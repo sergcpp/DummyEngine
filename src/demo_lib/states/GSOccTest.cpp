@@ -3,14 +3,10 @@
 #include <fstream>
 #include <sstream>
 
-#if defined(USE_SW_RENDER)
-#include <ren/SW/SW.h>
-#include <ren/SW/SWframebuffer.h>
-#endif
-
 #include <engine/GameStateManager.h>
 #include <ren/Context.h>
 #include <ren/Utils.h>
+#include <ren/GL.h>
 #include <sys/AssetFile.h>
 #include <sys/Json.h>
 #include <sys/Log.h>
@@ -33,6 +29,12 @@ GSOccTest::GSOccTest(GameBase *game) : game_(game) {
 
     const auto fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     font_ = fonts->FindFont("main_font");
+
+	swCullCtxInit(&cull_ctx_, 256, 128);
+}
+
+GSOccTest::~GSOccTest() {
+	swCullCtxDestroy(&cull_ctx_);
 }
 
 void GSOccTest::Enter() {
@@ -47,10 +49,60 @@ void GSOccTest::Exit() {
 
 void GSOccTest::Draw(float dt_s) {
     
+	{
+		const SWfloat attribs[] = { 0,    0,    0.5f,
+								    0.5f, 0,    0.5f,
+									0.5f, 0.5f, 0.5f, };
+		const SWubyte indices[] = { 0, 1, 2 };
+
+		SWcull_surf s;
+		s.type = SW_OCCLUDER;
+		s.prim_type = SW_TRIANGLES;
+		s.index_type = SW_UNSIGNED_BYTE;
+		s.attribs = &attribs[0];
+		s.indices = &indices[0];
+		s.stride = 3 * sizeof(float);
+		s.count = 3;
+
+		float xform[16];
+
+		swCullCtxSubmitCullSurfs(&cull_ctx_, &s, 1, xform);
+	}
+
+	{
+		int w = cull_ctx_.zbuf.w, h = cull_ctx_.zbuf.h;
+		std::vector<uint8_t> pixels(w * h * 4);
+		for (int x = 0; x < w; x++) {
+			for (int y = 0; y < h; y++) {
+				pixels[4 * (y * w + x) + 0] = (uint8_t)(cull_ctx_.zbuf.depth[y * w + x] * 255);
+				pixels[4 * (y * w + x) + 1] = (uint8_t)(cull_ctx_.zbuf.depth[y * w + x] * 255);
+				pixels[4 * (y * w + x) + 2] = (uint8_t)(cull_ctx_.zbuf.depth[y * w + x] * 255);
+				pixels[4 * (y * w + x) + 3] = 255;
+			}
+		}
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glDisable(GL_DEPTH_TEST);
+
+		glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
+	}
 
     {
         // ui draw
         ui_renderer_->BeginDraw();
+
+		static std::string s = "0";
+
+		fps_counter_++;
+		time_acc_ += dt_s;
+		if (time_acc_ >= 1.0f) {
+			s = std::to_string(fps_counter_);
+
+			time_acc_ -= 1.0f;
+			fps_counter_ = 0;
+		}
+
+		font_->DrawText(ui_renderer_.get(), s.c_str(), { -1, 1.0f - font_->height(ui_root_.get()) }, ui_root_.get());
 
         ui_renderer_->EndDraw();
     }
@@ -67,7 +119,7 @@ void GSOccTest::Update(int dt_ms) {
     view_origin_ += view_dir_ * forward_speed_;
     view_origin_ += side * side_speed_;
 
-    if (forward_speed_ != 0 || side_speed_ != 0 || animate_) {
+    if (forward_speed_ != 0 || side_speed_ != 0) {
         invalidate_preview_ = true;
     }
 
@@ -117,7 +169,7 @@ void GSOccTest::HandleInput(InputManager::Event evt) {
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT) {
             side_speed_ = FORWARD_SPEED;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SPACE) {
-            animate_ = !animate_;
+            
         } else if (evt.raw_key == 'e' || evt.raw_key == 'q') {
             vec3 up = { 1, 0, 0 };
             vec3 side = normalize(cross(sun_dir_, up));

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.8)
 project(demo_app)
 
 IF(WIN32)
@@ -36,3 +36,5 @@ add_dependencies(demo_app demo_lib sys)
 add_custom_command(TARGET demo_app 
                    POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:demo_app> ${WORKING_DIRECTORY})
+				   
+set_target_properties(demo_app PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}")

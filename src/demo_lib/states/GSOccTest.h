@@ -5,15 +5,11 @@
 #include <ren/Camera.h>
 #include <ren/Program.h>
 #include <ren/Texture.h>
+#include <ren/SW/SW.h>
 
 class GameBase;
 class GameStateManager;
 class FontStorage;
-
-namespace ray {
-class RendererBase;
-class SceneBase;
-}
 
 namespace ui {
 class BaseElement;
@@ -30,10 +26,8 @@ class GSOccTest : public GameState {
     std::shared_ptr<ui::BaseElement> ui_root_;
     std::shared_ptr<ui::BitmapFont> font_;
 
-    std::shared_ptr<ray::RendererBase> ray_renderer_;
-    std::shared_ptr<ray::SceneBase> ray_scene_;
+    SWcull_ctx cull_ctx_;
 
-    bool animate_ = false;
     bool view_grabbed_ = false;
     bool view_targeted_ = false;
     math::vec3 view_origin_ = { 0, 20, 3 },
@@ -46,14 +40,12 @@ class GSOccTest : public GameState {
 
     float forward_speed_ = 0, side_speed_ = 0;
 
-    float cur_time_stat_ms_ = 0;
+	float time_acc_ = 0;
+	int fps_counter_ = 0;
 
-    unsigned int time_acc_ = 0;
-    int time_counter_ = 0;
-
-    void UpdateEnvironment(const math::vec3 &sun_dir);
 public:
     explicit GSOccTest(GameBase *game);
+	~GSOccTest();
 
     void Enter() override;
     void Exit() override;

@@ -5,14 +5,6 @@ set(CMAKE_CXX_STANDARD 11)
 
 set(SDL_STATIC ON)
 
-include_directories(libs/ocl/include)
-
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    link_directories(libs/ocl/lib/x86_64)
-else(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    link_directories(libs/ocl/lib/x86)
-endif()
-
 add_definitions(-DCPU_ARCH_SSE2)
 #add_definitions(-DMATH_NO_INLINE)
 
