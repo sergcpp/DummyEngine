@@ -32,7 +32,7 @@ GSOccTest::GSOccTest(GameBase *game) : game_(game) {
 
 	swCullCtxInit(&cull_ctx_, 256, 128);
 
-	InitShaders();
+	//InitShaders();
 }
 
 GSOccTest::~GSOccTest() {
@@ -68,7 +68,7 @@ void GSOccTest::Draw(float dt_s) {
 
 		float xform[16];
 
-		swCullCtxClear(&cull_ctx_);
+		//swCullCtxClear(&cull_ctx_);
 		swCullCtxSubmitCullSurfs(&cull_ctx_, &s, 1, xform);
 	}
 
@@ -77,21 +77,8 @@ void GSOccTest::Draw(float dt_s) {
 	}
 
 	{
-		int w = cull_ctx_.zbuf.w, h = cull_ctx_.zbuf.h;
-		std::vector<uint8_t> pixels(w * h * 4);
-		for (int x = 0; x < w; x++) {
-			for (int y = 0; y < h; y++) {
-				pixels[4 * (y * w + x) + 0] = (uint8_t)(cull_ctx_.zbuf.depth[y * w + x] * 255);
-				pixels[4 * (y * w + x) + 1] = (uint8_t)(cull_ctx_.zbuf.depth[y * w + x] * 255);
-				pixels[4 * (y * w + x) + 2] = (uint8_t)(cull_ctx_.zbuf.depth[y * w + x] * 255);
-				pixels[4 * (y * w + x) + 3] = 255;
-			}
-		}
-
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glDisable(GL_DEPTH_TEST);
-
-		glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
+		
+        BlitDepthBuf();
 	}
 
     {

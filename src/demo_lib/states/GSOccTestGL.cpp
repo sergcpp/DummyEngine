@@ -50,9 +50,29 @@ void GSOccTest::InitShaders() {
 
 	ren::eProgLoadStatus status;
 	main_prog_ = ctx_->LoadProgramGLSL("main", vs_source, fs_source, &status);
-	assert(status == ProgCreatedFromData);
+	assert(status == ren::ProgCreatedFromData);
 }
 
 void GSOccTest::DrawBBox(const float min[3], const float max[3]) {
 
+}
+
+void GSOccTest::BlitDepthBuf() {
+    int w = cull_ctx_.zbuf.w, h = cull_ctx_.zbuf.h;
+    std::vector<uint8_t> pixels(w * h * 4);
+    for (int x = 0; x < w; x++) {
+        for (int y = 0; y < h; y++) {
+            pixels[4 * (y * w + x) + 0] = (uint8_t)(cull_ctx_.zbuf.depth[y * w + x] * 255);
+            pixels[4 * (y * w + x) + 1] = (uint8_t)(cull_ctx_.zbuf.depth[y * w + x] * 255);
+            pixels[4 * (y * w + x) + 2] = (uint8_t)(cull_ctx_.zbuf.depth[y * w + x] * 255);
+            pixels[4 * (y * w + x) + 3] = 255;
+        }
+    }
+
+    glUseProgram(0);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+
+    glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
 }

@@ -49,6 +49,7 @@ class GSOccTest : public GameState {
 
 	void InitShaders();
 	void DrawBBox(const float min[3], const float max[3]);
+    void BlitDepthBuf();
 
 public:
     explicit GSOccTest(GameBase *game);
