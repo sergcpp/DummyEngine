@@ -31,6 +31,8 @@ GSOccTest::GSOccTest(GameBase *game) : game_(game) {
     font_ = fonts->FindFont("main_font");
 
 	swCullCtxInit(&cull_ctx_, 256, 128);
+
+	InitShaders();
 }
 
 GSOccTest::~GSOccTest() {
@@ -66,7 +68,12 @@ void GSOccTest::Draw(float dt_s) {
 
 		float xform[16];
 
+		swCullCtxClear(&cull_ctx_);
 		swCullCtxSubmitCullSurfs(&cull_ctx_, &s, 1, xform);
+	}
+
+	{
+		
 	}
 
 	{

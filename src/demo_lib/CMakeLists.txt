@@ -10,7 +10,8 @@ set(SOURCE_FILES    exports.cpp
 set(STATES_SOURCES  states/GSCreate.h
 					states/GSCreate.cpp
 					states/GSOccTest.h
-					states/GSOccTest.cpp)
+					states/GSOccTest.cpp
+					states/GSOccTestGL.cpp)
 
 set(UI_SOURCES  ui/FontStorage.h)
 

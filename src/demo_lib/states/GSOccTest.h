@@ -43,6 +43,13 @@ class GSOccTest : public GameState {
 	float time_acc_ = 0;
 	int fps_counter_ = 0;
 
+#if defined(USE_GL_RENDER)
+	ren::ProgramRef main_prog_;
+#endif
+
+	void InitShaders();
+	void DrawBBox(const float min[3], const float max[3]);
+
 public:
     explicit GSOccTest(GameBase *game);
 	~GSOccTest();
