@@ -1,7 +1,6 @@
 #pragma once
 
 #include <engine/GameState.h>
-#include <engine/go/Go.h>
 #include <ren/Camera.h>
 #include <ren/Program.h>
 #include <ren/Texture.h>
@@ -26,6 +25,7 @@ class GSOccTest : public GameState {
     std::shared_ptr<ui::BaseElement> ui_root_;
     std::shared_ptr<ui::BitmapFont> font_;
 
+	ren::Camera cam_;
     SWcull_ctx cull_ctx_;
 
     bool view_grabbed_ = false;
@@ -34,8 +34,6 @@ class GSOccTest : public GameState {
                view_dir_ = { -1, 0, 0 },
                view_target_ = { 0, 0, 0 };
 
-    math::vec3 sun_dir_ = { 0, 1, 0 };
-
     bool invalidate_preview_ = true;
 
     float forward_speed_ = 0, side_speed_ = 0;
@@ -43,12 +41,16 @@ class GSOccTest : public GameState {
 	float time_acc_ = 0;
 	int fps_counter_ = 0;
 
+	bool cull_ = true;
+	bool wireframe_ = false;
+
 #if defined(USE_GL_RENDER)
 	ren::ProgramRef main_prog_;
 #endif
 
 	void InitShaders();
-	void DrawBBox(const float min[3], const float max[3]);
+	void DrawBoxes(SWcull_surf *surfs, int count);
+	void DrawCam();
     void BlitDepthBuf();
 
 public:
