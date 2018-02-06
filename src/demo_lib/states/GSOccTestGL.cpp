@@ -198,6 +198,8 @@ void GSOccTest::DrawCam() {
 
 	glDrawArrays(GL_LINES, 0, 8);
 
+	glLineWidth(1.0f);
+
 	ren::CheckError();
 }
 
