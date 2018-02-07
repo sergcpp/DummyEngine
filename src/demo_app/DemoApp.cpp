@@ -232,10 +232,10 @@ void DemoApp::PollEvents() {
                 quit_ = true;
                 return;
             } /*else if (e.key.keysym.sym == SDLK_TAB) {
-        bool is_fullscreen = bool(SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN);
-        SDL_SetWindowFullscreen(window_, is_fullscreen ? 0 : SDL_WINDOW_FULLSCREEN);
-        return;
-    }*/ else if (ConvertToRawButton(e.key.keysym.sym, button)) {
+bool is_fullscreen = bool(SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN);
+SDL_SetWindowFullscreen(window_, is_fullscreen ? 0 : SDL_WINDOW_FULLSCREEN);
+return;
+}*/ else if (ConvertToRawButton(e.key.keysym.sym, button)) {
                 evt.type = InputManager::RAW_INPUT_KEY_DOWN;
                 evt.key = button;
                 evt.raw_key = e.key.keysym.sym;
