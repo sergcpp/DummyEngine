@@ -137,7 +137,8 @@ int DemoApp::Run(const std::vector<std::string> &args) {
     const int h = 576;
     //const int w = 640;  const int h = 360;
 #else
-    const int w = 1280; const int h = 640;
+    const int w = 1280;
+    const int h = 640;
     //const int w = 1024;  const int h = 1024;
     //const int w = 1280; const int h = 720;
     //const int w = 512; const int h = 512;
@@ -231,10 +232,10 @@ void DemoApp::PollEvents() {
                 quit_ = true;
                 return;
             } /*else if (e.key.keysym.sym == SDLK_TAB) {
-            bool is_fullscreen = bool(SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN);
-            SDL_SetWindowFullscreen(window_, is_fullscreen ? 0 : SDL_WINDOW_FULLSCREEN);
-            return;
-        }*/ else if (ConvertToRawButton(e.key.keysym.sym, button)) {
+        bool is_fullscreen = bool(SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN);
+        SDL_SetWindowFullscreen(window_, is_fullscreen ? 0 : SDL_WINDOW_FULLSCREEN);
+        return;
+    }*/ else if (ConvertToRawButton(e.key.keysym.sym, button)) {
                 evt.type = InputManager::RAW_INPUT_KEY_DOWN;
                 evt.key = button;
                 evt.raw_key = e.key.keysym.sym;
@@ -346,7 +347,7 @@ void DemoApp::LoadLib(int w, int h) {
         p_get_renderer_pixels_ = (decltype(p_get_renderer_pixels_))demo_lib_.GetProcAddress("GetRendererPixels");
     }
 
-	if (p_create_viewer) {
-		viewer_.reset(p_create_viewer(w, h, "./"));
-	}
+    if (p_create_viewer) {
+        viewer_.reset(p_create_viewer(w, h, "./"));
+    }
 }

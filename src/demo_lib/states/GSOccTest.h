@@ -25,7 +25,7 @@ class GSOccTest : public GameState {
     std::shared_ptr<ui::BaseElement> ui_root_;
     std::shared_ptr<ui::BitmapFont> font_;
 
-	ren::Camera cam_;
+    ren::Camera cam_;
     SWcull_ctx cull_ctx_;
 
     bool view_grabbed_ = false;
@@ -38,24 +38,24 @@ class GSOccTest : public GameState {
 
     float forward_speed_ = 0, side_speed_ = 0;
 
-	float time_acc_ = 0;
-	int fps_counter_ = 0;
+    float time_acc_ = 0;
+    int fps_counter_ = 0;
 
-	bool cull_ = true;
-	bool wireframe_ = false;
+    bool cull_ = true;
+    bool wireframe_ = false;
 
 #if defined(USE_GL_RENDER)
-	ren::ProgramRef main_prog_;
+    ren::ProgramRef main_prog_;
 #endif
 
-	void InitShaders();
-	void DrawBoxes(SWcull_surf *surfs, int count);
-	void DrawCam();
+    void InitShaders();
+    void DrawBoxes(SWcull_surf *surfs, int count);
+    void DrawCam();
     void BlitDepthBuf();
 
 public:
     explicit GSOccTest(GameBase *game);
-	~GSOccTest();
+    ~GSOccTest();
 
     void Enter() override;
     void Exit() override;
