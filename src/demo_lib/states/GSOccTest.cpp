@@ -13,7 +13,7 @@ namespace GSOccTestInternal {
 const float FORWARD_SPEED = 2.0f;
 
 const float CAM_FOV = 45.0f;
-const float CAM_CENTER[3] = { 0.0f, 2.0f, -8.0f };
+const float CAM_CENTER[3] = { 100.0f, 100.0f, -200.0f };
 const float CAM_TARGET[3] = { 0.0f, 0.0f, 0.0f };
 const float CAM_UP[3] = { 0.0f, 1.0f, 0.0f };
 
@@ -38,6 +38,7 @@ GSOccTest::GSOccTest(GameBase *game) : game_(game),
     const auto fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     font_ = fonts->FindFont("main_font");
 
+    view_origin_ = math::make_vec3(CAM_CENTER);
     cam_.Perspective(CAM_FOV, float(game_->width)/game_->height, NEAR_CLIP, FAR_CLIP);
 
     swCullCtxInit(&cull_ctx_, DEPTH_RES_W, DEPTH_RES_H);
@@ -261,6 +262,7 @@ void GSOccTest::Draw(float dt_s) {
                     s[i][j][k].stride = 6 * sizeof(float);
                     s[i][j][k].count = 36;
                     s[i][j][k].xform = value_ptr(proj_from_object);
+                    s[i][j][k].dont_skip = nullptr;
                 }
             }
         }
@@ -302,7 +304,7 @@ void GSOccTest::Draw(float dt_s) {
     {
         {
             // draw main view
-            glClearColor(0, 1, 1, 1);
+            glClearColor(0, 0.2f, 0.2f, 1);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             DrawBoxes(&s[0][0][0], 8 * 8 * 8);
@@ -317,7 +319,7 @@ void GSOccTest::Draw(float dt_s) {
             glViewport(0, DEPTH_RES_H, DEPTH_RES_W, DEPTH_RES_H);
             glScissor(0, DEPTH_RES_H, DEPTH_RES_W, DEPTH_RES_H);
 
-            glClearColor(0, 1, 0, 1);
+            glClearColor(0, 0.2f, 0, 1);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             cam_.SetupView(value_ptr(view_origin_ + vec3{ 0, 500, 0 } + 20.0f * vec3{ view_dir_.x, 0, view_dir_.z }), value_ptr(view_origin_ + 200.0f * vec3{ view_dir_.x, 0, view_dir_.z }), value_ptr(up));
