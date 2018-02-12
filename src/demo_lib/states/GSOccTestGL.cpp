@@ -231,3 +231,31 @@ void GSOccTest::BlitDepthBuf() {
     glDisable(GL_DEPTH_TEST);
     glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
 }
+
+void GSOccTest::BlitDepthTiles() {
+    using namespace GSOccTestInternal;
+
+    int w = cull_ctx_.zbuf.w, h = cull_ctx_.zbuf.h;
+    std::vector<uint8_t> pixels(w * h * 4);
+    for (int x = 0; x < w; x++) {
+        for (int y = 0; y < h; y++) {
+            const auto *zr = swZbufGetTileRange(&cull_ctx_.zbuf, x, (h - y - 1));
+
+            float z = zr->min;
+            z = (2.0f * NEAR_CLIP) / (FAR_CLIP + NEAR_CLIP - z * (FAR_CLIP - NEAR_CLIP));
+            pixels[4 * (y * w + x) + 0] = (uint8_t)(z * 255);
+            pixels[4 * (y * w + x) + 1] = (uint8_t)(z * 255);
+            pixels[4 * (y * w + x) + 2] = (uint8_t)(z * 255);
+            pixels[4 * (y * w + x) + 3] = 255;
+        }
+    }
+
+    glUseProgram(0);
+
+    glRasterPos2f(-1 + 2* float(w) / game_->width, -1);
+
+    glDisable(GL_DEPTH_TEST);
+    glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
+
+    glRasterPos2f(-1, -1);
+}

@@ -13,7 +13,7 @@ namespace GSOccTestInternal {
 const float FORWARD_SPEED = 2.0f;
 
 const float CAM_FOV = 45.0f;
-const float CAM_CENTER[3] = { 100.0f, 100.0f, -200.0f };
+const float CAM_CENTER[3] = { 100.0f, 100.0f, -500.0f };
 const float CAM_TARGET[3] = { 0.0f, 0.0f, 0.0f };
 const float CAM_UP[3] = { 0.0f, 1.0f, 0.0f };
 
@@ -41,7 +41,8 @@ GSOccTest::GSOccTest(GameBase *game) : game_(game),
     view_origin_ = math::make_vec3(CAM_CENTER);
     cam_.Perspective(CAM_FOV, float(game_->width)/game_->height, NEAR_CLIP, FAR_CLIP);
 
-    swCullCtxInit(&cull_ctx_, DEPTH_RES_W, DEPTH_RES_H);
+    SWfloat z = FAR_CLIP / (FAR_CLIP - NEAR_CLIP) + (NEAR_CLIP - (2.0f * NEAR_CLIP)) / (0.15f * (FAR_CLIP - NEAR_CLIP));
+    swCullCtxInit(&cull_ctx_, DEPTH_RES_W, DEPTH_RES_H, z);
 
     InitShaders();
 }
@@ -333,8 +334,8 @@ void GSOccTest::Draw(float dt_s) {
     }
 
     {
-
         BlitDepthBuf();
+        BlitDepthTiles();
     }
 
     {

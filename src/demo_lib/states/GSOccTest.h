@@ -52,6 +52,7 @@ class GSOccTest : public GameState {
     void DrawBoxes(SWcull_surf *surfs, int count);
     void DrawCam();
     void BlitDepthBuf();
+    void BlitDepthTiles();
 
 public:
     explicit GSOccTest(GameBase *game);
