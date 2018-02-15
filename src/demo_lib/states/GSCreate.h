@@ -2,7 +2,7 @@
 
 #include <memory>
 
-enum eGameState { GS_OCC_TEST };
+enum eGameState { GS_OCC_TEST, GS_BICUBIC_TEST };
 
 class GameBase;
 class GameState;

@@ -9,6 +9,8 @@ set(SOURCE_FILES    exports.cpp
 
 set(STATES_SOURCES  states/GSCreate.h
 					states/GSCreate.cpp
+					states/GSBicubicTest.h
+					states/GSBicubicTest.cpp
 					states/GSOccTest.h
 					states/GSOccTest.cpp
 					states/GSOccTestGL.cpp)
