@@ -46,7 +46,7 @@ const char *fs_source = ""
                         "varying vec3 aVertexNormal_;\n"
                         "\n"
                         "void main(void) {\n"
-                        "    gl_FragColor = vec4(col, 1.0) * 0.001 + vec4(aVertexNormal_*0.5 + vec3(0.5, 0.5, 0.5), 1.0);\n"
+                        "    gl_FragColor = vec4(col, 1.0) * 0.001 + vec4(aVertexNormal_ * 0.5 + vec3(0.5, 0.5, 0.5), 1.0);\n"
                         "}\n";
 
 enum { A_POS,

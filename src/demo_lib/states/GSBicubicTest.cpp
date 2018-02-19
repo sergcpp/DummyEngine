@@ -21,13 +21,10 @@ namespace GSBicubicTestInternal {
 
         if (ret.format == ren::RawRGB888) {
             ret.data = std::unique_ptr<uint8_t[]>{ new uint8_t[ret.w * ret.h * 3] };
-            for (int j = 0; j < img.h; j++) {
-                for (int i = 0; i < img.w; i++) {
+            for (int j = 0; j < ret.h; j++) {
+                for (int i = 0; i < ret.w; i++) {
                     for (int k = 0; k < 3; k++) {
-                        ret.data[3 * ((2 * j + 0) * ret.w + (2 * i + 0)) + k] = img.data[3 * (j * img.w + i) + k];
-                        ret.data[3 * ((2 * j + 0) * ret.w + (2 * i + 1)) + k] = img.data[3 * (j * img.w + i) + k];
-                        ret.data[3 * ((2 * j + 1) * ret.w + (2 * i + 0)) + k] = img.data[3 * (j * img.w + i) + k];
-                        ret.data[3 * ((2 * j + 1) * ret.w + (2 * i + 1)) + k] = img.data[3 * (j * img.w + i) + k];
+                        ret.data[3 * (j * ret.w + i) + k] = img.data[3 * ((j / 2) * img.w + (i / 2)) + k];
                     }
                 }
             }
@@ -101,6 +98,8 @@ void GSBicubicTest::Draw(float dt_s) {
         glDisable(GL_DEPTH_TEST);
 
         float pos_x = -1;
+
+        glUseProgram(0);
 
         glRasterPos2f(pos_x, -1);
         glDrawPixels(orig_image_.w, orig_image_.h, GL_RGB, GL_UNSIGNED_BYTE, &orig_image_.data[0]);
