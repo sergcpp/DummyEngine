@@ -1,0 +1,12 @@
+{
+    "gfx_settings" : {
+        "general" : {
+            "setting1" : 1
+        }
+    },
+	"ui_settings" : {
+		"fonts" : {
+			"main_font" : "assets/fonts/Lucida Console.bff"
+		}
+	}
+}

@@ -1,0 +1,8 @@
+{ 
+    "drawable": {
+        "mesh_name": "biped.mesh",
+        "anims": [
+            "biped_run.anim"
+        ]
+    }
+}
