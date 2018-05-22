@@ -220,7 +220,7 @@ void GSBicubicTest::Enter() {
     using namespace GSBicubicTestInternal;
     using namespace math;
 
-    std::ifstream in_file("upscaled.tga", std::ios::binary | std::ios::ate);
+    std::ifstream in_file("grad.tga", std::ios::binary | std::ios::ate);
     size_t in_file_size = (size_t)in_file.tellg();
     in_file.seekg(0, std::ios::beg);
 
@@ -231,6 +231,34 @@ void GSBicubicTest::Enter() {
 
     //image_t new_img2 = Upscale(orig_image_, 16, Cubic);
     //WriteTGA(new_img2, "upscaled.tga");
+    
+    uint8_t _matrix[8][8] = { { 0,  48, 12, 60, 3,  51, 15, 63 },
+                             { 32, 16, 44, 28, 35, 19, 47, 31 },
+                             { 8,  56, 4,  52, 11, 59, 7,  55 },
+                             { 40, 24, 36, 20, 43, 27, 39, 23 },
+                             { 2,  50, 14, 62, 1,  49, 13, 61 },
+                             { 34, 18, 46, 30, 33, 17, 45, 29 },
+                             { 10, 58, 6,  54, 9,  57, 5,  53 },
+                             { 42, 26, 38, 22, 41, 25, 37, 21 } };
+
+    uint8_t matrix[4][4] = { { 0,  8,  2,  10 },
+                             { 12, 4,  14, 6  },
+                             { 3,  11, 1,  9  },
+                             { 15, 7,  13, 5  } };
+
+    for (int j = 0; j < orig_image_.h; j++) {
+        for (int i = 0; i < orig_image_.w; i++) {
+            int x = i % 4, y = j % 4;
+
+            orig_image_.data[3 * (j * orig_image_.w + i) + 0] += (matrix[y][x] / 2 - 4);
+            orig_image_.data[3 * (j * orig_image_.w + i) + 1] += (matrix[y][x] / 4 - 2);
+            orig_image_.data[3 * (j * orig_image_.w + i) + 2] += (matrix[y][x] / 2 - 4);
+
+            orig_image_.data[3 * (j * orig_image_.w + i) + 0] -= (orig_image_.data[3 * (j * orig_image_.w + i) + 0] + 4) % 8;
+            orig_image_.data[3 * (j * orig_image_.w + i) + 1] -= (orig_image_.data[3 * (j * orig_image_.w + i) + 1] + 2) % 4;
+            orig_image_.data[3 * (j * orig_image_.w + i) + 2] -= (orig_image_.data[3 * (j * orig_image_.w + i) + 2] + 4) % 8;
+        }
+    }
 }
 
 void GSBicubicTest::Exit() {
@@ -253,10 +281,10 @@ void GSBicubicTest::Draw(float dt_s) {
         glDrawPixels(orig_image_.w, orig_image_.h, GL_RGB, GL_UNSIGNED_BYTE, &orig_image_.data[0]);
         pos_x += float(orig_image_.w * 2)/game_->width;
 
-        image_t new_img1 = DownScale(orig_image_, 3);
+        /*image_t new_img1 = DownScale(orig_image_, 3);
         glRasterPos2f(pos_x, -1);
         glDrawPixels(new_img1.w, new_img1.h, GL_RGB, GL_UNSIGNED_BYTE, &new_img1.data[0]);
-        pos_x += float(new_img1.w * 2)/game_->width;
+        pos_x += float(new_img1.w * 2)/game_->width;*/
 
         /*image_t new_img2 = DownScale(new_img1, 7);
         glRasterPos2f(pos_x, -1);
