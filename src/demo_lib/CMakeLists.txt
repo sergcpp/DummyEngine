@@ -13,6 +13,7 @@ set(STATES_SOURCES  states/GSCreate.h
 					states/GSBicubicTest.cpp
                     states/GSDefTest.h
                     states/GSDefTest.cpp
+					states/GSDefTestGL.cpp
 					states/GSOccTest.h
 					states/GSOccTest.cpp
 					states/GSOccTestGL.cpp)

@@ -6,5 +6,6 @@
 #include "GSOccTest.cpp"
 
 #if defined(USE_GL_RENDER)
+#include "GSDefTestGL.cpp"
 #include "GSOccTestGL.cpp"
 #endif

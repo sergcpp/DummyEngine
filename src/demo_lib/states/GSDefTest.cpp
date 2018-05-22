@@ -14,7 +14,7 @@
 #include "../ui/FontStorage.h"
 
 namespace GSDefTestInternal {
-    const float FORWARD_SPEED = 2.0f;
+    const float FORWARD_SPEED = 0.25f;
 
     const float CAM_FOV = 45.0f;
     const float CAM_CENTER[3] = { 100.0f, 100.0f, -500.0f };
@@ -107,6 +107,24 @@ void GSDefTest::Enter() {
     in_file.Read(&in_file_data[0], in_file_size);
 
     test_mesh_ = ctx_->LoadMesh("test_mesh", &in_file_data[0], on_load_material);
+
+    InitInternal(game_->width, game_->height);
+
+    for (int i = 0; i < 10000; i++) {
+        lights_.emplace_back();
+
+        auto &l = lights_.back();
+
+        l.pos = math::vec3{ 30, 0, -5 };
+        l.pos.x += 30.0f * float(rand()) / RAND_MAX;
+        l.pos.y += 40.0f * float(rand()) / RAND_MAX;
+        l.pos.z += 10.0f * float(rand()) / RAND_MAX;
+
+        l.col = { float(rand()) / RAND_MAX, float(rand()) / RAND_MAX, float(rand()) / RAND_MAX };
+        float m = std::max(std::max(l.col.x, l.col.y), l.col.z);
+        l.col /= m;
+        l.col *= 0.5f;
+    }
 }
 
 void GSDefTest::Exit() {
@@ -117,11 +135,11 @@ void GSDefTest::Draw(float dt_s) {
     using namespace GSDefTestInternal;
 
     {
-        glClearColor(0, 0.2f, 0.2f, 1);
+        glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glDisable(GL_DEPTH_TEST);
+        //glDisable(GL_DEPTH_TEST);
 
-        
+        DrawInternal();
     }
 
     {
@@ -149,6 +167,16 @@ void GSDefTest::Update(int dt_ms) {
     view_origin_ += side * side_speed_;
 
     cam_.SetupView(value_ptr(view_origin_), value_ptr(view_origin_ + view_dir_), value_ptr(up));
+
+    anim_time_ += dt_ms / 1000.0;
+
+    float f_time = (float)anim_time_;
+
+    for (auto &l : lights_) {
+        //l.pos.x += 0.01f * std::sin(f_time);
+        l.pos.y += 0.025f * std::sin(1.0f * f_time);
+        //l.pos.z += 0.01f * std::sin(f_time);
+    }
 }
 
 void GSDefTest::HandleInput(InputManager::Event evt) {
@@ -157,13 +185,32 @@ void GSDefTest::HandleInput(InputManager::Event evt) {
 
     switch (evt.type) {
     case InputManager::RAW_INPUT_P1_DOWN:
-        
+        view_grabbed_ = true;
         break;
     case InputManager::RAW_INPUT_P1_UP:
-        
+        view_grabbed_ = false;
         break;
     case InputManager::RAW_INPUT_P1_MOVE:
-        
+         if (view_grabbed_) {
+            vec3 up = { 0, 1, 0 };
+            vec3 side = normalize(cross(view_dir_, up));
+            up = cross(side, view_dir_);
+
+            mat4 rot;
+            rot = rotate(rot, 0.01f * evt.move.dx, up);
+            rot = rotate(rot, 0.01f * evt.move.dy, side);
+
+            mat3 rot_m3 = mat3(rot);
+
+            if (!view_targeted_) {
+                view_dir_ = view_dir_ * rot_m3;
+            } else {
+                vec3 dir = view_origin_ - view_target_;
+                dir = dir * rot_m3;
+                view_origin_ = view_target_ + dir;
+                view_dir_ = normalize(-dir);
+            }
+        }
         break;
     case InputManager::RAW_INPUT_KEY_DOWN: {
         if (evt.key == InputManager::RAW_INPUT_BUTTON_UP) {
