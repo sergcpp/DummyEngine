@@ -101,6 +101,7 @@ void GSDefTest::DrawInternal() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
 
+    glDisable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
 
     const ren::Program *p = screen_draw_prog_.get();
