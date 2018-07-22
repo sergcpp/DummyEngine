@@ -1,11 +1,11 @@
 #pragma once
 
-#include <engine/GameState.h>
-#include <ren/Camera.h>
-#include <ren/Mesh.h>
-#include <ren/Program.h>
-#include <ren/Texture.h>
-#include <ren/SW/SW.h>
+#include <Eng/GameState.h>
+#include <Ren/Camera.h>
+#include <Ren/Mesh.h>
+#include <Ren/Program.h>
+#include <Ren/Texture.h>
+#include <Ren/SW/SW.h>
 
 class GameBase;
 class GameStateManager;

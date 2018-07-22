@@ -6,7 +6,7 @@
 #endif
 
 #if defined(USE_GL_RENDER)
-#include <ren/GL.h>
+#include <Ren/GL.h>
 #elif defined(USE_SW_RENDER)
 
 #endif
@@ -17,11 +17,11 @@
 #include <SDL2/SDL_video.h>
 #endif
 
-#include <engine/GameBase.h>
-#include <engine/TimedInput.h>
+#include <Eng/GameBase.h>
+#include <Eng/TimedInput.h>
 #include <math/math.hpp>
-#include <sys/Log.h>
-#include <sys/Time_.h>
+#include <Sys/Log.h>
+#include <Sys/Time_.h>
 
 #include <SDL2/SDL_events.h>
 

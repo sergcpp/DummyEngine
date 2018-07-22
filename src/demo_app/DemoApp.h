@@ -3,8 +3,9 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <engine/TimedInput.h>
-#include <sys/DynLib.h>
+
+#include <Eng/TimedInput.h>
+#include <Sys/DynLib.h>
 
 struct SDL_Renderer;
 struct SDL_Texture;

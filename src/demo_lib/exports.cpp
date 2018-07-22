@@ -1,8 +1,8 @@
 
 #include "Viewer.h"
 
-#include <ren/SW/SW.h>
-#include <sys/DynLib.h>
+#include <Ren/SW/SW.h>
+#include <Sys/DynLib.h>
 
 extern "C" DLL_EXPORT GameBase *CreateViewer(int w, int h, const char *local_dir) {
     return new Viewer(w, h, local_dir);

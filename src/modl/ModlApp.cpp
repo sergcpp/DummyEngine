@@ -13,15 +13,15 @@
 #include <SDL2/SDL.h>
 
 #if defined(USE_GL_RENDER)
-    #include <ren/GL.h>
+    #include <Ren/GL.h>
 #elif defined(USE_SW_RENDER)
-    #include <ren/SW/SW.h>
+    #include <Ren/SW/SW.h>
 #endif
-#include <ren/Mesh.h>
-#include <ren/RenderThread.h>
-#include <sys/AssetFile.h>
-#include <sys/AssetFileIO.h>
-#include <sys/Log.h>
+#include <Ren/Mesh.h>
+#include <Ren/RenderThread.h>
+#include <Sys/AssetFile.h>
+#include <Sys/AssetFileIO.h>
+#include <Sys/Log.h>
 
 #pragma warning(disable : 4351 4996)
 
@@ -274,10 +274,10 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
     int num_vertices, num_indices;
     map<string, int> vertex_textures;
-    vector<float> positions, normals, uvs, weights;
+    vector<float> positions, normals, uvs, uvs2, weights;
     vector<int> tex_ids;
     vector<string> materials;
-    vector<vector<unsigned short>> indices;
+    vector<vector<unsigned>> indices;
 
     vector<vector<unsigned short>> long_strips;
 
@@ -320,6 +320,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         positions.reserve((size_t)num_vertices * 3);
         normals.reserve((size_t)num_vertices * 3);
         uvs.reserve((size_t)num_vertices * 2);
+        uvs2.reserve((size_t)num_vertices * 2);
         tex_ids.reserve((size_t)num_vertices);
         weights.reserve((size_t)num_vertices * 4 * 2);
 
@@ -332,7 +333,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             string str;
             getline(in_file, str);
             auto toks = Tokenize(str, " ");
-            if ((mesh_type == M_STATIC && toks.size() != 8) ||
+            if ((mesh_type == M_STATIC && toks.size() != 10) ||
                 (mesh_type == M_TERR && toks.size() != 9) ||
                 (mesh_type == M_SKEL && toks.size() < 10)) {
                 cerr << "Wrong number of tokens!" << endl;
@@ -355,6 +356,11 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             // parse vertex uvs
             for (auto j : {6, 7}) {
                 uvs.push_back(stof(toks[j]));
+            }
+
+            // parse additional uvs
+            for (auto j : { 8, 9 }) {
+                uvs2.push_back(stof(toks[j]));
             }
 
             if (mesh_type == M_TERR) {
@@ -386,10 +392,6 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             if (str[0] > '9' || str[0] < '0') {
                 auto toks = Tokenize(str, " ");
                 materials.push_back(toks[0]);
-
-                if (!indices.empty()) {
-                    indices.back().shrink_to_fit();
-                }
                 indices.emplace_back();
             } else {
                 auto toks = Tokenize(str, " \t");
@@ -438,9 +440,6 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 }
             }
         }
-
-        indices.back().shrink_to_fit();
-        indices.shrink_to_fit();
     }
 
     /*{
@@ -452,7 +451,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
             //stripper.SetMinStripSize(0);
             stripper.SetCacheSize(256);
-            stripper.Strip(&primitives);
+            stripper.MeshChunk(&primitives);
 
             cout << "Num strips : " << primitives.size() << endl;
             unsigned individual_tris = 0;
@@ -508,15 +507,91 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         }
     }*/
 
-    struct Strip {
+    {   // optimize mesh
+        for (auto &index_group : indices) {
+
+            long_strips.emplace_back();
+            auto &cur_strip = long_strips.back();
+
+            //cur_strip.insert(cur_strip.end(), vec.m_Indices.begin() + off, vec.m_Indices.end());
+
+            cur_strip.resize(index_group.size());
+            for (size_t i = 0; i < index_group.size(); i++) {
+                cur_strip[i] = (unsigned short)index_group[i];
+            }
+
+            /*using triangle_stripper::tri_stripper;
+
+            tri_stripper stripper(index_group);
+            tri_stripper::primitives_vector primitives;
+
+            //stripper.SetMinStripSize(0);
+            stripper.SetCacheSize(256);
+            stripper.MeshChunk(&primitives);
+
+            cout << "Num strips : " << primitives.size() << endl;
+            unsigned individual_tris = 0;
+
+            long_strips.emplace_back();
+            auto &cur_strip = long_strips.back();
+
+            for (auto &vec : primitives) {
+                if (vec.m_Type != tri_stripper::PT_Triangle_Strip) {
+                    individual_tris++;
+                    for (unsigned i = 0; i < vec.m_Indices.size(); i += 3) {
+                        bool skip_first = false;
+                        if (!cur_strip.empty()) {
+                            if (cur_strip.back() != vec.m_Indices[i]) {
+                                cur_strip.push_back(cur_strip.back());
+                                cur_strip.push_back(vec.m_Indices[i]);
+                            } else {
+                                //skip_first = true;
+                            }
+
+                            if ((cur_strip.size() - 2) % 2 != 0) {
+                                //cur_strip.push_back(vec.m_Indices[i]);
+                                std::swap(vec.m_Indices[i + 1], vec.m_Indices[i + 2]);
+                            }
+                        }
+                        if (!skip_first) {
+                            cur_strip.push_back(vec.m_Indices[i]);
+                        }
+                        cur_strip.push_back(vec.m_Indices[i + 1]);
+                        cur_strip.push_back(vec.m_Indices[i + 2]);
+                    }
+                } else {
+                    if (vec.m_Indices.size() == 4) individual_tris++;
+                    unsigned off = 0;
+                    if (!cur_strip.empty()) {
+                        if (cur_strip.back() != vec.m_Indices[0]) {
+                            cur_strip.push_back(cur_strip.back());
+                            cur_strip.push_back(vec.m_Indices[0]);
+                        } else {
+                            //off = 1;
+                        }
+
+                        if ((cur_strip.size() - 2 - off) % 2 != 0) {
+                            cur_strip.push_back(vec.m_Indices[0]);
+                            //std::swap(vec.m_Indices[1], vec.m_Indices[2]);
+                        }
+                    }
+                    cur_strip.insert(long_strips.back().end(), vec.m_Indices.begin() + off, vec.m_Indices.end());
+                }
+            }
+            cur_strip.shrink_to_fit();
+            cout << "Individual triangles: " << individual_tris << endl;*/
+        }
+    }
+
+    struct MeshChunk {
         uint32_t index, num_indices;
         uint32_t alpha;
 
-        Strip(unsigned ndx, unsigned num, unsigned has_alpha)
+        MeshChunk(unsigned ndx, unsigned num, unsigned has_alpha)
                 : index(ndx), num_indices(num), alpha(has_alpha) {}
     };
     vector<uint16_t> total_indices;
-    vector<Strip> total_strips, alpha_strips;
+    vector<MeshChunk> total_chunks, alpha_chunks;
     vector<int> alpha_mats;
 
     for (int i = 0; i < (int)long_strips.size(); i++) {
@@ -543,17 +618,17 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         }
 
         if (alpha_blend) {
-            alpha_strips.emplace_back(total_indices.size(), long_strips[i].size(), 1);
+            alpha_chunks.emplace_back(total_indices.size(), long_strips[i].size(), 1);
             alpha_mats.push_back(i);
         } else {
-            total_strips.emplace_back(total_indices.size(), long_strips[i].size(), 0);
+            total_chunks.emplace_back(total_indices.size(), long_strips[i].size(), 0);
         }
 
         total_indices.insert(total_indices.end(), long_strips[i].begin(), long_strips[i].end());
     }
 
-    for (auto &strip : alpha_strips) {
-        total_strips.push_back(strip);
+    for (auto &strip : alpha_chunks) {
+        total_chunks.push_back(strip);
     }
 
     for (int mat_ndx : alpha_mats) {
@@ -626,7 +701,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
     file_offset += file_header.p[CH_MATERIALS].length;
     file_header.p[CH_STRIPS].offset = (int32_t)file_offset;
-    file_header.p[CH_STRIPS].length = sizeof(Strip) * total_strips.size();
+    file_header.p[CH_STRIPS].length = sizeof(MeshChunk) * total_chunks.size();
 
     if (mesh_type == M_SKEL) {
         file_header.num_chunks++;
@@ -660,7 +735,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         out_file.write((char *)&name[0], sizeof(name));
     }
 
-    out_file.write((char *)&total_strips[0], sizeof(Strip) * total_strips.size());
+    out_file.write((char *)&total_chunks[0], sizeof(MeshChunk) * total_chunks.size());
 
     if (mesh_type == M_SKEL) {
         for (auto &bone : out_bones) {

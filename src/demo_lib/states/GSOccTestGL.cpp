@@ -1,6 +1,6 @@
 #include "GSOccTest.h"
 
-#include <ren/Program.h>
+#include <Ren/Program.h>
 
 namespace GSOccTestInternal {
 extern const float CAM_FOV;

@@ -2,10 +2,10 @@
 
 #include <sstream>
 
-#include <engine/GameStateManager.h>
-#include <ren/Context.h>
-#include <sys/AssetFile.h>
-#include <sys/Json.h>
+#include <Eng/GameStateManager.h>
+#include <Ren/Context.h>
+#include <Sys/AssetFile.h>
+#include <Sys/Json.h>
 
 #include "states/GSCreate.h"
 #include "ui/FontStorage.h"

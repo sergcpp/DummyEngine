@@ -3,9 +3,9 @@
 #include <string>
 #include <vector>
 
-#include <ren/Camera.h>
-#include <ren/Context.h>
-#include <ren/Mesh.h>
+#include <Ren/Camera.h>
+#include <Ren/Context.h>
+#include <Ren/Mesh.h>
 
 struct SDL_Window;
 

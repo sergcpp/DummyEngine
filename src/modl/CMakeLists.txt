@@ -29,3 +29,5 @@ source_group("src" FILES ${SOURCE_FILES})
 
 add_executable(modl ${ALL_SOURCE_FILES})
 target_link_libraries(modl ${LIBS} Ren Sys)
+
+set_target_properties(modl PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}")

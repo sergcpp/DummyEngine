@@ -2,13 +2,13 @@
 
 #include <fstream>
 
-#include <engine/GameStateManager.h>
-#include <ren/Context.h>
-#include <ren/GL.h>
-#include <ren/Utils.h>
-#include <sys/AssetFile.h>
-#include <sys/Time_.h>
-#include <ui/Renderer.h>
+#include <Eng/GameStateManager.h>
+#include <Gui/Renderer.h>
+#include <Ren/Context.h>
+#include <Ren/GL.h>
+#include <Ren/Utils.h>
+#include <Sys/AssetFile.h>
+#include <Sys/Time_.h>
 
 #include "../Viewer.h"
 #include "../ui/FontStorage.h"
