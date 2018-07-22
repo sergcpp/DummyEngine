@@ -43,7 +43,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
 
     glUniform3f(p->uniform(U_COL).loc, 1.0f, 1.0f, 1.0f);
 
-    int stride = sizeof(float) * 8;
+    int stride = sizeof(float) * 10;
     glEnableVertexAttribArray(p->attribute(A_POS).loc);
     glVertexAttribPointer(p->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
@@ -57,7 +57,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     while (s->offset != -1) {
         const Ren::Material *mat = s->mat.get();
         //R::BindTexture(0, mat->textures[0].tex_id);
-        glDrawElements(GL_TRIANGLE_STRIP, s->num_indices, GL_UNSIGNED_SHORT, (void *)uintptr_t(s->offset));
+        glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_SHORT, (void *)uintptr_t(s->offset));
         ++s;
     }
 

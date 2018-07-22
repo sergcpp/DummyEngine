@@ -19,6 +19,7 @@
 #endif
 #include <Ren/Mesh.h>
 #include <Ren/RenderThread.h>
+#include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/AssetFileIO.h>
 #include <Sys/Log.h>
@@ -71,7 +72,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         }
     }
 
-    const auto w = 1024, h = 768;
+    const auto w = 1280, h = 720;
 
     if (Init(w, h) < 0) {
         return -1;
@@ -277,9 +278,9 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
     vector<float> positions, normals, uvs, uvs2, weights;
     vector<int> tex_ids;
     vector<string> materials;
-    vector<vector<unsigned>> indices;
+    vector<vector<uint32_t>> indices;
 
-    vector<vector<unsigned short>> long_strips;
+    vector<vector<uint16_t>> reordered_indices;
 
     ifstream in_file(in_file_name);
     if (!in_file) {
@@ -397,7 +398,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 auto toks = Tokenize(str, " \t");
                 if (toks.size() != 3) return RES_PARSE_ERROR;
                 for (auto j : {0, 1, 2}) {
-                    indices.back().push_back((unsigned short)stoi(toks[j]));
+                    indices.back().push_back((uint32_t)stoi(toks[j]));
                 }
                 i++;
             }
@@ -442,144 +443,19 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         }
     }
 
-    /*{
-        for (auto &index_group : indices) {
-            using triangle_stripper::tri_stripper;
-
-            tri_stripper stripper(index_group);
-            tri_stripper::primitives_vector primitives;
-
-            //stripper.SetMinStripSize(0);
-            stripper.SetCacheSize(256);
-            stripper.MeshChunk(&primitives);
-
-            cout << "Num strips : " << primitives.size() << endl;
-            unsigned individual_tris = 0;
-
-            long_strips.emplace_back();
-            auto &cur_strip = long_strips.back();
-
-            for (auto &vec : primitives) {
-                if (vec.m_Type != tri_stripper::PT_Triangle_Strip) {
-                    individual_tris++;
-                    for (unsigned i = 0; i < vec.m_Indices.size(); i += 3) {
-                        bool skip_first = false;
-                        if (!cur_strip.empty()) {
-                            if (cur_strip.back() != vec.m_Indices[i]) {
-                                cur_strip.push_back(cur_strip.back());
-                                cur_strip.push_back(vec.m_Indices[i]);
-                            } else {
-                                //skip_first = true;
-                            }
-
-                            if ((cur_strip.size() - 2) % 2 != 0) {
-                                //cur_strip.push_back(vec.m_Indices[i]);
-                                std::swap(vec.m_Indices[i + 1], vec.m_Indices[i + 2]);
-                            }
-                        }
-                        if (!skip_first) {
-                            cur_strip.push_back(vec.m_Indices[i]);
-                        }
-                        cur_strip.push_back(vec.m_Indices[i + 1]);
-                        cur_strip.push_back(vec.m_Indices[i + 2]);
-                    }
-                } else {
-                    if (vec.m_Indices.size() == 4) individual_tris++;
-                    unsigned off = 0;
-                    if (!cur_strip.empty()) {
-                        if (cur_strip.back() != vec.m_Indices[0]) {
-                            cur_strip.push_back(cur_strip.back());
-                            cur_strip.push_back(vec.m_Indices[0]);
-                        } else {
-                            //off = 1;
-                        }
-
-                        if ((cur_strip.size() - 2 - off) % 2 != 0) {
-                            cur_strip.push_back(vec.m_Indices[0]);
-                            //std::swap(vec.m_Indices[1], vec.m_Indices[2]);
-                        }
-                    }
-                    cur_strip.insert(long_strips.back().end(), vec.m_Indices.begin() + off, vec.m_Indices.end());
-                }
-            }
-            cur_strip.shrink_to_fit();
-            cout << "Individual triangles: " << individual_tris << endl;
-        }
-    }*/
-
     {   // optimize mesh
         for (auto &index_group : indices) {
+            reordered_indices.emplace_back();
+            auto &cur_strip = reordered_indices.back();
 
-            long_strips.emplace_back();
-            auto &cur_strip = long_strips.back();
+            std::vector<uint32_t> reordered(index_group.size());
 
-            //cur_strip.insert(cur_strip.end(), vec.m_Indices.begin() + off, vec.m_Indices.end());
+            Ren::ReorderTriangleIndices(&index_group[0], index_group.size(), (uint32_t)num_vertices, &reordered[0]);
 
-            cur_strip.resize(index_group.size());
-            for (size_t i = 0; i < index_group.size(); i++) {
-                cur_strip[i] = (unsigned short)index_group[i];
+            cur_strip.resize(reordered.size());
+            for (size_t i = 0; i < reordered.size(); i++) {
+                cur_strip[i] = (uint16_t)reordered[i];
             }
-
-            /*using triangle_stripper::tri_stripper;
-
-            tri_stripper stripper(index_group);
-            tri_stripper::primitives_vector primitives;
-
-            //stripper.SetMinStripSize(0);
-            stripper.SetCacheSize(256);
-            stripper.MeshChunk(&primitives);
-
-            cout << "Num strips : " << primitives.size() << endl;
-            unsigned individual_tris = 0;
-
-            long_strips.emplace_back();
-            auto &cur_strip = long_strips.back();
-
-            for (auto &vec : primitives) {
-                if (vec.m_Type != tri_stripper::PT_Triangle_Strip) {
-                    individual_tris++;
-                    for (unsigned i = 0; i < vec.m_Indices.size(); i += 3) {
-                        bool skip_first = false;
-                        if (!cur_strip.empty()) {
-                            if (cur_strip.back() != vec.m_Indices[i]) {
-                                cur_strip.push_back(cur_strip.back());
-                                cur_strip.push_back(vec.m_Indices[i]);
-                            } else {
-                                //skip_first = true;
-                            }
-
-                            if ((cur_strip.size() - 2) % 2 != 0) {
-                                //cur_strip.push_back(vec.m_Indices[i]);
-                                std::swap(vec.m_Indices[i + 1], vec.m_Indices[i + 2]);
-                            }
-                        }
-                        if (!skip_first) {
-                            cur_strip.push_back(vec.m_Indices[i]);
-                        }
-                        cur_strip.push_back(vec.m_Indices[i + 1]);
-                        cur_strip.push_back(vec.m_Indices[i + 2]);
-                    }
-                } else {
-                    if (vec.m_Indices.size() == 4) individual_tris++;
-                    unsigned off = 0;
-                    if (!cur_strip.empty()) {
-                        if (cur_strip.back() != vec.m_Indices[0]) {
-                            cur_strip.push_back(cur_strip.back());
-                            cur_strip.push_back(vec.m_Indices[0]);
-                        } else {
-                            //off = 1;
-                        }
-
-                        if ((cur_strip.size() - 2 - off) % 2 != 0) {
-                            cur_strip.push_back(vec.m_Indices[0]);
-                            //std::swap(vec.m_Indices[1], vec.m_Indices[2]);
-                        }
-                    }
-                    cur_strip.insert(long_strips.back().end(), vec.m_Indices.begin() + off, vec.m_Indices.end());
-                }
-            }
-            cur_strip.shrink_to_fit();
-            cout << "Individual triangles: " << individual_tris << endl;*/
         }
     }
 
@@ -587,14 +463,14 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         uint32_t index, num_indices;
         uint32_t alpha;
 
-        MeshChunk(unsigned ndx, unsigned num, unsigned has_alpha)
+        MeshChunk(uint32_t ndx, uint32_t num, uint32_t has_alpha)
                 : index(ndx), num_indices(num), alpha(has_alpha) {}
     };
     vector<uint16_t> total_indices;
     vector<MeshChunk> total_chunks, alpha_chunks;
     vector<int> alpha_mats;
 
-    for (int i = 0; i < (int)long_strips.size(); i++) {
+    for (int i = 0; i < (int)reordered_indices.size(); i++) {
         bool alpha_blend = false;
         {   // check if material has transparency
             ifstream mat_file("materials/" + materials[i] + ".txt");
@@ -618,13 +494,13 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         }
 
         if (alpha_blend) {
-            alpha_chunks.emplace_back(total_indices.size(), long_strips[i].size(), 1);
+            alpha_chunks.emplace_back(total_indices.size(), reordered_indices[i].size(), 1);
             alpha_mats.push_back(i);
         } else {
-            total_chunks.emplace_back(total_indices.size(), long_strips[i].size(), 0);
+            total_chunks.emplace_back(total_indices.size(), reordered_indices[i].size(), 0);
         }
 
-        total_indices.insert(total_indices.end(), long_strips[i].begin(), long_strips[i].end());
+        total_indices.insert(total_indices.end(), reordered_indices[i].begin(), reordered_indices[i].end());
     }
 
     for (auto &strip : alpha_chunks) {
@@ -689,7 +565,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
     file_offset += file_header.p[CH_MESH_INFO].length;
     file_header.p[CH_VTX_ATTR].offset = (int32_t)file_offset;
-    file_header.p[CH_VTX_ATTR].length = sizeof(float) * (positions.size()/3) * 8 + tex_ids.size() + sizeof(float) * weights.size();
+    file_header.p[CH_VTX_ATTR].length = sizeof(float) * (positions.size()/3) * 10 + tex_ids.size() + sizeof(float) * weights.size();
 
     file_offset += file_header.p[CH_VTX_ATTR].length;
     file_header.p[CH_VTX_NDX].offset = (int32_t)file_offset;
@@ -717,6 +593,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         out_file.write((char *)&positions[i * 3], sizeof(float) * 3);
         out_file.write((char *)&normals[i * 3], sizeof(float) * 3);
         out_file.write((char *)&uvs[i * 2], sizeof(float) * 2);
+        out_file.write((char *)&uvs2[i * 2], sizeof(float) * 2);
         if (mesh_type == M_SKEL) {
             out_file.write((char *)&weights[i * 8], sizeof(float) * 8);
         }
@@ -928,8 +805,8 @@ Ren::ProgramRef ModlApp::OnProgramNeeded(const char *name, const char *vs_shader
     if (!ret->ready()) {
         using namespace std;
 
-        Sys::AssetFile vs_file(string("shaders/") + vs_shader),
-            fs_file(string("shaders/") + fs_shader);
+        Sys::AssetFile vs_file(string("assets/shaders/") + vs_shader),
+            fs_file(string("assets/shaders/") + fs_shader);
         if (!vs_file || !fs_file) {
             LOGE("Error loading program %s", name);
             return ret;
@@ -960,7 +837,7 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(const char *name) {
     Ren::eMatLoadStatus status;
     Ren::MaterialRef ret = ctx_.LoadMaterial(name, nullptr, &status, nullptr, nullptr);
     if (!ret->ready()) {
-        Sys::AssetFile in_file(string("materials/") + name);
+        Sys::AssetFile in_file(string("assets/materials/") + name);
         if (!in_file) {
             LOGE("Error loading material %s", name);
             return ret;
