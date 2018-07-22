@@ -7,6 +7,8 @@
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
 
+#include <math/math.hpp>
+
 #include "states/GSCreate.h"
 #include "ui/FontStorage.h"
 

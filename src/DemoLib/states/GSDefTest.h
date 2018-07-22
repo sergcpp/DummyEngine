@@ -7,6 +7,8 @@
 #include <Ren/Texture.h>
 #include <Ren/SW/SW.h>
 
+#include <math/math.hpp>
+
 class GameBase;
 class GameStateManager;
 class FontStorage;

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstring>
+
 #include <algorithm>
 #include <fstream>
 #include <limits>
@@ -22,9 +23,16 @@
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/AssetFileIO.h>
+#include <Sys/DynLib.h>
 #include <Sys/Log.h>
 
 #pragma warning(disable : 4351 4996)
+
+extern "C" {
+    // Enable High Performance Graphics while using Integrated Graphics
+    DLL_EXPORT int32_t NvOptimusEnablement = 0x00000001;        // Nvidia
+    DLL_EXPORT int AmdPowerXpressRequestHighPerformance = 1;    // AMD
+}
 
 namespace {
     // slow, but ok for this task
@@ -165,7 +173,7 @@ int ModlApp::Init(int w, int h) {
     }
 
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 8);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
     window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                w, h, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
@@ -454,7 +462,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
             cur_strip.resize(reordered.size());
             for (size_t i = 0; i < reordered.size(); i++) {
-                cur_strip[i] = (uint16_t)reordered[i];
+                cur_strip[i] = (uint16_t)index_group[i];//reordered[i];
             }
         }
     }

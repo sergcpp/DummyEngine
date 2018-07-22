@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.4)
-project(modl)
+project(Modl)
 
 IF(WIN32)
     IF(SDL_STATIC)
@@ -27,7 +27,7 @@ set(SOURCE_FILES main.cpp
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
-add_executable(modl ${ALL_SOURCE_FILES})
-target_link_libraries(modl ${LIBS} Ren Sys)
+add_executable(Modl ${ALL_SOURCE_FILES})
+target_link_libraries(Modl ${LIBS} Ren Sys)
 
-set_target_properties(modl PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}")
+set_target_properties(Modl PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}")
