@@ -39,6 +39,14 @@ private:
     Ren::Camera cam_;
     Ren::Context ctx_;
 
+    Ren::ProgramRef diag_prog_;
+    Ren::Texture2DRef checker_tex_;
+
+    float angle_x_ = 0.0f, angle_y_ = 0.0f;
+    bool mouse_grabbed_ = false;
+
+    enum eViewMode { Material, DiagNormals, DiagUVs1, DiagUVs2 } view_mode_ = DiagNormals;
+
     void DrawMeshSimple(Ren::MeshRef &ref);
     void DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s);
 

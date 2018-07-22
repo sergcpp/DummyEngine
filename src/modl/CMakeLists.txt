@@ -30,4 +30,8 @@ source_group("src" FILES ${SOURCE_FILES})
 add_executable(Modl ${ALL_SOURCE_FILES})
 target_link_libraries(Modl ${LIBS} Ren Sys)
 
+add_custom_command(TARGET Modl 
+                   POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:Modl> ${WORKING_DIRECTORY})
+
 set_target_properties(Modl PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}")

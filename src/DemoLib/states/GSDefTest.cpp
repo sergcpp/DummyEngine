@@ -17,9 +17,9 @@ namespace GSDefTestInternal {
     const float FORWARD_SPEED = 2.0f;
 
     const float CAM_FOV = 45.0f;
-    const float CAM_CENTER[3] = { 100.0f, 100.0f, -500.0f };
-    const float CAM_TARGET[3] = { 0.0f, 0.0f, 0.0f };
-    const float CAM_UP[3] = { 0.0f, 1.0f, 0.0f };
+    const Ren::Vec3f CAM_CENTER = { 100.0f, 100.0f, -500.0f };
+    const Ren::Vec3f CAM_TARGET = { 0.0f, 0.0f, 0.0f };
+    const Ren::Vec3f CAM_UP = { 0.0f, 1.0f, 0.0f };
 
     const float NEAR_CLIP = 0.5f;
     const float FAR_CLIP = 1000;

@@ -3,6 +3,7 @@ build-*
 src/libs
 assets*
 check*
-demo_app.exe
-demo_lib.dll
-demo_lib_.dll
+DemoApp.exe
+DemoLib.dll
+DemoLib_.dll
+Modl.exe

@@ -130,6 +130,15 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         if (mesh_file) {
             view_mesh_ = ctx_.LoadMesh(out_file_name.c_str(), mesh_file, std::bind(&ModlApp::OnMaterialNeeded, this, _1));
 
+            auto bbox_min = view_mesh_->bbox_min(), bbox_max = view_mesh_->bbox_max();
+
+            auto dims = bbox_max - bbox_min;
+            float max_dim = std::max(dims[0], std::max(dims[1], dims[2]));
+
+            auto center = 0.5f * (bbox_min + bbox_max);
+
+            cam_.SetupView(center - Ren::Vec3f{ 0.0f, 0.0f, 1.0f } * max_dim * 2.0f, center, up);
+
             if (!anim_file_name.empty()) {
                 ifstream anim_file(anim_file_name, ios::binary);
                 if (anim_file) {
@@ -187,6 +196,26 @@ int ModlApp::Init(int w, int h) {
     ctx_.Init(w, h);
 
 #if defined(USE_GL_RENDER)
+    {   // load diagnostic shader
+        std::ifstream diag_vs("assets/shaders/diag.vs", std::ios::binary | std::ios::ate),
+                      diag_fs("assets/shaders/diag.fs", std::ios::binary | std::ios::ate);
+
+        size_t diag_vs_size = (size_t)diag_vs.tellg();
+        diag_vs.seekg(0, std::ios::beg);
+
+        size_t diag_fs_size = (size_t)diag_fs.tellg();
+        diag_fs.seekg(0, std::ios::beg);
+
+        std::string diag_vs_str, diag_fs_str;
+        diag_vs_str.resize(diag_vs_size);
+        diag_fs_str.resize(diag_fs_size);
+
+        diag_vs.read(&diag_vs_str[0], diag_vs_size);
+        diag_fs.read(&diag_fs_str[0], diag_fs_size);
+
+        diag_prog_ = ctx_.LoadProgramGLSL("__diag", diag_vs_str.c_str(), diag_fs_str.c_str(), nullptr);
+    }
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_CULL_FACE);
@@ -196,6 +225,34 @@ int ModlApp::Init(int w, int h) {
     swEnable(SW_DEPTH_TEST);
     swEnable(SW_FAST_PERSPECTIVE_CORRECTION);
 #endif
+
+    {   // load checker texture
+        const int checker_res = 512;
+        std::vector<uint8_t> checker_data(512 * 512 * 3);
+
+        for (int y = 0; y < checker_res; y++) {
+            for (int x = 0; x < checker_res; x++) {
+                if ((x + y) % 2 == 1) {
+                    checker_data[3 * (y * checker_res + x) + 0] = 255;
+                    checker_data[3 * (y * checker_res + x) + 1] = 255;
+                    checker_data[3 * (y * checker_res + x) + 2] = 255;
+                } else {
+                    checker_data[3 * (y * checker_res + x) + 0] = 0;
+                    checker_data[3 * (y * checker_res + x) + 1] = 0;
+                    checker_data[3 * (y * checker_res + x) + 2] = 0;
+                }
+            }
+        }
+
+        Ren::Texture2DParams p;
+        p.w = checker_res;
+        p.h = checker_res;
+        p.format = Ren::RawRGB888;
+        p.filter = Ren::NoFilter;
+        p.repeat = Ren::Repeat;
+
+        checker_tex_ = ctx_.LoadTexture2D("__diag_checker", &checker_data[0], (int)checker_data.size(), p, nullptr);
+    }
 
     return 0;
 }
@@ -222,6 +279,32 @@ void ModlApp::PollEvents() {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
+            case SDL_KEYDOWN: {
+                if (e.key.keysym.sym == SDLK_0) {
+                    view_mode_ = Material;
+                } else if (e.key.keysym.sym == SDLK_1) {
+                    view_mode_ = DiagNormals;
+                } else if (e.key.keysym.sym == SDLK_2) {
+                    view_mode_ = DiagUVs1;
+                } else if (e.key.keysym.sym == SDLK_3) {
+                    view_mode_ = DiagUVs2;
+                } else if (e.key.keysym.sym == SDLK_r) {
+                    angle_x_ = 0.0f;
+                    angle_y_ = 0.0f;
+                }
+            } break;
+            case SDL_MOUSEBUTTONDOWN: {
+                mouse_grabbed_ = true;
+            } break;
+            case SDL_MOUSEBUTTONUP:
+                mouse_grabbed_ = false;
+                break;
+            case SDL_MOUSEMOTION:
+                if (mouse_grabbed_) {
+                    angle_y_ += 0.01f * e.motion.xrel;
+                    angle_x_ += -0.01f * e.motion.yrel;
+                }
+                break;
             case SDL_QUIT: {
                 quit_ = true;
                 return;
@@ -283,12 +366,12 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
     int num_vertices, num_indices;
     map<string, int> vertex_textures;
-    vector<float> positions, normals, uvs, uvs2, weights;
+    vector<float> positions, normals, tangents, uvs, uvs2, weights;
     vector<int> tex_ids;
     vector<string> materials;
     vector<vector<uint32_t>> indices;
 
-    vector<vector<uint16_t>> reordered_indices;
+    vector<vector<uint32_t>> reordered_indices;
 
     ifstream in_file(in_file_name);
     if (!in_file) {
@@ -451,6 +534,43 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         }
     }
 
+    {   // generate tangents
+        std::vector<Ren::vertex_t> vertices(num_vertices);
+
+        for (int i = 0; i < num_vertices; i++) {
+            memcpy(&vertices[i].p[0], &positions[i * 3], sizeof(float) * 3);
+            memcpy(&vertices[i].n[0], &normals[i * 3], sizeof(float) * 3);
+            memset(&vertices[i].b[0], 0, sizeof(float) * 3);
+            memcpy(&vertices[i].t0[0], &uvs[i * 2], sizeof(float) * 2);
+            memcpy(&vertices[i].t1[0], &uvs2[i * 2], sizeof(float) * 2);
+        }
+
+        for (auto &index_group : indices) {
+            Ren::ComputeTextureBasis(vertices, index_group, &index_group[0], index_group.size());
+        }
+
+        tangents.resize(vertices.size() * 3);
+
+        for (size_t i = 0; i < vertices.size(); i++) {
+            memcpy(&tangents[i * 3], &vertices[i].b[0], sizeof(float) * 3);
+        }
+
+        for (int i = num_vertices; i < (int)vertices.size(); i++) {
+            positions.push_back(vertices[i].p[0]);
+            positions.push_back(vertices[i].p[1]);
+            positions.push_back(vertices[i].p[2]);
+            normals.push_back(vertices[i].n[0]);
+            normals.push_back(vertices[i].n[1]);
+            normals.push_back(vertices[i].n[2]);
+            uvs.push_back(vertices[i].t0[0]);
+            uvs.push_back(vertices[i].t0[1]);
+            uvs2.push_back(vertices[i].t1[0]);
+            uvs2.push_back(vertices[i].t1[1]);
+        }
+
+        num_vertices = (int)vertices.size();
+    }
+
     {   // optimize mesh
         for (auto &index_group : indices) {
             reordered_indices.emplace_back();
@@ -462,7 +582,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
             cur_strip.resize(reordered.size());
             for (size_t i = 0; i < reordered.size(); i++) {
-                cur_strip[i] = (uint16_t)index_group[i];//reordered[i];
+                cur_strip[i] = reordered[i];
             }
         }
     }
@@ -474,7 +594,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         MeshChunk(uint32_t ndx, uint32_t num, uint32_t has_alpha)
                 : index(ndx), num_indices(num), alpha(has_alpha) {}
     };
-    vector<uint16_t> total_indices;
+    vector<uint32_t> total_indices;
     vector<MeshChunk> total_chunks, alpha_chunks;
     vector<int> alpha_mats;
 
@@ -573,11 +693,11 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
     file_offset += file_header.p[CH_MESH_INFO].length;
     file_header.p[CH_VTX_ATTR].offset = (int32_t)file_offset;
-    file_header.p[CH_VTX_ATTR].length = sizeof(float) * (positions.size()/3) * 10 + tex_ids.size() + sizeof(float) * weights.size();
+    file_header.p[CH_VTX_ATTR].length = sizeof(float) * (positions.size()/3) * 13 + tex_ids.size() + sizeof(float) * weights.size();
 
     file_offset += file_header.p[CH_VTX_ATTR].length;
     file_header.p[CH_VTX_NDX].offset = (int32_t)file_offset;
-    file_header.p[CH_VTX_NDX].length = sizeof(uint16_t) * total_indices.size();
+    file_header.p[CH_VTX_NDX].length = sizeof(uint32_t) * total_indices.size();
 
     file_offset += file_header.p[CH_VTX_NDX].length;
     file_header.p[CH_MATERIALS].offset = (int32_t)file_offset;
@@ -600,6 +720,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
     for (unsigned i = 0; i < positions.size() / 3; i++) {
         out_file.write((char *)&positions[i * 3], sizeof(float) * 3);
         out_file.write((char *)&normals[i * 3], sizeof(float) * 3);
+        out_file.write((char *)&tangents[i * 3], sizeof(float) * 3);
         out_file.write((char *)&uvs[i * 2], sizeof(float) * 2);
         out_file.write((char *)&uvs2[i * 2], sizeof(float) * 2);
         if (mesh_type == M_SKEL) {
@@ -611,7 +732,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         out_file.write((char *)&tex_ids[0], positions.size()/3);
     }
 
-    out_file.write((char *)&total_indices[0], sizeof(uint16_t) * total_indices.size());
+    out_file.write((char *)&total_indices[0], sizeof(uint32_t) * total_indices.size());
 
     for (auto &str : materials) {
         char name[64]{};
