@@ -21,7 +21,7 @@ class DemoApp {
 #endif
     SDL_Window		*window_ = nullptr;
 
-    sys::DynLib		demo_lib_;
+    Sys::DynLib		demo_lib_;
     const void *(*p_get_renderer_pixels_)(GameBase *);
 
     bool quit_;

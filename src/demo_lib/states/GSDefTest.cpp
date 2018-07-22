@@ -30,10 +30,10 @@ GSDefTest::GSDefTest(GameBase *game) : game_(game),
          GSDefTestInternal::CAM_TARGET,
          GSDefTestInternal::CAM_UP) {
     state_manager_  = game->GetComponent<GameStateManager>(STATE_MANAGER_KEY);
-    ctx_            = game->GetComponent<ren::Context>(REN_CONTEXT_KEY);
+    ctx_            = game->GetComponent<Ren::Context>(REN_CONTEXT_KEY);
 
-    ui_renderer_    = game->GetComponent<ui::Renderer>(UI_RENDERER_KEY);
-    ui_root_        = game->GetComponent<ui::BaseElement>(UI_ROOT_KEY);
+    ui_renderer_    = game->GetComponent<Gui::Renderer>(UI_RENDERER_KEY);
+    ui_root_        = game->GetComponent<Gui::BaseElement>(UI_ROOT_KEY);
 
     const auto fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     font_ = fonts->FindFont("main_font");
@@ -57,14 +57,14 @@ void GSDefTest::Enter() {
         std::string fs_name = "assets/shaders/";
         fs_name += arg2;
 
-        sys::AssetFile vs_file(vs_name, sys::AssetFile::IN);
+        Sys::AssetFile vs_file(vs_name, Sys::AssetFile::IN);
         size_t vs_file_size = vs_file.size();
 
         std::string vs_file_data;
         vs_file_data.resize(vs_file_size);
         vs_file.Read(&vs_file_data[0], vs_file_size);
 
-        sys::AssetFile fs_file(fs_name, sys::AssetFile::IN);
+        Sys::AssetFile fs_file(fs_name, Sys::AssetFile::IN);
         size_t fs_file_size = fs_file.size();
 
         std::string fs_file_data;
@@ -75,13 +75,13 @@ void GSDefTest::Enter() {
     };
 
     auto on_load_texture = [&](const char *name) {
-        sys::AssetFile in_file(name, sys::AssetFile::IN);
+        Sys::AssetFile in_file(name, Sys::AssetFile::IN);
         size_t in_file_size = in_file.size();
 
         std::unique_ptr<char[]> in_file_data(new char[in_file_size]);
         in_file.Read(&in_file_data[0], in_file_size);
 
-        ren::Texture2DParams p;
+        Ren::Texture2DParams p;
 
         return ctx_->LoadTexture2D(name, &in_file_data[0], in_file_size, p, nullptr);
     };
@@ -90,7 +90,7 @@ void GSDefTest::Enter() {
         std::string material_path = "assets/materials/";
         material_path += name;
 
-        sys::AssetFile in_file(material_path.c_str(), sys::AssetFile::IN);
+        Sys::AssetFile in_file(material_path.c_str(), Sys::AssetFile::IN);
         size_t in_file_size = in_file.size();
 
         std::string in_file_data;
@@ -100,7 +100,7 @@ void GSDefTest::Enter() {
         return ctx_->LoadMaterial(name, &in_file_data[0], nullptr, on_load_program, on_load_texture);
     };
 
-    sys::AssetFile in_file("test.mesh", sys::AssetFile::IN);
+    Sys::AssetFile in_file("test.mesh", Sys::AssetFile::IN);
     size_t in_file_size = in_file.size();
 
     std::unique_ptr<char[]> in_file_data(new char[in_file_size]);

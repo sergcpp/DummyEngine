@@ -55,10 +55,10 @@ enum { A_POS,
 
 enum { U_MVP_MAT, U_COL };
 
-inline GLuint attr(const ren::Program *p, int i) {
+inline GLuint attr(const Ren::Program *p, int i) {
     return (GLuint)p->attribute(i).loc;
 }
-inline GLuint unif(const ren::Program *p, int i) {
+inline GLuint unif(const Ren::Program *p, int i) {
     return (GLuint)p->uniform(i).loc;
 }
 }
@@ -66,16 +66,16 @@ inline GLuint unif(const ren::Program *p, int i) {
 void GSOccTest::InitShaders() {
     using namespace GSOccTestInternal;
 
-    ren::eProgLoadStatus status;
+    Ren::eProgLoadStatus status;
     main_prog_ = ctx_->LoadProgramGLSL("main", vs_source, fs_source, &status);
-    assert(status == ren::ProgCreatedFromData);
+    assert(status == Ren::ProgCreatedFromData);
 }
 
 void GSOccTest::DrawBoxes(SWcull_surf *surfs, int count) {
     using namespace GSOccTestInternal;
     using namespace math;
 
-    const ren::Program *p = main_prog_.get();
+    const Ren::Program *p = main_prog_.get();
 
     glUseProgram(p->prog_id());
 
@@ -114,14 +114,14 @@ void GSOccTest::DrawBoxes(SWcull_surf *surfs, int count) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    ren::CheckError();
+    Ren::CheckError();
 }
 
 void GSOccTest::DrawCam() {
     using namespace GSOccTestInternal;
     using namespace math;
 
-    const ren::Program *p = main_prog_.get();
+    const Ren::Program *p = main_prog_.get();
 
     glUseProgram(p->prog_id());
 
@@ -207,7 +207,7 @@ void GSOccTest::DrawCam() {
 
     glLineWidth(1.0f);
 
-    ren::CheckError();
+    Ren::CheckError();
 }
 
 void GSOccTest::BlitDepthBuf() {

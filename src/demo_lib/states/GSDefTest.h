@@ -11,7 +11,7 @@ class GameBase;
 class GameStateManager;
 class FontStorage;
 
-namespace ui {
+namespace Gui {
 class BaseElement;
 class BitmapFont;
 class Renderer;
@@ -20,11 +20,11 @@ class Renderer;
 class GSDefTest : public GameState {
     GameBase *game_;
     std::weak_ptr<GameStateManager> state_manager_;
-    std::shared_ptr<ren::Context> ctx_;
+    std::shared_ptr<Ren::Context> ctx_;
 
-    std::shared_ptr<ui::Renderer> ui_renderer_;
-    std::shared_ptr<ui::BaseElement> ui_root_;
-    std::shared_ptr<ui::BitmapFont> font_;
+    std::shared_ptr<Gui::Renderer> ui_renderer_;
+    std::shared_ptr<Gui::BaseElement> ui_root_;
+    std::shared_ptr<Gui::BitmapFont> font_;
 
     bool view_grabbed_ = false;
     bool view_targeted_ = false;
@@ -34,9 +34,9 @@ class GSDefTest : public GameState {
 
     float forward_speed_ = 0, side_speed_ = 0;
 
-    ren::Camera cam_;
+    Ren::Camera cam_;
 
-    ren::MeshRef test_mesh_;
+    Ren::MeshRef test_mesh_;
 
 public:
     explicit GSDefTest(GameBase *game);

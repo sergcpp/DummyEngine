@@ -315,7 +315,7 @@ return;
             return;
         }
         if (evt.type != InputManager::RAW_INPUT_NONE) {
-            evt.time_stamp = sys::GetTicks() - (SDL_GetTicks() - e.common.timestamp);
+            evt.time_stamp = Sys::GetTicks() - (SDL_GetTicks() - e.common.timestamp);
             input_manager->AddRawInputEvent(evt);
         }
     }
@@ -336,10 +336,10 @@ void DemoApp::LoadLib(int w, int h) {
     demo_lib_ = {};
 #if defined(WIN32)
     system("copy \"demo_lib.dll\" \"demo_lib_.dll\"");
-    demo_lib_ = sys::DynLib{ "demo_lib_.dll" };
+    demo_lib_ = Sys::DynLib{ "demo_lib_.dll" };
 #else
     system("cp \"libdemo_lib.so\" \"libdemo_lib_.so\"");
-    demo_lib_ = sys::DynLib{ "libdemo_lib_.so" };
+    demo_lib_ = Sys::DynLib{ "libdemo_lib_.so" };
 #endif
 
     if (demo_lib_) {

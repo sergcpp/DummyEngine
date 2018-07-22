@@ -55,48 +55,50 @@ link_directories(${SDL2_LIBRARIES})
 #set(WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..)
 enable_testing()
 
-add_subdirectory(engine)
+add_subdirectory(Eng)
 add_subdirectory(demo_app)
 add_subdirectory(demo_lib)
 add_subdirectory(math)
-add_subdirectory(ren)
-add_subdirectory(sys)
-add_subdirectory(ui)
+add_subdirectory(modl)
+add_subdirectory(Ren)
+add_subdirectory(Sys)
+add_subdirectory(Gui)
 
 add_subdirectory(libs/SOIL2)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set_target_properties(demo_app
-                      demo_lib PROPERTIES FOLDER App)
+                      demo_lib
+					  modl PROPERTIES FOLDER App)
 
-set_target_properties(engine
+set_target_properties(Eng
                       math
-                      ren
+                      Ren
                       SW
-                      sys 
-                      ui PROPERTIES FOLDER Libs)
+                      Sys 
+                      Gui PROPERTIES FOLDER Libs)
 
-set_target_properties(test_engine
+set_target_properties(test_Eng
                       test_math
-                      test_ren
+                      test_Ren
                       test_SW
-                      test_sys
-                      test_ui PROPERTIES FOLDER Tests)
+                      test_Sys
+                      test_Gui PROPERTIES FOLDER Tests)
 					  
 set_target_properties(SOIL2 PROPERTIES FOLDER _)
 
-add_test(EngineTest     engine/tests/test_engine)
+add_test(EngTest     Eng/tests/test_Eng)
 add_test(MathTest       math/tests/test_math)
-add_test(RenTest        ren/tests/test_ren)
-add_test(SWTest         ren/SW/tests/test_SW)
-add_test(SysTest        sys/tests/test_sys)
-add_test(UiTest         ui/tests/test_ui)
+add_test(RenTest        Ren/tests/test_Ren)
+add_test(SWTest         Ren/SW/tests/test_SW)
+add_test(SysTest        Sys/tests/test_Sys)
+add_test(GuiTest         Gui/tests/test_Gui)
 
-add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_engine
+add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_Eng
                                                                test_math
-                                                               test_ren
+                                                               test_Ren
                                                                test_SW
-                                                               test_sys
-                                                               test_ui)
+                                                               test_Sys
+                                                               test_Gui)
 set_target_properties(Check PROPERTIES FOLDER Tests)

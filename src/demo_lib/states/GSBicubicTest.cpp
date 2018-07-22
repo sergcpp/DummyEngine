@@ -6,6 +6,7 @@
 #include <ren/Context.h>
 #include <ren/GL.h>
 #include <ren/Utils.h>
+#include <sys/Log.h>
 #include <sys/Time_.h>
 #include <ui/Renderer.h>
 
@@ -117,7 +118,7 @@ namespace GSBicubicTestInternal {
         ret.w = img.w * s;
         ret.h = img.h * s;
 
-        if (ret.format == ren::RawRGB888) {
+        if (ret.format == Ren::RawRGB888) {
             ret.data = std::unique_ptr<uint8_t[]>{ new uint8_t[ret.w * ret.h * 3] };
 
             const float off_x = 0.5f / ret.w,
@@ -148,7 +149,7 @@ namespace GSBicubicTestInternal {
         ret.w = img.w / s;
         ret.h = img.h / s;
 
-        if (ret.format == ren::RawRGB888) {
+        if (ret.format == Ren::RawRGB888) {
             ret.data = std::unique_ptr<uint8_t[]>{ new uint8_t[ret.w * ret.h * 3] };
 
             const float off_x = 0,//0.5f / ret.w,
@@ -168,7 +169,7 @@ namespace GSBicubicTestInternal {
     }
 
     void WriteTGA(const image_t &img, const std::string &name) {
-        assert(img.format == ren::RawRGB888);
+        assert(img.format == Ren::RawRGB888);
         int bpp = 3;
 
         std::ofstream file(name, std::ios::binary);
@@ -203,10 +204,10 @@ namespace GSBicubicTestInternal {
 
 GSBicubicTest::GSBicubicTest(GameBase *game) : game_(game) {
     state_manager_  = game->GetComponent<GameStateManager>(STATE_MANAGER_KEY);
-    ctx_            = game->GetComponent<ren::Context>(REN_CONTEXT_KEY);
+    ctx_            = game->GetComponent<Ren::Context>(REN_CONTEXT_KEY);
 
-    ui_renderer_    = game->GetComponent<ui::Renderer>(UI_RENDERER_KEY);
-    ui_root_        = game->GetComponent<ui::BaseElement>(UI_ROOT_KEY);
+    ui_renderer_    = game->GetComponent<Gui::Renderer>(UI_RENDERER_KEY);
+    ui_root_        = game->GetComponent<Gui::BaseElement>(UI_ROOT_KEY);
 
     const auto fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     font_ = fonts->FindFont("main_font");
@@ -232,7 +233,7 @@ void GSBicubicTest::Enter() {
     //image_t new_img2 = Upscale(orig_image_, 16, Cubic);
     //WriteTGA(new_img2, "upscaled.tga");
     
-    uint8_t _matrix[8][8] = { { 0,  48, 12, 60, 3,  51, 15, 63 },
+    /*uint8_t _matrix[8][8] = { { 0,  48, 12, 60, 3,  51, 15, 63 },
                              { 32, 16, 44, 28, 35, 19, 47, 31 },
                              { 8,  56, 4,  52, 11, 59, 7,  55 },
                              { 40, 24, 36, 20, 43, 27, 39, 23 },
@@ -258,7 +259,51 @@ void GSBicubicTest::Enter() {
             orig_image_.data[3 * (j * orig_image_.w + i) + 1] -= (orig_image_.data[3 * (j * orig_image_.w + i) + 1] + 2) % 4;
             orig_image_.data[3 * (j * orig_image_.w + i) + 2] -= (orig_image_.data[3 * (j * orig_image_.w + i) + 2] + 4) % 8;
         }
+    }*/
+
+    for (int j = 0; j < orig_image_.h; j++) {
+        for (int i = 0; i < orig_image_.w; i++) {
+            float x = float(i) / orig_image_.w;
+            float y = float(j) / orig_image_.h;
+            float z = 1.0f - x - y;
+            //float z = std::sqrt(1.0f - x - y);
+
+            orig_image_.data[3 * (j * orig_image_.w + i) + 0] = (uint8_t)(x * 255);
+            orig_image_.data[3 * (j * orig_image_.w + i) + 1] = (uint8_t)(y * 255);
+            orig_image_.data[3 * (j * orig_image_.w + i) + 2] = (uint8_t)(z * 255);
+        }
     }
+}
+
+void GSBicubicTest::OnMouse(int x, int y) {
+    //LOGI("%i %i", x, y);
+
+    float r = float(x) / orig_image_.w;
+    float g = float(y) / orig_image_.h;
+    float b = 1.0f - r - g;
+
+    // pointed color
+    for (int j = 450; j < orig_image_.h; j++) {
+        for (int i = 450; i < orig_image_.w; i++) {
+            orig_image_.data[3 * (j * orig_image_.w + i) + 0] = (uint8_t)(r * 255);
+            orig_image_.data[3 * (j * orig_image_.w + i) + 1] = (uint8_t)(g * 255);
+            orig_image_.data[3 * (j * orig_image_.w + i) + 2] = (uint8_t)(b * 255);
+        }
+    }
+
+    float fx = float(x), fy = float(y);
+
+    float u = std::sqrt(fx * fx + fy * fy);
+    float v = std::sqrt((500.0f - fx) * (500.0f - fx) + fy * fy);
+    float w = std::sqrt(fx * fx + (500.0f - fy) * (500.0f - fy));
+
+    float s = u + v + w;
+
+    //u /= s;
+    //v /= s;
+    //w /= s;
+
+    LOGI("%f %f %f", u, v, w);
 }
 
 void GSBicubicTest::Exit() {
@@ -324,7 +369,7 @@ void GSBicubicTest::HandleInput(InputManager::Event evt) {
         
         break;
     case InputManager::RAW_INPUT_P1_MOVE:
-        
+        OnMouse(int(evt.point.x), 500 - (int(evt.point.y) - 140));
         break;
     case InputManager::RAW_INPUT_KEY_DOWN:
         

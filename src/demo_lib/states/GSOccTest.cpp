@@ -30,10 +30,10 @@ GSOccTest::GSOccTest(GameBase *game) : game_(game),
     using namespace GSOccTestInternal;
 
     state_manager_  = game->GetComponent<GameStateManager>(STATE_MANAGER_KEY);
-    ctx_            = game->GetComponent<ren::Context>(REN_CONTEXT_KEY);
+    ctx_            = game->GetComponent<Ren::Context>(REN_CONTEXT_KEY);
 
-    ui_renderer_    = game->GetComponent<ui::Renderer>(UI_RENDERER_KEY);
-    ui_root_        = game->GetComponent<ui::BaseElement>(UI_ROOT_KEY);
+    ui_renderer_    = game->GetComponent<Gui::Renderer>(UI_RENDERER_KEY);
+    ui_root_        = game->GetComponent<Gui::BaseElement>(UI_ROOT_KEY);
 
     const auto fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     font_ = fonts->FindFont("main_font");
@@ -268,12 +268,12 @@ void GSOccTest::Draw(float dt_s) {
             }
         }
 
-        auto t1 = sys::GetTimeNs();
+        auto t1 = Sys::GetTimeNs();
 
         swCullCtxClear(&cull_ctx_);
         swCullCtxSubmitCullSurfs(&cull_ctx_, &s[0][0][0], 8 * 8 * 8);
 
-        auto t2 = sys::GetTimeNs();
+        auto t2 = Sys::GetTimeNs();
 
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
@@ -283,7 +283,7 @@ void GSOccTest::Draw(float dt_s) {
             }
         }
 
-        auto t3 = sys::GetTimeNs();
+        auto t3 = Sys::GetTimeNs();
 
         swCullCtxSubmitCullSurfs(&cull_ctx_, &s[0][0][0], 8 * 8 * 8);
 
@@ -296,7 +296,7 @@ void GSOccTest::Draw(float dt_s) {
             }
         }
 
-        auto t4 = sys::GetTimeNs();
+        auto t4 = Sys::GetTimeNs();
 
         dt1_ms = (t2 - t1) / 1000000.0;
         dt2_ms = (t4 - t3) / 1000000.0;

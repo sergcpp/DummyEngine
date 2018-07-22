@@ -10,14 +10,14 @@ class GameBase;
 class GameStateManager;
 class FontStorage;
 
-namespace ui {
+namespace Gui {
 class BaseElement;
 class BitmapFont;
 class Renderer;
 }
 
 struct image_t {
-    ren::eTex2DFormat format;
+    Ren::eTex2DFormat format;
     int w, h;
     std::unique_ptr<uint8_t[]> data;
 };
@@ -25,13 +25,15 @@ struct image_t {
 class GSBicubicTest : public GameState {
     GameBase *game_;
     std::weak_ptr<GameStateManager> state_manager_;
-    std::shared_ptr<ren::Context> ctx_;
+    std::shared_ptr<Ren::Context> ctx_;
 
-    std::shared_ptr<ui::Renderer> ui_renderer_;
-    std::shared_ptr<ui::BaseElement> ui_root_;
-    std::shared_ptr<ui::BitmapFont> font_;
+    std::shared_ptr<Gui::Renderer> ui_renderer_;
+    std::shared_ptr<Gui::BaseElement> ui_root_;
+    std::shared_ptr<Gui::BitmapFont> font_;
 
     image_t orig_image_;
+
+    void OnMouse(int x, int y);
 
 public:
     explicit GSBicubicTest(GameBase *game);

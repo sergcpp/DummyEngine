@@ -13,13 +13,13 @@
 Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) {
     using namespace math;
 
-    auto ctx = GetComponent<ren::Context>(REN_CONTEXT_KEY);
+    auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
 
     JsObject main_config;
 
     {
         // load config
-        sys::AssetFile config_file("assets/config.json", sys::AssetFile::IN);
+        Sys::AssetFile config_file("assets/config.json", Sys::AssetFile::IN);
         size_t config_file_size = config_file.size();
         std::unique_ptr<char[]> buf(new char[config_file_size]);
         config_file.Read(buf.get(), config_file_size);
@@ -53,7 +53,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     input_manager->SetConverter(InputManager::RAW_INPUT_P2_MOVE, nullptr);
 
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
-    state_manager->Push(GSCreate(GS_DEF_TEST, this));
+    state_manager->Push(GSCreate(GS_BICUBIC_TEST, this));
 }
 
 void Viewer::Resize(int w, int h) {
