@@ -8,6 +8,7 @@ set(SOURCE_FILES    exports.cpp
                     Viewer.cpp)
 
 set(MANAGER_SOURCES  Managers/Renderer.h
+					 Managers/Renderer.cpp
 					 Managers/SceneManager.h
 					 Managers/SceneManager.cpp)
 
