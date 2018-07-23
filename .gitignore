@@ -1,7 +1,6 @@
 .dumps
 build-*
 src/libs
-assets*
 check*
 DemoApp.exe
 DemoLib.dll
