@@ -13,9 +13,9 @@ namespace GSOccTestInternal {
 const float FORWARD_SPEED = 2.0f;
 
 const float CAM_FOV = 45.0f;
-const float CAM_CENTER[3] = { 100.0f, 100.0f, -500.0f };
-const float CAM_TARGET[3] = { 0.0f, 0.0f, 0.0f };
-const float CAM_UP[3] = { 0.0f, 1.0f, 0.0f };
+const Ren::Vec3f CAM_CENTER = { 100.0f, 100.0f, -500.0f };
+const Ren::Vec3f CAM_TARGET = { 0.0f, 0.0f, 0.0f };
+const Ren::Vec3f CAM_UP = { 0.0f, 1.0f, 0.0f };
 
 const float NEAR_CLIP = 0.5f;
 const float FAR_CLIP = 1000;
@@ -38,7 +38,7 @@ GSOccTest::GSOccTest(GameBase *game) : game_(game),
     const auto fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     font_ = fonts->FindFont("main_font");
 
-    view_origin_ = math::make_vec3(CAM_CENTER);
+    view_origin_ = CAM_CENTER;
     cam_.Perspective(CAM_FOV, float(game_->width)/game_->height, NEAR_CLIP, FAR_CLIP);
 
     SWfloat z = FAR_CLIP / (FAR_CLIP - NEAR_CLIP) + (NEAR_CLIP - (2.0f * NEAR_CLIP)) / (0.15f * (FAR_CLIP - NEAR_CLIP));
@@ -52,8 +52,6 @@ GSOccTest::~GSOccTest() {
 }
 
 void GSOccTest::Enter() {
-    using namespace math;
-
 
 }
 
@@ -63,12 +61,11 @@ void GSOccTest::Exit() {
 
 void GSOccTest::Draw(float dt_s) {
     using namespace GSOccTestInternal;
-    using namespace math;
 
     double dt1_ms = 0, dt2_ms = 0;
     int num_visible = 0;
 
-    const vec3 up = { 0, 1, 0 };
+    const Ren::Vec3f up = { 0, 1, 0 };
 
     SWfloat attribs[8][8][8][144] = { 0 };
     const SWubyte indices[] = { 0, 1, 2, 0, 2, 3,
@@ -240,14 +237,14 @@ void GSOccTest::Draw(float dt_s) {
 
     {
         cam_.Perspective(CAM_FOV, float(game_->width)/game_->height, NEAR_CLIP, FAR_CLIP);
-        cam_.SetupView(value_ptr(view_origin_), value_ptr(view_origin_ + view_dir_), value_ptr(up));
+        cam_.SetupView(view_origin_, (view_origin_ + view_dir_), up);
 
-        mat4 world_from_object,
-             view_from_world = make_mat4(cam_.view_matrix()),
-             proj_from_view = make_mat4(cam_.projection_matrix());
+        Ren::Mat4f world_from_object,
+                   view_from_world = cam_.view_matrix(),
+                   proj_from_view = cam_.projection_matrix();
 
-        mat4 view_from_object = view_from_world * world_from_object,
-             proj_from_object = proj_from_view * view_from_object;
+        Ren::Mat4f view_from_object = view_from_world * world_from_object,
+                   proj_from_object = proj_from_view * view_from_object;
 
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
@@ -262,7 +259,7 @@ void GSOccTest::Draw(float dt_s) {
                     s[i][j][k].indices = &indices[0];
                     s[i][j][k].stride = 6 * sizeof(float);
                     s[i][j][k].count = 36;
-                    s[i][j][k].xform = value_ptr(proj_from_object);
+                    s[i][j][k].xform = Ren::ValuePtr(proj_from_object);
                     s[i][j][k].dont_skip = nullptr;
                 }
             }
@@ -323,7 +320,7 @@ void GSOccTest::Draw(float dt_s) {
             glClearColor(0, 0.2f, 0, 1);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            cam_.SetupView(value_ptr(view_origin_ + vec3{ 0, 500, 0 } + 20.0f * vec3{ view_dir_.x, 0, view_dir_.z }), value_ptr(view_origin_ + 200.0f * vec3{ view_dir_.x, 0, view_dir_.z }), value_ptr(up));
+            cam_.SetupView((view_origin_ + Ren::Vec3f{ 0, 500, 0 } + 20.0f * Ren::Vec3f{ view_dir_[0], 0, view_dir_[2] }), (view_origin_ + 200.0f * Ren::Vec3f{ view_dir_[0], 0, view_dir_[2] }), up);
 
             DrawBoxes(&s[0][0][0], 8 * 8 * 8);
             DrawCam();
@@ -374,15 +371,13 @@ void GSOccTest::Draw(float dt_s) {
 }
 
 void GSOccTest::Update(int dt_ms) {
-    using namespace math;
-
-    vec3 up = { 0, 1, 0 };
-    vec3 side = normalize(cross(view_dir_, up));
+    Ren::Vec3f up = { 0, 1, 0 };
+    Ren::Vec3f side = Normalize(Cross(view_dir_, up));
 
     view_origin_ += view_dir_ * forward_speed_;
     view_origin_ += side * side_speed_;
 
-    cam_.SetupView(value_ptr(view_origin_), value_ptr(view_origin_ + view_dir_), value_ptr(up));
+    cam_.SetupView(view_origin_, (view_origin_ + view_dir_), up);
 
     if (forward_speed_ != 0 || side_speed_ != 0) {
         invalidate_preview_ = true;
@@ -392,7 +387,6 @@ void GSOccTest::Update(int dt_ms) {
 
 void GSOccTest::HandleInput(InputManager::Event evt) {
     using namespace GSOccTestInternal;
-    using namespace math;
 
     switch (evt.type) {
     case InputManager::RAW_INPUT_P1_DOWN:
@@ -403,23 +397,23 @@ void GSOccTest::HandleInput(InputManager::Event evt) {
         break;
     case InputManager::RAW_INPUT_P1_MOVE:
         if (view_grabbed_) {
-            vec3 up = { 0, 1, 0 };
-            vec3 side = normalize(cross(view_dir_, up));
-            up = cross(side, view_dir_);
+            Ren::Vec3f up = { 0, 1, 0 };
+            Ren::Vec3f side = Normalize(Cross(view_dir_, up));
+            up = Cross(side, view_dir_);
 
-            mat4 rot;
-            rot = rotate(rot, 0.01f * evt.move.dx, up);
-            rot = rotate(rot, 0.01f * evt.move.dy, side);
+            Ren::Mat4f rot;
+            rot = Rotate(rot, 0.01f * evt.move.dx, up);
+            rot = Rotate(rot, 0.01f * evt.move.dy, side);
 
-            mat3 rot_m3 = mat3(rot);
+            Ren::Mat3f rot_m3 = Ren::Mat3f(rot);
 
             if (!view_targeted_) {
                 view_dir_ = view_dir_ * rot_m3;
             } else {
-                vec3 dir = view_origin_ - view_target_;
+                Ren::Vec3f dir = view_origin_ - view_target_;
                 dir = dir * rot_m3;
                 view_origin_ = view_target_ + dir;
-                view_dir_ = normalize(-dir);
+                view_dir_ = Normalize(-dir);
             }
 
             invalidate_preview_ = true;

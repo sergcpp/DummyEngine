@@ -4,17 +4,14 @@
 
 #include <Eng/GameStateManager.h>
 #include <Ren/Context.h>
+#include <Ren/MVec.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
-
-#include <math/math.hpp>
 
 #include "states/GSCreate.h"
 #include "ui/FontStorage.h"
 
 Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) {
-    using namespace math;
-
     auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
 
     JsObject main_config;

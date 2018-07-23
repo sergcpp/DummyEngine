@@ -61,6 +61,13 @@ inline GLuint attr(const Ren::Program *p, int i) {
 inline GLuint unif(const Ren::Program *p, int i) {
     return (GLuint)p->uniform(i).loc;
 }
+
+template <typename T>
+T radians(T deg) {
+    const T Pi = T(3.1415926535897932384626433832795);
+    return deg * Pi / T(180);
+}
+
 }
 
 void GSOccTest::InitShaders() {
@@ -73,7 +80,6 @@ void GSOccTest::InitShaders() {
 
 void GSOccTest::DrawBoxes(SWcull_surf *surfs, int count) {
     using namespace GSOccTestInternal;
-    using namespace math;
 
     const Ren::Program *p = main_prog_.get();
 
@@ -82,14 +88,14 @@ void GSOccTest::DrawBoxes(SWcull_surf *surfs, int count) {
     glEnableVertexAttribArray(attr(p, A_POS));
     glEnableVertexAttribArray(attr(p, A_NORMAL));
 
-    mat4 world_from_object,
-         view_from_world = make_mat4(cam_.view_matrix()),
-         proj_from_view = make_mat4(cam_.projection_matrix());
+    Ren::Mat4f world_from_object,
+               view_from_world = cam_.view_matrix(),
+               proj_from_view = cam_.projection_matrix();
 
-    mat4 view_from_object = view_from_world * world_from_object,
-         proj_from_object = proj_from_view * view_from_object;
+    Ren::Mat4f view_from_object = view_from_world * world_from_object,
+               proj_from_object = proj_from_view * view_from_object;
 
-    glUniformMatrix4fv(unif(p, U_MVP_MAT), 1, GL_FALSE, value_ptr(proj_from_object));
+    glUniformMatrix4fv(unif(p, U_MVP_MAT), 1, GL_FALSE, Ren::ValuePtr(proj_from_object));
 
     glUniform3f(unif(p, U_COL), 1.0f, 1.0f, 1.0f);
 
@@ -119,7 +125,6 @@ void GSOccTest::DrawBoxes(SWcull_surf *surfs, int count) {
 
 void GSOccTest::DrawCam() {
     using namespace GSOccTestInternal;
-    using namespace math;
 
     const Ren::Program *p = main_prog_.get();
 
@@ -128,14 +133,14 @@ void GSOccTest::DrawCam() {
     glEnableVertexAttribArray(attr(p, A_POS));
     glEnableVertexAttribArray(attr(p, A_NORMAL));
 
-    mat4 world_from_object,
-         view_from_world = make_mat4(cam_.view_matrix()),
-         proj_from_view = make_mat4(cam_.projection_matrix());
+    Ren::Mat4f world_from_object,
+               view_from_world = cam_.view_matrix(),
+               proj_from_view = cam_.projection_matrix();
 
-    mat4 view_from_object = view_from_world * world_from_object,
-         proj_from_object = proj_from_view * view_from_object;
+    Ren::Mat4f view_from_object = view_from_world * world_from_object,
+               proj_from_object = proj_from_view * view_from_object;
 
-    glUniformMatrix4fv(unif(p, U_MVP_MAT), 1, GL_FALSE, value_ptr(proj_from_object));
+    glUniformMatrix4fv(unif(p, U_MVP_MAT), 1, GL_FALSE, Ren::ValuePtr(proj_from_object));
 
     glUniform3f(unif(p, U_COL), 1.0f, 1.0f, 1.0f);
 
@@ -143,51 +148,51 @@ void GSOccTest::DrawCam() {
 
     glLineWidth(5.0f);
 
-    const float *pos = cam_.world_position();
+    const Ren::Vec3f pos = cam_.world_position();
 
-    vec3 up = { 0, 1, 0 };
-    vec3 side = normalize(cross(view_dir_, up));
-    up = cross(side, view_dir_);
+    Ren::Vec3f up = { 0, 1, 0 };
+    Ren::Vec3f side = Normalize(Cross(view_dir_, up));
+    up = Cross(side, view_dir_);
 
-    vec3 v1, v2, v3, v4;
+    Ren::Vec3f v1, v2, v3, v4;
 
     {
-        mat4 rot;
-        rot = rotate(rot, radians(CAM_FOV / 1), up);
-        rot = rotate(rot, radians(CAM_FOV / 4), side);
-        v1 = view_dir_ * mat3(rot);
+        Ren::Mat4f rot;
+        rot = Rotate(rot, radians(CAM_FOV / 1), up);
+        rot = Rotate(rot, radians(CAM_FOV / 4), side);
+        v1 = view_dir_ * Ren::Mat3f(rot);
     }
 
     {
-        mat4 rot;
-        rot = rotate(rot, radians(-CAM_FOV / 1), up);
-        rot = rotate(rot, radians(CAM_FOV / 4), side);
-        v2 = view_dir_ * mat3(rot);
+        Ren::Mat4f rot;
+        rot = Rotate(rot, radians(-CAM_FOV / 1), up);
+        rot = Rotate(rot, radians(CAM_FOV / 4), side);
+        v2 = view_dir_ * Ren::Mat3f(rot);
     }
 
     {
-        mat4 rot;
-        rot = rotate(rot, radians(CAM_FOV / 1), up);
-        rot = rotate(rot, radians(-CAM_FOV / 4), side);
-        v3 = view_dir_ * mat3(rot);
+        Ren::Mat4f rot;
+        rot = Rotate(rot, radians(CAM_FOV / 1), up);
+        rot = Rotate(rot, radians(-CAM_FOV / 4), side);
+        v3 = view_dir_ * Ren::Mat3f(rot);
     }
 
     {
-        mat4 rot;
-        rot = rotate(rot, radians(-CAM_FOV / 1), up);
-        rot = rotate(rot, radians(-CAM_FOV / 4), side);
-        v4 = view_dir_ * mat3(rot);
+        Ren::Mat4f rot;
+        rot = Rotate(rot, radians(-CAM_FOV / 1), up);
+        rot = Rotate(rot, radians(-CAM_FOV / 4), side);
+        v4 = view_dir_ * Ren::Mat3f(rot);
     }
 
-    const float attribs[] = { view_origin_.x, view_origin_.y, view_origin_.z,
-                              view_origin_.x + 500 * v1.x, view_origin_.y + 500 * v1.y, view_origin_.z + 500 * v1.z,
-                              view_origin_.x, view_origin_.y, view_origin_.z,
-                              view_origin_.x + 500 * v2.x, view_origin_.y + 500 * v2.y, view_origin_.z + 500 * v2.z,
+    const float attribs[] = { view_origin_[0], view_origin_[1], view_origin_[2],
+                              view_origin_[0] + 500 * v1[0], view_origin_[1] + 500 * v1[1], view_origin_[2] + 500 * v1[2],
+                              view_origin_[0], view_origin_[1], view_origin_[2],
+                              view_origin_[0] + 500 * v2[0], view_origin_[1] + 500 * v2[1], view_origin_[2] + 500 * v2[2],
 
-                              view_origin_.x, view_origin_.y, view_origin_.z,
-                              view_origin_.x + 500 * v3.x, view_origin_.y + 500 * v3.y, view_origin_.z + 500 * v3.z,
-                              view_origin_.x, view_origin_.y, view_origin_.z,
-                              view_origin_.x + 500 * v4.x, view_origin_.y + 500 * v4.y, view_origin_.z + 500 * v4.z
+                              view_origin_[0], view_origin_[1], view_origin_[2],
+                              view_origin_[0] + 500 * v3[0], view_origin_[1] + 500 * v3[1], view_origin_[2] + 500 * v3[2],
+                              view_origin_[0], view_origin_[1], view_origin_[2],
+                              view_origin_[0] + 500 * v4[0], view_origin_[1] + 500 * v4[1], view_origin_[2] + 500 * v4[2]
                             };
 
     const float normals[] = { 0, 1, 1,

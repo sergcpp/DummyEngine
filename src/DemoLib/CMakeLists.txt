@@ -43,7 +43,7 @@ list(APPEND ALL_SOURCE_FILES states/_states.cpp)
 source_group("src\\states" FILES states/_states.cpp)
 
 add_library(DemoLib SHARED ${ALL_SOURCE_FILES})
-target_link_libraries(DemoLib engine ren sys ${LIBS})
+target_link_libraries(DemoLib Eng Ren Sys ${LIBS})
 
 # dot not prefix dll with 'lib' in MinGW
 set_target_properties(DemoLib PROPERTIES PREFIX "")

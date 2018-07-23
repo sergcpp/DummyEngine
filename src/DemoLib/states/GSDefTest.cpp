@@ -49,7 +49,6 @@ GSDefTest::~GSDefTest() {
 
 void GSDefTest::Enter() {
     using namespace GSDefTestInternal;
-    using namespace math;
 
     auto on_load_program = [&](const char *name, const char *arg1, const char *arg2) {
         std::string vs_name = "assets/shaders/";
@@ -100,13 +99,9 @@ void GSDefTest::Enter() {
         return ctx_->LoadMaterial(name, &in_file_data[0], nullptr, on_load_program, on_load_texture);
     };
 
-    Sys::AssetFile in_file("test.mesh", Sys::AssetFile::IN);
-    size_t in_file_size = in_file.size();
+    std::ifstream in_file("test.mesh", std::ios::binary);
 
-    std::unique_ptr<char[]> in_file_data(new char[in_file_size]);
-    in_file.Read(&in_file_data[0], in_file_size);
-
-    test_mesh_ = ctx_->LoadMesh("test_mesh", &in_file_data[0], on_load_material);
+    test_mesh_ = ctx_->LoadMesh("test_mesh", in_file, on_load_material);
 }
 
 void GSDefTest::Exit() {
@@ -140,20 +135,17 @@ void GSDefTest::Draw(float dt_s) {
 }
 
 void GSDefTest::Update(int dt_ms) {
-    using namespace math;
-
-    vec3 up = { 0, 1, 0 };
-    vec3 side = normalize(cross(view_dir_, up));
+    Ren::Vec3f up = { 0, 1, 0 };
+    Ren::Vec3f side = Normalize(Cross(view_dir_, up));
 
     view_origin_ += view_dir_ * forward_speed_;
     view_origin_ += side * side_speed_;
 
-    cam_.SetupView(value_ptr(view_origin_), value_ptr(view_origin_ + view_dir_), value_ptr(up));
+    cam_.SetupView(view_origin_, (view_origin_ + view_dir_), up);
 }
 
 void GSDefTest::HandleInput(InputManager::Event evt) {
     using namespace GSDefTestInternal;
-    using namespace math;
 
     switch (evt.type) {
     case InputManager::RAW_INPUT_P1_DOWN:
