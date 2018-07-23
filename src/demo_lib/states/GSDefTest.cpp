@@ -123,7 +123,7 @@ void GSDefTest::Enter() {
         l.col = { float(rand()) / RAND_MAX, float(rand()) / RAND_MAX, float(rand()) / RAND_MAX };
         float m = std::max(std::max(l.col.x, l.col.y), l.col.z);
         l.col /= m;
-        l.col *= 0.5f;
+        l.col *= 0.25f;
     }
 }
 
@@ -172,10 +172,14 @@ void GSDefTest::Update(int dt_ms) {
 
     float f_time = (float)anim_time_;
 
+    float sign = 1;
+
     for (auto &l : lights_) {
         //l.pos.x += 0.01f * std::sin(f_time);
-        l.pos.y += 0.025f * std::sin(1.0f * f_time);
+        l.pos.y += sign * 0.025f * std::sin(1.0f * f_time);
         //l.pos.z += 0.01f * std::sin(f_time);
+
+        sign *= -1;
     }
 }
 

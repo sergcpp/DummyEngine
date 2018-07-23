@@ -6,6 +6,7 @@
 #include <ren/Context.h>
 #include <ren/GL.h>
 #include <ren/Utils.h>
+#include <sys/Log.h>
 #include <sys/Time_.h>
 #include <ui/Renderer.h>
 
@@ -17,8 +18,8 @@ namespace GSBicubicTestInternal {
         int x0 = (int)std::floor(x * img.w);
         int y0 = (int)std::floor(y * img.h);
 
-        if (x0 < 0) __debugbreak();
-        if (x0 > img.w - 1) __debugbreak();
+        if (x0 < 0) x0 = 0;
+        if (x0 > img.w - 1) x0 = img.w - 1;
 
         for (int i = 0; i < 3; i++) {
             out_col[i] = img.data[3 * (y0 * img.w + x0) + i];
@@ -220,7 +221,7 @@ void GSBicubicTest::Enter() {
     using namespace GSBicubicTestInternal;
     using namespace math;
 
-    std::ifstream in_file("grad.tga", std::ios::binary | std::ios::ate);
+    std::ifstream in_file("005918071.tga", std::ios::binary | std::ios::ate);
     size_t in_file_size = (size_t)in_file.tellg();
     in_file.seekg(0, std::ios::beg);
 
@@ -229,10 +230,67 @@ void GSBicubicTest::Enter() {
 
     orig_image_.data = ReadTGAFile(&in_file_data[0], orig_image_.w, orig_image_.h, orig_image_.format);
 
+    new_image_.w = 256;
+    new_image_.h = 256;
+    new_image_.data.reset(new uint8_t[new_image_.w * new_image_.h * 3]);
+    new_image_.format = ren::RawRGB888;
+
+    LOGI("%i", sys::GetTicks());
+
+    for (int i = 0; i < new_image_.w; i++) {
+        float alpha = 1.0f * pi<float>() * float(i) / new_image_.w - 0.5 * pi<float>();
+
+        vec2 u_vec = { std::cos(alpha), std::sin(alpha) },
+             v_vec = { -u_vec.y, u_vec.x };
+
+        for (int j = 0; j < new_image_.h; j++) {
+            float u = std::sqrt(2.0f) * (float(j) / new_image_.h - 0.5f);
+
+            uint32_t sum[3] = { 0, 0, 0 };
+            uint32_t sample_count = 0;
+
+            for (float v = -0.5f * std::sqrt(2.0f); v < 0.5f * std::sqrt(2.0f); v += 0.005f) {
+                vec2 uv = vec2{ 0.5f, 0.5f } + u * u_vec + v * v_vec;
+
+                if (uv.x >= 0.0f && uv.x <= 1.0f && uv.y >= 0.0f && uv.y <= 1.0f) {
+                    uint8_t col[3];
+                    //SampleLinear(orig_image_, uv.x, uv.y, col);
+                    SampleNearest(orig_image_, uv.x, uv.y, col);
+
+                    sum[0] += col[0];
+                    sum[1] += col[1];
+                    sum[2] += col[2];
+                    sample_count++;
+                }
+            }
+
+            sample_count = 1;
+
+
+            float k = 1.0f / (std::sqrt(2.0f) / 0.005f);
+
+            uint32_t r = (uint32_t)(sum[0] * k),
+                     g = (uint32_t)(sum[1] * k),
+                     b = (uint32_t)(sum[2] * k);
+
+            if (r > 255) r = 255;
+            if (g > 255) g = 255;
+            if (b > 255) b = 255;
+
+            new_image_.data[3 * (j * new_image_.w + i) + 0] = (uint8_t)(r);
+            new_image_.data[3 * (j * new_image_.w + i) + 1] = (uint8_t)(g);
+            new_image_.data[3 * (j * new_image_.w + i) + 2] = (uint8_t)(b);
+        }
+    }
+
+    LOGI("%i", sys::GetTicks());
+
+    WriteTGA(new_image_, "pre.tga");
+
     //image_t new_img2 = Upscale(orig_image_, 16, Cubic);
     //WriteTGA(new_img2, "upscaled.tga");
     
-    uint8_t _matrix[8][8] = { { 0,  48, 12, 60, 3,  51, 15, 63 },
+    /*uint8_t _matrix[8][8] = { { 0,  48, 12, 60, 3,  51, 15, 63 },
                              { 32, 16, 44, 28, 35, 19, 47, 31 },
                              { 8,  56, 4,  52, 11, 59, 7,  55 },
                              { 40, 24, 36, 20, 43, 27, 39, 23 },
@@ -258,7 +316,7 @@ void GSBicubicTest::Enter() {
             orig_image_.data[3 * (j * orig_image_.w + i) + 1] -= (orig_image_.data[3 * (j * orig_image_.w + i) + 1] + 2) % 4;
             orig_image_.data[3 * (j * orig_image_.w + i) + 2] -= (orig_image_.data[3 * (j * orig_image_.w + i) + 2] + 4) % 8;
         }
-    }
+    }*/
 }
 
 void GSBicubicTest::Exit() {
@@ -280,6 +338,10 @@ void GSBicubicTest::Draw(float dt_s) {
         glRasterPos2f(pos_x, -1);
         glDrawPixels(orig_image_.w, orig_image_.h, GL_RGB, GL_UNSIGNED_BYTE, &orig_image_.data[0]);
         pos_x += float(orig_image_.w * 2)/game_->width;
+
+        glRasterPos2f(pos_x, -1);
+        glDrawPixels(new_image_.w, new_image_.h, GL_RGB, GL_UNSIGNED_BYTE, &new_image_.data[0]);
+        pos_x += float(new_image_.w * 2) / game_->width;
 
         /*image_t new_img1 = DownScale(orig_image_, 3);
         glRasterPos2f(pos_x, -1);

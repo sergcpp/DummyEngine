@@ -31,7 +31,7 @@ class GSBicubicTest : public GameState {
     std::shared_ptr<ui::BaseElement> ui_root_;
     std::shared_ptr<ui::BitmapFont> font_;
 
-    image_t orig_image_;
+    image_t orig_image_, new_image_;
 
 public:
     explicit GSBicubicTest(GameBase *game);

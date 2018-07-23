@@ -22,6 +22,8 @@ void main(void) {
 	vec3 pos = texture2D(positions, 0.5 * (aVertexPosition_.xy / aVertexPosition_.w) + 0.5).xyz;
 	vec3 normal = texture2D(normals, 0.5 * (aVertexPosition_.xy / aVertexPosition_.w) + 0.5).xyz;
 
+	normal.z = sqrt(1.0 - dot(normal.xy, normal.xy));
+	
 	vec3 v = light_pos - pos;
 	float dist = sqrt(dot(v, v));
 
