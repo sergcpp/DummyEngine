@@ -19,7 +19,6 @@
 
 #include <Eng/GameBase.h>
 #include <Eng/TimedInput.h>
-#include <math/math.hpp>
 #include <Sys/Log.h>
 #include <Sys/Time_.h>
 
@@ -36,7 +35,6 @@ extern "C" {
 }
 
 DemoApp::DemoApp() : p_get_renderer_pixels_(nullptr), quit_(false) {
-    math::init();
     g_app = this;
 }
 
@@ -335,11 +333,11 @@ void DemoApp::LoadLib(int w, int h) {
 
     demo_lib_ = {};
 #if defined(WIN32)
-    system("copy \"demo_lib.dll\" \"demo_lib_.dll\"");
-    demo_lib_ = Sys::DynLib{ "demo_lib_.dll" };
+    system("copy \"DemoLib.dll\" \"DemoLib_.dll\"");
+    demo_lib_ = Sys::DynLib{ "DemoLib_.dll" };
 #else
-    system("cp \"libdemo_lib.so\" \"libdemo_lib_.so\"");
-    demo_lib_ = Sys::DynLib{ "libdemo_lib_.so" };
+    system("cp \"libDemoLib.so\" \"libDemoLib_.so\"");
+    demo_lib_ = Sys::DynLib{ "libDemoLib_.so" };
 #endif
 
     if (demo_lib_) {
