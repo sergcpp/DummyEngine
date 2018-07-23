@@ -12,13 +12,13 @@
 namespace GSOccTestInternal {
 const float FORWARD_SPEED = 2.0f;
 
-const float CAM_FOV = 45.0f;
+extern const float CAM_FOV = 45.0f;
 const Ren::Vec3f CAM_CENTER = { 100.0f, 100.0f, -500.0f };
 const Ren::Vec3f CAM_TARGET = { 0.0f, 0.0f, 0.0f };
 const Ren::Vec3f CAM_UP = { 0.0f, 1.0f, 0.0f };
 
-const float NEAR_CLIP = 0.5f;
-const float FAR_CLIP = 1000;
+extern const float NEAR_CLIP = 0.5f;
+extern const float FAR_CLIP = 1000;
 
 const int DEPTH_RES_W = 256, DEPTH_RES_H = 128;
 }
@@ -402,8 +402,8 @@ void GSOccTest::HandleInput(InputManager::Event evt) {
             up = Cross(side, view_dir_);
 
             Ren::Mat4f rot;
-            rot = Rotate(rot, 0.01f * evt.move.dx, up);
-            rot = Rotate(rot, 0.01f * evt.move.dy, side);
+            rot = Rotate(rot, -0.01f * evt.move.dx, up);
+            rot = Rotate(rot, -0.01f * evt.move.dy, side);
 
             Ren::Mat3f rot_m3 = Ren::Mat3f(rot);
 

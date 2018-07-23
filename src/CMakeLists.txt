@@ -63,8 +63,6 @@ add_subdirectory(Ren)
 add_subdirectory(Sys)
 add_subdirectory(Gui)
 
-add_subdirectory(libs/SOIL2)
-
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set_target_properties(DemoApp

@@ -1,5 +1,8 @@
 #include "GSOccTest.h"
 
+#include <Eng/GameBase.h>
+#include <Ren/Context.h>
+#include <Ren/GL.h>
 #include <Ren/Program.h>
 
 namespace GSOccTestInternal {
