@@ -58,13 +58,10 @@ enable_testing()
 add_subdirectory(Eng)
 add_subdirectory(DemoApp)
 add_subdirectory(DemoLib)
-add_subdirectory(math)
 add_subdirectory(Modl)
 add_subdirectory(Ren)
 add_subdirectory(Sys)
 add_subdirectory(Gui)
-
-add_subdirectory(libs/SOIL2)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -73,14 +70,12 @@ set_target_properties(DemoApp
                       Modl PROPERTIES FOLDER App)
 
 set_target_properties(Eng
-                      math
                       Ren
                       SW
                       Sys 
                       Gui PROPERTIES FOLDER Libs)
 
 set_target_properties(test_Eng
-                      test_math
                       test_Ren
                       test_SW
                       test_Sys
@@ -89,14 +84,12 @@ set_target_properties(test_Eng
 set_target_properties(SOIL2 PROPERTIES FOLDER _)
 
 add_test(EngTest        Eng/tests/test_Eng)
-add_test(MathTest       math/tests/test_math)
 add_test(RenTest        Ren/tests/test_Ren)
 add_test(SWTest         Ren/SW/tests/test_SW)
 add_test(SysTest        Sys/tests/test_Sys)
 add_test(GuiTest        Gui/tests/test_Gui)
 
 add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_Eng
-                                                               test_math
                                                                test_Ren
                                                                test_SW
                                                                test_Sys

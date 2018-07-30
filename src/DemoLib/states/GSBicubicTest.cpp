@@ -219,7 +219,6 @@ GSBicubicTest::~GSBicubicTest() {
 
 void GSBicubicTest::Enter() {
     using namespace GSBicubicTestInternal;
-    using namespace math;
 
     std::ifstream in_file("grad.tga", std::ios::binary | std::ios::ate);
     size_t in_file_size = (size_t)in_file.tellg();
@@ -353,13 +352,10 @@ void GSBicubicTest::Draw(float dt_s) {
 }
 
 void GSBicubicTest::Update(int dt_ms) {
-    using namespace math;
 
-    
 }
 
 void GSBicubicTest::HandleInput(InputManager::Event evt) {
-    using namespace math;
 
     switch (evt.type) {
     case InputManager::RAW_INPUT_P1_DOWN:

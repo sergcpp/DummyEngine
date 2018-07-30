@@ -2,6 +2,7 @@
 
 #include <Eng/GameState.h>
 #include <Ren/Camera.h>
+#include <Ren/MVec.h>
 #include <Ren/Program.h>
 #include <Ren/Texture.h>
 #include <Ren/SW/SW.h>
@@ -30,7 +31,7 @@ class GSOccTest : public GameState {
 
     bool view_grabbed_ = false;
     bool view_targeted_ = false;
-    math::vec3 view_origin_ = { 0, 20, 3 },
+    Ren::Vec3f view_origin_ = { 0, 20, 3 },
                view_dir_ = { 0, 0, 1 },
                view_target_ = { 0, 0, 0 };
 
