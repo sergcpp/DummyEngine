@@ -195,6 +195,8 @@ int ModlApp::Init(int w, int h) {
 
     ctx_.Init(w, h);
 
+    Sys::InitWorker();
+
 #if defined(USE_GL_RENDER)
     {   // load diagnostic shader
         std::ifstream diag_vs("assets/shaders/diag.vs", std::ios::binary | std::ios::ate),
@@ -283,10 +285,12 @@ void ModlApp::PollEvents() {
                 if (e.key.keysym.sym == SDLK_0) {
                     view_mode_ = Material;
                 } else if (e.key.keysym.sym == SDLK_1) {
-                    view_mode_ = DiagNormals;
+                    view_mode_ = DiagNormals1;
                 } else if (e.key.keysym.sym == SDLK_2) {
-                    view_mode_ = DiagUVs1;
+                    view_mode_ = DiagNormals2;
                 } else if (e.key.keysym.sym == SDLK_3) {
+                    view_mode_ = DiagUVs1;
+                } else if (e.key.keysym.sym == SDLK_4) {
                     view_mode_ = DiagUVs2;
                 } else if (e.key.keysym.sym == SDLK_r) {
                     angle_x_ = 0.0f;
@@ -325,6 +329,9 @@ void ModlApp::PrintUsage() {
 
 void ModlApp::Destroy() {
     view_mesh_.Release();
+    ctx_.ReleaseAll();
+
+    Sys::StopWorker();
 
 #if defined(USE_GL_RENDER)
     SDL_GL_DeleteContext(gl_ctx_);
@@ -909,7 +916,7 @@ Ren::Texture2DRef ModlApp::OnTextureNeeded(const char *name) {
     Ren::Texture2DRef ret = ctx_.LoadTexture2D(name, nullptr, 0, {}, &status);
     if (!ret->ready()) {
         std::string tex_name = name;
-        Sys::LoadAssetComplete((std::string("textures/") + tex_name).c_str(),
+        Sys::LoadAssetComplete((std::string("assets/textures/") + tex_name).c_str(),
             [this, tex_name](void *data, int size) {
 
             ctx_.ProcessSingleTask([this, tex_name, data, size]() {

@@ -19,10 +19,17 @@ namespace {
 
     const int U_MODE = 2;
     const int U_TEX = 3;
+    const int U_NORM_TEX = 4;
 
     const int U_COL = 1;
 
     const int DIFFUSEMAP_SLOT = 0;
+    const int NORMALMAP_SLOT = 1;
+
+    inline void BindTexture(int slot, uint32_t tex) {
+        glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
+        glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
+    }
 }
 
 void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
@@ -42,6 +49,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
 
         glUniform1f(p->uniform(U_MODE).loc, (float)view_mode_);
         glUniform1i(p->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+        glUniform1i(p->uniform(U_NORM_TEX).loc, NORMALMAP_SLOT);
 
         //glBindTexture(GL_TEXTURE0 + DIFFUSEMAP_SLOT, checker_tex_->tex_id());
     }
@@ -85,7 +93,14 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     const Ren::TriStrip *s = &m->strip(0);
     while (s->offset != -1) {
         const Ren::Material *mat = s->mat.get();
-        //R::BindTexture(0, mat->textures[0].tex_id);
+
+        if (view_mode_ == DiagUVs1 || view_mode_ == DiagUVs2) {
+            BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
+        } else {
+            BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
+        }
+        BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
+
         glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset));
         ++s;
     }

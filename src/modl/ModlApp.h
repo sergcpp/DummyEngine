@@ -45,7 +45,7 @@ private:
     float angle_x_ = 0.0f, angle_y_ = 0.0f;
     bool mouse_grabbed_ = false;
 
-    enum eViewMode { Material, DiagNormals, DiagUVs1, DiagUVs2 } view_mode_ = DiagNormals;
+    enum eViewMode { Material, DiagNormals1, DiagNormals2, DiagUVs1, DiagUVs2 } view_mode_ = DiagNormals1;
 
     void DrawMeshSimple(Ren::MeshRef &ref);
     void DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s);

@@ -18,14 +18,12 @@ attribute vec2 aVertexUVs2;
 
 uniform mat4 uMVPMatrix;
 
-varying vec3 aVertexNormal_;
-varying vec3 aVertexTangent_;
+varying mat3 aVertexTBN_;
 varying vec2 aVertexUVs1_;
 varying vec2 aVertexUVs2_;
 
 void main(void) {
-    aVertexNormal_ = aVertexNormal;
-	aVertexTangent_ = aVertexTangent;
+	aVertexTBN_ = mat3(aVertexTangent, cross(aVertexNormal, aVertexTangent), aVertexNormal);
 	aVertexUVs1_ = aVertexUVs1;
 	aVertexUVs2_ = aVertexUVs2;
     gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
