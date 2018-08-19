@@ -9,7 +9,7 @@
 	url = https://Apfel1994@bitbucket.org/Apfel1994/ren.git
 [submodule "src/Sys"]
 	path = src/Sys
-	url = https://Apfel1994@bitbucket.org/Apfel1994/sys.git
+	url = https://github.com/MrApfel1994/sys.git
 [submodule "src/Gui"]
 	path = src/Gui
-	url = https://Apfel1994@bitbucket.org/Apfel1994/ui.git
+	url = https://Apfel1994@bitbucket.org/Apfel1994/gui.git
