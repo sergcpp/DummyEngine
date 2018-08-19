@@ -42,9 +42,9 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf_id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
 
-    if (view_mode_ == Material) {
+    /*if (view_mode_ == Material) {
         
-    } else {
+    } else*/ {
         p = diag_prog_;
 
         glUniform1f(p->uniform(U_MODE).loc, (float)view_mode_);

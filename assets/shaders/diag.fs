@@ -21,7 +21,7 @@ varying vec2 aVertexUVs2_;
 
 void main(void) {
 	if (mode < 0.5) {
-		gl_FragColor = vec4(col, 1.0);
+		gl_FragColor = texture2D(diffuse_texture, aVertexUVs1_);
 	} else if (mode < 1.5) {
 		vec3 normal = aVertexTBN_[2]*0.5 + vec3(0.5);
 		gl_FragColor = vec4(normal, 1.0);
