@@ -1,15 +1,15 @@
-[submodule "src/engine"]
-	path = src/engine
-	url = https://Apfel1994@bitbucket.org/Apfel1994/engine.git
-[submodule "src/ren"]
-	path = src/ren
-	url = https://Apfel1994@bitbucket.org/Apfel1994/ren.git
-[submodule "src/sys"]
-	path = src/sys
-	url = https://Apfel1994@bitbucket.org/Apfel1994/sys.git
-[submodule "src/ui"]
-	path = src/ui
-	url = https://Apfel1994@bitbucket.org/Apfel1994/ui.git
 [submodule "src/math"]
 	path = src/math
 	url = https://github.com/MrApfel1994/math.git
+[submodule "src/Eng"]
+	path = src/Eng
+	url = https://Apfel1994@bitbucket.org/Apfel1994/Eng.git
+[submodule "src/Ren"]
+	path = src/Ren
+	url = https://Apfel1994@bitbucket.org/Apfel1994/ren.git
+[submodule "src/Sys"]
+	path = src/Sys
+	url = https://github.com/MrApfel1994/sys.git
+[submodule "src/Gui"]
+	path = src/Gui
+	url = https://Apfel1994@bitbucket.org/Apfel1994/gui.git
