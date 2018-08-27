@@ -1,6 +1,7 @@
 #include "GSBicubicTest.h"
 
 #include <fstream>
+#include <random>
 
 #include <Eng/GameStateManager.h>
 #include <Gui/Renderer.h>
@@ -157,10 +158,24 @@ namespace GSBicubicTestInternal {
 
             for (int j = 0; j < ret.h; j++) {
                 for (int i = 0; i < ret.w; i++) {
-                    float x = off_x + float(i) / ret.w,
-                          y = off_y + float(j) / ret.h;
+                    uint32_t res[3] = { 0 };
+                    for (int k = 0; k < s; k++) {
+                        for (int l = 0; l < s; l++) {
+                            float x = off_x + (i + float(l) / s) / ret.w,
+                                  y = off_y + (j + float(k) / s) / ret.h;
 
-                    SampleNearest(img, x, y, &ret.data[3 * (j * ret.w + i)]);
+                            uint8_t col[3];
+                            SampleLinear(img, x, y, &col[0]);
+
+                            res[0] += col[0];
+                            res[1] += col[1];
+                            res[2] += col[2];
+                        }
+                    }
+
+                    ret.data[3 * (j * ret.w + i) + 0] = res[0] / (s * s);
+                    ret.data[3 * (j * ret.w + i) + 1] = res[1] / (s * s);
+                    ret.data[3 * (j * ret.w + i) + 2] = res[2] / (s * s);
                 }
             }
         }
@@ -200,6 +215,31 @@ namespace GSBicubicTestInternal {
         file.write((const char *) &footer, sizeof(footer));
     }
 
+    template <int InN, int OutN>
+    struct layer_t {
+        float weights[OutN][InN];
+        float biases[OutN];
+
+        float input[InN];
+        float output[OutN];
+
+        void process() {
+            for (int i = 0; i < OutN; i++) {
+                output[i] = biases[i];
+                for (int j = 0; j < InN; j++) {
+                    output[i] += input[j] * weights[i][j];
+                }
+                if (output[i] < 0.0f) output[i] = 0.0f;
+            }
+        }
+    };
+
+    const int f1 = 9, f2 = 1, f3 = 5;
+    const int c = 3, n1 = 64, n2 = 32;
+
+    layer_t<c * f1 * f1, n1> g_first_layer;
+    layer_t<n1 * f2 * f2, n2> g_second_layer;
+    layer_t<n2 * f3 * f3, c> g_third_layer;
 }
 
 GSBicubicTest::GSBicubicTest(GameBase *game) : game_(game) {
@@ -220,7 +260,7 @@ GSBicubicTest::~GSBicubicTest() {
 void GSBicubicTest::Enter() {
     using namespace GSBicubicTestInternal;
 
-    std::ifstream in_file("005918071.tga", std::ios::binary | std::ios::ate);
+    std::ifstream in_file("test_img2.tga", std::ios::binary | std::ios::ate);
     size_t in_file_size = (size_t)in_file.tellg();
     in_file.seekg(0, std::ios::beg);
 
@@ -228,7 +268,7 @@ void GSBicubicTest::Enter() {
     in_file.read(&in_file_data[0], in_file_size);
 
     orig_image_.data = ReadTGAFile(&in_file_data[0], orig_image_.w, orig_image_.h, orig_image_.format);
-
+#if 0
     new_image_.w = 256;
     new_image_.h = 256;
     new_image_.data.reset(new uint8_t[new_image_.w * new_image_.h * 3]);
@@ -287,6 +327,7 @@ void GSBicubicTest::Enter() {
     LOGI("%i", Sys::GetTicks());
 
     WriteTGA(new_image_, "pre.tga");
+#endif
 
     //image_t new_img2 = Upscale(orig_image_, 16, Cubic);
     //WriteTGA(new_img2, "upscaled.tga");
@@ -319,7 +360,7 @@ void GSBicubicTest::Enter() {
         }
     }*/
 
-    for (int j = 0; j < orig_image_.h; j++) {
+    /*for (int j = 0; j < orig_image_.h; j++) {
         for (int i = 0; i < orig_image_.w; i++) {
             float x = float(i) / orig_image_.w;
             float y = float(j) / orig_image_.h;
@@ -329,6 +370,31 @@ void GSBicubicTest::Enter() {
             orig_image_.data[3 * (j * orig_image_.w + i) + 0] = (uint8_t)(x * 255);
             orig_image_.data[3 * (j * orig_image_.w + i) + 1] = (uint8_t)(y * 255);
             orig_image_.data[3 * (j * orig_image_.w + i) + 2] = (uint8_t)(z * 255);
+        }
+    }*/
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
+
+    for (int i = 0; i < n1; i++) {
+        for (int j = 0; j < c * f1 * f1; j++) {
+            g_first_layer.weights[i][j] = dis(gen);
+            g_first_layer.biases[i] = dis(gen);
+        }
+    }
+
+    for (int i = 0; i < n2; i++) {
+        for (int j = 0; j < n1 * f2 * f2; j++) {
+            g_second_layer.weights[i][j] = dis(gen);
+            g_second_layer.biases[i] = dis(gen);
+        }
+    }
+
+    for (int i = 0; i < c; i++) {
+        for (int j = 0; j < n2 * f3 * f3; j++) {
+            g_third_layer.weights[i][j] = dis(gen);
+            g_third_layer.biases[i] = dis(gen);
         }
     }
 }
@@ -380,23 +446,122 @@ void GSBicubicTest::Draw(float dt_s) {
 
         glUseProgram(0);
 
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
         glRasterPos2f(pos_x, -1);
         glDrawPixels(orig_image_.w, orig_image_.h, GL_RGB, GL_UNSIGNED_BYTE, &orig_image_.data[0]);
         pos_x += float(orig_image_.w * 2)/game_->width;
 
-        glRasterPos2f(pos_x, -1);
+        /*glRasterPos2f(pos_x, -1);
         glDrawPixels(new_image_.w, new_image_.h, GL_RGB, GL_UNSIGNED_BYTE, &new_image_.data[0]);
-        pos_x += float(new_image_.w * 2) / game_->width;
+        pos_x += float(new_image_.w * 2) / game_->width;*/
 
-        /*image_t new_img1 = DownScale(orig_image_, 3);
+        image_t new_img1 = DownScale(orig_image_, 3);
         glRasterPos2f(pos_x, -1);
         glDrawPixels(new_img1.w, new_img1.h, GL_RGB, GL_UNSIGNED_BYTE, &new_img1.data[0]);
-        pos_x += float(new_img1.w * 2)/game_->width;*/
+        pos_x += float(new_img1.w * 2)/game_->width;
 
-        /*image_t new_img2 = DownScale(new_img1, 7);
+        image_t new_img2 = Upscale(new_img1, 3, Cubic);
         glRasterPos2f(pos_x, -1);
         glDrawPixels(new_img2.w, new_img2.h, GL_RGB, GL_UNSIGNED_BYTE, &new_img2.data[0]);
-        pos_x += float(new_img2.w * 2) / game_->width;*/
+        pos_x += float(new_img2.w * 2) / game_->width;
+
+        std::vector<float> results1;
+
+        for (int j = 0; j < new_img2.h - f1; j++) {
+            for (int i = 0; i < new_img2.w - f1; i++) {
+                for (int _y = 0; _y < f1; _y++) {
+                    for (int _x = 0; _x < f1; _x++) {
+                        int y = j + _y, x = i + _x;
+
+                        float r = new_img2.data[3 * (y * new_img2.w + x) + 0] / 255.0f;
+                        float g = new_img2.data[3 * (y * new_img2.w + x) + 1] / 255.0f;
+                        float b = new_img2.data[3 * (y * new_img2.w + x) + 2] / 255.0f;
+
+                        g_first_layer.input[c * (_y * f1 + _x) + 0] = r;
+                        g_first_layer.input[c * (_y * f1 + _x) + 1] = g;
+                        g_first_layer.input[c * (_y * f1 + _x) + 2] = b;
+                    }
+                }
+
+                g_first_layer.process();
+
+                for (int k = 0; k < n1; k++) {
+                    results1.push_back(g_first_layer.output[k]);
+                }
+            }
+        }
+
+        const int l1_w = new_img2.w - f1, l1_h = new_img2.h - f1;
+
+        std::vector<float> results2;
+
+        for (int j = 0; j < l1_h - f2; j++) {
+            for (int i = 0; i < l1_w - f2; i++) {
+                for (int _y = 0; _y < f2; _y++) {
+                    for (int _x = 0; _x < f2; _x++) {
+                        int y = j + _y, x = i + _x;
+
+                        for (int k = 0; k < n1; k++) {
+                            float val = results1[n1 * (y * f2 + x) + k];
+                            g_second_layer.input[n1 * (_y * f2 + _x) + k] = val;
+                        }
+                    }
+                }
+
+                g_second_layer.process();
+
+                for (int k = 0; k < n2; k++) {
+                    results2.push_back(g_second_layer.output[k]);
+                }
+            }
+        }
+
+        const int l2_w = new_img2.w - f1 - f2, l2_h = new_img2.h - f1 - f2;
+
+        std::vector<float> results3;
+
+        for (int j = 0; j < l2_h - f3; j++) {
+            for (int i = 0; i < l2_w - f3; i++) {
+                for (int _y = 0; _y < f3; _y++) {
+                    for (int _x = 0; _x < f3; _x++) {
+                        int y = j + _y, x = i + _x;
+
+                        for (int k = 0; k < n2; k++) {
+                            float val = results2[n2 * (y * f3 + x) + k];
+                            g_third_layer.input[n2 * (_y * f3 + _x) + k] = val;
+                        }
+                    }
+                }
+
+                g_third_layer.process();
+
+                for (int k = 0; k < c; k++) {
+                    results3.push_back(g_third_layer.output[k]);
+                }
+            }
+        }
+
+        const int l3_w = new_img2.w - f1 - f2 - f3, l3_h = new_img2.h - f1 - f2 - f3;
+
+        image_t new_img3;
+        new_img3.w = l3_w;
+        new_img3.h = l3_h;
+        new_img3.data.reset(new uint8_t[3 * l3_w * l3_h]);
+
+        for (int j = 0; j < l3_h; j++) {
+            for (int i = 0; i < l3_w; i++) {
+                new_img3.data[3 * (j * l3_w + i) + 0] = (uint8_t)(results3[3 * (j * l3_w + i) + 0] * 255);
+                new_img3.data[3 * (j * l3_w + i) + 1] = (uint8_t)(results3[3 * (j * l3_w + i) + 1] * 255);
+                new_img3.data[3 * (j * l3_w + i) + 2] = (uint8_t)(results3[3 * (j * l3_w + i) + 2] * 255);
+            }
+        }
+
+        glRasterPos2f(pos_x, -1);
+        glDrawPixels(new_img3.w, new_img3.h, GL_RGB, GL_UNSIGNED_BYTE, &new_img3.data[0]);
+        pos_x += float(new_img3.w * 2) / game_->width;
+
+        volatile int ii = 0;
     }
 
     {
@@ -419,16 +584,40 @@ void GSBicubicTest::Update(int dt_ms) {
 }
 
 void GSBicubicTest::HandleInput(InputManager::Event evt) {
+    using namespace GSBicubicTestInternal;
 
     switch (evt.type) {
     case InputManager::RAW_INPUT_P1_DOWN:
         
         break;
-    case InputManager::RAW_INPUT_P1_UP:
-        
-        break;
+    case InputManager::RAW_INPUT_P1_UP: {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
+
+        for (int i = 0; i < n1; i++) {
+            for (int j = 0; j < c * f1 * f1; j++) {
+                g_first_layer.weights[i][j] = dis(gen);
+                g_first_layer.biases[i] = dis(gen);
+            }
+        }
+
+        for (int i = 0; i < n2; i++) {
+            for (int j = 0; j < n1 * f2 * f2; j++) {
+                g_second_layer.weights[i][j] = dis(gen);
+                g_second_layer.biases[i] = dis(gen);
+            }
+        }
+
+        for (int i = 0; i < c; i++) {
+            for (int j = 0; j < n2 * f3 * f3; j++) {
+                g_third_layer.weights[i][j] = dis(gen);
+                g_third_layer.biases[i] = dis(gen);
+            }
+        }
+    } break;
     case InputManager::RAW_INPUT_P1_MOVE:
-        OnMouse(int(evt.point.x), 500 - (int(evt.point.y) - 140));
+        //OnMouse(int(evt.point.x), 500 - (int(evt.point.y) - 140));
         break;
     case InputManager::RAW_INPUT_KEY_DOWN:
         
