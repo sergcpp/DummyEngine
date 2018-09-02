@@ -190,6 +190,8 @@ int ModlApp::Init(int w, int h) {
 #if defined(USE_GL_RENDER)
     gl_ctx_ = SDL_GL_CreateContext(window_);
 
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+
     SDL_GL_SetSwapInterval(0);
 #endif
 
