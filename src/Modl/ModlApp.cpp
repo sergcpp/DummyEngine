@@ -548,8 +548,8 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             memcpy(&vertices[i].p[0], &positions[i * 3], sizeof(float) * 3);
             memcpy(&vertices[i].n[0], &normals[i * 3], sizeof(float) * 3);
             memset(&vertices[i].b[0], 0, sizeof(float) * 3);
-            memcpy(&vertices[i].t0[0], &uvs[i * 2], sizeof(float) * 2);
-            memcpy(&vertices[i].t1[0], &uvs2[i * 2], sizeof(float) * 2);
+            memcpy(&vertices[i].t[0][0], &uvs[i * 2], sizeof(float) * 2);
+            memcpy(&vertices[i].t[1][0], &uvs2[i * 2], sizeof(float) * 2);
         }
 
         for (auto &index_group : indices) {
@@ -569,10 +569,10 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             normals.push_back(vertices[i].n[0]);
             normals.push_back(vertices[i].n[1]);
             normals.push_back(vertices[i].n[2]);
-            uvs.push_back(vertices[i].t0[0]);
-            uvs.push_back(vertices[i].t0[1]);
-            uvs2.push_back(vertices[i].t1[0]);
-            uvs2.push_back(vertices[i].t1[1]);
+            uvs.push_back(vertices[i].t[0][0]);
+            uvs.push_back(vertices[i].t[0][1]);
+            uvs2.push_back(vertices[i].t[1][0]);
+            uvs2.push_back(vertices[i].t[1][1]);
         }
 
         num_vertices = (int)vertices.size();
