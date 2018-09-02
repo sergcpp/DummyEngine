@@ -20,13 +20,13 @@ endif()
 
 if(WIN32)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-		if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-			set(SDL2_INCLUDE_DIRS libs/SDL2/x86_64-w64-mingw32/include)
-			set(SDL2_LIBRARIES "libs/SDL2/x86_64-w64-mingw32/lib")
-		else(CMAKE_SIZEOF_VOID_P EQUAL 8)
-			set(SDL2_INCLUDE_DIRS libs/SDL2/i686-w64-mingw32/include)
-			set(SDL2_LIBRARIES "libs/SDL2/i686-w64-mingw32/lib")
-		endif()
+        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+            set(SDL2_INCLUDE_DIRS libs/SDL2/x86_64-w64-mingw32/include)
+            set(SDL2_LIBRARIES "libs/SDL2/x86_64-w64-mingw32/lib")
+        else(CMAKE_SIZEOF_VOID_P EQUAL 8)
+            set(SDL2_INCLUDE_DIRS libs/SDL2/i686-w64-mingw32/include)
+            set(SDL2_LIBRARIES "libs/SDL2/i686-w64-mingw32/lib")
+        endif()
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
         if(CMAKE_SIZEOF_VOID_P EQUAL 8)
             set(SDL2_LIBRARIES "libs/SDL2/lib/x64")
@@ -59,6 +59,7 @@ add_subdirectory(Eng)
 add_subdirectory(DemoApp)
 add_subdirectory(DemoLib)
 add_subdirectory(Modl)
+add_subdirectory(Ray)
 add_subdirectory(Ren)
 add_subdirectory(Sys)
 add_subdirectory(Gui)
@@ -70,26 +71,30 @@ set_target_properties(DemoApp
                       Modl PROPERTIES FOLDER App)
 
 set_target_properties(Eng
+                      Ray
                       Ren
                       SW
                       Sys 
                       Gui PROPERTIES FOLDER Libs)
 
 set_target_properties(test_Eng
+                      test_Ray
                       test_Ren
                       test_SW
                       test_Sys
                       test_Gui PROPERTIES FOLDER Tests)
-					  
+                      
 set_target_properties(SOIL2 PROPERTIES FOLDER _)
 
 add_test(EngTest        Eng/tests/test_Eng)
+add_test(RayTest        Ray/tests/test_Ray)
 add_test(RenTest        Ren/tests/test_Ren)
 add_test(SWTest         Ren/SW/tests/test_SW)
 add_test(SysTest        Sys/tests/test_Sys)
 add_test(GuiTest        Gui/tests/test_Gui)
 
 add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_Eng
+                                                               test_Ray
                                                                test_Ren
                                                                test_SW
                                                                test_Sys

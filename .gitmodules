@@ -13,3 +13,6 @@
 [submodule "src/Gui"]
 	path = src/Gui
 	url = https://Apfel1994@bitbucket.org/Apfel1994/gui.git
+[submodule "src/Ray"]
+	path = src/Ray
+	url = https://github.com/MrApfel1994/Ray.git
