@@ -110,8 +110,7 @@ void GSDrawTest::Draw(float dt_s) {
     using namespace GSDrawTestInternal;
 
     {
-        glClearColor(0, 0, 0, 1);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        scene_manager_->Draw();
         //glDisable(GL_DEPTH_TEST);
     }
 

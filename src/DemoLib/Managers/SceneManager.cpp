@@ -10,6 +10,8 @@
 #include <Sys/AssetFileIO.h>
 #include <Sys/Log.h>
 
+#include "Renderer.h"
+
 namespace SceneManagerConstants {
     const char *MODELS_PATH = "./assets/models/";
 }
@@ -19,6 +21,10 @@ SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer) : ctx_(ctx),
                                                 cam_(Ren::Vec3f{ 0.0f, 0.0f, 1.0f },
                                                      Ren::Vec3f{ 0.0f, 0.0f, 0.0f },
                                                      Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
+}
+
+void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up) {
+    cam_.SetupView(origin, target, up);
 }
 
 void SceneManager::LoadScene(const JsObject &js_scene) {
@@ -57,6 +63,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         obj.flags = HasDrawable | HasTransform;
         obj.dr = it->second;
         obj.tr = transforms_.Add();
+
+        objects_.push_back(obj);
     }
 }
 
@@ -68,7 +76,9 @@ void SceneManager::ClearScene() {
 }
 
 void SceneManager::Draw() {
+    cam_.Perspective(60.0f, float(ctx_.w()) / ctx_.h(), 0.1f, 100000.0f);
 
+    renderer_.DrawObjects(cam_, objects_);
 }
 
 Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {

@@ -11,6 +11,8 @@ class SceneManager {
 public:
     SceneManager(Ren::Context &ctx, Renderer &renderer);
 
+    void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up);
+
     void LoadScene(const JsObject &js_scene);
     void ClearScene();
 
