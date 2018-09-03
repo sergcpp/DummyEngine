@@ -9,6 +9,7 @@ set(SOURCE_FILES    exports.cpp
 
 set(MANAGER_SOURCES  Managers/Renderer.h
                      Managers/Renderer.cpp
+					 Managers/SceneData.h
                      Managers/SceneManager.h
                      Managers/SceneManager.cpp)
 
@@ -18,6 +19,8 @@ set(STATES_SOURCES  States/GSCreate.h
                     States/GSBicubicTest.cpp
                     States/GSDefTest.h
                     States/GSDefTest.cpp
+					States/GSDrawTest.h
+					States/GSDrawTest.cpp
                     States/GSIKTest.h
                     States/GSIKTest.cpp
                     States/GSOccTest.h

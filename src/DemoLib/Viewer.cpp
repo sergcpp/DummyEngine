@@ -8,7 +8,9 @@
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
 
-#include "states/GSCreate.h"
+#include "Managers/Renderer.h"
+#include "Managers/SceneManager.h"
+#include "States/GSCreate.h"
 #include "ui/FontStorage.h"
 
 Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) {
@@ -47,12 +49,20 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         }
     }
 
+    {
+        auto renderer = std::make_shared<Renderer>();
+        AddComponent(RENDERER_KEY, renderer);
+
+        auto scene_manager = std::make_shared<SceneManager>(*ctx, *renderer);
+        AddComponent(SCENE_MANAGER_KEY, scene_manager);
+    }
+
     auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);
     input_manager->SetConverter(InputManager::RAW_INPUT_P1_MOVE, nullptr);
     input_manager->SetConverter(InputManager::RAW_INPUT_P2_MOVE, nullptr);
 
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
-    state_manager->Push(GSCreate(GS_IK_TEST, this));
+    state_manager->Push(GSCreate(GS_DRAW_TEST, this));
 }
 
 void Viewer::Resize(int w, int h) {

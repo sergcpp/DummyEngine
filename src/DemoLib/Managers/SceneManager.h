@@ -1,27 +1,9 @@
 #pragma once
 
 #include <Ren/Camera.h>
-#include <Ren/Mesh.h>
-#include <Ren/MMat.h>
-#include <Ren/Storage.h>
 #include <Sys/Json.h>
 
-struct Transform : public Ren::RefCounter {
-    Ren::Mat4f mat;
-    Ren::Vec3f bbox_min_ws, bbox_max_ws;
-};
-
-struct Drawable : public Ren::RefCounter {
-    Ren::MeshRef mesh;
-};
-
-enum eObjectFlags { HasTransform = 1, HasDrawable = 2 };
-
-struct SceneObject {
-    uint32_t flags;
-    Ren::StorageRef<Transform> tr;
-    Ren::StorageRef<Drawable> dr;
-};
+#include "SceneData.h"
 
 class Renderer;
 
@@ -32,7 +14,12 @@ public:
     void LoadScene(const JsObject &js_scene);
     void ClearScene();
 
+    void Draw();
 private:
+    Ren::MaterialRef OnLoadMaterial(const char *name);
+    Ren::ProgramRef OnLoadProgram(const char *name, const char *arg1, const char *arg2);
+    Ren::Texture2DRef OnLoadTexture(const char *name);
+
     Ren::Context &ctx_;
     Renderer &renderer_;
 
