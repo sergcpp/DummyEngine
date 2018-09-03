@@ -16,6 +16,14 @@ class BitmapFont;
 class Renderer;
 }
 
+namespace GSIKTestInternal {
+    struct Bone {
+        Ren::Vec3f pos;
+        float length, angle;
+        float min_angle, max_angle;
+    };
+}
+
 class GSIKTest : public GameState {
     GameBase *game_;
     std::weak_ptr<GameStateManager> state_manager_;
@@ -25,6 +33,17 @@ class GSIKTest : public GameState {
     std::shared_ptr<Gui::BaseElement> ui_root_;
     std::shared_ptr<Gui::BitmapFont> font_;
 
+    Ren::ProgramRef line_prog_;
+    std::vector<GSIKTestInternal::Bone> bones_;
+
+    bool view_grabbed_ = false;
+    Ren::Vec3f cur_goal_, prev_goal_, next_goal_;
+
+    int goal_change_timer_ = 0;
+    int iterations_ = 0;
+    float error_ = 0.0f;
+
+    void UpdateBones();
 public:
     explicit GSIKTest(GameBase *game);
     ~GSIKTest();
