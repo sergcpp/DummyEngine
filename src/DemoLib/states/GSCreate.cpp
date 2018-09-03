@@ -4,6 +4,7 @@
 
 #include "GSBicubicTest.h"
 #include "GSDefTest.h"
+#include "GSIKTest.h"
 #include "GSOccTest.h"
 
 std::shared_ptr<GameState> GSCreate(eGameState state, GameBase *game) {
@@ -13,6 +14,8 @@ std::shared_ptr<GameState> GSCreate(eGameState state, GameBase *game) {
         return std::make_shared<GSBicubicTest>(game);
     } else if (state == GS_DEF_TEST) {
         return std::make_shared<GSDefTest>(game);
+    } else if (state == GS_IK_TEST) {
+        return std::make_shared<GSIKTest>(game);
     }
     throw std::invalid_argument("Unknown game state!");
 }

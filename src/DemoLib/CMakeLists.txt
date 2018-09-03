@@ -8,9 +8,9 @@ set(SOURCE_FILES    exports.cpp
                     Viewer.cpp)
 
 set(MANAGER_SOURCES  Managers/Renderer.h
-					 Managers/Renderer.cpp
-					 Managers/SceneManager.h
-					 Managers/SceneManager.cpp)
+                     Managers/Renderer.cpp
+                     Managers/SceneManager.h
+                     Managers/SceneManager.cpp)
 
 set(STATES_SOURCES  States/GSCreate.h
                     States/GSCreate.cpp
@@ -18,6 +18,8 @@ set(STATES_SOURCES  States/GSCreate.h
                     States/GSBicubicTest.cpp
                     States/GSDefTest.h
                     States/GSDefTest.cpp
+                    States/GSIKTest.h
+                    States/GSIKTest.cpp
                     States/GSOccTest.h
                     States/GSOccTest.cpp)
 
@@ -26,7 +28,7 @@ set(UI_SOURCES  ui/FontStorage.h)
 if(${RENDERER} STREQUAL "GL")
     set(MANAGER_SOURCES ${MANAGER_SOURCES}
                         Managers/RendererGL.cpp)
-	set(STATES_SOURCES ${STATES_SOURCES}
+    set(STATES_SOURCES ${STATES_SOURCES}
                        States/GSDefTestGL.cpp
                        States/GSOccTestGL.cpp)
 elseif(${RENDERER} STREQUAL "SW")
