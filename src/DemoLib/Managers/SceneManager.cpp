@@ -74,6 +74,17 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         obj.flags = HasDrawable | HasTransform;
         obj.dr = it->second;
         obj.tr = transforms_.Add();
+        
+        if (js_obj.Has("pos")) {
+            const JsArray &js_pos = (const JsArray &)js_obj.at("pos");
+            
+            double x = ((const JsNumber &)js_pos.at(0)).val;
+            double y = ((const JsNumber &)js_pos.at(1)).val;
+            double z = ((const JsNumber &)js_pos.at(2)).val;
+
+            obj.tr->mat = Ren::Translate(obj.tr->mat, Ren::Vec3f{ (float)x, (float)y, (float)z });
+        }
+
         obj.tr->UpdateBBox(it->second->mesh->bbox_min(), it->second->mesh->bbox_max());
 
         if (js_obj.Has("occluder")) {
