@@ -9,6 +9,7 @@
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
+#include <Sys/Log.h>
 #include <Sys/Time_.h>
 
 #include "../Viewer.h"
@@ -23,14 +24,10 @@ namespace GSDrawTestInternal {
     const Ren::Vec3f CAM_TARGET = { 0.0f, 0.0f, 0.0f };
     const Ren::Vec3f CAM_UP = { 0.0f, 1.0f, 0.0f };
 
-    const float NEAR_CLIP = 0.5f;
-    const float FAR_CLIP = 1000;
+    
 }
 
-GSDrawTest::GSDrawTest(GameBase *game) : game_(game),
-    cam_(GSDrawTestInternal::CAM_CENTER,
-         GSDrawTestInternal::CAM_TARGET,
-         GSDrawTestInternal::CAM_UP) {
+GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
     state_manager_  = game->GetComponent<GameStateManager>(STATE_MANAGER_KEY);
     ctx_            = game->GetComponent<Ren::Context>(REN_CONTEXT_KEY);
 
@@ -42,10 +39,6 @@ GSDrawTest::GSDrawTest(GameBase *game) : game_(game),
 
     const auto fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     font_ = fonts->FindFont("main_font");
-
-    using namespace GSDrawTestInternal;
-
-    cam_.Perspective(CAM_FOV, float(game_->width) / game_->height, NEAR_CLIP, FAR_CLIP);
 }
 
 GSDrawTest::~GSDrawTest() {
@@ -110,8 +103,23 @@ void GSDrawTest::Draw(float dt_s) {
     using namespace GSDrawTestInternal;
 
     {
+        scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
         scene_manager_->Draw();
-        //glDisable(GL_DEPTH_TEST);
+    }
+
+    {
+        const auto timings = scene_manager_->timings();
+        const auto back_timings = scene_manager_->back_timings();
+
+        auto start = std::min(last_timings_.first, back_timings.first);
+        auto end = std::max(last_timings_.second, back_timings.second);
+
+        auto dur1 = std::chrono::duration_cast<std::chrono::microseconds>(last_timings_.second - last_timings_.first);
+        auto dur2 = std::chrono::duration_cast<std::chrono::microseconds>(back_timings.second - back_timings.first);
+
+        LOGI("Frontend: %lld\tBackend: %lld", (long long)dur2.count(), (long long)dur1.count());
+
+        last_timings_ = timings;
     }
 
     {
@@ -135,8 +143,6 @@ void GSDrawTest::Update(int dt_ms) {
 
     view_origin_ += view_dir_ * forward_speed_;
     view_origin_ += side * side_speed_;
-
-    cam_.SetupView(view_origin_, (view_origin_ + view_dir_), up);
 }
 
 void GSDrawTest::HandleInput(InputManager::Event evt) {
@@ -161,15 +167,7 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
             rot = Rotate(rot, 0.01f * evt.move.dy, side);
 
             auto rot_m3 = Mat3f(rot);
-
-            if (!view_targeted_) {
-                view_dir_ = view_dir_ * rot_m3;
-            } else {
-                Vec3f dir = view_origin_ - view_target_;
-                dir = dir * rot_m3;
-                view_origin_ = view_target_ + dir;
-                view_dir_ = Normalize(-dir);
-            }
+            view_dir_ = view_dir_ * rot_m3;
         }
         break;
     case InputManager::RAW_INPUT_KEY_DOWN: {

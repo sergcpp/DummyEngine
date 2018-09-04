@@ -50,7 +50,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     }
 
     {
-        auto renderer = std::make_shared<Renderer>();
+        auto renderer = std::make_shared<Renderer>(*ctx);
         AddComponent(RENDERER_KEY, renderer);
 
         auto scene_manager = std::make_shared<SceneManager>(*ctx, *renderer);

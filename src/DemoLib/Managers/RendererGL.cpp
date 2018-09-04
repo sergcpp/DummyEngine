@@ -1,6 +1,7 @@
 #include "Renderer.h"
 
 #include <Ren/Camera.h>
+#include <Ren/Context.h>
 #include <Ren/GL.h>
 
 namespace RendererConstants {
@@ -31,42 +32,151 @@ namespace RendererConstants {
     }
 }
 
-void Renderer::DrawObjects(const Ren::Camera &cam, const std::vector<SceneObject> &objects) {
+void Renderer::InitShadersInternal() {
+    const char *vs_shader = R"(
+        /*
+        ATTRIBUTES
+	        aVertexPosition : 0
+        UNIFORMS
+	        uMVPMatrix : 0
+        */
+
+        attribute vec3 aVertexPosition;
+
+        uniform mat4 uMVPMatrix;
+
+        void main(void) {
+            gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
+        } 
+    )";
+
+    const char *fs_shader = R"(
+        #ifdef GL_ES
+	        precision mediump float;
+        #endif
+
+        void main(void) {
+        }
+    )";
+
+    Ren::eProgLoadStatus status;
+    fill_depth_prog_ = ctx_.LoadProgramGLSL("fill_depth", vs_shader, fs_shader, &status);
+    assert(status == Ren::ProgCreatedFromData);
+}
+
+void Renderer::DrawObjectsInternal(const Ren::Camera &cam, const DrawableItem *drawables, size_t drawable_count) {
     using namespace Ren;
     using namespace RendererConstants;
 
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (const auto &obj : objects) {
-        if (obj.flags & (HasDrawable | HasTransform)) {
-            const auto &ref = obj.dr->mesh;
-            const auto &tr = obj.tr;
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
 
-            auto m = ref.get();
-            auto mat = m->strip(0).mat.get();
-            auto p = mat->program();
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
 
+    Mat4f world_from_object = Mat4f{ 1.0f };
+
+    Mat4f view_from_world = cam.view_matrix(),
+          proj_from_view = cam.projection_matrix();
+
+    Mat4f view_from_object, proj_from_object;
+
+    const Ren::Program *cur_program = nullptr;
+    const Ren::Material *cur_mat = nullptr;
+    const Ren::Mesh *cur_mesh = nullptr;
+    const Ren::Mat4f *cur_xform = nullptr;
+
+    {
+        cur_program = fill_depth_prog_.get();
+        glUseProgram(cur_program->prog_id());
+
+        int stride = sizeof(float) * 13;
+        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+    }
+
+    // fill depth
+    for (size_t i = 0; i < drawable_count; i++) {
+        const auto &dr = drawables[i];
+
+        const Ren::Mat4f *xform = dr.xform;
+        const Ren::Mesh *mesh = dr.mesh;
+        const Ren::TriStrip *strip = dr.strip;
+
+        if (mesh != cur_mesh) {
+            glBindBuffer(GL_ARRAY_BUFFER, mesh->attribs_buf_id());
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indices_buf_id());
+
+            int stride = sizeof(float) * 13;
+            glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
+            glVertexAttribPointer(cur_program->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+
+            cur_mesh = mesh;
+        }
+
+        if (xform != cur_xform) {
+            const auto &world_from_object = *xform;
+
+            view_from_object = view_from_world * world_from_object,
+            proj_from_object = proj_from_view * view_from_object;
+
+            glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
+
+            cur_xform = xform;
+        }
+
+        glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
+    }
+
+    glDepthFunc(GL_EQUAL);
+
+    // actual drawing
+    for (size_t i = 0; i < drawable_count; i++) {
+        const auto &dr = drawables[i];
+
+        const Ren::Mat4f *xform = dr.xform;
+        const Ren::Material *mat = dr.mat;
+        const Ren::Mesh *mesh = dr.mesh;
+        const Ren::TriStrip *strip = dr.strip;
+
+        const auto *p = mat->program().get();
+
+        if (p != cur_program) {
             glUseProgram(p->prog_id());
 
-            glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf_id());
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
+            if (mesh == cur_mesh) {
+                int stride = sizeof(float) * 13;
+                glEnableVertexAttribArray(p->attribute(A_POS).loc);
+                glVertexAttribPointer(p->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
-            glUniform1f(p->uniform(U_MODE).loc, (float)1);
-            glUniform1i(p->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
-            glUniform1i(p->uniform(U_NORM_TEX).loc, NORMALMAP_SLOT);
+                glEnableVertexAttribArray(p->attribute(A_NORMAL).loc);
+                glVertexAttribPointer(p->attribute(A_NORMAL).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
 
-            Mat4f world_from_object = Mat4f{ 1.0f };
+                glEnableVertexAttribArray(p->attribute(A_TANGENT).loc);
+                glVertexAttribPointer(p->attribute(A_TANGENT).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(float)));
 
-            Mat4f view_from_world = cam.view_matrix(),
-                  proj_from_view = cam.projection_matrix();
+                glEnableVertexAttribArray(p->attribute(A_UVS1).loc);
+                glVertexAttribPointer(p->attribute(A_UVS1).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
 
-            Mat4f view_from_object = view_from_world * world_from_object,
-                  proj_from_object = proj_from_view * view_from_object;
-
-            glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
+                glEnableVertexAttribArray(p->attribute(A_UVS2).loc);
+                glVertexAttribPointer(p->attribute(A_UVS2).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
+            }
 
             glUniform3f(p->uniform(U_COL).loc, 1.0f, 1.0f, 1.0f);
+            
+            if (xform == cur_xform) {
+                glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
+            }
+
+            cur_program = p;
+        }
+
+        if (mesh != cur_mesh) {
+            glBindBuffer(GL_ARRAY_BUFFER, mesh->attribs_buf_id());
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indices_buf_id());
 
             int stride = sizeof(float) * 13;
             glEnableVertexAttribArray(p->attribute(A_POS).loc);
@@ -84,25 +194,95 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const std::vector<SceneObject
             glEnableVertexAttribArray(p->attribute(A_UVS2).loc);
             glVertexAttribPointer(p->attribute(A_UVS2).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
 
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_BACK);
-
-            const Ren::TriStrip *s = &m->strip(0);
-            while (s->offset != -1) {
-                const Ren::Material *mat = s->mat.get();
-
-                //if (view_mode_ == DiagUVs1 || view_mode_ == DiagUVs2) {
-                //    BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
-                //} else {
-                    BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
-                //}
-                BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
-
-                glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset));
-                ++s;
-            }
-
-            Ren::CheckError();
+            cur_mesh = mesh;
         }
+
+        if (xform != cur_xform) {
+            const auto &world_from_object = *xform;
+
+            view_from_object = view_from_world * world_from_object,
+            proj_from_object = proj_from_view * view_from_object;
+
+            glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
+
+            cur_xform = xform;
+        }
+
+        if (mat != cur_mat) {
+            BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
+            BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
+            cur_mat = mat;
+        }
+
+        glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
     }
+
+#if 0
+    for (size_t i = 0; i < drawable_count; i++) {
+        const auto *m = drawables[i].mesh;
+        auto mat = m->strip(0).mat.get();
+        auto p = mat->program();
+
+        glUseProgram(p->prog_id());
+
+        glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf_id());
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
+
+        glUniform1f(p->uniform(U_MODE).loc, (float)1);
+        glUniform1i(p->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+        glUniform1i(p->uniform(U_NORM_TEX).loc, NORMALMAP_SLOT);
+
+        Mat4f world_from_object = Mat4f{ 1.0f };
+
+        Mat4f view_from_world = cam.view_matrix(),
+                proj_from_view = cam.projection_matrix();
+
+        Mat4f view_from_object = view_from_world * world_from_object,
+                proj_from_object = proj_from_view * view_from_object;
+
+        glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
+
+        glUniform3f(p->uniform(U_COL).loc, 1.0f, 1.0f, 1.0f);
+
+        int stride = sizeof(float) * 13;
+        glEnableVertexAttribArray(p->attribute(A_POS).loc);
+        glVertexAttribPointer(p->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+
+        glEnableVertexAttribArray(p->attribute(A_NORMAL).loc);
+        glVertexAttribPointer(p->attribute(A_NORMAL).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
+
+        glEnableVertexAttribArray(p->attribute(A_TANGENT).loc);
+        glVertexAttribPointer(p->attribute(A_TANGENT).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(float)));
+
+        glEnableVertexAttribArray(p->attribute(A_UVS1).loc);
+        glVertexAttribPointer(p->attribute(A_UVS1).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
+
+        glEnableVertexAttribArray(p->attribute(A_UVS2).loc);
+        glVertexAttribPointer(p->attribute(A_UVS2).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+
+        const Ren::TriStrip *s = &m->strip(0);
+        while (s->offset != -1) {
+            const Ren::Material *mat = s->mat.get();
+
+            //if (view_mode_ == DiagUVs1 || view_mode_ == DiagUVs2) {
+            //    BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
+            //} else {
+                BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
+            //}
+            BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
+
+            glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset));
+            ++s;
+        }
+
+        Ren::CheckError();
+    }
+#endif
+
+#if 1
+    glFinish();
+#endif
 }

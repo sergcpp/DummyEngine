@@ -13,6 +13,9 @@
 #include "Renderer.h"
 
 namespace SceneManagerConstants {
+    const float NEAR_CLIP = 0.5f;
+    const float FAR_CLIP = 10000;
+
     const char *MODELS_PATH = "./assets/models/";
 }
 
@@ -23,8 +26,16 @@ SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer) : ctx_(ctx),
                                                      Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
 }
 
+SceneManager::~SceneManager() {
+    renderer_.WaitForCompletion();
+}
+
+TimingInfo SceneManager::timings() const { return renderer_.timings(); };
+TimingInfo SceneManager::back_timings() const { return renderer_.back_timings(); };
+
 void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up) {
     cam_.SetupView(origin, target, up);
+    cam_.UpdatePlanes();
 }
 
 void SceneManager::LoadScene(const JsObject &js_scene) {
@@ -63,6 +74,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         obj.flags = HasDrawable | HasTransform;
         obj.dr = it->second;
         obj.tr = transforms_.Add();
+        obj.tr->UpdateBBox(it->second->mesh->bbox_min(), it->second->mesh->bbox_max());
 
         objects_.push_back(obj);
     }
@@ -76,9 +88,11 @@ void SceneManager::ClearScene() {
 }
 
 void SceneManager::Draw() {
-    cam_.Perspective(60.0f, float(ctx_.w()) / ctx_.h(), 0.1f, 100000.0f);
+    using namespace SceneManagerConstants;
 
-    renderer_.DrawObjects(cam_, objects_);
+    cam_.Perspective(60.0f, float(ctx_.w()) / ctx_.h(), NEAR_CLIP, FAR_CLIP);
+
+    renderer_.DrawObjects(cam_, &objects_[0], objects_.size());
 }
 
 Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {

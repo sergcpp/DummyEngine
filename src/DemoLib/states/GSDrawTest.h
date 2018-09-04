@@ -8,6 +8,8 @@
 #include <Ren/Texture.h>
 #include <Ren/SW/SW.h>
 
+#include "../Managers/SceneData.h"
+
 class GameBase;
 class GameStateManager;
 class FontStorage;
@@ -31,15 +33,13 @@ class GSDrawTest : public GameState {
     std::shared_ptr<Gui::BaseElement> ui_root_;
     std::shared_ptr<Gui::BitmapFont> font_;
 
+    TimingInfo last_timings_;
+
     bool view_grabbed_ = false;
-    bool view_targeted_ = false;
-    Ren::Vec3f view_origin_ = { 0, 20, 3 },
-               view_dir_ = { 0, 0, 1 },
-               view_target_ = { 0, 0, 0 };
+    Ren::Vec3f view_origin_ = { 0, 0, 0 },
+               view_dir_ = { 0, 0, -1 };
 
     float forward_speed_ = 0, side_speed_ = 0;
-
-    Ren::Camera cam_;
 public:
     explicit GSDrawTest(GameBase *game);
     ~GSDrawTest();
