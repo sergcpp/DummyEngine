@@ -41,18 +41,19 @@ private:
 
     const SceneObject *objects_ = nullptr;
     size_t object_count_ = 0;
-    std::vector<Ren::Mat4f> transforms_;
+    std::vector<Ren::Mat4f> transforms_[2];
     std::vector<DrawableItem> draw_lists_[2];
     Ren::Camera draw_cam_;
     TimingInfo timings_, back_timings_[2];
 
     //temp
     std::vector<uint8_t> depth_pixels_;
+    std::mutex depth_mtx_;
 
     void SwapDrawLists(const Ren::Camera &cam, const SceneObject *objects, size_t object_count);
 
     void InitShadersInternal();
-    void DrawObjectsInternal(const Ren::Camera &cam, const DrawableItem *drawables, size_t drawable_count);
+    void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count);
 
     std::thread background_thread_;
     std::mutex mtx_;

@@ -26,7 +26,7 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const SceneObject *objects, s
     SwapDrawLists(cam, objects, object_count);
     auto t1 = std::chrono::high_resolution_clock::now();
     if (!draw_lists_[0].empty()) {
-        DrawObjectsInternal(cam, &draw_lists_[0][0], draw_lists_[0].size());
+        DrawObjectsInternal(&draw_lists_[0][0], draw_lists_[0].size());
     }
     auto t2 = std::chrono::high_resolution_clock::now();
     timings_ = { t1, t2 };
@@ -47,8 +47,9 @@ void Renderer::BackgroundProc() {
             std::lock_guard<Sys::SpinlockMutex> _(job_mtx_);
             auto t1 = std::chrono::high_resolution_clock::now();
 
-            transforms_.clear();
-            transforms_.reserve(object_count_);
+            auto &tr_list = transforms_[1];
+            tr_list.clear();
+            tr_list.reserve(object_count_);
 
             auto &dr_list = draw_lists_[1];
             dr_list.clear();
@@ -82,7 +83,7 @@ void Renderer::BackgroundProc() {
                     Ren::Mat4f view_from_object = view_from_world * world_from_object,
                                proj_from_object = proj_from_view * view_from_object;
 
-                    transforms_.push_back(proj_from_object);
+                    tr_list.push_back(proj_from_object);
 
                     const auto *mesh = dr->mesh.get();
 
@@ -99,12 +100,12 @@ void Renderer::BackgroundProc() {
                             surf[surf_count].indices = ((const uint32_t *)mesh->indices() + s->offset);
                             surf[surf_count].stride = 13 * sizeof(float);
                             surf[surf_count].count = (SWuint)s->num_indices;
-                            surf[surf_count].xform = Ren::ValuePtr(transforms_.back());
+                            surf[surf_count].xform = Ren::ValuePtr(tr_list.back());
                             surf[surf_count].dont_skip = nullptr;
                             surf_count++;
 
                             const Ren::Material *mat = s->mat.get();
-                            dr_list.push_back({ &transforms_.back(), mat, mesh, s });
+                            dr_list.push_back({ &tr_list.back(), mat, mesh, s });
                             ++s;
                         }
 
@@ -113,7 +114,7 @@ void Renderer::BackgroundProc() {
                         const Ren::TriStrip *s = &mesh->strip(0);
                         while (s->offset != -1) {
                             const Ren::Material *mat = s->mat.get();
-                            dr_list.push_back({ &transforms_.back(), mat, mesh, s });
+                            dr_list.push_back({ &tr_list.back(), mat, mesh, s });
                             ++s;
                         }
                     }
@@ -122,7 +123,10 @@ void Renderer::BackgroundProc() {
 
             std::sort(std::begin(dr_list), std::end(dr_list));
 
+#if 1
             {
+                std::lock_guard<std::mutex> _(depth_mtx_);
+
                 const float NEAR_CLIP = 0.5f;
                 const float FAR_CLIP = 10000.0f;
 
@@ -139,6 +143,7 @@ void Renderer::BackgroundProc() {
                     }
                 }
             }
+#endif
 
             auto t2 = std::chrono::high_resolution_clock::now();
             back_timings_[1] = { t1, t2 };
@@ -152,6 +157,7 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const SceneObject *objects,
     bool should_notify = false;
     {
         std::lock_guard<Sys::SpinlockMutex> _(job_mtx_);
+        std::swap(transforms_[0], transforms_[1]);
         std::swap(draw_lists_[0], draw_lists_[1]);
         objects_ = objects;
         object_count_ = object_count;

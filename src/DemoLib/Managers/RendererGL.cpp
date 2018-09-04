@@ -64,18 +64,19 @@ void Renderer::InitShadersInternal() {
     assert(status == Ren::ProgCreatedFromData);
 }
 
-void Renderer::DrawObjectsInternal(const Ren::Camera &cam, const DrawableItem *drawables, size_t drawable_count) {
+void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count) {
     using namespace Ren;
     using namespace RendererConstants;
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
 
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
 
     const Ren::Program *cur_program = nullptr;
     const Ren::Material *cur_mat = nullptr;
@@ -122,7 +123,6 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &cam, const DrawableItem *d
     }
 
     glDepthFunc(GL_EQUAL);
-    cur_xform = nullptr;
 
     // actual drawing
     for (size_t i = 0; i < drawable_count; i++) {
@@ -208,11 +208,14 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &cam, const DrawableItem *d
 
 #if 1
     {
+        std::lock_guard<std::mutex> _(depth_mtx_);
+
         glUseProgram(0);
 
         glRasterPos2f(-1, -1);
 
         glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
         glDrawPixels(256, 128, GL_RGBA, GL_UNSIGNED_BYTE, &depth_pixels_[0]);
     }
 #endif
