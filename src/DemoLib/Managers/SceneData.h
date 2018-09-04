@@ -34,7 +34,7 @@ struct Drawable : public Ren::RefCounter {
     Ren::MeshRef mesh;
 };
 
-enum eObjectFlags { HasTransform = 1, HasDrawable = 2 };
+enum eObjectFlags { HasTransform = 1, HasDrawable = 2, IsOccluder = 4 };
 
 struct SceneObject {
     uint32_t flags;

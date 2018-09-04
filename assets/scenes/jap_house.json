@@ -15,7 +15,8 @@
 	},
 	"objects" : [
 		{
-			"mesh" : "walls"
+			"mesh" : "walls",
+			"occluder" : true
 		}
 	]
 }

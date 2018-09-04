@@ -6,6 +6,9 @@
 
 #include <Ren/Camera.h>
 #include <Ren/RingBuffer.h>
+extern "C" {
+#include <Ren/SW/SWculling.h>
+}
 #include <Sys/SpinLock.h>
 
 #include "SceneData.h"
@@ -33,13 +36,18 @@ public:
     void WaitForCompletion();
 private:
     Ren::Context &ctx_;
+    SWcull_ctx cull_ctx_;
     Ren::ProgramRef fill_depth_prog_;
 
     const SceneObject *objects_ = nullptr;
     size_t object_count_ = 0;
+    std::vector<Ren::Mat4f> transforms_;
     std::vector<DrawableItem> draw_lists_[2];
     Ren::Camera draw_cam_;
     TimingInfo timings_, back_timings_[2];
+
+    //temp
+    std::vector<uint8_t> depth_pixels_;
 
     void SwapDrawLists(const Ren::Camera &cam, const SceneObject *objects, size_t object_count);
 

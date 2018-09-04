@@ -76,6 +76,13 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         obj.tr = transforms_.Add();
         obj.tr->UpdateBBox(it->second->mesh->bbox_min(), it->second->mesh->bbox_max());
 
+        if (js_obj.Has("occluder")) {
+            const JsLiteral &js_occ = (const JsLiteral &)js_obj.at("occluder");
+            if (js_occ.val == JS_TRUE) {
+                obj.flags |= IsOccluder;
+            }
+        }
+
         objects_.push_back(obj);
     }
 }

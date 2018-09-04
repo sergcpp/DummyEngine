@@ -77,13 +77,6 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &cam, const DrawableItem *d
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
-    Mat4f world_from_object = Mat4f{ 1.0f };
-
-    Mat4f view_from_world = cam.view_matrix(),
-          proj_from_view = cam.projection_matrix();
-
-    Mat4f view_from_object, proj_from_object;
-
     const Ren::Program *cur_program = nullptr;
     const Ren::Material *cur_mat = nullptr;
     const Ren::Mesh *cur_mesh = nullptr;
@@ -118,10 +111,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &cam, const DrawableItem *d
         }
 
         if (xform != cur_xform) {
-            const auto &world_from_object = *xform;
-
-            view_from_object = view_from_world * world_from_object,
-            proj_from_object = proj_from_view * view_from_object;
+            const auto &proj_from_object = *xform;
 
             glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
 
@@ -132,6 +122,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &cam, const DrawableItem *d
     }
 
     glDepthFunc(GL_EQUAL);
+    cur_xform = nullptr;
 
     // actual drawing
     for (size_t i = 0; i < drawable_count; i++) {
@@ -168,6 +159,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &cam, const DrawableItem *d
             glUniform3f(p->uniform(U_COL).loc, 1.0f, 1.0f, 1.0f);
             
             if (xform == cur_xform) {
+                const auto &proj_from_object = *xform;
                 glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
             }
 
@@ -198,10 +190,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &cam, const DrawableItem *d
         }
 
         if (xform != cur_xform) {
-            const auto &world_from_object = *xform;
-
-            view_from_object = view_from_world * world_from_object,
-            proj_from_object = proj_from_view * view_from_object;
+            const auto &proj_from_object = *xform;
 
             glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
 
@@ -217,68 +206,14 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &cam, const DrawableItem *d
         glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
     }
 
-#if 0
-    for (size_t i = 0; i < drawable_count; i++) {
-        const auto *m = drawables[i].mesh;
-        auto mat = m->strip(0).mat.get();
-        auto p = mat->program();
+#if 1
+    {
+        glUseProgram(0);
 
-        glUseProgram(p->prog_id());
+        glRasterPos2f(-1, -1);
 
-        glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf_id());
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
-
-        glUniform1f(p->uniform(U_MODE).loc, (float)1);
-        glUniform1i(p->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
-        glUniform1i(p->uniform(U_NORM_TEX).loc, NORMALMAP_SLOT);
-
-        Mat4f world_from_object = Mat4f{ 1.0f };
-
-        Mat4f view_from_world = cam.view_matrix(),
-                proj_from_view = cam.projection_matrix();
-
-        Mat4f view_from_object = view_from_world * world_from_object,
-                proj_from_object = proj_from_view * view_from_object;
-
-        glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
-
-        glUniform3f(p->uniform(U_COL).loc, 1.0f, 1.0f, 1.0f);
-
-        int stride = sizeof(float) * 13;
-        glEnableVertexAttribArray(p->attribute(A_POS).loc);
-        glVertexAttribPointer(p->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
-
-        glEnableVertexAttribArray(p->attribute(A_NORMAL).loc);
-        glVertexAttribPointer(p->attribute(A_NORMAL).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
-
-        glEnableVertexAttribArray(p->attribute(A_TANGENT).loc);
-        glVertexAttribPointer(p->attribute(A_TANGENT).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(float)));
-
-        glEnableVertexAttribArray(p->attribute(A_UVS1).loc);
-        glVertexAttribPointer(p->attribute(A_UVS1).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
-
-        glEnableVertexAttribArray(p->attribute(A_UVS2).loc);
-        glVertexAttribPointer(p->attribute(A_UVS2).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
-
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-
-        const Ren::TriStrip *s = &m->strip(0);
-        while (s->offset != -1) {
-            const Ren::Material *mat = s->mat.get();
-
-            //if (view_mode_ == DiagUVs1 || view_mode_ == DiagUVs2) {
-            //    BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
-            //} else {
-                BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
-            //}
-            BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
-
-            glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset));
-            ++s;
-        }
-
-        Ren::CheckError();
+        glDisable(GL_DEPTH_TEST);
+        glDrawPixels(256, 128, GL_RGBA, GL_UNSIGNED_BYTE, &depth_pixels_[0]);
     }
 #endif
 
