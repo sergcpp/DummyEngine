@@ -125,21 +125,33 @@ void Renderer::BackgroundProc() {
 
 #if 1
             {
-                std::lock_guard<std::mutex> _(depth_mtx_);
-
                 const float NEAR_CLIP = 0.5f;
                 const float FAR_CLIP = 10000.0f;
 
                 int w = cull_ctx_.zbuf.w, h = cull_ctx_.zbuf.h;
-                depth_pixels_.resize(w * h * 4);
+                depth_pixels_[1].resize(w * h * 4);
                 for (int x = 0; x < w; x++) {
                     for (int y = 0; y < h; y++) {
                         float z = cull_ctx_.zbuf.depth[(h - y - 1) * w + x];
                         z = (2.0f * NEAR_CLIP) / (FAR_CLIP + NEAR_CLIP - z * (FAR_CLIP - NEAR_CLIP));
-                        depth_pixels_[4 * (y * w + x) + 0] = (uint8_t)(z * 255);
-                        depth_pixels_[4 * (y * w + x) + 1] = (uint8_t)(z * 255);
-                        depth_pixels_[4 * (y * w + x) + 2] = (uint8_t)(z * 255);
-                        depth_pixels_[4 * (y * w + x) + 3] = 255;
+                        depth_pixels_[1][4 * (y * w + x) + 0] = (uint8_t)(z * 255);
+                        depth_pixels_[1][4 * (y * w + x) + 1] = (uint8_t)(z * 255);
+                        depth_pixels_[1][4 * (y * w + x) + 2] = (uint8_t)(z * 255);
+                        depth_pixels_[1][4 * (y * w + x) + 3] = 255;
+                    }
+                }
+
+                depth_tiles_[1].resize(w * h * 4);
+                for (int x = 0; x < w; x++) {
+                    for (int y = 0; y < h; y++) {
+                        const auto *zr = swZbufGetTileRange(&cull_ctx_.zbuf, x, (h - y - 1));
+
+                        float z = zr->min;
+                        z = (2.0f * NEAR_CLIP) / (FAR_CLIP + NEAR_CLIP - z * (FAR_CLIP - NEAR_CLIP));
+                        depth_tiles_[1][4 * (y * w + x) + 0] = (uint8_t)(z * 255);
+                        depth_tiles_[1][4 * (y * w + x) + 1] = (uint8_t)(z * 255);
+                        depth_tiles_[1][4 * (y * w + x) + 2] = (uint8_t)(z * 255);
+                        depth_tiles_[1][4 * (y * w + x) + 3] = 255;
                     }
                 }
             }
@@ -163,6 +175,8 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const SceneObject *objects,
         object_count_ = object_count;
         back_timings_[0] = back_timings_[1];
         draw_cam_ = cam;
+        std::swap(depth_pixels_[0], depth_pixels_[1]);
+        std::swap(depth_tiles_[0], depth_tiles_[1]);
         should_notify = object_count > 0;
     }
     if (should_notify) {

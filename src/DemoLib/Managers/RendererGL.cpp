@@ -208,15 +208,16 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
 #if 1
     {
-        std::lock_guard<std::mutex> _(depth_mtx_);
-
         glUseProgram(0);
 
         glRasterPos2f(-1, -1);
 
         glDisable(GL_DEPTH_TEST);
         glDepthMask(GL_FALSE);
-        glDrawPixels(256, 128, GL_RGBA, GL_UNSIGNED_BYTE, &depth_pixels_[0]);
+        glDrawPixels(256, 128, GL_RGBA, GL_UNSIGNED_BYTE, &depth_pixels_[0][0]);
+
+        glRasterPos2f(-1 + 2 * float(256) / ctx_.w(), -1);
+        glDrawPixels(256, 128, GL_RGBA, GL_UNSIGNED_BYTE, &depth_tiles_[0][0]);
     }
 #endif
 

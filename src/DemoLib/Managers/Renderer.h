@@ -47,8 +47,7 @@ private:
     TimingInfo timings_, back_timings_[2];
 
     //temp
-    std::vector<uint8_t> depth_pixels_;
-    std::mutex depth_mtx_;
+    std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];
 
     void SwapDrawLists(const Ren::Camera &cam, const SceneObject *objects, size_t object_count);
 
