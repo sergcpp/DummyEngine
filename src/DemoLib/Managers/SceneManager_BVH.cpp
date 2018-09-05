@@ -93,7 +93,6 @@ void SceneManager::RebuildBVH() {
                              { { bbox_min[0], bbox_min[1], bbox_min[2] }, { bbox_max[0], bbox_max[1], bbox_max[2] } }
             });
 
-            // push_front
             prim_lists.emplace_front(std::move(split_data.left_indices), split_data.left_bounds[0], split_data.left_bounds[1]);
             prim_lists.emplace_front(std::move(split_data.right_indices), split_data.right_bounds[0], split_data.right_bounds[1]);
 

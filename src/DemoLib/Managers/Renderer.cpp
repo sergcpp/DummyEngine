@@ -78,7 +78,7 @@ void Renderer::BackgroundProc() {
             occludees_.clear();
 
             Ren::Mat4f view_from_world = draw_cam_.view_matrix(),
-                proj_from_view = draw_cam_.projection_matrix();
+                       proj_from_view = draw_cam_.projection_matrix();
 
             swCullCtxClear(&cull_ctx_);
 

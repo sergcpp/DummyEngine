@@ -229,7 +229,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDrawPixels(256, 128, GL_RGBA, GL_UNSIGNED_BYTE, &depth_tiles_[0][0]);
     }
 
-#if 1
+#if 0
     glFinish();
 #endif
 }
