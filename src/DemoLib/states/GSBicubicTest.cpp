@@ -11,8 +11,8 @@
 #include <Sys/Log.h>
 #include <Sys/Time_.h>
 
+#include "../Gui/FontStorage.h"
 #include "../Viewer.h"
-#include "../ui/FontStorage.h"
 
 namespace GSBicubicTestInternal {
     void SampleNearest(const image_t &img, float x, float y, uint8_t *out_col) {

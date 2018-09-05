@@ -10,8 +10,8 @@
 #include <Sys/AssetFile.h>
 #include <Sys/Time_.h>
 
+#include "../Gui/FontStorage.h"
 #include "../Viewer.h"
-#include "../ui/FontStorage.h"
 
 namespace GSDefTestInternal {
     const float FORWARD_SPEED = 0.25f;
@@ -82,7 +82,7 @@ void GSDefTest::Enter() {
 
         Ren::Texture2DParams p;
 
-        return ctx_->LoadTexture2D(name, &in_file_data[0], in_file_size, p, nullptr);
+        return ctx_->LoadTexture2D(name, &in_file_data[0], (int)in_file_size, p, nullptr);
     };
 
     auto on_load_material = [&](const char *name) {

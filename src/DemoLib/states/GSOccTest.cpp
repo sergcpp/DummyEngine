@@ -6,8 +6,8 @@
 #include <Ren/GL.h>
 #include <Sys/Time_.h>
 
+#include "../Gui/FontStorage.h"
 #include "../Viewer.h"
-#include "../ui/FontStorage.h"
 
 namespace GSOccTestInternal {
 const float FORWARD_SPEED = 2.0f;

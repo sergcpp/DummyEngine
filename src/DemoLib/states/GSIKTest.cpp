@@ -12,8 +12,8 @@
 #include <Sys/Log.h>
 #include <Sys/Time_.h>
 
+#include "../Gui/FontStorage.h"
 #include "../Viewer.h"
-#include "../ui/FontStorage.h"
 
 namespace GSIKTestInternal {
     const char *vs_shader = R"(

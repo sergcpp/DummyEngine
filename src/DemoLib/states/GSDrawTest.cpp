@@ -13,10 +13,10 @@
 #include <Sys/Log.h>
 #include <Sys/Time_.h>
 
+#include "../Gui/FontStorage.h"
 #include "../Viewer.h"
 #include "../Managers/Renderer.h"
 #include "../Managers/SceneManager.h"
-#include "../ui/FontStorage.h"
 
 namespace GSDrawTestInternal {
     const float FORWARD_SPEED = 0.25f;
