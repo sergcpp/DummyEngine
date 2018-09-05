@@ -40,6 +40,10 @@ class GSDrawTest : public GameState {
                view_dir_ = { 0, 0, -1 };
 
     float forward_speed_ = 0, side_speed_ = 0;
+
+    std::vector<std::string> cmdline_history_;
+    bool cmdline_enabled_ = false;
+    bool shift_down_ = false;
 public:
     explicit GSDrawTest(GameBase *game);
     ~GSDrawTest();

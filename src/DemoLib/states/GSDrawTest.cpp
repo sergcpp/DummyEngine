@@ -1,6 +1,7 @@
 #include "GSDrawTest.h"
 
 #include <fstream>
+#include <memory>
 
 #include <Eng/GameStateManager.h>
 #include <Gui/Renderer.h>
@@ -13,6 +14,7 @@
 #include <Sys/Time_.h>
 
 #include "../Viewer.h"
+#include "../Managers/Renderer.h"
 #include "../Managers/SceneManager.h"
 #include "../ui/FontStorage.h"
 
@@ -24,7 +26,7 @@ namespace GSDrawTestInternal {
     const Ren::Vec3f CAM_TARGET = { 0.0f, 0.0f, 0.0f };
     const Ren::Vec3f CAM_UP = { 0.0f, 1.0f, 0.0f };
 
-    
+    const int MAX_CMD_LINES = 8;
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
@@ -93,6 +95,28 @@ void GSDrawTest::Enter() {
     }
 
     scene_manager_->LoadScene(js_scene);
+
+    cmdline_history_.resize(MAX_CMD_LINES, "~");
+
+    auto state_manager = state_manager_.lock();
+
+    std::weak_ptr<GSDrawTest> weak_this = std::dynamic_pointer_cast<GSDrawTest>(state_manager->Peek());
+
+    game_->RegisterCommand("wireframe", [weak_this](const std::vector<std::string> &args) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            shrd_this->renderer_->toggle_wireframe();
+        }
+        return true;
+    });
+
+    game_->RegisterCommand("debug_cull", [weak_this](const std::vector<std::string> &args) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            shrd_this->renderer_->toggle_debug_cull();
+        }
+        return true;
+    });
 }
 
 void GSDrawTest::Exit() {
@@ -117,7 +141,7 @@ void GSDrawTest::Draw(float dt_s) {
         auto dur1 = std::chrono::duration_cast<std::chrono::microseconds>(last_timings_.second - last_timings_.first);
         auto dur2 = std::chrono::duration_cast<std::chrono::microseconds>(back_timings.second - back_timings.first);
 
-        LOGI("Frontend: %04lld\tBackend: %04lld", (long long)dur2.count(), (long long)dur1.count());
+        //LOGI("Frontend: %04lld\tBackend: %04lld", (long long)dur2.count(), (long long)dur1.count());
 
         last_timings_ = timings;
     }
@@ -125,6 +149,22 @@ void GSDrawTest::Draw(float dt_s) {
     {
         // ui draw
         ui_renderer_->BeginDraw();
+
+        if (cmdline_enabled_) {
+            int font_height = (int)(0.5f * font_->height(ui_root_.get()) * game_->height);
+#if defined(USE_GL_RENDER)
+            glEnable(GL_SCISSOR_TEST);
+            glScissor(0, game_->height - MAX_CMD_LINES * font_height, game_->width, MAX_CMD_LINES * font_height);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glDisable(GL_SCISSOR_TEST);
+#endif
+            float cur_y = 1.0f - font_->height(ui_root_.get());
+
+            for (const auto &cmd : cmdline_history_) {
+                font_->DrawText(ui_renderer_.get(), cmd.c_str(), { -1, cur_y }, ui_root_.get());
+                cur_y -= font_->height(ui_root_.get());
+            }
+        }
 
         //font_->DrawText(ui_renderer_.get(), "111", { -1, 1.0f - 1 * font_->height(ui_root_.get()) }, ui_root_.get());
         //font_->DrawText(ui_renderer_.get(), s2.c_str(), { -1, 1.0f - 2 * font_->height(ui_root_.get()) }, ui_root_.get());
@@ -181,9 +221,10 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
             side_speed_ = FORWARD_SPEED;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SPACE) {
 
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
+            shift_down_ = true;
         }
-    }
-                                           break;
+    } break;
     case InputManager::RAW_INPUT_KEY_UP: {
         if (evt.key == InputManager::RAW_INPUT_BUTTON_UP) {
             forward_speed_ = 0;
@@ -193,6 +234,36 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
             side_speed_ = 0;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT) {
             side_speed_ = 0;
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
+            shift_down_ = false;
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_BACKSPACE) {
+            if (!cmdline_history_.back().empty()) {
+                cmdline_history_.back().pop_back();
+            }
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RETURN) {
+            if (cmdline_enabled_) {
+                game_->ExecuteCommand(cmdline_history_.back(), {});
+                cmdline_history_.emplace_back();
+                if (cmdline_history_.size() > MAX_CMD_LINES) {
+                    cmdline_history_.erase(cmdline_history_.begin());
+                }
+            }
+        } else if (evt.raw_key == (int)'`') {
+            cmdline_enabled_ = !cmdline_enabled_;
+            if (cmdline_enabled_) {
+                if (!cmdline_history_.back().empty()) {
+                    cmdline_history_.emplace_back();
+                    if (cmdline_history_.size() > MAX_CMD_LINES) {
+                        cmdline_history_.erase(cmdline_history_.begin());
+                    }
+                }
+            }
+        } else if (cmdline_enabled_) {
+            char ch = (char)evt.raw_key;
+            if (shift_down_) {
+                if (ch == '-') ch = '_';
+            }
+            cmdline_history_.back() += ch;
         }
     }
     case InputManager::RAW_INPUT_RESIZE:

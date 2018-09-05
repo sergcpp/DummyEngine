@@ -355,7 +355,7 @@ void GSOccTest::Draw(float dt_s) {
         s2 += std::to_string(dt1_ms);
         s3 = "occludees time: ";
         s3 += std::to_string(dt2_ms);
-        s4 = "   num visible: ";
+        s4 = "   num invisible: ";
         s4 += std::to_string(num_visible);
         s4 += "/512";
 

@@ -30,6 +30,8 @@ namespace RendererConstants {
         glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
         glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
     }
+
+    const bool DEPTH_PREPASS = true;
 }
 
 void Renderer::InitShadersInternal() {
@@ -70,7 +72,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
-    glDepthFunc(GL_LESS);
 
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -83,46 +84,55 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     const Ren::Mesh *cur_mesh = nullptr;
     const Ren::Mat4f *cur_xform = nullptr;
 
-    {
+    if (DEPTH_PREPASS && !wireframe_mode_) {
+        glDepthFunc(GL_LESS);
+
         cur_program = fill_depth_prog_.get();
         glUseProgram(cur_program->prog_id());
 
         int stride = sizeof(float) * 13;
         glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
         glVertexAttribPointer(cur_program->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
-    }
 
-    // fill depth
-    for (size_t i = 0; i < drawable_count; i++) {
-        const auto &dr = drawables[i];
+        // fill depth
+        for (size_t i = 0; i < drawable_count; i++) {
+            const auto &dr = drawables[i];
 
-        const Ren::Mat4f *xform = dr.xform;
-        const Ren::Mesh *mesh = dr.mesh;
-        const Ren::TriStrip *strip = dr.strip;
+            const Ren::Mat4f *xform = dr.xform;
+            const Ren::Mesh *mesh = dr.mesh;
+            const Ren::TriStrip *strip = dr.strip;
 
-        if (mesh != cur_mesh) {
-            glBindBuffer(GL_ARRAY_BUFFER, mesh->attribs_buf_id());
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indices_buf_id());
+            if (mesh != cur_mesh) {
+                glBindBuffer(GL_ARRAY_BUFFER, mesh->attribs_buf_id());
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indices_buf_id());
 
-            int stride = sizeof(float) * 13;
-            glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
-            glVertexAttribPointer(cur_program->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+                int stride = sizeof(float) * 13;
+                glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
+                glVertexAttribPointer(cur_program->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
-            cur_mesh = mesh;
+                cur_mesh = mesh;
+            }
+
+            if (xform != cur_xform) {
+                const auto &proj_from_object = *xform;
+
+                glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
+
+                cur_xform = xform;
+            }
+
+            glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
         }
 
-        if (xform != cur_xform) {
-            const auto &proj_from_object = *xform;
-
-            glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
-
-            cur_xform = xform;
-        }
-
-        glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
+        glDepthFunc(GL_EQUAL);
     }
 
-    glDepthFunc(GL_EQUAL);
+    if (wireframe_mode_) {
+        glDepthFunc(GL_LEQUAL);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    } else {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
 
     // actual drawing
     for (size_t i = 0; i < drawable_count; i++) {
@@ -206,8 +216,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
     }
 
-#if 1
-    {
+    if (debug_cull_ && !depth_pixels_[0].empty()) {
         glUseProgram(0);
 
         glRasterPos2f(-1, -1);
@@ -219,7 +228,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glRasterPos2f(-1 + 2 * float(256) / ctx_.w(), -1);
         glDrawPixels(256, 128, GL_RGBA, GL_UNSIGNED_BYTE, &depth_tiles_[0][0]);
     }
-#endif
 
 #if 1
     glFinish();

@@ -53,12 +53,17 @@ void Renderer::BackgroundProc() {
 
             auto &dr_list = draw_lists_[1];
             dr_list.clear();
-            dr_list.reserve(object_count_);
+            dr_list.reserve(object_count_ * 16);
+
+            occludees_.clear();
 
             Ren::Mat4f view_from_world = draw_cam_.view_matrix(),
                        proj_from_view = draw_cam_.projection_matrix();
 
             swCullCtxClear(&cull_ctx_);
+
+            Ren::Mat4f view_from_identity = view_from_world * Ren::Mat4f{ 1.0f },
+                       proj_from_identity = proj_from_view * view_from_identity;
 
             for (size_t i = 0; i < object_count_; i++) {
                 const auto &obj = objects_[i];
@@ -66,17 +71,17 @@ void Renderer::BackgroundProc() {
                     const auto *dr = obj.dr.get();
                     const auto *tr = obj.tr.get();
 
-                    const float bbox[8][3] = { tr->bbox_min_ws[0], tr->bbox_min_ws[1], tr->bbox_min_ws[2],
-                                               tr->bbox_max_ws[0], tr->bbox_min_ws[1], tr->bbox_min_ws[2],
-                                               tr->bbox_min_ws[0], tr->bbox_min_ws[1], tr->bbox_max_ws[2],
-                                               tr->bbox_max_ws[0], tr->bbox_min_ws[1], tr->bbox_max_ws[2],
+                    const float bbox_points[8][3] = { tr->bbox_min_ws[0], tr->bbox_min_ws[1], tr->bbox_min_ws[2],
+                                                      tr->bbox_max_ws[0], tr->bbox_min_ws[1], tr->bbox_min_ws[2],
+                                                      tr->bbox_min_ws[0], tr->bbox_min_ws[1], tr->bbox_max_ws[2],
+                                                      tr->bbox_max_ws[0], tr->bbox_min_ws[1], tr->bbox_max_ws[2],
 
-                                               tr->bbox_min_ws[0], tr->bbox_max_ws[1], tr->bbox_min_ws[2],
-                                               tr->bbox_max_ws[0], tr->bbox_max_ws[1], tr->bbox_min_ws[2],
-                                               tr->bbox_min_ws[0], tr->bbox_max_ws[1], tr->bbox_max_ws[2],
-                                               tr->bbox_max_ws[0], tr->bbox_max_ws[1], tr->bbox_max_ws[2] };
+                                                      tr->bbox_min_ws[0], tr->bbox_max_ws[1], tr->bbox_min_ws[2],
+                                                      tr->bbox_max_ws[0], tr->bbox_max_ws[1], tr->bbox_min_ws[2],
+                                                      tr->bbox_min_ws[0], tr->bbox_max_ws[1], tr->bbox_max_ws[2],
+                                                      tr->bbox_max_ws[0], tr->bbox_max_ws[1], tr->bbox_max_ws[2] };
 
-                    if (!draw_cam_.IsInFrustum(bbox)) continue;
+                    if (!draw_cam_.IsInFrustum(bbox_points)) continue;
 
                     const Ren::Mat4f &world_from_object = tr->mat;
 
@@ -87,12 +92,16 @@ void Renderer::BackgroundProc() {
 
                     const auto *mesh = dr->mesh.get();
 
-                    if (obj.flags & IsOccluder) {
-                        SWcull_surf surf[16];
-                        int surf_count = 0;
+                    SWcull_surf surf[16];
+                    int surf_count = 0;
 
-                        const Ren::TriStrip *s = &mesh->strip(0);
-                        while (s->offset != -1) {
+                    size_t dr_start = dr_list.size();
+
+                    const Ren::TriStrip *s = &mesh->strip(0);
+                    while (s->offset != -1) {
+                        dr_list.push_back({ &tr_list.back(), s->mat.get(), mesh, s });
+
+                        if (obj.flags & IsOccluder) {
                             surf[surf_count].type = SW_OCCLUDER;
                             surf[surf_count].prim_type = SW_TRIANGLES;
                             surf[surf_count].index_type = SW_UNSIGNED_INT;
@@ -103,28 +112,73 @@ void Renderer::BackgroundProc() {
                             surf[surf_count].xform = Ren::ValuePtr(tr_list.back());
                             surf[surf_count].dont_skip = nullptr;
                             surf_count++;
-
-                            const Ren::Material *mat = s->mat.get();
-                            dr_list.push_back({ &tr_list.back(), mat, mesh, s });
-                            ++s;
                         }
 
+                        ++s;
+                    }
+
+                    if (obj.flags & IsOccluder) {
                         swCullCtxSubmitCullSurfs(&cull_ctx_, surf, surf_count);
-                    } else {
-                        const Ren::TriStrip *s = &mesh->strip(0);
-                        while (s->offset != -1) {
-                            const Ren::Material *mat = s->mat.get();
-                            dr_list.push_back({ &tr_list.back(), mat, mesh, s });
-                            ++s;
+
+                        for (int j = 0; j < surf_count; j++) {
+                            dr_list[dr_start + j].invisible = (surf[j].visible == 0);
                         }
+                    } else {
+                        const auto &cam_pos = draw_cam_.world_position();
+
+                        // do not question visibility of object we are inside
+                        if (cam_pos[0] < tr->bbox_min_ws[0] || cam_pos[1] < tr->bbox_min_ws[1] || cam_pos[2] < tr->bbox_min_ws[2] ||
+                            cam_pos[0] > tr->bbox_max_ws[0] || cam_pos[1] > tr->bbox_max_ws[1] || cam_pos[2] > tr->bbox_max_ws[2]) {
+                            occludees_.emplace_back();
+                            auto &occ = occludees_.back();
+                            memcpy(&occ.bbox_points[0][0], &bbox_points[0][0], sizeof(bbox_points));
+                            occ.dr_start = dr_start;
+                            occ.dr_count = dr_list.size() - dr_start;
+                        }
+                    }
+                }
+            }
+
+            {   // process occludees
+                static const uint8_t bbox_indices[] = { 0, 1, 2,    2, 1, 3,
+                                                        0, 4, 5,    0, 5, 1,
+                                                        0, 2, 4,    4, 2, 6,
+                                                        2, 3, 6,    6, 3, 7,
+                                                        3, 1, 5,    3, 5, 7,
+                                                        4, 6, 5,    5, 6, 7 };
+
+                for (const auto &occ : occludees_) {
+                    SWcull_surf surf[16];
+                    int surf_count = 0;
+
+                    for (size_t i = occ.dr_start; i < occ.dr_start + occ.dr_count; i++) {
+                        surf[surf_count].type = SW_OCCLUDEE;
+                        surf[surf_count].prim_type = SW_TRIANGLES;
+                        surf[surf_count].index_type = SW_UNSIGNED_BYTE;
+                        surf[surf_count].attribs = &occ.bbox_points[0][0];
+                        surf[surf_count].indices = &bbox_indices[0];
+                        surf[surf_count].stride = 3 * sizeof(float);
+                        surf[surf_count].count = 36;
+                        surf[surf_count].xform = Ren::ValuePtr(proj_from_identity);
+                        surf[surf_count].dont_skip = nullptr;
+                        surf_count++;
+                    }
+
+                    swCullCtxSubmitCullSurfs(&cull_ctx_, surf, surf_count);
+
+                    for (int j = 0; j < surf_count; j++) {
+                        dr_list[occ.dr_start + j].invisible = (surf[j].visible == 0);
                     }
                 }
             }
 
             std::sort(std::begin(dr_list), std::end(dr_list));
 
-#if 1
-            {
+            while (!dr_list.empty() && dr_list.back().invisible) {
+                dr_list.pop_back();
+            }
+
+            if (debug_cull_) {
                 const float NEAR_CLIP = 0.5f;
                 const float FAR_CLIP = 10000.0f;
 
@@ -155,7 +209,6 @@ void Renderer::BackgroundProc() {
                     }
                 }
             }
-#endif
 
             auto t2 = std::chrono::high_resolution_clock::now();
             back_timings_[1] = { t1, t2 };

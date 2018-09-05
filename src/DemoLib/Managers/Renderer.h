@@ -14,20 +14,32 @@ extern "C" {
 #include "SceneData.h"
 
 struct DrawableItem {
+    bool invisible = false;
     const Ren::Mat4f    *xform;
     const Ren::Material *mat;
     const Ren::Mesh     *mesh;
     const Ren::TriStrip *strip;
 
+    DrawableItem(const Ren::Mat4f *_xform, const Ren::Material *_mat,
+        const Ren::Mesh *_mesh, const Ren::TriStrip *_strip) : xform(_xform), mat(_mat), mesh(_mesh), strip(_strip) { }
+
     bool operator<(const DrawableItem& rhs) const {
-        return std::tie(mat, mesh, xform) < std::tie(rhs.mat, rhs.mesh, rhs.xform);
+        return std::tie(invisible, mat, mesh, xform) < std::tie(rhs.invisible, rhs.mat, rhs.mesh, rhs.xform);
     }
+};
+
+struct OccludeeItem {
+    float bbox_points[8][3];
+    size_t dr_start, dr_count;
 };
 
 class Renderer {
 public:
     Renderer(Ren::Context &ctx);
     ~Renderer();
+
+    void toggle_wireframe() { wireframe_mode_ = !wireframe_mode_; }
+    void toggle_debug_cull() { debug_cull_ = !debug_cull_; }
 
     TimingInfo timings() const { return timings_; }
     TimingInfo back_timings() const { return back_timings_[0]; }
@@ -39,10 +51,13 @@ private:
     SWcull_ctx cull_ctx_;
     Ren::ProgramRef fill_depth_prog_;
 
+    bool wireframe_mode_ = false, debug_cull_ = false;
+
     const SceneObject *objects_ = nullptr;
     size_t object_count_ = 0;
     std::vector<Ren::Mat4f> transforms_[2];
     std::vector<DrawableItem> draw_lists_[2];
+    std::vector<OccludeeItem> occludees_;
     Ren::Camera draw_cam_;
     TimingInfo timings_, back_timings_[2];
 

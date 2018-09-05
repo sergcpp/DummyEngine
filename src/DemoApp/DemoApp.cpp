@@ -78,6 +78,8 @@ int DemoApp::Init(int w, int h) {
 
 #if defined(USE_GL_RENDER)
     gl_ctx_ = SDL_GL_CreateContext(window_);
+
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
 #if !defined(__EMSCRIPTEN__)
     /*GLenum glew_err = glewInit();
     if (glew_err != GLEW_OK) {
@@ -206,6 +208,9 @@ bool DemoApp::ConvertToRawButton(int32_t key, InputManager::RawInputButton &butt
         break;
     case SDLK_SPACE:
         button = InputManager::RAW_INPUT_BUTTON_SPACE;
+        break;
+    case SDLK_RETURN:
+        button = InputManager::RAW_INPUT_BUTTON_RETURN;
         break;
     default:
         button = InputManager::RAW_INPUT_BUTTON_OTHER;
