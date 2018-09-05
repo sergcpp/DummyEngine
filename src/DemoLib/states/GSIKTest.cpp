@@ -26,8 +26,10 @@ namespace GSIKTestInternal {
 
         attribute vec3 aVertexPosition;
 
+        uniform mat4 uMVPMatrix;
+
         void main(void) {
-            gl_Position = vec4(aVertexPosition, 1.0);
+            gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
         }
     )";
 
@@ -47,9 +49,13 @@ namespace GSIKTestInternal {
 	        gl_FragColor = vec4(col, 1.0);
         }
     )";
+
+    auto to_radians = [](float deg) { return deg * std::acos(-1.0f) / 180.0f; };
 }
 
-GSIKTest::GSIKTest(GameBase *game) : game_(game) {
+GSIKTest::GSIKTest(GameBase *game) : game_(game), cam_(Ren::Vec3f{ 0.0f, -0.5f, 2.5f },
+                                                       Ren::Vec3f{ 0.0f, -0.5f, 0.0f },
+                                                       Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
     state_manager_  = game->GetComponent<GameStateManager>(STATE_MANAGER_KEY);
     ctx_            = game->GetComponent<Ren::Context>(REN_CONTEXT_KEY);
 
@@ -58,6 +64,8 @@ GSIKTest::GSIKTest(GameBase *game) : game_(game) {
 
     const auto fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     font_ = fonts->FindFont("main_font");
+
+    cam_.Perspective(60.0f, 1.0f, 0.1f, 1000.0f);
 }
 
 GSIKTest::~GSIKTest() {
@@ -71,15 +79,14 @@ void GSIKTest::Enter() {
     line_prog_ = ctx_->LoadProgramGLSL("line_prog", vs_shader, fs_shader, &status);
     assert(status == Ren::ProgCreatedFromData);
 
-    auto to_radians = [](float deg) { return deg * std::acos(-1.0f) / 180.0f; };
+    bones_.push_back(Bone{ Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, 0.1f, 0.0f, -to_radians(180), to_radians(180), Ren::Vec3f{}, Ren::Vec3f{} });
+    bones_.push_back(Bone{ Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, Ren::Vec3f{ 0.0f, 0.0f, 1.0f }, 0.1f, 0.0f, -to_radians(45), to_radians(45), Ren::Vec3f{}, Ren::Vec3f{} });
+    bones_.push_back(Bone{ Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, Ren::Vec3f{ 0.0f, 0.0f, 1.0f }, 0.1f, 0.0f, -to_radians(45), to_radians(45), Ren::Vec3f{}, Ren::Vec3f{} });
+    bones_.push_back(Bone{ Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, Ren::Vec3f{ 0.0f, 0.0f, 1.0f }, 0.1f, 0.0f, -to_radians(45), to_radians(45), Ren::Vec3f{}, Ren::Vec3f{} });
+    bones_.push_back(Bone{ Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, Ren::Vec3f{ 0.0f, 0.0f, 1.0f }, 0.1f, 0.0f, -to_radians(45), to_radians(45), Ren::Vec3f{}, Ren::Vec3f{} });
 
-    bones_.push_back(Bone{ Ren::Vec3f{ 0.0f }, 0.1f, 0.0f, -to_radians(45), to_radians(45) });
-    bones_.push_back(Bone{ Ren::Vec3f{ 0.0f }, 0.1f, 0.0f, -to_radians(45), to_radians(45) });
-    bones_.push_back(Bone{ Ren::Vec3f{ 0.0f }, 0.1f, 0.0f, -to_radians(45), to_radians(45) });
-    bones_.push_back(Bone{ Ren::Vec3f{ 0.0f }, 0.1f, 0.0f, -to_radians(45), to_radians(45) });
-    bones_.push_back(Bone{ Ren::Vec3f{ 0.0f }, 0.1f, 0.0f, -to_radians(45), to_radians(45) });
-    bones_.push_back(Bone{ Ren::Vec3f{ 0.0f }, 0.1f, 0.0f, -to_radians(45), to_radians(45) });
-    bones_.push_back(Bone{ Ren::Vec3f{ 0.0f }, 0.0f, 0.0f, -to_radians(45), to_radians(45) });
+    //bones_[0].angle = 45.0f;
+    //bones_[1].angle = 45.0f;
 }
 
 void GSIKTest::Exit() {
@@ -94,18 +101,31 @@ void GSIKTest::Draw(float dt_s) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDisable(GL_DEPTH_TEST);
 
+        Ren::Mat4f view_from_world = cam_.view_matrix(),
+                   proj_from_view = cam_.projection_matrix();
+
+        Ren::Mat4f world_from_object = Ren::Mat4f{ 1.0f };
+
+        world_from_object = Ren::Rotate(world_from_object, to_radians(view_angle_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+
+        Ren::Mat4f view_from_object = view_from_world * world_from_object,
+                   proj_from_object = proj_from_view * view_from_object;
+
         const auto *p = line_prog_.get();
 
         const GLuint pos_attrib = p->attribute("aVertexPosition").loc;
 
+        const GLuint mvp_unif = p->uniform("uMVPMatrix").loc;
         const GLuint col_unif = p->uniform("col").loc;
 
         glUseProgram(p->prog_id());
 
+        glUniformMatrix4fv(mvp_unif, 1, GL_FALSE, ValuePtr(proj_from_object));
+
         glUniform3f(col_unif, 0.0f, 1.0f, 1.0f);
 
         glEnableVertexAttribArray(pos_attrib);
-        glVertexAttribPointer(pos_attrib, 3, GL_FLOAT, GL_FALSE, sizeof(Bone), &bones_[0].pos[0]);
+        glVertexAttribPointer(pos_attrib, 3, GL_FLOAT, GL_FALSE, sizeof(Bone), &bones_[0].cur_pos[0]);
 
         glDrawArrays(GL_LINE_STRIP, 0, (GLsizei)bones_.size());
 
@@ -114,11 +134,30 @@ void GSIKTest::Draw(float dt_s) {
         const float cross[] = { cur_goal_[0] - 0.025f, cur_goal_[1], cur_goal_[2],
                                 cur_goal_[0] + 0.025f, cur_goal_[1], cur_goal_[2],
                                 cur_goal_[0], cur_goal_[1] - 0.025f, cur_goal_[2],
-                                cur_goal_[0], cur_goal_[1] + 0.025f, cur_goal_[2] };
+                                cur_goal_[0], cur_goal_[1] + 0.025f, cur_goal_[2],
+                                cur_goal_[0], cur_goal_[1], cur_goal_[2] - 0.025f,
+                                cur_goal_[0], cur_goal_[1], cur_goal_[2] + 0.025f };
 
         glVertexAttribPointer(pos_attrib, 3, GL_FLOAT, GL_FALSE, 0, &cross[0]);
+        glDrawArrays(GL_LINES, 0, 6);
 
-        glDrawArrays(GL_LINES, 0, 4);
+        const float lines[] = { -0.5f, -1.0f, -0.5f,    0.5f, -1.0f, -0.5f,
+                                0.5f, -1.0f, -0.5f,     0.5f, -1.0f, 0.5f,
+                                0.5f, -1.0f, 0.5f,      -0.5f, -1.0f, 0.5f,
+                                -0.5f, -1.0f, 0.5f,     -0.5f, -1.0f, -0.5f,
+        
+                                -0.5f, -1.0f, -0.5f,    -0.5f, 0.0f, -0.5f,
+                                0.5f, -1.0f, -0.5f,     0.5f, 0.0f, -0.5f,
+                                0.5f, -1.0f, 0.5f,      0.5f, 0.0f, 0.5f,
+                                -0.5f, -1.0f, 0.5f,     -0.5f, 0.0f, 0.5f,
+        
+                                -0.5f, 0.0f, -0.5f,    0.5f, 0.0f, -0.5f,
+                                0.5f, 0.0f, -0.5f,     0.5f, 0.0f, 0.5f,
+                                0.5f, 0.0f, 0.5f,      -0.5f, 0.0f, 0.5f,
+                                -0.5f, 0.0f, 0.5f,     -0.5f, 0.0f, -0.5f };
+
+        glVertexAttribPointer(pos_attrib, 3, GL_FLOAT, GL_FALSE, 0, &lines[0]);
+        glDrawArrays(GL_LINES, 0, (GLsizei)24);
     }
 
     {
@@ -138,19 +177,33 @@ void GSIKTest::Draw(float dt_s) {
 }
 
 void GSIKTest::UpdateBones() {
-    Ren::Vec3f cur_pos = { 0.0f, -0.65f, 0.0f };
-    Ren::Vec4f cur_dir = { 0.0f, 1.0f, 0.0f, 0.0f };
+    if (bones_.empty()) return;
+
+    Ren::Vec3f cur_pos = { 0.0f, -1.0f, 0.0f };
+
+    Ren::Mat4f cur_rot;
+
     for (auto &b : bones_) {
-        b.pos = cur_pos;
+        b.cur_pos = cur_pos;
 
-        Ren::Vec4f dir = { 0.0f, 1.0f, 0.0f, 0.0f };
+        Ren::Vec4f dir = Ren::Vec4f{ 0.0f };
+        dir[0] = b.rot_axis[0];
+        dir[1] = b.rot_axis[1];
+        dir[2] = b.rot_axis[2];
 
-        Ren::Mat4f rot;
-        rot = Ren::Rotate(rot, b.angle, Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
+        dir = dir * cur_rot;
 
-        cur_dir = cur_dir * rot;
+        b.cur_rot_axis = Ren::Vec3f{ dir };
 
-        cur_pos += Ren::Vec3f{ cur_dir[0], cur_dir[1], cur_dir[2] } *b.length;
+        cur_rot = Ren::Rotate(cur_rot, b.angle, b.cur_rot_axis);
+
+        dir[0] = b.dir[0];
+        dir[1] = b.dir[1];
+        dir[2] = b.dir[2];
+
+        dir = dir * cur_rot;
+
+        cur_pos += Ren::Vec3f{ dir[0], dir[1], dir[2] } * b.length;
     }
 }
 
@@ -178,82 +231,86 @@ void GSIKTest::Update(int dt_ms) {
         return std::min(std::max(x, min), max);
     };
 
+    //bones_[0].angle += 1.0f;
+
     UpdateBones();
 
-    /*goal_change_timer_ += dt_ms;
-    if (goal_change_timer_ > 1000) {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
+    //return;
 
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
+
+#if 1
+    goal_change_timer_ += dt_ms;
+    if (goal_change_timer_ > 1000) {
         prev_goal_ = next_goal_;
-        next_goal_[0] = dis(gen);
-        next_goal_[1] = dis(gen);
-        next_goal_[2] = dis(gen);
+        next_goal_[0] = 0.5f * dis(gen);
+        next_goal_[1] = -1.0f + 0.5f * dis(gen) + 0.5f;
+        next_goal_[2] = 0.5f * dis(gen);
 
         goal_change_timer_ -= 1000;
     }
 
-    cur_goal_ = prev_goal_ + (next_goal_ - prev_goal_) * 0.001f * goal_change_timer_;*/
+    cur_goal_ = prev_goal_ + (next_goal_ - prev_goal_) * 0.001f * goal_change_timer_;
+#else
+    cur_goal_ = Ren::Vec3f{ 0.0f, 0.0f, 0.25f };
+#endif
 
-
-    Ren::Vec3f end_pos = bones_.back().pos;
-    Ren::Vec3f end_dir = Ren::Normalize(bones_.back().pos - bones_[bones_.size() - 2].pos);
+    Ren::Vec3f end_pos = bones_.back().cur_pos;
+    Ren::Vec3f end_dir = Ren::Normalize(bones_.back().cur_pos - bones_[bones_.size() - 2].cur_pos);
     //Ren::Vec3f diff = cur_goal_ - end_pos;
-    Ren::Vec3f x = bones_[bones_.size() - 2].pos + Ren::Dot(cur_goal_ - bones_[bones_.size() - 2].pos, end_dir) * end_dir;
-    if (Ren::Dot(x - bones_[bones_.size() - 2].pos, end_dir) < 0) {
-        x = bones_[bones_.size() - 2].pos;
+    Ren::Vec3f x = bones_[bones_.size() - 2].cur_pos + Ren::Dot(cur_goal_ - bones_[bones_.size() - 2].cur_pos, end_dir) * end_dir;
+    if (Ren::Dot(x - bones_[bones_.size() - 2].cur_pos, end_dir) < 0) {
+        x = bones_[bones_.size() - 2].cur_pos;
     }
     Ren::Vec3f diff = cur_goal_ - x;
     float error = Ren::Length(diff);
 
     int iterations = 0;
 
-    while (error > 0.001f && iterations < 1000) {
-        Ren::Vec3f j_0 = -Ren::Cross(Ren::Vec3f{ 0.0f, 0.0f, 1.0f }, x - bones_[0].pos);
-        Ren::Vec3f j_1 = -Ren::Cross(Ren::Vec3f{ 0.0f, 0.0f, 1.0f }, x - bones_[1].pos);
-        Ren::Vec3f j_2 = -Ren::Cross(Ren::Vec3f{ 0.0f, 0.0f, 1.0f }, x - bones_[2].pos);
-        Ren::Vec3f j_3 = -Ren::Cross(Ren::Vec3f{ 0.0f, 0.0f, 1.0f }, x - bones_[3].pos);
-        Ren::Vec3f j_4 = -Ren::Cross(Ren::Vec3f{ 0.0f, 0.0f, 1.0f }, x - bones_[4].pos);
-        Ren::Vec3f j_5 = -Ren::Cross(Ren::Vec3f{ 0.0f, 0.0f, 1.0f }, x - bones_[5].pos);
+    while (error > 0.01f && iterations < 100) {
+        const float h = 0.045f;
 
-        /*Ren::Mat3f j_mat;
-        j_mat[0] = j_0;
-        j_mat[1] = j_1;
-        j_mat[2] = j_2;
+        bool locked = true;
 
-        //j_mat = Ren::Transpose(j_mat);
+        for (size_t i = 0; i < bones_.size() - 1; i++) {
+            Ren::Vec3f j_row = Ren::Cross(bones_[i].cur_rot_axis, bones_[i].cur_pos - x);
 
-        Ren::Vec3f dO = j_mat * diff;*/
+            float delta = Ren::Dot(j_row, diff) * h;
 
-        const float h = 0.025f;
+            if (std::abs(delta) > 0.00001f) {
+                locked = false;
+            }
 
-        bones_[0].angle = clamp(bones_[0].angle + Ren::Dot(j_0, diff) * h, bones_[0].min_angle, bones_[0].max_angle);
-        bones_[1].angle = clamp(bones_[1].angle + Ren::Dot(j_1, diff) * h, bones_[1].min_angle, bones_[1].max_angle);
-        bones_[2].angle = clamp(bones_[2].angle + Ren::Dot(j_2, diff) * h, bones_[2].min_angle, bones_[2].max_angle);
-        bones_[3].angle = clamp(bones_[3].angle + Ren::Dot(j_2, diff) * h, bones_[3].min_angle, bones_[3].max_angle);
-        bones_[4].angle = clamp(bones_[4].angle + Ren::Dot(j_2, diff) * h, bones_[4].min_angle, bones_[4].max_angle);
-        bones_[5].angle = clamp(bones_[5].angle + Ren::Dot(j_2, diff) * h, bones_[5].min_angle, bones_[5].max_angle);
+            bones_[i].angle = bones_[i].angle + delta;
+        }
+
+        if (locked) {
+            for (size_t i = 0; i < bones_.size() - 1; i++) {
+                bones_[i].angle += 0.001f * h * dis(gen);
+            }
+        }
 
         UpdateBones();
 
-        end_pos = bones_.back().pos;
-        end_dir = Ren::Normalize(bones_.back().pos - bones_[bones_.size() - 2].pos);
+        end_pos = bones_.back().cur_pos;
+        end_dir = Ren::Normalize(bones_.back().cur_pos - bones_[bones_.size() - 2].cur_pos);
         //diff = cur_goal_ - end_pos;
-        x = bones_[bones_.size() - 2].pos + Ren::Dot(cur_goal_ - bones_[bones_.size() - 2].pos, end_dir) * end_dir;
-        if (Ren::Dot(x - bones_[bones_.size() - 2].pos, end_dir) < 0) {
-            x = bones_[bones_.size() - 2].pos;
+        x = bones_[bones_.size() - 2].cur_pos + Ren::Dot(cur_goal_ - bones_[bones_.size() - 2].cur_pos, end_dir) * end_dir;
+        if (Ren::Dot(x - bones_[bones_.size() - 2].cur_pos, end_dir) < 0) {
+            x = bones_[bones_.size() - 2].cur_pos;
         }
         diff = cur_goal_ - x;
         error = Ren::Length(diff);
         iterations++;
     }
 
-    if (iterations) {
+    //if (iterations) {
         //LOGI("Iterations: %i\tError: %f", iterations_, Ren::Length(diff));
         iterations_ = iterations;
         error_ = error;
-    }
+    //}
 }
 
 void GSIKTest::HandleInput(InputManager::Event evt) {
@@ -270,6 +327,8 @@ void GSIKTest::HandleInput(InputManager::Event evt) {
     case InputManager::RAW_INPUT_P1_MOVE:
         if (view_grabbed_) {
             cur_goal_ = { 2 * evt.point.x / ctx_->w() - 1.0f, 2 * (ctx_->h() - evt.point.y) / ctx_->h() - 1.0f, 0.0f };
+
+            view_angle_ += 0.5f * evt.move.dx;
         }
         break;
     case InputManager::RAW_INPUT_KEY_DOWN:

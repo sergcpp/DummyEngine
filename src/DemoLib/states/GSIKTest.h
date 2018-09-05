@@ -18,9 +18,10 @@ class Renderer;
 
 namespace GSIKTestInternal {
     struct Bone {
-        Ren::Vec3f pos;
+        Ren::Vec3f dir, rot_axis;
         float length, angle;
         float min_angle, max_angle;
+        Ren::Vec3f cur_pos, cur_rot_axis;
     };
 }
 
@@ -36,8 +37,12 @@ class GSIKTest : public GameState {
     Ren::ProgramRef line_prog_;
     std::vector<GSIKTestInternal::Bone> bones_;
 
+    Ren::Camera cam_;
+
     bool view_grabbed_ = false;
     Ren::Vec3f cur_goal_, prev_goal_, next_goal_;
+
+    float view_angle_ = 0.0f;
 
     int goal_change_timer_ = 0;
     int iterations_ = 0;
