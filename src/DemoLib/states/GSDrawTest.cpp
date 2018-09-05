@@ -163,6 +163,8 @@ void GSDrawTest::Draw(float dt_s) {
 #if defined(USE_GL_RENDER)
             glEnable(GL_SCISSOR_TEST);
             glScissor(0, game_->height - MAX_CMD_LINES * font_height, game_->width, MAX_CMD_LINES * font_height);
+
+            glClearColor(0, 0.5f, 0.5f, 1);
             glClear(GL_COLOR_BUFFER_BIT);
             glDisable(GL_SCISSOR_TEST);
 #endif
