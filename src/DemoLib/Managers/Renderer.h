@@ -40,19 +40,24 @@ public:
 
     void toggle_wireframe() { wireframe_mode_ = !wireframe_mode_; }
     void toggle_debug_cull() { debug_cull_ = !debug_cull_; }
+    void toggle_culling() { culling_enabled_ = !culling_enabled_; }
 
     TimingInfo timings() const { return timings_; }
     TimingInfo back_timings() const { return back_timings_[0]; }
 
-    void DrawObjects(const Ren::Camera &cam, const SceneObject *objects, size_t object_count);
-    void WaitForCompletion();
+    void DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
+                     const SceneObject *objects, size_t object_count);
+    void WaitForBackgroundThreadIteration();
 private:
     Ren::Context &ctx_;
     SWcull_ctx cull_ctx_;
     Ren::ProgramRef fill_depth_prog_;
 
     bool wireframe_mode_ = false, debug_cull_ = false;
+    bool culling_enabled_ = true;
 
+    const bvh_node_t *nodes_ = nullptr;
+    size_t root_node_ = 0;
     const SceneObject *objects_ = nullptr;
     size_t object_count_ = 0;
     std::vector<Ren::Mat4f> transforms_[2];
@@ -64,7 +69,8 @@ private:
     //temp
     std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];
 
-    void SwapDrawLists(const Ren::Camera &cam, const SceneObject *objects, size_t object_count);
+    void SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_node,
+                       const SceneObject *objects, size_t object_count);
 
     void InitShadersInternal();
     void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count);

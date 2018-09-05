@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <chrono>
 
 #include <Ren/Mesh.h>
@@ -44,3 +45,11 @@ struct SceneObject {
 
 using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 using TimingInfo = std::pair<TimePoint, TimePoint>;
+
+struct bvh_node_t {
+    uint32_t prim_index, prim_count,
+             left_child, right_child, parent,
+             space_axis; // axis with maximal child's centroids distance
+    float bbox[2][3];
+};
+static_assert(sizeof(bvh_node_t) == 48, "!");

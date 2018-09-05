@@ -117,6 +117,14 @@ void GSDrawTest::Enter() {
         }
         return true;
     });
+
+    game_->RegisterCommand("culling", [weak_this](const std::vector<std::string> &args) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            shrd_this->renderer_->toggle_culling();
+        }
+        return true;
+    });
 }
 
 void GSDrawTest::Exit() {
@@ -141,7 +149,7 @@ void GSDrawTest::Draw(float dt_s) {
         auto dur1 = std::chrono::duration_cast<std::chrono::microseconds>(last_timings_.second - last_timings_.first);
         auto dur2 = std::chrono::duration_cast<std::chrono::microseconds>(back_timings.second - back_timings.first);
 
-        //LOGI("Frontend: %04lld\tBackend: %04lld", (long long)dur2.count(), (long long)dur1.count());
+        LOGI("Frontend: %04lld\tBackend: %04lld", (long long)dur2.count(), (long long)dur1.count());
 
         last_timings_ = timings;
     }

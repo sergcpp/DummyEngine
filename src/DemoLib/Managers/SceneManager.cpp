@@ -27,7 +27,7 @@ SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer) : ctx_(ctx),
 }
 
 SceneManager::~SceneManager() {
-    renderer_.WaitForCompletion();
+    renderer_.WaitForBackgroundThreadIteration();
 }
 
 TimingInfo SceneManager::timings() const { return renderer_.timings(); };
@@ -96,6 +96,10 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
         objects_.push_back(obj);
     }
+
+    RebuildBVH();
+
+    volatile int ii = 0;
 }
 
 void SceneManager::ClearScene() {
@@ -110,7 +114,7 @@ void SceneManager::Draw() {
 
     cam_.Perspective(60.0f, float(ctx_.w()) / ctx_.h(), NEAR_CLIP, FAR_CLIP);
 
-    renderer_.DrawObjects(cam_, &objects_[0], objects_.size());
+    renderer_.DrawObjects(cam_, &nodes_[0], 0, &objects_[0], objects_.size());
 }
 
 Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {

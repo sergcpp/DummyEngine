@@ -5,7 +5,6 @@
 #include <Ren/MMat.h>
 
 struct prim_t {
-    uint32_t i0, i1, i2;
     Ren::Vec3f bbox_min, bbox_max;
 };
 

@@ -26,6 +26,8 @@ private:
     Ren::ProgramRef OnLoadProgram(const char *name, const char *arg1, const char *arg2);
     Ren::Texture2DRef OnLoadTexture(const char *name);
 
+    void RebuildBVH();
+
     Ren::Context &ctx_;
     Renderer &renderer_;
 
@@ -35,4 +37,6 @@ private:
     Ren::Storage<Drawable> drawables_;
 
     std::vector<SceneObject> objects_;
+
+    std::vector<bvh_node_t> nodes_;
 };

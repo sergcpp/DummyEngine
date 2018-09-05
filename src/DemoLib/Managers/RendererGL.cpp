@@ -216,7 +216,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
     }
 
-    if (debug_cull_ && !depth_pixels_[0].empty()) {
+    if (debug_cull_ && culling_enabled_ && !depth_pixels_[0].empty()) {
         glUseProgram(0);
 
         glRasterPos2f(-1, -1);

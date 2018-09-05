@@ -13,7 +13,8 @@ set(MANAGER_SOURCES  Managers/Renderer.h
                      Managers/Renderer.cpp
 					 Managers/SceneData.h
                      Managers/SceneManager.h
-                     Managers/SceneManager.cpp)
+                     Managers/SceneManager.cpp
+					 Managers/SceneManager_BVH.cpp)
 
 set(STATES_SOURCES  States/GSCreate.h
                     States/GSCreate.cpp
