@@ -43,23 +43,19 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
     ClearScene();
 
-    std::map<std::string, Ren::StorageRef<Drawable>> all_drawables;
+    std::map<std::string, Ren::MeshRef> all_meshes;
 
     const JsObject &js_meshes = (const JsObject &)js_scene.at("meshes");
     for (const auto &js_elem : js_meshes.elements) {
         const std::string &name = js_elem.first;
         const JsString &path = (const JsString &)js_elem.second;
 
-        auto dr_ref = drawables_.Add();
-
         std::string mesh_path = std::string(MODELS_PATH) + path.val;
 
         std::ifstream in_file(mesh_path.c_str(), std::ios::binary);
 
         using namespace std::placeholders;
-        dr_ref->mesh = ctx_.LoadMesh(name.c_str(), in_file, std::bind(&SceneManager::OnLoadMaterial, this, _1));
-
-        all_drawables[name] = dr_ref;
+        all_meshes[name] = ctx_.LoadMesh(name.c_str(), in_file, std::bind(&SceneManager::OnLoadMaterial, this, _1));
     }
 
     const JsArray &js_objects = (const JsArray &)js_scene.at("objects");
@@ -67,12 +63,12 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         const JsObject &js_obj = (const JsObject &)js_elem;
         const JsString &js_mesh_name = (const JsString &)js_obj.at("mesh");
 
-        const auto it = all_drawables.find(js_mesh_name.val);
-        if (it == all_drawables.end()) throw std::runtime_error("Cannot find mesh!");
+        const auto it = all_meshes.find(js_mesh_name.val);
+        if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
 
         SceneObject obj;
-        obj.flags = HasDrawable | HasTransform;
-        obj.dr = it->second;
+        obj.flags = HasMesh | HasTransform;
+        obj.mesh = it->second;
         obj.tr = transforms_.Add();
         
         if (js_obj.Has("pos")) {
@@ -85,28 +81,28 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             obj.tr->mat = Ren::Translate(obj.tr->mat, Ren::Vec3f{ (float)x, (float)y, (float)z });
         }
 
-        obj.tr->UpdateBBox(it->second->mesh->bbox_min(), it->second->mesh->bbox_max());
+        obj.tr->UpdateBBox(it->second->bbox_min(), it->second->bbox_max());
 
-        if (js_obj.Has("occluder")) {
-            const JsLiteral &js_occ = (const JsLiteral &)js_obj.at("occluder");
-            if (js_occ.val == JS_TRUE) {
-                obj.flags |= IsOccluder;
-            }
+        if (js_obj.Has("occluder_mesh")) {
+            const JsString &js_occ_mesh = (const JsString &)js_obj.at("occluder_mesh");
+
+            const auto it = all_meshes.find(js_occ_mesh.val);
+            if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
+
+            obj.flags |= HasOccluder;
+            obj.occ_mesh = it->second;
         }
 
         objects_.push_back(obj);
     }
 
     RebuildBVH();
-
-    volatile int ii = 0;
 }
 
 void SceneManager::ClearScene() {
     objects_.clear();
 
     assert(transforms_.Size() == 0);
-    assert(drawables_.Size() == 0);
 }
 
 void SceneManager::Draw() {

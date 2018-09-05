@@ -34,7 +34,6 @@ private:
     Ren::Camera cam_;
 
     Ren::Storage<Transform> transforms_;
-    Ren::Storage<Drawable> drawables_;
 
     std::vector<SceneObject> objects_;
 

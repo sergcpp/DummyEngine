@@ -31,16 +31,12 @@ struct Transform : public Ren::RefCounter {
     }
 };
 
-struct Drawable : public Ren::RefCounter {
-    Ren::MeshRef mesh;
-};
-
-enum eObjectFlags { HasTransform = 1, HasDrawable = 2, IsOccluder = 4 };
+enum eObjectFlags { HasTransform = 1, HasMesh = 2, HasOccluder = 4 };
 
 struct SceneObject {
     uint32_t flags;
     Ren::StorageRef<Transform> tr;
-    Ren::StorageRef<Drawable> dr;
+    Ren::MeshRef mesh, occ_mesh;
 };
 
 using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;

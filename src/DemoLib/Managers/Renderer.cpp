@@ -113,8 +113,8 @@ void Renderer::BackgroundProc() {
                     for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
                         const auto &obj = objects_[i];
 
-                        if (obj.flags & (HasDrawable | HasTransform | IsOccluder)) {
-                            const auto *dr = obj.dr.get();
+                        uint32_t occluder_flags = HasMesh | HasTransform | HasOccluder;
+                        if ((obj.flags & occluder_flags) == occluder_flags) {
                             const auto *tr = obj.tr.get();
 
                             const float bbox_points[8][3] = { tr->bbox_min_ws[0], tr->bbox_min_ws[1], tr->bbox_min_ws[2],
@@ -134,7 +134,7 @@ void Renderer::BackgroundProc() {
                             Ren::Mat4f view_from_object = view_from_world * world_from_object,
                                        proj_from_object = proj_from_view * view_from_object;
 
-                            const auto *mesh = dr->mesh.get();
+                            const auto *mesh = obj.mesh.get();
 
                             SWcull_surf surf[16];
                             int surf_count = 0;
@@ -211,8 +211,8 @@ void Renderer::BackgroundProc() {
                     for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
                         const auto &obj = objects_[i];
 
-                        if (obj.flags & (HasDrawable | HasTransform)) {
-                            const auto *dr = obj.dr.get();
+                        uint32_t drawable_flags = HasMesh | HasTransform;
+                        if ((obj.flags & drawable_flags) == drawable_flags) {
                             const auto *tr = obj.tr.get();
 
                             const float bbox_points[8][3] = { tr->bbox_min_ws[0], tr->bbox_min_ws[1], tr->bbox_min_ws[2],
@@ -258,7 +258,7 @@ void Renderer::BackgroundProc() {
 
                             tr_list.push_back(proj_from_object);
 
-                            const auto *mesh = dr->mesh.get();
+                            const auto *mesh = obj.mesh.get();
 
                             size_t dr_start = dr_list.size();
 

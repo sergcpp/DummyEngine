@@ -13,52 +13,50 @@
     "meshes" : {
         "walls" : "walls.mesh",
         "roof" : "roof.mesh",
+		"roof_plate" : "roof_plate.mesh",
 		"monk" : "monk.mesh",
     },
     "objects" : [
         {
             "mesh" : "walls",
-            "occluder" : true
+			"occluder_mesh" : "walls",
         },
 		{
 			"pos" : [ 0.0423079, 6.88465, -1.50584 ],
             "mesh" : "roof",
-            "occluder" : false
+        },
+		{
+			"pos" : [ 0.102901, 7.39339, -1.50723 ],
+            "mesh" : "roof_plate",
+			"occluder_mesh" : "roof_plate",
         },
 		{
 			"pos" : [ -9.0, 0.0, 0.0 ],
             "mesh" : "monk",
-            "occluder" : false
         },
 		{
 			"pos" : [ -6.0, 0.0, 0.0 ],
             "mesh" : "monk",
-            "occluder" : false
         },
 		{
 			"pos" : [ -3.0, 0.0, 0.0 ],
             "mesh" : "monk",
-            "occluder" : false
         },
 		{
 			"pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "monk",
-            "occluder" : false
         },
 		{
 			"pos" : [ 3.0, 0.0, 0.0 ],
             "mesh" : "monk",
-            "occluder" : false
         },
 		{
 			"pos" : [ 6.0, 0.0, 0.0 ],
             "mesh" : "monk",
-            "occluder" : false
         },
 		{
 			"pos" : [ 9.0, 0.0, 0.0 ],
             "mesh" : "monk",
-            "occluder" : false
         },
     ]
 }
