@@ -17,9 +17,23 @@ namespace RendererInternal {
                                             4, 6, 5,    5, 6, 7 };
 
     const int MAX_STACK_SIZE = 64;
+
+    const int SHADOWMAP_RES = 512;
 }
 
-Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx), draw_cam_({}, {}, {}) {
+#define BBOX_POINTS(min, max) \
+    (min)[0], (min)[1], (min)[2],     \
+    (max)[0], (min)[1], (min)[2],     \
+    (min)[0], (min)[1], (max)[2],     \
+    (max)[0], (min)[1], (max)[2],     \
+    (min)[0], (max)[1], (min)[2],     \
+    (max)[0], (max)[1], (min)[2],     \
+    (min)[0], (max)[1], (max)[2],     \
+    (max)[0], (max)[1], (max)[2]
+
+Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx), draw_cam_({}, {}, {}), shadow_cam_{ { {}, {}, {} }, { {}, {}, {} } } {
+    using namespace RendererInternal;
+
     {
         const float NEAR_CLIP = 0.5f;
         const float FAR_CLIP = 10000.0f;
@@ -27,6 +41,14 @@ Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx), draw_cam_({}, {}, {}) {
         swCullCtxInit(&cull_ctx_, 256, 128, z);
     }
     InitShadersInternal();
+
+    try {
+        shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::RawR32F, Ren::NoFilter, Ren::ClampToEdge, true);
+    } catch (std::runtime_error &) {
+        LOGI("Cannot create floating-point shadow buffer! Fallback to unsigned byte.");
+        shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::RawRGB888, Ren::NoFilter, Ren::ClampToEdge, true);
+    }
+
     background_thread_ = std::thread(std::bind(&Renderer::BackgroundProc, this));
 }
 
@@ -43,8 +65,14 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
                            const SceneObject *objects, size_t object_count) {
     SwapDrawLists(cam, nodes, root_index, objects, object_count);
     auto t1 = std::chrono::high_resolution_clock::now();
-    if (!draw_lists_[0].empty()) {
-        DrawObjectsInternal(&draw_lists_[0][0], draw_lists_[0].size());
+    {
+        size_t drawables_count = draw_lists_[0].size();
+        const auto *drawables = (drawables_count == 0) ? nullptr : &draw_lists_[0][0];
+
+        size_t shadow_drawables_count = shadow_list_[0].size();
+        const auto *shadow_drawables = (shadow_drawables_count == 0) ? nullptr : &shadow_list_[0][0];
+
+        DrawObjectsInternal(drawables, drawables_count, shadow_drawables, shadow_drawables_count);
     }
     auto t2 = std::chrono::high_resolution_clock::now();
     timings_ = { t1, t2 };
@@ -69,11 +97,15 @@ void Renderer::BackgroundProc() {
 
             auto &tr_list = transforms_[1];
             tr_list.clear();
-            tr_list.reserve(object_count_);
+            tr_list.reserve(object_count_ * 2);
 
             auto &dr_list = draw_lists_[1];
             dr_list.clear();
             dr_list.reserve(object_count_ * 16);
+
+            auto &sh_dr_list = shadow_list_[1];
+            sh_dr_list.clear();
+            sh_dr_list.reserve(object_count_ * 16);
 
             occludees_.clear();
 
@@ -94,17 +126,7 @@ void Renderer::BackgroundProc() {
                 uint32_t cur = stack[--stack_size];
                 const auto *n = &nodes_[cur];
 
-                const float bbox_points[8][3] = { n->bbox[0][0], n->bbox[0][1], n->bbox[0][2],
-                                                  n->bbox[1][0], n->bbox[0][1], n->bbox[0][2],
-                                                  n->bbox[0][0], n->bbox[0][1], n->bbox[1][2],
-                                                  n->bbox[1][0], n->bbox[0][1], n->bbox[1][2],
-
-                                                  n->bbox[0][0], n->bbox[1][1], n->bbox[0][2],
-                                                  n->bbox[1][0], n->bbox[1][1], n->bbox[0][2],
-                                                  n->bbox[0][0], n->bbox[1][1], n->bbox[1][2],
-                                                  n->bbox[1][0], n->bbox[1][1], n->bbox[1][2] };
-
-                if (!draw_cam_.IsInFrustum(bbox_points)) continue;
+                if (!draw_cam_.IsInFrustum(n->bbox[0], n->bbox[1])) continue;
 
                 if (!n->prim_count) {
                     stack[stack_size++] = n->left_child;
@@ -117,17 +139,7 @@ void Renderer::BackgroundProc() {
                         if ((obj.flags & occluder_flags) == occluder_flags) {
                             const auto *tr = obj.tr.get();
 
-                            const float bbox_points[8][3] = { tr->bbox_min_ws[0], tr->bbox_min_ws[1], tr->bbox_min_ws[2],
-                                                              tr->bbox_max_ws[0], tr->bbox_min_ws[1], tr->bbox_min_ws[2],
-                                                              tr->bbox_min_ws[0], tr->bbox_min_ws[1], tr->bbox_max_ws[2],
-                                                              tr->bbox_max_ws[0], tr->bbox_min_ws[1], tr->bbox_max_ws[2],
-                                
-                                                              tr->bbox_min_ws[0], tr->bbox_max_ws[1], tr->bbox_min_ws[2],
-                                                              tr->bbox_max_ws[0], tr->bbox_max_ws[1], tr->bbox_min_ws[2],
-                                                              tr->bbox_min_ws[0], tr->bbox_max_ws[1], tr->bbox_max_ws[2],
-                                                              tr->bbox_max_ws[0], tr->bbox_max_ws[1], tr->bbox_max_ws[2] };
-
-                            if (!draw_cam_.IsInFrustum(bbox_points)) continue;
+                            if (!draw_cam_.IsInFrustum(tr->bbox_min_ws, tr->bbox_max_ws)) continue;
 
                             const Ren::Mat4f &world_from_object = tr->mat;
 
@@ -168,16 +180,7 @@ void Renderer::BackgroundProc() {
                 uint32_t cur = stack[--stack_size];
                 const auto *n = &nodes_[cur];
 
-                const float bbox_points[8][3] = { n->bbox[0][0], n->bbox[0][1], n->bbox[0][2],
-                                                  n->bbox[1][0], n->bbox[0][1], n->bbox[0][2],
-                                                  n->bbox[0][0], n->bbox[0][1], n->bbox[1][2],
-                                                  n->bbox[1][0], n->bbox[0][1], n->bbox[1][2],
-
-                                                  n->bbox[0][0], n->bbox[1][1], n->bbox[0][2],
-                                                  n->bbox[1][0], n->bbox[1][1], n->bbox[0][2],
-                                                  n->bbox[0][0], n->bbox[1][1], n->bbox[1][2],
-                                                  n->bbox[1][0], n->bbox[1][1], n->bbox[1][2] };
-
+                const float bbox_points[8][3] = { BBOX_POINTS(n->bbox[0], n->bbox[1]) };
                 if (!draw_cam_.IsInFrustum(bbox_points)) continue;
 
                 if (culling_enabled_) {
@@ -215,16 +218,7 @@ void Renderer::BackgroundProc() {
                         if ((obj.flags & drawable_flags) == drawable_flags) {
                             const auto *tr = obj.tr.get();
 
-                            const float bbox_points[8][3] = { tr->bbox_min_ws[0], tr->bbox_min_ws[1], tr->bbox_min_ws[2],
-                                                              tr->bbox_max_ws[0], tr->bbox_min_ws[1], tr->bbox_min_ws[2],
-                                                              tr->bbox_min_ws[0], tr->bbox_min_ws[1], tr->bbox_max_ws[2],
-                                                              tr->bbox_max_ws[0], tr->bbox_min_ws[1], tr->bbox_max_ws[2],
-
-                                                              tr->bbox_min_ws[0], tr->bbox_max_ws[1], tr->bbox_min_ws[2],
-                                                              tr->bbox_max_ws[0], tr->bbox_max_ws[1], tr->bbox_min_ws[2],
-                                                              tr->bbox_min_ws[0], tr->bbox_max_ws[1], tr->bbox_max_ws[2],
-                                                              tr->bbox_max_ws[0], tr->bbox_max_ws[1], tr->bbox_max_ws[2] };
-
+                            const float bbox_points[8][3] = { BBOX_POINTS(tr->bbox_min_ws, tr->bbox_max_ws) };
                             if (!draw_cam_.IsInFrustum(bbox_points)) continue;
 
                             if (culling_enabled_) {
@@ -278,6 +272,58 @@ void Renderer::BackgroundProc() {
                 dr_list.pop_back();
             }
 
+            // gather lists for shadow map
+            auto &shadow_cam = shadow_cam_[1];
+
+            //shadow_cam = draw_cam_;
+            shadow_cam.SetupView(draw_cam_.world_position() + Ren::Vec3f{ 0.0f, 10.0f, 0.0f }, draw_cam_.world_position(), Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
+            shadow_cam.Orthographic(-10.0f, 10.0f, 10.0f, -10.0f, 0.5f, 10.0f);
+            shadow_cam.UpdatePlanes();
+
+            view_from_world = shadow_cam.view_matrix(),
+            proj_from_view = shadow_cam.projection_matrix();
+
+            stack_size = 0;
+            stack[stack_size++] = (uint32_t)root_node_;
+
+            while (stack_size) {
+                uint32_t cur = stack[--stack_size];
+                const auto *n = &nodes_[cur];
+
+                if (!shadow_cam.IsInFrustum(n->bbox[0], n->bbox[1])) continue;
+
+                if (!n->prim_count) {
+                    stack[stack_size++] = n->left_child;
+                    stack[stack_size++] = n->right_child;
+                } else {
+                    for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
+                        const auto &obj = objects_[i];
+
+                        uint32_t drawable_flags = HasMesh | HasTransform;
+                        if ((obj.flags & drawable_flags) == drawable_flags) {
+                            const auto *tr = obj.tr.get();
+
+                            if (!shadow_cam.IsInFrustum(tr->bbox_min_ws, tr->bbox_max_ws)) continue;
+
+                            const Ren::Mat4f &world_from_object = tr->mat;
+
+                            Ren::Mat4f view_from_object = view_from_world * world_from_object,
+                                       proj_from_object = proj_from_view * view_from_object;
+
+                            tr_list.push_back(proj_from_object);
+
+                            const auto *mesh = obj.mesh.get();
+
+                            const Ren::TriStrip *s = &mesh->strip(0);
+                            while (s->offset != -1) {
+                                sh_dr_list.push_back({ &tr_list.back(), s->mat.get(), mesh, s });
+                                ++s;
+                            }
+                        }
+                    }
+                }
+            }
+
             if (debug_cull_ && culling_enabled_) {
                 const float NEAR_CLIP = 0.5f;
                 const float FAR_CLIP = 10000.0f;
@@ -325,12 +371,14 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
         std::lock_guard<Sys::SpinlockMutex> _(job_mtx_);
         std::swap(transforms_[0], transforms_[1]);
         std::swap(draw_lists_[0], draw_lists_[1]);
+        std::swap(shadow_list_[0], shadow_list_[1]);
         nodes_ = nodes;
         root_node_ = root_node;
         objects_ = objects;
         object_count_ = object_count;
         back_timings_[0] = back_timings_[1];
         draw_cam_ = cam;
+        std::swap(shadow_cam_[0], shadow_cam_[1]);
         std::swap(depth_pixels_[0], depth_pixels_[1]);
         std::swap(depth_tiles_[0], depth_tiles_[1]);
         should_notify = (nodes != nullptr);
@@ -340,3 +388,5 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
         thr_notify_.notify_all();
     }
 }
+
+#undef BBOX_POINTS

@@ -65,7 +65,7 @@ GSIKTest::GSIKTest(GameBase *game) : game_(game), cam_(Ren::Vec3f{ 0.0f, -0.5f, 
     const auto fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     font_ = fonts->FindFont("main_font");
 
-    cam_.Perspective(60.0f, 1.0f, 0.1f, 1000.0f);
+    cam_.Perspective(60.0f, float(game_->width)/game_->height, 0.1f, 1000.0f);
 }
 
 GSIKTest::~GSIKTest() {
@@ -203,7 +203,7 @@ void GSIKTest::UpdateBones() {
 
         dir = dir * cur_rot;
 
-        cur_pos += Ren::Vec3f{ dir[0], dir[1], dir[2] } * b.length;
+        cur_pos += Ren::Vec3f{ dir } * b.length;
     }
 }
 
@@ -269,13 +269,13 @@ void GSIKTest::Update(int dt_ms) {
 
     int iterations = 0;
 
-    while (error > 0.01f && iterations < 100) {
-        const float h = 0.045f;
+    while (error > 0.001f && iterations < 1000) {
+        const float h = 0.025f;
 
         bool locked = true;
 
         for (size_t i = 0; i < bones_.size() - 1; i++) {
-            Ren::Vec3f j_row = Ren::Cross(bones_[i].cur_rot_axis, bones_[i].cur_pos - x);
+            Ren::Vec3f j_row = Ren::Cross(bones_[i].cur_rot_axis, Ren::Normalize(bones_[i].cur_pos - x));
 
             float delta = Ren::Dot(j_row, diff) * h;
 
@@ -283,7 +283,7 @@ void GSIKTest::Update(int dt_ms) {
                 locked = false;
             }
 
-            bones_[i].angle = bones_[i].angle + delta;
+            bones_[i].angle = clamp(bones_[i].angle + delta, bones_[i].min_angle, bones_[i].max_angle);
         }
 
         if (locked) {

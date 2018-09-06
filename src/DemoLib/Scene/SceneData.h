@@ -46,6 +46,6 @@ struct bvh_node_t {
     uint32_t prim_index, prim_count,
              left_child, right_child, parent,
              space_axis; // axis with maximal child's centroids distance
-    float bbox[2][3];
+    Ren::Vec3f bbox[2];
 };
 static_assert(sizeof(bvh_node_t) == 48, "!");

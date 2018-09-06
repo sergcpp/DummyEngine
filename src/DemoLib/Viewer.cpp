@@ -9,8 +9,8 @@
 #include <Sys/Json.h>
 
 #include "Gui/FontStorage.h"
-#include "Managers/Renderer.h"
-#include "Managers/SceneManager.h"
+#include "Scene/Renderer.h"
+#include "Scene/SceneManager.h"
 #include "States/GSCreate.h"
 
 Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) {

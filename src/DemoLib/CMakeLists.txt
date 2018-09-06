@@ -9,12 +9,13 @@ set(SOURCE_FILES    exports.cpp
 
 set(GUI_SOURCES  Gui/FontStorage.h)
 
-set(MANAGER_SOURCES  Managers/Renderer.h
-                     Managers/Renderer.cpp
-					 Managers/SceneData.h
-                     Managers/SceneManager.h
-                     Managers/SceneManager.cpp
-					 Managers/SceneManager_BVH.cpp)
+set(SCENE_SOURCES  Scene/FrameBuf.h
+					 Scene/Renderer.h
+                     Scene/Renderer.cpp
+					 Scene/SceneData.h
+                     Scene/SceneManager.h
+                     Scene/SceneManager.cpp
+					 Scene/SceneManager_BVH.cpp)
 
 set(STATES_SOURCES  States/GSCreate.h
                     States/GSCreate.cpp
@@ -33,13 +34,14 @@ set(UTILS_SOURCES Utils/BVHSplit.h
 				  Utils/BVHSplit.cpp)
 
 if(${RENDERER} STREQUAL "GL")
-    set(MANAGER_SOURCES ${MANAGER_SOURCES}
-                        Managers/RendererGL.cpp)
+    set(SCENE_SOURCES ${SCENE_SOURCES}
+						Scene/FrameBufGL.cpp
+                        Scene/RendererGL.cpp)
     set(STATES_SOURCES ${STATES_SOURCES}
                        States/GSDefTestGL.cpp
                        States/GSOccTestGL.cpp)
 elseif(${RENDERER} STREQUAL "SW")
-    set(MANAGER_SOURCES ${MANAGER_SOURCES}
+    set(SCENE_SOURCES ${SCENE_SOURCES}
                         Renderer/RendererSW.cpp)
 endif()
 
@@ -51,9 +53,9 @@ list(APPEND ALL_SOURCE_FILES ${GUI_SOURCES})
 #set_source_files_properties(${GUI_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Gui" FILES ${GUI_SOURCES})
 
-list(APPEND ALL_SOURCE_FILES ${MANAGER_SOURCES})
-#set_source_files_properties(${MANAGER_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
-source_group("src\\Managers" FILES ${MANAGER_SOURCES})
+list(APPEND ALL_SOURCE_FILES ${SCENE_SOURCES})
+#set_source_files_properties(${SCENE_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+source_group("src\\Managers" FILES ${SCENE_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${STATES_SOURCES})
 #set_source_files_properties(${STATES_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)

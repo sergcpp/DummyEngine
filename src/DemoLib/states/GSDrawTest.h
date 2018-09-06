@@ -8,7 +8,7 @@
 #include <Ren/Texture.h>
 #include <Ren/SW/SW.h>
 
-#include "../Managers/SceneData.h"
+#include "../Scene/SceneData.h"
 
 class GameBase;
 class GameStateManager;

@@ -5,6 +5,58 @@
 #include <Ren/GL.h>
 
 namespace RendererConstants {
+    const char fillz_vs_shader[] = R"(
+        /*
+        ATTRIBUTES
+	        aVertexPosition : 0
+        UNIFORMS
+	        uMVPMatrix : 0
+        */
+
+        attribute vec3 aVertexPosition;
+
+        uniform mat4 uMVPMatrix;
+
+        void main(void) {
+            gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
+        } 
+    )";
+
+    const char fillz_fs_shader[] = R"(
+        #ifdef GL_ES
+	        precision mediump float;
+        #endif
+
+        void main(void) {
+        }
+    )";
+
+    const char shadow_vs_shader[] = R"(
+        /*
+        ATTRIBUTES
+	        aVertexPosition : 0
+        UNIFORMS
+	        uMVPMatrix : 0
+        */
+
+        attribute vec3 aVertexPosition;
+        uniform mat4 uMVPMatrix;
+
+        void main(void) {
+            gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
+        } 
+    )";
+
+    const char shadow_fs_shader[] = R"(
+        #ifdef GL_ES
+            precision mediump float;
+        #endif
+
+        void main(void) {
+	        gl_FragColor.r = gl_FragCoord.z;
+        }
+    )";
+
     const int A_POS = 0;
     const int A_NORMAL = 1;
     const int A_TANGENT = 2;
@@ -31,42 +83,22 @@ namespace RendererConstants {
         glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
     }
 
-    const bool DEPTH_PREPASS = true;
+    const bool DEPTH_PREPASS = false;
 }
 
 void Renderer::InitShadersInternal() {
-    const char *vs_shader = R"(
-        /*
-        ATTRIBUTES
-	        aVertexPosition : 0
-        UNIFORMS
-	        uMVPMatrix : 0
-        */
-
-        attribute vec3 aVertexPosition;
-
-        uniform mat4 uMVPMatrix;
-
-        void main(void) {
-            gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
-        } 
-    )";
-
-    const char *fs_shader = R"(
-        #ifdef GL_ES
-	        precision mediump float;
-        #endif
-
-        void main(void) {
-        }
-    )";
+    using namespace RendererConstants;
 
     Ren::eProgLoadStatus status;
-    fill_depth_prog_ = ctx_.LoadProgramGLSL("fill_depth", vs_shader, fs_shader, &status);
+    fill_depth_prog_ = ctx_.LoadProgramGLSL("fill_depth", fillz_vs_shader, fillz_fs_shader, &status);
+    assert(status == Ren::ProgCreatedFromData);
+
+    shadow_prog_ = ctx_.LoadProgramGLSL("shadow", shadow_vs_shader, shadow_fs_shader, &status);
     assert(status == Ren::ProgCreatedFromData);
 }
 
-void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count) {
+void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count,
+                                   const DrawableItem *shadow_drawables, size_t shadow_drawable_count) {
     using namespace Ren;
     using namespace RendererConstants;
 
@@ -135,8 +167,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     }
 
     // actual drawing
-    for (size_t i = 0; i < drawable_count; i++) {
-        const auto &dr = drawables[i];
+    for (size_t i = 0; i < shadow_drawable_count; i++) {
+        const auto &dr = shadow_drawables[i];
 
         const Ren::Mat4f *xform = dr.xform;
         const Ren::Material *mat = dr.mat;

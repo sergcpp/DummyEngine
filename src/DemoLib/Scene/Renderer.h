@@ -11,6 +11,7 @@ extern "C" {
 }
 #include <Sys/SpinLock.h>
 
+#include "FrameBuf.h"
 #include "SceneData.h"
 
 struct DrawableItem {
@@ -51,7 +52,9 @@ public:
 private:
     Ren::Context &ctx_;
     SWcull_ctx cull_ctx_;
-    Ren::ProgramRef fill_depth_prog_;
+    Ren::ProgramRef fill_depth_prog_, shadow_prog_;
+
+    FrameBuf shadow_buf_;
 
     bool wireframe_mode_ = false, debug_cull_ = false;
     bool culling_enabled_ = true;
@@ -61,9 +64,9 @@ private:
     const SceneObject *objects_ = nullptr;
     size_t object_count_ = 0;
     std::vector<Ren::Mat4f> transforms_[2];
-    std::vector<DrawableItem> draw_lists_[2];
+    std::vector<DrawableItem> draw_lists_[2], shadow_list_[2];
     std::vector<OccludeeItem> occludees_;
-    Ren::Camera draw_cam_;
+    Ren::Camera draw_cam_, shadow_cam_[2];
     TimingInfo timings_, back_timings_[2];
 
     //temp
@@ -73,7 +76,8 @@ private:
                        const SceneObject *objects, size_t object_count);
 
     void InitShadersInternal();
-    void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count);
+    void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count,
+                             const DrawableItem *shadow_drawables, size_t shadow_drawable_count);
 
     std::thread background_thread_;
     std::mutex mtx_;

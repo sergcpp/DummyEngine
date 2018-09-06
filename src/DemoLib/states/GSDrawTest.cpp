@@ -15,8 +15,8 @@
 
 #include "../Gui/FontStorage.h"
 #include "../Viewer.h"
-#include "../Managers/Renderer.h"
-#include "../Managers/SceneManager.h"
+#include "../Scene/Renderer.h"
+#include "../Scene/SceneManager.h"
 
 namespace GSDrawTestInternal {
     const float FORWARD_SPEED = 0.25f;
