@@ -252,6 +252,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     if (wireframe_mode_) {
         glDepthFunc(GL_LEQUAL);
+        glDepthMask(GL_FALSE);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     } else {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
