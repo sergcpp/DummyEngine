@@ -40,8 +40,9 @@ public:
     ~Renderer();
 
     void toggle_wireframe() { wireframe_mode_ = !wireframe_mode_; }
-    void toggle_debug_cull() { debug_cull_ = !debug_cull_; }
     void toggle_culling() { culling_enabled_ = !culling_enabled_; }
+    void toggle_debug_cull() { debug_cull_ = !debug_cull_; }
+    void toggle_debug_shadow() { debug_shadow_ = !debug_shadow_; }
 
     TimingInfo timings() const { return timings_; }
     TimingInfo back_timings() const { return back_timings_[0]; }
@@ -52,11 +53,11 @@ public:
 private:
     Ren::Context &ctx_;
     SWcull_ctx cull_ctx_;
-    Ren::ProgramRef fill_depth_prog_, shadow_prog_;
+    Ren::ProgramRef fill_depth_prog_, shadow_prog_, blit_prog_;
 
     FrameBuf shadow_buf_;
 
-    bool wireframe_mode_ = false, debug_cull_ = false;
+    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = true;
     bool culling_enabled_ = true;
 
     const bvh_node_t *nodes_ = nullptr;

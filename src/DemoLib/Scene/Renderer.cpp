@@ -276,8 +276,8 @@ void Renderer::BackgroundProc() {
             auto &shadow_cam = shadow_cam_[1];
 
             //shadow_cam = draw_cam_;
-            shadow_cam.SetupView(draw_cam_.world_position() + Ren::Vec3f{ 0.0f, 10.0f, 0.0f }, draw_cam_.world_position(), Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
-            shadow_cam.Orthographic(-10.0f, 10.0f, 10.0f, -10.0f, 0.5f, 10.0f);
+            shadow_cam.SetupView(draw_cam_.world_position() + 100.0f * Ren::Vec3f{ 0.707f, 0.707f, 0.0f }, draw_cam_.world_position(), Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
+            shadow_cam.Orthographic(-10.0f, 10.0f, 10.0f, -10.0f, 0.5f, 10000.0f);
             shadow_cam.UpdatePlanes();
 
             view_from_world = shadow_cam.view_matrix(),

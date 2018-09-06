@@ -110,6 +110,14 @@ void GSDrawTest::Enter() {
         return true;
     });
 
+    game_->RegisterCommand("culling", [weak_this](const std::vector<std::string> &args) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            shrd_this->renderer_->toggle_culling();
+        }
+        return true;
+    });
+
     game_->RegisterCommand("debug_cull", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
@@ -118,10 +126,10 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("culling", [weak_this](const std::vector<std::string> &args) -> bool {
+    game_->RegisterCommand("debug_shadow", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            shrd_this->renderer_->toggle_culling();
+            shrd_this->renderer_->toggle_debug_shadow();
         }
         return true;
     });
