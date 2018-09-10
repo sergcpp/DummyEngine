@@ -609,7 +609,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
     for (int i = 0; i < (int)reordered_indices.size(); i++) {
         bool alpha_blend = false;
         {   // check if material has transparency
-            ifstream mat_file("materials/" + materials[i] + ".txt");
+            ifstream mat_file("assets/materials/" + materials[i] + ".txt");
             if (mat_file) {
                 streampos file_size = mat_file.tellg();
                 mat_file.seekg(0, ios::end);

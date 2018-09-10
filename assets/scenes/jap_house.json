@@ -11,12 +11,18 @@
         "fwd_speed" : 1.0
     },
     "meshes" : {
+		"floor" : "floor.mesh",
         "walls" : "walls.mesh",
         "roof" : "roof.mesh",
 		"roof_plate" : "roof_plate.mesh",
+		"inter_walls" : "inter_walls.mesh",
 		"monk" : "monk.mesh",
     },
     "objects" : [
+		{
+			"pos" : [ 0.0, 0.0, 0.0 ],
+            "mesh" : "floor",
+        },
         {
             "mesh" : "walls",
 			"occluder_mesh" : "walls",
@@ -29,6 +35,11 @@
 			"pos" : [ 0.102901, 7.39339, -1.50723 ],
             "mesh" : "roof_plate",
 			"occluder_mesh" : "roof_plate",
+        },
+		{
+			"pos" : [ 0.0, 0.0, 0.0 ],
+            "mesh" : "inter_walls",
+			"occluder_mesh" : "inter_walls",
         },
 		{
 			"pos" : [ -9.0, 0.0, 0.0 ],

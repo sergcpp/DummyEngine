@@ -110,12 +110,12 @@ void Renderer::BackgroundProc() {
             occludees_.clear();
 
             Ren::Mat4f view_from_world = draw_cam_.view_matrix(),
-                       proj_from_view = draw_cam_.projection_matrix();
+                       clip_from_view = draw_cam_.projection_matrix();
 
             swCullCtxClear(&cull_ctx_);
 
             Ren::Mat4f view_from_identity = view_from_world * Ren::Mat4f{ 1.0f },
-                       proj_from_identity = proj_from_view * view_from_identity;
+                       clip_from_identity = clip_from_view * view_from_identity;
 
             uint32_t stack[MAX_STACK_SIZE];
             uint32_t stack_size = 0;
@@ -144,7 +144,7 @@ void Renderer::BackgroundProc() {
                             const Ren::Mat4f &world_from_object = tr->mat;
 
                             Ren::Mat4f view_from_object = view_from_world * world_from_object,
-                                       proj_from_object = proj_from_view * view_from_object;
+                                       proj_from_object = clip_from_view * view_from_object;
 
                             const auto *mesh = obj.mesh.get();
 
@@ -157,7 +157,7 @@ void Renderer::BackgroundProc() {
                                 surf[surf_count].prim_type = SW_TRIANGLES;
                                 surf[surf_count].index_type = SW_UNSIGNED_INT;
                                 surf[surf_count].attribs = mesh->attribs();
-                                surf[surf_count].indices = ((const uint32_t *)mesh->indices() + s->offset);
+                                surf[surf_count].indices = ((const uint8_t *)mesh->indices() + s->offset);
                                 surf[surf_count].stride = 13 * sizeof(float);
                                 surf[surf_count].count = (SWuint)s->num_indices;
                                 surf[surf_count].xform = Ren::ValuePtr(proj_from_object);
@@ -198,7 +198,7 @@ void Renderer::BackgroundProc() {
                         surf.indices = &bbox_indices[0];
                         surf.stride = 3 * sizeof(float);
                         surf.count = 36;
-                        surf.xform = Ren::ValuePtr(proj_from_identity);
+                        surf.xform = Ren::ValuePtr(clip_from_identity);
                         surf.dont_skip = nullptr;
 
                         swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
@@ -221,7 +221,7 @@ void Renderer::BackgroundProc() {
                             const float bbox_points[8][3] = { BBOX_POINTS(tr->bbox_min_ws, tr->bbox_max_ws) };
                             if (!draw_cam_.IsInFrustum(bbox_points)) continue;
 
-                            if (culling_enabled_) {
+                            if (culling_enabled_ && n->prim_count > 1) {
                                 const auto &cam_pos = draw_cam_.world_position();
 
                                 // do not question visibility of the object in which we are inside
@@ -236,7 +236,7 @@ void Renderer::BackgroundProc() {
                                     surf.indices = &bbox_indices[0];
                                     surf.stride = 3 * sizeof(float);
                                     surf.count = 36;
-                                    surf.xform = Ren::ValuePtr(proj_from_identity);
+                                    surf.xform = Ren::ValuePtr(clip_from_identity);
                                     surf.dont_skip = nullptr;
 
                                     swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
@@ -248,7 +248,7 @@ void Renderer::BackgroundProc() {
                             const Ren::Mat4f &world_from_object = tr->mat;
 
                             Ren::Mat4f view_from_object = view_from_world * world_from_object,
-                                       proj_from_object = proj_from_view * view_from_object;
+                                       proj_from_object = clip_from_view * view_from_object;
 
                             tr_list.push_back(proj_from_object);
 
@@ -272,16 +272,47 @@ void Renderer::BackgroundProc() {
                 dr_list.pop_back();
             }
 
+            auto temp_cam = draw_cam_;
+            temp_cam.Perspective(draw_cam_.angle(), draw_cam_.aspect(), draw_cam_.near(), 10.0f);
+            temp_cam.UpdatePlanes();
+
+            const Ren::Mat4f &_view_from_world = temp_cam.view_matrix(),
+                             &_clip_from_view = temp_cam.projection_matrix();
+
+            Ren::Mat4f _clip_from_world = _clip_from_view * _view_from_world;
+            Ren::Mat4f _world_from_clip = Ren::Inverse(_clip_from_world);
+
+            Ren::Vec4f frustum_points[8] = { { -1, -1, 0, 1 },
+                                             { -1,  1, 0, 1 },
+                                             {  1,  1, 0, 1 },
+                                             {  1, -1, 0, 1 },
+                                             { -1, -1, 1, 1 },
+                                             { -1,  1, 1, 1 },
+                                             {  1,  1, 1, 1 },
+                                             {  1, -1, 1, 1 } };
+
+            for (int i = 0; i < 8; i++) {
+                frustum_points[i] = _world_from_clip * frustum_points[i];
+                frustum_points[i] /= frustum_points[i][3];
+            }
+
+            Ren::Vec3f fwd = { -_view_from_world[0][2], -_view_from_world[1][2], -_view_from_world[2][2] };
+            Ren::Vec3f __ttt = temp_cam.world_position();
+            Ren::Vec4f __tttt = _clip_from_world * Ren::Vec4f{ 0, 0, 0, 1 };
+            __tttt /= __tttt[3];
+            Ren::Vec3f center = Ren::Vec3f{  };// 0.5f * Ren::Vec3f(frustum_points[0] + frustum_points[6]);
+            float radius = 0.5f * Ren::Distance(Ren::Vec3f(frustum_points[0]), Ren::Vec3f(frustum_points[6]));
+
             // gather lists for shadow map
             auto &shadow_cam = shadow_cam_[1];
 
             //shadow_cam = draw_cam_;
-            shadow_cam.SetupView(draw_cam_.world_position() + 100.0f * Ren::Vec3f{ 0.707f, 0.707f, 0.0f }, draw_cam_.world_position(), Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
-            shadow_cam.Orthographic(-10.0f, 10.0f, 10.0f, -10.0f, 0.5f, 10000.0f);
+            shadow_cam.SetupView(center + 100.0f * Ren::Vec3f{ 0.707f, 0.707f, 0.0f }, center, Ren::Vec3f{ 0.0f, 0.0, 1.0f });
+            shadow_cam.Orthographic(-10.0f, 10.0f, -10.0f, 10.0f, 0.5f, 10000.0f);
             shadow_cam.UpdatePlanes();
 
             view_from_world = shadow_cam.view_matrix(),
-            proj_from_view = shadow_cam.projection_matrix();
+            clip_from_view = shadow_cam.projection_matrix();
 
             stack_size = 0;
             stack[stack_size++] = (uint32_t)root_node_;
@@ -308,7 +339,7 @@ void Renderer::BackgroundProc() {
                             const Ren::Mat4f &world_from_object = tr->mat;
 
                             Ren::Mat4f view_from_object = view_from_world * world_from_object,
-                                       proj_from_object = proj_from_view * view_from_object;
+                                       proj_from_object = clip_from_view * view_from_object;
 
                             tr_list.push_back(proj_from_object);
 

@@ -114,6 +114,7 @@ namespace RendererConstants {
 
     const int DIFFUSEMAP_SLOT = 0;
     const int NORMALMAP_SLOT = 1;
+    const int SHADOWMAP_SLOT = 2;
 
     inline void BindTexture(int slot, uint32_t tex) {
         glActiveTexture((GLenum)(GL_TEXTURE0 + slot));

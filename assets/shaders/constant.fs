@@ -8,12 +8,14 @@ UNIFORMS
 	mode : 2
 	diffuse_texture : 3
 	normals_texture : 4
+	shadow_texture : 5
 */
 
 uniform vec3 col;
 uniform float mode;
 uniform sampler2D diffuse_texture;
 uniform sampler2D normals_texture;
+uniform sampler2D shadow_texture;
 
 varying mat3 aVertexTBN_;
 varying vec2 aVertexUVs1_;
