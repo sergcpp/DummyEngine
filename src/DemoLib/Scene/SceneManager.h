@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <Ren/Camera.h>
 #include <Sys/Json.h>
 
@@ -7,7 +9,7 @@
 
 class Renderer;
 
-class SceneManager {
+class SceneManager : public std::enable_shared_from_this<SceneManager> {
 public:
     SceneManager(Ren::Context &ctx, Renderer &renderer);
     ~SceneManager();

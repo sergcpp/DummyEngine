@@ -177,14 +177,17 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
     Ren::Texture2DRef ret = ctx_.LoadTexture2D(name, nullptr, 0, {}, &status);
     if (!ret->ready()) {
         std::string tex_name = name;
+        std::weak_ptr<SceneManager> _self = shared_from_this();
         Sys::LoadAssetComplete((std::string("assets/textures/") + tex_name).c_str(),
-            [this, tex_name](void *data, int size) {
+            [_self, tex_name](void *data, int size) {
+            auto self = _self.lock();
+            if (!self) return;
 
-            ctx_.ProcessSingleTask([this, tex_name, data, size]() {
+            self->ctx_.ProcessSingleTask([self, tex_name, data, size]() {
                 Ren::Texture2DParams p;
                 p.filter = Ren::Trilinear;
                 p.repeat = Ren::Repeat;
-                ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, nullptr);
+                self->ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, nullptr);
                 LOGI("Texture %s loaded", tex_name.c_str());
             });
         }, [tex_name]() {

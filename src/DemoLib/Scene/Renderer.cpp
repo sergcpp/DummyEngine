@@ -53,12 +53,12 @@ Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx), draw_cam_({}, {}, {}), shadow
 }
 
 Renderer::~Renderer() {
-    swCullCtxDestroy(&cull_ctx_);
     if (background_thread_.joinable()) {
         shutdown_ = notified_ = true;
         thr_notify_.notify_all();
         background_thread_.join();
     }
+    swCullCtxDestroy(&cull_ctx_);
 }
 
 void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
@@ -135,7 +135,7 @@ void Renderer::BackgroundProc() {
                     for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
                         const auto &obj = objects_[i];
 
-                        uint32_t occluder_flags = HasMesh | HasTransform | HasOccluder;
+                        const uint32_t occluder_flags = HasMesh | HasTransform | HasOccluder;
                         if ((obj.flags & occluder_flags) == occluder_flags) {
                             const auto *tr = obj.tr.get();
 
@@ -214,7 +214,7 @@ void Renderer::BackgroundProc() {
                     for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
                         const auto &obj = objects_[i];
 
-                        uint32_t drawable_flags = HasMesh | HasTransform;
+                        const uint32_t drawable_flags = HasMesh | HasTransform;
                         if ((obj.flags & drawable_flags) == drawable_flags) {
                             const auto *tr = obj.tr.get();
 
@@ -297,10 +297,14 @@ void Renderer::BackgroundProc() {
             }
 
             Ren::Vec3f fwd = { -_view_from_world[0][2], -_view_from_world[1][2], -_view_from_world[2][2] };
-            Ren::Vec3f __ttt = temp_cam.world_position();
-            Ren::Vec4f __tttt = _clip_from_world * Ren::Vec4f{ 0, 0, 0, 1 };
+            //LOGI("%f %f %f", fwd[0], fwd[1], fwd[2]);
+            Ren::Vec3f __ttt = draw_cam_.world_position() + 0.9f * fwd;
+            Ren::Vec4f __tttt = Ren::Vec4f{ __ttt[0], __ttt[1], __ttt[2], 1 };
+            __tttt = _clip_from_world * __tttt;
             __tttt /= __tttt[3];
-            Ren::Vec3f center = Ren::Vec3f{  };// 0.5f * Ren::Vec3f(frustum_points[0] + frustum_points[6]);
+            Ren::Vec3f center = 0.5f * Ren::Vec3f(frustum_points[0] + frustum_points[6]);
+            //LOGI("+ %f %f %f", center[0], center[1], center[2]);
+            LOGI("- %f %f %f", __tttt[0], __tttt[1], __tttt[2]);
             float radius = 0.5f * Ren::Distance(Ren::Vec3f(frustum_points[0]), Ren::Vec3f(frustum_points[6]));
 
             // gather lists for shadow map
@@ -330,7 +334,7 @@ void Renderer::BackgroundProc() {
                     for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
                         const auto &obj = objects_[i];
 
-                        uint32_t drawable_flags = HasMesh | HasTransform;
+                        const uint32_t drawable_flags = HasMesh | HasTransform;
                         if ((obj.flags & drawable_flags) == drawable_flags) {
                             const auto *tr = obj.tr.get();
 
