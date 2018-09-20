@@ -273,7 +273,7 @@ void Renderer::BackgroundProc() {
             }
 
             auto temp_cam = draw_cam_;
-            temp_cam.Perspective(draw_cam_.angle(), draw_cam_.aspect(), draw_cam_.near(), 10.0f);
+            temp_cam.Perspective(draw_cam_.angle(), draw_cam_.aspect(), draw_cam_.near(), 100.0f);
             temp_cam.UpdatePlanes();
 
             const Ren::Mat4f &_view_from_world = temp_cam.view_matrix(),
@@ -282,10 +282,10 @@ void Renderer::BackgroundProc() {
             Ren::Mat4f _clip_from_world = _clip_from_view * _view_from_world;
             Ren::Mat4f _world_from_clip = Ren::Inverse(_clip_from_world);
 
-            Ren::Vec4f frustum_points[8] = { { -1, -1, 0, 1 },
-                                             { -1,  1, 0, 1 },
-                                             {  1,  1, 0, 1 },
-                                             {  1, -1, 0, 1 },
+            Ren::Vec4f frustum_points[8] = { { -1, -1, -1, 1 },
+                                             { -1,  -1, -1, 1 },
+                                             {  1,  1, -1, 1 },
+                                             {  1, -1, -1, 1 },
                                              { -1, -1, 1, 1 },
                                              { -1,  1, 1, 1 },
                                              {  1,  1, 1, 1 },
@@ -302,9 +302,9 @@ void Renderer::BackgroundProc() {
             Ren::Vec4f __tttt = Ren::Vec4f{ __ttt[0], __ttt[1], __ttt[2], 1 };
             __tttt = _clip_from_world * __tttt;
             __tttt /= __tttt[3];
-            Ren::Vec3f center = 0.5f * Ren::Vec3f(frustum_points[0] + frustum_points[6]);
-            //LOGI("+ %f %f %f", center[0], center[1], center[2]);
-            LOGI("- %f %f %f", __tttt[0], __tttt[1], __tttt[2]);
+            Ren::Vec3f center = Ren::Vec3f(frustum_points[0]);// 0.5f * Ren::Vec3f(frustum_points[0] + frustum_points[6]);
+            LOGI("+ %f %f %f", center[0], center[1], center[2]);
+            //LOGI("- %f %f %f", __tttt[0], __tttt[1], __tttt[2]);
             float radius = 0.5f * Ren::Distance(Ren::Vec3f(frustum_points[0]), Ren::Vec3f(frustum_points[6]));
 
             // gather lists for shadow map
