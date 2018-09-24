@@ -225,7 +225,7 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
             rot = Rotate(rot, 0.01f * evt.move.dy, side);
 
             auto rot_m3 = Mat3f(rot);
-            view_dir_ = view_dir_ * rot_m3;
+            view_dir_ = rot_m3 * view_dir_;
         }
         break;
     case InputManager::RAW_INPUT_KEY_DOWN: {

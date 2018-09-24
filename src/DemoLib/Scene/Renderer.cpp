@@ -282,7 +282,7 @@ void Renderer::BackgroundProc() {
             Ren::Mat4f _clip_from_world = _clip_from_view * _view_from_world;
             Ren::Mat4f _world_from_clip = Ren::Inverse(_clip_from_world);
 
-            Ren::Vec4f frustum_points[8] = { { -1, -1, -1, 1 },
+            Ren::Vec4f frustum_points[8] = { { 0.0f, 0.0f, 0.0f, 1 },
                                              { -1,  -1, -1, 1 },
                                              {  1,  1, -1, 1 },
                                              {  1, -1, -1, 1 },
@@ -292,7 +292,7 @@ void Renderer::BackgroundProc() {
                                              {  1, -1, 1, 1 } };
 
             for (int i = 0; i < 8; i++) {
-                frustum_points[i] = _world_from_clip * frustum_points[i];
+                frustum_points[i] = frustum_points[i] * _world_from_clip;
                 frustum_points[i] /= frustum_points[i][3];
             }
 
