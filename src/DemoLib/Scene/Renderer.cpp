@@ -31,7 +31,7 @@ namespace RendererInternal {
     (min)[0], (max)[1], (max)[2],     \
     (max)[0], (max)[1], (max)[2]
 
-Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx), draw_cam_({}, {}, {}), shadow_cam_{ { {}, {}, {} }, { {}, {}, {} } } {
+Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
     using namespace RendererInternal;
 
     {
@@ -69,8 +69,13 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
         size_t drawables_count = draw_lists_[0].size();
         const auto *drawables = (drawables_count == 0) ? nullptr : &draw_lists_[0][0];
 
-        size_t shadow_drawables_count = shadow_list_[0].size();
-        const auto *shadow_drawables = (shadow_drawables_count == 0) ? nullptr : &shadow_list_[0][0];
+        size_t shadow_drawables_count[4];
+        const DrawableItem *shadow_drawables[4];
+
+        for (int i = 0; i < 4; i++) {
+            shadow_drawables_count[i] = shadow_list_[0][i].size();
+            shadow_drawables[i] = (shadow_drawables_count[i] == 0) ? nullptr : &shadow_list_[0][i][0];
+        }
 
         DrawObjectsInternal(drawables, drawables_count, shadow_drawables, shadow_drawables_count);
     }
@@ -103,9 +108,11 @@ void Renderer::BackgroundProc() {
             dr_list.clear();
             dr_list.reserve(object_count_ * 16);
 
-            auto &sh_dr_list = shadow_list_[1];
-            sh_dr_list.clear();
-            sh_dr_list.reserve(object_count_ * 16);
+            auto *sh_dr_list = shadow_list_[1];
+            for (int i = 0; i < 4; i++) {
+                sh_dr_list[i].clear();
+                sh_dr_list[i].reserve(object_count_ * 16);
+            }
 
             occludees_.clear();
 
@@ -272,87 +279,72 @@ void Renderer::BackgroundProc() {
                 dr_list.pop_back();
             }
 
-            auto temp_cam = draw_cam_;
-            temp_cam.Perspective(draw_cam_.angle(), draw_cam_.aspect(), draw_cam_.near(), 100.0f);
-            temp_cam.UpdatePlanes();
+            const float far_planes[] = { 32.0f, 64.0f, 128.0f, 256.0f };
+            const float near_planes[] = { draw_cam_.near(), far_planes[0], far_planes[1], far_planes[2] };
 
-            const Ren::Mat4f &_view_from_world = temp_cam.view_matrix(),
-                             &_clip_from_view = temp_cam.projection_matrix();
+            for (int casc = 0; casc < 4; casc++) {
+                auto temp_cam = draw_cam_;
+                temp_cam.Perspective(draw_cam_.angle(), draw_cam_.aspect(), near_planes[casc], far_planes[casc]);
+                temp_cam.UpdatePlanes();
 
-            Ren::Mat4f _clip_from_world = _clip_from_view * _view_from_world;
-            Ren::Mat4f _world_from_clip = Ren::Inverse(_clip_from_world);
+                const Ren::Mat4f &_view_from_world = temp_cam.view_matrix(),
+                                 &_clip_from_view = temp_cam.projection_matrix();
 
-            Ren::Vec4f frustum_points[8] = { { 0.0f, 0.0f, 0.0f, 1 },
-                                             { -1,  -1, -1, 1 },
-                                             {  1,  1, -1, 1 },
-                                             {  1, -1, -1, 1 },
-                                             { -1, -1, 1, 1 },
-                                             { -1,  1, 1, 1 },
-                                             {  1,  1, 1, 1 },
-                                             {  1, -1, 1, 1 } };
+                Ren::Mat4f _clip_from_world = _clip_from_view * _view_from_world;
+                Ren::Mat4f _world_from_clip = Ren::Inverse(_clip_from_world);
 
-            for (int i = 0; i < 8; i++) {
-                frustum_points[i] = frustum_points[i] * _world_from_clip;
-                frustum_points[i] /= frustum_points[i][3];
-            }
+                Ren::Vec3f bounding_center;
+                float bounding_radius = temp_cam.GetBoundingSphere(bounding_center);
 
-            Ren::Vec3f fwd = { -_view_from_world[0][2], -_view_from_world[1][2], -_view_from_world[2][2] };
-            //LOGI("%f %f %f", fwd[0], fwd[1], fwd[2]);
-            Ren::Vec3f __ttt = draw_cam_.world_position() + 0.9f * fwd;
-            Ren::Vec4f __tttt = Ren::Vec4f{ __ttt[0], __ttt[1], __ttt[2], 1 };
-            __tttt = _clip_from_world * __tttt;
-            __tttt /= __tttt[3];
-            Ren::Vec3f center = Ren::Vec3f(frustum_points[0]);// 0.5f * Ren::Vec3f(frustum_points[0] + frustum_points[6]);
-            LOGI("+ %f %f %f", center[0], center[1], center[2]);
-            //LOGI("- %f %f %f", __tttt[0], __tttt[1], __tttt[2]);
-            float radius = 0.5f * Ren::Distance(Ren::Vec3f(frustum_points[0]), Ren::Vec3f(frustum_points[6]));
+                LOGI("+ %f %f %f", bounding_center[0], bounding_center[1], bounding_center[2]);
 
-            // gather lists for shadow map
-            auto &shadow_cam = shadow_cam_[1];
+                // gather lists for shadow map
+                auto &shadow_cam = shadow_cam_[1][casc];
 
-            //shadow_cam = draw_cam_;
-            shadow_cam.SetupView(center + 100.0f * Ren::Vec3f{ 0.707f, 0.707f, 0.0f }, center, Ren::Vec3f{ 0.0f, 0.0, 1.0f });
-            shadow_cam.Orthographic(-10.0f, 10.0f, -10.0f, 10.0f, 0.5f, 10000.0f);
-            shadow_cam.UpdatePlanes();
+                //shadow_cam = draw_cam_;
+                shadow_cam.SetupView(bounding_center + (0.0f + bounding_radius) * Ren::Vec3f{ 0.707f, 0.707f, 0.0f }, bounding_center, Ren::Vec3f{ 0.0f, 0.0, 1.0f });
+                shadow_cam.Orthographic(-bounding_radius, bounding_radius, -bounding_radius, bounding_radius, 0.0f, 0.0f + 2 * bounding_radius);
+                shadow_cam.UpdatePlanes();
 
-            view_from_world = shadow_cam.view_matrix(),
-            clip_from_view = shadow_cam.projection_matrix();
+                view_from_world = shadow_cam.view_matrix(),
+                clip_from_view = shadow_cam.projection_matrix();
 
-            stack_size = 0;
-            stack[stack_size++] = (uint32_t)root_node_;
+                stack_size = 0;
+                stack[stack_size++] = (uint32_t)root_node_;
 
-            while (stack_size) {
-                uint32_t cur = stack[--stack_size];
-                const auto *n = &nodes_[cur];
+                while (stack_size) {
+                    uint32_t cur = stack[--stack_size];
+                    const auto *n = &nodes_[cur];
 
-                if (!shadow_cam.IsInFrustum(n->bbox[0], n->bbox[1])) continue;
+                    if (!shadow_cam.IsInFrustum(n->bbox[0], n->bbox[1])) continue;
 
-                if (!n->prim_count) {
-                    stack[stack_size++] = n->left_child;
-                    stack[stack_size++] = n->right_child;
-                } else {
-                    for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
-                        const auto &obj = objects_[i];
+                    if (!n->prim_count) {
+                        stack[stack_size++] = n->left_child;
+                        stack[stack_size++] = n->right_child;
+                    } else {
+                        for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
+                            const auto &obj = objects_[i];
 
-                        const uint32_t drawable_flags = HasMesh | HasTransform;
-                        if ((obj.flags & drawable_flags) == drawable_flags) {
-                            const auto *tr = obj.tr.get();
+                            const uint32_t drawable_flags = HasMesh | HasTransform;
+                            if ((obj.flags & drawable_flags) == drawable_flags) {
+                                const auto *tr = obj.tr.get();
 
-                            if (!shadow_cam.IsInFrustum(tr->bbox_min_ws, tr->bbox_max_ws)) continue;
+                                if (!shadow_cam.IsInFrustum(tr->bbox_min_ws, tr->bbox_max_ws)) continue;
 
-                            const Ren::Mat4f &world_from_object = tr->mat;
+                                const Ren::Mat4f &world_from_object = tr->mat;
 
-                            Ren::Mat4f view_from_object = view_from_world * world_from_object,
-                                       proj_from_object = clip_from_view * view_from_object;
+                                Ren::Mat4f view_from_object = view_from_world * world_from_object,
+                                    proj_from_object = clip_from_view * view_from_object;
 
-                            tr_list.push_back(proj_from_object);
+                                tr_list.push_back(proj_from_object);
 
-                            const auto *mesh = obj.mesh.get();
+                                const auto *mesh = obj.mesh.get();
 
-                            const Ren::TriStrip *s = &mesh->strip(0);
-                            while (s->offset != -1) {
-                                sh_dr_list.push_back({ &tr_list.back(), s->mat.get(), mesh, s });
-                                ++s;
+                                const Ren::TriStrip *s = &mesh->strip(0);
+                                while (s->offset != -1) {
+                                    sh_dr_list[casc].push_back({ &tr_list.back(), s->mat.get(), mesh, s });
+                                    ++s;
+                                }
                             }
                         }
                     }
@@ -406,14 +398,16 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
         std::lock_guard<Sys::SpinlockMutex> _(job_mtx_);
         std::swap(transforms_[0], transforms_[1]);
         std::swap(draw_lists_[0], draw_lists_[1]);
-        std::swap(shadow_list_[0], shadow_list_[1]);
         nodes_ = nodes;
         root_node_ = root_node;
         objects_ = objects;
         object_count_ = object_count;
         back_timings_[0] = back_timings_[1];
         draw_cam_ = cam;
-        std::swap(shadow_cam_[0], shadow_cam_[1]);
+        for (int i = 0; i < 4; i++) {
+            std::swap(shadow_list_[0][i], shadow_list_[1][i]);
+            std::swap(shadow_cam_[0][i], shadow_cam_[1][i]);
+        }
         std::swap(depth_pixels_[0], depth_pixels_[1]);
         std::swap(depth_tiles_[0], depth_tiles_[1]);
         should_notify = (nodes != nullptr);

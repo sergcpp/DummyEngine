@@ -53,7 +53,7 @@ namespace RendererConstants {
         #endif
 
         void main(void) {
-	        gl_FragColor.r = gl_FragCoord.z;
+	        gl_FragColor.r = abs(gl_FragCoord.z) * 10.0;
         }
     )";
 
@@ -139,7 +139,7 @@ void Renderer::InitShadersInternal() {
 }
 
 void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count,
-                                   const DrawableItem *shadow_drawables, size_t shadow_drawable_count) {
+                                   const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4]) {
     using namespace Ren;
     using namespace RendererConstants;
 
@@ -157,51 +157,65 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     const Ren::Mesh *cur_mesh = nullptr;
     const Ren::Mat4f *cur_xform = nullptr;
 
-    if (shadow_drawable_count) {
-        cur_program = shadow_prog_.get();
-        glUseProgram(cur_program->prog_id());
-
-        int stride = sizeof(float) * 13;
-        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
-
+    {
         int32_t viewport_before[4];
-
-        glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
         glGetIntegerv(GL_VIEWPORT, viewport_before);
-        glViewport(0, 0, shadow_buf_.w, shadow_buf_.h);
-        
-        glClearColor(0, 0, 0, 1);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // draw shadow map
-        for (size_t i = 0; i < shadow_drawable_count; i++) {
-            const auto &dr = shadow_drawables[i];
+        for (int casc = 0; casc < 4; casc++) {
+            if (shadow_drawable_count[casc]) {
+                if (cur_program != shadow_prog_.get()) {
+                    cur_program = shadow_prog_.get();
+                    glUseProgram(cur_program->prog_id());
 
-            const Ren::Mat4f *xform = dr.xform;
-            const Ren::Mesh *mesh = dr.mesh;
-            const Ren::TriStrip *strip = dr.strip;
+                    int stride = sizeof(float) * 13;
+                    glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
+                    glVertexAttribPointer(cur_program->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+                }
 
-            if (mesh != cur_mesh) {
-                glBindBuffer(GL_ARRAY_BUFFER, mesh->attribs_buf_id());
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indices_buf_id());
+                if (casc == 0) {
+                    glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
+                    glClearColor(0, 0, 0, 1);
+                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                int stride = sizeof(float) * 13;
-                glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
-                glVertexAttribPointer(cur_program->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+                    glViewport(0, 0, shadow_buf_.w / 2, shadow_buf_.h / 2);
+                } else if (casc == 1) {
+                    glViewport(shadow_buf_.w / 2, 0, shadow_buf_.w / 2, shadow_buf_.h / 2);
+                } else if (casc == 2) {
+                    glViewport(0, shadow_buf_.h / 2, shadow_buf_.w / 2, shadow_buf_.h / 2);
+                } else {
+                    glViewport(shadow_buf_.w / 2, shadow_buf_.h / 2, shadow_buf_.w / 2, shadow_buf_.h / 2);
+                }
+                
+                // draw shadow map
+                for (size_t i = 0; i < shadow_drawable_count[casc]; i++) {
+                    const auto &dr = shadow_drawables[casc][i];
 
-                cur_mesh = mesh;
+                    const Ren::Mat4f *xform = dr.xform;
+                    const Ren::Mesh *mesh = dr.mesh;
+                    const Ren::TriStrip *strip = dr.strip;
+
+                    if (mesh != cur_mesh) {
+                        glBindBuffer(GL_ARRAY_BUFFER, mesh->attribs_buf_id());
+                        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indices_buf_id());
+
+                        int stride = sizeof(float) * 13;
+                        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
+                        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+
+                        cur_mesh = mesh;
+                    }
+
+                    if (xform != cur_xform) {
+                        const auto &proj_from_object = *xform;
+
+                        glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
+
+                        cur_xform = xform;
+                    }
+
+                    glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
+                }
             }
-
-            if (xform != cur_xform) {
-                const auto &proj_from_object = *xform;
-
-                glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
-
-                cur_xform = xform;
-            }
-
-            glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
         }
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
