@@ -102,7 +102,7 @@ void Renderer::BackgroundProc() {
 
             auto &tr_list = transforms_[1];
             tr_list.clear();
-            tr_list.reserve(object_count_ * 2);
+            tr_list.reserve(object_count_ * 5);
 
             auto &dr_list = draw_lists_[1];
             dr_list.clear();

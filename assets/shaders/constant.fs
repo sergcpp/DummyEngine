@@ -4,14 +4,12 @@
 	
 /*
 UNIFORMS
-	col : 1
 	mode : 2
 	diffuse_texture : 3
 	normals_texture : 4
 	shadow_texture : 5
 */
 
-uniform vec3 col;
 uniform float mode;
 uniform sampler2D diffuse_texture;
 uniform sampler2D normals_texture;
@@ -21,9 +19,11 @@ varying mat3 aVertexTBN_;
 varying vec2 aVertexUVs1_;
 varying vec2 aVertexUVs2_;
 
+varying vec2 aVertexShUVs_;
+
 void main(void) {
 	if (mode < 0.5) {
-		gl_FragColor = texture2D(diffuse_texture, aVertexUVs1_);
+		gl_FragColor = texture2D(diffuse_texture, aVertexUVs1_) * 0.0001 + texture2D(shadow_texture, aVertexShUVs_);
 	} else if (mode < 1.5) {
 		vec3 normal = aVertexTBN_[2]*0.5 + vec3(0.5);
 		gl_FragColor = vec4(normal, 1.0);

@@ -109,8 +109,9 @@ namespace RendererConstants {
     const int U_MODE = 2;
     const int U_TEX = 3;
     const int U_NORM_TEX = 4;
+    const int U_SHADOW_TEX = 5;
 
-    const int U_COL = 1;
+    const int U_SHADOW_MATR = 1;
 
     const int DIFFUSEMAP_SLOT = 0;
     const int NORMALMAP_SLOT = 1;
@@ -307,8 +308,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
             glUniform1i(p->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
             glUniform1i(p->uniform(U_NORM_TEX).loc, NORMALMAP_SLOT);
+            glUniform1i(p->uniform(U_SHADOW_TEX).loc, SHADOWMAP_SLOT);
 
-            glUniform3f(p->uniform(U_COL).loc, 1.0f, 1.0f, 1.0f);
+            //glUniform3f(p->uniform(U_COL).loc, 1.0f, 1.0f, 1.0f);
             
             if (xform == cur_xform) {
                 const auto &proj_from_object = *xform;

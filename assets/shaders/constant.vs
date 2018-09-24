@@ -8,6 +8,7 @@ ATTRIBUTES
 	aVertexUVs2 : 4
 UNIFORMS
 	uMVPMatrix : 0
+	uShadowMatrix[0] : 1
 */
 
 attribute vec3 aVertexPosition;
@@ -17,14 +18,20 @@ attribute vec2 aVertexUVs1;
 attribute vec2 aVertexUVs2;
 
 uniform mat4 uMVPMatrix;
+uniform mat4 uShadowMatrix[4];
 
 varying mat3 aVertexTBN_;
 varying vec2 aVertexUVs1_;
 varying vec2 aVertexUVs2_;
 
+varying vec2 aVertexShUVs_;
+
 void main(void) {
 	aVertexTBN_ = mat3(aVertexTangent, cross(aVertexNormal, aVertexTangent), aVertexNormal);
 	aVertexUVs1_ = aVertexUVs1;
 	aVertexUVs2_ = aVertexUVs2;
+	
+	vec4 frag_pos_ls = uShadowMatrix[0] * vec4(aVertexPosition, 1.0);
+	aVertexShUVs_ = frag_pos_ls.xy * 0.5 + 0.5;
     gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
 } 
