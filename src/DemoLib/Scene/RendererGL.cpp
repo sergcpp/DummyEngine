@@ -53,7 +53,7 @@ namespace RendererInternal {
         #endif
 
         void main(void) {
-	        gl_FragColor.r = abs(gl_FragCoord.z) * 10.0;
+	        gl_FragColor.r = gl_FragCoord.z;
         }
     )";
 
@@ -162,8 +162,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     {   // draw shadow map
         int32_t viewport_before[4];
         glGetIntegerv(GL_VIEWPORT, viewport_before);
+        bool fb_bound = false;
 
-        for (int casc = 0; casc < 4; casc++) {
+        for (int casc = 0; casc < 1; casc++) {
             if (shadow_drawable_count[casc]) {
                 if (cur_program != shadow_prog_.get()) {
                     cur_program = shadow_prog_.get();
@@ -174,12 +175,16 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                     glVertexAttribPointer(cur_program->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
                 }
 
-                if (casc == 0) {
+                if (!fb_bound) {
                     glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
                     glClearColor(0, 0, 0, 1);
                     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                    fb_bound = true;
+                }
 
-                    glViewport(0, 0, shadow_buf_.w / 2, shadow_buf_.h / 2);
+                if (casc == 0) {
+                    //glViewport(0, 0, shadow_buf_.w / 2, shadow_buf_.h / 2);
+                    glViewport(0, 0, shadow_buf_.w, shadow_buf_.h);
                 } else if (casc == 1) {
                     glViewport(shadow_buf_.w / 2, 0, shadow_buf_.w / 2, shadow_buf_.h / 2);
                 } else if (casc == 2) {
@@ -311,6 +316,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                 glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
             }
 
+            BindTexture(SHADOWMAP_SLOT, shadow_buf_.col_tex);
+
             cur_program = p;
         }
 
@@ -343,7 +350,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
 
         {   // update shadow matrices
-            for (int casc = 0; casc < 4; casc++) {
+            for (int casc = 0; casc < 1; casc++) {
                 const auto *_sh_clip_from_object = sh_clip_from_object[casc];
                 if (_sh_clip_from_object && _sh_clip_from_object != cur_sh_clip_from_object[casc]) {
                     glUniformMatrix4fv(p->uniform(U_SH_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(_sh_clip_from_object));

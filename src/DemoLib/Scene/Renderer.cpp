@@ -18,7 +18,7 @@ namespace RendererInternal {
 
     const int MAX_STACK_SIZE = 64;
 
-    const int SHADOWMAP_RES = 512;
+    const int SHADOWMAP_RES = 4096;
 }
 
 #define BBOX_POINTS(min, max) \
@@ -285,7 +285,7 @@ void Renderer::BackgroundProc() {
             }
 
             // Planes, that define cascaded shadow map splits
-            const float far_planes[] = { 32.0f, 64.0f, 128.0f, 256.0f };
+            const float far_planes[] = { 16.0f, 32.0f, 64.0f, 128.0f };
             const float near_planes[] = { draw_cam_.near(), far_planes[0], far_planes[1], far_planes[2] };
 
             // Gather drawables for each cascade
@@ -303,9 +303,8 @@ void Renderer::BackgroundProc() {
                 Ren::Vec3f bounding_center;
                 float bounding_radius = temp_cam.GetBoundingSphere(bounding_center);
 
-                LOGI("+ %f %f %f", bounding_center[0], bounding_center[1], bounding_center[2]);
+                //LOGI("+ %f %f %f", bounding_center[0], bounding_center[1], bounding_center[2]);
 
-                // gather lists for shadow map
                 auto &shadow_cam = shadow_cam_[1][casc];
 
                 //shadow_cam = draw_cam_;
