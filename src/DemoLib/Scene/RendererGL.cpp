@@ -4,7 +4,7 @@
 #include <Ren/Context.h>
 #include <Ren/GL.h>
 
-namespace RendererConstants {
+namespace RendererInternal {
     const char fillz_vs_shader[] = R"(
         /*
         ATTRIBUTES
@@ -111,7 +111,7 @@ namespace RendererConstants {
     const int U_NORM_TEX = 4;
     const int U_SHADOW_TEX = 5;
 
-    const int U_SHADOW_MATR = 1;
+    const int U_SH_MVP_MATR = 1;
 
     const int DIFFUSEMAP_SLOT = 0;
     const int NORMALMAP_SLOT = 1;
@@ -126,7 +126,7 @@ namespace RendererConstants {
 }
 
 void Renderer::InitShadersInternal() {
-    using namespace RendererConstants;
+    using namespace RendererInternal;
 
     Ren::eProgLoadStatus status;
     fill_depth_prog_ = ctx_.LoadProgramGLSL("fill_depth", fillz_vs_shader, fillz_fs_shader, &status);
@@ -139,10 +139,10 @@ void Renderer::InitShadersInternal() {
     assert(status == Ren::ProgCreatedFromData);
 }
 
-void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count,
+void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const Ren::Mat4f shadow_transforms[4],
                                    const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4]) {
     using namespace Ren;
-    using namespace RendererConstants;
+    using namespace RendererInternal;
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
@@ -156,9 +156,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     const Ren::Program *cur_program = nullptr;
     const Ren::Material *cur_mat = nullptr;
     const Ren::Mesh *cur_mesh = nullptr;
-    const Ren::Mat4f *cur_xform = nullptr;
+    const Ren::Mat4f *cur_clip_from_object = nullptr,
+                     *cur_sh_clip_from_object[4] = { nullptr };
 
-    {
+    {   // draw shadow map
         int32_t viewport_before[4];
         glGetIntegerv(GL_VIEWPORT, viewport_before);
 
@@ -187,11 +188,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                     glViewport(shadow_buf_.w / 2, shadow_buf_.h / 2, shadow_buf_.w / 2, shadow_buf_.h / 2);
                 }
                 
-                // draw shadow map
                 for (size_t i = 0; i < shadow_drawable_count[casc]; i++) {
                     const auto &dr = shadow_drawables[casc][i];
 
-                    const Ren::Mat4f *xform = dr.xform;
+                    const Ren::Mat4f *clip_from_object = dr.clip_from_object;
                     const Ren::Mesh *mesh = dr.mesh;
                     const Ren::TriStrip *strip = dr.strip;
 
@@ -206,12 +206,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                         cur_mesh = mesh;
                     }
 
-                    if (xform != cur_xform) {
-                        const auto &proj_from_object = *xform;
-
-                        glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
-
-                        cur_xform = xform;
+                    if (clip_from_object != cur_clip_from_object) {
+                        glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
+                        cur_clip_from_object = clip_from_object;
                     }
 
                     glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
@@ -237,7 +234,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         for (size_t i = 0; i < drawable_count; i++) {
             const auto &dr = drawables[i];
 
-            const Ren::Mat4f *xform = dr.xform;
+            const Ren::Mat4f *clip_from_object = dr.clip_from_object;
             const Ren::Mesh *mesh = dr.mesh;
             const Ren::TriStrip *strip = dr.strip;
 
@@ -252,12 +249,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                 cur_mesh = mesh;
             }
 
-            if (xform != cur_xform) {
-                const auto &proj_from_object = *xform;
-
-                glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
-
-                cur_xform = xform;
+            if (clip_from_object != cur_clip_from_object) {
+                glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
+                cur_clip_from_object = clip_from_object;
             }
 
             glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
@@ -278,7 +272,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     for (size_t i = 0; i < drawable_count; i++) {
         const auto &dr = drawables[i];
 
-        const Ren::Mat4f *xform = dr.xform;
+        const Ren::Mat4f *clip_from_object = dr.clip_from_object,
+                         *const *sh_clip_from_object = dr.sh_clip_from_object;
         const Ren::Material *mat = dr.mat;
         const Ren::Mesh *mesh = dr.mesh;
         const Ren::TriStrip *strip = dr.strip;
@@ -312,9 +307,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
             //glUniform3f(p->uniform(U_COL).loc, 1.0f, 1.0f, 1.0f);
             
-            if (xform == cur_xform) {
-                const auto &proj_from_object = *xform;
-                glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
+            if (clip_from_object == cur_clip_from_object) {
+                glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
             }
 
             cur_program = p;
@@ -343,12 +337,19 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             cur_mesh = mesh;
         }
 
-        if (xform != cur_xform) {
-            const auto &proj_from_object = *xform;
+        if (clip_from_object != cur_clip_from_object) {
+            glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
+            cur_clip_from_object = clip_from_object;
+        }
 
-            glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(proj_from_object));
-
-            cur_xform = xform;
+        {   // update shadow matrices
+            for (int casc = 0; casc < 4; casc++) {
+                const auto *_sh_clip_from_object = sh_clip_from_object[casc];
+                if (_sh_clip_from_object && _sh_clip_from_object != cur_sh_clip_from_object[casc]) {
+                    glUniformMatrix4fv(p->uniform(U_SH_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(_sh_clip_from_object));
+                    cur_sh_clip_from_object[casc] = _sh_clip_from_object;
+                }
+            }
         }
 
         if (mat != cur_mat) {

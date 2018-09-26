@@ -19,11 +19,16 @@ varying mat3 aVertexTBN_;
 varying vec2 aVertexUVs1_;
 varying vec2 aVertexUVs2_;
 
-varying vec2 aVertexShUVs_;
+varying vec4 aVertexShUVs_;
 
 void main(void) {
 	if (mode < 0.5) {
-		gl_FragColor = texture2D(diffuse_texture, aVertexUVs1_) * 0.0001 + texture2D(shadow_texture, aVertexShUVs_);
+		vec3 frag_pos_ls = aVertexShUVs_.xyz / aVertexShUVs_.w;
+		frag_pos_ls = frag_pos_ls * 0.5 + 0.5;
+		gl_FragColor = texture2D(diffuse_texture, aVertexUVs1_) + texture2D(shadow_texture, frag_pos_ls.xy);
+		gl_FragColor.xyz *= 0.5;
+
+		//gl_FragColor.xyz += frag_pos_ls;
 	} else if (mode < 1.5) {
 		vec3 normal = aVertexTBN_[2]*0.5 + vec3(0.5);
 		gl_FragColor = vec4(normal, 1.0);

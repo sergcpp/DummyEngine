@@ -15,23 +15,18 @@ extern "C" {
 #include "SceneData.h"
 
 struct DrawableItem {
-    bool invisible = false;
-    const Ren::Mat4f    *xform;
+    const Ren::Mat4f    *clip_from_object, *sh_clip_from_object[4];
     const Ren::Material *mat;
     const Ren::Mesh     *mesh;
     const Ren::TriStrip *strip;
 
-    DrawableItem(const Ren::Mat4f *_xform, const Ren::Material *_mat,
-        const Ren::Mesh *_mesh, const Ren::TriStrip *_strip) : xform(_xform), mat(_mat), mesh(_mesh), strip(_strip) { }
+    DrawableItem(const Ren::Mat4f *_clip_from_object, const Ren::Material *_mat,
+        const Ren::Mesh *_mesh, const Ren::TriStrip *_strip) : clip_from_object(_clip_from_object), sh_clip_from_object{ nullptr },
+        mat(_mat), mesh(_mesh), strip(_strip) { }
 
     bool operator<(const DrawableItem& rhs) const {
-        return std::tie(invisible, mat, mesh, xform) < std::tie(rhs.invisible, rhs.mat, rhs.mesh, rhs.xform);
+        return std::tie(mat, mesh, clip_from_object) < std::tie(rhs.mat, rhs.mesh, rhs.clip_from_object);
     }
-};
-
-struct OccludeeItem {
-    float bbox_points[8][3];
-    size_t dr_start, dr_count;
 };
 
 class Renderer {
@@ -66,7 +61,7 @@ private:
     size_t object_count_ = 0;
     std::vector<Ren::Mat4f> transforms_[2];
     std::vector<DrawableItem> draw_lists_[2], shadow_list_[2][4];
-    std::vector<OccludeeItem> occludees_;
+    std::vector<uint32_t> object_to_drawable_;
     Ren::Camera draw_cam_, shadow_cam_[2][4];
     TimingInfo timings_, back_timings_[2];
 
@@ -77,7 +72,7 @@ private:
                        const SceneObject *objects, size_t object_count);
 
     void InitShadersInternal();
-    void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count,
+    void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const Ren::Mat4f shadow_transforms[4],
                              const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4]);
 
     std::thread background_thread_;

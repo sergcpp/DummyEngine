@@ -69,15 +69,19 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
         size_t drawables_count = draw_lists_[0].size();
         const auto *drawables = (drawables_count == 0) ? nullptr : &draw_lists_[0][0];
 
+        Ren::Mat4f shadow_transforms[4];
         size_t shadow_drawables_count[4];
         const DrawableItem *shadow_drawables[4];
 
         for (int i = 0; i < 4; i++) {
+            Ren::Mat4f view_from_world = shadow_cam_[0][i].view_matrix(),
+                       clip_from_view = shadow_cam_[0][i].projection_matrix();
+            shadow_transforms[i] = clip_from_view * view_from_world;
             shadow_drawables_count[i] = shadow_list_[0][i].size();
             shadow_drawables[i] = (shadow_drawables_count[i] == 0) ? nullptr : &shadow_list_[0][i][0];
         }
 
-        DrawObjectsInternal(drawables, drawables_count, shadow_drawables, shadow_drawables_count);
+        DrawObjectsInternal(drawables, drawables_count, shadow_transforms, shadow_drawables, shadow_drawables_count);
     }
     auto t2 = std::chrono::high_resolution_clock::now();
     timings_ = { t1, t2 };
@@ -108,13 +112,14 @@ void Renderer::BackgroundProc() {
             dr_list.clear();
             dr_list.reserve(object_count_ * 16);
 
+            object_to_drawable_.clear();
+            object_to_drawable_.resize(object_count_, 0xffffffff);
+
             auto *sh_dr_list = shadow_list_[1];
             for (int i = 0; i < 4; i++) {
                 sh_dr_list[i].clear();
                 sh_dr_list[i].reserve(object_count_ * 16);
             }
-
-            occludees_.clear();
 
             Ren::Mat4f view_from_world = draw_cam_.view_matrix(),
                        clip_from_view = draw_cam_.projection_matrix();
@@ -127,161 +132,163 @@ void Renderer::BackgroundProc() {
             uint32_t stack[MAX_STACK_SIZE];
             uint32_t stack_size = 0;
 
-            stack[stack_size++] = (uint32_t)root_node_;
+            {   // Rasterize occluder meshes in small framebuffer
+                stack[stack_size++] = (uint32_t)root_node_;
 
-            while (stack_size && culling_enabled_) {
-                uint32_t cur = stack[--stack_size];
-                const auto *n = &nodes_[cur];
+                while (stack_size && culling_enabled_) {
+                    uint32_t cur = stack[--stack_size];
+                    const auto *n = &nodes_[cur];
 
-                if (!draw_cam_.IsInFrustum(n->bbox[0], n->bbox[1])) continue;
+                    if (!draw_cam_.IsInFrustum(n->bbox[0], n->bbox[1])) continue;
 
-                if (!n->prim_count) {
-                    stack[stack_size++] = n->left_child;
-                    stack[stack_size++] = n->right_child;
-                } else {
-                    for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
-                        const auto &obj = objects_[i];
+                    if (!n->prim_count) {
+                        stack[stack_size++] = n->left_child;
+                        stack[stack_size++] = n->right_child;
+                    } else {
+                        for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
+                            const auto &obj = objects_[i];
 
-                        const uint32_t occluder_flags = HasMesh | HasTransform | HasOccluder;
-                        if ((obj.flags & occluder_flags) == occluder_flags) {
-                            const auto *tr = obj.tr.get();
+                            const uint32_t occluder_flags = HasMesh | HasTransform | HasOccluder;
+                            if ((obj.flags & occluder_flags) == occluder_flags) {
+                                const auto *tr = obj.tr.get();
 
-                            if (!draw_cam_.IsInFrustum(tr->bbox_min_ws, tr->bbox_max_ws)) continue;
+                                if (!draw_cam_.IsInFrustum(tr->bbox_min_ws, tr->bbox_max_ws)) continue;
 
-                            const Ren::Mat4f &world_from_object = tr->mat;
+                                const Ren::Mat4f &world_from_object = tr->mat;
 
-                            Ren::Mat4f view_from_object = view_from_world * world_from_object,
-                                       proj_from_object = clip_from_view * view_from_object;
+                                Ren::Mat4f view_from_object = view_from_world * world_from_object,
+                                           clip_from_object = clip_from_view * view_from_object;
 
-                            const auto *mesh = obj.mesh.get();
+                                const auto *mesh = obj.mesh.get();
 
-                            SWcull_surf surf[16];
-                            int surf_count = 0;
+                                SWcull_surf surf[16];
+                                int surf_count = 0;
 
-                            const Ren::TriStrip *s = &mesh->strip(0);
-                            while (s->offset != -1) {
-                                surf[surf_count].type = SW_OCCLUDER;
-                                surf[surf_count].prim_type = SW_TRIANGLES;
-                                surf[surf_count].index_type = SW_UNSIGNED_INT;
-                                surf[surf_count].attribs = mesh->attribs();
-                                surf[surf_count].indices = ((const uint8_t *)mesh->indices() + s->offset);
-                                surf[surf_count].stride = 13 * sizeof(float);
-                                surf[surf_count].count = (SWuint)s->num_indices;
-                                surf[surf_count].xform = Ren::ValuePtr(proj_from_object);
-                                surf[surf_count].dont_skip = nullptr;
-                                surf_count++;
+                                const Ren::TriStrip *s = &mesh->strip(0);
+                                while (s->offset != -1) {
+                                    surf[surf_count].type = SW_OCCLUDER;
+                                    surf[surf_count].prim_type = SW_TRIANGLES;
+                                    surf[surf_count].index_type = SW_UNSIGNED_INT;
+                                    surf[surf_count].attribs = mesh->attribs();
+                                    surf[surf_count].indices = ((const uint8_t *)mesh->indices() + s->offset);
+                                    surf[surf_count].stride = 13 * sizeof(float);
+                                    surf[surf_count].count = (SWuint)s->num_indices;
+                                    surf[surf_count].xform = Ren::ValuePtr(clip_from_object);
+                                    surf[surf_count].dont_skip = nullptr;
+                                    surf_count++;
 
-                                ++s;
+                                    ++s;
+                                }
+
+                                swCullCtxSubmitCullSurfs(&cull_ctx_, surf, surf_count);
                             }
-
-                            swCullCtxSubmitCullSurfs(&cull_ctx_, surf, surf_count);
                         }
                     }
                 }
             }
 
-            stack_size = 0;
-            stack[stack_size++] = (uint32_t)root_node_;
+            {   // Gather drawable meshes, skip occluded and frustum culled
+                stack_size = 0;
+                stack[stack_size++] = (uint32_t)root_node_;
 
-            while (stack_size) {
-                uint32_t cur = stack[--stack_size];
-                const auto *n = &nodes_[cur];
+                while (stack_size) {
+                    uint32_t cur = stack[--stack_size];
+                    const auto *n = &nodes_[cur];
 
-                const float bbox_points[8][3] = { BBOX_POINTS(n->bbox[0], n->bbox[1]) };
-                if (!draw_cam_.IsInFrustum(bbox_points)) continue;
+                    const float bbox_points[8][3] = { BBOX_POINTS(n->bbox[0], n->bbox[1]) };
+                    if (!draw_cam_.IsInFrustum(bbox_points)) continue;
 
-                if (culling_enabled_) {
-                    const auto &cam_pos = draw_cam_.world_position();
+                    if (culling_enabled_) {
+                        const auto &cam_pos = draw_cam_.world_position();
 
-                    // do not question visibility of the node in which we are inside
-                    if (cam_pos[0] < n->bbox[0][0] - 0.5f || cam_pos[1] < n->bbox[0][1] - 0.5f || cam_pos[2] < n->bbox[0][2] - 0.5f ||
-                        cam_pos[0] > n->bbox[1][0] + 0.5f || cam_pos[1] > n->bbox[1][1] + 0.5f || cam_pos[2] > n->bbox[1][2] + 0.5f) {
-                        SWcull_surf surf;
+                        // do not question visibility of the node in which we are inside
+                        if (cam_pos[0] < n->bbox[0][0] - 0.5f || cam_pos[1] < n->bbox[0][1] - 0.5f || cam_pos[2] < n->bbox[0][2] - 0.5f ||
+                            cam_pos[0] > n->bbox[1][0] + 0.5f || cam_pos[1] > n->bbox[1][1] + 0.5f || cam_pos[2] > n->bbox[1][2] + 0.5f) {
+                            SWcull_surf surf;
 
-                        surf.type = SW_OCCLUDEE;
-                        surf.prim_type = SW_TRIANGLES;
-                        surf.index_type = SW_UNSIGNED_BYTE;
-                        surf.attribs = &bbox_points[0][0];
-                        surf.indices = &bbox_indices[0];
-                        surf.stride = 3 * sizeof(float);
-                        surf.count = 36;
-                        surf.xform = Ren::ValuePtr(clip_from_identity);
-                        surf.dont_skip = nullptr;
+                            surf.type = SW_OCCLUDEE;
+                            surf.prim_type = SW_TRIANGLES;
+                            surf.index_type = SW_UNSIGNED_BYTE;
+                            surf.attribs = &bbox_points[0][0];
+                            surf.indices = &bbox_indices[0];
+                            surf.stride = 3 * sizeof(float);
+                            surf.count = 36;
+                            surf.xform = Ren::ValuePtr(clip_from_identity);
+                            surf.dont_skip = nullptr;
 
-                        swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
+                            swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
-                        if (surf.visible == 0) continue;
+                            if (surf.visible == 0) continue;
+                        }
                     }
-                }
 
-                if (!n->prim_count) {
-                    stack[stack_size++] = n->left_child;
-                    stack[stack_size++] = n->right_child;
-                } else {
-                    for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
-                        const auto &obj = objects_[i];
+                    if (!n->prim_count) {
+                        stack[stack_size++] = n->left_child;
+                        stack[stack_size++] = n->right_child;
+                    } else {
+                        for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
+                            const auto &obj = objects_[i];
 
-                        const uint32_t drawable_flags = HasMesh | HasTransform;
-                        if ((obj.flags & drawable_flags) == drawable_flags) {
-                            const auto *tr = obj.tr.get();
+                            const uint32_t drawable_flags = HasMesh | HasTransform;
+                            if ((obj.flags & drawable_flags) == drawable_flags) {
+                                const auto *tr = obj.tr.get();
 
-                            const float bbox_points[8][3] = { BBOX_POINTS(tr->bbox_min_ws, tr->bbox_max_ws) };
-                            if (!draw_cam_.IsInFrustum(bbox_points)) continue;
+                                const float bbox_points[8][3] = { BBOX_POINTS(tr->bbox_min_ws, tr->bbox_max_ws) };
+                                if (!draw_cam_.IsInFrustum(bbox_points)) continue;
 
-                            if (culling_enabled_ && n->prim_count > 1) {
-                                const auto &cam_pos = draw_cam_.world_position();
+                                if (culling_enabled_ && n->prim_count > 1) {
+                                    const auto &cam_pos = draw_cam_.world_position();
 
-                                // do not question visibility of the object in which we are inside
-                                if (cam_pos[0] < tr->bbox_min_ws[0] - 0.5f || cam_pos[1] < tr->bbox_min_ws[1] - 0.5f || cam_pos[2] < tr->bbox_min_ws[2] - 0.5f ||
-                                    cam_pos[0] > tr->bbox_max_ws[0] + 0.5f || cam_pos[1] > tr->bbox_max_ws[1] + 0.5f || cam_pos[2] > tr->bbox_max_ws[2] + 0.5f) {
-                                    SWcull_surf surf;
+                                    // do not question visibility of the object in which we are inside
+                                    if (cam_pos[0] < tr->bbox_min_ws[0] - 0.5f || cam_pos[1] < tr->bbox_min_ws[1] - 0.5f || cam_pos[2] < tr->bbox_min_ws[2] - 0.5f ||
+                                        cam_pos[0] > tr->bbox_max_ws[0] + 0.5f || cam_pos[1] > tr->bbox_max_ws[1] + 0.5f || cam_pos[2] > tr->bbox_max_ws[2] + 0.5f) {
+                                        SWcull_surf surf;
 
-                                    surf.type = SW_OCCLUDEE;
-                                    surf.prim_type = SW_TRIANGLES;
-                                    surf.index_type = SW_UNSIGNED_BYTE;
-                                    surf.attribs = &bbox_points[0][0];
-                                    surf.indices = &bbox_indices[0];
-                                    surf.stride = 3 * sizeof(float);
-                                    surf.count = 36;
-                                    surf.xform = Ren::ValuePtr(clip_from_identity);
-                                    surf.dont_skip = nullptr;
+                                        surf.type = SW_OCCLUDEE;
+                                        surf.prim_type = SW_TRIANGLES;
+                                        surf.index_type = SW_UNSIGNED_BYTE;
+                                        surf.attribs = &bbox_points[0][0];
+                                        surf.indices = &bbox_indices[0];
+                                        surf.stride = 3 * sizeof(float);
+                                        surf.count = 36;
+                                        surf.xform = Ren::ValuePtr(clip_from_identity);
+                                        surf.dont_skip = nullptr;
 
-                                    swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
+                                        swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
-                                    if (surf.visible == 0) continue;
+                                        if (surf.visible == 0) continue;
+                                    }
+                                }
+
+                                const Ren::Mat4f &world_from_object = tr->mat;
+
+                                Ren::Mat4f view_from_object = view_from_world * world_from_object,
+                                           clip_from_object = clip_from_view * view_from_object;
+
+                                tr_list.push_back(clip_from_object);
+
+                                const auto *mesh = obj.mesh.get();
+
+                                size_t dr_start = dr_list.size();
+
+                                object_to_drawable_[i] = (uint32_t)dr_list.size();
+
+                                const Ren::TriStrip *s = &mesh->strip(0);
+                                while (s->offset != -1) {
+                                    dr_list.push_back({ &tr_list.back(), s->mat.get(), mesh, s });
+                                    ++s;
                                 }
                             }
-
-                            const Ren::Mat4f &world_from_object = tr->mat;
-
-                            Ren::Mat4f view_from_object = view_from_world * world_from_object,
-                                       proj_from_object = clip_from_view * view_from_object;
-
-                            tr_list.push_back(proj_from_object);
-
-                            const auto *mesh = obj.mesh.get();
-
-                            size_t dr_start = dr_list.size();
-
-                            const Ren::TriStrip *s = &mesh->strip(0);
-                            while (s->offset != -1) {
-                                dr_list.push_back({ &tr_list.back(), s->mat.get(), mesh, s });
-                                ++s;
-                            }
                         }
                     }
                 }
             }
 
-            std::sort(std::begin(dr_list), std::end(dr_list));
-
-            while (!dr_list.empty() && dr_list.back().invisible) {
-                dr_list.pop_back();
-            }
-
+            // Planes, that define cascaded shadow map splits
             const float far_planes[] = { 32.0f, 64.0f, 128.0f, 256.0f };
             const float near_planes[] = { draw_cam_.near(), far_planes[0], far_planes[1], far_planes[2] };
 
+            // Gather drawables for each cascade
             for (int casc = 0; casc < 4; casc++) {
                 auto temp_cam = draw_cam_;
                 temp_cam.Perspective(draw_cam_.angle(), draw_cam_.aspect(), near_planes[casc], far_planes[casc]);
@@ -334,9 +341,21 @@ void Renderer::BackgroundProc() {
                                 const Ren::Mat4f &world_from_object = tr->mat;
 
                                 Ren::Mat4f view_from_object = view_from_world * world_from_object,
-                                    proj_from_object = clip_from_view * view_from_object;
+                                           clip_from_object = clip_from_view * view_from_object;
 
-                                tr_list.push_back(proj_from_object);
+                                tr_list.push_back(clip_from_object);
+
+                                auto dr_index = object_to_drawable_[i];
+                                if (dr_index != 0xffffffff) {
+                                    auto *dr = &dr_list[dr_index];
+                                    const auto *mesh = dr->mesh;
+
+                                    const Ren::TriStrip *s = &mesh->strip(0);
+                                    while (s->offset != -1) {
+                                        dr->sh_clip_from_object[casc] = &tr_list.back();
+                                        ++dr; ++s;
+                                    }
+                                }
 
                                 const auto *mesh = obj.mesh.get();
 
@@ -350,6 +369,9 @@ void Renderer::BackgroundProc() {
                     }
                 }
             }
+
+            // Sort drawables to optimize state switches
+            std::sort(std::begin(dr_list), std::end(dr_list));
 
             if (debug_cull_ && culling_enabled_) {
                 const float NEAR_CLIP = 0.5f;
