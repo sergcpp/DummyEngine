@@ -36,7 +36,7 @@ class GSDrawTest : public GameState {
     TimingInfo last_timings_;
 
     bool view_grabbed_ = false;
-    Ren::Vec3f view_origin_ = { 0, 0, 0 },
+    Ren::Vec3f view_origin_ = { 0, 1, 0 },
                view_dir_ = { 0, 0, -1 };
 
     float forward_speed_ = 0, side_speed_ = 0;

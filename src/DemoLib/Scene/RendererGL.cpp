@@ -113,6 +113,9 @@ namespace RendererInternal {
 
     const int U_SH_MVP_MATR = 1;
 
+    const int U_SUN_DIR = 10;
+    const int U_SUN_COL = 11;
+
     const int DIFFUSEMAP_SLOT = 0;
     const int NORMALMAP_SLOT = 1;
     const int SHADOWMAP_SLOT = 2;
@@ -140,12 +143,13 @@ void Renderer::InitShadersInternal() {
 }
 
 void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const Ren::Mat4f shadow_transforms[4],
-                                   const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4]) {
+                                   const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env) {
     using namespace Ren;
     using namespace RendererInternal;
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
 
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -164,7 +168,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glGetIntegerv(GL_VIEWPORT, viewport_before);
         bool fb_bound = false;
 
-        for (int casc = 0; casc < 1; casc++) {
+        for (int casc = 0; casc < 4; casc++) {
             if (shadow_drawable_count[casc]) {
                 if (cur_program != shadow_prog_.get()) {
                     cur_program = shadow_prog_.get();
@@ -183,8 +187,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                 }
 
                 if (casc == 0) {
-                    //glViewport(0, 0, shadow_buf_.w / 2, shadow_buf_.h / 2);
-                    glViewport(0, 0, shadow_buf_.w, shadow_buf_.h);
+                    glViewport(0, 0, shadow_buf_.w / 2, shadow_buf_.h / 2);
                 } else if (casc == 1) {
                     glViewport(shadow_buf_.w / 2, 0, shadow_buf_.w / 2, shadow_buf_.h / 2);
                 } else if (casc == 2) {
@@ -310,7 +313,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             glUniform1i(p->uniform(U_NORM_TEX).loc, NORMALMAP_SLOT);
             glUniform1i(p->uniform(U_SHADOW_TEX).loc, SHADOWMAP_SLOT);
 
-            //glUniform3f(p->uniform(U_COL).loc, 1.0f, 1.0f, 1.0f);
+            glUniform3fv(p->uniform(U_SUN_DIR).loc, 1, Ren::ValuePtr(env.sun_dir));
+            glUniform3fv(p->uniform(U_SUN_COL).loc, 1, Ren::ValuePtr(env.sun_col));
             
             if (clip_from_object == cur_clip_from_object) {
                 glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
@@ -350,10 +354,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
 
         {   // update shadow matrices
-            for (int casc = 0; casc < 1; casc++) {
+            for (int casc = 0; casc < 4; casc++) {
                 const auto *_sh_clip_from_object = sh_clip_from_object[casc];
                 if (_sh_clip_from_object && _sh_clip_from_object != cur_sh_clip_from_object[casc]) {
-                    glUniformMatrix4fv(p->uniform(U_SH_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(_sh_clip_from_object));
+                    glUniformMatrix4fv(p->uniform(U_SH_MVP_MATR).loc + casc, 1, GL_FALSE, ValuePtr(_sh_clip_from_object));
                     cur_sh_clip_from_object[casc] = _sh_clip_from_object;
                 }
             }

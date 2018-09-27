@@ -18,7 +18,7 @@ namespace RendererInternal {
 
     const int MAX_STACK_SIZE = 64;
 
-    const int SHADOWMAP_RES = 4096;
+    const int SHADOWMAP_RES = 2048;
 }
 
 #define BBOX_POINTS(min, max) \
@@ -81,7 +81,11 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
             shadow_drawables[i] = (shadow_drawables_count[i] == 0) ? nullptr : &shadow_list_[0][i][0];
         }
 
-        DrawObjectsInternal(drawables, drawables_count, shadow_transforms, shadow_drawables, shadow_drawables_count);
+        Environment env;
+        env.sun_dir = Ren::Vec3f{ 0.0f, 1.0f, 0.0f };
+        env.sun_col = Ren::Vec3f{ 1.0f, 1.0f, 1.0f };
+
+        DrawObjectsInternal(drawables, drawables_count, shadow_transforms, shadow_drawables, shadow_drawables_count, env);
     }
     auto t2 = std::chrono::high_resolution_clock::now();
     timings_ = { t1, t2 };
@@ -285,7 +289,7 @@ void Renderer::BackgroundProc() {
             }
 
             // Planes, that define cascaded shadow map splits
-            const float far_planes[] = { 16.0f, 32.0f, 64.0f, 128.0f };
+            const float far_planes[] = { 8.0f, 24.0f, 56.0f, 120.0f };
             const float near_planes[] = { draw_cam_.near(), far_planes[0], far_planes[1], far_planes[2] };
 
             // Gather drawables for each cascade
@@ -301,15 +305,41 @@ void Renderer::BackgroundProc() {
                 Ren::Mat4f _world_from_clip = Ren::Inverse(_clip_from_world);
 
                 Ren::Vec3f bounding_center;
-                float bounding_radius = temp_cam.GetBoundingSphere(bounding_center);
-
-                //LOGI("+ %f %f %f", bounding_center[0], bounding_center[1], bounding_center[2]);
+                const float bounding_radius = temp_cam.GetBoundingSphere(bounding_center);
 
                 auto &shadow_cam = shadow_cam_[1][casc];
 
+                auto light_dir = Ren::Normalize(Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+                auto cam_up = Ren::Vec3f{ 0.0f, 0.0, 1.0f };
+                if (light_dir[0] < light_dir[1] && light_dir[0] < light_dir[2]) {
+                    cam_up = Ren::Vec3f{ 1.0f, 0.0, 0.0f };
+                } else if (light_dir[1] < light_dir[0] && light_dir[1] < light_dir[2]) {
+                    cam_up = Ren::Vec3f{ 0.0f, 1.0, 0.0f };
+                }
+
+                auto cam_target = bounding_center;
+                
+                {   // Snap camera movement to shadow map pixels
+                    auto cam_side = Normalize(Cross(light_dir, cam_up));
+
+                    const float move_step = 2 * bounding_radius / SHADOWMAP_RES;
+
+                    float _dot_f = Ren::Dot(cam_target, light_dir),
+                          _dot_s = Ren::Dot(cam_target, cam_side),
+                          _dot_u = Ren::Dot(cam_target, cam_up);
+
+                    _dot_f = std::round(_dot_f / move_step) * move_step;
+                    _dot_s = std::round(_dot_s / move_step) * move_step;
+                    _dot_u = std::round(_dot_u / move_step) * move_step;
+
+                    cam_target = _dot_f * light_dir + _dot_s * cam_side + _dot_u * cam_up;
+                }
+
+                auto cam_center = cam_target + 4.0f * bounding_radius * light_dir;
+
                 //shadow_cam = draw_cam_;
-                shadow_cam.SetupView(bounding_center + (0.0f + bounding_radius) * Ren::Vec3f{ 0.707f, 0.707f, 0.0f }, bounding_center, Ren::Vec3f{ 0.0f, 0.0, 1.0f });
-                shadow_cam.Orthographic(-bounding_radius, bounding_radius, -bounding_radius, bounding_radius, 0.0f, 0.0f + 2 * bounding_radius);
+                shadow_cam.SetupView(cam_center, cam_target, cam_up);
+                shadow_cam.Orthographic(-bounding_radius, bounding_radius, bounding_radius, -bounding_radius, 0.0f, 6.0f * bounding_radius);
                 shadow_cam.UpdatePlanes();
 
                 view_from_world = shadow_cam.view_matrix(),

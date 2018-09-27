@@ -65,6 +65,10 @@ private:
     Ren::Camera draw_cam_, shadow_cam_[2][4];
     TimingInfo timings_, back_timings_[2];
 
+    struct Environment {
+        Ren::Vec3f sun_dir, sun_col;
+    };
+
     //temp
     std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];
 
@@ -73,7 +77,7 @@ private:
 
     void InitShadersInternal();
     void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const Ren::Mat4f shadow_transforms[4],
-                             const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4]);
+                             const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env);
 
     std::thread background_thread_;
     std::mutex mtx_;
