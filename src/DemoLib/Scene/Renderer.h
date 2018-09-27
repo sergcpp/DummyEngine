@@ -43,7 +43,7 @@ public:
     TimingInfo back_timings() const { return back_timings_[0]; }
 
     void DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
-                     const SceneObject *objects, size_t object_count);
+                     const SceneObject *objects, size_t object_count, const Environment &env);
     void WaitForBackgroundThreadIteration();
 private:
     Ren::Context &ctx_;
@@ -63,17 +63,14 @@ private:
     std::vector<DrawableItem> draw_lists_[2], shadow_list_[2][4];
     std::vector<uint32_t> object_to_drawable_;
     Ren::Camera draw_cam_, shadow_cam_[2][4];
+    Environment env_;
     TimingInfo timings_, back_timings_[2];
-
-    struct Environment {
-        Ren::Vec3f sun_dir, sun_col;
-    };
 
     //temp
     std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];
 
     void SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_node,
-                       const SceneObject *objects, size_t object_count);
+                       const SceneObject *objects, size_t object_count, const Environment &env);
 
     void InitShadersInternal();
     void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const Ren::Mat4f shadow_transforms[4],

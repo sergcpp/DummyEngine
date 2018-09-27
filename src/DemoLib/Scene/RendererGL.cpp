@@ -53,7 +53,7 @@ namespace RendererInternal {
         #endif
 
         void main(void) {
-	        gl_FragColor.r = gl_FragCoord.z;
+            //gl_FragDepth = gl_FragCoord.z;
         }
     )";
 
@@ -181,8 +181,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
                 if (!fb_bound) {
                     glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
-                    glClearColor(0, 0, 0, 1);
-                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                    glClear(GL_DEPTH_BUFFER_BIT);
                     fb_bound = true;
                 }
 
@@ -320,7 +319,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                 glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
             }
 
-            BindTexture(SHADOWMAP_SLOT, shadow_buf_.col_tex);
+            BindTexture(SHADOWMAP_SLOT, shadow_buf_.depth_tex.GetValue());
 
             cur_program = p;
         }
@@ -415,7 +414,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glUniform1i(cur_program->uniform("s_texture").loc, DIFFUSEMAP_SLOT);
 
-        BindTexture(DIFFUSEMAP_SLOT, shadow_buf_.col_tex);
+        BindTexture(DIFFUSEMAP_SLOT, shadow_buf_.depth_tex.GetValue());
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &indices[0]);
     }

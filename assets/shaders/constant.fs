@@ -93,10 +93,12 @@ void main(void) {
 	poisson_disk[63] = vec2(-0.178564, -0.596057);
 
 	vec3 frag_pos_ls[4];
-	frag_pos_ls[0] = 0.25 * aVertexShUVs_[0].xyz / aVertexShUVs_[0].w + 0.25;
-	frag_pos_ls[1] = 0.25 * aVertexShUVs_[1].xyz / aVertexShUVs_[1].w + 0.25;
-	frag_pos_ls[2] = 0.25 * aVertexShUVs_[2].xyz / aVertexShUVs_[2].w + 0.25;
-	frag_pos_ls[3] = 0.25 * aVertexShUVs_[3].xyz / aVertexShUVs_[3].w + 0.25;
+	for (int i = 0; i < 4; i++) {
+		frag_pos_ls[i] = 0.5 * aVertexShUVs_[i].xyz + 0.5;
+		//frag_pos_ls[i] = aVertexShUVs_[i].xyz / aVertexShUVs_[i].w;
+		//frag_pos_ls[i].xy = 0.5 * frag_pos_ls[i].xy + 0.5;
+		frag_pos_ls[i].xy *= 0.5;
+	}
 
 	vec3 normal = texture2D(normals_texture, aVertexUVs1_).xyz * 2.0 - 1.0;
 	normal = aVertexTBN_ * normal;
@@ -113,16 +115,19 @@ void main(void) {
 		if (frag_depth < 8.0) {
 			for (int i = 0; i < 64; i++) {
 				float frag_z_ls = texture2D(shadow_texture, frag_pos_ls[0].xy + poisson_disk[i] * shadow_softness).r;
-				if (frag_pos_ls[0].z - bias < frag_z_ls) {
+				if (frag_pos_ls[0].z - bias > frag_z_ls) {
 					visibility -= 1.0/64.0;
 				}
 			}
 			color = vec3(1.0, 0.0, 0.0);
+			if (frag_pos_ls[0].x > 0.5 || frag_pos_ls[0].x < 0.0) {
+				color = vec3(0.0, 1.0, 1.0);
+			}
 		} else if (frag_depth < 24.0) {
 			frag_pos_ls[1].x += 0.5;
 			for (int i = 0; i < 16; i++) {
 				float frag_z_ls = texture2D(shadow_texture, frag_pos_ls[1].xy + poisson_disk[i] * shadow_softness * 0.25).r;
-				if (frag_pos_ls[1].z - bias < frag_z_ls) {
+				if (frag_pos_ls[1].z - bias > frag_z_ls) {
 					visibility -= 1.0/16.0;
 				}
 			}
@@ -131,14 +136,14 @@ void main(void) {
 			frag_pos_ls[2].y += 0.5;
 			for (int i = 0; i < 4; i++) {
 				float frag_z_ls = texture2D(shadow_texture, frag_pos_ls[2].xy + poisson_disk[i] * shadow_softness * 0.125).r;
-				if (frag_pos_ls[2].z - bias < frag_z_ls) {
+				if (frag_pos_ls[2].z - bias > frag_z_ls) {
 					visibility -= 1.0/4.0;
 				}
 			}
 		} else if (frag_depth < 120.0) {
 			frag_pos_ls[3].xy += 0.5;
 			float frag_z_ls = texture2D(shadow_texture, frag_pos_ls[3].xy).r;
-			if (frag_pos_ls[3].z - bias < frag_z_ls) {
+			if (frag_pos_ls[3].z - bias > frag_z_ls) {
 				visibility -= 1.0;
 			}
 		} else {
@@ -148,5 +153,5 @@ void main(void) {
 
 	vec3 diffuse_color = texture2D(diffuse_texture, aVertexUVs1_).rgb * sun_col * lambert * visibility;
 
-	gl_FragColor = vec4(diffuse_color, 1.0);
+	gl_FragColor = vec4(diffuse_color + color, 1.0);
 }

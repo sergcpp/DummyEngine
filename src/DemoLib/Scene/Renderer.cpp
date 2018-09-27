@@ -42,12 +42,14 @@ Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
     }
     InitShadersInternal();
 
-    try {
+    shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::None, Ren::NoFilter, Ren::ClampToEdge, true);
+
+    /*try {
         shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::RawR32F, Ren::NoFilter, Ren::ClampToEdge, true);
     } catch (std::runtime_error &) {
         LOGI("Cannot create floating-point shadow buffer! Fallback to unsigned byte.");
         shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::RawRGB888, Ren::NoFilter, Ren::ClampToEdge, true);
-    }
+    }*/
 
     background_thread_ = std::thread(std::bind(&Renderer::BackgroundProc, this));
 }
@@ -62,8 +64,8 @@ Renderer::~Renderer() {
 }
 
 void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
-                           const SceneObject *objects, size_t object_count) {
-    SwapDrawLists(cam, nodes, root_index, objects, object_count);
+                           const SceneObject *objects, size_t object_count, const Environment &env) {
+    SwapDrawLists(cam, nodes, root_index, objects, object_count, env);
     auto t1 = std::chrono::high_resolution_clock::now();
     {
         size_t drawables_count = draw_lists_[0].size();
@@ -81,18 +83,14 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
             shadow_drawables[i] = (shadow_drawables_count[i] == 0) ? nullptr : &shadow_list_[0][i][0];
         }
 
-        Environment env;
-        env.sun_dir = Ren::Vec3f{ 0.0f, 1.0f, 0.0f };
-        env.sun_col = Ren::Vec3f{ 1.0f, 1.0f, 1.0f };
-
-        DrawObjectsInternal(drawables, drawables_count, shadow_transforms, shadow_drawables, shadow_drawables_count, env);
+        DrawObjectsInternal(drawables, drawables_count, shadow_transforms, shadow_drawables, shadow_drawables_count, env_);
     }
     auto t2 = std::chrono::high_resolution_clock::now();
     timings_ = { t1, t2 };
 }
 
 void Renderer::WaitForBackgroundThreadIteration() {
-    SwapDrawLists(draw_cam_, nullptr, 0, nullptr, 0);
+    SwapDrawLists(draw_cam_, nullptr, 0, nullptr, 0, env_);
 }
 
 void Renderer::BackgroundProc() {
@@ -309,7 +307,7 @@ void Renderer::BackgroundProc() {
 
                 auto &shadow_cam = shadow_cam_[1][casc];
 
-                auto light_dir = Ren::Normalize(Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+                auto light_dir = env_.sun_dir;
                 auto cam_up = Ren::Vec3f{ 0.0f, 0.0, 1.0f };
                 if (light_dir[0] < light_dir[1] && light_dir[0] < light_dir[2]) {
                     cam_up = Ren::Vec3f{ 1.0f, 0.0, 0.0f };
@@ -320,9 +318,9 @@ void Renderer::BackgroundProc() {
                 auto cam_target = bounding_center;
                 
                 {   // Snap camera movement to shadow map pixels
-                    auto cam_side = Normalize(Cross(light_dir, cam_up));
+                    const float move_step = (2 * bounding_radius) / (0.5f * SHADOWMAP_RES);
 
-                    const float move_step = 2 * bounding_radius / SHADOWMAP_RES;
+                    auto cam_side = Normalize(Cross(light_dir, cam_up));
 
                     float _dot_f = Ren::Dot(cam_target, light_dir),
                           _dot_s = Ren::Dot(cam_target, cam_side),
@@ -335,11 +333,10 @@ void Renderer::BackgroundProc() {
                     cam_target = _dot_f * light_dir + _dot_s * cam_side + _dot_u * cam_up;
                 }
 
-                auto cam_center = cam_target + 4.0f * bounding_radius * light_dir;
+                auto cam_center = cam_target + 99.0f * bounding_radius * light_dir;
 
-                //shadow_cam = draw_cam_;
                 shadow_cam.SetupView(cam_center, cam_target, cam_up);
-                shadow_cam.Orthographic(-bounding_radius, bounding_radius, bounding_radius, -bounding_radius, 0.0f, 6.0f * bounding_radius);
+                shadow_cam.Orthographic(-bounding_radius, bounding_radius, -bounding_radius, bounding_radius, 0.0f, 100.0f * bounding_radius);
                 shadow_cam.UpdatePlanes();
 
                 view_from_world = shadow_cam.view_matrix(),
@@ -443,7 +440,7 @@ void Renderer::BackgroundProc() {
 }
 
 void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_node,
-                             const SceneObject *objects, size_t object_count) {
+                             const SceneObject *objects, size_t object_count, const Environment &env) {
     bool should_notify = false;
     {
         std::lock_guard<Sys::SpinlockMutex> _(job_mtx_);
@@ -459,6 +456,7 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
             std::swap(shadow_list_[0][i], shadow_list_[1][i]);
             std::swap(shadow_cam_[0][i], shadow_cam_[1][i]);
         }
+        env_ = env;
         std::swap(depth_pixels_[0], depth_pixels_[1]);
         std::swap(depth_tiles_[0], depth_tiles_[1]);
         should_notify = (nodes != nullptr);

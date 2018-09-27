@@ -49,3 +49,7 @@ struct bvh_node_t {
     Ren::Vec3f bbox[2];
 };
 static_assert(sizeof(bvh_node_t) == 48, "!");
+
+struct Environment {
+    Ren::Vec3f sun_dir, sun_col;
+};

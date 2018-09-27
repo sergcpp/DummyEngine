@@ -96,6 +96,31 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         objects_.push_back(obj);
     }
 
+    if (js_scene.Has("environment")) {
+        const JsObject &js_env = (const JsObject &)js_scene.at("environment");
+        if (js_env.Has("sun_dir")) {
+            const JsArray &js_dir = (const JsArray &)js_env.at("sun_dir");
+
+            double x = ((const JsNumber &)js_dir.at(0)).val;
+            double y = ((const JsNumber &)js_dir.at(1)).val;
+            double z = ((const JsNumber &)js_dir.at(2)).val;
+
+            env_.sun_dir = Ren::Vec3f{ float(x), float(y), float(z) };
+            env_.sun_dir = Ren::Normalize(env_.sun_dir);
+        }
+        if (js_env.Has("sun_col")) {
+            const JsArray &js_col = (const JsArray &)js_env.at("sun_col");
+
+            double r = ((const JsNumber &)js_col.at(0)).val;
+            double g = ((const JsNumber &)js_col.at(1)).val;
+            double b = ((const JsNumber &)js_col.at(2)).val;
+
+            env_.sun_col = Ren::Vec3f{ float(r), float(g), float(b) };
+        }
+    } else {
+        env_ = {};
+    }
+
     RebuildBVH();
 }
 
@@ -110,7 +135,7 @@ void SceneManager::Draw() {
 
     cam_.Perspective(60.0f, float(ctx_.w()) / ctx_.h(), NEAR_CLIP, FAR_CLIP);
 
-    renderer_.DrawObjects(cam_, &nodes_[0], 0, &objects_[0], objects_.size());
+    renderer_.DrawObjects(cam_, &nodes_[0], 0, &objects_[0], objects_.size(), env_);
 }
 
 Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {

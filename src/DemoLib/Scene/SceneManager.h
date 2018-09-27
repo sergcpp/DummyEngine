@@ -34,6 +34,7 @@ private:
     Renderer &renderer_;
 
     Ren::Camera cam_;
+    Environment env_;
 
     Ren::Storage<Transform> transforms_;
 
