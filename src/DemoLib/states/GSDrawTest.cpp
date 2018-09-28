@@ -144,8 +144,8 @@ void GSDrawTest::Draw(float dt_s) {
 
     {
         scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-        //scene_manager_->Draw();
-        scene_manager_->DrawPT();
+        scene_manager_->Draw();
+        //scene_manager_->DrawPT();
     }
 
     {
@@ -158,7 +158,7 @@ void GSDrawTest::Draw(float dt_s) {
         auto dur1 = std::chrono::duration_cast<std::chrono::microseconds>(last_timings_.second - last_timings_.first);
         auto dur2 = std::chrono::duration_cast<std::chrono::microseconds>(back_timings.second - back_timings.first);
 
-        //LOGI("Frontend: %04lld\tBackend: %04lld", (long long)dur2.count(), (long long)dur1.count());
+        LOGI("Frontend: %04lld\tBackend: %04lld", (long long)dur2.count(), (long long)dur1.count());
 
         last_timings_ = timings;
     }
