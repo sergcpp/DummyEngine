@@ -15,17 +15,17 @@ extern "C" {
 #include "SceneData.h"
 
 struct DrawableItem {
-    const Ren::Mat4f    *clip_from_object, *sh_clip_from_object[4];
+    const Ren::Mat4f    *clip_from_object, *world_from_object, *sh_clip_from_object[4];
     const Ren::Material *mat;
     const Ren::Mesh     *mesh;
     const Ren::TriStrip *strip;
 
-    DrawableItem(const Ren::Mat4f *_clip_from_object, const Ren::Material *_mat,
-        const Ren::Mesh *_mesh, const Ren::TriStrip *_strip) : clip_from_object(_clip_from_object), sh_clip_from_object{ nullptr },
+    DrawableItem(const Ren::Mat4f *_clip_from_object, const Ren::Mat4f *_world_from_object, const Ren::Material *_mat,
+        const Ren::Mesh *_mesh, const Ren::TriStrip *_strip) : clip_from_object(_clip_from_object), world_from_object(_world_from_object), sh_clip_from_object{ nullptr },
         mat(_mat), mesh(_mesh), strip(_strip) { }
 
     bool operator<(const DrawableItem& rhs) const {
-        return std::tie(mat, mesh, clip_from_object) < std::tie(rhs.mat, rhs.mesh, rhs.clip_from_object);
+        return std::tie(mat, mesh, clip_from_object, world_from_object) < std::tie(rhs.mat, rhs.mesh, rhs.clip_from_object, rhs.world_from_object);
     }
 };
 
@@ -48,9 +48,10 @@ public:
 private:
     Ren::Context &ctx_;
     SWcull_ctx cull_ctx_;
-    Ren::ProgramRef fill_depth_prog_, shadow_prog_, blit_prog_;
+    Ren::ProgramRef fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_;
 
-    FrameBuf shadow_buf_;
+    FrameBuf clean_buf_, shadow_buf_;
+    int w_ = 0, h_ = 0;
 
     bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = true;
     bool culling_enabled_ = true;

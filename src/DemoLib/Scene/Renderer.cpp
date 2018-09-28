@@ -1,5 +1,6 @@
 #include "Renderer.h"
 
+#include <Ren/Context.h>
 #include <Sys/Log.h>
 
 namespace RendererInternal {
@@ -18,7 +19,7 @@ namespace RendererInternal {
 
     const int MAX_STACK_SIZE = 64;
 
-    const int SHADOWMAP_RES = 2048;
+    const int SHADOWMAP_RES = 4096;
 }
 
 #define BBOX_POINTS(min, max) \
@@ -83,6 +84,13 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
             shadow_drawables[i] = (shadow_drawables_count[i] == 0) ? nullptr : &shadow_list_[0][i][0];
         }
 
+        if (ctx_.w() != w_ || ctx_.h() != h_) {
+            clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), Ren::RawRGB32F, Ren::NoFilter, Ren::ClampToEdge, true, 4);
+            w_ = ctx_.w();
+            h_ = ctx_.h();
+            LOGI("CleanBuf resized to %ix%i", w_, h_);
+        }
+
         DrawObjectsInternal(drawables, drawables_count, shadow_transforms, shadow_drawables, shadow_drawables_count, env_);
     }
     auto t2 = std::chrono::high_resolution_clock::now();
@@ -108,7 +116,7 @@ void Renderer::BackgroundProc() {
 
             auto &tr_list = transforms_[1];
             tr_list.clear();
-            tr_list.reserve(object_count_ * 5);
+            tr_list.reserve(object_count_ * 6);
 
             auto &dr_list = draw_lists_[1];
             dr_list.clear();
@@ -134,7 +142,7 @@ void Renderer::BackgroundProc() {
             uint32_t stack[MAX_STACK_SIZE];
             uint32_t stack_size = 0;
 
-            {   // Rasterize occluder meshes in small framebuffer
+            {   // Rasterize occluder meshes into a small framebuffer
                 stack[stack_size++] = (uint32_t)root_node_;
 
                 while (stack_size && culling_enabled_) {
@@ -277,7 +285,7 @@ void Renderer::BackgroundProc() {
 
                                 const Ren::TriStrip *s = &mesh->strip(0);
                                 while (s->offset != -1) {
-                                    dr_list.push_back({ &tr_list.back(), s->mat.get(), mesh, s });
+                                    dr_list.push_back({ &tr_list.back(), &world_from_object, s->mat.get(), mesh, s });
                                     ++s;
                                 }
                             }
@@ -290,8 +298,25 @@ void Renderer::BackgroundProc() {
             const float far_planes[] = { 8.0f, 24.0f, 56.0f, 120.0f };
             const float near_planes[] = { draw_cam_.near(), far_planes[0], far_planes[1], far_planes[2] };
 
+            // Choose up vector for shadow camera
+            auto light_dir = env_.sun_dir;
+            auto cam_up = Ren::Vec3f{ 0.0f, 0.0, 1.0f };
+            if (light_dir[0] <= light_dir[1] && light_dir[0] <= light_dir[2]) {
+                cam_up = Ren::Vec3f{ 1.0f, 0.0, 0.0f };
+            } else if (light_dir[1] <= light_dir[0] && light_dir[1] <= light_dir[2]) {
+                cam_up = Ren::Vec3f{ 0.0f, 1.0, 0.0f };
+            }
+            // Calculate side vector of shadow camera
+            auto cam_side = Normalize(Cross(light_dir, cam_up));
+            cam_up = Cross(cam_side, light_dir);
+
+            const Ren::Vec3f scene_dims = Ren::Vec3f{ nodes_[root_node_].bbox[1] } - Ren::Vec3f{ nodes_[root_node_].bbox[0] };
+            const float max_dist = Ren::Length(scene_dims);
+
             // Gather drawables for each cascade
             for (int casc = 0; casc < 4; casc++) {
+                auto &shadow_cam = shadow_cam_[1][casc];
+
                 auto temp_cam = draw_cam_;
                 temp_cam.Perspective(draw_cam_.angle(), draw_cam_.aspect(), near_planes[casc], far_planes[casc]);
                 temp_cam.UpdatePlanes();
@@ -299,28 +324,16 @@ void Renderer::BackgroundProc() {
                 const Ren::Mat4f &_view_from_world = temp_cam.view_matrix(),
                                  &_clip_from_view = temp_cam.projection_matrix();
 
-                Ren::Mat4f _clip_from_world = _clip_from_view * _view_from_world;
-                Ren::Mat4f _world_from_clip = Ren::Inverse(_clip_from_world);
+                const Ren::Mat4f _clip_from_world = _clip_from_view * _view_from_world;
+                const Ren::Mat4f _world_from_clip = Ren::Inverse(_clip_from_world);
 
                 Ren::Vec3f bounding_center;
                 const float bounding_radius = temp_cam.GetBoundingSphere(bounding_center);
-
-                auto &shadow_cam = shadow_cam_[1][casc];
-
-                auto light_dir = env_.sun_dir;
-                auto cam_up = Ren::Vec3f{ 0.0f, 0.0, 1.0f };
-                if (light_dir[0] < light_dir[1] && light_dir[0] < light_dir[2]) {
-                    cam_up = Ren::Vec3f{ 1.0f, 0.0, 0.0f };
-                } else if (light_dir[1] < light_dir[0] && light_dir[1] < light_dir[2]) {
-                    cam_up = Ren::Vec3f{ 0.0f, 1.0, 0.0f };
-                }
 
                 auto cam_target = bounding_center;
                 
                 {   // Snap camera movement to shadow map pixels
                     const float move_step = (2 * bounding_radius) / (0.5f * SHADOWMAP_RES);
-
-                    auto cam_side = Normalize(Cross(light_dir, cam_up));
 
                     float _dot_f = Ren::Dot(cam_target, light_dir),
                           _dot_s = Ren::Dot(cam_target, cam_side),
@@ -333,10 +346,10 @@ void Renderer::BackgroundProc() {
                     cam_target = _dot_f * light_dir + _dot_s * cam_side + _dot_u * cam_up;
                 }
 
-                auto cam_center = cam_target + 99.0f * bounding_radius * light_dir;
+                auto cam_center = cam_target + max_dist * light_dir;
 
                 shadow_cam.SetupView(cam_center, cam_target, cam_up);
-                shadow_cam.Orthographic(-bounding_radius, bounding_radius, -bounding_radius, bounding_radius, 0.0f, 100.0f * bounding_radius);
+                shadow_cam.Orthographic(-bounding_radius, bounding_radius, bounding_radius, -bounding_radius, 0.0f, max_dist + bounding_radius);
                 shadow_cam.UpdatePlanes();
 
                 view_from_world = shadow_cam.view_matrix(),
@@ -387,7 +400,7 @@ void Renderer::BackgroundProc() {
 
                                 const Ren::TriStrip *s = &mesh->strip(0);
                                 while (s->offset != -1) {
-                                    sh_dr_list[casc].push_back({ &tr_list.back(), s->mat.get(), mesh, s });
+                                    sh_dr_list[casc].push_back({ &tr_list.back(), nullptr, s->mat.get(), mesh, s });
                                     ++s;
                                 }
                             }

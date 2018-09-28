@@ -6,9 +6,9 @@
 #include <ren/GL.h>
 #include <sys/Log.h>
 
-FrameBuf::FrameBuf(int _w, int _h, Ren::eTex2DFormat col_format, Ren::eTexFilter filter,
-                      Ren::eTexRepeat repeat, bool with_depth)
-        : col_format(col_format), w(_w), h(_h) {
+FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFilter filter,
+                      Ren::eTexRepeat repeat, bool with_depth, int _msaa)
+        : col_format(col_format), w(_w), h(_h), msaa(_msaa) {
     glGenFramebuffers(1, &fb);
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
 
@@ -17,45 +17,64 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTex2DFormat col_format, Ren::eTexFilter
 
         glGenTextures(1, &_col_tex);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _col_tex);
 
-        if (col_format == Ren::RawRGB888) {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-        } else if (col_format == Ren::RawRGBA8888) {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-        } else if (col_format == Ren::RawR32F) {
-#if defined(EMSCRIPTEN)
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
-#else
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, w, h, 0, GL_RED, GL_FLOAT, NULL);
-#endif
-        } else if (col_format == Ren::RawRGB32F) {
-#if defined(EMSCRIPTEN)
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
-#else
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, w, h, 0, GL_RGB, GL_FLOAT, NULL);
-#endif
+        if (msaa > 1) {
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, _col_tex);
+
+            if (col_format == Ren::RawRGB888) {
+                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB8, w, h, GL_TRUE);
+            } else if (col_format == Ren::RawRGBA8888) {
+                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGBA8, w, h, GL_TRUE);
+            } else if (col_format == Ren::RawR32F) {
+                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_R32F, w, h, GL_TRUE);
+            } else if (col_format == Ren::RawRGB32F) {
+                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB32F, w, h, GL_TRUE);
+            } else {
+                throw std::invalid_argument("Wrong format!");
+            }
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, _col_tex, 0);
         } else {
-            throw std::invalid_argument("Wrong format!");
-        }
+            glBindTexture(GL_TEXTURE_2D, _col_tex);
 
-        if (filter == Ren::NoFilter) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        } else if (filter == Ren::Bilinear || filter == Ren::BilinearNoMipmap) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        }
+            if (col_format == Ren::RawRGB888) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            } else if (col_format == Ren::RawRGBA8888) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            } else if (col_format == Ren::RawR32F) {
+#if defined(EMSCRIPTEN)
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
+#else
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, w, h, 0, GL_RED, GL_FLOAT, NULL);
+#endif
+            } else if (col_format == Ren::RawRGB32F) {
+#if defined(EMSCRIPTEN)
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
+#else
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, w, h, 0, GL_RGB, GL_FLOAT, NULL);
+#endif
+            } else {
+                throw std::invalid_argument("Wrong format!");
+            }
 
-        if (repeat == Ren::ClampToEdge) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        } else if (repeat == Ren::Repeat) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        }
+            if (filter == Ren::NoFilter) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            } else if (filter == Ren::Bilinear || filter == Ren::BilinearNoMipmap) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            }
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _col_tex, 0);
+            if (repeat == Ren::ClampToEdge) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            } else if (repeat == Ren::Repeat) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            }
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _col_tex, 0);
+        }
 
         col_tex = _col_tex;
 
@@ -106,7 +125,11 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTex2DFormat col_format, Ren::eTexFilter
 
         glGenRenderbuffers(1, &_depth_rb);
         glBindRenderbuffer(GL_RENDERBUFFER, _depth_rb);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, w, h);
+        if (msaa > 1) {
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, msaa, GL_DEPTH_COMPONENT16, w, h);
+        } else {
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, w, h);
+        }
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depth_rb);
 
         auto s = glCheckFramebufferStatus(GL_FRAMEBUFFER);

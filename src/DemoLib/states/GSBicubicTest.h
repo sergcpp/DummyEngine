@@ -17,7 +17,7 @@ class Renderer;
 }
 
 struct image_t {
-    Ren::eTex2DFormat format;
+    Ren::eTexColorFormat format;
     int w, h;
     std::unique_ptr<uint8_t[]> data;
 };

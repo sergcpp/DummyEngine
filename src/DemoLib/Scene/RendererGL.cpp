@@ -94,6 +94,30 @@ namespace RendererInternal {
         }
     )";
 
+    const char blit_ms_fs_shader[] = R"(
+        #extension GL_ARB_texture_multisample : require
+
+        #ifdef GL_ES
+	        precision mediump float;
+        #endif
+
+        /*
+        UNIFORMS
+            s_texture : 0
+        */
+        
+        uniform sampler2DMS s_texture;
+
+        varying vec2 aVertexUVs_;
+
+        void main(void) {
+            gl_FragColor = texelFetch(s_texture, ivec2(aVertexUVs_), 0) * 0.25 +
+					       texelFetch(s_texture, ivec2(aVertexUVs_), 1) * 0.25 +
+					       texelFetch(s_texture, ivec2(aVertexUVs_), 2) * 0.25 +
+					       texelFetch(s_texture, ivec2(aVertexUVs_), 3) * 0.25;
+        }
+    )";
+
     const int A_POS = 0;
     const int A_NORMAL = 1;
     const int A_TANGENT = 2;
@@ -104,14 +128,13 @@ namespace RendererInternal {
     const int A_WEIGHTS = 4;
 
     const int U_MVP_MATR = 0;
-    const int U_M_PALETTE = 1;
+    const int U_MV_MATR = 1;
 
-    const int U_MODE = 2;
+    const int U_SH_MVP_MATR = 2;
+
     const int U_TEX = 3;
     const int U_NORM_TEX = 4;
     const int U_SHADOW_TEX = 5;
-
-    const int U_SH_MVP_MATR = 1;
 
     const int U_SUN_DIR = 10;
     const int U_SUN_COL = 11;
@@ -140,6 +163,9 @@ void Renderer::InitShadersInternal() {
 
     blit_prog_ = ctx_.LoadProgramGLSL("blit", blit_vs_shader, blit_fs_shader, &status);
     assert(status == Ren::ProgCreatedFromData);
+
+    blit_ms_prog_ = ctx_.LoadProgramGLSL("blit_ms", blit_vs_shader, blit_ms_fs_shader, &status);
+    assert(status == Ren::ProgCreatedFromData);
 }
 
 void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const Ren::Mat4f shadow_transforms[4],
@@ -154,18 +180,19 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
+    glDisable(GL_CULL_FACE);
 
     const Ren::Program *cur_program = nullptr;
     const Ren::Material *cur_mat = nullptr;
     const Ren::Mesh *cur_mesh = nullptr;
     const Ren::Mat4f *cur_clip_from_object = nullptr,
+                     *cur_world_from_object = nullptr,
                      *cur_sh_clip_from_object[4] = { nullptr };
 
+    int32_t viewport_before[4];
+    glGetIntegerv(GL_VIEWPORT, viewport_before);
+
     {   // draw shadow map
-        int32_t viewport_before[4];
-        glGetIntegerv(GL_VIEWPORT, viewport_before);
         bool fb_bound = false;
 
         for (int casc = 0; casc < 4; casc++) {
@@ -222,10 +249,16 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                 }
             }
         }
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
     }
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    // Bind main buffer for drawing
+    glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+    glViewport(0, 0, clean_buf_.w, clean_buf_.h);
 
     if (DEPTH_PREPASS && !wireframe_mode_) {
         glDepthFunc(GL_LESS);
@@ -280,6 +313,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         const auto &dr = drawables[i];
 
         const Ren::Mat4f *clip_from_object = dr.clip_from_object,
+                         *world_from_object = dr.world_from_object,
                          *const *sh_clip_from_object = dr.sh_clip_from_object;
         const Ren::Material *mat = dr.mat;
         const Ren::Mesh *mesh = dr.mesh;
@@ -314,9 +348,13 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
             glUniform3fv(p->uniform(U_SUN_DIR).loc, 1, Ren::ValuePtr(env.sun_dir));
             glUniform3fv(p->uniform(U_SUN_COL).loc, 1, Ren::ValuePtr(env.sun_col));
-            
+
             if (clip_from_object == cur_clip_from_object) {
                 glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
+            }
+
+            if (world_from_object == cur_world_from_object) {
+                glUniformMatrix4fv(p->uniform(U_MV_MATR).loc, 1, GL_FALSE, ValuePtr(world_from_object));
             }
 
             BindTexture(SHADOWMAP_SLOT, shadow_buf_.depth_tex.GetValue());
@@ -352,6 +390,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             cur_clip_from_object = clip_from_object;
         }
 
+        if (world_from_object != cur_world_from_object) {
+            glUniformMatrix4fv(cur_program->uniform(U_MV_MATR).loc, 1, GL_FALSE, ValuePtr(world_from_object));
+            cur_world_from_object = world_from_object;
+        }
+
         {   // update shadow matrices
             for (int casc = 0; casc < 4; casc++) {
                 const auto *_sh_clip_from_object = sh_clip_from_object[casc];
@@ -369,6 +412,38 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
 
         glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
+
+    {   // Blit main framebuffer
+        cur_program = blit_ms_prog_.get();
+        glUseProgram(cur_program->prog_id());
+
+        const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,
+                                       1.0f, 1.0f,         -1.0f, 1.0f };
+
+        const float fs_quad_uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
+                                      float(w_), float(h_),     0.0f, float(h_) };
+
+        const uint8_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        glEnableVertexAttribArray(cur_program->attribute("aVertexPosition").loc);
+        glVertexAttribPointer(cur_program->attribute("aVertexPosition").loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
+
+        glEnableVertexAttribArray(cur_program->attribute("aVertexUVs").loc);
+        glVertexAttribPointer(cur_program->attribute("aVertexUVs").loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
+
+        glUniform1i(cur_program->uniform("s_texture").loc, DIFFUSEMAP_SLOT);
+
+        glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.col_tex.GetValue());
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
     }
 
     if (debug_cull_ && culling_enabled_ && !depth_pixels_[0].empty()) {
