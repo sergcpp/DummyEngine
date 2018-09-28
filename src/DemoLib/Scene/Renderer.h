@@ -45,6 +45,8 @@ public:
     void DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
                      const SceneObject *objects, size_t object_count, const Environment &env);
     void WaitForBackgroundThreadIteration();
+
+    void BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format);
 private:
     Ren::Context &ctx_;
     SWcull_ctx cull_ctx_;

@@ -19,11 +19,14 @@ namespace SceneManagerConstants {
     const char *MODELS_PATH = "./assets/models/";
 }
 
-SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer) : ctx_(ctx),
-                                                renderer_(renderer),
-                                                cam_(Ren::Vec3f{ 0.0f, 0.0f, 1.0f },
-                                                     Ren::Vec3f{ 0.0f, 0.0f, 0.0f },
-                                                     Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
+SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererBase &ray_renderer) 
+    : ctx_(ctx),
+      renderer_(renderer),
+      ray_renderer_(ray_renderer),
+      ray_reg_ctx_{ {} },
+      cam_(Ren::Vec3f{ 0.0f, 0.0f, 1.0f },
+           Ren::Vec3f{ 0.0f, 0.0f, 0.0f },
+           Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
 }
 
 SceneManager::~SceneManager() {
@@ -116,6 +119,16 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             double b = ((const JsNumber &)js_col.at(2)).val;
 
             env_.sun_col = Ren::Vec3f{ float(r), float(g), float(b) };
+        }
+        if (js_env.Has("sun_softness")) {
+            const JsNumber &js_sun_softness = js_env.at("sun_softness");
+            env_.sun_softness = (float)js_sun_softness.val;
+        }
+        if (js_env.Has("env_col")) {
+            const JsArray &js_env_col = js_env.at("env_col");
+            env_.sky_col[0] = (float)((const JsNumber &)js_env_col.at(0)).val;
+            env_.sky_col[1] = (float)((const JsNumber &)js_env_col.at(1)).val;
+            env_.sky_col[2] = (float)((const JsNumber &)js_env_col.at(2)).val;
         }
     } else {
         env_ = {};

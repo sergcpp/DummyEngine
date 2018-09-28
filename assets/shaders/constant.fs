@@ -108,10 +108,11 @@ void main(void) {
 	vec3 color;
 
 	float lambert = max(dot(normal, sun_dir), 0.0);
-	float bias = 0.0004 * tan(acos(lambert));//max(0.00125 * (1.0 - lambert), 0.00025);
-	bias = clamp(bias, 0.00025, 0.001);
 	float visibility = 1.0;
 	if (lambert > 0.00001) {
+		float bias = 0.0004 * tan(acos(lambert));//max(0.00125 * (1.0 - lambert), 0.00025);
+		bias = clamp(bias, 0.00025, 0.001);
+
 		float frag_depth = gl_FragCoord.z / gl_FragCoord.w;
 		if (frag_depth < 8.0) {
 			for (int i = 0; i < 64; i++) {

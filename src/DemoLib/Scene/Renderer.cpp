@@ -294,7 +294,7 @@ void Renderer::BackgroundProc() {
                 }
             }
 
-            // Planes, that define cascaded shadow map splits
+            // Planes, that define shadow map splits
             const float far_planes[] = { 8.0f, 24.0f, 56.0f, 120.0f };
             const float near_planes[] = { draw_cam_.near(), far_planes[0], far_planes[1], far_planes[2] };
 
@@ -334,15 +334,19 @@ void Renderer::BackgroundProc() {
                 
                 {   // Snap camera movement to shadow map pixels
                     const float move_step = (2 * bounding_radius) / (0.5f * SHADOWMAP_RES);
+                    //                      |_shadow map extent_|   |_res of one cascade_|
 
+                    // Project target on shadow cam view matrix
                     float _dot_f = Ren::Dot(cam_target, light_dir),
                           _dot_s = Ren::Dot(cam_target, cam_side),
                           _dot_u = Ren::Dot(cam_target, cam_up);
 
+                    // Snap coordinates to pixels
                     _dot_f = std::round(_dot_f / move_step) * move_step;
                     _dot_s = std::round(_dot_s / move_step) * move_step;
                     _dot_u = std::round(_dot_u / move_step) * move_step;
 
+                    // Update target coordinates in world space
                     cam_target = _dot_f * light_dir + _dot_s * cam_side + _dot_u * cam_up;
                 }
 

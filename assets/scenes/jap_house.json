@@ -2,8 +2,8 @@
     "environment" : {
         "sun_dir" : [ -0.54, 0.54, 0.54 ],
         "sun_col" : [ 1.0, 1.0, 0.85 ],
-        "sky_col" : [ 0.45, 0.7, 0.95 ],
-        "sun_softness" : 0.00001
+        "sun_softness" : 0.00001,
+        "env_col" : [ 0.45, 0.7, 0.95 ]
     },
     "camera" : {
         "view_origin" : [ 0.0, 0.0, 0.0 ],

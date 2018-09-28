@@ -177,8 +177,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LESS);
 
-    glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(env.sky_col[0], env.sky_col[1], env.sky_col[2], 1.0f);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glDisable(GL_CULL_FACE);
 
@@ -417,6 +417,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+
     {   // Blit main framebuffer
         cur_program = blit_ms_prog_.get();
         glUseProgram(cur_program->prog_id());
@@ -450,9 +453,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glUseProgram(0);
 
         glRasterPos2f(-1, -1);
-
-        glDisable(GL_DEPTH_TEST);
-        glDepthMask(GL_FALSE);
         glDrawPixels(256, 128, GL_RGBA, GL_UNSIGNED_BYTE, &depth_pixels_[0][0]);
 
         glRasterPos2f(-1 + 2 * float(256) / ctx_.w(), -1);
@@ -463,10 +463,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         cur_program = blit_prog_.get();
         glUseProgram(cur_program->prog_id());
 
-        glDisable(GL_CULL_FACE);
-
-        glDisable(GL_DEPTH_TEST);
-        glDepthMask(GL_FALSE);
+        //glDisable(GL_CULL_FACE);
 
         float k = float(ctx_.w()) / ctx_.h();
 
@@ -497,4 +494,17 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 #if 0
     glFinish();
 #endif
+}
+
+void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format) {
+    glUseProgram(0);
+
+    GLenum gl_format, gl_type;
+    if (format == Ren::RawRGBA32F) {
+        gl_format = GL_RGBA;
+        gl_type = GL_FLOAT;
+    }
+
+    glRasterPos2f(-1, -1);
+    glDrawPixels(w, h, gl_format, gl_type, data);
 }

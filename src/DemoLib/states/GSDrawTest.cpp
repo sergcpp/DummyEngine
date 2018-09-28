@@ -144,7 +144,8 @@ void GSDrawTest::Draw(float dt_s) {
 
     {
         scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-        scene_manager_->Draw();
+        //scene_manager_->Draw();
+        scene_manager_->DrawPT();
     }
 
     {

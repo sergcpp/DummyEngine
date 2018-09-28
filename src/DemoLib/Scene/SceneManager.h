@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include <Ray/RendererBase.h>
 #include <Ren/Camera.h>
 #include <Sys/Json.h>
 
@@ -11,7 +12,7 @@ class Renderer;
 
 class SceneManager : public std::enable_shared_from_this<SceneManager> {
 public:
-    SceneManager(Ren::Context &ctx, Renderer &renderer);
+    SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererBase &ray_renderer);
     ~SceneManager();
 
     TimingInfo timings() const;
@@ -23,6 +24,7 @@ public:
     void ClearScene();
 
     void Draw();
+    void DrawPT();
 private:
     Ren::MaterialRef OnLoadMaterial(const char *name);
     Ren::ProgramRef OnLoadProgram(const char *name, const char *arg1, const char *arg2);
@@ -32,6 +34,9 @@ private:
 
     Ren::Context &ctx_;
     Renderer &renderer_;
+    Ray::RendererBase &ray_renderer_;
+    Ray::RegionContext ray_reg_ctx_;
+    std::shared_ptr<Ray::SceneBase> ray_scene_;
 
     Ren::Camera cam_;
     Environment env_;

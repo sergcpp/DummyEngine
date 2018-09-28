@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include <Eng/GameStateManager.h>
+#include <Ray/RendererFactory.h>
 #include <Ren/Context.h>
 #include <Ren/MVec.h>
 #include <Sys/AssetFile.h>
@@ -53,7 +54,13 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         auto renderer = std::make_shared<Renderer>(*ctx);
         AddComponent(RENDERER_KEY, renderer);
 
-        auto scene_manager = std::make_shared<SceneManager>(*ctx, *renderer);
+        Ray::settings_t s;
+        s.w = w;
+        s.h = h;
+        auto ray_renderer = Ray::CreateRenderer(s, Ray::RendererOCL);
+        AddComponent(RAY_RENDERER_KEY, ray_renderer);
+
+        auto scene_manager = std::make_shared<SceneManager>(*ctx, *renderer, *ray_renderer);
         AddComponent(SCENE_MANAGER_KEY, scene_manager);
     }
 
