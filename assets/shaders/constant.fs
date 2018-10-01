@@ -92,16 +92,12 @@ void main(void) {
 
 	vec3 frag_pos_ls[4];
 	for (int i = 0; i < 4; i++) {
-		frag_pos_ls[i] = 0.5 * aVertexShUVs_[i].xyz/aVertexShUVs_[i].w + 0.5;
-		//frag_pos_ls[i] = aVertexShUVs_[i].xyz / aVertexShUVs_[i].w;
-		//frag_pos_ls[i].xy = 0.5 * frag_pos_ls[i].xy + 0.5;
+		frag_pos_ls[i] = 0.5 * aVertexShUVs_[i].xyz + 0.5;
 		frag_pos_ls[i].xy *= 0.5;
 	}
 
 	vec3 normal = texture2D(normals_texture, aVertexUVs1_).xyz * 2.0 - 1.0;
 	normal = aVertexTBN_ * normal;
-
-	normal = 0.0001 * normal + aVertexTBN_[2];
 
 	const float shadow_softness = 4.0 / 4096.0;
 
@@ -110,7 +106,7 @@ void main(void) {
 	float lambert = max(dot(normal, sun_dir), 0.0);
 	float visibility = 1.0;
 	if (lambert > 0.00001) {
-		float bias = 0.0004 * tan(acos(lambert));//max(0.00125 * (1.0 - lambert), 0.00025);
+		float bias = 0.0005 * tan(acos(lambert));//max(0.00125 * (1.0 - lambert), 0.00025);
 		bias = clamp(bias, 0.00025, 0.001);
 
 		float frag_depth = gl_FragCoord.z / gl_FragCoord.w;

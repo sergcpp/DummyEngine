@@ -61,7 +61,7 @@ namespace RendererInternal {
         /*
         ATTRIBUTES
 	        aVertexPosition : 0
-            aVertexUVs : 1
+            aVertexUVs : 3
         */
 
         attribute vec2 aVertexPosition;
@@ -82,7 +82,7 @@ namespace RendererInternal {
 
         /*
         UNIFORMS
-            s_texture : 0
+            s_texture : 3
         */
         
         uniform sampler2D s_texture;
@@ -437,13 +437,13 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        glEnableVertexAttribArray(cur_program->attribute("aVertexPosition").loc);
-        glVertexAttribPointer(cur_program->attribute("aVertexPosition").loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
+        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
 
-        glEnableVertexAttribArray(cur_program->attribute("aVertexUVs").loc);
-        glVertexAttribPointer(cur_program->attribute("aVertexUVs").loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
+        glEnableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+        glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
 
-        glUniform1i(cur_program->uniform("s_texture").loc, DIFFUSEMAP_SLOT);
+        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
 
         glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.col_tex.GetValue());

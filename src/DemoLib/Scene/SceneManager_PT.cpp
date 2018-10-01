@@ -7,9 +7,7 @@
 #include "Renderer.h"
 
 void SceneManager::Draw_PT() {
-    if (!ray_scene_) {
-        InitScene_PT();
-    }
+    if (!ray_scene_) return;
 
     const auto &rect = ray_reg_ctx_.rect();
     if (rect.w != ctx_.w() || rect.h != ctx_.h()) {
@@ -23,8 +21,14 @@ void SceneManager::Draw_PT() {
     renderer_.BlitPixels(pixels, ctx_.w(), ctx_.h(), Ren::RawRGBA32F);
 }
 
-void SceneManager::InitScene_PT() {
-    if (ray_scene_) ray_scene_ = nullptr;
+void SceneManager::InitScene_PT(bool _override) {
+    if (ray_scene_) {
+        if (_override) {
+            ray_scene_ = nullptr;
+        } else {
+            return;
+        }
+    }
 
     ray_scene_ = ray_renderer_.CreateScene();
 
@@ -80,6 +84,19 @@ void SceneManager::InitScene_PT() {
         default_white_tex = ray_scene_->AddTexture(tex_desc);
     }
 
+    uint32_t default_glow_mat;
+
+    {
+        Ray::mat_desc_t mat_desc;
+        mat_desc.type = Ray::EmissiveMaterial;
+        mat_desc.main_texture = default_white_tex;
+        mat_desc.main_color[0] = 1.0f;
+        mat_desc.main_color[1] = 0.0f;
+        mat_desc.main_color[2] = 0.0f;
+
+        default_glow_mat = ray_scene_->AddMaterial(mat_desc);
+    }
+
     // Add objects
     for (const auto &obj : objects_) {
         const uint32_t drawable_flags = HasMesh | HasTransform;
@@ -113,7 +130,7 @@ void SceneManager::InitScene_PT() {
                         mat_it = loaded_materials.emplace(mat_name, new_mat).first;
                     }
 
-                    mesh_desc.shapes.push_back({ mat_it->second, (uint32_t)(s->offset / sizeof(uint32_t)), (uint32_t)s->num_indices });
+                    mesh_desc.shapes.emplace_back(mat_it->second, (uint32_t)default_glow_mat, (size_t)(s->offset / sizeof(uint32_t)), (size_t)s->num_indices);
                     ++s;
                 }
 

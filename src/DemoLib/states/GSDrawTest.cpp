@@ -85,8 +85,6 @@ void GSDrawTest::Enter() {
         return ctx_->LoadTexture2D(name, &in_file_data[0], (int)in_file_size, p, nullptr);
     };
 
-    
-
     std::ifstream in_scene("assets/scenes/jap_house.json", std::ios::binary);
 
     JsObject js_scene;
@@ -95,6 +93,23 @@ void GSDrawTest::Enter() {
     }
 
     scene_manager_->LoadScene(js_scene);
+
+    if (js_scene.Has("camera")) {
+        const JsObject &js_cam = (const JsObject &)js_scene.at("camera");
+        if (js_cam.Has("view_origin")) {
+            const JsArray &js_orig = (const JsArray &)js_cam.at("view_origin");
+            view_origin_[0] = (float)((const JsNumber &)js_orig.at(0)).val;
+            view_origin_[1] = (float)((const JsNumber &)js_orig.at(1)).val;
+            view_origin_[2] = (float)((const JsNumber &)js_orig.at(2)).val;
+        }
+
+        if (js_cam.Has("view_dir")) {
+            const JsArray &js_dir = (const JsArray &)js_cam.at("view_dir");
+            view_dir_[0] = (float)((const JsNumber &)js_dir.at(0)).val;
+            view_dir_[1] = (float)((const JsNumber &)js_dir.at(1)).val;
+            view_dir_[2] = (float)((const JsNumber &)js_dir.at(2)).val;
+        }
+    }
 
     cmdline_history_.resize(MAX_CMD_LINES, "~");
 
@@ -122,7 +137,10 @@ void GSDrawTest::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             shrd_this->use_pt_ = !shrd_this->use_pt_;
-            shrd_this->invalidate_view_ = true;
+            if (shrd_this->use_pt_) {
+                shrd_this->scene_manager_->InitScene_PT();
+                shrd_this->invalidate_view_ = true;
+            }
         }
         return true;
     });

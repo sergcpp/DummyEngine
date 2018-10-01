@@ -55,7 +55,7 @@ private:
     FrameBuf clean_buf_, shadow_buf_;
     int w_ = 0, h_ = 0;
 
-    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = true;
+    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false;
     bool culling_enabled_ = true;
 
     const bvh_node_t *nodes_ = nullptr;
