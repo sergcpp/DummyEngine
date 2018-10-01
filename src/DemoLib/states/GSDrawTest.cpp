@@ -122,6 +122,7 @@ void GSDrawTest::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             shrd_this->use_pt_ = !shrd_this->use_pt_;
+            shrd_this->invalidate_view_ = true;
         }
         return true;
     });
