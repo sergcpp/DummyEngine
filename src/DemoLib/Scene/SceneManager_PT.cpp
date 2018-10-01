@@ -124,7 +124,6 @@ void SceneManager::InitScene_PT(bool _override) {
                     if (mat_it == loaded_materials.end()) {
                         Ray::mat_desc_t mat_desc;
                         mat_desc.type = Ray::DiffuseMaterial;
-                        //mat_desc.main_texture = default_white_tex;
                         mat_desc.main_color[0] = mat_desc.main_color[1] = mat_desc.main_color[2] = 1.0f;
 
                         auto tex_ref = mat->texture(0);
@@ -186,6 +185,7 @@ void SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &targ
 
 void SceneManager::Clear_PT() {
     if (!ray_scene_) return;
+
     ray_reg_ctx_.Clear();
     ray_renderer_.Clear();
 }
