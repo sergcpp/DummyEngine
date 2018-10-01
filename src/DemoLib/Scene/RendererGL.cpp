@@ -336,10 +336,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                 glVertexAttribPointer(p->attribute(A_TANGENT).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(float)));
 
                 glEnableVertexAttribArray(p->attribute(A_UVS1).loc);
-                glVertexAttribPointer(p->attribute(A_UVS1).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
+                glVertexAttribPointer(p->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
 
                 glEnableVertexAttribArray(p->attribute(A_UVS2).loc);
-                glVertexAttribPointer(p->attribute(A_UVS2).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
+                glVertexAttribPointer(p->attribute(A_UVS2).loc, 2, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
             }
 
             glUniform1i(p->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
@@ -377,10 +377,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             glVertexAttribPointer(p->attribute(A_TANGENT).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(float)));
 
             glEnableVertexAttribArray(p->attribute(A_UVS1).loc);
-            glVertexAttribPointer(p->attribute(A_UVS1).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
+            glVertexAttribPointer(p->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
 
             glEnableVertexAttribArray(p->attribute(A_UVS2).loc);
-            glVertexAttribPointer(p->attribute(A_UVS2).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
+            glVertexAttribPointer(p->attribute(A_UVS2).loc, 2, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
 
             cur_mesh = mesh;
         }
@@ -420,6 +420,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
 
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
     {   // Blit main framebuffer
         cur_program = blit_ms_prog_.get();
         glUseProgram(cur_program->prog_id());
@@ -448,6 +450,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
     }
+
+    glPixelZoom(1, 1);
 
     if (debug_cull_ && culling_enabled_ && !depth_pixels_[0].empty()) {
         glUseProgram(0);
@@ -505,6 +509,10 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
         gl_type = GL_FLOAT;
     }
 
-    glRasterPos2f(-1, -1);
+    glDisable(GL_DEPTH_TEST);
+
+    glPixelZoom(1, -1);
+    glRasterPos2f(-1, 1);
+
     glDrawPixels(w, h, gl_format, gl_type, data);
 }

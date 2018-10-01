@@ -118,6 +118,14 @@ void GSDrawTest::Enter() {
         return true;
     });
 
+    game_->RegisterCommand("pt", [weak_this](const std::vector<std::string> &args) ->bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            shrd_this->use_pt_ = !shrd_this->use_pt_;
+        }
+        return true;
+    });
+
     game_->RegisterCommand("debug_cull", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
@@ -142,10 +150,16 @@ void GSDrawTest::Exit() {
 void GSDrawTest::Draw(float dt_s) {
     using namespace GSDrawTestInternal;
 
-    {
+    if (!use_pt_) {
         scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-        //scene_manager_->Draw();
-        scene_manager_->DrawPT();
+        scene_manager_->Draw();
+    } else {
+        scene_manager_->SetupView_PT(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+        if (view_grabbed_ || invalidate_view_) {
+            scene_manager_->Clear_PT();
+            invalidate_view_ = false;
+        }
+        scene_manager_->Draw_PT();
     }
 
     {
@@ -202,6 +216,10 @@ void GSDrawTest::Update(int dt_ms) {
 
     view_origin_ += view_dir_ * forward_speed_;
     view_origin_ += side * side_speed_;
+
+    if (std::abs(forward_speed_) > 0.0f || std::abs(side_speed_) > 0.0f) {
+        invalidate_view_ = true;
+    }
 }
 
 void GSDrawTest::HandleInput(InputManager::Event evt) {
@@ -286,7 +304,6 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
         }
     }
     case InputManager::RAW_INPUT_RESIZE:
-
         break;
     default:
         break;

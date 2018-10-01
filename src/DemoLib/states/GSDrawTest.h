@@ -41,6 +41,9 @@ class GSDrawTest : public GameState {
 
     float forward_speed_ = 0, side_speed_ = 0;
 
+    bool use_pt_ = false;
+    bool invalidate_view_ = true;
+
     std::vector<std::string> cmdline_history_;
     bool cmdline_enabled_ = false;
     bool shift_down_ = false;

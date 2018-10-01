@@ -109,7 +109,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             double z = ((const JsNumber &)js_dir.at(2)).val;
 
             env_.sun_dir = Ren::Vec3f{ float(x), float(y), float(z) };
-            env_.sun_dir = Ren::Normalize(env_.sun_dir);
+            env_.sun_dir = -Ren::Normalize(env_.sun_dir);
         }
         if (js_env.Has("sun_col")) {
             const JsArray &js_col = (const JsArray &)js_env.at("sun_col");
