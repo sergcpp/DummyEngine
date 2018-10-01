@@ -22,6 +22,10 @@ void SceneManager::Draw_PT() {
     renderer_.BlitPixels(pixels, ctx_.w(), ctx_.h(), Ren::RawRGBA32F);
 }
 
+void SceneManager::PrepareLightmaps_PT() {
+    if (!ray_scene_) return;
+}
+
 void SceneManager::InitScene_PT(bool _override) {
     if (ray_scene_) {
         if (_override) {
@@ -39,7 +43,7 @@ void SceneManager::InitScene_PT(bool _override) {
         ray_scene_->SetEnvironment(env_desc);
     }
 
-    // Add camera
+    // Add main camera
     {   Ray::camera_desc_t cam_desc;
         cam_desc.type = Ray::Persp;
         cam_desc.filter = Ray::Tent;
@@ -50,6 +54,17 @@ void SceneManager::InitScene_PT(bool _override) {
         cam_desc.gamma = 2.2f;
         cam_desc.focus_distance = 1.0f;
         cam_desc.focus_factor = 0.0f;
+
+        ray_scene_->AddCamera(cam_desc);
+    }
+
+    // Add camera for lightmapping
+    {   Ray::camera_desc_t cam_desc;
+        cam_desc.type = Ray::Geo;
+        cam_desc.filter = Ray::Box;
+        cam_desc.gamma = 1.0f;
+        cam_desc.lighting_only = true;
+        cam_desc.skip_indirect_lighting = true;
 
         ray_scene_->AddCamera(cam_desc);
     }

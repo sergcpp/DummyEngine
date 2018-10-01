@@ -28,6 +28,7 @@ public:
     void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up);
     void Draw_PT();
     void Clear_PT();
+    void PrepareLightmaps_PT();
 private:
     Ren::MaterialRef OnLoadMaterial(const char *name);
     Ren::ProgramRef OnLoadProgram(const char *name, const char *arg1, const char *arg2);
