@@ -3,6 +3,7 @@
 #include <map>
 
 #include <Ren/Context.h>
+#include <Sys/AssetFileIO.h>
 
 #include "Renderer.h"
 
@@ -69,7 +70,7 @@ void SceneManager::InitScene_PT(bool _override) {
         ray_scene_->AddLight(sun_desc);
     }
 
-    std::map<std::string, uint32_t> loaded_materials, loaded_meshes;
+    std::map<std::string, uint32_t> loaded_materials, loaded_meshes, loaded_textures;
 
     uint32_t default_white_tex;
 
@@ -123,8 +124,32 @@ void SceneManager::InitScene_PT(bool _override) {
                     if (mat_it == loaded_materials.end()) {
                         Ray::mat_desc_t mat_desc;
                         mat_desc.type = Ray::DiffuseMaterial;
-                        mat_desc.main_texture = default_white_tex;
-                        mat_desc.main_color[0] = mat_desc.main_color[1] = mat_desc.main_color[2] = 0.5f;
+                        //mat_desc.main_texture = default_white_tex;
+                        mat_desc.main_color[0] = mat_desc.main_color[1] = mat_desc.main_color[2] = 1.0f;
+
+                        auto tex_ref = mat->texture(0);
+                        if (tex_ref) {
+                            const char *tex_name = tex_ref->name();
+
+                            auto tex_it = loaded_textures.find(tex_name);
+                            if (tex_it == loaded_textures.end()) {
+                                auto params = tex_ref->params();
+
+                                std::unique_ptr<Ray::pixel_color8_t[]> tex_data(new Ray::pixel_color8_t[params.w * params.h]);
+                                tex_ref->ReadTextureData(Ren::RawRGBA8888, (void *)&tex_data[0]);
+
+                                Ray::tex_desc_t tex_desc;
+                                tex_desc.w = params.w;
+                                tex_desc.h = params.h;
+                                tex_desc.data = &tex_data[0];
+                                tex_desc.generate_mipmaps = true;
+
+                                uint32_t new_tex = ray_scene_->AddTexture(tex_desc);
+                                tex_it = loaded_textures.emplace(tex_name, new_tex).first;
+                            }
+
+                            mat_desc.main_texture = tex_it->second;
+                        }
 
                         uint32_t new_mat = ray_scene_->AddMaterial(mat_desc);
                         mat_it = loaded_materials.emplace(mat_name, new_mat).first;
