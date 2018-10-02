@@ -16,6 +16,8 @@ void SceneManager::Draw_PT() {
         ray_renderer_.Resize(ctx_.w(), ctx_.h());
     }
 
+    //ray_scene_->set_current_cam(1);
+
     ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_);
 
     const auto *pixels = ray_renderer_.get_pixels_ref();
@@ -65,6 +67,7 @@ void SceneManager::InitScene_PT(bool _override) {
         cam_desc.gamma = 1.0f;
         cam_desc.lighting_only = true;
         cam_desc.skip_indirect_lighting = true;
+        cam_desc.uv_index = 1;
 
         ray_scene_->AddCamera(cam_desc);
     }

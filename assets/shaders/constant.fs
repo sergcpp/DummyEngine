@@ -15,6 +15,10 @@ uniform sampler2D diffuse_texture;
 uniform sampler2D normals_texture;
 uniform sampler2D shadow_texture;
 
+/*struct {
+
+}*/
+
 uniform vec3 sun_dir, sun_col;
 
 varying mat3 aVertexTBN_;
@@ -145,8 +149,11 @@ void main(void) {
 			// use directional lightmap here
 		}
 	}
+    
+    const float gamma = 2.2;
 
-	vec3 diffuse_color = texture2D(diffuse_texture, aVertexUVs1_).rgb * sun_col * lambert * visibility;
-
-	gl_FragColor = vec4(diffuse_color + color*0.0, 1.0);
+	vec3 diffuse_color = pow(texture2D(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma)) * sun_col * lambert * visibility;
+    diffuse_color = pow(diffuse_color, vec3(1.0/gamma));
+    
+	gl_FragColor = vec4(diffuse_color, 1.0);
 }
