@@ -16,7 +16,7 @@ void SceneManager::Draw_PT() {
         ray_renderer_.Resize(ctx_.w(), ctx_.h());
     }
 
-    //ray_scene_->set_current_cam(1);
+    ray_scene_->set_current_cam(1);
 
     ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_);
 
@@ -66,8 +66,11 @@ void SceneManager::InitScene_PT(bool _override) {
         cam_desc.filter = Ray::Box;
         cam_desc.gamma = 1.0f;
         cam_desc.lighting_only = true;
-        cam_desc.skip_indirect_lighting = true;
+        cam_desc.skip_direct_lighting = true;
+        //cam_desc.skip_indirect_lighting = true;
+        cam_desc.no_background = true;
         cam_desc.uv_index = 1;
+        cam_desc.mi_index = 0;
 
         ray_scene_->AddCamera(cam_desc);
     }
