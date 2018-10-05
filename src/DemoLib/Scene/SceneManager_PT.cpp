@@ -77,7 +77,7 @@ void SceneManager::ResetLightmaps_PT() {
 bool SceneManager::PrepareLightmaps_PT() {
     if (!ray_scene_) return false;
 
-    const int LM_RES = 1024;
+    const int LM_RES = 512;
     const int LM_SAMPLES = 256;
 
     const auto &rect = ray_reg_ctx_.rect();
