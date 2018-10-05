@@ -1,11 +1,38 @@
 #include "SceneManager.h"
 
+#include <fstream>
 #include <map>
 
 #include <Ren/Context.h>
 #include <Sys/AssetFileIO.h>
+#include <Sys/Log.h>
 
 #include "Renderer.h"
+
+namespace SceneManagerInternal {
+    void WriteTGA(const std::vector<uint8_t> &out_data, int w, int h, const std::string &name) {
+        int bpp = 4;
+
+        std::ofstream file(name, std::ios::binary);
+
+        unsigned char header[18] = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+        header[12] = w & 0xFF;
+        header[13] = (w >> 8) & 0xFF;
+        header[14] = (h) & 0xFF;
+        header[15] = (h >> 8) & 0xFF;
+        header[16] = bpp * 8;
+
+        file.write((char *)&header[0], sizeof(unsigned char) * 18);
+        file.write((const char *)&out_data[0], w * h * bpp);
+
+        static const char footer[26] = "\0\0\0\0" // no extension area
+            "\0\0\0\0"// no developer directory
+            "TRUEVISION-XFILE"// yep, this is a TGA file
+            ".";
+        file.write((const char *)&footer, sizeof(footer));
+    }
+}
 
 void SceneManager::Draw_PT() {
     if (!ray_scene_) return;
@@ -16,7 +43,8 @@ void SceneManager::Draw_PT() {
         ray_renderer_.Resize(ctx_.w(), ctx_.h());
     }
 
-    ray_scene_->set_current_cam(1);
+    // main view camera
+    ray_scene_->set_current_cam(0);
 
     ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_);
 
@@ -24,8 +52,184 @@ void SceneManager::Draw_PT() {
     renderer_.BlitPixels(pixels, ctx_.w(), ctx_.h(), Ren::RawRGBA32F);
 }
 
-void SceneManager::PrepareLightmaps_PT() {
+void SceneManager::ResetLightmaps_PT() {
     if (!ray_scene_) return;
+
+    Ray::camera_desc_t cam_desc;
+    ray_scene_->GetCamera(1, cam_desc);
+
+    for (size_t i = 0; i < objects_.size(); i++) {
+        if (objects_[i].flags & UseLightmap) {
+            cur_lm_obj_ = i;
+            cam_desc.mi_index = objects_[i].pt_mi;
+            break;
+        }
+    }
+
+    cam_desc.skip_direct_lighting = false;
+    cam_desc.skip_indirect_lighting = true;
+
+    ray_scene_->SetCamera(1, cam_desc);
+
+    cur_lm_indir_ = false;
+}
+
+bool SceneManager::PrepareLightmaps_PT() {
+    if (!ray_scene_) return false;
+
+    const int LM_RES = 512;
+    const int LM_SAMPLES = 64;
+
+    const auto &rect = ray_reg_ctx_.rect();
+    if (rect.w != LM_RES || rect.h != LM_RES) {
+        ray_reg_ctx_ = Ray::RegionContext{ { 0, 0, LM_RES, LM_RES } };
+        ray_renderer_.Resize(LM_RES, LM_RES);
+    }
+
+    // special lightmap camera
+    ray_scene_->set_current_cam(1);
+
+    if (ray_reg_ctx_.iteration >= LM_SAMPLES) {
+
+        {   // Save lightmap to file
+            const auto *pixels = ray_renderer_.get_pixels_ref();
+
+            std::vector<Ray::pixel_color_t> temp_pixels1{ pixels, pixels + LM_RES * LM_RES },
+                                            temp_pixels2{ LM_RES * LM_RES };
+
+            const float INVAL_THRES = 0.5f;
+
+            // apply dilation filter
+            for (int i = 0; i < 16; i++) {
+                bool has_invalid = false;
+
+                for (int y = 0; y < LM_RES; y++) {
+                    for (int x = 0; x < LM_RES; x++) {
+                        auto in_p = temp_pixels1[y * LM_RES + x];
+                        auto &out_p = temp_pixels2[y * LM_RES + x];
+
+                        float mul = 1.0f;
+                        if (in_p.a < INVAL_THRES) {
+                            has_invalid = true;
+
+                            Ray::pixel_color_t new_p = { 0 };
+                            int count = 0;
+                            for (int _y : { y - 1, y, y + 1 }) {
+                                for (int _x : { x - 1, x, x + 1 }) {
+                                    if (_x < 0 || _y < 0
+                                        || _x > LM_RES - 1 || _y > LM_RES - 1) continue;
+
+                                    const auto &p = temp_pixels1[_y * LM_RES + _x];
+                                    if (p.a >= INVAL_THRES) {
+                                        new_p.r += p.r;
+                                        new_p.g += p.g;
+                                        new_p.b += p.b;
+                                        new_p.a += p.a;
+
+                                        count++;
+                                    }
+                                }
+                            }
+
+                            if (count) {
+                                float inv_c = 1.0f / count;
+                                new_p.r *= inv_c;
+                                new_p.g *= inv_c;
+                                new_p.b *= inv_c;
+                                new_p.a *= inv_c;
+
+                                in_p = new_p;
+                            }
+                        } else {
+                            mul = 1.0f / in_p.a;
+                        }
+
+                        out_p.r = in_p.r * mul;
+                        out_p.g = in_p.g * mul;
+                        out_p.b = in_p.b * mul;
+                        out_p.a = in_p.a * mul;
+                    }
+                }
+
+                std::swap(temp_pixels1, temp_pixels2);
+
+                if (!has_invalid) break;
+            }
+
+            std::vector<uint8_t> out_rgba;
+            out_rgba.resize(4 * LM_RES * LM_RES);
+
+            for (int y = 0; y < LM_RES; y++) {
+                for (int x = 0; x < LM_RES; x++) {
+                    const auto &p = temp_pixels1[y * LM_RES + x];
+
+                    uint8_t r = p.r > 1.0f ? 255 : uint8_t(p.r * 255);
+                    uint8_t g = p.g > 1.0f ? 255 : uint8_t(p.g * 255);
+                    uint8_t b = p.b > 1.0f ? 255 : uint8_t(p.b * 255);
+                    uint8_t a = p.a > 1.0f ? 255 : uint8_t(p.a * 255);
+
+                    out_rgba[4 * (y * LM_RES + x) + 0] = b;
+                    out_rgba[4 * (y * LM_RES + x) + 1] = g;
+                    out_rgba[4 * (y * LM_RES + x) + 2] = r;
+                    out_rgba[4 * (y * LM_RES + x) + 3] = a;
+                }
+            }
+
+            std::string out_file_name = scene_name_;
+            out_file_name += "_";
+            out_file_name += std::to_string(cur_lm_obj_);
+            if (!cur_lm_indir_) {
+                out_file_name += "_lm_direct.tga";
+            } else {
+                out_file_name += "_lm_indirect.tga";
+            }
+
+            out_file_name = std::string("assets/textures/lightmaps/") + out_file_name;
+
+            SceneManagerInternal::WriteTGA(out_rgba, LM_RES, LM_RES, out_file_name);
+
+            //std::ofstream out_file(std::string("assets/textures/lightmaps/") + out_file_name, std::ios::binary);
+            //out_file.write(out_file_name.c_str(), out_file_name.length());
+        }
+
+        Ray::camera_desc_t cam_desc;
+        ray_scene_->GetCamera(1, cam_desc);
+
+        if (!cur_lm_indir_) {
+            cur_lm_indir_ = true;
+
+            cam_desc.skip_direct_lighting = true;
+            cam_desc.skip_indirect_lighting = false;
+        } else {
+            bool found = false;
+
+            for (size_t i = cur_lm_obj_ + 1; i < objects_.size(); i++) {
+                if (objects_[i].flags & UseLightmap) {
+                    cur_lm_obj_ = i;
+                    cam_desc.mi_index = objects_[i].pt_mi;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                return false;
+            }
+        }
+
+        ray_scene_->SetCamera(1, cam_desc);
+
+        ray_reg_ctx_.Clear();
+    }
+
+    ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_);
+
+    LOGI("Lightmap: %i %i", int(cur_lm_obj_), ray_reg_ctx_.iteration);
+
+    const auto *pixels = ray_renderer_.get_pixels_ref();
+    renderer_.BlitPixels(pixels, LM_RES, LM_RES, Ren::RawRGBA32F);
+
+    return true;
 }
 
 void SceneManager::InitScene_PT(bool _override) {
@@ -120,7 +324,7 @@ void SceneManager::InitScene_PT(bool _override) {
     }
 
     // Add objects
-    for (const auto &obj : objects_) {
+    for (auto &obj : objects_) {
         const uint32_t drawable_flags = HasMesh | HasTransform;
         if ((obj.flags & drawable_flags) == drawable_flags) {
             const auto *mesh = obj.mesh.get();
@@ -185,7 +389,7 @@ void SceneManager::InitScene_PT(bool _override) {
 
             const auto *tr = obj.tr.get();
 
-            ray_scene_->AddMeshInstance(mesh_it->second, Ren::ValuePtr(tr->mat));
+            obj.pt_mi = ray_scene_->AddMeshInstance(mesh_it->second, Ren::ValuePtr(tr->mat));
         }
     }
 }

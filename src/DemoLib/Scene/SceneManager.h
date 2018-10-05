@@ -28,13 +28,17 @@ public:
     void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up);
     void Draw_PT();
     void Clear_PT();
-    void PrepareLightmaps_PT();
+
+    void ResetLightmaps_PT();
+    bool PrepareLightmaps_PT();
 private:
     Ren::MaterialRef OnLoadMaterial(const char *name);
     Ren::ProgramRef OnLoadProgram(const char *name, const char *arg1, const char *arg2);
     Ren::Texture2DRef OnLoadTexture(const char *name);
 
     void RebuildBVH();
+
+    std::string scene_name_;
 
     Ren::Context &ctx_;
     Renderer &renderer_;
@@ -44,6 +48,9 @@ private:
 
     Ren::Camera cam_;
     Environment env_;
+
+    bool cur_lm_indir_ = false;
+    size_t cur_lm_obj_ = 0;
 
     Ren::Storage<Transform> transforms_;
 

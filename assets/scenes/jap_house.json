@@ -1,4 +1,5 @@
 {
+    "name" : "jap_house",
     "environment" : {
         "sun_dir" : [ 0.54, -0.54, -0.54 ],
         "sun_col" : [ 1.0, 1.0, 0.9 ],
@@ -22,6 +23,7 @@
 		{
 			"pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "floor",
+            "use_lightmap" : true,
         },
         {
             "mesh" : "walls",

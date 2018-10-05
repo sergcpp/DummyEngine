@@ -96,7 +96,22 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             obj.occ_mesh = it->second;
         }
 
+        if (js_obj.Has("use_lightmap")) {
+            const JsLiteral &js_use_lm = (const JsLiteral &)js_obj.at("use_lightmap");
+
+            if (js_use_lm.val == JS_TRUE) {
+                obj.flags |= UseLightmap;
+            }
+        }
+
         objects_.push_back(obj);
+    }
+
+    if (js_scene.Has("name")) {
+        const JsString &js_name = (const JsString &)js_scene.at("name");
+        scene_name_ = js_name.val;
+    } else {
+        scene_name_.clear();
     }
 
     if (js_scene.Has("environment")) {

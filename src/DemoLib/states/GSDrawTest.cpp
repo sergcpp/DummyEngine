@@ -145,6 +145,19 @@ void GSDrawTest::Enter() {
         return true;
     });
 
+    game_->RegisterCommand("lm", [weak_this](const std::vector<std::string> &args) ->bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            shrd_this->use_lm_ = !shrd_this->use_lm_;
+            if (shrd_this->use_lm_) {
+                shrd_this->scene_manager_->InitScene_PT();
+                shrd_this->scene_manager_->ResetLightmaps_PT();
+                shrd_this->invalidate_view_ = true;
+            }
+        }
+        return true;
+    });
+
     game_->RegisterCommand("debug_cull", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
@@ -169,19 +182,23 @@ void GSDrawTest::Exit() {
 void GSDrawTest::Draw(float dt_s) {
     using namespace GSDrawTestInternal;
 
-    if (!use_pt_) {
-        scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-        scene_manager_->Draw();
-    } else {
+    if (use_lm_) {
+        if (!scene_manager_->PrepareLightmaps_PT()) {
+            use_lm_ = false;
+        }
+    } else if (use_pt_) {
         scene_manager_->SetupView_PT(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
         if (view_grabbed_ || invalidate_view_) {
             scene_manager_->Clear_PT();
             invalidate_view_ = false;
         }
         scene_manager_->Draw_PT();
+    } else {
+        scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+        scene_manager_->Draw();
     }
 
-    {
+    if (!use_pt_ && !use_lm_) {
         const auto timings = scene_manager_->timings();
         const auto back_timings = scene_manager_->back_timings();
 
