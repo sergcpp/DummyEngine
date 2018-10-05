@@ -2,9 +2,9 @@
     "name" : "jap_house",
     "environment" : {
         "sun_dir" : [ 0.54, -0.54, -0.54 ],
-        "sun_col" : [ 1.0, 1.0, 0.9 ],
+        "sun_col" : [ 5.0, 5.0, 4.5 ],
         "sun_softness" : 0.1,
-        "env_col" : [ 0.45, 0.7, 0.95 ]
+        "env_col" : [ 0.92, 1.4, 1.96 ]
     },
     "camera" : {
         "view_origin" : [ 0.0, 5.0, 0.0 ],

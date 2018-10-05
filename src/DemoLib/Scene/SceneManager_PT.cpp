@@ -32,6 +32,58 @@ namespace SceneManagerInternal {
             ".";
         file.write((const char *)&footer, sizeof(footer));
     }
+
+    void WriteTGA(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
+        int bpp = 4;
+
+        std::ofstream file(name, std::ios::binary);
+
+        unsigned char header[18] = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+        header[12] = w & 0xFF;
+        header[13] = (w >> 8) & 0xFF;
+        header[14] = (h) & 0xFF;
+        header[15] = (h >> 8) & 0xFF;
+        header[16] = bpp * 8;
+
+        file.write((char *)&header[0], sizeof(unsigned char) * 18);
+        //file.write((const char *)&out_data[0], w * h * bpp);
+
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                const auto &p = out_data[y * w + x];
+
+                Ren::Vec3f val = { p.r, p.g, p.b };
+
+                Ren::Vec3f exp = { std::log2(val[0]), std::log2(val[1]), std::log2(val[2]) };
+                for (int i = 0; i < 3; i++) {
+                    exp[i] = std::ceil(exp[i]);
+                    if (exp[i] < -128.0f) exp[i] = -128.0f;
+                    else if (exp[i] > 127.0f) exp[i] = 127.0f;
+                }
+
+                float common_exp = std::max(exp[0], std::max(exp[1], exp[2]));
+                float range = std::exp2(common_exp);
+
+                Ren::Vec3f mantissa = val / range;
+                for (int i = 0; i < 3; i++) {
+                    if (mantissa[i] < 0.0f) mantissa[i] = 0.0f;
+                    else if (mantissa[i] > 1.0f) mantissa[i] = 1.0f;
+                }
+
+                Ren::Vec4f res = { mantissa[0], mantissa[1], mantissa[2], (common_exp + 128.0f) / 256.0f };
+
+                uint8_t data[] = { uint8_t(res[0] * 255), uint8_t(res[1] * 255), uint8_t(res[2] * 255), uint8_t(res[3] * 255) };
+                file.write((const char *)&data[0], 4);
+            }
+        }
+
+        static const char footer[26] = "\0\0\0\0" // no extension area
+            "\0\0\0\0"// no developer directory
+            "TRUEVISION-XFILE"// yep, this is a TGA file
+            ".";
+        file.write((const char *)&footer, sizeof(footer));
+    }
 }
 
 void SceneManager::Draw_PT() {
@@ -156,7 +208,7 @@ bool SceneManager::PrepareLightmaps_PT() {
                 if (!has_invalid) break;
             }
 
-            std::vector<uint8_t> out_rgba;
+            /*std::vector<uint8_t> out_rgba;
             out_rgba.resize(4 * LM_RES * LM_RES);
 
             for (int y = 0; y < LM_RES; y++) {
@@ -173,7 +225,7 @@ bool SceneManager::PrepareLightmaps_PT() {
                     out_rgba[4 * (y * LM_RES + x) + 2] = r;
                     out_rgba[4 * (y * LM_RES + x) + 3] = a;
                 }
-            }
+            }*/
 
             std::string out_file_name = scene_name_;
             out_file_name += "_";
@@ -186,7 +238,7 @@ bool SceneManager::PrepareLightmaps_PT() {
 
             out_file_name = std::string("assets/textures/lightmaps/") + out_file_name;
 
-            SceneManagerInternal::WriteTGA(out_rgba, LM_RES, LM_RES, out_file_name);
+            SceneManagerInternal::WriteTGA(temp_pixels1, LM_RES, LM_RES, out_file_name);
 
             //std::ofstream out_file(std::string("assets/textures/lightmaps/") + out_file_name, std::ios::binary);
             //out_file.write(out_file_name.c_str(), out_file_name.length());
@@ -379,7 +431,7 @@ void SceneManager::InitScene_PT(bool _override) {
                         mat_it = loaded_materials.emplace(mat_name, new_mat).first;
                     }
 
-                    mesh_desc.shapes.emplace_back(mat_it->second, (uint32_t)default_glow_mat, (size_t)(s->offset / sizeof(uint32_t)), (size_t)s->num_indices);
+                    mesh_desc.shapes.emplace_back(mat_it->second, 0xffffffff/*default_glow_mat*/, (size_t)(s->offset / sizeof(uint32_t)), (size_t)s->num_indices);
                     ++s;
                 }
 
