@@ -47,6 +47,8 @@ class GSDrawTest : public GameState {
     std::vector<std::string> cmdline_history_;
     bool cmdline_enabled_ = false;
     bool shift_down_ = false;
+
+    void LoadScene(const char *name);
 public:
     explicit GSDrawTest(GameBase *game);
     ~GSDrawTest();

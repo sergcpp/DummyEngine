@@ -135,6 +135,7 @@ namespace RendererInternal {
     const int U_TEX = 3;
     const int U_NORM_TEX = 4;
     const int U_SHADOW_TEX = 5;
+    const int U_LM_TEX = 6;
 
     const int U_SUN_DIR = 10;
     const int U_SUN_COL = 11;
@@ -142,6 +143,7 @@ namespace RendererInternal {
     const int DIFFUSEMAP_SLOT = 0;
     const int NORMALMAP_SLOT = 1;
     const int SHADOWMAP_SLOT = 2;
+    const int LIGHTMAP_SLOT = 3;
 
     inline void BindTexture(int slot, uint32_t tex) {
         glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
@@ -345,6 +347,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             glUniform1i(p->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
             glUniform1i(p->uniform(U_NORM_TEX).loc, NORMALMAP_SLOT);
             glUniform1i(p->uniform(U_SHADOW_TEX).loc, SHADOWMAP_SLOT);
+            glUniform1i(p->uniform(U_LM_TEX).loc, LIGHTMAP_SLOT);
 
             glUniform3fv(p->uniform(U_SUN_DIR).loc, 1, Ren::ValuePtr(env.sun_dir));
             glUniform3fv(p->uniform(U_SUN_COL).loc, 1, Ren::ValuePtr(env.sun_col));
@@ -409,6 +412,12 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
             BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
             cur_mat = mat;
+        }
+
+        if (dr.lm_tex) {
+            BindTexture(LIGHTMAP_SLOT, dr.lm_tex->tex_id());
+        } else {
+            BindTexture(LIGHTMAP_SLOT, default_lightmap_->tex_id());
         }
 
         glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));

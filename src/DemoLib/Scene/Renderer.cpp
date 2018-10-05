@@ -45,6 +45,17 @@ Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
 
     shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::None, Ren::NoFilter, Ren::ClampToEdge, true);
 
+    uint8_t data[] = { 0, 0, 0, 0 };
+
+    Ren::Texture2DParams p;
+    p.w = p.h = 1;
+    p.format = Ren::RawRGBA8888;
+    p.filter = Ren::Bilinear;
+
+    Ren::eTexLoadStatus status;
+    default_lightmap_ = ctx_.LoadTexture2D("default_lightmap", data, sizeof(data), p, &status);
+    assert(status == Ren::TexCreatedFromData);
+
     /*try {
         shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::RawR32F, Ren::NoFilter, Ren::ClampToEdge, true);
     } catch (std::runtime_error &) {
@@ -278,6 +289,7 @@ void Renderer::BackgroundProc() {
                                 tr_list.push_back(clip_from_object);
 
                                 const auto *mesh = obj.mesh.get();
+                                const auto *lm_tex = obj.lm_indir_tex ? obj.lm_indir_tex.get() : nullptr;
 
                                 size_t dr_start = dr_list.size();
 
@@ -285,7 +297,7 @@ void Renderer::BackgroundProc() {
 
                                 const Ren::TriStrip *s = &mesh->strip(0);
                                 while (s->offset != -1) {
-                                    dr_list.push_back({ &tr_list.back(), &world_from_object, s->mat.get(), mesh, s });
+                                    dr_list.push_back({ &tr_list.back(), &world_from_object, s->mat.get(), mesh, s, lm_tex });
                                     ++s;
                                 }
                             }
@@ -404,7 +416,7 @@ void Renderer::BackgroundProc() {
 
                                 const Ren::TriStrip *s = &mesh->strip(0);
                                 while (s->offset != -1) {
-                                    sh_dr_list[casc].push_back({ &tr_list.back(), nullptr, s->mat.get(), mesh, s });
+                                    sh_dr_list[casc].push_back({ &tr_list.back(), nullptr, s->mat.get(), mesh, s, nullptr });
                                     ++s;
                                 }
                             }

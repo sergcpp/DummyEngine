@@ -27,6 +27,8 @@ namespace GSDrawTestInternal {
     const Ren::Vec3f CAM_UP = { 0.0f, 1.0f, 0.0f };
 
     const int MAX_CMD_LINES = 8;
+
+    const char SCENE_NAME[] = "assets/scenes/jap_house.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
@@ -50,66 +52,7 @@ GSDrawTest::~GSDrawTest() {
 void GSDrawTest::Enter() {
     using namespace GSDrawTestInternal;
 
-    auto on_load_program = [&](const char *name, const char *arg1, const char *arg2) {
-        std::string vs_name = "assets/shaders/";
-        vs_name += arg1;
-        std::string fs_name = "assets/shaders/";
-        fs_name += arg2;
-
-        Sys::AssetFile vs_file(vs_name, Sys::AssetFile::IN);
-        size_t vs_file_size = vs_file.size();
-
-        std::string vs_file_data;
-        vs_file_data.resize(vs_file_size);
-        vs_file.Read(&vs_file_data[0], vs_file_size);
-
-        Sys::AssetFile fs_file(fs_name, Sys::AssetFile::IN);
-        size_t fs_file_size = fs_file.size();
-
-        std::string fs_file_data;
-        fs_file_data.resize(fs_file_size);
-        fs_file.Read(&fs_file_data[0], fs_file_size);
-
-        return ctx_->LoadProgramGLSL(name, &vs_file_data[0], &fs_file_data[0], nullptr);
-    };
-
-    auto on_load_texture = [&](const char *name) {
-        Sys::AssetFile in_file(name, Sys::AssetFile::IN);
-        size_t in_file_size = in_file.size();
-
-        std::unique_ptr<char[]> in_file_data(new char[in_file_size]);
-        in_file.Read(&in_file_data[0], in_file_size);
-
-        Ren::Texture2DParams p;
-
-        return ctx_->LoadTexture2D(name, &in_file_data[0], (int)in_file_size, p, nullptr);
-    };
-
-    std::ifstream in_scene("assets/scenes/jap_house.json", std::ios::binary);
-
-    JsObject js_scene;
-    if (!js_scene.Read(in_scene)) {
-        throw std::runtime_error("Cannot load scene!");
-    }
-
-    scene_manager_->LoadScene(js_scene);
-
-    if (js_scene.Has("camera")) {
-        const JsObject &js_cam = (const JsObject &)js_scene.at("camera");
-        if (js_cam.Has("view_origin")) {
-            const JsArray &js_orig = (const JsArray &)js_cam.at("view_origin");
-            view_origin_[0] = (float)((const JsNumber &)js_orig.at(0)).val;
-            view_origin_[1] = (float)((const JsNumber &)js_orig.at(1)).val;
-            view_origin_[2] = (float)((const JsNumber &)js_orig.at(2)).val;
-        }
-
-        if (js_cam.Has("view_dir")) {
-            const JsArray &js_dir = (const JsArray &)js_cam.at("view_dir");
-            view_dir_[0] = (float)((const JsNumber &)js_dir.at(0)).val;
-            view_dir_[1] = (float)((const JsNumber &)js_dir.at(1)).val;
-            view_dir_[2] = (float)((const JsNumber &)js_dir.at(2)).val;
-        }
-    }
+    LoadScene(SCENE_NAME);
 
     cmdline_history_.resize(MAX_CMD_LINES, "~");
 
@@ -175,6 +118,34 @@ void GSDrawTest::Enter() {
     });
 }
 
+void GSDrawTest::LoadScene(const char *name) {
+    std::ifstream in_scene(name, std::ios::binary);
+
+    JsObject js_scene;
+    if (!js_scene.Read(in_scene)) {
+        throw std::runtime_error("Cannot load scene!");
+    }
+
+    scene_manager_->LoadScene(js_scene);
+
+    if (js_scene.Has("camera")) {
+        const JsObject &js_cam = (const JsObject &)js_scene.at("camera");
+        if (js_cam.Has("view_origin")) {
+            const JsArray &js_orig = (const JsArray &)js_cam.at("view_origin");
+            view_origin_[0] = (float)((const JsNumber &)js_orig.at(0)).val;
+            view_origin_[1] = (float)((const JsNumber &)js_orig.at(1)).val;
+            view_origin_[2] = (float)((const JsNumber &)js_orig.at(2)).val;
+        }
+
+        if (js_cam.Has("view_dir")) {
+            const JsArray &js_dir = (const JsArray &)js_cam.at("view_dir");
+            view_dir_[0] = (float)((const JsNumber &)js_dir.at(0)).val;
+            view_dir_[1] = (float)((const JsNumber &)js_dir.at(1)).val;
+            view_dir_[2] = (float)((const JsNumber &)js_dir.at(2)).val;
+        }
+    }
+}
+
 void GSDrawTest::Exit() {
 
 }
@@ -184,6 +155,7 @@ void GSDrawTest::Draw(float dt_s) {
 
     if (use_lm_) {
         if (!scene_manager_->PrepareLightmaps_PT()) {
+            LoadScene(SCENE_NAME);
             use_lm_ = false;
         }
     } else if (use_pt_) {

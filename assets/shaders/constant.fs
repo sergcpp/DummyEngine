@@ -7,6 +7,7 @@ UNIFORMS
 	diffuse_texture : 3
 	normals_texture : 4
 	shadow_texture : 5
+    lightmap_texture : 6
 	sun_dir : 10
 	sun_col : 11
 */
@@ -14,6 +15,7 @@ UNIFORMS
 uniform sampler2D diffuse_texture;
 uniform sampler2D normals_texture;
 uniform sampler2D shadow_texture;
+uniform sampler2D lightmap_texture;
 
 /*struct {
 
@@ -151,8 +153,10 @@ void main(void) {
 	}
     
     const float gamma = 2.2;
+    
+    vec3 indirect_col = texture2D(lightmap_texture, vec2(aVertexUVs2_.x, 1.0 - aVertexUVs2_.y)).rgb;
 
-	vec3 diffuse_color = pow(texture2D(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma)) * sun_col * lambert * visibility;
+	vec3 diffuse_color = pow(texture2D(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma)) * (sun_col * lambert * visibility + indirect_col);
     diffuse_color = pow(diffuse_color, vec3(1.0/gamma));
     
 	gl_FragColor = vec4(diffuse_color, 1.0);

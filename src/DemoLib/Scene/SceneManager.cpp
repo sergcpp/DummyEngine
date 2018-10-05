@@ -48,6 +48,13 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
     std::map<std::string, Ren::MeshRef> all_meshes;
 
+    if (js_scene.Has("name")) {
+        const JsString &js_name = (const JsString &)js_scene.at("name");
+        scene_name_ = js_name.val;
+    } else {
+        scene_name_.clear();
+    }
+
     const JsObject &js_meshes = (const JsObject &)js_scene.at("meshes");
     for (const auto &js_elem : js_meshes.elements) {
         const std::string &name = js_elem.first;
@@ -102,16 +109,20 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             if (js_use_lm.val == JS_TRUE) {
                 obj.flags |= UseLightmap;
             }
+
+            std::string lm_tex_name = "lightmaps/";
+            lm_tex_name += scene_name_;
+            lm_tex_name += "_";
+            lm_tex_name += std::to_string(objects_.size());
+
+            std::string lm_dir_tex_name = lm_tex_name + "_lm_direct.tga";
+            std::string lm_indir_tex_name = lm_tex_name + "_lm_indirect.tga";
+
+            obj.lm_dir_tex = OnLoadTexture(lm_dir_tex_name.c_str());
+            obj.lm_indir_tex = OnLoadTexture(lm_indir_tex_name.c_str());
         }
 
         objects_.push_back(obj);
-    }
-
-    if (js_scene.Has("name")) {
-        const JsString &js_name = (const JsString &)js_scene.at("name");
-        scene_name_ = js_name.val;
-    } else {
-        scene_name_.clear();
     }
 
     if (js_scene.Has("environment")) {
