@@ -289,7 +289,8 @@ void Renderer::BackgroundProc() {
                                 tr_list.push_back(clip_from_object);
 
                                 const auto *mesh = obj.mesh.get();
-                                const auto *lm_tex = obj.lm_indir_tex ? obj.lm_indir_tex.get() : nullptr;
+                                const auto *lm_dir_tex = obj.lm_dir_tex ? obj.lm_dir_tex.get() : nullptr;
+                                const auto *lm_indir_tex = obj.lm_indir_tex ? obj.lm_indir_tex.get() : nullptr;
 
                                 size_t dr_start = dr_list.size();
 
@@ -297,7 +298,7 @@ void Renderer::BackgroundProc() {
 
                                 const Ren::TriStrip *s = &mesh->strip(0);
                                 while (s->offset != -1) {
-                                    dr_list.push_back({ &tr_list.back(), &world_from_object, s->mat.get(), mesh, s, lm_tex });
+                                    dr_list.push_back({ &tr_list.back(), &world_from_object, s->mat.get(), mesh, s, lm_dir_tex, lm_indir_tex });
                                     ++s;
                                 }
                             }
@@ -416,7 +417,7 @@ void Renderer::BackgroundProc() {
 
                                 const Ren::TriStrip *s = &mesh->strip(0);
                                 while (s->offset != -1) {
-                                    sh_dr_list[casc].push_back({ &tr_list.back(), nullptr, s->mat.get(), mesh, s, nullptr });
+                                    sh_dr_list[casc].push_back({ &tr_list.back(), nullptr, s->mat.get(), mesh, s, nullptr, nullptr });
                                     ++s;
                                 }
                             }

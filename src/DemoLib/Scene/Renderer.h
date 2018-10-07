@@ -19,11 +19,12 @@ struct DrawableItem {
     const Ren::Material *mat;
     const Ren::Mesh     *mesh;
     const Ren::TriStrip *strip;
-    const Ren::Texture2D *lm_tex;
+    const Ren::Texture2D *lm_dir_tex;
+    const Ren::Texture2D *lm_indir_tex;
 
     DrawableItem(const Ren::Mat4f *_clip_from_object, const Ren::Mat4f *_world_from_object, const Ren::Material *_mat,
-        const Ren::Mesh *_mesh, const Ren::TriStrip *_strip, const Ren::Texture2D *_lm_tex) : clip_from_object(_clip_from_object), world_from_object(_world_from_object), sh_clip_from_object{ nullptr },
-        mat(_mat), mesh(_mesh), strip(_strip), lm_tex(_lm_tex) { }
+        const Ren::Mesh *_mesh, const Ren::TriStrip *_strip, const Ren::Texture2D *_lm_dir_tex, const Ren::Texture2D *_lm_indir_tex) : clip_from_object(_clip_from_object), world_from_object(_world_from_object), sh_clip_from_object{ nullptr },
+        mat(_mat), mesh(_mesh), strip(_strip), lm_dir_tex(_lm_dir_tex), lm_indir_tex(_lm_indir_tex) { }
 
     bool operator<(const DrawableItem& rhs) const {
         return std::tie(mat, mesh, clip_from_object, world_from_object) < std::tie(rhs.mat, rhs.mesh, rhs.clip_from_object, rhs.world_from_object);

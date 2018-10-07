@@ -71,9 +71,9 @@ namespace SceneManagerInternal {
                     else if (mantissa[i] > 1.0f) mantissa[i] = 1.0f;
                 }
 
-                Ren::Vec4f res = { mantissa[0], mantissa[1], mantissa[2], (common_exp + 128.0f) / 256.0f };
+                Ren::Vec4f res = { mantissa[0], mantissa[1], mantissa[2], common_exp + 128.0f };
 
-                uint8_t data[] = { uint8_t(res[0] * 255), uint8_t(res[1] * 255), uint8_t(res[2] * 255), uint8_t(res[3] * 255) };
+                uint8_t data[] = { uint8_t(res[2] * 255), uint8_t(res[1] * 255), uint8_t(res[0] * 255), uint8_t(res[3]) };        
                 file.write((const char *)&data[0], 4);
             }
         }
@@ -130,7 +130,7 @@ bool SceneManager::PrepareLightmaps_PT() {
     if (!ray_scene_) return false;
 
     const int LM_RES = 512;
-    const int LM_SAMPLES = 256;
+    const int LM_SAMPLES = 64;
 
     const auto &rect = ray_reg_ctx_.rect();
     if (rect.w != LM_RES || rect.h != LM_RES) {
@@ -231,9 +231,9 @@ bool SceneManager::PrepareLightmaps_PT() {
             out_file_name += "_";
             out_file_name += std::to_string(cur_lm_obj_);
             if (!cur_lm_indir_) {
-                out_file_name += "_lm_direct.tga";
+                out_file_name += "_lm_direct.tga_rgbe";
             } else {
-                out_file_name += "_lm_indirect.tga";
+                out_file_name += "_lm_indirect.tga_rgbe";
             }
 
             out_file_name = std::string("assets/textures/lightmaps/") + out_file_name;
@@ -276,7 +276,7 @@ bool SceneManager::PrepareLightmaps_PT() {
 
     ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_);
 
-    LOGI("Lightmap: %i %i", int(cur_lm_obj_), ray_reg_ctx_.iteration);
+    LOGI("Lightmap: %i %i/%i", int(cur_lm_obj_), ray_reg_ctx_.iteration, LM_SAMPLES);
 
     const auto *pixels = ray_renderer_.get_pixels_ref();
     renderer_.BlitPixels(pixels, LM_RES, LM_RES, Ren::RawRGBA32F);

@@ -115,8 +115,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             lm_tex_name += "_";
             lm_tex_name += std::to_string(objects_.size());
 
-            std::string lm_dir_tex_name = lm_tex_name + "_lm_direct.tga";
-            std::string lm_indir_tex_name = lm_tex_name + "_lm_indirect.tga";
+            std::string lm_dir_tex_name = lm_tex_name + "_lm_direct.tga_rgbe";
+            std::string lm_indir_tex_name = lm_tex_name + "_lm_indirect.tga_rgbe";
 
             obj.lm_dir_tex = OnLoadTexture(lm_dir_tex_name.c_str());
             obj.lm_indir_tex = OnLoadTexture(lm_indir_tex_name.c_str());

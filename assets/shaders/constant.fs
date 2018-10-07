@@ -7,7 +7,8 @@ UNIFORMS
 	diffuse_texture : 3
 	normals_texture : 4
 	shadow_texture : 5
-    lightmap_texture : 6
+    lm_direct_texture : 6
+	lm_indirect_texture : 7
 	sun_dir : 10
 	sun_col : 11
 */
@@ -15,7 +16,8 @@ UNIFORMS
 uniform sampler2D diffuse_texture;
 uniform sampler2D normals_texture;
 uniform sampler2D shadow_texture;
-uniform sampler2D lightmap_texture;
+uniform sampler2D lm_direct_texture;
+uniform sampler2D lm_indirect_texture;
 
 /*struct {
 
@@ -107,7 +109,7 @@ void main(void) {
 
 	const float shadow_softness = 4.0 / 4096.0;
 
-	vec3 color;
+	vec3 additional_light = vec3(0.0, 0.0, 0.0);
 
 	float lambert = max(dot(normal, sun_dir), 0.0);
 	float visibility = 1.0;
@@ -123,7 +125,6 @@ void main(void) {
 					visibility -= 1.0/64.0;
 				}
 			}
-			color = vec3(1.0, 0.0, 0.0);
 		} else if (frag_depth < 24.0) {
 			frag_pos_ls[1].x += 0.5;
 			for (int i = 0; i < 16; i++) {
@@ -132,7 +133,8 @@ void main(void) {
 					visibility -= 1.0/16.0;
 				}
 			}
-			color = vec3(0.0, 1.0, 0.0);
+			visibility = 0.0;
+			additional_light = texture2D(lm_direct_texture, vec2(aVertexUVs2_.x, 1.0 - aVertexUVs2_.y)).rgb;
 		} else if (frag_depth < 56.0) {
 			frag_pos_ls[2].y += 0.5;
 			for (int i = 0; i < 4; i++) {
@@ -148,16 +150,18 @@ void main(void) {
 				visibility -= 1.0;
 			}
 		} else {
-			// use directional lightmap here
+			// use directional lightmap
+			visibility = 0.0;
+			additional_light = texture2D(lm_direct_texture, vec2(aVertexUVs2_.x, 1.0 - aVertexUVs2_.y)).rgb;
 		}
 	}
     
     const float gamma = 2.2;
     
-    vec3 indirect_col = texture2D(lightmap_texture, vec2(aVertexUVs2_.x, 1.0 - aVertexUVs2_.y)).rgb;
-
-	vec3 diffuse_color = pow(texture2D(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma)) * (sun_col * lambert * visibility + indirect_col);
+    vec3 indirect_col = texture2D(lm_indirect_texture, vec2(aVertexUVs2_.x, 1.0 - aVertexUVs2_.y)).rgb;
+	
+	vec3 diffuse_color = pow(texture2D(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma)) * (sun_col * lambert * visibility + indirect_col + additional_light);
     diffuse_color = pow(diffuse_color, vec3(1.0/gamma));
-    
+	
 	gl_FragColor = vec4(diffuse_color, 1.0);
 }

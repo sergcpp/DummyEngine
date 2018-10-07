@@ -43,33 +43,5 @@
             "mesh" : "inter_walls",
 			"occluder_mesh" : "inter_walls",
         },
-		{
-			"pos" : [ -9.0, 0.0, 0.0 ],
-            "mesh" : "monk",
-        },
-		{
-			"pos" : [ -6.0, 0.0, 0.0 ],
-            "mesh" : "monk",
-        },
-		{
-			"pos" : [ -3.0, 0.0, 0.0 ],
-            "mesh" : "monk",
-        },
-		{
-			"pos" : [ 0.0, 0.0, 0.0 ],
-            "mesh" : "monk",
-        },
-		{
-			"pos" : [ 3.0, 0.0, 0.0 ],
-            "mesh" : "monk",
-        },
-		{
-			"pos" : [ 6.0, 0.0, 0.0 ],
-            "mesh" : "monk",
-        },
-		{
-			"pos" : [ 9.0, 0.0, 0.0 ],
-            "mesh" : "monk",
-        },
     ]
 }

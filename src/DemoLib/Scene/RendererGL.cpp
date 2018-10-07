@@ -135,7 +135,8 @@ namespace RendererInternal {
     const int U_TEX = 3;
     const int U_NORM_TEX = 4;
     const int U_SHADOW_TEX = 5;
-    const int U_LM_TEX = 6;
+    const int U_LM_DIR_TEX = 6;
+    const int U_LM_INDIR_TEX = 7;
 
     const int U_SUN_DIR = 10;
     const int U_SUN_COL = 11;
@@ -143,7 +144,8 @@ namespace RendererInternal {
     const int DIFFUSEMAP_SLOT = 0;
     const int NORMALMAP_SLOT = 1;
     const int SHADOWMAP_SLOT = 2;
-    const int LIGHTMAP_SLOT = 3;
+    const int LM_DIRECT_SLOT = 3;
+    const int LM_INDIRECT_SLOT = 4;
 
     inline void BindTexture(int slot, uint32_t tex) {
         glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
@@ -190,6 +192,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     const Ren::Mat4f *cur_clip_from_object = nullptr,
                      *cur_world_from_object = nullptr,
                      *cur_sh_clip_from_object[4] = { nullptr };
+    const Ren::Texture2D *cur_lm_dir_tex = nullptr,
+                         *cur_lm_indir_tex = nullptr;
 
     int32_t viewport_before[4];
     glGetIntegerv(GL_VIEWPORT, viewport_before);
@@ -347,7 +351,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             glUniform1i(p->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
             glUniform1i(p->uniform(U_NORM_TEX).loc, NORMALMAP_SLOT);
             glUniform1i(p->uniform(U_SHADOW_TEX).loc, SHADOWMAP_SLOT);
-            glUniform1i(p->uniform(U_LM_TEX).loc, LIGHTMAP_SLOT);
+            glUniform1i(p->uniform(U_LM_DIR_TEX).loc, LM_DIRECT_SLOT);
+            glUniform1i(p->uniform(U_LM_INDIR_TEX).loc, LM_INDIRECT_SLOT);
 
             glUniform3fv(p->uniform(U_SUN_DIR).loc, 1, Ren::ValuePtr(env.sun_dir));
             glUniform3fv(p->uniform(U_SUN_COL).loc, 1, Ren::ValuePtr(env.sun_col));
@@ -414,10 +419,14 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             cur_mat = mat;
         }
 
-        if (dr.lm_tex) {
-            BindTexture(LIGHTMAP_SLOT, dr.lm_tex->tex_id());
-        } else {
-            BindTexture(LIGHTMAP_SLOT, default_lightmap_->tex_id());
+        if (cur_lm_dir_tex != dr.lm_dir_tex) {
+            cur_lm_dir_tex = dr.lm_dir_tex ? dr.lm_dir_tex : default_lightmap_.get();
+            BindTexture(LM_DIRECT_SLOT, cur_lm_dir_tex->tex_id());
+        }
+
+        if (cur_lm_indir_tex != dr.lm_indir_tex) {
+            cur_lm_indir_tex = dr.lm_indir_tex ? dr.lm_indir_tex : default_lightmap_.get();
+            BindTexture(LM_INDIRECT_SLOT, cur_lm_indir_tex->tex_id());
         }
 
         glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
