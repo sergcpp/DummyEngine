@@ -16,6 +16,7 @@ void SceneManager::RebuildBVH() {
     }
 
     nodes_.clear();
+    obj_indices_.clear();
 
     struct prims_coll_t {
         std::vector<uint32_t> indices;
@@ -25,8 +26,6 @@ void SceneManager::RebuildBVH() {
             : indices(std::move(_indices)), min(_min), max(_max) {
         }
     };
-
-    std::vector<uint32_t> obj_indices;
 
     std::deque<prims_coll_t> prim_lists;
     prim_lists.emplace_back();
@@ -65,10 +64,10 @@ void SceneManager::RebuildBVH() {
             Ren::Vec3f bbox_min = split_data.left_bounds[0],
                        bbox_max = split_data.left_bounds[1];
 
-            nodes_.push_back({ (uint32_t)obj_indices.size(), (uint32_t)split_data.left_indices.size(), 0, 0, parent_index, 0,
+            nodes_.push_back({ (uint32_t)obj_indices_.size(), (uint32_t)split_data.left_indices.size(), 0, 0, parent_index, 0,
                              { { bbox_min[0], bbox_min[1], bbox_min[2] }, { bbox_max[0], bbox_max[1], bbox_max[2] } }
             });
-            obj_indices.insert(obj_indices.end(), split_data.left_indices.begin(), split_data.left_indices.end());
+            obj_indices_.insert(obj_indices_.end(), split_data.left_indices.begin(), split_data.left_indices.end());
         } else {
             auto index = (uint32_t)num_nodes;
 
@@ -100,7 +99,7 @@ void SceneManager::RebuildBVH() {
         }
     }
 
-    {   // reorder objects
+    /*{   // reorder objects
         uint32_t j, k;
         for (uint32_t i = 0; i < (uint32_t)objects_.size(); i++) {
             while (i != (j = obj_indices[i])) {
@@ -109,5 +108,5 @@ void SceneManager::RebuildBVH() {
                 std::swap(obj_indices[i], obj_indices[j]);
             }
         }
-    }
+    }*/
 }

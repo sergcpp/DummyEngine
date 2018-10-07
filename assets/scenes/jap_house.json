@@ -28,20 +28,24 @@
         {
             "mesh" : "walls",
 			"occluder_mesh" : "walls",
+			"use_lightmap" : true,
         },
 		{
 			"pos" : [ 0.0423079, 6.88465, -1.50584 ],
             "mesh" : "roof",
+			"use_lightmap" : true,
         },
 		{
-			"pos" : [ 0.102901, 7.39339, -1.50723 ],
+			"pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "roof_plate",
 			"occluder_mesh" : "roof_plate",
+			"use_lightmap" : true,
         },
 		{
 			"pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "inter_walls",
 			"occluder_mesh" : "inter_walls",
+			"use_lightmap" : true,
         },
     ]
 }

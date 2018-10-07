@@ -45,7 +45,7 @@ public:
     TimingInfo back_timings() const { return back_timings_[0]; }
 
     void DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
-                     const SceneObject *objects, size_t object_count, const Environment &env);
+                     const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env);
     void WaitForBackgroundThreadIteration();
 
     void BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format);
@@ -64,6 +64,7 @@ private:
     const bvh_node_t *nodes_ = nullptr;
     size_t root_node_ = 0;
     const SceneObject *objects_ = nullptr;
+    const uint32_t *obj_indices_ = nullptr;
     size_t object_count_ = 0;
     std::vector<Ren::Mat4f> transforms_[2];
     std::vector<DrawableItem> draw_lists_[2], shadow_list_[2][4];
@@ -76,7 +77,7 @@ private:
     std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];
 
     void SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_node,
-                       const SceneObject *objects, size_t object_count, const Environment &env);
+                       const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env);
 
     void InitShadersInternal();
     void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const Ren::Mat4f shadow_transforms[4],

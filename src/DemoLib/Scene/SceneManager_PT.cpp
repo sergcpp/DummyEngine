@@ -130,7 +130,7 @@ bool SceneManager::PrepareLightmaps_PT() {
     if (!ray_scene_) return false;
 
     const int LM_RES = 512;
-    const int LM_SAMPLES = 64;
+    const int LM_SAMPLES = 32;
 
     const auto &rect = ray_reg_ctx_.rect();
     if (rect.w != LM_RES || rect.h != LM_RES) {
@@ -239,9 +239,6 @@ bool SceneManager::PrepareLightmaps_PT() {
             out_file_name = std::string("assets/textures/lightmaps/") + out_file_name;
 
             SceneManagerInternal::WriteTGA(temp_pixels1, LM_RES, LM_RES, out_file_name);
-
-            //std::ofstream out_file(std::string("assets/textures/lightmaps/") + out_file_name, std::ios::binary);
-            //out_file.write(out_file_name.c_str(), out_file_name.length());
         }
 
         Ray::camera_desc_t cam_desc;
@@ -267,6 +264,10 @@ bool SceneManager::PrepareLightmaps_PT() {
             if (!found) {
                 return false;
             }
+
+            cur_lm_indir_ = false;
+            cam_desc.skip_direct_lighting = false;
+            cam_desc.skip_indirect_lighting = true;
         }
 
         ray_scene_->SetCamera(1, cam_desc);

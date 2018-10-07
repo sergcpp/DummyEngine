@@ -174,7 +174,7 @@ void SceneManager::Draw() {
 
     cam_.Perspective(60.0f, float(ctx_.w()) / ctx_.h(), NEAR_CLIP, FAR_CLIP);
 
-    renderer_.DrawObjects(cam_, &nodes_[0], 0, &objects_[0], objects_.size(), env_);
+    renderer_.DrawObjects(cam_, &nodes_[0], 0, &objects_[0], &obj_indices_[0], objects_.size(), env_);
 }
 
 Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {

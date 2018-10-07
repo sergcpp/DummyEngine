@@ -55,6 +55,7 @@ private:
     Ren::Storage<Transform> transforms_;
 
     std::vector<SceneObject> objects_;
+    std::vector<uint32_t> obj_indices_;
 
     std::vector<bvh_node_t> nodes_;
 };

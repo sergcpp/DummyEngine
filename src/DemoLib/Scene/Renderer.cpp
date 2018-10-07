@@ -76,8 +76,8 @@ Renderer::~Renderer() {
 }
 
 void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
-                           const SceneObject *objects, size_t object_count, const Environment &env) {
-    SwapDrawLists(cam, nodes, root_index, objects, object_count, env);
+                           const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env) {
+    SwapDrawLists(cam, nodes, root_index, objects, obj_indices, object_count, env);
     auto t1 = std::chrono::high_resolution_clock::now();
     {
         size_t drawables_count = draw_lists_[0].size();
@@ -109,7 +109,7 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
 }
 
 void Renderer::WaitForBackgroundThreadIteration() {
-    SwapDrawLists(draw_cam_, nullptr, 0, nullptr, 0, env_);
+    SwapDrawLists(draw_cam_, nullptr, 0, nullptr, nullptr, 0, env_);
 }
 
 void Renderer::BackgroundProc() {
@@ -167,7 +167,7 @@ void Renderer::BackgroundProc() {
                         stack[stack_size++] = n->right_child;
                     } else {
                         for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
-                            const auto &obj = objects_[i];
+                            const auto &obj = objects_[obj_indices_[i]];
 
                             const uint32_t occluder_flags = HasMesh | HasTransform | HasOccluder;
                             if ((obj.flags & occluder_flags) == occluder_flags) {
@@ -248,7 +248,7 @@ void Renderer::BackgroundProc() {
                         stack[stack_size++] = n->right_child;
                     } else {
                         for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
-                            const auto &obj = objects_[i];
+                            const auto &obj = objects_[obj_indices_[i]];
 
                             const uint32_t drawable_flags = HasMesh | HasTransform;
                             if ((obj.flags & drawable_flags) == drawable_flags) {
@@ -386,7 +386,7 @@ void Renderer::BackgroundProc() {
                         stack[stack_size++] = n->right_child;
                     } else {
                         for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
-                            const auto &obj = objects_[i];
+                            const auto &obj = objects_[obj_indices_[i]];
 
                             const uint32_t drawable_flags = HasMesh | HasTransform;
                             if ((obj.flags & drawable_flags) == drawable_flags) {
@@ -470,7 +470,7 @@ void Renderer::BackgroundProc() {
 }
 
 void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_node,
-                             const SceneObject *objects, size_t object_count, const Environment &env) {
+                             const SceneObject *objects, const uint32_t *obj_indcies, size_t object_count, const Environment &env) {
     bool should_notify = false;
     {
         std::lock_guard<Sys::SpinlockMutex> _(job_mtx_);
@@ -479,6 +479,7 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
         nodes_ = nodes;
         root_node_ = root_node;
         objects_ = objects;
+        obj_indices_ = obj_indcies;
         object_count_ = object_count;
         back_timings_[0] = back_timings_[1];
         draw_cam_ = cam;
