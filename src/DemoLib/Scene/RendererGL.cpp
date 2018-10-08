@@ -124,7 +124,7 @@ namespace RendererInternal {
 			vec3 c1 = texelFetch(s_texture, ivec2(aVertexUVs_), 1).xyz;
 			vec3 c2 = texelFetch(s_texture, ivec2(aVertexUVs_), 2).xyz;
 			vec3 c3 = texelFetch(s_texture, ivec2(aVertexUVs_), 3).xyz;
-            vec3 c4 = 0.15 * texture2D(s_blured_texture, aVertexUVs_ / uTexSize).xyz;
+            vec3 c4 = 0.1 * texture2D(s_blured_texture, aVertexUVs_ / uTexSize).xyz;
             
             c0 += c4;
             c1 += c4;
