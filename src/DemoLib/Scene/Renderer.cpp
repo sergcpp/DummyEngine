@@ -494,7 +494,11 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
         env_ = env;
         std::swap(depth_pixels_[0], depth_pixels_[1]);
         std::swap(depth_tiles_[0], depth_tiles_[1]);
-        should_notify = (nodes != nullptr);
+        if (nodes != nullptr) {
+            should_notify = true;
+        } else {
+            draw_lists_[1].clear();
+        }
     }
     if (should_notify) {
         notified_ = true;

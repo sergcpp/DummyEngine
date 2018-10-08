@@ -161,5 +161,5 @@ void main(void) {
 	
 	vec3 diffuse_color = pow(texture2D(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma)) * (sun_col * lambert * visibility + indirect_col + additional_light);
 	
-	gl_FragColor = vec4(diffuse_color, 1.0);
+	gl_FragColor = vec4(0.0001 * diffuse_color + indirect_col, 1.0);
 }

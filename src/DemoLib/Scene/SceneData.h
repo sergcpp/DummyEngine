@@ -38,7 +38,7 @@ struct SceneObject {
     Ren::StorageRef<Transform> tr;
     Ren::MeshRef mesh, occ_mesh;
     Ren::Texture2DRef lm_dir_tex, lm_indir_tex;
-    uint32_t pt_mi;
+    uint32_t lm_res, pt_mi;
 };
 
 using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;

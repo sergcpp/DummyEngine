@@ -84,11 +84,27 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         if (js_obj.Has("pos")) {
             const JsArray &js_pos = (const JsArray &)js_obj.at("pos");
             
-            double x = ((const JsNumber &)js_pos.at(0)).val;
-            double y = ((const JsNumber &)js_pos.at(1)).val;
-            double z = ((const JsNumber &)js_pos.at(2)).val;
+            double tx = ((const JsNumber &)js_pos.at(0)).val;
+            double ty = ((const JsNumber &)js_pos.at(1)).val;
+            double tz = ((const JsNumber &)js_pos.at(2)).val;
 
-            obj.tr->mat = Ren::Translate(obj.tr->mat, Ren::Vec3f{ (float)x, (float)y, (float)z });
+            obj.tr->mat = Ren::Translate(obj.tr->mat, Ren::Vec3f{ (float)tx, (float)ty, (float)tz });
+        }
+
+        if (js_obj.Has("rot")) {
+            const JsArray &js_pos = (const JsArray &)js_obj.at("rot");
+
+            float rx = (float)((const JsNumber &)js_pos.at(0)).val;
+            float ry = (float)((const JsNumber &)js_pos.at(1)).val;
+            float rz = (float)((const JsNumber &)js_pos.at(2)).val;
+
+            rx *= Ren::Pi<float>() / 180.0f;
+            ry *= Ren::Pi<float>() / 180.0f;
+            rz *= Ren::Pi<float>() / 180.0f;
+
+            obj.tr->mat = Ren::Rotate(obj.tr->mat, (float)rz, Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
+            obj.tr->mat = Ren::Rotate(obj.tr->mat, (float)rx, Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
+            obj.tr->mat = Ren::Rotate(obj.tr->mat, (float)ry, Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
         }
 
         obj.tr->UpdateBBox(it->second->bbox_min(), it->second->bbox_max());
@@ -103,12 +119,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             obj.occ_mesh = it->second;
         }
 
-        if (js_obj.Has("use_lightmap")) {
-            const JsLiteral &js_use_lm = (const JsLiteral &)js_obj.at("use_lightmap");
-
-            if (js_use_lm.val == JS_TRUE) {
-                obj.flags |= UseLightmap;
-            }
+        if (js_obj.Has("lightmap_res")) {
+            const JsNumber &js_lm_res = (const JsNumber &)js_obj.at("lightmap_res");
 
             std::string lm_tex_name = "lightmaps/";
             lm_tex_name += scene_name_;
@@ -118,6 +130,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             std::string lm_dir_tex_name = lm_tex_name + "_lm_direct.tga_rgbe";
             std::string lm_indir_tex_name = lm_tex_name + "_lm_indirect.tga_rgbe";
 
+            obj.flags |= UseLightmap;
+            obj.lm_res = (uint32_t)js_lm_res.val;
             obj.lm_dir_tex = OnLoadTexture(lm_dir_tex_name.c_str());
             obj.lm_indir_tex = OnLoadTexture(lm_indir_tex_name.c_str());
         }
@@ -164,7 +178,12 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 }
 
 void SceneManager::ClearScene() {
+    renderer_.WaitForBackgroundThreadIteration();
+    renderer_.WaitForBackgroundThreadIteration();
+
     objects_.clear();
+
+    ray_scene_ = nullptr;
 
     assert(transforms_.Size() == 0);
 }

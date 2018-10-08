@@ -129,13 +129,14 @@ void SceneManager::ResetLightmaps_PT() {
 bool SceneManager::PrepareLightmaps_PT() {
     if (!ray_scene_) return false;
 
-    const int LM_RES = 512;
-    const int LM_SAMPLES = 1024;
+    const int LM_SAMPLES = 16;
+
+    const int res = (int)objects_[cur_lm_obj_].lm_res;
 
     const auto &rect = ray_reg_ctx_.rect();
-    if (rect.w != LM_RES || rect.h != LM_RES) {
-        ray_reg_ctx_ = Ray::RegionContext{ { 0, 0, LM_RES, LM_RES } };
-        ray_renderer_.Resize(LM_RES, LM_RES);
+    if (rect.w != res || rect.h != res) {
+        ray_reg_ctx_ = Ray::RegionContext{ { 0, 0, res, res } };
+        ray_renderer_.Resize(res, res);
     }
 
     // special lightmap camera
@@ -146,8 +147,8 @@ bool SceneManager::PrepareLightmaps_PT() {
         {   // Save lightmap to file
             const auto *pixels = ray_renderer_.get_pixels_ref();
 
-            std::vector<Ray::pixel_color_t> temp_pixels1{ pixels, pixels + LM_RES * LM_RES },
-                                            temp_pixels2{ LM_RES * LM_RES };
+            std::vector<Ray::pixel_color_t> temp_pixels1{ pixels, pixels + res * res },
+                                            temp_pixels2{ (size_t)res * res };
 
             const float INVAL_THRES = 0.5f;
 
@@ -155,10 +156,10 @@ bool SceneManager::PrepareLightmaps_PT() {
             for (int i = 0; i < 16; i++) {
                 bool has_invalid = false;
 
-                for (int y = 0; y < LM_RES; y++) {
-                    for (int x = 0; x < LM_RES; x++) {
-                        auto in_p = temp_pixels1[y * LM_RES + x];
-                        auto &out_p = temp_pixels2[y * LM_RES + x];
+                for (int y = 0; y < res; y++) {
+                    for (int x = 0; x < res; x++) {
+                        auto in_p = temp_pixels1[y * res + x];
+                        auto &out_p = temp_pixels2[y * res + x];
 
                         float mul = 1.0f;
                         if (in_p.a < INVAL_THRES) {
@@ -168,10 +169,10 @@ bool SceneManager::PrepareLightmaps_PT() {
                             int count = 0;
                             for (int _y : { y - 1, y, y + 1 }) {
                                 for (int _x : { x - 1, x, x + 1 }) {
-                                    if (_x < 0 || _y < 0
-                                        || _x > LM_RES - 1 || _y > LM_RES - 1) continue;
+                                    if (_x < 0 || _y < 0 || 
+                                        _x > res - 1 || _y > res - 1) continue;
 
-                                    const auto &p = temp_pixels1[_y * LM_RES + _x];
+                                    const auto &p = temp_pixels1[_y * res + _x];
                                     if (p.a >= INVAL_THRES) {
                                         new_p.r += p.r;
                                         new_p.g += p.g;
@@ -238,7 +239,7 @@ bool SceneManager::PrepareLightmaps_PT() {
 
             out_file_name = std::string("assets/textures/lightmaps/") + out_file_name;
 
-            SceneManagerInternal::WriteTGA(temp_pixels1, LM_RES, LM_RES, out_file_name);
+            SceneManagerInternal::WriteTGA(temp_pixels1, res, res, out_file_name);
         }
 
         Ray::camera_desc_t cam_desc;
@@ -272,6 +273,7 @@ bool SceneManager::PrepareLightmaps_PT() {
 
         ray_scene_->SetCamera(1, cam_desc);
 
+        ray_renderer_.Clear();
         ray_reg_ctx_.Clear();
     }
 
@@ -280,7 +282,7 @@ bool SceneManager::PrepareLightmaps_PT() {
     LOGI("Lightmap: %i %i/%i", int(cur_lm_obj_), ray_reg_ctx_.iteration, LM_SAMPLES);
 
     const auto *pixels = ray_renderer_.get_pixels_ref();
-    renderer_.BlitPixels(pixels, LM_RES, LM_RES, Ren::RawRGBA32F);
+    renderer_.BlitPixels(pixels, res, res, Ren::RawRGBA32F);
 
     return true;
 }

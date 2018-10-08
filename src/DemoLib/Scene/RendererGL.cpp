@@ -172,6 +172,8 @@ namespace RendererInternal {
     )";
 
     const char blit_down_fs[] = R"(
+        #extension GL_ARB_texture_multisample : require
+
         #ifdef GL_ES
 	        precision mediump float;
         #endif
@@ -188,7 +190,7 @@ namespace RendererInternal {
         void main(void) {
             vec3 col = vec3(0.0);
             for (float j = -1.5; j < 2.0; j += 1.0) {
-                for (int i = -1.5; i < 2.0; i += 1.0) {
+                for (float i = -1.5; i < 2.0; i += 1.0) {
                     col += texelFetch(s_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
                 }
             }
@@ -197,6 +199,8 @@ namespace RendererInternal {
     )";
 
     const char blit_gauss_fs[] = R"(
+        #extension GL_ARB_texture_multisample : require
+
         #ifdef GL_ES
 	        precision mediump float;
         #endif
@@ -477,10 +481,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         const auto *p = mat->program().get();
 
-        if (p != cur_program) {
+        /*if (p != cur_program)*/ {
             glUseProgram(p->prog_id());
 
-            if (mesh == cur_mesh) {
+            /*if (mesh == cur_mesh)*/ {
                 int stride = sizeof(float) * 13;
                 glEnableVertexAttribArray(p->attribute(A_POS).loc);
                 glVertexAttribPointer(p->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
@@ -522,7 +526,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             cur_program = p;
         }
 
-        if (mesh != cur_mesh) {
+        /*if (mesh != cur_mesh)*/ {
             glBindBuffer(GL_ARRAY_BUFFER, mesh->attribs_buf_id());
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indices_buf_id());
 
@@ -565,18 +569,18 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             }
         }
 
-        if (mat != cur_mat) {
+        /*if (mat != cur_mat)*/ {
             BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
             BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
             cur_mat = mat;
         }
 
-        if (cur_lm_dir_tex != dr.lm_dir_tex) {
+        /*if (cur_lm_dir_tex != dr.lm_dir_tex)*/ {
             cur_lm_dir_tex = dr.lm_dir_tex ? dr.lm_dir_tex : default_lightmap_.get();
             BindTexture(LM_DIRECT_SLOT, cur_lm_dir_tex->tex_id());
         }
 
-        if (cur_lm_indir_tex != dr.lm_indir_tex) {
+        /*if (cur_lm_indir_tex != dr.lm_indir_tex)*/ {
             cur_lm_indir_tex = dr.lm_indir_tex ? dr.lm_indir_tex : default_lightmap_.get();
             BindTexture(LM_INDIRECT_SLOT, cur_lm_indir_tex->tex_id());
         }

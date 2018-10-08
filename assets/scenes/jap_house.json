@@ -17,35 +17,19 @@
         "roof" : "roof.mesh",
 		"roof_plate" : "roof_plate.mesh",
 		"inter_walls" : "inter_walls.mesh",
+        "ladder" : "ladder.mesh",
 		"monk" : "monk.mesh",
     },
     "objects" : [
-		{
-			"pos" : [ 0.0, 0.0, 0.0 ],
+        {
+			"pos" : [ 4.43021, 1.88348, -3.25406 ],
+            "rot" : [ 0.0, -90.0, 0.0 ],
             "mesh" : "floor",
-            "use_lightmap" : true,
         },
         {
-            "mesh" : "walls",
-			"occluder_mesh" : "walls",
-			"use_lightmap" : true,
-        },
-		{
-			"pos" : [ 0.0423079, 6.88465, -1.50584 ],
-            "mesh" : "roof",
-			"use_lightmap" : true,
-        },
-		{
 			"pos" : [ 0.0, 0.0, 0.0 ],
-            "mesh" : "roof_plate",
-			"occluder_mesh" : "roof_plate",
-			"use_lightmap" : true,
-        },
-		{
-			"pos" : [ 0.0, 0.0, 0.0 ],
-            "mesh" : "inter_walls",
-			"occluder_mesh" : "inter_walls",
-			"use_lightmap" : true,
+            "mesh" : "ladder",
+			"lightmap_res" : 256,
         },
     ]
 }
