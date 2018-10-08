@@ -3,9 +3,10 @@
 #include <Ren/Camera.h>
 #include <Ren/Context.h>
 #include <Ren/GL.h>
+#include <Sys/Log.h>
 
 namespace RendererInternal {
-    const char fillz_vs_shader[] = R"(
+    const char fillz_vs[] = R"(
         /*
         ATTRIBUTES
 	        aVertexPosition : 0
@@ -22,7 +23,7 @@ namespace RendererInternal {
         } 
     )";
 
-    const char fillz_fs_shader[] = R"(
+    const char fillz_fs[] = R"(
         #ifdef GL_ES
 	        precision mediump float;
         #endif
@@ -31,7 +32,7 @@ namespace RendererInternal {
         }
     )";
 
-    const char shadow_vs_shader[] = R"(
+    const char shadow_vs[] = R"(
         /*
         ATTRIBUTES
 	        aVertexPosition : 0
@@ -47,7 +48,7 @@ namespace RendererInternal {
         } 
     )";
 
-    const char shadow_fs_shader[] = R"(
+    const char shadow_fs[] = R"(
         #ifdef GL_ES
             precision mediump float;
         #endif
@@ -57,7 +58,7 @@ namespace RendererInternal {
         }
     )";
 
-    const char blit_vs_shader[] = R"(
+    const char blit_vs[] = R"(
         /*
         ATTRIBUTES
 	        aVertexPosition : 0
@@ -75,7 +76,7 @@ namespace RendererInternal {
         } 
     )";
 
-    const char blit_fs_shader[] = R"(
+    const char blit_fs[] = R"(
         #ifdef GL_ES
 	        precision mediump float;
         #endif
@@ -94,7 +95,7 @@ namespace RendererInternal {
         }
     )";
 
-    const char blit_ms_fs_shader[] = R"(
+    const char blit_ms_fs[] = R"(
         #extension GL_ARB_texture_multisample : require
 
         #ifdef GL_ES
@@ -103,7 +104,81 @@ namespace RendererInternal {
 
         /*
         UNIFORMS
-            s_texture : 0
+            s_texture : 3
+            s_blured_texture : 4
+            uTexSize : 5
+            gamma : 12
+            exposure : 13
+        */
+        
+        uniform sampler2DMS s_texture;
+        uniform sampler2D s_blured_texture;
+        uniform vec2 uTexSize;
+        uniform float gamma;
+        uniform float exposure;
+
+        varying vec2 aVertexUVs_;
+
+        void main(void) {
+            vec3 c0 = texelFetch(s_texture, ivec2(aVertexUVs_), 0).xyz;
+			vec3 c1 = texelFetch(s_texture, ivec2(aVertexUVs_), 1).xyz;
+			vec3 c2 = texelFetch(s_texture, ivec2(aVertexUVs_), 2).xyz;
+			vec3 c3 = texelFetch(s_texture, ivec2(aVertexUVs_), 3).xyz;
+            vec3 c4 = 0.15 * texture2D(s_blured_texture, aVertexUVs_ / uTexSize).xyz;
+            
+            c0 += c4;
+            c1 += c4;
+            c2 += c4;
+            c3 += c4;
+
+            //c0 = exposure * c0 / (c0 + vec3(1.0));
+            //c1 = exposure * c1 / (c1 + vec3(1.0));
+            //c2 = exposure * c2 / (c2 + vec3(1.0));
+            //c3 = exposure * c3 / (c3 + vec3(1.0));
+
+            c0 = vec3(1.0) - exp(-c0 * exposure);
+            c1 = vec3(1.0) - exp(-c1 * exposure);
+            c2 = vec3(1.0) - exp(-c2 * exposure);
+            c3 = vec3(1.0) - exp(-c3 * exposure);
+
+            c0 = pow(c0, vec3(1.0/gamma));
+            c1 = pow(c1, vec3(1.0/gamma));
+            c2 = pow(c2, vec3(1.0/gamma));
+            c3 = pow(c3, vec3(1.0/gamma));
+
+            gl_FragColor = vec4(0.25 * (c0 + c1 + c2 + c3), 1.0);
+        }
+    )";
+
+    const char blit_reduced_fs[] = R"(
+        #ifdef GL_ES
+	        precision mediump float;
+        #endif
+
+        /*
+        UNIFORMS
+            s_texture : 3
+            uOffset : 4
+        */
+        
+        uniform sampler2D s_texture;
+        uniform vec2 uOffset;
+
+        varying vec2 aVertexUVs_;
+
+        void main(void) {
+            gl_FragColor = texture2D(s_texture, aVertexUVs_ + uOffset);
+        }
+    )";
+
+    const char blit_down_fs[] = R"(
+        #ifdef GL_ES
+	        precision mediump float;
+        #endif
+
+        /*
+        UNIFORMS
+            s_texture : 3
         */
         
         uniform sampler2DMS s_texture;
@@ -111,12 +186,75 @@ namespace RendererInternal {
         varying vec2 aVertexUVs_;
 
         void main(void) {
-            gl_FragColor = texelFetch(s_texture, ivec2(aVertexUVs_), 0) * 0.25 +
-					       texelFetch(s_texture, ivec2(aVertexUVs_), 1) * 0.25 +
-					       texelFetch(s_texture, ivec2(aVertexUVs_), 2) * 0.25 +
-					       texelFetch(s_texture, ivec2(aVertexUVs_), 3) * 0.25;
+            vec3 col = vec3(0.0);
+            for (float j = -1.5; j < 2.0; j += 1.0) {
+                for (int i = -1.5; i < 2.0; i += 1.0) {
+                    col += texelFetch(s_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
+                }
+            }
+            gl_FragColor = vec4((1.0/16) * col, 1.0);
         }
     )";
+
+    const char blit_gauss_fs[] = R"(
+        #ifdef GL_ES
+	        precision mediump float;
+        #endif
+
+        /*
+        UNIFORMS
+            s_texture : 3
+            vertical : 4
+        */
+        
+        uniform sampler2D s_texture;
+        uniform float vertical;
+
+        varying vec2 aVertexUVs_;
+
+        void main(void) {
+            if(vertical < 1.0) {
+                gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(4, 0), 0) * 0.05;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(3, 0), 0) * 0.09;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(2, 0), 0) * 0.12;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(1, 0), 0) * 0.15;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_), 0) * 0.16;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(1, 0), 0) * 0.15;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(2, 0), 0) * 0.12;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(3, 0), 0) * 0.09;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(4, 0), 0) * 0.05;
+            } else {
+                gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 4), 0) * 0.05;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 3), 0) * 0.09;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 2), 0) * 0.12;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 1), 0) * 0.15;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_), 0) * 0.16;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 1), 0) * 0.15;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 2), 0) * 0.12;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 3), 0) * 0.09;
+	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 4), 0) * 0.05;
+            }
+        }
+    )";
+
+    const Ren::Vec2f poisson_disk[] = {
+        { -0.705374f, -0.668203f },     { -0.780145f, 0.486251f },  { 0.566637f, 0.605213f },   { 0.488876f, -0.783441f },
+        { -0.613392f, 0.617481f },      { 0.170019f, -0.040254f },  { -0.299417f, 0.791925f },  { 0.645680f, 0.493210f },
+        { -0.651784f, 0.717887f },      { 0.421003f, 0.027070f },   { -0.817194f, -0.271096f }, { 0.977050f, -0.108615f },
+        { 0.063326f, 0.142369f },       { 0.203528f, 0.214331f },   { -0.667531f, 0.326090f },  { -0.098422f, -0.295755f },
+        { -0.885922f, 0.215369f },      { 0.039766f, -0.396100f },  { 0.751946f, 0.453352f },   { 0.078707f, -0.715323f },
+        { -0.075838f, -0.529344f },     { 0.724479f, -0.580798f },  { 0.222999f, -0.215125f },  { -0.467574f, -0.405438f },
+        { -0.248268f, -0.814753f },     { 0.354411f, -0.887570f },  { 0.175817f, 0.382366f },   { 0.487472f, -0.063082f },
+        { -0.084078f, 0.898312f },      { 0.470016f, 0.217933f },   { -0.696890f, -0.549791f }, { -0.149693f, 0.605762f },
+        { 0.034211f, 0.979980f },       { 0.503098f, -0.308878f },  { -0.016205f, -0.872921f }, { 0.385784f, -0.393902f },
+        { -0.146886f, -0.859249f },     { 0.643361f, 0.164098f },   { 0.634388f, -0.049471f },  { -0.688894f, 0.007843f },
+        { 0.464034f, -0.188818f },      { -0.440840f, 0.137486f },  { 0.364483f, 0.511704f },   { 0.034028f, 0.325968f },
+        { 0.099094f, -0.308023f },      { 0.693960f, -0.366253f },  { 0.678884f, -0.204688f },  { 0.001801f, 0.780328f },
+        { 0.145177f, -0.898984f },      { 0.062655f, -0.611866f },  { 0.315226f, -0.604297f },  { -0.371868f, 0.882138f },
+        { 0.200476f, 0.494430f },       { -0.494552f, -0.711051f }, { 0.612476f, 0.705252f },   { -0.578845f, -0.768792f },
+        { -0.772454f, -0.090976f },     { 0.504440f, 0.372295f },   { 0.155736f, 0.065157f },   { 0.391522f, 0.849605f },
+        { -0.620106f, -0.328104f },     { 0.789239f, -0.419965f },  { -0.545396f, 0.538133f },  { -0.178564f, -0.596057f }
+    };
 
     const int A_POS = 0;
     const int A_NORMAL = 1;
@@ -141,6 +279,9 @@ namespace RendererInternal {
     const int U_SUN_DIR = 10;
     const int U_SUN_COL = 11;
 
+    const int U_GAMMA = 12;
+    const int U_EXPOSURE = 13;
+
     const int DIFFUSEMAP_SLOT = 0;
     const int NORMALMAP_SLOT = 1;
     const int SHADOWMAP_SLOT = 2;
@@ -159,16 +300,25 @@ void Renderer::InitShadersInternal() {
     using namespace RendererInternal;
 
     Ren::eProgLoadStatus status;
-    fill_depth_prog_ = ctx_.LoadProgramGLSL("fill_depth", fillz_vs_shader, fillz_fs_shader, &status);
+    fill_depth_prog_ = ctx_.LoadProgramGLSL("fill_depth", fillz_vs, fillz_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
 
-    shadow_prog_ = ctx_.LoadProgramGLSL("shadow", shadow_vs_shader, shadow_fs_shader, &status);
+    shadow_prog_ = ctx_.LoadProgramGLSL("shadow", shadow_vs, shadow_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
 
-    blit_prog_ = ctx_.LoadProgramGLSL("blit", blit_vs_shader, blit_fs_shader, &status);
+    blit_prog_ = ctx_.LoadProgramGLSL("blit", blit_vs, blit_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
 
-    blit_ms_prog_ = ctx_.LoadProgramGLSL("blit_ms", blit_vs_shader, blit_ms_fs_shader, &status);
+    blit_ms_prog_ = ctx_.LoadProgramGLSL("blit_ms", blit_vs, blit_ms_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+
+    blit_red_prog_ = ctx_.LoadProgramGLSL("blit_red", blit_vs, blit_reduced_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+
+    blit_down_prog_ = ctx_.LoadProgramGLSL("blit_down", blit_vs, blit_down_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+
+    blit_gauss_prog_ = ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
 }
 
@@ -357,6 +507,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             glUniform3fv(p->uniform(U_SUN_DIR).loc, 1, Ren::ValuePtr(env.sun_dir));
             glUniform3fv(p->uniform(U_SUN_COL).loc, 1, Ren::ValuePtr(env.sun_col));
 
+            glUniform1f(p->uniform(U_GAMMA).loc, 2.2f);
+
             if (clip_from_object == cur_clip_from_object) {
                 glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
             }
@@ -432,11 +584,131 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
-
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
+
+    {   // prepare blured buffer
+        glBindFramebuffer(GL_FRAMEBUFFER, blur_buf1_.fb);
+        glViewport(0, 0, blur_buf1_.w, blur_buf1_.h);
+
+        const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,
+                                      1.0f, 1.0f,         -1.0f, 1.0f };
+
+        const float fs_quad_uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
+                                      float(w_), float(h_),     0.0f, float(h_) };
+
+        const uint8_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
+
+        cur_program = blit_down_prog_.get();
+        glUseProgram(cur_program->prog_id());
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
+
+        glEnableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+        glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
+
+        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+
+        glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.col_tex.GetValue());
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
+
+        ////////////////
+
+        glBindFramebuffer(GL_FRAMEBUFFER, blur_buf2_.fb);
+        glViewport(0, 0, blur_buf2_.w, blur_buf2_.h);
+
+        const float fs_quad_uvs1[] = { 0.0f, 0.0f,                                   float(blur_buf2_.w), 0.0f,
+                                       float(blur_buf2_.w), float(blur_buf2_.h),     0.0f, float(blur_buf2_.h) };
+
+        cur_program = blit_gauss_prog_.get();
+        glUseProgram(cur_program->prog_id());
+
+        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
+
+        glEnableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+        glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs1[0]);
+
+        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+        glUniform1f(cur_program->uniform(4).loc, 0.5f);
+
+        BindTexture(DIFFUSEMAP_SLOT, blur_buf1_.col_tex.GetValue());
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
+
+        glUniform1f(cur_program->uniform(4).loc, 1.5f);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, blur_buf1_.fb);
+        glViewport(0, 0, blur_buf1_.w, blur_buf1_.h);
+
+        BindTexture(DIFFUSEMAP_SLOT, blur_buf2_.col_tex.GetValue());
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
+    }
+
+    {   // draw to small framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
+        glViewport(0, 0, reduced_buf_.w, reduced_buf_.h);
+
+        cur_program = blit_red_prog_.get();
+        glUseProgram(cur_program->prog_id());
+
+        const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,
+                                      1.0f, 1.0f,         -1.0f, 1.0f };
+
+        const float fs_quad_uvs[] = { 0.0f, 0.0f,     1.0f, 0.0f,
+                                      1.0f, 1.0f,     0.0f, 1.0f };
+
+        const uint8_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
+
+        const Ren::Vec2f offset_step = { 1.0f / reduced_buf_.w, 1.0f / reduced_buf_.h };
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
+
+        glEnableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+        glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
+
+        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+
+        static int cur_offset = 0;
+        glUniform2f(cur_program->uniform(4).loc, 0.5f * poisson_disk[cur_offset][0] * offset_step[0],
+                                                 0.5f * poisson_disk[cur_offset][1] * offset_step[1]);
+        cur_offset = cur_offset >= 63 ? 0 : (cur_offset + 1);
+
+        BindTexture(DIFFUSEMAP_SLOT, blur_buf1_.col_tex.GetValue());
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
+
+        reduced_pixels_.resize(3 * reduced_buf_.w * reduced_buf_.h);
+        glReadPixels(0, 0, reduced_buf_.w, reduced_buf_.h, GL_RGB, GL_FLOAT, &reduced_pixels_[0]);
+
+        Ren::Vec3f cur_average;
+        for (size_t i = 0; i < reduced_pixels_.size(); i += 3) {
+            cur_average[0] += reduced_pixels_[i + 0];
+            cur_average[1] += reduced_pixels_[i + 1];
+            cur_average[2] += reduced_pixels_[i + 2];
+        }
+
+       
+        float k = 1.0f / (reduced_pixels_.size() / 3);
+        cur_average *= k;
+
+        const float alpha = 1.0f / 64;
+        reduced_average_ = alpha * cur_average + (1.0f - alpha) * reduced_average_;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -462,9 +734,22 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+        glUniform1i(cur_program->uniform(U_TEX + 1).loc, DIFFUSEMAP_SLOT + 1);
+        glUniform2f(cur_program->uniform(U_TEX + 2).loc, float(w_), float(h_));
+        glUniform1f(cur_program->uniform(U_GAMMA).loc, 2.2f);
+
+        float luminance = 0.299f * reduced_average_[0] +
+                          0.587f * reduced_average_[1] +
+                          0.114f * reduced_average_[2];
+
+        float exposure = 0.7f / luminance;
+
+        glUniform1f(cur_program->uniform(U_EXPOSURE).loc, exposure);
 
         glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.col_tex.GetValue());
+
+        BindTexture(DIFFUSEMAP_SLOT + 1, blur_buf1_.col_tex.GetValue());
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
     }
@@ -500,15 +785,48 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        glEnableVertexAttribArray(cur_program->attribute("aVertexPosition").loc);
-        glVertexAttribPointer(cur_program->attribute("aVertexPosition").loc, 2, GL_FLOAT, GL_FALSE, 0, &positions[0]);
+        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 2, GL_FLOAT, GL_FALSE, 0, &positions[0]);
 
-        glEnableVertexAttribArray(cur_program->attribute("aVertexUVs").loc);
-        glVertexAttribPointer(cur_program->attribute("aVertexUVs").loc, 2, GL_FLOAT, GL_FALSE, 0, &uvs[0]);
+        glEnableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+        glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &uvs[0]);
 
-        glUniform1i(cur_program->uniform("s_texture").loc, DIFFUSEMAP_SLOT);
+        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
 
         BindTexture(DIFFUSEMAP_SLOT, shadow_buf_.depth_tex.GetValue());
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &indices[0]);
+    }
+
+    if (debug_reduce_) {
+        cur_program = blit_prog_.get();
+        glUseProgram(cur_program->prog_id());
+
+        float k = float(ctx_.w()) / ctx_.h();
+
+        const float positions[] = { -1.0f, -1.0f,                      -1.0f + 0.5f, -1.0f,
+                                    -1.0f + 0.5f, -1.0f + 0.25f * k,   -1.0f, -1.0f + 0.25f * k };
+
+        //const float positions[] = { -1.0f, -1.0f,                      1.0f, -1.0f,
+        //                            1.0f, 1.0f,                        -1.0f, 1.0f };
+
+        const float uvs[] = { 0.0f, 0.0f,       1.0f, 0.0f,
+                              1.0f, 1.0f,       0.0f, 1.0f };
+
+        const uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 2, GL_FLOAT, GL_FALSE, 0, &positions[0]);
+
+        glEnableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+        glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &uvs[0]);
+
+        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+
+        BindTexture(DIFFUSEMAP_SLOT, reduced_buf_.col_tex.GetValue());
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &indices[0]);
     }

@@ -40,6 +40,7 @@ public:
     void toggle_culling() { culling_enabled_ = !culling_enabled_; }
     void toggle_debug_cull() { debug_cull_ = !debug_cull_; }
     void toggle_debug_shadow() { debug_shadow_ = !debug_shadow_; }
+    void toggle_debug_reduce() { debug_reduce_ = !debug_reduce_; }
 
     TimingInfo timings() const { return timings_; }
     TimingInfo back_timings() const { return back_timings_[0]; }
@@ -52,13 +53,14 @@ public:
 private:
     Ren::Context &ctx_;
     SWcull_ctx cull_ctx_;
-    Ren::ProgramRef fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_;
+    Ren::ProgramRef fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_, 
+                    blit_red_prog_, blit_down_prog_, blit_gauss_prog_;
     Ren::Texture2DRef default_lightmap_;
 
-    FrameBuf clean_buf_, shadow_buf_;
+    FrameBuf clean_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_;
     int w_ = 0, h_ = 0;
 
-    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false;
+    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = true;
     bool culling_enabled_ = true;
 
     const bvh_node_t *nodes_ = nullptr;
@@ -72,6 +74,8 @@ private:
     Ren::Camera draw_cam_, shadow_cam_[2][4];
     Environment env_;
     TimingInfo timings_, back_timings_[2];
+    std::vector<float> reduced_pixels_;
+    Ren::Vec3f reduced_average_;
 
     //temp
     std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];

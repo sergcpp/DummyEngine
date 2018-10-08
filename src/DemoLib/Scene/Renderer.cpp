@@ -45,6 +45,8 @@ Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
 
     shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::None, Ren::NoFilter, Ren::ClampToEdge, true);
 
+    reduced_buf_ = FrameBuf(16, 8, Ren::RawRGB16F, Ren::Bilinear, Ren::ClampToEdge, false);
+
     uint8_t data[] = { 0, 0, 0, 0 };
 
     Ren::Texture2DParams p;
@@ -96,7 +98,9 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
         }
 
         if (ctx_.w() != w_ || ctx_.h() != h_) {
-            clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), Ren::RawRGB32F, Ren::NoFilter, Ren::ClampToEdge, true, 4);
+            clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), Ren::RawRGB16F, Ren::NoFilter, Ren::ClampToEdge, true, 4);
+            blur_buf1_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, Ren::RawRGB16F, Ren::Bilinear, Ren::ClampToEdge, false);
+            blur_buf2_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, Ren::RawRGB16F, Ren::Bilinear, Ren::ClampToEdge, false);
             w_ = ctx_.w();
             h_ = ctx_.h();
             LOGI("CleanBuf resized to %ix%i", w_, h_);

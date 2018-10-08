@@ -116,6 +116,14 @@ void GSDrawTest::Enter() {
         }
         return true;
     });
+
+    game_->RegisterCommand("debug_reduce", [weak_this](const std::vector<std::string> &args) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            shrd_this->renderer_->toggle_debug_reduce();
+        }
+        return true;
+    });
 }
 
 void GSDrawTest::LoadScene(const char *name) {

@@ -11,6 +11,8 @@ UNIFORMS
 	lm_indirect_texture : 7
 	sun_dir : 10
 	sun_col : 11
+	gamma : 12
+	
 */
 
 uniform sampler2D diffuse_texture;
@@ -24,6 +26,7 @@ uniform sampler2D lm_indirect_texture;
 }*/
 
 uniform vec3 sun_dir, sun_col;
+uniform float gamma;
 
 varying mat3 aVertexTBN_;
 varying vec2 aVertexUVs1_;
@@ -133,8 +136,6 @@ void main(void) {
 					visibility -= 1.0/16.0;
 				}
 			}
-			visibility = 0.0;
-			additional_light = texture2D(lm_direct_texture, vec2(aVertexUVs2_.x, 1.0 - aVertexUVs2_.y)).rgb;
 		} else if (frag_depth < 56.0) {
 			frag_pos_ls[2].y += 0.5;
 			for (int i = 0; i < 4; i++) {
@@ -156,12 +157,9 @@ void main(void) {
 		}
 	}
     
-    const float gamma = 2.2;
-    
     vec3 indirect_col = texture2D(lm_indirect_texture, vec2(aVertexUVs2_.x, 1.0 - aVertexUVs2_.y)).rgb;
 	
 	vec3 diffuse_color = pow(texture2D(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma)) * (sun_col * lambert * visibility + indirect_col + additional_light);
-    diffuse_color = pow(diffuse_color, vec3(1.0/gamma));
 	
 	gl_FragColor = vec4(diffuse_color, 1.0);
 }
