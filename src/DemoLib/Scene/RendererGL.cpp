@@ -199,8 +199,6 @@ namespace RendererInternal {
     )";
 
     const char blit_gauss_fs[] = R"(
-        #extension GL_ARB_texture_multisample : require
-
         #ifdef GL_ES
 	        precision mediump float;
         #endif
