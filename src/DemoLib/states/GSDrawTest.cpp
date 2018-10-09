@@ -19,7 +19,7 @@
 #include "../Scene/SceneManager.h"
 
 namespace GSDrawTestInternal {
-    const float FORWARD_SPEED = 0.25f;
+    const float FORWARD_SPEED = 0.15f;
 
     const float CAM_FOV = 45.0f;
     const Ren::Vec3f CAM_CENTER = { 100.0f, 100.0f, -500.0f };

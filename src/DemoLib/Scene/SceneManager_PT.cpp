@@ -129,7 +129,7 @@ void SceneManager::ResetLightmaps_PT() {
 bool SceneManager::PrepareLightmaps_PT() {
     if (!ray_scene_) return false;
 
-    const int LM_SAMPLES = 16;
+    const int LM_SAMPLES = 1024*8;
 
     const int res = (int)objects_[cur_lm_obj_].lm_res;
 
