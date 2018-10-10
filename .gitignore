@@ -2,6 +2,6 @@
 build-*
 check*
 DemoApp.exe
-DemoLib.dll
-DemoLib_.dll
+libDemoApp.so
 Modl.exe
+OccDemo.apk

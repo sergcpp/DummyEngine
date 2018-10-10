@@ -9,7 +9,7 @@ def main():
 	
 	#archs = [ "armeabi", "armeabi-v7a", "arm64-v8a", "x86", "x86_64" ]
 	#archs = [ "armeabi-v7a", "arm64-v8a", "x86", "x86_64" ]
-	archs = [ "armeabi-v7a" ]
+	archs = [ "arm64-v8a" ]
 	#archs = [ "arm64-v8a" ]
 	#archs = [ "x86_64" ]
 	
@@ -34,9 +34,9 @@ def main():
 		if not os.path.exists("android\\lib\\" + arch + "\\"):
 			os.makedirs("android\\lib\\" + arch + "\\")
 			
-		#shutil.copy2("build-android-" + arch + "\\src\\raymark_lib\\libraymark_lib.so", "android\\lib\\" + arch + "\\")
+		shutil.copy2("build-android-" + arch + "\\src\\DemoApp\\libDemoApp.so", "android\\lib\\" + arch + "\\")
 		
-	#os.system("android\\build.bat")
-	#shutil.copy2("android\\bin\\RayMark.apk", "RayMark.apk")
+	os.system("android\\build.bat")
+	shutil.copy2("android\\bin\\OccDemo.apk", "OccDemo.apk")
 	
 main()
