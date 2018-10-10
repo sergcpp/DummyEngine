@@ -458,6 +458,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDepthFunc(GL_EQUAL);
     }
 
+#if !defined(__ANDROID__)
     if (wireframe_mode_) {
         glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_FALSE);
@@ -465,6 +466,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     } else {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
+#endif
 
     // actual drawing
     for (size_t i = 0; i < drawable_count; i++) {
@@ -712,7 +714,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 
+#if !defined(__ANDROID__)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
 
     {   // Blit main framebuffer
         cur_program = blit_ms_prog_.get();
@@ -756,6 +760,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
     }
 
+#if !defined(__ANDROID__)
     glPixelZoom(1, 1);
 
     if (debug_cull_ && culling_enabled_ && !depth_pixels_[0].empty()) {
@@ -832,6 +837,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &indices[0]);
     }
+#endif
 
 #if 0
     glFinish();
@@ -839,6 +845,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 }
 
 void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format) {
+#if !defined(__ANDROID__)
     glUseProgram(0);
 
     GLenum gl_format, gl_type;
@@ -853,4 +860,5 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
     glRasterPos2f(-1, 1);
 
     glDrawPixels(w, h, gl_format, gl_type, data);
+#endif
 }

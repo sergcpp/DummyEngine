@@ -66,12 +66,6 @@ list(APPEND ALL_SOURCE_FILES ${UTILS_SOURCES})
 #set_source_files_properties(${UTILS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Utils" FILES ${UTILS_SOURCES})
 
-add_library(DemoLib SHARED ${ALL_SOURCE_FILES})
+add_library(DemoLib STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(DemoLib Eng Ray Ren Sys ${LIBS})
 
-# dot not prefix dll with 'lib' in MinGW
-set_target_properties(DemoLib PROPERTIES PREFIX "")
-
-add_custom_command(TARGET DemoLib
-                   POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:DemoLib> ${WORKING_DIRECTORY})

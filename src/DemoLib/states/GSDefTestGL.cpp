@@ -244,8 +244,10 @@ void GSDefTest::InitInternal(int w, int h) {
     };
 
     prim_vars_prog_ = load_program("prim_vars", "prim_vars.vs", "prim_vars.fs");
+#if !defined(__ANDROID__)
     glBindFragDataLocation(prim_vars_prog_->prog_id(), 0, "positions_out");
     glBindFragDataLocation(prim_vars_prog_->prog_id(), 1, "normals_out");
+#endif
 
     screen_draw_prog_ = load_program("screen_draw", "screen_draw.vs", "screen_draw.fs");
 

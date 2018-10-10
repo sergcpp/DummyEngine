@@ -2,9 +2,9 @@
 
 #include <stdexcept>
 
-#include <ren/Fwd.h>
-#include <ren/GL.h>
-#include <sys/Log.h>
+#include <Ren/Fwd.h>
+#include <Ren/GL.h>
+#include <Sys/Log.h>
 
 FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFilter filter,
                       Ren::eTexRepeat repeat, bool with_depth, int _msaa)
@@ -22,15 +22,15 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, _col_tex);
 
             if (col_format == Ren::RawRGB888) {
-                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB8, w, h, GL_TRUE);
+                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB8, w, h, GL_TRUE);
             } else if (col_format == Ren::RawRGBA8888) {
-                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGBA8, w, h, GL_TRUE);
+                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGBA8, w, h, GL_TRUE);
             } else if (col_format == Ren::RawR32F) {
-                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_R32F, w, h, GL_TRUE);
+                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_R32F, w, h, GL_TRUE);
             } else if (col_format == Ren::RawRGB16F) {
-                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB16F, w, h, GL_TRUE);
+                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB16F, w, h, GL_TRUE);
             } else if (col_format == Ren::RawRGB32F) {
-                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB32F, w, h, GL_TRUE);
+                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB32F, w, h, GL_TRUE);
             } else {
                 throw std::invalid_argument("Wrong format!");
             }
@@ -111,7 +111,9 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
         }
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_tex, 0);
+#if !defined(__ANDROID__)
         glDrawBuffer(GL_NONE);
+#endif
         glReadBuffer(GL_NONE);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

@@ -23,7 +23,6 @@ class DemoApp {
     SDL_Window		*window_ = nullptr;
 
     Sys::DynLib		demo_lib_;
-    const void *(*p_get_renderer_pixels_)(GameBase *);
 
     bool quit_;
 
@@ -33,8 +32,6 @@ class DemoApp {
 #endif
 
     std::unique_ptr<GameBase> viewer_;
-
-    void LoadLib(int w, int h);
 public:
     DemoApp();
     ~DemoApp();

@@ -15,6 +15,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_video.h>
+#include <SDL2/SDL_events.h>
 #endif
 
 #include <Eng/GameBase.h>
@@ -22,7 +23,7 @@
 #include <Sys/Log.h>
 #include <Sys/Time_.h>
 
-#include <SDL2/SDL_events.h>
+#include "../DemoLib/Viewer.h"
 
 namespace {
 DemoApp *g_app = nullptr;
@@ -34,7 +35,7 @@ extern "C" {
     DLL_EXPORT int AmdPowerXpressRequestHighPerformance = 1;    // AMD
 }
 
-DemoApp::DemoApp() : p_get_renderer_pixels_(nullptr), quit_(false) {
+DemoApp::DemoApp() : quit_(false) {
     g_app = this;
 }
 
@@ -101,7 +102,7 @@ int DemoApp::Init(int w, int h) {
 #endif
 #endif
     try {
-        LoadLib(w, h);
+        viewer_.reset(new Viewer(w, h, nullptr));
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());
         return -1;
@@ -137,8 +138,8 @@ int DemoApp::Run(const std::vector<std::string> &args) {
     const int h = 576;
     //const int w = 640;  const int h = 360;
 #else
-    const int w = 1920; const int h = 1080;
-    //const int w = 1280; const int h = 720;
+    //const int w = 1920; const int h = 1080;
+    const int w = 1280; const int h = 720;
     //const int w = 1024;  const int h = 256;
     //const int w = 1280; const int h = 720;
     //const int w = 512; const int h = 512;
@@ -247,11 +248,7 @@ return;
         }
         break;
         case SDL_KEYUP:
-            if (e.key.keysym.sym == SDLK_F5) {
-                input_manager = nullptr;
-                LoadLib(0, 0);
-                return;
-            } else if (ConvertToRawButton(e.key.keysym.sym, button)) {
+            if (ConvertToRawButton(e.key.keysym.sym, button)) {
                 evt.type = InputManager::RAW_INPUT_KEY_UP;
                 evt.key = button;
                 evt.raw_key = e.key.keysym.sym;
@@ -326,32 +323,3 @@ return;
 }
 
 #endif
-
-void DemoApp::LoadLib(int w, int h) {
-    if (viewer_) {
-        w = viewer_->width;
-        h = viewer_->height;
-    }
-
-    viewer_.reset();
-
-    GameBase *(__cdecl *p_create_viewer)(int w, int h, const char *local_dir) = nullptr;
-
-    demo_lib_ = {};
-#if defined(WIN32)
-    system("copy \"DemoLib.dll\" \"DemoLib_.dll\"");
-    demo_lib_ = Sys::DynLib{ "DemoLib_.dll" };
-#else
-    system("cp \"libDemoLib.so\" \"libDemoLib_.so\"");
-    demo_lib_ = Sys::DynLib{ "libDemoLib_.so" };
-#endif
-
-    if (demo_lib_) {
-        p_create_viewer = (decltype(p_create_viewer))demo_lib_.GetProcAddress("CreateViewer");
-        p_get_renderer_pixels_ = (decltype(p_get_renderer_pixels_))demo_lib_.GetProcAddress("GetRendererPixels");
-    }
-
-    if (p_create_viewer) {
-        viewer_.reset(p_create_viewer(w, h, "./"));
-    }
-}

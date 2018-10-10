@@ -106,9 +106,11 @@ void GSOccTest::DrawBoxes(SWcull_surf *surfs, int count) {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
+#if !defined(__ANDROID__)
     if (wireframe_) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
+#endif
 
     for (int i = 0; i < count; i++) {
         if (!surfs[i].visible && cull_) continue;
@@ -119,9 +121,11 @@ void GSOccTest::DrawBoxes(SWcull_surf *surfs, int count) {
         glDrawElements(GL_TRIANGLES, surfs[i].count, GL_UNSIGNED_BYTE, (const void *)surfs[i].indices);
     }
 
+#if !defined(__ANDROID__)
     if (wireframe_) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
+#endif
 
     Ren::CheckError();
 }
@@ -234,10 +238,12 @@ void GSOccTest::BlitDepthBuf() {
         }
     }
 
+#if !defined(__ANDROID__)
     glUseProgram(0);
 
     glDisable(GL_DEPTH_TEST);
     glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
+#endif
 }
 
 void GSOccTest::BlitDepthTiles() {
@@ -258,6 +264,7 @@ void GSOccTest::BlitDepthTiles() {
         }
     }
 
+#if !defined(__ANDROID__)
     glUseProgram(0);
 
     glRasterPos2f(-1 + 2* float(w) / game_->width, -1);
@@ -266,4 +273,5 @@ void GSOccTest::BlitDepthTiles() {
     glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
 
     glRasterPos2f(-1, -1);
+#endif
 }

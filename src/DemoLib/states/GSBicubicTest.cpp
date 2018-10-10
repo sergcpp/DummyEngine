@@ -437,6 +437,7 @@ void GSBicubicTest::Exit() {
 void GSBicubicTest::Draw(float dt_s) {
     using namespace GSBicubicTestInternal;
 
+#if !defined(__ANDROID__)
     {
         glClearColor(0, 0.2f, 0.2f, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -563,6 +564,7 @@ void GSBicubicTest::Draw(float dt_s) {
 
         volatile int ii = 0;
     }
+#endif
 
     {
         // ui draw
