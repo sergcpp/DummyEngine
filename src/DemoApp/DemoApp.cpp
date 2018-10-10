@@ -20,6 +20,7 @@
 
 #include <Eng/GameBase.h>
 #include <Eng/TimedInput.h>
+#include <Sys/DynLib.h>
 #include <Sys/Log.h>
 #include <Sys/Time_.h>
 

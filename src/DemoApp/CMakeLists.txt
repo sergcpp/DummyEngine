@@ -60,6 +60,7 @@ set(SOURCE_FILES    DemoApp.h
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
 	list(APPEND SOURCE_FILES main_pc.cpp)
 else()
+    list(APPEND SOURCE_FILES main_android.cpp)
 endif()
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})

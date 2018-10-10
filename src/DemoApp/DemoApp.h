@@ -5,7 +5,6 @@
 #include <vector>
 
 #include <Eng/TimedInput.h>
-#include <Sys/DynLib.h>
 
 struct SDL_Renderer;
 struct SDL_Texture;
@@ -21,8 +20,6 @@ class DemoApp {
     SDL_Texture     *texture_ = nullptr;
 #endif
     SDL_Window		*window_ = nullptr;
-
-    Sys::DynLib		demo_lib_;
 
     bool quit_;
 

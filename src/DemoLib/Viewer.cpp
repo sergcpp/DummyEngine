@@ -8,6 +8,7 @@
 #include <Ren/MVec.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
+#include <Sys/Log.h>
 
 #include "Gui/FontStorage.h"
 #include "Scene/Renderer.h"
@@ -15,6 +16,7 @@
 #include "States/GSCreate.h"
 
 Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) {
+    LOGI("Viewer 1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
 
     JsObject main_config;
@@ -22,7 +24,9 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     {
         // load config
         Sys::AssetFile config_file("assets/config.json", Sys::AssetFile::IN);
+        LOGI("Viewer retrieving size !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         size_t config_file_size = config_file.size();
+        LOGI("Viewer s=%i !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", int(config_file_size));
         std::unique_ptr<char[]> buf(new char[config_file_size]);
         config_file.Read(buf.get(), config_file_size);
 
@@ -33,6 +37,8 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
             throw std::runtime_error("Unable to load main config!");
         }
     }
+
+    LOGI("Viewer 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
     const JsObject &ui_settings = main_config.at("ui_settings");
 
@@ -50,6 +56,8 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         }
     }
 
+    LOGI("Viewer 3 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+
     {
         auto renderer = std::make_shared<Renderer>(*ctx);
         AddComponent(RENDERER_KEY, renderer);
@@ -63,6 +71,8 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         auto scene_manager = std::make_shared<SceneManager>(*ctx, *renderer, *ray_renderer);
         AddComponent(SCENE_MANAGER_KEY, scene_manager);
     }
+
+    LOGI("Viewer 4 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
     auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);
     input_manager->SetConverter(InputManager::RAW_INPUT_P1_MOVE, nullptr);

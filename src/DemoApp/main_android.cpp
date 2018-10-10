@@ -3,7 +3,39 @@
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 
-unsigned int g_android_local_ip_address;
+#include <Sys/AssetFile.h>
+#include "DemoApp.h"
+
+#include "com_serg_occdemo_LibJNI.h"
+
+// "C:\Program Files\Java\jdk1.8.0_171\bin\javah.exe" -jni -classpath C:/Users/MA/AppData/Local/Android/Sdk/platforms/android-21/android.jar;./bin com.serg.occdemo.LibJNI
+
+namespace {
+    DemoApp *g_app = nullptr;
+}
+
+extern "C" JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_Init(JNIEnv *env, jclass, jint w, jint h, jobject am) {
+    AAssetManager *asset_mgr = AAssetManager_fromJava(env, am);
+    Sys::AssetFile::InitAssetManager(asset_mgr);
+    
+    g_app = new DemoApp();
+    g_app->Init((int)w, (int)h);
+}
+
+extern "C" JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_Destroy(JNIEnv *, jclass) {
+    
+}
+
+extern "C" JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_Frame(JNIEnv *, jclass) {
+    
+}
+
+extern "C" JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_AddEvent(JNIEnv *, jclass, jint, jint, jfloat, jfloat) {
+    
+}
+
+
+#if 0
 
 /*
 #include "GameApp.h"
@@ -201,3 +233,4 @@ JNIEXPORT jboolean JNICALL Java_com_yablokov_serg_sw_1demo_DemoLib_IsTerminated(
     return (jboolean)0;
 }*/
 
+#endif

@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.WindowManager;
 
 import android.content.Context;
+import android.content.res.AssetManager;
 import android.graphics.PixelFormat;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
@@ -26,7 +27,10 @@ public class MainActivity extends Activity {
 
     @Override protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-        view_ = new MainView(getApplication());
+        
+        AssetManager asset_manager = getAssets();
+        
+        view_ = new MainView(getApplication(), asset_manager);
         setContentView(view_);
     }
 
@@ -42,17 +46,25 @@ public class MainActivity extends Activity {
 }
 
 class MainView extends GLSurfaceView {
-    public MainView(Context context) {
+    public MainView(Context context, AssetManager am) {
         super(context);
         // Pick an EGLConfig with RGB8 color, 16-bit depth, no stencil,
         // supporting OpenGL ES 2.0 or later backwards-compatible versions.
         setEGLConfigChooser(8, 8, 8, 0, 16, 0);
         setEGLContextClientVersion(3);
-        setRenderer(new Renderer());
+        setRenderer(new Renderer(am));
     }
 
     private static class Renderer implements GLSurfaceView.Renderer {
+        private AssetManager am_;
+        
+        public Renderer(AssetManager am) {
+            am_ = am;
+        }
+        
         public void onDrawFrame(GL10 gl) {
+            gl.glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+            gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
             //GLES3JNILib.step();
         }
 
@@ -61,7 +73,7 @@ class MainView extends GLSurfaceView {
         }
 
         public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-            //GLES3JNILib.init();
+            LibJNI.Init(256, 256, am_);
         }
     }
 }
