@@ -29,8 +29,8 @@ varying vec2 aVertexUVs2_;
 varying vec4 aVertexShUVs_[4];
 
 void main(void) {
-	vec3 vertex_normal_ws = uMVMatrix * vec4(aVertexNormal, 0.0);
-	vec3 vertex_tangent_ws = uMVMatrix * vec4(aVertexTangent, 0.0);
+	vec3 vertex_normal_ws = (uMVMatrix * vec4(aVertexNormal, 0.0)).xyz;
+	vec3 vertex_tangent_ws = (uMVMatrix * vec4(aVertexTangent, 0.0)).xyz;
 
 	aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);
 	aVertexUVs1_ = aVertexUVs1;

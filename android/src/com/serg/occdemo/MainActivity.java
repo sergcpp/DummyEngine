@@ -13,6 +13,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.View;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -31,6 +32,12 @@ public class MainActivity extends Activity {
         AssetManager asset_manager = getAssets();
         
         view_ = new MainView(getApplication(), asset_manager);
+        
+        /*requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, 
+                             WindowManager.LayoutParams.FLAG_FULLSCREEN);*/
+        //getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        
         setContentView(view_);
     }
 
@@ -43,6 +50,32 @@ public class MainActivity extends Activity {
         super.onResume();
         view_.onResume();
     }
+    
+    @Override
+    public void onWindowFocusChanged(boolean has_focus) {
+        super.onWindowFocusChanged(has_focus);
+        if (has_focus) {
+            //getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+            HideSystemUI();
+        }
+    }
+        
+    private void HideSystemUI() {
+    // Enables regular immersive mode.
+    // For "lean back" mode, remove SYSTEM_UI_FLAG_IMMERSIVE.
+    // Or for "sticky immersive," replace it with SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+    View decorView = getWindow().getDecorView();
+    decorView.setSystemUiVisibility(
+            View.SYSTEM_UI_FLAG_IMMERSIVE
+            // Set the content to appear under the system bars so that the
+            // content doesn't resize when the system bars hide and show.
+            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            // Hide the nav bar and status bar
+            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+            | View.SYSTEM_UI_FLAG_FULLSCREEN);
+}
 }
 
 class MainView extends GLSurfaceView {
@@ -63,17 +96,15 @@ class MainView extends GLSurfaceView {
         }
         
         public void onDrawFrame(GL10 gl) {
-            gl.glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-            gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
-            //GLES3JNILib.step();
+            LibJNI.Frame();
         }
 
         public void onSurfaceChanged(GL10 gl, int width, int height) {
-            //GLES3JNILib.resize(width, height);
+            LibJNI.Resize(width, height);
         }
 
         public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-            LibJNI.Init(256, 256, am_);
+            LibJNI.Init(720, 405, am_);
         }
     }
 }

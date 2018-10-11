@@ -132,7 +132,7 @@ void main(void) {
 			frag_pos_ls[1].x += 0.5;
 			for (int i = 0; i < 16; i++) {
 				float frag_z_ls = texture2D(shadow_texture, frag_pos_ls[1].xy + poisson_disk[i] * shadow_softness * 0.25).r;
-				if (frag_pos_ls[1].z - bias*2 > frag_z_ls) {
+				if (frag_pos_ls[1].z - bias * 2.0 > frag_z_ls) {
 					visibility -= 1.0/16.0;
 				}
 			}
@@ -140,14 +140,14 @@ void main(void) {
 			frag_pos_ls[2].y += 0.5;
 			for (int i = 0; i < 4; i++) {
 				float frag_z_ls = texture2D(shadow_texture, frag_pos_ls[2].xy + poisson_disk[i] * shadow_softness * 0.125).r;
-				if (frag_pos_ls[2].z - bias * 4 > frag_z_ls) {
+				if (frag_pos_ls[2].z - bias * 4.0 > frag_z_ls) {
 					visibility -= 1.0/4.0;
 				}
 			}
 		} else if (frag_depth < 120.0) {
 			frag_pos_ls[3].xy += 0.5;
 			float frag_z_ls = texture2D(shadow_texture, frag_pos_ls[3].xy).r;
-			if (frag_pos_ls[3].z - bias * 8 > frag_z_ls) {
+			if (frag_pos_ls[3].z - bias * 8.0 > frag_z_ls) {
 				visibility -= 1.0;
 			}
 		} else {

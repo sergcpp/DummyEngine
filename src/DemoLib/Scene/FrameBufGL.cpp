@@ -29,8 +29,12 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_R32F, w, h, GL_TRUE);
             } else if (col_format == Ren::RawRGB16F) {
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB16F, w, h, GL_TRUE);
+            } else if (col_format == Ren::RawRGBA16F) {
+                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGBA16F, w, h, GL_TRUE);
             } else if (col_format == Ren::RawRGB32F) {
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB32F, w, h, GL_TRUE);
+            } else if (col_format == Ren::RawRGBA32F) {
+                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGBA32F, w, h, GL_TRUE);
             } else {
                 throw std::invalid_argument("Wrong format!");
             }
@@ -51,6 +55,8 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
 #endif
             } else if (col_format == Ren::RawRGB16F) {
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_HALF_FLOAT, NULL);
+            } else if (col_format == Ren::RawRGBA16F) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, w, h, 0, GL_RGBA, GL_HALF_FLOAT, NULL);
             } else if (col_format == Ren::RawRGB32F) {
 #if defined(EMSCRIPTEN)
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
@@ -111,12 +117,15 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
         }
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_tex, 0);
-#if !defined(__ANDROID__)
-        glDrawBuffer(GL_NONE);
-#endif
+//#if !defined(__ANDROID__)
+        //glDrawBuffer(GL_NONE);
+        GLenum bufs[] = { GL_NONE };
+        glDrawBuffers(1, bufs);
+//#endif
         glReadBuffer(GL_NONE);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+        LOGI("%ix%i", w, h);
         auto s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         if (s != GL_FRAMEBUFFER_COMPLETE) {
             LOGI("Frambuffer error %i", int(s));
@@ -138,6 +147,7 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
         }
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depth_rb);
 
+        LOGI("- %ix%i", w, h);
         auto s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         if (s != GL_FRAMEBUFFER_COMPLETE) {
             LOGI("Frambuffer error %i", int(s));
@@ -166,6 +176,7 @@ FrameBuf &FrameBuf::operator=(FrameBuf &&rhs) {
     col_format = rhs.col_format;
     w = rhs.w;
     h = rhs.h;
+    msaa = rhs.msaa;
     fb = rhs.fb;
     col_tex = std::move(rhs.col_tex);
     depth_tex = std::move(rhs.depth_tex);

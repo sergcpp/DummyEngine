@@ -7,255 +7,313 @@
 
 namespace RendererInternal {
     const char fillz_vs[] = R"(
-        /*
-        ATTRIBUTES
-	        aVertexPosition : 0
-        UNIFORMS
-	        uMVPMatrix : 0
-        */
+/*
+ATTRIBUTES
+	aVertexPosition : 0
+UNIFORMS
+	uMVPMatrix : 0
+*/
 
-        attribute vec3 aVertexPosition;
+attribute vec3 aVertexPosition;
 
-        uniform mat4 uMVPMatrix;
+uniform mat4 uMVPMatrix;
 
-        void main(void) {
-            gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
-        } 
-    )";
+void main() {
+    gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
+} 
+)";
 
     const char fillz_fs[] = R"(
-        #ifdef GL_ES
-	        precision mediump float;
-        #endif
+#ifdef GL_ES
+	precision mediump float;
+#endif
 
-        void main(void) {
-        }
-    )";
+void main() {
+}
+)";
 
     const char shadow_vs[] = R"(
-        /*
-        ATTRIBUTES
-	        aVertexPosition : 0
-        UNIFORMS
-	        uMVPMatrix : 0
-        */
+/*
+ATTRIBUTES
+	aVertexPosition : 0
+UNIFORMS
+	uMVPMatrix : 0
+*/
 
-        attribute vec3 aVertexPosition;
-        uniform mat4 uMVPMatrix;
+attribute vec3 aVertexPosition;
+uniform mat4 uMVPMatrix;
 
-        void main(void) {
-            gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
-        } 
-    )";
+void main() {
+    gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
+} 
+)";
 
     const char shadow_fs[] = R"(
-        #ifdef GL_ES
-            precision mediump float;
-        #endif
+#ifdef GL_ES
+    precision mediump float;
+#endif
 
-        void main(void) {
-            //gl_FragDepth = gl_FragCoord.z;
-        }
-    )";
+void main() {
+    //gl_FragDepth = gl_FragCoord.z;
+}
+)";
 
     const char blit_vs[] = R"(
-        /*
-        ATTRIBUTES
-	        aVertexPosition : 0
-            aVertexUVs : 3
-        */
+/*
+ATTRIBUTES
+	aVertexPosition : 0
+    aVertexUVs : 3
+*/
 
-        attribute vec2 aVertexPosition;
-        attribute vec2 aVertexUVs;
+attribute vec2 aVertexPosition;
+attribute vec2 aVertexUVs;
 
-        varying vec2 aVertexUVs_;
+varying vec2 aVertexUVs_;
 
-        void main(void) {
-            aVertexUVs_ = aVertexUVs;
-            gl_Position = vec4(aVertexPosition, 0.5, 1.0);
-        } 
-    )";
+void main() {
+    aVertexUVs_ = aVertexUVs;
+    gl_Position = vec4(aVertexPosition, 0.5, 1.0);
+} 
+)";
 
     const char blit_fs[] = R"(
-        #ifdef GL_ES
-	        precision mediump float;
-        #endif
+#version 310 es
+#ifdef GL_ES
+	precision mediump float;
+#endif
 
-        /*
-        UNIFORMS
-            s_texture : 3
-        */
+/*
+UNIFORMS
+    s_texture : 3
+    s_blured_texture : 4
+    uTexSize : 5
+    gamma : 12
+    exposure : 13
+*/
         
-        uniform sampler2D s_texture;
+uniform sampler2D s_texture;
+uniform sampler2D s_blured_texture;
+uniform vec2 uTexSize;
+uniform float gamma;
+uniform float exposure;
 
-        varying vec2 aVertexUVs_;
+in vec2 aVertexUVs_;
 
-        void main(void) {
-            gl_FragColor = texture2D(s_texture, aVertexUVs_);
-        }
-    )";
+out vec4 outColor;
+
+void main() {
+    vec3 c0 = texelFetch(s_texture, ivec2(aVertexUVs_), 0).xyz;
+    vec3 c1 = 0.1 * texture2D(s_blured_texture, aVertexUVs_ / uTexSize).xyz;
+            
+    c0 += c1;
+    c0 = vec3(1.0) - exp(-c0 * exposure);
+    c0 = pow(c0, vec3(1.0/gamma));
+
+    outColor = vec4(c0, 1.0);
+}
+)";
 
     const char blit_ms_fs[] = R"(
-        #extension GL_ARB_texture_multisample : require
+#version 310 es
+#extension GL_ARB_texture_multisample : enable
 
-        #ifdef GL_ES
-	        precision mediump float;
-        #endif
+#ifdef GL_ES
+	precision mediump float;
+#endif
 
-        /*
-        UNIFORMS
-            s_texture : 3
-            s_blured_texture : 4
-            uTexSize : 5
-            gamma : 12
-            exposure : 13
-        */
+/*
+UNIFORMS
+    s_texture : 3
+    s_blured_texture : 4
+    uTexSize : 5
+    gamma : 12
+    exposure : 13
+*/
         
-        uniform sampler2DMS s_texture;
-        uniform sampler2D s_blured_texture;
-        uniform vec2 uTexSize;
-        uniform float gamma;
-        uniform float exposure;
+uniform sampler2DMS s_texture;
+uniform sampler2D s_blured_texture;
+uniform vec2 uTexSize;
+uniform float gamma;
+uniform float exposure;
 
-        varying vec2 aVertexUVs_;
+in vec2 aVertexUVs_;
 
-        void main(void) {
-            vec3 c0 = texelFetch(s_texture, ivec2(aVertexUVs_), 0).xyz;
-			vec3 c1 = texelFetch(s_texture, ivec2(aVertexUVs_), 1).xyz;
-			vec3 c2 = texelFetch(s_texture, ivec2(aVertexUVs_), 2).xyz;
-			vec3 c3 = texelFetch(s_texture, ivec2(aVertexUVs_), 3).xyz;
-            vec3 c4 = 0.1 * texture2D(s_blured_texture, aVertexUVs_ / uTexSize).xyz;
+out vec4 outColor;
+
+void main() {
+    vec3 c0 = texelFetch(s_texture, ivec2(aVertexUVs_), 0).xyz;
+	vec3 c1 = texelFetch(s_texture, ivec2(aVertexUVs_), 1).xyz;
+	vec3 c2 = texelFetch(s_texture, ivec2(aVertexUVs_), 2).xyz;
+	vec3 c3 = texelFetch(s_texture, ivec2(aVertexUVs_), 3).xyz;
+    vec3 c4 = 0.1 * texture2D(s_blured_texture, aVertexUVs_ / uTexSize).xyz;
             
-            c0 += c4;
-            c1 += c4;
-            c2 += c4;
-            c3 += c4;
+    c0 += c4;
+    c1 += c4;
+    c2 += c4;
+    c3 += c4;
 
-            //c0 = exposure * c0 / (c0 + vec3(1.0));
-            //c1 = exposure * c1 / (c1 + vec3(1.0));
-            //c2 = exposure * c2 / (c2 + vec3(1.0));
-            //c3 = exposure * c3 / (c3 + vec3(1.0));
+    //c0 = exposure * c0 / (c0 + vec3(1.0));
+    //c1 = exposure * c1 / (c1 + vec3(1.0));
+    //c2 = exposure * c2 / (c2 + vec3(1.0));
+    //c3 = exposure * c3 / (c3 + vec3(1.0));
 
-            c0 = vec3(1.0) - exp(-c0 * exposure);
-            c1 = vec3(1.0) - exp(-c1 * exposure);
-            c2 = vec3(1.0) - exp(-c2 * exposure);
-            c3 = vec3(1.0) - exp(-c3 * exposure);
+    c0 = vec3(1.0) - exp(-c0 * exposure);
+    c1 = vec3(1.0) - exp(-c1 * exposure);
+    c2 = vec3(1.0) - exp(-c2 * exposure);
+    c3 = vec3(1.0) - exp(-c3 * exposure);
 
-            c0 = pow(c0, vec3(1.0/gamma));
-            c1 = pow(c1, vec3(1.0/gamma));
-            c2 = pow(c2, vec3(1.0/gamma));
-            c3 = pow(c3, vec3(1.0/gamma));
+    c0 = pow(c0, vec3(1.0/gamma));
+    c1 = pow(c1, vec3(1.0/gamma));
+    c2 = pow(c2, vec3(1.0/gamma));
+    c3 = pow(c3, vec3(1.0/gamma));
 
-            gl_FragColor = vec4(0.25 * (c0 + c1 + c2 + c3), 1.0);
-        }
+    outColor = vec4(0.25 * (c0 + c1 + c2 + c3), 1.0);
+}
     )";
 
     const char blit_reduced_fs[] = R"(
-        #ifdef GL_ES
-	        precision mediump float;
-        #endif
+#ifdef GL_ES
+	precision mediump float;
+#endif
 
-        /*
-        UNIFORMS
-            s_texture : 3
-            uOffset : 4
-        */
+/*
+UNIFORMS
+    s_texture : 3
+    uOffset : 4
+*/
         
-        uniform sampler2D s_texture;
-        uniform vec2 uOffset;
+uniform sampler2D s_texture;
+uniform vec2 uOffset;
 
-        varying vec2 aVertexUVs_;
+varying vec2 aVertexUVs_;
 
-        void main(void) {
-            gl_FragColor = texture2D(s_texture, aVertexUVs_ + uOffset);
-        }
-    )";
+void main() {
+    gl_FragColor = texture2D(s_texture, aVertexUVs_ + uOffset);
+}
+)";
 
     const char blit_down_fs[] = R"(
-        #extension GL_ARB_texture_multisample : require
+#version 310 es
 
-        #ifdef GL_ES
-	        precision mediump float;
-        #endif
+#ifdef GL_ES
+	precision mediump float;
+#endif
 
-        /*
-        UNIFORMS
-            s_texture : 3
-        */
+/*
+UNIFORMS
+    s_texture : 3
+*/
         
-        uniform sampler2DMS s_texture;
+uniform sampler2D s_texture;
 
-        varying vec2 aVertexUVs_;
+in vec2 aVertexUVs_;
 
-        void main(void) {
-            vec3 col = vec3(0.0);
-            for (float j = -1.5; j < 2.0; j += 1.0) {
-                for (float i = -1.5; i < 2.0; i += 1.0) {
-                    col += texelFetch(s_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
-                }
-            }
-            gl_FragColor = vec4((1.0/16) * col, 1.0);
+out vec4 outColor;
+
+void main() {
+    vec3 col = vec3(0.0);
+    for (float j = -1.5; j < 2.0; j += 1.0) {
+        for (float i = -1.5; i < 2.0; i += 1.0) {
+            col += texelFetch(s_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
         }
+    }
+    outColor = vec4((1.0/16.0) * col, 1.0);
+}
+    )";
+
+    const char blit_down_ms_fs[] = R"(
+#version 310 es
+#extension GL_ARB_texture_multisample : enable
+
+#ifdef GL_ES
+	precision mediump float;
+#endif
+
+/*
+UNIFORMS
+    s_texture : 3
+*/
+        
+uniform sampler2DMS s_texture;
+
+in vec2 aVertexUVs_;
+
+out vec4 outColor;
+
+void main() {
+    vec3 col = vec3(0.0);
+    for (float j = -1.5; j < 2.0; j += 1.0) {
+        for (float i = -1.5; i < 2.0; i += 1.0) {
+            col += texelFetch(s_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
+        }
+    }
+    outColor = vec4((1.0/16.0) * col, 1.0);
+}
     )";
 
     const char blit_gauss_fs[] = R"(
-        #ifdef GL_ES
-	        precision mediump float;
-        #endif
+#version 310 es
+#extension GL_ARB_texture_multisample : enable
 
-        /*
-        UNIFORMS
-            s_texture : 3
-            vertical : 4
-        */
+#ifdef GL_ES
+	precision mediump float;
+#endif
+
+/*
+UNIFORMS
+    s_texture : 3
+    vertical : 4
+*/
         
-        uniform sampler2D s_texture;
-        uniform float vertical;
+uniform sampler2D s_texture;
+uniform float vertical;
 
-        varying vec2 aVertexUVs_;
+in vec2 aVertexUVs_;
 
-        void main(void) {
-            if(vertical < 1.0) {
-                gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(4, 0), 0) * 0.05;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(3, 0), 0) * 0.09;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(2, 0), 0) * 0.12;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(1, 0), 0) * 0.15;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_), 0) * 0.16;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(1, 0), 0) * 0.15;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(2, 0), 0) * 0.12;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(3, 0), 0) * 0.09;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(4, 0), 0) * 0.05;
-            } else {
-                gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 4), 0) * 0.05;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 3), 0) * 0.09;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 2), 0) * 0.12;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 1), 0) * 0.15;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_), 0) * 0.16;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 1), 0) * 0.15;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 2), 0) * 0.12;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 3), 0) * 0.09;
-	            gl_FragColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 4), 0) * 0.05;
-            }
-        }
-    )";
+out vec4 outColor;
+
+void main() {
+    if(vertical < 1.0) {
+        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(4, 0), 0) * 0.05;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(3, 0), 0) * 0.09;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(2, 0), 0) * 0.12;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(1, 0), 0) * 0.15;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_), 0) * 0.16;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(1, 0), 0) * 0.15;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(2, 0), 0) * 0.12;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(3, 0), 0) * 0.09;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(4, 0), 0) * 0.05;
+    } else {
+        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 4), 0) * 0.05;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 3), 0) * 0.09;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 2), 0) * 0.12;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 1), 0) * 0.15;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_), 0) * 0.16;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 1), 0) * 0.15;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 2), 0) * 0.12;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 3), 0) * 0.09;
+	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 4), 0) * 0.05;
+    }
+}
+)";
 
     const Ren::Vec2f poisson_disk[] = {
-        { -0.705374f, -0.668203f },     { -0.780145f, 0.486251f },  { 0.566637f, 0.605213f },   { 0.488876f, -0.783441f },
-        { -0.613392f, 0.617481f },      { 0.170019f, -0.040254f },  { -0.299417f, 0.791925f },  { 0.645680f, 0.493210f },
-        { -0.651784f, 0.717887f },      { 0.421003f, 0.027070f },   { -0.817194f, -0.271096f }, { 0.977050f, -0.108615f },
-        { 0.063326f, 0.142369f },       { 0.203528f, 0.214331f },   { -0.667531f, 0.326090f },  { -0.098422f, -0.295755f },
-        { -0.885922f, 0.215369f },      { 0.039766f, -0.396100f },  { 0.751946f, 0.453352f },   { 0.078707f, -0.715323f },
-        { -0.075838f, -0.529344f },     { 0.724479f, -0.580798f },  { 0.222999f, -0.215125f },  { -0.467574f, -0.405438f },
-        { -0.248268f, -0.814753f },     { 0.354411f, -0.887570f },  { 0.175817f, 0.382366f },   { 0.487472f, -0.063082f },
-        { -0.084078f, 0.898312f },      { 0.470016f, 0.217933f },   { -0.696890f, -0.549791f }, { -0.149693f, 0.605762f },
-        { 0.034211f, 0.979980f },       { 0.503098f, -0.308878f },  { -0.016205f, -0.872921f }, { 0.385784f, -0.393902f },
-        { -0.146886f, -0.859249f },     { 0.643361f, 0.164098f },   { 0.634388f, -0.049471f },  { -0.688894f, 0.007843f },
-        { 0.464034f, -0.188818f },      { -0.440840f, 0.137486f },  { 0.364483f, 0.511704f },   { 0.034028f, 0.325968f },
-        { 0.099094f, -0.308023f },      { 0.693960f, -0.366253f },  { 0.678884f, -0.204688f },  { 0.001801f, 0.780328f },
-        { 0.145177f, -0.898984f },      { 0.062655f, -0.611866f },  { 0.315226f, -0.604297f },  { -0.371868f, 0.882138f },
-        { 0.200476f, 0.494430f },       { -0.494552f, -0.711051f }, { 0.612476f, 0.705252f },   { -0.578845f, -0.768792f },
-        { -0.772454f, -0.090976f },     { 0.504440f, 0.372295f },   { 0.155736f, 0.065157f },   { 0.391522f, 0.849605f },
-        { -0.620106f, -0.328104f },     { 0.789239f, -0.419965f },  { -0.545396f, 0.538133f },  { -0.178564f, -0.596057f }
+        { -0.705374f, -0.668203f }, { -0.780145f, 0.486251f  }, { 0.566637f, 0.605213f   }, { 0.488876f, -0.783441f  },
+        { -0.613392f, 0.617481f  }, { 0.170019f, -0.040254f  }, { -0.299417f, 0.791925f  }, { 0.645680f, 0.493210f   },
+        { -0.651784f, 0.717887f  }, { 0.421003f, 0.027070f   }, { -0.817194f, -0.271096f }, { 0.977050f, -0.108615f  },
+        { 0.063326f, 0.142369f   }, { 0.203528f, 0.214331f   }, { -0.667531f, 0.326090f  }, { -0.098422f, -0.295755f },
+        { -0.885922f, 0.215369f  }, { 0.039766f, -0.396100f  }, { 0.751946f, 0.453352f   }, { 0.078707f, -0.715323f  },
+        { -0.075838f, -0.529344f }, { 0.724479f, -0.580798f  }, { 0.222999f, -0.215125f  }, { -0.467574f, -0.405438f },
+        { -0.248268f, -0.814753f }, { 0.354411f, -0.887570f  }, { 0.175817f, 0.382366f   }, { 0.487472f, -0.063082f  },
+        { -0.084078f, 0.898312f  }, { 0.470016f, 0.217933f   }, { -0.696890f, -0.549791f }, { -0.149693f, 0.605762f  },
+        { 0.034211f, 0.979980f   }, { 0.503098f, -0.308878f  }, { -0.016205f, -0.872921f }, { 0.385784f, -0.393902f  },
+        { -0.146886f, -0.859249f }, { 0.643361f, 0.164098f   }, { 0.634388f, -0.049471f  }, { -0.688894f, 0.007843f  },
+        { 0.464034f, -0.188818f  }, { -0.440840f, 0.137486f  }, { 0.364483f, 0.511704f   }, { 0.034028f, 0.325968f   },
+        { 0.099094f, -0.308023f  }, { 0.693960f, -0.366253f  }, { 0.678884f, -0.204688f  }, { 0.001801f, 0.780328f   },
+        { 0.145177f, -0.898984f  }, { 0.062655f, -0.611866f  }, { 0.315226f, -0.604297f  }, { -0.371868f, 0.882138f  },
+        { 0.200476f, 0.494430f   }, { -0.494552f, -0.711051f }, { 0.612476f, 0.705252f   }, { -0.578845f, -0.768792f },
+        { -0.772454f, -0.090976f }, { 0.504440f, 0.372295f   }, { 0.155736f, 0.065157f   }, { 0.391522f, 0.849605f   },
+        { -0.620106f, -0.328104f }, { 0.789239f, -0.419965f  }, { -0.545396f, 0.538133f  }, { -0.178564f, -0.596057f }
     };
 
     const int A_POS = 0;
@@ -320,6 +378,9 @@ void Renderer::InitShadersInternal() {
     blit_down_prog_ = ctx_.LoadProgramGLSL("blit_down", blit_vs, blit_down_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
 
+    blit_down_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_ms", blit_vs, blit_down_ms_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+
     blit_gauss_prog_ = ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
 }
@@ -334,7 +395,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glDepthFunc(GL_LESS);
 
     glClearColor(env.sky_col[0], env.sky_col[1], env.sky_col[2], 1.0f);
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glDisable(GL_CULL_FACE);
 
@@ -379,10 +439,12 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                 } else {
                     glViewport(shadow_buf_.w / 2, shadow_buf_.h / 2, shadow_buf_.w / 2, shadow_buf_.h / 2);
                 }
-                
-                for (size_t i = 0; i < shadow_drawable_count[casc]; i++) {
-                    const auto &dr = shadow_drawables[casc][i];
 
+                const auto *shadow_dr_list = shadow_drawables[casc];
+
+                for (size_t i = 0; i < shadow_drawable_count[casc]; i++) {
+                    const auto &dr = shadow_dr_list[i];
+                    
                     const Ren::Mat4f *clip_from_object = dr.clip_from_object;
                     const Ren::Mesh *mesh = dr.mesh;
                     const Ren::TriStrip *strip = dr.strip;
@@ -526,7 +588,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             cur_program = p;
         }
 
-        /*if (mesh != cur_mesh)*/ {
+        if (mesh != cur_mesh) {
             glBindBuffer(GL_ARRAY_BUFFER, mesh->attribs_buf_id());
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indices_buf_id());
 
@@ -569,23 +631,31 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             }
         }
 
-        /*if (mat != cur_mat)*/ {
+        if (mat != cur_mat) {
             BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
             BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
             cur_mat = mat;
         }
 
-        /*if (cur_lm_dir_tex != dr.lm_dir_tex)*/ {
+        if (cur_lm_dir_tex != dr.lm_dir_tex) {
             cur_lm_dir_tex = dr.lm_dir_tex ? dr.lm_dir_tex : default_lightmap_.get();
             BindTexture(LM_DIRECT_SLOT, cur_lm_dir_tex->tex_id());
         }
 
-        /*if (cur_lm_indir_tex != dr.lm_indir_tex)*/ {
+        if (cur_lm_indir_tex != dr.lm_indir_tex) {
             cur_lm_indir_tex = dr.lm_indir_tex ? dr.lm_indir_tex : default_lightmap_.get();
             BindTexture(LM_INDIRECT_SLOT, cur_lm_indir_tex->tex_id());
         }
 
         glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
+    }
+
+    if (drawable_count) {
+        glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glDisableVertexAttribArray(cur_program->attribute(A_NORMAL).loc);
+        glDisableVertexAttribArray(cur_program->attribute(A_TANGENT).loc);
+        glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+        glDisableVertexAttribArray(cur_program->attribute(A_UVS2).loc);
     }
 
     glDisable(GL_DEPTH_TEST);
@@ -603,7 +673,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         const uint8_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
 
-        cur_program = blit_down_prog_.get();
+        if (clean_buf_.msaa > 1) {
+            cur_program = blit_down_ms_prog_.get();
+        } else {
+            cur_program = blit_down_prog_.get();
+        }
         glUseProgram(cur_program->prog_id());
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -617,8 +691,12 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
 
-        glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.col_tex.GetValue());
+        if (clean_buf_.msaa > 1) {
+            glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.col_tex.GetValue());
+        } else {
+            BindTexture(DIFFUSEMAP_SLOT, clean_buf_.col_tex.GetValue());
+        }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
 
@@ -654,6 +732,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         BindTexture(DIFFUSEMAP_SLOT, blur_buf2_.col_tex.GetValue());
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
+
+        glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
     }
 
     {   // draw to small framebuffer
@@ -693,6 +774,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
 
+        glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+
         reduced_pixels_.resize(3 * reduced_buf_.w * reduced_buf_.h);
         glReadPixels(0, 0, reduced_buf_.w, reduced_buf_.h, GL_RGB, GL_FLOAT, &reduced_pixels_[0]);
 
@@ -719,7 +803,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 #endif
 
     {   // Blit main framebuffer
-        cur_program = blit_ms_prog_.get();
+        if (clean_buf_.msaa > 1) {
+            cur_program = blit_ms_prog_.get();
+        } else {
+            cur_program = blit_prog_.get();
+        }
         glUseProgram(cur_program->prog_id());
 
         const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,
@@ -752,12 +840,19 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glUniform1f(cur_program->uniform(U_EXPOSURE).loc, exposure);
 
-        glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.col_tex.GetValue());
+        if (clean_buf_.msaa > 1) {
+            glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.col_tex.GetValue());
+        } else {
+            BindTexture(DIFFUSEMAP_SLOT, clean_buf_.col_tex.GetValue());
+        }
 
         BindTexture(DIFFUSEMAP_SLOT + 1, blur_buf1_.col_tex.GetValue());
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
+
+        glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
     }
 
 #if !defined(__ANDROID__)
@@ -803,6 +898,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         BindTexture(DIFFUSEMAP_SLOT, shadow_buf_.depth_tex.GetValue());
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &indices[0]);
+
+        glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
     }
 
     if (debug_reduce_) {
@@ -817,8 +915,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         //const float positions[] = { -1.0f, -1.0f,                      1.0f, -1.0f,
         //                            1.0f, 1.0f,                        -1.0f, 1.0f };
 
-        const float uvs[] = { 0.0f, 0.0f,       1.0f, 0.0f,
-                              1.0f, 1.0f,       0.0f, 1.0f };
+        const float uvs[] = {
+            0.0f, 0.0f,                                   (float)reduced_buf_.w, 0.0f,
+            (float)reduced_buf_.w, (float)reduced_buf_.h, 0.0f, (float)reduced_buf_.h
+        };
 
         const uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
 
@@ -836,6 +936,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         BindTexture(DIFFUSEMAP_SLOT, reduced_buf_.col_tex.GetValue());
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &indices[0]);
+
+        glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
     }
 #endif
 

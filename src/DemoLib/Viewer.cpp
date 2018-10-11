@@ -59,14 +59,25 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     LOGI("Viewer 3 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
     {
+        LOGI("Viewer 31 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+
+        if (ctx) {
+
+            LOGI("Viewer NOT NULL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        }
+
         auto renderer = std::make_shared<Renderer>(*ctx);
         AddComponent(RENDERER_KEY, renderer);
+
+        LOGI("Viewer 32 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
         Ray::settings_t s;
         s.w = w;
         s.h = h;
         auto ray_renderer = Ray::CreateRenderer(s, Ray::RendererOCL);
         AddComponent(RAY_RENDERER_KEY, ray_renderer);
+
+        LOGI("Viewer 33 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
         auto scene_manager = std::make_shared<SceneManager>(*ctx, *renderer, *ray_renderer);
         AddComponent(SCENE_MANAGER_KEY, scene_manager);

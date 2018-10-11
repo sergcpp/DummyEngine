@@ -6,9 +6,11 @@
 
 #include <Eng/TimedInput.h>
 
+#if !defined(__ANDROID__)
 struct SDL_Renderer;
 struct SDL_Texture;
 struct SDL_Window;
+#endif
 
 class GameBase;
 
@@ -19,11 +21,11 @@ class DemoApp {
     SDL_Renderer    *renderer_ = nullptr;
     SDL_Texture     *texture_ = nullptr;
 #endif
-    SDL_Window		*window_ = nullptr;
-
     bool quit_;
 
 #if !defined(__ANDROID__)
+    SDL_Window		*window_ = nullptr;
+
     bool ConvertToRawButton(int32_t key, InputManager::RawInputButton &button);
     void PollEvents();
 #endif
@@ -37,6 +39,7 @@ public:
     void Destroy();
 
     void Frame();
+    void Resize(int w, int h);
 
 #if !defined(__ANDROID__)
     int Run(const std::vector<std::string> &args);

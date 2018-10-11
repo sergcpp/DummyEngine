@@ -128,8 +128,11 @@ void DemoApp::Destroy() {
 }
 
 void DemoApp::Frame() {
-    //R::ClearColorAndDepth(0.1f, 0.75f, 0.75f, 1);
     viewer_->Frame();
+}
+
+void DemoApp::Resize(int w, int h) {
+    viewer_->Resize(w, h);
 }
 
 #if !defined(__ANDROID__)
@@ -303,7 +306,7 @@ return;
 #if defined(__EMSCRIPTEN__)
                 emscripten_set_canvas_size(e.window.data1, e.window.data2);
 #endif
-                viewer_->Resize(e.window.data1, e.window.data2);
+                Resize(e.window.data1, e.window.data2);
 #if defined(USE_SW_RENDER)
                 SDL_RenderPresent(renderer_);
 

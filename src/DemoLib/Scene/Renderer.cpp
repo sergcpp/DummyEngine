@@ -41,6 +41,7 @@ Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
         SWfloat z = FAR_CLIP / (FAR_CLIP - NEAR_CLIP) + (NEAR_CLIP - (2.0f * NEAR_CLIP)) / (0.15f * (FAR_CLIP - NEAR_CLIP));
         swCullCtxInit(&cull_ctx_, 256, 128, z);
     }
+
     InitShadersInternal();
 
     shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::None, Ren::NoFilter, Ren::ClampToEdge, true);
@@ -98,7 +99,7 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
         }
 
         if (ctx_.w() != w_ || ctx_.h() != h_) {
-            clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), Ren::RawRGB16F, Ren::NoFilter, Ren::ClampToEdge, true, 4);
+            clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), Ren::RawRGBA16F, Ren::NoFilter, Ren::ClampToEdge, true, 4);
             blur_buf1_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, Ren::RawRGB16F, Ren::Bilinear, Ren::ClampToEdge, false);
             blur_buf2_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, Ren::RawRGB16F, Ren::Bilinear, Ren::ClampToEdge, false);
             w_ = ctx_.w();
@@ -128,7 +129,7 @@ void Renderer::BackgroundProc() {
         if (nodes_ && objects_) {
             std::lock_guard<Sys::SpinlockMutex> _(job_mtx_);
             auto t1 = std::chrono::high_resolution_clock::now();
-
+            
             auto &tr_list = transforms_[1];
             tr_list.clear();
             tr_list.reserve(object_count_ * 6);
@@ -148,7 +149,7 @@ void Renderer::BackgroundProc() {
 
             Ren::Mat4f view_from_world = draw_cam_.view_matrix(),
                        clip_from_view = draw_cam_.projection_matrix();
-
+            
             swCullCtxClear(&cull_ctx_);
 
             Ren::Mat4f view_from_identity = view_from_world * Ren::Mat4f{ 1.0f },

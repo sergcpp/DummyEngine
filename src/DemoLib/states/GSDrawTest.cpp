@@ -11,6 +11,7 @@
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
 #include <Sys/Log.h>
+#include <Sys/MemBuf.h>
 #include <Sys/Time_.h>
 
 #include "../Gui/FontStorage.h"
@@ -52,6 +53,7 @@ GSDrawTest::~GSDrawTest() {
 void GSDrawTest::Enter() {
     using namespace GSDrawTestInternal;
 
+    LOGI("GSDrawTest: Loading scene!");
     LoadScene(SCENE_NAME);
 
     cmdline_history_.resize(MAX_CMD_LINES, "~");
@@ -127,10 +129,19 @@ void GSDrawTest::Enter() {
 }
 
 void GSDrawTest::LoadScene(const char *name) {
-    std::ifstream in_scene(name, std::ios::binary);
+    Sys::AssetFile in_scene(name);
+    size_t scene_size = in_scene.size();
+
+    std::unique_ptr<uint8_t[]> scene_data(new uint8_t[scene_size]);
+    in_scene.Read((char *)&scene_data[0], scene_size);
+
+    Sys::MemBuf mem(&scene_data[0], scene_size);
+    std::istream in_stream(&mem);
+
+    //std::ifstream in_scene(name, std::ios::binary);
 
     JsObject js_scene;
-    if (!js_scene.Read(in_scene)) {
+    if (!js_scene.Read(in_stream)) {
         throw std::runtime_error("Cannot load scene!");
     }
 

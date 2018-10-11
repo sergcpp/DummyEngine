@@ -10,5 +10,6 @@ public class LibJNI {
     public static native void Init(int w, int h, AssetManager asset_manager);
     public static native void Destroy();
     public static native void Frame();
+    public static native void Resize(int w, int h);
     public static native void AddEvent(int type, int key, float x, float y);
 }

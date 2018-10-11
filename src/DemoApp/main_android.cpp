@@ -27,7 +27,11 @@ extern "C" JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_Destroy(JNIEnv *,
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_Frame(JNIEnv *, jclass) {
-    
+    g_app->Frame();
+}
+
+extern "C" JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_Resize(JNIEnv *, jclass, jint w, jint h) {
+    g_app->Resize(int(w), int(h));
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_AddEvent(JNIEnv *, jclass, jint, jint, jfloat, jfloat) {

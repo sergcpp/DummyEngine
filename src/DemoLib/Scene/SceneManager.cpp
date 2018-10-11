@@ -9,6 +9,7 @@
 #include <Sys/AssetFile.h>
 #include <Sys/AssetFileIO.h>
 #include <Sys/Log.h>
+#include <Sys/MemBuf.h>
 
 #include "Renderer.h"
 
@@ -44,6 +45,7 @@ void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target,
 void SceneManager::LoadScene(const JsObject &js_scene) {
     using namespace SceneManagerConstants;
 
+    LOGI("SceneManager: Loading scene!");
     ClearScene();
 
     std::map<std::string, Ren::MeshRef> all_meshes;
@@ -62,10 +64,17 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
         std::string mesh_path = std::string(MODELS_PATH) + path.val;
 
-        std::ifstream in_file(mesh_path.c_str(), std::ios::binary);
+        Sys::AssetFile in_file(mesh_path.c_str());
+        size_t in_file_size = in_file.size();
+
+        std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+        in_file.Read((char *)&in_file_data[0], in_file_size);
+
+        Sys::MemBuf mem = { &in_file_data[0], in_file_size };
+        std::istream in_file_stream(&mem);
 
         using namespace std::placeholders;
-        all_meshes[name] = ctx_.LoadMesh(name.c_str(), in_file, std::bind(&SceneManager::OnLoadMaterial, this, _1));
+        all_meshes[name] = ctx_.LoadMesh(name.c_str(), in_file_stream, std::bind(&SceneManager::OnLoadMaterial, this, _1));
     }
 
     const JsArray &js_objects = (const JsArray &)js_scene.at("objects");
@@ -174,6 +183,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         env_ = {};
     }
 
+    LOGI("SceneManager: RebuildBVH!");
+
     RebuildBVH();
 }
 
@@ -268,7 +279,11 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
 
             self->ctx_.ProcessSingleTask([self, tex_name, data, size]() {
                 Ren::Texture2DParams p;
-                p.filter = Ren::Trilinear;
+                if (strstr(tex_name.c_str(), ".tga_rgbe")) {
+                    p.filter = Ren::BilinearNoMipmap;
+                } else {
+                    p.filter = Ren::Trilinear;
+                }
                 p.repeat = Ren::Repeat;
                 self->ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, nullptr);
                 LOGI("Texture %s loaded", tex_name.c_str());

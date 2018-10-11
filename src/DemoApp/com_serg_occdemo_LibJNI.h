@@ -33,6 +33,14 @@ JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_Frame
 
 /*
  * Class:     com_serg_occdemo_LibJNI
+ * Method:    Resize
+ * Signature: (II)V
+ */
+JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_Resize
+  (JNIEnv *, jclass, jint, jint);
+
+/*
+ * Class:     com_serg_occdemo_LibJNI
  * Method:    AddEvent
  * Signature: (IIFF)V
  */
