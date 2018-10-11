@@ -100,8 +100,8 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
 
         if (ctx_.w() != w_ || ctx_.h() != h_) {
             clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), Ren::RawRGBA16F, Ren::NoFilter, Ren::ClampToEdge, true, 4);
-            blur_buf1_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, Ren::RawRGB16F, Ren::Bilinear, Ren::ClampToEdge, false);
-            blur_buf2_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, Ren::RawRGB16F, Ren::Bilinear, Ren::ClampToEdge, false);
+            blur_buf1_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, Ren::RawRGBA16F, Ren::Bilinear, Ren::ClampToEdge, false);
+            blur_buf2_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, Ren::RawRGBA16F, Ren::Bilinear, Ren::ClampToEdge, false);
             w_ = ctx_.w();
             h_ = ctx_.h();
             LOGI("CleanBuf resized to %ix%i", w_, h_);
