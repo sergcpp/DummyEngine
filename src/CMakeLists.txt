@@ -18,7 +18,6 @@ elseif(${RENDERER} STREQUAL "VK")
   add_definitions(-DUSE_VK_RENDER)
 endif()
 
-include_directories(libs)
 include_directories(.)
 
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..)

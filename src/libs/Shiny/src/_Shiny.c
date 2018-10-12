@@ -1,7 +1,0 @@
-#include "ShinyManager.c"
-#include "ShinyNode.c"
-#include "ShinyNodePool.c"
-#include "ShinyNodeState.c"
-#include "ShinyOutput.c"
-#include "ShinyTools.c"
-#include "ShinyZone.c"
