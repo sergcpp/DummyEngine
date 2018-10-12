@@ -65,7 +65,7 @@ void SceneManager::RebuildBVH() {
                        bbox_max = split_data.left_bounds[1];
 
             nodes_.push_back({ (uint32_t)obj_indices_.size(), (uint32_t)split_data.left_indices.size(), 0, 0, parent_index, 0,
-                             { { bbox_min[0], bbox_min[1], bbox_min[2] }, { bbox_max[0], bbox_max[1], bbox_max[2] } }
+                { { bbox_min[0], bbox_min[1], bbox_min[2] }, { bbox_max[0], bbox_max[1], bbox_max[2] } }
             });
             obj_indices_.insert(obj_indices_.end(), split_data.left_indices.begin(), split_data.left_indices.end());
         } else {
@@ -89,7 +89,7 @@ void SceneManager::RebuildBVH() {
                        bbox_max = Max(split_data.left_bounds[1], split_data.right_bounds[1]);
 
             nodes_.push_back({ 0, 0, index + 1, index + 2, parent_index, space_axis,
-                             { { bbox_min[0], bbox_min[1], bbox_min[2] }, { bbox_max[0], bbox_max[1], bbox_max[2] } }
+                { { bbox_min[0], bbox_min[1], bbox_min[2] }, { bbox_max[0], bbox_max[1], bbox_max[2] } }
             });
 
             prim_lists.emplace_front(std::move(split_data.left_indices), split_data.left_bounds[0], split_data.left_bounds[1]);

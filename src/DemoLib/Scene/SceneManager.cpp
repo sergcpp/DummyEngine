@@ -14,28 +14,32 @@
 #include "Renderer.h"
 
 namespace SceneManagerConstants {
-    const float NEAR_CLIP = 0.5f;
-    const float FAR_CLIP = 10000;
+const float NEAR_CLIP = 0.5f;
+const float FAR_CLIP = 10000;
 
-    const char *MODELS_PATH = "./assets/models/";
+const char *MODELS_PATH = "./assets/models/";
 }
 
-SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererBase &ray_renderer) 
+SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererBase &ray_renderer)
     : ctx_(ctx),
       renderer_(renderer),
       ray_renderer_(ray_renderer),
       ray_reg_ctx_{ {} },
-      cam_(Ren::Vec3f{ 0.0f, 0.0f, 1.0f },
-           Ren::Vec3f{ 0.0f, 0.0f, 0.0f },
-           Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
+cam_(Ren::Vec3f{ 0.0f, 0.0f, 1.0f },
+     Ren::Vec3f{ 0.0f, 0.0f, 0.0f },
+     Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
 }
 
 SceneManager::~SceneManager() {
     renderer_.WaitForBackgroundThreadIteration();
 }
 
-TimingInfo SceneManager::timings() const { return renderer_.timings(); };
-TimingInfo SceneManager::back_timings() const { return renderer_.back_timings(); };
+TimingInfo SceneManager::timings() const {
+    return renderer_.timings();
+};
+TimingInfo SceneManager::back_timings() const {
+    return renderer_.back_timings();
+};
 
 void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up) {
     cam_.SetupView(origin, target, up);
@@ -89,10 +93,10 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         obj.flags = HasMesh | HasTransform;
         obj.mesh = it->second;
         obj.tr = transforms_.Add();
-        
+
         if (js_obj.Has("pos")) {
             const JsArray &js_pos = (const JsArray &)js_obj.at("pos");
-            
+
             double tx = ((const JsNumber &)js_pos.at(0)).val;
             double ty = ((const JsNumber &)js_pos.at(1)).val;
             double tz = ((const JsNumber &)js_pos.at(2)).val;
@@ -226,8 +230,8 @@ Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {
         using namespace std::placeholders;
 
         ret = ctx_.LoadMaterial(name, mat_src.data(), &status,
-            std::bind(&SceneManager::OnLoadProgram, this, _1, _2, _3),
-            std::bind(&SceneManager::OnLoadTexture, this, _1));
+                                std::bind(&SceneManager::OnLoadProgram, this, _1, _2, _3),
+                                std::bind(&SceneManager::OnLoadTexture, this, _1));
         assert(status == Ren::MatCreatedFromData);
     }
     return ret;
@@ -241,14 +245,14 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
         using namespace std;
 
         Sys::AssetFile vs_file(std::string("assets/shaders/") + vs_shader),
-                       fs_file(std::string("assets/shaders/") + fs_shader);
+            fs_file(std::string("assets/shaders/") + fs_shader);
         if (!vs_file || !fs_file) {
             LOGE("Error loading program %s", name);
             return ret;
         }
 
         size_t vs_size = vs_file.size(),
-            fs_size = fs_file.size();
+               fs_size = fs_file.size();
 
         string vs_src, fs_src;
         vs_src.resize(vs_size);
@@ -273,7 +277,7 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
         std::string tex_name = name;
         std::weak_ptr<SceneManager> _self = shared_from_this();
         Sys::LoadAssetComplete((std::string("assets/textures/") + tex_name).c_str(),
-            [_self, tex_name](void *data, int size) {
+        [_self, tex_name](void *data, int size) {
             auto self = _self.lock();
             if (!self) return;
 

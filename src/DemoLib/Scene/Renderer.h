@@ -23,7 +23,7 @@ struct DrawableItem {
     const Ren::Texture2D *lm_indir_tex;
 
     DrawableItem(const Ren::Mat4f *_clip_from_object, const Ren::Mat4f *_world_from_object, const Ren::Material *_mat,
-        const Ren::Mesh *_mesh, const Ren::TriStrip *_strip, const Ren::Texture2D *_lm_dir_tex, const Ren::Texture2D *_lm_indir_tex) : clip_from_object(_clip_from_object), world_from_object(_world_from_object), sh_clip_from_object{ nullptr },
+                 const Ren::Mesh *_mesh, const Ren::TriStrip *_strip, const Ren::Texture2D *_lm_dir_tex, const Ren::Texture2D *_lm_indir_tex) : clip_from_object(_clip_from_object), world_from_object(_world_from_object), sh_clip_from_object{ nullptr },
         mat(_mat), mesh(_mesh), strip(_strip), lm_dir_tex(_lm_dir_tex), lm_indir_tex(_lm_indir_tex) { }
 
     bool operator<(const DrawableItem& rhs) const {
@@ -36,14 +36,28 @@ public:
     Renderer(Ren::Context &ctx);
     ~Renderer();
 
-    void toggle_wireframe() { wireframe_mode_ = !wireframe_mode_; }
-    void toggle_culling() { culling_enabled_ = !culling_enabled_; }
-    void toggle_debug_cull() { debug_cull_ = !debug_cull_; }
-    void toggle_debug_shadow() { debug_shadow_ = !debug_shadow_; }
-    void toggle_debug_reduce() { debug_reduce_ = !debug_reduce_; }
+    void toggle_wireframe() {
+        wireframe_mode_ = !wireframe_mode_;
+    }
+    void toggle_culling() {
+        culling_enabled_ = !culling_enabled_;
+    }
+    void toggle_debug_cull() {
+        debug_cull_ = !debug_cull_;
+    }
+    void toggle_debug_shadow() {
+        debug_shadow_ = !debug_shadow_;
+    }
+    void toggle_debug_reduce() {
+        debug_reduce_ = !debug_reduce_;
+    }
 
-    TimingInfo timings() const { return timings_; }
-    TimingInfo back_timings() const { return back_timings_[0]; }
+    TimingInfo timings() const {
+        return timings_;
+    }
+    TimingInfo back_timings() const {
+        return back_timings_[0];
+    }
 
     void DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
                      const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env);
@@ -53,8 +67,8 @@ public:
 private:
     Ren::Context &ctx_;
     SWcull_ctx cull_ctx_;
-    Ren::ProgramRef fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_, 
-                    blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_;
+    Ren::ProgramRef fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_,
+        blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_;
     Ren::Texture2DRef default_lightmap_;
 
     FrameBuf clean_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_;

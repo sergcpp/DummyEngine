@@ -14,15 +14,15 @@
 #include "../Viewer.h"
 
 namespace GSDefTestInternal {
-    const float FORWARD_SPEED = 0.25f;
+const float FORWARD_SPEED = 0.25f;
 
-    const float CAM_FOV = 45.0f;
-    const Ren::Vec3f CAM_CENTER = { 100.0f, 100.0f, -500.0f };
-    const Ren::Vec3f CAM_TARGET = { 0.0f, 0.0f, 0.0f };
-    const Ren::Vec3f CAM_UP = { 0.0f, 1.0f, 0.0f };
+const float CAM_FOV = 45.0f;
+const Ren::Vec3f CAM_CENTER = { 100.0f, 100.0f, -500.0f };
+const Ren::Vec3f CAM_TARGET = { 0.0f, 0.0f, 0.0f };
+const Ren::Vec3f CAM_UP = { 0.0f, 1.0f, 0.0f };
 
-    const float NEAR_CLIP = 0.5f;
-    const float FAR_CLIP = 1000;
+const float NEAR_CLIP = 0.5f;
+const float FAR_CLIP = 1000;
 }
 
 GSDefTest::GSDefTest(GameBase *game) : game_(game),
@@ -44,7 +44,7 @@ GSDefTest::GSDefTest(GameBase *game) : game_(game),
 }
 
 GSDefTest::~GSDefTest() {
-    
+
 }
 
 void GSDefTest::Enter() {
@@ -179,7 +179,7 @@ void GSDefTest::HandleInput(InputManager::Event evt) {
         view_grabbed_ = false;
         break;
     case InputManager::RAW_INPUT_P1_MOVE:
-         if (view_grabbed_) {
+        if (view_grabbed_) {
             Vec3f up = { 0, 1, 0 };
             Vec3f side = Normalize(Cross(view_dir_, up));
             up = Cross(side, view_dir_);
@@ -213,7 +213,7 @@ void GSDefTest::HandleInput(InputManager::Event evt) {
 
         }
     }
-                                           break;
+    break;
     case InputManager::RAW_INPUT_KEY_UP: {
         if (evt.key == InputManager::RAW_INPUT_BUTTON_UP) {
             forward_speed_ = 0;

@@ -10,80 +10,80 @@
 #include "Renderer.h"
 
 namespace SceneManagerInternal {
-    void WriteTGA(const std::vector<uint8_t> &out_data, int w, int h, const std::string &name) {
-        int bpp = 4;
+void WriteTGA(const std::vector<uint8_t> &out_data, int w, int h, const std::string &name) {
+    int bpp = 4;
 
-        std::ofstream file(name, std::ios::binary);
+    std::ofstream file(name, std::ios::binary);
 
-        unsigned char header[18] = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    unsigned char header[18] = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-        header[12] = w & 0xFF;
-        header[13] = (w >> 8) & 0xFF;
-        header[14] = (h) & 0xFF;
-        header[15] = (h >> 8) & 0xFF;
-        header[16] = bpp * 8;
+    header[12] = w & 0xFF;
+    header[13] = (w >> 8) & 0xFF;
+    header[14] = (h) & 0xFF;
+    header[15] = (h >> 8) & 0xFF;
+    header[16] = bpp * 8;
 
-        file.write((char *)&header[0], sizeof(unsigned char) * 18);
-        file.write((const char *)&out_data[0], w * h * bpp);
+    file.write((char *)&header[0], sizeof(unsigned char) * 18);
+    file.write((const char *)&out_data[0], w * h * bpp);
 
-        static const char footer[26] = "\0\0\0\0" // no extension area
-            "\0\0\0\0"// no developer directory
-            "TRUEVISION-XFILE"// yep, this is a TGA file
-            ".";
-        file.write((const char *)&footer, sizeof(footer));
-    }
+    static const char footer[26] = "\0\0\0\0" // no extension area
+                                   "\0\0\0\0"// no developer directory
+                                   "TRUEVISION-XFILE"// yep, this is a TGA file
+                                   ".";
+    file.write((const char *)&footer, sizeof(footer));
+}
 
-    void WriteTGA(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
-        int bpp = 4;
+void WriteTGA(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
+    int bpp = 4;
 
-        std::ofstream file(name, std::ios::binary);
+    std::ofstream file(name, std::ios::binary);
 
-        unsigned char header[18] = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    unsigned char header[18] = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-        header[12] = w & 0xFF;
-        header[13] = (w >> 8) & 0xFF;
-        header[14] = (h) & 0xFF;
-        header[15] = (h >> 8) & 0xFF;
-        header[16] = bpp * 8;
+    header[12] = w & 0xFF;
+    header[13] = (w >> 8) & 0xFF;
+    header[14] = (h) & 0xFF;
+    header[15] = (h >> 8) & 0xFF;
+    header[16] = bpp * 8;
 
-        file.write((char *)&header[0], sizeof(unsigned char) * 18);
-        //file.write((const char *)&out_data[0], w * h * bpp);
+    file.write((char *)&header[0], sizeof(unsigned char) * 18);
+    //file.write((const char *)&out_data[0], w * h * bpp);
 
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                const auto &p = out_data[y * w + x];
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            const auto &p = out_data[y * w + x];
 
-                Ren::Vec3f val = { p.r, p.g, p.b };
+            Ren::Vec3f val = { p.r, p.g, p.b };
 
-                Ren::Vec3f exp = { std::log2(val[0]), std::log2(val[1]), std::log2(val[2]) };
-                for (int i = 0; i < 3; i++) {
-                    exp[i] = std::ceil(exp[i]);
-                    if (exp[i] < -128.0f) exp[i] = -128.0f;
-                    else if (exp[i] > 127.0f) exp[i] = 127.0f;
-                }
-
-                float common_exp = std::max(exp[0], std::max(exp[1], exp[2]));
-                float range = std::exp2(common_exp);
-
-                Ren::Vec3f mantissa = val / range;
-                for (int i = 0; i < 3; i++) {
-                    if (mantissa[i] < 0.0f) mantissa[i] = 0.0f;
-                    else if (mantissa[i] > 1.0f) mantissa[i] = 1.0f;
-                }
-
-                Ren::Vec4f res = { mantissa[0], mantissa[1], mantissa[2], common_exp + 128.0f };
-
-                uint8_t data[] = { uint8_t(res[2] * 255), uint8_t(res[1] * 255), uint8_t(res[0] * 255), uint8_t(res[3]) };        
-                file.write((const char *)&data[0], 4);
+            Ren::Vec3f exp = { std::log2(val[0]), std::log2(val[1]), std::log2(val[2]) };
+            for (int i = 0; i < 3; i++) {
+                exp[i] = std::ceil(exp[i]);
+                if (exp[i] < -128.0f) exp[i] = -128.0f;
+                else if (exp[i] > 127.0f) exp[i] = 127.0f;
             }
-        }
 
-        static const char footer[26] = "\0\0\0\0" // no extension area
-            "\0\0\0\0"// no developer directory
-            "TRUEVISION-XFILE"// yep, this is a TGA file
-            ".";
-        file.write((const char *)&footer, sizeof(footer));
+            float common_exp = std::max(exp[0], std::max(exp[1], exp[2]));
+            float range = std::exp2(common_exp);
+
+            Ren::Vec3f mantissa = val / range;
+            for (int i = 0; i < 3; i++) {
+                if (mantissa[i] < 0.0f) mantissa[i] = 0.0f;
+                else if (mantissa[i] > 1.0f) mantissa[i] = 1.0f;
+            }
+
+            Ren::Vec4f res = { mantissa[0], mantissa[1], mantissa[2], common_exp + 128.0f };
+
+            uint8_t data[] = { uint8_t(res[2] * 255), uint8_t(res[1] * 255), uint8_t(res[0] * 255), uint8_t(res[3]) };
+            file.write((const char *)&data[0], 4);
+        }
     }
+
+    static const char footer[26] = "\0\0\0\0" // no extension area
+                                   "\0\0\0\0"// no developer directory
+                                   "TRUEVISION-XFILE"// yep, this is a TGA file
+                                   ".";
+    file.write((const char *)&footer, sizeof(footer));
+}
 }
 
 void SceneManager::Draw_PT() {
@@ -144,11 +144,12 @@ bool SceneManager::PrepareLightmaps_PT() {
 
     if (ray_reg_ctx_.iteration >= LM_SAMPLES) {
 
-        {   // Save lightmap to file
+        {
+            // Save lightmap to file
             const auto *pixels = ray_renderer_.get_pixels_ref();
 
             std::vector<Ray::pixel_color_t> temp_pixels1{ pixels, pixels + res * res },
-                                            temp_pixels2{ (size_t)res * res };
+                temp_pixels2{ (size_t)res * res };
 
             const float INVAL_THRES = 0.5f;
 
@@ -167,10 +168,14 @@ bool SceneManager::PrepareLightmaps_PT() {
 
                             Ray::pixel_color_t new_p = { 0 };
                             int count = 0;
-                            for (int _y : { y - 1, y, y + 1 }) {
-                                for (int _x : { x - 1, x, x + 1 }) {
-                                    if (_x < 0 || _y < 0 || 
-                                        _x > res - 1 || _y > res - 1) continue;
+                            for (int _y : {
+                                        y - 1, y, y + 1
+                                    }) {
+                                for (int _x : {
+                                            x - 1, x, x + 1
+                                        }) {
+                                    if (_x < 0 || _y < 0 ||
+                                            _x > res - 1 || _y > res - 1) continue;
 
                                     const auto &p = temp_pixels1[_y * res + _x];
                                     if (p.a >= INVAL_THRES) {
@@ -299,13 +304,15 @@ void SceneManager::InitScene_PT(bool _override) {
     ray_scene_ = ray_renderer_.CreateScene();
 
     // Setup environment
-    {   Ray::environment_desc_t env_desc;
+    {
+        Ray::environment_desc_t env_desc;
         memcpy(&env_desc.env_col[0], &env_.sky_col[0], 3 * sizeof(float));
         ray_scene_->SetEnvironment(env_desc);
     }
 
     // Add main camera
-    {   Ray::camera_desc_t cam_desc;
+    {
+        Ray::camera_desc_t cam_desc;
         cam_desc.type = Ray::Persp;
         cam_desc.filter = Ray::Tent;
         cam_desc.origin[0] = cam_desc.origin[1] = cam_desc.origin[2] = 0.0f;
@@ -320,7 +327,8 @@ void SceneManager::InitScene_PT(bool _override) {
     }
 
     // Add camera for lightmapping
-    {   Ray::camera_desc_t cam_desc;
+    {
+        Ray::camera_desc_t cam_desc;
         cam_desc.type = Ray::Geo;
         cam_desc.filter = Ray::Box;
         cam_desc.gamma = 1.0f;
@@ -335,7 +343,7 @@ void SceneManager::InitScene_PT(bool _override) {
     }
 
     // Add sun lamp
-    if (Ren::Dot(env_.sun_dir, env_.sun_dir) > 0.00001f && Ren::Dot(env_.sun_col, env_.sun_col) > 0.00001f){
+    if (Ren::Dot(env_.sun_dir, env_.sun_dir) > 0.00001f && Ren::Dot(env_.sun_col, env_.sun_col) > 0.00001f) {
         Ray::light_desc_t sun_desc;
         sun_desc.type = Ray::DirectionalLight;
 
@@ -354,7 +362,8 @@ void SceneManager::InitScene_PT(bool _override) {
 
     uint32_t default_white_tex;
 
-    {   //  Add default white texture
+    {
+        //  Add default white texture
         Ray::pixel_color8_t white = { 255, 255, 255, 255 };
 
         Ray::tex_desc_t tex_desc;

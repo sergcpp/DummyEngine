@@ -4,22 +4,23 @@
 #include <Sys/Log.h>
 
 namespace RendererInternal {
-    bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]) {
-        return p[0] > bbox_min[0] && p[0] < bbox_max[0] &&
-               p[1] > bbox_min[1] && p[1] < bbox_max[1] &&
-               p[2] > bbox_min[2] && p[2] < bbox_max[2];
-    }
+bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]) {
+    return p[0] > bbox_min[0] && p[0] < bbox_max[0] &&
+           p[1] > bbox_min[1] && p[1] < bbox_max[1] &&
+           p[2] > bbox_min[2] && p[2] < bbox_max[2];
+}
 
-    static const uint8_t bbox_indices[] = { 0, 1, 2,    2, 1, 3,
-                                            0, 4, 5,    0, 5, 1,
-                                            0, 2, 4,    4, 2, 6,
-                                            2, 3, 6,    6, 3, 7,
-                                            3, 1, 5,    3, 5, 7,
-                                            4, 6, 5,    5, 6, 7 };
+static const uint8_t bbox_indices[] = { 0, 1, 2,    2, 1, 3,
+                                        0, 4, 5,    0, 5, 1,
+                                        0, 2, 4,    4, 2, 6,
+                                        2, 3, 6,    6, 3, 7,
+                                        3, 1, 5,    3, 5, 7,
+                                        4, 6, 5,    5, 6, 7
+                                      };
 
-    const int MAX_STACK_SIZE = 64;
+const int MAX_STACK_SIZE = 64;
 
-    const int SHADOWMAP_RES = 4096;
+const int SHADOWMAP_RES = 4096;
 }
 
 #define BBOX_POINTS(min, max) \
@@ -129,7 +130,7 @@ void Renderer::BackgroundProc() {
         if (nodes_ && objects_) {
             std::lock_guard<Sys::SpinlockMutex> _(job_mtx_);
             auto t1 = std::chrono::high_resolution_clock::now();
-            
+
             auto &tr_list = transforms_[1];
             tr_list.clear();
             tr_list.reserve(object_count_ * 6);
@@ -149,7 +150,7 @@ void Renderer::BackgroundProc() {
 
             Ren::Mat4f view_from_world = draw_cam_.view_matrix(),
                        clip_from_view = draw_cam_.projection_matrix();
-            
+
             swCullCtxClear(&cull_ctx_);
 
             Ren::Mat4f view_from_identity = view_from_world * Ren::Mat4f{ 1.0f },
@@ -158,7 +159,8 @@ void Renderer::BackgroundProc() {
             uint32_t stack[MAX_STACK_SIZE];
             uint32_t stack_size = 0;
 
-            {   // Rasterize occluder meshes into a small framebuffer
+            {
+                // Rasterize occluder meshes into a small framebuffer
                 stack[stack_size++] = (uint32_t)root_node_;
 
                 while (stack_size && culling_enabled_) {
@@ -213,7 +215,8 @@ void Renderer::BackgroundProc() {
                 }
             }
 
-            {   // Gather drawable meshes, skip occluded and frustum culled
+            {
+                // Gather drawable meshes, skip occluded and frustum culled
                 stack_size = 0;
                 stack[stack_size++] = (uint32_t)root_node_;
 
@@ -229,7 +232,7 @@ void Renderer::BackgroundProc() {
 
                         // do not question visibility of the node in which we are inside
                         if (cam_pos[0] < n->bbox[0][0] - 0.5f || cam_pos[1] < n->bbox[0][1] - 0.5f || cam_pos[2] < n->bbox[0][2] - 0.5f ||
-                            cam_pos[0] > n->bbox[1][0] + 0.5f || cam_pos[1] > n->bbox[1][1] + 0.5f || cam_pos[2] > n->bbox[1][2] + 0.5f) {
+                                cam_pos[0] > n->bbox[1][0] + 0.5f || cam_pos[1] > n->bbox[1][1] + 0.5f || cam_pos[2] > n->bbox[1][2] + 0.5f) {
                             SWcull_surf surf;
 
                             surf.type = SW_OCCLUDEE;
@@ -267,7 +270,7 @@ void Renderer::BackgroundProc() {
 
                                     // do not question visibility of the object in which we are inside
                                     if (cam_pos[0] < tr->bbox_min_ws[0] - 0.5f || cam_pos[1] < tr->bbox_min_ws[1] - 0.5f || cam_pos[2] < tr->bbox_min_ws[2] - 0.5f ||
-                                        cam_pos[0] > tr->bbox_max_ws[0] + 0.5f || cam_pos[1] > tr->bbox_max_ws[1] + 0.5f || cam_pos[2] > tr->bbox_max_ws[2] + 0.5f) {
+                                            cam_pos[0] > tr->bbox_max_ws[0] + 0.5f || cam_pos[1] > tr->bbox_max_ws[1] + 0.5f || cam_pos[2] > tr->bbox_max_ws[2] + 0.5f) {
                                         SWcull_surf surf;
 
                                         surf.type = SW_OCCLUDEE;
@@ -340,7 +343,7 @@ void Renderer::BackgroundProc() {
                 temp_cam.UpdatePlanes();
 
                 const Ren::Mat4f &_view_from_world = temp_cam.view_matrix(),
-                                 &_clip_from_view = temp_cam.projection_matrix();
+                                  &_clip_from_view = temp_cam.projection_matrix();
 
                 const Ren::Mat4f _clip_from_world = _clip_from_view * _view_from_world;
                 const Ren::Mat4f _world_from_clip = Ren::Inverse(_clip_from_world);
@@ -349,8 +352,9 @@ void Renderer::BackgroundProc() {
                 const float bounding_radius = temp_cam.GetBoundingSphere(bounding_center);
 
                 auto cam_target = bounding_center;
-                
-                {   // Snap camera movement to shadow map pixels
+
+                {
+                    // Snap camera movement to shadow map pixels
                     const float move_step = (2 * bounding_radius) / (0.5f * SHADOWMAP_RES);
                     //                      |_shadow map extent_|   |_res of one cascade_|
 
@@ -414,7 +418,8 @@ void Renderer::BackgroundProc() {
                                     const Ren::TriStrip *s = &mesh->strip(0);
                                     while (s->offset != -1) {
                                         dr->sh_clip_from_object[casc] = &tr_list.back();
-                                        ++dr; ++s;
+                                        ++dr;
+                                        ++s;
                                     }
                                 }
 

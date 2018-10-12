@@ -6,7 +6,7 @@
 #include <Sys/Log.h>
 
 namespace RendererInternal {
-    const char fillz_vs[] = R"(
+const char fillz_vs[] = R"(
 /*
 ATTRIBUTES
 	aVertexPosition : 0
@@ -171,7 +171,7 @@ void main() {
 }
     )";
 
-    const char blit_reduced_fs[] = R"(
+const char blit_reduced_fs[] = R"(
 #ifdef GL_ES
 	precision mediump float;
 #endif
@@ -221,7 +221,7 @@ void main() {
 }
     )";
 
-    const char blit_down_ms_fs[] = R"(
+const char blit_down_ms_fs[] = R"(
 #version 310 es
 #extension GL_ARB_texture_multisample : enable
 
@@ -251,7 +251,7 @@ void main() {
 }
     )";
 
-    const char blit_gauss_fs[] = R"(
+const char blit_gauss_fs[] = R"(
 #version 310 es
 #extension GL_ARB_texture_multisample : enable
 

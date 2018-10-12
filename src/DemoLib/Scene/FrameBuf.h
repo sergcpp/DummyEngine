@@ -13,7 +13,7 @@ struct FrameBuf {
 #endif
     FrameBuf() : col_format(Ren::Undefined), w(-1), h(-1) {}
     FrameBuf(int w, int h, Ren::eTexColorFormat col_format, Ren::eTexFilter filter,
-                Ren::eTexRepeat repeat, bool with_depth = true, int msaa = 1);
+             Ren::eTexRepeat repeat, bool with_depth = true, int msaa = 1);
     ~FrameBuf();
 
     FrameBuf(const FrameBuf &rhs) = delete;

@@ -3,8 +3,8 @@
 #include <algorithm>
 
 namespace UtilsConstants {
-    const float SAHOversplitThreshold = 0.95f;
-    const float NodeTraversalCost = 2.0f;
+const float SAHOversplitThreshold = 0.95f;
+const float NodeTraversalCost = 2.0f;
 }
 
 struct bbox_t {
@@ -56,12 +56,12 @@ split_data_t SplitPrimitives_SAH(const prim_t *primitives, const std::vector<uin
 
         if (new_prim_bounds.empty()) {
             std::sort(list.begin(), list.end(),
-                [axis, primitives, &tri_indices](uint32_t p1, uint32_t p2) -> bool {
+            [axis, primitives, &tri_indices](uint32_t p1, uint32_t p2) -> bool {
                 return primitives[tri_indices[p1]].bbox_max[axis] < primitives[tri_indices[p2]].bbox_max[axis];
             });
         } else {
             std::sort(list.begin(), list.end(),
-                [axis, &new_prim_bounds](uint32_t p1, uint32_t p2) -> bool {
+            [axis, &new_prim_bounds](uint32_t p1, uint32_t p2) -> bool {
                 return new_prim_bounds[p1].max[axis] < new_prim_bounds[p2].max[axis];
             });
         }

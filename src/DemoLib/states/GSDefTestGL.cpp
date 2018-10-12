@@ -46,29 +46,29 @@ void GSDefTest::DrawMesh() {
 
     glBindBuffer(GL_ARRAY_BUFFER, (GLuint)m->attribs_buf_id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)m->indices_buf_id());
-    
+
     int stride = sizeof(float) * 8;
 
     glEnableVertexAttribArray((GLuint)attr(p, A_POS));
     glVertexAttribPointer((GLuint)attr(p, A_POS), 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
-    
+
     glEnableVertexAttribArray((GLuint)attr(p, A_NORMAL));
     glVertexAttribPointer((GLuint)attr(p, A_NORMAL), 3, GL_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
 
     Ren::Mat4f world_from_object,
-               view_from_world = cam_.view_matrix(),
-               proj_from_view = cam_.projection_matrix();
+        view_from_world = cam_.view_matrix(),
+        proj_from_view = cam_.projection_matrix();
 
     world_from_object = Ren::Rotate(world_from_object, radians(90.0f), { 0.0f, 0.0f, 1.0f });
 
     Ren::Mat4f view_from_object = view_from_world * world_from_object,
                proj_from_object = proj_from_view * view_from_object;
-    
+
     glUniformMatrix4fv(unif(p, U_MVP_MAT), 1, GL_FALSE, Ren::ValuePtr(proj_from_object));
     glUniformMatrix4fv(unif(p, U_MV_MAT), 1, GL_FALSE, Ren::ValuePtr(world_from_object));
-    
+
     glUniform3f(unif(p, U_COL), 1.0f, 1.0f, 1.0f);
-    
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -84,7 +84,7 @@ void GSDefTest::DrawMesh() {
 
 void GSDefTest::DrawInternal() {
     using namespace GSDefTestInternal;
-    
+
 #if 1
     glBindFramebuffer(GL_FRAMEBUFFER, framebuf_);
 
@@ -100,7 +100,7 @@ void GSDefTest::DrawInternal() {
 
     DrawMesh();
     //draw_light();
-    
+
 #if 1
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -188,7 +188,7 @@ void GSDefTest::InitInternal(int w, int h) {
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -275,19 +275,23 @@ void GSDefTest::InitInternal(int w, int h) {
 
                 float vertex1[3] = { 2.0f * std::sin(theta1) * std::cos(phi1),
                                      2.0f * std::sin(theta1) * std::sin(phi1),
-                                     2.0f * std::cos(theta1) };
+                                     2.0f * std::cos(theta1)
+                                   };
 
                 float vertex2[3] = { 2.0f * std::sin(theta1) * std::cos(phi2),
                                      2.0f * std::sin(theta1) * std::sin(phi2),
-                                     2.0f * std::cos(theta1) };
+                                     2.0f * std::cos(theta1)
+                                   };
 
                 float vertex3[3] = { 2.0f * std::sin(theta2) * std::cos(phi2),
                                      2.0f * std::sin(theta2) * std::sin(phi2),
-                                     2.0f * std::cos(theta2) };
+                                     2.0f * std::cos(theta2)
+                                   };
 
                 float vertex4[3] = { 2.0f * std::sin(theta2) * std::cos(phi1),
                                      2.0f * std::sin(theta2) * std::sin(phi1),
-                                     2.0f * std::cos(theta2) };
+                                     2.0f * std::cos(theta2)
+                                   };
 
                 if (t == 0) {
                     vertices.insert(vertices.end(), std::begin(vertex1), std::end(vertex1));

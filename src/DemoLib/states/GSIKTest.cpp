@@ -16,7 +16,7 @@
 #include "../Viewer.h"
 
 namespace GSIKTestInternal {
-    const char *vs_shader = R"(
+const char *vs_shader = R"(
         /*
         ATTRIBUTES
             aVertexPosition : 0
@@ -33,7 +33,7 @@ namespace GSIKTestInternal {
         }
     )";
 
-    const char *fs_shader = R"(
+const char *fs_shader = R"(
         #ifdef GL_ES
         precision mediump float;
         #endif
@@ -50,12 +50,14 @@ namespace GSIKTestInternal {
         }
     )";
 
-    auto to_radians = [](float deg) { return deg * std::acos(-1.0f) / 180.0f; };
+auto to_radians = [](float deg) {
+    return deg * std::acos(-1.0f) / 180.0f;
+};
 }
 
 GSIKTest::GSIKTest(GameBase *game) : game_(game), cam_(Ren::Vec3f{ 0.0f, -0.5f, 2.5f },
-                                                       Ren::Vec3f{ 0.0f, -0.5f, 0.0f },
-                                                       Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
+            Ren::Vec3f{ 0.0f, -0.5f, 0.0f },
+            Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
     state_manager_  = game->GetComponent<GameStateManager>(STATE_MANAGER_KEY);
     ctx_            = game->GetComponent<Ren::Context>(REN_CONTEXT_KEY);
 
@@ -69,7 +71,7 @@ GSIKTest::GSIKTest(GameBase *game) : game_(game), cam_(Ren::Vec3f{ 0.0f, -0.5f, 
 }
 
 GSIKTest::~GSIKTest() {
-    
+
 }
 
 void GSIKTest::Enter() {
@@ -136,7 +138,8 @@ void GSIKTest::Draw(float dt_s) {
                                 cur_goal_[0], cur_goal_[1] - 0.025f, cur_goal_[2],
                                 cur_goal_[0], cur_goal_[1] + 0.025f, cur_goal_[2],
                                 cur_goal_[0], cur_goal_[1], cur_goal_[2] - 0.025f,
-                                cur_goal_[0], cur_goal_[1], cur_goal_[2] + 0.025f };
+                                cur_goal_[0], cur_goal_[1], cur_goal_[2] + 0.025f
+                              };
 
         glVertexAttribPointer(pos_attrib, 3, GL_FLOAT, GL_FALSE, 0, &cross[0]);
         glDrawArrays(GL_LINES, 0, 6);
@@ -145,16 +148,17 @@ void GSIKTest::Draw(float dt_s) {
                                 0.5f, -1.0f, -0.5f,     0.5f, -1.0f, 0.5f,
                                 0.5f, -1.0f, 0.5f,      -0.5f, -1.0f, 0.5f,
                                 -0.5f, -1.0f, 0.5f,     -0.5f, -1.0f, -0.5f,
-        
+
                                 -0.5f, -1.0f, -0.5f,    -0.5f, 0.0f, -0.5f,
                                 0.5f, -1.0f, -0.5f,     0.5f, 0.0f, -0.5f,
                                 0.5f, -1.0f, 0.5f,      0.5f, 0.0f, 0.5f,
                                 -0.5f, -1.0f, 0.5f,     -0.5f, 0.0f, 0.5f,
-        
+
                                 -0.5f, 0.0f, -0.5f,    0.5f, 0.0f, -0.5f,
                                 0.5f, 0.0f, -0.5f,     0.5f, 0.0f, 0.5f,
                                 0.5f, 0.0f, 0.5f,      -0.5f, 0.0f, 0.5f,
-                                -0.5f, 0.0f, 0.5f,     -0.5f, 0.0f, -0.5f };
+                                -0.5f, 0.0f, 0.5f,     -0.5f, 0.0f, -0.5f
+                              };
 
         glVertexAttribPointer(pos_attrib, 3, GL_FLOAT, GL_FALSE, 0, &lines[0]);
         glDrawArrays(GL_LINES, 0, (GLsizei)24);
@@ -254,7 +258,7 @@ void GSIKTest::Update(int dt_ms) {
 
     cur_goal_ = prev_goal_ + (next_goal_ - prev_goal_) * 0.001f * goal_change_timer_;
 #else
-    cur_goal_ = Ren::Vec3f{ 0.0f, 0.0f, 0.25f };
+    cur_goal_ = Ren::Vec3f { 0.0f, 0.0f, 0.25f };
 #endif
 
     Ren::Vec3f end_pos = bones_.back().cur_pos;
@@ -307,9 +311,9 @@ void GSIKTest::Update(int dt_ms) {
     }
 
     //if (iterations) {
-        //LOGI("Iterations: %i\tError: %f", iterations_, Ren::Length(diff));
-        iterations_ = iterations;
-        error_ = error;
+    //LOGI("Iterations: %i\tError: %f", iterations_, Ren::Length(diff));
+    iterations_ = iterations;
+    error_ = error;
     //}
 }
 
@@ -323,7 +327,8 @@ void GSIKTest::HandleInput(InputManager::Event evt) {
         break;
     case InputManager::RAW_INPUT_P1_UP: {
         view_grabbed_ = false;
-    } break;
+    }
+    break;
     case InputManager::RAW_INPUT_P1_MOVE:
         if (view_grabbed_) {
             cur_goal_ = { 2 * evt.point.x / ctx_->w() - 1.0f, 2 * (ctx_->h() - evt.point.y) / ctx_->h() - 1.0f, 0.0f };
@@ -332,7 +337,7 @@ void GSIKTest::HandleInput(InputManager::Event evt) {
         }
         break;
     case InputManager::RAW_INPUT_KEY_DOWN:
-        
+
         break;
     case InputManager::RAW_INPUT_KEY_UP:
         break;

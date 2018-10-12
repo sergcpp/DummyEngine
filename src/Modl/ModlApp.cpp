@@ -14,9 +14,9 @@
 #include <SDL2/SDL.h>
 
 #if defined(USE_GL_RENDER)
-    #include <Ren/GL.h>
+#include <Ren/GL.h>
 #elif defined(USE_SW_RENDER)
-    #include <Ren/SW/SW.h>
+#include <Ren/SW/SW.h>
 #endif
 #include <Ren/Mesh.h>
 #include <Ren/RenderThread.h>
@@ -35,26 +35,26 @@ extern "C" {
 }
 
 namespace {
-    // slow, but ok for this task
-    std::vector<std::string> Tokenize(const std::string &str, const char *delims) {
-        std::vector<std::string> toks;
-        std::unique_ptr<char[]> _str(new char[str.size() + 1]);
-        strcpy(_str.get(), str.c_str());
-        char* tok = strtok(_str.get(), delims);
-        while (tok != NULL) {
-            toks.push_back(tok);
-            tok = strtok(NULL, delims);
-        }
-        return toks;
+// slow, but ok for this task
+std::vector<std::string> Tokenize(const std::string &str, const char *delims) {
+    std::vector<std::string> toks;
+    std::unique_ptr<char[]> _str(new char[str.size() + 1]);
+    strcpy(_str.get(), str.c_str());
+    char* tok = strtok(_str.get(), delims);
+    while (tok != NULL) {
+        toks.push_back(tok);
+        tok = strtok(NULL, delims);
     }
+    return toks;
+}
 
-    Ren::Vec3f center = { -2.0f, 2.0f, 4.0f };
-    Ren::Vec3f target = { 0.0f, 0.0f, 0.0f };
-    Ren::Vec3f up = { 0.0f, 1.0f, 0.0f };
+Ren::Vec3f center = { -2.0f, 2.0f, 4.0f };
+Ren::Vec3f target = { 0.0f, 0.0f, 0.0f };
+Ren::Vec3f up = { 0.0f, 1.0f, 0.0f };
 }
 
 ModlApp::ModlApp() : quit_(false),
-                     cam_(center, target, up){}
+    cam_(center, target, up) {}
 
 int ModlApp::Run(const std::vector<std::string> &args) {
     using namespace std;
@@ -123,7 +123,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         }
     }
 
-    if (!view_file_name.empty()){   // load mesh file
+    if (!view_file_name.empty()) {  // load mesh file
         SDL_ShowWindow(window_);
 
         ifstream mesh_file(view_file_name, ios::binary);
@@ -162,10 +162,10 @@ int ModlApp::Run(const std::vector<std::string> &args) {
 #elif defined(USE_SW_RENDER)
         const void *pixels = swGetPixelDataRef(swGetCurFramebuffer());
 
-		SDL_UpdateTexture(texture_, NULL, pixels, w * sizeof(Uint32));
-		SDL_RenderClear(renderer_);
-		SDL_RenderCopy(renderer_, texture_, NULL, NULL);
-		SDL_RenderPresent(renderer_);
+        SDL_UpdateTexture(texture_, NULL, pixels, w * sizeof(Uint32));
+        SDL_RenderClear(renderer_);
+        SDL_RenderCopy(renderer_, texture_, NULL, NULL);
+        SDL_RenderPresent(renderer_);
 #endif
         PollEvents();
     }
@@ -199,9 +199,10 @@ int ModlApp::Init(int w, int h) {
     Sys::InitWorker();
 
 #if defined(USE_GL_RENDER)
-    {   // load diagnostic shader
+    {
+        // load diagnostic shader
         std::ifstream diag_vs("assets/shaders/diag.vs", std::ios::binary | std::ios::ate),
-                      diag_fs("assets/shaders/diag.fs", std::ios::binary | std::ios::ate);
+            diag_fs("assets/shaders/diag.fs", std::ios::binary | std::ios::ate);
 
         size_t diag_vs_size = (size_t)diag_vs.tellg();
         diag_vs.seekg(0, std::ios::beg);
@@ -229,7 +230,8 @@ int ModlApp::Init(int w, int h) {
     swEnable(SW_FAST_PERSPECTIVE_CORRECTION);
 #endif
 
-    {   // load checker texture
+    {
+        // load checker texture
         const int checker_res = 512;
         std::vector<uint8_t> checker_data(512 * 512 * 3);
 
@@ -282,40 +284,42 @@ void ModlApp::PollEvents() {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
-            case SDL_KEYDOWN: {
-                if (e.key.keysym.sym == SDLK_0) {
-                    view_mode_ = Material;
-                } else if (e.key.keysym.sym == SDLK_1) {
-                    view_mode_ = DiagNormals1;
-                } else if (e.key.keysym.sym == SDLK_2) {
-                    view_mode_ = DiagNormals2;
-                } else if (e.key.keysym.sym == SDLK_3) {
-                    view_mode_ = DiagUVs1;
-                } else if (e.key.keysym.sym == SDLK_4) {
-                    view_mode_ = DiagUVs2;
-                } else if (e.key.keysym.sym == SDLK_r) {
-                    angle_x_ = 0.0f;
-                    angle_y_ = 0.0f;
-                }
-            } break;
-            case SDL_MOUSEBUTTONDOWN: {
-                mouse_grabbed_ = true;
-            } break;
-            case SDL_MOUSEBUTTONUP:
-                mouse_grabbed_ = false;
-                break;
-            case SDL_MOUSEMOTION:
-                if (mouse_grabbed_) {
-                    angle_y_ += 0.01f * e.motion.xrel;
-                    angle_x_ += -0.01f * e.motion.yrel;
-                }
-                break;
-            case SDL_QUIT: {
-                quit_ = true;
-                return;
+        case SDL_KEYDOWN: {
+            if (e.key.keysym.sym == SDLK_0) {
+                view_mode_ = Material;
+            } else if (e.key.keysym.sym == SDLK_1) {
+                view_mode_ = DiagNormals1;
+            } else if (e.key.keysym.sym == SDLK_2) {
+                view_mode_ = DiagNormals2;
+            } else if (e.key.keysym.sym == SDLK_3) {
+                view_mode_ = DiagUVs1;
+            } else if (e.key.keysym.sym == SDLK_4) {
+                view_mode_ = DiagUVs2;
+            } else if (e.key.keysym.sym == SDLK_r) {
+                angle_x_ = 0.0f;
+                angle_y_ = 0.0f;
             }
-            default:
-                return;
+        }
+        break;
+        case SDL_MOUSEBUTTONDOWN: {
+            mouse_grabbed_ = true;
+        }
+        break;
+        case SDL_MOUSEBUTTONUP:
+            mouse_grabbed_ = false;
+            break;
+        case SDL_MOUSEMOTION:
+            if (mouse_grabbed_) {
+                angle_y_ += 0.01f * e.motion.xrel;
+                angle_x_ += -0.01f * e.motion.yrel;
+            }
+            break;
+        case SDL_QUIT: {
+            quit_ = true;
+            return;
+        }
+        default:
+            return;
         }
     }
 }
@@ -387,11 +391,13 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         return RES_FILE_NOT_FOUND;
     }
 
-    {   // get mesh type
+    {
+        // get mesh type
         string str;
         getline(in_file, str);
 
-        {   auto toks = Tokenize(str, " ");
+        {
+            auto toks = Tokenize(str, " ");
             if (toks.empty()) return RES_PARSE_ERROR;
             str = toks[0];
         }
@@ -412,7 +418,8 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         }
     }
 
-    {   // prepare containers
+    {
+        // prepare containers
         string str;
 
         getline(in_file, str);
@@ -428,20 +435,23 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         num_indices = stoi(str);
     }
 
-    {   // parse vertex information
+    {
+        // parse vertex information
         for (int i = 0; i < num_vertices; i++) {
             string str;
             getline(in_file, str);
             auto toks = Tokenize(str, " ");
             if ((mesh_type == M_STATIC && toks.size() != 10) ||
-                (mesh_type == M_TERR && toks.size() != 9) ||
-                (mesh_type == M_SKEL && toks.size() < 10)) {
+                    (mesh_type == M_TERR && toks.size() != 9) ||
+                    (mesh_type == M_SKEL && toks.size() < 10)) {
                 cerr << "Wrong number of tokens!" << endl;
                 return RES_PARSE_ERROR;
             }
 
             // parse vertex positions
-            for (auto j : {0, 1, 2}) {
+            for (auto j : {
+                        0, 1, 2
+                    }) {
                 float v = stof(toks[j]);
                 positions.push_back(v);
                 mesh_info.bbox_min[j] = min(mesh_info.bbox_min[j], v);
@@ -449,17 +459,23 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             }
 
             // parse vertex normals
-            for (auto j : {3, 4, 5}) {
+            for (auto j : {
+                        3, 4, 5
+                    }) {
                 normals.push_back(stof(toks[j]));
             }
 
             // parse vertex uvs
-            for (auto j : {6, 7}) {
+            for (auto j : {
+                        6, 7
+                    }) {
                 uvs.push_back(stof(toks[j]));
             }
 
             // parse additional uvs
-            for (auto j : { 8, 9 }) {
+            for (auto j : {
+                        8, 9
+                    }) {
                 uvs2.push_back(stof(toks[j]));
             }
 
@@ -470,21 +486,26 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 tex_ids.push_back(it->second);
             } else if (mesh_type == M_SKEL) {
                 // parse joint indices and weights
-                for (auto j : {8, 10, 12, 14, 9, 11, 13, 15}) {
+                for (auto j : {
+                            8, 10, 12, 14, 9, 11, 13, 15
+                        }) {
                     weights.push_back(j < (int)toks.size() ? stof(toks[j]) : 0);
                 }
             }
         }
 
         // fix for flat objects
-        for (auto j : {0, 1, 2}) {
+        for (auto j : {
+                    0, 1, 2
+                }) {
             if (fabs(mesh_info.bbox_min[j] - mesh_info.bbox_max[j]) < 0.01f) {
                 mesh_info.bbox_max[j] += 0.01f;
             }
         }
     }
 
-    {   // parse triangle information
+    {
+        // parse triangle information
         for (int i = 0; i < num_indices / 3; ) {
             string str;
             getline(in_file, str);
@@ -496,7 +517,9 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             } else {
                 auto toks = Tokenize(str, " \t");
                 if (toks.size() != 3) return RES_PARSE_ERROR;
-                for (auto j : {0, 1, 2}) {
+                for (auto j : {
+                            0, 1, 2
+                        }) {
                     indices.back().push_back((uint32_t)stoi(toks[j]));
                 }
                 i++;
@@ -530,10 +553,14 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                     auto toks = Tokenize(str, " \t()");
                     if (toks.size() != 8) return RES_PARSE_ERROR;
                     int bone_index = stoi(toks[0]);
-                    for (auto j : {0, 1, 2}) {
+                    for (auto j : {
+                                0, 1, 2
+                            }) {
                         out_bones[bone_index].bind_pos[j] = stof(toks[1 + j]);
                     }
-                    for (auto j : {0, 1, 2, 3}) {
+                    for (auto j : {
+                                0, 1, 2, 3
+                            }) {
                         out_bones[bone_index].bind_rot[j] = stof(toks[4 + j]);
                     }
                     getline(in_file, str);
@@ -542,7 +569,8 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         }
     }
 
-    {   // generate tangents
+    {
+        // generate tangents
         std::vector<Ren::vertex_t> vertices(num_vertices);
 
         for (int i = 0; i < num_vertices; i++) {
@@ -579,7 +607,8 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         num_vertices = (int)vertices.size();
     }
 
-    {   // optimize mesh
+    {
+        // optimize mesh
         for (auto &index_group : indices) {
             reordered_indices.emplace_back();
             auto &cur_strip = reordered_indices.back();
@@ -600,7 +629,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         uint32_t alpha;
 
         MeshChunk(uint32_t ndx, uint32_t num, uint32_t has_alpha)
-                : index(ndx), num_indices(num), alpha(has_alpha) {}
+            : index(ndx), num_indices(num), alpha(has_alpha) {}
     };
     vector<uint32_t> total_indices;
     vector<MeshChunk> total_chunks, alpha_chunks;
@@ -608,7 +637,8 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
     for (int i = 0; i < (int)reordered_indices.size(); i++) {
         bool alpha_blend = false;
-        {   // check if material has transparency
+        {
+            // check if material has transparency
             ifstream mat_file("assets/materials/" + materials[i] + ".txt");
             if (mat_file) {
                 streampos file_size = mat_file.tellg();
@@ -620,8 +650,8 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 mat_file.read(img_data.get(), file_size);
 
                 Ren::MaterialRef mat_ref = ctx_.LoadMaterial(materials[i].c_str(), img_data.get(), nullptr,
-                    std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
-                    std::bind(&ModlApp::OnTextureNeeded, this, _1));
+                                           std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
+                                           std::bind(&ModlApp::OnTextureNeeded, this, _1));
                 Ren::Material *mat = mat_ref.get();
                 alpha_blend = (bool)(mat->flags() & Ren::AlphaBlend);
             } else {
@@ -743,7 +773,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
     out_file.write((char *)&total_indices[0], sizeof(uint32_t) * total_indices.size());
 
     for (auto &str : materials) {
-        char name[64]{};
+        char name[64] {};
         strcpy(name, str.c_str());
         strcat(name, ".txt");
         out_file.write((char *)&name[0], sizeof(name));
@@ -778,7 +808,8 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
     file_size = in_file.tellg() - file_size;
     in_file.seekg(0, ios::beg);
 
-    { // check file type
+    {
+        // check file type
         string str;
         getline(in_file, str);
         if (str != "ANIM_SEQUENCE") {
@@ -795,21 +826,22 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
         char parent_name[64];
         int32_t anim_type;
 
-		OutAnimBone() : name{}, parent_name{}, anim_type(0) {}
+        OutAnimBone() : name{}, parent_name{}, anim_type(0) {}
     };
 
     struct OutAnimInfo {
-		char name[64];
+        char name[64];
         int32_t fps, len;
 
-		OutAnimInfo() : name{}, fps(0), len(0) {}
+        OutAnimInfo() : name{}, fps(0), len(0) {}
     } anim_info;
 
     vector<OutAnimBone> out_bones;
     vector<float> frames;
     int frame_size = 0;
 
-    { // parse bones info
+    {
+        // parse bones info
         string str;
         getline(in_file, str);
         while (str.find("}") == string::npos) {
@@ -834,7 +866,8 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
         }
     }
 
-    { // prepare containers
+    {
+        // prepare containers
         string str;
         getline(in_file, str);
         auto toks = Tokenize(str, " []/");
@@ -846,7 +879,8 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
         getline(in_file, str);
     }
 
-    { // parse frame animation
+    {
+        // parse frame animation
         string str;
         for (int i = 0; i < anim_info.len; i++) {
             getline(in_file, str);
@@ -918,7 +952,7 @@ Ren::Texture2DRef ModlApp::OnTextureNeeded(const char *name) {
     if (!ret->ready()) {
         std::string tex_name = name;
         Sys::LoadAssetComplete((std::string("assets/textures/") + tex_name).c_str(),
-            [this, tex_name](void *data, int size) {
+        [this, tex_name](void *data, int size) {
 
             ctx_.ProcessSingleTask([this, tex_name, data, size]() {
                 Ren::Texture2DParams p;
@@ -950,7 +984,7 @@ Ren::ProgramRef ModlApp::OnProgramNeeded(const char *name, const char *vs_shader
         }
 
         size_t vs_size = vs_file.size(),
-            fs_size = fs_file.size();
+               fs_size = fs_file.size();
 
         string vs_src, fs_src;
         vs_src.resize(vs_size);
@@ -989,8 +1023,8 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(const char *name) {
         using namespace std::placeholders;
 
         ret = ctx_.LoadMaterial(name, mat_src.data(), &status,
-            std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
-            std::bind(&ModlApp::OnTextureNeeded, this, _1));
+                                std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
+                                std::bind(&ModlApp::OnTextureNeeded, this, _1));
         assert(status == Ren::MatCreatedFromData);
     }
     return ret;

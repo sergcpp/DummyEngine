@@ -5,31 +5,31 @@
 #include <Ren/MMat.h>
 
 namespace {
-    const int A_POS = 0;
-    const int A_NORMAL = 1;
-    const int A_TANGENT = 2;
-    const int A_UVS1 = 3;
-    const int A_UVS2 = 4;
+const int A_POS = 0;
+const int A_NORMAL = 1;
+const int A_TANGENT = 2;
+const int A_UVS1 = 3;
+const int A_UVS2 = 4;
 
-    const int A_INDICES = 3;
-    const int A_WEIGHTS = 4;
+const int A_INDICES = 3;
+const int A_WEIGHTS = 4;
 
-    const int U_MVP_MATR = 0;
-    const int U_M_PALETTE = 1;
+const int U_MVP_MATR = 0;
+const int U_M_PALETTE = 1;
 
-    const int U_MODE = 2;
-    const int U_TEX = 3;
-    const int U_NORM_TEX = 4;
+const int U_MODE = 2;
+const int U_TEX = 3;
+const int U_NORM_TEX = 4;
 
-    const int U_COL = 1;
+const int U_COL = 1;
 
-    const int DIFFUSEMAP_SLOT = 0;
-    const int NORMALMAP_SLOT = 1;
+const int DIFFUSEMAP_SLOT = 0;
+const int NORMALMAP_SLOT = 1;
 
-    inline void BindTexture(int slot, uint32_t tex) {
-        glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
-        glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
-    }
+inline void BindTexture(int slot, uint32_t tex) {
+    glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
+    glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
+}
 }
 
 void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
@@ -43,7 +43,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
 
     /*if (view_mode_ == Material) {
-        
+
     } else*/ {
         p = diag_prog_;
 
@@ -167,7 +167,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
         ++s;
     }
 
-	Ren::CheckError();
+    Ren::CheckError();
 }
 
 void ModlApp::ClearColorAndDepth(float r, float g, float b, float a) {

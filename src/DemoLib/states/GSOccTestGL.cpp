@@ -92,8 +92,8 @@ void GSOccTest::DrawBoxes(SWcull_surf *surfs, int count) {
     glEnableVertexAttribArray(attr(p, A_NORMAL));
 
     Ren::Mat4f world_from_object,
-               view_from_world = cam_.view_matrix(),
-               proj_from_view = cam_.projection_matrix();
+        view_from_world = cam_.view_matrix(),
+        proj_from_view = cam_.projection_matrix();
 
     Ren::Mat4f view_from_object = view_from_world * world_from_object,
                proj_from_object = proj_from_view * view_from_object;
@@ -141,8 +141,8 @@ void GSOccTest::DrawCam() {
     glEnableVertexAttribArray(attr(p, A_NORMAL));
 
     Ren::Mat4f world_from_object,
-               view_from_world = cam_.view_matrix(),
-               proj_from_view = cam_.projection_matrix();
+        view_from_world = cam_.view_matrix(),
+        proj_from_view = cam_.projection_matrix();
 
     Ren::Mat4f view_from_object = view_from_world * world_from_object,
                proj_from_object = proj_from_view * view_from_object;

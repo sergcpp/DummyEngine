@@ -17,12 +17,12 @@ class Renderer;
 }
 
 namespace GSIKTestInternal {
-    struct Bone {
-        Ren::Vec3f dir, rot_axis;
-        float length, angle;
-        float min_angle, max_angle;
-        Ren::Vec3f cur_pos, cur_rot_axis;
-    };
+struct Bone {
+    Ren::Vec3f dir, rot_axis;
+    float length, angle;
+    float min_angle, max_angle;
+    Ren::Vec3f cur_pos, cur_rot_axis;
+};
 }
 
 class GSIKTest : public GameState {

@@ -15,231 +15,231 @@
 #include "../Viewer.h"
 
 namespace GSBicubicTestInternal {
-    void SampleNearest(const image_t &img, float x, float y, uint8_t *out_col) {
-        int x0 = (int)std::floor(x * img.w);
-        int y0 = (int)std::floor(y * img.h);
+void SampleNearest(const image_t &img, float x, float y, uint8_t *out_col) {
+    int x0 = (int)std::floor(x * img.w);
+    int y0 = (int)std::floor(y * img.h);
 
-        if (x0 < 0) x0 = 0;
-        if (x0 > img.w - 1) x0 = img.w - 1;
+    if (x0 < 0) x0 = 0;
+    if (x0 > img.w - 1) x0 = img.w - 1;
 
-        for (int i = 0; i < 3; i++) {
-            out_col[i] = img.data[3 * (y0 * img.w + x0) + i];
-        }
+    for (int i = 0; i < 3; i++) {
+        out_col[i] = img.data[3 * (y0 * img.w + x0) + i];
     }
+}
 
-    void SampleLinear(const image_t &img, float x, float y, uint8_t *out_col) {
-        int x0 = (int)std::floor(x * img.w - 0.5f);
-        int y0 = (int)std::floor(y * img.h - 0.5f);
-        int x1 = std::min(x0 + 1, img.w - 1);
-        int y1 = std::min(y0 + 1, img.h - 1);
+void SampleLinear(const image_t &img, float x, float y, uint8_t *out_col) {
+    int x0 = (int)std::floor(x * img.w - 0.5f);
+    int y0 = (int)std::floor(y * img.h - 0.5f);
+    int x1 = std::min(x0 + 1, img.w - 1);
+    int y1 = std::min(y0 + 1, img.h - 1);
 
-        float fac_x = (x * img.w - 0.5f) - x0,
-                fac_y = (y * img.h - 0.5f) - y0;
+    float fac_x = (x * img.w - 0.5f) - x0,
+          fac_y = (y * img.h - 0.5f) - y0;
 
-        x0 = std::max(x0, 0);
-        y0 = std::max(y0, 0);
+    x0 = std::max(x0, 0);
+    y0 = std::max(y0, 0);
 
-        for (int i = 0; i < 3; i++) {
-            float v1 = img.data[3 * (y0 * img.w + x0) + i] * (1 - fac_x) + img.data[3 * (y0 * img.w + x1) + i] * fac_x;
-            float v2 = img.data[3 * (y1 * img.w + x0) + i] * (1 - fac_x) + img.data[3 * (y1 * img.w + x1) + i] * fac_x;
+    for (int i = 0; i < 3; i++) {
+        float v1 = img.data[3 * (y0 * img.w + x0) + i] * (1 - fac_x) + img.data[3 * (y0 * img.w + x1) + i] * fac_x;
+        float v2 = img.data[3 * (y1 * img.w + x0) + i] * (1 - fac_x) + img.data[3 * (y1 * img.w + x1) + i] * fac_x;
 
-            float v = v1 * (1 - fac_y) + v2 * fac_y;
+        float v = v1 * (1 - fac_y) + v2 * fac_y;
 
-            out_col[i] = uint8_t(v);
-        }
+        out_col[i] = uint8_t(v);
     }
-    
-    void SampleCubic(const image_t &img, float x, float y, uint8_t *out_col) {
-        int x1 = (int)std::floor(x * img.w - 0.5f);
-        int y1 = (int)std::floor(y * img.h - 0.5f);
-        int x2 = std::min(x1 + 1, img.w - 1);
-        int y2 = std::min(y1 + 1, img.h - 1);
+}
 
-        float fac_x = (x * img.w - 0.5f) - x1,
-            fac_y = (y * img.h - 0.5f) - y1;
+void SampleCubic(const image_t &img, float x, float y, uint8_t *out_col) {
+    int x1 = (int)std::floor(x * img.w - 0.5f);
+    int y1 = (int)std::floor(y * img.h - 0.5f);
+    int x2 = std::min(x1 + 1, img.w - 1);
+    int y2 = std::min(y1 + 1, img.h - 1);
 
-        x1 = std::max(x1, 0);
-        y1 = std::max(y1, 0);
+    float fac_x = (x * img.w - 0.5f) - x1,
+          fac_y = (y * img.h - 0.5f) - y1;
 
-        int x0 = std::max(x1 - 1, 0);
-        int y0 = std::max(y1 - 1, 0);
-        int x3 = std::min(x2 + 1, img.w - 1);
-        int y3 = std::min(y2 + 1, img.h - 1);
+    x1 = std::max(x1, 0);
+    y1 = std::max(y1, 0);
 
-        auto interpolate = [](float p0, float p1, float p2, float p3, float x) {
-            float a = -0.5f * p0 + 1.5f * p1 - 1.5f * p2 + 0.5f * p3;
-            float b = p0 - 2.5f * p1 + 2.0f * p2 - 0.5f * p3;
-            float c = -0.5f * p0 + 0.5f * p2;
-            float d = p1;
+    int x0 = std::max(x1 - 1, 0);
+    int y0 = std::max(y1 - 1, 0);
+    int x3 = std::min(x2 + 1, img.w - 1);
+    int y3 = std::min(y2 + 1, img.h - 1);
 
-            return (a * x * x * x) + (b * x * x) + (c * x) + d;
-        };
+    auto interpolate = [](float p0, float p1, float p2, float p3, float x) {
+        float a = -0.5f * p0 + 1.5f * p1 - 1.5f * p2 + 0.5f * p3;
+        float b = p0 - 2.5f * p1 + 2.0f * p2 - 0.5f * p3;
+        float c = -0.5f * p0 + 0.5f * p2;
+        float d = p1;
 
-        auto clamp = [](float x, float min, float max) {
-            return std::min(std::max(x, min), max);
-        };
-
-        for (int i = 0; i < 3; i++) {
-            float p00 = img.data[3 * (y0 * img.w + x0) + i];
-            float p10 = img.data[3 * (y0 * img.w + x1) + i];
-            float p20 = img.data[3 * (y0 * img.w + x2) + i];
-            float p30 = img.data[3 * (y0 * img.w + x3) + i];
-
-            float p01 = img.data[3 * (y1 * img.w + x0) + i];
-            float p11 = img.data[3 * (y1 * img.w + x1) + i];
-            float p21 = img.data[3 * (y1 * img.w + x2) + i];
-            float p31 = img.data[3 * (y1 * img.w + x3) + i];
-
-            float p02 = img.data[3 * (y2 * img.w + x0) + i];
-            float p12 = img.data[3 * (y2 * img.w + x1) + i];
-            float p22 = img.data[3 * (y2 * img.w + x2) + i];
-            float p32 = img.data[3 * (y2 * img.w + x3) + i];
-
-            float p03 = img.data[3 * (y3 * img.w + x0) + i];
-            float p13 = img.data[3 * (y3 * img.w + x1) + i];
-            float p23 = img.data[3 * (y3 * img.w + x2) + i];
-            float p33 = img.data[3 * (y3 * img.w + x3) + i];
-
-            float f0 = interpolate(p00, p10, p20, p30, fac_x);
-            float f1 = interpolate(p01, p11, p21, p31, fac_x);
-            float f2 = interpolate(p02, p12, p22, p32, fac_x);
-            float f3 = interpolate(p03, p13, p23, p33, fac_x);
-
-            float f = clamp(interpolate(f0, f1, f2, f3, fac_y), 0, 255);
-
-            out_col[i] = uint8_t(f);
-        }
-    }
-
-    enum eSampleMode { Nearest, Linear, Cubic };
-
-    image_t Upscale(const image_t &img, int s, eSampleMode mode) {
-        image_t ret;
-        ret.format = img.format;
-        ret.w = img.w * s;
-        ret.h = img.h * s;
-
-        if (ret.format == Ren::RawRGB888) {
-            ret.data = std::unique_ptr<uint8_t[]>{ new uint8_t[ret.w * ret.h * 3] };
-
-            const float off_x = 0.5f / ret.w,
-                        off_y = 0.5f / ret.h;
-
-            for (int j = 0; j < ret.h; j++) {
-                for (int i = 0; i < ret.w; i++) {
-                    float x = off_x + float(i) / ret.w,
-                          y = off_y + float(j) / ret.h;
-
-                    if (mode == Nearest) {
-                        SampleNearest(img, x, y, &ret.data[3 * (j * ret.w + i)]);
-                    } else if (mode == Linear) {
-                        SampleLinear(img, x, y, &ret.data[3 * (j * ret.w + i)]);
-                    } else if (mode == Cubic) {
-                        SampleCubic(img, x, y, &ret.data[3 * (j * ret.w + i)]);
-                    }
-                }
-            }
-        }
-
-        return ret;
-    }
-
-    image_t DownScale(const image_t &img, int s) {
-        image_t ret;
-        ret.format = img.format;
-        ret.w = img.w / s;
-        ret.h = img.h / s;
-
-        if (ret.format == Ren::RawRGB888) {
-            ret.data = std::unique_ptr<uint8_t[]>{ new uint8_t[ret.w * ret.h * 3] };
-
-            const float off_x = 0,//0.5f / ret.w,
-                        off_y = 0;//0.5f / ret.h;
-
-            for (int j = 0; j < ret.h; j++) {
-                for (int i = 0; i < ret.w; i++) {
-                    uint32_t res[3] = { 0 };
-                    for (int k = 0; k < s; k++) {
-                        for (int l = 0; l < s; l++) {
-                            float x = off_x + (i + float(l) / s) / ret.w,
-                                  y = off_y + (j + float(k) / s) / ret.h;
-
-                            uint8_t col[3];
-                            SampleLinear(img, x, y, &col[0]);
-
-                            res[0] += col[0];
-                            res[1] += col[1];
-                            res[2] += col[2];
-                        }
-                    }
-
-                    ret.data[3 * (j * ret.w + i) + 0] = res[0] / (s * s);
-                    ret.data[3 * (j * ret.w + i) + 1] = res[1] / (s * s);
-                    ret.data[3 * (j * ret.w + i) + 2] = res[2] / (s * s);
-                }
-            }
-        }
-
-        return ret;
-    }
-
-    void WriteTGA(const image_t &img, const std::string &name) {
-        assert(img.format == Ren::RawRGB888);
-        int bpp = 3;
-
-        std::ofstream file(name, std::ios::binary);
-
-        unsigned char header[18] = {0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-        header[12] = img.w & 0xFF;
-        header[13] = (img.w >> 8) & 0xFF;
-        header[14] = (img.h) & 0xFF;
-        header[15] = (img.h >> 8) & 0xFF;
-        header[16] = bpp * 8;
-
-        file.write((char *) &header[0], sizeof(unsigned char) * 18);
-
-        auto out_data = std::unique_ptr<uint8_t[]>{ new uint8_t[img.w * img.h * bpp] };
-        for (int i = 0; i < img.w * img.h; i++) {
-            out_data[i * 3 + 0] = img.data[i * 3 + 2];
-            out_data[i * 3 + 1] = img.data[i * 3 + 1];
-            out_data[i * 3 + 2] = img.data[i * 3 + 0];
-        }
-
-        file.write((const char *) &out_data[0], img.w * img.h * bpp);
-
-        static const char footer[26] = "\0\0\0\0" // no extension area
-                                       "\0\0\0\0"// no developer directory
-                                       "TRUEVISION-XFILE"// yep, this is a TGA file
-                                       ".";
-        file.write((const char *) &footer, sizeof(footer));
-    }
-
-    template <int InN, int OutN>
-    struct layer_t {
-        float weights[OutN][InN];
-        float biases[OutN];
-
-        float input[InN];
-        float output[OutN];
-
-        void process() {
-            for (int i = 0; i < OutN; i++) {
-                output[i] = biases[i];
-                for (int j = 0; j < InN; j++) {
-                    output[i] += input[j] * weights[i][j];
-                }
-                if (output[i] < 0.0f) output[i] = 0.0f;
-            }
-        }
+        return (a * x * x * x) + (b * x * x) + (c * x) + d;
     };
 
-    const int f1 = 9, f2 = 1, f3 = 5;
-    const int c = 3, n1 = 64, n2 = 32;
+    auto clamp = [](float x, float min, float max) {
+        return std::min(std::max(x, min), max);
+    };
 
-    layer_t<c * f1 * f1, n1> g_first_layer;
-    layer_t<n1 * f2 * f2, n2> g_second_layer;
-    layer_t<n2 * f3 * f3, c> g_third_layer;
+    for (int i = 0; i < 3; i++) {
+        float p00 = img.data[3 * (y0 * img.w + x0) + i];
+        float p10 = img.data[3 * (y0 * img.w + x1) + i];
+        float p20 = img.data[3 * (y0 * img.w + x2) + i];
+        float p30 = img.data[3 * (y0 * img.w + x3) + i];
+
+        float p01 = img.data[3 * (y1 * img.w + x0) + i];
+        float p11 = img.data[3 * (y1 * img.w + x1) + i];
+        float p21 = img.data[3 * (y1 * img.w + x2) + i];
+        float p31 = img.data[3 * (y1 * img.w + x3) + i];
+
+        float p02 = img.data[3 * (y2 * img.w + x0) + i];
+        float p12 = img.data[3 * (y2 * img.w + x1) + i];
+        float p22 = img.data[3 * (y2 * img.w + x2) + i];
+        float p32 = img.data[3 * (y2 * img.w + x3) + i];
+
+        float p03 = img.data[3 * (y3 * img.w + x0) + i];
+        float p13 = img.data[3 * (y3 * img.w + x1) + i];
+        float p23 = img.data[3 * (y3 * img.w + x2) + i];
+        float p33 = img.data[3 * (y3 * img.w + x3) + i];
+
+        float f0 = interpolate(p00, p10, p20, p30, fac_x);
+        float f1 = interpolate(p01, p11, p21, p31, fac_x);
+        float f2 = interpolate(p02, p12, p22, p32, fac_x);
+        float f3 = interpolate(p03, p13, p23, p33, fac_x);
+
+        float f = clamp(interpolate(f0, f1, f2, f3, fac_y), 0, 255);
+
+        out_col[i] = uint8_t(f);
+    }
+}
+
+enum eSampleMode { Nearest, Linear, Cubic };
+
+image_t Upscale(const image_t &img, int s, eSampleMode mode) {
+    image_t ret;
+    ret.format = img.format;
+    ret.w = img.w * s;
+    ret.h = img.h * s;
+
+    if (ret.format == Ren::RawRGB888) {
+        ret.data = std::unique_ptr<uint8_t[]> { new uint8_t[ret.w * ret.h * 3] };
+
+        const float off_x = 0.5f / ret.w,
+                    off_y = 0.5f / ret.h;
+
+        for (int j = 0; j < ret.h; j++) {
+            for (int i = 0; i < ret.w; i++) {
+                float x = off_x + float(i) / ret.w,
+                      y = off_y + float(j) / ret.h;
+
+                if (mode == Nearest) {
+                    SampleNearest(img, x, y, &ret.data[3 * (j * ret.w + i)]);
+                } else if (mode == Linear) {
+                    SampleLinear(img, x, y, &ret.data[3 * (j * ret.w + i)]);
+                } else if (mode == Cubic) {
+                    SampleCubic(img, x, y, &ret.data[3 * (j * ret.w + i)]);
+                }
+            }
+        }
+    }
+
+    return ret;
+}
+
+image_t DownScale(const image_t &img, int s) {
+    image_t ret;
+    ret.format = img.format;
+    ret.w = img.w / s;
+    ret.h = img.h / s;
+
+    if (ret.format == Ren::RawRGB888) {
+        ret.data = std::unique_ptr<uint8_t[]> { new uint8_t[ret.w * ret.h * 3] };
+
+        const float off_x = 0,//0.5f / ret.w,
+                    off_y = 0;//0.5f / ret.h;
+
+        for (int j = 0; j < ret.h; j++) {
+            for (int i = 0; i < ret.w; i++) {
+                uint32_t res[3] = { 0 };
+                for (int k = 0; k < s; k++) {
+                    for (int l = 0; l < s; l++) {
+                        float x = off_x + (i + float(l) / s) / ret.w,
+                              y = off_y + (j + float(k) / s) / ret.h;
+
+                        uint8_t col[3];
+                        SampleLinear(img, x, y, &col[0]);
+
+                        res[0] += col[0];
+                        res[1] += col[1];
+                        res[2] += col[2];
+                    }
+                }
+
+                ret.data[3 * (j * ret.w + i) + 0] = res[0] / (s * s);
+                ret.data[3 * (j * ret.w + i) + 1] = res[1] / (s * s);
+                ret.data[3 * (j * ret.w + i) + 2] = res[2] / (s * s);
+            }
+        }
+    }
+
+    return ret;
+}
+
+void WriteTGA(const image_t &img, const std::string &name) {
+    assert(img.format == Ren::RawRGB888);
+    int bpp = 3;
+
+    std::ofstream file(name, std::ios::binary);
+
+    unsigned char header[18] = {0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+    header[12] = img.w & 0xFF;
+    header[13] = (img.w >> 8) & 0xFF;
+    header[14] = (img.h) & 0xFF;
+    header[15] = (img.h >> 8) & 0xFF;
+    header[16] = bpp * 8;
+
+    file.write((char *) &header[0], sizeof(unsigned char) * 18);
+
+    auto out_data = std::unique_ptr<uint8_t[]> { new uint8_t[img.w * img.h * bpp] };
+    for (int i = 0; i < img.w * img.h; i++) {
+        out_data[i * 3 + 0] = img.data[i * 3 + 2];
+        out_data[i * 3 + 1] = img.data[i * 3 + 1];
+        out_data[i * 3 + 2] = img.data[i * 3 + 0];
+    }
+
+    file.write((const char *) &out_data[0], img.w * img.h * bpp);
+
+    static const char footer[26] = "\0\0\0\0" // no extension area
+                                   "\0\0\0\0"// no developer directory
+                                   "TRUEVISION-XFILE"// yep, this is a TGA file
+                                   ".";
+    file.write((const char *) &footer, sizeof(footer));
+}
+
+template <int InN, int OutN>
+struct layer_t {
+    float weights[OutN][InN];
+    float biases[OutN];
+
+    float input[InN];
+    float output[OutN];
+
+    void process() {
+        for (int i = 0; i < OutN; i++) {
+            output[i] = biases[i];
+            for (int j = 0; j < InN; j++) {
+                output[i] += input[j] * weights[i][j];
+            }
+            if (output[i] < 0.0f) output[i] = 0.0f;
+        }
+    }
+};
+
+const int f1 = 9, f2 = 1, f3 = 5;
+const int c = 3, n1 = 64, n2 = 32;
+
+layer_t<c * f1 * f1, n1> g_first_layer;
+layer_t<n1 * f2 * f2, n2> g_second_layer;
+layer_t<n2 * f3 * f3, c> g_third_layer;
 }
 
 GSBicubicTest::GSBicubicTest(GameBase *game) : game_(game) {
@@ -254,7 +254,7 @@ GSBicubicTest::GSBicubicTest(GameBase *game) : game_(game) {
 }
 
 GSBicubicTest::~GSBicubicTest() {
-    
+
 }
 
 void GSBicubicTest::Enter() {
@@ -264,7 +264,7 @@ void GSBicubicTest::Enter() {
     size_t in_file_size = (size_t)in_file.tellg();
     in_file.seekg(0, std::ios::beg);
 
-    auto in_file_data = std::unique_ptr<char[]>{ new char[in_file_size] };
+    auto in_file_data = std::unique_ptr<char[]> { new char[in_file_size] };
     in_file.read(&in_file_data[0], in_file_size);
 
     orig_image_.data = ReadTGAFile(&in_file_data[0], orig_image_.w, orig_image_.h, orig_image_.format);
@@ -331,7 +331,7 @@ void GSBicubicTest::Enter() {
 
     //image_t new_img2 = Upscale(orig_image_, 16, Cubic);
     //WriteTGA(new_img2, "upscaled.tga");
-    
+
     /*uint8_t _matrix[8][8] = { { 0,  48, 12, 60, 3,  51, 15, 63 },
                              { 32, 16, 44, 28, 35, 19, 47, 31 },
                              { 8,  56, 4,  52, 11, 59, 7,  55 },
@@ -590,7 +590,7 @@ void GSBicubicTest::HandleInput(InputManager::Event evt) {
 
     switch (evt.type) {
     case InputManager::RAW_INPUT_P1_DOWN:
-        
+
         break;
     case InputManager::RAW_INPUT_P1_UP: {
         std::random_device rd;
@@ -617,12 +617,13 @@ void GSBicubicTest::HandleInput(InputManager::Event evt) {
                 g_third_layer.biases[i] = dis(gen);
             }
         }
-    } break;
+    }
+    break;
     case InputManager::RAW_INPUT_P1_MOVE:
         //OnMouse(int(evt.point.x), 500 - (int(evt.point.y) - 140));
         break;
     case InputManager::RAW_INPUT_KEY_DOWN:
-        
+
         break;
     case InputManager::RAW_INPUT_KEY_UP:
         break;

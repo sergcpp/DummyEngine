@@ -7,8 +7,8 @@
 #include <Sys/Log.h>
 
 FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFilter filter,
-                      Ren::eTexRepeat repeat, bool with_depth, int _msaa)
-        : col_format(col_format), w(_w), h(_h), msaa(_msaa) {
+                   Ren::eTexRepeat repeat, bool with_depth, int _msaa)
+    : col_format(col_format), w(_w), h(_h), msaa(_msaa) {
     glGenFramebuffers(1, &fb);
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
 
@@ -99,7 +99,7 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
         glGenTextures(1, &_depth_tex);
         glBindTexture(GL_TEXTURE_2D, _depth_tex);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-        
+
         if (filter == Ren::NoFilter) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -203,6 +203,6 @@ FrameBuf::~FrameBuf() {
             GLuint val = (GLuint)depth_rb.GetValue();
             glDeleteRenderbuffers(1, &val);
         }
-        
+
     }
 }
