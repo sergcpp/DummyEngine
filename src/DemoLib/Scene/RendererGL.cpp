@@ -103,7 +103,7 @@ out vec4 outColor;
 
 void main() {
     vec3 c0 = texelFetch(s_texture, ivec2(aVertexUVs_), 0).xyz;
-    vec3 c1 = 0.1 * texture2D(s_blured_texture, aVertexUVs_ / uTexSize).xyz;
+    vec3 c1 = 0.1 * texture(s_blured_texture, aVertexUVs_ / uTexSize).xyz;
             
     c0 += c1;
     c0 = vec3(1.0) - exp(-c0 * exposure);
@@ -130,7 +130,7 @@ UNIFORMS
     exposure : 13
 */
         
-uniform sampler2DMS s_texture;
+uniform mediump sampler2DMS s_texture;
 uniform sampler2D s_blured_texture;
 uniform vec2 uTexSize;
 uniform float gamma;
@@ -145,7 +145,7 @@ void main() {
 	vec3 c1 = texelFetch(s_texture, ivec2(aVertexUVs_), 1).xyz;
 	vec3 c2 = texelFetch(s_texture, ivec2(aVertexUVs_), 2).xyz;
 	vec3 c3 = texelFetch(s_texture, ivec2(aVertexUVs_), 3).xyz;
-    vec3 c4 = 0.1 * texture2D(s_blured_texture, aVertexUVs_ / uTexSize).xyz;
+    vec3 c4 = 0.1 * texture(s_blured_texture, aVertexUVs_ / uTexSize).xyz;
             
     c0 += c4;
     c1 += c4;
@@ -188,7 +188,7 @@ uniform vec2 uOffset;
 varying vec2 aVertexUVs_;
 
 void main() {
-    gl_FragColor = texture2D(s_texture, aVertexUVs_ + uOffset);
+    gl_FragColor = texture(s_texture, aVertexUVs_ + uOffset);
 }
 )";
 
@@ -234,7 +234,7 @@ UNIFORMS
     s_texture : 3
 */
         
-uniform sampler2DMS s_texture;
+uniform mediump sampler2DMS s_texture;
 
 in vec2 aVertexUVs_;
 
