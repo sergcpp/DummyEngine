@@ -101,8 +101,8 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
 
         if (ctx_.w() != w_ || ctx_.h() != h_) {
             clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), Ren::RawRGBA16F, Ren::NoFilter, Ren::ClampToEdge, true, 4);
-            blur_buf1_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, Ren::RawRGBA8888, Ren::Bilinear, Ren::ClampToEdge, false);
-            blur_buf2_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, Ren::RawRGBA8888, Ren::Bilinear, Ren::ClampToEdge, false);
+            blur_buf1_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, Ren::RawRGBA16F, Ren::Bilinear, Ren::ClampToEdge, false);
+            blur_buf2_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, Ren::RawRGBA16F, Ren::Bilinear, Ren::ClampToEdge, false);
             w_ = ctx_.w();
             h_ = ctx_.h();
             LOGI("CleanBuf resized to %ix%i", w_, h_);
@@ -159,7 +159,7 @@ void Renderer::BackgroundProc() {
             uint32_t stack[MAX_STACK_SIZE];
             uint32_t stack_size = 0;
 
-            /*{
+            {
                 // Rasterize occluder meshes into a small framebuffer
                 stack[stack_size++] = (uint32_t)root_node_;
 
@@ -213,7 +213,7 @@ void Renderer::BackgroundProc() {
                         }
                     }
                 }
-            }*/
+            }
 
             {
                 // Gather drawable meshes, skip occluded and frustum culled
@@ -233,7 +233,7 @@ void Renderer::BackgroundProc() {
                         // do not question visibility of the node in which we are inside
                         if (cam_pos[0] < n->bbox[0][0] - 0.5f || cam_pos[1] < n->bbox[0][1] - 0.5f || cam_pos[2] < n->bbox[0][2] - 0.5f ||
                                 cam_pos[0] > n->bbox[1][0] + 0.5f || cam_pos[1] > n->bbox[1][1] + 0.5f || cam_pos[2] > n->bbox[1][2] + 0.5f) {
-                            /*SWcull_surf surf;
+                            SWcull_surf surf;
 
                             surf.type = SW_OCCLUDEE;
                             surf.prim_type = SW_TRIANGLES;
@@ -247,7 +247,7 @@ void Renderer::BackgroundProc() {
 
                             swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
-                            if (surf.visible == 0) continue;*/
+                            if (surf.visible == 0) continue;
                         }
                     }
 
