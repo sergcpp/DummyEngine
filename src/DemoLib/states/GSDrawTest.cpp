@@ -179,7 +179,7 @@ void GSDrawTest::Draw(float dt_s) {
         }
     } else if (use_pt_) {
         scene_manager_->SetupView_PT(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-        if (view_grabbed_ || invalidate_view_) {
+        if (invalidate_view_) {
             scene_manager_->Clear_PT();
             invalidate_view_ = false;
         }
@@ -238,29 +238,19 @@ void GSDrawTest::Draw(float dt_s) {
 }
 
 void GSDrawTest::Update(int dt_ms) {
+    using namespace GSDrawTestInternal;
+
     Ren::Vec3f up = { 0, 1, 0 };
     Ren::Vec3f side = Normalize(Cross(view_dir_, up));
 
-    view_origin_ += view_dir_ * forward_speed_;
-    view_origin_ += side * side_speed_;
+    float fwd_speed = std::max(std::min(fwd_press_speed_ + fwd_touch_speed_, FORWARD_SPEED), -FORWARD_SPEED);
+    float side_speed = std::max(std::min(side_press_speed_ + side_touch_speed_, FORWARD_SPEED), -FORWARD_SPEED);
 
-    if (std::abs(forward_speed_) > 0.0f || std::abs(side_speed_) > 0.0f) {
+    view_origin_ += view_dir_ * fwd_speed;
+    view_origin_ += side * side_speed;
+
+    if (std::abs(fwd_speed) > 0.0f || std::abs(side_speed) > 0.0f) {
         invalidate_view_ = true;
-    }
-
-    ////////////////////////
-    using namespace Ren;
-    {
-        Vec3f up = { 0, 1, 0 };
-        Vec3f side = Normalize(Cross(view_dir_, up));
-        up = Cross(side, view_dir_);
-
-        Mat4f rot;
-        rot = Rotate(rot, 0.01f * 0.5f, up);
-        rot = Rotate(rot, 0.01f * 0.0f, side);
-
-        auto rot_m3 = Mat3f(rot);
-        view_dir_ = rot_m3 * view_dir_;
     }
 }
 
@@ -270,13 +260,45 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
 
     switch (evt.type) {
     case InputManager::RAW_INPUT_P1_DOWN:
-        view_grabbed_ = true;
+        if (evt.point.x < ctx_->w() / 3 && move_pointer_ == 0) {
+            move_pointer_ = 1;
+        } else if (view_pointer_ == 0) {
+            view_pointer_ = 1;
+        }
+        break;
+    case InputManager::RAW_INPUT_P2_DOWN:
+        if (evt.point.x < ctx_->w() / 3 && move_pointer_ == 0) {
+            move_pointer_ = 2;
+        } else if (view_pointer_ == 0) {
+            view_pointer_ = 2;
+        }
         break;
     case InputManager::RAW_INPUT_P1_UP:
-        view_grabbed_ = false;
+        if (move_pointer_ == 1) {
+            move_pointer_ = 0;
+            fwd_touch_speed_ = 0;
+            side_touch_speed_ = 0;
+        } else if (view_pointer_ == 1) {
+            view_pointer_ = 0;
+        }
+        break;
+    case InputManager::RAW_INPUT_P2_UP:
+        if (move_pointer_ == 2) {
+            move_pointer_ = 0;
+            fwd_touch_speed_ = 0;
+            side_touch_speed_ = 0;
+        } else if (view_pointer_ == 2) {
+            view_pointer_ = 0;
+        }
         break;
     case InputManager::RAW_INPUT_P1_MOVE:
-        if (view_grabbed_) {
+        if (move_pointer_ == 1) {
+            side_touch_speed_ += evt.move.dx * 0.01f;
+            side_touch_speed_ = std::max(std::min(side_touch_speed_, FORWARD_SPEED), -FORWARD_SPEED);
+
+            fwd_touch_speed_ -= evt.move.dy * 0.01f;
+            fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, FORWARD_SPEED), -FORWARD_SPEED);
+        } else if (view_pointer_ == 1) {
             Vec3f up = { 0, 1, 0 };
             Vec3f side = Normalize(Cross(view_dir_, up));
             up = Cross(side, view_dir_);
@@ -287,17 +309,41 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
 
             auto rot_m3 = Mat3f(rot);
             view_dir_ = rot_m3 * view_dir_;
+
+            invalidate_view_ = true;
+        }
+        break;
+    case InputManager::RAW_INPUT_P2_MOVE:
+        if (move_pointer_ == 2) {
+            side_touch_speed_ += evt.move.dx * 0.01f;
+            side_touch_speed_ = std::max(std::min(side_touch_speed_, FORWARD_SPEED), -FORWARD_SPEED);
+
+            fwd_touch_speed_ -= evt.move.dy * 0.01f;
+            fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, FORWARD_SPEED), -FORWARD_SPEED);
+        } else if (view_pointer_ == 2) {
+            Vec3f up = { 0, 1, 0 };
+            Vec3f side = Normalize(Cross(view_dir_, up));
+            up = Cross(side, view_dir_);
+
+            Mat4f rot;
+            rot = Rotate(rot, 0.01f * evt.move.dx, up);
+            rot = Rotate(rot, 0.01f * evt.move.dy, side);
+
+            auto rot_m3 = Mat3f(rot);
+            view_dir_ = rot_m3 * view_dir_;
+
+            invalidate_view_ = true;
         }
         break;
     case InputManager::RAW_INPUT_KEY_DOWN: {
         if (evt.key == InputManager::RAW_INPUT_BUTTON_UP) {
-            forward_speed_ = FORWARD_SPEED;
+            fwd_press_speed_ = FORWARD_SPEED;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN) {
-            forward_speed_ = -FORWARD_SPEED;
+            fwd_press_speed_ = -FORWARD_SPEED;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT) {
-            side_speed_ = -FORWARD_SPEED;
+            side_press_speed_ = -FORWARD_SPEED;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT) {
-            side_speed_ = FORWARD_SPEED;
+            side_press_speed_ = FORWARD_SPEED;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SPACE) {
 
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
@@ -307,13 +353,13 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
     break;
     case InputManager::RAW_INPUT_KEY_UP: {
         if (evt.key == InputManager::RAW_INPUT_BUTTON_UP) {
-            forward_speed_ = 0;
+            fwd_press_speed_ = 0;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN) {
-            forward_speed_ = 0;
+            fwd_press_speed_ = 0;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT) {
-            side_speed_ = 0;
+            side_press_speed_ = 0;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT) {
-            side_speed_ = 0;
+            side_press_speed_ = 0;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
             shift_down_ = false;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_BACKSPACE) {

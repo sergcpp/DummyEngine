@@ -42,10 +42,10 @@ JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_Resize
 /*
  * Class:     com_serg_occdemo_LibJNI
  * Method:    AddEvent
- * Signature: (IIFF)V
+ * Signature: (IIFFFF)V
  */
 JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_AddEvent
-  (JNIEnv *, jclass, jint, jint, jfloat, jfloat);
+  (JNIEnv *, jclass, jint, jint, jfloat, jfloat, jfloat, jfloat);
 
 #ifdef __cplusplus
 }

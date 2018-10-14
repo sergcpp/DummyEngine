@@ -135,6 +135,21 @@ void DemoApp::Resize(int w, int h) {
     viewer_->Resize(w, h);
 }
 
+void DemoApp::AddEvent(int type, int key, float x, float y, float dx, float dy) {
+    auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
+    if (!input_manager) return;
+
+    InputManager::Event evt;
+    evt.type = (InputManager::RawInputEvent)type;
+    evt.key = (InputManager::RawInputButton)key;
+    evt.point.x = x;
+    evt.point.y = y;
+    evt.move.dx = dx;
+    evt.move.dy = dy;
+
+    input_manager->AddRawInputEvent(evt);
+}
+
 #if !defined(__ANDROID__)
 int DemoApp::Run(const std::vector<std::string> &args) {
 #if defined(__EMSCRIPTEN__)

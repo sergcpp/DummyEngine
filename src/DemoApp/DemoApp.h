@@ -41,6 +41,8 @@ public:
     void Frame();
     void Resize(int w, int h);
 
+    void AddEvent(int type, int key, float x, float y, float dx, float dy);
+
 #if !defined(__ANDROID__)
     int Run(const std::vector<std::string> &args);
 #endif

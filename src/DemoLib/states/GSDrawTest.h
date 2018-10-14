@@ -35,11 +35,12 @@ class GSDrawTest : public GameState {
 
     TimingInfo last_timings_;
 
-    bool view_grabbed_ = false;
+    int view_pointer_ = 0, move_pointer_ = 0;
     Ren::Vec3f view_origin_ = { 0, 1, 0 },
                view_dir_ = { 0, 0, -1 };
 
-    float forward_speed_ = 0, side_speed_ = 0;
+    float fwd_press_speed_ = 0, side_press_speed_ = 0,
+          fwd_touch_speed_ = 0, side_touch_speed_ = 0;
 
     bool use_pt_ = false, use_lm_ = false;
     bool invalidate_view_ = true;

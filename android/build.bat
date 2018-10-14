@@ -41,9 +41,9 @@ call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/arm64-v8a/libDemoApp.so" 
 call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/x86/libDemoApp.so" || exit \b
 REM call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/x86_64/libDemoApp.so" || exit \b
 
-call "%JAVA_HOME%\bin\jarsigner" -keystore "%CD%\keystore\my-release-key.keystore" -storepass "fxF5vbttHc" -keypass "fxF5vbttHc" -tsa "http://timestamp.comodoca.com/rfc3161" -sigalg SHA1withRSA -digestalg SHA1 -signedjar "%CD%\bin\%APP_NAME%.ap_" "%CD%\bin\%APP_NAME%.ap_" "serg" || exit \b
+call "%JAVA_HOME%\bin\jarsigner" -keystore "%CD%\keystore\test_key.keystore" -storepass "123456" -keypass "123456" -tsa "http://timestamp.comodoca.com/rfc3161" -sigalg SHA1withRSA -digestalg SHA1 -signedjar "%CD%\bin\%APP_NAME%.ap_" "%CD%\bin\%APP_NAME%.ap_" "Test" || exit \b
 
-call "%JAVA_HOME%\bin\jarsigner" -keystore "%CD%\keystore\my-release-key.keystore" -verify "%CD%\bin\%APP_NAME%.ap_" || exit \b
+call "%JAVA_HOME%\bin\jarsigner" -keystore "%CD%\keystore\test_key.keystore" -verify "%CD%\bin\%APP_NAME%.ap_" || exit \b
 
 call %ANDROID_ZIPALIGN% -f -v 4 "%CD%\bin\%APP_NAME%.ap_" "%CD%\bin\%APP_NAME%.apk"
 
