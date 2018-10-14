@@ -67,7 +67,7 @@ public:
 private:
     Ren::Context &ctx_;
     SWcull_ctx cull_ctx_;
-    Ren::ProgramRef fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_,
+    Ren::ProgramRef fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_combine_ms_prog_,
         blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_;
     Ren::Texture2DRef default_lightmap_;
 
@@ -89,7 +89,7 @@ private:
     Environment env_;
     TimingInfo timings_, back_timings_[2];
     std::vector<float> reduced_pixels_;
-    Ren::Vec3f reduced_average_;
+    float reduced_average_ = 0.0f;
 
     //temp
     std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];

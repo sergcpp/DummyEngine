@@ -26,6 +26,8 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
             } else if (col_format == Ren::RawRGBA8888) {
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGBA8, w, h, GL_TRUE);
             } else if (col_format == Ren::RawR32F) {
+                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_R16F, w, h, GL_TRUE);
+            } else if (col_format == Ren::RawR16F) {
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_R32F, w, h, GL_TRUE);
             } else if (col_format == Ren::RawRGB16F) {
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB16F, w, h, GL_TRUE);
@@ -53,6 +55,8 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
 #else
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, w, h, 0, GL_RED, GL_FLOAT, NULL);
 #endif
+            } else if (col_format == Ren::RawR16F) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, w, h, 0, GL_RED, GL_FLOAT, NULL);
             } else if (col_format == Ren::RawRGB16F) {
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_HALF_FLOAT, NULL);
             } else if (col_format == Ren::RawRGBA16F) {
@@ -98,7 +102,7 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
 
         glGenTextures(1, &_depth_tex);
         glBindTexture(GL_TEXTURE_2D, _depth_tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT16, w, h);
 
         if (filter == Ren::NoFilter) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -117,11 +121,10 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
         }
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_tex, 0);
-//#if !defined(__ANDROID__)
-        //glDrawBuffer(GL_NONE);
+
         GLenum bufs[] = { GL_NONE };
         glDrawBuffers(1, bufs);
-//#endif
+
         glReadBuffer(GL_NONE);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

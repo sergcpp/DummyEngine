@@ -37,7 +37,7 @@ cd ..
 
 REM call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/armeabi/libDemoApp.so" || exit \b
 REM call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/armeabi-v7a/libDemoApp.so" || exit \b
-REM call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/arm64-v8a/libDemoApp.so" || exit \b
+call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/arm64-v8a/libDemoApp.so" || exit \b
 call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/x86/libDemoApp.so" || exit \b
 REM call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/x86_64/libDemoApp.so" || exit \b
 

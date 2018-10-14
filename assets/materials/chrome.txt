@@ -1,4 +1,4 @@
-gl_program: constant constant.vs constant.fs
-sw_program: constant
+gl_program: main main.vs main.fs
+sw_program: main
 texture: brushed_chrome.tga
 texture: default_normalmap.tga

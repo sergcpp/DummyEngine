@@ -247,6 +247,21 @@ void GSDrawTest::Update(int dt_ms) {
     if (std::abs(forward_speed_) > 0.0f || std::abs(side_speed_) > 0.0f) {
         invalidate_view_ = true;
     }
+
+    ////////////////////////
+    using namespace Ren;
+    {
+        Vec3f up = { 0, 1, 0 };
+        Vec3f side = Normalize(Cross(view_dir_, up));
+        up = Cross(side, view_dir_);
+
+        Mat4f rot;
+        rot = Rotate(rot, 0.01f * 0.5f, up);
+        rot = Rotate(rot, 0.01f * 0.0f, side);
+
+        auto rot_m3 = Mat3f(rot);
+        view_dir_ = rot_m3 * view_dir_;
+    }
 }
 
 void GSDrawTest::HandleInput(InputManager::Event evt) {

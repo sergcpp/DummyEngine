@@ -285,10 +285,11 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
                 Ren::Texture2DParams p;
                 if (strstr(tex_name.c_str(), ".tga_rgbe")) {
                     p.filter = Ren::BilinearNoMipmap;
+                    p.repeat = Ren::ClampToEdge;
                 } else {
                     p.filter = Ren::Trilinear;
+                    p.repeat = Ren::Repeat;
                 }
-                p.repeat = Ren::Repeat;
                 self->ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, nullptr);
                 LOGI("Texture %s loaded", tex_name.c_str());
             });

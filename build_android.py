@@ -9,7 +9,7 @@ def main():
     
     #archs = [ "armeabi", "armeabi-v7a", "arm64-v8a", "x86", "x86_64" ]
     #archs = [ "armeabi-v7a", "arm64-v8a", "x86", "x86_64" ]
-    archs = [ "x86" ]
+    archs = [ "arm64-v8a", "x86" ]
     #archs = [ "arm64-v8a" ]
     #archs = [ "x86_64" ]
     

@@ -59,16 +59,17 @@ void main() {
 )";
 
     const char blit_vs[] = R"(
+#version 310 es
 /*
 ATTRIBUTES
 	aVertexPosition : 0
     aVertexUVs : 3
 */
 
-attribute vec2 aVertexPosition;
-attribute vec2 aVertexUVs;
+in vec2 aVertexPosition;
+in vec2 aVertexUVs;
 
-varying vec2 aVertexUVs_;
+out vec2 aVertexUVs_;
 
 void main() {
     aVertexUVs_ = aVertexUVs;
@@ -77,6 +78,58 @@ void main() {
 )";
 
     const char blit_fs[] = R"(
+#version 310 es
+#ifdef GL_ES
+	precision mediump float;
+#endif
+
+/*
+UNIFORMS
+    s_texture : 3
+    uTexSize : 5
+*/
+        
+uniform sampler2D s_texture;
+uniform float gamma;
+uniform float exposure;
+
+in vec2 aVertexUVs_;
+
+out vec4 outColor;
+
+void main() {
+    outColor = texelFetch(s_texture, ivec2(aVertexUVs_), 0);
+}
+)";
+
+    const char blit_ms_fs[] = R"(
+#version 310 es
+#extension GL_ARB_texture_multisample : enable
+
+#ifdef GL_ES
+	precision mediump float;
+#endif
+
+/*
+UNIFORMS
+    s_texture : 3
+    uTexSize : 5
+    gamma : 12
+    exposure : 13
+*/
+        
+uniform mediump sampler2DMS s_texture;
+
+in vec2 aVertexUVs_;
+
+out vec4 outColor;
+
+void main() {
+    outColor = texelFetch(s_texture, ivec2(aVertexUVs_), 0);
+}
+    )";
+
+    const char blit_combine_fs[] = R"(
 #version 310 es
 #ifdef GL_ES
 	precision mediump float;
@@ -113,7 +166,7 @@ void main() {
 }
 )";
 
-    const char blit_ms_fs[] = R"(
+    const char blit_combine_ms_fs[] = R"(
 #version 310 es
 #extension GL_ARB_texture_multisample : enable
 
@@ -169,9 +222,10 @@ void main() {
 
     outColor = vec4(0.25 * (c0 + c1 + c2 + c3), 1.0);
 }
-    )";
+)";
 
 const char blit_reduced_fs[] = R"(
+#version 310 es
 #ifdef GL_ES
 	precision mediump float;
 #endif
@@ -185,10 +239,13 @@ UNIFORMS
 uniform sampler2D s_texture;
 uniform vec2 uOffset;
 
-varying vec2 aVertexUVs_;
+in vec2 aVertexUVs_;
+
+out vec4 outColor;
 
 void main() {
-    gl_FragColor = texture(s_texture, aVertexUVs_ + uOffset);
+    vec3 c0 = texture(s_texture, aVertexUVs_ + uOffset).xyz;
+    outColor.r = 0.299 * c0.r + 0.587 * c0.g + 0.114 * c0.b;
 }
 )";
 
@@ -358,29 +415,35 @@ void main() {
 
 void Renderer::InitShadersInternal() {
     using namespace RendererInternal;
-
+    LOGI("Compiling fill_depth");
     Ren::eProgLoadStatus status;
     fill_depth_prog_ = ctx_.LoadProgramGLSL("fill_depth", fillz_vs, fillz_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-
+    LOGI("Compiling shadow");
     shadow_prog_ = ctx_.LoadProgramGLSL("shadow", shadow_vs, shadow_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-
+    LOGI("Compiling blit");
     blit_prog_ = ctx_.LoadProgramGLSL("blit", blit_vs, blit_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-
+    LOGI("Compiling blit_combine");
+    blit_combine_prog_ = ctx_.LoadProgramGLSL("blit_combine", blit_vs, blit_combine_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_combine_ms");
+    blit_combine_ms_prog_ = ctx_.LoadProgramGLSL("blit_combine_ms", blit_vs, blit_combine_ms_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_ms");
     blit_ms_prog_ = ctx_.LoadProgramGLSL("blit_ms", blit_vs, blit_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-
+    LOGI("Compiling blit_red");
     blit_red_prog_ = ctx_.LoadProgramGLSL("blit_red", blit_vs, blit_reduced_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-
+    LOGI("Compiling blit_down");
     blit_down_prog_ = ctx_.LoadProgramGLSL("blit_down", blit_vs, blit_down_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-
+    LOGI("Compiling blit_down_ms");
     blit_down_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_ms", blit_vs, blit_down_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-
+    LOGI("Compiling blit_gauss");
     blit_gauss_prog_ = ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
 }
@@ -476,6 +539,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     // Bind main buffer for drawing
     glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     glViewport(0, 0, clean_buf_.w, clean_buf_.h);
@@ -777,23 +841,24 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
         glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
 
-        reduced_pixels_.resize(3 * reduced_buf_.w * reduced_buf_.h);
-        glReadPixels(0, 0, reduced_buf_.w, reduced_buf_.h, GL_RGB, GL_FLOAT, &reduced_pixels_[0]);
+        reduced_pixels_.resize(4 * reduced_buf_.w * reduced_buf_.h);
+        glReadPixels(0, 0, reduced_buf_.w, reduced_buf_.h, GL_RGBA, GL_FLOAT, &reduced_pixels_[0]);
 
-        Ren::Vec3f cur_average;
-        for (size_t i = 0; i < reduced_pixels_.size(); i += 3) {
-            cur_average[0] += reduced_pixels_[i + 0];
-            cur_average[1] += reduced_pixels_[i + 1];
-            cur_average[2] += reduced_pixels_[i + 2];
+        float cur_average = 0.0f;
+        for (size_t i = 0; i < reduced_pixels_.size(); i += 4) {
+            cur_average += reduced_pixels_[i];
         }
 
-       
-        float k = 1.0f / (reduced_pixels_.size() / 3);
+        float k = 1.0f / (reduced_pixels_.size() / 4);
         cur_average *= k;
 
         const float alpha = 1.0f / 64;
         reduced_average_ = alpha * cur_average + (1.0f - alpha) * reduced_average_;
+
+        LOGI("reduced_average_ = %f\t%f", cur_average, reduced_average_);
     }
+
+    //reduced_average_ = Vec3f{ 0.5f };
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
@@ -804,9 +869,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     {   // Blit main framebuffer
         if (clean_buf_.msaa > 1) {
-            cur_program = blit_ms_prog_.get();
+            cur_program = blit_combine_ms_prog_.get();
         } else {
-            cur_program = blit_prog_.get();
+            cur_program = blit_combine_prog_.get();
         }
         glUseProgram(cur_program->prog_id());
 
@@ -832,11 +897,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glUniform2f(cur_program->uniform(U_TEX + 2).loc, float(w_), float(h_));
         glUniform1f(cur_program->uniform(U_GAMMA).loc, 2.2f);
 
-        float luminance = 0.299f * reduced_average_[0] +
-                          0.587f * reduced_average_[1] +
-                          0.114f * reduced_average_[2];
-
-        float exposure = 0.7f / luminance;
+        float exposure = 0.7f / reduced_average_;
 
         glUniform1f(cur_program->uniform(U_EXPOSURE).loc, exposure);
 
@@ -867,17 +928,16 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glRasterPos2f(-1 + 2 * float(256) / ctx_.w(), -1);
         glDrawPixels(256, 128, GL_RGBA, GL_UNSIGNED_BYTE, &depth_tiles_[0][0]);
     }
+#endif
 
     if (debug_shadow_) {
         cur_program = blit_prog_.get();
         glUseProgram(cur_program->prog_id());
 
-        //glDisable(GL_CULL_FACE);
-
         float k = float(ctx_.w()) / ctx_.h();
 
         const float positions[] = { -1.0f, -1.0f,                       -1.0f + 0.25f, -1.0f,
-                                    -1.0f + 0.25f, -1.0f + 0.25f * k,     -1.0f, -1.0f + 0.25f * k };
+                                    -1.0f + 0.25f, -1.0f + 0.25f * k,   -1.0f, -1.0f + 0.25f * k };
 
         const float uvs[] = { 0.0f, 0.0f,       1.0f, 0.0f,
                               1.0f, 1.0f,       0.0f, 1.0f };
@@ -912,9 +972,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         const float positions[] = { -1.0f, -1.0f,                      -1.0f + 0.5f, -1.0f,
                                     -1.0f + 0.5f, -1.0f + 0.25f * k,   -1.0f, -1.0f + 0.25f * k };
 
-        //const float positions[] = { -1.0f, -1.0f,                      1.0f, -1.0f,
-        //                            1.0f, 1.0f,                        -1.0f, 1.0f };
-
         const float uvs[] = {
             0.0f, 0.0f,                                   (float)reduced_buf_.w, 0.0f,
             (float)reduced_buf_.w, (float)reduced_buf_.h, 0.0f, (float)reduced_buf_.h
@@ -940,7 +997,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
         glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
     }
-#endif
 
 #if 0
     glFinish();

@@ -12,5 +12,5 @@
     </activity>
   </application>
   <uses-permission android:name="android.permission.INTERNET" />
-  <uses-sdk android:minSdkVersion="14" android:targetSdkVersion="26" />
+  <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="26" />
 </manifest>

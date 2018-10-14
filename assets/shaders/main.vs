@@ -1,3 +1,4 @@
+#version 310 es
 
 /*
 ATTRIBUTES
@@ -12,21 +13,21 @@ UNIFORMS
 	uShadowMatrix[0] : 2
 */
 
-attribute vec3 aVertexPosition;
-attribute vec3 aVertexNormal;
-attribute vec3 aVertexTangent;
-attribute vec2 aVertexUVs1;
-attribute vec2 aVertexUVs2;
+in vec3 aVertexPosition;
+in vec3 aVertexNormal;
+in vec3 aVertexTangent;
+in vec2 aVertexUVs1;
+in vec2 aVertexUVs2;
 
 uniform mat4 uMVPMatrix;
 uniform mat4 uMVMatrix;
 uniform mat4 uShadowMatrix[4];
 
-varying mat3 aVertexTBN_;
-varying vec2 aVertexUVs1_;
-varying vec2 aVertexUVs2_;
+out mat3 aVertexTBN_;
+out vec2 aVertexUVs1_;
+out vec2 aVertexUVs2_;
 
-varying vec4 aVertexShUVs_[4];
+out vec4 aVertexShUVs_[4];
 
 void main(void) {
 	vec3 vertex_normal_ws = (uMVMatrix * vec4(aVertexNormal, 0.0)).xyz;
