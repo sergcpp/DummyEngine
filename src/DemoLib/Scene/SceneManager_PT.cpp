@@ -125,7 +125,7 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
 void SceneManager::Draw_PT() {
     if (!ray_scene_) return;
 
-    const int TILE_SIZE = 48;
+    const int TILE_SIZE = 64;
 
     if (ray_reg_ctx_.empty()) {
         if (ray_renderer_.type() == Ray::RendererOCL) {

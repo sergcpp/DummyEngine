@@ -1,11 +1,11 @@
 
 /*
 ATTRIBUTES
-	aVertexPosition : 0
-	aVertexNormal : 1
+    aVertexPosition : 0
+    aVertexNormal : 1
 UNIFORMS
-	uMVPMatrix : 0
-	uMVMatrix : 1
+    uMVPMatrix : 0
+    uMVMatrix : 1
 */
 
 attribute vec3 aVertexPosition;
@@ -18,7 +18,7 @@ varying vec3 aVertexPosition_;
 varying vec3 aVertexNormal_;
 
 void main(void) {
-	aVertexPosition_ = uMVMatrix * vec4(aVertexPosition, 1.0);
+    aVertexPosition_ = uMVMatrix * vec4(aVertexPosition, 1.0);
     aVertexNormal_ = uMVMatrix * vec4(aVertexNormal, 0.0);
     gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
 } 

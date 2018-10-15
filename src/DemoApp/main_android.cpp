@@ -34,10 +34,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_Resize(JNIEnv *, 
     g_app->Resize(int(w), int(h));
 }
 
-#include <Sys/Log.h>
-
 extern "C" JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_AddEvent(JNIEnv *, jclass, jint type, jint key, jfloat x, jfloat y, jfloat dx, jfloat dy) {
-    LOGI("Add Event %i", (int)type);
-	g_app->AddEvent((int)type, (int)key, (float)x, (float)y, (float)dx, (float)dy);
+    g_app->AddEvent((int)type, (int)key, (float)x, (float)y, (float)dx, (float)dy);
 }
 

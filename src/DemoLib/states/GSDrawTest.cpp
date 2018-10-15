@@ -260,7 +260,7 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
 
     // pt switch for touch controls
     if (evt.type == InputManager::RAW_INPUT_P1_DOWN || evt.type == InputManager::RAW_INPUT_P2_DOWN) {
-        if (evt.point.x > ctx_->w() * 0.95f && evt.point.y < ctx_->h() * 0.05f) {
+        if (evt.point.x > ctx_->w() * 0.9f && evt.point.y < ctx_->h() * 0.1f) {
             auto new_time = Sys::GetTicks();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -268,8 +268,10 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
                     scene_manager_->InitScene_PT();
                     invalidate_view_ = true;
                 }
+                click_time_ = 0;
+            } else {
+                click_time_ = new_time;
             }
-            click_time_ = new_time;
         }
     }
 

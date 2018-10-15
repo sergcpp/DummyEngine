@@ -79,12 +79,12 @@ public class MainActivity extends Activity {
 }
 
 class MainView extends GLSurfaceView {
-	private static final int INVALID_POINTER_ID = -1;
-	private int primary_id_ = INVALID_POINTER_ID,
-				secondary_id_ = INVALID_POINTER_ID;
+    private static final int INVALID_POINTER_ID = -1;
+    private int primary_id_ = INVALID_POINTER_ID,
+                secondary_id_ = INVALID_POINTER_ID;
     private float prev_prim_x_ = 0.0f;
     private float prev_prim_y_ = 0.0f;
-	private float prev_sec_x_ = 0.0f;
+    private float prev_sec_x_ = 0.0f;
     private float prev_sec_y_ = 0.0f;
     
     public MainView(Context context, AssetManager am) {
@@ -128,77 +128,75 @@ class MainView extends GLSurfaceView {
         final int RAW_INPUT_KEY_UP      = 8;
         final int RAW_INPUT_RESIZE      = 9;
         final int RAW_INPUT_MOUSE_WHEEL = 10;
-		
-		Log.d("111111", Integer.toString(primary_id_) + " |=| " + Integer.toString(secondary_id_));
 
-		final int action = e.getAction();
+        final int action = e.getAction();
         switch (action & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN: {
-				float x = e.getX(0);
-				float y = e.getY(0);
+                float x = e.getX(0);
+                float y = e.getY(0);
                 LibJNI.AddEvent(RAW_INPUT_P1_DOWN, 0, x, y, 0.0f, 0.0f);
                 prev_prim_x_ = x;
                 prev_prim_y_ = y;
-				primary_id_ = e.getPointerId(0);
+                primary_id_ = e.getPointerId(0);
             } break;
-			case MotionEvent.ACTION_POINTER_DOWN: {
-				if (secondary_id_ == INVALID_POINTER_ID && e.getActionIndex() == 1) {
-					float x = e.getX(1);
-					float y = e.getY(1);
-					LibJNI.AddEvent(RAW_INPUT_P2_DOWN, 0, x, y, 0.0f, 0.0f);
-					prev_sec_x_ = x;
-					prev_sec_y_ = y;
-					secondary_id_ = e.getPointerId(1);
-				}
+            case MotionEvent.ACTION_POINTER_DOWN: {
+                if (secondary_id_ == INVALID_POINTER_ID && e.getActionIndex() == 1) {
+                    float x = e.getX(1);
+                    float y = e.getY(1);
+                    LibJNI.AddEvent(RAW_INPUT_P2_DOWN, 0, x, y, 0.0f, 0.0f);
+                    prev_sec_x_ = x;
+                    prev_sec_y_ = y;
+                    secondary_id_ = e.getPointerId(1);
+                }
             } break;
             case MotionEvent.ACTION_UP: {
-				final int pointer_index = e.getActionIndex();
-				final float x = e.getX(pointer_index);
-				final float y = e.getY(pointer_index);
-				if (primary_id_ == e.getPointerId(pointer_index)) {
-					LibJNI.AddEvent(RAW_INPUT_P1_UP, 0, x, y, 0.0f, 0.0f);
-					primary_id_ = INVALID_POINTER_ID;
-				} else if (secondary_id_ == e.getPointerId(pointer_index)) {
-					LibJNI.AddEvent(RAW_INPUT_P2_UP, 0, x, y, 0.0f, 0.0f);
-					secondary_id_ = INVALID_POINTER_ID;
-				}
+                final int pointer_index = e.getActionIndex();
+                final float x = e.getX(pointer_index);
+                final float y = e.getY(pointer_index);
+                if (primary_id_ == e.getPointerId(pointer_index)) {
+                    LibJNI.AddEvent(RAW_INPUT_P1_UP, 0, x, y, 0.0f, 0.0f);
+                    primary_id_ = INVALID_POINTER_ID;
+                } else if (secondary_id_ == e.getPointerId(pointer_index)) {
+                    LibJNI.AddEvent(RAW_INPUT_P2_UP, 0, x, y, 0.0f, 0.0f);
+                    secondary_id_ = INVALID_POINTER_ID;
+                }
             } break;
-			case MotionEvent.ACTION_POINTER_UP: {
-				final int pointer_index = e.getActionIndex();
-				final float x = e.getX(pointer_index);
-				final float y = e.getY(pointer_index);
-				if (primary_id_ == e.getPointerId(pointer_index)) {
-					LibJNI.AddEvent(RAW_INPUT_P1_UP, 0, x, y, 0.0f, 0.0f);
-					primary_id_ = INVALID_POINTER_ID;
-				} else if (secondary_id_ == e.getPointerId(pointer_index)) {
-					LibJNI.AddEvent(RAW_INPUT_P2_UP, 0, x, y, 0.0f, 0.0f);
-					secondary_id_ = INVALID_POINTER_ID;
-				}
+            case MotionEvent.ACTION_POINTER_UP: {
+                final int pointer_index = e.getActionIndex();
+                final float x = e.getX(pointer_index);
+                final float y = e.getY(pointer_index);
+                if (primary_id_ == e.getPointerId(pointer_index)) {
+                    LibJNI.AddEvent(RAW_INPUT_P1_UP, 0, x, y, 0.0f, 0.0f);
+                    primary_id_ = INVALID_POINTER_ID;
+                } else if (secondary_id_ == e.getPointerId(pointer_index)) {
+                    LibJNI.AddEvent(RAW_INPUT_P2_UP, 0, x, y, 0.0f, 0.0f);
+                    secondary_id_ = INVALID_POINTER_ID;
+                }
             } break;
             case MotionEvent.ACTION_MOVE:
-				if (primary_id_ != INVALID_POINTER_ID) {
-					final int pointer_index = e.findPointerIndex(primary_id_);
-					if (pointer_index != INVALID_POINTER_ID) {
-						float x = e.getX(pointer_index);
-						float y = e.getY(pointer_index);
-						
-						LibJNI.AddEvent(RAW_INPUT_P1_MOVE, 0, x, y, x - prev_prim_x_, y - prev_prim_y_);
-						prev_prim_x_ = x;
-						prev_prim_y_ = y;
-					}
-				}
-				
-				if (secondary_id_ != INVALID_POINTER_ID) {
-					final int pointer_index = e.findPointerIndex(secondary_id_);
-					if (pointer_index != INVALID_POINTER_ID) {
-						float x = e.getX(pointer_index);
-						float y = e.getY(pointer_index);
-						
-						LibJNI.AddEvent(RAW_INPUT_P2_MOVE, 0, x, y, x - prev_sec_x_, y - prev_sec_y_);
-						prev_sec_x_ = x;
-						prev_sec_y_ = y;
-					}
-				}
+                if (primary_id_ != INVALID_POINTER_ID) {
+                    final int pointer_index = e.findPointerIndex(primary_id_);
+                    if (pointer_index != INVALID_POINTER_ID) {
+                        float x = e.getX(pointer_index);
+                        float y = e.getY(pointer_index);
+                        
+                        LibJNI.AddEvent(RAW_INPUT_P1_MOVE, 0, x, y, x - prev_prim_x_, y - prev_prim_y_);
+                        prev_prim_x_ = x;
+                        prev_prim_y_ = y;
+                    }
+                }
+                
+                if (secondary_id_ != INVALID_POINTER_ID) {
+                    final int pointer_index = e.findPointerIndex(secondary_id_);
+                    if (pointer_index != INVALID_POINTER_ID) {
+                        float x = e.getX(pointer_index);
+                        float y = e.getY(pointer_index);
+                        
+                        LibJNI.AddEvent(RAW_INPUT_P2_MOVE, 0, x, y, x - prev_sec_x_, y - prev_sec_y_);
+                        prev_sec_x_ = x;
+                        prev_sec_y_ = y;
+                    }
+                }
             break;
         }
         

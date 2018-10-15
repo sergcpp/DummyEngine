@@ -146,6 +146,7 @@ void DemoApp::AddEvent(int type, int key, float x, float y, float dx, float dy) 
     evt.point.y = y;
     evt.move.dx = dx;
     evt.move.dy = dy;
+    evt.time_stamp = Sys::GetTicks();
 
     input_manager->AddRawInputEvent(evt);
 }

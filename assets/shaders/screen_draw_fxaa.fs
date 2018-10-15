@@ -1,11 +1,11 @@
 #ifdef GL_ES
-	precision mediump float;
+    precision mediump float;
 #endif
 
 /*
 UNIFORMS
-	s_texture : 0
-	texcoord_offset : 1
+    s_texture : 0
+    texcoord_offset : 1
 */
 
 uniform sampler2D s_texture;
@@ -39,28 +39,28 @@ vec4 FxaaPixelShader0(vec2 pos,
   vec3 rgbSW = texture2D(tex, pos + (vec2(-1.0, +1.0) * texcoord_offset)).xyz;
   vec3 rgbSE = texture2D(tex, pos + (vec2(+1.0, +1.0) * texcoord_offset)).xyz;
   vec3 rgbM  = texture2D(tex, pos).xyz;
-	
+    
   vec3 luma = vec3(0.299, 0.587, 0.114);
   float lumaNW = dot(rgbNW, luma);
   float lumaNE = dot(rgbNE, luma);
   float lumaSW = dot(rgbSW, luma);
   float lumaSE = dot(rgbSE, luma);
   float lumaM  = dot( rgbM, luma);
-	
+    
   float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
   float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
 
   vec2 dir;
   dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
   dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));
-	
+    
   float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * (0.25 * FXAA_REDUCE_MUL), FXAA_REDUCE_MIN);
-	
+    
   float rcpDirMin = 1.0/(min(abs(dir.x), abs(dir.y)) + dirReduce);
   
   dir = min(vec2(FXAA_SPAN_MAX,  FXAA_SPAN_MAX), 
         max(vec2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX), dir * rcpDirMin)) * texcoord_offset;
-		
+        
   vec3 rgbA = (1.0/2.0) * (
               texture2D(tex, pos + dir * (1.0/3.0 - 0.5)).xyz +
               texture2D(tex, pos + dir * (2.0/3.0 - 0.5)).xyz);
@@ -89,7 +89,7 @@ vec4 FxaaPixelShader(
         posM.y = pos.y;
         vec4 rgbyM = texture2D(tex, posM);
         rgbyM.w = FxaaLuma(rgbyM);
-		
+        
         float lumaS = FxaaLuma(texture2D(tex, posM + (vec2(0.0, 1.0) * fxaaQualityRcpFrame)));
         float lumaE = FxaaLuma(texture2D(tex, posM + (vec2(1.0, 0.0) * fxaaQualityRcpFrame)));
         float lumaN = FxaaLuma(texture2D(tex, posM + (vec2(0.0, -1.0) * fxaaQualityRcpFrame)));
@@ -109,8 +109,8 @@ vec4 FxaaPixelShader(
         bool earlyExit = range < rangeMaxClamped;
         if(earlyExit)
                 return rgbyM;
-		
-		
+        
+        
         float lumaNW = FxaaLuma(texture2D(tex, posM + (vec2(-1.0, -1.0) * fxaaQualityRcpFrame)));
         float lumaSE = FxaaLuma(texture2D(tex, posM + (vec2(1.0, 1.0) * fxaaQualityRcpFrame)));
         float lumaNE = FxaaLuma(texture2D(tex, posM + (vec2(1.0, -1.0) * fxaaQualityRcpFrame)));
