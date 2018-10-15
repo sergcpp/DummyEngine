@@ -410,7 +410,7 @@ void main() {
         glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
     }
 
-    const bool DEPTH_PREPASS = false;
+    const bool DEPTH_PREPASS = true;
 }
 
 void Renderer::InitShadersInternal() {
@@ -607,10 +607,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         const auto *p = mat->program().get();
 
-        /*if (p != cur_program)*/ {
+        if (p != cur_program) {
             glUseProgram(p->prog_id());
 
-            /*if (mesh == cur_mesh)*/ {
+            if (mesh == cur_mesh) {
                 int stride = sizeof(float) * 13;
                 glEnableVertexAttribArray(p->attribute(A_POS).loc);
                 glVertexAttribPointer(p->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
@@ -854,11 +854,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         const float alpha = 1.0f / 64;
         reduced_average_ = alpha * cur_average + (1.0f - alpha) * reduced_average_;
-
-        LOGI("reduced_average_ = %f\t%f", cur_average, reduced_average_);
     }
-
-    //reduced_average_ = Vec3f{ 0.5f };
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
