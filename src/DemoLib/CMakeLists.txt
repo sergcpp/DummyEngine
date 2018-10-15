@@ -1,10 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(DemoLib)
 
-add_definitions(-DBUILDING_DLL)
-
-set(SOURCE_FILES    exports.cpp
-                    Viewer.h
+set(SOURCE_FILES    Viewer.h
                     Viewer.cpp)
 
 set(GUI_SOURCES  Gui/FontStorage.h)
