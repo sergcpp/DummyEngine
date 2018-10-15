@@ -91,6 +91,12 @@ private:
     std::vector<float> reduced_pixels_;
     float reduced_average_ = 0.0f;
 
+#if defined(USE_GL_RENDER)
+    uint32_t temp_tex_;
+    Ren::eTexColorFormat temp_tex_format_;
+    int temp_tex_w_ = 0, temp_tex_h_ = 0;
+#endif
+
     //temp
     std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];
 

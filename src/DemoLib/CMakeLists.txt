@@ -53,7 +53,7 @@ source_group("src\\Gui" FILES ${GUI_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${SCENE_SOURCES})
 #set_source_files_properties(${SCENE_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
-source_group("src\\Managers" FILES ${SCENE_SOURCES})
+source_group("src\\Scene" FILES ${SCENE_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${STATES_SOURCES})
 #set_source_files_properties(${STATES_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)

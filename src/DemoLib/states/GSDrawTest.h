@@ -45,6 +45,8 @@ class GSDrawTest : public GameState {
     bool use_pt_ = false, use_lm_ = false;
     bool invalidate_view_ = true;
 
+    uint32_t click_time_;
+
     std::vector<std::string> cmdline_history_;
     bool cmdline_enabled_ = false;
     bool shift_down_ = false;

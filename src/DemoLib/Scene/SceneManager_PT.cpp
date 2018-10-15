@@ -4,8 +4,11 @@
 #include <map>
 
 #include <Ren/Context.h>
+#include <Ren/Utils.h>
+#include <Sys/AssetFile.h>
 #include <Sys/AssetFileIO.h>
 #include <Sys/Log.h>
+#include <Sys/ThreadPool.h>
 
 #include "Renderer.h"
 
@@ -84,24 +87,87 @@ void WriteTGA(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, con
                                    ".";
     file.write((const char *)&footer, sizeof(footer));
 }
+
+void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data) {
+    size_t in_file_size = (size_t)in_file.size();
+
+    std::vector<char> in_file_data(in_file_size);
+    in_file.Read(&in_file_data[0], in_file_size);
+
+    Ren::eTexColorFormat format;
+    int _w, _h;
+    auto pixels = Ren::ReadTGAFile(&in_file_data[0], _w, _h, format);
+
+    if (_w != w || _h != h) return;
+
+    if (format == Ren::RawRGB888) {
+        int i = 0;
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                out_data[i++] = { pixels[3 * (y * w + x)], pixels[3 * (y * w + x) + 1], pixels[3 * (y * w + x) + 2], 255 };
+            }
+        }
+    } else if (format == Ren::RawRGBA8888) {
+        int i = 0;
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                out_data[i++] = { pixels[4 * (y * w + x)], pixels[4 * (y * w + x) + 1], pixels[4 * (y * w + x) + 2], pixels[4 * (y * w + x) + 3] };
+            }
+        }
+    } else {
+        assert(false);
+    }
+}
+
+
 }
 
 void SceneManager::Draw_PT() {
     if (!ray_scene_) return;
 
-    const auto &rect = ray_reg_ctx_.rect();
-    if (rect.w != ctx_.w() || rect.h != ctx_.h()) {
-        ray_reg_ctx_ = Ray::RegionContext{ { 0, 0, ctx_.w(), ctx_.h() } };
-        ray_renderer_.Resize(ctx_.w(), ctx_.h());
+    const int TILE_SIZE = 48;
+
+    if (ray_reg_ctx_.empty()) {
+        if (ray_renderer_.type() == Ray::RendererOCL) {
+            ray_reg_ctx_.emplace_back(Ray::rect_t{ 0, 0, ctx_.w(), ctx_.h() });
+        } else {
+#if defined(__ANDROID__)
+            int pt_res_w = 640, pt_res_h = 360;
+#else
+            int pt_res_w = ctx_.w(), pt_res_h = ctx_.h();
+#endif
+
+            for (int y = 0; y < pt_res_h + TILE_SIZE - 1; y += TILE_SIZE) {
+                for (int x = 0; x < pt_res_w + TILE_SIZE - 1; x += TILE_SIZE) {
+                    auto rect = Ray::rect_t{ x, y, std::min(TILE_SIZE, pt_res_w - x), std::min(TILE_SIZE, pt_res_h - y) };
+                    if (rect.w > 0 && rect.h > 0) {
+                        ray_reg_ctx_.emplace_back(rect);
+                    }
+                }
+            }
+
+            ray_renderer_.Resize(pt_res_w, pt_res_h);
+        }
     }
 
     // main view camera
     ray_scene_->set_current_cam(0);
 
-    ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_);
+    if (ray_renderer_.type() == Ray::RendererOCL) {
+        ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[0]);
+    } else {
+        auto render_task = [this](int i) { ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[i]); };
+        std::vector<std::future<void>> ev(ray_reg_ctx_.size());
+        for (int i = 0; i < (int)ray_reg_ctx_.size(); i++) {
+            ev[i] = threads_.enqueue(render_task, i);
+        }
+        for (const auto &e : ev) {
+            e.wait();
+        }
+    }
 
     const auto *pixels = ray_renderer_.get_pixels_ref();
-    renderer_.BlitPixels(pixels, ctx_.w(), ctx_.h(), Ren::RawRGBA32F);
+    renderer_.BlitPixels(pixels, ray_renderer_.size().first, ray_renderer_.size().second, Ren::RawRGBA32F);
 }
 
 void SceneManager::ResetLightmaps_PT() {
@@ -133,17 +199,22 @@ bool SceneManager::PrepareLightmaps_PT() {
 
     const int res = (int)objects_[cur_lm_obj_].lm_res;
 
-    const auto &rect = ray_reg_ctx_.rect();
+    if (ray_reg_ctx_.empty()) {
+        if (ray_renderer_.type() == Ray::RendererOCL) {
+            ray_reg_ctx_.emplace_back(Ray::rect_t{ 0, 0, res, res });
+        }
+    }
+
+    const auto &rect = ray_reg_ctx_[0].rect();
     if (rect.w != res || rect.h != res) {
-        ray_reg_ctx_ = Ray::RegionContext{ { 0, 0, res, res } };
+        ray_reg_ctx_[0] = Ray::RegionContext{ { 0, 0, res, res } };
         ray_renderer_.Resize(res, res);
     }
 
     // special lightmap camera
     ray_scene_->set_current_cam(1);
 
-    if (ray_reg_ctx_.iteration >= LM_SAMPLES) {
-
+    if (ray_reg_ctx_[0].iteration >= LM_SAMPLES) {
         {
             // Save lightmap to file
             const auto *pixels = ray_renderer_.get_pixels_ref();
@@ -279,12 +350,18 @@ bool SceneManager::PrepareLightmaps_PT() {
         ray_scene_->SetCamera(1, cam_desc);
 
         ray_renderer_.Clear();
-        ray_reg_ctx_.Clear();
+        for (auto &c : ray_reg_ctx_) {
+            c.Clear();
+        }
     }
 
-    ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_);
+    if (ray_renderer_.type() == Ray::RendererOCL) {
+        ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[0]);
+    } else {
 
-    LOGI("Lightmap: %i %i/%i", int(cur_lm_obj_), ray_reg_ctx_.iteration, LM_SAMPLES);
+    }
+
+    LOGI("Lightmap: %i %i/%i", int(cur_lm_obj_), ray_reg_ctx_[0].iteration, LM_SAMPLES);
 
     const auto *pixels = ray_renderer_.get_pixels_ref();
     renderer_.BlitPixels(pixels, res, res, Ren::RawRGBA32F);
@@ -302,6 +379,8 @@ void SceneManager::InitScene_PT(bool _override) {
     }
 
     ray_scene_ = ray_renderer_.CreateScene();
+
+    ray_reg_ctx_.clear();
 
     // Setup environment
     {
@@ -424,7 +503,12 @@ void SceneManager::InitScene_PT(bool _override) {
                                 auto params = tex_ref->params();
 
                                 std::unique_ptr<Ray::pixel_color8_t[]> tex_data(new Ray::pixel_color8_t[params.w * params.h]);
+#if defined(__ANDROID__)
+                                Sys::AssetFile in_file((std::string("assets/textures/") + tex_name).c_str());
+                                SceneManagerInternal::LoadTGA(in_file, params.w, params.h, &tex_data[0]);
+#else
                                 tex_ref->ReadTextureData(Ren::RawRGBA8888, (void *)&tex_data[0]);
+#endif
 
                                 Ray::tex_desc_t tex_desc;
                                 tex_desc.w = params.w;
@@ -475,6 +559,8 @@ void SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &targ
 void SceneManager::Clear_PT() {
     if (!ray_scene_) return;
 
-    ray_reg_ctx_.Clear();
+    for (auto &c : ray_reg_ctx_) {
+        c.Clear();
+    }
     ray_renderer_.Clear();
 }

@@ -10,9 +10,14 @@
 
 class Renderer;
 
+namespace Sys {
+    class ThreadPool;
+}
+
 class SceneManager : public std::enable_shared_from_this<SceneManager> {
 public:
-    SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererBase &ray_renderer);
+    SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererBase &ray_renderer,
+                 Sys::ThreadPool &threads);
     ~SceneManager();
 
     TimingInfo timings() const;
@@ -43,7 +48,8 @@ private:
     Ren::Context &ctx_;
     Renderer &renderer_;
     Ray::RendererBase &ray_renderer_;
-    Ray::RegionContext ray_reg_ctx_;
+    Sys::ThreadPool &threads_;
+    std::vector<Ray::RegionContext> ray_reg_ctx_;
     std::shared_ptr<Ray::SceneBase> ray_scene_;
 
     Ren::Camera cam_;

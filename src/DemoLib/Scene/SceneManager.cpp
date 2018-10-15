@@ -20,11 +20,12 @@ const float FAR_CLIP = 10000;
 const char *MODELS_PATH = "./assets/models/";
 }
 
-SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererBase &ray_renderer)
+SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererBase &ray_renderer,
+                           Sys::ThreadPool &threads)
     : ctx_(ctx),
       renderer_(renderer),
       ray_renderer_(ray_renderer),
-      ray_reg_ctx_{ {} },
+      threads_(threads),
 cam_(Ren::Vec3f{ 0.0f, 0.0f, 1.0f },
      Ren::Vec3f{ 0.0f, 0.0f, 0.0f },
      Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {

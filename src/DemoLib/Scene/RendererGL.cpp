@@ -86,12 +86,9 @@ void main() {
 /*
 UNIFORMS
     s_texture : 3
-    uTexSize : 5
 */
         
 uniform sampler2D s_texture;
-uniform float gamma;
-uniform float exposure;
 
 in vec2 aVertexUVs_;
 
@@ -1000,20 +997,74 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 }
 
 void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format) {
-#if !defined(__ANDROID__)
-    glUseProgram(0);
+    using namespace RendererInternal;
 
-    GLenum gl_format, gl_type;
-    if (format == Ren::RawRGBA32F) {
-        gl_format = GL_RGBA;
-        gl_type = GL_FLOAT;
+    if (temp_tex_w_ != w || temp_tex_h_ != h || temp_tex_format_ != format) {
+        if (temp_tex_w_ != 0 && temp_tex_h_ != 0) {
+            GLuint gl_tex = (GLuint)temp_tex_;
+            glDeleteTextures(1, &gl_tex);
+        }
+
+        GLuint new_tex;
+        glGenTextures(1, &new_tex);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, new_tex);
+
+        if (format == Ren::RawRGBA32F) {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, w, h, 0, GL_RGBA, GL_FLOAT, data);
+        }
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        temp_tex_ = (uint32_t)new_tex;
+        temp_tex_w_ = w;
+        temp_tex_h_ = h;
+        temp_tex_format_ = format;
+    } else {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, temp_tex_);
+
+        if (format == Ren::RawRGBA32F) {
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_FLOAT, data);
+        }
     }
 
-    glDisable(GL_DEPTH_TEST);
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    glPixelZoom(1, -1);
-    glRasterPos2f(-1, 1);
+        glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
 
-    glDrawPixels(w, h, gl_format, gl_type, data);
-#endif
+        Ren::Program *cur_program = blit_prog_.get();
+        glUseProgram(cur_program->prog_id());
+
+        const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,
+                                      1.0f, 1.0f,         -1.0f, 1.0f };
+
+        const float fs_quad_uvs[] = { 0.0f, float(h),     float(w), float(h),
+                                      float(w), 0.0f,     0.0f, 0.0f };
+
+        const uint8_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
+
+        glEnableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+        glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
+
+        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+
+        BindTexture(DIFFUSEMAP_SLOT, temp_tex_);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
+
+        glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
+        glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+    }
 }
