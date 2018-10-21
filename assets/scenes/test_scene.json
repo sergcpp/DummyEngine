@@ -1,0 +1,24 @@
+{
+    "name" : "test_scene",
+    "environment" : {
+        "sun_dir" : [ 0.54, -0.54, -0.54 ],
+        "sun_col" : [ 5.0, 5.0, 4.5 ],
+        "sun_softness" : 0.1,
+        "env_col" : [ 0.0, 0.0, 0.0 ]
+    },
+    "camera" : {
+        "view_origin" : [ 0.0, 5.0, 0.0 ],
+        "view_dir" : [ 0.0, 0.0, -1.0 ],
+        "fwd_speed" : 1.0
+    },
+    "meshes" : {
+		"test_floor" : "test_floor.mesh",
+    },
+    "objects" : [
+		{
+			"pos" : [ 0.0, 0.0, 0.0 ],
+            "mesh" : "test_floor",
+            "lightmap_res" : 256,
+        }
+    ]
+}

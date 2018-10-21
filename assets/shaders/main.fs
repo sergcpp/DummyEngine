@@ -39,13 +39,6 @@ in vec4 aVertexShUVs_[4];
 out vec4 outColor;
 
 void main(void) {
-    const vec3 MyArray[4]=vec3[4](
-    vec3(1.5,34.4,3.2),
-    vec3(1.6,34.1,1.2),
-    vec3(18.981777,6.258294,-27.141813),
-    vec3(1.0,3.0,1.0)
-);
-    
     const vec2 poisson_disk[64] = vec2[64](
         vec2(-0.705374, -0.668203),
         vec2(-0.780145, 0.486251),
@@ -113,28 +106,6 @@ void main(void) {
         vec2(-0.178564, -0.596057)
     );
 
-    /*{
-        vec3 frag_pos_ls[4];
-        for (int i = 0; i < 4; i++) {
-            frag_pos_ls[i] = 0.5 * aVertexShUVs_[i].xyz + 0.5;
-            frag_pos_ls[i].xy *= 0.5;
-        }
-
-        vec3 normal = texture(normals_texture, aVertexUVs1_).xyz * 2.0 - 1.0;
-        normal = aVertexTBN_ * normal;
-
-        const float shadow_softness = 4.0 / 4096.0;
-
-        vec3 additional_light = vec3(0.0, 0.0, 0.0);
-
-        float lambert = max(dot(normal, sun_dir), 0.0);
-    
-        vec3 diffuse_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma)) * (sun_col * lambert);
-    
-        gl_FragColor = vec4(diffuse_color, 1.0);
-        return;
-    }*/
-
     vec3 frag_pos_ls[4];
     for (int i = 0; i < 4; i++) {
         frag_pos_ls[i] = 0.5 * aVertexShUVs_[i].xyz + 0.5;
@@ -151,8 +122,8 @@ void main(void) {
     float lambert = max(dot(normal, sun_dir), 0.0);
     float visibility = 1.0;
     if (lambert > 0.00001) {
-        float bias = 0.0005 * tan(acos(lambert));//max(0.00125 * (1.0 - lambert), 0.00025);
-        bias = clamp(bias, 0.00025, 0.001);
+        float bias = 0.001 * tan(acos(lambert));//max(0.00125 * (1.0 - lambert), 0.00025);
+        bias = clamp(bias, 0.00025, 0.002);
 
         float frag_depth = gl_FragCoord.z / gl_FragCoord.w;
         if (frag_depth < 8.0) {
