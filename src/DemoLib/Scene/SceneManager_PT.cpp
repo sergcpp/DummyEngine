@@ -119,6 +119,19 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
     }
 }
 
+std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &tex_ref) {
+    auto params = tex_ref->params();
+
+    std::unique_ptr<Ray::pixel_color8_t[]> tex_data(new Ray::pixel_color8_t[params.w * params.h]);
+#if defined(__ANDROID__)
+    Sys::AssetFile in_file((std::string("assets/textures/") + tex_name).c_str());
+    SceneManagerInternal::LoadTGA(in_file, params.w, params.h, &tex_data[0]);
+#else
+    tex_ref->ReadTextureData(Ren::RawRGBA8888, (void *)&tex_data[0]);
+#endif
+
+    return tex_data;
+}
 
 }
 
@@ -195,7 +208,7 @@ void SceneManager::ResetLightmaps_PT() {
 bool SceneManager::PrepareLightmaps_PT() {
     if (!ray_scene_) return false;
 
-    const int LM_SAMPLES = 1024*8;
+    const int LM_SAMPLES = 512*1;
 
     const int res = (int)objects_[cur_lm_obj_].lm_res;
 
@@ -239,14 +252,9 @@ bool SceneManager::PrepareLightmaps_PT() {
 
                             Ray::pixel_color_t new_p = { 0 };
                             int count = 0;
-                            for (int _y : {
-                                        y - 1, y, y + 1
-                                    }) {
-                                for (int _x : {
-                                            x - 1, x, x + 1
-                                        }) {
-                                    if (_x < 0 || _y < 0 ||
-                                            _x > res - 1 || _y > res - 1) continue;
+                            for (int _y : { y - 1, y, y + 1 }) {
+                                for (int _x : { x - 1, x, x + 1 }) {
+                                    if (_x < 0 || _y < 0 || _x > res - 1 || _y > res - 1) continue;
 
                                     const auto &p = temp_pixels1[_y * res + _x];
                                     if (p.a >= INVAL_THRES) {
@@ -304,7 +312,7 @@ bool SceneManager::PrepareLightmaps_PT() {
                 }
             }*/
 
-            std::string out_file_name = scene_name_;
+            std::string out_file_name = std::string("assets/textures/lightmaps/") + scene_name_;
             out_file_name += "_";
             out_file_name += std::to_string(cur_lm_obj_);
             if (!cur_lm_indir_) {
@@ -313,9 +321,31 @@ bool SceneManager::PrepareLightmaps_PT() {
                 out_file_name += "_lm_indirect.tga_rgbe";
             }
 
-            out_file_name = std::string("assets/textures/lightmaps/") + out_file_name;
-
             SceneManagerInternal::WriteTGA(temp_pixels1, res, res, out_file_name);
+
+            if (cur_lm_indir_) {
+                const auto *sh_data = ray_renderer_.get_sh_data_ref();
+
+                std::vector<Ray::pixel_color_t> temp_pixels1(res * res, Ray::pixel_color_t{ 0.0f, 0.0f, 0.0f, 1.0f });
+
+                for (int sh_l = 0; sh_l < 4; sh_l++) {
+                    for (int i = 0; i < res * res; i++) {
+                        temp_pixels1[i].r = sh_data[i].coeff_r[sh_l];
+                        temp_pixels1[i].g = sh_data[i].coeff_g[sh_l];
+                        temp_pixels1[i].b = sh_data[i].coeff_b[sh_l];
+                    }
+
+                    out_file_name = "assets/textures/lightmaps/";
+                    out_file_name += scene_name_;
+                    out_file_name += "_";
+                    out_file_name += std::to_string(cur_lm_obj_);
+                    out_file_name += "_lm_sh_";
+                    out_file_name += std::to_string(sh_l);
+                    out_file_name += ".tga_rgbe";
+
+                    SceneManagerInternal::WriteTGA(temp_pixels1, res, res, out_file_name);
+                }
+            }
         }
 
         Ray::camera_desc_t cam_desc;
@@ -417,6 +447,7 @@ void SceneManager::InitScene_PT(bool _override) {
         cam_desc.no_background = true;
         cam_desc.uv_index = 1;
         cam_desc.mi_index = 0;
+        cam_desc.output_sh = true;
 
         ray_scene_->AddCamera(cam_desc);
     }
@@ -491,24 +522,26 @@ void SceneManager::InitScene_PT(bool _override) {
                     auto mat_it = loaded_materials.find(mat_name);
                     if (mat_it == loaded_materials.end()) {
                         Ray::mat_desc_t mat_desc;
-                        mat_desc.type = Ray::DiffuseMaterial;
                         mat_desc.main_color[0] = mat_desc.main_color[1] = mat_desc.main_color[2] = 1.0f;
 
-                        auto tex_ref = mat->texture(0);
+                        Ren::Texture2DRef tex_ref;
+
+                        if (!mat->texture(2)) {
+                            mat_desc.type = Ray::DiffuseMaterial;
+                            tex_ref = mat->texture(0);
+                        } else {
+                            mat_desc.type = Ray::EmissiveMaterial;
+                            tex_ref = mat->texture(2);
+                        }
+
                         if (tex_ref) {
                             const char *tex_name = tex_ref->name();
 
                             auto tex_it = loaded_textures.find(tex_name);
                             if (tex_it == loaded_textures.end()) {
-                                auto params = tex_ref->params();
+                                std::unique_ptr<Ray::pixel_color8_t[]> tex_data = SceneManagerInternal::GetTextureData(tex_ref);
 
-                                std::unique_ptr<Ray::pixel_color8_t[]> tex_data(new Ray::pixel_color8_t[params.w * params.h]);
-#if defined(__ANDROID__)
-                                Sys::AssetFile in_file((std::string("assets/textures/") + tex_name).c_str());
-                                SceneManagerInternal::LoadTGA(in_file, params.w, params.h, &tex_data[0]);
-#else
-                                tex_ref->ReadTextureData(Ren::RawRGBA8888, (void *)&tex_data[0]);
-#endif
+                                auto params = tex_ref->params();
 
                                 Ray::tex_desc_t tex_desc;
                                 tex_desc.w = params.w;

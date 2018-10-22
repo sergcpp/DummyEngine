@@ -704,7 +704,13 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
 
         if (cur_lm_indir_tex != dr.lm_indir_tex) {
-            cur_lm_indir_tex = dr.lm_indir_tex ? dr.lm_indir_tex : default_lightmap_.get();
+            if (dr.lm_indir_tex) {
+                cur_lm_indir_tex = dr.lm_indir_tex;
+            } else if (cur_mat->texture(2)) {
+                cur_lm_indir_tex = cur_mat->texture(2).get();
+            } else {
+                cur_lm_indir_tex = default_lightmap_.get();
+            }
             BindTexture(LM_INDIRECT_SLOT, cur_lm_indir_tex->tex_id());
         }
 

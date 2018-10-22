@@ -615,7 +615,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
             std::vector<uint32_t> reordered(index_group.size());
 
-            Ren::ReorderTriangleIndices(&index_group[0], index_group.size(), (uint32_t)num_vertices, &reordered[0]);
+            Ren::ReorderTriangleIndices(&index_group[0], (uint32_t)index_group.size(), (uint32_t)num_vertices, &reordered[0]);
 
             cur_strip.resize(reordered.size());
             for (size_t i = 0; i < reordered.size(); i++) {
@@ -660,10 +660,10 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         }
 
         if (alpha_blend) {
-            alpha_chunks.emplace_back(total_indices.size(), reordered_indices[i].size(), 1);
+            alpha_chunks.emplace_back((uint32_t)total_indices.size(), (uint32_t)reordered_indices[i].size(), 1);
             alpha_mats.push_back(i);
         } else {
-            total_chunks.emplace_back(total_indices.size(), reordered_indices[i].size(), 0);
+            total_chunks.emplace_back((uint32_t)total_indices.size(), (uint32_t)reordered_indices[i].size(), 0);
         }
 
         total_indices.insert(total_indices.end(), reordered_indices[i].begin(), reordered_indices[i].end());
@@ -731,11 +731,11 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
     file_offset += file_header.p[CH_MESH_INFO].length;
     file_header.p[CH_VTX_ATTR].offset = (int32_t)file_offset;
-    file_header.p[CH_VTX_ATTR].length = sizeof(float) * (positions.size()/3) * 13 + tex_ids.size() + sizeof(float) * weights.size();
+    file_header.p[CH_VTX_ATTR].length = (int32_t)(sizeof(float) * (positions.size()/3) * 13 + tex_ids.size() + sizeof(float) * weights.size());
 
     file_offset += file_header.p[CH_VTX_ATTR].length;
     file_header.p[CH_VTX_NDX].offset = (int32_t)file_offset;
-    file_header.p[CH_VTX_NDX].length = sizeof(uint32_t) * total_indices.size();
+    file_header.p[CH_VTX_NDX].length = (int32_t)(sizeof(uint32_t) * total_indices.size());
 
     file_offset += file_header.p[CH_VTX_NDX].length;
     file_header.p[CH_MATERIALS].offset = (int32_t)file_offset;
@@ -743,7 +743,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
     file_offset += file_header.p[CH_MATERIALS].length;
     file_header.p[CH_STRIPS].offset = (int32_t)file_offset;
-    file_header.p[CH_STRIPS].length = sizeof(MeshChunk) * total_chunks.size();
+    file_header.p[CH_STRIPS].length = (int32_t)(sizeof(MeshChunk) * total_chunks.size());
 
     if (mesh_type == M_SKEL) {
         file_header.num_chunks++;
@@ -920,15 +920,15 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
     size_t file_offset = 12 + sizeof(Header);
     file_header.num_chunks = 3;
     file_header.p[CH_SKELETON].offset = (int32_t)file_offset;
-    file_header.p[CH_SKELETON].length = sizeof(OutAnimBone) * out_bones.size();
+    file_header.p[CH_SKELETON].length = (int32_t)(sizeof(OutAnimBone) * out_bones.size());
 
     file_offset += file_header.p[CH_SKELETON].length;
     file_header.p[CH_ANIM_INFO].offset = (int32_t)file_offset;
-    file_header.p[CH_ANIM_INFO].length = sizeof(OutAnimInfo);
+    file_header.p[CH_ANIM_INFO].length = (int32_t)(sizeof(OutAnimInfo));
 
     file_offset += file_header.p[CH_ANIM_INFO].length;
     file_header.p[CH_FRAMES].offset = (int32_t)file_offset;
-    file_header.p[CH_FRAMES].length = sizeof(float) * frames.size();
+    file_header.p[CH_FRAMES].length = (int32_t)(sizeof(float) * frames.size());
 
     ofstream out_file(out_file_name, ios::binary);
     out_file.write("ANIM_SEQUEN\0", 12);
