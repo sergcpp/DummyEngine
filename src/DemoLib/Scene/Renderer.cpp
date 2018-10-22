@@ -307,6 +307,14 @@ void Renderer::BackgroundProc() {
                                 const Ren::TriStrip *s = &mesh->strip(0);
                                 while (s->offset != -1) {
                                     dr_list.push_back({ &tr_list.back(), &world_from_object, s->mat.get(), mesh, s, lm_dir_tex, lm_indir_tex });
+                                    
+                                    if (obj.lm_indir_sh_tex[0]) {
+                                        dr_list.back().lm_indir_sh_tex[0] = obj.lm_indir_sh_tex[0].get();
+                                        dr_list.back().lm_indir_sh_tex[1] = obj.lm_indir_sh_tex[1].get();
+                                        dr_list.back().lm_indir_sh_tex[2] = obj.lm_indir_sh_tex[2].get();
+                                        dr_list.back().lm_indir_sh_tex[3] = obj.lm_indir_sh_tex[3].get();
+                                    }
+                                    
                                     ++s;
                                 }
                             }

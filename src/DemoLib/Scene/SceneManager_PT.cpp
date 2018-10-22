@@ -208,7 +208,7 @@ void SceneManager::ResetLightmaps_PT() {
 bool SceneManager::PrepareLightmaps_PT() {
     if (!ray_scene_) return false;
 
-    const int LM_SAMPLES = 512*1;
+    const int LM_SAMPLES = 512 * 16;
 
     const int res = (int)objects_[cur_lm_obj_].lm_res;
 
@@ -328,11 +328,16 @@ bool SceneManager::PrepareLightmaps_PT() {
 
                 std::vector<Ray::pixel_color_t> temp_pixels1(res * res, Ray::pixel_color_t{ 0.0f, 0.0f, 0.0f, 1.0f });
 
+                const float SH_A0 = 0.886226952f; // PI / sqrt(4.0f * Pi)
+                const float SH_A1 = 1.02332675f;  // sqrt(PI / 3.0f)
+
+                float mult[] = { SH_A0, SH_A1, SH_A1, SH_A1 };
+
                 for (int sh_l = 0; sh_l < 4; sh_l++) {
                     for (int i = 0; i < res * res; i++) {
-                        temp_pixels1[i].r = sh_data[i].coeff_r[sh_l];
-                        temp_pixels1[i].g = sh_data[i].coeff_g[sh_l];
-                        temp_pixels1[i].b = sh_data[i].coeff_b[sh_l];
+                        temp_pixels1[i].r = sh_data[i].coeff_r[sh_l] * mult[sh_l];
+                        temp_pixels1[i].g = sh_data[i].coeff_g[sh_l] * mult[sh_l];
+                        temp_pixels1[i].b = sh_data[i].coeff_b[sh_l] * mult[sh_l];
                     }
 
                     out_file_name = "assets/textures/lightmaps/";

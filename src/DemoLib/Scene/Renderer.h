@@ -21,6 +21,7 @@ struct DrawableItem {
     const Ren::TriStrip *strip;
     const Ren::Texture2D *lm_dir_tex;
     const Ren::Texture2D *lm_indir_tex;
+    const Ren::Texture2D *lm_indir_sh_tex[4] = {};
 
     DrawableItem(const Ren::Mat4f *_clip_from_object, const Ren::Mat4f *_world_from_object, const Ren::Material *_mat,
                  const Ren::Mesh *_mesh, const Ren::TriStrip *_strip, const Ren::Texture2D *_lm_dir_tex, const Ren::Texture2D *_lm_indir_tex) : clip_from_object(_clip_from_object), world_from_object(_world_from_object), sh_clip_from_object{ nullptr },

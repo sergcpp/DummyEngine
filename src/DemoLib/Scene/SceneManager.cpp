@@ -150,6 +150,26 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             obj.lm_indir_tex = OnLoadTexture(lm_indir_tex_name.c_str());
         }
 
+        if (js_obj.Has("lightmap_sh")) {
+            const JsLiteral &js_lm_sh = (const JsLiteral &)js_obj.at("lightmap_sh");
+
+            if (js_lm_sh.val == JS_TRUE) {
+                std::string base_file_name = "lightmaps/";
+                base_file_name += scene_name_;
+                base_file_name += "_";
+                base_file_name += std::to_string(cur_lm_obj_);
+                base_file_name += "_lm_sh_";
+
+                for (int sh_l = 0; sh_l < 4; sh_l++) {
+                    std::string lm_file_name = base_file_name;
+                    lm_file_name += std::to_string(sh_l);
+                    lm_file_name += ".tga_rgbe";
+
+                    obj.lm_indir_sh_tex[sh_l] = OnLoadTexture(lm_file_name.c_str());
+                }
+            }
+        }
+
         objects_.push_back(obj);
     }
 

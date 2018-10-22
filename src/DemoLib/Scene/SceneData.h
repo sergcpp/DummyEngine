@@ -37,7 +37,7 @@ struct SceneObject {
     uint32_t flags;
     Ren::StorageRef<Transform> tr;
     Ren::MeshRef mesh, occ_mesh;
-    Ren::Texture2DRef lm_dir_tex, lm_indir_tex;
+    Ren::Texture2DRef lm_dir_tex, lm_indir_tex, lm_indir_sh_tex[4];
     uint32_t lm_res, pt_mi;
 };
 

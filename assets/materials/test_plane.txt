@@ -1,4 +1,4 @@
 gl_program: main main.vs main.fs
 sw_program: main
-texture: wall_01.tga
+texture: grey.tga
 texture: test_normalmap.tga

@@ -11,6 +11,7 @@ UNIFORMS
     shadow_texture : 5
     lm_direct_texture : 6
     lm_indirect_texture : 7
+    lm_indirect_sh_texture[0] : 8
     sun_dir : 10
     sun_col : 11
     gamma : 12
@@ -22,6 +23,7 @@ uniform sampler2D normals_texture;
 uniform sampler2D shadow_texture;
 uniform sampler2D lm_direct_texture;
 uniform sampler2D lm_indirect_texture;
+uniform sampler2D lm_indirect_sh_texture[4];
 
 /*struct {
 
@@ -114,6 +116,8 @@ void main(void) {
 
     vec3 normal = texture(normals_texture, aVertexUVs1_).xyz * 2.0 - 1.0;
     normal = aVertexTBN_ * normal;
+    
+    vec2 lm_uvs = vec2(aVertexUVs2_.x, 1.0 - aVertexUVs2_.y);
 
     const float shadow_softness = 4.0 / 4096.0;
 
@@ -158,11 +162,21 @@ void main(void) {
         } else {
             // use directional lightmap
             visibility = 0.0;
-            additional_light = texture(lm_direct_texture, vec2(aVertexUVs2_.x, 1.0 - aVertexUVs2_.y)).rgb;
+            additional_light = texture(lm_direct_texture, lm_uvs).rgb;
         }
     }
     
-    vec3 indirect_col = texture(lm_indirect_texture, vec2(aVertexUVs2_.x, 1.0 - aVertexUVs2_.y)).rgb;
+    
+    
+    vec3 indirect_col = texture(lm_indirect_texture, lm_uvs).rgb;
+    
+    vec3 sh_l_00 = texture(lm_indirect_sh_texture[0], lm_uvs).rgb;
+    vec3 sh_l_10 = texture(lm_indirect_sh_texture[1], lm_uvs).rgb;
+    vec3 sh_l_11 = texture(lm_indirect_sh_texture[2], lm_uvs).rgb;
+    vec3 sh_l_12 = texture(lm_indirect_sh_texture[3], lm_uvs).rgb;
+    
+    indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
+    
     vec3 diffuse_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma)) * (sun_col * lambert * visibility + indirect_col + additional_light);
     
     outColor = vec4(diffuse_color, 1.0);

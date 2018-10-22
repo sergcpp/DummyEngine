@@ -20,6 +20,7 @@
 			"pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "test_floor",
             "lightmap_res" : 256,
+            "lightmap_sh" : true,
         },
         {
 			"pos" : [ 0.0, 0.0, 0.0 ],
