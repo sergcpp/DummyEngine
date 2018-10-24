@@ -260,7 +260,7 @@ GSBicubicTest::~GSBicubicTest() {
 void GSBicubicTest::Enter() {
     using namespace GSBicubicTestInternal;
 
-    std::ifstream in_file("test_img2.tga", std::ios::binary | std::ios::ate);
+    std::ifstream in_file("test_img3.tga", std::ios::binary | std::ios::ate);
     size_t in_file_size = (size_t)in_file.tellg();
     in_file.seekg(0, std::ios::beg);
 
@@ -268,7 +268,8 @@ void GSBicubicTest::Enter() {
     in_file.read(&in_file_data[0], in_file_size);
 
     orig_image_.data = ReadTGAFile(&in_file_data[0], orig_image_.w, orig_image_.h, orig_image_.format);
-#if 0
+
+#if 1
     new_image_.w = 256;
     new_image_.h = 256;
     new_image_.data.reset(new uint8_t[new_image_.w * new_image_.h * 3]);
@@ -449,15 +450,119 @@ void GSBicubicTest::Draw(float dt_s) {
 
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
+        image_t img_copy;
+        img_copy.format = orig_image_.format;
+        img_copy.w = orig_image_.w;
+        img_copy.h = orig_image_.h;
+
+        int buf_size = img_copy.w * img_copy.h * 3;
+        img_copy.data.reset(new uint8_t[buf_size]);
+
+        std::copy(&orig_image_.data[0], &orig_image_.data[0] + buf_size, &img_copy.data[0]);
+
+        std::vector<uint8_t> slab;
+        slab.reserve((size_t)(std::max(img_copy.w, img_copy.h) * 1.5f));
+
+        {   // draw input line
+
+            Ren::Vec2f p0 = { line_[1][0], game_->height - line_[1][1] }, //{ line_[0][0], game_->height - line_[0][1] },
+                       p1 = { line_[1][0] + 1, game_->height - line_[1][1] }; // { line_[1][0], game_->height - line_[1][1] };
+
+            auto dir = p1 - p0;
+            float len = Ren::Length(dir);
+            dir /= len;
+
+            bool p0_done = false, p1_done = false;
+
+            if (len > 0.0001f) {
+                for (int i = 0; i < 512; i++) {
+                    if (p0_done && p1_done) break;
+
+                    if (!p0_done) {
+                        p0 -= dir;
+                    }
+
+                    if (!p1_done) {
+                        p1 += dir;
+                    }
+
+                    if (p0[0] < 0 || p0[0] >= img_copy.w || p0[1] < 0 || p0[1] >= img_copy.h) {
+                        p0_done = true;
+                    }
+
+                    if (p1[0] < 0 || p1[0] >= img_copy.w || p1[1] < 0 || p1[1] >= img_copy.h) {
+                        p1_done = true;
+                    }
+                }
+            }
+
+            if (p0[0] < 0) p0[0] = 0.0f;
+            else if (p0[0] >= img_copy.w) p0[0] = img_copy.w - 1;
+            if (p0[1] < 0) p0[1] = 0.0f;
+            else if (p0[1] >= img_copy.h) p0[1] = img_copy.h - 1;
+
+            if (p1[0] < 0) p1[0] = 0.0f;
+            else if (p1[0] >= img_copy.w) p1[0] = img_copy.w - 1;
+            if (p1[1] < 0) p1[1] = 0.0f;
+            else if (p1[1] >= img_copy.h) p1[1] = img_copy.h - 1;
+
+            Ren::Vec2f delta = p1 - p0;
+
+            if (delta[0] < 0.0f) {
+                std::swap(p0, p1);
+                delta = -delta;
+            }
+
+            float delta_err = std::abs(delta[0]) > 0.001f ? std::abs(delta[1]/delta[0]) : 0.0f;
+            float cur_err = 0.0f;
+            int y = (int)p0[1];
+            for (int x = int(p0[0]); x <= int(p1[0]); x++) {
+
+                auto &r = img_copy.data[3 * (y * img_copy.w + x) + 0];
+                auto &g = img_copy.data[3 * (y * img_copy.w + x) + 1];
+                auto &b = img_copy.data[3 * (y * img_copy.w + x) + 2];
+
+                slab.push_back(r);
+                slab.push_back(g);
+                slab.push_back(b);
+
+                float k = std::sqrt((p0[0] - x) * (p0[0] - x) + (p0[1] - y) * (p0[1] - y));
+                k /= Ren::Length(delta);
+
+                if (k <= integration_limit_) {
+                    r = 255;
+                    g = 0;
+                    b = 0;
+                } else {
+                    r = 0;
+                    g = 255;
+                    b = 255;
+                }
+
+                cur_err += delta_err;
+                if (cur_err >= 0.5f) {
+                    if (delta[1] > 0.0f) {
+                        ++y;
+                    } else {
+                        --y;
+                    }
+
+                    cur_err -= 1.0f;
+                }
+            }
+        }
+
         glRasterPos2f(pos_x, -1);
-        glDrawPixels(orig_image_.w, orig_image_.h, GL_RGB, GL_UNSIGNED_BYTE, &orig_image_.data[0]);
-        pos_x += float(orig_image_.w * 2)/game_->width;
+        glDrawPixels(img_copy.w, img_copy.h, GL_RGB, GL_UNSIGNED_BYTE, &img_copy.data[0]);
+        pos_x += float(img_copy.w * 2)/game_->width;
 
-        /*glRasterPos2f(pos_x, -1);
+#if 0
+        glRasterPos2f(pos_x, -1);
         glDrawPixels(new_image_.w, new_image_.h, GL_RGB, GL_UNSIGNED_BYTE, &new_image_.data[0]);
-        pos_x += float(new_image_.w * 2) / game_->width;*/
+        pos_x += float(new_image_.w * 2) / game_->width;
+#endif
 
-        image_t new_img1 = DownScale(orig_image_, 3);
+        /*image_t new_img1 = DownScale(orig_image_, 3);
         glRasterPos2f(pos_x, -1);
         glDrawPixels(new_img1.w, new_img1.h, GL_RGB, GL_UNSIGNED_BYTE, &new_img1.data[0]);
         pos_x += float(new_img1.w * 2)/game_->width;
@@ -465,8 +570,278 @@ void GSBicubicTest::Draw(float dt_s) {
         image_t new_img2 = Upscale(new_img1, 3, Cubic);
         glRasterPos2f(pos_x, -1);
         glDrawPixels(new_img2.w, new_img2.h, GL_RGB, GL_UNSIGNED_BYTE, &new_img2.data[0]);
-        pos_x += float(new_img2.w * 2) / game_->width;
+        pos_x += float(new_img2.w * 2) / game_->width;*/
 
+
+        float fourier_coeffs[3][5] = {};
+
+        {
+            const float step = 1.0f / (slab.size() / 3);
+
+            for (int i = 0; i < (int)(slab.size() / 3); i++) {
+                float t = Ren::Pi<float>()  * (-1 + 2 * float(i) / (slab.size() / 3));
+
+                const float to_norm_float = 1.0f / 255;
+
+                float r_val = 2 * slab[i * 3 + 0] * to_norm_float - 1.0f;
+                float g_val = 2 * slab[i * 3 + 1] * to_norm_float - 1.0f;
+                float b_val = 2 * slab[i * 3 + 2] * to_norm_float - 1.0f;
+
+                fourier_coeffs[0][0] += step * r_val;
+                fourier_coeffs[0][1] += step * r_val * std::cos(t);
+                fourier_coeffs[0][2] += step * r_val * std::sin(t);
+                fourier_coeffs[0][3] += step * r_val * std::cos(2 * t);
+                fourier_coeffs[0][4] += step * r_val * std::sin(2 * t);
+
+                fourier_coeffs[1][0] += step * g_val;
+                fourier_coeffs[1][1] += step * g_val * std::cos(t);
+                fourier_coeffs[1][2] += step * g_val * std::sin(t);
+                fourier_coeffs[1][3] += step * g_val * std::cos(2 * t);
+                fourier_coeffs[1][4] += step * g_val * std::sin(2 * t);
+
+                fourier_coeffs[2][0] += step * b_val;
+                fourier_coeffs[2][1] += step * b_val * std::cos(t);
+                fourier_coeffs[2][2] += step * b_val * std::sin(t);
+                fourier_coeffs[2][3] += step * b_val * std::cos(2 * t);
+                fourier_coeffs[2][4] += step * b_val * std::sin(2 * t);
+            }
+
+            const float k = 2.0f;// / Ren::Pi<float>();
+
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 5; j++) {
+                    fourier_coeffs[i][j] *= k;
+                }
+            }
+        }
+
+        image_t slab_plot;
+        slab_plot.format = orig_image_.format;
+        slab_plot.w = int(slab.size() / 3);
+        slab_plot.h = 128;
+
+        buf_size = slab_plot.w * slab_plot.h * 3;
+        slab_plot.data.reset(new uint8_t[buf_size]);
+
+        std::fill(&slab_plot.data[0], &slab_plot.data[0] + buf_size, 0);
+
+        for (int x = 0; x < slab_plot.w; x++) {
+            for (int y = 0; y < slab[x * 3 + 0] / 2; y++) {
+                slab_plot.data[3 * (y * slab_plot.w + x) + 0] = 255;
+            }
+
+            for (int y = 0; y < slab[x * 3 + 1] / 2; y++) {
+                slab_plot.data[3 * (y * slab_plot.w + x) + 1] = 255;
+            }
+
+            for (int y = 0; y < slab[x * 3 + 2] / 2; y++) {
+                slab_plot.data[3 * (y * slab_plot.w + x) + 2] = 255;
+            }
+        }
+
+        glRasterPos2f(pos_x, -1);
+        glDrawPixels(slab_plot.w, slab_plot.h, GL_RGB, GL_UNSIGNED_BYTE, &slab_plot.data[0]);
+
+        {   // Integrate original
+            float integral[3] = {};
+
+            for (int i = 0; i < int(integration_limit_ * slab.size()/3); i++) {
+                const float to_norm_float = 1.0f / 255;
+
+                integral[0] += slab[i * 3 + 0] * to_norm_float;
+                integral[1] += slab[i * 3 + 1] * to_norm_float;
+                integral[2] += slab[i * 3 + 2] * to_norm_float;
+            }
+
+            integral[0] /= float(slab.size() / 3);
+            integral[1] /= float(slab.size() / 3);
+            integral[2] /= float(slab.size() / 3);
+
+            image_t slab_plot2;
+            slab_plot2.format = slab_plot.format;
+            slab_plot2.w = slab_plot.w;
+            slab_plot2.h = slab_plot.h;
+
+            slab_plot2.data.reset(new uint8_t[buf_size]);
+
+            for (int y = 0; y < slab_plot2.h; y++) {
+                for (int x = 0; x < slab_plot2.w; x++) {
+                    slab_plot2.data[3 * (y * slab_plot2.w + x) + 0] = uint8_t(integral[0] * 255);
+                    slab_plot2.data[3 * (y * slab_plot2.w + x) + 1] = uint8_t(integral[1] * 255);
+                    slab_plot2.data[3 * (y * slab_plot2.w + x) + 2] = uint8_t(integral[2] * 255);
+                }
+            }
+
+            glRasterPos2f(pos_x, -1 + float(slab_plot.h * 2) / game_->height);
+            glDrawPixels(slab_plot2.w, slab_plot2.h, GL_RGB, GL_UNSIGNED_BYTE, &slab_plot2.data[0]);
+        }
+
+        pos_x += float(slab_plot.w * 2) / game_->width;
+
+        std::vector<uint8_t> slab2(slab.size());
+
+        for (int i = 0; i < (int)(slab2.size() / 3); i++) {
+            float t = Ren::Pi<float>()  * (-1 + 2 * float(i) / (slab2.size() / 3));
+
+            float r_val = 0.5f * fourier_coeffs[0][0] +
+                fourier_coeffs[0][1] * std::cos(t) + fourier_coeffs[0][2] * std::sin(t) +
+                fourier_coeffs[0][3] * std::cos(2 * t) + fourier_coeffs[0][4] * std::sin(2 * t);
+
+            float g_val = 0.5f * fourier_coeffs[1][0] +
+                fourier_coeffs[1][1] * std::cos(t) + fourier_coeffs[1][2] * std::sin(t) +
+                fourier_coeffs[1][3] * std::cos(2 * t) + fourier_coeffs[1][4] * std::sin(2 * t);
+
+            float b_val = 0.5f * fourier_coeffs[2][0] +
+                fourier_coeffs[2][1] * std::cos(t) + fourier_coeffs[2][2] * std::sin(t) +
+                fourier_coeffs[2][3] * std::cos(2 * t) + fourier_coeffs[2][4] * std::sin(2 * t);
+
+            r_val = r_val * 0.5f + 0.5f;
+            g_val = g_val * 0.5f + 0.5f;
+            b_val = b_val * 0.5f + 0.5f;
+
+            if (r_val < 0.0f) r_val = 0.0f;
+            else if (r_val > 1.0f) r_val = 1.0f;
+
+            if (g_val < 0.0f) g_val = 0.0f;
+            else if (g_val > 1.0f) g_val = 1.0f;
+
+            if (b_val < 0.0f) b_val = 0.0f;
+            else if (b_val > 1.0f) b_val = 1.0f;
+
+            slab2[3 * i + 0] = uint8_t(r_val * 255);
+            slab2[3 * i + 1] = uint8_t(g_val * 255);
+            slab2[3 * i + 2] = uint8_t(b_val * 255);
+        }
+
+        std::fill(&slab_plot.data[0], &slab_plot.data[0] + buf_size, 0);
+
+        for (int x = 0; x < slab_plot.w; x++) {
+            for (int y = 0; y < slab2[x * 3 + 0] / 2; y++) {
+                slab_plot.data[3 * (y * slab_plot.w + x) + 0] = 255;
+            }
+
+            for (int y = 0; y < slab2[x * 3 + 1] / 2; y++) {
+                slab_plot.data[3 * (y * slab_plot.w + x) + 1] = 255;
+            }
+
+            for (int y = 0; y < slab2[x * 3 + 2] / 2; y++) {
+                slab_plot.data[3 * (y * slab_plot.w + x) + 2] = 255;
+            }
+        }
+
+        glRasterPos2f(pos_x, -1);
+        glDrawPixels(slab_plot.w, slab_plot.h, GL_RGB, GL_UNSIGNED_BYTE, &slab_plot.data[0]);
+
+        {   // Integrate approximation
+            float integral1[3] = {}, integral2[3] = {};
+
+            for (int i = 0; i < int(slab2.size() / 3); i++) {
+                const float to_norm_float = 1.0f / 255;
+
+                integral1[0] += slab2[i * 3 + 0] * to_norm_float;
+                integral1[1] += slab2[i * 3 + 1] * to_norm_float;
+                integral1[2] += slab2[i * 3 + 2] * to_norm_float;
+            }
+
+            integral1[0] /= float(slab2.size() / 3);
+            integral1[1] /= float(slab2.size() / 3);
+            integral1[2] /= float(slab2.size() / 3);
+
+
+            auto antiderivative = [](const float *fourrier_coeffs, float t) {
+                return 0.5f * fourrier_coeffs[0] * t +
+                    fourrier_coeffs[1] * std::sin(t) - fourrier_coeffs[2] * std::cos(t) +
+                    0.5f * fourrier_coeffs[3] * std::sin(2 * t) - 0.5f * fourrier_coeffs[4] * std::cos(2 * t);
+            };
+
+            const float range_start = -Ren::Pi<float>();
+            const float range_end = range_start + 2 * integration_limit_ * Ren::Pi<float>();
+
+            integral2[0] = antiderivative(fourier_coeffs[0], range_end) - antiderivative(fourier_coeffs[0], range_start);
+            integral2[1] = antiderivative(fourier_coeffs[1], range_end) - antiderivative(fourier_coeffs[1], range_start);
+            integral2[2] = antiderivative(fourier_coeffs[2], range_end) - antiderivative(fourier_coeffs[2], range_start);
+
+            //LOGI("%f %f %f", integral[0], integral[1], integral[2]);
+
+            integral2[0] /= (range_end - range_start);
+            integral2[1] /= (range_end - range_start);
+            integral2[2] /= (range_end - range_start);
+
+            integral2[0] = integral2[0] * 0.5f + 0.5f;
+            integral2[1] = integral2[1] * 0.5f + 0.5f;
+            integral2[2] = integral2[2] * 0.5f + 0.5f;
+
+            /*float coeffs[3][5] = {};
+
+            for (int i = 0; i < 3; i++) {
+                coeffs[i][0] = fourier_coeffs[i][2] + 0.5f * fourier_coeffs[i][4];
+                coeffs[i][1] = -fourier_coeffs[i][2];
+                coeffs[i][2] = fourier_coeffs[i][1];
+                coeffs[i][3] = -0.5f * fourier_coeffs[i][4];
+                coeffs[i][4] = 0.5f * fourier_coeffs[i][3];
+            }
+
+            {
+                const float t1 = -Ren::Pi<float>();
+                const float t2 = Ren::Pi<float>();
+
+                integral[0] = coeffs[0][0] +
+                    coeffs[0][1] * std::cos(t) + coeffs[0][2] * std::sin(t) +
+                    coeffs[0][3] * std::cos(2 * t) + coeffs[0][4] * std::sin(2 * t);
+
+                integral[1] = coeffs[1][0] +
+                    coeffs[1][1] * std::cos(t) + coeffs[1][2] * std::sin(t) +
+                    coeffs[1][3] * std::cos(2 * t) + coeffs[1][4] * std::sin(2 * t);
+
+                integral[2] = coeffs[2][0] +
+                    coeffs[2][1] * std::cos(t) + coeffs[2][2] * std::sin(t) +
+                    coeffs[2][3] * std::cos(2 * t) + coeffs[2][4] * std::sin(2 * t);
+            }
+
+            LOGI("%f %f %f", integral[0], integral[1], integral[2]);*/
+
+
+            LOGI("(%f %f %f) (%f %f %f)", integral1[0], integral1[1], integral1[2], integral2[0], integral2[1], integral2[2]);
+
+            image_t slab_plot2;
+            slab_plot2.format = slab_plot.format;
+            slab_plot2.w = slab_plot.w;
+            slab_plot2.h = slab_plot.h;
+
+            slab_plot2.data.reset(new uint8_t[buf_size]);
+
+            float integr[] = { integral2[0], integral2[1], integral2[2] };
+
+            if (integr[0] < 0.0f) integr[0] = 0.0f;
+            else if (integr[0] > 1.0f) integr[0] = 1.0f;
+
+            if (integr[1] < 0.0f) integr[1] = 0.0f;
+            else if (integr[1] > 1.0f) integr[1] = 1.0f;
+
+            if (integr[2] < 0.0f) integr[2] = 0.0f;
+            else if (integr[2] > 1.0f) integr[2] = 1.0f;
+
+            for (int y = 0; y < slab_plot2.h; y++) {
+                /*for (int x = 0; x < slab_plot2.w/2; x++) {
+                    slab_plot2.data[3 * (y * slab_plot2.w + x) + 0] = uint8_t(integral1[0] * 255);
+                    slab_plot2.data[3 * (y * slab_plot2.w + x) + 1] = uint8_t(integral1[1] * 255);
+                    slab_plot2.data[3 * (y * slab_plot2.w + x) + 2] = uint8_t(integral1[2] * 255);
+                }*/
+
+                for (int x = 0; x < slab_plot2.w; x++) {
+                    slab_plot2.data[3 * (y * slab_plot2.w + x) + 0] = uint8_t(integr[0] * 255);
+                    slab_plot2.data[3 * (y * slab_plot2.w + x) + 1] = uint8_t(integr[1] * 255);
+                    slab_plot2.data[3 * (y * slab_plot2.w + x) + 2] = uint8_t(integr[2] * 255);
+                }
+            }
+
+            glRasterPos2f(pos_x, -1 + float(slab_plot.h * 2) / game_->height);
+            glDrawPixels(slab_plot2.w, slab_plot2.h, GL_RGB, GL_UNSIGNED_BYTE, &slab_plot2.data[0]);
+        }
+
+        pos_x += float(slab_plot.w * 2) / game_->width;
+
+#if 0
         std::vector<float> results1;
 
         for (int j = 0; j < new_img2.h - f1; j++) {
@@ -561,8 +936,7 @@ void GSBicubicTest::Draw(float dt_s) {
         glRasterPos2f(pos_x, -1);
         glDrawPixels(new_img3.w, new_img3.h, GL_RGB, GL_UNSIGNED_BYTE, &new_img3.data[0]);
         pos_x += float(new_img3.w * 2) / game_->width;
-
-        volatile int ii = 0;
+#endif
     }
 #endif
 
@@ -590,10 +964,11 @@ void GSBicubicTest::HandleInput(InputManager::Event evt) {
 
     switch (evt.type) {
     case InputManager::RAW_INPUT_P1_DOWN:
-
+        is_grabbed_ = true;
+        line_[0] = { evt.point.x, evt.point.y };
         break;
     case InputManager::RAW_INPUT_P1_UP: {
-        std::random_device rd;
+        /*std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
 
@@ -616,16 +991,33 @@ void GSBicubicTest::HandleInput(InputManager::Event evt) {
                 g_third_layer.weights[i][j] = dis(gen);
                 g_third_layer.biases[i] = dis(gen);
             }
-        }
+        }*/
+
+        is_grabbed_ = false;
     }
     break;
     case InputManager::RAW_INPUT_P1_MOVE:
         //OnMouse(int(evt.point.x), 500 - (int(evt.point.y) - 140));
+        if (is_grabbed_) {
+            line_[1] = { evt.point.x, evt.point.y };
+        }
+        break;
+    case InputManager::RAW_INPUT_MOUSE_WHEEL:
+        
         break;
     case InputManager::RAW_INPUT_KEY_DOWN:
 
         break;
     case InputManager::RAW_INPUT_KEY_UP:
+        if (evt.raw_key == 'q') {
+            integration_limit_ -= 0.05f;
+        } else if (evt.raw_key == 'e') {
+            integration_limit_ += 0.05f;
+        }
+
+        if (integration_limit_ < 0.0f) integration_limit_ = 0.0f;
+        else if (integration_limit_ > 1.0f) integration_limit_ = 1.0f;
+
         break;
     case InputManager::RAW_INPUT_RESIZE:
 

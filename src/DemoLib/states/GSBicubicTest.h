@@ -33,6 +33,10 @@ class GSBicubicTest : public GameState {
 
     image_t orig_image_, new_image_;
 
+    bool is_grabbed_ = false;
+    Ren::Vec2f line_[2];
+    float integration_limit_ = 1.0f;
+
     void OnMouse(int x, int y);
 
 public:
