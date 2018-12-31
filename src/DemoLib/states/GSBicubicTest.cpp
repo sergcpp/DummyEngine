@@ -653,9 +653,11 @@ void GSBicubicTest::Draw(float dt_s) {
                 integral[2] += slab[i * 3 + 2] * to_norm_float;
             }
 
-            integral[0] /= float(slab.size() / 3);
-            integral[1] /= float(slab.size() / 3);
-            integral[2] /= float(slab.size() / 3);
+            float scale = 1.0f / (integration_limit_ * slab.size() / 3);
+
+            integral[0] *= scale;
+            integral[1] *= scale;
+            integral[2] *= scale;
 
             image_t slab_plot2;
             slab_plot2.format = slab_plot.format;

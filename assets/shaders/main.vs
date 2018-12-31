@@ -11,6 +11,8 @@ UNIFORMS
     uMVPMatrix : 0
     uMVMatrix : 1
     uShadowMatrix[0] : 2
+UNIFORM_BLOCKS
+    MatricesBlock : 0
 */
 
 in vec3 aVertexPosition;
@@ -19,9 +21,11 @@ in vec3 aVertexTangent;
 in vec2 aVertexUVs1;
 in vec2 aVertexUVs2;
 
-uniform mat4 uMVPMatrix;
-uniform mat4 uMVMatrix;
-uniform mat4 uShadowMatrix[4];
+layout (std140) uniform MatricesBlock {
+    mat4 uMVPMatrix;
+    mat4 uMVMatrix;
+    mat4 uShadowMatrix[4];
+};
 
 out mat3 aVertexTBN_;
 out vec2 aVertexUVs1_;

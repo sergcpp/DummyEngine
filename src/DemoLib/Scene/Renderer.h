@@ -96,6 +96,8 @@ private:
     uint32_t temp_tex_;
     Ren::eTexColorFormat temp_tex_format_;
     int temp_tex_w_ = 0, temp_tex_h_ = 0;
+
+    uint32_t unif_matrices_block_;
 #endif
 
     //temp
@@ -104,7 +106,8 @@ private:
     void SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_node,
                        const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env);
 
-    void InitShadersInternal();
+    void InitRendererInternal();
+    void DestroyRendererInternal();
     void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const Ren::Mat4f shadow_transforms[4],
                              const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env);
 

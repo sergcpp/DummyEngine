@@ -43,7 +43,7 @@ Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
         swCullCtxInit(&cull_ctx_, 256, 128, z);
     }
 
-    InitShadersInternal();
+    InitRendererInternal();
 
     shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::None, Ren::NoFilter, Ren::ClampToEdge, true);
 
@@ -76,6 +76,7 @@ Renderer::~Renderer() {
         thr_notify_.notify_all();
         background_thread_.join();
     }
+    DestroyRendererInternal();
     swCullCtxDestroy(&cull_ctx_);
 }
 

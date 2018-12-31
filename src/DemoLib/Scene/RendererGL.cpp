@@ -351,6 +351,13 @@ void main() {
 }
 )";
 
+    struct MatricesBlock {
+        Ren::Mat4f uMVPMatrix;
+        Ren::Mat4f uMVMatrix;
+        Ren::Mat4f uShadowMatrix[4];
+    };
+    static_assert(sizeof(MatricesBlock) == 384, "!");
+
     const Ren::Vec2f poisson_disk[] = {
         { -0.705374f, -0.668203f }, { -0.780145f, 0.486251f  }, { 0.566637f, 0.605213f   }, { 0.488876f, -0.783441f  },
         { -0.613392f, 0.617481f  }, { 0.170019f, -0.040254f  }, { -0.299417f, 0.791925f  }, { 0.645680f, 0.493210f   },
@@ -378,6 +385,8 @@ void main() {
 
     const int A_INDICES = 3;
     const int A_WEIGHTS = 4;
+
+    const int U_MATRICES = 0;
 
     const int U_MVP_MATR = 0;
     const int U_MV_MATR = 1;
@@ -412,7 +421,7 @@ void main() {
     const bool DEPTH_PREPASS = true;
 }
 
-void Renderer::InitShadersInternal() {
+void Renderer::InitRendererInternal() {
     using namespace RendererInternal;
     LOGI("Compiling fill_depth");
     Ren::eProgLoadStatus status;
@@ -445,6 +454,24 @@ void Renderer::InitShadersInternal() {
     LOGI("Compiling blit_gauss");
     blit_gauss_prog_ = ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
+
+    {
+        GLuint matrices_ubo;
+
+        glGenBuffers(1, &matrices_ubo);
+        glBindBuffer(GL_UNIFORM_BUFFER, matrices_ubo);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(MatricesBlock), NULL, GL_STATIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+        unif_matrices_block_ = (uint32_t)matrices_ubo;
+    }
+}
+
+void Renderer::DestroyRendererInternal() {
+    {
+        GLuint matrices_ubo = (GLuint)unif_matrices_block_;
+        glDeleteBuffers(1, &matrices_ubo);
+    }
 }
 
 void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const Ren::Mat4f shadow_transforms[4],
@@ -628,6 +655,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                 glVertexAttribPointer(p->attribute(A_UVS2).loc, 2, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
             }
 
+            glBindBufferBase(GL_UNIFORM_BUFFER, p->uniform_block(U_MATRICES).loc, (GLuint)unif_matrices_block_);
+
             glUniform1i(p->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
             glUniform1i(p->uniform(U_NORM_TEX).loc, NORMALMAP_SLOT);
             glUniform1i(p->uniform(U_SHADOW_TEX).loc, SHADOWMAP_SLOT);
@@ -644,11 +673,19 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             glUniform1f(p->uniform(U_GAMMA).loc, 2.2f);
 
             if (clip_from_object == cur_clip_from_object) {
-                glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
+                //glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
+
+                glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_matrices_block_);
+                glBufferSubData(GL_UNIFORM_BUFFER, offsetof(MatricesBlock, uMVPMatrix), sizeof(Ren::Mat4f), ValuePtr(clip_from_object));
+                glBindBuffer(GL_UNIFORM_BUFFER, 0);
             }
 
             if (world_from_object == cur_world_from_object) {
-                glUniformMatrix4fv(p->uniform(U_MV_MATR).loc, 1, GL_FALSE, ValuePtr(world_from_object));
+                //glUniformMatrix4fv(p->uniform(U_MV_MATR).loc, 1, GL_FALSE, ValuePtr(world_from_object));
+
+                glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_matrices_block_);
+                glBufferSubData(GL_UNIFORM_BUFFER, offsetof(MatricesBlock, uMVMatrix), sizeof(Ren::Mat4f), ValuePtr(world_from_object));
+                glBindBuffer(GL_UNIFORM_BUFFER, 0);
             }
 
             BindTexture(SHADOWMAP_SLOT, shadow_buf_.depth_tex.GetValue());
@@ -680,12 +717,22 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
 
         if (clip_from_object != cur_clip_from_object) {
-            glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
+            //glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
+
+            glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_matrices_block_);
+            glBufferSubData(GL_UNIFORM_BUFFER, offsetof(MatricesBlock, uMVPMatrix), sizeof(Ren::Mat4f), ValuePtr(clip_from_object));
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
             cur_clip_from_object = clip_from_object;
         }
 
         if (world_from_object != cur_world_from_object) {
-            glUniformMatrix4fv(cur_program->uniform(U_MV_MATR).loc, 1, GL_FALSE, ValuePtr(world_from_object));
+            //glUniformMatrix4fv(cur_program->uniform(U_MV_MATR).loc, 1, GL_FALSE, ValuePtr(world_from_object));
+
+            glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_matrices_block_);
+            glBufferSubData(GL_UNIFORM_BUFFER, offsetof(MatricesBlock, uMVMatrix), sizeof(Ren::Mat4f), ValuePtr(world_from_object));
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
             cur_world_from_object = world_from_object;
         }
 
@@ -693,7 +740,12 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             for (int casc = 0; casc < 4; casc++) {
                 const auto *_sh_clip_from_object = sh_clip_from_object[casc];
                 if (_sh_clip_from_object && _sh_clip_from_object != cur_sh_clip_from_object[casc]) {
-                    glUniformMatrix4fv(p->uniform(U_SH_MVP_MATR).loc + casc, 1, GL_FALSE, ValuePtr(_sh_clip_from_object));
+                    //glUniformMatrix4fv(p->uniform(U_SH_MVP_MATR).loc + casc, 1, GL_FALSE, ValuePtr(_sh_clip_from_object));
+
+                    glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_matrices_block_);
+                    glBufferSubData(GL_UNIFORM_BUFFER, offsetof(MatricesBlock, uShadowMatrix) + casc * sizeof(Ren::Mat4f), sizeof(Ren::Mat4f), ValuePtr(_sh_clip_from_object));
+                    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
                     cur_sh_clip_from_object[casc] = _sh_clip_from_object;
                 }
             }
