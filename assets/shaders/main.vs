@@ -1,12 +1,6 @@
 #version 310 es
 
 /*
-ATTRIBUTES
-    aVertexPosition : 0
-    aVertexNormal : 1
-    aVertexTangent : 2
-    aVertexUVs1 : 3
-    aVertexUVs2 : 4
 UNIFORMS
     uMVPMatrix : 0
     uMVMatrix : 1
@@ -15,11 +9,11 @@ UNIFORM_BLOCKS
     MatricesBlock : 0
 */
 
-in vec3 aVertexPosition;
-in vec3 aVertexNormal;
-in vec3 aVertexTangent;
-in vec2 aVertexUVs1;
-in vec2 aVertexUVs2;
+layout(location = 0) in vec3 aVertexPosition;
+layout(location = 1) in vec3 aVertexNormal;
+layout(location = 2) in vec3 aVertexTangent;
+layout(location = 3) in vec2 aVertexUVs1;
+layout(location = 4) in vec2 aVertexUVs2;
 
 layout (std140) uniform MatricesBlock {
     mat4 uMVPMatrix;

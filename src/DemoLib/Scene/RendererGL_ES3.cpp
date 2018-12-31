@@ -7,14 +7,14 @@
 
 namespace RendererInternal {
 const char fillz_vs[] = R"(
+#version 310 es
+
 /*
-ATTRIBUTES
-	aVertexPosition : 0
 UNIFORMS
 	uMVPMatrix : 0
 */
 
-attribute vec3 aVertexPosition;
+layout(location = 0) in vec3 aVertexPosition;
 
 uniform mat4 uMVPMatrix;
 
@@ -33,14 +33,15 @@ void main() {
 )";
 
     const char shadow_vs[] = R"(
+#version 310 es
+
 /*
-ATTRIBUTES
-	aVertexPosition : 0
 UNIFORMS
 	uMVPMatrix : 0
 */
 
-attribute vec3 aVertexPosition;
+layout(location = 0) in vec3 aVertexPosition;
+
 uniform mat4 uMVPMatrix;
 
 void main() {
@@ -60,14 +61,9 @@ void main() {
 
     const char blit_vs[] = R"(
 #version 310 es
-/*
-ATTRIBUTES
-	aVertexPosition : 0
-    aVertexUVs : 3
-*/
 
-in vec2 aVertexPosition;
-in vec2 aVertexUVs;
+layout(location = 0) in vec2 aVertexPosition;
+layout(location = 3) in vec2 aVertexUVs;
 
 out vec2 aVertexUVs_;
 
@@ -377,14 +373,14 @@ void main() {
         { -0.620106f, -0.328104f }, { 0.789239f, -0.419965f  }, { -0.545396f, 0.538133f  }, { -0.178564f, -0.596057f }
     };
 
-    const int A_POS = 0;
-    const int A_NORMAL = 1;
-    const int A_TANGENT = 2;
-    const int A_UVS1 = 3;
-    const int A_UVS2 = 4;
+    const GLuint A_POS = 0;
+    const GLuint A_NORMAL = 1;
+    const GLuint A_TANGENT = 2;
+    const GLuint A_UVS1 = 3;
+    const GLuint A_UVS2 = 4;
 
-    const int A_INDICES = 3;
-    const int A_WEIGHTS = 4;
+    const GLuint A_INDICES = 3;
+    const GLuint A_WEIGHTS = 4;
 
     const int U_MATRICES = 0;
 
@@ -472,8 +468,8 @@ void Renderer::InitRendererInternal() {
         glBindVertexArray(shadow_pass_vao);
 
         int stride = 13 * sizeof(float);
-        glEnableVertexAttribArray(shadow_prog_->attribute(A_POS).loc);
-        glVertexAttribPointer(shadow_prog_->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
         glBindVertexArray(0);
 
@@ -483,33 +479,33 @@ void Renderer::InitRendererInternal() {
         glGenVertexArrays(1, &depth_pass_vao);
         glBindVertexArray(depth_pass_vao);
 
-        glEnableVertexAttribArray(fill_depth_prog_->attribute(A_POS).loc);
-        glVertexAttribPointer(fill_depth_prog_->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
         glBindVertexArray(0);
         depth_pass_vao_ = (uint32_t)depth_pass_vao;
 
-        /*GLuint draw_pass_vao;
+        GLuint draw_pass_vao;
         glGenVertexArrays(1, &draw_pass_vao);
         glBindVertexArray(draw_pass_vao);
 
-        glEnableVertexAttribArray(p->attribute(A_POS).loc);
-        glVertexAttribPointer(p->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
-        glEnableVertexAttribArray(p->attribute(A_NORMAL).loc);
-        glVertexAttribPointer(p->attribute(A_NORMAL).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
+        glEnableVertexAttribArray(A_NORMAL);
+        glVertexAttribPointer(A_NORMAL, 3, GL_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
 
-        glEnableVertexAttribArray(p->attribute(A_TANGENT).loc);
-        glVertexAttribPointer(p->attribute(A_TANGENT).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(float)));
+        glEnableVertexAttribArray(A_TANGENT);
+        glVertexAttribPointer(A_TANGENT, 3, GL_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(float)));
 
-        glEnableVertexAttribArray(p->attribute(A_UVS1).loc);
-        glVertexAttribPointer(p->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
 
-        glEnableVertexAttribArray(p->attribute(A_UVS2).loc);
-        glVertexAttribPointer(p->attribute(A_UVS2).loc, 2, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
+        glEnableVertexAttribArray(A_UVS2);
+        glVertexAttribPointer(A_UVS2, 2, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
 
         glBindVertexArray(0);
-        draw_pass_vao_ = (uint32_t)draw_pass_vao;*/
+        draw_pass_vao_ = (uint32_t)draw_pass_vao;
     }
 }
 
@@ -595,7 +591,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indices_buf_id());
 
                         int stride = 13 * sizeof(float);
-                        glBindVertexBuffer(cur_program->attribute(A_POS).loc, mesh->attribs_buf_id(), 0, stride);
+                        glBindVertexBuffer(A_POS, mesh->attribs_buf_id(), 0, stride);
 
                         cur_mesh = mesh;
                     }
@@ -643,7 +639,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indices_buf_id());
 
                 int stride = 13 * sizeof(float);
-                glBindVertexBuffer(cur_program->attribute(A_POS).loc, mesh->attribs_buf_id(), 0, stride);
+                glBindVertexBuffer(A_POS, mesh->attribs_buf_id(), 0, stride);
 
                 cur_mesh = mesh;
             }
@@ -672,6 +668,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     }
 #endif
 
+    glBindVertexArray((GLuint)draw_pass_vao_);
+
     // actual drawing
     for (size_t i = 0; i < drawable_count; i++) {
         const auto &dr = drawables[i];
@@ -687,24 +685,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         if (p != cur_program) {
             glUseProgram(p->prog_id());
-
-            if (mesh == cur_mesh) {
-                int stride = sizeof(float) * 13;
-                glEnableVertexAttribArray(p->attribute(A_POS).loc);
-                glVertexAttribPointer(p->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
-
-                glEnableVertexAttribArray(p->attribute(A_NORMAL).loc);
-                glVertexAttribPointer(p->attribute(A_NORMAL).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
-
-                glEnableVertexAttribArray(p->attribute(A_TANGENT).loc);
-                glVertexAttribPointer(p->attribute(A_TANGENT).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(float)));
-
-                glEnableVertexAttribArray(p->attribute(A_UVS1).loc);
-                glVertexAttribPointer(p->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
-
-                glEnableVertexAttribArray(p->attribute(A_UVS2).loc);
-                glVertexAttribPointer(p->attribute(A_UVS2).loc, 2, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
-            }
 
             glBindBufferBase(GL_UNIFORM_BUFFER, p->uniform_block(U_MATRICES).loc, (GLuint)unif_matrices_block_);
 
@@ -745,24 +725,14 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
 
         if (mesh != cur_mesh) {
-            glBindBuffer(GL_ARRAY_BUFFER, mesh->attribs_buf_id());
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indices_buf_id());
 
             int stride = sizeof(float) * 13;
-            glEnableVertexAttribArray(p->attribute(A_POS).loc);
-            glVertexAttribPointer(p->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
-
-            glEnableVertexAttribArray(p->attribute(A_NORMAL).loc);
-            glVertexAttribPointer(p->attribute(A_NORMAL).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
-
-            glEnableVertexAttribArray(p->attribute(A_TANGENT).loc);
-            glVertexAttribPointer(p->attribute(A_TANGENT).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(float)));
-
-            glEnableVertexAttribArray(p->attribute(A_UVS1).loc);
-            glVertexAttribPointer(p->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
-
-            glEnableVertexAttribArray(p->attribute(A_UVS2).loc);
-            glVertexAttribPointer(p->attribute(A_UVS2).loc, 2, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
+            glBindVertexBuffer(A_POS, mesh->attribs_buf_id(), 0, stride);
+            glBindVertexBuffer(A_NORMAL, mesh->attribs_buf_id(), 3 * sizeof(float), stride);
+            glBindVertexBuffer(A_TANGENT, mesh->attribs_buf_id(), 6 * sizeof(float), stride);
+            glBindVertexBuffer(A_UVS1, mesh->attribs_buf_id(), 9 * sizeof(float), stride);
+            glBindVertexBuffer(A_UVS2, mesh->attribs_buf_id(), 11 * sizeof(float), stride);
 
             cur_mesh = mesh;
         }
@@ -841,13 +811,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
     }
 
-    if (drawable_count) {
-        glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glDisableVertexAttribArray(cur_program->attribute(A_NORMAL).loc);
-        glDisableVertexAttribArray(cur_program->attribute(A_TANGENT).loc);
-        glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
-        glDisableVertexAttribArray(cur_program->attribute(A_UVS2).loc);
-    }
+    glBindVertexArray(0);
 
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
@@ -874,11 +838,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
 
-        glEnableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
-        glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
 
@@ -902,11 +866,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         cur_program = blit_gauss_prog_.get();
         glUseProgram(cur_program->prog_id());
 
-        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
 
-        glEnableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
-        glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs1[0]);
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs1[0]);
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
         glUniform1f(cur_program->uniform(4).loc, 0.5f);
@@ -924,8 +888,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
 
-        glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+        glDisableVertexAttribArray(A_POS);
+        glDisableVertexAttribArray(A_UVS1);
     }
 
     {   // draw to small framebuffer
@@ -948,11 +912,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
 
-        glEnableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
-        glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
 
@@ -965,8 +929,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
 
-        glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+        glDisableVertexAttribArray(A_POS);
+        glDisableVertexAttribArray(A_UVS1);
 
         reduced_pixels_.resize(4 * reduced_buf_.w * reduced_buf_.h);
         glReadPixels(0, 0, reduced_buf_.w, reduced_buf_.h, GL_RGBA, GL_FLOAT, &reduced_pixels_[0]);
@@ -1009,11 +973,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
 
-        glEnableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
-        glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
         glUniform1i(cur_program->uniform(U_TEX + 1).loc, DIFFUSEMAP_SLOT + 1);
@@ -1035,8 +999,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
 
-        glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+        glDisableVertexAttribArray(A_POS);
+        glDisableVertexAttribArray(A_UVS1);
     }
 
 #if !defined(__ANDROID__)
@@ -1070,11 +1034,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 2, GL_FLOAT, GL_FALSE, 0, &positions[0]);
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, &positions[0]);
 
-        glEnableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
-        glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &uvs[0]);
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, &uvs[0]);
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
 
@@ -1082,8 +1046,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &indices[0]);
 
-        glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+        glDisableVertexAttribArray(A_POS);
+        glDisableVertexAttribArray(A_UVS1);
     }
 
     if (debug_reduce_) {
@@ -1105,11 +1069,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 2, GL_FLOAT, GL_FALSE, 0, &positions[0]);
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, &positions[0]);
 
-        glEnableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
-        glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &uvs[0]);
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, &uvs[0]);
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
 
@@ -1117,8 +1081,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &indices[0]);
 
-        glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+        glDisableVertexAttribArray(A_POS);
+        glDisableVertexAttribArray(A_UVS1);
     }
 
 #if 0
@@ -1182,11 +1146,11 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
 
-        glEnableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
-        glVertexAttribPointer(cur_program->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
 
@@ -1194,7 +1158,7 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
 
-        glDisableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glDisableVertexAttribArray(cur_program->attribute(A_UVS1).loc);
+        glDisableVertexAttribArray(A_POS);
+        glDisableVertexAttribArray(A_UVS1);
     }
 }
