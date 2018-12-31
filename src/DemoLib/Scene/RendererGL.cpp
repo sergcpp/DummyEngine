@@ -465,12 +465,66 @@ void Renderer::InitRendererInternal() {
 
         unif_matrices_block_ = (uint32_t)matrices_ubo;
     }
+
+    {
+        GLuint shadow_pass_vao;
+        glGenVertexArrays(1, &shadow_pass_vao);
+        glBindVertexArray(shadow_pass_vao);
+
+        int stride = 13 * sizeof(float);
+        glEnableVertexAttribArray(shadow_prog_->attribute(A_POS).loc);
+        glVertexAttribPointer(shadow_prog_->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+
+        glBindVertexArray(0);
+
+        shadow_pass_vao_ = (uint32_t)shadow_pass_vao;
+
+        GLuint depth_pass_vao;
+        glGenVertexArrays(1, &depth_pass_vao);
+        glBindVertexArray(depth_pass_vao);
+
+        glEnableVertexAttribArray(fill_depth_prog_->attribute(A_POS).loc);
+        glVertexAttribPointer(fill_depth_prog_->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+
+        glBindVertexArray(0);
+        depth_pass_vao_ = (uint32_t)depth_pass_vao;
+
+        /*GLuint draw_pass_vao;
+        glGenVertexArrays(1, &draw_pass_vao);
+        glBindVertexArray(draw_pass_vao);
+
+        glEnableVertexAttribArray(p->attribute(A_POS).loc);
+        glVertexAttribPointer(p->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+
+        glEnableVertexAttribArray(p->attribute(A_NORMAL).loc);
+        glVertexAttribPointer(p->attribute(A_NORMAL).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
+
+        glEnableVertexAttribArray(p->attribute(A_TANGENT).loc);
+        glVertexAttribPointer(p->attribute(A_TANGENT).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(float)));
+
+        glEnableVertexAttribArray(p->attribute(A_UVS1).loc);
+        glVertexAttribPointer(p->attribute(A_UVS1).loc, 2, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
+
+        glEnableVertexAttribArray(p->attribute(A_UVS2).loc);
+        glVertexAttribPointer(p->attribute(A_UVS2).loc, 2, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
+
+        glBindVertexArray(0);
+        draw_pass_vao_ = (uint32_t)draw_pass_vao;*/
+    }
 }
 
 void Renderer::DestroyRendererInternal() {
     {
         GLuint matrices_ubo = (GLuint)unif_matrices_block_;
         glDeleteBuffers(1, &matrices_ubo);
+    }
+
+    {
+        GLuint shadow_pass_vao = (GLuint)shadow_pass_vao_;
+        glDeleteVertexArrays(1, &shadow_pass_vao);
+
+        GLuint depth_pass_vao = (GLuint)depth_pass_vao_;
+        glDeleteVertexArrays(1, &depth_pass_vao);
     }
 }
 
@@ -503,15 +557,13 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     {   // draw shadow map
         bool fb_bound = false;
 
+        glBindVertexArray(shadow_pass_vao_);
+
         for (int casc = 0; casc < 4; casc++) {
             if (shadow_drawable_count[casc]) {
                 if (cur_program != shadow_prog_.get()) {
                     cur_program = shadow_prog_.get();
                     glUseProgram(cur_program->prog_id());
-
-                    int stride = sizeof(float) * 13;
-                    glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
-                    glVertexAttribPointer(cur_program->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
                 }
 
                 if (!fb_bound) {
@@ -540,12 +592,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                     const Ren::TriStrip *strip = dr.strip;
 
                     if (mesh != cur_mesh) {
-                        glBindBuffer(GL_ARRAY_BUFFER, mesh->attribs_buf_id());
                         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indices_buf_id());
 
-                        int stride = sizeof(float) * 13;
-                        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
-                        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+                        int stride = 13 * sizeof(float);
+                        glBindVertexBuffer(cur_program->attribute(A_POS).loc, mesh->attribs_buf_id(), 0, stride);
 
                         cur_mesh = mesh;
                     }
@@ -559,6 +609,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                 }
             }
         }
+
+        cur_mesh = nullptr;
+        glBindVertexArray(0);
     }
 
     glEnable(GL_CULL_FACE);
@@ -567,9 +620,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     // Bind main buffer for drawing
     glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
     //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
     glViewport(0, 0, clean_buf_.w, clean_buf_.h);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     if (DEPTH_PREPASS && !wireframe_mode_) {
         glDepthFunc(GL_LESS);
@@ -577,9 +629,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         cur_program = fill_depth_prog_.get();
         glUseProgram(cur_program->prog_id());
 
-        int stride = sizeof(float) * 13;
-        glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
-        glVertexAttribPointer(cur_program->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+        glBindVertexArray(depth_pass_vao_);
 
         // fill depth
         for (size_t i = 0; i < drawable_count; i++) {
@@ -590,12 +640,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             const Ren::TriStrip *strip = dr.strip;
 
             if (mesh != cur_mesh) {
-                glBindBuffer(GL_ARRAY_BUFFER, mesh->attribs_buf_id());
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indices_buf_id());
 
-                int stride = sizeof(float) * 13;
-                glEnableVertexAttribArray(cur_program->attribute(A_POS).loc);
-                glVertexAttribPointer(cur_program->attribute(A_POS).loc, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+                int stride = 13 * sizeof(float);
+                glBindVertexBuffer(cur_program->attribute(A_POS).loc, mesh->attribs_buf_id(), 0, stride);
 
                 cur_mesh = mesh;
             }
@@ -607,6 +655,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
             glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(strip->offset));
         }
+
+        cur_mesh = nullptr;
+        glBindVertexArray(0);
 
         glDepthFunc(GL_EQUAL);
     }

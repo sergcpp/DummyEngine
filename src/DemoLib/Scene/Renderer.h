@@ -98,6 +98,7 @@ private:
     int temp_tex_w_ = 0, temp_tex_h_ = 0;
 
     uint32_t unif_matrices_block_;
+    uint32_t shadow_pass_vao_, depth_pass_vao_, draw_pass_vao_;
 #endif
 
     //temp
