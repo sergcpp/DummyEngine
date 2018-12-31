@@ -291,13 +291,44 @@ void GSBicubicTest::Enter() {
             uint32_t sum[3] = { 0, 0, 0 };
             uint32_t sample_count = 0;
 
-            for (float v = -0.5f * std::sqrt(2.0f); v < 0.5f * std::sqrt(2.0f); v += 0.005f) {
+            float fourier_coeffs[3][5] = {};
+
+            //std::fill_n(&fourier_coeffs[0][0], 3 * 5, -1.0f);
+
+            for (float t = 0.0f; t < 1.0f; t += 0.005f) {
+                //float v = -0.5f * std::sqrt(2.0f); v < 0.5f * std::sqrt(2.0f); v += 0.005f
+                float v = -0.5f * std::sqrt(2.0f) + std::sqrt(2.0f) * t;
                 auto uv = Ren::Vec2f{ 0.5f, 0.5f } + u * u_vec + v * v_vec;
 
                 if (uv[0] >= 0.0f && uv[0] <= 1.0f && uv[1] >= 0.0f && uv[1] <= 1.0f) {
                     uint8_t col[3];
                     //SampleLinear(orig_image_, uv[0], uv[1], col);
                     SampleNearest(orig_image_, uv[0], uv[1], col);
+
+                    float _t = -Ren::Pi<float>() + 2.0f * t * Ren::Pi<float>();
+
+                    const float to_norm_float = 1.0f / 255;
+                    float r_val = 2 * col[0] * to_norm_float - 1.0f;
+                    float g_val = 2 * col[1] * to_norm_float - 1.0f;
+                    float b_val = 2 * col[2] * to_norm_float - 1.0f;
+
+                    fourier_coeffs[0][0] += r_val;
+                    fourier_coeffs[0][1] += r_val * std::cos(_t);
+                    fourier_coeffs[0][2] += r_val * std::sin(_t);
+                    fourier_coeffs[0][3] += r_val * std::cos(2 * _t);
+                    fourier_coeffs[0][4] += r_val * std::sin(2 * _t);
+
+                    fourier_coeffs[1][0] += g_val;
+                    fourier_coeffs[1][1] += g_val * std::cos(_t);
+                    fourier_coeffs[1][2] += g_val * std::sin(_t);
+                    fourier_coeffs[1][3] += g_val * std::cos(2 * _t);
+                    fourier_coeffs[1][4] += g_val * std::sin(2 * _t);
+
+                    fourier_coeffs[2][0] += b_val;
+                    fourier_coeffs[2][1] += b_val * std::cos(_t);
+                    fourier_coeffs[2][2] += b_val * std::sin(_t);
+                    fourier_coeffs[2][3] += b_val * std::cos(2 * _t);
+                    fourier_coeffs[2][4] += b_val * std::sin(2 * _t);
 
                     sum[0] += col[0];
                     sum[1] += col[1];
@@ -306,16 +337,38 @@ void GSBicubicTest::Enter() {
                 }
             }
 
+            /*if (sample_count) {
+                for (auto &row : fourier_coeffs) {
+                    for (auto &val : row) {
+                        val = val / sample_count;
+                    }
+                }
+            }*/
+
+            for (auto &row : fourier_coeffs) {
+                for (auto &val : row) {
+                    val = 0.5f + 0.5f * val * 0.005f;
+                    if (val < 0.0f) val = 0.0f;
+                    else if (val > 1.0f) val = 1.0f;
+                }
+            }
+
             sample_count = 1;
 
-
-            float k = 1.0f / (std::sqrt(2.0f) / 0.005f);
-
+            float k = 0.005f;
+#if 0
             uint32_t r = (uint32_t)(sum[0] * k),
                      g = (uint32_t)(sum[1] * k),
                      b = (uint32_t)(sum[2] * k);
+#else
+            uint32_t r = (uint32_t)(fourier_coeffs[0][1] * 255),
+                     g = (uint32_t)(fourier_coeffs[1][1] * 255),
+                     b = (uint32_t)(fourier_coeffs[2][1] * 255);
+#endif
 
-            if (r > 255) r = 255;
+            if (r > 255) {
+                r = 255;
+            }
             if (g > 255) g = 255;
             if (b > 255) b = 255;
 
