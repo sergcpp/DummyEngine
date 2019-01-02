@@ -99,6 +99,9 @@ private:
 
     uint32_t unif_matrices_block_;
     uint32_t shadow_pass_vao_, depth_pass_vao_, draw_pass_vao_;
+    uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
+
+    void CheckInitVAOs();
 #endif
 
     //temp

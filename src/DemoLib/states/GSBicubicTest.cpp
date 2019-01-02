@@ -550,14 +550,14 @@ void GSBicubicTest::Draw(float dt_s) {
             }
 
             if (p0[0] < 0) p0[0] = 0.0f;
-            else if (p0[0] >= img_copy.w) p0[0] = img_copy.w - 1;
+            else if (p0[0] >= img_copy.w) p0[0] = (float)(img_copy.w - 1);
             if (p0[1] < 0) p0[1] = 0.0f;
-            else if (p0[1] >= img_copy.h) p0[1] = img_copy.h - 1;
+            else if (p0[1] >= img_copy.h) p0[1] = (float)(img_copy.h - 1);
 
             if (p1[0] < 0) p1[0] = 0.0f;
-            else if (p1[0] >= img_copy.w) p1[0] = img_copy.w - 1;
+            else if (p1[0] >= img_copy.w) p1[0] = (float)(img_copy.w - 1);
             if (p1[1] < 0) p1[1] = 0.0f;
-            else if (p1[1] >= img_copy.h) p1[1] = img_copy.h - 1;
+            else if (p1[1] >= img_copy.h) p1[1] = (float)(img_copy.h - 1);
 
             Ren::Vec2f delta = p1 - p0;
 
