@@ -608,7 +608,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                     const Ren::Mesh *mesh = dr.mesh;
                     const Ren::TriStrip *strip = dr.strip;
 
-
                     if (clip_from_object != cur_clip_from_object) {
                         glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
                         cur_clip_from_object = clip_from_object;

@@ -157,6 +157,9 @@ void Renderer::BackgroundProc() {
             Ren::Mat4f view_from_identity = view_from_world * Ren::Mat4f{ 1.0f },
                        clip_from_identity = clip_from_view * view_from_identity;
 
+            const uint32_t skip_check_bit = (1 << 31);
+            const uint32_t index_bits = ~skip_check_bit;
+
             uint32_t stack[MAX_STACK_SIZE];
             uint32_t stack_size = 0;
 
@@ -165,14 +168,19 @@ void Renderer::BackgroundProc() {
                 stack[stack_size++] = (uint32_t)root_node_;
 
                 while (stack_size && culling_enabled_) {
-                    uint32_t cur = stack[--stack_size];
+                    uint32_t cur = stack[--stack_size] & index_bits;
+                    uint32_t skip_check = (stack[stack_size] & skip_check_bit);
                     const auto *n = &nodes_[cur];
 
-                    if (!draw_cam_.IsInFrustum(n->bbox[0], n->bbox[1])) continue;
+                    if (!skip_check) {
+                        auto res = draw_cam_.CheckFrustumVisibility(n->bbox[0], n->bbox[1]);
+                        if (res == Ren::NotVisible) continue;
+                        else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
+                    }
 
                     if (!n->prim_count) {
-                        stack[stack_size++] = n->left_child;
-                        stack[stack_size++] = n->right_child;
+                        stack[stack_size++] = skip_check | n->left_child;
+                        stack[stack_size++] = skip_check | n->right_child;
                     } else {
                         for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
                             const auto &obj = objects_[obj_indices_[i]];
@@ -181,7 +189,8 @@ void Renderer::BackgroundProc() {
                             if ((obj.flags & occluder_flags) == occluder_flags) {
                                 const auto *tr = obj.tr.get();
 
-                                if (!draw_cam_.IsInFrustum(tr->bbox_min_ws, tr->bbox_max_ws)) continue;
+                                if (!skip_check &&
+                                    draw_cam_.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::NotVisible) continue;
 
                                 const Ren::Mat4f &world_from_object = tr->mat;
 
@@ -218,43 +227,51 @@ void Renderer::BackgroundProc() {
 
             {
                 // Gather drawable meshes, skip occluded and frustum culled
+                const uint32_t skip_check_bit = (1 << 31);
+                const uint32_t index_bits = ~skip_check_bit;
+
                 stack_size = 0;
                 stack[stack_size++] = (uint32_t)root_node_;
 
                 while (stack_size) {
-                    uint32_t cur = stack[--stack_size];
+                    uint32_t cur = stack[--stack_size] & index_bits;
+                    uint32_t skip_check = stack[stack_size] & skip_check_bit;
                     const auto *n = &nodes_[cur];
 
-                    const float bbox_points[8][3] = { BBOX_POINTS(n->bbox[0], n->bbox[1]) };
-                    if (!draw_cam_.IsInFrustum(bbox_points)) continue;
+                    if (!skip_check) {
+                        const float bbox_points[8][3] = { BBOX_POINTS(n->bbox[0], n->bbox[1]) };
+                        auto res = draw_cam_.CheckFrustumVisibility(bbox_points);
+                        if (res == Ren::NotVisible) continue;
+                        else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
 
-                    if (culling_enabled_) {
-                        const auto &cam_pos = draw_cam_.world_position();
+                        if (culling_enabled_) {
+                            const auto &cam_pos = draw_cam_.world_position();
 
-                        // do not question visibility of the node in which we are inside
-                        if (cam_pos[0] < n->bbox[0][0] - 0.5f || cam_pos[1] < n->bbox[0][1] - 0.5f || cam_pos[2] < n->bbox[0][2] - 0.5f ||
+                            // do not question visibility of the node in which we are inside
+                            if (cam_pos[0] < n->bbox[0][0] - 0.5f || cam_pos[1] < n->bbox[0][1] - 0.5f || cam_pos[2] < n->bbox[0][2] - 0.5f ||
                                 cam_pos[0] > n->bbox[1][0] + 0.5f || cam_pos[1] > n->bbox[1][1] + 0.5f || cam_pos[2] > n->bbox[1][2] + 0.5f) {
-                            SWcull_surf surf;
+                                SWcull_surf surf;
 
-                            surf.type = SW_OCCLUDEE;
-                            surf.prim_type = SW_TRIANGLES;
-                            surf.index_type = SW_UNSIGNED_BYTE;
-                            surf.attribs = &bbox_points[0][0];
-                            surf.indices = &bbox_indices[0];
-                            surf.stride = 3 * sizeof(float);
-                            surf.count = 36;
-                            surf.xform = Ren::ValuePtr(clip_from_identity);
-                            surf.dont_skip = nullptr;
+                                surf.type = SW_OCCLUDEE;
+                                surf.prim_type = SW_TRIANGLES;
+                                surf.index_type = SW_UNSIGNED_BYTE;
+                                surf.attribs = &bbox_points[0][0];
+                                surf.indices = &bbox_indices[0];
+                                surf.stride = 3 * sizeof(float);
+                                surf.count = 36;
+                                surf.xform = Ren::ValuePtr(clip_from_identity);
+                                surf.dont_skip = nullptr;
 
-                            swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
+                                swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
-                            if (surf.visible == 0) continue;
+                                if (surf.visible == 0) continue;
+                            }
                         }
                     }
 
                     if (!n->prim_count) {
-                        stack[stack_size++] = n->left_child;
-                        stack[stack_size++] = n->right_child;
+                        stack[stack_size++] = skip_check | n->left_child;
+                        stack[stack_size++] = skip_check | n->right_child;
                     } else {
                         for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
                             const auto &obj = objects_[obj_indices_[i]];
@@ -263,30 +280,32 @@ void Renderer::BackgroundProc() {
                             if ((obj.flags & drawable_flags) == drawable_flags) {
                                 const auto *tr = obj.tr.get();
 
-                                const float bbox_points[8][3] = { BBOX_POINTS(tr->bbox_min_ws, tr->bbox_max_ws) };
-                                if (!draw_cam_.IsInFrustum(bbox_points)) continue;
+                                if (!skip_check) {
+                                    const float bbox_points[8][3] = { BBOX_POINTS(tr->bbox_min_ws, tr->bbox_max_ws) };
+                                    if (draw_cam_.CheckFrustumVisibility(bbox_points) == Ren::NotVisible) continue;
 
-                                if (culling_enabled_ && n->prim_count > 1) {
-                                    const auto &cam_pos = draw_cam_.world_position();
+                                    if (culling_enabled_ && n->prim_count > 1) {
+                                        const auto &cam_pos = draw_cam_.world_position();
 
-                                    // do not question visibility of the object in which we are inside
-                                    if (cam_pos[0] < tr->bbox_min_ws[0] - 0.5f || cam_pos[1] < tr->bbox_min_ws[1] - 0.5f || cam_pos[2] < tr->bbox_min_ws[2] - 0.5f ||
+                                        // do not question visibility of the object in which we are inside
+                                        if (cam_pos[0] < tr->bbox_min_ws[0] - 0.5f || cam_pos[1] < tr->bbox_min_ws[1] - 0.5f || cam_pos[2] < tr->bbox_min_ws[2] - 0.5f ||
                                             cam_pos[0] > tr->bbox_max_ws[0] + 0.5f || cam_pos[1] > tr->bbox_max_ws[1] + 0.5f || cam_pos[2] > tr->bbox_max_ws[2] + 0.5f) {
-                                        SWcull_surf surf;
+                                            SWcull_surf surf;
 
-                                        surf.type = SW_OCCLUDEE;
-                                        surf.prim_type = SW_TRIANGLES;
-                                        surf.index_type = SW_UNSIGNED_BYTE;
-                                        surf.attribs = &bbox_points[0][0];
-                                        surf.indices = &bbox_indices[0];
-                                        surf.stride = 3 * sizeof(float);
-                                        surf.count = 36;
-                                        surf.xform = Ren::ValuePtr(clip_from_identity);
-                                        surf.dont_skip = nullptr;
+                                            surf.type = SW_OCCLUDEE;
+                                            surf.prim_type = SW_TRIANGLES;
+                                            surf.index_type = SW_UNSIGNED_BYTE;
+                                            surf.attribs = &bbox_points[0][0];
+                                            surf.indices = &bbox_indices[0];
+                                            surf.stride = 3 * sizeof(float);
+                                            surf.count = 36;
+                                            surf.xform = Ren::ValuePtr(clip_from_identity);
+                                            surf.dont_skip = nullptr;
 
-                                        swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
+                                            swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
-                                        if (surf.visible == 0) continue;
+                                            if (surf.visible == 0) continue;
+                                        }
                                     }
                                 }
 
@@ -390,18 +409,24 @@ void Renderer::BackgroundProc() {
                 view_from_world = shadow_cam.view_matrix(),
                 clip_from_view = shadow_cam.projection_matrix();
 
+                const uint32_t skip_check_bit = (1 << 31);
+                const uint32_t index_bits = ~skip_check_bit;
+
                 stack_size = 0;
                 stack[stack_size++] = (uint32_t)root_node_;
 
                 while (stack_size) {
-                    uint32_t cur = stack[--stack_size];
+                    uint32_t cur = stack[--stack_size] & index_bits;
+                    uint32_t skip_check = stack[stack_size] & skip_check_bit;
                     const auto *n = &nodes_[cur];
 
-                    if (!shadow_cam.IsInFrustum(n->bbox[0], n->bbox[1])) continue;
+                    auto res = shadow_cam.CheckFrustumVisibility(n->bbox[0], n->bbox[1]);
+                    if (res == Ren::NotVisible) continue;
+                    else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
 
                     if (!n->prim_count) {
-                        stack[stack_size++] = n->left_child;
-                        stack[stack_size++] = n->right_child;
+                        stack[stack_size++] = skip_check | n->left_child;
+                        stack[stack_size++] = skip_check | n->right_child;
                     } else {
                         for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
                             const auto &obj = objects_[obj_indices_[i]];
@@ -410,7 +435,8 @@ void Renderer::BackgroundProc() {
                             if ((obj.flags & drawable_flags) == drawable_flags) {
                                 const auto *tr = obj.tr.get();
 
-                                if (!shadow_cam.IsInFrustum(tr->bbox_min_ws, tr->bbox_max_ws)) continue;
+                                if (!skip_check &&
+                                    shadow_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::NotVisible) continue;
 
                                 const Ren::Mat4f &world_from_object = tr->mat;
 
