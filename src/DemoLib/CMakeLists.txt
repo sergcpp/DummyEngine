@@ -34,7 +34,7 @@ set(UTILS_SOURCES Utils/BVHSplit.h
 if(${RENDERER} STREQUAL "GL")
     set(SCENE_SOURCES ${SCENE_SOURCES}
 						Scene/FrameBufGL.cpp
-                        Scene/RendererGL_ES3.cpp)
+                        Scene/Renderer_GLES3.cpp)
     set(STATES_SOURCES ${STATES_SOURCES}
                        States/GSDefTestGL.cpp
                        States/GSOccTestGL.cpp)
