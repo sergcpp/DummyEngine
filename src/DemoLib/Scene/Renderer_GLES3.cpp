@@ -35,7 +35,7 @@ void main() {
 )";
 
     const char shadow_vs[] = R"(
-#version 310 es
+#version 300 es
 
 /*
 UNIFORMS
@@ -52,7 +52,7 @@ void main() {
 )";
 
     const char shadow_fs[] = R"(
-#version 310 es
+#version 300 es
 #ifdef GL_ES
     precision mediump float;
 #endif
@@ -63,7 +63,7 @@ void main() {
 )";
 
     const char blit_vs[] = R"(
-#version 310 es
+#version 300 es
 
 layout(location = 0) in vec2 aVertexPosition;
 layout(location = 3) in vec2 aVertexUVs;
@@ -77,7 +77,7 @@ void main() {
 )";
 
     const char blit_fs[] = R"(
-#version 310 es
+#version 300 es
 #ifdef GL_ES
 	precision mediump float;
 #endif
@@ -96,6 +96,20 @@ out vec4 outColor;
 void main() {
     outColor = texelFetch(s_texture, ivec2(aVertexUVs_), 0);
 }
+)";
+
+    const char blit_ms_vs[] = R"(
+#version 310 es
+
+layout(location = 0) in vec2 aVertexPosition;
+layout(location = 3) in vec2 aVertexUVs;
+
+out vec2 aVertexUVs_;
+
+void main() {
+    aVertexUVs_ = aVertexUVs;
+    gl_Position = vec4(aVertexPosition, 0.5, 1.0);
+} 
 )";
 
     const char blit_ms_fs[] = R"(
@@ -221,7 +235,7 @@ void main() {
 )";
 
 const char blit_reduced_fs[] = R"(
-#version 310 es
+#version 300 es
 #ifdef GL_ES
 	precision mediump float;
 #endif
@@ -246,7 +260,7 @@ void main() {
 )";
 
     const char blit_down_fs[] = R"(
-#version 310 es
+#version 300 es
 
 #ifdef GL_ES
 	precision mediump float;
@@ -437,10 +451,10 @@ void Renderer::InitRendererInternal() {
     blit_combine_prog_ = ctx_.LoadProgramGLSL("blit_combine", blit_vs, blit_combine_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_combine_ms");
-    blit_combine_ms_prog_ = ctx_.LoadProgramGLSL("blit_combine_ms", blit_vs, blit_combine_ms_fs, &status);
+    blit_combine_ms_prog_ = ctx_.LoadProgramGLSL("blit_combine_ms", blit_ms_vs, blit_combine_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_ms");
-    blit_ms_prog_ = ctx_.LoadProgramGLSL("blit_ms", blit_vs, blit_ms_fs, &status);
+    blit_ms_prog_ = ctx_.LoadProgramGLSL("blit_ms", blit_ms_vs, blit_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_red");
     blit_red_prog_ = ctx_.LoadProgramGLSL("blit_red", blit_vs, blit_reduced_fs, &status);
@@ -449,7 +463,7 @@ void Renderer::InitRendererInternal() {
     blit_down_prog_ = ctx_.LoadProgramGLSL("blit_down", blit_vs, blit_down_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_down_ms");
-    blit_down_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_ms", blit_vs, blit_down_ms_fs, &status);
+    blit_down_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_ms", blit_ms_vs, blit_down_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_gauss");
     blit_gauss_prog_ = ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
