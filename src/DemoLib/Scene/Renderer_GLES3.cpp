@@ -7,7 +7,7 @@
 
 namespace RendererInternal {
 const char fillz_vs[] = R"(
-#version 310 es
+#version 300 es
 
 /*
 UNIFORMS
@@ -24,6 +24,8 @@ void main() {
 )";
 
     const char fillz_fs[] = R"(
+#version 300 es
+
 #ifdef GL_ES
 	precision mediump float;
 #endif
@@ -50,6 +52,7 @@ void main() {
 )";
 
     const char shadow_fs[] = R"(
+#version 310 es
 #ifdef GL_ES
     precision mediump float;
 #endif
@@ -613,10 +616,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                         cur_clip_from_object = clip_from_object;
                     }
 
-                    const int stride = 13 * sizeof(float);
-                    GLint base_vertex = mesh->attribs_offset() / stride;
-                    glDrawElementsBaseVertex(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT,
-                        (void *)uintptr_t(mesh->indices_offset() + strip->offset), base_vertex);
+                    glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(mesh->indices_offset() + strip->offset));
                 }
             }
         }
@@ -654,10 +654,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                 cur_clip_from_object = clip_from_object;
             }
 
-            const int stride = 13 * sizeof(float);
-            GLint base_vertex = mesh->attribs_offset() / stride;
-            glDrawElementsBaseVertex(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT,
-                (void *)uintptr_t(mesh->indices_offset() + strip->offset), base_vertex);
+            glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(mesh->indices_offset() + strip->offset));
         }
 
         glBindVertexArray(0);
@@ -802,10 +799,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             }
         }
 
-        const int stride = sizeof(float) * 13;
-        GLint base_vertex = mesh->attribs_offset() / stride;
-        glDrawElementsBaseVertex(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT,
-            (void *)uintptr_t(mesh->indices_offset() + strip->offset), base_vertex);
+        glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(mesh->indices_offset() + strip->offset));
     }
 
     glBindVertexArray(0);

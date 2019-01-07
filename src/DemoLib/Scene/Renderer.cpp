@@ -204,16 +204,18 @@ void Renderer::BackgroundProc() {
 
                                 const Ren::TriStrip *s = &mesh->strip(0);
                                 while (s->offset != -1) {
-                                    surf[surf_count].type = SW_OCCLUDER;
-                                    surf[surf_count].prim_type = SW_TRIANGLES;
-                                    surf[surf_count].index_type = SW_UNSIGNED_INT;
-                                    surf[surf_count].attribs = mesh->attribs();
-                                    surf[surf_count].indices = ((const uint8_t *)mesh->indices() + s->offset);
-                                    surf[surf_count].stride = 13 * sizeof(float);
-                                    surf[surf_count].count = (SWuint)s->num_indices;
-                                    surf[surf_count].xform = Ren::ValuePtr(clip_from_object);
-                                    surf[surf_count].dont_skip = nullptr;
-                                    surf_count++;
+                                    SWcull_surf *_surf = &surf[surf_count++];
+
+                                    _surf->type = SW_OCCLUDER;
+                                    _surf->prim_type = SW_TRIANGLES;
+                                    _surf->index_type = SW_UNSIGNED_INT;
+                                    _surf->attribs = mesh->attribs();
+                                    _surf->indices = ((const uint8_t *)mesh->indices() + s->offset);
+                                    _surf->stride = 13 * sizeof(float);
+                                    _surf->count = (SWuint)s->num_indices;
+                                    _surf->base_vertex = -SWint(mesh->attribs_offset() / _surf->stride);
+                                    _surf->xform = Ren::ValuePtr(clip_from_object);
+                                    _surf->dont_skip = nullptr;
 
                                     ++s;
                                 }
@@ -259,6 +261,7 @@ void Renderer::BackgroundProc() {
                                 surf.indices = &bbox_indices[0];
                                 surf.stride = 3 * sizeof(float);
                                 surf.count = 36;
+                                surf.base_vertex = 0;
                                 surf.xform = Ren::ValuePtr(clip_from_identity);
                                 surf.dont_skip = nullptr;
 
