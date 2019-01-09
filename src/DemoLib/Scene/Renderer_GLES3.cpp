@@ -124,11 +124,9 @@ void main() {
 UNIFORMS
     s_texture : 3
     uTexSize : 5
-    gamma : 12
-    exposure : 13
 */
         
-uniform mediump sampler2DMS s_texture;
+layout(location = 14) uniform mediump sampler2DMS s_texture;
 
 in vec2 aVertexUVs_;
 
@@ -150,15 +148,13 @@ UNIFORMS
     s_texture : 3
     s_blured_texture : 4
     uTexSize : 5
-    gamma : 12
-    exposure : 13
 */
         
 uniform sampler2D s_texture;
 uniform sampler2D s_blured_texture;
 uniform vec2 uTexSize;
-uniform float gamma;
-uniform float exposure;
+layout(location = 14) uniform float gamma;
+layout(location = 15) uniform float exposure;
 
 in vec2 aVertexUVs_;
 
@@ -189,15 +185,13 @@ UNIFORMS
     s_texture : 3
     s_blured_texture : 4
     uTexSize : 5
-    gamma : 12
-    exposure : 13
 */
         
 uniform mediump sampler2DMS s_texture;
 uniform sampler2D s_blured_texture;
 uniform vec2 uTexSize;
-uniform float gamma;
-uniform float exposure;
+layout(location = 14) uniform float gamma;
+layout(location = 15) uniform float exposure;
 
 in vec2 aVertexUVs_;
 
@@ -413,11 +407,11 @@ void main() {
     const int U_LM_INDIR_TEX = 7;
     const int U_LM_INDIR_SH_TEX = 8;
 
-    const int U_SUN_DIR = 10;
-    const int U_SUN_COL = 11;
+    const int U_SUN_DIR = 12;
+    const int U_SUN_COL = 13;
 
-    const int U_GAMMA = 12;
-    const int U_EXPOSURE = 13;
+    const int U_GAMMA = 14;
+    const int U_EXPOSURE = 15;
 
     const int DIFFUSEMAP_SLOT = 0;
     const int NORMALMAP_SLOT = 1;
@@ -713,20 +707,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
             glBindBufferBase(GL_UNIFORM_BUFFER, p->uniform_block(U_MATRICES).loc, (GLuint)unif_matrices_block_);
 
-            glUniform1i(p->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
-            glUniform1i(p->uniform(U_NORM_TEX).loc, NORMALMAP_SLOT);
-            glUniform1i(p->uniform(U_SHADOW_TEX).loc, SHADOWMAP_SLOT);
-            glUniform1i(p->uniform(U_LM_DIR_TEX).loc, LM_DIRECT_SLOT);
-            glUniform1i(p->uniform(U_LM_INDIR_TEX).loc, LM_INDIR_SLOT);
+            glUniform3fv(U_SUN_DIR, 1, Ren::ValuePtr(env.sun_dir));
+            glUniform3fv(U_SUN_COL, 1, Ren::ValuePtr(env.sun_col));
 
-            for (int sh_l = 0; sh_l < 4; sh_l++) {
-                glUniform1i(p->uniform(U_LM_INDIR_SH_TEX).loc + sh_l, LM_INDIR_SH_SLOT + sh_l);
-            }
-
-            glUniform3fv(p->uniform(U_SUN_DIR).loc, 1, Ren::ValuePtr(env.sun_dir));
-            glUniform3fv(p->uniform(U_SUN_COL).loc, 1, Ren::ValuePtr(env.sun_col));
-
-            glUniform1f(p->uniform(U_GAMMA).loc, 2.2f);
+            glUniform1f(U_GAMMA, 2.2f);
 
             if (clip_from_object == cur_clip_from_object) {
                 //glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
@@ -994,11 +978,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
         glUniform1i(cur_program->uniform(U_TEX + 1).loc, DIFFUSEMAP_SLOT + 1);
         glUniform2f(cur_program->uniform(U_TEX + 2).loc, float(w_), float(h_));
-        glUniform1f(cur_program->uniform(U_GAMMA).loc, 2.2f);
+        glUniform1f(U_GAMMA, 2.2f);
 
         float exposure = 0.7f / reduced_average_;
 
-        glUniform1f(cur_program->uniform(U_EXPOSURE).loc, exposure);
+        glUniform1f(U_EXPOSURE, exposure);
 
         if (clean_buf_.msaa > 1) {
             glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));

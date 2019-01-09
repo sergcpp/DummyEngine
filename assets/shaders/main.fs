@@ -3,34 +3,17 @@
 #ifdef GL_ES
     precision mediump float;
 #endif
-    
-/*
-UNIFORMS
-    diffuse_texture : 3
-    normals_texture : 4
-    shadow_texture : 5
-    lm_direct_texture : 6
-    lm_indirect_texture : 7
-    lm_indirect_sh_texture[0] : 8
-    sun_dir : 10
-    sun_col : 11
-    gamma : 12
-    
-*/
 
-uniform sampler2D diffuse_texture;
-uniform sampler2D normals_texture;
-uniform sampler2D shadow_texture;
-uniform sampler2D lm_direct_texture;
-uniform sampler2D lm_indirect_texture;
-uniform sampler2D lm_indirect_sh_texture[4];
+layout(location = 3, binding = 0) uniform sampler2D diffuse_texture;
+layout(location = 4, binding = 1) uniform sampler2D normals_texture;
+layout(location = 5, binding = 2) uniform sampler2D shadow_texture;
+layout(location = 6, binding = 3) uniform sampler2D lm_direct_texture;
+layout(location = 7, binding = 4) uniform sampler2D lm_indirect_texture;
+layout(location = 8, binding = 5) uniform sampler2D lm_indirect_sh_texture[4];
 
-/*struct {
-
-}*/
-
-uniform vec3 sun_dir, sun_col;
-uniform float gamma;
+layout(location = 12) uniform vec3 sun_dir;
+layout(location = 13) uniform vec3 sun_col;
+layout(location = 14) uniform float gamma;
 
 in mat3 aVertexTBN_;
 in vec2 aVertexUVs1_;
@@ -101,37 +84,34 @@ void main(void) {
     float lambert = max(dot(normal, sun_dir), 0.0);
     float visibility = 1.0;
     if (lambert > 0.00001) {
-        float bias = 0.0;//0.001 * tan(acos(lambert));//max(0.00125 * (1.0 - lambert), 0.00025);
-        //bias = clamp(bias, 0.00025, 0.002);
-
         float frag_depth = gl_FragCoord.z / gl_FragCoord.w;
         if (frag_depth < 8.0) {
-            for (int i = 0; i < 32; i++) {
+            for (int i = 0; i < 16; i++) {
                 float frag_z_ls = texture(shadow_texture, frag_pos_ls[0].xy + poisson_disk[i] * shadow_softness).r;
-                if (frag_pos_ls[0].z - bias > frag_z_ls) {
-                    visibility -= 1.0/32.0;
+                if (frag_pos_ls[0].z > frag_z_ls) {
+                    visibility -= 1.0/16.0;
                 }
             }
         } else if (frag_depth < 24.0) {
             frag_pos_ls[1].x += 0.5;
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < 16; i++) {
                 float frag_z_ls = texture(shadow_texture, frag_pos_ls[1].xy + poisson_disk[i] * shadow_softness * 0.25).r;
-                if (frag_pos_ls[1].z - bias * 2.0 > frag_z_ls) {
-                    visibility -= 1.0/8.0;
+                if (frag_pos_ls[1].z > frag_z_ls) {
+                    visibility -= 1.0/16.0;
                 }
             }
         } else if (frag_depth < 56.0) {
             frag_pos_ls[2].y += 0.5;
             for (int i = 0; i < 4; i++) {
                 float frag_z_ls = texture(shadow_texture, frag_pos_ls[2].xy + poisson_disk[i] * shadow_softness * 0.125).r;
-                if (frag_pos_ls[2].z - bias * 4.0 > frag_z_ls) {
+                if (frag_pos_ls[2].z > frag_z_ls) {
                     visibility -= 1.0/4.0;
                 }
             }
         } else if (frag_depth < 120.0) {
             frag_pos_ls[3].xy += 0.5;
             float frag_z_ls = texture(shadow_texture, frag_pos_ls[3].xy).r;
-            if (frag_pos_ls[3].z - bias * 8.0 > frag_z_ls) {
+            if (frag_pos_ls[3].z > frag_z_ls) {
                 visibility -= 1.0;
             }
         } else {
