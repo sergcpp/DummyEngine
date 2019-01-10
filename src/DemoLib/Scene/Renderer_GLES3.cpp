@@ -607,9 +607,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                     glPolygonOffset(1.5f, 6.0f);
                 } else if (casc == 1) {
                     glViewport(shadow_buf_.w / 2, 0, shadow_buf_.w / 2, shadow_buf_.h / 2);
-                    glPolygonOffset(1.25f, 4.0f);
                 } else if (casc == 2) {
                     glViewport(0, shadow_buf_.h / 2, shadow_buf_.w / 2, shadow_buf_.h / 2);
+                    glPolygonOffset(1.75f, 6.0f);
                 } else {
                     glViewport(shadow_buf_.w / 2, shadow_buf_.h / 2, shadow_buf_.w / 2, shadow_buf_.h / 2);
                 }
@@ -1134,8 +1134,10 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
         Ren::Program *cur_program = blit_prog_.get();
         glUseProgram(cur_program->prog_id());
 
-        const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,
-                                      1.0f, 1.0f,         -1.0f, 1.0f };
+        float k = float(ctx_.h()) / ctx_.w();
+
+        const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f * k, -1.0f,
+                                      1.0f * k, 1.0f,     -1.0f, 1.0f };
 
         const float fs_quad_uvs[] = { 0.0f, float(h),     float(w), float(h),
                                       float(w), 0.0f,     0.0f, 0.0f };

@@ -20,7 +20,7 @@ static const uint8_t bbox_indices[] = { 0, 1, 2,    2, 1, 3,
 
 const int MAX_STACK_SIZE = 64;
 
-const int SHADOWMAP_RES = 4096;
+const int SHADOWMAP_RES = 2048;
 }
 
 #define BBOX_POINTS(min, max) \

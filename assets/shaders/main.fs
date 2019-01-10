@@ -77,7 +77,7 @@ void main(void) {
     
     vec2 lm_uvs = vec2(aVertexUVs2_.x, 1.0 - aVertexUVs2_.y);
 
-    const float shadow_softness = 2.0 / 4096.0;
+    const float shadow_softness = 2.0 / 2048.0;
 
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
 
@@ -107,8 +107,6 @@ void main(void) {
             additional_light = texture(lm_direct_texture, lm_uvs).rgb;
         }
     }
-    
-    
     
     vec3 indirect_col = texture(lm_indirect_texture, lm_uvs).rgb;
     

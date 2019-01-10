@@ -208,13 +208,15 @@ void SceneManager::ResetLightmaps_PT() {
 bool SceneManager::PrepareLightmaps_PT() {
     if (!ray_scene_) return false;
 
-    const int LM_SAMPLES = 512 * 16;
+    const int LM_SAMPLES_TOTAL = 512;
+    const int LM_SAMPLES_PER_PASS = 16;
 
     const int res = (int)objects_[cur_lm_obj_].lm_res;
 
     if (ray_reg_ctx_.empty()) {
         if (ray_renderer_.type() == Ray::RendererOCL) {
             ray_reg_ctx_.emplace_back(Ray::rect_t{ 0, 0, res, res });
+            ray_renderer_.Resize(res, res);
         }
     }
 
@@ -227,7 +229,7 @@ bool SceneManager::PrepareLightmaps_PT() {
     // special lightmap camera
     ray_scene_->set_current_cam(1);
 
-    if (ray_reg_ctx_[0].iteration >= LM_SAMPLES) {
+    if (ray_reg_ctx_[0].iteration >= LM_SAMPLES_TOTAL) {
         {
             // Save lightmap to file
             const auto *pixels = ray_renderer_.get_pixels_ref();
@@ -390,13 +392,15 @@ bool SceneManager::PrepareLightmaps_PT() {
         }
     }
 
-    if (ray_renderer_.type() == Ray::RendererOCL) {
-        ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[0]);
-    } else {
+    for (int i = 0; i < LM_SAMPLES_PER_PASS; i++) {
+        if (ray_renderer_.type() == Ray::RendererOCL) {
+            ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[0]);
+        } else {
 
+        }
     }
 
-    LOGI("Lightmap: %i %i/%i", int(cur_lm_obj_), ray_reg_ctx_[0].iteration, LM_SAMPLES);
+    LOGI("Lightmap: %i %i/%i", int(cur_lm_obj_), ray_reg_ctx_[0].iteration, LM_SAMPLES_TOTAL);
 
     const auto *pixels = ray_renderer_.get_pixels_ref();
     renderer_.BlitPixels(pixels, res, res, Ren::RawRGBA32F);
