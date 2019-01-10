@@ -730,6 +730,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
             BindTexture(SHADOWMAP_SLOT, shadow_buf_.depth_tex.GetValue());
 
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+
             cur_program = p;
         }
 

@@ -45,7 +45,7 @@ Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
 
     InitRendererInternal();
 
-    shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::None, Ren::NoFilter, Ren::ClampToEdge, true);
+    shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::None, Ren::BilinearNoMipmap, Ren::ClampToEdge, true);
 
     reduced_buf_ = FrameBuf(16, 8, Ren::RawR16F, Ren::Bilinear, Ren::ClampToEdge, false);
 
