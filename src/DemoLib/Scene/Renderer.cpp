@@ -202,7 +202,7 @@ void Renderer::BackgroundProc() {
                                 SWcull_surf surf[16];
                                 int surf_count = 0;
 
-                                const Ren::TriStrip *s = &mesh->strip(0);
+                                const Ren::TriGroup *s = &mesh->group(0);
                                 while (s->offset != -1) {
                                     SWcull_surf *_surf = &surf[surf_count++];
 
@@ -327,7 +327,7 @@ void Renderer::BackgroundProc() {
 
                                 object_to_drawable_[i] = (uint32_t)dr_list.size();
 
-                                const Ren::TriStrip *s = &mesh->strip(0);
+                                const Ren::TriGroup *s = &mesh->group(0);
                                 while (s->offset != -1) {
                                     dr_list.push_back({ &tr_list.back(), &world_from_object, s->mat.get(), mesh, s, lm_dir_tex, lm_indir_tex });
                                     
@@ -453,7 +453,7 @@ void Renderer::BackgroundProc() {
                                     auto *dr = &dr_list[dr_index];
                                     const auto *mesh = dr->mesh;
 
-                                    const Ren::TriStrip *s = &mesh->strip(0);
+                                    const Ren::TriGroup *s = &mesh->group(0);
                                     while (s->offset != -1) {
                                         dr->sh_clip_from_object[casc] = &tr_list.back();
                                         ++dr;
@@ -463,7 +463,7 @@ void Renderer::BackgroundProc() {
 
                                 const auto *mesh = obj.mesh.get();
 
-                                const Ren::TriStrip *s = &mesh->strip(0);
+                                const Ren::TriGroup *s = &mesh->group(0);
                                 while (s->offset != -1) {
                                     sh_dr_list[casc].push_back({ &tr_list.back(), nullptr, s->mat.get(), mesh, s, nullptr, nullptr });
                                     ++s;

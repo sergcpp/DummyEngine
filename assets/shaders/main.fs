@@ -2,6 +2,7 @@
 
 #ifdef GL_ES
     precision mediump float;
+    precision mediump sampler2DShadow;
 #endif
 
 layout(binding = 0) uniform sampler2D diffuse_texture;

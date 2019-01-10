@@ -669,8 +669,8 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         total_indices.insert(total_indices.end(), reordered_indices[i].begin(), reordered_indices[i].end());
     }
 
-    for (auto &strip : alpha_chunks) {
-        total_chunks.push_back(strip);
+    for (auto &tris : alpha_chunks) {
+        total_chunks.push_back(tris);
     }
 
     for (int mat_ndx : alpha_mats) {

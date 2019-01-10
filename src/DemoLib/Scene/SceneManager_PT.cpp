@@ -520,7 +520,7 @@ void SceneManager::InitScene_PT(bool _override) {
                 mesh_desc.vtx_indices_count = (uint32_t)(mesh->indices_size() / sizeof(uint32_t));
                 mesh_desc.base_vertex = -int(mesh->attribs_offset() / (13 * sizeof(float)));
 
-                const Ren::TriStrip *s = &mesh->strip(0);
+                const Ren::TriGroup *s = &mesh->group(0);
                 while (s->offset != -1) {
                     const auto *mat = s->mat.get();
                     const char *mat_name = mat->name();
