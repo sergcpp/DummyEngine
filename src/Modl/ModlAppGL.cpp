@@ -36,7 +36,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     using namespace Ren;
 
     auto m		= ref.get();
-    auto mat	= m->strip(0).mat.get();
+    auto mat	= m->tris(0).mat.get();
     auto p      = mat->program();
 
     glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf_id());
@@ -90,7 +90,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
-    const Ren::TriStrip *s = &m->strip(0);
+    const Ren::TriGroup *s = &m->tris(0);
     while (s->offset != -1) {
         const Ren::Material *mat = s->mat.get();
 
@@ -112,7 +112,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     using namespace Ren;
 
     auto m	    = ref.get();
-    auto mat	= m->strip(0).mat.get();
+    auto mat	= m->tris(0).mat.get();
     auto p		= mat->program();
 
     Ren::Skeleton *skel = m->skel();
@@ -158,7 +158,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
-    const Ren::TriStrip *s = &m->strip(0);
+    const Ren::TriGroup *s = &m->tris(0);
     while (s->offset != -1) {
         const Ren::Material *mat = s->mat.get();
         //R::BindTexture(0, mat->textures[0].tex_id);

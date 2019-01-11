@@ -621,14 +621,14 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                     
                     const Ren::Mat4f *clip_from_object = dr.clip_from_object;
                     const Ren::Mesh *mesh = dr.mesh;
-                    const Ren::TriStrip *strip = dr.strip;
+                    const Ren::TriGroup *tris = dr.tris;
 
                     if (clip_from_object != cur_clip_from_object) {
                         glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
                         cur_clip_from_object = clip_from_object;
                     }
 
-                    glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(mesh->indices_offset() + strip->offset));
+                    glDrawElements(GL_TRIANGLES, tris->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(mesh->indices_offset() + tris->offset));
                 }
             }
         }
@@ -662,14 +662,14 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
             const Ren::Mat4f *clip_from_object = dr.clip_from_object;
             const Ren::Mesh *mesh = dr.mesh;
-            const Ren::TriStrip *strip = dr.strip;
+            const Ren::TriGroup *tris = dr.tris;
 
             if (clip_from_object != cur_clip_from_object) {
                 glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
                 cur_clip_from_object = clip_from_object;
             }
 
-            glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(mesh->indices_offset() + strip->offset));
+            glDrawElements(GL_TRIANGLES, tris->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(mesh->indices_offset() + tris->offset));
         }
 
         glBindVertexArray(0);
@@ -698,7 +698,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                          *const *sh_clip_from_object = dr.sh_clip_from_object;
         const Ren::Material *mat = dr.mat;
         const Ren::Mesh *mesh = dr.mesh;
-        const Ren::TriStrip *strip = dr.strip;
+        const Ren::TriGroup *tris = dr.tris;
 
         const auto *p = mat->program().get();
 
@@ -807,7 +807,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             }
         }
 
-        glDrawElements(GL_TRIANGLES, strip->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(mesh->indices_offset() + strip->offset));
+        glDrawElements(GL_TRIANGLES, tris->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(mesh->indices_offset() + tris->offset));
     }
 
     glBindVertexArray(0);

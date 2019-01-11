@@ -39,7 +39,7 @@ void GSDefTest::DrawMesh() {
     using namespace GSDefTestInternal;
 
     const Ren::Mesh *m = test_mesh_.get();
-    const Ren::Material *mat = m->strip(0).mat.get();
+    const Ren::Material *mat = m->group(0).mat.get();
     const Ren::Program *p = prim_vars_prog_.get();
 
     glUseProgram(p->prog_id());
@@ -73,7 +73,7 @@ void GSDefTest::DrawMesh() {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
-    const Ren::TriStrip *s = &m->strip(0);
+    const Ren::TriGroup *s = &m->group(0);
     while (s->offset != -1) {
         glDrawElements(GL_TRIANGLE_STRIP, s->num_indices, GL_UNSIGNED_SHORT, (void *)uintptr_t(s->offset));
         ++s;

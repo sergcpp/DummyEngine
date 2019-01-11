@@ -139,6 +139,7 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
         depth_tex = _depth_tex;
         glClear(GL_DEPTH_BUFFER_BIT);
     } else if (with_depth) {
+#if 0
         GLuint _depth_rb;
 
         glGenRenderbuffers(1, &_depth_rb);
@@ -149,6 +150,46 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
             glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, w, h);
         }
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depth_rb);
+#else
+        GLuint _depth_tex;
+
+        GLenum target = msaa > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
+
+        glGenTextures(1, &_depth_tex);
+        glBindTexture(target, _depth_tex);
+
+        if (msaa > 1) {
+            glTexStorage2DMultisample(target, msaa, GL_DEPTH_COMPONENT16, w, h, GL_TRUE);
+        } else {
+            glTexStorage2D(target, 1, GL_DEPTH_COMPONENT16, w, h);
+        }
+
+        Ren::CheckError("[Renderer]: create framebuffer 3");
+
+        if (filter == Ren::NoFilter) {
+            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        } else if (filter == Ren::Bilinear || filter == Ren::BilinearNoMipmap) {
+            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        }
+
+        if (repeat == Ren::ClampToEdge) {
+            glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        } else if (repeat == Ren::Repeat) {
+            glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        }
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, _depth_tex, 0);
+
+        //GLenum bufs[] = { GL_NONE };
+        //glDrawBuffers(1, bufs);
+
+        //glReadBuffer(GL_NONE);
+        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+#endif
 
         LOGI("- %ix%i", w, h);
         auto s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -159,9 +200,9 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
             throw std::runtime_error("Framebuffer error!");
         }
 
-        depth_rb = _depth_rb;
+        //depth_rb = _depth_rb;
 
-        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+        //glBindRenderbuffer(GL_RENDERBUFFER, 0);
         glClear(GL_DEPTH_BUFFER_BIT);
     }
 
