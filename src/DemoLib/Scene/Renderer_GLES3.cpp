@@ -607,7 +607,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                     glPolygonOffset(1.5f, 6.0f);
                 } else if (casc == 1) {
                     glViewport(shadow_buf_.w / 2, 0, shadow_buf_.w / 2, shadow_buf_.h / 2);
-                    glPolygonOffset(1.25f, 4.0f);
                 } else if (casc == 2) {
                     glViewport(0, shadow_buf_.h / 2, shadow_buf_.w / 2, shadow_buf_.h / 2);
                 } else {
