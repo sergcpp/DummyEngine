@@ -59,6 +59,7 @@ private:
     size_t cur_lm_obj_ = 0;
 
     Ren::Storage<Transform> transforms_;
+    Ren::Storage<LightSource> lights_;
 
     std::vector<SceneObject> objects_;
     std::vector<uint32_t> obj_indices_;

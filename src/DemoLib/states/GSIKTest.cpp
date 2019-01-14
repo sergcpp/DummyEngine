@@ -256,7 +256,7 @@ void GSIKTest::Update(int dt_ms) {
         goal_change_timer_ -= 1000;
     }
 
-    cur_goal_ = prev_goal_ + (next_goal_ - prev_goal_) * 0.001f * goal_change_timer_;
+    cur_goal_ = prev_goal_ + (next_goal_ - prev_goal_) * 0.001f * float(goal_change_timer_);
 #else
     cur_goal_ = Ren::Vec3f { 0.0f, 0.0f, 0.25f };
 #endif

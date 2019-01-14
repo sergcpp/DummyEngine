@@ -31,7 +31,19 @@ struct Transform : public Ren::RefCounter {
     }
 };
 
-enum eObjectFlags { HasTransform = 1, HasMesh = 2, HasOccluder = 4, UseLightmap = 8 };
+struct LightSource : public Ren::RefCounter {
+    Ren::Vec3f offset;
+    float radius;
+    Ren::Vec3f col;
+    float brightness;
+    Ren::Vec3f dir;
+    float spot;
+    float influence;
+
+    Ren::Vec3f bbox_min, bbox_max;
+};
+
+enum eObjectFlags { HasTransform = 1, HasMesh = 2, HasOccluder = 4, UseLightmap = 8, HasLightSource = 16 };
 
 struct SceneObject {
     uint32_t flags;
@@ -39,6 +51,7 @@ struct SceneObject {
     Ren::MeshRef mesh, occ_mesh;
     Ren::Texture2DRef lm_dir_tex, lm_indir_tex, lm_indir_sh_tex[4];
     uint32_t lm_res, pt_mi;
+    Ren::StorageRef<LightSource> ls[16];
 };
 
 using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;

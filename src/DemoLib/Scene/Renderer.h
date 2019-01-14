@@ -14,6 +14,10 @@ extern "C" {
 #include "FrameBuf.h"
 #include "SceneData.h"
 
+namespace Sys {
+    class ThreadPool;
+}
+
 struct DrawableItem {
     const Ren::Mat4f    *clip_from_object, *world_from_object, *sh_clip_from_object[4];
     const Ren::Material *mat;
@@ -32,9 +36,40 @@ struct DrawableItem {
     }
 };
 
+struct LightSourceItem {
+    float pos[3], radius;
+    float col[3], brightness;
+    float dir[3], spot;
+};
+static_assert(sizeof(LightSourceItem) == 48, "!");
+
+struct CellData {
+    uint32_t item_offset;
+    uint32_t light_count;
+};
+static_assert(sizeof(CellData) == 8, "!");
+
+struct ItemData {
+    uint16_t light_index;
+};
+static_assert(sizeof(ItemData) == 2, "!");
+
+namespace RendererInternal {
+    const int GRID_RES_X = 16;
+    const int GRID_RES_Y = 8;
+    const int GRID_RES_Z = 24;
+
+    const int CELLS_COUNT = GRID_RES_X * GRID_RES_Y * GRID_RES_Z;
+
+    const int MAX_LIGHTS_PER_CELL = 256;
+    const int MAX_LIGHTS_PER_CELL_EXC = 16;
+
+    const int MAX_LIGHTS_COUNT = CELLS_COUNT * MAX_LIGHTS_PER_CELL_EXC;
+}
+
 class Renderer {
 public:
-    Renderer(Ren::Context &ctx);
+    Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads);
     ~Renderer();
 
     void toggle_wireframe() {
@@ -67,6 +102,7 @@ public:
     void BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format);
 private:
     Ren::Context &ctx_;
+    std::shared_ptr<Sys::ThreadPool> threads_;
     SWcull_ctx cull_ctx_;
     Ren::ProgramRef fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_combine_ms_prog_,
         blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_;
@@ -85,7 +121,12 @@ private:
     size_t object_count_ = 0;
     std::vector<Ren::Mat4f> transforms_[2];
     std::vector<DrawableItem> draw_lists_[2], shadow_list_[2][4];
+    std::vector<LightSourceItem> light_sources_[2];
+    std::vector<CellData> cells_[2];
+    std::vector<ItemData> items_[2];
+    int items_count_[2] = {};
     std::vector<uint32_t> object_to_drawable_;
+    std::vector<const LightSource *> litem_to_lsource_;
     Ren::Camera draw_cam_, shadow_cam_[2][4];
     Environment env_;
     TimingInfo timings_, back_timings_[2];
@@ -100,6 +141,7 @@ private:
     uint32_t unif_matrices_block_;
     uint32_t shadow_pass_vao_, depth_pass_vao_, draw_pass_vao_;
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
+    uint32_t lights_ssbo_, lights_tbo_, cells_ssbo_, cells_tbo_, items_ssbo_, items_tbo_;
 
     void CheckInitVAOs();
 #endif
@@ -112,12 +154,13 @@ private:
 
     void InitRendererInternal();
     void DestroyRendererInternal();
-    void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const Ren::Mat4f shadow_transforms[4],
+    void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const LightSourceItem *lights, size_t lights_count,
+                             const CellData *cells, const ItemData *items, size_t item_count, const Ren::Mat4f shadow_transforms[4],
                              const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env);
 
     std::thread background_thread_;
     std::mutex mtx_;
-    std::condition_variable thr_notify_;
+    std::condition_variable thr_notify_, thr_done_;
     bool shutdown_ = false, notified_ = false;
     Sys::SpinlockMutex job_mtx_;
 

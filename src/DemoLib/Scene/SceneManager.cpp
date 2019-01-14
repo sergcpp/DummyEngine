@@ -18,6 +18,8 @@ const float NEAR_CLIP = 0.5f;
 const float FAR_CLIP = 10000;
 
 const char *MODELS_PATH = "./assets/models/";
+
+const float LIGHT_ATTEN_CUTOFF = 0.001f;
 }
 
 SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererBase &ray_renderer,
@@ -54,6 +56,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     ClearScene();
 
     std::map<std::string, Ren::MeshRef> all_meshes;
+    std::map<std::string, Ren::StorageRef<LightSource>> all_lights;
 
     if (js_scene.Has("name")) {
         const JsString &js_name = (const JsString &)js_scene.at("name");
@@ -82,18 +85,85 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         all_meshes[name] = ctx_.LoadMesh(name.c_str(), in_file_stream, std::bind(&SceneManager::OnLoadMaterial, this, _1));
     }
 
+    const JsObject &js_lights = (const JsObject &)js_scene.at("lights");
+    for (const auto &js_elem : js_lights.elements) {
+        const std::string &name = js_elem.first;
+
+        const JsObject &js_obj = (const JsObject &)js_elem.second;
+        
+        const auto &js_color = (const JsArray &)js_obj.at("color");
+
+        Ren::StorageRef<LightSource> ls = lights_.Add();
+
+        ls->col[0] = (float)static_cast<const JsNumber &>(js_color[0]).val;
+        ls->col[1] = (float)static_cast<const JsNumber &>(js_color[1]).val;
+        ls->col[2] = (float)static_cast<const JsNumber &>(js_color[2]).val;
+
+        ls->brightness = std::max(ls->col[0], std::max(ls->col[1], ls->col[2]));
+
+        if (js_obj.Has("offset")) {
+            const auto &js_offset = (const JsArray &)js_obj.at("offset");
+
+            ls->offset[0] = (float)static_cast<const JsNumber &>(js_offset[0]).val;
+            ls->offset[1] = (float)static_cast<const JsNumber &>(js_offset[1]).val;
+            ls->offset[2] = (float)static_cast<const JsNumber &>(js_offset[2]).val;
+        }
+
+        if (js_obj.Has("radius")) {
+            const auto &js_radius = (const JsNumber &)js_obj.at("radius");
+
+            ls->radius = (float)js_radius.val;
+        } else {
+            ls->radius = 1.0f;
+        }
+
+        ls->influence = ls->radius * (std::sqrt(ls->brightness / LIGHT_ATTEN_CUTOFF) - 1.0f);
+
+        if (js_obj.Has("direction")) {
+            const auto &js_dir = (const JsArray &)js_obj.at("direction");
+
+            ls->dir[0] = (float)static_cast<const JsNumber &>(js_dir[0]).val;
+            ls->dir[1] = (float)static_cast<const JsNumber &>(js_dir[1]).val;
+            ls->dir[2] = (float)static_cast<const JsNumber &>(js_dir[2]).val;
+
+            float angle = 45.0f;
+            if (js_obj.Has("angle")) {
+                const auto &js_angle = (const JsNumber &)js_obj.at("angle");
+                angle = (float)js_angle.val;
+            }
+
+            ls->spot = std::cos(angle * Ren::Pi<float>() / 180.0f);
+        } else {
+            ls->dir[1] = -1.0f;
+            ls->spot = -1.0f;
+        }
+
+        all_lights[name] = ls;
+    }
+
     const JsArray &js_objects = (const JsArray &)js_scene.at("objects");
     for (const auto &js_elem : js_objects.elements) {
         const JsObject &js_obj = (const JsObject &)js_elem;
-        const JsString &js_mesh_name = (const JsString &)js_obj.at("mesh");
-
-        const auto it = all_meshes.find(js_mesh_name.val);
-        if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
 
         SceneObject obj;
-        obj.flags = HasMesh | HasTransform;
-        obj.mesh = it->second;
+        obj.flags = HasTransform;
         obj.tr = transforms_.Add();
+
+        Ren::Vec3f obj_bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
+                   obj_bbox_max = Ren::Vec3f{ -std::numeric_limits<float>::max() };
+
+        if (js_obj.Has("mesh")) {
+            const JsString &js_mesh_name = (const JsString &)js_obj.at("mesh");
+
+            const auto it = all_meshes.find(js_mesh_name.val);
+            if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
+
+            obj.flags |= HasMesh;
+            obj.mesh = it->second;
+
+            obj_bbox_min = Ren::Min(obj_bbox_min, obj.mesh->bbox_min());
+            obj_bbox_max = Ren::Max(obj_bbox_max, obj.mesh->bbox_max());
+        }
 
         if (js_obj.Has("pos")) {
             const JsArray &js_pos = (const JsArray &)js_obj.at("pos");
@@ -120,8 +190,6 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             obj.tr->mat = Ren::Rotate(obj.tr->mat, (float)rx, Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
             obj.tr->mat = Ren::Rotate(obj.tr->mat, (float)ry, Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
         }
-
-        obj.tr->UpdateBBox(it->second->bbox_min(), it->second->bbox_max());
 
         if (js_obj.Has("occluder_mesh")) {
             const JsString &js_occ_mesh = (const JsString &)js_obj.at("occluder_mesh");
@@ -169,6 +237,75 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 }
             }
         }
+
+        if (js_obj.Has("lights")) {
+            const auto &js_lights = (const JsArray &)js_obj.at("lights");
+
+            int index = 0;
+            for (const auto &js_light : js_lights.elements) {
+                const auto &js_light_name = (const JsString &)js_light;
+
+                auto it = all_lights.find(js_light_name.val);
+                if (it == all_lights.end()) throw std::runtime_error("Light not found!");
+
+                obj.flags |= HasLightSource;
+                obj.ls[index] = it->second;
+                const auto *ls = obj.ls[index].get();
+
+                index++;
+
+                {   // Compute bounding box of light source
+                    Ren::Vec4f pos = { ls->offset[0], ls->offset[1], ls->offset[2], 1.0f },
+                               dir = { ls->dir[0], ls->dir[1], ls->dir[2], 0.0f };
+
+                    pos = obj.tr->mat * pos;
+                    pos /= pos[3];
+                    dir = obj.tr->mat * dir;
+
+                    Ren::Vec3f bbox_min, bbox_max;
+
+                    Ren::Vec3f _dir = { dir[0], dir[1], dir[2] };
+                    Ren::Vec3f p1 = _dir * ls->influence;
+
+                    bbox_min = Ren::Min(bbox_min, p1);
+                    bbox_max = Ren::Max(bbox_max, p1);
+
+                    Ren::Vec3f p2 = _dir * ls->spot * ls->influence;
+
+                    float d = std::sqrt(1.0f - ls->spot * ls->spot) * ls->influence;
+
+                    bbox_min = Ren::Min(bbox_min, p2 - Ren::Vec3f{ d, 0.0f, d });
+                    bbox_max = Ren::Max(bbox_max, p2 + Ren::Vec3f{ d, 0.0f, d });
+
+                    if (ls->spot < 0.0f) {
+                        bbox_min = Ren::Min(bbox_min, p1 - Ren::Vec3f{ ls->influence, 0.0f, ls->influence });
+                        bbox_max = Ren::Max(bbox_max, p1 + Ren::Vec3f{ ls->influence, 0.0f, ls->influence });
+                    }
+
+                    Ren::Vec3f up = { 1.0f, 0.0f, 0.0f };
+                    if (std::abs(_dir[1]) < std::abs(_dir[2]) && std::abs(_dir[1]) < std::abs(_dir[0])) {
+                        up = { 0.0f, 1.0f, 0.0f };
+                    } else if (std::abs(_dir[2]) < std::abs(_dir[0]) && std::abs(_dir[2]) < std::abs(_dir[1])) {
+                        up = { 0.0f, 0.0f, 1.0f };
+                    }
+
+                    Ren::Vec3f side = Ren::Cross(_dir, up);
+
+                    Transform ls_transform;
+                    ls_transform.mat = { Ren::Vec4f{ side[0],  -_dir[0], up[0],    0.0f },
+                                         Ren::Vec4f{ side[1],  -_dir[1], up[1],    0.0f },
+                                         Ren::Vec4f{ side[2],  -_dir[2], up[2],    0.0f },
+                                         Ren::Vec4f{ ls->offset[0], ls->offset[1], ls->offset[2], 1.0f } };
+                    ls_transform.UpdateBBox(bbox_min, bbox_max);
+
+                    // Combine light's bounding box with object's
+                    obj_bbox_min = Ren::Min(obj_bbox_min, ls_transform.bbox_min_ws);
+                    obj_bbox_max = Ren::Max(obj_bbox_max, ls_transform.bbox_max_ws);
+                }
+            }
+        }
+
+        obj.tr->UpdateBBox(obj_bbox_min, obj_bbox_max);
 
         objects_.push_back(obj);
     }
@@ -228,6 +365,7 @@ void SceneManager::Draw() {
     using namespace SceneManagerConstants;
 
     cam_.Perspective(60.0f, float(ctx_.w()) / ctx_.h(), NEAR_CLIP, FAR_CLIP);
+    cam_.UpdatePlanes();
 
     renderer_.DrawObjects(cam_, &nodes_[0], 0, &objects_[0], &obj_indices_[0], objects_.size(), env_);
 }

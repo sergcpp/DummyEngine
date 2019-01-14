@@ -2,6 +2,7 @@
 
 #include <Ren/Context.h>
 #include <Sys/Log.h>
+#include <Sys/ThreadPool.h>
 
 namespace RendererInternal {
 bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]) {
@@ -33,7 +34,7 @@ const int SHADOWMAP_RES = 2048;
     (min)[0], (max)[1], (max)[2],     \
     (max)[0], (max)[1], (max)[2]
 
-Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
+Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads) : ctx_(ctx), threads_(threads) {
     using namespace RendererInternal;
 
     {
@@ -88,6 +89,14 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
         size_t drawables_count = draw_lists_[0].size();
         const auto *drawables = (drawables_count == 0) ? nullptr : &draw_lists_[0][0];
 
+        size_t lights_count = light_sources_[0].size();
+        const auto *lights = (lights_count == 0) ? nullptr : &light_sources_[0][0];
+
+        const auto *cells = cells_[0].empty() ? nullptr : &cells_[0][0];
+
+        size_t items_count = items_count_[0];
+        const auto *items = (items_count == 0) ? nullptr : &items_[0][0];
+
         Ren::Mat4f shadow_transforms[4];
         size_t shadow_drawables_count[4];
         const DrawableItem *shadow_drawables[4];
@@ -109,7 +118,7 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
             LOGI("CleanBuf resized to %ix%i", w_, h_);
         }
 
-        DrawObjectsInternal(drawables, drawables_count, shadow_transforms, shadow_drawables, shadow_drawables_count, env_);
+        DrawObjectsInternal(drawables, drawables_count, lights, lights_count, cells, items, items_count, shadow_transforms, shadow_drawables, shadow_drawables_count, env_);
     }
     auto t2 = std::chrono::high_resolution_clock::now();
     timings_ = { t1, t2 };
@@ -140,8 +149,20 @@ void Renderer::BackgroundProc() {
             dr_list.clear();
             dr_list.reserve(object_count_ * 16);
 
+            auto &ls_list = light_sources_[1];
+            ls_list.clear();
+            ls_list.reserve(object_count_);
+
+            auto &cells = cells_[1];
+            cells.resize(CELLS_COUNT);
+
+            auto &items = items_[1];
+            items.resize(MAX_LIGHTS_COUNT);
+
             object_to_drawable_.clear();
             object_to_drawable_.resize(object_count_, 0xffffffff);
+
+            litem_to_lsource_.clear();
 
             auto *sh_dr_list = shadow_list_[1];
             for (int i = 0; i < 4; i++) {
@@ -185,7 +206,7 @@ void Renderer::BackgroundProc() {
                         for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
                             const auto &obj = objects_[obj_indices_[i]];
 
-                            const uint32_t occluder_flags = HasMesh | HasTransform | HasOccluder;
+                            const uint32_t occluder_flags = HasTransform | HasOccluder;
                             if ((obj.flags & occluder_flags) == occluder_flags) {
                                 const auto *tr = obj.tr.get();
 
@@ -280,14 +301,16 @@ void Renderer::BackgroundProc() {
                             const auto &obj = objects_[obj_indices_[i]];
 
                             const uint32_t drawable_flags = HasMesh | HasTransform;
-                            if ((obj.flags & drawable_flags) == drawable_flags) {
+                            const uint32_t lightsource_flags = HasLightSource | HasTransform;
+                            if ((obj.flags & drawable_flags) == drawable_flags ||
+                                (obj.flags & lightsource_flags) == lightsource_flags) {
                                 const auto *tr = obj.tr.get();
 
                                 if (!skip_check) {
                                     const float bbox_points[8][3] = { BBOX_POINTS(tr->bbox_min_ws, tr->bbox_max_ws) };
                                     if (draw_cam_.CheckFrustumVisibility(bbox_points) == Ren::NotVisible) continue;
 
-                                    if (culling_enabled_ && n->prim_count > 1) {
+                                    if (culling_enabled_) {
                                         const auto &cam_pos = draw_cam_.world_position();
 
                                         // do not question visibility of the object in which we are inside
@@ -302,6 +325,7 @@ void Renderer::BackgroundProc() {
                                             surf.indices = &bbox_indices[0];
                                             surf.stride = 3 * sizeof(float);
                                             surf.count = 36;
+                                            surf.base_vertex = 0;
                                             surf.xform = Ren::ValuePtr(clip_from_identity);
                                             surf.dont_skip = nullptr;
 
@@ -317,28 +341,76 @@ void Renderer::BackgroundProc() {
                                 Ren::Mat4f view_from_object = view_from_world * world_from_object,
                                            clip_from_object = clip_from_view * view_from_object;
 
-                                tr_list.push_back(clip_from_object);
+                                if (obj.flags & HasMesh) {
+                                    tr_list.push_back(clip_from_object);
 
-                                const auto *mesh = obj.mesh.get();
-                                const auto *lm_dir_tex = obj.lm_dir_tex ? obj.lm_dir_tex.get() : nullptr;
-                                const auto *lm_indir_tex = obj.lm_indir_tex ? obj.lm_indir_tex.get() : nullptr;
+                                    const auto *mesh = obj.mesh.get();
+                                    const auto *lm_dir_tex = obj.lm_dir_tex ? obj.lm_dir_tex.get() : nullptr;
+                                    const auto *lm_indir_tex = obj.lm_indir_tex ? obj.lm_indir_tex.get() : nullptr;
 
-                                size_t dr_start = dr_list.size();
+                                    size_t dr_start = dr_list.size();
 
-                                object_to_drawable_[i] = (uint32_t)dr_list.size();
+                                    object_to_drawable_[i] = (uint32_t)dr_list.size();
 
-                                const Ren::TriGroup *s = &mesh->group(0);
-                                while (s->offset != -1) {
-                                    dr_list.push_back({ &tr_list.back(), &world_from_object, s->mat.get(), mesh, s, lm_dir_tex, lm_indir_tex });
-                                    
-                                    if (obj.lm_indir_sh_tex[0]) {
-                                        dr_list.back().lm_indir_sh_tex[0] = obj.lm_indir_sh_tex[0].get();
-                                        dr_list.back().lm_indir_sh_tex[1] = obj.lm_indir_sh_tex[1].get();
-                                        dr_list.back().lm_indir_sh_tex[2] = obj.lm_indir_sh_tex[2].get();
-                                        dr_list.back().lm_indir_sh_tex[3] = obj.lm_indir_sh_tex[3].get();
+                                    const Ren::TriGroup *s = &mesh->group(0);
+                                    while (s->offset != -1) {
+                                        dr_list.push_back({ &tr_list.back(), &world_from_object, s->mat.get(), mesh, s, lm_dir_tex, lm_indir_tex });
+
+                                        if (obj.lm_indir_sh_tex[0]) {
+                                            dr_list.back().lm_indir_sh_tex[0] = obj.lm_indir_sh_tex[0].get();
+                                            dr_list.back().lm_indir_sh_tex[1] = obj.lm_indir_sh_tex[1].get();
+                                            dr_list.back().lm_indir_sh_tex[2] = obj.lm_indir_sh_tex[2].get();
+                                            dr_list.back().lm_indir_sh_tex[3] = obj.lm_indir_sh_tex[3].get();
+                                        }
+
+                                        ++s;
                                     }
-                                    
-                                    ++s;
+                                }
+
+                                if (obj.flags & HasLightSource) {
+                                    for (int i = 0; i < 16; i++) {
+                                        if (!obj.ls[i]) break;
+
+                                        const auto *light = obj.ls[i].get();
+
+                                        Ren::Vec4f pos = { light->offset[0], light->offset[1], light->offset[2], 1.0f };
+                                        pos = world_from_object * pos;
+                                        pos /= pos[3];
+
+                                        Ren::Vec4f dir = { -light->dir[0], -light->dir[1], -light->dir[2], 0.0f };
+                                        dir = world_from_object * dir;
+
+                                        auto res = Ren::FullyVisible;
+
+                                        for (int k = 0; k < 6; k++) {
+                                            const auto &plane = draw_cam_.frustum_plane(k);
+
+                                            float dist = plane.n[0] * pos[0] +
+                                                         plane.n[1] * pos[1] +
+                                                         plane.n[2] * pos[2] + plane.d;
+
+                                            if (dist < -light->influence) {
+                                                res = Ren::NotVisible;
+                                                break;
+                                            } else if (std::abs(dist) < light->influence) {
+                                                res = Ren::PartiallyVisible;
+                                            }
+                                        }
+
+                                        if (res != Ren::NotVisible) {
+                                            ls_list.emplace_back();
+                                            litem_to_lsource_.push_back(light);
+
+                                            auto &ls = ls_list.back();
+
+                                            memcpy(&ls.pos[0], &pos[0], 3 * sizeof(float));
+                                            ls.radius = light->radius;
+                                            memcpy(&ls.col[0], &light->col[0], 3 * sizeof(float));
+                                            ls.brightness = light->brightness;
+                                            memcpy(&ls.dir[0], &dir[0], 3 * sizeof(float));
+                                            ls.spot = light->spot;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -374,7 +446,7 @@ void Renderer::BackgroundProc() {
                 temp_cam.UpdatePlanes();
 
                 const Ren::Mat4f &_view_from_world = temp_cam.view_matrix(),
-                                  &_clip_from_view = temp_cam.projection_matrix();
+                                 &_clip_from_view = temp_cam.projection_matrix();
 
                 const Ren::Mat4f _clip_from_world = _clip_from_view * _view_from_world;
                 const Ren::Mat4f _world_from_clip = Ren::Inverse(_clip_from_world);
@@ -477,6 +549,129 @@ void Renderer::BackgroundProc() {
             // Sort drawables to optimize state switches
             std::sort(std::begin(dr_list), std::end(dr_list));
 
+            if (!ls_list.empty()) {
+                std::vector<Ren::Frustum> sub_frustums;
+                sub_frustums.resize(CELLS_COUNT);
+
+                draw_cam_.ExtractSubFrustums(GRID_RES_X, GRID_RES_Y, GRID_RES_Z, &sub_frustums[0]);
+
+                const auto *lights = &ls_list[0];
+                const int lights_count = (int)ls_list.size();
+
+                const auto *litem_to_lsource = &litem_to_lsource_[0];
+
+                const int sub_frustums_count = (int)sub_frustums.size();
+
+                auto gather_items_for_zslice = [](int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,
+                                                  const LightSource * const*litem_to_lsource, CellData *cells, ItemData *items, std::atomic_int &items_count) {
+                    const int frustums_per_slice = GRID_RES_X * GRID_RES_Y;
+                    const int i = slice * frustums_per_slice;
+                    const auto *first_sf = &sub_frustums[i];
+
+                    // Reset cells information for slice
+                    for (int s = 0; s < frustums_per_slice; s++) {
+                        auto &cell = cells[i + s];
+                        cell.item_offset = 0;
+                        cell.light_count = 0;
+                    }
+
+                    ItemData local_items[GRID_RES_X * GRID_RES_Y][MAX_LIGHTS_PER_CELL];
+
+                    for (int j = 0; j < lights_count; j++) {
+                        const auto &l = lights[j];
+                        const float influence = litem_to_lsource[j]->influence;
+                        const float *l_pos = &l.pos[0];
+
+                        auto visible_to_slice = Ren::FullyVisible;
+
+                        // Check if light is inside of a whole slice
+                        for (int k = Ren::NearPlane; k <= Ren::FarPlane; k++) {
+                            float dist = first_sf->planes[k].n[0] * l_pos[0] +
+                                first_sf->planes[k].n[1] * l_pos[1] +
+                                first_sf->planes[k].n[2] * l_pos[2] + first_sf->planes[k].d;
+                            if (dist < -influence) {
+                                visible_to_slice = Ren::NotVisible;
+                            }
+                        }
+
+                        if (visible_to_slice == Ren::NotVisible) continue;
+
+                        for (int row_offset = 0; row_offset < frustums_per_slice; row_offset += GRID_RES_X) {
+                            const auto *first_line_sf = first_sf + row_offset;
+
+                            auto visible_to_line = Ren::FullyVisible;
+
+                            // Check if light is inside of grid line
+                            for (int k = Ren::TopPlane; k <= Ren::BottomPlane; k++) {
+                                float dist = first_line_sf->planes[k].n[0] * l_pos[0] +
+                                    first_line_sf->planes[k].n[1] * l_pos[1] +
+                                    first_line_sf->planes[k].n[2] * l_pos[2] + first_line_sf->planes[k].d;
+                                if (dist < -influence) {
+                                    visible_to_line = Ren::NotVisible;
+                                }
+                            }
+
+                            if (visible_to_line == Ren::NotVisible) continue;
+
+                            for (int col_offset = 0; col_offset < GRID_RES_X; col_offset++) {
+                                const auto *sf = first_line_sf + col_offset;
+
+                                auto res = Ren::FullyVisible;
+
+                                // Can skip near, far, top and bottom plane check
+                                for (int k = Ren::LeftPlane; k <= Ren::RightPlane; k++) {
+                                    float dist = sf->planes[k].n[0] * l_pos[0] +
+                                        sf->planes[k].n[1] * l_pos[1] +
+                                        sf->planes[k].n[2] * l_pos[2] + sf->planes[k].d;
+
+                                    if (dist < -influence) {
+                                        res = Ren::NotVisible;
+                                    }
+                                }
+
+                                if (res != Ren::NotVisible) {
+                                    const int index = i + row_offset + col_offset;
+                                    auto &cell = cells[index];
+                                    if (cell.light_count < MAX_LIGHTS_PER_CELL) {
+                                        local_items[row_offset + col_offset][cell.light_count].light_index = (uint16_t)j;
+                                        cell.light_count++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Pack gathered item data
+                    for (int s = 0; s < frustums_per_slice; s++) {
+                        auto &cell = cells[i + s];
+
+                        cell.item_offset = items_count.fetch_add(cell.light_count);
+                        if (cell.item_offset > MAX_LIGHTS_COUNT) {
+                            cell.item_offset = 0;
+                            cell.light_count = 0;
+                        } else {
+                            cell.light_count = std::min(cell.light_count, MAX_LIGHTS_COUNT - cell.item_offset);
+                            memcpy(&items[cell.item_offset], &local_items[s][0], cell.light_count * sizeof(ItemData));
+                        }
+                    }
+                };
+
+                std::vector<std::future<void>> futures;
+                std::atomic_int items_count = {};
+
+                for (int i = 0; i < GRID_RES_Z; i++) {
+                    auto f = threads_->enqueue(gather_items_for_zslice,
+                                              i, &sub_frustums[0], lights, lights_count, litem_to_lsource, &cells[0], &items[0], std::ref(items_count));
+                    futures.push_back(std::move(f));
+                }
+
+                for (int i = 0; i < GRID_RES_Z; i++) {
+                    futures[i].wait();
+                }
+
+                items_count_[1] = std::min(items_count.load(), MAX_LIGHTS_COUNT);
+            }
+
             if (debug_cull_ && culling_enabled_) {
                 const float NEAR_CLIP = 0.5f;
                 const float FAR_CLIP = 10000.0f;
@@ -508,7 +703,6 @@ void Renderer::BackgroundProc() {
                     }
                 }
             }
-
             auto t2 = std::chrono::high_resolution_clock::now();
             back_timings_[1] = { t1, t2 };
         }
@@ -518,16 +712,26 @@ void Renderer::BackgroundProc() {
 }
 
 void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_node,
-                             const SceneObject *objects, const uint32_t *obj_indcies, size_t object_count, const Environment &env) {
+                             const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env) {
     bool should_notify = false;
+
+    std::unique_lock<std::mutex> lock(mtx_);
+    while (notified_) {
+        thr_done_.wait(lock);
+    }
+
     {
         std::lock_guard<Sys::SpinlockMutex> _(job_mtx_);
         std::swap(transforms_[0], transforms_[1]);
         std::swap(draw_lists_[0], draw_lists_[1]);
+        std::swap(light_sources_[0], light_sources_[1]);
+        std::swap(cells_[0], cells_[1]);
+        std::swap(items_[0], items_[1]);
+        std::swap(items_count_[0], items_count_[1]);
         nodes_ = nodes;
         root_node_ = root_node;
         objects_ = objects;
-        obj_indices_ = obj_indcies;
+        obj_indices_ = obj_indices;
         object_count_ = object_count;
         back_timings_[0] = back_timings_[1];
         draw_cam_ = cam;
@@ -544,6 +748,7 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
             draw_lists_[1].clear();
         }
     }
+
     if (should_notify) {
         notified_ = true;
         thr_notify_.notify_all();

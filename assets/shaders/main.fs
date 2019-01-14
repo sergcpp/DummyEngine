@@ -1,9 +1,17 @@
 #version 310 es
+#extension GL_EXT_texture_buffer : enable
 
 #ifdef GL_ES
     precision mediump float;
     precision mediump sampler2DShadow;
 #endif
+
+#define GRID_RES_X 16
+#define GRID_RES_Y 8
+#define GRID_RES_Z 24
+
+#define FLT_EPS 0.0000001f
+#define LIGHT_ATTEN_CUTOFF 0.001f
 
 layout(binding = 0) uniform sampler2D diffuse_texture;
 layout(binding = 1) uniform sampler2D normals_texture;
@@ -11,11 +19,18 @@ layout(binding = 2) uniform sampler2DShadow shadow_texture;
 layout(binding = 3) uniform sampler2D lm_direct_texture;
 layout(binding = 4) uniform sampler2D lm_indirect_texture;
 layout(binding = 5) uniform sampler2D lm_indirect_sh_texture[4];
+layout(binding = 9) uniform highp samplerBuffer lights_buffer;
+layout(binding = 10) uniform highp usamplerBuffer cells_buffer;
+layout(binding = 11) uniform highp usamplerBuffer items_buffer;
 
 layout(location = 12) uniform vec3 sun_dir;
 layout(location = 13) uniform vec3 sun_col;
 layout(location = 14) uniform float gamma;
+layout(location = 15) uniform int lights_count;
+layout(location = 16) uniform int resx;
+layout(location = 17) uniform int resy;
 
+in vec3 aVertexPos_;
 in mat3 aVertexTBN_;
 in vec2 aVertexUVs1_;
 in vec2 aVertexUVs2_;
@@ -23,6 +38,11 @@ in vec2 aVertexUVs2_;
 in vec4 aVertexShUVs_[4];
 
 out vec4 outColor;
+
+vec3 heatmap(float t) {
+    vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
+    return vec3(1.0) - r * r;
+}
 
 void main(void) {
     const vec2 poisson_disk[32] = vec2[32](
@@ -118,7 +138,86 @@ void main(void) {
     
     indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
     
-    vec3 diffuse_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma)) * (sun_col * lambert * visibility + indirect_col + additional_light);
+    indirect_col *= 0.001;
+    visibility *= 0.001;
+    
+    float depth = 1.0 / gl_FragCoord.w;
+    
+    const float n = 0.5;
+    const float f = 10000.0;
+    
+    float k = log2(depth / n) / log2(1.0 + f / n);
+    int slice = int(k * 24.0);
+    
+    int ix = int(gl_FragCoord.x);
+    int iy = int(gl_FragCoord.y);
+    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy / (resy / GRID_RES_Y)) * GRID_RES_X + (ix / (resx / GRID_RES_X));
+    
+    uvec2 offset_and_count = texelFetch(cells_buffer, cell_index).xy;
+    
+    for (uint i = offset_and_count.x; i < offset_and_count.x + offset_and_count.y; i++) {
+        int li = int(texelFetch(items_buffer, int(i)).x);
+        
+        vec4 pos_and_radius = texelFetch(lights_buffer, li * 3 + 0);
+        vec4 col_and_brightness = texelFetch(lights_buffer, li * 3 + 1);
+        vec4 dir_and_spot = texelFetch(lights_buffer, li * 3 + 2);
+        
+        vec3 L = pos_and_radius.xyz - aVertexPos_;
+        float dist = length(L);
+        float d = max(dist - pos_and_radius.w, 0.0);
+        L /= dist;
+        
+        float denom = d / pos_and_radius.w + 1.0;
+        float atten = 1.0 / (denom * denom);
+        
+        atten = (atten - LIGHT_ATTEN_CUTOFF / col_and_brightness.w) / (1.0 - LIGHT_ATTEN_CUTOFF);
+        atten = max(atten, 0.0);
+        
+        float _dot1 = max(dot(L, aVertexTBN_[2]), 0.0);
+        float _dot2 = dot(L, dir_and_spot.xyz);
+        
+        atten = _dot1 * atten;
+        if (_dot2 > dir_and_spot.w && (col_and_brightness.w * atten) > FLT_EPS) {
+            additional_light += col_and_brightness.xyz * atten;
+        }
+    }
+    
+    vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma));
+    vec3 diffuse_color = albedo_color * (sun_col * lambert * visibility + indirect_col + additional_light);
     
     outColor = vec4(diffuse_color, 1.0);
+    
+    //outColor.xyz = heatmap(float(offset_and_count.y) * (1.0 / 256.0));
+    
+    /*if (slice == 0) {
+        outColor.xyz += vec3(0.25, 0.0, 0.0);
+    } else if (slice == 1) {
+        outColor.xyz += vec3(0.0, 0.25, 0.0);
+    } else if (slice == 2) {
+        outColor.xyz += vec3(0.0, 0.0, 0.25);
+    } else if (slice == 3) {
+        outColor.xyz += vec3(0.25, 0.0, 0.0);
+    } else if (slice == 4) {
+        outColor.xyz += vec3(0.0, 0.25, 0.0);
+    } else if (slice == 5) {
+        outColor.xyz += vec3(0.0, 0.0, 0.25);
+    } else if (slice == 6) {
+        outColor.xyz += vec3(0.25, 0.0, 0.0);
+    } else if (slice == 7) {
+        outColor.xyz += vec3(0.0, 0.25, 0.0);
+    } else if (slice == 8) {
+        outColor.xyz += vec3(0.0, 0.0, 0.25);
+    } else if (slice == 12) {
+        outColor.xyz += vec3(0.25, 0.0, 0.25);
+    }*/
+    
+    //outColor.xyz = vec3(depth);
+    
+    if (ix % (resx / GRID_RES_X) == 0 || iy % (resy / GRID_RES_Y) == 0) {
+        outColor.x = 1.0;
+        outColor.y = 0.0;
+        outColor.z = 0.0;
+    }
+    
+    
 }
