@@ -62,9 +62,9 @@ namespace RendererInternal {
     const int CELLS_COUNT = GRID_RES_X * GRID_RES_Y * GRID_RES_Z;
 
     const int MAX_LIGHTS_PER_CELL = 256;
-    const int MAX_LIGHTS_PER_CELL_EXC = 16;
+    const int AVG_LIGHTS_PER_CELL = 16;
 
-    const int MAX_LIGHTS_COUNT = CELLS_COUNT * MAX_LIGHTS_PER_CELL_EXC;
+    const int MAX_LIGHTS_COUNT = CELLS_COUNT * AVG_LIGHTS_PER_CELL;
 }
 
 class Renderer {
