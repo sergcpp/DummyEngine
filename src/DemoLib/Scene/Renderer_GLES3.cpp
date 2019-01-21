@@ -219,10 +219,10 @@ void main() {
     c2 = vec3(1.0) - exp(-c2 * exposure);
     c3 = vec3(1.0) - exp(-c3 * exposure);
 
-    //c0 = pow(c0, vec3(1.0/gamma));
-    //c1 = pow(c1, vec3(1.0/gamma));
-    //c2 = pow(c2, vec3(1.0/gamma));
-    //c3 = pow(c3, vec3(1.0/gamma));
+    c0 = pow(c0, vec3(1.0/gamma));
+    c1 = pow(c1, vec3(1.0/gamma));
+    c2 = pow(c2, vec3(1.0/gamma));
+    c3 = pow(c3, vec3(1.0/gamma));
 
     outColor = vec4(0.25 * (c0 + c1 + c2 + c3), 1.0);
 }
@@ -358,6 +358,65 @@ void main() {
 }
 )";
 
+const char blit_debug_ms_fs[] = R"(
+#version 310 es
+#extension GL_EXT_texture_buffer : enable
+#extension GL_ARB_texture_multisample : enable
+
+#ifdef GL_ES
+	precision mediump float;
+#endif
+
+#define GRID_RES_X 16
+#define GRID_RES_Y 8
+#define GRID_RES_Z 24
+
+/*
+UNIFORMS
+    s_texture : 3
+*/
+        
+layout(binding = 0) uniform mediump sampler2DMS s_texture;
+layout(binding = 10) uniform highp usamplerBuffer cells_buffer;
+layout(binding = 11) uniform highp usamplerBuffer items_buffer;
+
+layout(location = 16) uniform int resx;
+layout(location = 17) uniform int resy;
+
+in vec2 aVertexUVs_;
+
+out vec4 outColor;
+
+vec3 heatmap(float t) {
+    vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
+    return vec3(1.0) - r * r;
+}
+
+void main() {
+    const float n = 0.5;
+    const float f = 10000.0;
+
+    float depth = texelFetch(s_texture, ivec2(aVertexUVs_), 0).r;
+    //depth = 2.0 * depth - 1.0;
+    depth = n * f / (f + depth * (n - f));
+    
+    float k = log2(depth / n) / log2(1.0 + f / n);
+    int slice = int(k * 24.0);
+    
+    int ix = int(gl_FragCoord.x);
+    int iy = int(gl_FragCoord.y);
+    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy / (resy / GRID_RES_Y)) * GRID_RES_X + (ix / (resx / GRID_RES_X));
+    
+    uvec2 offset_and_count = texelFetch(cells_buffer, cell_index).xy;
+
+    outColor = vec4(heatmap(float(offset_and_count.y) * (1.0 / 256.0)), 0.85);
+
+    if ((ix != 0 && (ix % (resx / GRID_RES_X)) == 0) || (iy != 0 && (iy % (resy / GRID_RES_Y)) == 0)) {
+        outColor = vec4(1.0, 0.0, 0.0, 1.0);
+    }
+}
+)";
+
     struct MatricesBlock {
         Ren::Mat4f uMVPMatrix;
         Ren::Mat4f uMVMatrix;
@@ -475,6 +534,9 @@ void Renderer::InitRendererInternal() {
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_gauss");
     blit_gauss_prog_ = ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_debug");
+    blit_debug_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug", blit_vs, blit_debug_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
 
     {
@@ -1180,7 +1242,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
         glUniform1i(cur_program->uniform(U_TEX + 1).loc, DIFFUSEMAP_SLOT + 1);
         glUniform2f(cur_program->uniform(U_TEX + 2).loc, float(w_), float(h_));
-        glUniform1f(U_GAMMA, 2.2f);
+
+        glUniform1f(U_GAMMA, debug_lights_ ? 1.0f : 2.2f);
 
         float exposure = 0.7f / reduced_average_;
         exposure = std::min(exposure, 1000.0f);
@@ -1202,12 +1265,63 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_UVS1);
     }
 
-#if !defined(__ANDROID__)
-    glPixelZoom(1, 1);
+    if (debug_lights_) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        if (clean_buf_.msaa > 1) {
+            cur_program = blit_debug_ms_prog_.get();
+        } else {
+            cur_program = nullptr;// blit_combine_prog_.get();
+        }
+        glUseProgram(cur_program->prog_id());
+
+        glUniform1i(U_RESX, w_);
+        glUniform1i(U_RESY, h_);
+
+        const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,
+                                      1.0f, 1.0f,         -1.0f, 1.0f };
+
+        const float fs_quad_uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
+                                      float(w_), float(h_),     0.0f, float(h_) };
+
+        const uint8_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
+
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_pos), fs_quad_pos);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs), fs_quad_uvs);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
+
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)));
+
+        if (clean_buf_.msaa > 1) {
+            glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.depth_tex.GetValue());
+        } else {
+            BindTexture(DIFFUSEMAP_SLOT, clean_buf_.depth_tex.GetValue());
+        }
+
+        glActiveTexture((GLenum)(GL_TEXTURE0 + CELLS_BUFFER_SLOT));
+        glBindTexture(GL_TEXTURE_BUFFER, (GLuint)cells_tbo_);
+
+        glActiveTexture((GLenum)(GL_TEXTURE0 + ITEMS_BUFFER_SLOT));
+        glBindTexture(GL_TEXTURE_BUFFER, (GLuint)items_tbo_);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+
+        glDisableVertexAttribArray(A_POS);
+        glDisableVertexAttribArray(A_UVS1);
+
+        glDisable(GL_BLEND);
+    }
 
     if (debug_cull_ && culling_enabled_ && !depth_pixels_[0].empty()) {
-        glUseProgram(0);
-
         cur_program = blit_prog_.get();
         glUseProgram(cur_program->prog_id());
 
@@ -1255,7 +1369,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_POS);
         glDisableVertexAttribArray(A_UVS1);
     }
-#endif
 
     if (debug_shadow_) {
         cur_program = blit_prog_.get();

@@ -186,38 +186,4 @@ void main(void) {
     vec3 diffuse_color = albedo_color * (sun_col * lambert * visibility + indirect_col + additional_light);
     
     outColor = vec4(diffuse_color, 1.0);
-    
-    //outColor.xyz = heatmap(float(offset_and_count.y) * (1.0 / 256.0));
-    
-    /*if (slice == 0) {
-        outColor.xyz += vec3(0.25, 0.0, 0.0);
-    } else if (slice == 1) {
-        outColor.xyz += vec3(0.0, 0.25, 0.0);
-    } else if (slice == 2) {
-        outColor.xyz += vec3(0.0, 0.0, 0.25);
-    } else if (slice == 3) {
-        outColor.xyz += vec3(0.25, 0.0, 0.0);
-    } else if (slice == 4) {
-        outColor.xyz += vec3(0.0, 0.25, 0.0);
-    } else if (slice == 5) {
-        outColor.xyz += vec3(0.0, 0.0, 0.25);
-    } else if (slice == 6) {
-        outColor.xyz += vec3(0.25, 0.0, 0.0);
-    } else if (slice == 7) {
-        outColor.xyz += vec3(0.0, 0.25, 0.0);
-    } else if (slice == 8) {
-        outColor.xyz += vec3(0.0, 0.0, 0.25);
-    } else if (slice == 12) {
-        outColor.xyz += vec3(0.25, 0.0, 0.25);
-    }*/
-    
-    //outColor.xyz = vec3(depth);
-    
-    if (ix % (resx / GRID_RES_X) == 0 || iy % (resy / GRID_RES_Y) == 0) {
-        outColor.x = 1.0;
-        outColor.y = 0.0;
-        outColor.z = 0.0;
-    }
-    
-    
 }

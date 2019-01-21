@@ -113,7 +113,7 @@ private:
     std::shared_ptr<Sys::ThreadPool> threads_;
     SWcull_ctx cull_ctx_;
     Ren::ProgramRef fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_combine_ms_prog_,
-        blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_;
+        blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_, blit_debug_ms_prog_;
     Ren::Texture2DRef default_lightmap_;
 
     FrameBuf clean_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_;

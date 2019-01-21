@@ -184,6 +184,8 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, _depth_tex, 0);
 
+        depth_tex = _depth_tex;
+
         //GLenum bufs[] = { GL_NONE };
         //glDrawBuffers(1, bufs);
 

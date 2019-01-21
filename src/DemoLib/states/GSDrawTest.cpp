@@ -238,18 +238,25 @@ void GSDrawTest::Draw(float dt_s) {
         if (!use_pt_ && !use_lm_) {
             auto render_info = scene_manager_->render_info();
 
+            float vertical_offset = 0.65f;
+
             if (print_light_info_) {
                 std::string s = "lights_count: " + std::to_string(render_info.lights_count);
-                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1, 1.0f - 1 * font_->height(ui_root_.get()) }, ui_root_.get());
 
+                vertical_offset -= font_->height(ui_root_.get());
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
                 s = "lights_data_size: " + std::to_string(render_info.lights_data_size / 1024) + " kb";
-                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1, 1.0f - 2 * font_->height(ui_root_.get()) }, ui_root_.get());
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
+                vertical_offset -= font_->height(ui_root_.get());
                 s = "cells_data_size: " + std::to_string(render_info.cells_data_size / 1024) + " kb";
-                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1, 1.0f - 3 * font_->height(ui_root_.get()) }, ui_root_.get());
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
+                vertical_offset -= font_->height(ui_root_.get());
                 s = "items_data_size: " + std::to_string(render_info.items_data_size / 1024) + " kb";
-                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1, 1.0f - 4 * font_->height(ui_root_.get()) }, ui_root_.get());
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
             }
         }
         //font_->DrawText(ui_renderer_.get(), s2.c_str(), { -1, 1.0f - 2 * font_->height(ui_root_.get()) }, ui_root_.get());
