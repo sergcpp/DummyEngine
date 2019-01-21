@@ -557,112 +557,14 @@ void Renderer::BackgroundProc() {
 
                 const auto *lights = &ls_list[0];
                 const int lights_count = (int)ls_list.size();
-
                 const auto *litem_to_lsource = &litem_to_lsource_[0];
-
-                const int sub_frustums_count = (int)sub_frustums.size();
-
-                auto gather_items_for_zslice = [](int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,
-                                                  const LightSource * const*litem_to_lsource, CellData *cells, ItemData *items, std::atomic_int &items_count) {
-                    const int frustums_per_slice = GRID_RES_X * GRID_RES_Y;
-                    const int i = slice * frustums_per_slice;
-                    const auto *first_sf = &sub_frustums[i];
-
-                    // Reset cells information for slice
-                    for (int s = 0; s < frustums_per_slice; s++) {
-                        auto &cell = cells[i + s];
-                        cell.item_offset = 0;
-                        cell.light_count = 0;
-                    }
-
-                    ItemData local_items[GRID_RES_X * GRID_RES_Y][MAX_LIGHTS_PER_CELL];
-
-                    for (int j = 0; j < lights_count; j++) {
-                        const auto &l = lights[j];
-                        const float influence = litem_to_lsource[j]->influence;
-                        const float *l_pos = &l.pos[0];
-
-                        auto visible_to_slice = Ren::FullyVisible;
-
-                        // Check if light is inside of a whole slice
-                        for (int k = Ren::NearPlane; k <= Ren::FarPlane; k++) {
-                            float dist = first_sf->planes[k].n[0] * l_pos[0] +
-                                first_sf->planes[k].n[1] * l_pos[1] +
-                                first_sf->planes[k].n[2] * l_pos[2] + first_sf->planes[k].d;
-                            if (dist < -influence) {
-                                visible_to_slice = Ren::NotVisible;
-                            }
-                        }
-
-                        if (visible_to_slice == Ren::NotVisible) continue;
-
-                        for (int row_offset = 0; row_offset < frustums_per_slice; row_offset += GRID_RES_X) {
-                            const auto *first_line_sf = first_sf + row_offset;
-
-                            auto visible_to_line = Ren::FullyVisible;
-
-                            // Check if light is inside of grid line
-                            for (int k = Ren::TopPlane; k <= Ren::BottomPlane; k++) {
-                                float dist = first_line_sf->planes[k].n[0] * l_pos[0] +
-                                    first_line_sf->planes[k].n[1] * l_pos[1] +
-                                    first_line_sf->planes[k].n[2] * l_pos[2] + first_line_sf->planes[k].d;
-                                if (dist < -influence) {
-                                    visible_to_line = Ren::NotVisible;
-                                }
-                            }
-
-                            if (visible_to_line == Ren::NotVisible) continue;
-
-                            for (int col_offset = 0; col_offset < GRID_RES_X; col_offset++) {
-                                const auto *sf = first_line_sf + col_offset;
-
-                                auto res = Ren::FullyVisible;
-
-                                // Can skip near, far, top and bottom plane check
-                                for (int k = Ren::LeftPlane; k <= Ren::RightPlane; k++) {
-                                    float dist = sf->planes[k].n[0] * l_pos[0] +
-                                        sf->planes[k].n[1] * l_pos[1] +
-                                        sf->planes[k].n[2] * l_pos[2] + sf->planes[k].d;
-
-                                    if (dist < -influence) {
-                                        res = Ren::NotVisible;
-                                    }
-                                }
-
-                                if (res != Ren::NotVisible) {
-                                    const int index = i + row_offset + col_offset;
-                                    auto &cell = cells[index];
-                                    if (cell.light_count < MAX_LIGHTS_PER_CELL) {
-                                        local_items[row_offset + col_offset][cell.light_count].light_index = (uint16_t)j;
-                                        cell.light_count++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Pack gathered item data
-                    for (int s = 0; s < frustums_per_slice; s++) {
-                        auto &cell = cells[i + s];
-
-                        cell.item_offset = items_count.fetch_add(cell.light_count);
-                        if (cell.item_offset > MAX_LIGHTS_COUNT) {
-                            cell.item_offset = 0;
-                            cell.light_count = 0;
-                        } else {
-                            cell.light_count = std::min(cell.light_count, MAX_LIGHTS_COUNT - cell.item_offset);
-                            memcpy(&items[cell.item_offset], &local_items[s][0], cell.light_count * sizeof(ItemData));
-                        }
-                    }
-                };
 
                 std::vector<std::future<void>> futures;
                 std::atomic_int items_count = {};
 
                 for (int i = 0; i < GRID_RES_Z; i++) {
-                    auto f = threads_->enqueue(gather_items_for_zslice,
-                                              i, &sub_frustums[0], lights, lights_count, litem_to_lsource, &cells[0], &items[0], std::ref(items_count));
-                    futures.push_back(std::move(f));
+                    auto fu = threads_->enqueue(GatherItemsForZSlice_Job, i, &sub_frustums[0], lights, lights_count, litem_to_lsource, &cells[0], &items[0], std::ref(items_count));
+                    futures.push_back(std::move(fu));
                 }
 
                 for (int i = 0; i < GRID_RES_Z; i++) {
@@ -734,6 +636,7 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
         obj_indices_ = obj_indices;
         object_count_ = object_count;
         back_timings_[0] = back_timings_[1];
+        render_infos_[0] = render_infos_[1];
         draw_cam_ = cam;
         for (int i = 0; i < 4; i++) {
             std::swap(shadow_list_[0][i], shadow_list_[1][i]);
@@ -752,6 +655,104 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
     if (should_notify) {
         notified_ = true;
         thr_notify_.notify_all();
+    }
+}
+
+void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,
+                                        const LightSource * const*litem_to_lsource, CellData *cells, ItemData *items, std::atomic_int &items_count) {
+    using namespace RendererInternal;
+
+    const int frustums_per_slice = GRID_RES_X * GRID_RES_Y;
+    const int i = slice * frustums_per_slice;
+    const auto *first_sf = &sub_frustums[i];
+
+    // Reset cells information for slice
+    for (int s = 0; s < frustums_per_slice; s++) {
+        auto &cell = cells[i + s];
+        cell.item_offset = 0;
+        cell.light_count = 0;
+    }
+
+    ItemData local_items[GRID_RES_X * GRID_RES_Y][MAX_LIGHTS_PER_CELL];
+
+    for (int j = 0; j < lights_count; j++) {
+        const auto &l = lights[j];
+        const float influence = litem_to_lsource[j]->influence;
+        const float *l_pos = &l.pos[0];
+
+        auto visible_to_slice = Ren::FullyVisible;
+
+        // Check if light is inside of a whole slice
+        for (int k = Ren::NearPlane; k <= Ren::FarPlane; k++) {
+            float dist = first_sf->planes[k].n[0] * l_pos[0] +
+                first_sf->planes[k].n[1] * l_pos[1] +
+                first_sf->planes[k].n[2] * l_pos[2] + first_sf->planes[k].d;
+            if (dist < -influence) {
+                visible_to_slice = Ren::NotVisible;
+            }
+        }
+
+        // Skip light for whole slice
+        if (visible_to_slice == Ren::NotVisible) continue;
+
+        for (int row_offset = 0; row_offset < frustums_per_slice; row_offset += GRID_RES_X) {
+            const auto *first_line_sf = first_sf + row_offset;
+
+            auto visible_to_line = Ren::FullyVisible;
+
+            // Check if light is inside of grid line
+            for (int k = Ren::TopPlane; k <= Ren::BottomPlane; k++) {
+                float dist = first_line_sf->planes[k].n[0] * l_pos[0] +
+                    first_line_sf->planes[k].n[1] * l_pos[1] +
+                    first_line_sf->planes[k].n[2] * l_pos[2] + first_line_sf->planes[k].d;
+                if (dist < -influence) {
+                    visible_to_line = Ren::NotVisible;
+                }
+            }
+
+            // Skip light for whole line
+            if (visible_to_line == Ren::NotVisible) continue;
+
+            for (int col_offset = 0; col_offset < GRID_RES_X; col_offset++) {
+                const auto *sf = first_line_sf + col_offset;
+
+                auto res = Ren::FullyVisible;
+
+                // Can skip near, far, top and bottom plane check
+                for (int k = Ren::LeftPlane; k <= Ren::RightPlane; k++) {
+                    float dist = sf->planes[k].n[0] * l_pos[0] +
+                        sf->planes[k].n[1] * l_pos[1] +
+                        sf->planes[k].n[2] * l_pos[2] + sf->planes[k].d;
+
+                    if (dist < -influence) {
+                        res = Ren::NotVisible;
+                    }
+                }
+
+                if (res != Ren::NotVisible) {
+                    const int index = i + row_offset + col_offset;
+                    auto &cell = cells[index];
+                    if (cell.light_count < MAX_LIGHTS_PER_CELL) {
+                        local_items[row_offset + col_offset][cell.light_count].light_index = (uint16_t)j;
+                        cell.light_count++;
+                    }
+                }
+            }
+        }
+    }
+
+    // Pack gathered item data
+    for (int s = 0; s < frustums_per_slice; s++) {
+        auto &cell = cells[i + s];
+
+        cell.item_offset = items_count.fetch_add(cell.light_count);
+        if (cell.item_offset > MAX_LIGHTS_COUNT) {
+            cell.item_offset = 0;
+            cell.light_count = 0;
+        } else {
+            cell.light_count = std::min(cell.light_count, MAX_LIGHTS_COUNT - cell.item_offset);
+            memcpy(&items[cell.item_offset], &local_items[s][0], cell.light_count * sizeof(ItemData));
+        }
     }
 }
 

@@ -126,6 +126,15 @@ void GSDrawTest::Enter() {
         }
         return true;
     });
+
+    game_->RegisterCommand("debug_lights", [weak_this](const std::vector<std::string> &args) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            shrd_this->renderer_->toggle_debug_lights();
+            shrd_this->print_light_info_ = !shrd_this->print_light_info_;
+        }
+        return true;
+    });
 }
 
 void GSDrawTest::LoadScene(const char *name) {
@@ -226,7 +235,23 @@ void GSDrawTest::Draw(float dt_s) {
             }
         }
 
-        //font_->DrawText(ui_renderer_.get(), "111", { -1, 1.0f - 1 * font_->height(ui_root_.get()) }, ui_root_.get());
+        if (!use_pt_ && !use_lm_) {
+            auto render_info = scene_manager_->render_info();
+
+            if (print_light_info_) {
+                std::string s = "lights_count: " + std::to_string(render_info.lights_count);
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1, 1.0f - 1 * font_->height(ui_root_.get()) }, ui_root_.get());
+
+                s = "lights_data_size: " + std::to_string(render_info.lights_data_size / 1024) + " kb";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1, 1.0f - 2 * font_->height(ui_root_.get()) }, ui_root_.get());
+
+                s = "cells_data_size: " + std::to_string(render_info.cells_data_size / 1024) + " kb";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1, 1.0f - 3 * font_->height(ui_root_.get()) }, ui_root_.get());
+
+                s = "items_data_size: " + std::to_string(render_info.items_data_size / 1024) + " kb";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1, 1.0f - 4 * font_->height(ui_root_.get()) }, ui_root_.get());
+            }
+        }
         //font_->DrawText(ui_renderer_.get(), s2.c_str(), { -1, 1.0f - 2 * font_->height(ui_root_.get()) }, ui_root_.get());
         //font_->DrawText(ui_renderer_.get(), s3.c_str(), { -1, 1.0f - 3 * font_->height(ui_root_.get()) }, ui_root_.get());
         //font_->DrawText(ui_renderer_.get(), s4.c_str(), { -1, 1.0f - 4 * font_->height(ui_root_.get()) }, ui_root_.get());

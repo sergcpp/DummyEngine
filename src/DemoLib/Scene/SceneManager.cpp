@@ -39,10 +39,15 @@ SceneManager::~SceneManager() {
 
 TimingInfo SceneManager::timings() const {
     return renderer_.timings();
-};
+}
+
 TimingInfo SceneManager::back_timings() const {
     return renderer_.back_timings();
-};
+}
+
+RenderInfo SceneManager::render_info() const {
+    return renderer_.render_info();
+}
 
 void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up) {
     cam_.SetupView(origin, target, up);

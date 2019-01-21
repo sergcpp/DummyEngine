@@ -57,6 +57,13 @@ struct SceneObject {
 using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 using TimingInfo = std::pair<TimePoint, TimePoint>;
 
+struct RenderInfo {
+    uint32_t lights_count = 0;
+    uint32_t lights_data_size = 0,
+             cells_data_size = 0,
+             items_data_size = 0;
+};
+
 struct bvh_node_t {
     uint32_t prim_index, prim_count,
              left_child, right_child, parent,

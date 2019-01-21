@@ -87,12 +87,20 @@ public:
     void toggle_debug_reduce() {
         debug_reduce_ = !debug_reduce_;
     }
+    void toggle_debug_lights() {
+        debug_lights_ = !debug_lights_;
+    }
 
     TimingInfo timings() const {
         return timings_;
     }
+
     TimingInfo back_timings() const {
         return back_timings_[0];
+    }
+
+    RenderInfo render_info() const {
+        return render_infos_[0];
     }
 
     void DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
@@ -111,7 +119,7 @@ private:
     FrameBuf clean_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_;
     int w_ = 0, h_ = 0;
 
-    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false;
+    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false;
     bool culling_enabled_ = true;
 
     const bvh_node_t *nodes_ = nullptr;
@@ -130,6 +138,7 @@ private:
     Ren::Camera draw_cam_, shadow_cam_[2][4];
     Environment env_;
     TimingInfo timings_, back_timings_[2];
+    RenderInfo render_infos_[2];
     std::vector<float> reduced_pixels_;
     float reduced_average_ = 0.0f;
 
@@ -139,7 +148,8 @@ private:
     int temp_tex_w_ = 0, temp_tex_h_ = 0;
 
     uint32_t unif_matrices_block_;
-    uint32_t shadow_pass_vao_, depth_pass_vao_, draw_pass_vao_;
+    uint32_t temp_vao_, shadow_pass_vao_, depth_pass_vao_, draw_pass_vao_;
+    uint32_t temp_buf_vtx_offset_, temp_buf_ndx_offset_;
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
     uint32_t lights_ssbo_, lights_tbo_, cells_ssbo_, cells_tbo_, items_ssbo_, items_tbo_;
 
@@ -165,4 +175,8 @@ private:
     Sys::SpinlockMutex job_mtx_;
 
     void BackgroundProc();
+
+    // Parallel Jobs
+    static void GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,
+                                         const LightSource * const *litem_to_lsource, CellData *cells, ItemData *items, std::atomic_int &items_count);
 };
