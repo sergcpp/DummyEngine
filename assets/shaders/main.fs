@@ -138,8 +138,8 @@ void main(void) {
     
     indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
     
-    //indirect_col *= 0.001;
-    //visibility *= 0.001;
+    indirect_col *= 0.001;
+    visibility *= 0.001;
     
     float depth = 1.0 / gl_FragCoord.w;
     

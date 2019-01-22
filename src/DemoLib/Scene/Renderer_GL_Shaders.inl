@@ -78,16 +78,18 @@ const char blit_fs[] = R"(
 /*
 UNIFORMS
     s_texture : 3
+    multiplier : 4
 */
         
 uniform sampler2D s_texture;
+uniform float multiplier;
 
 in vec2 aVertexUVs_;
 
 out vec4 outColor;
 
 void main() {
-    outColor = texelFetch(s_texture, ivec2(aVertexUVs_), 0);
+    outColor = vec4(multiplier, multiplier, multiplier, 1.0) * texelFetch(s_texture, ivec2(aVertexUVs_), 0);
 }
 )";
 
@@ -116,17 +118,19 @@ const char blit_ms_fs[] = R"(
 /*
 UNIFORMS
     s_texture : 3
+    multiplier : 4
     uTexSize : 5
 */
         
 layout(location = 14) uniform mediump sampler2DMS s_texture;
+uniform float multiplier;
 
 in vec2 aVertexUVs_;
 
 out vec4 outColor;
 
 void main() {
-    outColor = texelFetch(s_texture, ivec2(aVertexUVs_), 0);
+    outColor = vec4(multiplier, multiplier, multiplier, 1.0) * texelFetch(s_texture, ivec2(aVertexUVs_), 0);
 }
     )";
 
@@ -207,10 +211,10 @@ void main() {
     //c2 = exposure * c2 / (c2 + vec3(1.0));
     //c3 = exposure * c3 / (c3 + vec3(1.0));
 
-    //c0 = vec3(1.0) - exp(-c0 * exposure);
-    //c1 = vec3(1.0) - exp(-c1 * exposure);
-    //c2 = vec3(1.0) - exp(-c2 * exposure);
-    //c3 = vec3(1.0) - exp(-c3 * exposure);
+    c0 = vec3(1.0) - exp(-c0 * exposure);
+    c1 = vec3(1.0) - exp(-c1 * exposure);
+    c2 = vec3(1.0) - exp(-c2 * exposure);
+    c3 = vec3(1.0) - exp(-c3 * exposure);
 
     //c0 = pow(c0, vec3(1.0/gamma));
     //c1 = pow(c1, vec3(1.0/gamma));

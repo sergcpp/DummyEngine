@@ -193,7 +193,7 @@ void Renderer::InitRendererInternal() {
     {
         GLuint items_ssbo;
 
-        const int MAX_ITEMS_COUNT = GRID_RES_X * GRID_RES_Y * GRID_RES_Z * 256;
+        const int MAX_ITEMS_COUNT = MAX_LIGHTS_COUNT;
 
         glGenBuffers(1, &items_ssbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, items_ssbo);
@@ -705,10 +705,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
-#if 0
+
     {   // prepare blured buffer
-        glBindFramebuffer(GL_FRAMEBUFFER, blur_buf1_.fb);
-        glViewport(0, 0, blur_buf1_.w, blur_buf1_.h);
+        glBindFramebuffer(GL_FRAMEBUFFER, down_buf_.fb);
+        glViewport(0, 0, down_buf_.w, down_buf_.h);
 
         const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,
                                       1.0f, 1.0f,         -1.0f, 1.0f };
@@ -725,25 +725,29 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
         glUseProgram(cur_program->prog_id());
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_pos), fs_quad_pos);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs), fs_quad_uvs);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
         glEnableVertexAttribArray(A_POS);
-        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
 
         glEnableVertexAttribArray(A_UVS1);
-        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)));
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
 
         if (clean_buf_.msaa > 1) {
             glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.col_tex.GetValue());
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.attachments[0].tex);
         } else {
-            BindTexture(DIFFUSEMAP_SLOT, clean_buf_.col_tex.GetValue());
+            BindTexture(DIFFUSEMAP_SLOT, clean_buf_.attachments[0].tex);
         }
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         ////////////////
 
@@ -756,32 +760,27 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         cur_program = blit_gauss_prog_.get();
         glUseProgram(cur_program->prog_id());
 
-        glEnableVertexAttribArray(A_POS);
-        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
-
-        glEnableVertexAttribArray(A_UVS1);
-        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs1[0]);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs1), fs_quad_uvs1);
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
         glUniform1f(cur_program->uniform(4).loc, 0.5f);
 
-        BindTexture(DIFFUSEMAP_SLOT, blur_buf1_.col_tex.GetValue());
+        BindTexture(DIFFUSEMAP_SLOT, down_buf_.attachments[0].tex);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         glUniform1f(cur_program->uniform(4).loc, 1.5f);
 
         glBindFramebuffer(GL_FRAMEBUFFER, blur_buf1_.fb);
         glViewport(0, 0, blur_buf1_.w, blur_buf1_.h);
 
-        BindTexture(DIFFUSEMAP_SLOT, blur_buf2_.col_tex.GetValue());
+        BindTexture(DIFFUSEMAP_SLOT, blur_buf2_.attachments[0].tex);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         glDisableVertexAttribArray(A_POS);
         glDisableVertexAttribArray(A_UVS1);
     }
-#endif
 
     glQueryCounter(queries_[1][TimeDrawEnd], GL_TIMESTAMP);
 
@@ -800,16 +799,20 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         const uint8_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
 
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_pos), fs_quad_pos);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs), fs_quad_uvs);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
+
         const Ren::Vec2f offset_step = { 1.0f / reduced_buf_.w, 1.0f / reduced_buf_.h };
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
         glEnableVertexAttribArray(A_POS);
-        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
 
         glEnableVertexAttribArray(A_UVS1);
-        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)));
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
 
@@ -820,7 +823,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         BindTexture(DIFFUSEMAP_SLOT, blur_buf1_.attachments[0].tex);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         glDisableVertexAttribArray(A_POS);
         glDisableVertexAttribArray(A_UVS1);
@@ -986,6 +989,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+        glUniform1f(cur_program->uniform(4).loc, 1.0f);
 
         BindTexture(DIFFUSEMAP_SLOT, temp_tex_);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, &depth_pixels_[0][0]);
@@ -1035,6 +1039,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+        glUniform1f(cur_program->uniform(4).loc, 1.0f);
 
         BindTexture(DIFFUSEMAP_SLOT, shadow_buf_.depth_tex.GetValue());
 
@@ -1044,109 +1049,20 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_UVS1);
     }
 
+    if (debug_down_) {
+        BlitBuffer(-1.0f, -1.0f, 1.0f, 1.0f, down_buf_, 0, 1, 400.0f);
+    }
+
     if (debug_reduce_) {
-        cur_program = blit_prog_.get();
-        glUseProgram(cur_program->prog_id());
-
-        float k = float(ctx_.w()) / ctx_.h();
-
-        const float positions[] = { -1.0f, -1.0f,                      -1.0f + 0.5f, -1.0f,
-                                    -1.0f + 0.5f, -1.0f + 0.25f * k,   -1.0f, -1.0f + 0.25f * k };
-
-        const float uvs[] = {
-            0.0f, 0.0f,                                   (float)reduced_buf_.w, 0.0f,
-            (float)reduced_buf_.w, (float)reduced_buf_.h, 0.0f, (float)reduced_buf_.h
-        };
-
-        const uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
-
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
-
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(indices), indices);
-
-        glEnableVertexAttribArray(A_POS);
-        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
-
-        glEnableVertexAttribArray(A_UVS1);
-        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
-
-        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
-
-        BindTexture(DIFFUSEMAP_SLOT, reduced_buf_.attachments[0].tex);
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
-
-        glDisableVertexAttribArray(A_POS);
-        glDisableVertexAttribArray(A_UVS1);
+        BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, reduced_buf_, 0, 1, 400.0f);
     }
 
     if (debug_deffered_) {
-        if (clean_buf_.msaa > 1) {
-            cur_program = blit_ms_prog_.get();
-        } else {
-            cur_program = blit_prog_.get();
-        }
-        glUseProgram(cur_program->prog_id());
+        BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, clean_buf_, 1, 2);
+    }
 
-        float k = float(ctx_.w()) / ctx_.h();
-
-        const float sx = 0.5f, sy = 0.5f;
-
-        const float positions[] = { -1.0f, -1.0f,             -1.0f + sx, -1.0f,
-                                    -1.0f + sx, -1.0f + sy,   -1.0f, -1.0f + sy };
-
-        const float uvs[] = {
-            0.0f, 0.0f,             (float)w_, 0.0f,
-            (float)w_, (float)h_,   0.0f, (float)h_
-        };
-
-        const uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
-
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
-
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(indices), indices);
-
-        glEnableVertexAttribArray(A_POS);
-        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
-
-        glEnableVertexAttribArray(A_UVS1);
-        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
-
-        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
-
-        if (clean_buf_.msaa > 1) {
-            glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.attachments[1].tex);
-        } else {
-            BindTexture(DIFFUSEMAP_SLOT, clean_buf_.attachments[1].tex);
-        }
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
-
-        /////
-
-        const float positions2[] = { -1.0f + sx, -1.0f,               -1.0f + sx + sx, -1.0f,
-                                     -1.0f + sx + sx, -1.0f + sy,     -1.0f + sx, -1.0f + sy };
-
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions2), positions2);
-
-        if (clean_buf_.msaa > 1) {
-            glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.attachments[2].tex);
-        } else {
-            BindTexture(DIFFUSEMAP_SLOT, clean_buf_.attachments[2].tex);
-        }
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
-
-        glDisableVertexAttribArray(A_POS);
-        glDisableVertexAttribArray(A_UVS1);
+    if (debug_blur_) {
+        BlitBuffer(-1.0f, -1.0f, 1.0f, 1.0f, blur_buf1_, 0, 1, 400.0f);
     }
 
     glBindVertexArray(0);
@@ -1244,6 +1160,62 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
         glDisableVertexAttribArray(A_POS);
         glDisableVertexAttribArray(A_UVS1);
     }
+}
+
+void Renderer::BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf, int first_att, int att_count, float multiplier) {
+    using namespace RendererInternal;
+
+    Ren::Program *cur_program = nullptr;
+
+    if (buf.msaa > 1) {
+        cur_program = blit_ms_prog_.get();
+    } else {
+        cur_program = blit_prog_.get();
+    }
+    glUseProgram(cur_program->prog_id());
+
+    for (int i = first_att; i < first_att + att_count; i++) {
+        const float positions[] = { px + (i - first_att) * sx, py,              px + (i - first_att + 1) * sx, py,
+                                    px + (i - first_att + 1) * sx, py + sy,     px + (i - first_att) * sx, py + sy };
+
+        if (i == first_att) {
+            const float uvs[] = {
+                0.0f, 0.0f,                 (float)buf.w, 0.0f,
+                (float)buf.w, (float)buf.h,  0.0f, (float)buf.h
+            };
+
+            const uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
+
+            glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
+
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(indices), indices);
+
+            glEnableVertexAttribArray(A_POS);
+            glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+
+            glEnableVertexAttribArray(A_UVS1);
+            glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
+
+            glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+            glUniform1f(cur_program->uniform(4).loc, multiplier);
+        }
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
+
+        if (buf.msaa > 1) {
+            glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, buf.attachments[i].tex);
+        } else {
+            BindTexture(DIFFUSEMAP_SLOT, buf.attachments[i].tex);
+        }
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+    }
+
+    glDisableVertexAttribArray(A_POS);
+    glDisableVertexAttribArray(A_UVS1);
 }
 
 #undef _AS_STR

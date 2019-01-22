@@ -118,7 +118,7 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
         }
 
         if (ctx_.w() != w_ || ctx_.h() != h_) {
-            {   // Main buffer for raw frame before 
+            {   // Main buffer for raw frame before tonemapping
                 FrameBuf::ColorAttachmentDesc desc[3];
                 {   // Main color
                     desc[0].format = Ren::RawRGBA16F;
@@ -136,6 +136,13 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
                     desc[2].repeat = Ren::ClampToEdge;
                 }
                 clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, true, Ren::NoFilter, 4);
+            }
+            {   // Auxilary buffer for SSR
+                FrameBuf::ColorAttachmentDesc desc;
+                desc.format = Ren::RawRGBA16F;
+                desc.filter = Ren::Bilinear;
+                desc.repeat = Ren::ClampToEdge;
+                down_buf_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, &desc, 1, false);
             }
             {   // Auxilary buffers for bloom effect
                 FrameBuf::ColorAttachmentDesc desc;

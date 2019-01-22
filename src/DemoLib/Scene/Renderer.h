@@ -94,6 +94,15 @@ public:
     void toggle_debug_lights() {
         debug_lights_ = !debug_lights_;
     }
+    void toggle_debug_deffered() {
+        debug_deffered_ = !debug_deffered_;
+    }
+    void toggle_debug_blur() {
+        debug_blur_ = !debug_blur_;
+    }
+    void toggle_debug_down() {
+        debug_down_ = !debug_down_;
+    }
 
     TimingInfo timings() const {
         return timings_;
@@ -116,6 +125,7 @@ public:
     void WaitForBackgroundThreadIteration();
 
     void BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format);
+    void BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf, int first_att, int att_count, float multiplier = 1.0f);
 private:
     Ren::Context &ctx_;
     std::shared_ptr<Sys::ThreadPool> threads_;
@@ -124,10 +134,10 @@ private:
         blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_, blit_debug_prog_, blit_debug_ms_prog_;
     Ren::Texture2DRef default_lightmap_;
 
-    FrameBuf clean_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_;
+    FrameBuf clean_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_;
     int w_ = 0, h_ = 0;
 
-    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false, debug_deffered_ = true;
+    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false, debug_deffered_ = false, debug_blur_ = false, debug_down_ = false;
     bool culling_enabled_ = true;
 
     const bvh_node_t *nodes_ = nullptr;
