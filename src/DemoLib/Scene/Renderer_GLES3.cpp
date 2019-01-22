@@ -633,6 +633,16 @@ void Renderer::InitRendererInternal() {
         temp_tex_h_ = 128;
         temp_tex_format_ = Ren::RawRGBA8888;
     }
+
+    {   // Create timer queries
+        for (int i = 0; i < 2; i++) {
+            glGenQueries(TimersCount, queries_[i]);
+            
+            for (int j = 0; j < TimersCount; j++) {
+                glQueryCounter(queries_[i][j], GL_TIMESTAMP);
+            }
+        }
+    }
 }
 
 void Renderer::CheckInitVAOs() {
@@ -753,6 +763,12 @@ void Renderer::DestroyRendererInternal() {
         GLuint depth_pass_vao = (GLuint)depth_pass_vao_;
         glDeleteVertexArrays(1, &depth_pass_vao);
     }
+
+    {
+        for (int i = 0; i < 2; i++) {
+            glDeleteQueries(TimersCount, queries_[i]);
+        }
+    }
 }
 
 void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const LightSourceItem *lights, size_t lights_count,
@@ -823,6 +839,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     int32_t viewport_before[4];
     glGetIntegerv(GL_VIEWPORT, viewport_before);
 
+    glQueryCounter(queries_[1][TimeShadowMapStart], GL_TIMESTAMP);
+
     {   // draw shadow map
         bool fb_bound = false;
 
@@ -889,6 +907,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glViewport(0, 0, clean_buf_.w, clean_buf_.h);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
+    glQueryCounter(queries_[1][TimeDepthPassStart], GL_TIMESTAMP);
+
     if (DEPTH_PREPASS && !wireframe_mode_) {
         glDepthFunc(GL_LESS);
 
@@ -927,6 +947,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 #endif
+
+    glQueryCounter(queries_[1][TimeDrawStart], GL_TIMESTAMP);
 
     glBindVertexArray((GLuint)draw_pass_vao_);
 
@@ -1147,6 +1169,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_UVS1);
     }
 #endif
+
+    glQueryCounter(queries_[1][TimeDrawEnd], GL_TIMESTAMP);
 
     {   // draw to small framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
@@ -1447,6 +1471,21 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     }
 
     glBindVertexArray(0);
+
+    {   // Get timer queries result
+        GLuint64 time1 = 0, time2 = 0;
+
+        glGetQueryObjectui64v(queries_[0][TimeShadowMapStart], GL_QUERY_RESULT, &time1);
+
+        glGetQueryObjectui64v(queries_[0][TimeDepthPassStart], GL_QUERY_RESULT, &time2);
+        backend_info_.shadow_time_us = uint32_t((time2 - time1) / 1000);
+
+        glGetQueryObjectui64v(queries_[0][TimeDrawStart], GL_QUERY_RESULT, &time1);
+        backend_info_.depth_pass_time_us = uint32_t((time1 - time2) / 1000);
+
+        glGetQueryObjectui64v(queries_[0][TimeDrawEnd], GL_QUERY_RESULT, &time2);
+        backend_info_.draw_time_us = uint32_t((time2 - time1) / 1000);
+    }
 
 #if 0
     glFinish();

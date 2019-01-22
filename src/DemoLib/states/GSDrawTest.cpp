@@ -237,13 +237,32 @@ void GSDrawTest::Draw(float dt_s) {
 
         if (!use_pt_ && !use_lm_) {
             auto render_info = scene_manager_->render_info();
+            auto back_info = scene_manager_->backend_info();
 
+            std::string s;
             float vertical_offset = 0.65f;
 
-            if (print_light_info_) {
-                std::string s = "lights_count: " + std::to_string(render_info.lights_count);
+            {
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "shadow_time: " + std::to_string(back_info.shadow_time_us) + " us";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
+                s = "depth_time:  " + std::to_string(back_info.depth_pass_time_us) + " us";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "draw_time:   " + std::to_string(back_info.draw_time_us) + " us";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "------------------";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+            }
+
+            if (print_light_info_) {
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "lights_count: " + std::to_string(render_info.lights_count);
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());

@@ -103,6 +103,10 @@ public:
         return render_infos_[0];
     }
 
+    BackendInfo backend_info() const {
+        return backend_info_;
+    }
+
     void DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
                      const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env);
     void WaitForBackgroundThreadIteration();
@@ -139,6 +143,7 @@ private:
     Environment env_;
     TimingInfo timings_, back_timings_[2];
     RenderInfo render_infos_[2];
+    BackendInfo backend_info_;
     std::vector<float> reduced_pixels_;
     float reduced_average_ = 0.0f;
 
@@ -152,6 +157,9 @@ private:
     uint32_t temp_buf_vtx_offset_, temp_buf_ndx_offset_;
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
     uint32_t lights_ssbo_, lights_tbo_, cells_ssbo_, cells_tbo_, items_ssbo_, items_tbo_;
+
+    enum { TimeShadowMapStart, TimeDepthPassStart, TimeDrawStart, TimeDrawEnd, TimersCount };
+    uint32_t queries_[2][TimersCount];
 
     void CheckInitVAOs();
 #endif

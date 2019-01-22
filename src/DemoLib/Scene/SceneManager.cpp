@@ -49,6 +49,10 @@ RenderInfo SceneManager::render_info() const {
     return renderer_.render_info();
 }
 
+BackendInfo SceneManager::backend_info() const {
+    return renderer_.backend_info();
+}
+
 void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up) {
     cam_.SetupView(origin, target, up);
     cam_.UpdatePlanes();

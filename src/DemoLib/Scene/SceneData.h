@@ -64,6 +64,12 @@ struct RenderInfo {
              items_data_size = 0;
 };
 
+struct BackendInfo {
+    uint32_t shadow_time_us = 0,
+             depth_pass_time_us = 0,
+             draw_time_us = 0;
+};
+
 struct bvh_node_t {
     uint32_t prim_index, prim_count,
              left_child, right_child, parent,

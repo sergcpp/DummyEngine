@@ -23,6 +23,7 @@ public:
     TimingInfo timings() const;
     TimingInfo back_timings() const;
     RenderInfo render_info() const;
+    BackendInfo backend_info() const;
 
     void LoadScene(const JsObject &js_scene);
     void ClearScene();

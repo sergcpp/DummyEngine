@@ -637,6 +637,9 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
         object_count_ = object_count;
         back_timings_[0] = back_timings_[1];
         render_infos_[0] = render_infos_[1];
+        for (int i = 0; i < TimersCount; i++) {
+            std::swap(queries_[0][i], queries_[1][i]);
+        }
         draw_cam_ = cam;
         for (int i = 0; i < 4; i++) {
             std::swap(shadow_list_[0][i], shadow_list_[1][i]);
