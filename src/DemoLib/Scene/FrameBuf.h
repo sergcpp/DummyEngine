@@ -4,16 +4,27 @@
 #include <Sys/Optional.h>
 
 struct FrameBuf {
-    Ren::eTexColorFormat col_format;
     int w = -1, h = -1, msaa = 0;
 
+    struct ColorAttachmentDesc {
+        Ren::eTexColorFormat format;
+        Ren::eTexFilter filter;
+        Ren::eTexRepeat repeat;
+    };
+
 #if defined(USE_GL_RENDER)
+    struct ColorAttachment {
+        ColorAttachmentDesc desc;
+        uint32_t tex;
+    };
+
     uint32_t fb;
-    Sys::Optional<uint32_t> depth_rb, col_tex, depth_tex;
+    Sys::Optional<uint32_t> depth_rb, depth_tex;
+    std::vector<ColorAttachment> attachments;
 #endif
-    FrameBuf() : col_format(Ren::Undefined), w(-1), h(-1) {}
-    FrameBuf(int w, int h, Ren::eTexColorFormat col_format, Ren::eTexFilter filter,
-             Ren::eTexRepeat repeat, bool with_depth = true, int msaa = 1);
+    FrameBuf() :  w(-1), h(-1) {}
+    FrameBuf(int w, int h, const ColorAttachmentDesc *attachments, int attachments_count,
+             bool with_depth = true, Ren::eTexFilter depth_filter = Ren::NoFilter, int msaa = 1);
     ~FrameBuf();
 
     FrameBuf(const FrameBuf &rhs) = delete;

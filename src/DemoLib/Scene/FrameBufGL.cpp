@@ -6,13 +6,15 @@
 #include <Ren/GL.h>
 #include <Sys/Log.h>
 
-FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFilter filter,
-                   Ren::eTexRepeat repeat, bool with_depth, int _msaa)
-    : col_format(col_format), w(_w), h(_h), msaa(_msaa) {
+FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int attachments_count,
+                   bool with_depth, Ren::eTexFilter depth_filter, int _msaa)
+    : w(_w), h(_h), msaa(_msaa) {
     glGenFramebuffers(1, &fb);
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
 
-    if (col_format != Ren::None) {
+    for (int i = 0; i < attachments_count; i++) {
+        const auto &att = _attachments[i];
+
         GLuint _col_tex;
 
         glGenTextures(1, &_col_tex);
@@ -21,47 +23,51 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
         if (msaa > 1) {
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, _col_tex);
 
-            if (col_format == Ren::RawRGB888) {
+            if (att.format == Ren::RawRGB888) {
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB8, w, h, GL_TRUE);
-            } else if (col_format == Ren::RawRGBA8888) {
+            } else if (att.format == Ren::RawRGBA8888) {
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGBA8, w, h, GL_TRUE);
-            } else if (col_format == Ren::RawR32F) {
-                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_R16F, w, h, GL_TRUE);
-            } else if (col_format == Ren::RawR16F) {
+            } else if (att.format == Ren::RawR32F) {
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_R32F, w, h, GL_TRUE);
-            } else if (col_format == Ren::RawRGB16F) {
+            } else if (att.format == Ren::RawR16F) {
+                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_R16F, w, h, GL_TRUE);
+            } else if (att.format == Ren::RawRG16F) {
+                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RG16F, w, h, GL_TRUE);
+            } else if (att.format == Ren::RawRGB16F) {
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB16F, w, h, GL_TRUE);
-            } else if (col_format == Ren::RawRGBA16F) {
+            } else if (att.format == Ren::RawRGBA16F) {
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGBA16F, w, h, GL_TRUE);
-            } else if (col_format == Ren::RawRGB32F) {
+            } else if (att.format == Ren::RawRGB32F) {
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB32F, w, h, GL_TRUE);
-            } else if (col_format == Ren::RawRGBA32F) {
+            } else if (att.format == Ren::RawRGBA32F) {
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGBA32F, w, h, GL_TRUE);
             } else {
                 throw std::invalid_argument("Wrong format!");
             }
 
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, _col_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, _col_tex, 0);
         } else {
             glBindTexture(GL_TEXTURE_2D, _col_tex);
 
-            if (col_format == Ren::RawRGB888) {
+            if (att.format == Ren::RawRGB888) {
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-            } else if (col_format == Ren::RawRGBA8888) {
+            } else if (att.format == Ren::RawRGBA8888) {
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-            } else if (col_format == Ren::RawR32F) {
+            } else if (att.format == Ren::RawR32F) {
 #if defined(EMSCRIPTEN)
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
 #else
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, w, h, 0, GL_RED, GL_FLOAT, NULL);
 #endif
-            } else if (col_format == Ren::RawR16F) {
+            } else if (att.format == Ren::RawR16F) {
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, w, h, 0, GL_RED, GL_FLOAT, NULL);
-            } else if (col_format == Ren::RawRGB16F) {
+            } else if (att.format == Ren::RawRG16F) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, w, h, 0, GL_RG, GL_FLOAT, NULL);
+            } else if (att.format == Ren::RawRGB16F) {
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_HALF_FLOAT, NULL);
-            } else if (col_format == Ren::RawRGBA16F) {
+            } else if (att.format == Ren::RawRGBA16F) {
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, w, h, 0, GL_RGBA, GL_HALF_FLOAT, NULL);
-            } else if (col_format == Ren::RawRGB32F) {
+            } else if (att.format == Ren::RawRGB32F) {
 #if defined(EMSCRIPTEN)
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
 #else
@@ -71,54 +77,48 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
                 throw std::invalid_argument("Wrong format!");
             }
 
-            if (filter == Ren::NoFilter) {
+            if (att.filter == Ren::NoFilter) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            } else if (filter == Ren::Bilinear || filter == Ren::BilinearNoMipmap) {
+            } else if (att.filter == Ren::Bilinear || att.filter == Ren::BilinearNoMipmap) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             }
 
-            if (repeat == Ren::ClampToEdge) {
+            if (att.repeat == Ren::ClampToEdge) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            } else if (repeat == Ren::Repeat) {
+            } else if (att.repeat == Ren::Repeat) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
             }
 
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _col_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _col_tex, 0);
         }
 
-        col_tex = _col_tex;
-
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        Ren::CheckError("[Renderer]: create framebuffer 2");
+        attachments.push_back({ att, _col_tex });
     }
 
-    if (with_depth && col_format == Ren::None) {
+    glClear(GL_COLOR_BUFFER_BIT);
+    Ren::CheckError("[Renderer]: create framebuffer 2");
+
+    if (with_depth && attachments_count == 0) {
         GLuint _depth_tex;
 
         glGenTextures(1, &_depth_tex);
         glBindTexture(GL_TEXTURE_2D, _depth_tex);
         glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT16, w, h);
 
-        if (filter == Ren::NoFilter) {
+        if (depth_filter == Ren::NoFilter) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        } else if (filter == Ren::Bilinear || filter == Ren::BilinearNoMipmap) {
+        } else if (depth_filter == Ren::Bilinear || depth_filter == Ren::BilinearNoMipmap) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         }
 
-        if (repeat == Ren::ClampToEdge) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        } else if (repeat == Ren::Repeat) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        }
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_tex, 0);
 
@@ -166,21 +166,16 @@ FrameBuf::FrameBuf(int _w, int _h, Ren::eTexColorFormat col_format, Ren::eTexFil
 
         Ren::CheckError("[Renderer]: create framebuffer 3");
 
-        if (filter == Ren::NoFilter) {
+        if (depth_filter == Ren::NoFilter) {
             glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        } else if (filter == Ren::Bilinear || filter == Ren::BilinearNoMipmap) {
+        } else if (depth_filter == Ren::Bilinear || depth_filter == Ren::BilinearNoMipmap) {
             glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         }
 
-        if (repeat == Ren::ClampToEdge) {
-            glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        } else if (repeat == Ren::Repeat) {
-            glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        }
+        glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, _depth_tex, 0);
 
@@ -219,36 +214,35 @@ FrameBuf::FrameBuf(FrameBuf &&rhs) {
 }
 
 FrameBuf &FrameBuf::operator=(FrameBuf &&rhs) {
-    col_format = rhs.col_format;
+    attachments = std::move(rhs.attachments);
     w = rhs.w;
     h = rhs.h;
     msaa = rhs.msaa;
     fb = rhs.fb;
-    col_tex = std::move(rhs.col_tex);
     depth_tex = std::move(rhs.depth_tex);
     depth_rb = std::move(rhs.depth_rb);
 
-    rhs.col_format = Ren::Undefined;
     rhs.w = rhs.h = -1;
 
     return *this;
 }
 
 FrameBuf::~FrameBuf() {
-    if (col_format != Ren::Undefined) {
-        glDeleteFramebuffers(1, &fb);
-        if (col_tex.initialized()) {
-            GLuint val = (GLuint)col_tex.GetValue();
-            glDeleteTextures(1, &val);
-        }
-        if (depth_tex.initialized()) {
-            GLuint val = (GLuint)depth_tex.GetValue();
-            glDeleteTextures(1, &val);
-        }
-        if (depth_rb.initialized()) {
-            GLuint val = (GLuint)depth_rb.GetValue();
-            glDeleteRenderbuffers(1, &val);
-        }
+    for (const auto &att : attachments) {
+        GLuint val = (GLuint)att.tex;
+        glDeleteTextures(1, &val);
+    }
 
+    if (depth_tex.initialized()) {
+        GLuint val = (GLuint)depth_tex.GetValue();
+        glDeleteTextures(1, &val);
+    }
+    if (depth_rb.initialized()) {
+        GLuint val = (GLuint)depth_rb.GetValue();
+        glDeleteRenderbuffers(1, &val);
+    }
+
+    if (w != -1) {
+        glDeleteFramebuffers(1, &fb);
     }
 }

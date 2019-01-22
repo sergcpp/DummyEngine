@@ -54,10 +54,14 @@ struct ItemData {
 };
 static_assert(sizeof(ItemData) == 2, "!");
 
+#define REN_GRID_RES_X 16
+#define REN_GRID_RES_Y 8
+#define REN_GRID_RES_Z 24
+
 namespace RendererInternal {
-    const int GRID_RES_X = 16;
-    const int GRID_RES_Y = 8;
-    const int GRID_RES_Z = 24;
+    const int GRID_RES_X = REN_GRID_RES_X;
+    const int GRID_RES_Y = REN_GRID_RES_Y;
+    const int GRID_RES_Z = REN_GRID_RES_Z;
 
     const int CELLS_COUNT = GRID_RES_X * GRID_RES_Y * GRID_RES_Z;
 
@@ -117,13 +121,13 @@ private:
     std::shared_ptr<Sys::ThreadPool> threads_;
     SWcull_ctx cull_ctx_;
     Ren::ProgramRef fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_combine_ms_prog_,
-        blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_, blit_debug_ms_prog_;
+        blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_, blit_debug_prog_, blit_debug_ms_prog_;
     Ren::Texture2DRef default_lightmap_;
 
     FrameBuf clean_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_;
     int w_ = 0, h_ = 0;
 
-    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false;
+    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false, debug_deffered_ = true;
     bool culling_enabled_ = true;
 
     const bvh_node_t *nodes_ = nullptr;

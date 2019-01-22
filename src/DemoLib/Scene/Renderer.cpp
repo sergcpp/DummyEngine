@@ -46,9 +46,17 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
 
     InitRendererInternal();
 
-    shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::None, Ren::BilinearNoMipmap, Ren::ClampToEdge, true);
+    {   // Create shadow map buffer
+        shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, nullptr, 0, true, Ren::BilinearNoMipmap);
+    }
 
-    reduced_buf_ = FrameBuf(16, 8, Ren::RawR16F, Ren::Bilinear, Ren::ClampToEdge, false);
+    {   // Create aux buffer which gathers frame luminance
+        FrameBuf::ColorAttachmentDesc desc;
+        desc.format = Ren::RawR16F;
+        desc.filter = Ren::Bilinear;
+        desc.repeat = Ren::ClampToEdge;
+        reduced_buf_ = FrameBuf(16, 8, &desc, 1, false);
+    }
 
     uint8_t data[] = { 0, 0, 0, 0 };
 
@@ -110,9 +118,33 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
         }
 
         if (ctx_.w() != w_ || ctx_.h() != h_) {
-            clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), Ren::RawRGBA16F, Ren::NoFilter, Ren::ClampToEdge, true, 4);
-            blur_buf1_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, Ren::RawRGBA16F, Ren::Bilinear, Ren::ClampToEdge, false);
-            blur_buf2_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, Ren::RawRGBA16F, Ren::Bilinear, Ren::ClampToEdge, false);
+            {   // Main buffer for raw frame before 
+                FrameBuf::ColorAttachmentDesc desc[3];
+                {   // Main color
+                    desc[0].format = Ren::RawRGBA16F;
+                    desc[0].filter = Ren::NoFilter;
+                    desc[0].repeat = Ren::ClampToEdge;
+                }
+                {   // Clip-space normal
+                    desc[1].format = Ren::RawRG16F;
+                    desc[1].filter = Ren::BilinearNoMipmap;
+                    desc[1].repeat = Ren::ClampToEdge;
+                }
+                {   // 4-component specular
+                    desc[2].format = Ren::RawRGBA8888;
+                    desc[2].filter = Ren::BilinearNoMipmap;
+                    desc[2].repeat = Ren::ClampToEdge;
+                }
+                clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, true, Ren::NoFilter, 4);
+            }
+            {   // Auxilary buffers for bloom effect
+                FrameBuf::ColorAttachmentDesc desc;
+                desc.format = Ren::RawRGBA16F;
+                desc.filter = Ren::Bilinear;
+                desc.repeat = Ren::ClampToEdge;
+                blur_buf1_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, &desc, 1, false);
+                blur_buf2_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, &desc, 1, false);
+            }
             w_ = ctx_.w();
             h_ = ctx_.h();
             LOGI("CleanBuf resized to %ix%i", w_, h_);
@@ -178,14 +210,15 @@ void Renderer::BackgroundProc() {
             Ren::Mat4f view_from_identity = view_from_world * Ren::Mat4f{ 1.0f },
                        clip_from_identity = clip_from_view * view_from_identity;
 
+            tr_list.push_back(clip_from_identity);
+
             const uint32_t skip_check_bit = (1 << 31);
             const uint32_t index_bits = ~skip_check_bit;
 
             uint32_t stack[MAX_STACK_SIZE];
             uint32_t stack_size = 0;
 
-            {
-                // Rasterize occluder meshes into a small framebuffer
+            {   // Rasterize occluder meshes into a small framebuffer
                 stack[stack_size++] = (uint32_t)root_node_;
 
                 while (stack_size && culling_enabled_) {
@@ -248,8 +281,7 @@ void Renderer::BackgroundProc() {
                 }
             }
 
-            {
-                // Gather drawable meshes, skip occluded and frustum culled
+            {   // Gather meshes and lights, skip occluded and frustum culled
                 const uint32_t skip_check_bit = (1 << 31);
                 const uint32_t index_bits = ~skip_check_bit;
 

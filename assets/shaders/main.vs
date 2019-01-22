@@ -17,7 +17,8 @@ layout(location = 4) in vec2 aVertexUVs2;
 
 layout (std140) uniform MatricesBlock {
     mat4 uMVPMatrix;
-    mat4 uMVMatrix;
+    mat4 uVPMatrix;
+    mat4 uMMatrix;
     mat4 uShadowMatrix[4];
 };
 
@@ -26,22 +27,31 @@ out mat3 aVertexTBN_;
 out vec2 aVertexUVs1_;
 out vec2 aVertexUVs2_;
 
-out vec4 aVertexShUVs_[4];
+out vec3 aVertexShUVs_[4];
 
 void main(void) {
-    vec3 vertex_position_ws = (uMVMatrix * vec4(aVertexPosition, 1.0)).xyz;
-    vec3 vertex_normal_ws = (uMVMatrix * vec4(aVertexNormal, 0.0)).xyz;
-    vec3 vertex_tangent_ws = (uMVMatrix * vec4(aVertexTangent, 0.0)).xyz;
+    vec3 vertex_position_ws = (uMMatrix * vec4(aVertexPosition, 1.0)).xyz;
+    vec3 vertex_normal_ws = (uMMatrix * vec4(aVertexNormal, 0.0)).xyz;
+    vec3 vertex_tangent_ws = (uMMatrix * vec4(aVertexTangent, 0.0)).xyz;
 
     aVertexPos_ = vertex_position_ws;
     aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);
     aVertexUVs1_ = aVertexUVs1;
     aVertexUVs2_ = aVertexUVs2;
     
-    aVertexShUVs_[0] = uShadowMatrix[0] * vec4(aVertexPosition, 1.0);
-    aVertexShUVs_[1] = uShadowMatrix[1] * vec4(aVertexPosition, 1.0);
-    aVertexShUVs_[2] = uShadowMatrix[2] * vec4(aVertexPosition, 1.0);
-    aVertexShUVs_[3] = uShadowMatrix[3] * vec4(aVertexPosition, 1.0);
-
+    const vec2 offsets[4] = vec2[4](
+        vec2(0.0, 0.0),
+        vec2(0.5, 0.0),
+        vec2(0.0, 0.5),
+        vec2(0.5, 0.5)
+    );
+    
+    for (int i = 0; i < 4; i++) {
+        aVertexShUVs_[i] = (uShadowMatrix[i] * vec4(aVertexPosition, 1.0)).xyz;
+        aVertexShUVs_[i] = 0.5 * aVertexShUVs_[i] + 0.5;
+        aVertexShUVs_[i].xy *= 0.5;
+        aVertexShUVs_[i].xy += offsets[i];
+    }
+    
     gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
 } 

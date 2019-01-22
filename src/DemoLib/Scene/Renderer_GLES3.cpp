@@ -5,424 +5,19 @@
 #include <Ren/GL.h>
 #include <Sys/Log.h>
 
+#define _AS_STR(x) #x
+#define AS_STR(x) _AS_STR(x)
+
 namespace RendererInternal {
-const char fillz_vs[] = R"(
-#version 300 es
-
-/*
-UNIFORMS
-	uMVPMatrix : 0
-*/
-
-layout(location = 0) in vec3 aVertexPosition;
-
-uniform mat4 uMVPMatrix;
-
-void main() {
-    gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
-} 
-)";
-
-    const char fillz_fs[] = R"(
-#version 300 es
-
-#ifdef GL_ES
-	precision mediump float;
-#endif
-
-void main() {
-}
-)";
-
-    const char shadow_vs[] = R"(
-#version 300 es
-
-/*
-UNIFORMS
-	uMVPMatrix : 0
-*/
-
-layout(location = 0) in vec3 aVertexPosition;
-
-uniform mat4 uMVPMatrix;
-
-void main() {
-    gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
-} 
-)";
-
-    const char shadow_fs[] = R"(
-#version 300 es
-#ifdef GL_ES
-    precision mediump float;
-#endif
-
-void main() {
-    //gl_FragDepth = gl_FragCoord.z;
-}
-)";
-
-    const char blit_vs[] = R"(
-#version 300 es
-
-layout(location = 0) in vec2 aVertexPosition;
-layout(location = 3) in vec2 aVertexUVs;
-
-out vec2 aVertexUVs_;
-
-void main() {
-    aVertexUVs_ = aVertexUVs;
-    gl_Position = vec4(aVertexPosition, 0.5, 1.0);
-} 
-)";
-
-    const char blit_fs[] = R"(
-#version 300 es
-#ifdef GL_ES
-	precision mediump float;
-#endif
-
-/*
-UNIFORMS
-    s_texture : 3
-*/
-        
-uniform sampler2D s_texture;
-
-in vec2 aVertexUVs_;
-
-out vec4 outColor;
-
-void main() {
-    outColor = texelFetch(s_texture, ivec2(aVertexUVs_), 0);
-}
-)";
-
-    const char blit_ms_vs[] = R"(
-#version 310 es
-
-layout(location = 0) in vec2 aVertexPosition;
-layout(location = 3) in vec2 aVertexUVs;
-
-out vec2 aVertexUVs_;
-
-void main() {
-    aVertexUVs_ = aVertexUVs;
-    gl_Position = vec4(aVertexPosition, 0.5, 1.0);
-} 
-)";
-
-    const char blit_ms_fs[] = R"(
-#version 310 es
-#extension GL_ARB_texture_multisample : enable
-
-#ifdef GL_ES
-	precision mediump float;
-#endif
-
-/*
-UNIFORMS
-    s_texture : 3
-    uTexSize : 5
-*/
-        
-layout(location = 14) uniform mediump sampler2DMS s_texture;
-
-in vec2 aVertexUVs_;
-
-out vec4 outColor;
-
-void main() {
-    outColor = texelFetch(s_texture, ivec2(aVertexUVs_), 0);
-}
-    )";
-
-    const char blit_combine_fs[] = R"(
-#version 310 es
-#ifdef GL_ES
-	precision mediump float;
-#endif
-
-/*
-UNIFORMS
-    s_texture : 3
-    s_blured_texture : 4
-    uTexSize : 5
-*/
-        
-uniform sampler2D s_texture;
-uniform sampler2D s_blured_texture;
-uniform vec2 uTexSize;
-layout(location = 14) uniform float gamma;
-layout(location = 15) uniform float exposure;
-
-in vec2 aVertexUVs_;
-
-out vec4 outColor;
-
-void main() {
-    vec3 c0 = texelFetch(s_texture, ivec2(aVertexUVs_), 0).xyz;
-    vec3 c1 = 0.1 * texture(s_blured_texture, aVertexUVs_ / uTexSize).xyz;
-            
-    c0 += c1;
-    c0 = vec3(1.0) - exp(-c0 * exposure);
-    c0 = pow(c0, vec3(1.0/gamma));
-
-    outColor = vec4(c0, 1.0);
-}
-)";
-
-    const char blit_combine_ms_fs[] = R"(
-#version 310 es
-#extension GL_ARB_texture_multisample : enable
-
-#ifdef GL_ES
-	precision mediump float;
-#endif
-
-/*
-UNIFORMS
-    s_texture : 3
-    s_blured_texture : 4
-    uTexSize : 5
-*/
-        
-uniform mediump sampler2DMS s_texture;
-uniform sampler2D s_blured_texture;
-uniform vec2 uTexSize;
-layout(location = 14) uniform float gamma;
-layout(location = 15) uniform float exposure;
-
-in vec2 aVertexUVs_;
-
-out vec4 outColor;
-
-void main() {
-    vec3 c0 = texelFetch(s_texture, ivec2(aVertexUVs_), 0).xyz;
-	vec3 c1 = texelFetch(s_texture, ivec2(aVertexUVs_), 1).xyz;
-	vec3 c2 = texelFetch(s_texture, ivec2(aVertexUVs_), 2).xyz;
-	vec3 c3 = texelFetch(s_texture, ivec2(aVertexUVs_), 3).xyz;
-    vec3 c4 = 0.1 * texture(s_blured_texture, aVertexUVs_ / uTexSize).xyz;
-            
-    c0 += c4;
-    c1 += c4;
-    c2 += c4;
-    c3 += c4;
-
-    //c0 = exposure * c0 / (c0 + vec3(1.0));
-    //c1 = exposure * c1 / (c1 + vec3(1.0));
-    //c2 = exposure * c2 / (c2 + vec3(1.0));
-    //c3 = exposure * c3 / (c3 + vec3(1.0));
-
-    c0 = vec3(1.0) - exp(-c0 * exposure);
-    c1 = vec3(1.0) - exp(-c1 * exposure);
-    c2 = vec3(1.0) - exp(-c2 * exposure);
-    c3 = vec3(1.0) - exp(-c3 * exposure);
-
-    c0 = pow(c0, vec3(1.0/gamma));
-    c1 = pow(c1, vec3(1.0/gamma));
-    c2 = pow(c2, vec3(1.0/gamma));
-    c3 = pow(c3, vec3(1.0/gamma));
-
-    outColor = vec4(0.25 * (c0 + c1 + c2 + c3), 1.0);
-}
-)";
-
-const char blit_reduced_fs[] = R"(
-#version 300 es
-#ifdef GL_ES
-	precision mediump float;
-#endif
-
-/*
-UNIFORMS
-    s_texture : 3
-    uOffset : 4
-*/
-        
-uniform sampler2D s_texture;
-uniform vec2 uOffset;
-
-in vec2 aVertexUVs_;
-
-out vec4 outColor;
-
-void main() {
-    vec3 c0 = texture(s_texture, aVertexUVs_ + uOffset).xyz;
-    outColor.r = 0.299 * c0.r + 0.587 * c0.g + 0.114 * c0.b;
-}
-)";
-
-    const char blit_down_fs[] = R"(
-#version 300 es
-
-#ifdef GL_ES
-	precision mediump float;
-#endif
-
-/*
-UNIFORMS
-    s_texture : 3
-*/
-        
-uniform sampler2D s_texture;
-
-in vec2 aVertexUVs_;
-
-out vec4 outColor;
-
-void main() {
-    vec3 col = vec3(0.0);
-    for (float j = -1.5; j < 2.0; j += 1.0) {
-        for (float i = -1.5; i < 2.0; i += 1.0) {
-            col += texelFetch(s_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
-        }
-    }
-    outColor = vec4((1.0/16.0) * col, 1.0);
-}
-    )";
-
-const char blit_down_ms_fs[] = R"(
-#version 310 es
-#extension GL_ARB_texture_multisample : enable
-
-#ifdef GL_ES
-	precision mediump float;
-#endif
-
-/*
-UNIFORMS
-    s_texture : 3
-*/
-        
-uniform mediump sampler2DMS s_texture;
-
-in vec2 aVertexUVs_;
-
-out vec4 outColor;
-
-void main() {
-    vec3 col = vec3(0.0);
-    for (float j = -1.5; j < 2.0; j += 1.0) {
-        for (float i = -1.5; i < 2.0; i += 1.0) {
-            col += texelFetch(s_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
-        }
-    }
-    outColor = vec4((1.0/16.0) * col, 1.0);
-}
-    )";
-
-const char blit_gauss_fs[] = R"(
-#version 310 es
-#extension GL_ARB_texture_multisample : enable
-
-#ifdef GL_ES
-	precision mediump float;
-#endif
-
-/*
-UNIFORMS
-    s_texture : 3
-    vertical : 4
-*/
-        
-uniform sampler2D s_texture;
-uniform float vertical;
-
-in vec2 aVertexUVs_;
-
-out vec4 outColor;
-
-void main() {
-    if(vertical < 1.0) {
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(4, 0), 0) * 0.05;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(3, 0), 0) * 0.09;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(2, 0), 0) * 0.12;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(1, 0), 0) * 0.15;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_), 0) * 0.16;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(1, 0), 0) * 0.15;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(2, 0), 0) * 0.12;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(3, 0), 0) * 0.09;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(4, 0), 0) * 0.05;
-    } else {
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 4), 0) * 0.05;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 3), 0) * 0.09;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 2), 0) * 0.12;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 1), 0) * 0.15;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_), 0) * 0.16;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 1), 0) * 0.15;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 2), 0) * 0.12;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 3), 0) * 0.09;
-	    outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 4), 0) * 0.05;
-    }
-}
-)";
-
-const char blit_debug_ms_fs[] = R"(
-#version 310 es
-#extension GL_EXT_texture_buffer : enable
-#extension GL_ARB_texture_multisample : enable
-
-#ifdef GL_ES
-	precision mediump float;
-#endif
-
-#define GRID_RES_X 16
-#define GRID_RES_Y 8
-#define GRID_RES_Z 24
-
-/*
-UNIFORMS
-    s_texture : 3
-*/
-        
-layout(binding = 0) uniform mediump sampler2DMS s_texture;
-layout(binding = 10) uniform highp usamplerBuffer cells_buffer;
-layout(binding = 11) uniform highp usamplerBuffer items_buffer;
-
-layout(location = 16) uniform int resx;
-layout(location = 17) uniform int resy;
-
-in vec2 aVertexUVs_;
-
-out vec4 outColor;
-
-vec3 heatmap(float t) {
-    vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
-    return vec3(1.0) - r * r;
-}
-
-void main() {
-    const float n = 0.5;
-    const float f = 10000.0;
-
-    float depth = texelFetch(s_texture, ivec2(aVertexUVs_), 0).r;
-    //depth = 2.0 * depth - 1.0;
-    depth = n * f / (f + depth * (n - f));
-    
-    float k = log2(depth / n) / log2(1.0 + f / n);
-    int slice = int(k * 24.0);
-    
-    int ix = int(gl_FragCoord.x);
-    int iy = int(gl_FragCoord.y);
-    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy / (resy / GRID_RES_Y)) * GRID_RES_X + (ix / (resx / GRID_RES_X));
-    
-    uvec2 offset_and_count = texelFetch(cells_buffer, cell_index).xy;
-
-    outColor = vec4(heatmap(float(offset_and_count.y) * (1.0 / 256.0)), 0.85);
-
-    if ((ix != 0 && (ix % (resx / GRID_RES_X)) == 0) || (iy != 0 && (iy % (resy / GRID_RES_Y)) == 0)) {
-        outColor = vec4(1.0, 0.0, 0.0, 1.0);
-    }
-}
-)";
+#include "Renderer_GL_Shaders.inl"
 
     struct MatricesBlock {
         Ren::Mat4f uMVPMatrix;
-        Ren::Mat4f uMVMatrix;
+        Ren::Mat4f uVPMatrix;
+        Ren::Mat4f uMMatrix;
         Ren::Mat4f uShadowMatrix[4];
     };
-    static_assert(sizeof(MatricesBlock) == 384, "!");
+    static_assert(sizeof(MatricesBlock) == 448, "!");
 
     const Ren::Vec2f poisson_disk[] = {
         { -0.705374f, -0.668203f }, { -0.780145f, 0.486251f  }, { 0.566637f, 0.605213f   }, { 0.488876f, -0.783441f  },
@@ -536,7 +131,10 @@ void Renderer::InitRendererInternal() {
     blit_gauss_prog_ = ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_debug");
-    blit_debug_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug", blit_vs, blit_debug_ms_fs, &status);
+    blit_debug_prog_ = ctx_.LoadProgramGLSL("blit_debug", blit_vs, blit_debug_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_debug_ms");
+    blit_debug_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug_ms", blit_vs, blit_debug_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
 
     {
@@ -952,6 +550,15 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     glBindVertexArray((GLuint)draw_pass_vao_);
 
+    Ren::Mat4f clip_from_world;
+
+    if (!transforms_[0].empty()) {
+        clip_from_world = transforms_[0][0];
+    }
+
+    GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+    glDrawBuffers(3, draw_buffers);
+
     // actual drawing
     for (size_t i = 0; i < drawable_count; i++) {
         const auto &dr = drawables[i];
@@ -989,11 +596,17 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                 glBindBuffer(GL_UNIFORM_BUFFER, 0);
             }
 
+            {
+                glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_matrices_block_);
+                glBufferSubData(GL_UNIFORM_BUFFER, offsetof(MatricesBlock, uVPMatrix), sizeof(Ren::Mat4f), ValuePtr(clip_from_world));
+                glBindBuffer(GL_UNIFORM_BUFFER, 0);
+            }
+
             if (world_from_object == cur_world_from_object) {
                 //glUniformMatrix4fv(p->uniform(U_MV_MATR).loc, 1, GL_FALSE, ValuePtr(world_from_object));
 
                 glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_matrices_block_);
-                glBufferSubData(GL_UNIFORM_BUFFER, offsetof(MatricesBlock, uMVMatrix), sizeof(Ren::Mat4f), ValuePtr(world_from_object));
+                glBufferSubData(GL_UNIFORM_BUFFER, offsetof(MatricesBlock, uMMatrix), sizeof(Ren::Mat4f), ValuePtr(world_from_object));
                 glBindBuffer(GL_UNIFORM_BUFFER, 0);
             }
 
@@ -1027,7 +640,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             //glUniformMatrix4fv(cur_program->uniform(U_MV_MATR).loc, 1, GL_FALSE, ValuePtr(world_from_object));
 
             glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_matrices_block_);
-            glBufferSubData(GL_UNIFORM_BUFFER, offsetof(MatricesBlock, uMVMatrix), sizeof(Ren::Mat4f), ValuePtr(world_from_object));
+            glBufferSubData(GL_UNIFORM_BUFFER, offsetof(MatricesBlock, uMMatrix), sizeof(Ren::Mat4f), ValuePtr(world_from_object));
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
             cur_world_from_object = world_from_object;
@@ -1205,7 +818,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                                                  0.5f * poisson_disk[cur_offset][1] * offset_step[1]);
         cur_offset = cur_offset >= 63 ? 0 : (cur_offset + 1);
 
-        BindTexture(DIFFUSEMAP_SLOT, blur_buf1_.col_tex.GetValue());
+        BindTexture(DIFFUSEMAP_SLOT, blur_buf1_.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
 
@@ -1276,12 +889,12 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         if (clean_buf_.msaa > 1) {
             glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.col_tex.GetValue());
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.attachments[0].tex);
         } else {
-            BindTexture(DIFFUSEMAP_SLOT, clean_buf_.col_tex.GetValue());
+            BindTexture(DIFFUSEMAP_SLOT, clean_buf_.attachments[0].tex);
         }
 
-        BindTexture(DIFFUSEMAP_SLOT + 1, blur_buf1_.col_tex.GetValue());
+        BindTexture(DIFFUSEMAP_SLOT + 1, blur_buf1_.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
@@ -1296,7 +909,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         if (clean_buf_.msaa > 1) {
             cur_program = blit_debug_ms_prog_.get();
         } else {
-            cur_program = nullptr;// blit_combine_prog_.get();
+            cur_program = blit_debug_prog_.get();
         }
         glUseProgram(cur_program->prog_id());
 
@@ -1462,7 +1075,73 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
 
-        BindTexture(DIFFUSEMAP_SLOT, reduced_buf_.col_tex.GetValue());
+        BindTexture(DIFFUSEMAP_SLOT, reduced_buf_.attachments[0].tex);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+
+        glDisableVertexAttribArray(A_POS);
+        glDisableVertexAttribArray(A_UVS1);
+    }
+
+    if (debug_deffered_) {
+        if (clean_buf_.msaa > 1) {
+            cur_program = blit_ms_prog_.get();
+        } else {
+            cur_program = blit_prog_.get();
+        }
+        glUseProgram(cur_program->prog_id());
+
+        float k = float(ctx_.w()) / ctx_.h();
+
+        const float sx = 0.5f, sy = 0.5f;
+
+        const float positions[] = { -1.0f, -1.0f,             -1.0f + sx, -1.0f,
+                                    -1.0f + sx, -1.0f + sy,   -1.0f, -1.0f + sy };
+
+        const float uvs[] = {
+            0.0f, 0.0f,             (float)w_, 0.0f,
+            (float)w_, (float)h_,   0.0f, (float)h_
+        };
+
+        const uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
+
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(indices), indices);
+
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
+
+        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+
+        if (clean_buf_.msaa > 1) {
+            glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.attachments[1].tex);
+        } else {
+            BindTexture(DIFFUSEMAP_SLOT, clean_buf_.attachments[1].tex);
+        }
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+
+        /////
+
+        const float positions2[] = { -1.0f + sx, -1.0f,               -1.0f + sx + sx, -1.0f,
+                                     -1.0f + sx + sx, -1.0f + sy,     -1.0f + sx, -1.0f + sy };
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions2), positions2);
+
+        if (clean_buf_.msaa > 1) {
+            glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.attachments[2].tex);
+        } else {
+            BindTexture(DIFFUSEMAP_SLOT, clean_buf_.attachments[2].tex);
+        }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
@@ -1566,3 +1245,6 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
         glDisableVertexAttribArray(A_UVS1);
     }
 }
+
+#undef _AS_STR
+#undef AS_STR

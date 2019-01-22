@@ -23,6 +23,13 @@ layout(binding = 9) uniform highp samplerBuffer lights_buffer;
 layout(binding = 10) uniform highp usamplerBuffer cells_buffer;
 layout(binding = 11) uniform highp usamplerBuffer items_buffer;
 
+layout (std140) uniform MatricesBlock {
+    mat4 uMVPMatrix;
+    mat4 uVPMatrix;
+    mat4 uMMatrix;
+    mat4 uShadowMatrix[4];
+};
+
 layout(location = 12) uniform vec3 sun_dir;
 layout(location = 13) uniform vec3 sun_col;
 layout(location = 14) uniform float gamma;
@@ -35,9 +42,11 @@ in mat3 aVertexTBN_;
 in vec2 aVertexUVs1_;
 in vec2 aVertexUVs2_;
 
-in vec4 aVertexShUVs_[4];
+in vec3 aVertexShUVs_[4];
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
+layout(location = 1) out vec2 outNormal;
+layout(location = 2) out vec4 outSpecular;
 
 vec3 heatmap(float t) {
     vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
@@ -87,12 +96,6 @@ void main(void) {
         vec2(-0.99, 0.1)
     );
 
-    vec3 frag_pos_ls[4];
-    for (int i = 0; i < 4; i++) {
-        frag_pos_ls[i] = 0.5 * aVertexShUVs_[i].xyz + 0.5;
-        frag_pos_ls[i].xy *= 0.5;
-    }
-
     vec3 normal = texture(normals_texture, aVertexUVs1_).xyz * 2.0 - 1.0;
     normal = aVertexTBN_ * normal;
     
@@ -108,21 +111,18 @@ void main(void) {
         float frag_depth = gl_FragCoord.z / gl_FragCoord.w;
         if (frag_depth < 8.0) {
             for (int i = 0; i < 16; i++) {
-                visibility += texture(shadow_texture, frag_pos_ls[0] + vec3(poisson_disk[i] * shadow_softness, 0.0)) / 16.0;
+                visibility += texture(shadow_texture, aVertexShUVs_[0] + vec3(poisson_disk[i] * shadow_softness, 0.0)) / 16.0;
             }
         } else if (frag_depth < 24.0) {
-            frag_pos_ls[1].x += 0.5;
             for (int i = 0; i < 8; i++) {
-                visibility += texture(shadow_texture, frag_pos_ls[1] + vec3(poisson_disk[i] * shadow_softness * 0.25, 0.0)) / 8.0;
+                visibility += texture(shadow_texture, aVertexShUVs_[1] + vec3(poisson_disk[i] * shadow_softness * 0.25, 0.0)) / 8.0;
             }
         } else if (frag_depth < 56.0) {
-            frag_pos_ls[2].y += 0.5;
             for (int i = 0; i < 4; i++) {
-                visibility += texture(shadow_texture, frag_pos_ls[2] + vec3(poisson_disk[i] * shadow_softness * 0.125, 0.0)) / 4.0;
+                visibility += texture(shadow_texture, aVertexShUVs_[2] + vec3(poisson_disk[i] * shadow_softness * 0.125, 0.0)) / 4.0;
             }
         } else if (frag_depth < 120.0) {
-            frag_pos_ls[3].xy += 0.5;
-            visibility += texture(shadow_texture, frag_pos_ls[3]);
+            visibility += texture(shadow_texture, aVertexShUVs_[3]);
         } else {
             // use directional lightmap
             additional_light = texture(lm_direct_texture, lm_uvs).rgb;
@@ -138,8 +138,8 @@ void main(void) {
     
     indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
     
-    indirect_col *= 0.001;
-    visibility *= 0.001;
+    //indirect_col *= 0.001;
+    //visibility *= 0.001;
     
     float depth = 1.0 / gl_FragCoord.w;
     
@@ -186,4 +186,6 @@ void main(void) {
     vec3 diffuse_color = albedo_color * (sun_col * lambert * visibility + indirect_col + additional_light);
     
     outColor = vec4(diffuse_color, 1.0);
+    outNormal.xy += (uVPMatrix * vec4(normal, 0.0)).xy;
+    outSpecular = vec4(0.0, 0.5, 0.5, 1.0);
 }

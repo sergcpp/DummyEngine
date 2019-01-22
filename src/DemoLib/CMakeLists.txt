@@ -34,6 +34,7 @@ set(UTILS_SOURCES Utils/BVHSplit.h
 if(${RENDERER} STREQUAL "GL")
     set(SCENE_SOURCES ${SCENE_SOURCES}
 						Scene/FrameBufGL.cpp
+						Scene/Renderer_GL_Shaders.inl
                         Scene/Renderer_GLES3.cpp)
     set(STATES_SOURCES ${STATES_SOURCES}
                        States/GSDefTestGL.cpp
@@ -52,16 +53,22 @@ list(APPEND ALL_SOURCE_FILES ${GUI_SOURCES})
 source_group("src\\Gui" FILES ${GUI_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${SCENE_SOURCES})
-#set_source_files_properties(${SCENE_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties(${SCENE_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Scene" FILES ${SCENE_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${STATES_SOURCES})
-#set_source_files_properties(${STATES_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties(${STATES_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\States" FILES ${STATES_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${UTILS_SOURCES})
 #set_source_files_properties(${UTILS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Utils" FILES ${UTILS_SOURCES})
+
+list(APPEND ALL_SOURCE_FILES Scene/_Scene.cpp)
+source_group("src\\Scene" FILES Scene/_Scene.cpp)
+
+list(APPEND ALL_SOURCE_FILES States/_States.cpp)
+source_group("src\\States" FILES States/_States.cpp)
 
 add_library(DemoLib STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(DemoLib Eng Ray Ren Sys ${LIBS})
