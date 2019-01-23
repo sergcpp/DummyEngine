@@ -100,6 +100,9 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
         size_t lights_count = light_sources_[0].size();
         const auto *lights = (lights_count == 0) ? nullptr : &light_sources_[0][0];
 
+        size_t decals_count = decals_[0].size();
+        const auto *decals = (decals_count == 0) ? nullptr : &decals_[0][0];
+
         const auto *cells = cells_[0].empty() ? nullptr : &cells_[0][0];
 
         size_t items_count = items_count_[0];
@@ -157,7 +160,8 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
             LOGI("CleanBuf resized to %ix%i", w_, h_);
         }
 
-        DrawObjectsInternal(drawables, drawables_count, lights, lights_count, cells, items, items_count, shadow_transforms, shadow_drawables, shadow_drawables_count, env_);
+        DrawObjectsInternal(drawables, drawables_count, lights, lights_count, decals, decals_count,
+                            cells, items, items_count, shadow_transforms, shadow_drawables, shadow_drawables_count, env_);
     }
     auto t2 = std::chrono::high_resolution_clock::now();
     timings_ = { t1, t2 };
@@ -190,7 +194,9 @@ void Renderer::BackgroundProc() {
 
             auto &ls_list = light_sources_[1];
             ls_list.clear();
-            ls_list.reserve(object_count_);
+
+            auto &de_list = decals_[1];
+            de_list.clear();
 
             auto &cells = cells_[1];
             cells.resize(CELLS_COUNT);
@@ -202,6 +208,8 @@ void Renderer::BackgroundProc() {
             object_to_drawable_.resize(object_count_, 0xffffffff);
 
             litem_to_lsource_.clear();
+            ditem_to_decal_.clear();
+            decals_boxes_.clear();
 
             auto *sh_dr_list = shadow_list_[1];
             for (int i = 0; i < 4; i++) {
@@ -407,7 +415,7 @@ void Renderer::BackgroundProc() {
                                 }
 
                                 if (obj.flags & HasLightSource) {
-                                    for (int i = 0; i < 16; i++) {
+                                    for (int i = 0; i < LIGHTS_PER_OBJECT; i++) {
                                         if (!obj.ls[i]) break;
 
                                         const auto *light = obj.ls[i].get();
@@ -419,36 +427,87 @@ void Renderer::BackgroundProc() {
                                         Ren::Vec4f dir = { -light->dir[0], -light->dir[1], -light->dir[2], 0.0f };
                                         dir = world_from_object * dir;
 
-                                        auto res = Ren::FullyVisible;
+                                        
+                                        if (!skip_check) {
+                                            auto res = Ren::FullyVisible;
 
-                                        for (int k = 0; k < 6; k++) {
-                                            const auto &plane = draw_cam_.frustum_plane(k);
+                                            for (int k = 0; k < 6; k++) {
+                                                const auto &plane = draw_cam_.frustum_plane(k);
 
-                                            float dist = plane.n[0] * pos[0] +
-                                                         plane.n[1] * pos[1] +
-                                                         plane.n[2] * pos[2] + plane.d;
+                                                float dist = plane.n[0] * pos[0] +
+                                                             plane.n[1] * pos[1] +
+                                                             plane.n[2] * pos[2] + plane.d;
 
-                                            if (dist < -light->influence) {
-                                                res = Ren::NotVisible;
-                                                break;
-                                            } else if (std::abs(dist) < light->influence) {
-                                                res = Ren::PartiallyVisible;
+                                                if (dist < -light->influence) {
+                                                    res = Ren::NotVisible;
+                                                    break;
+                                                } else if (std::abs(dist) < light->influence) {
+                                                    res = Ren::PartiallyVisible;
+                                                }
                                             }
+
+                                            if (res == Ren::NotVisible) continue;
                                         }
 
-                                        if (res != Ren::NotVisible) {
-                                            ls_list.emplace_back();
-                                            litem_to_lsource_.push_back(light);
+                                        ls_list.emplace_back();
+                                        litem_to_lsource_.push_back(light);
 
-                                            auto &ls = ls_list.back();
+                                        auto &ls = ls_list.back();
 
-                                            memcpy(&ls.pos[0], &pos[0], 3 * sizeof(float));
-                                            ls.radius = light->radius;
-                                            memcpy(&ls.col[0], &light->col[0], 3 * sizeof(float));
-                                            ls.brightness = light->brightness;
-                                            memcpy(&ls.dir[0], &dir[0], 3 * sizeof(float));
-                                            ls.spot = light->spot;
+                                        memcpy(&ls.pos[0], &pos[0], 3 * sizeof(float));
+                                        ls.radius = light->radius;
+                                        memcpy(&ls.col[0], &light->col[0], 3 * sizeof(float));
+                                        ls.brightness = light->brightness;
+                                        memcpy(&ls.dir[0], &dir[0], 3 * sizeof(float));
+                                        ls.spot = light->spot;
+                                    }
+                                }
+
+                                if (obj.flags & HasDecal) {
+                                    Ren::Mat4f object_from_world = Ren::Inverse(world_from_object);
+
+                                    for (int i = 0; i < DECALS_PER_OBJECT; i++) {
+                                        if (!obj.de[i]) break;
+
+                                        const auto *decal = obj.de[i].get();
+
+                                        // TODO: check visibility
+
+                                        const Ren::Mat4f &view_from_object = decal->view,
+                                                         &clip_from_view = decal->proj;
+
+                                        Ren::Mat4f view_from_world = view_from_object * object_from_world,
+                                                   clip_from_world = clip_from_view * view_from_world;
+
+                                        de_list.emplace_back();
+                                        ditem_to_decal_.push_back(decal);
+
+                                        auto &de = de_list.back();
+
+                                        memcpy(&de.mat[0][0], &clip_from_world[0][0], 16 * sizeof(float));
+
+                                        Ren::Mat4f world_from_clip = Ren::Inverse(clip_from_world);
+
+                                        static const Ren::Vec4f points[] = {
+                                            { -1.0f, -1.0f, 0.0f, 1.0f },{ -1.0f, 1.0f, 0.0f, 1.0f },
+                                            { 1.0f, 1.0f, 0.0f, 1.0f },{ 1.0f, -1.0f, 0.0f, 1.0f },
+
+                                            { -1.0f, -1.0f, 1.0f, 1.0f },{ -1.0f, 1.0f, 1.0f, 1.0f },
+                                            { 1.0f, 1.0f, 1.0f, 1.0f },{ 1.0f, -1.0f, 1.0f, 1.0f }
+                                        };
+
+                                        Ren::Vec3f bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
+                                                   bbox_max = Ren::Vec3f{ std::numeric_limits<float>::lowest() };
+
+                                        for (int k = 0; k < 8; k++) {
+                                            Ren::Vec4f tr_point = world_from_clip * points[i];
+                                            tr_point /= tr_point[3];
+
+                                            bbox_min = Ren::Min(bbox_min, Ren::Vec3f{ tr_point });
+                                            bbox_max = Ren::Max(bbox_max, Ren::Vec3f{ tr_point });
                                         }
+
+                                        decals_boxes_.push_back({ bbox_min, bbox_max });
                                     }
                                 }
                             }
@@ -588,22 +647,26 @@ void Renderer::BackgroundProc() {
             // Sort drawables to optimize state switches
             std::sort(std::begin(dr_list), std::end(dr_list));
 
-            if (!ls_list.empty()) {
+            if (!ls_list.empty() || !de_list.empty()) {
                 std::vector<Ren::Frustum> sub_frustums;
                 sub_frustums.resize(CELLS_COUNT);
 
                 draw_cam_.ExtractSubFrustums(GRID_RES_X, GRID_RES_Y, GRID_RES_Z, &sub_frustums[0]);
 
-                const auto *lights = &ls_list[0];
                 const int lights_count = (int)ls_list.size();
-                const auto *litem_to_lsource = &litem_to_lsource_[0];
+                const auto *lights = lights_count ? &ls_list[0] : nullptr;
+                const auto *litem_to_lsource = lights_count ? &litem_to_lsource_[0] : nullptr;
+
+                const int decals_count = (int)de_list.size();
+                const auto *decals = decals_count ? &de_list[0] : nullptr;
+                const auto *decals_boxes = decals_count ? &decals_boxes_[0] : nullptr;
 
                 std::vector<std::future<void>> futures;
                 std::atomic_int items_count = {};
 
                 for (int i = 0; i < GRID_RES_Z; i++) {
                     futures.push_back(
-                        threads_->enqueue(GatherItemsForZSlice_Job, i, &sub_frustums[0], lights, lights_count, litem_to_lsource, &cells[0], &items[0], std::ref(items_count))
+                        threads_->enqueue(GatherItemsForZSlice_Job, i, &sub_frustums[0], lights, lights_count, decals, decals_count, decals_boxes, litem_to_lsource, &cells[0], &items[0], std::ref(items_count))
                     );
                 }
 
@@ -667,6 +730,7 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
         std::swap(transforms_[0], transforms_[1]);
         std::swap(draw_lists_[0], draw_lists_[1]);
         std::swap(light_sources_[0], light_sources_[1]);
+        std::swap(decals_[0], decals_[1]);
         std::swap(cells_[0], cells_[1]);
         std::swap(items_[0], items_[1]);
         std::swap(items_count_[0], items_count_[1]);
@@ -702,6 +766,7 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
 }
 
 void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,
+                                        const DecalItem *decals, int decals_count, const BBox *decals_boxes,
                                         const LightSource * const*litem_to_lsource, CellData *cells, ItemData *items, std::atomic_int &items_count) {
     using namespace RendererInternal;
 
@@ -712,8 +777,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
     // Reset cells information for slice
     for (int s = 0; s < frustums_per_slice; s++) {
         auto &cell = cells[i + s];
-        cell.item_offset = 0;
-        cell.light_count = 0;
+        cell = {};
     }
 
     // Gather to local list first
@@ -776,13 +840,39 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 if (res != Ren::NotVisible) {
                     const int index = i + row_offset + col_offset;
                     auto &cell = cells[index];
-                    if (cell.light_count < MAX_LIGHTS_PER_CELL - 1) {
+                    if (cell.light_count < MAX_LIGHTS_PER_CELL) {
                         local_items[row_offset + col_offset][cell.light_count].light_index = (uint16_t)j;
                         cell.light_count++;
                     }
                 }
             }
         }
+    }
+
+    for (int j = 0; j < decals_count; j++) {
+        const auto &de = decals[j];
+
+        const float bbox_points[8][3] = { BBOX_POINTS(decals_boxes[j].bmin, decals_boxes[j].bmax) };
+
+        auto visible_to_slice = Ren::FullyVisible;
+
+        // Check if light is inside of a whole slice
+        for (int k = Ren::NearPlane; k <= Ren::FarPlane; k++) {
+            int in_count = 8;
+
+            for (int i = 0; i < 8; i++) {
+                float dist = first_sf->planes[k].n[0] * bbox_points[i][0] +
+                             first_sf->planes[k].n[1] * bbox_points[i][1] +
+                             first_sf->planes[k].n[2] * bbox_points[i][2] + first_sf->planes[k].d;
+                if (dist < 0.0f) {
+                    visible_to_slice = Ren::NotVisible;
+                    break;
+                }
+            }
+        }
+
+        // Skip light for whole slice
+        if (visible_to_slice == Ren::NotVisible) continue;
     }
 
     // Pack gathered local item data to total list

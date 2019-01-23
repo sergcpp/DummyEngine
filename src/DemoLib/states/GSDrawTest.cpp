@@ -29,7 +29,7 @@ const Ren::Vec3f CAM_UP = { 0.0f, 1.0f, 0.0f };
 
 const int MAX_CMD_LINES = 8;
 
-const char SCENE_NAME[] = "assets/scenes/jap_house.json";
+const char SCENE_NAME[] = "assets/scenes/jap_house2.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {

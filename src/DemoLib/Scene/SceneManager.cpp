@@ -66,6 +66,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
     std::map<std::string, Ren::MeshRef> all_meshes;
     std::map<std::string, Ren::StorageRef<LightSource>> all_lights;
+    std::map<std::string, Ren::StorageRef<Decal>> all_decals;
 
     if (js_scene.Has("name")) {
         const JsString &js_name = (const JsString &)js_scene.at("name");
@@ -94,60 +95,113 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         all_meshes[name] = ctx_.LoadMesh(name.c_str(), in_file_stream, std::bind(&SceneManager::OnLoadMaterial, this, _1));
     }
 
-    const JsObject &js_lights = (const JsObject &)js_scene.at("lights");
-    for (const auto &js_elem : js_lights.elements) {
-        const std::string &name = js_elem.first;
+    if (js_scene.Has("lights")) {
+        const JsObject &js_lights = (const JsObject &)js_scene.at("lights");
+        for (const auto &js_elem : js_lights.elements) {
+            const std::string &name = js_elem.first;
 
-        const JsObject &js_obj = (const JsObject &)js_elem.second;
-        
-        const auto &js_color = (const JsArray &)js_obj.at("color");
+            const JsObject &js_obj = (const JsObject &)js_elem.second;
 
-        Ren::StorageRef<LightSource> ls = lights_.Add();
+            Ren::StorageRef<LightSource> ls = lights_.Add();
 
-        ls->col[0] = (float)static_cast<const JsNumber &>(js_color[0]).val;
-        ls->col[1] = (float)static_cast<const JsNumber &>(js_color[1]).val;
-        ls->col[2] = (float)static_cast<const JsNumber &>(js_color[2]).val;
+            const auto &js_color = (const JsArray &)js_obj.at("color");
 
-        ls->brightness = std::max(ls->col[0], std::max(ls->col[1], ls->col[2]));
+            ls->col[0] = (float)static_cast<const JsNumber &>(js_color[0]).val;
+            ls->col[1] = (float)static_cast<const JsNumber &>(js_color[1]).val;
+            ls->col[2] = (float)static_cast<const JsNumber &>(js_color[2]).val;
 
-        if (js_obj.Has("offset")) {
-            const auto &js_offset = (const JsArray &)js_obj.at("offset");
+            ls->brightness = std::max(ls->col[0], std::max(ls->col[1], ls->col[2]));
 
-            ls->offset[0] = (float)static_cast<const JsNumber &>(js_offset[0]).val;
-            ls->offset[1] = (float)static_cast<const JsNumber &>(js_offset[1]).val;
-            ls->offset[2] = (float)static_cast<const JsNumber &>(js_offset[2]).val;
-        }
+            if (js_obj.Has("offset")) {
+                const auto &js_offset = (const JsArray &)js_obj.at("offset");
 
-        if (js_obj.Has("radius")) {
-            const auto &js_radius = (const JsNumber &)js_obj.at("radius");
-
-            ls->radius = (float)js_radius.val;
-        } else {
-            ls->radius = 1.0f;
-        }
-
-        ls->influence = ls->radius * (std::sqrt(ls->brightness / LIGHT_ATTEN_CUTOFF) - 1.0f);
-
-        if (js_obj.Has("direction")) {
-            const auto &js_dir = (const JsArray &)js_obj.at("direction");
-
-            ls->dir[0] = (float)static_cast<const JsNumber &>(js_dir[0]).val;
-            ls->dir[1] = (float)static_cast<const JsNumber &>(js_dir[1]).val;
-            ls->dir[2] = (float)static_cast<const JsNumber &>(js_dir[2]).val;
-
-            float angle = 45.0f;
-            if (js_obj.Has("angle")) {
-                const auto &js_angle = (const JsNumber &)js_obj.at("angle");
-                angle = (float)js_angle.val;
+                ls->offset[0] = (float)static_cast<const JsNumber &>(js_offset[0]).val;
+                ls->offset[1] = (float)static_cast<const JsNumber &>(js_offset[1]).val;
+                ls->offset[2] = (float)static_cast<const JsNumber &>(js_offset[2]).val;
             }
 
-            ls->spot = std::cos(angle * Ren::Pi<float>() / 180.0f);
-        } else {
-            ls->dir[1] = -1.0f;
-            ls->spot = -1.0f;
-        }
+            if (js_obj.Has("radius")) {
+                const auto &js_radius = (const JsNumber &)js_obj.at("radius");
 
-        all_lights[name] = ls;
+                ls->radius = (float)js_radius.val;
+            } else {
+                ls->radius = 1.0f;
+            }
+
+            ls->influence = ls->radius * (std::sqrt(ls->brightness / LIGHT_ATTEN_CUTOFF) - 1.0f);
+
+            if (js_obj.Has("direction")) {
+                const auto &js_dir = (const JsArray &)js_obj.at("direction");
+
+                ls->dir[0] = (float)static_cast<const JsNumber &>(js_dir[0]).val;
+                ls->dir[1] = (float)static_cast<const JsNumber &>(js_dir[1]).val;
+                ls->dir[2] = (float)static_cast<const JsNumber &>(js_dir[2]).val;
+
+                float angle = 45.0f;
+                if (js_obj.Has("angle")) {
+                    const auto &js_angle = (const JsNumber &)js_obj.at("angle");
+                    angle = (float)js_angle.val;
+                }
+
+                ls->spot = std::cos(angle * Ren::Pi<float>() / 180.0f);
+            } else {
+                ls->dir[1] = -1.0f;
+                ls->spot = -1.0f;
+            }
+
+            all_lights[name] = ls;
+        }
+    }
+
+    if (js_scene.Has("decals")) {
+        const JsObject &js_decals = (const JsObject &)js_scene.at("decals");
+        for (const auto &js_elem : js_decals.elements) {
+            const std::string &name = js_elem.first;
+
+            const JsObject &js_obj = (const JsObject &)js_elem.second;
+
+            Ren::StorageRef<Decal> de = decals_.Add();
+
+            if (js_obj.Has("pos")) {
+                const JsArray &js_pos = (const JsArray &)js_obj.at("pos");
+
+                Ren::Vec3f pos = { (float)((const JsNumber &)js_pos.at(0)).val,
+                                   (float)((const JsNumber &)js_pos.at(1)).val,
+                                   (float)((const JsNumber &)js_pos.at(2)).val };
+
+                de->view = Ren::Translate(de->view, pos);
+            }
+
+            if (js_obj.Has("rot")) {
+                const JsArray &js_pos = (const JsArray &)js_obj.at("rot");
+
+                Ren::Vec3f rot = { (float)((const JsNumber &)js_pos.at(0)).val,
+                                   (float)((const JsNumber &)js_pos.at(1)).val,
+                                   (float)((const JsNumber &)js_pos.at(2)).val };
+
+                rot *= Ren::Pi<float>() / 180.0f;
+
+                de->view = Ren::Rotate(de->view, rot[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
+                de->view = Ren::Rotate(de->view, rot[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
+                de->view = Ren::Rotate(de->view, rot[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+            }
+
+            de->view = Ren::Inverse(de->view);
+
+            Ren::Vec3f scale = { 1.0f, 1.0f, 1.0f };
+
+            if (js_obj.Has("sca")) {
+                const JsArray &js_sca = (const JsArray &)js_obj.at("sca");
+
+                scale = { (float)((const JsNumber &)js_sca.at(0)).val,
+                          (float)((const JsNumber &)js_sca.at(1)).val,
+                          (float)((const JsNumber &)js_sca.at(2)).val };
+            }
+
+            Ren::OrthographicProjection(de->proj, -0.5f * scale[0], 0.5f * scale[0], -0.5f * scale[1], 0.5f * scale[1], 0.0f, 0.5f * scale[2]);
+            
+            all_decals[name] = de;
+        }
     }
 
     const JsArray &js_objects = (const JsArray &)js_scene.at("objects");
@@ -177,27 +231,25 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         if (js_obj.Has("pos")) {
             const JsArray &js_pos = (const JsArray &)js_obj.at("pos");
 
-            double tx = ((const JsNumber &)js_pos.at(0)).val;
-            double ty = ((const JsNumber &)js_pos.at(1)).val;
-            double tz = ((const JsNumber &)js_pos.at(2)).val;
+            Ren::Vec3f pos = { (float)((const JsNumber &)js_pos.at(0)).val,
+                               (float)((const JsNumber &)js_pos.at(1)).val,
+                               (float)((const JsNumber &)js_pos.at(2)).val };
 
-            obj.tr->mat = Ren::Translate(obj.tr->mat, Ren::Vec3f{ (float)tx, (float)ty, (float)tz });
+            obj.tr->mat = Ren::Translate(obj.tr->mat, pos);
         }
 
         if (js_obj.Has("rot")) {
             const JsArray &js_pos = (const JsArray &)js_obj.at("rot");
 
-            float rx = (float)((const JsNumber &)js_pos.at(0)).val;
-            float ry = (float)((const JsNumber &)js_pos.at(1)).val;
-            float rz = (float)((const JsNumber &)js_pos.at(2)).val;
+            Ren::Vec3f rot = { (float)((const JsNumber &)js_pos.at(0)).val,
+                               (float)((const JsNumber &)js_pos.at(1)).val,
+                               (float)((const JsNumber &)js_pos.at(2)).val };
 
-            rx *= Ren::Pi<float>() / 180.0f;
-            ry *= Ren::Pi<float>() / 180.0f;
-            rz *= Ren::Pi<float>() / 180.0f;
+            rot *= Ren::Pi<float>() / 180.0f;
 
-            obj.tr->mat = Ren::Rotate(obj.tr->mat, (float)rz, Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
-            obj.tr->mat = Ren::Rotate(obj.tr->mat, (float)rx, Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
-            obj.tr->mat = Ren::Rotate(obj.tr->mat, (float)ry, Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+            obj.tr->mat = Ren::Rotate(obj.tr->mat, rot[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
+            obj.tr->mat = Ren::Rotate(obj.tr->mat, rot[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
+            obj.tr->mat = Ren::Rotate(obj.tr->mat, rot[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
         }
 
         if (js_obj.Has("occluder_mesh")) {
@@ -310,6 +362,45 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                     // Combine light's bounding box with object's
                     obj_bbox_min = Ren::Min(obj_bbox_min, ls_transform.bbox_min_ws);
                     obj_bbox_max = Ren::Max(obj_bbox_max, ls_transform.bbox_max_ws);
+                }
+            }
+        }
+
+        if (js_obj.Has("decals")) {
+            const auto &js_decals = (const JsArray &)js_obj.at("decals");
+
+            int index = 0;
+            for (const auto &js_decal : js_decals.elements) {
+                const auto &js_decal_name = (const JsString &)js_decal;
+
+                auto it = all_decals.find(js_decal_name.val);
+                if (it == all_decals.end()) throw std::runtime_error("Decal not found!");
+
+                obj.flags |= HasDecal;
+                obj.de[index] = it->second;
+                const auto *de = obj.de[index].get();
+
+                index++;
+
+                {   // Compute bounding box of decal
+                    Ren::Vec4f points[] = {
+                        { -1.0f, -1.0f, 0.0f, 1.0f }, { -1.0f, 1.0f, 0.0f, 1.0f },
+                        { 1.0f, 1.0f, 0.0f, 1.0f }, { 1.0f, -1.0f, 0.0f, 1.0f },
+
+                        { -1.0f, -1.0f, 1.0f, 1.0f }, { -1.0f, 1.0f, 1.0f, 1.0f },
+                        { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, -1.0f, 1.0f, 1.0f }
+                    };
+
+                    Ren::Mat4f object_from_view = Ren::Inverse(de->proj * de->view);
+
+                    for (int i = 0; i < 8; i++) {
+                        points[i] = object_from_view * points[i];
+                        points[i] /= points[i][3];
+
+                        // Combine decals's bounding box with object's
+                        obj_bbox_min = Ren::Min(obj_bbox_min, Ren::Vec3f{ points[i] });
+                        obj_bbox_max = Ren::Max(obj_bbox_max, Ren::Vec3f{ points[i] });
+                    }
                 }
             }
         }

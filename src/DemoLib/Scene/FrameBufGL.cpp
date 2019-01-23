@@ -99,7 +99,9 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
         attachments.push_back({ att, _col_tex });
     }
 
-    glClear(GL_COLOR_BUFFER_BIT);
+    if (attachments_count) {
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
     Ren::CheckError("[Renderer]: create framebuffer 2");
 
     if (with_depth && attachments_count == 0) {

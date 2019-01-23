@@ -43,6 +43,11 @@ struct LightSourceItem {
 };
 static_assert(sizeof(LightSourceItem) == 48, "!");
 
+struct DecalItem {
+    float mat[4][4];
+};
+static_assert(sizeof(DecalItem) == 16 * sizeof(float), "!");
+
 struct CellData {
     uint32_t item_offset : 24;
     uint32_t light_count : 8;
@@ -69,10 +74,14 @@ namespace RendererInternal {
 
     const int CELLS_COUNT = GRID_RES_X * GRID_RES_Y * GRID_RES_Z;
 
-    const int MAX_LIGHTS_PER_CELL = 256;
+    const int MAX_LIGHTS_PER_CELL = 255;
+    const int MAX_DECALS_PER_CELL = 256;
+    const int MAX_PROBES_PER_CELL = 8;
 
     const int MAX_LIGHTS_TOTAL = 4096;
-    const int MAX_ITEMS_TOTAL = 4096 * 16;
+    const int MAX_DECALS_TOTAL = 4096;
+    const int MAX_PROBES_TOTAL = 256;
+    const int MAX_ITEMS_TOTAL = (1 << 16);
 }
 
 class Renderer {
@@ -152,11 +161,14 @@ private:
     std::vector<Ren::Mat4f> transforms_[2];
     std::vector<DrawableItem> draw_lists_[2], shadow_list_[2][4];
     std::vector<LightSourceItem> light_sources_[2];
+    std::vector<DecalItem> decals_[2];
     std::vector<CellData> cells_[2];
     std::vector<ItemData> items_[2];
     int items_count_[2] = {};
     std::vector<uint32_t> object_to_drawable_;
     std::vector<const LightSource *> litem_to_lsource_;
+    std::vector<const Decal *> ditem_to_decal_;
+    std::vector<BBox> decals_boxes_;
     Ren::Camera draw_cam_, shadow_cam_[2][4];
     Environment env_;
     TimingInfo timings_, back_timings_[2];
@@ -191,6 +203,7 @@ private:
     void InitRendererInternal();
     void DestroyRendererInternal();
     void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const LightSourceItem *lights, size_t lights_count,
+                             const DecalItem *decals, size_t decals_count,
                              const CellData *cells, const ItemData *items, size_t item_count, const Ren::Mat4f shadow_transforms[4],
                              const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env);
 
@@ -204,5 +217,6 @@ private:
 
     // Parallel Jobs
     static void GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,
+                                         const DecalItem *decals, int decals_count, const BBox *decals_boxes,
                                          const LightSource * const *litem_to_lsource, CellData *cells, ItemData *items, std::atomic_int &items_count);
 };

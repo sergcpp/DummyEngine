@@ -62,6 +62,7 @@ private:
 
     Ren::Storage<Transform> transforms_;
     Ren::Storage<LightSource> lights_;
+    Ren::Storage<Decal> decals_;
 
     std::vector<SceneObject> objects_;
     std::vector<uint32_t> obj_indices_;

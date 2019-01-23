@@ -175,6 +175,13 @@ void Renderer::InitRendererInternal() {
         glGenBuffers(1, &cells_ssbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, cells_ssbo);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CellData) * CELLS_COUNT, nullptr, GL_DYNAMIC_COPY);
+
+        // fill with zeros
+        CellData dummy[GRID_RES_X * GRID_RES_Y] = {};
+        for (int i = 0; i < GRID_RES_Z; i++) {
+            glBufferSubData(GL_SHADER_STORAGE_BUFFER, i * sizeof(CellData) * GRID_RES_X * GRID_RES_Y, sizeof(CellData) * GRID_RES_X * GRID_RES_Y, &dummy[0]);
+        }
+
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
         cells_ssbo_ = (uint32_t)cells_ssbo;
@@ -196,6 +203,11 @@ void Renderer::InitRendererInternal() {
         glGenBuffers(1, &items_ssbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, items_ssbo);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ItemData) * MAX_ITEMS_TOTAL, nullptr, GL_DYNAMIC_COPY);
+
+        // fill first entry with zeroes
+        ItemData dummy = {};
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(ItemData), &dummy);
+
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
         items_ssbo_ = (uint32_t)items_ssbo;
@@ -368,6 +380,7 @@ void Renderer::DestroyRendererInternal() {
 }
 
 void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const LightSourceItem *lights, size_t lights_count,
+                                   const DecalItem *decals, size_t decals_count,
                                    const CellData *cells, const ItemData *items, size_t item_count, const Ren::Mat4f shadow_transforms[4],
                                    const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env) {
     using namespace Ren;
@@ -378,8 +391,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LESS);
-
-    glClearColor(env.sky_col[0], env.sky_col[1], env.sky_col[2], 1.0f);
 
     glDisable(GL_CULL_FACE);
 
@@ -501,6 +512,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
     //glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, clean_buf_.w, clean_buf_.h);
+    glClearColor(env.sky_col[0], env.sky_col[1], env.sky_col[2], 1.0f);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     glQueryCounter(queries_[1][TimeDepthPassStart], GL_TIMESTAMP);

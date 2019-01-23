@@ -43,7 +43,21 @@ struct LightSource : public Ren::RefCounter {
     Ren::Vec3f bbox_min, bbox_max;
 };
 
-enum eObjectFlags { HasTransform = 1, HasMesh = 2, HasOccluder = 4, UseLightmap = 8, HasLightSource = 16 };
+struct Decal : public Ren::RefCounter {
+    Ren::Mat4f view, proj;
+};
+
+enum eObjectFlags {
+    HasTransform    = (1 << 0),
+    HasMesh         = (1 << 1),
+    HasOccluder     = (1 << 2),
+    UseLightmap     = (1 << 3),
+    HasLightSource  = (1 << 4),
+    HasDecal        = (1 << 5)
+};
+
+const int LIGHTS_PER_OBJECT = 16;
+const int DECALS_PER_OBJECT = 16;
 
 struct SceneObject {
     uint32_t flags;
@@ -51,7 +65,8 @@ struct SceneObject {
     Ren::MeshRef mesh, occ_mesh;
     Ren::Texture2DRef lm_dir_tex, lm_indir_tex, lm_indir_sh_tex[4];
     uint32_t lm_res, pt_mi;
-    Ren::StorageRef<LightSource> ls[16];
+    Ren::StorageRef<LightSource> ls[LIGHTS_PER_OBJECT];
+    Ren::StorageRef<Decal> de[DECALS_PER_OBJECT];
 };
 
 using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
@@ -81,4 +96,8 @@ static_assert(sizeof(bvh_node_t) == 48, "!");
 struct Environment {
     Ren::Vec3f sun_dir, sun_col, sky_col;
     float sun_softness = 0.0f;
+};
+
+struct BBox {
+    Ren::Vec3f bmin, bmax;
 };

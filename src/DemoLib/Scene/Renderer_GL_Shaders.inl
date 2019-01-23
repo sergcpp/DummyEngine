@@ -216,10 +216,10 @@ void main() {
     c2 = vec3(1.0) - exp(-c2 * exposure);
     c3 = vec3(1.0) - exp(-c3 * exposure);
 
-    //c0 = pow(c0, vec3(1.0/gamma));
-    //c1 = pow(c1, vec3(1.0/gamma));
-    //c2 = pow(c2, vec3(1.0/gamma));
-    //c3 = pow(c3, vec3(1.0/gamma));
+    c0 = pow(c0, vec3(1.0/gamma));
+    c1 = pow(c1, vec3(1.0/gamma));
+    c2 = pow(c2, vec3(1.0/gamma));
+    c3 = pow(c3, vec3(1.0/gamma));
 
     outColor = vec4(0.25 * (c0 + c1 + c2 + c3), 1.0);
 }
