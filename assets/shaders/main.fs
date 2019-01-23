@@ -153,10 +153,11 @@ void main(void) {
     int iy = int(gl_FragCoord.y);
     int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy / (resy / GRID_RES_Y)) * GRID_RES_X + (ix / (resx / GRID_RES_X));
     
-    uvec2 offset_and_count = texelFetch(cells_buffer, cell_index).xy;
+    uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
+    uvec2 offset_and_count = uvec2(cell_data.x & 0x00ffffffu, cell_data.x >> 24);
     
     for (uint i = offset_and_count.x; i < offset_and_count.x + offset_and_count.y; i++) {
-        int li = int(texelFetch(items_buffer, int(i)).x);
+        int li = int(texelFetch(items_buffer, int(i)).x & 0x00000fffu);
         
         vec4 pos_and_radius = texelFetch(lights_buffer, li * 3 + 0);
         vec4 col_and_brightness = texelFetch(lights_buffer, li * 3 + 1);

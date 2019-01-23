@@ -450,9 +450,9 @@ void main() {
     int iy = int(gl_FragCoord.y);
     int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy / (resy / GRID_RES_Y)) * GRID_RES_X + (ix / (resx / GRID_RES_X));
     
-    uvec2 offset_and_count = texelFetch(cells_buffer, cell_index).xy;
+    uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
 
-    outColor = vec4(heatmap(float(offset_and_count.y) * (1.0 / 256.0)), 0.85);
+    outColor = vec4(heatmap(float(cell_data.x >> 24) * (1.0 / 256.0)), 0.85);
 
     if ((ix != 0 && (ix % (resx / GRID_RES_X)) == 0) || (iy != 0 && (iy % (resy / GRID_RES_Y)) == 0)) {
         outColor = vec4(1.0, 0.0, 0.0, 1.0);

@@ -44,15 +44,19 @@ struct LightSourceItem {
 static_assert(sizeof(LightSourceItem) == 48, "!");
 
 struct CellData {
-    uint32_t item_offset;
-    uint32_t light_count;
+    uint32_t item_offset : 24;
+    uint32_t light_count : 8;
+    uint8_t decal_count;
+    uint8_t probe_count;
 };
 static_assert(sizeof(CellData) == 8, "!");
 
 struct ItemData {
-    uint16_t light_index;
+    uint32_t light_index : 12;
+    uint32_t decal_index : 12;
+    uint32_t probe_index : 8;
 };
-static_assert(sizeof(ItemData) == 2, "!");
+static_assert(sizeof(ItemData) == 4, "!");
 
 #define REN_GRID_RES_X 16
 #define REN_GRID_RES_Y 8
@@ -66,9 +70,9 @@ namespace RendererInternal {
     const int CELLS_COUNT = GRID_RES_X * GRID_RES_Y * GRID_RES_Z;
 
     const int MAX_LIGHTS_PER_CELL = 256;
-    const int AVG_LIGHTS_PER_CELL = 16;
 
-    const int MAX_LIGHTS_COUNT = CELLS_COUNT * AVG_LIGHTS_PER_CELL;
+    const int MAX_LIGHTS_TOTAL = 4096;
+    const int MAX_ITEMS_TOTAL = 4096 * 16;
 }
 
 class Renderer {

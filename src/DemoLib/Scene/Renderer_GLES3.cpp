@@ -153,7 +153,7 @@ void Renderer::InitRendererInternal() {
 
         glGenBuffers(1, &lights_ssbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, lights_ssbo);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(LightSourceItem) * MAX_LIGHTS_COUNT, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(LightSourceItem) * MAX_LIGHTS_TOTAL, nullptr, GL_DYNAMIC_COPY);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
         lights_ssbo_ = (uint32_t)lights_ssbo;
@@ -193,11 +193,9 @@ void Renderer::InitRendererInternal() {
     {
         GLuint items_ssbo;
 
-        const int MAX_ITEMS_COUNT = MAX_LIGHTS_COUNT;
-
         glGenBuffers(1, &items_ssbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, items_ssbo);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ItemData) * MAX_ITEMS_COUNT, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ItemData) * MAX_ITEMS_TOTAL, nullptr, GL_DYNAMIC_COPY);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
         items_ssbo_ = (uint32_t)items_ssbo;
@@ -207,7 +205,7 @@ void Renderer::InitRendererInternal() {
         glGenTextures(1, &items_tbo);
         glBindTexture(GL_TEXTURE_BUFFER, items_tbo);
 
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_R16UI, items_ssbo);
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_R32UI, items_ssbo);
         glBindTexture(GL_TEXTURE_BUFFER, 0);
 
         items_tbo_ = (uint32_t)items_tbo;
@@ -385,7 +383,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     glDisable(GL_CULL_FACE);
 
-    const size_t used_lights_count = std::min(lights_count, (size_t)MAX_LIGHTS_COUNT);
+    const size_t used_lights_count = std::min(lights_count, (size_t)MAX_LIGHTS_TOTAL);
 
     {   // Update lights buffer
         size_t lights_mem_size = used_lights_count * sizeof(LightSourceItem);

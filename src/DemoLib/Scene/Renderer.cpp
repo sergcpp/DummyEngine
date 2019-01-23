@@ -196,7 +196,7 @@ void Renderer::BackgroundProc() {
             cells.resize(CELLS_COUNT);
 
             auto &items = items_[1];
-            items.resize(MAX_LIGHTS_COUNT);
+            items.resize(MAX_ITEMS_TOTAL);
 
             object_to_drawable_.clear();
             object_to_drawable_.resize(object_count_, 0xffffffff);
@@ -602,15 +602,16 @@ void Renderer::BackgroundProc() {
                 std::atomic_int items_count = {};
 
                 for (int i = 0; i < GRID_RES_Z; i++) {
-                    auto fu = threads_->enqueue(GatherItemsForZSlice_Job, i, &sub_frustums[0], lights, lights_count, litem_to_lsource, &cells[0], &items[0], std::ref(items_count));
-                    futures.push_back(std::move(fu));
+                    futures.push_back(
+                        threads_->enqueue(GatherItemsForZSlice_Job, i, &sub_frustums[0], lights, lights_count, litem_to_lsource, &cells[0], &items[0], std::ref(items_count))
+                    );
                 }
 
                 for (int i = 0; i < GRID_RES_Z; i++) {
                     futures[i].wait();
                 }
 
-                items_count_[1] = std::min(items_count.load(), MAX_LIGHTS_COUNT);
+                items_count_[1] = std::min(items_count.load(), MAX_ITEMS_TOTAL);
             }
 
             if (debug_cull_ && culling_enabled_) {
@@ -715,6 +716,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
         cell.light_count = 0;
     }
 
+    // Gather to local list first
     ItemData local_items[GRID_RES_X * GRID_RES_Y][MAX_LIGHTS_PER_CELL];
 
     for (int j = 0; j < lights_count; j++) {
@@ -774,7 +776,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 if (res != Ren::NotVisible) {
                     const int index = i + row_offset + col_offset;
                     auto &cell = cells[index];
-                    if (cell.light_count < MAX_LIGHTS_PER_CELL) {
+                    if (cell.light_count < MAX_LIGHTS_PER_CELL - 1) {
                         local_items[row_offset + col_offset][cell.light_count].light_index = (uint16_t)j;
                         cell.light_count++;
                     }
@@ -783,16 +785,16 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
         }
     }
 
-    // Pack gathered item data
+    // Pack gathered local item data to total list
     for (int s = 0; s < frustums_per_slice; s++) {
         auto &cell = cells[i + s];
 
         cell.item_offset = items_count.fetch_add(cell.light_count);
-        if (cell.item_offset > MAX_LIGHTS_COUNT) {
+        if (cell.item_offset > MAX_ITEMS_TOTAL) {
             cell.item_offset = 0;
             cell.light_count = 0;
         } else {
-            cell.light_count = std::min(cell.light_count, MAX_LIGHTS_COUNT - cell.item_offset);
+            cell.light_count = std::min(cell.light_count, MAX_ITEMS_TOTAL - cell.item_offset);
             memcpy(&items[cell.item_offset], &local_items[s][0], cell.light_count * sizeof(ItemData));
         }
     }
