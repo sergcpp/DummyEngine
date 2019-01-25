@@ -29,7 +29,9 @@ set(STATES_SOURCES  States/GSCreate.h
                     States/GSOccTest.cpp)
 
 set(UTILS_SOURCES Utils/BVHSplit.h
-				  Utils/BVHSplit.cpp)
+				  Utils/BVHSplit.cpp
+				  Utils/TextureSplitter.h
+				  Utils/TextureSplitter.cpp)
 
 if(${RENDERER} STREQUAL "GL")
     set(SCENE_SOURCES ${SCENE_SOURCES}
@@ -61,7 +63,7 @@ set_source_files_properties(${STATES_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\States" FILES ${STATES_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${UTILS_SOURCES})
-#set_source_files_properties(${UTILS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties(${UTILS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Utils" FILES ${UTILS_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES Scene/_Scene.cpp)
@@ -69,6 +71,9 @@ source_group("src\\Scene" FILES Scene/_Scene.cpp)
 
 list(APPEND ALL_SOURCE_FILES States/_States.cpp)
 source_group("src\\States" FILES States/_States.cpp)
+
+list(APPEND ALL_SOURCE_FILES Utils/_Utils.cpp)
+source_group("src\\Utils" FILES Utils/_Utils.cpp)
 
 add_library(DemoLib STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(DemoLib Eng Ray Ren Sys ${LIBS})

@@ -394,13 +394,20 @@ void main() {
     
     int ix = int(gl_FragCoord.x);
     int iy = int(gl_FragCoord.y);
-    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy / (resy / GRID_RES_Y)) * GRID_RES_X + (ix / (resx / GRID_RES_X));
+    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy * GRID_RES_Y / resy) * GRID_RES_X + ix * GRID_RES_X / resx;
     
-    uvec2 offset_and_count = texelFetch(cells_buffer, cell_index).xy;
+    uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
+    uvec2 offset_and_lcount = uvec2(cell_data.x & 0x00ffffffu, cell_data.x >> 24);
+    uvec2 dcount_and_pcount = uvec2(cell_data.y & 0x000000ffu, 0);
 
-    outColor = vec4(heatmap(float(offset_and_count.y) * (1.0 / 256.0)), 0.85);
+    outColor = vec4(heatmap(float(offset_and_lcount.y) * (1.0 / 255.0)), 0.85);
+    //outColor = vec4(heatmap(float(dcount_and_pcount.x) * (1.0 / 255.0)), 0.85);
 
-    if ((ix != 0 && (ix % (resx / GRID_RES_X)) == 0) || (iy != 0 && (iy % (resy / GRID_RES_Y)) == 0)) {
+    int xy_cell = (iy * GRID_RES_Y / resy) * GRID_RES_X + ix * GRID_RES_X / resx;
+    int xy_cell_right = (iy * GRID_RES_Y / resy) * GRID_RES_X + (ix + 1) * GRID_RES_X / resx;
+    int xy_cell_up = ((iy + 1) * GRID_RES_Y / resy) * GRID_RES_X + ix * GRID_RES_X / resx;
+
+    if (xy_cell_right != xy_cell || xy_cell_up != xy_cell) {
         outColor = vec4(1.0, 0.0, 0.0, 1.0);
     }
 }
@@ -420,8 +427,8 @@ const char blit_debug_ms_fs[] = R"(
 #define GRID_RES_Z )" AS_STR(REN_GRID_RES_Z) R"(
         
 layout(binding = 0) uniform mediump sampler2DMS s_texture;
-layout(binding = 10) uniform highp usamplerBuffer cells_buffer;
-layout(binding = 11) uniform highp usamplerBuffer items_buffer;
+layout(binding = 11) uniform highp usamplerBuffer cells_buffer;
+layout(binding = 12) uniform highp usamplerBuffer items_buffer;
 
 layout(location = 16) uniform int resx;
 layout(location = 17) uniform int resy;
@@ -448,13 +455,20 @@ void main() {
     
     int ix = int(gl_FragCoord.x);
     int iy = int(gl_FragCoord.y);
-    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy / (resy / GRID_RES_Y)) * GRID_RES_X + (ix / (resx / GRID_RES_X));
+    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy * GRID_RES_Y / resy) * GRID_RES_X + ix * GRID_RES_X / resx;
     
     uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
+    uvec2 offset_and_lcount = uvec2(cell_data.x & 0x00ffffffu, cell_data.x >> 24);
+    uvec2 dcount_and_pcount = uvec2(cell_data.y & 0x000000ffu, 0);
 
-    outColor = vec4(heatmap(float(cell_data.x >> 24) * (1.0 / 256.0)), 0.85);
+    //outColor = vec4(heatmap(float(offset_and_lcount.y) * (1.0 / 255.0)), 0.85);
+    outColor = vec4(heatmap(float(dcount_and_pcount.x) * (1.0 / 2.0)), 0.85);
 
-    if ((ix != 0 && (ix % (resx / GRID_RES_X)) == 0) || (iy != 0 && (iy % (resy / GRID_RES_Y)) == 0)) {
+    int xy_cell = (iy * GRID_RES_Y / resy) * GRID_RES_X + ix * GRID_RES_X / resx;
+    int xy_cell_right = (iy * GRID_RES_Y / resy) * GRID_RES_X + (ix + 1) * GRID_RES_X / resx;
+    int xy_cell_up = ((iy + 1) * GRID_RES_Y / resy) * GRID_RES_X + ix * GRID_RES_X / resx;
+
+    if (xy_cell_right != xy_cell || xy_cell_up != xy_cell) {
         outColor = vec4(1.0, 0.0, 0.0, 1.0);
     }
 }

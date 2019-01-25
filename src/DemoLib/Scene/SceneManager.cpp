@@ -198,7 +198,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                           (float)((const JsNumber &)js_sca.at(2)).val };
             }
 
-            Ren::OrthographicProjection(de->proj, -0.5f * scale[0], 0.5f * scale[0], -0.5f * scale[1], 0.5f * scale[1], 0.0f, 0.5f * scale[2]);
+            Ren::OrthographicProjection(de->proj, -0.5f * scale[0], 0.5f * scale[0], -0.5f * scale[1], 0.5f * scale[1], 0.0f, 1.0f * scale[2]);
             
             all_decals[name] = de;
         }

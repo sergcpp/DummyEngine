@@ -51,8 +51,9 @@ static_assert(sizeof(DecalItem) == 16 * sizeof(float), "!");
 struct CellData {
     uint32_t item_offset : 24;
     uint32_t light_count : 8;
-    uint8_t decal_count;
-    uint8_t probe_count;
+    uint32_t decal_count : 8;
+    uint32_t probe_count : 8;
+    uint32_t _unused : 16;
 };
 static_assert(sizeof(CellData) == 8, "!");
 
@@ -75,8 +76,9 @@ namespace RendererInternal {
     const int CELLS_COUNT = GRID_RES_X * GRID_RES_Y * GRID_RES_Z;
 
     const int MAX_LIGHTS_PER_CELL = 255;
-    const int MAX_DECALS_PER_CELL = 256;
+    const int MAX_DECALS_PER_CELL = 255;
     const int MAX_PROBES_PER_CELL = 8;
+    const int MAX_ITEMS_PER_CELL = 255;
 
     const int MAX_LIGHTS_TOTAL = 4096;
     const int MAX_DECALS_TOTAL = 4096;
@@ -186,7 +188,7 @@ private:
     uint32_t temp_vao_, shadow_pass_vao_, depth_pass_vao_, draw_pass_vao_;
     uint32_t temp_buf_vtx_offset_, temp_buf_ndx_offset_;
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
-    uint32_t lights_ssbo_, lights_tbo_, cells_ssbo_, cells_tbo_, items_ssbo_, items_tbo_;
+    uint32_t lights_ssbo_, lights_tbo_, decals_ssbo_, decals_tbo_, cells_ssbo_, cells_tbo_, items_ssbo_, items_tbo_;
 
     enum { TimeShadowMapStart, TimeDepthPassStart, TimeDrawStart, TimeDrawEnd, TimersCount };
     uint32_t queries_[2][TimersCount];

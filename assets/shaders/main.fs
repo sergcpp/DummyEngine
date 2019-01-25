@@ -19,9 +19,10 @@ layout(binding = 2) uniform sampler2DShadow shadow_texture;
 layout(binding = 3) uniform sampler2D lm_direct_texture;
 layout(binding = 4) uniform sampler2D lm_indirect_texture;
 layout(binding = 5) uniform sampler2D lm_indirect_sh_texture[4];
-layout(binding = 9) uniform highp samplerBuffer lights_buffer;
-layout(binding = 10) uniform highp usamplerBuffer cells_buffer;
-layout(binding = 11) uniform highp usamplerBuffer items_buffer;
+layout(binding = 9) uniform mediump samplerBuffer lights_buffer;
+layout(binding = 10) uniform mediump samplerBuffer decals_buffer;
+layout(binding = 11) uniform highp usamplerBuffer cells_buffer;
+layout(binding = 12) uniform highp usamplerBuffer items_buffer;
 
 layout (std140) uniform MatricesBlock {
     mat4 uMVPMatrix;
@@ -151,13 +152,15 @@ void main(void) {
     
     int ix = int(gl_FragCoord.x);
     int iy = int(gl_FragCoord.y);
-    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy / (resy / GRID_RES_Y)) * GRID_RES_X + (ix / (resx / GRID_RES_X));
+    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy * GRID_RES_Y / resy) * GRID_RES_X + ix * GRID_RES_X / resx;
     
     uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
-    uvec2 offset_and_count = uvec2(cell_data.x & 0x00ffffffu, cell_data.x >> 24);
+    uvec2 offset_and_lcount = uvec2(cell_data.x & 0x00ffffffu, cell_data.x >> 24);
+    uvec2 dcount_and_pcount = uvec2(cell_data.y & 0x000000ffu, 0);
     
-    for (uint i = offset_and_count.x; i < offset_and_count.x + offset_and_count.y; i++) {
-        int li = int(texelFetch(items_buffer, int(i)).x & 0x00000fffu);
+    for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
+        uint item_data = texelFetch(items_buffer, int(i)).x;
+        int li = int(item_data & 0x00000fffu);
         
         vec4 pos_and_radius = texelFetch(lights_buffer, li * 3 + 0);
         vec4 col_and_brightness = texelFetch(lights_buffer, li * 3 + 1);
@@ -180,6 +183,30 @@ void main(void) {
         atten = _dot1 * atten;
         if (_dot2 > dir_and_spot.w && (col_and_brightness.w * atten) > FLT_EPS) {
             additional_light += col_and_brightness.xyz * atten;
+        }
+    }
+    
+    for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.x; i++) {
+        uint item_data = texelFetch(items_buffer, int(i)).x;
+        int di = int(item_data & 0x00fff000u);
+        
+        mat4 de_proj;
+        de_proj[0] = texelFetch(decals_buffer, di * 4 + 0);
+        de_proj[1] = texelFetch(decals_buffer, di * 4 + 1);
+        de_proj[2] = texelFetch(decals_buffer, di * 4 + 2);
+        de_proj[3] = texelFetch(decals_buffer, di * 4 + 3);
+        
+        vec4 pp = de_proj * vec4(aVertexPos_, 1.0);
+        pp /= pp[3];
+        
+        vec3 app = abs(pp.xyz);
+        
+        if (app.x < 1.0 && app.y < 1.0) {
+            //additional_light += vec3(pp.xy * 0.5 + 0.5, 0.0);
+        }
+        
+        if (app.x < 1.0 && app.z < 1.0) {
+            additional_light += vec3(1.0, 0.0, 0.0);
         }
     }
     
