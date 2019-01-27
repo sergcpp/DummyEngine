@@ -142,13 +142,14 @@ void main(void) {
     indirect_col *= 0.001;
     visibility *= 0.001;
     
-    float depth = 1.0 / gl_FragCoord.w;
-    
     const float n = 0.5;
     const float f = 10000.0;
     
-    float k = log2(depth / n) / log2(1.0 + f / n);
-    int slice = int(k * 24.0);
+    float depth = 2.0 * gl_FragCoord.z - 1.0;
+    depth = 2.0 * n * f / (f + n - depth * (f - n));
+    
+    float k = log2(depth / n) / log2(f / n);
+    int slice = int(floor(k * 24.0));
     
     int ix = int(gl_FragCoord.x);
     int iy = int(gl_FragCoord.y);
@@ -202,12 +203,14 @@ void main(void) {
         vec3 app = abs(pp.xyz);
         
         if (app.x < 1.0 && app.y < 1.0) {
-            //additional_light += vec3(pp.xy * 0.5 + 0.5, 0.0);
+            additional_light += vec3(pp.xy * 0.5 + 0.5, 0.0);
         }
         
-        if (app.x < 1.0 && app.z < 1.0) {
+        /*if (app.x < 1.0 && app.y < 1.0) {
             additional_light += vec3(1.0, 0.0, 0.0);
-        }
+        } else {
+            additional_light += vec3(0.0, 1.0, 0.0);
+        }*/
     }
     
     vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma));
@@ -216,4 +219,6 @@ void main(void) {
     outColor = vec4(diffuse_color, 1.0);
     outNormal.xy += (uVPMatrix * vec4(normal, 0.0)).xy;
     outSpecular = vec4(0.0, 0.5, 0.5, 1.0);
+    
+    //outColor = vec4(depth, depth, depth, 1.0);
 }

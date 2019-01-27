@@ -489,8 +489,8 @@ void Renderer::BackgroundProc() {
                                         Ren::Mat4f world_from_clip = Ren::Inverse(clip_from_world);
 
                                         static const Ren::Vec4f points[] = {
-                                            { -1.0f, -1.0f, 0.0f, 1.0f },{ -1.0f, 1.0f, 0.0f, 1.0f },
-                                            { 1.0f, 1.0f, 0.0f, 1.0f },{ 1.0f, -1.0f, 0.0f, 1.0f },
+                                            { -1.0f, -1.0f, -1.0f, 1.0f },{ -1.0f, 1.0f, -1.0f, 1.0f },
+                                            { 1.0f, 1.0f, -1.0f, 1.0f },{ 1.0f, -1.0f, -1.0f, 1.0f },
 
                                             { -1.0f, -1.0f, 1.0f, 1.0f },{ -1.0f, 1.0f, 1.0f, 1.0f },
                                             { 1.0f, 1.0f, 1.0f, 1.0f },{ 1.0f, -1.0f, 1.0f, 1.0f }
@@ -856,7 +856,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 
         auto visible_to_slice = Ren::FullyVisible;
 
-        // Check if light is inside of a whole slice
+        // Check if decal is inside of a whole slice
         for (int k = Ren::NearPlane; k <= Ren::FarPlane; k++) {
             int in_count = 8;
 
@@ -875,7 +875,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
             }
         }
 
-        // Skip light for whole slice
+        // Skip decal for whole slice
         if (visible_to_slice == Ren::NotVisible) continue;
 
         for (int row_offset = 0; row_offset < frustums_per_slice; row_offset += GRID_RES_X) {
@@ -883,7 +883,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 
             auto visible_to_line = Ren::FullyVisible;
 
-            // Check if light is inside of grid line
+            // Check if decal is inside of grid line
             for (int k = Ren::TopPlane; k <= Ren::BottomPlane; k++) {
                 int in_count = 8;
 
@@ -902,7 +902,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 }
             }
 
-            // Skip light for whole line
+            // Skip decal for whole line
             if (visible_to_line == Ren::NotVisible) continue;
 
             for (int col_offset = 0; col_offset < GRID_RES_X; col_offset++) {
@@ -944,6 +944,10 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
     // Pack gathered local item data to total list
     for (int s = 0; s < frustums_per_slice; s++) {
         auto &cell = cells[i + s];
+
+        if (cell.decal_count) {
+            volatile int ii = 0;
+        }
 
         int local_items_count = std::max((int)cell.light_count, (int)cell.decal_count);
 

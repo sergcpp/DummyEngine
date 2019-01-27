@@ -173,32 +173,39 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             }
 
             if (js_obj.Has("rot")) {
-                const JsArray &js_pos = (const JsArray &)js_obj.at("rot");
+                const JsArray &js_rot = (const JsArray &)js_obj.at("rot");
 
-                Ren::Vec3f rot = { (float)((const JsNumber &)js_pos.at(0)).val,
-                                   (float)((const JsNumber &)js_pos.at(1)).val,
-                                   (float)((const JsNumber &)js_pos.at(2)).val };
+                Ren::Vec3f rot = { (float)((const JsNumber &)js_rot.at(0)).val,
+                                   (float)((const JsNumber &)js_rot.at(1)).val,
+                                   (float)((const JsNumber &)js_rot.at(2)).val };
 
                 rot *= Ren::Pi<float>() / 180.0f;
 
-                de->view = Ren::Rotate(de->view, rot[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
-                de->view = Ren::Rotate(de->view, rot[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
-                de->view = Ren::Rotate(de->view, rot[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+                //de->view = Ren::Rotate(de->view, rot[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
+                //de->view = Ren::Rotate(de->view, rot[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
+                //de->view = Ren::Rotate(de->view, rot[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+
+                auto rot_z = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
+                auto rot_x = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
+                auto rot_y = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+
+                auto rot_all = rot_y * rot_x * rot_z;
+                de->view = de->view * rot_all;
             }
 
             de->view = Ren::Inverse(de->view);
 
-            Ren::Vec3f scale = { 1.0f, 1.0f, 1.0f };
+            Ren::Vec3f dim = { 1.0f, 1.0f, 1.0f };
 
-            if (js_obj.Has("sca")) {
-                const JsArray &js_sca = (const JsArray &)js_obj.at("sca");
+            if (js_obj.Has("dim")) {
+                const JsArray &js_dim = (const JsArray &)js_obj.at("dim");
 
-                scale = { (float)((const JsNumber &)js_sca.at(0)).val,
-                          (float)((const JsNumber &)js_sca.at(1)).val,
-                          (float)((const JsNumber &)js_sca.at(2)).val };
+                dim = { (float)((const JsNumber &)js_dim.at(0)).val,
+                        (float)((const JsNumber &)js_dim.at(1)).val,
+                        (float)((const JsNumber &)js_dim.at(2)).val };
             }
 
-            Ren::OrthographicProjection(de->proj, -0.5f * scale[0], 0.5f * scale[0], -0.5f * scale[1], 0.5f * scale[1], 0.0f, 1.0f * scale[2]);
+            Ren::OrthographicProjection(de->proj, -0.5f * dim[0], 0.5f * dim[0], -0.5f * dim[1], 0.5f * dim[1], 0.0f, 1.0f * dim[2]);
             
             all_decals[name] = de;
         }
@@ -239,17 +246,24 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         }
 
         if (js_obj.Has("rot")) {
-            const JsArray &js_pos = (const JsArray &)js_obj.at("rot");
+            const JsArray &js_rot = (const JsArray &)js_obj.at("rot");
 
-            Ren::Vec3f rot = { (float)((const JsNumber &)js_pos.at(0)).val,
-                               (float)((const JsNumber &)js_pos.at(1)).val,
-                               (float)((const JsNumber &)js_pos.at(2)).val };
+            Ren::Vec3f rot = { (float)((const JsNumber &)js_rot.at(0)).val,
+                               (float)((const JsNumber &)js_rot.at(1)).val,
+                               (float)((const JsNumber &)js_rot.at(2)).val };
 
             rot *= Ren::Pi<float>() / 180.0f;
 
-            obj.tr->mat = Ren::Rotate(obj.tr->mat, rot[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
-            obj.tr->mat = Ren::Rotate(obj.tr->mat, rot[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
-            obj.tr->mat = Ren::Rotate(obj.tr->mat, rot[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+            //obj.tr->mat = Ren::Rotate(obj.tr->mat, rot[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
+            //obj.tr->mat = Ren::Rotate(obj.tr->mat, rot[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
+            //obj.tr->mat = Ren::Rotate(obj.tr->mat, rot[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+
+            auto rot_z = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
+            auto rot_x = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
+            auto rot_y = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+
+            auto rot_all = rot_y * rot_x * rot_z;
+            obj.tr->mat = obj.tr->mat * rot_all;
         }
 
         if (js_obj.Has("occluder_mesh")) {
@@ -384,8 +398,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
                 {   // Compute bounding box of decal
                     Ren::Vec4f points[] = {
-                        { -1.0f, -1.0f, 0.0f, 1.0f }, { -1.0f, 1.0f, 0.0f, 1.0f },
-                        { 1.0f, 1.0f, 0.0f, 1.0f }, { 1.0f, -1.0f, 0.0f, 1.0f },
+                        { -1.0f, -1.0f, -1.0f, 1.0f }, { -1.0f, 1.0f, -1.0f, 1.0f },
+                        { 1.0f, 1.0f, -1.0f, 1.0f }, { 1.0f, -1.0f, -1.0f, 1.0f },
 
                         { -1.0f, -1.0f, 1.0f, 1.0f }, { -1.0f, 1.0f, 1.0f, 1.0f },
                         { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, -1.0f, 1.0f, 1.0f }
@@ -401,6 +415,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                         obj_bbox_min = Ren::Min(obj_bbox_min, Ren::Vec3f{ points[i] });
                         obj_bbox_max = Ren::Max(obj_bbox_max, Ren::Vec3f{ points[i] });
                     }
+
+                    volatile int ii = 0;
                 }
             }
         }

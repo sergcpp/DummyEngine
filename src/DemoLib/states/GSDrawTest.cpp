@@ -22,11 +22,6 @@
 namespace GSDrawTestInternal {
 const float FORWARD_SPEED = 0.5f;
 
-const float CAM_FOV = 45.0f;
-const Ren::Vec3f CAM_CENTER = { 100.0f, 100.0f, -500.0f };
-const Ren::Vec3f CAM_TARGET = { 0.0f, 0.0f, 0.0f };
-const Ren::Vec3f CAM_UP = { 0.0f, 1.0f, 0.0f };
-
 const int MAX_CMD_LINES = 8;
 
 const char SCENE_NAME[] = "assets/scenes/jap_house2.json";
@@ -420,13 +415,13 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
         }
         break;
     case InputManager::RAW_INPUT_KEY_DOWN: {
-        if (evt.key == InputManager::RAW_INPUT_BUTTON_UP) {
+        if (evt.key == InputManager::RAW_INPUT_BUTTON_UP || (evt.raw_key == 'w' && !cmdline_enabled_)) {
             fwd_press_speed_ = FORWARD_SPEED;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN) {
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN || (evt.raw_key == 's' && !cmdline_enabled_)) {
             fwd_press_speed_ = -FORWARD_SPEED;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT) {
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT || (evt.raw_key == 'a' && !cmdline_enabled_)) {
             side_press_speed_ = -FORWARD_SPEED;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT) {
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT || (evt.raw_key == 'd' && !cmdline_enabled_)) {
             side_press_speed_ = FORWARD_SPEED;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SPACE) {
 
@@ -436,13 +431,13 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
     }
     break;
     case InputManager::RAW_INPUT_KEY_UP: {
-        if (evt.key == InputManager::RAW_INPUT_BUTTON_UP) {
+        if (evt.key == InputManager::RAW_INPUT_BUTTON_UP || (evt.raw_key == 'w' && !cmdline_enabled_)) {
             fwd_press_speed_ = 0;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN) {
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN || (evt.raw_key == 's' && !cmdline_enabled_)) {
             fwd_press_speed_ = 0;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT) {
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT || (evt.raw_key == 'a' && !cmdline_enabled_)) {
             side_press_speed_ = 0;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT) {
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT || (evt.raw_key == 'd' && !cmdline_enabled_)) {
             side_press_speed_ = 0;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
             shift_down_ = false;
