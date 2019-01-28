@@ -6,25 +6,19 @@ set(SOURCE_FILES    Viewer.h
 
 set(GUI_SOURCES  Gui/FontStorage.h)
 
-set(SCENE_SOURCES  Scene/FrameBuf.h
-					 Scene/Renderer.h
-                     Scene/Renderer.cpp
-					 Scene/SceneData.h
-                     Scene/SceneManager.h
-                     Scene/SceneManager.cpp
-					 Scene/SceneManager_BVH.cpp
-					 Scene/SceneManager_PT.cpp)
+set(SCENE_SOURCES	Scene/FrameBuf.h
+					Scene/Renderer.h
+                    Scene/Renderer.cpp
+					Scene/SceneData.h
+                    Scene/SceneManager.h
+                    Scene/SceneManager.cpp
+					Scene/SceneManager_BVH.cpp
+					Scene/SceneManager_PT.cpp)
 
 set(STATES_SOURCES  States/GSCreate.h
                     States/GSCreate.cpp
-                    States/GSBicubicTest.h
-                    States/GSBicubicTest.cpp
-                    States/GSDefTest.h
-                    States/GSDefTest.cpp
 					States/GSDrawTest.h
 					States/GSDrawTest.cpp
-                    States/GSIKTest.h
-                    States/GSIKTest.cpp
                     States/GSOccTest.h
                     States/GSOccTest.cpp)
 
@@ -39,8 +33,8 @@ if(${RENDERER} STREQUAL "GL")
 						Scene/Renderer_GL_Shaders.inl
                         Scene/Renderer_GLES3.cpp)
     set(STATES_SOURCES ${STATES_SOURCES}
-                       States/GSDefTestGL.cpp
-                       States/GSOccTestGL.cpp)
+						States/GSOccTestGL.cpp
+						)
 elseif(${RENDERER} STREQUAL "SW")
     set(SCENE_SOURCES ${SCENE_SOURCES}
                         Renderer/RendererSW.cpp)
