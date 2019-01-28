@@ -131,6 +131,15 @@ void GSDrawTest::Enter() {
         return true;
     });
 
+    game_->RegisterCommand("debug_decals", [weak_this](const std::vector<std::string> &args) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            shrd_this->renderer_->toggle_debug_decals();
+            shrd_this->print_light_info_ = !shrd_this->print_light_info_;
+        }
+        return true;
+    });
+
     game_->RegisterCommand("debug_deffered", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
@@ -183,6 +192,14 @@ void GSDrawTest::LoadScene(const char *name) {
             view_dir_[2] = (float)((const JsNumber &)js_dir.at(2)).val;
         }
     }
+
+    view_origin_[0] = -20.139059f;
+    view_origin_[1] = 3.208992f;
+    view_origin_[2] = 20.637007f;
+
+    view_dir_[0] = -0.350961f;
+    view_dir_[1] = -0.552905f;
+    view_dir_[2] = -0.755727f;
 }
 
 void GSDrawTest::Exit() {
@@ -223,6 +240,9 @@ void GSDrawTest::Draw(float dt_s) {
 
         last_timings_ = timings;
     }
+
+    LOGI("(%f %f %f) (%f %f %f)", view_origin_[0], view_origin_[1], view_origin_[2],
+                                  view_dir_[0], view_dir_[1], view_dir_[2]);
 
     {
         // ui draw
@@ -281,6 +301,14 @@ void GSDrawTest::Draw(float dt_s) {
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
+                s = "decals_count: " + std::to_string(render_info.decals_count);
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "decals_data_size: " + std::to_string(render_info.decals_data_size / 1024) + " kb";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
                 s = "cells_data_size: " + std::to_string(render_info.cells_data_size / 1024) + " kb";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
@@ -289,6 +317,7 @@ void GSDrawTest::Draw(float dt_s) {
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
             }
         }
+
         //font_->DrawText(ui_renderer_.get(), s2.c_str(), { -1, 1.0f - 2 * font_->height(ui_root_.get()) }, ui_root_.get());
         //font_->DrawText(ui_renderer_.get(), s3.c_str(), { -1, 1.0f - 3 * font_->height(ui_root_.get()) }, ui_root_.get());
         //font_->DrawText(ui_renderer_.get(), s4.c_str(), { -1, 1.0f - 4 * font_->height(ui_root_.get()) }, ui_root_.get());
@@ -415,13 +444,13 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
         }
         break;
     case InputManager::RAW_INPUT_KEY_DOWN: {
-        if (evt.key == InputManager::RAW_INPUT_BUTTON_UP || (evt.raw_key == 'w' && !cmdline_enabled_)) {
+        if (evt.key == InputManager::RAW_INPUT_BUTTON_UP || (evt.raw_key == 'w' && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = FORWARD_SPEED;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN || (evt.raw_key == 's' && !cmdline_enabled_)) {
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN || (evt.raw_key == 's' && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = -FORWARD_SPEED;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT || (evt.raw_key == 'a' && !cmdline_enabled_)) {
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT || (evt.raw_key == 'a' && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = -FORWARD_SPEED;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT || (evt.raw_key == 'd' && !cmdline_enabled_)) {
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT || (evt.raw_key == 'd' && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = FORWARD_SPEED;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SPACE) {
 
@@ -431,13 +460,13 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
     }
     break;
     case InputManager::RAW_INPUT_KEY_UP: {
-        if (evt.key == InputManager::RAW_INPUT_BUTTON_UP || (evt.raw_key == 'w' && !cmdline_enabled_)) {
+        if (evt.key == InputManager::RAW_INPUT_BUTTON_UP || (evt.raw_key == 'w' && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = 0;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN || (evt.raw_key == 's' && !cmdline_enabled_)) {
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN || (evt.raw_key == 's' && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = 0;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT || (evt.raw_key == 'a' && !cmdline_enabled_)) {
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT || (evt.raw_key == 'a' && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = 0;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT || (evt.raw_key == 'd' && !cmdline_enabled_)) {
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT || (evt.raw_key == 'd' && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = 0;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
             shift_down_ = false;

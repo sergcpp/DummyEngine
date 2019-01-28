@@ -367,11 +367,12 @@ const char blit_debug_fs[] = R"(
 #define GRID_RES_Z )" AS_STR(REN_GRID_RES_Z) R"(
         
 layout(binding = 0) uniform mediump sampler2D s_texture;
-layout(binding = 10) uniform highp usamplerBuffer cells_buffer;
-layout(binding = 11) uniform highp usamplerBuffer items_buffer;
+layout(binding = 12) uniform highp usamplerBuffer cells_buffer;
+layout(binding = 13) uniform highp usamplerBuffer items_buffer;
 
 layout(location = 16) uniform int resx;
 layout(location = 17) uniform int resy;
+layout(location = 18) uniform int mode;
 
 in vec2 aVertexUVs_;
 
@@ -387,9 +388,10 @@ void main() {
     const float f = 10000.0;
 
     float depth = texelFetch(s_texture, ivec2(aVertexUVs_), 0).r;
-    depth = n * f / (f + depth * (n - f));
+    depth = 2.0 * depth - 1.0;
+    depth = 2.0 * n * f / (f + n - depth * (f - n));
     
-    float k = log2(depth / n) / log2(1.0 + f / n);
+    float k = log2(depth / n) / log2(f / n);
     int slice = int(k * 24.0);
     
     int ix = int(gl_FragCoord.x);
@@ -400,8 +402,11 @@ void main() {
     uvec2 offset_and_lcount = uvec2(cell_data.x & 0x00ffffffu, cell_data.x >> 24);
     uvec2 dcount_and_pcount = uvec2(cell_data.y & 0x000000ffu, 0);
 
-    outColor = vec4(heatmap(float(offset_and_lcount.y) * (1.0 / 255.0)), 0.85);
-    //outColor = vec4(heatmap(float(dcount_and_pcount.x) * (1.0 / 255.0)), 0.85);
+    if (mode == 0) {
+        outColor = vec4(heatmap(float(offset_and_lcount.y) * (1.0 / 8.0)), 0.85);
+    } else if (mode == 1) {
+        outColor = vec4(heatmap(float(dcount_and_pcount.x) * (1.0 / 8.0)), 0.85);
+    }
 
     int xy_cell = (iy * GRID_RES_Y / resy) * GRID_RES_X + ix * GRID_RES_X / resx;
     int xy_cell_right = (iy * GRID_RES_Y / resy) * GRID_RES_X + (ix + 1) * GRID_RES_X / resx;
@@ -427,11 +432,12 @@ const char blit_debug_ms_fs[] = R"(
 #define GRID_RES_Z )" AS_STR(REN_GRID_RES_Z) R"(
         
 layout(binding = 0) uniform mediump sampler2DMS s_texture;
-layout(binding = 11) uniform highp usamplerBuffer cells_buffer;
-layout(binding = 12) uniform highp usamplerBuffer items_buffer;
+layout(binding = 12) uniform highp usamplerBuffer cells_buffer;
+layout(binding = 13) uniform highp usamplerBuffer items_buffer;
 
 layout(location = 16) uniform int resx;
 layout(location = 17) uniform int resy;
+layout(location = 18) uniform int mode;
 
 in vec2 aVertexUVs_;
 
@@ -447,10 +453,10 @@ void main() {
     const float f = 10000.0;
 
     float depth = texelFetch(s_texture, ivec2(aVertexUVs_), 0).r;
-    //depth = 2.0 * depth - 1.0;
-    depth = n * f / (f + depth * (n - f));
+    depth = 2.0 * depth - 1.0;
+    depth = 2.0 * n * f / (f + n - depth * (f - n));
     
-    float k = log2(depth / n) / log2(1.0 + f / n);
+    float k = log2(depth / n) / log2(f / n);
     int slice = int(k * 24.0);
     
     int ix = int(gl_FragCoord.x);
@@ -461,8 +467,11 @@ void main() {
     uvec2 offset_and_lcount = uvec2(cell_data.x & 0x00ffffffu, cell_data.x >> 24);
     uvec2 dcount_and_pcount = uvec2(cell_data.y & 0x000000ffu, 0);
 
-    //outColor = vec4(heatmap(float(offset_and_lcount.y) * (1.0 / 255.0)), 0.85);
-    outColor = vec4(heatmap(float(dcount_and_pcount.x) * (1.0 / 2.0)), 0.85);
+    if (mode == 0) {
+        outColor = vec4(heatmap(float(offset_and_lcount.y) * (1.0 / 8.0)), 0.85);
+    } else if (mode == 1) {
+        outColor = vec4(heatmap(float(dcount_and_pcount.x) * (1.0 / 8.0)), 0.85);
+    }
 
     int xy_cell = (iy * GRID_RES_Y / resy) * GRID_RES_X + ix * GRID_RES_X / resx;
     int xy_cell_right = (iy * GRID_RES_Y / resy) * GRID_RES_X + (ix + 1) * GRID_RES_X / resx;

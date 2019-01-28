@@ -6,6 +6,7 @@
 #include <map>
 
 #include <Ren/Context.h>
+#include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/AssetFileIO.h>
 #include <Sys/Log.h>
@@ -20,6 +21,9 @@ const float FAR_CLIP = 10000;
 const char *MODELS_PATH = "./assets/models/";
 
 const float LIGHT_ATTEN_CUTOFF = 0.001f;
+
+const int DECALS_ATLAS_RESX = 2048,
+          DECALS_ATLAS_RESY = 1024;
 }
 
 SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererBase &ray_renderer,
@@ -31,6 +35,16 @@ SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererB
 cam_(Ren::Vec3f{ 0.0f, 0.0f, 1.0f },
      Ren::Vec3f{ 0.0f, 0.0f, 0.0f },
      Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
+    using namespace SceneManagerConstants;
+
+    Ren::Texture2DParams p;
+    p.w = DECALS_ATLAS_RESX;
+    p.h = DECALS_ATLAS_RESY;
+    p.format = Ren::RawRGBA8888;
+    p.filter = Ren::Trilinear;
+    p.repeat = Ren::ClampToEdge;
+
+    decals_atlas_ = TextureAtlas{ p };
 }
 
 SceneManager::~SceneManager() {
@@ -67,6 +81,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     std::map<std::string, Ren::MeshRef> all_meshes;
     std::map<std::string, Ren::StorageRef<LightSource>> all_lights;
     std::map<std::string, Ren::StorageRef<Decal>> all_decals;
+
+    std::map<std::string, Ren::Vec4f> decals_textures;
 
     if (js_scene.Has("name")) {
         const JsString &js_name = (const JsString &)js_scene.at("name");
@@ -207,6 +223,54 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
             Ren::OrthographicProjection(de->proj, -0.5f * dim[0], 0.5f * dim[0], -0.5f * dim[1], 0.5f * dim[1], 0.0f, 1.0f * dim[2]);
             
+            auto load_decal_texture = [this](const std::string &name) {
+                Sys::AssetFile in_file(name, Sys::AssetFile::IN);
+                size_t in_file_size = in_file.size();
+
+                std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+
+                in_file.Read((char *)&in_file_data[0], in_file_size);
+
+                int res[2];
+                Ren::eTexColorFormat format;
+                auto image_data = Ren::ReadTGAFile(&in_file_data[0], res[0], res[1], format);
+
+                int pos[2];
+                int rc = decals_atlas_.Allocate(&image_data[0], format, res, pos, 4);
+                if (rc == -1) throw std::runtime_error("Cannot allocate decal!");
+
+                return Ren::Vec4f{ float(pos[0]) / DECALS_ATLAS_RESX,
+                                   float(pos[1]) / DECALS_ATLAS_RESY,
+                                   float(res[0]) / DECALS_ATLAS_RESX,
+                                   float(res[1]) / DECALS_ATLAS_RESY };
+            };
+
+            if (js_obj.Has("diff")) {
+                const JsString &js_diff = (const JsString &)js_obj.at("diff");
+
+                auto it = decals_textures.find(js_diff.val);
+
+                if (it == decals_textures.end()) {
+                    de->diff = load_decal_texture(js_diff.val);
+                    decals_textures[js_diff.val] = de->diff;
+                } else {
+                    de->diff = decals_textures[js_diff.val];
+                }
+            }
+
+            if (js_obj.Has("norm")) {
+                const JsString &js_norm = (const JsString &)js_obj.at("norm");
+
+                auto it = decals_textures.find(js_norm.val);
+
+                if (it == decals_textures.end()) {
+                    de->norm = load_decal_texture(js_norm.val);
+                    decals_textures[js_norm.val] = de->norm;
+                } else {
+                    de->norm = decals_textures[js_norm.val];
+                }
+            }
+
             all_decals[name] = de;
         }
     }
@@ -415,8 +479,6 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                         obj_bbox_min = Ren::Min(obj_bbox_min, Ren::Vec3f{ points[i] });
                         obj_bbox_max = Ren::Max(obj_bbox_max, Ren::Vec3f{ points[i] });
                     }
-
-                    volatile int ii = 0;
                 }
             }
         }
@@ -461,6 +523,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         env_ = {};
     }
 
+    decals_atlas_.Finalize();
+
     LOGI("SceneManager: RebuildBVH!");
 
     RebuildBVH();
@@ -483,7 +547,7 @@ void SceneManager::Draw() {
     cam_.Perspective(60.0f, float(ctx_.w()) / ctx_.h(), NEAR_CLIP, FAR_CLIP);
     cam_.UpdatePlanes();
 
-    renderer_.DrawObjects(cam_, &nodes_[0], 0, &objects_[0], &obj_indices_[0], objects_.size(), env_);
+    renderer_.DrawObjects(cam_, &nodes_[0], 0, &objects_[0], &obj_indices_[0], objects_.size(), env_, decals_atlas_);
 }
 
 Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {

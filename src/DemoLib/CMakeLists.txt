@@ -13,7 +13,9 @@ set(SCENE_SOURCES	Scene/FrameBuf.h
                     Scene/SceneManager.h
                     Scene/SceneManager.cpp
 					Scene/SceneManager_BVH.cpp
-					Scene/SceneManager_PT.cpp)
+					Scene/SceneManager_PT.cpp
+					Scene/TextureAtlas.h
+					Scene/TextureAtlas.cpp)
 
 set(STATES_SOURCES  States/GSCreate.h
                     States/GSCreate.cpp

@@ -45,6 +45,7 @@ struct LightSource : public Ren::RefCounter {
 
 struct Decal : public Ren::RefCounter {
     Ren::Mat4f view, proj;
+    Ren::Vec4f diff, norm;
 };
 
 enum eObjectFlags {
@@ -73,8 +74,9 @@ using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 using TimingInfo = std::pair<TimePoint, TimePoint>;
 
 struct RenderInfo {
-    uint32_t lights_count = 0;
+    uint32_t lights_count = 0, decals_count = 0;
     uint32_t lights_data_size = 0,
+             decals_data_size = 0,
              cells_data_size = 0,
              items_data_size = 0;
 };

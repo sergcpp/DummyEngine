@@ -19,10 +19,11 @@ layout(binding = 2) uniform sampler2DShadow shadow_texture;
 layout(binding = 3) uniform sampler2D lm_direct_texture;
 layout(binding = 4) uniform sampler2D lm_indirect_texture;
 layout(binding = 5) uniform sampler2D lm_indirect_sh_texture[4];
-layout(binding = 9) uniform mediump samplerBuffer lights_buffer;
-layout(binding = 10) uniform mediump samplerBuffer decals_buffer;
-layout(binding = 11) uniform highp usamplerBuffer cells_buffer;
-layout(binding = 12) uniform highp usamplerBuffer items_buffer;
+layout(binding = 9) uniform sampler2D decals_texture;
+layout(binding = 10) uniform mediump samplerBuffer lights_buffer;
+layout(binding = 11) uniform mediump samplerBuffer decals_buffer;
+layout(binding = 12) uniform highp usamplerBuffer cells_buffer;
+layout(binding = 13) uniform highp usamplerBuffer items_buffer;
 
 layout (std140) uniform MatricesBlock {
     mat4 uMVPMatrix;
@@ -54,7 +55,7 @@ vec3 heatmap(float t) {
     return vec3(1.0) - r * r;
 }
 
-void main(void) {
+float GetVisibility(in vec2 lm_uvs, inout vec3 additional_light) {
     const vec2 poisson_disk[32] = vec2[32](
         vec2(-0.5, 0.0),
         vec2(0.0, 0.5),
@@ -97,58 +98,41 @@ void main(void) {
         vec2(-0.99, 0.1)
     );
 
-    vec3 normal = texture(normals_texture, aVertexUVs1_).xyz * 2.0 - 1.0;
-    normal = aVertexTBN_ * normal;
-    
-    vec2 lm_uvs = vec2(aVertexUVs2_.x, 1.0 - aVertexUVs2_.y);
-
     const float shadow_softness = 2.0 / 2048.0;
-
-    vec3 additional_light = vec3(0.0, 0.0, 0.0);
-
-    float lambert = max(dot(normal, sun_dir), 0.0);
+    
     float visibility = 0.0;
-    if (lambert > 0.00001) {
-        float frag_depth = gl_FragCoord.z / gl_FragCoord.w;
-        if (frag_depth < 8.0) {
-            for (int i = 0; i < 16; i++) {
-                visibility += texture(shadow_texture, aVertexShUVs_[0] + vec3(poisson_disk[i] * shadow_softness, 0.0)) / 16.0;
-            }
-        } else if (frag_depth < 24.0) {
-            for (int i = 0; i < 8; i++) {
-                visibility += texture(shadow_texture, aVertexShUVs_[1] + vec3(poisson_disk[i] * shadow_softness * 0.25, 0.0)) / 8.0;
-            }
-        } else if (frag_depth < 56.0) {
-            for (int i = 0; i < 4; i++) {
-                visibility += texture(shadow_texture, aVertexShUVs_[2] + vec3(poisson_disk[i] * shadow_softness * 0.125, 0.0)) / 4.0;
-            }
-        } else if (frag_depth < 120.0) {
-            visibility += texture(shadow_texture, aVertexShUVs_[3]);
-        } else {
-            // use directional lightmap
-            additional_light = texture(lm_direct_texture, lm_uvs).rgb;
+    
+    float frag_depth = gl_FragCoord.z / gl_FragCoord.w;
+    if (frag_depth < 8.0) {
+        for (int i = 0; i < 16; i++) {
+            visibility += texture(shadow_texture, aVertexShUVs_[0] + vec3(poisson_disk[i] * shadow_softness, 0.0)) / 16.0;
         }
+    } else if (frag_depth < 24.0) {
+        for (int i = 0; i < 8; i++) {
+            visibility += texture(shadow_texture, aVertexShUVs_[1] + vec3(poisson_disk[i] * shadow_softness * 0.25, 0.0)) / 8.0;
+        }
+    } else if (frag_depth < 56.0) {
+        for (int i = 0; i < 4; i++) {
+            visibility += texture(shadow_texture, aVertexShUVs_[2] + vec3(poisson_disk[i] * shadow_softness * 0.125, 0.0)) / 4.0;
+        }
+    } else if (frag_depth < 120.0) {
+        visibility += texture(shadow_texture, aVertexShUVs_[3]);
+    } else {
+        // use directional lightmap
+        additional_light += texture(lm_direct_texture, lm_uvs).rgb;
     }
     
-    vec3 indirect_col = texture(lm_indirect_texture, lm_uvs).rgb;
-    
-    vec3 sh_l_00 = texture(lm_indirect_sh_texture[0], lm_uvs).rgb;
-    vec3 sh_l_10 = texture(lm_indirect_sh_texture[1], lm_uvs).rgb;
-    vec3 sh_l_11 = texture(lm_indirect_sh_texture[2], lm_uvs).rgb;
-    vec3 sh_l_12 = texture(lm_indirect_sh_texture[3], lm_uvs).rgb;
-    
-    indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
-    
-    indirect_col *= 0.001;
-    visibility *= 0.001;
-    
+    return visibility;
+}
+
+void main(void) {
     const float n = 0.5;
     const float f = 10000.0;
     
     float depth = 2.0 * gl_FragCoord.z - 1.0;
     depth = 2.0 * n * f / (f + n - depth * (f - n));
     
-    float k = log2(depth / n) / log2(f / n);
+    float k = log2(depth / n) / log2(1.0 + f / n);
     int slice = int(floor(k * 24.0));
     
     int ix = int(gl_FragCoord.x);
@@ -158,6 +142,66 @@ void main(void) {
     uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
     uvec2 offset_and_lcount = uvec2(cell_data.x & 0x00ffffffu, cell_data.x >> 24);
     uvec2 dcount_and_pcount = uvec2(cell_data.y & 0x000000ffu, 0);
+    
+    vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma));
+    vec3 normal_color = texture(normals_texture, aVertexUVs1_).xyz;
+    
+    vec3 dp_dx = dFdx(aVertexPos_);
+    vec3 dp_dy = dFdy(aVertexPos_);
+    
+    for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.x; i++) {
+        uint item_data = texelFetch(items_buffer, int(i)).x;
+        int di = int((item_data >> 12) & 0x00000fffu);
+        
+        mat4 de_proj;
+        de_proj[0] = texelFetch(decals_buffer, di * 5 + 0);
+        de_proj[1] = texelFetch(decals_buffer, di * 5 + 1);
+        de_proj[2] = texelFetch(decals_buffer, di * 5 + 2);
+        de_proj[3] = vec4(0.0, 0.0, 0.0, 1.0);
+        de_proj = transpose(de_proj);
+        
+        vec4 pp = de_proj * vec4(aVertexPos_, 1.0);
+        pp /= pp[3];
+        
+        vec3 app = abs(pp.xyz);
+        vec2 uvs = pp.xy * 0.5 + 0.5;
+        
+        vec2 duv_dx = 0.5 * (de_proj * vec4(dp_dx, 0.0)).xy;
+        vec2 duv_dy = 0.5 * (de_proj * vec4(dp_dy, 0.0)).xy;
+        
+        if (app.x < 1.0 && app.y < 1.0 && app.z < 1.0) {
+            vec4 diff_uvs_tr = texelFetch(decals_buffer, di * 5 + 3);
+            float decal_influence = 0.0;
+            
+            if (diff_uvs_tr.z > 0.0) {
+                vec2 diff_uvs = diff_uvs_tr.xy + diff_uvs_tr.zw * uvs;
+                
+                vec2 _duv_dx = diff_uvs_tr.zw * duv_dx;
+                vec2 _duv_dy = diff_uvs_tr.zw * duv_dy;
+            
+                vec4 decal_diff = textureGrad(decals_texture, diff_uvs, _duv_dx, _duv_dy);
+                decal_influence = decal_diff.a;
+                albedo_color = mix(albedo_color, decal_diff.xyz, decal_influence);
+            }
+            
+            vec4 norm_uvs_tr = texelFetch(decals_buffer, di * 5 + 4);
+            
+            if (norm_uvs_tr.z > 0.0) {
+                vec2 norm_uvs = norm_uvs_tr.xy + norm_uvs_tr.zw * uvs;
+                
+                vec2 _duv_dx = norm_uvs_tr.zw * duv_dx;
+                vec2 _duv_dy = norm_uvs_tr.zw * duv_dy;
+            
+                vec4 decal_norm = textureGrad(decals_texture, norm_uvs, _duv_dx, _duv_dy);
+                normal_color = mix(normal_color, decal_norm.xyz, decal_influence);
+            }
+        }
+    }
+    
+    vec3 normal = normalize(normal_color * 2.0 - 1.0);
+    normal = aVertexTBN_ * normal;
+    
+    vec3 additional_light = vec3(0.0, 0.0, 0.0);
     
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
         uint item_data = texelFetch(items_buffer, int(i)).x;
@@ -178,7 +222,7 @@ void main(void) {
         atten = (atten - LIGHT_ATTEN_CUTOFF / col_and_brightness.w) / (1.0 - LIGHT_ATTEN_CUTOFF);
         atten = max(atten, 0.0);
         
-        float _dot1 = max(dot(L, aVertexTBN_[2]), 0.0);
+        float _dot1 = max(dot(L, normal), 0.0);
         float _dot2 = dot(L, dir_and_spot.xyz);
         
         atten = _dot1 * atten;
@@ -187,38 +231,43 @@ void main(void) {
         }
     }
     
-    for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.x; i++) {
-        uint item_data = texelFetch(items_buffer, int(i)).x;
-        int di = int(item_data & 0x00fff000u);
-        
-        mat4 de_proj;
-        de_proj[0] = texelFetch(decals_buffer, di * 4 + 0);
-        de_proj[1] = texelFetch(decals_buffer, di * 4 + 1);
-        de_proj[2] = texelFetch(decals_buffer, di * 4 + 2);
-        de_proj[3] = texelFetch(decals_buffer, di * 4 + 3);
-        
-        vec4 pp = de_proj * vec4(aVertexPos_, 1.0);
-        pp /= pp[3];
-        
-        vec3 app = abs(pp.xyz);
-        
-        if (app.x < 1.0 && app.y < 1.0) {
-            additional_light += vec3(pp.xy * 0.5 + 0.5, 0.0);
-        }
-        
-        /*if (app.x < 1.0 && app.y < 1.0) {
-            additional_light += vec3(1.0, 0.0, 0.0);
-        } else {
-            additional_light += vec3(0.0, 1.0, 0.0);
-        }*/
+    vec2 lm_uvs = vec2(aVertexUVs2_.x, 1.0 - aVertexUVs2_.y);
+    
+    float lambert = max(dot(normal, sun_dir), 0.0);
+    float visibility = 0.0;
+    if (lambert > 0.00001) {
+        visibility = GetVisibility(lm_uvs, additional_light);
     }
     
-    vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma));
+    vec3 indirect_col = texture(lm_indirect_texture, lm_uvs).rgb;
+    
+    vec3 sh_l_00 = texture(lm_indirect_sh_texture[0], lm_uvs).rgb;
+    vec3 sh_l_10 = texture(lm_indirect_sh_texture[1], lm_uvs).rgb;
+    vec3 sh_l_11 = texture(lm_indirect_sh_texture[2], lm_uvs).rgb;
+    vec3 sh_l_12 = texture(lm_indirect_sh_texture[3], lm_uvs).rgb;
+    
+    indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
+    
+    indirect_col *= 0.001;
+    visibility *= 0.001;
+    
     vec3 diffuse_color = albedo_color * (sun_col * lambert * visibility + indirect_col + additional_light);
     
     outColor = vec4(diffuse_color, 1.0);
     outNormal.xy += (uVPMatrix * vec4(normal, 0.0)).xy;
     outSpecular = vec4(0.0, 0.5, 0.5, 1.0);
     
-    //outColor = vec4(depth, depth, depth, 1.0);
+    //outColor = outColor * 0.0001 + vec4(normal_color, 1.0);
+    
+    //outColor = outColor * 0.0001;
+    
+    //int yline = (iy * GRID_RES_Y / resy)
+    
+    /*if (dcount_and_pcount.x == 1u) {
+        outColor += vec4(0.0001, 0.0, 0.0, 1.0);
+    } else if (slice == 6) {
+        outColor += vec4(0.0, 0.0001, 0.0, 1.0);
+    } else if (slice == 7) {
+        outColor += vec4(0.0, 0.0, 0.0001, 1.0);
+    }*/
 }

@@ -7,6 +7,7 @@
 #include <Sys/Json.h>
 
 #include "SceneData.h"
+#include "TextureAtlas.h"
 
 class Renderer;
 
@@ -59,6 +60,8 @@ private:
 
     bool cur_lm_indir_ = false;
     size_t cur_lm_obj_ = 0;
+
+    TextureAtlas decals_atlas_;
 
     Ren::Storage<Transform> transforms_;
     Ren::Storage<LightSource> lights_;

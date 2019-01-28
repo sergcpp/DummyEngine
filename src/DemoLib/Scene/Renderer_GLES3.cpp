@@ -80,16 +80,22 @@ namespace RendererInternal {
     const int LM_DIRECT_SLOT = 3;
     const int LM_INDIR_SLOT = 4;
     const int LM_INDIR_SH_SLOT = 5;
-    const int LIGHTS_BUFFER_SLOT = 9;
-    const int DECALS_BUFFER_SLOT = 10;
-    const int CELLS_BUFFER_SLOT = 11;
-    const int ITEMS_BUFFER_SLOT = 12;
+    const int DECALSMAP_SLOT = 9;
+    const int LIGHTS_BUFFER_SLOT = 10;
+    const int DECALS_BUFFER_SLOT = 11;
+    const int CELLS_BUFFER_SLOT = 12;
+    const int ITEMS_BUFFER_SLOT = 13;
 
     const int LIGHTS_BUFFER_BINDING = 0;
 
     inline void BindTexture(int slot, uint32_t tex) {
         glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
         glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
+    }
+
+    inline void BindTextureMs(int slot, uint32_t tex) {
+        glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, (GLuint)tex);
     }
 
     const int TEMP_BUF_SIZE = 256;
@@ -412,7 +418,8 @@ void Renderer::DestroyRendererInternal() {
 void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const LightSourceItem *lights, size_t lights_count,
                                    const DecalItem *decals, size_t decals_count,
                                    const CellData *cells, const ItemData *items, size_t item_count, const Ren::Mat4f shadow_transforms[4],
-                                   const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env) {
+                                   const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env,
+                                   const TextureAtlas *decals_atlas) {
     using namespace Ren;
     using namespace RendererInternal;
 
@@ -449,6 +456,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
         }
+
+        render_infos_[1].decals_count = (uint32_t)decals_count;
+        render_infos_[1].decals_data_size = (uint32_t)decals_mem_size;
 
         // Update cells buffer
         size_t cells_mem_size = CELLS_COUNT * sizeof(CellData);
@@ -677,6 +687,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             glActiveTexture((GLenum)(GL_TEXTURE0 + ITEMS_BUFFER_SLOT));
             glBindTexture(GL_TEXTURE_BUFFER, (GLuint)items_tbo_);
 
+            if (decals_atlas) {
+                BindTexture(DECALSMAP_SLOT, decals_atlas->tex_id());
+            }
+
             cur_program = p;
         }
 
@@ -754,10 +768,27 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDrawElements(GL_TRIANGLES, tris->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(mesh->indices_offset() + tris->offset));
     }
 
+#if !defined(__ANDROID__)
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
+
     //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, LIGHTS_BUFFER_BINDING, 0);
     glBindVertexArray((GLuint)temp_vao_);
 
-    glDisable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    
+    if (debug_deffered_) {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        glDepthMask(GL_TRUE);
+
+        BlitBuffer(0.0f, -1.0f, 0.5f, 0.5f, down_buf_, 0, 1, 400.0f);
+    } else {
+        glDisable(GL_DEPTH_TEST);
+    }
+
     glDepthMask(GL_FALSE);
 
     {   // prepare blured buffer
@@ -795,8 +826,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
 
         if (clean_buf_.msaa > 1) {
-            glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.attachments[0].tex);
+            BindTextureMs(DIFFUSEMAP_SLOT, clean_buf_.attachments[0].tex);
         } else {
             BindTexture(DIFFUSEMAP_SLOT, clean_buf_.attachments[0].tex);
         }
@@ -900,10 +930,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 
-#if !defined(__ANDROID__)
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-#endif
-
     {   // Blit main framebuffer
         if (clean_buf_.msaa > 1) {
             cur_program = blit_combine_ms_prog_.get();
@@ -945,8 +971,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glUniform1f(U_EXPOSURE, exposure);
 
         if (clean_buf_.msaa > 1) {
-            glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.attachments[0].tex);
+            BindTextureMs(DIFFUSEMAP_SLOT, clean_buf_.attachments[0].tex);
         } else {
             BindTexture(DIFFUSEMAP_SLOT, clean_buf_.attachments[0].tex);
         }
@@ -959,7 +984,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_UVS1);
     }
 
-    if (debug_lights_) {
+    if (debug_lights_ || debug_decals_) {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -972,6 +997,12 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glUniform1i(U_RESX, w_);
         glUniform1i(U_RESY, h_);
+
+        if (debug_lights_) {
+            glUniform1i(18, 0);
+        } else if (debug_decals_) {
+            glUniform1i(18, 1);
+        }
 
         const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,
                                       1.0f, 1.0f,         -1.0f, 1.0f };
@@ -995,8 +1026,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)));
 
         if (clean_buf_.msaa > 1) {
-            glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, clean_buf_.depth_tex.GetValue());
+            BindTextureMs(DIFFUSEMAP_SLOT, clean_buf_.depth_tex.GetValue());
         } else {
             BindTexture(DIFFUSEMAP_SLOT, clean_buf_.depth_tex.GetValue());
         }
@@ -1103,10 +1133,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_UVS1);
     }
 
-    if (debug_down_) {
-        BlitBuffer(-1.0f, -1.0f, 1.0f, 1.0f, down_buf_, 0, 1, 400.0f);
-    }
-
     if (debug_reduce_) {
         BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, reduced_buf_, 0, 1, 400.0f);
     }
@@ -1117,6 +1143,16 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     if (debug_blur_) {
         BlitBuffer(-1.0f, -1.0f, 1.0f, 1.0f, blur_buf1_, 0, 1, 400.0f);
+    }
+
+    if (debug_decals_ && decals_atlas) {
+        int resx = decals_atlas->params().w,
+            resy = decals_atlas->params().h;
+
+        float k = float(w_) / h_;
+        k *= float(resy) / resx;
+
+        BlitTexture(-1.0f, -1.0f, 1.0f, 1.0f * k, decals_atlas->tex_id(), resx, resy);
     }
 
     glBindVertexArray(0);
@@ -1259,10 +1295,62 @@ void Renderer::BlitBuffer(float px, float py, float sx, float sy, const FrameBuf
         glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
 
         if (buf.msaa > 1) {
-            glActiveTexture((GLenum)(GL_TEXTURE0 + DIFFUSEMAP_SLOT));
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, buf.attachments[i].tex);
+            BindTextureMs(DIFFUSEMAP_SLOT, buf.attachments[i].tex);
         } else {
             BindTexture(DIFFUSEMAP_SLOT, buf.attachments[i].tex);
+        }
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+    }
+
+    glDisableVertexAttribArray(A_POS);
+    glDisableVertexAttribArray(A_UVS1);
+}
+
+void Renderer::BlitTexture(float px, float py, float sx, float sy, uint32_t tex_id, int resx, int resy, bool is_ms) {
+    using namespace RendererInternal;
+
+    Ren::Program *cur_program = nullptr;
+
+    if (is_ms) {
+        cur_program = blit_ms_prog_.get();
+    } else {
+        cur_program = blit_prog_.get();
+    }
+    glUseProgram(cur_program->prog_id());
+
+    {
+        const float positions[] = { px, py,               px + sx, py,
+                                    px + sx, py + sy,     px, py + sy };
+
+        const float uvs[] = {
+            0.0f, 0.0f,                 (float)resx, 0.0f,
+            (float)resx, (float)resy,   0.0f, (float)resy
+        };
+
+        const uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
+
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(indices), indices);
+
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
+
+        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+        glUniform1f(cur_program->uniform(4).loc, 1.0f);
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
+
+        if (is_ms) {
+            BindTextureMs(DIFFUSEMAP_SLOT, tex_id);
+        } else {
+            BindTexture(DIFFUSEMAP_SLOT, tex_id);
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));

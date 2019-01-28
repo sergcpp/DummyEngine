@@ -90,8 +90,9 @@ Renderer::~Renderer() {
 }
 
 void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
-                           const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env) {
-    SwapDrawLists(cam, nodes, root_index, objects, obj_indices, object_count, env);
+                           const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env,
+                           const TextureAtlas &decals_atlas) {
+    SwapDrawLists(cam, nodes, root_index, objects, obj_indices, object_count, env, &decals_atlas);
     auto t1 = std::chrono::high_resolution_clock::now();
     {
         size_t drawables_count = draw_lists_[0].size();
@@ -107,6 +108,8 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
 
         size_t items_count = items_count_[0];
         const auto *items = (items_count == 0) ? nullptr : &items_[0][0];
+
+        const auto *p_decals_atlas = decals_atlas_[0];
 
         Ren::Mat4f shadow_transforms[4];
         size_t shadow_drawables_count[4];
@@ -133,7 +136,7 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
                     desc[1].filter = Ren::BilinearNoMipmap;
                     desc[1].repeat = Ren::ClampToEdge;
                 }
-                {   // 4-component specular
+                {   // 4-component specular (alpha is roughness)
                     desc[2].format = Ren::RawRGBA8888;
                     desc[2].filter = Ren::BilinearNoMipmap;
                     desc[2].repeat = Ren::ClampToEdge;
@@ -161,14 +164,15 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
         }
 
         DrawObjectsInternal(drawables, drawables_count, lights, lights_count, decals, decals_count,
-                            cells, items, items_count, shadow_transforms, shadow_drawables, shadow_drawables_count, env_);
+                            cells, items, items_count, shadow_transforms, shadow_drawables, shadow_drawables_count, env_,
+                            p_decals_atlas);
     }
     auto t2 = std::chrono::high_resolution_clock::now();
     timings_ = { t1, t2 };
 }
 
 void Renderer::WaitForBackgroundThreadIteration() {
-    SwapDrawLists(draw_cam_, nullptr, 0, nullptr, nullptr, 0, env_);
+    SwapDrawLists(draw_cam_, nullptr, 0, nullptr, nullptr, 0, env_, nullptr);
 }
 
 void Renderer::BackgroundProc() {
@@ -243,7 +247,7 @@ void Renderer::BackgroundProc() {
 
                     if (!skip_check) {
                         auto res = draw_cam_.CheckFrustumVisibility(n->bbox[0], n->bbox[1]);
-                        if (res == Ren::NotVisible) continue;
+                        if (res == Ren::Invisible) continue;
                         else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
                     }
 
@@ -259,7 +263,7 @@ void Renderer::BackgroundProc() {
                                 const auto *tr = obj.tr.get();
 
                                 if (!skip_check &&
-                                    draw_cam_.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::NotVisible) continue;
+                                    draw_cam_.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
 
                                 const Ren::Mat4f &world_from_object = tr->mat;
 
@@ -311,7 +315,7 @@ void Renderer::BackgroundProc() {
                     if (!skip_check) {
                         const float bbox_points[8][3] = { BBOX_POINTS(n->bbox[0], n->bbox[1]) };
                         auto res = draw_cam_.CheckFrustumVisibility(bbox_points);
-                        if (res == Ren::NotVisible) continue;
+                        if (res == Ren::Invisible) continue;
                         else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
 
                         if (culling_enabled_) {
@@ -355,7 +359,7 @@ void Renderer::BackgroundProc() {
 
                                 if (!skip_check) {
                                     const float bbox_points[8][3] = { BBOX_POINTS(tr->bbox_min_ws, tr->bbox_max_ws) };
-                                    if (draw_cam_.CheckFrustumVisibility(bbox_points) == Ren::NotVisible) continue;
+                                    if (draw_cam_.CheckFrustumVisibility(bbox_points) == Ren::Invisible) continue;
 
                                     if (culling_enabled_) {
                                         const auto &cam_pos = draw_cam_.world_position();
@@ -439,14 +443,14 @@ void Renderer::BackgroundProc() {
                                                              plane.n[2] * pos[2] + plane.d;
 
                                                 if (dist < -light->influence) {
-                                                    res = Ren::NotVisible;
+                                                    res = Ren::Invisible;
                                                     break;
                                                 } else if (std::abs(dist) < light->influence) {
                                                     res = Ren::PartiallyVisible;
                                                 }
                                             }
 
-                                            if (res == Ren::NotVisible) continue;
+                                            if (res == Ren::Invisible) continue;
                                         }
 
                                         ls_list.emplace_back();
@@ -471,43 +475,71 @@ void Renderer::BackgroundProc() {
 
                                         const auto *decal = obj.de[i].get();
 
-                                        // TODO: check visibility
-
                                         const Ren::Mat4f &view_from_object = decal->view,
                                                          &clip_from_view = decal->proj;
 
                                         Ren::Mat4f view_from_world = view_from_object * object_from_world,
                                                    clip_from_world = clip_from_view * view_from_world;
 
-                                        de_list.emplace_back();
-                                        ditem_to_decal_.push_back(decal);
-
-                                        auto &de = de_list.back();
-
-                                        memcpy(&de.mat[0][0], &clip_from_world[0][0], 16 * sizeof(float));
-
                                         Ren::Mat4f world_from_clip = Ren::Inverse(clip_from_world);
 
-                                        static const Ren::Vec4f points[] = {
-                                            { -1.0f, -1.0f, -1.0f, 1.0f },{ -1.0f, 1.0f, -1.0f, 1.0f },
-                                            { 1.0f, 1.0f, -1.0f, 1.0f },{ 1.0f, -1.0f, -1.0f, 1.0f },
+                                        Ren::Vec4f bbox_points[] = {
+                                            { -1.0f, -1.0f, -1.0f, 1.0f }, { -1.0f, 1.0f, -1.0f, 1.0f },
+                                            { 1.0f, 1.0f, -1.0f, 1.0f }, { 1.0f, -1.0f, -1.0f, 1.0f },
 
-                                            { -1.0f, -1.0f, 1.0f, 1.0f },{ -1.0f, 1.0f, 1.0f, 1.0f },
-                                            { 1.0f, 1.0f, 1.0f, 1.0f },{ 1.0f, -1.0f, 1.0f, 1.0f }
+                                            { -1.0f, -1.0f, 1.0f, 1.0f }, { -1.0f, 1.0f, 1.0f, 1.0f },
+                                            { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, -1.0f, 1.0f, 1.0f }
                                         };
 
                                         Ren::Vec3f bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
                                                    bbox_max = Ren::Vec3f{ std::numeric_limits<float>::lowest() };
 
                                         for (int k = 0; k < 8; k++) {
-                                            Ren::Vec4f tr_point = world_from_clip * points[k];
-                                            tr_point /= tr_point[3];
+                                            bbox_points[k] = world_from_clip * bbox_points[k];
+                                            bbox_points[k] /= bbox_points[k][3];
 
-                                            bbox_min = Ren::Min(bbox_min, Ren::Vec3f{ tr_point });
-                                            bbox_max = Ren::Max(bbox_max, Ren::Vec3f{ tr_point });
+                                            bbox_min = Ren::Min(bbox_min, Ren::Vec3f{ bbox_points[k] });
+                                            bbox_max = Ren::Max(bbox_max, Ren::Vec3f{ bbox_points[k] });
                                         }
 
-                                        decals_boxes_.push_back({ bbox_min, bbox_max });
+                                        auto res = Ren::FullyVisible;
+
+                                        if (!skip_check) {
+                                            for (int p = Ren::LeftPlane; p <= Ren::FarPlane; p++) {
+                                                const auto &plane = draw_cam_.frustum_plane(p);
+
+                                                int in_count = 8;
+
+                                                for (int k = 0; k < 8; k++) {
+                                                    float dist = plane.n[0] * bbox_points[k][0] +
+                                                        plane.n[1] * bbox_points[k][1] +
+                                                        plane.n[2] * bbox_points[k][2] + plane.d;
+                                                    if (dist < 0.0f) {
+                                                        in_count--;
+                                                    }
+                                                }
+
+                                                if (in_count == 0) {
+                                                    res = Ren::Invisible;
+                                                    break;
+                                                } else if (in_count != 8) {
+                                                    res = Ren::PartiallyVisible;
+                                                }
+                                            }
+                                        }
+
+                                        if (res != Ren::Invisible) {
+                                            de_list.emplace_back();
+                                            ditem_to_decal_.push_back(decal);
+                                            decals_boxes_.push_back({ bbox_min, bbox_max });
+
+                                            Ren::Mat4f clip_from_world_transposed = Ren::Transpose(clip_from_world);
+
+                                            auto &de = de_list.back();
+                                            memcpy(&de.mat[0][0], &clip_from_world_transposed[0][0], 12 * sizeof(float));
+                                            memcpy(&de.diff[0], &decal->diff[0], 4 * sizeof(float));
+                                            memcpy(&de.norm[0], &decal->norm[0], 4 * sizeof(float));
+                                        }
                                     }
                                 }
                             }
@@ -594,7 +626,7 @@ void Renderer::BackgroundProc() {
                     const auto *n = &nodes_[cur];
 
                     auto res = shadow_cam.CheckFrustumVisibility(n->bbox[0], n->bbox[1]);
-                    if (res == Ren::NotVisible) continue;
+                    if (res == Ren::Invisible) continue;
                     else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
 
                     if (!n->prim_count) {
@@ -609,7 +641,7 @@ void Renderer::BackgroundProc() {
                                 const auto *tr = obj.tr.get();
 
                                 if (!skip_check &&
-                                    shadow_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::NotVisible) continue;
+                                    shadow_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
 
                                 const Ren::Mat4f &world_from_object = tr->mat;
 
@@ -717,7 +749,8 @@ void Renderer::BackgroundProc() {
 }
 
 void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_node,
-                             const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env) {
+                             const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env,
+                             const TextureAtlas *decals_atlas) {
     bool should_notify = false;
 
     std::unique_lock<std::mutex> lock(mtx_);
@@ -734,6 +767,8 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
         std::swap(cells_[0], cells_[1]);
         std::swap(items_[0], items_[1]);
         std::swap(items_count_[0], items_count_[1]);
+        std::swap(decals_atlas_[0], decals_atlas_[1]);
+        decals_atlas_[1] = decals_atlas;
         nodes_ = nodes;
         root_node_ = root_node;
         objects_ = objects;
@@ -796,12 +831,12 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 first_sf->planes[k].n[1] * l_pos[1] +
                 first_sf->planes[k].n[2] * l_pos[2] + first_sf->planes[k].d;
             if (dist < -influence) {
-                visible_to_slice = Ren::NotVisible;
+                visible_to_slice = Ren::Invisible;
             }
         }
 
         // Skip light for whole slice
-        if (visible_to_slice == Ren::NotVisible) continue;
+        if (visible_to_slice == Ren::Invisible) continue;
 
         for (int row_offset = 0; row_offset < frustums_per_slice; row_offset += GRID_RES_X) {
             const auto *first_line_sf = first_sf + row_offset;
@@ -814,12 +849,12 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                     first_line_sf->planes[k].n[1] * l_pos[1] +
                     first_line_sf->planes[k].n[2] * l_pos[2] + first_line_sf->planes[k].d;
                 if (dist < -influence) {
-                    visible_to_line = Ren::NotVisible;
+                    visible_to_line = Ren::Invisible;
                 }
             }
 
             // Skip light for whole line
-            if (visible_to_line == Ren::NotVisible) continue;
+            if (visible_to_line == Ren::Invisible) continue;
 
             for (int col_offset = 0; col_offset < GRID_RES_X; col_offset++) {
                 const auto *sf = first_line_sf + col_offset;
@@ -833,11 +868,11 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                         sf->planes[k].n[2] * l_pos[2] + sf->planes[k].d;
 
                     if (dist < -influence) {
-                        res = Ren::NotVisible;
+                        res = Ren::Invisible;
                     }
                 }
 
-                if (res != Ren::NotVisible) {
+                if (res != Ren::Invisible) {
                     const int index = i + row_offset + col_offset;
                     auto &cell = cells[index];
                     if (cell.light_count < MAX_LIGHTS_PER_CELL) {
@@ -870,13 +905,13 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
             }
 
             if (in_count == 0) {
-                visible_to_slice = Ren::NotVisible;
+                visible_to_slice = Ren::Invisible;
                 break;
             }
         }
 
         // Skip decal for whole slice
-        if (visible_to_slice == Ren::NotVisible) continue;
+        if (visible_to_slice == Ren::Invisible) continue;
 
         for (int row_offset = 0; row_offset < frustums_per_slice; row_offset += GRID_RES_X) {
             const auto *first_line_sf = first_sf + row_offset;
@@ -897,13 +932,13 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 }
 
                 if (in_count == 0) {
-                    visible_to_line = Ren::NotVisible;
+                    visible_to_line = Ren::Invisible;
                     break;
                 }
             }
 
             // Skip decal for whole line
-            if (visible_to_line == Ren::NotVisible) continue;
+            if (visible_to_line == Ren::Invisible) continue;
 
             for (int col_offset = 0; col_offset < GRID_RES_X; col_offset++) {
                 const auto *sf = first_line_sf + col_offset;
@@ -924,12 +959,12 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                     }
 
                     if (in_count == 0) {
-                        res = Ren::NotVisible;
+                        res = Ren::Invisible;
                         break;
                     }
                 }
 
-                if (res != Ren::NotVisible) {
+                if (res != Ren::Invisible) {
                     const int index = i + row_offset + col_offset;
                     auto &cell = cells[index];
                     if (cell.decal_count < MAX_DECALS_PER_CELL) {
@@ -945,24 +980,26 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
     for (int s = 0; s < frustums_per_slice; s++) {
         auto &cell = cells[i + s];
 
-        if (cell.decal_count) {
+        if (cell.decal_count == 2) {
             volatile int ii = 0;
         }
 
         int local_items_count = std::max((int)cell.light_count, (int)cell.decal_count);
 
-        cell.item_offset = items_count.fetch_add(local_items_count);
-        if (cell.item_offset > MAX_ITEMS_TOTAL) {
-            cell.item_offset = 0;
-            cell.light_count = 0;
-            cell.decal_count = 0;
-        } else {
-            int free_items_left = MAX_ITEMS_TOTAL - cell.item_offset;
+        if (local_items_count) {
+            cell.item_offset = items_count.fetch_add(local_items_count);
+            if (cell.item_offset > MAX_ITEMS_TOTAL) {
+                cell.item_offset = 0;
+                cell.light_count = 0;
+                cell.decal_count = 0;
+            } else {
+                int free_items_left = MAX_ITEMS_TOTAL - cell.item_offset;
 
-            if ((int)cell.light_count > free_items_left) cell.light_count = free_items_left;
-            if ((int)cell.decal_count > free_items_left) cell.decal_count = free_items_left;
+                if ((int)cell.light_count > free_items_left) cell.light_count = free_items_left;
+                if ((int)cell.decal_count > free_items_left) cell.decal_count = free_items_left;
 
-            memcpy(&items[cell.item_offset], &local_items[s][0], local_items_count * sizeof(ItemData));
+                memcpy(&items[cell.item_offset], &local_items[s][0], local_items_count * sizeof(ItemData));
+            }
         }
     }
 }

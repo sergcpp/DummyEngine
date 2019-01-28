@@ -18,6 +18,8 @@ namespace Sys {
     class ThreadPool;
 }
 
+class TextureAtlas;
+
 struct DrawableItem {
     const Ren::Mat4f    *clip_from_object, *world_from_object, *sh_clip_from_object[4];
     const Ren::Material *mat;
@@ -44,9 +46,10 @@ struct LightSourceItem {
 static_assert(sizeof(LightSourceItem) == 48, "!");
 
 struct DecalItem {
-    float mat[4][4];
+    float mat[3][4];
+    float diff[4], norm[4];
 };
-static_assert(sizeof(DecalItem) == 16 * sizeof(float), "!");
+static_assert(sizeof(DecalItem) == 20 * sizeof(float), "!");
 
 struct CellData {
     uint32_t item_offset : 24;
@@ -109,14 +112,14 @@ public:
     void toggle_debug_lights() {
         debug_lights_ = !debug_lights_;
     }
+    void toggle_debug_decals() {
+        debug_decals_ = !debug_decals_;
+    }
     void toggle_debug_deffered() {
         debug_deffered_ = !debug_deffered_;
     }
     void toggle_debug_blur() {
         debug_blur_ = !debug_blur_;
-    }
-    void toggle_debug_down() {
-        debug_down_ = !debug_down_;
     }
 
     TimingInfo timings() const {
@@ -136,11 +139,13 @@ public:
     }
 
     void DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
-                     const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env);
+                     const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env,
+                     const TextureAtlas &decals_atlas);
     void WaitForBackgroundThreadIteration();
 
     void BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format);
     void BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf, int first_att, int att_count, float multiplier = 1.0f);
+    void BlitTexture(float px, float py, float sx, float sy, uint32_t tex_id, int resx, int resy, bool is_ms = false);
 private:
     Ren::Context &ctx_;
     std::shared_ptr<Sys::ThreadPool> threads_;
@@ -152,7 +157,7 @@ private:
     FrameBuf clean_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_;
     int w_ = 0, h_ = 0;
 
-    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false, debug_deffered_ = false, debug_blur_ = false, debug_down_ = false;
+    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false, debug_deffered_ = false, debug_blur_ = false, debug_decals_ = false;
     bool culling_enabled_ = true;
 
     const bvh_node_t *nodes_ = nullptr;
@@ -166,6 +171,7 @@ private:
     std::vector<DecalItem> decals_[2];
     std::vector<CellData> cells_[2];
     std::vector<ItemData> items_[2];
+    const TextureAtlas *decals_atlas_[2] = {};
     int items_count_[2] = {};
     std::vector<uint32_t> object_to_drawable_;
     std::vector<const LightSource *> litem_to_lsource_;
@@ -200,14 +206,16 @@ private:
     std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];
 
     void SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_node,
-                       const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env);
+                       const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env,
+                       const TextureAtlas *decals_atlas);
 
     void InitRendererInternal();
     void DestroyRendererInternal();
     void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const LightSourceItem *lights, size_t lights_count,
                              const DecalItem *decals, size_t decals_count,
                              const CellData *cells, const ItemData *items, size_t item_count, const Ren::Mat4f shadow_transforms[4],
-                             const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env);
+                             const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env,
+                             const TextureAtlas *decals_atlas);
 
     std::thread background_thread_;
     std::mutex mtx_;
