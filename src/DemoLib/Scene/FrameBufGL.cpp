@@ -33,6 +33,8 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_R16F, w, h, GL_TRUE);
             } else if (att.format == Ren::RawRG16F) {
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RG16F, w, h, GL_TRUE);
+            } else if (att.format == Ren::RawRG32F) {
+                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RG32F, w, h, GL_TRUE);
             } else if (att.format == Ren::RawRGB16F) {
                 glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB16F, w, h, GL_TRUE);
             } else if (att.format == Ren::RawRGBA16F) {
@@ -63,6 +65,8 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, w, h, 0, GL_RED, GL_FLOAT, NULL);
             } else if (att.format == Ren::RawRG16F) {
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, w, h, 0, GL_RG, GL_FLOAT, NULL);
+            } else if (att.format == Ren::RawRG32F) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, w, h, 0, GL_RG, GL_FLOAT, NULL);
             } else if (att.format == Ren::RawRGB16F) {
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_HALF_FLOAT, NULL);
             } else if (att.format == Ren::RawRGBA16F) {
@@ -176,8 +180,8 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         }
 
-        glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, _depth_tex, 0);
 

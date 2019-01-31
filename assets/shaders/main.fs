@@ -27,7 +27,7 @@ layout(binding = 13) uniform highp usamplerBuffer items_buffer;
 
 layout (std140) uniform MatricesBlock {
     mat4 uMVPMatrix;
-    mat4 uVPMatrix;
+    mat4 uVMatrix;
     mat4 uMMatrix;
     mat4 uShadowMatrix[4];
 };
@@ -199,7 +199,7 @@ void main(void) {
     }
     
     vec3 normal = normalize(normal_color * 2.0 - 1.0);
-    normal = aVertexTBN_ * normal;
+    normal = aVertexTBN_[2];// * normal;
     
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
     
@@ -254,8 +254,8 @@ void main(void) {
     vec3 diffuse_color = albedo_color * (sun_col * lambert * visibility + indirect_col + additional_light);
     
     outColor = vec4(diffuse_color, 1.0);
-    outNormal.xy += (uVPMatrix * vec4(normal, 0.0)).xy;
-    outSpecular = vec4(0.0, 0.5, 0.5, 1.0);
+    outNormal.xy += (uVMatrix * vec4(normal, 0.0)).xy;
+    outSpecular = vec4(0.0, 0.5, 0.5, 0.0);
     
     //outColor = outColor * 0.0001 + vec4(normal_color, 1.0);
     

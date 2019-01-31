@@ -131,7 +131,7 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
                     desc[0].filter = Ren::NoFilter;
                     desc[0].repeat = Ren::ClampToEdge;
                 }
-                {   // Clip-space normal
+                {   // View-space normal
                     desc[1].format = Ren::RawRG16F;
                     desc[1].filter = Ren::BilinearNoMipmap;
                     desc[1].repeat = Ren::ClampToEdge;
@@ -229,7 +229,8 @@ void Renderer::BackgroundProc() {
             Ren::Mat4f view_from_identity = view_from_world * Ren::Mat4f{ 1.0f },
                        clip_from_identity = clip_from_view * view_from_identity;
 
-            tr_list.push_back(clip_from_identity);
+            tr_list.push_back(view_from_identity);
+            tr_list.push_back(clip_from_view);
 
             const uint32_t skip_check_bit = (1 << 31);
             const uint32_t index_bits = ~skip_check_bit;

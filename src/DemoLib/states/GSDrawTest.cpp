@@ -24,7 +24,7 @@ const float FORWARD_SPEED = 0.5f;
 
 const int MAX_CMD_LINES = 8;
 
-const char SCENE_NAME[] = "assets/scenes/jap_house2.json";
+const char SCENE_NAME[] = "assets/scenes/jap_house.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
@@ -193,13 +193,13 @@ void GSDrawTest::LoadScene(const char *name) {
         }
     }
 
-    view_origin_[0] = -20.139059f;
+    /*view_origin_[0] = -20.139059f;
     view_origin_[1] = 3.208992f;
     view_origin_[2] = 20.637007f;
 
     view_dir_[0] = -0.350961f;
     view_dir_[1] = -0.552905f;
-    view_dir_[2] = -0.755727f;
+    view_dir_[2] = -0.755727f;*/
 }
 
 void GSDrawTest::Exit() {
@@ -241,8 +241,8 @@ void GSDrawTest::Draw(float dt_s) {
         last_timings_ = timings;
     }
 
-    LOGI("(%f %f %f) (%f %f %f)", view_origin_[0], view_origin_[1], view_origin_[2],
-                                  view_dir_[0], view_dir_[1], view_dir_[2]);
+    //LOGI("(%f %f %f) (%f %f %f)", view_origin_[0], view_origin_[1], view_origin_[2],
+    //                              view_dir_[0], view_dir_[1], view_dir_[2]);
 
     {
         // ui draw

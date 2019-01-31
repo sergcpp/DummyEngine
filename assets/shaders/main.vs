@@ -17,7 +17,7 @@ layout(location = 4) in vec2 aVertexUVs2;
 
 layout (std140) uniform MatricesBlock {
     mat4 uMVPMatrix;
-    mat4 uVPMatrix;
+    mat4 uVMatrix;
     mat4 uMMatrix;
     mat4 uShadowMatrix[4];
 };
