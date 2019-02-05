@@ -157,7 +157,7 @@ private:
     FrameBuf clean_buf_, down_buf_, refl_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_;
     int w_ = 0, h_ = 0;
 
-    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false, debug_deffered_ = true, debug_blur_ = false, debug_decals_ = false;
+    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false, debug_deffered_ = false, debug_blur_ = false, debug_decals_ = false;
     bool culling_enabled_ = true;
 
     const bvh_node_t *nodes_ = nullptr;

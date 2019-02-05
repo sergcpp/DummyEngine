@@ -1206,7 +1206,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     if (debug_deffered_) {
         BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, clean_buf_, 1, 2);
-        BlitBuffer(0.5f, -1.0f, 0.5f, 0.5f, refl_buf_, 0, 1, 400.0f);
+        BlitBuffer(0.5f, -1.0f, 0.5f, 0.5f, refl_buf_, 0, 1, 2000.0f);
     }
 
     if (debug_blur_) {

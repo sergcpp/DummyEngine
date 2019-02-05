@@ -569,7 +569,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     float dk = (k1 - k0) * inv_dx;
     vec2 dP = vec2(step_dir, delta.y * inv_dx);
 
-        const float stride = 16.0;
+        float stride = 0.05 * zbuffer_size.x; //16.0;
         dP *= stride;
         dQ *= stride;
         dk *= stride;
