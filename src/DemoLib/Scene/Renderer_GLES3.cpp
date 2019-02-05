@@ -619,11 +619,12 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     glBindVertexArray((GLuint)draw_pass_vao_);
 
-    Ren::Mat4f view_from_world, clip_from_view;
+    Ren::Mat4f view_from_world, clip_from_view, clip_from_world;
 
     if (!transforms_[0].empty()) {
         view_from_world = transforms_[0][0];
         clip_from_view = transforms_[0][1];
+        clip_from_world = clip_from_view * view_from_world;
     }
 
     GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
@@ -1198,6 +1199,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glUniformMatrix4fv(0, 1, GL_FALSE, Ren::ValuePtr(clip_from_view));
         glUniformMatrix4fv(1, 1, GL_FALSE, Ren::ValuePtr(view_from_clip));
+        glUniform2f(2, float(w_), float(h_));
 
         if (true) {
             BindTextureMs(0, clean_buf_.depth_tex.GetValue());
