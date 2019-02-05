@@ -1173,8 +1173,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         float k = float(w_) / h_;
 
-        const float positions[] = { -1.0f, -1.0f,                 -1.0f + 1.0f, -1.0f,
-                                    -1.0f + 1.0f, -1.0f + 1.0f,   -1.0f, -1.0f + 1.0f };
+        const float positions[] = { -1.0f, -1.0f,                 -1.0f + 2.0f, -1.0f,
+                                    -1.0f + 2.0f, -1.0f + 2.0f,   -1.0f, -1.0f + 2.0f };
 
         const float uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
                               float(w_), float(h_),     0.0f, float(h_) };

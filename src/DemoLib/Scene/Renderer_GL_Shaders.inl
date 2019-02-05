@@ -569,11 +569,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     float dk = (k1 - k0) * inv_dx;
     vec2 dP = vec2(step_dir, delta.y * inv_dx);
 
-        const float stride_zcutoff = 0.1f;
-        const float initial_stride = 7.0f;
-
-        float stride_scale = 1.0 - min(1.0, ray_origin_vs.z * stride_zcutoff);
-        float stride = 1.0 + stride_scale * initial_stride;
+        const float stride = 16.0;
         dP *= stride;
         dQ *= stride;
         dk *= stride;
@@ -592,8 +588,8 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     float prev_zmax_estimate = ray_origin_vs.z;
     hit_pixel = vec2(-1.0, -1.0);
 
-    const float max_steps = 48.0;
-
+    const float max_steps = 24.0;
+        
     for (vec2 P = P0;
         ((P.x * step_dir) <= end) && (step_count < max_steps);
          P += dP, Q.z += dQ.z, k += dk, step_count += 1.0) {
@@ -606,21 +602,51 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
             float temp = ray_zmin; ray_zmin = ray_zmax; ray_zmax = temp;
         }
 
-        const float z_thickness = 1.0f;
+        const float z_thickness = 1.0;
 
         vec2 pixel = permute ? P.yx : P;
         float scene_zmax = -LinearDepthTexelFetch(ivec2(pixel));
         float scene_zmin = scene_zmax - z_thickness;
 
         if (((ray_zmax >= scene_zmin) && (ray_zmin <= scene_zmax)) || scene_zmax >= -n) {
-            hit_pixel = pixel;
+            hit_pixel = P;
             break;
         }
     }
 
-    Q.xy += dQ.xy * step_count;
-    hit_point = Q * (1.0 / k);
-    return all(lessThanEqual(abs(hit_pixel - (zbuffer_size * 0.5)), zbuffer_size * 0.5));
+    vec2 test_pixel = permute ? hit_pixel.yx : hit_pixel;
+    bool res = all(lessThanEqual(abs(test_pixel - (zbuffer_size * 0.5)), zbuffer_size * 0.5));
+
+    if (res) {
+        Q.xy += dQ.xy * step_count;
+
+        // perform binary search to find intersection more accurately
+        for (int i = 0; i < 8; i++) {
+            vec2 pixel = permute ? hit_pixel.yx : hit_pixel;
+            float scene_z = -LinearDepthTexelFetch(ivec2(pixel));
+            float ray_z = Q.z / k;
+    
+            float depth_diff = ray_z - scene_z;
+        
+            dQ *= 0.5;
+            dP *= 0.5;
+            dk *= 0.5;
+            if (depth_diff > 0.0) {
+                Q += dQ;
+                hit_pixel += dP;
+                k += dk;
+            } else {
+                Q -= dQ;
+                hit_pixel -= dP;
+                k -= dk;
+            }
+        }
+
+        hit_pixel = permute ? hit_pixel.yx : hit_pixel;
+        hit_point = Q * (1.0 / k);
+    }
+    
+    return res;
 }
 
 vec3 DecodeNormal(vec2 enc) {
