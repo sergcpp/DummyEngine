@@ -66,7 +66,7 @@ TextureAtlas::~TextureAtlas() {
 #endif
 }
 
-TextureAtlas::TextureAtlas(TextureAtlas &&rhs) : params_(rhs.params_), tex_id_(rhs.tex_id_), splitter_(std::move(splitter_)) {
+TextureAtlas::TextureAtlas(TextureAtlas &&rhs) : params_(rhs.params_), tex_id_(rhs.tex_id_), splitter_(std::move(rhs.splitter_)) {
     rhs.tex_id_ = 0xffffffff;
 }
 
