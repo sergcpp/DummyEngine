@@ -693,9 +693,9 @@ void main() {
     
         if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, hit_pixel, hit_point)) {
             hit_pixel /= zbuffer_size;
-            vec4 tex_color = 2000.0 * texture(prev_texture, hit_pixel);
+            vec4 tex_color = texture(prev_texture, hit_pixel);
 
-            float R0 = 0.0f;
+            const float R0 = 0.0f;
             float fresnel = R0 + (1.0 - R0) * pow(1.0 - dot(normal, -view_ray_vs), 5.0);;
 
             vec3 infl = fresnel * specular.xyz;
