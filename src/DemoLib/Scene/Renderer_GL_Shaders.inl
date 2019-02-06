@@ -144,11 +144,13 @@ const char blit_combine_fs[] = R"(
 UNIFORMS
     s_texture : 3
     s_blured_texture : 4
-    uTexSize : 5
+    s_reflection_texture : 5
+    uTexSize : 6
 */
         
 uniform sampler2D s_texture;
 uniform sampler2D s_blured_texture;
+uniform sampler2D s_reflection_texture;
 uniform vec2 uTexSize;
 layout(location = 14) uniform float gamma;
 layout(location = 15) uniform float exposure;
@@ -158,8 +160,11 @@ in vec2 aVertexUVs_;
 out vec4 outColor;
 
 void main() {
+    vec2 norm_uvs = aVertexUVs_ / uTexSize;
+
     vec3 c0 = texelFetch(s_texture, ivec2(aVertexUVs_), 0).xyz;
-    vec3 c1 = 0.1 * texture(s_blured_texture, aVertexUVs_ / uTexSize).xyz;
+    vec3 c1 = 0.1 * texture(s_blured_texture, norm_uvs).xyz + 
+                    texture(s_reflection_texture, norm_uvs).xyz;
             
     c0 += c1;
     c0 = vec3(1.0) - exp(-c0 * exposure);
@@ -181,11 +186,13 @@ const char blit_combine_ms_fs[] = R"(
 UNIFORMS
     s_texture : 3
     s_blured_texture : 4
-    uTexSize : 5
+    s_reflection_texture : 5
+    uTexSize : 6
 */
         
 uniform mediump sampler2DMS s_texture;
 uniform sampler2D s_blured_texture;
+uniform sampler2D s_reflection_texture;
 uniform vec2 uTexSize;
 layout(location = 14) uniform float gamma;
 layout(location = 15) uniform float exposure;
@@ -195,11 +202,14 @@ in vec2 aVertexUVs_;
 out vec4 outColor;
 
 void main() {
+    vec2 norm_uvs = aVertexUVs_ / uTexSize;
+
     vec3 c0 = texelFetch(s_texture, ivec2(aVertexUVs_), 0).xyz;
 	vec3 c1 = texelFetch(s_texture, ivec2(aVertexUVs_), 1).xyz;
 	vec3 c2 = texelFetch(s_texture, ivec2(aVertexUVs_), 2).xyz;
 	vec3 c3 = texelFetch(s_texture, ivec2(aVertexUVs_), 3).xyz;
-    vec3 c4 = 0.1 * texture(s_blured_texture, aVertexUVs_ / uTexSize).xyz;
+    vec3 c4 = 0.1 * texture(s_blured_texture, norm_uvs).xyz + 
+                    texture(s_reflection_texture, norm_uvs).xyz;
             
     c0 += c4;
     c1 += c4;
@@ -526,6 +536,8 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     const float n = 0.5;
     const float max_dist = 100.0;
 
+    // based on "Efficient GPU Screen-Space Ray Tracing"
+
     // Clip ray length to camera near plane
     float ray_length = (ray_origin_vs.z + ray_dir_vs.z * max_dist) > -n ?
                        (-ray_origin_vs.z + n) / ray_dir_vs.z :
@@ -569,7 +581,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     float dk = (k1 - k0) * inv_dx;
     vec2 dP = vec2(step_dir, delta.y * inv_dx);
 
-        float stride = 0.05 * zbuffer_size.x; //16.0;
+        float stride = 0.015 * zbuffer_size.x; //16.0;
         dP *= stride;
         dQ *= stride;
         dk *= stride;
@@ -595,6 +607,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
          P += dP, Q.z += dQ.z, k += dk, step_count += 1.0) {
 
         float ray_zmin = prev_zmax_estimate;
+        // take half of step forward
         float ray_zmax = (dQ.z * 0.5 + Q.z) / (dk * 0.5 + k);
         prev_zmax_estimate = ray_zmax;
 
@@ -693,7 +706,7 @@ void main() {
     
         if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, hit_pixel, hit_point)) {
             hit_pixel /= zbuffer_size;
-            vec4 tex_color = texture(prev_texture, hit_pixel);
+            vec4 tex_color = textureLod(prev_texture, hit_pixel, 2.0);
 
             const float R0 = 0.0f;
             float fresnel = R0 + (1.0 - R0) * pow(1.0 - dot(normal, -view_ray_vs), 5.0);;

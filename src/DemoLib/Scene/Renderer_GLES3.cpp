@@ -784,8 +784,64 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, LIGHTS_BUFFER_BINDING, 0);
     glBindVertexArray((GLuint)temp_vao_);
-
     glDepthFunc(GL_LESS);
+
+    auto view_from_clip = Ren::Inverse(clip_from_view);
+
+    {   // Draw to reflecitons buffer
+        glBindFramebuffer(GL_FRAMEBUFFER, refl_buf_.fb);
+        glViewport(0, 0, refl_buf_.w, refl_buf_.h);
+
+        cur_program = blit_ssr_ms_prog_.get();
+        glUseProgram(cur_program->prog_id());
+
+        float k = float(w_) / h_;
+
+        const float positions[] = { -1.0f, -1.0f,                 -1.0f + 2.0f, -1.0f,
+                                    -1.0f + 2.0f, -1.0f + 2.0f,   -1.0f, -1.0f + 2.0f };
+
+        const float uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
+                              float(w_), float(h_),     0.0f, float(h_) };
+
+        const uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
+
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(indices), indices);
+
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
+
+        //glUniform1i(0, DIFFUSEMAP_SLOT);
+        //glUniform1f(cur_program->uniform(4).loc, 1.0f);
+
+        glUniformMatrix4fv(0, 1, GL_FALSE, Ren::ValuePtr(clip_from_view));
+        glUniformMatrix4fv(1, 1, GL_FALSE, Ren::ValuePtr(view_from_clip));
+        glUniform2f(2, float(w_), float(h_));
+
+        if (true) {
+            BindTextureMs(0, clean_buf_.depth_tex.GetValue());
+            BindTextureMs(1, clean_buf_.attachments[CLEAN_BUF_NORMAL_ATTACHMENT].tex);
+            BindTextureMs(2, clean_buf_.attachments[CLEAN_BUF_SPECULAR_ATTACHMENT].tex);
+        } else {
+            BindTexture(0, clean_buf_.depth_tex.GetValue());
+            BindTexture(1, clean_buf_.attachments[CLEAN_BUF_NORMAL_ATTACHMENT].tex);
+            BindTexture(2, clean_buf_.attachments[CLEAN_BUF_SPECULAR_ATTACHMENT].tex);
+        }
+
+        BindTexture(3, down_buf_.attachments[0].tex);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+
+        glDisableVertexAttribArray(A_POS);
+        glDisableVertexAttribArray(A_UVS1);
+    }
     
     if (debug_deffered_) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -842,6 +898,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+
+        {   // create mipmaps for small buffer
+            BindTexture(DIFFUSEMAP_SLOT, down_buf_.attachments[0].tex);
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
 
         ////////////////
 
@@ -937,63 +998,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         reduced_average_ = alpha * cur_average + (1.0f - alpha) * reduced_average_;
     }
 
-    auto view_from_clip = Ren::Inverse(clip_from_view);
-
-    {   // Draw to reflecitons buffer
-        glBindFramebuffer(GL_FRAMEBUFFER, refl_buf_.fb);
-        glViewport(0, 0, refl_buf_.w, refl_buf_.h);
-
-        cur_program = blit_ssr_ms_prog_.get();
-        glUseProgram(cur_program->prog_id());
-
-        float k = float(w_) / h_;
-
-        const float positions[] = { -1.0f, -1.0f,                 -1.0f + 2.0f, -1.0f,
-                                    -1.0f + 2.0f, -1.0f + 2.0f,   -1.0f, -1.0f + 2.0f };
-
-        const float uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
-                              float(w_), float(h_),     0.0f, float(h_) };
-
-        const uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
-
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
-
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(indices), indices);
-
-        glEnableVertexAttribArray(A_POS);
-        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
-
-        glEnableVertexAttribArray(A_UVS1);
-        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
-
-        //glUniform1i(0, DIFFUSEMAP_SLOT);
-        //glUniform1f(cur_program->uniform(4).loc, 1.0f);
-
-        glUniformMatrix4fv(0, 1, GL_FALSE, Ren::ValuePtr(clip_from_view));
-        glUniformMatrix4fv(1, 1, GL_FALSE, Ren::ValuePtr(view_from_clip));
-        glUniform2f(2, float(w_), float(h_));
-
-        if (true) {
-            BindTextureMs(0, clean_buf_.depth_tex.GetValue());
-            BindTextureMs(1, clean_buf_.attachments[CLEAN_BUF_NORMAL_ATTACHMENT].tex);
-            BindTextureMs(2, clean_buf_.attachments[CLEAN_BUF_SPECULAR_ATTACHMENT].tex);
-        } else {
-            BindTexture(0, clean_buf_.depth_tex.GetValue());
-            BindTexture(1, clean_buf_.attachments[CLEAN_BUF_NORMAL_ATTACHMENT].tex);
-            BindTexture(2, clean_buf_.attachments[CLEAN_BUF_SPECULAR_ATTACHMENT].tex);
-        }
-
-        BindTexture(3, down_buf_.attachments[0].tex);
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
-
-        glDisableVertexAttribArray(A_POS);
-        glDisableVertexAttribArray(A_UVS1);
-    }
-
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 
@@ -1028,7 +1032,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
         glUniform1i(cur_program->uniform(U_TEX + 1).loc, DIFFUSEMAP_SLOT + 1);
-        glUniform2f(cur_program->uniform(U_TEX + 2).loc, float(w_), float(h_));
+        glUniform1i(cur_program->uniform(U_TEX + 2).loc, DIFFUSEMAP_SLOT + 2);
+        glUniform2f(cur_program->uniform(U_TEX + 3).loc, float(w_), float(h_));
 
         glUniform1f(U_GAMMA, debug_lights_ ? 1.0f : 2.2f);
 
@@ -1044,6 +1049,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
 
         BindTexture(DIFFUSEMAP_SLOT + 1, blur_buf1_.attachments[0].tex);
+        BindTexture(DIFFUSEMAP_SLOT + 2, refl_buf_.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 

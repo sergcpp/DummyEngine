@@ -84,7 +84,12 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
             if (att.filter == Ren::NoFilter) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            } else if (att.filter == Ren::Bilinear || att.filter == Ren::BilinearNoMipmap) {
+            } else if (att.filter == Ren::Bilinear) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+
+                glGenerateMipmap(GL_TEXTURE_2D);
+            } else if (att.filter == Ren::BilinearNoMipmap) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             }
