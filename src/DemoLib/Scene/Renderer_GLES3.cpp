@@ -787,6 +787,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glDepthFunc(GL_LESS);
 
     auto view_from_clip = Ren::Inverse(clip_from_view);
+    auto delta_matrix = prev_view_from_world_ * Ren::Inverse(view_from_world);
 
     {   // Draw to reflecitons buffer
         glBindFramebuffer(GL_FRAMEBUFFER, refl_buf_.fb);
@@ -823,7 +824,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glUniformMatrix4fv(0, 1, GL_FALSE, Ren::ValuePtr(clip_from_view));
         glUniformMatrix4fv(1, 1, GL_FALSE, Ren::ValuePtr(view_from_clip));
-        glUniform2f(2, float(w_), float(h_));
+        glUniformMatrix4fv(2, 1, GL_FALSE, Ren::ValuePtr(delta_matrix));
+        glUniform2f(3, float(w_), float(h_));
 
         if (true) {
             BindTextureMs(0, clean_buf_.depth_tex.GetValue());
@@ -842,6 +844,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_POS);
         glDisableVertexAttribArray(A_UVS1);
     }
+
+    prev_view_from_world_ = view_from_world;
     
     if (debug_deffered_) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -889,13 +893,13 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glEnableVertexAttribArray(A_UVS1);
         glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)));
 
-        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
-
         if (clean_buf_.msaa > 1) {
             BindTextureMs(DIFFUSEMAP_SLOT, clean_buf_.attachments[0].tex);
         } else {
             BindTexture(DIFFUSEMAP_SLOT, clean_buf_.attachments[0].tex);
         }
+
+        BindTexture(1, refl_buf_.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 

@@ -184,6 +184,7 @@ private:
     BackendInfo backend_info_;
     std::vector<float> reduced_pixels_;
     float reduced_average_ = 0.0f;
+    Ren::Mat4f prev_view_from_world_;
 
 #if defined(USE_GL_RENDER)
     uint32_t temp_tex_;

@@ -261,18 +261,14 @@ void main() {
 )";
 
 const char blit_down_fs[] = R"(
-#version 300 es
+#version 310 es
 
 #ifdef GL_ES
 	precision mediump float;
 #endif
-
-/*
-UNIFORMS
-    s_texture : 3
-*/
         
-uniform sampler2D s_texture;
+layout(binding = 0) uniform sampler2D s_texture;
+layout(binding = 1) uniform sampler2D s_reflection_texture;
 
 in vec2 aVertexUVs_;
 
@@ -283,6 +279,7 @@ void main() {
     for (float j = -1.5; j < 2.0; j += 1.0) {
         for (float i = -1.5; i < 2.0; i += 1.0) {
             col += texelFetch(s_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
+            col += texelFetch(s_reflection_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
         }
     }
     outColor = vec4((1.0/16.0) * col, 1.0);
@@ -296,13 +293,9 @@ const char blit_down_ms_fs[] = R"(
 #ifdef GL_ES
 	precision mediump float;
 #endif
-
-/*
-UNIFORMS
-    s_texture : 3
-*/
         
-uniform mediump sampler2DMS s_texture;
+layout(binding = 0) uniform mediump sampler2DMS s_texture;
+layout(binding = 1) uniform sampler2D s_reflection_texture;
 
 in vec2 aVertexUVs_;
 
@@ -313,6 +306,7 @@ void main() {
     for (float j = -1.5; j < 2.0; j += 1.0) {
         for (float i = -1.5; i < 2.0; i += 1.0) {
             col += texelFetch(s_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
+            col += texelFetch(s_reflection_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
         }
     }
     outColor = vec4((1.0/16.0) * col, 1.0);
@@ -507,7 +501,8 @@ layout(binding = 3) uniform mediump sampler2D prev_texture;
 
 layout(location = 0) uniform mat4 proj_matrix;
 layout(location = 1) uniform mat4 inv_proj_matrix;
-layout(location = 2) uniform vec2 zbuffer_size;
+layout(location = 2) uniform mat4 delta_matrix;
+layout(location = 3) uniform vec2 zbuffer_size;
 
 in vec2 aVertexUVs_;
 
@@ -706,7 +701,14 @@ void main() {
     
         if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, hit_pixel, hit_point)) {
             hit_pixel /= zbuffer_size;
-            vec4 tex_color = textureLod(prev_texture, hit_pixel, 2.0);
+
+            // reproject hitpoint in view space of previous frame
+            vec4 hit_prev = delta_matrix * vec4(hit_point, 1.0);
+            hit_prev = proj_matrix * hit_prev;
+            hit_prev /= hit_prev.w;
+            hit_prev.xy = 0.5 * hit_prev.xy + 0.5;
+            
+            vec4 tex_color = textureLod(prev_texture, hit_prev.xy, 0.0);
 
             const float R0 = 0.0f;
             float fresnel = R0 + (1.0 - R0) * pow(1.0 - dot(normal, -view_ray_vs), 5.0);;

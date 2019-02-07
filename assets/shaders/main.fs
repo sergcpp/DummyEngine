@@ -213,7 +213,7 @@ void main(void) {
     }
     
     vec3 normal = normalize(normal_color * 2.0 - 1.0);
-    normal = aVertexTBN_[2];// * normal;
+    normal = aVertexTBN_ * normal;
     
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
     
