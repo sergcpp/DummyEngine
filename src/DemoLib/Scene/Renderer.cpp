@@ -158,13 +158,6 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
                 blur_buf1_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, &desc, 1, false);
                 blur_buf2_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, &desc, 1, false);
             }
-            {   // Auxilary buffer for reflections
-                FrameBuf::ColorAttachmentDesc desc;
-                desc.format = Ren::RawRGBA16F;
-                desc.filter = Ren::BilinearNoMipmap;
-                desc.repeat = Ren::ClampToEdge;
-                refl_buf_ = FrameBuf(ctx_.w(), ctx_.h(), &desc, 1, false);
-            }
             w_ = ctx_.w();
             h_ = ctx_.h();
             LOGI("CleanBuf resized to %ix%i", w_, h_);

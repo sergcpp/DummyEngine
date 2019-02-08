@@ -144,13 +144,11 @@ const char blit_combine_fs[] = R"(
 UNIFORMS
     s_texture : 3
     s_blured_texture : 4
-    s_reflection_texture : 5
     uTexSize : 6
 */
         
 uniform sampler2D s_texture;
 uniform sampler2D s_blured_texture;
-uniform sampler2D s_reflection_texture;
 uniform vec2 uTexSize;
 layout(location = 14) uniform float gamma;
 layout(location = 15) uniform float exposure;
@@ -163,8 +161,7 @@ void main() {
     vec2 norm_uvs = aVertexUVs_ / uTexSize;
 
     vec3 c0 = texelFetch(s_texture, ivec2(aVertexUVs_), 0).xyz;
-    vec3 c1 = 0.1 * texture(s_blured_texture, norm_uvs).xyz + 
-                    texture(s_reflection_texture, norm_uvs).xyz;
+    vec3 c1 = 0.1 * texture(s_blured_texture, norm_uvs).xyz;
             
     c0 += c1;
     c0 = vec3(1.0) - exp(-c0 * exposure);
@@ -186,13 +183,11 @@ const char blit_combine_ms_fs[] = R"(
 UNIFORMS
     s_texture : 3
     s_blured_texture : 4
-    s_reflection_texture : 5
     uTexSize : 6
 */
         
 uniform mediump sampler2DMS s_texture;
 uniform sampler2D s_blured_texture;
-uniform sampler2D s_reflection_texture;
 uniform vec2 uTexSize;
 layout(location = 14) uniform float gamma;
 layout(location = 15) uniform float exposure;
@@ -208,8 +203,7 @@ void main() {
 	vec3 c1 = texelFetch(s_texture, ivec2(aVertexUVs_), 1).xyz;
 	vec3 c2 = texelFetch(s_texture, ivec2(aVertexUVs_), 2).xyz;
 	vec3 c3 = texelFetch(s_texture, ivec2(aVertexUVs_), 3).xyz;
-    vec3 c4 = 0.1 * texture(s_blured_texture, norm_uvs).xyz + 
-                    texture(s_reflection_texture, norm_uvs).xyz;
+    vec3 c4 = 0.1 * texture(s_blured_texture, norm_uvs).xyz;
             
     c0 += c4;
     c1 += c4;
@@ -268,7 +262,6 @@ const char blit_down_fs[] = R"(
 #endif
         
 layout(binding = 0) uniform sampler2D s_texture;
-layout(binding = 1) uniform sampler2D s_reflection_texture;
 
 in vec2 aVertexUVs_;
 
@@ -279,7 +272,6 @@ void main() {
     for (float j = -1.5; j < 2.0; j += 1.0) {
         for (float i = -1.5; i < 2.0; i += 1.0) {
             col += texelFetch(s_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
-            col += texelFetch(s_reflection_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
         }
     }
     outColor = vec4((1.0/16.0) * col, 1.0);
@@ -295,7 +287,6 @@ const char blit_down_ms_fs[] = R"(
 #endif
         
 layout(binding = 0) uniform mediump sampler2DMS s_texture;
-layout(binding = 1) uniform sampler2D s_reflection_texture;
 
 in vec2 aVertexUVs_;
 
@@ -306,7 +297,6 @@ void main() {
     for (float j = -1.5; j < 2.0; j += 1.0) {
         for (float i = -1.5; i < 2.0; i += 1.0) {
             col += texelFetch(s_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
-            col += texelFetch(s_reflection_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
         }
     }
     outColor = vec4((1.0/16.0) * col, 1.0);
@@ -576,7 +566,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     float dk = (k1 - k0) * inv_dx;
     vec2 dP = vec2(step_dir, delta.y * inv_dx);
 
-        float stride = 0.015 * zbuffer_size.x; //16.0;
+        float stride = 0.025 * zbuffer_size.x; //16.0;
         dP *= stride;
         dQ *= stride;
         dk *= stride;
@@ -595,7 +585,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     float prev_zmax_estimate = ray_origin_vs.z;
     hit_pixel = vec2(-1.0, -1.0);
 
-    const float max_steps = 24.0;
+    const float max_steps = 12.0;
         
     for (vec2 P = P0;
         ((P.x * step_dir) <= end) && (step_count < max_steps);
@@ -672,7 +662,7 @@ void main() {
     vec4 prev_color = vec4(0.0);
     float prev_depth = -2.0f;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 1; i++) {
         vec4 specular = texelFetch(spec_texture, ivec2(aVertexUVs_), i);
         if (specular.w > 0.5) continue;
 
@@ -680,10 +670,10 @@ void main() {
         depth = 2.0 * depth - 1.0;
         //depth = 2.0 * n * f / (f + n - depth * (f - n));
 
-        if (abs(depth - prev_depth) < 0.005) {
+        /*if (abs(depth - prev_depth) < 0.005) {
             outColor += 0.25 * prev_color;
             continue;
-        }
+        }*/
 
         vec3 normal = DecodeNormal(texelFetch(norm_texture, ivec2(aVertexUVs_), i).xy);
 
@@ -718,7 +708,7 @@ void main() {
 
             prev_depth = depth;
             prev_color = vec4(infl * tex_color.xyz, 1.0);
-            outColor += 0.25 * prev_color;
+            outColor += 1.0 * prev_color;
         }
     }
 }

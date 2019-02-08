@@ -287,6 +287,10 @@ void GSDrawTest::Draw(float dt_s) {
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
+                s = "refl_time:  " + std::to_string(back_info.refl_pass_time_us) + " us";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
                 s = "------------------";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
             }

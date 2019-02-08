@@ -425,7 +425,7 @@ void Renderer::DestroyRendererInternal() {
 
 void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const LightSourceItem *lights, size_t lights_count,
                                    const DecalItem *decals, size_t decals_count,
-                                   const CellData *cells, const ItemData *items, size_t item_count, const Ren::Mat4f shadow_transforms[4],
+                                   const CellData *cells, const ItemData *items, size_t items_count, const Ren::Mat4f shadow_transforms[4],
                                    const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env,
                                    const TextureAtlas *decals_atlas) {
     using namespace Ren;
@@ -441,6 +441,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     assert(lights_count < MAX_LIGHTS_TOTAL);
     assert(decals_count < MAX_DECALS_TOTAL);
+    assert(items_count < MAX_ITEMS_TOTAL);
 
     {   // Update lights buffer
         size_t lights_mem_size = lights_count * sizeof(LightSourceItem);
@@ -481,7 +482,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         render_infos_[1].cells_data_size = (uint32_t)cells_mem_size;
 
         // Update items buffer
-        size_t items_mem_size = item_count * sizeof(ItemData);
+        size_t items_mem_size = items_count * sizeof(ItemData);
         if (items_mem_size) {
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)items_ssbo_);
             void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, items_mem_size, GL_MAP_WRITE_BIT);
@@ -789,9 +790,18 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     auto view_from_clip = Ren::Inverse(clip_from_view);
     auto delta_matrix = prev_view_from_world_ * Ren::Inverse(view_from_world);
 
-    {   // Draw to reflecitons buffer
-        glBindFramebuffer(GL_FRAMEBUFFER, refl_buf_.fb);
-        glViewport(0, 0, refl_buf_.w, refl_buf_.h);
+    glQueryCounter(queries_[1][TimeReflStart], GL_TIMESTAMP);
+
+    {   // Compose reflecitons on top of clean buffer
+        glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+        glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
+
+        GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0 };
+        glDrawBuffers(1, draw_buffers);
 
         cur_program = blit_ssr_ms_prog_.get();
         glUseProgram(cur_program->prog_id());
@@ -843,7 +853,12 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glDisableVertexAttribArray(A_POS);
         glDisableVertexAttribArray(A_UVS1);
+
+        glDisable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
+
+    glQueryCounter(queries_[1][TimeReflEnd], GL_TIMESTAMP);
 
     prev_view_from_world_ = view_from_world;
     
@@ -899,8 +914,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             BindTexture(DIFFUSEMAP_SLOT, clean_buf_.attachments[0].tex);
         }
 
-        BindTexture(1, refl_buf_.attachments[0].tex);
-
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         {   // create mipmaps for small buffer
@@ -940,8 +953,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_POS);
         glDisableVertexAttribArray(A_UVS1);
     }
-
-    glQueryCounter(queries_[1][TimeDrawEnd], GL_TIMESTAMP);
 
     {   // draw to small framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
@@ -1053,7 +1064,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
 
         BindTexture(DIFFUSEMAP_SLOT + 1, blur_buf1_.attachments[0].tex);
-        BindTexture(DIFFUSEMAP_SLOT + 2, refl_buf_.attachments[0].tex);
+        //BindTexture(DIFFUSEMAP_SLOT + 2, refl_buf_.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
@@ -1216,7 +1227,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     if (debug_deffered_) {
         BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, clean_buf_, 1, 2);
-        BlitBuffer(0.5f, -1.0f, 0.5f, 0.5f, refl_buf_, 0, 1, 2000.0f);
     }
 
     if (debug_blur_) {
@@ -1246,8 +1256,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glGetQueryObjectui64v(queries_[0][TimeDrawStart], GL_QUERY_RESULT, &time1);
         backend_info_.depth_pass_time_us = uint32_t((time1 - time2) / 1000);
 
-        glGetQueryObjectui64v(queries_[0][TimeDrawEnd], GL_QUERY_RESULT, &time2);
+        glGetQueryObjectui64v(queries_[0][TimeReflStart], GL_QUERY_RESULT, &time2);
         backend_info_.opaque_pass_time_us = uint32_t((time2 - time1) / 1000);
+
+        glGetQueryObjectui64v(queries_[0][TimeReflEnd], GL_QUERY_RESULT, &time1);
+        backend_info_.refl_pass_time_us = uint32_t((time1 - time2) / 1000);
     }
 
 #if 0

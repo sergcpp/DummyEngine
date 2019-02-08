@@ -154,7 +154,7 @@ private:
         blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_, blit_debug_prog_, blit_debug_ms_prog_, blit_ssr_ms_prog_;
     Ren::Texture2DRef default_lightmap_;
 
-    FrameBuf clean_buf_, down_buf_, refl_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_;
+    FrameBuf clean_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_;
     int w_ = 0, h_ = 0;
 
     bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false, debug_deffered_ = false, debug_blur_ = false, debug_decals_ = false;
@@ -197,7 +197,7 @@ private:
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
     uint32_t lights_ssbo_, lights_tbo_, decals_ssbo_, decals_tbo_, cells_ssbo_, cells_tbo_, items_ssbo_, items_tbo_;
 
-    enum { TimeShadowMapStart, TimeDepthPassStart, TimeDrawStart, TimeDrawEnd, TimersCount };
+    enum { TimeShadowMapStart, TimeDepthPassStart, TimeDrawStart, TimeReflStart, TimeReflEnd, TimersCount };
     uint32_t queries_[2][TimersCount];
 
     void CheckInitVAOs();
