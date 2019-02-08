@@ -150,6 +150,9 @@ void Renderer::InitRendererInternal() {
     LOGI("Compiling blit_ssr_ms");
     blit_ssr_ms_prog_ = ctx_.LoadProgramGLSL("blit_ssr_ms", blit_ms_vs, blit_ssr_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_ao_ms");
+    blit_ao_ms_prog_ = ctx_.LoadProgramGLSL("blit_ao_ms", blit_ms_vs, blit_ao_ms_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
 
     {
         GLuint matrices_ubo;
@@ -606,6 +609,54 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDepthFunc(GL_EQUAL);
     }
 
+    {   // prepare ao buf
+        glBindFramebuffer(GL_FRAMEBUFFER, ssao_buf_.fb);
+        glViewport(0, 0, ssao_buf_.w, ssao_buf_.h);
+
+        cur_program = blit_ao_ms_prog_.get();
+        glUseProgram(cur_program->prog_id());
+
+        const float positions[] = { -1.0f, -1.0f,                 -1.0f + 2.0f, -1.0f,
+                                    -1.0f + 2.0f, -1.0f + 2.0f,   -1.0f, -1.0f + 2.0f };
+
+        const float uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
+                              float(w_), float(h_),     0.0f, float(h_) };
+
+        const uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
+
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(indices), indices);
+
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
+
+        //glUniform1i(0, DIFFUSEMAP_SLOT);
+        //glUniform1f(cur_program->uniform(4).loc, 1.0f);
+
+        //glUniformMatrix4fv(0, 1, GL_FALSE, Ren::ValuePtr(clip_from_view));
+        //glUniformMatrix4fv(1, 1, GL_FALSE, Ren::ValuePtr(view_from_clip));
+        //glUniformMatrix4fv(2, 1, GL_FALSE, Ren::ValuePtr(delta_matrix));
+        //glUniform2f(3, float(w_), float(h_));
+
+        if (true) {
+            BindTextureMs(0, clean_buf_.depth_tex.GetValue());
+        } else {
+            BindTexture(0, clean_buf_.depth_tex.GetValue());
+        }
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+
+        glDisableVertexAttribArray(A_POS);
+        glDisableVertexAttribArray(A_UVS1);
+    }
+
 #if !defined(__ANDROID__)
     if (wireframe_mode_) {
         glDepthFunc(GL_LEQUAL);
@@ -926,8 +977,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glBindFramebuffer(GL_FRAMEBUFFER, blur_buf2_.fb);
         glViewport(0, 0, blur_buf2_.w, blur_buf2_.h);
 
-        const float fs_quad_uvs1[] = { 0.0f, 0.0f,                                   float(blur_buf2_.w), 0.0f,
-                                       float(blur_buf2_.w), float(blur_buf2_.h),     0.0f, float(blur_buf2_.h) };
+        const float fs_quad_uvs1[] = { 0.0f, 0.0f,                                 float(down_buf_.w), 0.0f,
+                                       float(down_buf_.w), float(down_buf_.h),     0.0f, float(down_buf_.h) };
 
         cur_program = blit_gauss_prog_.get();
         glUseProgram(cur_program->prog_id());
@@ -945,6 +996,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glBindFramebuffer(GL_FRAMEBUFFER, blur_buf1_.fb);
         glViewport(0, 0, blur_buf1_.w, blur_buf1_.h);
+
+        const float fs_quad_uvs2[] = { 0.0f, 0.0f,                                   float(blur_buf2_.w), 0.0f,
+                                       float(blur_buf2_.w), float(blur_buf2_.h),     0.0f, float(blur_buf2_.h) };
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs2), fs_quad_uvs2);
 
         BindTexture(DIFFUSEMAP_SLOT, blur_buf2_.attachments[0].tex);
 

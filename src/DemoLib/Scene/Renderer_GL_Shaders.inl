@@ -585,7 +585,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     float prev_zmax_estimate = ray_origin_vs.z;
     hit_pixel = vec2(-1.0, -1.0);
 
-    const float max_steps = 12.0;
+    const float max_steps = 24.0;
         
     for (vec2 P = P0;
         ((P.x * step_dir) <= end) && (step_count < max_steps);
@@ -711,5 +711,38 @@ void main() {
             outColor += 1.0 * prev_color;
         }
     }
+}
+)";
+
+const char blit_ao_ms_fs[] = R"(
+#version 310 es
+
+#ifdef GL_ES
+	precision mediump float;
+#endif
+
+layout(binding = 0) uniform mediump sampler2DMS depth_texture;
+
+in vec2 aVertexUVs_;
+
+out vec4 outColor;
+
+float LinearDepthTexelFetch(ivec2 hit_pixel) {
+    const float n = 0.5;
+    const float f = 10000.0;
+
+    float depth = texelFetch(depth_texture, hit_pixel, 0).r;
+    depth = 2.0 * depth - 1.0;
+    depth = 2.0 * n * f / (f + n - depth * (f - n));
+    return depth;
+}
+
+void main() {
+    const float n = 0.5;
+    const float f = 10000.0;
+
+    float depth = LinearDepthTexelFetch(ivec2(aVertexUVs_));
+
+    outColor = vec4(depth, 0.0, 0.0, 1.0);
 }
 )";

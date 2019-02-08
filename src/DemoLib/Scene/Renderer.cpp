@@ -143,9 +143,16 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
                 }
                 clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, true, Ren::NoFilter, 4);
             }
+            {   // Buffer for SSAO
+                FrameBuf::ColorAttachmentDesc desc;
+                desc.format = Ren::RawLUM8;
+                desc.filter = Ren::NoFilter;
+                desc.repeat = Ren::ClampToEdge;
+                ssao_buf_ = FrameBuf(ctx_.w(), ctx_.h(), &desc, 1, false);
+            }
             {   // Auxilary buffer for SSR
                 FrameBuf::ColorAttachmentDesc desc;
-                desc.format = Ren::RawRGBA16F;
+                desc.format = Ren::RawRGB16F;
                 desc.filter = Ren::Bilinear;
                 desc.repeat = Ren::ClampToEdge;
                 down_buf_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, &desc, 1, false);
