@@ -20,6 +20,8 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
         glGenTextures(1, &_col_tex);
         glActiveTexture(GL_TEXTURE0);
 
+        Ren::CheckError("[Renderer]: create framebuffer 1");
+
         if (msaa > 1) {
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, _col_tex);
 
@@ -122,16 +124,19 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
         glBindTexture(GL_TEXTURE_2D, _depth_tex);
         glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT16, w, h);
 
-        if (depth_filter == Ren::NoFilter) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        } else if (depth_filter == Ren::Bilinear || depth_filter == Ren::BilinearNoMipmap) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        }
+        // multisample textures does not support sampler state
+        if (msaa == 1) {
+            if (depth_filter == Ren::NoFilter) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            } else if (depth_filter == Ren::Bilinear || depth_filter == Ren::BilinearNoMipmap) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            }
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        }
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_tex, 0);
 
@@ -179,16 +184,19 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
 
         Ren::CheckError("[Renderer]: create framebuffer 3");
 
-        if (depth_filter == Ren::NoFilter) {
-            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        } else if (depth_filter == Ren::Bilinear || depth_filter == Ren::BilinearNoMipmap) {
-            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        }
+        // multisample textures does not support sampler state
+        if (msaa == 1) {
+            if (depth_filter == Ren::NoFilter) {
+                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            } else if (depth_filter == Ren::Bilinear || depth_filter == Ren::BilinearNoMipmap) {
+                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            }
 
-        glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-        glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+            glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+            glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        }
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, _depth_tex, 0);
 

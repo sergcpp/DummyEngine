@@ -609,7 +609,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDepthFunc(GL_EQUAL);
     }
 
-    {   // prepare ao buf
+    //glBindVertexArray((GLuint)temp_vao_);
+
+    /*{   // prepare ao buffer
         glBindFramebuffer(GL_FRAMEBUFFER, ssao_buf_.fb);
         glViewport(0, 0, ssao_buf_.w, ssao_buf_.h);
 
@@ -655,7 +657,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glDisableVertexAttribArray(A_POS);
         glDisableVertexAttribArray(A_UVS1);
-    }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }*/
+
+    glBindVertexArray(0);
 
 #if !defined(__ANDROID__)
     if (wireframe_mode_) {
@@ -1059,6 +1065,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         float cur_average = 0.0f;
         for (size_t i = 0; i < reduced_pixels_.size(); i += 4) {
+            if (!std::isnan(reduced_pixels_[i]))
             cur_average += reduced_pixels_[i];
         }
 
@@ -1101,10 +1108,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glEnableVertexAttribArray(A_UVS1);
         glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)));
 
-        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
-        glUniform1i(cur_program->uniform(U_TEX + 1).loc, DIFFUSEMAP_SLOT + 1);
-        glUniform1i(cur_program->uniform(U_TEX + 2).loc, DIFFUSEMAP_SLOT + 2);
-        glUniform2f(cur_program->uniform(U_TEX + 3).loc, float(w_), float(h_));
+        //glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+        //glUniform1i(cur_program->uniform(U_TEX + 1).loc, DIFFUSEMAP_SLOT + 1);
+        //glUniform1i(cur_program->uniform(U_TEX + 2).loc, DIFFUSEMAP_SLOT + 2);
+        glUniform2f(13, float(w_), float(h_));
 
         glUniform1f(U_GAMMA, debug_lights_ ? 1.0f : 2.2f);
 
@@ -1114,9 +1121,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glUniform1f(U_EXPOSURE, exposure);
 
         if (clean_buf_.msaa > 1) {
-            BindTextureMs(DIFFUSEMAP_SLOT, clean_buf_.attachments[0].tex);
+            BindTextureMs(DIFFUSEMAP_SLOT, clean_buf_.attachments[CLEAN_BUF_OPAQUE_ATTACHMENT].tex);
         } else {
-            BindTexture(DIFFUSEMAP_SLOT, clean_buf_.attachments[0].tex);
+            BindTexture(DIFFUSEMAP_SLOT, clean_buf_.attachments[CLEAN_BUF_OPAQUE_ATTACHMENT].tex);
         }
 
         BindTexture(DIFFUSEMAP_SLOT + 1, blur_buf1_.attachments[0].tex);

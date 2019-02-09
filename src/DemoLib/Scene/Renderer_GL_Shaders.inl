@@ -178,17 +178,10 @@ const char blit_combine_ms_fs[] = R"(
 #ifdef GL_ES
 	precision mediump float;
 #endif
-
-/*
-UNIFORMS
-    s_texture : 3
-    s_blured_texture : 4
-    uTexSize : 6
-*/
         
-uniform mediump sampler2DMS s_texture;
-uniform sampler2D s_blured_texture;
-uniform vec2 uTexSize;
+layout(binding = 0) uniform mediump sampler2DMS s_texture;
+layout(binding = 1) uniform sampler2D s_blured_texture;
+layout(location = 13) uniform vec2 uTexSize;
 layout(location = 14) uniform float gamma;
 layout(location = 15) uniform float exposure;
 
@@ -743,6 +736,6 @@ void main() {
 
     float depth = LinearDepthTexelFetch(ivec2(aVertexUVs_));
 
-    outColor = vec4(depth, 0.0, 0.0, 1.0);
+    outColor = vec4(0.5, 0.0, 0.0, 1.0);
 }
 )";
