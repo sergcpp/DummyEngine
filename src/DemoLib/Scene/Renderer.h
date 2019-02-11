@@ -121,6 +121,9 @@ public:
     void toggle_debug_blur() {
         debug_blur_ = !debug_blur_;
     }
+    void toggle_debug_ssao() {
+        debug_ssao_ = !debug_ssao_;
+    }
 
     TimingInfo timings() const {
         return timings_;
@@ -157,7 +160,7 @@ private:
     FrameBuf clean_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf_;
     int w_ = 0, h_ = 0;
 
-    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false, debug_deffered_ = false, debug_blur_ = false, debug_decals_ = false;
+    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false, debug_deffered_ = false, debug_blur_ = false, debug_decals_ = false, debug_ssao_ = true;
     bool culling_enabled_ = true;
 
     const bvh_node_t *nodes_ = nullptr;
@@ -197,7 +200,7 @@ private:
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
     uint32_t lights_ssbo_, lights_tbo_, decals_ssbo_, decals_tbo_, cells_ssbo_, cells_tbo_, items_ssbo_, items_tbo_;
 
-    enum { TimeShadowMapStart, TimeDepthPassStart, TimeDrawStart, TimeReflStart, TimeReflEnd, TimersCount };
+    enum { TimeShadowMapStart, TimeDepthPassStart, TimeAOPassStart, TimeDrawStart, TimeReflStart, TimeReflEnd, TimersCount };
     uint32_t queries_[2][TimersCount];
 
     void CheckInitVAOs();

@@ -79,8 +79,8 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
 #else
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, w, h, 0, GL_RGB, GL_FLOAT, NULL);
 #endif
-            } else if (att.format == Ren::RawLUM8) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, w, h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+            } else if (att.format == Ren::RawR8) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
             } else {
                 throw std::invalid_argument("Wrong format!");
             }

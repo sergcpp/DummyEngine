@@ -113,7 +113,7 @@ void TextureAtlas::Finalize() {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, (GLuint)tex_id_);
 
-        glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+        //glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
         glGenerateMipmap(GL_TEXTURE_2D);
 #endif
     }

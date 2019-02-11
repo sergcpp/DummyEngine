@@ -84,6 +84,7 @@ struct RenderInfo {
 struct BackendInfo {
     uint32_t shadow_time_us = 0,
              depth_pass_time_us = 0,
+             ao_pass_time_us = 0,
              opaque_pass_time_us = 0,
              refl_pass_time_us = 0;
 };

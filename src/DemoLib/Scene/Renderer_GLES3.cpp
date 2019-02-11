@@ -81,10 +81,11 @@ namespace RendererInternal {
     const int LM_INDIR_SLOT = 4;
     const int LM_INDIR_SH_SLOT = 5;
     const int DECALSMAP_SLOT = 9;
-    const int LIGHTS_BUFFER_SLOT = 10;
-    const int DECALS_BUFFER_SLOT = 11;
-    const int CELLS_BUFFER_SLOT = 12;
-    const int ITEMS_BUFFER_SLOT = 13;
+    const int AOMAP_SLOT = 10;
+    const int LIGHTS_BUFFER_SLOT = 11;
+    const int DECALS_BUFFER_SLOT = 12;
+    const int CELLS_BUFFER_SLOT = 13;
+    const int ITEMS_BUFFER_SLOT = 14;
 
     const int LIGHTS_BUFFER_BINDING = 0;
 
@@ -609,9 +610,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDepthFunc(GL_EQUAL);
     }
 
-    //glBindVertexArray((GLuint)temp_vao_);
+    glQueryCounter(queries_[1][TimeAOPassStart], GL_TIMESTAMP);
 
-    /*{   // prepare ao buffer
+    glBindVertexArray((GLuint)temp_vao_);
+
+    {   // prepare ao buffer
         glBindFramebuffer(GL_FRAMEBUFFER, ssao_buf_.fb);
         glViewport(0, 0, ssao_buf_.w, ssao_buf_.h);
 
@@ -621,8 +624,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         const float positions[] = { -1.0f, -1.0f,                 -1.0f + 2.0f, -1.0f,
                                     -1.0f + 2.0f, -1.0f + 2.0f,   -1.0f, -1.0f + 2.0f };
 
-        const float uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
-                              float(w_), float(h_),     0.0f, float(h_) };
+        const float uvs[] = { 0.0f, 0.0f,                                   float(clean_buf_.w), 0.0f,
+                              float(clean_buf_.w), float(clean_buf_.h),     0.0f, float(clean_buf_.h) };
 
         const uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
 
@@ -639,13 +642,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glEnableVertexAttribArray(A_UVS1);
         glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
 
-        //glUniform1i(0, DIFFUSEMAP_SLOT);
-        //glUniform1f(cur_program->uniform(4).loc, 1.0f);
-
-        //glUniformMatrix4fv(0, 1, GL_FALSE, Ren::ValuePtr(clip_from_view));
-        //glUniformMatrix4fv(1, 1, GL_FALSE, Ren::ValuePtr(view_from_clip));
-        //glUniformMatrix4fv(2, 1, GL_FALSE, Ren::ValuePtr(delta_matrix));
-        //glUniform2f(3, float(w_), float(h_));
+        glUniform2f(0, float(clean_buf_.w), float(clean_buf_.h));
 
         if (true) {
             BindTextureMs(0, clean_buf_.depth_tex.GetValue());
@@ -658,8 +655,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_POS);
         glDisableVertexAttribArray(A_UVS1);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }*/
+        glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
+        glViewport(0, 0, clean_buf_.w, clean_buf_.h);
+    }
 
     glBindVertexArray(0);
 
@@ -758,6 +756,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             if (decals_atlas) {
                 BindTexture(DECALSMAP_SLOT, decals_atlas->tex_id());
             }
+
+            BindTexture(AOMAP_SLOT, ssao_buf_.attachments[0].tex);
 
             cur_program = p;
         }
@@ -1296,6 +1296,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         BlitBuffer(-1.0f, -1.0f, 1.0f, 1.0f, blur_buf1_, 0, 1, 400.0f);
     }
 
+    if (debug_ssao_) {
+        BlitBuffer(-1.0f, -1.0f, 1.0f, 1.0f, ssao_buf_, 0, 1);
+    }
+
     if (debug_decals_ && decals_atlas) {
         int resx = decals_atlas->params().w,
             resy = decals_atlas->params().h;
@@ -1316,14 +1320,17 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glGetQueryObjectui64v(queries_[0][TimeDepthPassStart], GL_QUERY_RESULT, &time2);
         backend_info_.shadow_time_us = uint32_t((time2 - time1) / 1000);
 
-        glGetQueryObjectui64v(queries_[0][TimeDrawStart], GL_QUERY_RESULT, &time1);
-        backend_info_.depth_pass_time_us = uint32_t((time1 - time2) / 1000);
+        glGetQueryObjectui64v(queries_[0][TimeAOPassStart], GL_QUERY_RESULT, &time1);
+        backend_info_.ao_pass_time_us = uint32_t((time1 - time2) / 1000);
 
-        glGetQueryObjectui64v(queries_[0][TimeReflStart], GL_QUERY_RESULT, &time2);
-        backend_info_.opaque_pass_time_us = uint32_t((time2 - time1) / 1000);
+        glGetQueryObjectui64v(queries_[0][TimeDrawStart], GL_QUERY_RESULT, &time2);
+        backend_info_.depth_pass_time_us = uint32_t((time2 - time1) / 1000);
 
-        glGetQueryObjectui64v(queries_[0][TimeReflEnd], GL_QUERY_RESULT, &time1);
-        backend_info_.refl_pass_time_us = uint32_t((time1 - time2) / 1000);
+        glGetQueryObjectui64v(queries_[0][TimeReflStart], GL_QUERY_RESULT, &time1);
+        backend_info_.opaque_pass_time_us = uint32_t((time1 - time2) / 1000);
+
+        glGetQueryObjectui64v(queries_[0][TimeReflEnd], GL_QUERY_RESULT, &time2);
+        backend_info_.refl_pass_time_us = uint32_t((time2 - time1) / 1000);
     }
 
 #if 0

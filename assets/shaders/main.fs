@@ -20,10 +20,11 @@ layout(binding = 3) uniform sampler2D lm_direct_texture;
 layout(binding = 4) uniform sampler2D lm_indirect_texture;
 layout(binding = 5) uniform sampler2D lm_indirect_sh_texture[4];
 layout(binding = 9) uniform sampler2D decals_texture;
-layout(binding = 10) uniform mediump samplerBuffer lights_buffer;
-layout(binding = 11) uniform mediump samplerBuffer decals_buffer;
-layout(binding = 12) uniform highp usamplerBuffer cells_buffer;
-layout(binding = 13) uniform highp usamplerBuffer items_buffer;
+layout(binding = 10) uniform sampler2D ao_texture;
+layout(binding = 11) uniform mediump samplerBuffer lights_buffer;
+layout(binding = 12) uniform mediump samplerBuffer decals_buffer;
+layout(binding = 13) uniform highp usamplerBuffer cells_buffer;
+layout(binding = 14) uniform highp usamplerBuffer items_buffer;
 
 layout (std140) uniform MatricesBlock {
     mat4 uMVPMatrix;
@@ -262,16 +263,21 @@ void main(void) {
     
     //indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
     
-    indirect_col *= 0.001;
-    visibility *= 0.001;
+    //indirect_col *= 0.001;
+    //visibility *= 0.001;
     
-    vec3 diffuse_color = albedo_color * (sun_col * lambert * visibility + indirect_col + additional_light);
+    //indirect_col = vec3(0.1, 0.1, 0.1);
+    
+    vec2 ao_uvs = gl_FragCoord.xy / vec2(float(resx), float(resy));
+    float ambient_occlusion = texture(ao_texture, ao_uvs).r;
+    
+    vec3 diffuse_color = albedo_color * (sun_col * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
     
     outColor = vec4(diffuse_color, 1.0);
     outNormal = EncodeNormal((uVMatrix * vec4(normal, 0.0)).xyz);
-    outSpecular = vec4(1.0, 1.0, 1.0, 0.0);
+    outSpecular = ambient_occlusion * vec4(1.0, 1.0, 1.0, 0.0);
     
-    //outColor = outColor * 0.0001 + vec4(normal_color, 1.0);
+    //outColor = outColor * 0.0001 + vec4(ambient_occlusion, ambient_occlusion, ambient_occlusion, 1.0);
     
     //outColor = outColor * 0.0001;
     
