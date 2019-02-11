@@ -16,7 +16,7 @@
 
 #include "../Gui/FontStorage.h"
 #include "../Viewer.h"
-#include "../Scene/Renderer.h"
+#include "../Renderer/Renderer.h"
 #include "../Scene/SceneManager.h"
 
 namespace GSDrawTestInternal {

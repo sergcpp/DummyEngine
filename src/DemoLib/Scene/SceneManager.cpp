@@ -12,7 +12,7 @@
 #include <Sys/Log.h>
 #include <Sys/MemBuf.h>
 
-#include "Renderer.h"
+#include "../Renderer/Renderer.h"
 
 namespace SceneManagerConstants {
 const float NEAR_CLIP = 0.5f;

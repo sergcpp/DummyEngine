@@ -10,7 +10,7 @@
 #include <Sys/Log.h>
 #include <Sys/ThreadPool.h>
 
-#include "Renderer.h"
+#include "../Renderer/Renderer.h"
 
 namespace SceneManagerInternal {
 void WriteTGA(const std::vector<uint8_t> &out_data, int w, int h, const std::string &name) {

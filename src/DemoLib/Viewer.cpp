@@ -11,7 +11,7 @@
 #include <Sys/Log.h>
 
 #include "Gui/FontStorage.h"
-#include "Scene/Renderer.h"
+#include "Renderer/Renderer.h"
 #include "Scene/SceneManager.h"
 #include "States/GSCreate.h"
 

@@ -12,7 +12,7 @@ extern "C" {
 #include <Sys/SpinLock.h>
 
 #include "FrameBuf.h"
-#include "SceneData.h"
+#include "../Scene/SceneData.h"
 
 namespace Sys {
     class ThreadPool;

@@ -152,7 +152,7 @@ void Renderer::InitRendererInternal() {
     blit_ssr_ms_prog_ = ctx_.LoadProgramGLSL("blit_ssr_ms", blit_ms_vs, blit_ssr_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_ao_ms");
-    blit_ao_ms_prog_ = ctx_.LoadProgramGLSL("blit_ao_ms", blit_ms_vs, blit_ao_ms_fs, &status);
+    blit_ao_ms_prog_ = ctx_.LoadProgramGLSL("blit_ao_ms", blit_ms_vs, blit_ssao_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
 
     {

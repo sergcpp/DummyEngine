@@ -7,7 +7,7 @@
 #include <Sys/Json.h>
 
 #include "SceneData.h"
-#include "TextureAtlas.h"
+#include "../Renderer/TextureAtlas.h"
 
 class Renderer;
 
