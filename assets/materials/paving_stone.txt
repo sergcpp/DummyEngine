@@ -1,0 +1,5 @@
+gl_program: main main.vs main.fs
+sw_program: main
+texture: paving_stone.tga
+texture: paving_stone_normal.tga
+texture: paving_stone_spec.tga

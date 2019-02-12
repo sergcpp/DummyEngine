@@ -1,4 +1,12 @@
 
+static const char skydome_vs[] =
+#include "Shaders/skydome.vs.glsl"
+;
+
+static const char skydome_fs[] =
+#include "Shaders/skydome.fs.glsl"
+;
+
 static const char fillz_vs[] =
 #include "Shaders/fillz.vs.glsl"
 ;

@@ -10,6 +10,7 @@
 
 namespace RendererInternal {
 #include "Renderer_GL_Shaders.inl"
+#include "__skydome_mesh.inl"
 
     struct MatricesBlock {
         Ren::Mat4f uMVPMatrix;
@@ -76,16 +77,17 @@ namespace RendererInternal {
 
     const int DIFFUSEMAP_SLOT = 0;
     const int NORMALMAP_SLOT = 1;
-    const int SHADOWMAP_SLOT = 2;
-    const int LM_DIRECT_SLOT = 3;
-    const int LM_INDIR_SLOT = 4;
-    const int LM_INDIR_SH_SLOT = 5;
-    const int DECALSMAP_SLOT = 9;
-    const int AOMAP_SLOT = 10;
-    const int LIGHTS_BUFFER_SLOT = 11;
-    const int DECALS_BUFFER_SLOT = 12;
-    const int CELLS_BUFFER_SLOT = 13;
-    const int ITEMS_BUFFER_SLOT = 14;
+    const int SPECULARMAP_SLOT = 2;
+    const int SHADOWMAP_SLOT = 3;
+    const int LM_DIRECT_SLOT = 4;
+    const int LM_INDIR_SLOT = 5;
+    const int LM_INDIR_SH_SLOT = 6;
+    const int DECALSMAP_SLOT = 10;
+    const int AOMAP_SLOT = 11;
+    const int LIGHTS_BUFFER_SLOT = 12;
+    const int DECALS_BUFFER_SLOT = 13;
+    const int CELLS_BUFFER_SLOT = 14;
+    const int ITEMS_BUFFER_SLOT = 15;
 
     const int LIGHTS_BUFFER_BINDING = 0;
 
@@ -106,13 +108,17 @@ namespace RendererInternal {
     const int TEMP_BUF_SIZE = 256;
 
     const bool DEPTH_PREPASS = true;
+    const bool ENABLE_SSR = true;
+    const bool ENABLE_SSAO = true;
 }
 
 void Renderer::InitRendererInternal() {
     using namespace RendererInternal;
-
-    LOGI("Compiling fill_depth");
     Ren::eProgLoadStatus status;
+    LOGI("Compiling skydome");
+    skydome_prog_ = ctx_.LoadProgramGLSL("skydome", skydome_vs, skydome_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling fill_depth");
     fill_depth_prog_ = ctx_.LoadProgramGLSL("fill_depth", fillz_vs, fillz_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling shadow");
@@ -295,16 +301,19 @@ void Renderer::InitRendererInternal() {
 void Renderer::CheckInitVAOs() {
     using namespace RendererInternal;
 
-    GLuint vertex_buf = ctx_.default_vertex_buf()->buf_id(),
-           indices_buf = ctx_.default_indices_buf()->buf_id();
+    auto vtx_buf = ctx_.default_vertex_buf();
+    auto ndx_buf = ctx_.default_indices_buf();
 
-    if (vertex_buf != last_vertex_buffer_ || indices_buf != last_index_buffer_) {
+    GLuint gl_vertex_buf = (GLuint)ctx_.default_vertex_buf()->buf_id(),
+           gl_indices_buf = (GLuint)ctx_.default_indices_buf()->buf_id();
+
+    if (gl_vertex_buf != last_vertex_buffer_ || gl_indices_buf != last_index_buffer_) {
         GLuint shadow_pass_vao;
         glGenVertexArrays(1, &shadow_pass_vao);
         glBindVertexArray(shadow_pass_vao);
 
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buf);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_buf);
+        glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
         int stride = 13 * sizeof(float);
         glEnableVertexAttribArray(A_POS);
@@ -318,8 +327,8 @@ void Renderer::CheckInitVAOs() {
         glGenVertexArrays(1, &depth_pass_vao);
         glBindVertexArray(depth_pass_vao);
 
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buf);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_buf);
+        glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
         glEnableVertexAttribArray(A_POS);
         glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
@@ -331,8 +340,8 @@ void Renderer::CheckInitVAOs() {
         glGenVertexArrays(1, &draw_pass_vao);
         glBindVertexArray(draw_pass_vao);
 
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buf);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_buf);
+        glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
         glEnableVertexAttribArray(A_POS);
         glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
@@ -352,11 +361,8 @@ void Renderer::CheckInitVAOs() {
         glBindVertexArray(0);
         draw_pass_vao_ = (uint32_t)draw_pass_vao;
 
-        {
-            auto vtx_buf = ctx_.default_vertex_buf();
+        {   // Allocate temporary buffer
             temp_buf_vtx_offset_ = vtx_buf->Alloc(TEMP_BUF_SIZE);
-
-            auto ndx_buf = ctx_.default_indices_buf();
             temp_buf_ndx_offset_ = ndx_buf->Alloc(TEMP_BUF_SIZE);
 
             GLuint temp_vao;
@@ -365,12 +371,34 @@ void Renderer::CheckInitVAOs() {
             temp_vao_ = (uint32_t)temp_vao;
         }
 
-        last_vertex_buffer_ = (uint32_t)vertex_buf;
-        last_index_buffer_ = (uint32_t)indices_buf;
+        {   // Allocate skydome vertices
+            skydome_vtx_offset_ = vtx_buf->Alloc(sizeof(__skydome_positions), __skydome_positions);
+            skydome_ndx_offset_ = ndx_buf->Alloc(sizeof(__skydome_indices), __skydome_indices);
+
+            GLuint skydome_vao;
+            glGenVertexArrays(1, &skydome_vao);
+            glBindVertexArray(skydome_vao);
+
+            glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
+
+            glEnableVertexAttribArray(A_POS);
+            glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+
+            glBindVertexArray(0);
+            skydome_vao_ = (uint32_t)skydome_vao;
+        }
+
+        last_vertex_buffer_ = (uint32_t)gl_vertex_buf;
+        last_index_buffer_ = (uint32_t)gl_indices_buf;
     }
 }
 
 void Renderer::DestroyRendererInternal() {
+
+    auto vtx_buf = ctx_.default_vertex_buf();
+    auto ndx_buf = ctx_.default_indices_buf();
+
     {
         GLuint matrices_ubo = (GLuint)unif_matrices_block_;
         glDeleteBuffers(1, &matrices_ubo);
@@ -409,6 +437,15 @@ void Renderer::DestroyRendererInternal() {
     }
 
     {
+        vtx_buf->Free(skydome_vtx_offset_);
+        ndx_buf->Free(skydome_ndx_offset_);
+
+        vtx_buf->Free(temp_buf_vtx_offset_);
+        ndx_buf->Free(temp_buf_ndx_offset_);
+
+        GLuint skydome_vao = (GLuint)skydome_vao_;
+        glDeleteVertexArrays(1, &skydome_vao);
+
         GLuint temp_vao = (GLuint)temp_vao_;
         glDeleteVertexArrays(1, &temp_vao);
 
@@ -569,6 +606,14 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glBindVertexArray(0);
     }
 
+    Ren::Mat4f view_from_world, clip_from_view, clip_from_world;
+
+    if (!transforms_[0].empty()) {
+        view_from_world = transforms_[0][0];
+        clip_from_view = transforms_[0][1];
+        clip_from_world = clip_from_view * view_from_world;
+    }
+
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
@@ -576,8 +621,27 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
     //glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, clean_buf_.w, clean_buf_.h);
-    glClearColor(env.sky_col[0], env.sky_col[1], env.sky_col[2], 1.0f);
+    //glClearColor(env.sky_col[0], env.sky_col[1], env.sky_col[2], 1.0f);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+    {   // Draw skydome
+        glDisable(GL_DEPTH_TEST);
+
+        GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0 };
+        glDrawBuffers(1, draw_buffers);
+
+        cur_program = skydome_prog_.get();
+        glUseProgram(cur_program->prog_id());
+
+        glBindVertexArray(skydome_vao_);
+
+        glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_world));
+        cur_clip_from_object = nullptr;
+
+        glDrawElements(GL_TRIANGLES, tris->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(mesh->indices_offset() + tris->offset));
+
+        glEnable(GL_DEPTH_TEST);
+    }
 
     glQueryCounter(queries_[1][TimeDepthPassStart], GL_TIMESTAMP);
 
@@ -614,7 +678,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     glBindVertexArray((GLuint)temp_vao_);
 
-    {   // prepare ao buffer
+    if (ENABLE_SSAO) {   // prepare ao buffer
         glBindFramebuffer(GL_FRAMEBUFFER, ssao_buf_.fb);
         glViewport(0, 0, ssao_buf_.w, ssao_buf_.h);
 
@@ -674,14 +738,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glQueryCounter(queries_[1][TimeDrawStart], GL_TIMESTAMP);
 
     glBindVertexArray((GLuint)draw_pass_vao_);
-
-    Ren::Mat4f view_from_world, clip_from_view, clip_from_world;
-
-    if (!transforms_[0].empty()) {
-        view_from_world = transforms_[0][0];
-        clip_from_view = transforms_[0][1];
-        clip_from_world = clip_from_view * view_from_world;
-    }
 
     GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
     glDrawBuffers(3, draw_buffers);
@@ -800,6 +856,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         if (mat != cur_mat) {
             BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
             BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
+            BindTexture(SPECULARMAP_SLOT, mat->texture(2)->tex_id());
             cur_mat = mat;
         }
 
@@ -849,7 +906,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     glQueryCounter(queries_[1][TimeReflStart], GL_TIMESTAMP);
 
-    {   // Compose reflecitons on top of clean buffer
+    if (ENABLE_SSR) {   // Compose reflecitons on top of clean buffer
         glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
 
         glEnable(GL_BLEND);

@@ -1,0 +1,85 @@
+{
+    "name" : "street",
+    "environment" : {
+        "sun_dir" : [ 0.54, -0.54, -0.54 ],
+        "sun_col" : [ 1.0, 1.0, 0.9 ],
+        "sun_softness" : 0.1,
+        "env_col1" : [ 0.05, 0.075, 0.1 ]
+    },
+    "camera" : {
+        "view_origin" : [ 0.0, 5.0, 0.0 ],
+        "view_dir" : [ 0.0, 0.0, -1.0 ],
+        "fwd_speed" : 0.025
+    },
+    "meshes" : {
+		"rails" : "rails.mesh",
+    },
+    "lights" : {
+        "l0" : {
+            "offset" : [ -23.0, 1.0, 0.0 ],
+            "color" : [ 100.0, 0.0, 0.0 ],
+            "radius" : 0.01
+        },
+        "l1" : {
+            "offset" : [ -23.0, 1.0, 5.0 ],
+            "color" : [ 0.0, 100.0, 0.0 ],
+            "radius" : 0.01
+        },
+        "l2" : {
+            "offset" : [ -23.0, 1.0, 10.0 ],
+            "color" : [ 0.0, 0.0, 100.0 ],
+            "radius" : 0.01
+        },
+        "l3" : {
+            "offset" : [ -23.0, 1.0, 15.0 ],
+            "color" : [ 100.0, 0.0, 100.0 ],
+            "radius" : 0.01
+        }
+    },
+    "decals" : {
+        "d0" : {
+            "pos" : [ -23.0, 0.5, 0.0 ],
+            "rot" : [ -90.0, 45.0, 0.0 ],
+            "dim" : [ 5.0, 5.0, 1.0 ],
+            "diff" : "assets/textures/manhole01_diff.tga",
+            "norm" : "assets/textures/manhole01_norm.tga"
+        },
+        "d1" : {
+            "pos" : [ -23.0, 0.5, 5.0 ],
+            "rot" : [ -90.0, 45.0, 0.0 ],
+            "dim" : [ 5.0, 5.0, 1.0 ],
+            "diff" : "assets/textures/manhole01_diff.tga",
+            "norm" : "assets/textures/manhole01_norm.tga"
+        },
+        "d2" : {
+            "pos" : [ -23.0, 0.5, 10.0 ],
+            "rot" : [ -90.0, 45.0, 0.0 ],
+            "dim" : [ 5.0, 5.0, 1.0 ],
+            "diff" : "assets/textures/manhole01_diff.tga",
+            "norm" : "assets/textures/manhole01_norm.tga"
+        },
+        "d3" : {
+            "pos" : [ -23.0, 0.5, 15.0 ],
+            "rot" : [ -90.0, 45.0, 0.0 ],
+            "dim" : [ 5.0, 5.0, 1.0 ],
+            "diff" : "assets/textures/manhole01_diff.tga",
+            "norm" : "assets/textures/manhole01_norm.tga"
+        }
+    },
+    "objects" : [
+		{
+			"pos" : [ 0.0, 0.0, 0.0 ],
+            "mesh" : "rails",
+            "lightmap_res" : 512,
+            "lights1" : [ "l0", "l1", "l2", "l3" ],
+            "decals1" : [ "d0", "d1", "d2", "d3" ]
+        },
+        {
+			"pos" : [ 0.0, 0.0, 16.0 ],
+            "mesh" : "rails",
+            "lightmap_res" : 512,
+            "lights1" : [ "l0", "l1", "l2", "l3" ],
+            "decals1" : [ "d0", "d1", "d2", "d3" ]
+        }
+    ]
+}

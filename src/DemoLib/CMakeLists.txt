@@ -10,7 +10,8 @@ set(RENDERER_SOURCES	Renderer/FrameBuf.h
 						Renderer/Renderer.h
 						Renderer/Renderer.cpp
 						Renderer/TextureAtlas.h
-						Renderer/TextureAtlas.cpp)
+						Renderer/TextureAtlas.cpp
+						Renderer/__skydome_mesh.inl)
 
 set(SCENE_SOURCES	Scene/SceneData.h
                     Scene/SceneManager.h

@@ -80,7 +80,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         }
     }
 
-    const auto w = 1280, h = 720;
+    const auto w = 1024, h = 576;
 
     if (Init(w, h) < 0) {
         return -1;
@@ -285,7 +285,10 @@ void ModlApp::PollEvents() {
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
         case SDL_KEYDOWN: {
-            if (e.key.keysym.sym == SDLK_0) {
+            if (e.key.keysym.sym == SDLK_ESCAPE) {
+                quit_ = true;
+                return;
+            } else if (e.key.keysym.sym == SDLK_0) {
                 view_mode_ = Material;
             } else if (e.key.keysym.sym == SDLK_1) {
                 view_mode_ = DiagNormals1;
