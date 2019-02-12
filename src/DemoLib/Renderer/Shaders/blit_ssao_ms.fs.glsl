@@ -99,27 +99,22 @@ void main() {
         int c = (hash(ivec2(gl_FragCoord.xy)) + i) % 8;
         vec2 sample_point = transforms[c] * sample_points[i];
 
-        float depth1 = BilinearSampleDepthTexel(aVertexUVs_ + ss_radius * sample_point * screen_size);
-        float depth2 = BilinearSampleDepthTexel(aVertexUVs_ - ss_radius * sample_point * screen_size);
+        vec2 depth_values = vec2(BilinearSampleDepthTexel(aVertexUVs_ + ss_radius * sample_point * screen_size),
+								 BilinearSampleDepthTexel(aVertexUVs_ - ss_radius * sample_point * screen_size));
         float sphere_width = initial_radius * sphere_widths[i];
 
-        float diff1 = depth - depth1;
-        float diff2 = depth - depth2;
+        vec2 depth_diff = vec2(depth) - depth_values;
 
-        float occ1 = clamp(0.5 * diff1 / sphere_width + 0.5, 0.0, 1.0);
-        float occ2 = clamp(0.5 * diff2 / sphere_width + 0.5, 0.0, 1.0);
+        vec2 occ_values = clamp(0.5 * depth_diff / sphere_width + vec2(0.5), vec2(0.0), vec2(1.0));
 
         const float max_dist = 1.0;
-        float dist_mod1 = clamp((max_dist - diff1) / max_dist, 0.0, 1.0);
-        float dist_mod2 = clamp((max_dist - diff2) / max_dist, 0.0, 1.0);
+        vec2 dist_mod = clamp((vec2(max_dist) - depth_diff) / max_dist, vec2(0.0), vec2(1.0));
 
-        float mod_cont1 = mix(mix(0.5, 1.0 - occ2, dist_mod2),
-                              occ1, dist_mod1);
-        float mod_cont2 = mix(mix(0.5, 1.0 - occ1, dist_mod1),
-                              occ2, dist_mod2);
+		vec2 mod_cont = mix(mix(vec2(0.5), 1.0 - occ_values.yx, dist_mod.yx),
+							occ_values.xy, dist_mod.xy);
         
-        occlusion += sample_weight * mod_cont1;
-        occlusion += sample_weight * mod_cont2;
+        occlusion += sample_weight * mod_cont.x;
+        occlusion += sample_weight * mod_cont.y;
     }
 
     occlusion = clamp(1.0 - 2.0 * (occlusion - 0.5), 0.0, 1.0);
