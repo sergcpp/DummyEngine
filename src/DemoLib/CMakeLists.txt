@@ -44,10 +44,26 @@ elseif(${RENDERER} STREQUAL "SW")
                         Renderer/RendererSW.cpp)
 endif()
 
-file(GLOB SHADERS_SOURCES
-    "Renderer/Shaders/*.vs.glsl"
-    "Renderer/Shaders/*.fs.glsl"
-)
+set(SHADERS_SOURCES Renderer/Shaders/blit.fs.glsl
+					Renderer/Shaders/blit.vs.glsl
+					Renderer/Shaders/blit_combine.fs.glsl
+					Renderer/Shaders/blit_combine_ms.fs.glsl
+					Renderer/Shaders/blit_debug.fs.glsl
+					Renderer/Shaders/blit_debug_ms.fs.glsl
+					Renderer/Shaders/blit_down.fs.glsl
+					Renderer/Shaders/blit_down_ms.fs.glsl
+					Renderer/Shaders/blit_gauss.fs.glsl
+					Renderer/Shaders/blit_ms.fs.glsl
+					Renderer/Shaders/blit_ms.vs.glsl
+					Renderer/Shaders/blit_reduced.fs.glsl
+					Renderer/Shaders/blit_ssao_ms.fs.glsl
+					Renderer/Shaders/blit_ssr_ms.fs.glsl
+					Renderer/Shaders/fillz.fs.glsl
+					Renderer/Shaders/fillz.vs.glsl
+					Renderer/Shaders/shadow.fs.glsl
+					Renderer/Shaders/shadow.vs.glsl
+					Renderer/Shaders/skydome.fs.glsl
+					Renderer/Shaders/skydome.vs.glsl)
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 #set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)

@@ -383,7 +383,7 @@ void Renderer::CheckInitVAOs() {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
             glEnableVertexAttribArray(A_POS);
-            glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+            glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, 0, (void *)uintptr_t(skydome_vtx_offset_));
 
             glBindVertexArray(0);
             skydome_vao_ = (uint32_t)skydome_vao;
@@ -622,23 +622,32 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     //glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, clean_buf_.w, clean_buf_.h);
     //glClearColor(env.sky_col[0], env.sky_col[1], env.sky_col[2], 1.0f);
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT /*| GL_COLOR_BUFFER_BIT*/);
 
-    {   // Draw skydome
+    {   // Draw skydome (and clear depth)
         glDisable(GL_DEPTH_TEST);
 
-        GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0 };
-        glDrawBuffers(1, draw_buffers);
+        // Write to color and specular
+        GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT2 };
+        glDrawBuffers(2, draw_buffers);
 
         cur_program = skydome_prog_.get();
         glUseProgram(cur_program->prog_id());
 
         glBindVertexArray(skydome_vao_);
 
-        glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_world));
+        Ren::Mat4f translate_matrix;
+        translate_matrix = Ren::Translate(translate_matrix, draw_cam_.world_position());
+
+        Ren::Mat4f scale_matrix;
+        scale_matrix = Ren::Scale(scale_matrix, Ren::Vec3f{ 100.0f, 100.0f, 100.0f });
+
+        Ren::Mat4f _clip_from_world = clip_from_world * /*translate_matrix */ scale_matrix;
+
+        glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(_clip_from_world));
         cur_clip_from_object = nullptr;
 
-        glDrawElements(GL_TRIANGLES, tris->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(mesh->indices_offset() + tris->offset));
+        glDrawElements(GL_TRIANGLES, (GLsizei)__skydome_indices_count, GL_UNSIGNED_BYTE, (void *)uintptr_t(skydome_ndx_offset_));
 
         glEnable(GL_DEPTH_TEST);
     }

@@ -165,7 +165,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
         hit_point = Q * (1.0 / k);
     }
     
-    return res;
+    return true;
 }
 
 vec3 DecodeNormal(vec2 enc) {
