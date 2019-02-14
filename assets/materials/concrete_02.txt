@@ -2,3 +2,4 @@ gl_program: main main.vs main.fs
 sw_program: main
 texture: concrete_02.tga
 texture: default_normalmap.tga
+texture: default_specular.tga

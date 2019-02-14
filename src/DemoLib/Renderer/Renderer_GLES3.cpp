@@ -622,10 +622,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     //glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, clean_buf_.w, clean_buf_.h);
     //glClearColor(env.sky_col[0], env.sky_col[1], env.sky_col[2], 1.0f);
-    glClear(GL_DEPTH_BUFFER_BIT /*| GL_COLOR_BUFFER_BIT*/);
+    //glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-    {   // Draw skydome (and clear depth)
-        glDisable(GL_DEPTH_TEST);
+    {   // Draw skydome (and clear depth with it)
+        glDepthFunc(GL_ALWAYS);
 
         // Write to color and specular
         GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT2 };
@@ -640,16 +640,16 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         translate_matrix = Ren::Translate(translate_matrix, draw_cam_.world_position());
 
         Ren::Mat4f scale_matrix;
-        scale_matrix = Ren::Scale(scale_matrix, Ren::Vec3f{ 100.0f, 100.0f, 100.0f });
+        scale_matrix = Ren::Scale(scale_matrix, Ren::Vec3f{ 10.0f, 10.0f, 10.0f });
 
-        Ren::Mat4f _clip_from_world = clip_from_world * /*translate_matrix */ scale_matrix;
+        Ren::Mat4f _clip_from_world = clip_from_world * translate_matrix * scale_matrix;
 
         glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(_clip_from_world));
         cur_clip_from_object = nullptr;
 
         glDrawElements(GL_TRIANGLES, (GLsizei)__skydome_indices_count, GL_UNSIGNED_BYTE, (void *)uintptr_t(skydome_ndx_offset_));
 
-        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
     }
 
     glQueryCounter(queries_[1][TimeDepthPassStart], GL_TIMESTAMP);
