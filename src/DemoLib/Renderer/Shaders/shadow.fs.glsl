@@ -5,6 +5,5 @@ R"(
 #endif
 
 void main() {
-    //gl_FragDepth = gl_FragCoord.z;
 }
 )"
