@@ -624,7 +624,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     //glClearColor(env.sky_col[0], env.sky_col[1], env.sky_col[2], 1.0f);
     //glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-    {   // Draw skydome (and clear depth with it)
+    if (!wireframe_mode_) {   // Draw skydome (and clear depth with it)
         glDepthFunc(GL_ALWAYS);
 
         // Write to color and specular
@@ -640,7 +640,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         translate_matrix = Ren::Translate(translate_matrix, draw_cam_.world_position());
 
         Ren::Mat4f scale_matrix;
-        scale_matrix = Ren::Scale(scale_matrix, Ren::Vec3f{ 10.0f, 10.0f, 10.0f });
+        scale_matrix = Ren::Scale(scale_matrix, Ren::Vec3f{ 5000.0f, 5000.0f, 5000.0f });
 
         Ren::Mat4f _clip_from_world = clip_from_world * translate_matrix * scale_matrix;
 
@@ -650,6 +650,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDrawElements(GL_TRIANGLES, (GLsizei)__skydome_indices_count, GL_UNSIGNED_BYTE, (void *)uintptr_t(skydome_ndx_offset_));
 
         glDepthFunc(GL_LESS);
+    } else {
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     }
 
     glQueryCounter(queries_[1][TimeDepthPassStart], GL_TIMESTAMP);
@@ -990,14 +992,18 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
         glClear(GL_DEPTH_BUFFER_BIT);
 
+        glEnable(GL_DEPTH_TEST);
         glDepthMask(GL_TRUE);
+        glDepthFunc(GL_ALWAYS);
 
         BlitBuffer(0.0f, -1.0f, 0.5f, 0.5f, down_buf_, 0, 1, 400.0f);
     } else {
         glDisable(GL_DEPTH_TEST);
     }
 
+    //glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
+    glDepthFunc(GL_LESS);
 
     {   // prepare blured buffer
         glBindFramebuffer(GL_FRAMEBUFFER, down_buf_.fb);

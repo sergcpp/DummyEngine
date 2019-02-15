@@ -42,7 +42,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     const float n = 0.5;
     const float max_dist = 100.0;
 
-    // based on "Efficient GPU Screen-Space Ray Tracing"
+    // from "Efficient GPU Screen-Space Ray Tracing"
 
     // Clip ray length to camera near plane
     float ray_length = (ray_origin_vs.z + ray_dir_vs.z * max_dist) > -n ?
@@ -165,7 +165,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
         hit_point = Q * (1.0 / k);
     }
     
-    return true;
+    return res;
 }
 
 vec3 DecodeNormal(vec2 enc) {
@@ -181,11 +181,11 @@ void main() {
     const float f = 10000.0;
 
     vec4 prev_color = vec4(0.0);
-    float prev_depth = -2.0f;
+    float prev_depth = -1.1f;
 
     for (int i = 0; i < 1; i++) {
         vec4 specular = texelFetch(spec_texture, ivec2(aVertexUVs_), i);
-        if (specular.w > 0.5) continue;
+        if (dot(specular.xyz, specular.xyz) < 0.01) continue;
 
         float depth = texelFetch(depth_texture, ivec2(aVertexUVs_), i).r;
         depth = 2.0 * depth - 1.0;

@@ -988,10 +988,6 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
     for (int s = 0; s < frustums_per_slice; s++) {
         auto &cell = cells[i + s];
 
-        if (cell.decal_count == 2) {
-            volatile int ii = 0;
-        }
-
         int local_items_count = std::max((int)cell.light_count, (int)cell.decal_count);
 
         if (local_items_count) {
