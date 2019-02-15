@@ -100,6 +100,7 @@ static_assert(sizeof(bvh_node_t) == 48, "!");
 struct Environment {
     Ren::Vec3f sun_dir, sun_col, sky_col;
     float sun_softness = 0.0f;
+    Ren::Texture2DRef env_map;
 };
 
 struct BBox {

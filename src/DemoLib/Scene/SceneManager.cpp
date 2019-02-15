@@ -13,6 +13,7 @@
 #include <Sys/MemBuf.h>
 
 #include "../Renderer/Renderer.h"
+#include "../Utils/Load.h"
 
 namespace SceneManagerConstants {
 const float NEAR_CLIP = 0.5f;
@@ -518,6 +519,46 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             env_.sky_col[0] = (float)((const JsNumber &)js_env_col.at(0)).val;
             env_.sky_col[1] = (float)((const JsNumber &)js_env_col.at(1)).val;
             env_.sky_col[2] = (float)((const JsNumber &)js_env_col.at(2)).val;
+        }
+        if (js_env.Has("env_map")) {
+            const JsString &js_env_map = (const JsString &)js_env.at("env_map");
+
+            const std::string tex_names[6] = {
+                "assets/textures/" + js_env_map.val + "_PX.hdr",
+                "assets/textures/" + js_env_map.val + "_NX.hdr",
+                "assets/textures/" + js_env_map.val + "_PY.hdr",
+                "assets/textures/" + js_env_map.val + "_NY.hdr",
+                "assets/textures/" + js_env_map.val + "_PZ.hdr",
+                "assets/textures/" + js_env_map.val + "_NZ.hdr"
+            };
+
+            std::vector<uint8_t> tex_data[6];
+            const void *data[6];
+            int size[6];
+            int res = 0;
+
+            for (int i = 0; i < 6; i++) {
+                int w, h;
+                tex_data[i] = LoadHDR(tex_names[i], w, h);
+                assert(w == h);
+
+                res = w;
+                data[i] = (const void *)&tex_data[i][0];
+                size[i] = (int)tex_data[i].size();
+                
+            }
+
+            Ren::Texture2DParams p;
+            p.format = Ren::RawRGBE8888;
+            p.filter = Ren::Bilinear;
+            p.repeat = Ren::ClampToEdge;
+            p.w = res;
+            p.h = res;
+
+            std::string tex_name = js_env_map.val + ".tga_rgbe";
+
+            Ren::eTexLoadStatus load_status;
+            env_.env_map = ctx_.LoadTextureCube(tex_name.c_str(), data, size, p, &load_status);
         }
     } else {
         env_ = {};

@@ -28,6 +28,8 @@ set(STATES_SOURCES  States/GSCreate.h
 
 set(UTILS_SOURCES Utils/BVHSplit.h
 				  Utils/BVHSplit.cpp
+				  Utils/Load.h
+				  Utils/Load.cpp
 				  Utils/TextureSplitter.h
 				  Utils/TextureSplitter.cpp)
 

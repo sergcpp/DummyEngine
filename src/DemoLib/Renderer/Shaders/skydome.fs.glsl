@@ -1,15 +1,23 @@
 R"(
-#version 300 es
+#version 310 es
 
 #ifdef GL_ES
 	precision mediump float;
 #endif
 
+layout(binding = 0) uniform samplerCube env_texture;
+
+layout(location = 0) uniform vec3 camera_pos;
+
+in vec3 aVertexPos_;
+
 out vec4 outColor;
 out vec4 outSpecular;
 
 void main() {
-    outColor = vec4(1.0, 0.0, 0.0, 1.0);
+	vec3 view_dir_ws = normalize(aVertexPos_ - camera_pos);
+
+    outColor = texture(env_texture, view_dir_ws);
 	outSpecular = vec4(0.0, 0.0, 0.0, 1.0);
 }
 )"

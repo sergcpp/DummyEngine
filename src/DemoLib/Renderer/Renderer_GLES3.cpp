@@ -105,6 +105,11 @@ namespace RendererInternal {
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, (GLuint)tex);
     }
 
+    inline void BindCubemap(int slot, uint32_t tex) {
+        glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
+        glBindTexture(GL_TEXTURE_CUBE_MAP, (GLuint)tex);
+    }
+
     const int TEMP_BUF_SIZE = 256;
 
     const bool DEPTH_PREPASS = true;
@@ -636,16 +641,32 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glBindVertexArray(skydome_vao_);
 
+        Ren::Vec3f cam_pos = draw_cam_.world_position();
+
         Ren::Mat4f translate_matrix;
-        translate_matrix = Ren::Translate(translate_matrix, draw_cam_.world_position());
+        translate_matrix = Ren::Translate(translate_matrix, cam_pos);
 
         Ren::Mat4f scale_matrix;
         scale_matrix = Ren::Scale(scale_matrix, Ren::Vec3f{ 5000.0f, 5000.0f, 5000.0f });
 
-        Ren::Mat4f _clip_from_world = clip_from_world * translate_matrix * scale_matrix;
+        Ren::Mat4f _world_from_object = translate_matrix * scale_matrix;
 
-        glUniformMatrix4fv(cur_program->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(_clip_from_world));
+        Ren::Mat4f _clip_from_object = clip_from_world * _world_from_object;
+
+        glBindBufferBase(GL_UNIFORM_BUFFER, cur_program->uniform_block(U_MATRICES).loc, (GLuint)unif_matrices_block_);
+
+        glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_matrices_block_);
+        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(MatricesBlock, uMVPMatrix), sizeof(Ren::Mat4f), ValuePtr(_clip_from_object));
+        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(MatricesBlock, uMMatrix), sizeof(Ren::Mat4f), ValuePtr(_world_from_object));
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+        glUniform3fv(0, 1, Ren::ValuePtr(cam_pos));
+
+        //glUniformMatrix4fv(0, 1, GL_FALSE, ValuePtr(_clip_from_world));
+        //glUniformMatrix4fv(1, 1, GL_FALSE, ValuePtr(_world_from_clip));
         cur_clip_from_object = nullptr;
+
+        BindCubemap(0, env.env_map->tex_id());
 
         glDrawElements(GL_TRIANGLES, (GLsizei)__skydome_indices_count, GL_UNSIGNED_BYTE, (void *)uintptr_t(skydome_ndx_offset_));
 
