@@ -77,7 +77,8 @@ std::vector<uint8_t> LoadHDR(const std::string &name, int &out_w, int &out_h) {
     int data_offset = 0;
 
     int scanlines_left = res_y;
-    std::vector<uint8_t> scanline(res_x * 4);
+    std::vector<uint8_t> _scanline(res_x * 4);
+    uint8_t *scanline = _scanline.data();
 
     while (scanlines_left) {
         {
