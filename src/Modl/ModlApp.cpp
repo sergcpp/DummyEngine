@@ -87,7 +87,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
     }
 
     // Setup camera
-    cam_.Perspective(45.0f, float(w)/h, 0.1f, 100000.0f);
+    cam_.Perspective(45.0f, float(w)/h, 0.2f, 10000.0f);
 
     // Compile model or anim and/or load from file
 
@@ -131,13 +131,9 @@ int ModlApp::Run(const std::vector<std::string> &args) {
             view_mesh_ = ctx_.LoadMesh(out_file_name.c_str(), mesh_file, std::bind(&ModlApp::OnMaterialNeeded, this, _1));
 
             auto bbox_min = view_mesh_->bbox_min(), bbox_max = view_mesh_->bbox_max();
-
             auto dims = bbox_max - bbox_min;
             float max_dim = std::max(dims[0], std::max(dims[1], dims[2]));
-
-            auto center = 0.5f * (bbox_min + bbox_max);
-
-            cam_.SetupView(center - Ren::Vec3f{ 0.0f, 0.0f, 1.0f } * max_dim * 2.0f, center, up);
+            view_dist_ = 2.0f * max_dim;
 
             if (!anim_file_name.empty()) {
                 ifstream anim_file(anim_file_name, ios::binary);
@@ -155,6 +151,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
     //
 
     while (!terminated()) {
+        PollEvents();
         Frame();
 
 #if defined(USE_GL_RENDER)
@@ -167,7 +164,6 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         SDL_RenderCopy(renderer_, texture_, NULL, NULL);
         SDL_RenderPresent(renderer_);
 #endif
-        PollEvents();
     }
 
     Destroy();
@@ -202,7 +198,7 @@ int ModlApp::Init(int w, int h) {
     {
         // load diagnostic shader
         std::ifstream diag_vs("assets/shaders/diag.vs", std::ios::binary | std::ios::ate),
-            diag_fs("assets/shaders/diag.fs", std::ios::binary | std::ios::ate);
+                      diag_fs("assets/shaders/diag.fs", std::ios::binary | std::ios::ate);
 
         size_t diag_vs_size = (size_t)diag_vs.tellg();
         diag_vs.seekg(0, std::ios::beg);
@@ -270,6 +266,11 @@ void ModlApp::Frame() {
 
     ClearColorAndDepth(0.1f, 0.75f, 0.75f, 1);
 
+    {   // Update camera position
+        auto center = 0.5f * (view_mesh_->bbox_min() + view_mesh_->bbox_max());
+        cam_.SetupView(center - Ren::Vec3f{ 0.0f, 0.0f, 1.0f } * view_dist_, center, up);
+    }
+
     if (view_mesh_->type() == Ren::MeshSimple) {
         DrawMeshSimple(view_mesh_);
     } else if (view_mesh_->type() == Ren::MeshSkeletal) {
@@ -317,6 +318,13 @@ void ModlApp::PollEvents() {
                 angle_x_ += -0.01f * e.motion.yrel;
             }
             break;
+        case SDL_MOUSEWHEEL: {
+            if (e.wheel.y > 0) {
+                view_dist_ -= 0.05f * view_dist_;
+            } else if (e.wheel.y < 0) {
+                view_dist_ += 0.05f * view_dist_;
+            }
+        } break;
         case SDL_QUIT: {
             quit_ = true;
             return;
