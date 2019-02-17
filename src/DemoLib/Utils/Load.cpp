@@ -137,7 +137,7 @@ std::vector<uint8_t> LoadHDR(const std::string &name, int &out_w, int &out_h) {
             }
         }
 
-        for (int i = 0; i < res_x; i++) {
+        for (int i = res_x - 1; i >= 0; --i) {
             data[data_offset++] = scanline[i + 0 * res_x];
             data[data_offset++] = scanline[i + 1 * res_x];
             data[data_offset++] = scanline[i + 2 * res_x];

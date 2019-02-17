@@ -18,7 +18,6 @@ void main() {
 	vec3 view_dir_ws = normalize(aVertexPos_ - camera_pos);
 
     outColor = texture(env_texture, view_dir_ws);
-outColor.r = 1.0;
 	outSpecular = vec4(0.0, 0.0, 0.0, 1.0);
 }
 )"
