@@ -9,6 +9,7 @@ layout(binding = 0) uniform mediump sampler2DMS depth_texture;
 layout(binding = 1) uniform mediump sampler2DMS norm_texture;
 layout(binding = 2) uniform mediump sampler2DMS spec_texture;
 layout(binding = 3) uniform mediump sampler2D prev_texture;
+layout(binding = 4) uniform mediump samplerCube env_texture;
 
 layout(location = 0) uniform mat4 proj_matrix;
 layout(location = 1) uniform mat4 inv_proj_matrix;
@@ -180,7 +181,7 @@ void main() {
     const float n = 0.5;
     const float f = 10000.0;
 
-    vec4 prev_color = vec4(0.0);
+    vec3 prev_color = vec3(0.0);
     float prev_depth = -1.1f;
 
     for (int i = 0; i < 1; i++) {
@@ -207,6 +208,10 @@ void main() {
         vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
         vec3 refl_ray_vs = reflect(view_ray_vs, normal);
 
+        const float R0 = 0.0f;
+        float fresnel = R0 + (1.0 - R0) * pow(1.0 - dot(normal, -view_ray_vs), 5.0);
+        vec3 infl = fresnel * specular.xyz;
+
         vec2 hit_pixel;
         vec3 hit_point;
     
@@ -221,16 +226,16 @@ void main() {
             
             vec4 tex_color = textureLod(prev_texture, hit_prev.xy, 0.0);
 
-            const float R0 = 0.0f;
-            float fresnel = R0 + (1.0 - R0) * pow(1.0 - dot(normal, -view_ray_vs), 5.0);;
-
-            vec3 infl = fresnel * specular.xyz;
             infl *= max(1.0 - 2.0 * distance(hit_pixel, vec2(0.5, 0.5)), 0.0);
 
             prev_depth = depth;
-            prev_color = vec4(infl * tex_color.xyz, 1.0);
-            outColor += 1.0 * prev_color;
+            prev_color = infl * tex_color.xyz;
+            outColor += vec4(prev_color, 1.0);
+        } else {
+            outColor += vec4(infl * texture(env_texture, refl_ray_vs).xyz, 1.0);
         }
+
+        
     }
 }
 )"

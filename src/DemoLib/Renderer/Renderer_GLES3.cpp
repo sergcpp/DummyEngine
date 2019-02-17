@@ -994,6 +994,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
 
         BindTexture(3, down_buf_.attachments[0].tex);
+        BindCubemap(4, env.env_map->tex_id());
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 

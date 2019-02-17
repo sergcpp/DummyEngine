@@ -276,20 +276,9 @@ void main(void) {
     vec3 diffuse_color = albedo_color * (sun_col * lambert * visibility + ambient_occlusion * indirect_col /*+ additional_light*/);
     
     outColor = vec4(diffuse_color, 1.0);
-    outNormal = EncodeNormal((uVMatrix * vec4(normal, 0.0)).xyz);
+    
+    vec3 normal_vs = normalize((uVMatrix * vec4(normal, 0.0)).xyz);
+    outNormal = EncodeNormal(normal_vs);
+    
     outSpecular = vec4(vec3(ambient_occlusion), 1.0) * specular_color;
-    
-    //outColor = outColor * 0.0001 + vec4(ambient_occlusion, ambient_occlusion, ambient_occlusion, 1.0);
-    
-    //outColor = outColor * 0.0001;
-    
-    //int yline = (iy * GRID_RES_Y / resy)
-    
-    /*if (dcount_and_pcount.x == 1u) {
-        outColor += vec4(0.0001, 0.0, 0.0, 1.0);
-    } else if (slice == 6) {
-        outColor += vec4(0.0, 0.0001, 0.0, 1.0);
-    } else if (slice == 7) {
-        outColor += vec4(0.0, 0.0, 0.0001, 1.0);
-    }*/
 }
