@@ -1,0 +1,5 @@
+gl_program: main main.vs main.fs
+sw_program: main
+texture: tile01_diff.tga
+texture: tile01_norm.tga
+texture: tile01_spec.tga

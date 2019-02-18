@@ -13,7 +13,8 @@
         "fwd_speed" : 0.025
     },
     "meshes" : {
-		"rails" : "rails.mesh",
+        "rails" : "rails.mesh",
+        "sidewalk" : "sidewalk.mesh"
     },
     "lights" : {
         "l0" : {
@@ -68,33 +69,53 @@
         }
     },
     "objects" : [
-		{
-			"pos" : [ 0.0, 0.0, 0.0 ],
+        {
+            "pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "rails",
             "lightmap_res" : 512,
             "lights" : [ "l0", "l1", "l2" ],
             "decals1" : [ "d0", "d1", "d2", "d3" ]
         },
         {
-			"pos" : [ 0.0, 0.0, 16.0 ],
+            "pos" : [ 0.0, 0.0, 0.0 ],
+            "mesh" : "sidewalk",
+            "lightmap_res" : 512
+        },
+        {
+            "pos" : [ 0.0, 0.0, 16.0 ],
             "mesh" : "rails",
             "lightmap_res" : 512,
-            "lights1" : [ "l0", "l1", "l2", "l3" ],
+            "lights" : [ "l0", "l1", "l2" ],
             "decals1" : [ "d0", "d1", "d2", "d3" ]
         },
         {
-			"pos" : [ 0.0, 0.0, 32.0 ],
+            "pos" : [ 0.0, 0.0, 16.0 ],
+            "mesh" : "sidewalk",
+            "lightmap_res" : 512
+        },
+        {
+            "pos" : [ 0.0, 0.0, 32.0 ],
             "mesh" : "rails",
             "lightmap_res" : 512,
-            "lights1" : [ "l0", "l1", "l2", "l3" ],
+            "lights" : [ "l0", "l1", "l2" ],
             "decals1" : [ "d0", "d1", "d2", "d3" ]
         },
         {
-			"pos" : [ 0.0, 0.0, 48.0 ],
+            "pos" : [ 0.0, 0.0, 32.0 ],
+            "mesh" : "sidewalk",
+            "lightmap_res" : 512
+        },
+        {
+            "pos" : [ 0.0, 0.0, 48.0 ],
             "mesh" : "rails",
             "lightmap_res" : 512,
-            "lights1" : [ "l0", "l1", "l2", "l3" ],
+            "lights" : [ "l0", "l1", "l2" ],
             "decals1" : [ "d0", "d1", "d2", "d3" ]
+        },
+        {
+            "pos" : [ 0.0, 0.0, 48.0 ],
+            "mesh" : "sidewalk",
+            "lightmap_res" : 512
         }
     ]
 }
