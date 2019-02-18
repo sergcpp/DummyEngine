@@ -3,7 +3,7 @@ R"(
 
 /*
 UNIFORMS
-	uMVPMatrix : 0
+    uMVPMatrix : 0
 */
 
 layout(location = 0) in vec3 aVertexPosition;

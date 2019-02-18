@@ -3,7 +3,7 @@ R"(
 #extension GL_ARB_texture_multisample : enable
 
 #ifdef GL_ES
-	precision mediump float;
+    precision mediump float;
 #endif
 
 /*

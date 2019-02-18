@@ -3,7 +3,7 @@ R"(
 #extension GL_EXT_texture_buffer : enable
 
 #ifdef GL_ES
-	precision mediump float;
+    precision mediump float;
 #endif
 
 #define GRID_RES_X )" AS_STR(REN_GRID_RES_X) R"(

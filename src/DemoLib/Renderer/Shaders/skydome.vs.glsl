@@ -23,8 +23,8 @@ out vec3 aVertexPos_;
 
 void main() {
     vec3 vertex_position_ws = (uMMatrix * vec4(aVertexPosition, 1.0)).xyz;
-	aVertexPos_ = vertex_position_ws;
+    aVertexPos_ = vertex_position_ws;
 
-	gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
+    gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
 } 
 )"

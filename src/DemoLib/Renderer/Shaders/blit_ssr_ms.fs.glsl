@@ -236,8 +236,6 @@ void main() {
 			vec4 refl_ray_ws = inv_view_matrix * vec4(refl_ray_vs, 0.0);
             outColor += vec4(infl * texture(env_texture, refl_ray_ws.xyz).xyz, 1.0);
         }
-
-        
     }
 }
 )"

@@ -3,7 +3,7 @@ R"(
 #extension GL_ARB_texture_multisample : enable
 
 #ifdef GL_ES
-	precision mediump float;
+    precision mediump float;
 #endif
         
 layout(binding = 0) uniform mediump sampler2DMS s_texture;
@@ -20,9 +20,9 @@ void main() {
     vec2 norm_uvs = aVertexUVs_ / uTexSize;
 
     vec3 c0 = texelFetch(s_texture, ivec2(aVertexUVs_), 0).xyz;
-	vec3 c1 = texelFetch(s_texture, ivec2(aVertexUVs_), 1).xyz;
-	vec3 c2 = texelFetch(s_texture, ivec2(aVertexUVs_), 2).xyz;
-	vec3 c3 = texelFetch(s_texture, ivec2(aVertexUVs_), 3).xyz;
+    vec3 c1 = texelFetch(s_texture, ivec2(aVertexUVs_), 1).xyz;
+    vec3 c2 = texelFetch(s_texture, ivec2(aVertexUVs_), 2).xyz;
+    vec3 c3 = texelFetch(s_texture, ivec2(aVertexUVs_), 3).xyz;
     vec3 c4 = 0.1 * texture(s_blured_texture, norm_uvs).xyz;
             
     c0 += c4;

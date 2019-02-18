@@ -2,7 +2,7 @@ R"(
 #version 310 es
 
 #ifdef GL_ES
-	precision mediump float;
+    precision mediump float;
 #endif
         
 layout(binding = 0) uniform sampler2D s_texture;

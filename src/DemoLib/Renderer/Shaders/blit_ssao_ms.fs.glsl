@@ -2,7 +2,7 @@ R"(
 #version 310 es
 
 #ifdef GL_ES
-	precision mediump float;
+    precision mediump float;
 #endif
 
 layout(binding = 0) uniform mediump sampler2DMS depth_texture;
@@ -100,7 +100,7 @@ void main() {
         vec2 sample_point = transforms[c] * sample_points[i];
 
         vec2 depth_values = vec2(BilinearSampleDepthTexel(aVertexUVs_ + ss_radius * sample_point * screen_size),
-								 BilinearSampleDepthTexel(aVertexUVs_ - ss_radius * sample_point * screen_size));
+                                 BilinearSampleDepthTexel(aVertexUVs_ - ss_radius * sample_point * screen_size));
         float sphere_width = initial_radius * sphere_widths[i];
 
         vec2 depth_diff = vec2(depth) - depth_values;
@@ -110,8 +110,8 @@ void main() {
         const float max_dist = 1.0;
         vec2 dist_mod = clamp((vec2(max_dist) - depth_diff) / max_dist, vec2(0.0), vec2(1.0));
 
-		vec2 mod_cont = mix(mix(vec2(0.5), 1.0 - occ_values.yx, dist_mod.yx),
-							occ_values.xy, dist_mod.xy);
+        vec2 mod_cont = mix(mix(vec2(0.5), 1.0 - occ_values.yx, dist_mod.yx),
+                            occ_values.xy, dist_mod.xy);
         
         occlusion += sample_weight * mod_cont.x;
         occlusion += sample_weight * mod_cont.y;
