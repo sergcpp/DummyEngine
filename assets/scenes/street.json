@@ -18,18 +18,18 @@
     },
     "lights" : {
         "l0" : {
-            "offset" : [ 0.0, 1.0, 0.0 ],
-            "color" : [ 1000.0, 0.0, 0.0 ],
+            "offset" : [ 0.0, 5.0, 0.0 ],
+            "color" : [ 10000.0, 9000.0, 7000.0 ],
             "radius" : 0.01
         },
         "l1" : {
-            "offset" : [ 0.0, 1.0, 5.0 ],
-            "color" : [ 0.0, 1000.0, 0.0 ],
+            "offset" : [ 0.0, 5.0, 5.0 ],
+            "color" : [ 10000.0, 9000.0, 7000.0 ],
             "radius" : 0.01
         },
         "l2" : {
-            "offset" : [ 0.0, 1.0, -5.0 ],
-            "color" : [ 0.0, 0.0, 1000.0 ],
+            "offset" : [ 0.0, 5.0, -5.0 ],
+            "color" : [ 10000.0, 9000.0, 7000.0 ],
             "radius" : 0.01
         },
         "l3" : {
@@ -40,16 +40,16 @@
     },
     "decals" : {
         "d0" : {
-            "pos" : [ -23.0, 0.5, 0.0 ],
-            "rot" : [ -90.0, 45.0, 0.0 ],
-            "dim" : [ 5.0, 5.0, 1.0 ],
+            "pos" : [ 6.0, 0.5, 0.0 ],
+            "rot" : [ -90.0, 0.0, 0.0 ],
+            "dim" : [ 1.0, 1.0, 1.0 ],
             "diff" : "assets/textures/manhole01_diff.tga",
             "norm" : "assets/textures/manhole01_norm.tga"
         },
         "d1" : {
-            "pos" : [ -23.0, 0.5, 5.0 ],
-            "rot" : [ -90.0, 45.0, 0.0 ],
-            "dim" : [ 5.0, 5.0, 1.0 ],
+            "pos" : [ -6.0, 0.5, 1.0 ],
+            "rot" : [ -90.0, 0.0, 0.0 ],
+            "dim" : [ 1.0, 1.0, 1.0 ],
             "diff" : "assets/textures/manhole01_diff.tga",
             "norm" : "assets/textures/manhole01_norm.tga"
         },
@@ -74,12 +74,12 @@
             "mesh" : "rails",
             "lightmap_res" : 512,
             "lights" : [ "l0", "l1", "l2" ],
-            "decals1" : [ "d0", "d1", "d2", "d3" ]
         },
         {
             "pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "sidewalk",
-            "lightmap_res" : 512
+            "lightmap_res" : 512,
+            "decals" : [ "d0", "d1" ]
         },
         {
             "pos" : [ 0.0, 0.0, 16.0 ],
@@ -91,7 +91,8 @@
         {
             "pos" : [ 0.0, 0.0, 16.0 ],
             "mesh" : "sidewalk",
-            "lightmap_res" : 512
+            "lightmap_res" : 512,
+            "decals" : [ "d0", "d1" ]
         },
         {
             "pos" : [ 0.0, 0.0, 32.0 ],
@@ -103,7 +104,8 @@
         {
             "pos" : [ 0.0, 0.0, 32.0 ],
             "mesh" : "sidewalk",
-            "lightmap_res" : 512
+            "lightmap_res" : 512,
+            "decals" : [ "d0", "d1" ]
         },
         {
             "pos" : [ 0.0, 0.0, 48.0 ],
@@ -115,7 +117,8 @@
         {
             "pos" : [ 0.0, 0.0, 48.0 ],
             "mesh" : "sidewalk",
-            "lightmap_res" : 512
+            "lightmap_res" : 512,
+            "decals" : [ "d0", "d1" ]
         }
     ]
 }
