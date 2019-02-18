@@ -185,9 +185,11 @@ void main() {
     vec3 prev_color = vec3(0.0);
     float prev_depth = -1.1f;
 
+    outColor = vec4(0.0, 0.0, 0.0, 0.0);
+
     for (int i = 0; i < 1; i++) {
         vec4 specular = texelFetch(spec_texture, ivec2(aVertexUVs_), i);
-        if (dot(specular.xyz, specular.xyz) < 0.01) continue;
+        if (dot(specular.xyz, specular.xyz) < 0.001) continue;
 
         float depth = texelFetch(depth_texture, ivec2(aVertexUVs_), i).r;
         depth = 2.0 * depth - 1.0;
@@ -233,7 +235,7 @@ void main() {
             prev_color = infl * tex_color.xyz;
             outColor += vec4(prev_color, 1.0);
         } else {
-			vec3 refl_ray_ws = (inv_view_matrix * vec4(refl_ray_vs, 0.0)).xyz;
+            vec3 refl_ray_ws = normalize((inv_view_matrix * vec4(refl_ray_vs, 0.0)).xyz);
             outColor += vec4(infl * texture(env_texture, refl_ray_ws).xyz, 1.0);
         }
     }

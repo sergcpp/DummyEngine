@@ -46,7 +46,7 @@ void main() {
     uvec2 dcount_and_pcount = uvec2(cell_data.y & 0x000000ffu, 0);
 
     if (mode == 0) {
-        outColor = vec4(heatmap(float(offset_and_lcount.y) * (1.0 / 16.0)), 0.85);
+        outColor = vec4(heatmap(float(offset_and_lcount.y) * (1.0 / 32.0)), 0.85);
     } else if (mode == 1) {
         outColor = vec4(heatmap(float(dcount_and_pcount.x) * (1.0 / 8.0)), 0.85);
     }

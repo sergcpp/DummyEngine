@@ -1,0 +1,5 @@
+gl_program: main main.vs main.fs
+sw_program: main
+texture: window01_diff.tga
+texture: default_normalmap.tga
+texture: window01_spec.tga

@@ -4,3 +4,8 @@ Personal playground for testing different realtime rendering stuff. Currently in
 
 ![Screenshot](img0.jpg)|![Screenshot](img1.jpg)|![Screenshot](img2.jpg)|![Screenshot](img3.jpg)
 :-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:
+
+Also trying to add clustered lighting, decals, SSR and SSAO.
+
+![Screenshot](img4.jpg)|![Screenshot](img5.jpg)|![Screenshot](img6.jpg)
+:-------------------------:|:-------------------------:|:-------------------------:

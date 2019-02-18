@@ -1,0 +1,5 @@
+gl_program: main main.vs main.fs
+sw_program: main
+texture: grey_paint_diff.tga
+texture: grey_paint_norm.tga
+texture: default_specular.tga
