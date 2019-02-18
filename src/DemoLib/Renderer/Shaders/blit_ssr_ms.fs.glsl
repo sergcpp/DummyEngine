@@ -15,6 +15,7 @@ layout(location = 0) uniform mat4 proj_matrix;
 layout(location = 1) uniform mat4 inv_proj_matrix;
 layout(location = 2) uniform mat4 delta_matrix;
 layout(location = 3) uniform vec2 zbuffer_size;
+layout(location = 4) uniform mat4 inv_view_matrix;
 
 in vec2 aVertexUVs_;
 
@@ -88,10 +89,10 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     float dk = (k1 - k0) * inv_dx;
     vec2 dP = vec2(step_dir, delta.y * inv_dx);
 
-        float stride = 0.025 * zbuffer_size.x; //16.0;
-        dP *= stride;
-        dQ *= stride;
-        dk *= stride;
+	float stride = 0.025 * zbuffer_size.x; //16.0;
+	dP *= stride;
+	dQ *= stride;
+	dk *= stride;
 
     ivec2 c = ivec2(gl_FragCoord.xy);
     float jitter = rand(gl_FragCoord.xy); //float((c.x + c.y) & 1) * 0.5;    
@@ -232,7 +233,8 @@ void main() {
             prev_color = infl * tex_color.xyz;
             outColor += vec4(prev_color, 1.0);
         } else {
-            outColor += vec4(infl * texture(env_texture, refl_ray_vs).xyz, 1.0);
+			vec4 refl_ray_ws = inv_view_matrix * vec4(refl_ray_vs, 0.0);
+            outColor += vec4(infl * texture(env_texture, refl_ray_ws.xyz).xyz, 1.0);
         }
 
         

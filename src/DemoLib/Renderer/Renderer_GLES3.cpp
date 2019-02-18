@@ -934,7 +934,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glDepthFunc(GL_LESS);
 
     auto view_from_clip = Ren::Inverse(clip_from_view);
-    auto delta_matrix = prev_view_from_world_ * Ren::Inverse(view_from_world);
+    auto world_from_view = Ren::Inverse(view_from_world);
+    // delta matrix between current and previous frame
+    auto delta_matrix = prev_view_from_world_ * world_from_view;
 
     glQueryCounter(queries_[1][TimeReflStart], GL_TIMESTAMP);
 
@@ -982,6 +984,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glUniformMatrix4fv(1, 1, GL_FALSE, Ren::ValuePtr(view_from_clip));
         glUniformMatrix4fv(2, 1, GL_FALSE, Ren::ValuePtr(delta_matrix));
         glUniform2f(3, float(w_), float(h_));
+        glUniformMatrix4fv(4, 1, GL_FALSE, Ren::ValuePtr(world_from_view));
 
         if (true) {
             BindTextureMs(0, clean_buf_.depth_tex.GetValue());
