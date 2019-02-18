@@ -70,8 +70,7 @@ namespace RendererInternal {
 
     const int U_EXPOSURE = 15;
 
-    const int U_RESX = 16;
-    const int U_RESY = 17;
+    const int U_RES = 16;
 
     const int U_LIGHTS_BUFFER_TEXTURE = 16;
 
@@ -666,7 +665,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         //glUniformMatrix4fv(1, 1, GL_FALSE, ValuePtr(_world_from_clip));
         cur_clip_from_object = nullptr;
 
-        BindCubemap(0, env.env_map->tex_id());
+        if (env.env_map) {
+            BindCubemap(0, env.env_map->tex_id());
+        }
 
         glDrawElements(GL_TRIANGLES, (GLsizei)__skydome_indices_count, GL_UNSIGNED_BYTE, (void *)uintptr_t(skydome_ndx_offset_));
 
@@ -795,8 +796,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             glUniform3fv(U_SUN_DIR, 1, Ren::ValuePtr(env.sun_dir));
             glUniform3fv(U_SUN_COL, 1, Ren::ValuePtr(env.sun_col));
 
-            glUniform1i(U_RESX, w_);
-            glUniform1i(U_RESY, h_);
+            glUniform2i(U_RES, w_, h_);
 
             glUniform1f(U_GAMMA, 2.2f);
             glUniform1i(U_LIGHTS_COUNT, (GLint)lights_count);
@@ -997,7 +997,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
 
         BindTexture(3, down_buf_.attachments[0].tex);
-        BindCubemap(4, env.env_map->tex_id());
+        if (env.env_map) {
+            BindCubemap(4, env.env_map->tex_id());
+        }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
@@ -1243,13 +1245,12 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
         glUseProgram(cur_program->prog_id());
 
-        glUniform1i(U_RESX, w_);
-        glUniform1i(U_RESY, h_);
+        glUniform2i(U_RES, w_, h_);
 
         if (debug_lights_) {
-            glUniform1i(18, 0);
+            glUniform1i(17, 0);
         } else if (debug_decals_) {
-            glUniform1i(18, 1);
+            glUniform1i(17, 1);
         }
 
         const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,

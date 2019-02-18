@@ -233,8 +233,8 @@ void main() {
             prev_color = infl * tex_color.xyz;
             outColor += vec4(prev_color, 1.0);
         } else {
-			vec4 refl_ray_ws = inv_view_matrix * vec4(refl_ray_vs, 0.0);
-            outColor += vec4(infl * texture(env_texture, refl_ray_ws.xyz).xyz, 1.0);
+			vec3 refl_ray_ws = (inv_view_matrix * vec4(refl_ray_vs, 0.0)).xyz;
+            outColor += vec4(infl * texture(env_texture, refl_ray_ws).xyz, 1.0);
         }
     }
 }

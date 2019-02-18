@@ -2,7 +2,7 @@
     "name" : "street",
     "environment" : {
         "sun_dir" : [ 0.54, -0.54, -0.54 ],
-        "sun_col" : [ 1.0, 1.0, 0.9 ],
+        "sun_col1" : [ 1.0, 1.0, 0.9 ],
         "sun_softness" : 0.1,
         "env_col1" : [ 0.05, 0.075, 0.1 ],
         "env_map" : "env/satara_night"
@@ -17,18 +17,18 @@
     },
     "lights" : {
         "l0" : {
-            "offset" : [ -23.0, 1.0, 0.0 ],
-            "color" : [ 100.0, 0.0, 0.0 ],
+            "offset" : [ 0.0, 1.0, 0.0 ],
+            "color" : [ 1000.0, 0.0, 0.0 ],
             "radius" : 0.01
         },
         "l1" : {
-            "offset" : [ -23.0, 1.0, 5.0 ],
-            "color" : [ 0.0, 100.0, 0.0 ],
+            "offset" : [ 0.0, 1.0, 5.0 ],
+            "color" : [ 0.0, 1000.0, 0.0 ],
             "radius" : 0.01
         },
         "l2" : {
-            "offset" : [ -23.0, 1.0, 10.0 ],
-            "color" : [ 0.0, 0.0, 100.0 ],
+            "offset" : [ 0.0, 1.0, -5.0 ],
+            "color" : [ 0.0, 0.0, 1000.0 ],
             "radius" : 0.01
         },
         "l3" : {
@@ -72,11 +72,25 @@
 			"pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "rails",
             "lightmap_res" : 512,
-            "lights1" : [ "l0", "l1", "l2", "l3" ],
+            "lights" : [ "l0", "l1", "l2" ],
             "decals1" : [ "d0", "d1", "d2", "d3" ]
         },
         {
 			"pos" : [ 0.0, 0.0, 16.0 ],
+            "mesh" : "rails",
+            "lightmap_res" : 512,
+            "lights1" : [ "l0", "l1", "l2", "l3" ],
+            "decals1" : [ "d0", "d1", "d2", "d3" ]
+        },
+        {
+			"pos" : [ 0.0, 0.0, 32.0 ],
+            "mesh" : "rails",
+            "lightmap_res" : 512,
+            "lights1" : [ "l0", "l1", "l2", "l3" ],
+            "decals1" : [ "d0", "d1", "d2", "d3" ]
+        },
+        {
+			"pos" : [ 0.0, 0.0, 48.0 ],
             "mesh" : "rails",
             "lightmap_res" : 512,
             "lights1" : [ "l0", "l1", "l2", "l3" ],

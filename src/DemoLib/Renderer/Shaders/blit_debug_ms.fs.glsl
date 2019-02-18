@@ -12,12 +12,11 @@ R"(
 #define GRID_RES_Z )" AS_STR(REN_GRID_RES_Z) R"(
         
 layout(binding = 0) uniform mediump sampler2DMS s_texture;
-layout(binding = 12) uniform highp usamplerBuffer cells_buffer;
-layout(binding = 13) uniform highp usamplerBuffer items_buffer;
+layout(binding = 14) uniform highp usamplerBuffer cells_buffer;
+layout(binding = 15) uniform highp usamplerBuffer items_buffer;
 
-layout(location = 16) uniform int resx;
-layout(location = 17) uniform int resy;
-layout(location = 18) uniform int mode;
+layout(location = 16) uniform ivec2 res;
+layout(location = 17) uniform int mode;
 
 in vec2 aVertexUVs_;
 
@@ -36,12 +35,12 @@ void main() {
     depth = 2.0 * depth - 1.0;
     depth = 2.0 * n * f / (f + n - depth * (f - n));
     
-    float k = log2(depth / n) / log2(f / n);
-    int slice = int(k * 24.0);
+    float k = log2(depth / n) / log2(0.0 + f / n);
+    int slice = int(floor(k * 24.0));
     
     int ix = int(gl_FragCoord.x);
     int iy = int(gl_FragCoord.y);
-    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy * GRID_RES_Y / resy) * GRID_RES_X + ix * GRID_RES_X / resx;
+    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy * GRID_RES_Y / res.y) * GRID_RES_X + ix * GRID_RES_X / res.x;
     
     uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
     uvec2 offset_and_lcount = uvec2(cell_data.x & 0x00ffffffu, cell_data.x >> 24);
@@ -53,9 +52,9 @@ void main() {
         outColor = vec4(heatmap(float(dcount_and_pcount.x) * (1.0 / 8.0)), 0.85);
     }
 
-    int xy_cell = (iy * GRID_RES_Y / resy) * GRID_RES_X + ix * GRID_RES_X / resx;
-    int xy_cell_right = (iy * GRID_RES_Y / resy) * GRID_RES_X + (ix + 1) * GRID_RES_X / resx;
-    int xy_cell_up = ((iy + 1) * GRID_RES_Y / resy) * GRID_RES_X + ix * GRID_RES_X / resx;
+    int xy_cell = (iy * GRID_RES_Y / res.y) * GRID_RES_X + ix * GRID_RES_X / res.x;
+    int xy_cell_right = (iy * GRID_RES_Y / res.y) * GRID_RES_X + (ix + 1) * GRID_RES_X / res.x;
+    int xy_cell_up = ((iy + 1) * GRID_RES_Y / res.y) * GRID_RES_X + ix * GRID_RES_X / res.x;
 
     if (xy_cell_right != xy_cell || xy_cell_up != xy_cell) {
         outColor = vec4(1.0, 0.0, 0.0, 1.0);

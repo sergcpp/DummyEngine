@@ -38,8 +38,7 @@ layout(location = 12) uniform vec3 sun_dir;
 layout(location = 13) uniform vec3 sun_col;
 layout(location = 14) uniform float gamma;
 layout(location = 15) uniform int lights_count;
-layout(location = 16) uniform int resx;
-layout(location = 17) uniform int resy;
+layout(location = 16) uniform ivec2 res;
 
 in vec3 aVertexPos_;
 in mat3 aVertexTBN_;
@@ -58,7 +57,7 @@ vec3 heatmap(float t) {
 }
 
 float GetVisibility(in vec2 lm_uvs, inout vec3 additional_light) {
-    const vec2 poisson_disk[32] = vec2[32](
+    const vec2 poisson_disk[16] = vec2[16](
         vec2(-0.5, 0.0),
         vec2(0.0, 0.5),
         vec2(0.5, 0.0),
@@ -77,27 +76,7 @@ float GetVisibility(in vec2 lm_uvs, inout vec3 additional_light) {
         vec2(0.72, 0.8),
         vec2(-0.75, 0.74),
         vec2(-0.8, -0.73),
-        vec2(0.75, -0.81),
-        
-        vec2(-0.26, 0.75),
-        vec2(0.79, 0.36),
-        vec2(0.79, -0.42),
-        vec2(-0.36, -0.76),
-        
-        vec2(-0.83, -0.34),
-        vec2(0.43, -0.9),
-        vec2(0.35, 0.82),
-        vec2(-0.8, 0.4),
-        
-        vec2(-0.42, 0.18),
-        vec2(0.23, 0.36),
-        vec2(0.3, -0.33),
-        vec2(-0.41, -0.27),
-        
-        vec2(-0.28, 0.97),
-        vec2(0.95, -0.19),
-        vec2(-0.11, -0.94),
-        vec2(-0.99, 0.1)
+        vec2(0.75, -0.81)
     );
 
     const float shadow_softness = 2.0 / 2048.0;
@@ -153,7 +132,7 @@ void main(void) {
     
     int ix = int(gl_FragCoord.x);
     int iy = int(gl_FragCoord.y);
-    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy * GRID_RES_Y / resy) * GRID_RES_X + ix * GRID_RES_X / resx;
+    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy * GRID_RES_Y / res.y) * GRID_RES_X + ix * GRID_RES_X / res.x;
     
     uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
     uvec2 offset_and_lcount = uvec2(cell_data.x & 0x00ffffffu, cell_data.x >> 24);
@@ -270,10 +249,10 @@ void main(void) {
     
     //indirect_col = vec3(0.1, 0.1, 0.1);
     
-    vec2 ao_uvs = gl_FragCoord.xy / vec2(float(resx), float(resy));
+    vec2 ao_uvs = gl_FragCoord.xy / vec2(float(res.x), float(res.y));
     float ambient_occlusion = texture(ao_texture, ao_uvs).r;
     
-    vec3 diffuse_color = albedo_color * (sun_col * lambert * visibility + ambient_occlusion * indirect_col /*+ additional_light*/);
+    vec3 diffuse_color = albedo_color * (sun_col * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
     
     outColor = vec4(diffuse_color, 1.0);
     
