@@ -44,28 +44,16 @@
             "rot" : [ -90.0, 0.0, 0.0 ],
             "dim" : [ 1.0, 1.0, 1.0 ],
             "diff" : "assets/textures/manhole01_diff.tga",
-            "norm" : "assets/textures/manhole01_norm.tga"
+            "norm" : "assets/textures/manhole01_norm.tga",
+            "spec" : "assets/textures/manhole01_spec.tga"
         },
         "d1" : {
             "pos" : [ -6.0, 0.5, 1.0 ],
             "rot" : [ -90.0, 0.0, 0.0 ],
             "dim" : [ 1.0, 1.0, 1.0 ],
             "diff" : "assets/textures/manhole01_diff.tga",
-            "norm" : "assets/textures/manhole01_norm.tga"
-        },
-        "d2" : {
-            "pos" : [ -23.0, 0.5, 10.0 ],
-            "rot" : [ -90.0, 45.0, 0.0 ],
-            "dim" : [ 5.0, 5.0, 1.0 ],
-            "diff" : "assets/textures/manhole01_diff.tga",
-            "norm" : "assets/textures/manhole01_norm.tga"
-        },
-        "d3" : {
-            "pos" : [ -23.0, 0.5, 15.0 ],
-            "rot" : [ -90.0, 45.0, 0.0 ],
-            "dim" : [ 5.0, 5.0, 1.0 ],
-            "diff" : "assets/textures/manhole01_diff.tga",
-            "norm" : "assets/textures/manhole01_norm.tga"
+            "norm" : "assets/textures/manhole01_norm.tga",
+            "spec" : "assets/textures/manhole01_spec.tga"
         }
     },
     "objects" : [
@@ -85,8 +73,7 @@
             "pos" : [ 0.0, 0.0, 16.0 ],
             "mesh" : "rails",
             "lightmap_res" : 512,
-            "lights" : [ "l0", "l1", "l2" ],
-            "decals1" : [ "d0", "d1", "d2", "d3" ]
+            "lights" : [ "l0", "l1", "l2" ]
         },
         {
             "pos" : [ 0.0, 0.0, 16.0 ],
@@ -98,8 +85,7 @@
             "pos" : [ 0.0, 0.0, 32.0 ],
             "mesh" : "rails",
             "lightmap_res" : 512,
-            "lights" : [ "l0", "l1", "l2" ],
-            "decals1" : [ "d0", "d1", "d2", "d3" ]
+            "lights" : [ "l0", "l1", "l2" ]
         },
         {
             "pos" : [ 0.0, 0.0, 32.0 ],
@@ -111,8 +97,7 @@
             "pos" : [ 0.0, 0.0, 48.0 ],
             "mesh" : "rails",
             "lightmap_res" : 512,
-            "lights" : [ "l0", "l1", "l2" ],
-            "decals1" : [ "d0", "d1", "d2", "d3" ]
+            "lights" : [ "l0", "l1", "l2" ]
         },
         {
             "pos" : [ 0.0, 0.0, 48.0 ],

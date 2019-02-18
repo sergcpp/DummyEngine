@@ -272,6 +272,19 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 }
             }
 
+            if (js_obj.Has("spec")) {
+                const JsString &js_spec = (const JsString &)js_obj.at("spec");
+
+                auto it = decals_textures.find(js_spec.val);
+
+                if (it == decals_textures.end()) {
+                    de->spec = load_decal_texture(js_spec.val);
+                    decals_textures[js_spec.val] = de->spec;
+                } else {
+                    de->spec = decals_textures[js_spec.val];
+                }
+            }
+
             all_decals[name] = de;
         }
     }

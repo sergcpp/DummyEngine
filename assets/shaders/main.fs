@@ -150,9 +150,9 @@ void main(void) {
         int di = int((item_data >> 12) & 0x00000fffu);
         
         mat4 de_proj;
-        de_proj[0] = texelFetch(decals_buffer, di * 5 + 0);
-        de_proj[1] = texelFetch(decals_buffer, di * 5 + 1);
-        de_proj[2] = texelFetch(decals_buffer, di * 5 + 2);
+        de_proj[0] = texelFetch(decals_buffer, di * 6 + 0);
+        de_proj[1] = texelFetch(decals_buffer, di * 6 + 1);
+        de_proj[2] = texelFetch(decals_buffer, di * 6 + 2);
         de_proj[3] = vec4(0.0, 0.0, 0.0, 1.0);
         de_proj = transpose(de_proj);
         
@@ -166,7 +166,7 @@ void main(void) {
         vec2 duv_dy = 0.5 * (de_proj * vec4(dp_dy, 0.0)).xy;
         
         if (app.x < 1.0 && app.y < 1.0 && app.z < 1.0) {
-            vec4 diff_uvs_tr = texelFetch(decals_buffer, di * 5 + 3);
+            vec4 diff_uvs_tr = texelFetch(decals_buffer, di * 6 + 3);
             float decal_influence = 0.0;
             
             if (diff_uvs_tr.z > 0.0) {
@@ -180,7 +180,7 @@ void main(void) {
                 albedo_color = mix(albedo_color, decal_diff.xyz, decal_influence);
             }
             
-            vec4 norm_uvs_tr = texelFetch(decals_buffer, di * 5 + 4);
+            vec4 norm_uvs_tr = texelFetch(decals_buffer, di * 6 + 4);
             
             if (norm_uvs_tr.z > 0.0) {
                 vec2 norm_uvs = norm_uvs_tr.xy + norm_uvs_tr.zw * uvs;
@@ -190,6 +190,18 @@ void main(void) {
             
                 vec4 decal_norm = textureGrad(decals_texture, norm_uvs, _duv_dx, _duv_dy);
                 normal_color = mix(normal_color, decal_norm.xyz, decal_influence);
+            }
+            
+            vec4 spec_uvs_tr = texelFetch(decals_buffer, di * 6 + 5);
+            
+            if (spec_uvs_tr.z > 0.0) {
+                vec2 spec_uvs = spec_uvs_tr.xy + spec_uvs_tr.zw * uvs;
+                
+                vec2 _duv_dx = spec_uvs_tr.zw * duv_dx;
+                vec2 _duv_dy = spec_uvs_tr.zw * duv_dy;
+            
+                vec4 decal_spec = textureGrad(decals_texture, spec_uvs, _duv_dx, _duv_dy);
+                specular_color = mix(specular_color, decal_spec, decal_influence);
             }
         }
     }

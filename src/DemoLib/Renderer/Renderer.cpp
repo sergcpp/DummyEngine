@@ -547,6 +547,7 @@ void Renderer::BackgroundProc() {
                                             memcpy(&de.mat[0][0], &clip_from_world_transposed[0][0], 12 * sizeof(float));
                                             memcpy(&de.diff[0], &decal->diff[0], 4 * sizeof(float));
                                             memcpy(&de.norm[0], &decal->norm[0], 4 * sizeof(float));
+                                            memcpy(&de.spec[0], &decal->spec[0], 4 * sizeof(float));
                                         }
                                     }
                                 }

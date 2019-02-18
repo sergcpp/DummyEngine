@@ -47,9 +47,9 @@ static_assert(sizeof(LightSourceItem) == 48, "!");
 
 struct DecalItem {
     float mat[3][4];
-    float diff[4], norm[4];
+    float diff[4], norm[4], spec[4];
 };
-static_assert(sizeof(DecalItem) == 20 * sizeof(float), "!");
+static_assert(sizeof(DecalItem) == 24 * sizeof(float), "!");
 
 struct CellData {
     uint32_t item_offset : 24;

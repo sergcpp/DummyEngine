@@ -45,7 +45,7 @@ struct LightSource : public Ren::RefCounter {
 
 struct Decal : public Ren::RefCounter {
     Ren::Mat4f view, proj;
-    Ren::Vec4f diff, norm;
+    Ren::Vec4f diff, norm, spec;
 };
 
 enum eObjectFlags {
