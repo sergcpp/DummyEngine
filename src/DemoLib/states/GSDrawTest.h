@@ -47,7 +47,7 @@ class GSDrawTest : public GameState {
 
     bool print_light_info_ = false;
 
-    uint32_t click_time_;
+    uint32_t click_time_ = 0;
 
     std::vector<std::string> cmdline_history_;
     bool cmdline_enabled_ = false;

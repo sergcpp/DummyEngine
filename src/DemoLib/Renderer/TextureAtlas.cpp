@@ -25,11 +25,8 @@ TextureAtlas::TextureAtlas(const Ren::Texture2DParams &p) : params_(p), splitter
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, p.w, p.h, 0, GL_RGB, GL_FLOAT, nullptr);
     }
 
-    float anisotropy = 4.0f;
-    //glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &anisotropy);
-    if (anisotropy > 0.0f) {
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
-    }
+    const float anisotropy = 4.0f;
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 
     if (p.filter == Ren::NoFilter) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -104,7 +101,7 @@ int TextureAtlas::Allocate(const void *data, Ren::eTexColorFormat format, const 
 
 bool TextureAtlas::Free(const int pos[2]) {
     // TODO: fill with black in debug
-    return splitter_.Free(pos[2]);
+    return splitter_.Free(pos);
 }
 
 void TextureAtlas::Finalize() {

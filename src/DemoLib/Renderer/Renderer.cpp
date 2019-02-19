@@ -239,7 +239,7 @@ void Renderer::BackgroundProc() {
             tr_list.push_back(view_from_identity);
             tr_list.push_back(clip_from_view);
 
-            const uint32_t skip_check_bit = (1 << 31);
+            const uint32_t skip_check_bit = (1u << 31);
             const uint32_t index_bits = ~skip_check_bit;
 
             uint32_t stack[MAX_STACK_SIZE];
@@ -309,8 +309,6 @@ void Renderer::BackgroundProc() {
             }
 
             {   // Gather meshes and lights, skip occluded and frustum culled
-                const uint32_t skip_check_bit = (1 << 31);
-                const uint32_t index_bits = ~skip_check_bit;
 
                 stack_size = 0;
                 stack[stack_size++] = (uint32_t)root_node_;
@@ -623,7 +621,7 @@ void Renderer::BackgroundProc() {
                 view_from_world = shadow_cam.view_matrix(),
                 clip_from_view = shadow_cam.projection_matrix();
 
-                const uint32_t skip_check_bit = (1 << 31);
+                const uint32_t skip_check_bit = (1u << 31);
                 const uint32_t index_bits = ~skip_check_bit;
 
                 stack_size = 0;

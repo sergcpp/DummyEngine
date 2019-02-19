@@ -155,7 +155,7 @@ void GSOccTest::DrawCam() {
 
     glLineWidth(5.0f);
 
-    const Ren::Vec3f pos = cam_.world_position();
+    //const Ren::Vec3f pos = cam_.world_position();
 
     Ren::Vec3f up = { 0, 1, 0 };
     Ren::Vec3f side = Normalize(Cross(view_dir_, up));

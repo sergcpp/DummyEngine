@@ -22,7 +22,7 @@ struct FrameBuf {
     Sys::Optional<uint32_t> depth_rb, depth_tex;
     std::vector<ColorAttachment> attachments;
 #endif
-    FrameBuf() :  w(-1), h(-1) {}
+    FrameBuf() :  w(-1), h(-1), fb(0xffffffff) {}
     FrameBuf(int w, int h, const ColorAttachmentDesc *attachments, int attachments_count,
              bool with_depth = true, Ren::eTexFilter depth_filter = Ren::NoFilter, int msaa = 1);
     ~FrameBuf();

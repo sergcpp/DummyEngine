@@ -29,9 +29,9 @@ private:
     int CompileAnim(const std::string &in_file_name, const std::string &out_file_name);
 
     bool quit_;
-    SDL_Window *window_;
+    SDL_Window *window_ = nullptr;
 #if defined(USE_GL_RENDER)
-    void *gl_ctx_;
+    void *gl_ctx_ = nullptr;
 #endif
 
     Ren::MeshRef view_mesh_;

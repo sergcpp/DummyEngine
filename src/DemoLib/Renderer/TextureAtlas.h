@@ -11,7 +11,7 @@ class TextureAtlas {
     TextureSplitter splitter_;
 public:
     TextureAtlas() : splitter_(0, 0) {}
-    TextureAtlas(const Ren::Texture2DParams &p);
+    explicit TextureAtlas(const Ren::Texture2DParams &p);
     ~TextureAtlas();
 
     TextureAtlas(const TextureAtlas &rhs) = delete;

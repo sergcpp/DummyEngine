@@ -230,8 +230,8 @@ void GSDrawTest::Draw(float dt_s) {
         const auto timings = scene_manager_->timings();
         const auto back_timings = scene_manager_->back_timings();
 
-        auto start = std::min(last_timings_.first, back_timings.first);
-        auto end = std::max(last_timings_.second, back_timings.second);
+        //auto start = std::min(last_timings_.first, back_timings.first);
+        //auto end = std::max(last_timings_.second, back_timings.second);
 
         auto dur1 = std::chrono::duration_cast<std::chrono::microseconds>(last_timings_.second - last_timings_.first);
         auto dur2 = std::chrono::duration_cast<std::chrono::microseconds>(back_timings.second - back_timings.first);

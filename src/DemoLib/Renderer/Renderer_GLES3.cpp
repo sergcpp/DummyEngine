@@ -954,8 +954,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         cur_program = blit_ssr_ms_prog_.get();
         glUseProgram(cur_program->prog_id());
 
-        float k = float(w_) / h_;
-
         const float positions[] = { -1.0f, -1.0f,                 -1.0f + 2.0f, -1.0f,
                                     -1.0f + 2.0f, -1.0f + 2.0f,   -1.0f, -1.0f + 2.0f };
 

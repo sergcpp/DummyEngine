@@ -493,7 +493,7 @@ void SceneManager::InitScene_PT(bool _override) {
         default_white_tex = ray_scene_->AddTexture(tex_desc);
     }
 
-    uint32_t default_glow_mat;
+    /*uint32_t default_glow_mat;
 
     {
         Ray::mat_desc_t mat_desc;
@@ -504,7 +504,7 @@ void SceneManager::InitScene_PT(bool _override) {
         mat_desc.main_color[2] = 0.0f;
 
         default_glow_mat = ray_scene_->AddMaterial(mat_desc);
-    }
+    }*/
 
     // Add objects
     for (auto &obj : objects_) {

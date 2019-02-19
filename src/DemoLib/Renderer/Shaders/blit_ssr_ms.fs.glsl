@@ -211,7 +211,7 @@ void main() {
         vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
         vec3 refl_ray_vs = reflect(view_ray_vs, normal);
 
-        const float R0 = 0.0f;
+        const float R0 = 0.25f;
         float fresnel = R0 + (1.0 - R0) * pow(1.0 - dot(normal, -view_ray_vs), 5.0);
         vec3 infl = fresnel * specular.xyz;
 
@@ -236,7 +236,7 @@ void main() {
             outColor += vec4(prev_color, 1.0);
         } else {
             vec3 refl_ray_ws = normalize((inv_view_matrix * vec4(refl_ray_vs, 0.0)).xyz);
-            outColor += vec4(infl * texture(env_texture, refl_ray_ws).xyz, 1.0);
+            outColor += vec4(0.001 * infl * texture(env_texture, refl_ray_ws).xyz, 1.0);
         }
     }
 }

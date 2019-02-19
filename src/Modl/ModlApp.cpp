@@ -680,9 +680,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         total_indices.insert(total_indices.end(), reordered_indices[i].begin(), reordered_indices[i].end());
     }
 
-    for (auto &tris : alpha_chunks) {
-        total_chunks.push_back(tris);
-    }
+    total_chunks.insert(std::end(total_chunks), std::begin(alpha_chunks), std::end(alpha_chunks));
 
     for (int mat_ndx : alpha_mats) {
         materials.push_back(materials[mat_ndx]);
