@@ -4,9 +4,6 @@
 [submodule "src/Ren"]
 	path = src/Ren
 	url = https://github.com/SerhiiY-94/Ren.git
-[submodule "src/Sys"]
-	path = src/Sys
-	url = https://github.com/SerhiiY-94/Sys.git
 [submodule "src/Gui"]
 	path = src/Gui
 	url = https://github.com/SerhiiY-94/Gui.git
