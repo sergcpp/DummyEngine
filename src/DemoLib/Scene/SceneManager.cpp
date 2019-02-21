@@ -38,14 +38,16 @@ cam_(Ren::Vec3f{ 0.0f, 0.0f, 1.0f },
      Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
     using namespace SceneManagerConstants;
 
-    Ren::Texture2DParams p;
-    p.w = DECALS_ATLAS_RESX;
-    p.h = DECALS_ATLAS_RESY;
-    p.format = Ren::RawRGBA8888;
-    p.filter = Ren::Trilinear;
-    p.repeat = Ren::ClampToEdge;
+    {   // Alloc texture for decals atlas
+        Ren::Texture2DParams p;
+        p.w = DECALS_ATLAS_RESX;
+        p.h = DECALS_ATLAS_RESY;
+        p.format = Ren::RawRGBA8888;
+        p.filter = Ren::Trilinear;
+        p.repeat = Ren::ClampToEdge;
 
-    decals_atlas_ = TextureAtlas{ p };
+        decals_atlas_ = TextureAtlas{ p };
+    }
 }
 
 SceneManager::~SceneManager() {

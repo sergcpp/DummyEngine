@@ -275,8 +275,8 @@ void Renderer::BackgroundProc() {
 
                                 const Ren::Mat4f &world_from_object = tr->mat;
 
-                                Ren::Mat4f view_from_object = view_from_world * world_from_object,
-                                           clip_from_object = clip_from_view * view_from_object;
+                                const Ren::Mat4f view_from_object = view_from_world * world_from_object,
+                                                 clip_from_object = clip_from_view * view_from_object;
 
                                 const auto *mesh = obj.mesh.get();
 
@@ -395,8 +395,8 @@ void Renderer::BackgroundProc() {
 
                                 const Ren::Mat4f &world_from_object = tr->mat;
 
-                                Ren::Mat4f view_from_object = view_from_world * world_from_object,
-                                           clip_from_object = clip_from_view * view_from_object;
+                                const Ren::Mat4f view_from_object = view_from_world * world_from_object,
+                                                 clip_from_object = clip_from_view * view_from_object;
 
                                 if (obj.flags & HasMesh) {
                                     tr_list.push_back(clip_from_object);
@@ -425,10 +425,10 @@ void Renderer::BackgroundProc() {
                                 }
 
                                 if (obj.flags & HasLightSource) {
-                                    for (int i = 0; i < LIGHTS_PER_OBJECT; i++) {
-                                        if (!obj.ls[i]) break;
+                                    for (int li = 0; li < LIGHTS_PER_OBJECT; li++) {
+                                        if (!obj.ls[li]) break;
 
-                                        const auto *light = obj.ls[i].get();
+                                        const auto *light = obj.ls[li].get();
 
                                         Ren::Vec4f pos = { light->offset[0], light->offset[1], light->offset[2], 1.0f };
                                         pos = world_from_object * pos;
@@ -476,10 +476,10 @@ void Renderer::BackgroundProc() {
                                 if (obj.flags & HasDecal) {
                                     Ren::Mat4f object_from_world = Ren::Inverse(world_from_object);
 
-                                    for (int i = 0; i < DECALS_PER_OBJECT; i++) {
-                                        if (!obj.de[i]) break;
+                                    for (int di = 0; di < DECALS_PER_OBJECT; di++) {
+                                        if (!obj.de[di]) break;
 
-                                        const auto *decal = obj.de[i].get();
+                                        const auto *decal = obj.de[di].get();
 
                                         const Ren::Mat4f &view_from_object = decal->view,
                                                          &clip_from_view = decal->proj;
@@ -813,12 +813,12 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
     using namespace RendererInternal;
 
     const int frustums_per_slice = GRID_RES_X * GRID_RES_Y;
-    const int i = slice * frustums_per_slice;
-    const auto *first_sf = &sub_frustums[i];
+    const int fi = slice * frustums_per_slice;
+    const auto *first_sf = &sub_frustums[fi];
 
     // Reset cells information for slice
     for (int s = 0; s < frustums_per_slice; s++) {
-        auto &cell = cells[i + s];
+        auto &cell = cells[fi + s];
         cell = {};
     }
 
@@ -880,7 +880,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 }
 
                 if (res != Ren::Invisible) {
-                    const int index = i + row_offset + col_offset;
+                    const int index = fi + row_offset + col_offset;
                     auto &cell = cells[index];
                     if (cell.light_count < MAX_LIGHTS_PER_CELL) {
                         local_items[row_offset + col_offset][cell.light_count].light_index = (uint16_t)j;
@@ -972,7 +972,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 }
 
                 if (res != Ren::Invisible) {
-                    const int index = i + row_offset + col_offset;
+                    const int index = fi + row_offset + col_offset;
                     auto &cell = cells[index];
                     if (cell.decal_count < MAX_DECALS_PER_CELL) {
                         local_items[row_offset + col_offset][cell.decal_count].decal_index = (uint16_t)j;
@@ -985,7 +985,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 
     // Pack gathered local item data to total list
     for (int s = 0; s < frustums_per_slice; s++) {
-        auto &cell = cells[i + s];
+        auto &cell = cells[fi + s];
 
         int local_items_count = std::max((int)cell.light_count, (int)cell.decal_count);
 

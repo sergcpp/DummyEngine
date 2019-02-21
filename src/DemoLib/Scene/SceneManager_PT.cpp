@@ -492,6 +492,8 @@ void SceneManager::InitScene_PT(bool _override) {
 
         default_white_tex = ray_scene_->AddTexture(tex_desc);
     }
+    
+    (void)default_white_tex;
 
     /*uint32_t default_glow_mat;
 
