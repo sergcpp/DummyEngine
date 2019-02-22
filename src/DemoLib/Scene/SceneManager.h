@@ -21,9 +21,8 @@ public:
                  Sys::ThreadPool &threads);
     ~SceneManager();
 
-    TimingInfo timings() const;
-    TimingInfo back_timings() const;
     RenderInfo render_info() const;
+    FrontendInfo frontend_info() const;
     BackendInfo backend_info() const;
 
     void LoadScene(const JsObject &js_scene);

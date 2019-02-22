@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <chrono>
 
 #include <Ren/Mesh.h>
 #include <Ren/MMat.h>
@@ -70,9 +69,6 @@ struct SceneObject {
     Ren::StorageRef<Decal> de[DECALS_PER_OBJECT];
 };
 
-using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
-using TimingInfo = std::pair<TimePoint, TimePoint>;
-
 struct RenderInfo {
     uint32_t lights_count = 0, decals_count = 0;
     uint32_t lights_data_size = 0,
@@ -81,7 +77,21 @@ struct RenderInfo {
              items_data_size = 0;
 };
 
+struct FrontendInfo {
+    uint64_t start_timepoint_us = 0,
+             end_timepoint_us = 0;
+    uint32_t occluders_time_us = 0,
+             main_gather_time_us = 0,
+             drawables_sort_time_us = 0,
+             shadow_gather_time_us = 0,
+             items_assignment_time_us = 0;
+};
+
 struct BackendInfo {
+    uint64_t cpu_start_timepoint_us = 0,
+             cpu_end_timepoint_us = 0;
+    uint64_t gpu_start_timepoint_us = 0,
+             gpu_end_timepoint_us = 0;
     uint32_t shadow_time_us = 0,
              depth_pass_time_us = 0,
              ao_pass_time_us = 0,

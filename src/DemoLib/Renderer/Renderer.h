@@ -125,16 +125,12 @@ public:
         debug_ssao_ = !debug_ssao_;
     }
 
-    TimingInfo timings() const {
-        return timings_;
-    }
-
-    TimingInfo back_timings() const {
-        return back_timings_[0];
-    }
-
     RenderInfo render_info() const {
         return render_infos_[0];
+    }
+
+    FrontendInfo frontend_info() const {
+        return frontend_infos_[0];
     }
 
     BackendInfo backend_info() const {
@@ -182,9 +178,10 @@ private:
     std::vector<BBox> decals_boxes_;
     Ren::Camera draw_cam_, shadow_cam_[2][4];
     Environment env_;
-    TimingInfo timings_, back_timings_[2];
     RenderInfo render_infos_[2];
+    FrontendInfo frontend_infos_[2];
     BackendInfo backend_info_;
+    uint64_t backend_cpu_start_, backend_cpu_end_;
     std::vector<float> reduced_pixels_;
     float reduced_average_ = 0.0f;
     Ren::Mat4f prev_view_from_world_;
@@ -200,7 +197,7 @@ private:
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
     uint32_t lights_ssbo_, lights_tbo_, decals_ssbo_, decals_tbo_, cells_ssbo_, cells_tbo_, items_ssbo_, items_tbo_;
 
-    enum { TimeShadowMapStart, TimeDepthPassStart, TimeAOPassStart, TimeDrawStart, TimeReflStart, TimeReflEnd, TimersCount };
+    enum { TimeDrawStart, TimeShadowMapStart, TimeDepthPassStart, TimeAOPassStart, TimeOpaqueStart, TimeReflStart, TimeReflEnd, TimeDrawEnd, TimersCount };
     uint32_t queries_[2][TimersCount];
 
     void CheckInitVAOs();

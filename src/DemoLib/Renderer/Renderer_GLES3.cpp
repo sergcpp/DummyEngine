@@ -1,5 +1,7 @@
 #include "Renderer.h"
 
+#include <chrono>
+
 #include <Ren/Camera.h>
 #include <Ren/Context.h>
 #include <Ren/GL.h>
@@ -476,6 +478,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     using namespace Ren;
     using namespace RendererInternal;
 
+    glQueryCounter(queries_[1][TimeDrawStart], GL_TIMESTAMP);
+
     CheckInitVAOs();
 
     glEnable(GL_DEPTH_TEST);
@@ -768,7 +772,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     }
 #endif
 
-    glQueryCounter(queries_[1][TimeDrawStart], GL_TIMESTAMP);
+    glQueryCounter(queries_[1][TimeOpaqueStart], GL_TIMESTAMP);
 
     glBindVertexArray((GLuint)draw_pass_vao_);
 
@@ -1408,25 +1412,39 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     glBindVertexArray(0);
 
-    {   // Get timer queries result
-        GLuint64 time1 = 0, time2 = 0;
+    glQueryCounter(queries_[1][TimeDrawEnd], GL_TIMESTAMP);
 
-        glGetQueryObjectui64v(queries_[0][TimeShadowMapStart], GL_QUERY_RESULT, &time1);
+    {   // Get timer queries result (for previous frame)
+        GLuint64 time_draw_start,
+                 time_shadow_start,
+                 time_depth_start,
+                 time_ao_start,
+                 time_opaque_start,
+                 time_refl_start,
+                 time_refl_end,
+                 time_draw_end;
 
-        glGetQueryObjectui64v(queries_[0][TimeDepthPassStart], GL_QUERY_RESULT, &time2);
-        backend_info_.shadow_time_us = uint32_t((time2 - time1) / 1000);
+        glGetQueryObjectui64v(queries_[0][TimeDrawStart], GL_QUERY_RESULT, &time_draw_start);
+        glGetQueryObjectui64v(queries_[0][TimeShadowMapStart], GL_QUERY_RESULT, &time_shadow_start);
+        glGetQueryObjectui64v(queries_[0][TimeDepthPassStart], GL_QUERY_RESULT, &time_depth_start);
+        glGetQueryObjectui64v(queries_[0][TimeAOPassStart], GL_QUERY_RESULT, &time_ao_start);
+        glGetQueryObjectui64v(queries_[0][TimeOpaqueStart], GL_QUERY_RESULT, &time_opaque_start);
+        glGetQueryObjectui64v(queries_[0][TimeReflStart], GL_QUERY_RESULT, &time_refl_start);
+        glGetQueryObjectui64v(queries_[0][TimeReflEnd], GL_QUERY_RESULT, &time_refl_end);
+        glGetQueryObjectui64v(queries_[0][TimeDrawEnd], GL_QUERY_RESULT, &time_draw_end);
 
-        glGetQueryObjectui64v(queries_[0][TimeAOPassStart], GL_QUERY_RESULT, &time1);
-        backend_info_.ao_pass_time_us = uint32_t((time1 - time2) / 1000);
+        // assign values from previous frame
+        backend_info_.cpu_start_timepoint_us = backend_cpu_start_;
+        backend_info_.cpu_end_timepoint_us = backend_cpu_end_;
 
-        glGetQueryObjectui64v(queries_[0][TimeDrawStart], GL_QUERY_RESULT, &time2);
-        backend_info_.depth_pass_time_us = uint32_t((time2 - time1) / 1000);
+        backend_info_.gpu_start_timepoint_us = uint64_t(time_draw_start / 1000);
+        backend_info_.gpu_end_timepoint_us = uint64_t(time_draw_end / 1000);
 
-        glGetQueryObjectui64v(queries_[0][TimeReflStart], GL_QUERY_RESULT, &time1);
-        backend_info_.opaque_pass_time_us = uint32_t((time1 - time2) / 1000);
-
-        glGetQueryObjectui64v(queries_[0][TimeReflEnd], GL_QUERY_RESULT, &time2);
-        backend_info_.refl_pass_time_us = uint32_t((time2 - time1) / 1000);
+        backend_info_.shadow_time_us = uint32_t((time_depth_start - time_shadow_start) / 1000);
+        backend_info_.depth_pass_time_us = uint32_t((time_ao_start - time_depth_start) / 1000);
+        backend_info_.ao_pass_time_us = uint32_t((time_opaque_start - time_ao_start) / 1000);
+        backend_info_.opaque_pass_time_us = uint32_t((time_refl_start - time_opaque_start) / 1000);
+        backend_info_.refl_pass_time_us = uint32_t((time_refl_end - time_refl_start) / 1000);
     }
 
 #if 0

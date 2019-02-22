@@ -87,10 +87,6 @@ int DemoApp::Init(int w, int h) {
 
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
 #if !defined(__EMSCRIPTEN__)
-    /*GLenum glew_err = glewInit();
-    if (glew_err != GLEW_OK) {
-        fprintf(stderr, "GLEW Error: %s\n", glewGetErrorString(glew_err));
-    }*/
     //SDL_GL_SetSwapInterval(1);
 #endif
 #elif defined(USE_SW_RENDER)

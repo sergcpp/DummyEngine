@@ -33,8 +33,6 @@ class GSDrawTest : public GameState {
     std::shared_ptr<Gui::BaseElement> ui_root_;
     std::shared_ptr<Gui::BitmapFont> font_;
 
-    TimingInfo last_timings_;
-
     int view_pointer_ = 0, move_pointer_ = 0;
     Ren::Vec3f view_origin_ = { 0, 1, 0 },
                view_dir_ = { 0, 0, -1 };

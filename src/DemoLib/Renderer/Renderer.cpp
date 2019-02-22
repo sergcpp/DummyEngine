@@ -1,5 +1,7 @@
 #include "Renderer.h"
 
+#include <chrono>
+
 #include <Ren/Context.h>
 #include <Sys/Log.h>
 #include <Sys/ThreadPool.h>
@@ -92,8 +94,10 @@ Renderer::~Renderer() {
 void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
                            const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env,
                            const TextureAtlas &decals_atlas) {
+    auto cpu_draw_start = std::chrono::high_resolution_clock::now();
+
     SwapDrawLists(cam, nodes, root_index, objects, obj_indices, object_count, env, &decals_atlas);
-    auto t1 = std::chrono::high_resolution_clock::now();
+    
     {
         size_t drawables_count = draw_lists_[0].size();
         const auto *drawables = (drawables_count == 0) ? nullptr : &draw_lists_[0][0];
@@ -174,8 +178,12 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
                             cells, items, items_count, shadow_transforms, shadow_drawables, shadow_drawables_count, env_,
                             p_decals_atlas);
     }
-    auto t2 = std::chrono::high_resolution_clock::now();
-    timings_ = { t1, t2 };
+    
+    auto cpu_draw_end = std::chrono::high_resolution_clock::now();
+
+    // store values for current frame
+    backend_cpu_start_ = (uint64_t)std::chrono::duration<double, std::micro>{ cpu_draw_start.time_since_epoch() }.count();
+    backend_cpu_end_ = (uint64_t)std::chrono::duration<double, std::micro>{ cpu_draw_end.time_since_epoch() }.count();
 }
 
 void Renderer::WaitForBackgroundThreadIteration() {
@@ -193,7 +201,7 @@ void Renderer::BackgroundProc() {
 
         if (nodes_ && objects_) {
             std::lock_guard<Sys::SpinlockMutex> _(job_mtx_);
-            auto t1 = std::chrono::high_resolution_clock::now();
+            auto iteration_start = std::chrono::high_resolution_clock::now();
 
             auto &tr_list = transforms_[1];
             tr_list.clear();
@@ -214,6 +222,8 @@ void Renderer::BackgroundProc() {
 
             auto &items = items_[1];
             items.resize(MAX_ITEMS_TOTAL);
+
+            auto &info = frontend_infos_[1];
 
             object_to_drawable_.clear();
             object_to_drawable_.resize(object_count_, 0xffffffff);
@@ -244,6 +254,8 @@ void Renderer::BackgroundProc() {
 
             uint32_t stack[MAX_STACK_SIZE];
             uint32_t stack_size = 0;
+
+            auto occluders_start = std::chrono::high_resolution_clock::now();
 
             {   // Rasterize occluder meshes into a small framebuffer
                 stack[stack_size++] = (uint32_t)root_node_;
@@ -308,8 +320,9 @@ void Renderer::BackgroundProc() {
                 }
             }
 
-            {   // Gather meshes and lights, skip occluded and frustum culled
+            auto main_gather_start = std::chrono::high_resolution_clock::now();
 
+            {   // Gather meshes and lights, skip occluded and frustum culled
                 stack_size = 0;
                 stack[stack_size++] = (uint32_t)root_node_;
 
@@ -555,6 +568,8 @@ void Renderer::BackgroundProc() {
                 }
             }
 
+            auto shadow_gather_start = std::chrono::high_resolution_clock::now();
+
             // Planes, that define shadow map splits
             const float far_planes[] = { 8.0f, 24.0f, 56.0f, 120.0f };
             const float near_planes[] = { draw_cam_.near(), far_planes[0], far_planes[1], far_planes[2] };
@@ -683,8 +698,12 @@ void Renderer::BackgroundProc() {
                 }
             }
 
+            auto drawables_sort_start = std::chrono::high_resolution_clock::now();
+
             // Sort drawables to optimize state switches
             std::sort(std::begin(dr_list), std::end(dr_list));
+
+            auto items_assignment_start = std::chrono::high_resolution_clock::now();
 
             if (!ls_list.empty() || !de_list.empty()) {
                 std::vector<Ren::Frustum> sub_frustums;
@@ -747,8 +766,15 @@ void Renderer::BackgroundProc() {
                     }
                 }
             }
-            auto t2 = std::chrono::high_resolution_clock::now();
-            back_timings_[1] = { t1, t2 };
+
+            auto iteration_end = std::chrono::high_resolution_clock::now();
+
+            info.start_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ iteration_start.time_since_epoch() }.count();
+            info.end_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ iteration_end.time_since_epoch() }.count();
+            info.occluders_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ main_gather_start - occluders_start }.count();
+            info.main_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ shadow_gather_start - main_gather_start }.count();
+            info.shadow_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ items_assignment_start - shadow_gather_start }.count();
+            info.items_assignment_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ iteration_end - items_assignment_start }.count();
         }
 
         notified_ = false;
@@ -781,7 +807,7 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
         objects_ = objects;
         obj_indices_ = obj_indices;
         object_count_ = object_count;
-        back_timings_[0] = back_timings_[1];
+        frontend_infos_[0] = frontend_infos_[1];
         render_infos_[0] = render_infos_[1];
         for (int i = 0; i < TimersCount; i++) {
             std::swap(queries_[0][i], queries_[1][i]);

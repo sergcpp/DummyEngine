@@ -54,16 +54,12 @@ SceneManager::~SceneManager() {
     renderer_.WaitForBackgroundThreadIteration();
 }
 
-TimingInfo SceneManager::timings() const {
-    return renderer_.timings();
-}
-
-TimingInfo SceneManager::back_timings() const {
-    return renderer_.back_timings();
-}
-
 RenderInfo SceneManager::render_info() const {
     return renderer_.render_info();
+}
+
+FrontendInfo SceneManager::frontend_info() const {
+    return renderer_.frontend_info();
 }
 
 BackendInfo SceneManager::backend_info() const {

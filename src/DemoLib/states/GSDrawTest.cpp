@@ -226,21 +226,6 @@ void GSDrawTest::Draw(float dt_s) {
         scene_manager_->Draw();
     }
 
-    if (!use_pt_ && !use_lm_) {
-        const auto timings = scene_manager_->timings();
-        const auto back_timings = scene_manager_->back_timings();
-
-        //auto start = std::min(last_timings_.first, back_timings.first);
-        //auto end = std::max(last_timings_.second, back_timings.second);
-
-        auto dur1 = std::chrono::duration_cast<std::chrono::microseconds>(last_timings_.second - last_timings_.first);
-        auto dur2 = std::chrono::duration_cast<std::chrono::microseconds>(back_timings.second - back_timings.first);
-
-        LOGI("Frontend: %04lld\tBackend: %04lld", (long long)dur2.count(), (long long)dur1.count());
-
-        last_timings_ = timings;
-    }
-
     //LOGI("(%f %f %f) (%f %f %f)", view_origin_[0], view_origin_[1], view_origin_[2],
     //                              view_dir_[0], view_dir_[1], view_dir_[2]);
 
@@ -268,12 +253,39 @@ void GSDrawTest::Draw(float dt_s) {
 
         if (!use_pt_ && !use_lm_) {
             auto render_info = scene_manager_->render_info();
+            auto front_info = scene_manager_->frontend_info();
             auto back_info = scene_manager_->backend_info();
+
+            uint64_t front_dur = front_info.end_timepoint_us - front_info.start_timepoint_us,
+                     back_dur = back_info.cpu_end_timepoint_us - back_info.cpu_start_timepoint_us;
+            LOGI("Frontend: %04lld\tBackend(cpu): %04lld", (long long)front_dur, (long long)back_dur);
 
             std::string s;
             float vertical_offset = 0.65f;
 
             {
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "occluders_time: " + std::to_string(front_info.occluders_time_us) + " us";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "main_gather_time:  " + std::to_string(front_info.main_gather_time_us) + " us";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "shadow_gather_time:  " + std::to_string(front_info.shadow_gather_time_us) + " us";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "items_assign_time:   " + std::to_string(front_info.items_assignment_time_us) + " us";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+            }
+
+            {
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "------------------";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
                 vertical_offset -= font_->height(ui_root_.get());
                 s = "shadow_time: " + std::to_string(back_info.shadow_time_us) + " us";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
@@ -293,13 +305,13 @@ void GSDrawTest::Draw(float dt_s) {
                 vertical_offset -= font_->height(ui_root_.get());
                 s = "refl_time:  " + std::to_string(back_info.refl_pass_time_us) + " us";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                s = "------------------";
-                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
             }
 
             if (print_light_info_) {
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "------------------";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
                 vertical_offset -= font_->height(ui_root_.get());
                 s = "lights_count: " + std::to_string(render_info.lights_count);
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
