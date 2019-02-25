@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 project(RayDemo)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -36,9 +36,6 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     include_directories(${SDL2_INCLUDE_DIRS})
     link_directories(${SDL2_LIBRARIES})
 endif()
-
-add_definitions(-DCPU_ARCH_SSE2)
-#add_definitions(-DMATH_NO_INLINE)
 
 set(RENDERER GL)
 
