@@ -20,6 +20,7 @@ layout (std140) uniform MatricesBlock {
     mat4 uVMatrix;
     mat4 uMMatrix;
     mat4 uShadowMatrix[4];
+    vec4 uClipInfo;
 };
 
 out vec3 aVertexPos_;

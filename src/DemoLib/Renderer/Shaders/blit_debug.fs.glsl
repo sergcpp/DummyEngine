@@ -16,6 +16,7 @@ layout(binding = 15) uniform highp usamplerBuffer items_buffer;
 
 layout(location = 16) uniform ivec2 res;
 layout(location = 17) uniform int mode;
+layout(location = 18) uniform vec4 uClipInfo;
 
 in vec2 aVertexUVs_;
 
@@ -27,14 +28,10 @@ vec3 heatmap(float t) {
 }
 
 void main() {
-    const float n = 0.5;
-    const float f = 10000.0;
-
     float depth = texelFetch(s_texture, ivec2(aVertexUVs_), 0).r;
-    depth = 2.0 * depth - 1.0;
-    depth = 2.0 * n * f / (f + n - depth * (f - n));
+    depth = uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
     
-    float k = log2(depth / n) / log2(f / n);
+    float k = log2(depth / uClipInfo[1]) / uClipInfo[3];
     int slice = int(k * 24.0);
     
     int ix = int(gl_FragCoord.x);

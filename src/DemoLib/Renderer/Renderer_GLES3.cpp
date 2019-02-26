@@ -19,8 +19,9 @@ namespace RendererInternal {
         Ren::Mat4f uVMatrix;
         Ren::Mat4f uMMatrix;
         Ren::Mat4f uShadowMatrix[4];
+        Ren::Vec4f uClipInfo;
     };
-    static_assert(sizeof(MatricesBlock) == 448, "!");
+    static_assert(sizeof(MatricesBlock) == 464, "!");
 
     const Ren::Vec2f poisson_disk[] = {
         { -0.705374f, -0.668203f }, { -0.780145f, 0.486251f  }, { 0.566637f, 0.605213f   }, { 0.488876f, -0.783441f  },
@@ -622,15 +623,24 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         clip_from_world = clip_from_view * view_from_world;
     }
 
+    Ren::Vec4f clip_info;
+
+    {   // Update camera clip info (used to linearize depth)
+        const float near = draw_cam_.near(), far = draw_cam_.far();
+
+        clip_info = { near * far, near, far, std::log2(1.0f + far / near) };
+
+        glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_matrices_block_);
+        glBufferSubData(GL_UNIFORM_BUFFER, offsetof(MatricesBlock, uClipInfo), sizeof(Ren::Vec4f), ValuePtr(clip_info));
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
     // Bind main buffer for drawing
     glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
-    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, clean_buf_.w, clean_buf_.h);
-    //glClearColor(env.sky_col[0], env.sky_col[1], env.sky_col[2], 1.0f);
-    //glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     if (!wireframe_mode_) {   // Draw skydome (and clear depth with it)
         glDepthFunc(GL_ALWAYS);
@@ -744,6 +754,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
 
         glUniform2f(0, float(clean_buf_.w), float(clean_buf_.h));
+        glUniform4fv(1, 1, Ren::ValuePtr(clip_info));
 
         if (true) {
             BindTextureMs(0, clean_buf_.depth_tex.GetValue());
@@ -987,6 +998,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glUniformMatrix4fv(2, 1, GL_FALSE, Ren::ValuePtr(delta_matrix));
         glUniform2f(3, float(w_), float(h_));
         glUniformMatrix4fv(4, 1, GL_FALSE, Ren::ValuePtr(world_from_view));
+        glUniform4fv(5, 1, Ren::ValuePtr(clip_info));
 
         if (true) {
             BindTextureMs(0, clean_buf_.depth_tex.GetValue());
@@ -1254,6 +1266,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         } else if (debug_decals_) {
             glUniform1i(17, 1);
         }
+
+        glUniform4fv(18, 1, Ren::ValuePtr(clip_info));
 
         const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,
                                       1.0f, 1.0f,         -1.0f, 1.0f };

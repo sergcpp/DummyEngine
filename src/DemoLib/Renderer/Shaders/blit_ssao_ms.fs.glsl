@@ -7,20 +7,16 @@ R"(
 
 layout(binding = 0) uniform mediump sampler2DMS depth_texture;
 
-layout(location = 0) uniform vec2 screen_size;
+layout(location = 0) uniform vec2 uScreenSize;
+layout(location = 1) uniform vec4 uClipInfo;
 
 in vec2 aVertexUVs_;
 
 out vec4 outColor;
 
 float LinearDepthTexelFetch(ivec2 hit_pixel) {
-    const float n = 0.5;
-    const float f = 10000.0;
-
     float depth = texelFetch(depth_texture, hit_pixel, 0).r;
-    depth = 2.0 * depth - 1.0;
-    depth = 2.0 * n * f / (f + n - depth * (f - n));
-    return depth;
+    return uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
 }
 
 float BilinearSampleDepthTexel(vec2 texcoord) {
@@ -37,13 +33,7 @@ float BilinearSampleDepthTexel(vec2 texcoord) {
     float texel1 = mix(texel10, texel11, sample_coord.y);
             
     float depth = mix(texel0, texel1, sample_coord.x);
-
-    const float n = 0.5;
-    const float f = 10000.0;
-
-    depth = 2.0 * depth - 1.0;
-    depth = 2.0 * n * f / (f + n - depth * (f - n));
-    return depth;
+    return uClipInfo[0] / (depth * uClipInfo[1] + uClipInfo[2]);
 }
 
 int hash(int x) {
@@ -99,8 +89,8 @@ void main() {
         int c = (hash(ivec2(gl_FragCoord.xy)) + i) % 8;
         vec2 sample_point = transforms[c] * sample_points[i];
 
-        vec2 depth_values = vec2(BilinearSampleDepthTexel(aVertexUVs_ + ss_radius * sample_point * screen_size),
-                                 BilinearSampleDepthTexel(aVertexUVs_ - ss_radius * sample_point * screen_size));
+        vec2 depth_values = vec2(BilinearSampleDepthTexel(aVertexUVs_ + ss_radius * sample_point * uScreenSize),
+                                 BilinearSampleDepthTexel(aVertexUVs_ - ss_radius * sample_point * uScreenSize));
         float sphere_width = initial_radius * sphere_widths[i];
 
         vec2 depth_diff = vec2(depth) - depth_values;

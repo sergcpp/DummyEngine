@@ -16,6 +16,7 @@ layout(location = 1) uniform mat4 inv_proj_matrix;
 layout(location = 2) uniform mat4 delta_matrix;
 layout(location = 3) uniform vec2 zbuffer_size;
 layout(location = 4) uniform mat4 inv_view_matrix;
+layout(location = 5) uniform vec4 uClipInfo;
 
 in vec2 aVertexUVs_;
 
@@ -27,17 +28,12 @@ float distance2(in vec2 P0, in vec2 P1) {
 }
 
 float rand(vec2 co) {
-  return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
 float LinearDepthTexelFetch(ivec2 hit_pixel) {
-    const float n = 0.5;
-    const float f = 10000.0;
-
     float depth = texelFetch(depth_texture, hit_pixel, 0).r;
-    depth = 2.0 * depth - 1.0;
-    depth = 2.0 * n * f / (f + n - depth * (f - n));
-    return depth;
+    return uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
 }
 
 bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel, out vec3 hit_point) {
@@ -84,15 +80,15 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
 
     float step_dir = sign(delta.x);
     float inv_dx = step_dir / delta.x;
+    vec2 dP = vec2(step_dir, delta.y * inv_dx);
 
     vec3 dQ = (Q1 - Q0) * inv_dx;
     float dk = (k1 - k0) * inv_dx;
-    vec2 dP = vec2(step_dir, delta.y * inv_dx);
 
-	float stride = 0.025 * zbuffer_size.x; //16.0;
-	dP *= stride;
-	dQ *= stride;
-	dk *= stride;
+    float stride = 0.025 * zbuffer_size.x;
+    dP *= stride;
+    dQ *= stride;
+    dk *= stride;
 
     ivec2 c = ivec2(gl_FragCoord.xy);
     float jitter = rand(gl_FragCoord.xy); //float((c.x + c.y) & 1) * 0.5;    
@@ -126,10 +122,11 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
         const float z_thickness = 1.0;
 
         vec2 pixel = permute ? P.yx : P;
+
         float scene_zmax = -LinearDepthTexelFetch(ivec2(pixel));
         float scene_zmin = scene_zmax - z_thickness;
 
-        if (((ray_zmax >= scene_zmin) && (ray_zmin <= scene_zmax)) || scene_zmax >= -n) {
+        if ((ray_zmax >= scene_zmin) && (ray_zmin <= scene_zmax)) {
             hit_pixel = P;
             break;
         }
@@ -137,6 +134,16 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
 
     vec2 test_pixel = permute ? hit_pixel.yx : hit_pixel;
     bool res = all(lessThanEqual(abs(test_pixel - (zbuffer_size * 0.5)), zbuffer_size * 0.5));
+
+#if 0
+    if (res && step_count == 0.0) {
+        outColor.g = 1.0;
+    }
+
+    if (res && step_count == 1.0) {
+        outColor.b = 1.0;
+    }
+#endif
 
     if (res) {
         Q.xy += dQ.xy * step_count;
@@ -179,9 +186,6 @@ vec3 DecodeNormal(vec2 enc) {
 }
 
 void main() {
-    const float n = 0.5;
-    const float f = 10000.0;
-
     vec3 prev_color = vec3(0.0);
     float prev_depth = -1.1f;
 
@@ -193,12 +197,6 @@ void main() {
 
         float depth = texelFetch(depth_texture, ivec2(aVertexUVs_), i).r;
         depth = 2.0 * depth - 1.0;
-        //depth = 2.0 * n * f / (f + n - depth * (f - n));
-
-        /*if (abs(depth - prev_depth) < 0.005) {
-            outColor += 0.25 * prev_color;
-            continue;
-        }*/
 
         vec3 normal = DecodeNormal(texelFetch(norm_texture, ivec2(aVertexUVs_), i).xy);
 
@@ -211,9 +209,10 @@ void main() {
         vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
         vec3 refl_ray_vs = reflect(view_ray_vs, normal);
 
-        const float R0 = 0.25f;
-        float fresnel = R0 + (1.0 - R0) * pow(1.0 - dot(normal, -view_ray_vs), 5.0);
-        vec3 infl = fresnel * specular.xyz;
+        const float R0 = 0.0f;
+        float ssr_factor = pow(1.0 - dot(normal, -view_ray_vs), 5.0);
+        float fresnel = R0 + (1.0 - R0) * ssr_factor;
+        vec3 infl = vec3(fresnel) * specular.xyz;
 
         vec2 hit_pixel;
         vec3 hit_point;

@@ -32,6 +32,7 @@ layout (std140) uniform MatricesBlock {
     mat4 uVMatrix;
     mat4 uMMatrix;
     mat4 uShadowMatrix[4];
+    vec4 uClipInfo;
 };
 
 layout(location = 12) uniform vec3 sun_dir;
@@ -121,13 +122,9 @@ vec3 DecodeNormal(vec2 enc) {
 }
 
 void main(void) {
-    const float n = 0.5;
-    const float f = 10000.0;
+    float depth = uClipInfo[0] / (gl_FragCoord.z * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
     
-    float depth = 2.0 * gl_FragCoord.z - 1.0;
-    depth = 2.0 * n * f / (f + n - depth * (f - n));
-    
-    float k = log2(depth / n) / log2(1.0 + f / n);
+    float k = log2(depth / uClipInfo[1]) / uClipInfo[3];
     int slice = int(floor(k * 24.0));
     
     int ix = int(gl_FragCoord.x);
