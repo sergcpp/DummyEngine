@@ -37,14 +37,13 @@ float LinearDepthTexelFetch(ivec2 hit_pixel) {
 }
 
 bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel, out vec3 hit_point) {
-    const float n = 0.5;
     const float max_dist = 100.0;
 
     // from "Efficient GPU Screen-Space Ray Tracing"
 
     // Clip ray length to camera near plane
-    float ray_length = (ray_origin_vs.z + ray_dir_vs.z * max_dist) > -n ?
-                       (-ray_origin_vs.z + n) / ray_dir_vs.z :
+    float ray_length = (ray_origin_vs.z + ray_dir_vs.z * max_dist) > -uClipInfo[1] ?
+                       (-ray_origin_vs.z - uClipInfo[1]) / ray_dir_vs.z :
                        max_dist;
 
     vec3 ray_end_vs = ray_origin_vs + ray_length * ray_dir_vs;
@@ -101,7 +100,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     float k = k0;
     float step_count = 0.0f;
     float end = P1.x * step_dir;
-    float prev_zmax_estimate = ray_origin_vs.z;
+    float prev_zmax_estimate = ray_origin_vs.z + 0.1;
     hit_pixel = vec2(-1.0, -1.0);
 
     const float max_steps = 24.0;
@@ -112,7 +111,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
 
         float ray_zmin = prev_zmax_estimate;
         // take half of step forward
-        float ray_zmax = (dQ.z * 0.5 + Q.z) / (dk * 0.5 + k);
+        float ray_zmax = (dQ.z * 0.5 + Q.z) / (dk * 0.5 + k) + 0.1;
         prev_zmax_estimate = ray_zmax;
 
         if(ray_zmin > ray_zmax) {
@@ -135,16 +134,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     vec2 test_pixel = permute ? hit_pixel.yx : hit_pixel;
     bool res = all(lessThanEqual(abs(test_pixel - (zbuffer_size * 0.5)), zbuffer_size * 0.5));
 
-#if 0
-    if (res && step_count == 0.0) {
-        outColor.g = 1.0;
-    }
-
-    if (res && step_count == 1.0) {
-        outColor.b = 1.0;
-    }
-#endif
-
+#if 1
     if (res) {
         Q.xy += dQ.xy * step_count;
 
@@ -173,6 +163,10 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
         hit_pixel = permute ? hit_pixel.yx : hit_pixel;
         hit_point = Q * (1.0 / k);
     }
+#else
+    hit_pixel = permute ? hit_pixel.yx : hit_pixel;
+    hit_point = Q * (1.0 / k);
+#endif
     
     return res;
 }
@@ -186,57 +180,50 @@ vec3 DecodeNormal(vec2 enc) {
 }
 
 void main() {
-    vec3 prev_color = vec3(0.0);
-    float prev_depth = -1.1f;
-
     outColor = vec4(0.0, 0.0, 0.0, 0.0);
 
-    for (int i = 0; i < 1; i++) {
-        vec4 specular = texelFetch(spec_texture, ivec2(aVertexUVs_), i);
-        if (dot(specular.xyz, specular.xyz) < 0.001) continue;
+    vec4 specular = texelFetch(spec_texture, ivec2(aVertexUVs_), 0);
+    if (dot(specular.xyz, specular.xyz) < 0.001) return;
 
-        float depth = texelFetch(depth_texture, ivec2(aVertexUVs_), i).r;
-        depth = 2.0 * depth - 1.0;
+    float depth = texelFetch(depth_texture, ivec2(aVertexUVs_), 0).r;
+    depth = 2.0 * depth - 1.0;
 
-        vec3 normal = DecodeNormal(texelFetch(norm_texture, ivec2(aVertexUVs_), i).xy);
+    vec3 normal = DecodeNormal(texelFetch(norm_texture, ivec2(aVertexUVs_), 0).xy);
 
-        vec4 ray_origin_cs = vec4(aVertexUVs_.xy / zbuffer_size, depth, 1.0f);
-        ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
+    vec4 ray_origin_cs = vec4(aVertexUVs_.xy / zbuffer_size, depth, 1.0f);
+    ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
 
-        vec4 ray_origin_vs = inv_proj_matrix * ray_origin_cs;
-        ray_origin_vs /= ray_origin_vs.w;
+    vec4 ray_origin_vs = inv_proj_matrix * ray_origin_cs;
+    ray_origin_vs /= ray_origin_vs.w;
 
-        vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
-        vec3 refl_ray_vs = reflect(view_ray_vs, normal);
+    vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
+    vec3 refl_ray_vs = reflect(view_ray_vs, normal);
 
-        const float R0 = 0.0f;
-        float ssr_factor = pow(1.0 - dot(normal, -view_ray_vs), 5.0);
-        float fresnel = R0 + (1.0 - R0) * ssr_factor;
-        vec3 infl = vec3(fresnel) * specular.xyz;
+    const float R0 = 0.25f;
+    float ssr_factor = pow(1.0 - dot(normal, -view_ray_vs), 5.0);
+    float fresnel = R0 + (1.0 - R0) * ssr_factor;
+    vec3 infl = vec3(fresnel) * specular.xyz;
 
-        vec2 hit_pixel;
-        vec3 hit_point;
+    vec3 refl_ray_ws = normalize((inv_view_matrix * vec4(refl_ray_vs, 0.0)).xyz);
+    outColor = vec4(0.001 * infl * texture(env_texture, refl_ray_ws).xyz, 1.0);
+
+    vec2 hit_pixel;
+    vec3 hit_point;
     
-        if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, hit_pixel, hit_point)) {
-            hit_pixel /= zbuffer_size;
+    if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, hit_pixel, hit_point)) {
+        hit_pixel /= zbuffer_size;
 
-            // reproject hitpoint in view space of previous frame
-            vec4 hit_prev = delta_matrix * vec4(hit_point, 1.0);
-            hit_prev = proj_matrix * hit_prev;
-            hit_prev /= hit_prev.w;
-            hit_prev.xy = 0.5 * hit_prev.xy + 0.5;
+        // reproject hitpoint in view space of previous frame
+        vec4 hit_prev = delta_matrix * vec4(hit_point, 1.0);
+        hit_prev = proj_matrix * hit_prev;
+        hit_prev /= hit_prev.w;
+        hit_prev.xy = 0.5 * hit_prev.xy + 0.5;
             
-            vec4 tex_color = textureLod(prev_texture, hit_prev.xy, 0.0);
+        vec4 tex_color = textureLod(prev_texture, hit_prev.xy, 0.0);
 
-            infl *= max(1.0 - 2.0 * distance(hit_pixel, vec2(0.5, 0.5)), 0.0);
+        float mix_factor = max(1.0 - 2.0 * distance(hit_pixel, vec2(0.5, 0.5)), 0.0);
 
-            prev_depth = depth;
-            prev_color = infl * tex_color.xyz;
-            outColor += vec4(prev_color, 1.0);
-        } else {
-            vec3 refl_ray_ws = normalize((inv_view_matrix * vec4(refl_ray_vs, 0.0)).xyz);
-            outColor += vec4(0.001 * infl * texture(env_texture, refl_ray_ws).xyz, 1.0);
-        }
+        outColor.xyz = mix(outColor.xyz, tex_color.xyz, mix_factor);
     }
 }
 )"
