@@ -126,7 +126,7 @@ void GSDrawTest::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             shrd_this->renderer_->toggle_debug_lights();
-            shrd_this->print_light_info_ = !shrd_this->print_light_info_;
+            shrd_this->print_item_info_ = !shrd_this->print_item_info_;
         }
         return true;
     });
@@ -135,7 +135,7 @@ void GSDrawTest::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             shrd_this->renderer_->toggle_debug_decals();
-            shrd_this->print_light_info_ = !shrd_this->print_light_info_;
+            shrd_this->print_item_info_ = !shrd_this->print_item_info_;
         }
         return true;
     });
@@ -265,19 +265,19 @@ void GSDrawTest::Draw(float dt_s) {
 
             {
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "occluders_time: " + std::to_string(front_info.occluders_time_us) + " us";
+                s = "   occ_rast: " + std::to_string(front_info.occluders_time_us) + " us";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "main_gather_time:  " + std::to_string(front_info.main_gather_time_us) + " us";
+                s = "main_gather: " + std::to_string(front_info.main_gather_time_us) + " us";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "shadow_gather_time:  " + std::to_string(front_info.shadow_gather_time_us) + " us";
+                s = "shad_gather: " + std::to_string(front_info.shadow_gather_time_us) + " us";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "items_assign_time:   " + std::to_string(front_info.items_assignment_time_us) + " us";
+                s = "item_assign: " + std::to_string(front_info.items_assignment_time_us) + " us";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
             }
 
@@ -287,53 +287,59 @@ void GSDrawTest::Draw(float dt_s) {
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "shadow_time: " + std::to_string(back_info.shadow_time_us) + " us";
+                s = "shadow_maps: " + std::to_string(back_info.shadow_time_us) + " us";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "depth_time:  " + std::to_string(back_info.depth_pass_time_us) + " us";
+                s = " depth_pass: " + std::to_string(back_info.depth_pass_time_us) + " us";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "ao_time:  " + std::to_string(back_info.ao_pass_time_us) + " us";
+                s = "       ssao: " + std::to_string(back_info.ao_pass_time_us) + " us";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "opaque_time:   " + std::to_string(back_info.opaque_pass_time_us) + " us";
+                s = "opaque_pass: " + std::to_string(back_info.opaque_pass_time_us) + " us";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "refl_time:  " + std::to_string(back_info.refl_pass_time_us) + " us";
+                s = "  refl_pass: " + std::to_string(back_info.refl_pass_time_us) + " us";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
+                uint32_t gpu_total_us = (uint32_t)(back_info.gpu_end_timepoint_us - back_info.gpu_start_timepoint_us);
+
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "  gpu_total: " + std::to_string(gpu_total_us) + " us";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
             }
 
-            if (print_light_info_) {
+            if (print_item_info_) {
                 vertical_offset -= font_->height(ui_root_.get());
                 s = "------------------";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "lights_count: " + std::to_string(render_info.lights_count);
+                s = " lights_cnt: " + std::to_string(render_info.lights_count);
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "lights_data_size: " + std::to_string(render_info.lights_data_size / 1024) + " kb";
+                s = "lights_data: " + std::to_string(render_info.lights_data_size / 1024) + " kb";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "decals_count: " + std::to_string(render_info.decals_count);
+                s = " decals_cnt: " + std::to_string(render_info.decals_count);
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "decals_data_size: " + std::to_string(render_info.decals_data_size / 1024) + " kb";
+                s = "decals_data: " + std::to_string(render_info.decals_data_size / 1024) + " kb";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "cells_data_size: " + std::to_string(render_info.cells_data_size / 1024) + " kb";
+                s = " cells_data: " + std::to_string(render_info.cells_data_size / 1024) + " kb";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                s = "items_data_size: " + std::to_string(render_info.items_data_size / 1024) + " kb";
+                s = " items_data: " + std::to_string(render_info.items_data_size / 1024) + " kb";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
             }
         }

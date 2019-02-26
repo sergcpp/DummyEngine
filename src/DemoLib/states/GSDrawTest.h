@@ -43,7 +43,7 @@ class GSDrawTest : public GameState {
     bool use_pt_ = false, use_lm_ = false;
     bool invalidate_view_ = true;
 
-    bool print_light_info_ = false;
+    bool print_item_info_ = false;
 
     uint32_t click_time_ = 0;
 
