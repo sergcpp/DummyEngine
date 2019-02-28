@@ -138,12 +138,12 @@ std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &t
 void SceneManager::Draw_PT() {
     if (!ray_scene_) return;
 
-    const int TILE_SIZE = 64;
-
     if (ray_reg_ctx_.empty()) {
         if (ray_renderer_.type() == Ray::RendererOCL) {
             ray_reg_ctx_.emplace_back(Ray::rect_t{ 0, 0, ctx_.w(), ctx_.h() });
         } else {
+            const int TILE_SIZE = 64;
+
 #if defined(__ANDROID__)
             int pt_res_w = 640, pt_res_h = 360;
 #else

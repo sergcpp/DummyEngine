@@ -5,18 +5,20 @@ R"(
 	precision mediump float;
 #endif
 
+#define BSEARCH_STEPS 4
+
 layout(binding = 0) uniform mediump sampler2DMS depth_texture;
 layout(binding = 1) uniform mediump sampler2DMS norm_texture;
 layout(binding = 2) uniform mediump sampler2DMS spec_texture;
 layout(binding = 3) uniform mediump sampler2D prev_texture;
 layout(binding = 4) uniform mediump samplerCube env_texture;
 
-layout(location = 0) uniform mat4 proj_matrix;
-layout(location = 1) uniform mat4 inv_proj_matrix;
-layout(location = 2) uniform mat4 delta_matrix;
-layout(location = 3) uniform vec2 zbuffer_size;
-layout(location = 4) uniform mat4 inv_view_matrix;
-layout(location = 5) uniform vec4 uClipInfo;
+layout(location = 0) uniform mat4 uProjMatrix;      // projection matrix for current frame
+layout(location = 1) uniform mat4 uInvProjMatrix;   // inverse projection matrix for current frame
+layout(location = 2) uniform mat4 uDeltaMatrix;     // 'delta' matrix to transform points from current frame to previous
+layout(location = 3) uniform vec2 uZBufferSize;     // depth buffer resolution
+layout(location = 4) uniform mat4 uInvViewMatrix;   // inverse view matrix for current frame
+layout(location = 5) uniform vec4 uClipInfo;        // camera clip info
 
 in vec2 aVertexUVs_;
 
@@ -49,8 +51,8 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     vec3 ray_end_vs = ray_origin_vs + ray_length * ray_dir_vs;
 
     // Project into screen space
-    vec4 H0 = proj_matrix * vec4(ray_origin_vs, 1.0),
-         H1 = proj_matrix * vec4(ray_end_vs, 1.0);
+    vec4 H0 = uProjMatrix * vec4(ray_origin_vs, 1.0),
+         H1 = uProjMatrix * vec4(ray_end_vs, 1.0);
     float k0 = 1.0 / H0.w, k1 = 1.0 / H1.w;
 
     vec3 Q0 = ray_origin_vs * k0,
@@ -64,8 +66,8 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     P0 = 0.5 * P0 + 0.5;
     P1 = 0.5 * P1 + 0.5;
 
-    P0 *= zbuffer_size;
-    P1 *= zbuffer_size;
+    P0 *= uZBufferSize;
+    P1 *= uZBufferSize;
 
     vec2 delta = P1 - P0;
 
@@ -84,7 +86,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     vec3 dQ = (Q1 - Q0) * inv_dx;
     float dk = (k1 - k0) * inv_dx;
 
-    float stride = 0.025 * zbuffer_size.x;
+    float stride = 0.025 * uZBufferSize.x;
     dP *= stride;
     dQ *= stride;
     dk *= stride;
@@ -103,7 +105,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     float prev_zmax_estimate = ray_origin_vs.z + 0.1;
     hit_pixel = vec2(-1.0, -1.0);
 
-    const float max_steps = 24.0;
+    const float max_steps = 12.0;
         
     for (vec2 P = P0;
         ((P.x * step_dir) <= end) && (step_count < max_steps);
@@ -132,14 +134,14 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     }
 
     vec2 test_pixel = permute ? hit_pixel.yx : hit_pixel;
-    bool res = all(lessThanEqual(abs(test_pixel - (zbuffer_size * 0.5)), zbuffer_size * 0.5));
+    bool res = all(lessThanEqual(abs(test_pixel - (uZBufferSize * 0.5)), uZBufferSize * 0.5));
 
-#if 1
+#if BSEARCH_STEPS != 0
     if (res) {
         Q.xy += dQ.xy * step_count;
 
         // perform binary search to find intersection more accurately
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < BSEARCH_STEPS; i++) {
             vec2 pixel = permute ? hit_pixel.yx : hit_pixel;
             float scene_z = -LinearDepthTexelFetch(ivec2(pixel));
             float ray_z = Q.z / k;
@@ -180,20 +182,18 @@ vec3 DecodeNormal(vec2 enc) {
 }
 
 void main() {
-    outColor = vec4(0.0, 0.0, 0.0, 0.0);
-
     vec4 specular = texelFetch(spec_texture, ivec2(aVertexUVs_), 0);
-    if (dot(specular.xyz, specular.xyz) < 0.001) return;
+    if (dot(specular.xyz, specular.xyz) < 0.0001) return;
 
     float depth = texelFetch(depth_texture, ivec2(aVertexUVs_), 0).r;
     depth = 2.0 * depth - 1.0;
 
     vec3 normal = DecodeNormal(texelFetch(norm_texture, ivec2(aVertexUVs_), 0).xy);
 
-    vec4 ray_origin_cs = vec4(aVertexUVs_.xy / zbuffer_size, depth, 1.0f);
+    vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uZBufferSize, depth, 1.0f);
     ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
 
-    vec4 ray_origin_vs = inv_proj_matrix * ray_origin_cs;
+    vec4 ray_origin_vs = uInvProjMatrix * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
 
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
@@ -204,18 +204,18 @@ void main() {
     float fresnel = R0 + (1.0 - R0) * ssr_factor;
     vec3 infl = vec3(fresnel) * specular.xyz;
 
-    vec3 refl_ray_ws = normalize((inv_view_matrix * vec4(refl_ray_vs, 0.0)).xyz);
+    vec3 refl_ray_ws = normalize((uInvViewMatrix * vec4(refl_ray_vs, 0.0)).xyz);
     outColor = vec4(0.001 * infl * texture(env_texture, refl_ray_ws).xyz, 1.0);
 
     vec2 hit_pixel;
     vec3 hit_point;
     
     if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, hit_pixel, hit_point)) {
-        hit_pixel /= zbuffer_size;
+        hit_pixel /= uZBufferSize;
 
         // reproject hitpoint in view space of previous frame
-        vec4 hit_prev = delta_matrix * vec4(hit_point, 1.0);
-        hit_prev = proj_matrix * hit_prev;
+        vec4 hit_prev = uDeltaMatrix * vec4(hit_point, 1.0);
+        hit_prev = uProjMatrix * hit_prev;
         hit_prev /= hit_prev.w;
         hit_prev.xy = 0.5 * hit_prev.xy + 0.5;
             
