@@ -78,6 +78,7 @@ void Ren::Context::Init(int w, int h) {
             }
         };
 
+        glEnable(GL_DEBUG_OUTPUT);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
         glDebugMessageCallback(gl_debug_proc, nullptr);
     }

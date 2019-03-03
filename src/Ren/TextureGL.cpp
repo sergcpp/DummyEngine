@@ -330,7 +330,7 @@ void Ren::Texture2D::InitFromRAWData(const void *data[6], const Texture2DParams 
 #endif
 
     if ((f == Trilinear || f == Bilinear) && (cubemap_ready_ == 0x3F)) {
-        glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+        //glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
         glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
     }
 }
