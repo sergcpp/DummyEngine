@@ -570,127 +570,131 @@ void Renderer::BackgroundProc() {
 
             auto shadow_gather_start = std::chrono::high_resolution_clock::now();
 
-            // Planes, that define shadow map splits
-            const float far_planes[] = { 8.0f, 24.0f, 56.0f, 120.0f };
-            const float near_planes[] = { draw_cam_.near(), far_planes[0], far_planes[1], far_planes[2] };
+            if (Ren::Length2(env_.sun_dir) > 0.9f && Ren::Length2(env_.sun_col) > FLT_EPSILON) {
+                // Planes, that define shadow map splits
+                const float far_planes[] = { 8.0f, 24.0f, 56.0f, 120.0f };
+                const float near_planes[] = { draw_cam_.near(), far_planes[0], far_planes[1], far_planes[2] };
 
-            // Choose up vector for shadow camera
-            auto light_dir = env_.sun_dir;
-            auto cam_up = Ren::Vec3f{ 0.0f, 0.0, 1.0f };
-            if (light_dir[0] <= light_dir[1] && light_dir[0] <= light_dir[2]) {
-                cam_up = Ren::Vec3f{ 1.0f, 0.0, 0.0f };
-            } else if (light_dir[1] <= light_dir[0] && light_dir[1] <= light_dir[2]) {
-                cam_up = Ren::Vec3f{ 0.0f, 1.0, 0.0f };
-            }
-            // Calculate side vector of shadow camera
-            auto cam_side = Normalize(Cross(light_dir, cam_up));
-            cam_up = Cross(cam_side, light_dir);
-
-            const Ren::Vec3f scene_dims = Ren::Vec3f{ nodes_[root_node_].bbox[1] } - Ren::Vec3f{ nodes_[root_node_].bbox[0] };
-            const float max_dist = Ren::Length(scene_dims);
-
-            // Gather drawables for each cascade
-            for (int casc = 0; casc < 4; casc++) {
-                auto &shadow_cam = shadow_cam_[1][casc];
-
-                auto temp_cam = draw_cam_;
-                temp_cam.Perspective(draw_cam_.angle(), draw_cam_.aspect(), near_planes[casc], far_planes[casc]);
-                temp_cam.UpdatePlanes();
-
-                const Ren::Mat4f &_view_from_world = temp_cam.view_matrix(),
-                                 &_clip_from_view = temp_cam.projection_matrix();
-
-                const Ren::Mat4f _clip_from_world = _clip_from_view * _view_from_world;
-                const Ren::Mat4f _world_from_clip = Ren::Inverse(_clip_from_world);
-
-                Ren::Vec3f bounding_center;
-                const float bounding_radius = temp_cam.GetBoundingSphere(bounding_center);
-
-                auto cam_target = bounding_center;
-
-                {
-                    // Snap camera movement to shadow map pixels
-                    const float move_step = (2 * bounding_radius) / (0.5f * SHADOWMAP_RES);
-                    //                      |_shadow map extent_|   |_res of one cascade_|
-
-                    // Project target on shadow cam view matrix
-                    float _dot_f = Ren::Dot(cam_target, light_dir),
-                          _dot_s = Ren::Dot(cam_target, cam_side),
-                          _dot_u = Ren::Dot(cam_target, cam_up);
-
-                    // Snap coordinates to pixels
-                    _dot_f = std::round(_dot_f / move_step) * move_step;
-                    _dot_s = std::round(_dot_s / move_step) * move_step;
-                    _dot_u = std::round(_dot_u / move_step) * move_step;
-
-                    // Update target coordinates in world space
-                    cam_target = _dot_f * light_dir + _dot_s * cam_side + _dot_u * cam_up;
+                // Choose up vector for shadow camera
+                auto light_dir = env_.sun_dir;
+                auto cam_up = Ren::Vec3f{ 0.0f, 0.0, 1.0f };
+                if (light_dir[0] <= light_dir[1] && light_dir[0] <= light_dir[2]) {
+                    cam_up = Ren::Vec3f{ 1.0f, 0.0, 0.0f };
                 }
+                else if (light_dir[1] <= light_dir[0] && light_dir[1] <= light_dir[2]) {
+                    cam_up = Ren::Vec3f{ 0.0f, 1.0, 0.0f };
+                }
+                // Calculate side vector of shadow camera
+                auto cam_side = Normalize(Cross(light_dir, cam_up));
+                cam_up = Cross(cam_side, light_dir);
 
-                auto cam_center = cam_target + max_dist * light_dir;
+                const Ren::Vec3f scene_dims = Ren::Vec3f{ nodes_[root_node_].bbox[1] } -Ren::Vec3f{ nodes_[root_node_].bbox[0] };
+                const float max_dist = Ren::Length(scene_dims);
 
-                shadow_cam.SetupView(cam_center, cam_target, cam_up);
-                shadow_cam.Orthographic(-bounding_radius, bounding_radius, bounding_radius, -bounding_radius, 0.0f, max_dist + bounding_radius);
-                shadow_cam.UpdatePlanes();
+                // Gather drawables for each cascade
+                for (int casc = 0; casc < 4; casc++) {
+                    auto& shadow_cam = shadow_cam_[1][casc];
 
-                view_from_world = shadow_cam.view_matrix(),
-                clip_from_view = shadow_cam.projection_matrix();
+                    auto temp_cam = draw_cam_;
+                    temp_cam.Perspective(draw_cam_.angle(), draw_cam_.aspect(), near_planes[casc], far_planes[casc]);
+                    temp_cam.UpdatePlanes();
 
-                const uint32_t skip_check_bit = (1u << 31);
-                const uint32_t index_bits = ~skip_check_bit;
+                    const Ren::Mat4f& _view_from_world = temp_cam.view_matrix(),
+                        & _clip_from_view = temp_cam.projection_matrix();
 
-                stack_size = 0;
-                stack[stack_size++] = (uint32_t)root_node_;
+                    const Ren::Mat4f _clip_from_world = _clip_from_view * _view_from_world;
+                    const Ren::Mat4f _world_from_clip = Ren::Inverse(_clip_from_world);
 
-                while (stack_size) {
-                    uint32_t cur = stack[--stack_size] & index_bits;
-                    uint32_t skip_check = stack[stack_size] & skip_check_bit;
-                    const auto *n = &nodes_[cur];
+                    Ren::Vec3f bounding_center;
+                    const float bounding_radius = temp_cam.GetBoundingSphere(bounding_center);
 
-                    auto res = shadow_cam.CheckFrustumVisibility(n->bbox[0], n->bbox[1]);
-                    if (res == Ren::Invisible) continue;
-                    else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
+                    auto cam_target = bounding_center;
 
-                    if (!n->prim_count) {
-                        stack[stack_size++] = skip_check | n->left_child;
-                        stack[stack_size++] = skip_check | n->right_child;
-                    } else {
-                        for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
-                            const auto &obj = objects_[obj_indices_[i]];
+                    {
+                        // Snap camera movement to shadow map pixels
+                        const float move_step = (2 * bounding_radius) / (0.5f * SHADOWMAP_RES);
+                        //                      |_shadow map extent_|   |_res of one cascade_|
 
-                            const uint32_t drawable_flags = HasMesh | HasTransform;
-                            if ((obj.flags & drawable_flags) == drawable_flags) {
-                                const auto *tr = obj.tr.get();
+                        // Project target on shadow cam view matrix
+                        float _dot_f = Ren::Dot(cam_target, light_dir),
+                              _dot_s = Ren::Dot(cam_target, cam_side),
+                              _dot_u = Ren::Dot(cam_target, cam_up);
 
-                                if (!skip_check &&
-                                    shadow_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
+                        // Snap coordinates to pixels
+                        _dot_f = std::round(_dot_f / move_step) * move_step;
+                        _dot_s = std::round(_dot_s / move_step) * move_step;
+                        _dot_u = std::round(_dot_u / move_step) * move_step;
 
-                                const Ren::Mat4f &world_from_object = tr->mat;
+                        // Update target coordinates in world space
+                        cam_target = _dot_f * light_dir + _dot_s * cam_side + _dot_u * cam_up;
+                    }
 
-                                Ren::Mat4f view_from_object = view_from_world * world_from_object,
-                                           clip_from_object = clip_from_view * view_from_object;
+                    auto cam_center = cam_target + max_dist * light_dir;
 
-                                tr_list.push_back(clip_from_object);
+                    shadow_cam.SetupView(cam_center, cam_target, cam_up);
+                    shadow_cam.Orthographic(-bounding_radius, bounding_radius, bounding_radius, -bounding_radius, 0.0f, max_dist + bounding_radius);
+                    shadow_cam.UpdatePlanes();
 
-                                auto dr_index = object_to_drawable_[i];
-                                if (dr_index != 0xffffffff) {
-                                    auto *dr = &dr_list[dr_index];
-                                    const auto *mesh = dr->mesh;
+                    view_from_world = shadow_cam.view_matrix(),
+                    clip_from_view = shadow_cam.projection_matrix();
 
-                                    const Ren::TriGroup *s = &mesh->group(0);
+                    const uint32_t skip_check_bit = (1u << 31);
+                    const uint32_t index_bits = ~skip_check_bit;
+
+                    stack_size = 0;
+                    stack[stack_size++] = (uint32_t)root_node_;
+
+                    while (stack_size) {
+                        uint32_t cur = stack[--stack_size] & index_bits;
+                        uint32_t skip_check = stack[stack_size] & skip_check_bit;
+                        const auto* n = &nodes_[cur];
+
+                        auto res = shadow_cam.CheckFrustumVisibility(n->bbox[0], n->bbox[1]);
+                        if (res == Ren::Invisible) continue;
+                        else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
+
+                        if (!n->prim_count) {
+                            stack[stack_size++] = skip_check | n->left_child;
+                            stack[stack_size++] = skip_check | n->right_child;
+                        }
+                        else {
+                            for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
+                                const auto& obj = objects_[obj_indices_[i]];
+
+                                const uint32_t drawable_flags = HasMesh | HasTransform;
+                                if ((obj.flags & drawable_flags) == drawable_flags) {
+                                    const auto* tr = obj.tr.get();
+
+                                    if (!skip_check &&
+                                        shadow_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
+
+                                    const Ren::Mat4f & world_from_object = tr->mat;
+
+                                    Ren::Mat4f view_from_object = view_from_world * world_from_object,
+                                        clip_from_object = clip_from_view * view_from_object;
+
+                                    tr_list.push_back(clip_from_object);
+
+                                    auto dr_index = object_to_drawable_[i];
+                                    if (dr_index != 0xffffffff) {
+                                        auto* dr = &dr_list[dr_index];
+                                        const auto* mesh = dr->mesh;
+
+                                        const Ren::TriGroup* s = &mesh->group(0);
+                                        while (s->offset != -1) {
+                                            dr->sh_clip_from_object[casc] = &tr_list.back();
+                                            ++dr;
+                                            ++s;
+                                        }
+                                    }
+
+                                    const auto* mesh = obj.mesh.get();
+
+                                    const Ren::TriGroup* s = &mesh->group(0);
                                     while (s->offset != -1) {
-                                        dr->sh_clip_from_object[casc] = &tr_list.back();
-                                        ++dr;
+                                        sh_dr_list[casc].push_back({ &tr_list.back(), nullptr, s->mat.get(), mesh, s, nullptr, nullptr });
                                         ++s;
                                     }
-                                }
-
-                                const auto *mesh = obj.mesh.get();
-
-                                const Ren::TriGroup *s = &mesh->group(0);
-                                while (s->offset != -1) {
-                                    sh_dr_list[casc].push_back({ &tr_list.back(), nullptr, s->mat.get(), mesh, s, nullptr, nullptr });
-                                    ++s;
                                 }
                             }
                         }
