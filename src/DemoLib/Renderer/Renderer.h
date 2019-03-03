@@ -197,7 +197,8 @@ private:
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
     uint32_t lights_ssbo_, lights_tbo_, decals_ssbo_, decals_tbo_, cells_ssbo_, cells_tbo_, items_ssbo_, items_tbo_;
 
-    enum { TimeDrawStart, TimeShadowMapStart, TimeDepthPassStart, TimeAOPassStart, TimeOpaqueStart, TimeReflStart, TimeReflEnd, TimeDrawEnd, TimersCount };
+    enum { TimeDrawStart, TimeShadowMapStart, TimeDepthPassStart, TimeAOPassStart, TimeOpaqueStart,
+           TimeReflStart, TimeBlurStart, TimeReduceStart, TimeBlitStart, TimeDrawEnd, TimersCount };
     uint32_t queries_[2][TimersCount];
 
     void CheckInitVAOs();

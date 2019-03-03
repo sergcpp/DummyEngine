@@ -1,4 +1,5 @@
 .dumps
+.vs
 build-*
 check*
 DemoApp.exe

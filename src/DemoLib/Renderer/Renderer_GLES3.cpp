@@ -179,6 +179,8 @@ void Renderer::InitRendererInternal() {
         unif_matrices_block_ = (uint32_t)matrices_ubo;
     }
 
+    Ren::CheckError("[InitRendererInternal]: matrices UBO");
+
     {
         GLuint lights_ssbo;
 
@@ -200,6 +202,8 @@ void Renderer::InitRendererInternal() {
         lights_tbo_ = (uint32_t)lights_tbo;
     }
 
+    Ren::CheckError("[InitRendererInternal]: lights TBO");
+
     {
         GLuint decals_ssbo;
 
@@ -220,6 +224,8 @@ void Renderer::InitRendererInternal() {
 
         decals_tbo_ = (uint32_t)decals_tbo;
     }
+
+    Ren::CheckError("[InitRendererInternal]: decals TBO");
 
     {
         GLuint cells_ssbo;
@@ -249,6 +255,8 @@ void Renderer::InitRendererInternal() {
         cells_tbo_ = (uint32_t)cells_tbo;
     }
 
+    Ren::CheckError("[InitRendererInternal]: cells TBO");
+
     {
         GLuint items_ssbo;
 
@@ -275,6 +283,8 @@ void Renderer::InitRendererInternal() {
         items_tbo_ = (uint32_t)items_tbo;
     }
 
+    Ren::CheckError("[InitRendererInternal]: items TBO");
+
     {
         GLuint temp_tex;
         glGenTextures(1, &temp_tex);
@@ -294,6 +304,8 @@ void Renderer::InitRendererInternal() {
         temp_tex_format_ = Ren::RawRGBA8888;
     }
 
+    Ren::CheckError("[InitRendererInternal]: temp texture");
+
     {   // Create timer queries
         for (int i = 0; i < 2; i++) {
             glGenQueries(TimersCount, queries_[i]);
@@ -303,6 +315,8 @@ void Renderer::InitRendererInternal() {
             }
         }
     }
+
+    Ren::CheckError("[InitRendererInternal]: timer queries");
 }
 
 void Renderer::CheckInitVAOs() {
@@ -955,7 +969,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     glQueryCounter(queries_[1][TimeReflStart], GL_TIMESTAMP);
 
-    if (ENABLE_SSR) {   // Compose reflecitons on top of clean buffer
+    if (ENABLE_SSR) {   // Compose reflections on top of clean buffer
         glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
 
         glEnable(GL_BLEND);
@@ -1024,8 +1038,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
 
-    glQueryCounter(queries_[1][TimeReflEnd], GL_TIMESTAMP);
-
     prev_view_from_world_ = view_from_world;
     
     if (debug_deffered_) {
@@ -1041,6 +1053,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     } else {
         glDisable(GL_DEPTH_TEST);
     }
+
+    glQueryCounter(queries_[1][TimeBlurStart], GL_TIMESTAMP);
 
     //glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
@@ -1129,6 +1143,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_UVS1);
     }
 
+    glQueryCounter(queries_[1][TimeReduceStart], GL_TIMESTAMP);
+
     {   // draw to small framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
         glViewport(0, 0, reduced_buf_.w, reduced_buf_.h);
@@ -1178,8 +1194,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         float cur_average = 0.0f;
         for (size_t i = 0; i < reduced_pixels_.size(); i += 4) {
-            if (!std::isnan(reduced_pixels_[i]))
-            cur_average += reduced_pixels_[i];
+            if (!std::isnan(reduced_pixels_[i])) {
+                cur_average += reduced_pixels_[i];
+            }
         }
 
         float k = 1.0f / (reduced_pixels_.size() / 4);
@@ -1188,6 +1205,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         const float alpha = 1.0f / 64;
         reduced_average_ = alpha * cur_average + (1.0f - alpha) * reduced_average_;
     }
+
+    glQueryCounter(queries_[1][TimeBlitStart], GL_TIMESTAMP);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
@@ -1435,7 +1454,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                  time_ao_start,
                  time_opaque_start,
                  time_refl_start,
-                 time_refl_end,
+                 time_blur_start,
+                 time_reduce_start,
+                 time_blit_start,
                  time_draw_end;
 
         glGetQueryObjectui64v(queries_[0][TimeDrawStart], GL_QUERY_RESULT, &time_draw_start);
@@ -1444,7 +1465,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glGetQueryObjectui64v(queries_[0][TimeAOPassStart], GL_QUERY_RESULT, &time_ao_start);
         glGetQueryObjectui64v(queries_[0][TimeOpaqueStart], GL_QUERY_RESULT, &time_opaque_start);
         glGetQueryObjectui64v(queries_[0][TimeReflStart], GL_QUERY_RESULT, &time_refl_start);
-        glGetQueryObjectui64v(queries_[0][TimeReflEnd], GL_QUERY_RESULT, &time_refl_end);
+        glGetQueryObjectui64v(queries_[0][TimeBlurStart], GL_QUERY_RESULT, &time_blur_start);
+        glGetQueryObjectui64v(queries_[0][TimeReduceStart], GL_QUERY_RESULT, &time_reduce_start);
+        glGetQueryObjectui64v(queries_[0][TimeBlitStart], GL_QUERY_RESULT, &time_blit_start);
         glGetQueryObjectui64v(queries_[0][TimeDrawEnd], GL_QUERY_RESULT, &time_draw_end);
 
         // assign values from previous frame
@@ -1458,7 +1481,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         backend_info_.depth_pass_time_us = uint32_t((time_ao_start - time_depth_start) / 1000);
         backend_info_.ao_pass_time_us = uint32_t((time_opaque_start - time_ao_start) / 1000);
         backend_info_.opaque_pass_time_us = uint32_t((time_refl_start - time_opaque_start) / 1000);
-        backend_info_.refl_pass_time_us = uint32_t((time_refl_end - time_refl_start) / 1000);
+        backend_info_.refl_pass_time_us = uint32_t((time_blur_start - time_refl_start) / 1000);
+        backend_info_.blur_pass_time_us = uint32_t((time_reduce_start - time_blur_start) / 1000);
+        backend_info_.reduce_pass_time_us = uint32_t((time_blit_start - time_reduce_start) / 1000);
+        backend_info_.blit_pass_time_us = uint32_t((time_draw_end - time_blit_start) / 1000);
     }
 
 #if 0

@@ -306,6 +306,18 @@ void GSDrawTest::Draw(float dt_s) {
                 s = "  refl_pass: " + std::to_string(back_info.refl_pass_time_us) + " us";
                 font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
 
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "  blur_pass: " + std::to_string(back_info.blur_pass_time_us) + " us";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "reduce_pass: " + std::to_string(back_info.reduce_pass_time_us) + " us";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
+                s = "  blit_pass: " + std::to_string(back_info.blit_pass_time_us) + " us";
+                font_->DrawText(ui_renderer_.get(), s.c_str(), { -1.0f, vertical_offset }, ui_root_.get());
+
                 uint32_t gpu_total_us = (uint32_t)(back_info.gpu_end_timepoint_us - back_info.gpu_start_timepoint_us);
 
                 vertical_offset -= font_->height(ui_root_.get());

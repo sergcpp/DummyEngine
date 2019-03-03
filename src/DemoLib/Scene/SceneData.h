@@ -96,7 +96,10 @@ struct BackendInfo {
              depth_pass_time_us = 0,
              ao_pass_time_us = 0,
              opaque_pass_time_us = 0,
-             refl_pass_time_us = 0;
+             refl_pass_time_us = 0,
+             blur_pass_time_us = 0,
+             reduce_pass_time_us = 0,
+             blit_pass_time_us = 0;
 };
 
 struct bvh_node_t {
