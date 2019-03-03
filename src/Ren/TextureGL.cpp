@@ -304,7 +304,7 @@ void Ren::Texture2D::InitFromRAWData(const void *data[6], const Texture2DParams 
         } else if (params_.format == RawLUM8) {
             glTexImage2D((GLenum)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i), 0, GL_LUMINANCE, w, h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data[i]);
         } else if (params_.format == RawRGB16F) {
-            glTexImage2D((GLenum)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i), 0, GL_RGB, w, h, 0, GL_RGB, GL_HALF_FLOAT, data[i]);
+            glTexImage2D((GLenum)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i), 0, GL_RGB16F, w, h, 0, GL_RGB, GL_HALF_FLOAT, data[i]);
         }
     }
 
