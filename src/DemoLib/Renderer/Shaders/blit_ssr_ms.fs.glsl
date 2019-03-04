@@ -184,7 +184,7 @@ vec3 DecodeNormal(vec2 enc) {
 
 void main() {
     vec4 specular = texelFetch(spec_texture, ivec2(aVertexUVs_), 0);
-    if (dot(specular.xyz, specular.xyz) < 0.0001) return;
+    if ((specular.x + specular.y + specular.z) < 0.0001) return;
 
     float depth = texelFetch(depth_texture, ivec2(aVertexUVs_), 0).r;
     depth = 2.0 * depth - 1.0;
@@ -205,8 +205,10 @@ void main() {
     float fresnel = R0 + (1.0 - R0) * ssr_factor;
     vec3 infl = vec3(fresnel) * specular.xyz;
 
+    float tex_lod = 8.0 * (1.0 - specular.w);
+
     vec3 refl_ray_ws = normalize((uInvViewMatrix * vec4(refl_ray_vs, 0.0)).xyz);
-    outColor = vec4(0.001 * infl * clamp(texture(env_texture, refl_ray_ws).xyz, vec3(0.0), vec3(10.0)), 1.0);
+    outColor = vec4(0.001 * infl * clamp(textureLod(env_texture, refl_ray_ws, tex_lod).xyz, vec3(0.0), vec3(10.0)), 1.0);
 
     vec2 hit_pixel;
     vec3 hit_point;
@@ -220,7 +222,7 @@ void main() {
         hit_prev /= hit_prev.w;
         hit_prev.xy = 0.5 * hit_prev.xy + 0.5;
             
-        vec4 tex_color = textureLod(prev_texture, hit_prev.xy, 0.0);
+        vec4 tex_color = textureLod(prev_texture, hit_prev.xy, 0.05 * tex_lod * distance(ray_origin_vs.xyz, hit_point));
 
         float mix_factor = max(1.0 - 2.0 * distance(hit_pixel, vec2(0.5, 0.5)), 0.0);
 
