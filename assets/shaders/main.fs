@@ -38,8 +38,7 @@ layout (std140) uniform MatricesBlock {
 layout(location = 12) uniform vec3 sun_dir;
 layout(location = 13) uniform vec3 sun_col;
 layout(location = 14) uniform float gamma;
-layout(location = 15) uniform int lights_count;
-layout(location = 16) uniform ivec2 res;
+layout(location = 15) uniform ivec2 res;
 
 in vec3 aVertexPos_;
 in mat3 aVertexTBN_;

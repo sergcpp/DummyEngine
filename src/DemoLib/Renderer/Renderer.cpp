@@ -46,8 +46,6 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
         swCullCtxInit(&cull_ctx_, 256, 128, z);
     }
 
-    InitRendererInternal();
-
     {   // Create shadow map buffer
         shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, nullptr, 0, true, Ren::BilinearNoMipmap);
     }
@@ -59,6 +57,9 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
         desc.repeat = Ren::ClampToEdge;
         reduced_buf_ = FrameBuf(16, 8, &desc, 1, false);
     }
+
+    // Compile built-in shadres etc.
+    InitRendererInternal();
 
     uint8_t data[] = { 0, 0, 0, 0 };
 

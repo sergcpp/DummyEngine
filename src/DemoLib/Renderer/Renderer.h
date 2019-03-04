@@ -183,7 +183,6 @@ private:
     FrontendInfo frontend_infos_[2];
     BackendInfo backend_info_;
     uint64_t backend_cpu_start_, backend_cpu_end_;
-    std::vector<float> reduced_pixels_;
     float reduced_average_ = 0.0f;
     Ren::Mat4f prev_view_from_world_;
 
@@ -197,9 +196,10 @@ private:
     uint32_t temp_buf_vtx_offset_, temp_buf_ndx_offset_, skydome_vtx_offset_, skydome_ndx_offset_;
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
     uint32_t lights_buf_, lights_tbo_, decals_buf_, decals_tbo_, cells_buf_, cells_tbo_, items_buf_, items_tbo_;
+    uint32_t reduce_pbo_;
 
     enum { TimeDrawStart, TimeShadowMapStart, TimeDepthPassStart, TimeAOPassStart, TimeOpaqueStart,
-           TimeReflStart, TimeBlurStart, TimeReduceStart, TimeBlitStart, TimeDrawEnd, TimersCount };
+           TimeReflStart, TimeBlurStart, TimeBlitStart, TimeDrawEnd, TimersCount };
     uint32_t queries_[2][TimersCount];
 
     void CheckInitVAOs();

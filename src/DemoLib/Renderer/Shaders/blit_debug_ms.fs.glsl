@@ -15,9 +15,9 @@ layout(binding = 0) uniform mediump sampler2DMS s_texture;
 layout(binding = 14) uniform highp usamplerBuffer cells_buffer;
 layout(binding = 15) uniform highp usamplerBuffer items_buffer;
 
-layout(location = 16) uniform ivec2 res;
-layout(location = 17) uniform int mode;
-layout(location = 18) uniform vec4 uClipInfo;
+layout(location = 15) uniform ivec2 res;
+layout(location = 16) uniform int mode;
+layout(location = 17) uniform vec4 uClipInfo;
 
 in vec2 aVertexUVs_;
 

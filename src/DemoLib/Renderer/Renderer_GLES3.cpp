@@ -69,11 +69,10 @@ namespace RendererInternal {
     const int U_SUN_COL = 13;
 
     const int U_GAMMA = 14;
-    const int U_LIGHTS_COUNT = 15;
 
     const int U_EXPOSURE = 15;
 
-    const int U_RES = 16;
+    const int U_RES = 15;
 
     const int U_LIGHTS_BUFFER_TEXTURE = 16;
 
@@ -286,6 +285,18 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: items TBO");
 
     {
+        GLuint reduce_pbo;
+        glGenBuffers(1, &reduce_pbo);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, reduce_pbo);
+        glBufferData(GL_PIXEL_PACK_BUFFER, reduced_buf_.w * reduced_buf_.h * sizeof(float), 0, GL_DYNAMIC_READ);
+
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+        reduce_pbo_ = (uint32_t)reduce_pbo;
+    }
+
+    Ren::CheckError("[InitRendererInternal]: reduce PBO");
+
+    {
         GLuint temp_tex;
         glGenTextures(1, &temp_tex);
         glBindTexture(GL_TEXTURE_2D, temp_tex);
@@ -455,6 +466,11 @@ void Renderer::DestroyRendererInternal() {
 
         GLuint items_buf = (GLuint)items_buf_;
         glDeleteBuffers(1, &items_buf);
+    }
+
+    {
+        GLuint reduce_pbo = (GLuint)reduce_pbo_;
+        glDeleteBuffers(1, &reduce_pbo);
     }
 
     {
@@ -826,9 +842,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             glUniform3fv(U_SUN_COL, 1, Ren::ValuePtr(env.sun_col));
 
             glUniform2i(U_RES, w_, h_);
-
             glUniform1f(U_GAMMA, 2.2f);
-            glUniform1i(U_LIGHTS_COUNT, (GLint)lights_count);
 
             if (clip_from_object == cur_clip_from_object) {
                 //glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
@@ -1097,11 +1111,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
-        {   // create mipmaps for small buffer
-            BindTexture(DIFFUSEMAP_SLOT, down_buf_.attachments[0].tex);
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
-
         ////////////////
 
         glBindFramebuffer(GL_FRAMEBUFFER, blur_buf2_.fb);
@@ -1139,8 +1148,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_POS);
         glDisableVertexAttribArray(A_UVS1);
     }
-
-    glQueryCounter(queries_[1][TimeReduceStart], GL_TIMESTAMP);
 
     {   // draw to small framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
@@ -1186,19 +1193,24 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_POS);
         glDisableVertexAttribArray(A_UVS1);
 
-        reduced_pixels_.resize(4 * reduced_buf_.w * reduced_buf_.h);
-        glReadPixels(0, 0, reduced_buf_.w, reduced_buf_.h, GL_RGBA, GL_FLOAT, &reduced_pixels_[0]);
-
         const float max_value = 64.0f;
-
         float cur_average = 0.0f;
-        for (size_t i = 0; i < reduced_pixels_.size(); i += 4) {
-            if (!std::isnan(reduced_pixels_[i])) {
-                cur_average += std::min(reduced_pixels_[i], max_value);
+
+        {   // Retrieve result of glReadPixels call from previous frame
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)reduce_pbo_);
+            float *reduced_pixels = (float *)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+            if (reduced_pixels) {
+                for (int i = 0; i < reduced_buf_.w * reduced_buf_.h; i++) {
+                    if (!std::isnan(reduced_pixels[i])) {
+                        cur_average += std::min(reduced_pixels[i], max_value);
+                    }
+                }
+                glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
             }
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         }
 
-        float k = 1.0f / (reduced_pixels_.size() / 4);
+        float k = 1.0f / (reduced_buf_.w * reduced_buf_.h);
         cur_average *= k;
 
         const float alpha = 1.0f / 64;
@@ -1258,12 +1270,25 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
 
         BindTexture(DIFFUSEMAP_SLOT + 1, blur_buf1_.attachments[0].tex);
-        //BindTexture(DIFFUSEMAP_SLOT + 2, refl_buf_.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         glDisableVertexAttribArray(A_POS);
         glDisableVertexAttribArray(A_UVS1);
+    }
+
+    {
+        BindTexture(DIFFUSEMAP_SLOT, down_buf_.attachments[0].tex);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
+
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)reduce_pbo_);
+        glReadPixels(0, 0, reduced_buf_.w, reduced_buf_.h, GL_RED, GL_FLOAT, nullptr);
+
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     if (debug_lights_ || debug_decals_) {
@@ -1280,12 +1305,12 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glUniform2i(U_RES, w_, h_);
 
         if (debug_lights_) {
-            glUniform1i(17, 0);
+            glUniform1i(16, 0);
         } else if (debug_decals_) {
-            glUniform1i(17, 1);
+            glUniform1i(16, 1);
         }
 
-        glUniform4fv(18, 1, Ren::ValuePtr(clip_info));
+        glUniform4fv(17, 1, Ren::ValuePtr(clip_info));
 
         const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,
                                       1.0f, 1.0f,         -1.0f, 1.0f };
@@ -1454,7 +1479,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
                  time_opaque_start,
                  time_refl_start,
                  time_blur_start,
-                 time_reduce_start,
                  time_blit_start,
                  time_draw_end;
 
@@ -1465,7 +1489,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glGetQueryObjectui64v(queries_[0][TimeOpaqueStart], GL_QUERY_RESULT, &time_opaque_start);
         glGetQueryObjectui64v(queries_[0][TimeReflStart], GL_QUERY_RESULT, &time_refl_start);
         glGetQueryObjectui64v(queries_[0][TimeBlurStart], GL_QUERY_RESULT, &time_blur_start);
-        glGetQueryObjectui64v(queries_[0][TimeReduceStart], GL_QUERY_RESULT, &time_reduce_start);
         glGetQueryObjectui64v(queries_[0][TimeBlitStart], GL_QUERY_RESULT, &time_blit_start);
         glGetQueryObjectui64v(queries_[0][TimeDrawEnd], GL_QUERY_RESULT, &time_draw_end);
 
@@ -1481,8 +1504,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         backend_info_.ao_pass_time_us = uint32_t((time_opaque_start - time_ao_start) / 1000);
         backend_info_.opaque_pass_time_us = uint32_t((time_refl_start - time_opaque_start) / 1000);
         backend_info_.refl_pass_time_us = uint32_t((time_blur_start - time_refl_start) / 1000);
-        backend_info_.blur_pass_time_us = uint32_t((time_reduce_start - time_blur_start) / 1000);
-        backend_info_.reduce_pass_time_us = uint32_t((time_blit_start - time_reduce_start) / 1000);
+        backend_info_.blur_pass_time_us = uint32_t((time_blit_start - time_blur_start) / 1000);
         backend_info_.blit_pass_time_us = uint32_t((time_draw_end - time_blit_start) / 1000);
     }
 
