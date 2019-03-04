@@ -1,5 +1,6 @@
 R"(
 #version 310 es
+#extension GL_ARB_texture_multisample : enable
 
 #ifdef GL_ES
 	precision mediump float;
@@ -205,7 +206,7 @@ void main() {
     vec3 infl = vec3(fresnel) * specular.xyz;
 
     vec3 refl_ray_ws = normalize((uInvViewMatrix * vec4(refl_ray_vs, 0.0)).xyz);
-    outColor = vec4(0.001 * infl * texture(env_texture, refl_ray_ws).xyz, 1.0);
+    outColor = vec4(0.001 * infl * clamp(texture(env_texture, refl_ray_ws).xyz, vec3(0.0), vec3(10.0)), 1.0);
 
     vec2 hit_pixel;
     vec3 hit_point;

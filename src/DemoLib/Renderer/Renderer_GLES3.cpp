@@ -182,21 +182,21 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: matrices UBO");
 
     {
-        GLuint lights_ssbo;
+        GLuint lights_buf;
 
-        glGenBuffers(1, &lights_ssbo);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, lights_ssbo);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(LightSourceItem) * MAX_LIGHTS_TOTAL, nullptr, GL_DYNAMIC_COPY);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        glGenBuffers(1, &lights_buf);
+        glBindBuffer(GL_TEXTURE_BUFFER, lights_buf);
+        glBufferData(GL_TEXTURE_BUFFER, sizeof(LightSourceItem) * MAX_LIGHTS_TOTAL, nullptr, GL_DYNAMIC_COPY);
+        glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
-        lights_ssbo_ = (uint32_t)lights_ssbo;
+        lights_buf_ = (uint32_t)lights_buf;
 
         GLuint lights_tbo;
 
         glGenTextures(1, &lights_tbo);
         glBindTexture(GL_TEXTURE_BUFFER, lights_tbo);
 
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, lights_ssbo);
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, lights_buf);
         glBindTexture(GL_TEXTURE_BUFFER, 0);
 
         lights_tbo_ = (uint32_t)lights_tbo;
@@ -205,21 +205,21 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: lights TBO");
 
     {
-        GLuint decals_ssbo;
+        GLuint decals_buf;
 
-        glGenBuffers(1, &decals_ssbo);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, decals_ssbo);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(DecalItem) * MAX_DECALS_TOTAL, nullptr, GL_DYNAMIC_COPY);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        glGenBuffers(1, &decals_buf);
+        glBindBuffer(GL_TEXTURE_BUFFER, decals_buf);
+        glBufferData(GL_TEXTURE_BUFFER, sizeof(DecalItem) * MAX_DECALS_TOTAL, nullptr, GL_DYNAMIC_COPY);
+        glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
-        decals_ssbo_ = (uint32_t)decals_ssbo;
+        decals_buf_ = (uint32_t)decals_buf;
 
         GLuint decals_tbo;
 
         glGenTextures(1, &decals_tbo);
         glBindTexture(GL_TEXTURE_BUFFER, decals_tbo);
 
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, decals_ssbo);
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, decals_buf);
         glBindTexture(GL_TEXTURE_BUFFER, 0);
 
         decals_tbo_ = (uint32_t)decals_tbo;
@@ -228,28 +228,28 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: decals TBO");
 
     {
-        GLuint cells_ssbo;
+        GLuint cells_buf;
 
-        glGenBuffers(1, &cells_ssbo);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, cells_ssbo);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CellData) * CELLS_COUNT, nullptr, GL_DYNAMIC_COPY);
+        glGenBuffers(1, &cells_buf);
+        glBindBuffer(GL_TEXTURE_BUFFER, cells_buf);
+        glBufferData(GL_TEXTURE_BUFFER, sizeof(CellData) * CELLS_COUNT, nullptr, GL_DYNAMIC_COPY);
 
         // fill with zeros
         CellData dummy[GRID_RES_X * GRID_RES_Y] = {};
         for (int i = 0; i < GRID_RES_Z; i++) {
-            glBufferSubData(GL_SHADER_STORAGE_BUFFER, i * sizeof(CellData) * GRID_RES_X * GRID_RES_Y, sizeof(CellData) * GRID_RES_X * GRID_RES_Y, &dummy[0]);
+            glBufferSubData(GL_TEXTURE_BUFFER, i * sizeof(CellData) * GRID_RES_X * GRID_RES_Y, sizeof(CellData) * GRID_RES_X * GRID_RES_Y, &dummy[0]);
         }
 
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
-        cells_ssbo_ = (uint32_t)cells_ssbo;
+        cells_buf_ = (uint32_t)cells_buf;
 
         GLuint cells_tbo;
 
         glGenTextures(1, &cells_tbo);
         glBindTexture(GL_TEXTURE_BUFFER, cells_tbo);
 
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RG32UI, cells_ssbo);
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_RG32UI, cells_buf);
         glBindTexture(GL_TEXTURE_BUFFER, 0);
 
         cells_tbo_ = (uint32_t)cells_tbo;
@@ -258,26 +258,26 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: cells TBO");
 
     {
-        GLuint items_ssbo;
+        GLuint items_buf;
 
-        glGenBuffers(1, &items_ssbo);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, items_ssbo);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ItemData) * MAX_ITEMS_TOTAL, nullptr, GL_DYNAMIC_COPY);
+        glGenBuffers(1, &items_buf);
+        glBindBuffer(GL_TEXTURE_BUFFER, items_buf);
+        glBufferData(GL_TEXTURE_BUFFER, sizeof(ItemData) * MAX_ITEMS_TOTAL, nullptr, GL_DYNAMIC_COPY);
 
         // fill first entry with zeroes
         ItemData dummy = {};
-        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(ItemData), &dummy);
+        glBufferSubData(GL_TEXTURE_BUFFER, 0, sizeof(ItemData), &dummy);
 
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
-        items_ssbo_ = (uint32_t)items_ssbo;
+        items_buf_ = (uint32_t)items_buf;
 
         GLuint items_tbo;
 
         glGenTextures(1, &items_tbo);
         glBindTexture(GL_TEXTURE_BUFFER, items_tbo);
 
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_R32UI, items_ssbo);
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_R32UI, items_buf);
         glBindTexture(GL_TEXTURE_BUFFER, 0);
 
         items_tbo_ = (uint32_t)items_tbo;
@@ -429,32 +429,32 @@ void Renderer::DestroyRendererInternal() {
         GLuint lights_tbo = (GLuint)lights_tbo_;
         glDeleteTextures(1, &lights_tbo);
 
-        GLuint lights_ssbo = (GLuint)lights_ssbo_;
-        glDeleteBuffers(1, &lights_ssbo);
+        GLuint lights_buf = (GLuint)lights_buf_;
+        glDeleteBuffers(1, &lights_buf);
     }
 
     {
         GLuint decals_tbo = (GLuint)decals_tbo_;
         glDeleteTextures(1, &decals_tbo);
 
-        GLuint lights_ssbo = (GLuint)lights_ssbo_;
-        glDeleteBuffers(1, &lights_ssbo);
+        GLuint lights_buf = (GLuint)lights_buf_;
+        glDeleteBuffers(1, &lights_buf);
     }
 
     {
         GLuint cells_tbo = (GLuint)cells_tbo_;
         glDeleteTextures(1, &cells_tbo);
 
-        GLuint cells_ssbo = (GLuint)cells_ssbo_;
-        glDeleteBuffers(1, &cells_ssbo);
+        GLuint cells_buf = (GLuint)cells_buf_;
+        glDeleteBuffers(1, &cells_buf);
     }
 
     {
         GLuint items_tbo = (GLuint)items_tbo_;
         glDeleteTextures(1, &items_tbo);
 
-        GLuint items_ssbo = (GLuint)items_ssbo_;
-        glDeleteBuffers(1, &items_ssbo);
+        GLuint items_buf = (GLuint)items_buf_;
+        glDeleteBuffers(1, &items_buf);
     }
 
     {
@@ -510,11 +510,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     {   // Update lights buffer
         size_t lights_mem_size = lights_count * sizeof(LightSourceItem);
         if (lights_mem_size) {
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)lights_ssbo_);
-            void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, lights_mem_size, GL_MAP_WRITE_BIT);
+            glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)lights_buf_);
+            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, 0, lights_mem_size, GL_MAP_WRITE_BIT);
             memcpy(pinned_mem, lights, lights_mem_size);
-            glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+            glUnmapBuffer(GL_TEXTURE_BUFFER);
+            glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
         render_infos_[1].lights_count = (uint32_t)lights_count;
@@ -523,11 +523,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         // Update decals buffer
         size_t decals_mem_size = decals_count * sizeof(DecalItem);
         if (decals_mem_size) {
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)decals_ssbo_);
-            void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, decals_mem_size, GL_MAP_WRITE_BIT);
+            glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)decals_buf_);
+            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, 0, decals_mem_size, GL_MAP_WRITE_BIT);
             memcpy(pinned_mem, decals, decals_mem_size);
-            glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+            glUnmapBuffer(GL_TEXTURE_BUFFER);
+            glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
         render_infos_[1].decals_count = (uint32_t)decals_count;
@@ -536,11 +536,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         // Update cells buffer
         size_t cells_mem_size = CELLS_COUNT * sizeof(CellData);
         if (cells_mem_size && cells) {
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)cells_ssbo_);
-            void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, cells_mem_size, GL_MAP_WRITE_BIT);
+            glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)cells_buf_);
+            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, 0, cells_mem_size, GL_MAP_WRITE_BIT);
             memcpy(pinned_mem, cells, cells_mem_size);
-            glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+            glUnmapBuffer(GL_TEXTURE_BUFFER);
+            glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
         render_infos_[1].cells_data_size = (uint32_t)cells_mem_size;
@@ -548,11 +548,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         // Update items buffer
         size_t items_mem_size = items_count * sizeof(ItemData);
         if (items_mem_size) {
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)items_ssbo_);
-            void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, items_mem_size, GL_MAP_WRITE_BIT);
+            glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)items_buf_);
+            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, 0, items_mem_size, GL_MAP_WRITE_BIT);
             memcpy(pinned_mem, items, items_mem_size);
-            glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+            glUnmapBuffer(GL_TEXTURE_BUFFER);
+            glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
         render_infos_[1].items_data_size = (uint32_t)items_mem_size;
@@ -830,8 +830,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
             glUniform1f(U_GAMMA, 2.2f);
             glUniform1i(U_LIGHTS_COUNT, (GLint)lights_count);
 
-            //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, LIGHTS_BUFFER_BINDING, (GLuint)lights_ssbo_);
-
             if (clip_from_object == cur_clip_from_object) {
                 //glUniformMatrix4fv(p->uniform(U_MVP_MATR).loc, 1, GL_FALSE, ValuePtr(clip_from_object));
 
@@ -958,7 +956,6 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
 
-    //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, LIGHTS_BUFFER_BINDING, 0);
     glBindVertexArray((GLuint)temp_vao_);
     glDepthFunc(GL_LESS);
 
@@ -1192,10 +1189,12 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         reduced_pixels_.resize(4 * reduced_buf_.w * reduced_buf_.h);
         glReadPixels(0, 0, reduced_buf_.w, reduced_buf_.h, GL_RGBA, GL_FLOAT, &reduced_pixels_[0]);
 
+        const float max_value = 64.0f;
+
         float cur_average = 0.0f;
         for (size_t i = 0; i < reduced_pixels_.size(); i += 4) {
             if (!std::isnan(reduced_pixels_[i])) {
-                cur_average += reduced_pixels_[i];
+                cur_average += std::min(reduced_pixels_[i], max_value);
             }
         }
 

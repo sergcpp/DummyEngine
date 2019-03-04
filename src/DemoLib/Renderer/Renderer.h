@@ -156,7 +156,8 @@ private:
     FrameBuf clean_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf_;
     int w_ = 0, h_ = 0;
 
-    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false, debug_deffered_ = false, debug_blur_ = false, debug_decals_ = false, debug_ssao_ = false;
+    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false,
+         debug_deffered_ = false, debug_blur_ = false, debug_decals_ = false, debug_ssao_ = false;
     bool culling_enabled_ = true;
 
     const bvh_node_t *nodes_ = nullptr;
@@ -195,7 +196,7 @@ private:
     uint32_t temp_vao_, shadow_pass_vao_, depth_pass_vao_, draw_pass_vao_, skydome_vao_;
     uint32_t temp_buf_vtx_offset_, temp_buf_ndx_offset_, skydome_vtx_offset_, skydome_ndx_offset_;
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
-    uint32_t lights_ssbo_, lights_tbo_, decals_ssbo_, decals_tbo_, cells_ssbo_, cells_tbo_, items_ssbo_, items_tbo_;
+    uint32_t lights_buf_, lights_tbo_, decals_buf_, decals_tbo_, cells_buf_, cells_tbo_, items_buf_, items_tbo_;
 
     enum { TimeDrawStart, TimeShadowMapStart, TimeDepthPassStart, TimeAOPassStart, TimeOpaqueStart,
            TimeReflStart, TimeBlurStart, TimeReduceStart, TimeBlitStart, TimeDrawEnd, TimersCount };

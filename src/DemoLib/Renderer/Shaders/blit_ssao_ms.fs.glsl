@@ -1,5 +1,6 @@
 R"(
 #version 310 es
+#extension GL_ARB_texture_multisample : enable
 
 #ifdef GL_ES
     precision mediump float;
