@@ -94,8 +94,12 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 #define GL_STATIC_DRAW                      0x88E4
 #define GL_DYNAMIC_DRAW                     0x88E8
 
+#define GL_STREAM_READ                      0x88E1
+#define GL_DYNAMIC_READ                     0x88E9
+
 #define GL_DYNAMIC_COPY                     0x88EA
 
+#define GL_READ_ONLY                        0x88B8
 #define GL_WRITE_ONLY                       0x88B9
 
 #define GL_COPY_WRITE_BUFFER                0x8f37
@@ -111,6 +115,9 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 
 #define GL_FRAMEBUFFER                      0x8D40
 #define GL_RENDERBUFFER                     0x8D41
+
+#define GL_READ_FRAMEBUFFER                 0x8ca8
+#define GL_DRAW_FRAMEBUFFER                 0x8ca9
 
 #define GL_FRAMEBUFFER_COMPLETE             0x8CD5
 
@@ -176,6 +183,8 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 
 #define GL_TEXTURE_BUFFER                 0x8C2A
 #define GL_MAX_TEXTURE_BUFFER_SIZE        0x8C2B
+
+#define GL_PIXEL_PACK_BUFFER        0x88eb
 
 #define GL_TIMESTAMP 0x8E28
 
