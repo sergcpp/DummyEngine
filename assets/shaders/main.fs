@@ -250,9 +250,9 @@ void main(void) {
     vec3 sh_l_11 = texture(lm_indirect_sh_texture[2], lm_uvs).rgb;
     vec3 sh_l_12 = texture(lm_indirect_sh_texture[3], lm_uvs).rgb;
     
-    //indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
+    indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
     
-    indirect_col *= 0.000001;
+    //indirect_col *= 0.000001;
     //visibility *= 0.001;
     
     //indirect_col = vec3(0.1, 0.1, 0.1);
