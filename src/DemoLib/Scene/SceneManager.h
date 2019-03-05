@@ -56,6 +56,7 @@ private:
 
     Ren::Camera cam_;
     Environment env_;
+    std::string env_map_pt_name_;
 
     bool cur_lm_indir_ = false;
     size_t cur_lm_obj_ = 0;

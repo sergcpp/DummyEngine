@@ -1549,43 +1549,13 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
         }
     }
 
-    {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        glDisable(GL_DEPTH_TEST);
-        glDepthMask(GL_FALSE);
+    glBindVertexArray((GLuint)temp_vao_);
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
 
-        Ren::Program *cur_program = blit_prog_.get();
-        glUseProgram(cur_program->prog_id());
-
-        float k = float(ctx_.h()) / ctx_.w();
-
-        const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f * k, -1.0f,
-                                      1.0f * k, 1.0f,     -1.0f, 1.0f };
-
-        const float fs_quad_uvs[] = { 0.0f, float(h),     float(w), float(h),
-                                      float(w), 0.0f,     0.0f, 0.0f };
-
-        const uint8_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        glEnableVertexAttribArray(A_POS);
-        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_pos[0]);
-
-        glEnableVertexAttribArray(A_UVS1);
-        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, &fs_quad_uvs[0]);
-
-        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
-
-        BindTexture(DIFFUSEMAP_SLOT, temp_tex_);
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, &fs_quad_indices[0]);
-
-        glDisableVertexAttribArray(A_POS);
-        glDisableVertexAttribArray(A_UVS1);
-    }
+    BlitTexture(-1.0f, 1.0f, 2.0f, -2.0f, temp_tex_, w, h);
 }
 
 void Renderer::BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf, int first_att, int att_count, float multiplier) {
@@ -1664,7 +1634,13 @@ void Renderer::BlitTexture(float px, float py, float sx, float sy, uint32_t tex_
             (float)resx, (float)resy,   0.0f, (float)resy
         };
 
-        const uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
+        uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
+
+        if (sy < 0.0f) {
+            // keep counter-clockwise winding order
+            std::swap(indices[0], indices[2]);
+            std::swap(indices[3], indices[5]);
+        }
 
         glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);

@@ -208,7 +208,7 @@ void main() {
     float tex_lod = 8.0 * (1.0 - specular.w);
 
     vec3 refl_ray_ws = normalize((uInvViewMatrix * vec4(refl_ray_vs, 0.0)).xyz);
-    outColor = vec4(0.001 * infl * clamp(textureLod(env_texture, refl_ray_ws, tex_lod).xyz, vec3(0.0), vec3(10.0)), 1.0);
+    outColor = vec4(infl * clamp(textureLod(env_texture, refl_ray_ws, tex_lod).xyz, vec3(0.0), vec3(10.0)), 1.0);
 
     vec2 hit_pixel;
     vec3 hit_point;

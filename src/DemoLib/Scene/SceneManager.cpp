@@ -525,12 +525,6 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             const JsNumber &js_sun_softness = js_env.at("sun_softness");
             env_.sun_softness = (float)js_sun_softness.val;
         }
-        if (js_env.Has("env_col")) {
-            const JsArray &js_env_col = js_env.at("env_col");
-            env_.sky_col[0] = (float)((const JsNumber &)js_env_col.at(0)).val;
-            env_.sky_col[1] = (float)((const JsNumber &)js_env_col.at(1)).val;
-            env_.sky_col[2] = (float)((const JsNumber &)js_env_col.at(2)).val;
-        }
         if (js_env.Has("env_map")) {
             const JsString &js_env_map = (const JsString &)js_env.at("env_map");
 
@@ -570,6 +564,9 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
             Ren::eTexLoadStatus load_status;
             env_.env_map = ctx_.LoadTextureCube(tex_name.c_str(), data, size, p, &load_status);
+        }
+        if (js_env.Has("env_map_pt")) {
+            env_map_pt_name_ = ((const JsString &)js_env.at("env_map_pt")).val;
         }
     } else {
         env_ = {};

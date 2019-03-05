@@ -208,7 +208,7 @@ void SceneManager::ResetLightmaps_PT() {
 bool SceneManager::PrepareLightmaps_PT() {
     if (!ray_scene_) return false;
 
-    const int LM_SAMPLES_TOTAL = 512;
+    const int LM_SAMPLES_TOTAL = 16;
     const int LM_SAMPLES_PER_PASS = 16;
 
     const int res = (int)objects_[cur_lm_obj_].lm_res;
@@ -424,7 +424,22 @@ void SceneManager::InitScene_PT(bool _override) {
     // Setup environment
     {
         Ray::environment_desc_t env_desc;
-        memcpy(&env_desc.env_col[0], &env_.sky_col[0], 3 * sizeof(float));
+        env_desc.env_col[0] = env_desc.env_col[1] = env_desc.env_col[2] = 1.0f;
+
+        if (!env_map_pt_name_.empty()) {
+            int w, h;
+            auto tex_data = LoadHDR("assets/textures/" + env_map_pt_name_, w, h);
+
+            Ray::tex_desc_t tex_desc;
+            tex_desc.data = (const Ray::pixel_color8_t *)&tex_data[0];
+            tex_desc.w = w;
+            tex_desc.h = h;
+            tex_desc.generate_mipmaps = false;
+
+            env_desc.env_map = ray_scene_->AddTexture(tex_desc);
+            env_desc.env_clamp = 4.0f;
+        }
+
         ray_scene_->SetEnvironment(env_desc);
     }
 
@@ -538,13 +553,13 @@ void SceneManager::InitScene_PT(bool _override) {
 
                         Ren::Texture2DRef tex_ref;
 
-                        if (!mat->texture(2)) {
+                        //if (!mat->texture(2)) {
                             mat_desc.type = Ray::DiffuseMaterial;
                             tex_ref = mat->texture(0);
-                        } else {
-                            mat_desc.type = Ray::EmissiveMaterial;
-                            tex_ref = mat->texture(2);
-                        }
+                        //} else {
+                        //    mat_desc.type = Ray::EmissiveMaterial;
+                        //    tex_ref = mat->texture(2);
+                        //}
 
                         if (tex_ref) {
                             const char *tex_name = tex_ref->name();
