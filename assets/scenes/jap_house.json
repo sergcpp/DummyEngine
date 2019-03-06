@@ -14,18 +14,18 @@
         "fwd_speed" : 1.0
     },
     "meshes" : {
-		"floor" : "floor.mesh",
+        "floor" : "floor.mesh",
         "walls" : "walls.mesh",
         "roof" : "roof.mesh",
-		"roof_plate" : "roof_plate.mesh",
-		"inter_walls" : "inter_walls.mesh",
+        "roof_plate" : "roof_plate.mesh",
+        "inter_walls" : "inter_walls.mesh",
         "ladder" : "ladder.mesh",
         "cabinet" : "cabinet.mesh",
         "table" : "table.mesh",
         "toilet" : "toilet.mesh",
         "kitchen_01" : "kitchen_01.mesh",
         "kitchen_02" : "kitchen_02.mesh",
-		"monk" : "monk.mesh",
+        "monk" : "monk.mesh",
     },
     "lights" : {
         "l0" : {
@@ -110,16 +110,16 @@
         }
     },
     "objects" : [
-		{
-			"pos" : [ 0.0, 0.0, 0.0 ],
+        {
+            "pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "floor",
             "lightmap_res" : 512,
             "lightmap_sh" : true
         },
         {
             "mesh" : "walls",
-			"occluder_mesh" : "walls",
-			"lightmap_res" : 512,
+            "occluder_mesh" : "walls",
+            "lightmap_res" : 512,
             "lightmap_sh" : true
         },
         {
@@ -1082,72 +1082,72 @@
             "pos" : [ -5.75, 0.0, 9.75 ],
             "lights" : [ "l0", "l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9", "l10", "l11", "l12", "l13", "l14", "l15" ]
         },
-		{
-			"pos" : [ 0.0423079, 6.88465, -1.50584 ],
+        {
+            "pos" : [ 0.0423079, 6.88465, -1.50584 ],
             "mesh" : "roof",
-			"lightmap_res" : 512,
-            "lightmap_sh" : true
-        },
-		{
-			"pos" : [ 0.0, 0.0, 0.0 ],
-            "mesh" : "roof_plate",
-			"occluder_mesh" : "roof_plate",
-			"lightmap_res" : 512,
-        },
-		{
-			"pos" : [ 0.0, 0.0, 0.0 ],
-            "mesh" : "inter_walls",
-			"occluder_mesh" : "inter_walls",
-			"lightmap_res" : 512,
+            "lightmap_res" : 512,
             "lightmap_sh" : true
         },
         {
-			"pos" : [ 4.43021, 1.88348, -3.25406 ],
+            "pos" : [ 0.0, 0.0, 0.0 ],
+            "mesh" : "roof_plate",
+            "occluder_mesh" : "roof_plate",
+            "lightmap_res" : 512,
+        },
+        {
+            "pos" : [ 0.0, 0.0, 0.0 ],
+            "mesh" : "inter_walls",
+            "occluder_mesh" : "inter_walls",
+            "lightmap_res" : 512,
+            "lightmap_sh" : true
+        },
+        {
+            "pos" : [ 4.43021, 1.88348, -3.25406 ],
             "rot" : [ 0.0, -90.0, 0.0 ],
             "mesh" : "ladder",
-			"lightmap_res" : 256,
+            "lightmap_res" : 256,
             "lightmap_sh" : true
         },
         {
-			"pos" : [ -1.59414, 1.88348, 4.40305 ],
+            "pos" : [ -1.59414, 1.88348, 4.40305 ],
             "rot" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "ladder",
-			"lightmap_res" : 256,
+            "lightmap_res" : 256,
             "lightmap_sh" : true
         },
         {
-			"pos" : [ -4.1675, 0.998758, 9.59256 ],
+            "pos" : [ -4.1675, 0.998758, 9.59256 ],
             "rot" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "cabinet",
-			"lightmap_res" : 256,
+            "lightmap_res" : 256,
             "lightmap_sh" : true
         },
         {
-			"pos" : [ -9.9254, 1.24848, 6.15349 ],
+            "pos" : [ -9.9254, 1.24848, 6.15349 ],
             "rot" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "table",
-			"lightmap_res" : 256,
+            "lightmap_res" : 256,
             "lightmap_sh" : true
         },
         {
-			"pos" : [ -10.995, 0.974263, -2.16758 ],
+            "pos" : [ -10.995, 0.974263, -2.16758 ],
             "rot" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "toilet",
-			"lightmap_res" : 256,
+            "lightmap_res" : 256,
             "lightmap_sh" : true
         },
         {
-			"pos" : [ -10.2862, 1.14991, -9.8114 ],
+            "pos" : [ -10.2862, 1.14991, -9.8114 ],
             "rot" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "kitchen_01",
-			"lightmap_res" : 256,
+            "lightmap_res" : 256,
             "lightmap_sh" : true
         },
         {
-			"pos" : [ -2.04144, 1.36105, -13.0609 ],
+            "pos" : [ -2.04144, 1.36105, -13.0609 ],
             "rot" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "kitchen_02",
-			"lightmap_res" : 256,
+            "lightmap_res" : 256,
             "lightmap_sh" : true
         },
     ]

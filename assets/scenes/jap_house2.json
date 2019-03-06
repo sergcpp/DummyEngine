@@ -14,12 +14,12 @@
         "fwd_speed" : 0.025
     },
     "meshes" : {
-		"floor" : "floor.mesh",
+        "floor" : "floor.mesh",
         "walls" : "walls.mesh",
         "roof" : "roof.mesh",
-		"roof_plate" : "roof_plate.mesh",
-		"inter_walls" : "inter_walls.mesh",
-		"monk" : "monk.mesh",
+        "roof_plate" : "roof_plate.mesh",
+        "inter_walls" : "inter_walls.mesh",
+        "monk" : "monk.mesh",
     },
     "lights" : {
         "l0" : {
@@ -74,8 +74,8 @@
         }
     },
     "objects" : [
-		{
-			"pos" : [ 0.0, 0.0, 0.0 ],
+        {
+            "pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "floor",
             "lightmap_res" : 512,
             "lightmap_sh" : true,
@@ -83,10 +83,10 @@
             "decals" : [ "d0", "d1", "d2", "d3" ]
         },
         {
-			"pos" : [ 0.0, 0.0, 0.0 ],
+            "pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "inter_walls",
-			"occluder_mesh" : "inter_walls",
-			"lightmap_res" : 512,
+            "occluder_mesh" : "inter_walls",
+            "lightmap_res" : 512,
             "lightmap_sh" : true
         },
     ]
