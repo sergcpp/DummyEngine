@@ -119,6 +119,70 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
     }
 }
 
+std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int res) {
+    std::vector<Ray::pixel_color_t> temp_pixels1{ pixels, pixels + res * res },
+                                    temp_pixels2{ (size_t)res * res };
+    const int FILTER_SIZE = 16;
+    const float INVAL_THRES = 0.5f;
+
+    // apply dilation filter
+    for (int i = 0; i < FILTER_SIZE; i++) {
+        bool has_invalid = false;
+
+        for (int y = 0; y < res; y++) {
+            for (int x = 0; x < res; x++) {
+                auto in_p = temp_pixels1[y * res + x];
+                auto &out_p = temp_pixels2[y * res + x];
+
+                float mul = 1.0f;
+                if (in_p.a < INVAL_THRES) {
+                    has_invalid = true;
+
+                    Ray::pixel_color_t new_p = { 0 };
+                    int count = 0;
+                    for (int _y : { y - 1, y, y + 1 }) {
+                        for (int _x : { x - 1, x, x + 1 }) {
+                            if (_x < 0 || _y < 0 || _x > res - 1 || _y > res - 1) continue;
+
+                            const auto &p = temp_pixels1[_y * res + _x];
+                            if (p.a >= INVAL_THRES) {
+                                new_p.r += p.r;
+                                new_p.g += p.g;
+                                new_p.b += p.b;
+                                new_p.a += p.a;
+
+                                count++;
+                            }
+                        }
+                    }
+
+                    if (count) {
+                        float inv_c = 1.0f / count;
+                        new_p.r *= inv_c;
+                        new_p.g *= inv_c;
+                        new_p.b *= inv_c;
+                        new_p.a *= inv_c;
+
+                        in_p = new_p;
+                    }
+                } else {
+                    mul = 1.0f / in_p.a;
+                }
+
+                out_p.r = in_p.r * mul;
+                out_p.g = in_p.g * mul;
+                out_p.b = in_p.b * mul;
+                out_p.a = in_p.a * mul;
+            }
+        }
+
+        std::swap(temp_pixels1, temp_pixels2);
+        if (!has_invalid) break;
+    }
+
+    return temp_pixels1;
+}
+
 std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &tex_ref) {
     auto params = tex_ref->params();
 
@@ -208,7 +272,12 @@ void SceneManager::ResetLightmaps_PT() {
 bool SceneManager::PrepareLightmaps_PT() {
     if (!ray_scene_) return false;
 
-    const int LM_SAMPLES_TOTAL = 4096;
+    const int LM_SAMPLES_TOTAL =
+#ifdef NDEBUG
+        4096;
+#else
+        16;
+#endif
     const int LM_SAMPLES_PER_PASS = 16;
 
     const int res = (int)objects_[cur_lm_obj_].lm_res;
@@ -217,12 +286,26 @@ bool SceneManager::PrepareLightmaps_PT() {
         if (ray_renderer_.type() == Ray::RendererOCL) {
             ray_reg_ctx_.emplace_back(Ray::rect_t{ 0, 0, res, res });
             ray_renderer_.Resize(res, res);
+        } else {
+            const int TILE_SIZE = 64;
+
+            for (int y = 0; y < res + TILE_SIZE - 1; y += TILE_SIZE) {
+                for (int x = 0; x < res + TILE_SIZE - 1; x += TILE_SIZE) {
+                    auto rect = Ray::rect_t{ x, y, std::min(TILE_SIZE, res - x), std::min(TILE_SIZE, res - y) };
+                    if (rect.w > 0 && rect.h > 0) {
+                        ray_reg_ctx_.emplace_back(rect);
+                    }
+                }
+            }
         }
     }
 
-    const auto &rect = ray_reg_ctx_[0].rect();
-    if (rect.w != res || rect.h != res) {
-        ray_reg_ctx_[0] = Ray::RegionContext{ { 0, 0, res, res } };
+    const auto &cur_size = ray_renderer_.size();
+
+    if (cur_size.first != res || cur_size.second != res) {
+        if (ray_renderer_.type() == Ray::RendererOCL) {
+            ray_reg_ctx_[0] = Ray::RegionContext{ { 0, 0, res, res } };
+        }
         ray_renderer_.Resize(res, res);
     }
 
@@ -234,85 +317,8 @@ bool SceneManager::PrepareLightmaps_PT() {
             // Save lightmap to file
             const auto *pixels = ray_renderer_.get_pixels_ref();
 
-            std::vector<Ray::pixel_color_t> temp_pixels1{ pixels, pixels + res * res },
-                temp_pixels2{ (size_t)res * res };
-
-            const float INVAL_THRES = 0.5f;
-
             // apply dilation filter
-            for (int i = 0; i < 16; i++) {
-                bool has_invalid = false;
-
-                for (int y = 0; y < res; y++) {
-                    for (int x = 0; x < res; x++) {
-                        auto in_p = temp_pixels1[y * res + x];
-                        auto &out_p = temp_pixels2[y * res + x];
-
-                        float mul = 1.0f;
-                        if (in_p.a < INVAL_THRES) {
-                            has_invalid = true;
-
-                            Ray::pixel_color_t new_p = { 0 };
-                            int count = 0;
-                            for (int _y : { y - 1, y, y + 1 }) {
-                                for (int _x : { x - 1, x, x + 1 }) {
-                                    if (_x < 0 || _y < 0 || _x > res - 1 || _y > res - 1) continue;
-
-                                    const auto &p = temp_pixels1[_y * res + _x];
-                                    if (p.a >= INVAL_THRES) {
-                                        new_p.r += p.r;
-                                        new_p.g += p.g;
-                                        new_p.b += p.b;
-                                        new_p.a += p.a;
-
-                                        count++;
-                                    }
-                                }
-                            }
-
-                            if (count) {
-                                float inv_c = 1.0f / count;
-                                new_p.r *= inv_c;
-                                new_p.g *= inv_c;
-                                new_p.b *= inv_c;
-                                new_p.a *= inv_c;
-
-                                in_p = new_p;
-                            }
-                        } else {
-                            mul = 1.0f / in_p.a;
-                        }
-
-                        out_p.r = in_p.r * mul;
-                        out_p.g = in_p.g * mul;
-                        out_p.b = in_p.b * mul;
-                        out_p.a = in_p.a * mul;
-                    }
-                }
-
-                std::swap(temp_pixels1, temp_pixels2);
-
-                if (!has_invalid) break;
-            }
-
-            /*std::vector<uint8_t> out_rgba;
-            out_rgba.resize(4 * LM_RES * LM_RES);
-
-            for (int y = 0; y < LM_RES; y++) {
-                for (int x = 0; x < LM_RES; x++) {
-                    const auto &p = temp_pixels1[y * LM_RES + x];
-
-                    uint8_t r = p.r > 1.0f ? 255 : uint8_t(p.r * 255);
-                    uint8_t g = p.g > 1.0f ? 255 : uint8_t(p.g * 255);
-                    uint8_t b = p.b > 1.0f ? 255 : uint8_t(p.b * 255);
-                    uint8_t a = p.a > 1.0f ? 255 : uint8_t(p.a * 255);
-
-                    out_rgba[4 * (y * LM_RES + x) + 0] = b;
-                    out_rgba[4 * (y * LM_RES + x) + 1] = g;
-                    out_rgba[4 * (y * LM_RES + x) + 2] = r;
-                    out_rgba[4 * (y * LM_RES + x) + 3] = a;
-                }
-            }*/
+            std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(pixels, res);
 
             std::string out_file_name = std::string("assets/textures/lightmaps/") + scene_name_;
             out_file_name += "_";
@@ -323,7 +329,7 @@ bool SceneManager::PrepareLightmaps_PT() {
                 out_file_name += "_lm_indirect.tga_rgbe";
             }
 
-            SceneManagerInternal::WriteTGA(temp_pixels1, res, res, out_file_name);
+            SceneManagerInternal::WriteTGA(out_pixels, res, res, out_file_name);
 
             if (cur_lm_indir_) {
                 const auto *sh_data = ray_renderer_.get_sh_data_ref();
@@ -340,7 +346,11 @@ bool SceneManager::PrepareLightmaps_PT() {
                         temp_pixels1[i].r = sh_data[i].coeff_r[sh_l] * mult[sh_l];
                         temp_pixels1[i].g = sh_data[i].coeff_g[sh_l] * mult[sh_l];
                         temp_pixels1[i].b = sh_data[i].coeff_b[sh_l] * mult[sh_l];
+                        // use coverage info from simple lightmap
+                        temp_pixels1[i].a = pixels[i].a;
                     }
+
+                    const auto out_pixels = SceneManagerInternal::FlushSeams(&temp_pixels1[0], res);
 
                     out_file_name = "assets/textures/lightmaps/";
                     out_file_name += scene_name_;
@@ -350,7 +360,7 @@ bool SceneManager::PrepareLightmaps_PT() {
                     out_file_name += std::to_string(sh_l);
                     out_file_name += ".tga_rgbe";
 
-                    SceneManagerInternal::WriteTGA(temp_pixels1, res, res, out_file_name);
+                    SceneManagerInternal::WriteTGA(out_pixels, res, res, out_file_name);
                 }
             }
         }
@@ -396,7 +406,14 @@ bool SceneManager::PrepareLightmaps_PT() {
         if (ray_renderer_.type() == Ray::RendererOCL) {
             ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[0]);
         } else {
-
+            auto render_task = [this](int i) { ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[i]); };
+            std::vector<std::future<void>> ev(ray_reg_ctx_.size());
+            for (int i = 0; i < (int)ray_reg_ctx_.size(); i++) {
+                ev[i] = threads_.enqueue(render_task, i);
+            }
+            for (const auto &e : ev) {
+                e.wait();
+            }
         }
     }
 

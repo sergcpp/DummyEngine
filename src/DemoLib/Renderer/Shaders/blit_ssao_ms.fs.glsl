@@ -34,7 +34,7 @@ float BilinearSampleDepthTexel(vec2 texcoord) {
     float texel1 = mix(texel10, texel11, sample_coord.y);
             
     float depth = mix(texel0, texel1, sample_coord.x);
-    return uClipInfo[0] / (depth * uClipInfo[1] + uClipInfo[2]);
+    return uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
 }
 
 int hash(int x) {

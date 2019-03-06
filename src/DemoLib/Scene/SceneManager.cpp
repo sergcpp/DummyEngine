@@ -376,7 +376,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 std::string base_file_name = "lightmaps/";
                 base_file_name += scene_name_;
                 base_file_name += "_";
-                base_file_name += std::to_string(cur_lm_obj_);
+                base_file_name += std::to_string(objects_.size());
                 base_file_name += "_lm_sh_";
 
                 for (int sh_l = 0; sh_l < 4; sh_l++) {

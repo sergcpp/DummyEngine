@@ -225,7 +225,6 @@ void main() {
         vec4 tex_color = textureLod(prev_texture, hit_prev.xy, 0.05 * tex_lod * distance(ray_origin_vs.xyz, hit_point));
 
         float mix_factor = max(1.0 - 2.0 * distance(hit_pixel, vec2(0.5, 0.5)), 0.0);
-
         outColor.xyz = mix(outColor.xyz, tex_color.xyz, mix_factor);
     }
 }

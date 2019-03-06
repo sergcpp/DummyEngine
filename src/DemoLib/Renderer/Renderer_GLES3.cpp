@@ -955,9 +955,11 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         }
 
         for (int sh_l = 0; sh_l < 4; sh_l++) {
-            if (dr.lm_indir_sh_tex[sh_l] && cur_lm_indir_sh_tex[sh_l] != dr.lm_indir_sh_tex[sh_l]) {
-                cur_lm_indir_sh_tex[sh_l] = dr.lm_indir_sh_tex[sh_l];
-                BindTexture(LM_INDIR_SH_SLOT + sh_l, cur_lm_indir_sh_tex[sh_l]->tex_id());
+            if (dr.lm_indir_sh_tex[sh_l]) {
+                if (cur_lm_indir_sh_tex[sh_l] != dr.lm_indir_sh_tex[sh_l]) {
+                    cur_lm_indir_sh_tex[sh_l] = dr.lm_indir_sh_tex[sh_l];
+                    BindTexture(LM_INDIR_SH_SLOT + sh_l, cur_lm_indir_sh_tex[sh_l]->tex_id());
+                }
             } else {
                 BindTexture(LM_INDIR_SH_SLOT + sh_l, default_lightmap_->tex_id());
             }
@@ -1556,6 +1558,8 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
     glDepthMask(GL_FALSE);
 
     BlitTexture(-1.0f, 1.0f, 2.0f, -2.0f, temp_tex_, w, h);
+
+    glBindVertexArray(0);
 }
 
 void Renderer::BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf, int first_att, int att_count, float multiplier) {
