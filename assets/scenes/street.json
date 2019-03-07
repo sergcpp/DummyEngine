@@ -5,7 +5,8 @@
         "sun_col1" : [ 0.1, 0.1, 0.09 ],
         "sun_softness" : 0.1,
         "env_col1" : [ 0.05, 0.075, 0.1 ],
-        "env_map" : "env/satara_night"
+        "env_map" : "env/satara_night_no_lamps",
+        "env_map_pt" : "env/satara_night_no_lamps_2k.hdr"
     },
     "camera" : {
         "view_origin" : [ 0.0, 5.0, 0.0 ],
@@ -117,61 +118,61 @@
         {
             "pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "rails",
-            "lightmap_res" : 512,
+            "lightmap_res1" : 512,
             "lights" : [ "l0", "l1", "l2" ],
         },
         {
             "pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "sidewalk",
-            "lightmap_res" : 512,
+            "lightmap_res1" : 512,
             "decals" : [ "d0", "d1" ]
         },
         {
             "pos" : [ 0.0, 0.0, 16.0 ],
             "mesh" : "rails",
-            "lightmap_res" : 512,
+            "lightmap_res1" : 512,
             "lights" : [ "l0", "l1", "l2" ]
         },
         {
             "pos" : [ 0.0, 0.0, 16.0 ],
             "mesh" : "sidewalk",
-            "lightmap_res" : 512,
+            "lightmap_res1" : 512,
             "decals" : [ "d0", "d1" ]
         },
         {
             "pos" : [ 0.0, 0.0, 32.0 ],
             "mesh" : "rails",
-            "lightmap_res" : 512,
+            "lightmap_res1" : 512,
             "lights" : [ "l0", "l1", "l2" ]
         },
         {
             "pos" : [ 0.0, 0.0, 32.0 ],
             "mesh" : "sidewalk",
-            "lightmap_res" : 512,
+            "lightmap_res1" : 512,
             "decals" : [ "d0", "d1" ]
         },
         {
             "pos" : [ 0.0, 0.0, 48.0 ],
             "mesh" : "rails",
-            "lightmap_res" : 512,
+            "lightmap_res1" : 512,
             "lights" : [ "l0", "l1", "l2" ]
         },
         {
             "pos" : [ 0.0, 0.0, 48.0 ],
             "mesh" : "sidewalk",
-            "lightmap_res" : 512,
+            "lightmap_res1" : 512,
             "decals" : [ "d0", "d1" ]
         },
         {
             "pos" : [ 12.4276, 0.0, 1.15319 ],
             "mesh" : "main_house",
-            "lightmap_res" : 512,
+            "lightmap_res1" : 512,
             "lights1" : [ "l0", "l1", "l2" ],
         },
         {
             "pos" : [ 14.2315, 0.0, 22.0001 ],
             "mesh" : "house_04",
-            "lightmap_res" : 512,
+            "lightmap_res1" : 512,
             "lights" : [ "l3", "l4", "l5", "l6", "l7", "l8", "l9", "l10", "l11", "l12", "l13", "l14" ],
         },
         {
