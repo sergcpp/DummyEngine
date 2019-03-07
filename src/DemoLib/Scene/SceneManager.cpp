@@ -363,7 +363,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             std::string lm_dir_tex_name = lm_tex_name + "_lm_direct.tga_rgbe";
             std::string lm_indir_tex_name = lm_tex_name + "_lm_indirect.tga_rgbe";
 
-            obj.flags |= UseLightmap;
+            obj.flags |= HasLightmap;
             obj.lm_res = (uint32_t)js_lm_res.val;
             obj.lm_dir_tex = OnLoadTexture(lm_dir_tex_name.c_str());
             obj.lm_indir_tex = OnLoadTexture(lm_indir_tex_name.c_str());

@@ -51,7 +51,7 @@ enum eObjectFlags {
     HasTransform    = (1 << 0),
     HasMesh         = (1 << 1),
     HasOccluder     = (1 << 2),
-    UseLightmap     = (1 << 3),
+    HasLightmap     = (1 << 3),
     HasLightSource  = (1 << 4),
     HasDecal        = (1 << 5)
 };

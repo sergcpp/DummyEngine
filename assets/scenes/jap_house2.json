@@ -19,6 +19,7 @@
         "roof" : "roof.mesh",
         "roof_plate" : "roof_plate.mesh",
         "inter_walls" : "inter_walls.mesh",
+        "ladder" : "ladder.mesh",
         "monk" : "monk.mesh",
     },
     "lights" : {
@@ -76,18 +77,24 @@
     "objects" : [
         {
             "pos" : [ 0.0, 0.0, 0.0 ],
-            "mesh" : "floor",
-            "lightmap_res" : 512,
-            "lightmap_sh" : true,
-            "lights" : [ "l0", "l1", "l2", "l3" ],
-            "decals" : [ "d0", "d1", "d2", "d3" ]
-        },
-        {
-            "pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "inter_walls",
             "occluder_mesh" : "inter_walls",
             "lightmap_res" : 512,
             "lightmap_sh" : true
         },
+        {
+            "pos" : [ 4.43021, 1.88348, -3.25406 ],
+            "rot" : [ 0.0, -90.0, 0.0 ],
+            "mesh" : "ladder",
+            "lightmap_res" : 256,
+            "lightmap_sh" : true
+        },
+        {
+            "pos" : [ -1.59414, 1.88348, 4.40305 ],
+            "rot" : [ 0.0, 0.0, 0.0 ],
+            "mesh" : "ladder",
+            "lightmap_res" : 256,
+            "lightmap_sh" : true
+        }
     ]
 }

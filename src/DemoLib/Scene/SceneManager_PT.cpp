@@ -254,7 +254,7 @@ void SceneManager::ResetLightmaps_PT() {
     ray_scene_->GetCamera(1, cam_desc);
 
     for (size_t i = 0; i < objects_.size(); i++) {
-        if (objects_[i].flags & UseLightmap) {
+        if (objects_[i].flags & HasLightmap) {
             cur_lm_obj_ = i;
             cam_desc.mi_index = objects_[i].pt_mi;
             break;
@@ -276,9 +276,10 @@ bool SceneManager::PrepareLightmaps_PT() {
 #ifdef NDEBUG
         4096;
 #else
-        16;
+        32;
 #endif
     const int LM_SAMPLES_PER_PASS = 16;
+    const int TILE_SIZE = 64;
 
     const int res = (int)objects_[cur_lm_obj_].lm_res;
 
@@ -287,8 +288,6 @@ bool SceneManager::PrepareLightmaps_PT() {
             ray_reg_ctx_.emplace_back(Ray::rect_t{ 0, 0, res, res });
             ray_renderer_.Resize(res, res);
         } else {
-            const int TILE_SIZE = 64;
-
             for (int y = 0; y < res + TILE_SIZE - 1; y += TILE_SIZE) {
                 for (int x = 0; x < res + TILE_SIZE - 1; x += TILE_SIZE) {
                     auto rect = Ray::rect_t{ x, y, std::min(TILE_SIZE, res - x), std::min(TILE_SIZE, res - y) };
@@ -305,6 +304,17 @@ bool SceneManager::PrepareLightmaps_PT() {
     if (cur_size.first != res || cur_size.second != res) {
         if (ray_renderer_.type() == Ray::RendererOCL) {
             ray_reg_ctx_[0] = Ray::RegionContext{ { 0, 0, res, res } };
+        } else {
+            ray_reg_ctx_.clear();
+
+            for (int y = 0; y < res + TILE_SIZE - 1; y += TILE_SIZE) {
+                for (int x = 0; x < res + TILE_SIZE - 1; x += TILE_SIZE) {
+                    auto rect = Ray::rect_t{ x, y, std::min(TILE_SIZE, res - x), std::min(TILE_SIZE, res - y) };
+                    if (rect.w > 0 && rect.h > 0) {
+                        ray_reg_ctx_.emplace_back(rect);
+                    }
+                }
+            }
         }
         ray_renderer_.Resize(res, res);
     }
@@ -339,7 +349,7 @@ bool SceneManager::PrepareLightmaps_PT() {
                 const float SH_A0 = 0.886226952f; // PI / sqrt(4.0f * Pi)
                 const float SH_A1 = 1.02332675f;  // sqrt(PI / 3.0f)
 
-                float mult[] = { SH_A0, SH_A1, SH_A1, SH_A1 };
+                const float mult[] = { SH_A0, SH_A1, SH_A1, SH_A1 };
 
                 for (int sh_l = 0; sh_l < 4; sh_l++) {
                     for (int i = 0; i < res * res; i++) {
@@ -373,11 +383,12 @@ bool SceneManager::PrepareLightmaps_PT() {
 
             cam_desc.skip_direct_lighting = true;
             cam_desc.skip_indirect_lighting = false;
+            cam_desc.output_sh = true;
         } else {
             bool found = false;
 
             for (size_t i = cur_lm_obj_ + 1; i < objects_.size(); i++) {
-                if (objects_[i].flags & UseLightmap) {
+                if (objects_[i].flags & HasLightmap) {
                     cur_lm_obj_ = i;
                     cam_desc.mi_index = objects_[i].pt_mi;
                     found = true;
@@ -392,6 +403,7 @@ bool SceneManager::PrepareLightmaps_PT() {
             cur_lm_indir_ = false;
             cam_desc.skip_direct_lighting = false;
             cam_desc.skip_indirect_lighting = true;
+            cam_desc.output_sh = false;
         }
 
         ray_scene_->SetCamera(1, cam_desc);
@@ -489,6 +501,7 @@ void SceneManager::InitScene_PT(bool _override) {
         cam_desc.uv_index = 1;
         cam_desc.mi_index = 0;
         cam_desc.output_sh = true;
+        cam_desc.use_coherent_sampling = true;
 
         ray_scene_->AddCamera(cam_desc);
     }
