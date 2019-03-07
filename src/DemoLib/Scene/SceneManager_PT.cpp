@@ -244,7 +244,7 @@ void SceneManager::Draw_PT() {
     }
 
     const auto *pixels = ray_renderer_.get_pixels_ref();
-    renderer_.BlitPixels(pixels, ray_renderer_.size().first, ray_renderer_.size().second, Ren::RawRGBA32F);
+    renderer_.BlitPixelsTonemap(pixels, ray_renderer_.size().first, ray_renderer_.size().second, Ren::RawRGBA32F);
 }
 
 void SceneManager::ResetLightmaps_PT() {
@@ -481,7 +481,7 @@ void SceneManager::InitScene_PT(bool _override) {
         cam_desc.fwd[0] = cam_desc.fwd[1] = 0.0f;
         cam_desc.fwd[2] = -1.0f;
         cam_desc.fov = cam_.angle();
-        cam_desc.gamma = 2.2f;
+        cam_desc.gamma = 1.0f;
         cam_desc.focus_distance = 1.0f;
         cam_desc.focus_factor = 0.0f;
 

@@ -1260,7 +1260,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glUniform1f(U_GAMMA, debug_lights_ ? 1.0f : 2.2f);
 
-        float exposure = 0.7f / reduced_average_;
+        float exposure = 0.85f / reduced_average_;
         exposure = std::min(exposure, 1000.0f);
 
         glUniform1f(U_EXPOSURE, exposure);
@@ -1558,6 +1558,176 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
     glDepthMask(GL_FALSE);
 
     BlitTexture(-1.0f, 1.0f, 2.0f, -2.0f, temp_tex_, w, h);
+
+    glBindVertexArray(0);
+}
+
+void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTexColorFormat format) {
+    using namespace RendererInternal;
+
+    if (temp_tex_w_ != w || temp_tex_h_ != h || temp_tex_format_ != format) {
+        if (temp_tex_w_ != 0 && temp_tex_h_ != 0) {
+            GLuint gl_tex = (GLuint)temp_tex_;
+            glDeleteTextures(1, &gl_tex);
+        }
+
+        GLuint new_tex;
+        glGenTextures(1, &new_tex);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, new_tex);
+
+        if (format == Ren::RawRGBA32F) {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, w, h, 0, GL_RGBA, GL_FLOAT, data);
+        }
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        temp_tex_ = (uint32_t)new_tex;
+        temp_tex_w_ = w;
+        temp_tex_h_ = h;
+        temp_tex_format_ = format;
+    } else {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, temp_tex_);
+
+        if (format == Ren::RawRGBA32F) {
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_FLOAT, data);
+        }
+    }
+
+    assert(format == Ren::RawRGBA32F);
+
+    float avarage_color[3] = {};
+    int sample_count = 0;
+    const float *_data = (const float *)data;
+    
+    for (int y = 0; y < h; y += 100) {
+        for (int x = 0; x < w; x += 100) {
+            int i = y * w + x;
+            avarage_color[0] += _data[i * 4 + 0];
+            avarage_color[1] += _data[i * 4 + 1];
+            avarage_color[2] += _data[i * 4 + 2];
+            sample_count++;
+        }
+    }
+
+    avarage_color[0] /= sample_count;
+    avarage_color[1] /= sample_count;
+    avarage_color[2] /= sample_count;
+
+    float lum = 0.299f * avarage_color[0] + 0.587f * avarage_color[1] + 0.114f * avarage_color[2];
+
+    const float alpha = 0.25f;
+    reduced_average_ = alpha * lum + (1.0f - alpha) * reduced_average_;
+
+    glBindVertexArray((GLuint)temp_vao_);
+    glDisable(GL_BLEND);
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, blur_buf2_.fb);
+        glViewport(0, 0, blur_buf2_.w, blur_buf2_.h);
+
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,
+                                       1.0f, 1.0f,         -1.0f, 1.0f };
+
+        const float fs_quad_uvs1[] = { 0.0f, 0.0f,             float(w), 0.0f,
+                                       float(w), float(h),     0.0f, float(h) };
+
+        const uint8_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
+
+        const Ren::Program *cur_program = blit_gauss_prog_.get();
+        glUseProgram(cur_program->prog_id());
+
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_pos), fs_quad_pos);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs1), fs_quad_uvs1);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
+
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)));
+
+        glUniform1i(cur_program->uniform(U_TEX).loc, DIFFUSEMAP_SLOT);
+        glUniform1f(cur_program->uniform(4).loc, 0.5f);
+
+        BindTexture(DIFFUSEMAP_SLOT, temp_tex_);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+
+        glUniform1f(cur_program->uniform(4).loc, 1.5f);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, blur_buf1_.fb);
+        glViewport(0, 0, blur_buf1_.w, blur_buf1_.h);
+
+        const float fs_quad_uvs2[] = { 0.0f, float(blur_buf2_.h),     float(blur_buf2_.w), float(blur_buf2_.h),
+                                       float(blur_buf2_.w), 0.0f,     0.0f, 0.0f };
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs2), fs_quad_uvs2);
+
+        BindTexture(DIFFUSEMAP_SLOT, blur_buf2_.attachments[0].tex);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+
+        glDisableVertexAttribArray(A_POS);
+        glDisableVertexAttribArray(A_UVS1);
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, w_, h_);
+
+    {   
+        const Ren::Program *cur_program = blit_combine_prog_.get();
+        glUseProgram(cur_program->prog_id());
+
+        const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,
+            1.0f, 1.0f,         -1.0f, 1.0f };
+
+        const float fs_quad_uvs[] = { 0.0f, float(h),       float(w), float(h),
+                                      float(w), 0.0f,       0.0f, 0.0f };
+
+        const uint8_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
+
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_pos), fs_quad_pos);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs), fs_quad_uvs);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
+
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)));
+
+        glUniform2f(13, float(w), float(h));
+        glUniform1f(U_GAMMA, 2.2f);
+
+        float exposure = 0.85f / reduced_average_;
+        exposure = std::min(exposure, 1000.0f);
+
+        glUniform1f(U_EXPOSURE, exposure);
+
+        BindTexture(DIFFUSEMAP_SLOT, temp_tex_);
+
+        BindTexture(DIFFUSEMAP_SLOT + 1, blur_buf2_.attachments[0].tex);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+
+        glDisableVertexAttribArray(A_POS);
+        glDisableVertexAttribArray(A_UVS1);
+    }
 
     glBindVertexArray(0);
 }

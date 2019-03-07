@@ -42,16 +42,6 @@ void main() {
     c2 += c4;
     c3 += c4;
 
-    //c0 = exposure * c0 / (c0 + vec3(1.0));
-    //c1 = exposure * c1 / (c1 + vec3(1.0));
-    //c2 = exposure * c2 / (c2 + vec3(1.0));
-    //c3 = exposure * c3 / (c3 + vec3(1.0));
-
-    //c0 = vec3(1.0) - exp(-c0 * exposure);
-    //c1 = vec3(1.0) - exp(-c1 * exposure);
-    //c2 = vec3(1.0) - exp(-c2 * exposure);
-    //c3 = vec3(1.0) - exp(-c3 * exposure);
-
     c0 = Unch2Tonemap(exposure * c0);
     c1 = Unch2Tonemap(exposure * c1);
     c2 = Unch2Tonemap(exposure * c2);
