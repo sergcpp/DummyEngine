@@ -178,7 +178,7 @@ vec3 DecodeNormal(vec2 enc) {
     vec4 nn = vec4(2.0 * enc, 0.0, 0.0) + vec4(-1.0, -1.0, 1.0, -1.0);
     float l = dot(nn.xyz, -nn.xyw);
     nn.z = l;
-    nn.xy *= sqrt(l);
+    nn.xy *= sqrt(max(l, 0.0));
     return 2.0 * nn.xyz + vec3(0.0, 0.0, -1.0);
 }
 

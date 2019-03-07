@@ -201,13 +201,13 @@ void GSDrawTest::LoadScene(const char *name) {
         }
     }
 
-    /*view_origin_[0] = -20.139059f;
-    view_origin_[1] = 3.208992f;
-    view_origin_[2] = 20.637007f;
+    /*view_origin_[0] = -12.032555f;
+    view_origin_[1] = 4.289737f;
+    view_origin_[2] = 22.207867f;
 
-    view_dir_[0] = -0.350961f;
-    view_dir_[1] = -0.552905f;
-    view_dir_[2] = -0.755727f;*/
+    view_dir_[0] = 0.958003f;
+    view_dir_[1] = -0.286701f;
+    view_dir_[2] = 0.005389f;*/
 }
 
 void GSDrawTest::Exit() {
