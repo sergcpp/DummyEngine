@@ -22,68 +22,19 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
 
         Ren::CheckError("[Renderer]: create framebuffer 1");
 
+        GLenum format = Ren::GLFormatFromTexFormat(att.format),
+               internal_format = Ren::GLInternalFormatFromTexFormat(att.format);
+        if (format == 0xffffffff || internal_format == 0xffffffff) {
+            throw std::invalid_argument("Wrong format!");
+        }
+
         if (msaa > 1) {
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, _col_tex);
-
-            if (att.format == Ren::RawRGB888) {
-                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB8, w, h, GL_TRUE);
-            } else if (att.format == Ren::RawRGBA8888) {
-                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGBA8, w, h, GL_TRUE);
-            } else if (att.format == Ren::RawR32F) {
-                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_R32F, w, h, GL_TRUE);
-            } else if (att.format == Ren::RawR16F) {
-                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_R16F, w, h, GL_TRUE);
-            } else if (att.format == Ren::RawRG16F) {
-                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RG16F, w, h, GL_TRUE);
-            } else if (att.format == Ren::RawRG32F) {
-                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RG32F, w, h, GL_TRUE);
-            } else if (att.format == Ren::RawRGB16F) {
-                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB16F, w, h, GL_TRUE);
-            } else if (att.format == Ren::RawRGBA16F) {
-                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGBA16F, w, h, GL_TRUE);
-            } else if (att.format == Ren::RawRGB32F) {
-                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGB32F, w, h, GL_TRUE);
-            } else if (att.format == Ren::RawRGBA32F) {
-                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, GL_RGBA32F, w, h, GL_TRUE);
-            } else {
-                throw std::invalid_argument("Wrong format!");
-            }
-
+            glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, internal_format, w, h, GL_TRUE);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, _col_tex, 0);
         } else {
             glBindTexture(GL_TEXTURE_2D, _col_tex);
-
-            if (att.format == Ren::RawRGB888) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-            } else if (att.format == Ren::RawRGBA8888) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-            } else if (att.format == Ren::RawR32F) {
-#if defined(EMSCRIPTEN)
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
-#else
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, w, h, 0, GL_RED, GL_FLOAT, NULL);
-#endif
-            } else if (att.format == Ren::RawR16F) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, w, h, 0, GL_RED, GL_FLOAT, NULL);
-            } else if (att.format == Ren::RawRG16F) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, w, h, 0, GL_RG, GL_FLOAT, NULL);
-            } else if (att.format == Ren::RawRG32F) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, w, h, 0, GL_RG, GL_FLOAT, NULL);
-            } else if (att.format == Ren::RawRGB16F) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, w, h, 0, GL_RGB, GL_HALF_FLOAT, NULL);
-            } else if (att.format == Ren::RawRGBA16F) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, w, h, 0, GL_RGBA, GL_HALF_FLOAT, NULL);
-            } else if (att.format == Ren::RawRGB32F) {
-#if defined(EMSCRIPTEN)
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
-#else
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, w, h, 0, GL_RGB, GL_FLOAT, NULL);
-#endif
-            } else if (att.format == Ren::RawR8) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
-            } else {
-                throw std::invalid_argument("Wrong format!");
-            }
+            glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0, format, GL_UNSIGNED_BYTE, NULL);
 
             if (att.filter == Ren::NoFilter) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
