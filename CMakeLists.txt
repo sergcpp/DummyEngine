@@ -8,9 +8,9 @@ IF(WIN32)
 ELSE(WIN32)
     set(CMAKE_CXX_STANDARD  11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -fPIC")
-	if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
-		set(LIBS dl pthread)
-	endif()
+    if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
+        set(LIBS dl pthread)
+    endif()
 ENDIF(WIN32)
 
 set(SOURCE_FILES AssetFile.h
