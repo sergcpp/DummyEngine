@@ -198,16 +198,12 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Texture2DParams &p)
 
     params_ = p;
 
-    if (p.format == RawRGBA8888) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, p.w, p.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    } else if (p.format == RawRGB888) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, p.w, p.h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    } else if (p.format == RawLUM8) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, p.w, p.h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
-    } else if (p.format == RawRGB16F) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, p.w, p.h, 0, GL_RGB, GL_HALF_FLOAT, data);
-    } else if (p.format == RawRGB32F) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, p.w, p.h, 0, GL_RGB, GL_FLOAT, data);
+    GLenum format = (GLenum)GLFormatFromTexFormat(p.format),
+           internal_format = (GLenum)GLInternalFormatFromTexFormat(p.format),
+           type = (GLenum)GLTypeFromTexFormat(p.format);
+
+    if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
+        glTexImage2D(GL_TEXTURE_2D, 0, internal_format, p.w, p.h, 0, format, type, data);
     }
 
     float anisotropy = 4.0f;
@@ -307,27 +303,21 @@ void Ren::Texture2D::InitFromRAWData(const void *data[6], const Texture2DParams 
 
     params_ = p;
 
+    GLenum format = (GLenum)GLFormatFromTexFormat(params_.format),
+           internal_format = (GLenum)GLInternalFormatFromTexFormat(params_.format),
+           type = (GLenum)GLTypeFromTexFormat(params_.format);
+
     int w = p.w, h = p.h;
 
     for (int i = 0; i < 6; i++) {
         if (!data[i]) {
-            /*if (!(cubemap_ready_ & (1 << i))) {
-                continue;
-            }
-            cubemap_ready_ &= ~(1 << i);*/
             continue;
         } else {
             cubemap_ready_ |= (1 << i);
         }
 
-        if (params_.format == RawRGBA8888) {
-            glTexImage2D((GLenum)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i), 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data[i]);
-        } else if (params_.format == RawRGB888) {
-            glTexImage2D((GLenum)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i), 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, data[i]);
-        } else if (params_.format == RawLUM8) {
-            glTexImage2D((GLenum)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i), 0, GL_LUMINANCE, w, h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data[i]);
-        } else if (params_.format == RawRGB16F) {
-            glTexImage2D((GLenum)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i), 0, GL_RGB16F, w, h, 0, GL_RGB, GL_HALF_FLOAT, data[i]);
+        if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
+            glTexImage2D((GLenum)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i), 0, internal_format, w, h, 0, format, type, data[i]);
         }
     }
 

@@ -24,7 +24,7 @@ const float FORWARD_SPEED = 0.5f;
 
 const int MAX_CMD_LINES = 8;
 
-const char SCENE_NAME[] = "assets/scenes/street.json";
+const char SCENE_NAME[] = "assets/scenes/jap_house.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {

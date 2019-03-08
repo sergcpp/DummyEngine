@@ -122,7 +122,7 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
 
         for (int i = 0; i < 4; i++) {
             Ren::Mat4f view_from_world = shadow_cam_[0][i].view_matrix(),
-                       clip_from_view = shadow_cam_[0][i].projection_matrix();
+                       clip_from_view = shadow_cam_[0][i].proj_matrix();
             shadow_transforms[i] = clip_from_view * view_from_world;
             shadow_drawables_count[i] = shadow_list_[0][i].size();
             shadow_drawables[i] = (shadow_drawables_count[i] == 0) ? nullptr : &shadow_list_[0][i][0];
@@ -240,7 +240,7 @@ void Renderer::BackgroundProc() {
             }
 
             Ren::Mat4f view_from_world = draw_cam_.view_matrix(),
-                       clip_from_view = draw_cam_.projection_matrix();
+                       clip_from_view = draw_cam_.proj_matrix();
 
             swCullCtxClear(&cull_ctx_);
 
@@ -601,7 +601,7 @@ void Renderer::BackgroundProc() {
                     temp_cam.UpdatePlanes();
 
                     const Ren::Mat4f& _view_from_world = temp_cam.view_matrix(),
-                        & _clip_from_view = temp_cam.projection_matrix();
+                        & _clip_from_view = temp_cam.proj_matrix();
 
                     const Ren::Mat4f _clip_from_world = _clip_from_view * _view_from_world;
                     const Ren::Mat4f _world_from_clip = Ren::Inverse(_clip_from_world);
@@ -637,7 +637,7 @@ void Renderer::BackgroundProc() {
                     shadow_cam.UpdatePlanes();
 
                     view_from_world = shadow_cam.view_matrix(),
-                    clip_from_view = shadow_cam.projection_matrix();
+                    clip_from_view = shadow_cam.proj_matrix();
 
                     const uint32_t skip_check_bit = (1u << 31);
                     const uint32_t index_bits = ~skip_check_bit;

@@ -62,7 +62,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     world_from_object = Rotate(world_from_object, angle_y_, { 0, 1, 0 });
 
     Mat4f view_from_world = cam_.view_matrix(),
-          proj_from_view = cam_.projection_matrix();
+          proj_from_view = cam_.proj_matrix();
 
     Mat4f view_from_object = view_from_world * world_from_object,
           proj_from_object = proj_from_view * view_from_object;
@@ -132,7 +132,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
     Mat4f world_from_object = Rotate(Mat4f{ 1.0f }, angle, { 0, 1, 0 }),
           view_from_world = cam_.view_matrix(),
-          proj_from_view = cam_.projection_matrix();
+          proj_from_view = cam_.proj_matrix();
 
     Mat4f view_from_object = view_from_world * world_from_object,
           proj_from_object = proj_from_view * view_from_object;

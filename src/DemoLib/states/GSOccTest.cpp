@@ -241,7 +241,7 @@ void GSOccTest::Draw(float dt_s) {
 
         Ren::Mat4f world_from_object,
             view_from_world = cam_.view_matrix(),
-            proj_from_view = cam_.projection_matrix();
+            proj_from_view = cam_.proj_matrix();
 
         Ren::Mat4f view_from_object = view_from_world * world_from_object,
                    proj_from_object = proj_from_view * view_from_object;
