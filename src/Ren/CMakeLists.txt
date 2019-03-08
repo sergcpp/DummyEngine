@@ -15,7 +15,7 @@ endif()
 ENDIF(WIN32)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Android")
-	set(LIBS GLESv2 GLESv3 EGL)
+    set(LIBS GLESv2 GLESv3 EGL)
 endif()
 
 set(SOURCE_FILES Anim.h
@@ -31,9 +31,9 @@ set(SOURCE_FILES Anim.h
                  Material.cpp
                  Mesh.h
                  Mesh.cpp
-				 MMat.h
-				 MQuat.h
-				 MVec.h
+                 MMat.h
+                 MQuat.h
+                 MVec.h
                  Program.h
                  RenderThread.h
                  RenderThread.cpp
@@ -45,7 +45,7 @@ set(SOURCE_FILES Anim.h
                  Utils.cpp)
 
 if(${RENDERER} STREQUAL "GL")
-	add_definitions(-DUSE_GL_RENDER)
+    add_definitions(-DUSE_GL_RENDER)
     set(SOURCE_FILES ${SOURCE_FILES}
                      ContextGL.cpp
                      GL.h
@@ -65,7 +65,7 @@ if(${RENDERER} STREQUAL "GL")
         set(LIBS ${LIBS} SOIL2)
     ENDIF(WIN32)
 elseif(${RENDERER} STREQUAL "SW")
-	add_definitions(-DUSE_SW_RENDER)
+    add_definitions(-DUSE_SW_RENDER)
     set(SOURCE_FILES ${SOURCE_FILES}
                      ContextSW.cpp
                      ProgramSW.h
