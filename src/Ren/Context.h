@@ -91,7 +91,7 @@ public:
 #if defined(USE_GL_RENDER)
     float anisotropy = 0;
     int max_uniform_vec4 = 0;
-    bool IsExtensionSupported(const char *ext);
+    static bool IsExtensionSupported(const char *ext);
 #elif defined(USE_SW_RENDER)
     int max_uniform_vec4 = 0;
 #endif
