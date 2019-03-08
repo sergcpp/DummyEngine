@@ -1053,7 +1053,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     prev_view_from_world_ = view_from_world;
     
-    if (debug_deffered_) {
+    if (debug_deferred_) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
         glClear(GL_DEPTH_BUFFER_BIT);
@@ -1447,7 +1447,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, reduced_buf_, 0, 1, 400.0f);
     }
 
-    if (debug_deffered_) {
+    if (debug_deferred_) {
         BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, clean_buf_, 1, 2);
     }
 

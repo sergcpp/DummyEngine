@@ -115,8 +115,8 @@ public:
     void toggle_debug_decals() {
         debug_decals_ = !debug_decals_;
     }
-    void toggle_debug_deffered() {
-        debug_deffered_ = !debug_deffered_;
+    void toggle_debug_deferred() {
+        debug_deferred_ = !debug_deferred_;
     }
     void toggle_debug_blur() {
         debug_blur_ = !debug_blur_;
@@ -158,7 +158,7 @@ private:
     int w_ = 0, h_ = 0;
 
     bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false,
-         debug_deffered_ = false, debug_blur_ = false, debug_decals_ = false, debug_ssao_ = false;
+         debug_deferred_ = false, debug_blur_ = false, debug_decals_ = false, debug_ssao_ = false;
     bool culling_enabled_ = true;
 
     const bvh_node_t *nodes_ = nullptr;
