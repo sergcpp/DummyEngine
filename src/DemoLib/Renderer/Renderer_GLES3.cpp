@@ -1200,7 +1200,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         {   // Retrieve result of glReadPixels call from previous frame
             glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)reduce_pbo_);
-            float *reduced_pixels = (float *)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+            float *reduced_pixels = (float *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, reduced_buf_.w * reduced_buf_.h, GL_READ_ONLY);
             if (reduced_pixels) {
                 for (int i = 0; i < reduced_buf_.w * reduced_buf_.h; i++) {
                     if (!std::isnan(reduced_pixels[i])) {
