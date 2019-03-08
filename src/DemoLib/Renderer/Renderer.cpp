@@ -137,7 +137,7 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
                     desc[0].repeat = Ren::ClampToEdge;
                 }
                 {   // View-space normal
-                    desc[1].format = Ren::RawRG16F;
+                    desc[1].format = Ren::RawRG88;
                     desc[1].filter = Ren::BilinearNoMipmap;
                     desc[1].repeat = Ren::ClampToEdge;
                 }
