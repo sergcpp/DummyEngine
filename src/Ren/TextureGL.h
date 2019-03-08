@@ -79,6 +79,7 @@ public:
 };
 
 uint32_t GLFormatFromTexFormat(eTexColorFormat format);
+uint32_t GLInternalFormatFromTexFormat(eTexColorFormat format);
 uint32_t GLTypeFromTexFormat(eTexColorFormat format);
 
 typedef StorageRef<Texture2D> Texture2DRef;

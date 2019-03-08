@@ -35,6 +35,26 @@ uint32_t g_gl_formats[] = {
 };
 static_assert(sizeof(g_gl_formats) / sizeof(g_gl_formats[0]) == FormatCount, "!");
 
+uint32_t g_gl_internal_formats[] = {
+    0xffffffff,     // Undefined
+    GL_RGB8,        // RawRGB888
+    GL_RGBA8,       // RawRGBA8888
+    GL_LUMINANCE,   // RawLUM8
+    GL_R32F,        // RawR32F
+    GL_R16F,        // RawR16F
+    GL_R8,          // RawR8
+    GL_RGB32F,      // RawRGB32F
+    GL_RGBA32F,     // RawRGBA32F
+    0xffffffff,     // RawRGBE8888
+    GL_RGB16F,      // RawRGB16F
+    GL_RGBA16F,     // RawRGBA16F
+    GL_RG16F,       // RawRG16F
+    GL_RG32F,       // RawRG32F
+    0xffffffff,     // Compressed
+    0xffffffff,     // None
+};
+static_assert(sizeof(g_gl_internal_formats) / sizeof(g_gl_internal_formats[0]) == FormatCount, "!");
+
 uint32_t g_gl_types[] = {
     0xffffffff,         // Undefined
     GL_UNSIGNED_BYTE,   // RawRGB888
@@ -420,6 +440,10 @@ void Ren::Texture2D::ReadTextureData(eTexColorFormat format, void *out_data) con
 
 uint32_t Ren::GLFormatFromTexFormat(eTexColorFormat format) {
     return g_gl_formats[format];
+}
+
+uint32_t Ren::GLInternalFormatFromTexFormat(eTexColorFormat format) {
+    return g_gl_internal_formats[format];
 }
 
 uint32_t Ren::GLTypeFromTexFormat(eTexColorFormat format) {
