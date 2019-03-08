@@ -39,7 +39,7 @@ public:
     void ResetLightmaps_PT();
     bool PrepareLightmaps_PT();
 
-    static void PrepareAssets(const char *in_folder, const char *out_folder, const char *platform);
+    static bool PrepareAssets(const char *in_folder, const char *out_folder, const char *platform);
 private:
     Ren::MaterialRef OnLoadMaterial(const char *name);
     Ren::ProgramRef OnLoadProgram(const char *name, const char *arg1, const char *arg2);

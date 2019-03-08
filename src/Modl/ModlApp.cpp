@@ -197,8 +197,8 @@ int ModlApp::Init(int w, int h) {
 #if defined(USE_GL_RENDER)
     {
         // load diagnostic shader
-        std::ifstream diag_vs("assets/shaders/diag.vs", std::ios::binary | std::ios::ate),
-                      diag_fs("assets/shaders/diag.fs", std::ios::binary | std::ios::ate);
+        std::ifstream diag_vs("assets_pc/shaders/diag.vs", std::ios::binary | std::ios::ate),
+                      diag_fs("assets_pc/shaders/diag.fs", std::ios::binary | std::ios::ate);
 
         size_t diag_vs_size = (size_t)diag_vs.tellg();
         diag_vs.seekg(0, std::ios::beg);
@@ -650,7 +650,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         bool alpha_blend = false;
         {
             // check if material has transparency
-            ifstream mat_file("assets/materials/" + materials[i] + ".txt");
+            ifstream mat_file("assets_pc/materials/" + materials[i] + ".txt");
             if (mat_file) {
                 streampos file_size = mat_file.tellg();
                 mat_file.seekg(0, ios::end);
@@ -960,7 +960,7 @@ Ren::Texture2DRef ModlApp::OnTextureNeeded(const char *name) {
     Ren::Texture2DRef ret = ctx_.LoadTexture2D(name, nullptr, 0, {}, &status);
     if (!ret->ready()) {
         std::string tex_name = name;
-        Sys::LoadAssetComplete((std::string("assets/textures/") + tex_name).c_str(),
+        Sys::LoadAssetComplete((std::string("assets_pc/textures/") + tex_name).c_str(),
         [this, tex_name](void *data, int size) {
 
             ctx_.ProcessSingleTask([this, tex_name, data, size]() {
@@ -985,8 +985,8 @@ Ren::ProgramRef ModlApp::OnProgramNeeded(const char *name, const char *vs_shader
     if (!ret->ready()) {
         using namespace std;
 
-        Sys::AssetFile vs_file(string("assets/shaders/") + vs_shader),
-            fs_file(string("assets/shaders/") + fs_shader);
+        Sys::AssetFile vs_file(string("assets_pc/shaders/") + vs_shader),
+                       fs_file(string("assets_pc/shaders/") + fs_shader);
         if (!vs_file || !fs_file) {
             LOGE("Error loading program %s", name);
             return ret;
@@ -1017,7 +1017,7 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(const char *name) {
     Ren::eMatLoadStatus status;
     Ren::MaterialRef ret = ctx_.LoadMaterial(name, nullptr, &status, nullptr, nullptr);
     if (!ret->ready()) {
-        Sys::AssetFile in_file(string("assets/materials/") + name);
+        Sys::AssetFile in_file(string("assets_pc/materials/") + name);
         if (!in_file) {
             LOGE("Error loading material %s", name);
             return ret;

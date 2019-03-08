@@ -19,7 +19,17 @@ namespace SceneManagerConstants {
 const float NEAR_CLIP = 0.5f;
 const float FAR_CLIP = 10000;
 
+#if defined(__ANDROID__)
 const char *MODELS_PATH = "./assets/models/";
+const char *TEXTURES_PATH = "./assets/textures/";
+const char *MATERIALS_PATH = "./assets/materials/";
+const char *SHADERS_PATH = "./assets/shaders/";
+#else
+const char *MODELS_PATH = "./assets_pc/models/";
+const char *TEXTURES_PATH = "./assets_pc/textures/";
+const char *MATERIALS_PATH = "./assets_pc/materials/";
+const char *SHADERS_PATH = "./assets_pc/shaders/";
+#endif
 
 const float LIGHT_ATTEN_CUTOFF = 0.001f;
 
@@ -529,12 +539,12 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             const JsString &js_env_map = (const JsString &)js_env.at("env_map");
 
             const std::string tex_names[6] = {
-                "assets/textures/" + js_env_map.val + "_PX.hdr",
-                "assets/textures/" + js_env_map.val + "_NX.hdr",
-                "assets/textures/" + js_env_map.val + "_PY.hdr",
-                "assets/textures/" + js_env_map.val + "_NY.hdr",
-                "assets/textures/" + js_env_map.val + "_PZ.hdr",
-                "assets/textures/" + js_env_map.val + "_NZ.hdr"
+                TEXTURES_PATH + js_env_map.val + "_PX.hdr",
+                TEXTURES_PATH + js_env_map.val + "_NX.hdr",
+                TEXTURES_PATH + js_env_map.val + "_PY.hdr",
+                TEXTURES_PATH + js_env_map.val + "_NY.hdr",
+                TEXTURES_PATH + js_env_map.val + "_PZ.hdr",
+                TEXTURES_PATH + js_env_map.val + "_NZ.hdr"
             };
 
             std::vector<uint8_t> tex_data[6];
@@ -600,10 +610,12 @@ void SceneManager::Draw() {
 }
 
 Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {
+    using namespace SceneManagerConstants;
+
     Ren::eMatLoadStatus status;
     Ren::MaterialRef ret = ctx_.LoadMaterial(name, nullptr, &status, nullptr, nullptr);
     if (!ret->ready()) {
-        Sys::AssetFile in_file(std::string("assets/materials/") + name);
+        Sys::AssetFile in_file(std::string(MATERIALS_PATH) + name);
         if (!in_file) {
             LOGE("Error loading material %s", name);
             return ret;
@@ -626,14 +638,16 @@ Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {
 }
 
 Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_shader, const char *fs_shader) {
+    using namespace SceneManagerConstants;
+
 #if defined(USE_GL_RENDER)
     Ren::eProgLoadStatus status;
     Ren::ProgramRef ret = ctx_.LoadProgramGLSL(name, nullptr, nullptr, &status);
     if (!ret->ready()) {
         using namespace std;
 
-        Sys::AssetFile vs_file(std::string("assets/shaders/") + vs_shader),
-            fs_file(std::string("assets/shaders/") + fs_shader);
+        Sys::AssetFile vs_file(std::string(SHADERS_PATH) + vs_shader),
+                       fs_file(std::string(SHADERS_PATH) + fs_shader);
         if (!vs_file || !fs_file) {
             LOGE("Error loading program %s", name);
             return ret;
@@ -659,12 +673,14 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
 }
 
 Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
+    using namespace SceneManagerConstants;
+
     Ren::eTexLoadStatus status;
     Ren::Texture2DRef ret = ctx_.LoadTexture2D(name, nullptr, 0, {}, &status);
     if (!ret->ready()) {
         std::string tex_name = name;
         std::weak_ptr<SceneManager> _self = shared_from_this();
-        Sys::LoadAssetComplete((std::string("assets/textures/") + tex_name).c_str(),
+        Sys::LoadAssetComplete((std::string(TEXTURES_PATH) + tex_name).c_str(),
         [_self, tex_name](void *data, int size) {
             auto self = _self.lock();
             if (!self) return;

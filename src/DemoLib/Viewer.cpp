@@ -18,11 +18,21 @@
 Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) {
     auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
 
+#if 1
+    //SceneManager::PrepareAssets("assets", "assets_pc", "pc_deb");
+    SceneManager::PrepareAssets("assets", "assets_pc", "pc_rel");
+    //exit(0);
+#endif
+
     JsObject main_config;
 
     {
         // load config
+#if defined(__ANDROID__)
         Sys::AssetFile config_file("assets/config.json", Sys::AssetFile::IN);
+#else
+        Sys::AssetFile config_file("assets_pc/config.json", Sys::AssetFile::IN);
+#endif
         size_t config_file_size = config_file.size();
         
         std::unique_ptr<char[]> buf(new char[config_file_size]);

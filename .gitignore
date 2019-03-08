@@ -1,5 +1,6 @@
 .dumps
 .vs
+assets_pc
 build-*
 check*
 DemoApp.exe

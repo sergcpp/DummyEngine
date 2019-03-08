@@ -24,7 +24,11 @@ const float FORWARD_SPEED = 0.5f;
 
 const int MAX_CMD_LINES = 8;
 
+#if defined(__ANDROID__)
 const char SCENE_NAME[] = "assets/scenes/street.json";
+#else
+const char SCENE_NAME[] = "assets_pc/scenes/street.json";
+#endif
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
@@ -47,8 +51,6 @@ GSDrawTest::~GSDrawTest() {
 
 void GSDrawTest::Enter() {
     using namespace GSDrawTestInternal;
-
-    SceneManager::PrepareAssets("assets", "assets_pc", "pc");
 
     LOGI("GSDrawTest: Loading scene!");
     LoadScene(SCENE_NAME);

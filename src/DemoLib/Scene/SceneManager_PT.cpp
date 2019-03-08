@@ -9,6 +9,13 @@
 
 #include "../Renderer/Renderer.h"
 
+namespace SceneManagerConstants {
+extern const char *MODELS_PATH;
+extern const char *TEXTURES_PATH;
+extern const char *MATERIALS_PATH;
+extern const char *SHADERS_PATH;
+}
+
 namespace SceneManagerInternal {
 void WriteTGA(const std::vector<uint8_t> &out_data, int w, int h, const std::string &name);
 void WriteTGA(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name);
@@ -91,6 +98,8 @@ void SceneManager::ResetLightmaps_PT() {
 }
 
 bool SceneManager::PrepareLightmaps_PT() {
+    using namespace SceneManagerConstants;
+
     if (!ray_scene_) return false;
 
     const int LM_SAMPLES_TOTAL =
@@ -151,7 +160,7 @@ bool SceneManager::PrepareLightmaps_PT() {
             // apply dilation filter
             std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(pixels, res);
 
-            std::string out_file_name = std::string("assets/textures/lightmaps/") + scene_name_;
+            std::string out_file_name = std::string(TEXTURES_PATH) + "/lightmaps/" + scene_name_;
             out_file_name += "_";
             out_file_name += std::to_string(cur_lm_obj_);
             if (!cur_lm_indir_) {
@@ -183,7 +192,8 @@ bool SceneManager::PrepareLightmaps_PT() {
 
                     const auto out_pixels = SceneManagerInternal::FlushSeams(&temp_pixels1[0], res);
 
-                    out_file_name = "assets/textures/lightmaps/";
+                    out_file_name = TEXTURES_PATH;
+                    out_file_name += "/lightmaps/";
                     out_file_name += scene_name_;
                     out_file_name += "_";
                     out_file_name += std::to_string(cur_lm_obj_);
@@ -259,6 +269,8 @@ bool SceneManager::PrepareLightmaps_PT() {
 }
 
 void SceneManager::InitScene_PT(bool _override) {
+    using namespace SceneManagerConstants;
+
     if (ray_scene_) {
         if (_override) {
             ray_scene_ = nullptr;
@@ -278,7 +290,7 @@ void SceneManager::InitScene_PT(bool _override) {
 
         if (!env_map_pt_name_.empty()) {
             int w, h;
-            auto tex_data = LoadHDR("assets/textures/" + env_map_pt_name_, w, h);
+            auto tex_data = LoadHDR(TEXTURES_PATH + env_map_pt_name_, w, h);
 
             Ray::tex_desc_t tex_desc;
             tex_desc.data = (const Ray::pixel_color8_t *)&tex_data[0];

@@ -1,6 +1,12 @@
 #include "SceneManager.h"
 
 #include <fstream>
+#include <iterator>
+
+#include <dirent.h>
+
+#undef max
+#undef min
 
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
@@ -190,8 +196,125 @@ std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &t
     return tex_data;
 }
 
+void ReadAllFiles_r(const char *in_folder, const std::function<void(const char *)> &callback) {
+    DIR *in_dir = opendir(in_folder);
+    if (!in_dir) {
+        LOGE("Cannot open folder %s", in_folder);
+        return;
+    }
+
+    struct dirent *in_ent = nullptr;
+    while (in_ent = readdir(in_dir)) {
+        if (in_ent->d_type == DT_DIR) {
+            if (strcmp(in_ent->d_name, ".") == 0 || strcmp(in_ent->d_name, "..") == 0) {
+                continue;
+            }
+            std::string path = in_folder;
+            path += '/';
+            path += in_ent->d_name;
+
+            ReadAllFiles_r(path.c_str(), callback);
+        } else {
+            std::string path = in_folder;
+            path += '/';
+            path += in_ent->d_name;
+
+            callback(path.c_str());
+        }
+    }
+
+    closedir(in_dir);
 }
 
-void SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, const char *platform) {
+bool CheckCanSkipAsset(const char *in_file, const char *out_file) {
+#ifdef _WIN32
+    HANDLE in_h = CreateFile(in_file, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL);
+    if (in_h == INVALID_HANDLE_VALUE) {
+        LOGI("[PrepareAssets] Failed to open file!");
+        CloseHandle(in_h);
+        return true;
+    }
+    HANDLE out_h = CreateFile(out_file, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL);
+    LARGE_INTEGER out_size = {};
+    if (out_h != INVALID_HANDLE_VALUE && GetFileSizeEx(out_h, &out_size) && out_size.QuadPart) {
+        FILETIME in_t, out_t;
+        GetFileTime(in_h, NULL, NULL, &in_t);
+        GetFileTime(out_h, NULL, NULL, &out_t);
 
+        if (CompareFileTime(&in_t, &out_t) == -1) {
+            CloseHandle(in_h);
+            CloseHandle(out_h);
+            return true;
+        }
+    }
+
+    CloseHandle(in_h);
+    CloseHandle(out_h);
+#else
+#error "Not Implemented!"
+#endif
+    return false;
+}
+
+bool CreateFolders(const char *out_file) {
+#ifdef _WIN32
+    const char *end = strchr(out_file, '/');
+    while (end) {
+        char folder[256] = {};
+        strncpy(folder, out_file, end - out_file + 1);
+        if (!CreateDirectory(folder, NULL)) {
+            if (GetLastError() != ERROR_ALREADY_EXISTS) {
+                LOGI("[PrepareAssets] Failed to create directory!");
+                return false;
+            }
+        }
+        end = strchr(end + 1, '/');
+    }
+#else
+#error "Not Implemented!"
+#endif
+    return true;
+}
+
+}
+
+bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, const char *platform) {
+    using namespace SceneManagerInternal;
+
+    auto convert_file = [out_folder](const char *in_file) {
+        const char *base_path = strchr(in_file, '/');
+        if (!base_path) return;
+        const char *ext = strrchr(in_file, '.');
+        if (!ext) return;
+
+        ext++;
+
+        std::string out_file = out_folder;
+        out_file += base_path;
+
+        if (CheckCanSkipAsset(in_file, out_file.c_str())) {
+            LOGI("[PrepareAssets] Skipping %s", in_file);
+            return;
+        }
+
+        {
+            if (!CreateFolders(out_file.c_str())) {
+                LOGI("[PrepareAssets] Failed to create directories for %s", out_file.c_str());
+            }
+
+            LOGI("[PrepareAssets] Processing %s", in_file);
+
+            std::ifstream src_stream(in_file, std::ios::binary);
+            std::ofstream dst_stream(out_file, std::ios::binary);
+
+            std::istreambuf_iterator<char> src_beg(src_stream);
+            std::istreambuf_iterator<char> src_end;
+            std::ostreambuf_iterator<char> dst_beg(dst_stream);
+            std::copy(src_beg, src_end, dst_beg);
+        }
+    };
+
+    ReadAllFiles_r(in_folder, convert_file);
+
+    return true;
 }
