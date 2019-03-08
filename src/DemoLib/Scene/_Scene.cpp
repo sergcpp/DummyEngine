@@ -4,5 +4,6 @@
 #endif
 
 #include "SceneManager.cpp"
+#include "SceneManager_ASS.cpp"
 #include "SceneManager_BVH.cpp"
 #include "SceneManager_PT.cpp"

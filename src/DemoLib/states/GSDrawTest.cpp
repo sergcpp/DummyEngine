@@ -48,6 +48,8 @@ GSDrawTest::~GSDrawTest() {
 void GSDrawTest::Enter() {
     using namespace GSDrawTestInternal;
 
+    SceneManager::PrepareAssets("assets", "assets_pc", "pc");
+
     LOGI("GSDrawTest: Loading scene!");
     LoadScene(SCENE_NAME);
 

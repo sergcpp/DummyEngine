@@ -6,66 +6,67 @@ set(SOURCE_FILES    Viewer.h
 
 set(GUI_SOURCES  Gui/FontStorage.h)
 
-set(RENDERER_SOURCES	Renderer/FrameBuf.h
-						Renderer/Renderer.h
-						Renderer/Renderer.cpp
-						Renderer/TextureAtlas.h
-						Renderer/TextureAtlas.cpp
-						Renderer/__skydome_mesh.inl)
+set(RENDERER_SOURCES    Renderer/FrameBuf.h
+                        Renderer/Renderer.h
+                        Renderer/Renderer.cpp
+                        Renderer/TextureAtlas.h
+                        Renderer/TextureAtlas.cpp
+                        Renderer/__skydome_mesh.inl)
 
-set(SCENE_SOURCES	Scene/SceneData.h
+set(SCENE_SOURCES   Scene/SceneData.h
                     Scene/SceneManager.h
                     Scene/SceneManager.cpp
-					Scene/SceneManager_BVH.cpp
-					Scene/SceneManager_PT.cpp)
+                    Scene/SceneManager_ASS.cpp
+                    Scene/SceneManager_BVH.cpp
+                    Scene/SceneManager_PT.cpp)
 
 set(STATES_SOURCES  States/GSCreate.h
                     States/GSCreate.cpp
-					States/GSDrawTest.h
-					States/GSDrawTest.cpp
+                    States/GSDrawTest.h
+                    States/GSDrawTest.cpp
                     States/GSOccTest.h
                     States/GSOccTest.cpp)
 
 set(UTILS_SOURCES Utils/BVHSplit.h
-				  Utils/BVHSplit.cpp
-				  Utils/Load.h
-				  Utils/Load.cpp
-				  Utils/TextureSplitter.h
-				  Utils/TextureSplitter.cpp)
+                  Utils/BVHSplit.cpp
+                  Utils/Load.h
+                  Utils/Load.cpp
+                  Utils/TextureSplitter.h
+                  Utils/TextureSplitter.cpp)
 
 if(${RENDERER} STREQUAL "GL")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
-						Renderer/FrameBufGL.cpp
-						Renderer/Renderer_GL_Shaders.inl
+                        Renderer/FrameBufGL.cpp
+                        Renderer/Renderer_GL_Shaders.inl
                         Renderer/Renderer_GLES3.cpp)
     set(STATES_SOURCES ${STATES_SOURCES}
-						States/GSOccTestGL.cpp
-						)
+                        States/GSOccTestGL.cpp
+                        )
 elseif(${RENDERER} STREQUAL "SW")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                         Renderer/RendererSW.cpp)
 endif()
 
 set(SHADERS_SOURCES Renderer/Shaders/blit.fs.glsl
-					Renderer/Shaders/blit.vs.glsl
-					Renderer/Shaders/blit_combine.fs.glsl
-					Renderer/Shaders/blit_combine_ms.fs.glsl
-					Renderer/Shaders/blit_debug.fs.glsl
-					Renderer/Shaders/blit_debug_ms.fs.glsl
-					Renderer/Shaders/blit_down.fs.glsl
-					Renderer/Shaders/blit_down_ms.fs.glsl
-					Renderer/Shaders/blit_gauss.fs.glsl
-					Renderer/Shaders/blit_ms.fs.glsl
-					Renderer/Shaders/blit_ms.vs.glsl
-					Renderer/Shaders/blit_reduced.fs.glsl
-					Renderer/Shaders/blit_ssao_ms.fs.glsl
-					Renderer/Shaders/blit_ssr_ms.fs.glsl
-					Renderer/Shaders/fillz.fs.glsl
-					Renderer/Shaders/fillz.vs.glsl
-					Renderer/Shaders/shadow.fs.glsl
-					Renderer/Shaders/shadow.vs.glsl
-					Renderer/Shaders/skydome.fs.glsl
-					Renderer/Shaders/skydome.vs.glsl)
+                    Renderer/Shaders/blit.vs.glsl
+                    Renderer/Shaders/blit_combine.fs.glsl
+                    Renderer/Shaders/blit_combine_ms.fs.glsl
+                    Renderer/Shaders/blit_debug.fs.glsl
+                    Renderer/Shaders/blit_debug_ms.fs.glsl
+                    Renderer/Shaders/blit_down.fs.glsl
+                    Renderer/Shaders/blit_down_ms.fs.glsl
+                    Renderer/Shaders/blit_gauss.fs.glsl
+                    Renderer/Shaders/blit_ms.fs.glsl
+                    Renderer/Shaders/blit_ms.vs.glsl
+                    Renderer/Shaders/blit_reduced.fs.glsl
+                    Renderer/Shaders/blit_ssao_ms.fs.glsl
+                    Renderer/Shaders/blit_ssr_ms.fs.glsl
+                    Renderer/Shaders/fillz.fs.glsl
+                    Renderer/Shaders/fillz.vs.glsl
+                    Renderer/Shaders/shadow.fs.glsl
+                    Renderer/Shaders/shadow.vs.glsl
+                    Renderer/Shaders/skydome.fs.glsl
+                    Renderer/Shaders/skydome.vs.glsl)
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 #set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
