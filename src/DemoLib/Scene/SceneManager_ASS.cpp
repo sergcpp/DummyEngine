@@ -1,7 +1,9 @@
 #include "SceneManager.h"
 
 #include <fstream>
+#include <functional>
 #include <iterator>
+#include <map>
 
 #include <dirent.h>
 
@@ -29,9 +31,9 @@ void WriteTGA(const std::vector<uint8_t> &out_data, int w, int h, const std::str
     file.write((const char *)&out_data[0], w * h * bpp);
 
     static const char footer[26] = "\0\0\0\0" // no extension area
-                                   "\0\0\0\0"// no developer directory
-                                   "TRUEVISION-XFILE"// yep, this is a TGA file
-                                   ".";
+        "\0\0\0\0"// no developer directory
+        "TRUEVISION-XFILE"// yep, this is a TGA file
+        ".";
     file.write((const char *)&footer, sizeof(footer));
 }
 
@@ -81,9 +83,9 @@ void WriteTGA(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, con
     }
 
     static const char footer[26] = "\0\0\0\0" // no extension area
-                                   "\0\0\0\0"// no developer directory
-                                   "TRUEVISION-XFILE"// yep, this is a TGA file
-                                   ".";
+        "\0\0\0\0"// no developer directory
+        "TRUEVISION-XFILE"// yep, this is a TGA file
+        ".";
     file.write((const char *)&footer, sizeof(footer));
 }
 
@@ -120,7 +122,7 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
 
 std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int res) {
     std::vector<Ray::pixel_color_t> temp_pixels1{ pixels, pixels + res * res },
-                                    temp_pixels2{ (size_t)res * res };
+        temp_pixels2{ (size_t)res * res };
     const int FILTER_SIZE = 16;
     const float INVAL_THRES = 0.5f;
 
@@ -281,7 +283,46 @@ bool CreateFolders(const char *out_file) {
 bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, const char *platform) {
     using namespace SceneManagerInternal;
 
-    auto convert_file = [out_folder](const char *in_file) {
+    auto h_skip = [](const char *in_file, const char *out_file) {
+        LOGI("[PrepareAssets] Skipping %s", out_file);
+    };
+
+    auto h_copy = [](const char *in_file, const char *out_file) {
+        LOGI("[PrepareAssets] Copying %s", out_file);
+
+        std::ifstream src_stream(in_file, std::ios::binary);
+        std::ofstream dst_stream(out_file, std::ios::binary);
+
+        std::istreambuf_iterator<char> src_beg(src_stream);
+        std::istreambuf_iterator<char> src_end;
+        std::ostreambuf_iterator<char> dst_beg(dst_stream);
+        std::copy(src_beg, src_end, dst_beg);
+    };
+
+    struct Handler {
+        const char *ext;
+        std::function<void(const char *in_file, const char *out_file)> convert;
+    };
+
+    std::map<std::string, Handler> handlers;
+
+    handlers["bff"] = { "bff", h_copy };
+    handlers["mesh"] = { "mesh", h_copy };
+    handlers["anim"] = { "anim", h_copy };
+    handlers["txt"] = { "txt",  h_copy };
+    handlers["json"] = { "json", h_copy };
+    handlers["vs"] = { "vs",   h_copy };
+    handlers["fs"] = { "fs",   h_copy };
+
+    if (strcmp(platform, "pc_deb")) {
+        handlers["tga"] = { "tga",   h_copy };
+        handlers["tga_rgbe"] = { "tga_rgbe",   h_copy };
+        handlers["hdr"] = { "hdr",   h_copy };
+    } else if (strcmp(platform, "pc_rel")) {
+
+    }
+
+    auto convert_file = [out_folder, &handlers](const char *in_file) {
         const char *base_path = strchr(in_file, '/');
         if (!base_path) return;
         const char *ext = strrchr(in_file, '.');
@@ -289,29 +330,26 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
         ext++;
 
-        std::string out_file = out_folder;
-        out_file += base_path;
-
-        if (CheckCanSkipAsset(in_file, out_file.c_str())) {
-            LOGI("[PrepareAssets] Skipping %s", in_file);
+        auto h_it = handlers.find(ext);
+        if (h_it == handlers.end()) {
+            LOGI("[PrepareAssets] No handler found for %s", in_file);
             return;
         }
 
-        {
-            if (!CreateFolders(out_file.c_str())) {
-                LOGI("[PrepareAssets] Failed to create directories for %s", out_file.c_str());
-            }
+        std::string out_file = out_folder;
+        out_file += std::string(base_path, strlen(base_path) - strlen(ext));
+        out_file += h_it->second.ext;
 
-            LOGI("[PrepareAssets] Processing %s", in_file);
-
-            std::ifstream src_stream(in_file, std::ios::binary);
-            std::ofstream dst_stream(out_file, std::ios::binary);
-
-            std::istreambuf_iterator<char> src_beg(src_stream);
-            std::istreambuf_iterator<char> src_end;
-            std::ostreambuf_iterator<char> dst_beg(dst_stream);
-            std::copy(src_beg, src_end, dst_beg);
+        if (CheckCanSkipAsset(in_file, out_file.c_str())) {
+            return;
         }
+
+        if (!CreateFolders(out_file.c_str())) {
+            LOGI("[PrepareAssets] Failed to create directories for %s", out_file.c_str());
+            return;
+        }
+
+        h_it->second.convert(in_file, out_file.c_str());
     };
 
     ReadAllFiles_r(in_folder, convert_file);

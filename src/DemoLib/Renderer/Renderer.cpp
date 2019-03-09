@@ -844,12 +844,12 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
     using namespace RendererInternal;
 
     const int frustums_per_slice = GRID_RES_X * GRID_RES_Y;
-    const int fi = slice * frustums_per_slice;
-    const auto *first_sf = &sub_frustums[fi];
+    const int base_index = slice * frustums_per_slice;
+    const auto *first_sf = &sub_frustums[base_index];
 
     // Reset cells information for slice
     for (int s = 0; s < frustums_per_slice; s++) {
-        auto &cell = cells[fi + s];
+        auto &cell = cells[base_index + s];
         cell = {};
     }
 
@@ -911,7 +911,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 }
 
                 if (res != Ren::Invisible) {
-                    const int index = fi + row_offset + col_offset;
+                    const int index = base_index + row_offset + col_offset;
                     auto &cell = cells[index];
                     if (cell.light_count < MAX_LIGHTS_PER_CELL) {
                         local_items[row_offset + col_offset][cell.light_count].light_index = (uint16_t)j;
@@ -1003,7 +1003,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 }
 
                 if (res != Ren::Invisible) {
-                    const int index = fi + row_offset + col_offset;
+                    const int index = base_index + row_offset + col_offset;
                     auto &cell = cells[index];
                     if (cell.decal_count < MAX_DECALS_PER_CELL) {
                         local_items[row_offset + col_offset][cell.decal_count].decal_index = (uint16_t)j;
@@ -1016,7 +1016,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 
     // Pack gathered local item data to total list
     for (int s = 0; s < frustums_per_slice; s++) {
-        auto &cell = cells[fi + s];
+        auto &cell = cells[base_index + s];
 
         int local_items_count = std::max((int)cell.light_count, (int)cell.decal_count);
 
