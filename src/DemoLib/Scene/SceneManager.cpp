@@ -7,6 +7,7 @@
 
 #include <Ren/Context.h>
 #include <Ren/Utils.h>
+#include <Ren/SOIL2/SOIL2.h>
 #include <Sys/AssetFile.h>
 #include <Sys/AssetFileIO.h>
 #include <Sys/Log.h>
@@ -233,19 +234,30 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             Ren::OrthographicProjection(de->proj, -0.5f * dim[0], 0.5f * dim[0], -0.5f * dim[1], 0.5f * dim[1], 0.0f, 1.0f * dim[2]);
             
             auto load_decal_texture = [this](const std::string &name) {
-                Sys::AssetFile in_file(name, Sys::AssetFile::IN);
+                std::string file_name = TEXTURES_PATH + name;
+                size_t n = file_name.find_last_of('.');
+                if (n != std::string::npos) {
+                    n++;
+                    if (strcmp(&file_name[n], "tga") == 0) {
+                        file_name.erase(n);
+                        file_name += "dds";
+                    }
+                }
+
+                Sys::AssetFile in_file(file_name, Sys::AssetFile::IN);
                 size_t in_file_size = in_file.size();
 
                 std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
 
                 in_file.Read((char *)&in_file_data[0], in_file_size);
 
-                int res[2];
-                Ren::eTexColorFormat format;
-                auto image_data = Ren::ReadTGAFile(&in_file_data[0], res[0], res[1], format);
+                int res[2], channels;
+                uint8_t *image_data = SOIL_load_image_from_memory(&in_file_data[0], (int)in_file_size, &res[0], &res[1], &channels, 4);
+                assert(channels == 4);
 
                 int pos[2];
-                int rc = decals_atlas_.Allocate(&image_data[0], format, res, pos, 4);
+                int rc = decals_atlas_.Allocate(&image_data[0], Ren::RawRGBA8888, res, pos, 4);
+                SOIL_free_image_data(image_data);
                 if (rc == -1) throw std::runtime_error("Cannot allocate decal!");
 
                 return Ren::Vec4f{ float(pos[0]) / DECALS_ATLAS_RESX,
