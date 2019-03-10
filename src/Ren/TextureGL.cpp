@@ -285,6 +285,14 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2D
     int res = SOIL_load_OGL_texture_from_memory((unsigned char *)data, size, SOIL_LOAD_AUTO, tex_id, SOIL_FLAG_DDS_LOAD_DIRECT);
     assert(res == tex_id);
 
+    GLint w, h;
+    glBindTexture(GL_TEXTURE_2D, tex_id);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+
+    params_.w = (int)w;
+    params_.h = (int)h;
+
     ChangeFilter(p.filter, p.repeat);
 }
 

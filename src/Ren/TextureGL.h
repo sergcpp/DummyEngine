@@ -29,7 +29,7 @@ class Texture2D : public RefCounter {
     Texture2DParams params_;
     bool        ready_ = false;
     uint32_t    cubemap_ready_ = 0;
-    char        name_[64];
+    char        name_[128];
 
     void InitFromRAWData(const void *data, const Texture2DParams &p);
     void InitFromTGAFile(const void *data, const Texture2DParams &p);
