@@ -101,17 +101,17 @@
             "pos" : [ 6.0, 0.5, 0.0 ],
             "rot" : [ -90.0, 0.0, 0.0 ],
             "dim" : [ 1.0, 1.0, 1.0 ],
-            "diff" : "manhole01_diff.tga",
-            "norm" : "manhole01_norm.tga",
-            "spec" : "manhole01_spec.tga"
+            "diff" : "manhole01_diff.png",
+            "norm" : "manhole01_norm.png",
+            "spec" : "manhole01_spec.png"
         },
         "d1" : {
             "pos" : [ -6.0, 0.5, 1.0 ],
             "rot" : [ -90.0, 0.0, 0.0 ],
             "dim" : [ 1.0, 1.0, 1.0 ],
-            "diff" : "manhole01_diff.tga",
-            "norm" : "manhole01_norm.tga",
-            "spec" : "manhole01_spec.tga"
+            "diff" : "manhole01_diff.png",
+            "norm" : "manhole01_norm.png",
+            "spec" : "manhole01_spec.png"
         }
     },
     "objects" : [

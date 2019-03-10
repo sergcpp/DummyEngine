@@ -337,7 +337,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         std::copy(src_beg, src_end, dst_beg);
     };
 
-    auto h_tga_to_dds = [](const char *in_file, const char *out_file) {
+    auto h_conv_to_dds = [](const char *in_file, const char *out_file) {
         LOGI("[PrepareAssets] Converting %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
@@ -483,10 +483,12 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         handlers["tga"] = { "tga", h_copy };
         handlers["tga_rgbe"] = { "tga_rgbe", h_copy };
         handlers["hdr"] = { "hdr", h_copy };
+        handlers["png"] = { "png", h_copy };
     } else if (strcmp(platform, "pc_rel") == 0) {
-        handlers["tga"] = { "dds", h_tga_to_dds };
+        handlers["tga"] = { "dds", h_conv_to_dds };
         handlers["tga_rgbe"] = { "tga_rgbe", h_copy };
         handlers["hdr"] = { "hdr", h_copy };
+        handlers["png"] = { "dds", h_conv_to_dds };
     }
 
     auto convert_file = [out_folder, &handlers](const char *in_file) {

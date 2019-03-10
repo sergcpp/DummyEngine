@@ -97,8 +97,6 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     if (js_scene.Has("name")) {
         const JsString &js_name = (const JsString &)js_scene.at("name");
         scene_name_ = js_name.val;
-    } else {
-        scene_name_.clear();
     }
 
     const JsObject &js_meshes = (const JsObject &)js_scene.at("meshes");
@@ -238,9 +236,13 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 size_t n = file_name.find_last_of('.');
                 if (n != std::string::npos) {
                     n++;
-                    if (strcmp(&file_name[n], "tga") == 0) {
+                    if (strcmp(&file_name[n], "png") == 0) {
                         file_name.erase(n);
+#if defined(__ANDROID__)
+                        tex_name += "png"; // use astc textures later
+#else
                         file_name += "dds";
+#endif
                     }
                 }
 
@@ -605,6 +607,7 @@ void SceneManager::ClearScene() {
     renderer_.WaitForBackgroundThreadIteration();
     renderer_.WaitForBackgroundThreadIteration();
 
+    scene_name_.clear();
     objects_.clear();
 
     ray_scene_ = nullptr;
@@ -695,7 +698,18 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
         n++;
         if (strcmp(&tex_name[n], "tga") == 0) {
             tex_name.erase(n);
+#if defined(__ANDROID__)
+            tex_name += "tga"; // use astc textures later
+#else
             tex_name += "dds";
+#endif
+        } else if (strcmp(&tex_name[n], "png") == 0) {
+            tex_name.erase(n);
+#if defined(__ANDROID__)
+            tex_name += "png"; // use astc textures later
+#else
+            tex_name += "dds";
+#endif
         }
     }
 
