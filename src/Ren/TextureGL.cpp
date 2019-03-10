@@ -141,6 +141,8 @@ void Ren::Texture2D::Init(const char *name, const void *data, int size,
             InitFromTGAFile(data, p);
         } else if (strstr(name, ".dds") != 0 || strstr(name, ".DDS") != 0) {
             InitFromDDSFile(data, size, p);
+        } else if (strstr(name, ".png") != 0 || strstr(name, ".PNG") != 0) {
+            InitFromPNGFile(data, size, p);
         } else {
             InitFromRAWData(data, p);
         }
@@ -283,6 +285,32 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2D
     params_.format = Compressed;
 
     int res = SOIL_load_OGL_texture_from_memory((unsigned char *)data, size, SOIL_LOAD_AUTO, tex_id, SOIL_FLAG_DDS_LOAD_DIRECT);
+    assert(res == tex_id);
+
+    GLint w, h;
+    glBindTexture(GL_TEXTURE_2D, tex_id);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+
+    params_.w = (int)w;
+    params_.h = (int)h;
+
+    ChangeFilter(p.filter, p.repeat);
+}
+
+void Ren::Texture2D::InitFromPNGFile(const void *data, int size, const Texture2DParams &p) {
+    GLuint tex_id;
+    if (params_.format == Undefined) {
+        glGenTextures(1, &tex_id);
+        tex_id_ = tex_id;
+    } else {
+        tex_id = (GLuint)tex_id_;
+    }
+
+    params_ = p;
+    params_.format = Compressed;
+
+    int res = SOIL_load_OGL_texture_from_memory((unsigned char *)data, size, SOIL_LOAD_AUTO, tex_id, SOIL_FLAG_GL_MIPMAPS);
     assert(res == tex_id);
 
     GLint w, h;
