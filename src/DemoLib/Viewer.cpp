@@ -17,10 +17,10 @@
 
 Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) {
     auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
+    auto threads = GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
 
 #if 1
-    //SceneManager::PrepareAssets("assets", "assets_pc", "pc_deb");
-    SceneManager::PrepareAssets("assets", "assets_pc", "pc_rel");
+    SceneManager::PrepareAssets("assets", "assets_pc", "pc_rel", threads.get());
     //exit(0);
 #endif
 
@@ -62,9 +62,9 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         }
     }
 
-    {
-        auto threads = GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
+    
 
+    {
         auto renderer = std::make_shared<Renderer>(*ctx, threads);
         AddComponent(RENDERER_KEY, renderer);
 

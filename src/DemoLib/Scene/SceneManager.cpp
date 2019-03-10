@@ -675,12 +675,23 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
 Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
     using namespace SceneManagerConstants;
 
+    std::string tex_name = TEXTURES_PATH;
+    tex_name += name;
+
+    size_t n = tex_name.find_last_of('.');
+    if (n != std::string::npos) {
+        n++;
+        if (strcmp(&tex_name[n], "tga") == 0) {
+            tex_name.erase(n);
+            tex_name += "dds";
+        }
+    }
+
     Ren::eTexLoadStatus status;
-    Ren::Texture2DRef ret = ctx_.LoadTexture2D(name, nullptr, 0, {}, &status);
+    Ren::Texture2DRef ret = ctx_.LoadTexture2D(tex_name.c_str(), nullptr, 0, {}, &status);
     if (!ret->ready()) {
-        std::string tex_name = name;
         std::weak_ptr<SceneManager> _self = shared_from_this();
-        Sys::LoadAssetComplete((std::string(TEXTURES_PATH) + tex_name).c_str(),
+        Sys::LoadAssetComplete(tex_name.c_str(),
         [_self, tex_name](void *data, int size) {
             auto self = _self.lock();
             if (!self) return;

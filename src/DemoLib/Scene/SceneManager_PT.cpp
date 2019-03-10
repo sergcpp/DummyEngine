@@ -18,7 +18,7 @@ extern const char *SHADERS_PATH;
 
 namespace SceneManagerInternal {
 void WriteTGA(const std::vector<uint8_t> &out_data, int w, int h, const std::string &name);
-void WriteTGA(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name);
+void WriteTGA_RGBE(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name);
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data);
 
@@ -169,7 +169,7 @@ bool SceneManager::PrepareLightmaps_PT() {
                 out_file_name += "_lm_indirect.tga_rgbe";
             }
 
-            SceneManagerInternal::WriteTGA(out_pixels, res, res, out_file_name);
+            SceneManagerInternal::WriteTGA_RGBE(out_pixels, res, res, out_file_name);
 
             if (cur_lm_indir_) {
                 const auto *sh_data = ray_renderer_.get_sh_data_ref();
@@ -201,7 +201,7 @@ bool SceneManager::PrepareLightmaps_PT() {
                     out_file_name += std::to_string(sh_l);
                     out_file_name += ".tga_rgbe";
 
-                    SceneManagerInternal::WriteTGA(out_pixels, res, res, out_file_name);
+                    SceneManagerInternal::WriteTGA_RGBE(out_pixels, res, res, out_file_name);
                 }
             }
         }
