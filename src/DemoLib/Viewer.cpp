@@ -19,7 +19,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
     auto threads = GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
 
-#if 1
+#if !defined(__ANDROID__)
     SceneManager::PrepareAssets("assets", "assets_pc", "pc_rel", threads.get());
     //exit(0);
 #endif

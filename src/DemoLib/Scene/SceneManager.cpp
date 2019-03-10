@@ -239,7 +239,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                     if (strcmp(&file_name[n], "png") == 0) {
                         file_name.erase(n);
 #if defined(__ANDROID__)
-                        tex_name += "png"; // use astc textures later
+                        file_name += "png"; // use astc textures later
 #else
                         file_name += "dds";
 #endif
