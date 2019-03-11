@@ -20,9 +20,7 @@ extern "C" {
 #include <Sys/ThreadPool.h>
 
 namespace SceneManagerInternal {
-void WriteTGA(const std::vector<uint8_t> &out_data, int w, int h, const std::string &name) {
-    int bpp = 4;
-
+void WriteTGA(const std::vector<uint8_t> &out_data, int w, int h, int bpp, const std::string &name) {
     std::ofstream file(name, std::ios::binary);
 
     unsigned char header[18] = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -44,20 +42,7 @@ void WriteTGA(const std::vector<uint8_t> &out_data, int w, int h, const std::str
 }
 
 void WriteTGA_RGBE(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
-    int bpp = 4;
-
-    std::ofstream file(name, std::ios::binary);
-
-    unsigned char header[18] = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-    header[12] = w & 0xFF;
-    header[13] = (w >> 8) & 0xFF;
-    header[14] = (h) & 0xFF;
-    header[15] = (h >> 8) & 0xFF;
-    header[16] = bpp * 8;
-
-    file.write((char *)&header[0], sizeof(unsigned char) * 18);
-    //file.write((const char *)&out_data[0], w * h * bpp);
+    std::vector<uint8_t> u8_data(w * h * 4);
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
@@ -83,16 +68,59 @@ void WriteTGA_RGBE(const std::vector<Ray::pixel_color_t> &out_data, int w, int h
 
             Ren::Vec4f res = { mantissa[0], mantissa[1], mantissa[2], common_exp + 128.0f };
 
-            uint8_t data[] = { uint8_t(res[2] * 255), uint8_t(res[1] * 255), uint8_t(res[0] * 255), uint8_t(res[3]) };
-            file.write((const char *)&data[0], 4);
+            u8_data[(y * w + x) * 4 + 0] = uint8_t(res[2] * 255);
+            u8_data[(y * w + x) * 4 + 1] = uint8_t(res[1] * 255);
+            u8_data[(y * w + x) * 4 + 2] = uint8_t(res[0] * 255);
+            u8_data[(y * w + x) * 4 + 3] = uint8_t(res[3]);
         }
     }
 
-    static const char footer[26] = "\0\0\0\0" // no extension area
-        "\0\0\0\0"// no developer directory
-        "TRUEVISION-XFILE"// yep, this is a TGA file
-        ".";
-    file.write((const char *)&footer, sizeof(footer));
+    WriteTGA(u8_data, w, h, 4, name);
+}
+
+void WriteTGA_RGB(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
+    std::vector<uint8_t> u8_data(w * h * 3);
+
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            const auto &p = out_data[y * w + x];
+
+            u8_data[(y * w + x) * 3 + 0] = uint8_t(p.b * 255);
+            u8_data[(y * w + x) * 3 + 1] = uint8_t(p.g * 255);
+            u8_data[(y * w + x) * 3 + 2] = uint8_t(p.r * 255);
+        }
+    }
+
+    WriteTGA(u8_data, w, h, 3, name);
+}
+
+void WriteTGA_RGBM(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
+    std::vector<uint8_t> u8_data(w * h * 4);
+
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            auto p = out_data[y * w + x];
+
+            p.r *= 1.0f / 6.0f;
+            p.g *= 1.0f / 6.0f;
+            p.b *= 1.0f / 6.0f;
+
+            p.a = std::max(std::max(p.r, p.g), std::max(p.b, 1e-6f));
+            if (p.a > 1.0f) p.a = 1.0f;
+
+            p.a = std::ceil(p.a * 255.0f) / 255.0f;
+            p.r /= p.a;
+            p.g /= p.a;
+            p.b /= p.a;
+
+            u8_data[(y * w + x) * 4 + 0] = uint8_t(p.b * 255);
+            u8_data[(y * w + x) * 4 + 1] = uint8_t(p.g * 255);
+            u8_data[(y * w + x) * 4 + 2] = uint8_t(p.r * 255);
+            u8_data[(y * w + x) * 4 + 3] = uint8_t(p.a * 255);
+        }
+    }
+
+    WriteTGA(u8_data, w, h, 4, name);
 }
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data) {

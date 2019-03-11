@@ -160,48 +160,91 @@ bool SceneManager::PrepareLightmaps_PT() {
             // apply dilation filter
             std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(pixels, res);
 
-            std::string out_file_name = std::string(TEXTURES_PATH) + "/lightmaps/" + scene_name_;
+            std::string out_file_name = "./assets/textures/lightmaps/" + scene_name_;
             out_file_name += "_";
             out_file_name += std::to_string(cur_lm_obj_);
             if (!cur_lm_indir_) {
-                out_file_name += "_lm_direct.tga_rgbe";
+                out_file_name += "_lm_direct.tga";
             } else {
-                out_file_name += "_lm_indirect.tga_rgbe";
+                out_file_name += "_lm_indirect.tga";
             }
 
-            SceneManagerInternal::WriteTGA_RGBE(out_pixels, res, res, out_file_name);
+            SceneManagerInternal::WriteTGA_RGBM(out_pixels, res, res, out_file_name);
 
             if (cur_lm_indir_) {
-                const auto *sh_data = ray_renderer_.get_sh_data_ref();
-
+                std::vector<Ray::shl1_data_t> sh_data(ray_renderer_.get_sh_data_ref(), ray_renderer_.get_sh_data_ref() + res * res);
                 std::vector<Ray::pixel_color_t> temp_pixels1(res * res, Ray::pixel_color_t{ 0.0f, 0.0f, 0.0f, 1.0f });
+
+                const float SH_Y0 = 0.282094806f; // sqrt(1.0f / (4.0f * PI))
+                const float SH_Y1 = 0.488602519f; // sqrt(3.0f / (4.0f * PI))
 
                 const float SH_A0 = 0.886226952f; // PI / sqrt(4.0f * Pi)
                 const float SH_A1 = 1.02332675f;  // sqrt(PI / 3.0f)
 
-                const float mult[] = { SH_A0, SH_A1, SH_A1, SH_A1 };
+                const float SH_AY0 = 0.25f; // SH_A0 * SH_Y0
+                const float SH_AY1 = 0.5f;  // SH_A1 * SH_Y1
+
+                const float inv_pi = 1.0f / Ren::Pi<float>();
+                const float mult[] = { SH_A0 * inv_pi, SH_A1 * inv_pi, SH_A1 * inv_pi, SH_A1 * inv_pi };
+
+                for (int i = 0; i < res * res; i++) {
+                    for (int sh_l = 0; sh_l < 4; sh_l++) {
+                        sh_data[i].coeff_r[sh_l] *= mult[sh_l];
+                        sh_data[i].coeff_g[sh_l] *= mult[sh_l];
+                        sh_data[i].coeff_b[sh_l] *= mult[sh_l];
+                    }
+                }
+
+                for (int i = 0; i < res * res; i++) {
+                    for (int sh_l = 1; sh_l < 4; sh_l++) {
+                        sh_data[i].coeff_r[sh_l] /= sh_data[i].coeff_r[0];
+                        sh_data[i].coeff_g[sh_l] /= sh_data[i].coeff_g[0];
+                        sh_data[i].coeff_b[sh_l] /= sh_data[i].coeff_b[0];
+
+                        sh_data[i].coeff_r[sh_l] = 0.25f * sh_data[i].coeff_r[sh_l] + 0.5f;
+                        sh_data[i].coeff_g[sh_l] = 0.25f * sh_data[i].coeff_g[sh_l] + 0.5f;
+                        sh_data[i].coeff_b[sh_l] = 0.25f * sh_data[i].coeff_b[sh_l] + 0.5f;
+
+                        //if (sh_data[i].coeff_r[sh_l] < 0.0f) {
+                        //    LOGI("!!!!! %f", sh_data[i].coeff_r[sh_l]);
+                        //}
+
+                        if (sh_data[i].coeff_r[sh_l] > 1.0f) sh_data[i].coeff_r[sh_l] = 1.0f;
+                        else if (sh_data[i].coeff_r[sh_l] < 0.0f) sh_data[i].coeff_r[sh_l] = 0.0f;
+                        if (sh_data[i].coeff_g[sh_l] > 1.0f) sh_data[i].coeff_g[sh_l] = 1.0f;
+                        else if (sh_data[i].coeff_g[sh_l] < 0.0f) sh_data[i].coeff_g[sh_l] = 0.0f;
+                        if (sh_data[i].coeff_b[sh_l] > 1.0f) sh_data[i].coeff_b[sh_l] = 1.0f;
+                        else if (sh_data[i].coeff_b[sh_l] < 0.0f) sh_data[i].coeff_b[sh_l] = 0.0f;
+                    }
+                }
 
                 for (int sh_l = 0; sh_l < 4; sh_l++) {
                     for (int i = 0; i < res * res; i++) {
-                        temp_pixels1[i].r = sh_data[i].coeff_r[sh_l] * mult[sh_l];
-                        temp_pixels1[i].g = sh_data[i].coeff_g[sh_l] * mult[sh_l];
-                        temp_pixels1[i].b = sh_data[i].coeff_b[sh_l] * mult[sh_l];
+                        temp_pixels1[i].r = sh_data[i].coeff_r[sh_l];
+                        temp_pixels1[i].g = sh_data[i].coeff_g[sh_l];
+                        temp_pixels1[i].b = sh_data[i].coeff_b[sh_l];
                         // use coverage info from simple lightmap
                         temp_pixels1[i].a = pixels[i].a;
                     }
 
                     const auto out_pixels = SceneManagerInternal::FlushSeams(&temp_pixels1[0], res);
 
-                    out_file_name = TEXTURES_PATH;
+                    out_file_name = "./assets/textures/";
                     out_file_name += "/lightmaps/";
                     out_file_name += scene_name_;
                     out_file_name += "_";
                     out_file_name += std::to_string(cur_lm_obj_);
                     out_file_name += "_lm_sh_";
                     out_file_name += std::to_string(sh_l);
-                    out_file_name += ".tga_rgbe";
+                    out_file_name += ".tga";
 
-                    SceneManagerInternal::WriteTGA_RGBE(out_pixels, res, res, out_file_name);
+                    if (sh_l == 0) {
+                        // Write as HDR image
+                        SceneManagerInternal::WriteTGA_RGBM(out_pixels, res, res, out_file_name);
+                    } else {
+                        // Write as LDR image
+                        SceneManagerInternal::WriteTGA_RGB(out_pixels, res, res, out_file_name);
+                    }
                 }
             }
         }

@@ -56,6 +56,10 @@ vec3 heatmap(float t) {
     return vec3(1.0) - r * r;
 }
 
+vec3 RGBMDecode(vec4 rgbm) {
+    return 6.0 * rgbm.rgb * rgbm.a;
+}
+
 float GetVisibility(in vec2 lm_uvs, inout vec3 additional_light) {
     const vec2 poisson_disk[16] = vec2[16](
         vec2(-0.5, 0.0),
@@ -100,7 +104,7 @@ float GetVisibility(in vec2 lm_uvs, inout vec3 additional_light) {
         visibility += texture(shadow_texture, aVertexShUVs_[3]);
     } else {
         // use directional lightmap
-        additional_light += texture(lm_direct_texture, lm_uvs).rgb;
+        additional_light += RGBMDecode(texture(lm_direct_texture, lm_uvs));
     }
     
     return visibility;
@@ -243,14 +247,16 @@ void main(void) {
         visibility = GetVisibility(lm_uvs, additional_light);
     }
     
-    vec3 indirect_col = texture(lm_indirect_texture, lm_uvs).rgb;
+    vec3 indirect_col = RGBMDecode(texture(lm_indirect_texture, lm_uvs));
     
-    vec3 sh_l_00 = texture(lm_indirect_sh_texture[0], lm_uvs).rgb;
+    vec3 sh_l_00 = RGBMDecode(texture(lm_indirect_sh_texture[0], lm_uvs));
     vec3 sh_l_10 = texture(lm_indirect_sh_texture[1], lm_uvs).rgb;
     vec3 sh_l_11 = texture(lm_indirect_sh_texture[2], lm_uvs).rgb;
     vec3 sh_l_12 = texture(lm_indirect_sh_texture[3], lm_uvs).rgb;
     
-    indirect_col += max(sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x, vec3(0.0));
+    //indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
+    indirect_col += (0.5 + (sh_l_10 - vec3(0.5)) * normal.y + (sh_l_11 - vec3(0.5)) * normal.z + (sh_l_12 - vec3(0.5)) * normal.x) * sh_l_00 * 2.0;
+    indirect_col = max(indirect_col, vec3(0.0));
     
     vec2 ao_uvs = gl_FragCoord.xy / vec2(float(res.x), float(res.y));
     float ambient_occlusion = texture(ao_texture, ao_uvs).r;

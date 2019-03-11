@@ -27,7 +27,7 @@ const int MAX_CMD_LINES = 8;
 #if defined(__ANDROID__)
 const char SCENE_NAME[] = "assets/scenes/street.json";
 #else
-const char SCENE_NAME[] = "assets_pc/scenes/street.json";
+const char SCENE_NAME[] = "assets_pc/scenes/jap_house.json";
 #endif
 }
 
@@ -205,13 +205,13 @@ void GSDrawTest::LoadScene(const char *name) {
         }
     }
 
-    /*view_origin_[0] = -12.032555f;
-    view_origin_[1] = 4.289737f;
-    view_origin_[2] = 22.207867f;
+    /*view_origin_[0] = 17.834387f;
+    view_origin_[1] = 4.055820f;
+    view_origin_[2] = 14.737459f;
 
-    view_dir_[0] = 0.958003f;
-    view_dir_[1] = -0.286701f;
-    view_dir_[2] = 0.005389f;*/
+    view_dir_[0] = -0.351112f;
+    view_dir_[1] = -0.208540f;
+    view_dir_[2] = -0.912816f;*/
 }
 
 void GSDrawTest::Exit() {
