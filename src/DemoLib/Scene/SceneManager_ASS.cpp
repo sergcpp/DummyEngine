@@ -20,28 +20,20 @@ extern "C" {
 #include <Sys/ThreadPool.h>
 
 namespace SceneManagerInternal {
-void WriteTGA(const std::vector<uint8_t> &out_data, int w, int h, int bpp, const std::string &name) {
-    std::ofstream file(name, std::ios::binary);
+void WriteImage(const std::vector<uint8_t> &out_data, int w, int h, int channels, const std::string &name) {
+    int res = 0;
+    if (strstr(name.c_str(), ".tga")) {
+        res = SOIL_save_image(name.c_str(), SOIL_SAVE_TYPE_TGA, w, h, channels, out_data.data());
+    } else if (strstr(name.c_str(), ".png")) {
+        res = SOIL_save_image(name.c_str(), SOIL_SAVE_TYPE_PNG, w, h, channels, out_data.data());
+    }
 
-    unsigned char header[18] = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-    header[12] = w & 0xFF;
-    header[13] = (w >> 8) & 0xFF;
-    header[14] = (h) & 0xFF;
-    header[15] = (h >> 8) & 0xFF;
-    header[16] = bpp * 8;
-
-    file.write((char *)&header[0], sizeof(unsigned char) * 18);
-    file.write((const char *)&out_data[0], w * h * bpp);
-
-    static const char footer[26] = "\0\0\0\0" // no extension area
-        "\0\0\0\0"// no developer directory
-        "TRUEVISION-XFILE"// yep, this is a TGA file
-        ".";
-    file.write((const char *)&footer, sizeof(footer));
+    if (!res) {
+        LOGE("Failed to save image %s", name.c_str());
+    }
 }
 
-void WriteTGA_RGBE(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
+void Write_RGBE(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
     std::vector<uint8_t> u8_data(w * h * 4);
 
     for (int y = 0; y < h; y++) {
@@ -68,33 +60,38 @@ void WriteTGA_RGBE(const std::vector<Ray::pixel_color_t> &out_data, int w, int h
 
             Ren::Vec4f res = { mantissa[0], mantissa[1], mantissa[2], common_exp + 128.0f };
 
-            u8_data[(y * w + x) * 4 + 0] = uint8_t(res[2] * 255);
-            u8_data[(y * w + x) * 4 + 1] = uint8_t(res[1] * 255);
-            u8_data[(y * w + x) * 4 + 2] = uint8_t(res[0] * 255);
-            u8_data[(y * w + x) * 4 + 3] = uint8_t(res[3]);
+            uint8_t r = (uint8_t)std::max(std::min(int(res[0] * 255), 255), 0);
+            uint8_t g = (uint8_t)std::max(std::min(int(res[1] * 255), 255), 0);
+            uint8_t b = (uint8_t)std::max(std::min(int(res[2] * 255), 255), 0);
+            uint8_t a = (uint8_t)std::max(std::min(int(res[3]), 255), 0);
+
+            u8_data[(y * w + x) * 4 + 0] = r;
+            u8_data[(y * w + x) * 4 + 1] = g;
+            u8_data[(y * w + x) * 4 + 2] = b;
+            u8_data[(y * w + x) * 4 + 3] = a;
         }
     }
 
-    WriteTGA(u8_data, w, h, 4, name);
+    WriteImage(u8_data, w, h, 4, name);
 }
 
-void WriteTGA_RGB(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
+void Write_RGB(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
     std::vector<uint8_t> u8_data(w * h * 3);
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
             const auto &p = out_data[y * w + x];
 
-            u8_data[(y * w + x) * 3 + 0] = uint8_t(p.b * 255);
-            u8_data[(y * w + x) * 3 + 1] = uint8_t(p.g * 255);
-            u8_data[(y * w + x) * 3 + 2] = uint8_t(p.r * 255);
+            u8_data[(y * w + x) * 3 + 0] = uint8_t(std::min(int(p.r * 255), 255));
+            u8_data[(y * w + x) * 3 + 1] = uint8_t(std::min(int(p.g * 255), 255));
+            u8_data[(y * w + x) * 3 + 2] = uint8_t(std::min(int(p.b * 255), 255));
         }
     }
 
-    WriteTGA(u8_data, w, h, 3, name);
+    WriteImage(u8_data, w, h, 3, name);
 }
 
-void WriteTGA_RGBM(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
+void Write_RGBM(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
     std::vector<uint8_t> u8_data(w * h * 4);
 
     for (int y = 0; y < h; y++) {
@@ -113,14 +110,19 @@ void WriteTGA_RGBM(const std::vector<Ray::pixel_color_t> &out_data, int w, int h
             p.g /= p.a;
             p.b /= p.a;
 
-            u8_data[(y * w + x) * 4 + 0] = uint8_t(p.b * 255);
-            u8_data[(y * w + x) * 4 + 1] = uint8_t(p.g * 255);
-            u8_data[(y * w + x) * 4 + 2] = uint8_t(p.r * 255);
-            u8_data[(y * w + x) * 4 + 3] = uint8_t(p.a * 255);
+            uint8_t r = (uint8_t)std::max(std::min(int(p.r * 255), 255), 0);
+            uint8_t g = (uint8_t)std::max(std::min(int(p.g * 255), 255), 0);
+            uint8_t b = (uint8_t)std::max(std::min(int(p.b * 255), 255), 0);
+            uint8_t a = (uint8_t)std::max(std::min(int(p.a * 255), 255), 0);
+
+            u8_data[(y * w + x) * 4 + 0] = r;
+            u8_data[(y * w + x) * 4 + 1] = g;
+            u8_data[(y * w + x) * 4 + 2] = b;
+            u8_data[(y * w + x) * 4 + 3] = a;
         }
     }
 
-    WriteTGA(u8_data, w, h, 4, name);
+    WriteImage(u8_data, w, h, 4, name);
 }
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data) {
@@ -156,9 +158,13 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
 
 std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int res) {
     std::vector<Ray::pixel_color_t> temp_pixels1{ pixels, pixels + res * res },
-        temp_pixels2{ (size_t)res * res };
+                                    temp_pixels2{ (size_t)res * res };
     const int FILTER_SIZE = 16;
     const float INVAL_THRES = 0.5f;
+
+    // Avoid bound checks in debug
+    Ray::pixel_color_t *_temp_pixels1 = temp_pixels1.data(),
+                       *_temp_pixels2 = temp_pixels2.data();
 
     // apply dilation filter
     for (int i = 0; i < FILTER_SIZE; i++) {
@@ -166,8 +172,8 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
 
         for (int y = 0; y < res; y++) {
             for (int x = 0; x < res; x++) {
-                auto in_p = temp_pixels1[y * res + x];
-                auto &out_p = temp_pixels2[y * res + x];
+                auto in_p = _temp_pixels1[y * res + x];
+                auto &out_p = _temp_pixels2[y * res + x];
 
                 float mul = 1.0f;
                 if (in_p.a < INVAL_THRES) {
@@ -179,7 +185,7 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
                         for (int _x : { x - 1, x, x + 1 }) {
                             if (_x < 0 || _y < 0 || _x > res - 1 || _y > res - 1) continue;
 
-                            const auto &p = temp_pixels1[_y * res + _x];
+                            const auto &p = _temp_pixels1[_y * res + _x];
                             if (p.a >= INVAL_THRES) {
                                 new_p.r += p.r;
                                 new_p.g += p.g;
@@ -211,7 +217,7 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
             }
         }
 
-        std::swap(temp_pixels1, temp_pixels2);
+        std::swap(_temp_pixels1, _temp_pixels2);
         if (!has_invalid) break;
     }
 

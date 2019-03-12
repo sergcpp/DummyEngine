@@ -17,8 +17,8 @@ extern const char *SHADERS_PATH;
 }
 
 namespace SceneManagerInternal {
-void WriteTGA(const std::vector<uint8_t> &out_data, int w, int h, const std::string &name);
-void WriteTGA_RGBE(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name);
+void Write_RGBM(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name);
+void Write_RGBE(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name);
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data);
 
@@ -164,12 +164,12 @@ bool SceneManager::PrepareLightmaps_PT() {
             out_file_name += "_";
             out_file_name += std::to_string(cur_lm_obj_);
             if (!cur_lm_indir_) {
-                out_file_name += "_lm_direct.tga";
+                out_file_name += "_lm_direct.png";
             } else {
-                out_file_name += "_lm_indirect.tga";
+                out_file_name += "_lm_indirect.png";
             }
 
-            SceneManagerInternal::WriteTGA_RGBM(out_pixels, res, res, out_file_name);
+            SceneManagerInternal::Write_RGBM(out_pixels, res, res, out_file_name);
 
             if (cur_lm_indir_) {
                 std::vector<Ray::shl1_data_t> sh_data(ray_renderer_.get_sh_data_ref(), ray_renderer_.get_sh_data_ref() + res * res);
@@ -196,10 +196,18 @@ bool SceneManager::PrepareLightmaps_PT() {
                 }
 
                 for (int i = 0; i < res * res; i++) {
+                    if (pixels[i].a < 0.5f) continue;
+
                     for (int sh_l = 1; sh_l < 4; sh_l++) {
-                        sh_data[i].coeff_r[sh_l] /= sh_data[i].coeff_r[0];
-                        sh_data[i].coeff_g[sh_l] /= sh_data[i].coeff_g[0];
-                        sh_data[i].coeff_b[sh_l] /= sh_data[i].coeff_b[0];
+                        if (sh_data[i].coeff_r[0] > FLT_EPSILON) {
+                            sh_data[i].coeff_r[sh_l] /= sh_data[i].coeff_r[0];
+                        }
+                        if (sh_data[i].coeff_g[0] > FLT_EPSILON) {
+                            sh_data[i].coeff_g[sh_l] /= sh_data[i].coeff_g[0];
+                        }
+                        if (sh_data[i].coeff_b[0] > FLT_EPSILON) {
+                            sh_data[i].coeff_b[sh_l] /= sh_data[i].coeff_b[0];
+                        }
 
                         sh_data[i].coeff_r[sh_l] = 0.25f * sh_data[i].coeff_r[sh_l] + 0.5f;
                         sh_data[i].coeff_g[sh_l] = 0.25f * sh_data[i].coeff_g[sh_l] + 0.5f;
@@ -236,14 +244,14 @@ bool SceneManager::PrepareLightmaps_PT() {
                     out_file_name += std::to_string(cur_lm_obj_);
                     out_file_name += "_lm_sh_";
                     out_file_name += std::to_string(sh_l);
-                    out_file_name += ".tga";
+                    out_file_name += ".png";
 
                     if (sh_l == 0) {
                         // Write as HDR image
-                        SceneManagerInternal::WriteTGA_RGBM(out_pixels, res, res, out_file_name);
+                        SceneManagerInternal::Write_RGBM(out_pixels, res, res, out_file_name);
                     } else {
                         // Write as LDR image
-                        SceneManagerInternal::WriteTGA_RGB(out_pixels, res, res, out_file_name);
+                        SceneManagerInternal::Write_RGB(out_pixels, res, res, out_file_name);
                     }
                 }
             }

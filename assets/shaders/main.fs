@@ -239,7 +239,7 @@ void main(void) {
         }
     }
     
-    vec2 lm_uvs = vec2(aVertexUVs2_.x, 1.0 - aVertexUVs2_.y);
+    vec2 lm_uvs = vec2(aVertexUVs2_.x, aVertexUVs2_.y);
     
     float lambert = max(dot(normal, sun_dir), 0.0);
     float visibility = 0.0;
@@ -255,7 +255,8 @@ void main(void) {
     vec3 sh_l_12 = texture(lm_indirect_sh_texture[3], lm_uvs).rgb;
     
     //indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
-    indirect_col += (0.5 + (sh_l_10 - vec3(0.5)) * normal.y + (sh_l_11 - vec3(0.5)) * normal.z + (sh_l_12 - vec3(0.5)) * normal.x) * sh_l_00 * 2.0;
+    indirect_col += sh_l_00;
+    //indirect_col += (0.5 + (sh_l_10 - vec3(0.5)) * normal.y + (sh_l_11 - vec3(0.5)) * normal.z + (sh_l_12 - vec3(0.5)) * normal.x) * sh_l_00 * 2.0;
     indirect_col = max(indirect_col, vec3(0.0));
     
     vec2 ao_uvs = gl_FragCoord.xy / vec2(float(res.x), float(res.y));
