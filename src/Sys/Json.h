@@ -108,6 +108,7 @@ struct JsObject {
     JsElement &operator[](const std::string &s);
 
     const JsElement &at(const std::string &s) const;
+    JsElement &at(const std::string &s);
 
     bool operator==(const JsObject &rhs) const;
     bool operator!=(const JsObject &rhs) const {
