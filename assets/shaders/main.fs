@@ -83,7 +83,7 @@ float GetVisibility(in vec2 lm_uvs, inout vec3 additional_light) {
         vec2(0.75, -0.81)
     );
 
-    const float shadow_softness = 2.0 / 2048.0;
+    const highp float shadow_softness = 2.0 / 2048.0;
     
     float visibility = 0.0;
     
@@ -103,7 +103,7 @@ float GetVisibility(in vec2 lm_uvs, inout vec3 additional_light) {
     } else if (frag_depth < 120.0) {
         visibility += texture(shadow_texture, aVertexShUVs_[3]);
     } else {
-        // use directional lightmap
+        // use direct lightmap
         additional_light += RGBMDecode(texture(lm_direct_texture, lm_uvs));
     }
     
