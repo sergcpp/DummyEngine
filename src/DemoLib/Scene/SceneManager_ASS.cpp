@@ -355,12 +355,29 @@ bool CreateFolders(const char *out_file) {
 bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, const char *platform, Sys::ThreadPool *p_threads) {
     using namespace SceneManagerInternal;
 
+    auto replace_texture_extension = [](std::string &tex) {
+        size_t n;
+        if ((n = tex.find(".tga")) != std::string::npos) {
+#if defined(__ANDROID__)
+            // use astc textures later
+#else
+            tex.replace(n + 1, n + 3, "dds");
+#endif
+        } else if ((n = tex.find(".png")) != std::string::npos) {
+#if defined(__ANDROID__)
+            // use astc textures later
+#else
+            tex.replace(n + 1, n + 3, "dds");
+#endif
+        }
+    };
+
     auto h_skip = [](const char *in_file, const char *out_file) {
-        LOGI("[PrepareAssets] Skipping %s", out_file);
+        LOGI("[PrepareAssets] Skip %s", out_file);
     };
 
     auto h_copy = [](const char *in_file, const char *out_file) {
-        LOGI("[PrepareAssets] Copying %s", out_file);
+        LOGI("[PrepareAssets] Copy %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary);
         std::ofstream dst_stream(out_file, std::ios::binary);
@@ -372,7 +389,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     };
 
     auto h_conv_to_dds = [](const char *in_file, const char *out_file) {
-        LOGI("[PrepareAssets] Converting %s", out_file);
+        LOGI("[PrepareAssets] Conv %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
         auto src_size = src_stream.tellg();
@@ -498,6 +515,52 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         SOIL_free_image_data(image_data);
     };
 
+    auto h_preprocess_material = [&replace_texture_extension](const char *in_file, const char *out_file) {
+        LOGI("[PrepareAssets] Prep %s", out_file);
+
+        std::ifstream src_stream(in_file, std::ios::binary);
+        std::ofstream dst_stream(out_file, std::ios::binary);
+        std::string line;
+
+        while (std::getline(src_stream, line)) {
+            replace_texture_extension(line);
+            dst_stream << line << "\r\n";
+        }
+    };
+
+    auto h_preprocess_scene = [&replace_texture_extension](const char *in_file, const char *out_file) {
+        LOGI("[PrepareAssets] Prep %s", out_file);
+
+        std::ifstream src_stream(in_file, std::ios::binary);
+        std::ofstream dst_stream(out_file, std::ios::binary);
+
+        JsObject js_scene;
+        if (!js_scene.Read(src_stream)) {
+            throw std::runtime_error("Cannot load scene!");
+        }
+
+        if (js_scene.Has("decals")) {
+            JsObject &js_decals = (JsObject &)js_scene.at("decals");
+            for (auto &d : js_decals.elements) {
+                auto &js_decal = (JsObject &)d.second;
+                if (js_decal.Has("diff")) {
+                    auto &js_diff_tex = (JsString &)js_decal.at("diff");
+                    replace_texture_extension(js_diff_tex.val);
+                }
+                if (js_decal.Has("norm")) {
+                    auto &js_norm_tex = (JsString &)js_decal.at("norm");
+                    replace_texture_extension(js_norm_tex.val);
+                }
+                if (js_decal.Has("spec")) {
+                    auto &js_spec_tex = (JsString &)js_decal.at("spec");
+                    replace_texture_extension(js_spec_tex.val);
+                }
+            }
+        }
+
+        js_scene.Write(dst_stream);
+    };
+
     struct Handler {
         const char *ext;
         std::function<void(const char *in_file, const char *out_file)> convert;
@@ -505,22 +568,22 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
     std::map<std::string, Handler> handlers;
 
-    handlers["bff"] = { "bff", h_copy };
-    handlers["mesh"] = { "mesh", h_copy };
-    handlers["anim"] = { "anim", h_copy };
-    handlers["txt"] = { "txt", h_copy };
-    handlers["json"] = { "json", h_copy };
-    handlers["vs"] = { "vs", h_copy };
-    handlers["fs"] = { "fs", h_copy };
+    handlers["bff"]     = { "bff",  h_copy };
+    handlers["mesh"]    = { "mesh", h_copy };
+    handlers["anim"]    = { "anim", h_copy };
+    handlers["vs"]      = { "vs",   h_copy };
+    handlers["fs"]      = { "fs",   h_copy };
 
     if (strcmp(platform, "pc_deb") == 0) {
+        handlers["json"] = { "json", h_copy };
+        handlers["txt"] = { "txt", h_copy };
         handlers["tga"] = { "tga", h_copy };
-        handlers["tga_rgbe"] = { "tga_rgbe", h_copy };
         handlers["hdr"] = { "hdr", h_copy };
         handlers["png"] = { "png", h_copy };
     } else if (strcmp(platform, "pc_rel") == 0) {
+        handlers["json"] = { "json", h_preprocess_scene };
+        handlers["txt"] = { "txt", h_preprocess_material };
         handlers["tga"] = { "dds", h_conv_to_dds };
-        handlers["tga_rgbe"] = { "tga_rgbe", h_copy };
         handlers["hdr"] = { "hdr", h_copy };
         handlers["png"] = { "dds", h_conv_to_dds };
     }

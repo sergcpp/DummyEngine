@@ -384,8 +384,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             lm_tex_name += "_";
             lm_tex_name += std::to_string(objects_.size());
 
-            std::string lm_dir_tex_name = lm_tex_name + "_lm_direct.tga";
-            std::string lm_indir_tex_name = lm_tex_name + "_lm_indirect.tga";
+            std::string lm_dir_tex_name = lm_tex_name + "_lm_direct.dds";
+            std::string lm_indir_tex_name = lm_tex_name + "_lm_indirect.dds";
 
             obj.flags |= HasLightmap;
             obj.lm_res = (uint32_t)js_lm_res.val;
@@ -406,7 +406,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 for (int sh_l = 0; sh_l < 4; sh_l++) {
                     std::string lm_file_name = base_file_name;
                     lm_file_name += std::to_string(sh_l);
-                    lm_file_name += ".tga";
+                    lm_file_name += ".dds";
 
                     obj.lm_indir_sh_tex[sh_l] = OnLoadTexture(lm_file_name.c_str());
                 }
@@ -692,26 +692,6 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
 
     std::string tex_name = TEXTURES_PATH;
     tex_name += name;
-
-    size_t n = tex_name.find_last_of('.');
-    if (n != std::string::npos) {
-        n++;
-        if (strcmp(&tex_name[n], "tga") == 0) {
-            tex_name.erase(n);
-#if defined(__ANDROID__)
-            tex_name += "tga"; // use astc textures later
-#else
-            tex_name += "dds";
-#endif
-        } else if (strcmp(&tex_name[n], "png") == 0) {
-            tex_name.erase(n);
-#if defined(__ANDROID__)
-            tex_name += "png"; // use astc textures later
-#else
-            tex_name += "dds";
-#endif
-        }
-    }
 
     Ren::eTexLoadStatus status;
     Ren::Texture2DRef ret = ctx_.LoadTexture2D(tex_name.c_str(), nullptr, 0, {}, &status);
