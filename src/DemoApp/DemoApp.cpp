@@ -103,6 +103,7 @@ int DemoApp::Init(int w, int h) {
 #endif
 #endif
     try {
+        Viewer::PrepareAssets();
         viewer_.reset(new Viewer(w, h, nullptr));
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());

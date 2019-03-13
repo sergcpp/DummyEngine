@@ -1,5 +1,5 @@
 gl_program: main main.vs main.fs
 sw_program: main
-texture: concrete_03.tga
-texture: concrete_03_nor.tga
-texture: default_specular.tga
+texture: concrete_03.png
+texture: concrete_03_nor.png
+texture: default_specular.png

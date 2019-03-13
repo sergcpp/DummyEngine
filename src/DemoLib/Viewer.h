@@ -13,5 +13,7 @@ public:
     Viewer(int w, int h, const char *local_dir);
 
     void Resize(int w, int h) override;
+
+    static void PrepareAssets();
 };
 

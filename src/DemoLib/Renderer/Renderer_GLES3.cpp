@@ -1279,7 +1279,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_UVS1);
     }
 
-    {
+    {   // Start asynchronous memory read from framebuffer
         BindTexture(DIFFUSEMAP_SLOT, down_buf_.attachments[0].tex);
         glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -1444,7 +1444,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     }
 
     if (debug_reduce_) {
-        BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, reduced_buf_, 0, 1, 400.0f);
+        BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, reduced_buf_, 0, 1, 10.0f);
     }
 
     if (debug_deferred_) {

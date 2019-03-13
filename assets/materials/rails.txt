@@ -1,5 +1,5 @@
 gl_program: main main.vs main.fs
 sw_program: main
-texture: rail_diff.tga
-texture: default_normalmap.tga
-texture: rail_spec.tga
+texture: rail_diff.png
+texture: default_normalmap.png
+texture: rail_spec.png

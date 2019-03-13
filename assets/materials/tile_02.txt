@@ -1,2 +1,0 @@
-gl_program: skinned skinned.vs car_uber.fs
-sw_program: constant

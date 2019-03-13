@@ -1,5 +1,5 @@
 gl_program: main main.vs main.fs
 sw_program: main
-texture: wall_01.tga
-texture: wall_01_nor.tga
-texture: default_specular.tga
+texture: wall_01.png
+texture: wall_01_nor.png
+texture: default_specular.png

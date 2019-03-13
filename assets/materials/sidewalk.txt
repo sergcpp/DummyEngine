@@ -1,5 +1,5 @@
 gl_program: main main.vs main.fs
 sw_program: main
-texture: sidewalk_diff.tga
-texture: sidewalk_norm.tga
-texture: sidewalk_spec.tga
+texture: sidewalk_diff.png
+texture: sidewalk_norm.png
+texture: sidewalk_spec.png

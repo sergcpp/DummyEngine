@@ -1,6 +1,0 @@
-gl_program: skinned skinned.vs car_uber.fs
-sw_program: constant
-texture: lamb_grid.tga
-param: 1.0 1.0 1.0 0.0  // base_color1:3 reflectivity:1
-param: 1.0 1.0 1.0 0.0  // base_color2:3 fresnel_off:1
-param: 0 0 0 0          // :2 metallic:1 fresnel_pow:1

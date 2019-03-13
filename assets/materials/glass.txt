@@ -1,7 +1,0 @@
-gl_program: car_uber skinned.vs car_uber.fs
-sw_program: constant
-flag: alpha_blend
-texture: lamb_glass.tga
-param: 0.0 0.0 0.0 0.85     // base_color1:3 reflectivity:1
-param: 0.0 0.0 0.0 0.45   // base_color2:3 fresnel_off:1
-param: 0 0 0 4           // :2 metallic:1 fresnel_pow:1

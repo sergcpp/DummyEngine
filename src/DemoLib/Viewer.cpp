@@ -17,12 +17,6 @@
 
 Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) {
     auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
-    auto threads = GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
-
-#if !defined(__ANDROID__)
-    SceneManager::PrepareAssets("assets", "assets_pc", "pc_rel", threads.get());
-    //exit(0);
-#endif
 
     JsObject main_config;
 
@@ -65,6 +59,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     
 
     {
+        auto threads = GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
         auto renderer = std::make_shared<Renderer>(*ctx, threads);
         AddComponent(RENDERER_KEY, renderer);
 
@@ -99,3 +94,8 @@ void Viewer::Resize(int w, int h) {
     GameBase::Resize(w, h);
 }
 
+void Viewer::PrepareAssets() {
+#if !defined(__ANDROID__)
+    SceneManager::PrepareAssets("assets", "assets_pc", "pc_rel", nullptr);
+#endif
+}

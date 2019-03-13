@@ -1,5 +1,0 @@
-gl_program: constant constant.vs constant.fs
-sw_program: constant
-texture: lion.tga
-texture: lion_ddn.tga
-texture: default_specular.tga

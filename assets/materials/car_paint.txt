@@ -1,5 +1,0 @@
-gl_program: car_uber skinned.vs car_uber.fs
-sw_program: constant
-param: 1.0 0.63 0.0 0.75     // base_color1:3 reflectivity:1
-param: 1.0 0.93 0.13 0.45   // base_color2:3 fresnel_off:1
-param: 0 0 0.25 4           // :2 metallic:1 fresnel_pow:1

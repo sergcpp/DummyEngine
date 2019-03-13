@@ -1,5 +1,0 @@
-gl_program: main main.vs main.fs
-sw_program: main
-texture: blue.tga
-texture: default_normalmap.tga
-texture: blue.tga
