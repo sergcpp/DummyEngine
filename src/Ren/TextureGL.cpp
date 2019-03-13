@@ -173,6 +173,8 @@ void Ren::Texture2D::Init(const char *name, const void *data[6], const int size[
             InitFromTGA_RGBEFile(data, p);
         } else if (strstr(name, ".tga") != 0 || strstr(name, ".TGA") != 0) {
             InitFromTGAFile(data, p);
+        } else if (strstr(name, ".dds") != 0 || strstr(name, ".DDS") != 0) {
+            InitFromDDSFile(data, size, p);
         } else {
             InitFromRAWData(data, p);
         }
@@ -421,6 +423,34 @@ void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data[6], const Texture2DPa
     _p.format = Ren::RawRGB16F;
 
     InitFromRAWData(_image_data, _p);
+}
+
+void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], const Texture2DParams &p) {
+    assert(p.w > 0 && p.h > 0);
+    GLuint tex_id;
+    if (params_.format == Undefined) {
+        glGenTextures(1, &tex_id);
+        tex_id_ = tex_id;
+    } else {
+        tex_id = (GLuint)tex_id_;
+    }
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, tex_id);
+
+    params_ = p;
+
+    unsigned int handle =
+    SOIL_load_OGL_cubemap_from_memory((const unsigned char *)data[0], size[0],
+                                      (const unsigned char *)data[1], size[1],
+                                      (const unsigned char *)data[2], size[2],
+                                      (const unsigned char *)data[3], size[3],
+                                      (const unsigned char *)data[4], size[4],
+                                      (const unsigned char *)data[5], size[5], 0, tex_id, SOIL_FLAG_DDS_LOAD_DIRECT);
+
+    assert(handle == tex_id);
+
+    ChangeFilter(p.filter, p.repeat);
 }
 
 void Ren::Texture2D::ChangeFilter(eTexFilter f, eTexRepeat r) {

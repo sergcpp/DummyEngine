@@ -161,6 +161,26 @@ std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eT
     return image_ret;
 }
 
+std::unique_ptr<float[]> Ren::ConvertRGBE_to_RGB32F(const uint8_t *image_data, int w, int h) {
+    std::unique_ptr<float[]> fp_data(new float[w * h * 3]);
+
+    for (int i = 0; i < w * h; i++) {
+        uint8_t r = image_data[4 * i + 0];
+        uint8_t g = image_data[4 * i + 1];
+        uint8_t b = image_data[4 * i + 2];
+        uint8_t a = image_data[4 * i + 3];
+
+        float f = std::exp2(float(a) - 128.0f);
+        float k = 1.0f / 255;
+
+        fp_data[3 * i + 0] = k * r * f;
+        fp_data[3 * i + 1] = k * g * f;
+        fp_data[3 * i + 2] = k * b * f;
+    }
+
+    return fp_data;
+}
+
 std::unique_ptr<uint16_t[]> Ren::ConvertRGBE_to_RGB16F(const uint8_t *image_data, int w, int h) {
     std::unique_ptr<uint16_t[]> fp_data(new uint16_t[w * h * 3]);
 
