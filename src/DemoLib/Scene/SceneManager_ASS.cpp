@@ -20,20 +20,14 @@ extern "C" {
 #include <Sys/ThreadPool.h>
 
 namespace SceneManagerInternal {
-void WriteImage(const std::vector<uint8_t> &out_data, int w, int h, int channels, const std::string &name) {
-    int res = 0;
-    if (strstr(name.c_str(), ".tga")) {
-        res = SOIL_save_image(name.c_str(), SOIL_SAVE_TYPE_TGA, w, h, channels, out_data.data());
-    } else if (strstr(name.c_str(), ".png")) {
-        res = SOIL_save_image(name.c_str(), SOIL_SAVE_TYPE_PNG, w, h, channels, out_data.data());
-    }
+extern const char *MODELS_PATH;
+extern const char *TEXTURES_PATH;
+extern const char *MATERIALS_PATH;
+extern const char *SHADERS_PATH;
 
-    if (!res) {
-        LOGE("Failed to save image %s", name.c_str());
-    }
-}
+void WriteImage(const uint8_t *out_data, int w, int h, int channels, const char *name);
 
-void Write_RGBE(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
+void Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
     std::vector<uint8_t> u8_data(w * h * 4);
 
     for (int y = 0; y < h; y++) {
@@ -72,10 +66,10 @@ void Write_RGBE(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, c
         }
     }
 
-    WriteImage(u8_data, w, h, 4, name);
+    WriteImage(&u8_data[0], w, h, 4, name);
 }
 
-void Write_RGB(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
+void Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
     std::vector<uint8_t> u8_data(w * h * 3);
 
     for (int y = 0; y < h; y++) {
@@ -88,15 +82,25 @@ void Write_RGB(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, co
         }
     }
 
-    WriteImage(u8_data, w, h, 3, name);
+    WriteImage(&u8_data[0], w, h, 3, name);
 }
 
-void Write_RGBM(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name) {
+void Write_RGBM(const float *out_data, int w, int h, int channels, const char *name) {
     std::vector<uint8_t> u8_data(w * h * 4);
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
-            auto p = out_data[y * w + x];
+            Ray::pixel_color_t p;
+
+            if (channels == 3) {
+                p.r = out_data[3 * (y * w + x) + 0];
+                p.g = out_data[3 * (y * w + x) + 1];
+                p.b = out_data[3 * (y * w + x) + 2];
+            } else if (channels == 4) {
+                p.r = out_data[4 * (y * w + x) + 0];
+                p.g = out_data[4 * (y * w + x) + 1];
+                p.b = out_data[4 * (y * w + x) + 2];
+            }
 
             p.r *= 1.0f / 6.0f;
             p.g *= 1.0f / 6.0f;
@@ -122,7 +126,136 @@ void Write_RGBM(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, c
         }
     }
 
-    WriteImage(u8_data, w, h, 4, name);
+    WriteImage(&u8_data[0], w, h, 4, name);
+}
+
+void Write_DDS(const uint8_t *image_data, int w, int h, int channels, const char *out_file) {
+    // Check if power of two
+    bool store_mipmaps = (w & (w - 1)) == 0 && (h & (h - 1)) == 0;
+
+    std::unique_ptr<uint8_t[]> mipmaps[16] = {};
+    int widths[16] = {},
+        heights[16] = {};
+
+    mipmaps[0].reset(new uint8_t[w * h * channels]);
+    // mirror by y (????)
+    for (int j = 0; j < h; j++) {
+        memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels], w * channels);
+    }
+    widths[0] = w;
+    heights[0] = h;
+    int mip_count = 1;
+
+    int _w = w, _h = h;
+    while ((_w > 1 || _h > 1) && store_mipmaps) {
+        int _prev_w = _w, _prev_h = _h;
+        _w = std::max(_w / 2, 1);
+        _h = std::max(_h / 2, 1);
+        mipmaps[mip_count].reset(new uint8_t[_w * _h * channels]);
+        widths[mip_count] = _w;
+        heights[mip_count] = _h;
+        const uint8_t *tex = mipmaps[mip_count - 1].get();
+
+        int count = 0;
+
+        if (channels == 4) {
+            for (int j = 0; j < _prev_h; j += 2) {
+                for (int i = 0; i < _prev_w; i += 2) {
+                    int r = tex[((j + 0) * _prev_w + i) * 4 + 0] + tex[((j + 0) * _prev_w + i + 1) * 4 + 0] +
+                            tex[((j + 1) * _prev_w + i) * 4 + 0] + tex[((j + 1) * _prev_w + i + 1) * 4 + 0];
+                    int g = tex[((j + 0) * _prev_w + i) * 4 + 1] + tex[((j + 0) * _prev_w + i + 1) * 4 + 1] +
+                            tex[((j + 1) * _prev_w + i) * 4 + 1] + tex[((j + 1) * _prev_w + i + 1) * 4 + 1];
+                    int b = tex[((j + 0) * _prev_w + i) * 4 + 2] + tex[((j + 0) * _prev_w + i + 1) * 4 + 2] +
+                            tex[((j + 1) * _prev_w + i) * 4 + 2] + tex[((j + 1) * _prev_w + i + 1) * 4 + 2];
+                    int a = tex[((j + 0) * _prev_w + i) * 4 + 3] + tex[((j + 0) * _prev_w + i + 1) * 4 + 3] +
+                            tex[((j + 1) * _prev_w + i) * 4 + 3] + tex[((j + 1) * _prev_w + i + 1) * 4 + 3];
+
+                    mipmaps[mip_count][count * 4 + 0] = uint8_t(r / 4);
+                    mipmaps[mip_count][count * 4 + 1] = uint8_t(g / 4);
+                    mipmaps[mip_count][count * 4 + 2] = uint8_t(b / 4);
+                    mipmaps[mip_count][count * 4 + 3] = uint8_t(a / 4);
+                    count++;
+                }
+            }
+        } else if (channels == 3) {
+            for (int j = 0; j < _prev_h; j += 2) {
+                for (int i = 0; i < _prev_w; i += 2) {
+                    int r = tex[((j + 0) * _prev_w + i) * 3 + 0] + tex[((j + 0) * _prev_w + i + 1) * 3 + 0] +
+                            tex[((j + 1) * _prev_w + i) * 3 + 0] + tex[((j + 1) * _prev_w + i + 1) * 3 + 0];
+                    int g = tex[((j + 0) * _prev_w + i) * 3 + 1] + tex[((j + 0) * _prev_w + i + 1) * 3 + 1] +
+                            tex[((j + 1) * _prev_w + i) * 3 + 1] + tex[((j + 1) * _prev_w + i + 1) * 3 + 1];
+                    int b = tex[((j + 0) * _prev_w + i) * 3 + 2] + tex[((j + 0) * _prev_w + i + 1) * 3 + 2] +
+                            tex[((j + 1) * _prev_w + i) * 3 + 2] + tex[((j + 1) * _prev_w + i + 1) * 3 + 2];
+
+                    mipmaps[mip_count][count * 3 + 0] = uint8_t(r / 4);
+                    mipmaps[mip_count][count * 3 + 1] = uint8_t(g / 4);
+                    mipmaps[mip_count][count * 3 + 2] = uint8_t(b / 4);
+                    count++;
+                }
+            }
+        }
+
+        mip_count++;
+    }
+
+    {
+        uint8_t *dds_data[16] = {};
+        int dds_size[16] = {};
+        int dds_size_total = 0;
+
+        for (int i = 0; i < mip_count; i++) {
+            if (channels == 3) {
+                dds_data[i] = convert_image_to_DXT1(mipmaps[i].get(), widths[i], heights[i], channels, &dds_size[i]);
+            } else if (channels == 4) {
+                dds_data[i] = convert_image_to_DXT5(mipmaps[i].get(), widths[i], heights[i], channels, &dds_size[i]);
+            }
+            dds_size_total += dds_size[i];
+        }
+
+        DDS_header header = {};
+        header.dwMagic = ('D' << 0) | ('D' << 8) | ('S' << 16) | (' ' << 24);
+        header.dwSize = 124;
+        header.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT | DDSD_LINEARSIZE | DDSD_MIPMAPCOUNT;
+        header.dwWidth = w;
+        header.dwHeight = h;
+        header.dwPitchOrLinearSize = dds_size_total;
+        header.dwMipMapCount = mip_count;
+        header.sPixelFormat.dwSize = 32;
+        header.sPixelFormat.dwFlags = DDPF_FOURCC;
+
+        if (channels == 3) {
+            header.sPixelFormat.dwFourCC = ('D' << 0) | ('X' << 8) | ('T' << 16) | ('1' << 24);
+        } else {
+            header.sPixelFormat.dwFourCC = ('D' << 0) | ('X' << 8) | ('T' << 16) | ('5' << 24);
+        }
+
+        header.sCaps.dwCaps1 = DDSCAPS_TEXTURE | DDSCAPS_MIPMAP;
+
+        std::ofstream out_file(out_file, std::ios::binary);
+        out_file.write((char *)&header, sizeof(header));
+
+        for (int i = 0; i < mip_count; i++) {
+            out_file.write((char *)dds_data[i], dds_size[i]);
+            SOIL_free_image_data(dds_data[i]);
+            dds_data[i] = nullptr;
+        }
+    }
+}
+
+void WriteImage(const uint8_t *out_data, int w, int h, int channels, const char *name) {
+    int res = 0;
+    if (strstr(name, ".tga")) {
+        res = SOIL_save_image(name, SOIL_SAVE_TYPE_TGA, w, h, channels, out_data);
+    } else if (strstr(name, ".png")) {
+        res = SOIL_save_image(name, SOIL_SAVE_TYPE_PNG, w, h, channels, out_data);
+    } else if (strstr(name, ".dds")) {
+        res = 1;
+        Write_DDS(out_data, w, h, channels, name);
+    }
+
+    if (!res) {
+        LOGE("Failed to save image %s", name);
+    }
 }
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data) {
@@ -401,118 +534,27 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         int width, height, channels;
         unsigned char *image_data = SOIL_load_image_from_memory(&src_buf[0], (int)src_size, &width, &height, &channels, 0);
 
-        // Check if power of two
-        bool store_mipmaps = (width & (width - 1)) == 0 && (height & (height - 1)) == 0;
-
-        std::unique_ptr<uint8_t[]> mipmaps[16] = {};
-        int widths[16] = {},
-            heights[16] = {};
-
-        mipmaps[0].reset(new uint8_t[width * height * channels]);
-        // mirror by y (????)
-        for (int j = 0; j < height; j++) {
-            memcpy(&mipmaps[0][j * width * channels], &image_data[(height - j - 1) * width * channels], width * channels);
-        }
-        widths[0] = width;
-        heights[0] = height;
-        int mip_count = 1;
-
-        int _w = width, _h = height;
-        while ((_w > 1 || _h > 1) && store_mipmaps) {
-            int _prev_w = _w, _prev_h = _h;
-            _w = std::max(_w / 2, 1);
-            _h = std::max(_h / 2, 1);
-            mipmaps[mip_count].reset(new uint8_t[_w * _h * channels]);
-            widths[mip_count] = _w;
-            heights[mip_count] = _h;
-            const uint8_t *tex = mipmaps[mip_count - 1].get();
-
-            int count = 0;
-
-            if (channels == 4) {
-                for (int j = 0; j < _prev_h; j += 2) {
-                    for (int i = 0; i < _prev_w; i += 2) {
-                        int r = tex[((j + 0) * _prev_w + i) * 4 + 0] + tex[((j + 0) * _prev_w + i + 1) * 4 + 0] +
-                                tex[((j + 1) * _prev_w + i) * 4 + 0] + tex[((j + 1) * _prev_w + i + 1) * 4 + 0];
-                        int g = tex[((j + 0) * _prev_w + i) * 4 + 1] + tex[((j + 0) * _prev_w + i + 1) * 4 + 1] +
-                                tex[((j + 1) * _prev_w + i) * 4 + 1] + tex[((j + 1) * _prev_w + i + 1) * 4 + 1];
-                        int b = tex[((j + 0) * _prev_w + i) * 4 + 2] + tex[((j + 0) * _prev_w + i + 1) * 4 + 2] +
-                                tex[((j + 1) * _prev_w + i) * 4 + 2] + tex[((j + 1) * _prev_w + i + 1) * 4 + 2];
-                        int a = tex[((j + 0) * _prev_w + i) * 4 + 3] + tex[((j + 0) * _prev_w + i + 1) * 4 + 3] +
-                                tex[((j + 1) * _prev_w + i) * 4 + 3] + tex[((j + 1) * _prev_w + i + 1) * 4 + 3];
-
-                        mipmaps[mip_count][count * 4 + 0] = uint8_t(r / 4);
-                        mipmaps[mip_count][count * 4 + 1] = uint8_t(g / 4);
-                        mipmaps[mip_count][count * 4 + 2] = uint8_t(b / 4);
-                        mipmaps[mip_count][count * 4 + 3] = uint8_t(a / 4);
-                        count++;
-                    }
-                }
-            } else if (channels == 3) {
-                for (int j = 0; j < _prev_h; j += 2) {
-                    for (int i = 0; i < _prev_w; i += 2) {
-                        int r = tex[((j + 0) * _prev_w + i) * 3 + 0] + tex[((j + 0) * _prev_w + i + 1) * 3 + 0] +
-                                tex[((j + 1) * _prev_w + i) * 3 + 0] + tex[((j + 1) * _prev_w + i + 1) * 3 + 0];
-                        int g = tex[((j + 0) * _prev_w + i) * 3 + 1] + tex[((j + 0) * _prev_w + i + 1) * 3 + 1] +
-                                tex[((j + 1) * _prev_w + i) * 3 + 1] + tex[((j + 1) * _prev_w + i + 1) * 3 + 1];
-                        int b = tex[((j + 0) * _prev_w + i) * 3 + 2] + tex[((j + 0) * _prev_w + i + 1) * 3 + 2] +
-                                tex[((j + 1) * _prev_w + i) * 3 + 2] + tex[((j + 1) * _prev_w + i + 1) * 3 + 2];
-
-                        mipmaps[mip_count][count * 3 + 0] = uint8_t(r / 4);
-                        mipmaps[mip_count][count * 3 + 1] = uint8_t(g / 4);
-                        mipmaps[mip_count][count * 3 + 2] = uint8_t(b / 4);
-                        count++;
-                    }
-                }
-            }
-
-            mip_count++;
-        }
-
-        {
-            uint8_t *dds_data[16] = {};
-            int dds_size[16] = {};
-            int dds_size_total = 0;
-
-            for (int i = 0; i < mip_count; i++) {
-                if (channels == 3) {
-                    dds_data[i] = convert_image_to_DXT1(mipmaps[i].get(), widths[i], heights[i], channels, &dds_size[i]);
-                } else if (channels == 4) {
-                    dds_data[i] = convert_image_to_DXT5(mipmaps[i].get(), widths[i], heights[i], channels, &dds_size[i]);
-                }
-                dds_size_total += dds_size[i];
-            }
-
-            DDS_header header = {};
-            header.dwMagic = ('D' << 0) | ('D' << 8) | ('S' << 16) | (' ' << 24);
-            header.dwSize = 124;
-            header.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT | DDSD_LINEARSIZE | DDSD_MIPMAPCOUNT;
-            header.dwWidth = width;
-            header.dwHeight = height;
-            header.dwPitchOrLinearSize = dds_size_total;
-            header.dwMipMapCount = mip_count;
-            header.sPixelFormat.dwSize = 32;
-            header.sPixelFormat.dwFlags = DDPF_FOURCC;
-
-            if (channels == 3) {
-                header.sPixelFormat.dwFourCC = ('D' << 0) | ('X' << 8) | ('T' << 16) | ('1' << 24);
-            } else {
-                header.sPixelFormat.dwFourCC = ('D' << 0) | ('X' << 8) | ('T' << 16) | ('5' << 24);
-            }
-
-            header.sCaps.dwCaps1 = DDSCAPS_TEXTURE | DDSCAPS_MIPMAP;
-
-            std::ofstream out_file(out_file, std::ios::binary);
-            out_file.write((char *)&header, sizeof(header));
-
-            for (int i = 0; i < mip_count; i++) {
-                out_file.write((char *)dds_data[i], dds_size[i]);
-                SOIL_free_image_data(dds_data[i]);
-                dds_data[i] = nullptr;
-            }
-        }
+        Write_DDS(image_data, width, height, channels, out_file);
 
         SOIL_free_image_data(image_data);
+    };
+
+    auto h_conv_hdr_to_dds = [](const char *in_file, const char *out_file) {
+        LOGI("[PrepareAssets] Conv %s", out_file);
+
+        int width, height;
+        auto image_rgbe = LoadHDR(in_file, width, height);
+        auto image_f32 = Ren::ConvertRGBE_to_RGB32F(&image_rgbe[0], width, height);
+        
+        std::unique_ptr<float[]> temp(new float[width * 3]);
+        for (int j = 0; j < height / 2; j++) {
+            int j1 = j, j2 = height - j - 1;
+            memcpy(&temp[0], &image_f32[j1 * width * 3], width * 3 * sizeof(float));
+            memcpy(&image_f32[j1 * width * 3], &image_f32[j2 * width * 3], width * 3 * sizeof(float));
+            memcpy(&image_f32[j2 * width * 3], &temp[0], width * 3 * sizeof(float));
+        }
+
+        Write_RGBM(&image_f32[0], width, height, 3, out_file);
     };
 
     auto h_preprocess_material = [&replace_texture_extension](const char *in_file, const char *out_file) {
@@ -528,7 +570,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
     };
 
-    auto h_preprocess_scene = [&replace_texture_extension](const char *in_file, const char *out_file) {
+    auto h_preprocess_scene = [&replace_texture_extension, &h_copy](const char *in_file, const char *out_file) {
         LOGI("[PrepareAssets] Prep %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary);
@@ -584,7 +626,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         handlers["json"] = { "json", h_preprocess_scene };
         handlers["txt"] = { "txt", h_preprocess_material };
         handlers["tga"] = { "dds", h_conv_to_dds };
-        handlers["hdr"] = { "hdr", h_copy };
+        handlers["hdr"] = { "dds", h_conv_hdr_to_dds };
         handlers["png"] = { "dds", h_conv_to_dds };
     }
 

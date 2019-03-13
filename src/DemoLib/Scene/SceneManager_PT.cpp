@@ -17,8 +17,8 @@ extern const char *SHADERS_PATH;
 }
 
 namespace SceneManagerInternal {
-void Write_RGBM(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name);
-void Write_RGBE(const std::vector<Ray::pixel_color_t> &out_data, int w, int h, const std::string &name);
+void Write_RGBM(const float *out_data, int w, int h, int channels, const char *name);
+void Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name);
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data);
 
@@ -169,7 +169,7 @@ bool SceneManager::PrepareLightmaps_PT() {
                 out_file_name += "_lm_indirect.png";
             }
 
-            SceneManagerInternal::Write_RGBM(out_pixels, res, res, out_file_name);
+            SceneManagerInternal::Write_RGBM(&out_pixels[0].r, res, res, 4, out_file_name.c_str());
 
             if (cur_lm_indir_) {
                 std::vector<Ray::shl1_data_t> sh_data(ray_renderer_.get_sh_data_ref(), ray_renderer_.get_sh_data_ref() + res * res);
@@ -248,10 +248,10 @@ bool SceneManager::PrepareLightmaps_PT() {
 
                     if (sh_l == 0) {
                         // Write as HDR image
-                        SceneManagerInternal::Write_RGBM(out_pixels, res, res, out_file_name);
+                        SceneManagerInternal::Write_RGBM(&out_pixels[0].r, res, res, 4, out_file_name.c_str());
                     } else {
                         // Write as LDR image
-                        SceneManagerInternal::Write_RGB(out_pixels, res, res, out_file_name);
+                        SceneManagerInternal::Write_RGB(&out_pixels[0], res, res, out_file_name.c_str());
                     }
                 }
             }
@@ -341,7 +341,7 @@ void SceneManager::InitScene_PT(bool _override) {
 
         if (!env_map_pt_name_.empty()) {
             int w, h;
-            auto tex_data = LoadHDR(TEXTURES_PATH + env_map_pt_name_, w, h);
+            auto tex_data = LoadHDR(("./assets/textures/" + env_map_pt_name_).c_str(), w, h);
 
             Ray::tex_desc_t tex_desc;
             tex_desc.data = (const Ray::pixel_color8_t *)&tex_data[0];

@@ -14,10 +14,15 @@ in vec3 aVertexPos_;
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outSpecular;
 
+vec3 RGBMDecode(vec4 rgbm) {
+    return 6.0 * rgbm.rgb * rgbm.a;
+}
+
 void main() {
     vec3 view_dir_ws = normalize(aVertexPos_ - camera_pos);
 
-    outColor = clamp(texture(env_texture, view_dir_ws), vec4(0.0), vec4(16.0));
+    outColor.rgb = clamp(RGBMDecode(texture(env_texture, view_dir_ws)), vec3(0.0), vec3(16.0));
+    outColor.a = 1.0;
     outSpecular = vec4(0.0, 0.0, 0.0, 1.0);
 }
 )"

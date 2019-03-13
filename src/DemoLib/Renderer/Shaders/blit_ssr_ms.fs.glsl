@@ -34,6 +34,10 @@ float rand(vec2 co) {
     return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
+vec3 RGBMDecode(vec4 rgbm) {
+    return 6.0 * rgbm.rgb * rgbm.a;
+}
+
 float LinearDepthTexelFetch(ivec2 hit_pixel) {
     float depth = texelFetch(depth_texture, hit_pixel, 0).r;
     return uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
@@ -208,7 +212,7 @@ void main() {
     float tex_lod = 8.0 * (1.0 - specular.w);
 
     vec3 refl_ray_ws = normalize((uInvViewMatrix * vec4(refl_ray_vs, 0.0)).xyz);
-    outColor = vec4(infl * clamp(textureLod(env_texture, refl_ray_ws, tex_lod).xyz, vec3(0.0), vec3(10.0)), 1.0);
+    outColor = vec4(infl * clamp(RGBMDecode(textureLod(env_texture, refl_ray_ws, tex_lod)), vec3(0.0), vec3(10.0)), 1.0);
 
     vec2 hit_pixel;
     vec3 hit_point;

@@ -3,4 +3,4 @@
 #include <string>
 #include <vector>
 
-std::vector<uint8_t> LoadHDR(const std::string &name, int &w, int &h);
+std::vector<uint8_t> LoadHDR(const char *name, int &w, int &h);

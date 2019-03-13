@@ -13,6 +13,10 @@
 #include <Sys/Log.h>
 #include <Sys/MemBuf.h>
 
+extern "C" {
+#include <Ren/SOIL2/image_DXT.h>
+}
+
 #include "../Renderer/Renderer.h"
 #include "../Utils/Load.h"
 
@@ -553,12 +557,12 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             const JsString &js_env_map = (const JsString &)js_env.at("env_map");
 
             const std::string tex_names[6] = {
-                TEXTURES_PATH + js_env_map.val + "_PX.hdr",
-                TEXTURES_PATH + js_env_map.val + "_NX.hdr",
-                TEXTURES_PATH + js_env_map.val + "_PY.hdr",
-                TEXTURES_PATH + js_env_map.val + "_NY.hdr",
-                TEXTURES_PATH + js_env_map.val + "_PZ.hdr",
-                TEXTURES_PATH + js_env_map.val + "_NZ.hdr"
+                TEXTURES_PATH + js_env_map.val + "_PX.dds",
+                TEXTURES_PATH + js_env_map.val + "_NX.dds",
+                TEXTURES_PATH + js_env_map.val + "_PY.dds",
+                TEXTURES_PATH + js_env_map.val + "_NY.dds",
+                TEXTURES_PATH + js_env_map.val + "_PZ.dds",
+                TEXTURES_PATH + js_env_map.val + "_NZ.dds"
             };
 
             std::vector<uint8_t> tex_data[6];
@@ -568,7 +572,22 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
             for (int i = 0; i < 6; i++) {
                 int w, h;
+#if 0
                 tex_data[i] = LoadHDR(tex_names[i], w, h);
+#else
+                std::ifstream in_file(tex_names[i], std::ios::binary | std::ios::ate);
+                size_t in_file_size = (size_t)in_file.tellg();
+                in_file.seekg(0, std::ios::beg);
+
+                tex_data[i].resize(in_file_size);
+                in_file.read((char *)&tex_data[i][0], in_file_size);
+
+                DDS_header header;
+                memcpy(&header, &tex_data[i][0], sizeof(DDS_header));
+
+                w = (int)header.dwWidth;
+                h = (int)header.dwHeight;
+#endif
                 assert(w == h);
 
                 res = w;
@@ -584,7 +603,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             p.w = res;
             p.h = res;
 
-            std::string tex_name = js_env_map.val + ".tga_rgbe";
+            std::string tex_name = js_env_map.val + ".dds";
 
             Ren::eTexLoadStatus load_status;
             env_.env_map = ctx_.LoadTextureCube(tex_name.c_str(), data, size, p, &load_status);
