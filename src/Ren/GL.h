@@ -325,12 +325,19 @@ extern void (APIENTRY *glGenQueries)(GLsizei n, GLuint *ids);
 extern void (APIENTRY *glDeleteQueries)(GLsizei n, const GLuint *ids);
 extern void (APIENTRY *glQueryCounter)(GLuint id, GLenum target);
 
-extern void (APIENTRY *glGetQueryObjectiv)(GLuint id, GLenum pname, GLint * params);
-extern void (APIENTRY *glGetQueryObjectuiv)(GLuint id, GLenum pname, GLuint * params);
+extern void (APIENTRY *glGetQueryObjectiv)(GLuint id, GLenum pname, GLint *params);
+extern void (APIENTRY *glGetQueryObjectuiv)(GLuint id, GLenum pname, GLuint *params);
 extern void (APIENTRY *glGetQueryObjecti64v)(GLuint id, GLenum pname, GLint64 *params);
 extern void (APIENTRY *glGetQueryObjectui64v)(GLuint id, GLenum pname, GLuint64 *params);
 
 extern const GLubyte *(APIENTRY *glGetStringi)(GLenum name, GLuint index);
+
+extern void (APIENTRY *glGetInteger64v)(GLenum pname, GLint64 *data);
+extern void (APIENTRY *glGetBooleani_v)(GLenum target, GLuint index, GLboolean *data);
+extern void (APIENTRY *glGetIntegeri_v)(GLenum target, GLuint index, GLint *data);
+extern void (APIENTRY *glGetFloati_v)(GLenum target, GLuint index, GLfloat *data);
+extern void (APIENTRY *glGetDoublei_v)(GLenum target, GLuint index, GLdouble *data);
+extern void (APIENTRY *glGetInteger64i_v)(GLenum target, GLuint index, GLint64 *data);
 
 typedef void (APIENTRY *DEBUGPROC)(GLenum source,
                                    GLenum type,

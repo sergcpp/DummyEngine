@@ -117,6 +117,13 @@ void (APIENTRY *glGetQueryObjectui64v)(GLuint id, GLenum pname, GLuint64 *params
 
 const GLubyte *(APIENTRY *glGetStringi)(GLenum name, GLuint index);
 
+void (APIENTRY *glGetInteger64v)(GLenum pname, GLint64 *data);
+void (APIENTRY *glGetBooleani_v)(GLenum target, GLuint index, GLboolean *data);
+void (APIENTRY *glGetIntegeri_v)(GLenum target, GLuint index, GLint *data);
+void (APIENTRY *glGetFloati_v)(GLenum target, GLuint index, GLfloat *data);
+void (APIENTRY *glGetDoublei_v)(GLenum target, GLuint index, GLdouble *data);
+void (APIENTRY *glGetInteger64i_v)(GLenum target, GLuint index, GLint64 *data);
+
 void (APIENTRY *glDebugMessageCallback)(DEBUGPROC callback, const void * userParam);
 #endif
 
@@ -238,6 +245,13 @@ bool Ren::InitGLExtentions() {
     glGetQueryObjectui64v = GetProcAddress(glGetQueryObjectui64v);
 
     glGetStringi = GetProcAddress(glGetStringi);
+
+    glGetInteger64v = GetProcAddress(glGetInteger64v);
+    glGetBooleani_v = GetProcAddress(glGetBooleani_v);
+    glGetIntegeri_v = GetProcAddress(glGetIntegeri_v);
+    glGetFloati_v = GetProcAddress(glGetFloati_v);
+    glGetDoublei_v = GetProcAddress(glGetDoublei_v);
+    glGetInteger64i_v = GetProcAddress(glGetInteger64i_v);
 
     glDebugMessageCallback = GetProcAddress(glDebugMessageCallback);
 #endif
