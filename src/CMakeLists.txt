@@ -48,7 +48,10 @@ elseif(${RENDERER} STREQUAL "VK")
 endif()
 
 include_directories(.)
-include_directories(libs/dirent)
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    include_directories(libs/dirent)
+endif()
 
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..)
 #set(WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..)

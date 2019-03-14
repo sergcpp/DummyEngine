@@ -231,11 +231,11 @@ void Write_DDS(const uint8_t *image_data, int w, int h, int channels, const char
 
         header.sCaps.dwCaps1 = DDSCAPS_TEXTURE | DDSCAPS_MIPMAP;
 
-        std::ofstream out_file(out_file, std::ios::binary);
-        out_file.write((char *)&header, sizeof(header));
+        std::ofstream out_stream(out_file, std::ios::binary);
+        out_stream.write((char *)&header, sizeof(header));
 
         for (int i = 0; i < mip_count; i++) {
-            out_file.write((char *)dds_data[i], dds_size[i]);
+            out_stream.write((char *)dds_data[i], dds_size[i]);
             SOIL_free_image_data(dds_data[i]);
             dds_data[i] = nullptr;
         }
@@ -379,7 +379,7 @@ void ReadAllFiles_r(const char *in_folder, const std::function<void(const char *
     }
 
     struct dirent *in_ent = nullptr;
-    while (in_ent = readdir(in_dir)) {
+    while ((in_ent = readdir(in_dir))) {
         if (in_ent->d_type == DT_DIR) {
             if (strcmp(in_ent->d_name, ".") == 0 || strcmp(in_ent->d_name, "..") == 0) {
                 continue;
@@ -409,7 +409,7 @@ void ReadAllFiles_MT_r(const char *in_folder, const std::function<void(const cha
     }
 
     struct dirent *in_ent = nullptr;
-    while (in_ent = readdir(in_dir)) {
+    while ((in_ent = readdir(in_dir))) {
         if (in_ent->d_type == DT_DIR) {
             if (strcmp(in_ent->d_name, ".") == 0 || strcmp(in_ent->d_name, "..") == 0) {
                 continue;
@@ -458,7 +458,7 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file) {
     CloseHandle(in_h);
     CloseHandle(out_h);
 #else
-#error "Not Implemented!"
+#warning "Not Implemented!"
 #endif
     return false;
 }
@@ -478,7 +478,7 @@ bool CreateFolders(const char *out_file) {
         end = strchr(end + 1, '/');
     }
 #else
-#error "Not Implemented!"
+#warning "Not Implemented!"
 #endif
     return true;
 }
