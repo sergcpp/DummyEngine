@@ -61,6 +61,9 @@ inline void BindTexture(int slot, uint32_t tex) {
     glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
     glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
 }
+
+const int MAX_VERTICES = 1024;
+const int MAX_INDICES = 2048;
 }
 
 Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config) : ctx_(ctx) {
@@ -80,11 +83,11 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config) : ctx_(ctx) {
 
     glGenBuffers(1, &attribs_buf_id_);
     glBindBuffer(GL_ARRAY_BUFFER, attribs_buf_id_);
-    glBufferData(GL_ARRAY_BUFFER, 0xff * 5 * sizeof(GLfloat), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, MAX_VERTICES * 5 * sizeof(GLfloat), nullptr, GL_DYNAMIC_DRAW);
 
     glGenBuffers(1, &indices_buf_id_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_buf_id_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0xff * sizeof(GLubyte), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_INDICES * sizeof(GLushort), nullptr, GL_DYNAMIC_DRAW);
 
     glEnableVertexAttribArray((GLuint)ui_program_->attribute(0).loc);
     glEnableVertexAttribArray((GLuint)ui_program_->attribute(1).loc);
@@ -144,8 +147,7 @@ void Gui::Renderer::DrawImageQuad(const Ren::Texture2DRef &tex, const Vec2f dims
                        };
 
     unsigned char indices[] = { 2, 1, 0,
-                                3, 2, 0
-                              };
+                                3, 2, 0 };
 
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(indices), indices);
@@ -164,10 +166,11 @@ void Gui::Renderer::DrawImageQuad(const Ren::Texture2DRef &tex, const Vec2f dims
 
 void Gui::Renderer::DrawUIElement(const Ren::Texture2DRef &tex, ePrimitiveType prim_type,
                                   const std::vector<float> &pos, const std::vector<float> &uvs,
-                                  const std::vector<unsigned char> &indices) {
+                                  const std::vector<uint16_t> &indices) {
     using namespace UIRendererConstants;
 
-    assert(pos.size() / 5 < 0xff);
+    assert(pos.size() / 5 < MAX_VERTICES);
+    assert(indices.size() < MAX_INDICES);
     if (pos.empty()) return;
 
     const DrawParams &cur_params = params_.back();
@@ -179,13 +182,13 @@ void Gui::Renderer::DrawUIElement(const Ren::Texture2DRef &tex, ePrimitiveType p
     glBufferSubData(GL_ARRAY_BUFFER, 0, pos.size() * sizeof(GLfloat), &pos[0]);
     glBufferSubData(GL_ARRAY_BUFFER, pos.size() * sizeof(GLfloat), uvs.size() * sizeof(GLfloat), &uvs[0]);
 
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.size() * sizeof(GLubyte), &indices[0]);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.size() * sizeof(GLushort), &indices[0]);
 
     glVertexAttribPointer((GLuint)ui_program_->attribute(0).loc, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
     glVertexAttribPointer((GLuint)ui_program_->attribute(1).loc, 2, GL_FLOAT, GL_FALSE, 0, (void *)((uintptr_t)pos.size() * sizeof(GLfloat)));
 
     if (prim_type == PRIM_TRIANGLE) {
-        glDrawElements(GL_TRIANGLES, (GLsizei)indices.size(), GL_UNSIGNED_BYTE, 0);
+        glDrawElements(GL_TRIANGLES, (GLsizei)indices.size(), GL_UNSIGNED_SHORT, 0);
     }
 }
 

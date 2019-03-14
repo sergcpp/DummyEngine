@@ -27,7 +27,7 @@ size_t _strnlen(const char *str, size_t maxlen) {
 }
 
 std::vector<float> Gui::BitmapFont::std_positions, Gui::BitmapFont::std_uvs;
-std::vector<unsigned char> Gui::BitmapFont::std_indices;
+std::vector<uint16_t> Gui::BitmapFont::std_indices;
 
 Gui::BitmapFont::BitmapFont(const char *name, Ren::Context *ctx) {
     cur_x_ = cur_y_ = 0;
@@ -155,7 +155,7 @@ void Gui::BitmapFont::ReverseYAxis(bool state) {
 }
 
 float Gui::BitmapFont::GetTriangles(const char *text, std::vector<float> &positions, std::vector<float> &uvs,
-                                    std::vector<unsigned char> &indices, const Vec2f &pos, const BaseElement *parent) {
+                                    std::vector<uint16_t> &indices, const Vec2f &pos, const BaseElement *parent) {
     using namespace BitmapFontConstants;
 
     int len;
@@ -167,10 +167,11 @@ float Gui::BitmapFont::GetTriangles(const char *text, std::vector<float> &positi
         return 0.0f;
     }
 
-    char w1251str[BFG_MAXSTRING];
-    strcpy(w1251str, text);
+    /*char w1251str[BFG_MAXSTRING];
+    strcpy(w1251str, text);*/
     /*convert_utf8_to_windows1251(text, w1251str, BFG_MAXSTRING);
     len = (int) _strnlen(w1251str, BFG_MAXSTRING);*/
+    const char *w1251str = text;
 
     positions.resize((size_t)len * 12);
     uvs.resize((size_t)len * 8);
@@ -213,12 +214,12 @@ float Gui::BitmapFont::GetTriangles(const char *text, std::vector<float> &positi
         positions[i * 12 + 9] = p[0] + cur_x_ * m[0];
         positions[i * 12 + 10] = p[1] + (cur_y_ + y_offset_ * scale_) * m[1];
 
-        indices[i * 6 + 0] = (unsigned char)(4 * i + 1);
-        indices[i * 6 + 1] = (unsigned char)(4 * i + 2);
-        indices[i * 6 + 2] = (unsigned char)(4 * i + 0);
-        indices[i * 6 + 3] = (unsigned char)(4 * i + 3);
-        indices[i * 6 + 4] = (unsigned char)(4 * i + 0);
-        indices[i * 6 + 5] = (unsigned char)(4 * i + 2);
+        indices[i * 6 + 0] = (uint16_t)(4 * i + 1);
+        indices[i * 6 + 1] = (uint16_t)(4 * i + 2);
+        indices[i * 6 + 2] = (uint16_t)(4 * i + 0);
+        indices[i * 6 + 3] = (uint16_t)(4 * i + 3);
+        indices[i * 6 + 4] = (uint16_t)(4 * i + 0);
+        indices[i * 6 + 5] = (uint16_t)(4 * i + 2);
 
         cur_x_ += int(width_[char_code] * scale_);
     }
