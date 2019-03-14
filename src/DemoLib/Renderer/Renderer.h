@@ -90,18 +90,18 @@ namespace RendererInternal {
 }
 
 enum eRenderFlags {
-    WireframeMode   = (1 << 0),
-    DebugCulling    = (1 << 1),
-    DebugShadow     = (1 << 2),
-    DebugReduce     = (1 << 3),
-    DebugLights     = (1 << 4),
-    DebugDeferred   = (1 << 5),
-    DebugBlur       = (1 << 6),
-    DebugDecals     = (1 << 7),
-    DebugSSAO       = (1 << 8),
-    EnableCulling   = (1 << 9),
-    EnableSSR       = (1 << 10),
-    EnableSSAO      = (1 << 11)
+    EnableCulling   = (1 << 1),
+    EnableSSR       = (1 << 2),
+    EnableSSAO      = (1 << 3),
+    EnableWireframe = (1 << 4),
+    DebugCulling    = (1 << 5),
+    DebugShadow     = (1 << 6),
+    DebugReduce     = (1 << 7),
+    DebugLights     = (1 << 8),
+    DebugDeferred   = (1 << 9),
+    DebugBlur       = (1 << 10),
+    DebugDecals     = (1 << 11),
+    DebugSSAO       = (1 << 12),
 };
 
 class Renderer {

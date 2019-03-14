@@ -65,7 +65,7 @@ void GSDrawTest::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
-            flags ^= WireframeMode;
+            flags ^= EnableWireframe;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;

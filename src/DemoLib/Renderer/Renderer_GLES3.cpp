@@ -674,7 +674,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
     glViewport(0, 0, clean_buf_.w, clean_buf_.h);
 
-    if ((render_flags & WireframeMode) == 0) {   // Draw skydome (and clear depth with it)
+    if ((render_flags & EnableWireframe) == 0) {   // Draw skydome (and clear depth with it)
         glDepthFunc(GL_ALWAYS);
 
         // Write to color and specular
@@ -724,7 +724,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     glQueryCounter(queries_[1][TimeDepthPassStart], GL_TIMESTAMP);
 
-    if (DEPTH_PREPASS && ((render_flags & WireframeMode) == 0)) {
+    if (DEPTH_PREPASS && ((render_flags & EnableWireframe) == 0)) {
         glDepthFunc(GL_LESS);
 
         cur_program = fill_depth_prog_.get();
@@ -806,7 +806,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glBindVertexArray(0);
 
 #if !defined(__ANDROID__)
-    if (render_flags & WireframeMode) {
+    if (render_flags & EnableWireframe) {
         glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_FALSE);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
