@@ -64,7 +64,9 @@ void GSDrawTest::Enter() {
     game_->RegisterCommand("wireframe", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            shrd_this->renderer_->toggle_wireframe();
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= WireframeMode;
+            shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
     });
@@ -72,7 +74,9 @@ void GSDrawTest::Enter() {
     game_->RegisterCommand("culling", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            shrd_this->renderer_->toggle_culling();
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= EnableCulling;
+            shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
     });
@@ -105,7 +109,9 @@ void GSDrawTest::Enter() {
     game_->RegisterCommand("debug_cull", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            shrd_this->renderer_->toggle_debug_cull();
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= DebugCulling;
+            shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
     });
@@ -113,7 +119,9 @@ void GSDrawTest::Enter() {
     game_->RegisterCommand("debug_shadow", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            shrd_this->renderer_->toggle_debug_shadow();
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= DebugShadow;
+            shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
     });
@@ -121,7 +129,9 @@ void GSDrawTest::Enter() {
     game_->RegisterCommand("debug_reduce", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            shrd_this->renderer_->toggle_debug_reduce();
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= DebugReduce;
+            shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
     });
@@ -129,7 +139,9 @@ void GSDrawTest::Enter() {
     game_->RegisterCommand("debug_lights", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            shrd_this->renderer_->toggle_debug_lights();
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= DebugLights;
+            shrd_this->renderer_->set_render_flags(flags);
             shrd_this->print_item_info_ = !shrd_this->print_item_info_;
         }
         return true;
@@ -138,7 +150,9 @@ void GSDrawTest::Enter() {
     game_->RegisterCommand("debug_decals", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            shrd_this->renderer_->toggle_debug_decals();
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= DebugDecals;
+            shrd_this->renderer_->set_render_flags(flags);
             shrd_this->print_item_info_ = !shrd_this->print_item_info_;
         }
         return true;
@@ -147,7 +161,9 @@ void GSDrawTest::Enter() {
     game_->RegisterCommand("debug_deferred", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            shrd_this->renderer_->toggle_debug_deferred();
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= DebugDeferred;
+            shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
     });
@@ -155,7 +171,9 @@ void GSDrawTest::Enter() {
     game_->RegisterCommand("debug_blur", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            shrd_this->renderer_->toggle_debug_blur();
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= DebugBlur;
+            shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
     });
@@ -163,7 +181,9 @@ void GSDrawTest::Enter() {
     game_->RegisterCommand("debug_ssao", [weak_this](const std::vector<std::string> &args) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            shrd_this->renderer_->toggle_debug_ssao();
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= DebugSSAO;
+            shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
     });
@@ -223,8 +243,11 @@ void GSDrawTest::Draw(float dt_s) {
 
     if (use_lm_) {
         if (!scene_manager_->PrepareLightmaps_PT()) {
+            // Lightmap creation finished, convert textures
             Viewer::PrepareAssets();
+            // Reload scene
             LoadScene(SCENE_NAME);
+            // Switch back to normal mode
             use_lm_ = false;
         }
     } else if (use_pt_) {

@@ -224,6 +224,9 @@ void Renderer::BackgroundProc() {
             auto &items = items_[1];
             items.resize(MAX_ITEMS_TOTAL);
 
+            uint32_t render_flags = render_flags_[1];
+            const bool culling_enabled = (render_flags & EnableCulling) != 0;
+
             auto &info = frontend_infos_[1];
 
             object_to_drawable_.clear();
@@ -261,7 +264,7 @@ void Renderer::BackgroundProc() {
             {   // Rasterize occluder meshes into a small framebuffer
                 stack[stack_size++] = (uint32_t)root_node_;
 
-                while (stack_size && culling_enabled_) {
+                while (stack_size && culling_enabled) {
                     uint32_t cur = stack[--stack_size] & index_bits;
                     uint32_t skip_check = (stack[stack_size] & skip_check_bit);
                     const auto *n = &nodes_[cur];
@@ -338,7 +341,7 @@ void Renderer::BackgroundProc() {
                         if (res == Ren::Invisible) continue;
                         else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
 
-                        if (culling_enabled_) {
+                        if (culling_enabled) {
                             const auto &cam_pos = draw_cam_.world_position();
 
                             // do not question visibility of the node in which we are inside
@@ -381,7 +384,7 @@ void Renderer::BackgroundProc() {
                                     const float bbox_points[8][3] = { BBOX_POINTS(tr->bbox_min_ws, tr->bbox_max_ws) };
                                     if (draw_cam_.CheckFrustumVisibility(bbox_points) == Ren::Invisible) continue;
 
-                                    if (culling_enabled_) {
+                                    if (culling_enabled) {
                                         const auto &cam_pos = draw_cam_.world_position();
 
                                         // do not question visibility of the object in which we are inside
@@ -740,7 +743,7 @@ void Renderer::BackgroundProc() {
                 items_count_[1] = std::min(items_count.load(), MAX_ITEMS_TOTAL);
             }
 
-            if (debug_cull_ && culling_enabled_) {
+            if ((render_flags & (EnableCulling | DebugCulling)) == (EnableCulling | DebugCulling)) {
                 const float NEAR_CLIP = 0.5f;
                 const float FAR_CLIP = 10000.0f;
 
@@ -812,6 +815,7 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
         objects_ = objects;
         obj_indices_ = obj_indices;
         object_count_ = object_count;
+        render_flags_[1] = render_flags_[0];
         frontend_infos_[0] = frontend_infos_[1];
         render_infos_[0] = render_infos_[1];
         for (int i = 0; i < TimersCount; i++) {

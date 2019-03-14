@@ -89,40 +89,32 @@ namespace RendererInternal {
     const int MAX_ITEMS_TOTAL = (1 << 16);
 }
 
+enum eRenderFlags {
+    WireframeMode   = (1 << 0),
+    DebugCulling    = (1 << 1),
+    DebugShadow     = (1 << 2),
+    DebugReduce     = (1 << 3),
+    DebugLights     = (1 << 4),
+    DebugDeferred   = (1 << 5),
+    DebugBlur       = (1 << 6),
+    DebugDecals     = (1 << 7),
+    DebugSSAO       = (1 << 8),
+    EnableCulling   = (1 << 9),
+    EnableSSR       = (1 << 10),
+    EnableSSAO      = (1 << 11)
+};
+
 class Renderer {
 public:
     Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads);
     ~Renderer();
 
-    void toggle_wireframe() {
-        wireframe_mode_ = !wireframe_mode_;
+    uint32_t render_flags() const {
+        return render_flags_[0];
     }
-    void toggle_culling() {
-        culling_enabled_ = !culling_enabled_;
-    }
-    void toggle_debug_cull() {
-        debug_cull_ = !debug_cull_;
-    }
-    void toggle_debug_shadow() {
-        debug_shadow_ = !debug_shadow_;
-    }
-    void toggle_debug_reduce() {
-        debug_reduce_ = !debug_reduce_;
-    }
-    void toggle_debug_lights() {
-        debug_lights_ = !debug_lights_;
-    }
-    void toggle_debug_decals() {
-        debug_decals_ = !debug_decals_;
-    }
-    void toggle_debug_deferred() {
-        debug_deferred_ = !debug_deferred_;
-    }
-    void toggle_debug_blur() {
-        debug_blur_ = !debug_blur_;
-    }
-    void toggle_debug_ssao() {
-        debug_ssao_ = !debug_ssao_;
+
+    void set_render_flags(uint32_t f) {
+        render_flags_[0] = f;
     }
 
     RenderInfo render_info() const {
@@ -157,9 +149,8 @@ private:
     FrameBuf clean_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf_;
     int w_ = 0, h_ = 0;
 
-    bool wireframe_mode_ = false, debug_cull_ = false, debug_shadow_ = false, debug_reduce_ = false, debug_lights_ = false,
-         debug_deferred_ = false, debug_blur_ = false, debug_decals_ = false, debug_ssao_ = false;
-    bool culling_enabled_ = true;
+    const uint32_t default_flags = (EnableCulling | EnableSSR | EnableSSAO);
+    uint32_t render_flags_[2] = { default_flags, default_flags };
 
     const bvh_node_t *nodes_ = nullptr;
     size_t root_node_ = 0;

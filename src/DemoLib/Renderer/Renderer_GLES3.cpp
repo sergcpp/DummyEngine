@@ -509,6 +509,8 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     using namespace Ren;
     using namespace RendererInternal;
 
+    uint32_t render_flags = render_flags_[0];
+
     glQueryCounter(queries_[1][TimeDrawStart], GL_TIMESTAMP);
 
     CheckInitVAOs();
@@ -672,7 +674,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
     glViewport(0, 0, clean_buf_.w, clean_buf_.h);
 
-    if (!wireframe_mode_) {   // Draw skydome (and clear depth with it)
+    if ((render_flags & WireframeMode) == 0) {   // Draw skydome (and clear depth with it)
         glDepthFunc(GL_ALWAYS);
 
         // Write to color and specular
@@ -722,7 +724,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     glQueryCounter(queries_[1][TimeDepthPassStart], GL_TIMESTAMP);
 
-    if (DEPTH_PREPASS && !wireframe_mode_) {
+    if (DEPTH_PREPASS && ((render_flags & WireframeMode) == 0)) {
         glDepthFunc(GL_LESS);
 
         cur_program = fill_depth_prog_.get();
@@ -804,7 +806,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
     glBindVertexArray(0);
 
 #if !defined(__ANDROID__)
-    if (wireframe_mode_) {
+    if (render_flags & WireframeMode) {
         glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_FALSE);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -1053,7 +1055,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     prev_view_from_world_ = view_from_world;
     
-    if (debug_deferred_) {
+    if (render_flags & DebugDeferred) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
         glClear(GL_DEPTH_BUFFER_BIT);
@@ -1258,7 +1260,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         //glUniform1i(cur_program->uniform(U_TEX + 2).loc, DIFFUSEMAP_SLOT + 2);
         glUniform2f(13, float(w_), float(h_));
 
-        glUniform1f(U_GAMMA, debug_lights_ ? 1.0f : 2.2f);
+        glUniform1f(U_GAMMA, (render_flags & DebugLights) ? 1.0f : 2.2f);
 
         float exposure = 0.85f / reduced_average_;
         exposure = std::min(exposure, 1000.0f);
@@ -1293,7 +1295,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
-    if (debug_lights_ || debug_decals_) {
+    if (render_flags & (DebugLights | DebugDecals)) {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -1306,9 +1308,9 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glUniform2i(U_RES, w_, h_);
 
-        if (debug_lights_) {
+        if (render_flags & DebugLights) {
             glUniform1i(16, 0);
-        } else if (debug_decals_) {
+        } else if (render_flags & DebugDecals) {
             glUniform1i(16, 1);
         }
 
@@ -1355,7 +1357,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisable(GL_BLEND);
     }
 
-    if (debug_cull_ && culling_enabled_ && !depth_pixels_[0].empty()) {
+    if (((render_flags & (EnableCulling | DebugCulling)) == (EnableCulling | DebugCulling)) && !depth_pixels_[0].empty()) {
         cur_program = blit_prog_.get();
         glUseProgram(cur_program->prog_id());
 
@@ -1405,7 +1407,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_UVS1);
     }
 
-    if (debug_shadow_) {
+    if (render_flags & DebugShadow) {
         cur_program = blit_prog_.get();
         glUseProgram(cur_program->prog_id());
 
@@ -1443,23 +1445,23 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         glDisableVertexAttribArray(A_UVS1);
     }
 
-    if (debug_reduce_) {
+    if (render_flags & DebugReduce) {
         BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, reduced_buf_, 0, 1, 10.0f);
     }
 
-    if (debug_deferred_) {
+    if (render_flags & DebugDeferred) {
         BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, clean_buf_, 1, 2);
     }
 
-    if (debug_blur_) {
+    if (render_flags & DebugBlur) {
         BlitBuffer(-1.0f, -1.0f, 1.0f, 1.0f, blur_buf1_, 0, 1, 400.0f);
     }
 
-    if (debug_ssao_) {
+    if (render_flags & DebugSSAO) {
         BlitBuffer(-1.0f, -1.0f, 1.0f, 1.0f, ssao_buf_, 0, 1);
     }
 
-    if (debug_decals_ && decals_atlas) {
+    if ((render_flags & DebugDecals) && decals_atlas) {
         int resx = decals_atlas->params().w,
             resy = decals_atlas->params().h;
 
