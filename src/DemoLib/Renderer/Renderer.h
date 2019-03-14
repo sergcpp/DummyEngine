@@ -102,6 +102,7 @@ enum eRenderFlags {
     DebugBlur       = (1 << 10),
     DebugDecals     = (1 << 11),
     DebugSSAO       = (1 << 12),
+    DebugTimings    = (1 << 13)
 };
 
 class Renderer {
@@ -175,6 +176,7 @@ private:
     FrontendInfo frontend_infos_[2];
     BackendInfo backend_info_;
     uint64_t backend_cpu_start_, backend_cpu_end_;
+    int64_t backend_time_diff_;
     float reduced_average_ = 0.0f;
     Ren::Mat4f prev_view_from_world_;
 
@@ -211,6 +213,7 @@ private:
                              const CellData *cells, const ItemData *items, size_t item_count, const Ren::Mat4f shadow_transforms[4],
                              const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env,
                              const TextureAtlas *decals_atlas);
+    uint64_t GetGpuTimeBlockingUs();
 
     std::thread background_thread_;
     std::mutex mtx_;

@@ -99,6 +99,7 @@ struct BackendInfo {
              refl_pass_time_us = 0,
              blur_pass_time_us = 0,
              blit_pass_time_us = 0;
+    int64_t gpu_cpu_time_diff_us = 0;
 };
 
 struct bvh_node_t {

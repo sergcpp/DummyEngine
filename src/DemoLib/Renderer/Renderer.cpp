@@ -95,6 +95,10 @@ Renderer::~Renderer() {
 void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
                            const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env,
                            const TextureAtlas &decals_atlas) {
+    uint64_t gpu_draw_start = 0;
+    if (render_flags_[0] & DebugTimings) {
+        gpu_draw_start = GetGpuTimeBlockingUs();
+    }
     auto cpu_draw_start = std::chrono::high_resolution_clock::now();
 
     SwapDrawLists(cam, nodes, root_index, objects, obj_indices, object_count, env, &decals_atlas);
@@ -185,6 +189,7 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
     // store values for current frame
     backend_cpu_start_ = (uint64_t)std::chrono::duration<double, std::micro>{ cpu_draw_start.time_since_epoch() }.count();
     backend_cpu_end_ = (uint64_t)std::chrono::duration<double, std::micro>{ cpu_draw_end.time_since_epoch() }.count();
+    backend_time_diff_ = int64_t(gpu_draw_start) - int64_t(backend_cpu_start_);
 }
 
 void Renderer::WaitForBackgroundThreadIteration() {

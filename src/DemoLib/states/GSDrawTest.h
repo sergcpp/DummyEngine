@@ -44,6 +44,10 @@ class GSDrawTest : public GameState {
     bool invalidate_view_ = true;
 
     bool print_item_info_ = false;
+    bool print_timeline_ = false;
+
+    FrontendInfo prev_front_info_;
+    BackendInfo prev_back_info_;
 
     uint32_t click_time_ = 0;
 

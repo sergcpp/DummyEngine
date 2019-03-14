@@ -1499,6 +1499,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         // assign values from previous frame
         backend_info_.cpu_start_timepoint_us = backend_cpu_start_;
         backend_info_.cpu_end_timepoint_us = backend_cpu_end_;
+        backend_info_.gpu_cpu_time_diff_us = backend_time_diff_;
 
         backend_info_.gpu_start_timepoint_us = uint64_t(time_draw_start / 1000);
         backend_info_.gpu_end_timepoint_us = uint64_t(time_draw_end / 1000);
@@ -1515,6 +1516,12 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 #if 0
     glFinish();
 #endif
+}
+
+uint64_t Renderer::GetGpuTimeBlockingUs() {
+    GLint64 time = 0;
+    glGetInteger64v(GL_TIMESTAMP, &time);
+    return (uint64_t)(time / 1000);
 }
 
 void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format) {
