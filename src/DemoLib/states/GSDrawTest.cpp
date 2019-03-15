@@ -27,7 +27,7 @@ const int MAX_CMD_LINES = 8;
 #if defined(__ANDROID__)
 const char SCENE_NAME[] = "assets/scenes/street.json";
 #else
-const char SCENE_NAME[] = "assets_pc/scenes/jap_house2.json";
+const char SCENE_NAME[] = "assets_pc/scenes/jap_house.json";
 #endif
 }
 
