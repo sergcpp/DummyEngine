@@ -132,8 +132,8 @@ public:
         return backend_info_;
     }
 
-    void DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
-                     const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env,
+    void DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_index,
+                     const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
                      const TextureAtlas &decals_atlas);
     void WaitForBackgroundThreadIteration();
 
@@ -158,10 +158,10 @@ private:
     int frame_counter_ = 0;
 
     const bvh_node_t *nodes_ = nullptr;
-    size_t root_node_ = 0;
+    uint32_t root_node_ = 0;
     const SceneObject *objects_ = nullptr;
     const uint32_t *obj_indices_ = nullptr;
-    size_t object_count_ = 0;
+    uint32_t object_count_ = 0;
     std::vector<Ren::Mat4f> transforms_[2];
     std::vector<DrawableItem> draw_lists_[2], shadow_list_[2][4];
     std::vector<LightSourceItem> light_sources_[2];
@@ -174,7 +174,7 @@ private:
     std::vector<const LightSource *> litem_to_lsource_;
     std::vector<const Decal *> ditem_to_decal_;
     std::vector<BBox> decals_boxes_;
-    Ren::Camera draw_cam_, shadow_cam_[2][4];
+    Ren::Camera draw_cam_, shadow_cams_[2][4];
     Environment env_;
     RenderInfo render_infos_[2];
     FrontendInfo frontend_infos_[2];
@@ -206,18 +206,22 @@ private:
     //temp
     std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];
 
-    void SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_node,
-                       const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env,
+    void SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_node,
+                       const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
                        const TextureAtlas *decals_atlas);
 
-    void GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flags, std::vector<Ren::Mat4f> &tr_list, std::vector<DrawableItem> &dr_list, std::vector<LightSourceItem> &ls_list,
-                         std::vector<DecalItem> &de_list, std::vector<CellData> &cells, std::vector<ItemData> &items, std::vector<DrawableItem> sh_dr_list[4], FrontendInfo &info);
+    void GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flags, const Environment &env, const bvh_node_t *nodes, uint32_t root_node,
+                         const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count,
+                         std::vector<Ren::Mat4f> &tr_list, std::vector<DrawableItem> &dr_list, std::vector<LightSourceItem> &ls_list,
+                         std::vector<DecalItem> &de_list, CellData *cells, ItemData *items, int &items_count,
+                         Ren::Camera shadow_cams[4], std::vector<DrawableItem> sh_dr_list[4], FrontendInfo &info);
 
     void InitRendererInternal();
     void DestroyRendererInternal();
-    void DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const LightSourceItem *lights, size_t lights_count,
+    void DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_flags, const Ren::Mat4f *transforms,
+                             const DrawableItem *drawables, size_t drawable_count, const LightSourceItem *lights, size_t lights_count,
                              const DecalItem *decals, size_t decals_count,
-                             const CellData *cells, const ItemData *items, size_t item_count, const Ren::Mat4f shadow_transforms[4],
+                             const CellData *cells, const ItemData *items, size_t items_count, const Ren::Mat4f shadow_transforms[4],
                              const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env,
                              const TextureAtlas *decals_atlas);
     uint64_t GetGpuTimeBlockingUs();

@@ -501,15 +501,14 @@ void Renderer::DestroyRendererInternal() {
     }
 }
 
-void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawable_count, const LightSourceItem *lights, size_t lights_count,
+void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_flags, const Ren::Mat4f *transforms,
+                                   const DrawableItem *drawables, size_t drawable_count, const LightSourceItem *lights, size_t lights_count,
                                    const DecalItem *decals, size_t decals_count,
                                    const CellData *cells, const ItemData *items, size_t items_count, const Ren::Mat4f shadow_transforms[4],
                                    const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env,
                                    const TextureAtlas *decals_atlas) {
     using namespace Ren;
     using namespace RendererInternal;
-
-    uint32_t render_flags = render_flags_[0];
 
     glQueryCounter(queries_[1][TimeDrawStart], GL_TIMESTAMP);
 
@@ -649,16 +648,16 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
     Ren::Mat4f view_from_world, clip_from_view, clip_from_world;
 
-    if (!transforms_[0].empty()) {
-        view_from_world = transforms_[0][0];
-        clip_from_view = transforms_[0][1];
+    if (transforms) {
+        view_from_world = transforms[0];
+        clip_from_view = transforms[1];
         clip_from_world = clip_from_view * view_from_world;
     }
 
     Ren::Vec4f clip_info;
 
     {   // Update camera clip info (used to linearize depth)
-        const float near = draw_cam_.near(), far = draw_cam_.far();
+        const float near = draw_cam.near(), far = draw_cam.far();
 
         clip_info = { near * far, near, far, std::log2(1.0f + far / near) };
 
@@ -686,7 +685,7 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
 
         glBindVertexArray(skydome_vao_);
 
-        Ren::Vec3f cam_pos = draw_cam_.world_position();
+        Ren::Vec3f cam_pos = draw_cam.world_position();
 
         Ren::Mat4f translate_matrix;
         translate_matrix = Ren::Translate(translate_matrix, cam_pos);
@@ -1511,6 +1510,10 @@ void Renderer::DrawObjectsInternal(const DrawableItem *drawables, size_t drawabl
         backend_info_.refl_pass_time_us = uint32_t((time_blur_start - time_refl_start) / 1000);
         backend_info_.blur_pass_time_us = uint32_t((time_blit_start - time_blur_start) / 1000);
         backend_info_.blit_pass_time_us = uint32_t((time_draw_end - time_blit_start) / 1000);
+
+        for (int i = 0; i < TimersCount; i++) {
+            std::swap(queries_[0][i], queries_[1][i]);
+        }
     }
 
 #if 0

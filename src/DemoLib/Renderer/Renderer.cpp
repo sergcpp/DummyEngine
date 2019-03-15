@@ -71,6 +71,11 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     if (USE_TWO_THREADS) {
         background_thread_ = std::thread(std::bind(&Renderer::BackgroundProc, this));
     }
+
+    for (int i = 0; i < 2; i++) {
+        cells_[i].resize(CELLS_COUNT);
+        items_[i].resize(MAX_ITEMS_TOTAL);
+    }
 }
 
 Renderer::~Renderer() {
@@ -83,8 +88,8 @@ Renderer::~Renderer() {
     swCullCtxDestroy(&cull_ctx_);
 }
 
-void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_index,
-                           const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env,
+void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_index,
+                           const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
                            const TextureAtlas &decals_atlas) {
     using namespace RendererInternal;
 
@@ -94,13 +99,20 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
     }
     auto cpu_draw_start = std::chrono::high_resolution_clock::now();
 
-    SwapDrawLists(cam, nodes, root_index, objects, obj_indices, object_count, env, &decals_atlas);
-
-    if (!USE_TWO_THREADS) {
-        
+    if (USE_TWO_THREADS) {
+        // Delegate gathering to background thread
+        SwapDrawLists(cam, nodes, root_index, objects, obj_indices, object_count, env, &decals_atlas);
+    } else {
+        // Gather object in main thread
+        GatherDrawables(cam, render_flags_[0], env, nodes, root_index, objects, obj_indices, object_count,
+                        transforms_[0], draw_lists_[0], light_sources_[0], decals_[0], cells_[0].data(),
+                        items_[0].data(), items_count_[0], shadow_cams_[0], shadow_list_[0], frontend_infos_[0]);
     }
     
     {
+        size_t transforms_count = transforms_[0].size();
+        const auto *transforms = (transforms_count == 0) ? nullptr : &transforms_[0][0];
+
         size_t drawables_count = draw_lists_[0].size();
         const auto *drawables = (drawables_count == 0) ? nullptr : &draw_lists_[0][0];
 
@@ -122,8 +134,8 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
         const DrawableItem *shadow_drawables[4];
 
         for (int i = 0; i < 4; i++) {
-            Ren::Mat4f view_from_world = shadow_cam_[0][i].view_matrix(),
-                       clip_from_view = shadow_cam_[0][i].proj_matrix();
+            Ren::Mat4f view_from_world = shadow_cams_[0][i].view_matrix(),
+                       clip_from_view = shadow_cams_[0][i].proj_matrix();
             shadow_transforms[i] = clip_from_view * view_from_world;
             shadow_drawables_count[i] = shadow_list_[0][i].size();
             shadow_drawables[i] = (shadow_drawables_count[i] == 0) ? nullptr : &shadow_list_[0][i][0];
@@ -176,8 +188,11 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, size
             LOGI("CleanBuf resized to %ix%i", w_, h_);
         }
 
-        DrawObjectsInternal(drawables, drawables_count, lights, lights_count, decals, decals_count,
-                            cells, items, items_count, shadow_transforms, shadow_drawables, shadow_drawables_count, env_,
+        auto &_cam = USE_TWO_THREADS ? draw_cam_ : cam;
+        auto &_env = USE_TWO_THREADS ? env_ : env;
+
+        DrawObjectsInternal(_cam, render_flags_[0], transforms, drawables, drawables_count, lights, lights_count, decals, decals_count,
+                            cells, items, items_count, shadow_transforms, shadow_drawables, shadow_drawables_count, _env,
                             p_decals_atlas);
     }
     
@@ -206,16 +221,17 @@ void Renderer::BackgroundProc() {
         if (nodes_ && objects_) {
             std::lock_guard<Sys::SpinlockMutex> _(job_mtx_);
             
-            GatherDrawables(draw_cam_, render_flags_[1], transforms_[1], draw_lists_[1], light_sources_[1], decals_[1], cells_[1],
-                            items_[1], shadow_list_[1], frontend_infos_[1]);
+            GatherDrawables(draw_cam_, render_flags_[1], env_, nodes_, root_node_, objects_, obj_indices_, object_count_,
+                            transforms_[1], draw_lists_[1], light_sources_[1], decals_[1], cells_[1].data(),
+                            items_[1].data(), items_count_[1], shadow_cams_[1], shadow_list_[1], frontend_infos_[1]);
         }
 
         notified_ = false;
     }
 }
 
-void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_node,
-                             const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env,
+void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_node,
+                             const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
                              const TextureAtlas *decals_atlas) {
     using namespace RendererInternal;
 
@@ -247,13 +263,10 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, si
         render_flags_[1] = render_flags_[0];
         frontend_infos_[0] = frontend_infos_[1];
         render_infos_[0] = render_infos_[1];
-        for (int i = 0; i < TimersCount; i++) {
-            std::swap(queries_[0][i], queries_[1][i]);
-        }
         draw_cam_ = cam;
         for (int i = 0; i < 4; i++) {
             std::swap(shadow_list_[0][i], shadow_list_[1][i]);
-            std::swap(shadow_cam_[0][i], shadow_cam_[1][i]);
+            std::swap(shadow_cams_[0][i], shadow_cams_[1][i]);
         }
         env_ = env;
         std::swap(depth_pixels_[0], depth_pixels_[1]);
