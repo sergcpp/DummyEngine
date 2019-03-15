@@ -27,7 +27,7 @@ const int MAX_CMD_LINES = 8;
 #if defined(__ANDROID__)
 const char SCENE_NAME[] = "assets/scenes/street.json";
 #else
-const char SCENE_NAME[] = "assets_pc/scenes/jap_house.json";
+const char SCENE_NAME[] = "assets_pc/scenes/jap_house2.json";
 #endif
 }
 
@@ -462,6 +462,8 @@ void GSDrawTest::Draw(float dt_s) {
                 vertical_offset -= font_->height(ui_root_.get());
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
+                //LOGI("%s", text_buffer);
+
                 for (int i = 0; i < 100; i++) {
                     double t = double(i) / 100;
 
@@ -475,6 +477,8 @@ void GSDrawTest::Draw(float dt_s) {
 
                 vertical_offset -= font_->height(ui_root_.get());
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
+
+                //LOGI("%s", text_buffer);
 
                 prev_front_info_ = front_info;
                 prev_back_info_ = back_info;

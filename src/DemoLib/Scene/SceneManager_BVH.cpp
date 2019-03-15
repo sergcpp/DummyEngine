@@ -43,7 +43,7 @@ void SceneManager::RebuildBVH() {
                root_max = prim_lists.back().max;
 
     while (!prim_lists.empty()) {
-        auto split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices, prim_lists.back().min, prim_lists.back().max, root_min, root_max);
+        auto split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices.data(), (uint32_t)prim_lists.back().indices.size(), prim_lists.back().min, prim_lists.back().max, root_min, root_max);
         prim_lists.pop_back();
 
         uint32_t leaf_index = (uint32_t)nodes_.size(),

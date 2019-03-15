@@ -22,7 +22,7 @@ void Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *na
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data);
 
-std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int res);
+std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int res, float invalid_threshold, int filter_size);
 
 std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &tex_ref);
 }
@@ -157,8 +157,11 @@ bool SceneManager::PrepareLightmaps_PT() {
             // Save lightmap to file
             const auto *pixels = ray_renderer_.get_pixels_ref();
 
+            const float InvalidThreshold = 0.5f;
+            const int FilterSize = 16;
+
             // apply dilation filter
-            std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(pixels, res);
+            std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(pixels, res, InvalidThreshold, FilterSize);
 
             std::string out_file_name = "./assets/textures/lightmaps/" + scene_name_;
             out_file_name += "_";
@@ -196,9 +199,19 @@ bool SceneManager::PrepareLightmaps_PT() {
                 }
 
                 for (int i = 0; i < res * res; i++) {
-                    if (pixels[i].a < 0.5f) continue;
+                    const float coverage = pixels[i].a;
+
+                    if (coverage < InvalidThreshold) continue;
+
+                    sh_data[i].coeff_r[0] /= coverage;
+                    sh_data[i].coeff_g[0] /= coverage;
+                    sh_data[i].coeff_b[0] /= coverage;
 
                     for (int sh_l = 1; sh_l < 4; sh_l++) {
+                        sh_data[i].coeff_r[sh_l] /= coverage;
+                        sh_data[i].coeff_g[sh_l] /= coverage;
+                        sh_data[i].coeff_b[sh_l] /= coverage;
+
                         if (sh_data[i].coeff_r[0] > FLT_EPSILON) {
                             sh_data[i].coeff_r[sh_l] /= sh_data[i].coeff_r[0];
                         }
@@ -212,10 +225,6 @@ bool SceneManager::PrepareLightmaps_PT() {
                         sh_data[i].coeff_r[sh_l] = 0.25f * sh_data[i].coeff_r[sh_l] + 0.5f;
                         sh_data[i].coeff_g[sh_l] = 0.25f * sh_data[i].coeff_g[sh_l] + 0.5f;
                         sh_data[i].coeff_b[sh_l] = 0.25f * sh_data[i].coeff_b[sh_l] + 0.5f;
-
-                        //if (sh_data[i].coeff_r[sh_l] < 0.0f) {
-                        //    LOGI("!!!!! %f", sh_data[i].coeff_r[sh_l]);
-                        //}
 
                         if (sh_data[i].coeff_r[sh_l] > 1.0f) sh_data[i].coeff_r[sh_l] = 1.0f;
                         else if (sh_data[i].coeff_r[sh_l] < 0.0f) sh_data[i].coeff_r[sh_l] = 0.0f;
@@ -231,11 +240,16 @@ bool SceneManager::PrepareLightmaps_PT() {
                         temp_pixels1[i].r = sh_data[i].coeff_r[sh_l];
                         temp_pixels1[i].g = sh_data[i].coeff_g[sh_l];
                         temp_pixels1[i].b = sh_data[i].coeff_b[sh_l];
-                        // use coverage info from simple lightmap
-                        temp_pixels1[i].a = pixels[i].a;
+
+                        // coverage division is already applied in previous step
+                        if (pixels[i].a > InvalidThreshold) {
+                            temp_pixels1[i].a = 1.0f;
+                        } else {
+                            temp_pixels1[i].a = 0.0f;
+                        }
                     }
 
-                    const auto out_pixels = SceneManagerInternal::FlushSeams(&temp_pixels1[0], res);
+                    const auto out_pixels = SceneManagerInternal::FlushSeams(&temp_pixels1[0], res, InvalidThreshold, FilterSize);
 
                     out_file_name = "./assets/textures/";
                     out_file_name += "/lightmaps/";

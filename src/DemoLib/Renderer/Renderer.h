@@ -71,6 +71,8 @@ static_assert(sizeof(ItemData) == 4, "!");
 #define REN_GRID_RES_Y 8
 #define REN_GRID_RES_Z 24
 
+#define MAX_STACK_SIZE 64
+
 namespace RendererInternal {
     const int GRID_RES_X = REN_GRID_RES_X;
     const int GRID_RES_Y = REN_GRID_RES_Y;
@@ -153,6 +155,8 @@ private:
     const uint32_t default_flags = (EnableCulling | EnableSSR | EnableSSAO);
     uint32_t render_flags_[2] = { default_flags, default_flags };
 
+    int frame_counter_ = 0;
+
     const bvh_node_t *nodes_ = nullptr;
     size_t root_node_ = 0;
     const SceneObject *objects_ = nullptr;
@@ -205,6 +209,9 @@ private:
     void SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, size_t root_node,
                        const SceneObject *objects, const uint32_t *obj_indices, size_t object_count, const Environment &env,
                        const TextureAtlas *decals_atlas);
+
+    void GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flags, std::vector<Ren::Mat4f> &tr_list, std::vector<DrawableItem> &dr_list, std::vector<LightSourceItem> &ls_list,
+                         std::vector<DecalItem> &de_list, std::vector<CellData> &cells, std::vector<ItemData> &items, std::vector<DrawableItem> sh_dr_list[4], FrontendInfo &info);
 
     void InitRendererInternal();
     void DestroyRendererInternal();

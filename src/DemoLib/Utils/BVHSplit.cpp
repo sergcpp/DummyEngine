@@ -24,29 +24,28 @@ struct bbox_t {
     }
 };
 
-split_data_t SplitPrimitives_SAH(const prim_t *primitives, const std::vector<uint32_t> &tri_indices,
+split_data_t SplitPrimitives_SAH(const prim_t *primitives, const uint32_t *tri_indices, uint32_t tris_count,
                                  const Ren::Vec3f &bbox_min, const Ren::Vec3f &bbox_max,
                                  const Ren::Vec3f &root_min, const Ren::Vec3f &root_max) {
     using namespace UtilsConstants;
 
-    size_t num_tris = tri_indices.size();
     bbox_t whole_box = { bbox_min, bbox_max };
 
     std::vector<uint32_t> axis_lists[3];
     for (int axis = 0; axis < 3; axis++) {
-        axis_lists[axis].reserve(num_tris);
+        axis_lists[axis].reserve(tris_count);
     }
 
-    for (uint32_t i = 0; i < (uint32_t)num_tris; i++) {
+    for (uint32_t i = 0; i < tris_count; i++) {
         axis_lists[0].push_back(i);
         axis_lists[1].push_back(i);
         axis_lists[2].push_back(i);
     }
 
     std::vector<bbox_t> new_prim_bounds;
-    std::vector<bbox_t> right_bounds(num_tris);
+    std::vector<bbox_t> right_bounds(tris_count);
 
-    float res_sah = SAHOversplitThreshold * whole_box.surface_area() * num_tris;
+    float res_sah = SAHOversplitThreshold * whole_box.surface_area() * tris_count;
     int div_axis = -1;
     uint32_t div_index = 0;
     bbox_t res_left_bounds, res_right_bounds;
@@ -105,7 +104,7 @@ split_data_t SplitPrimitives_SAH(const prim_t *primitives, const std::vector<uin
     std::vector<uint32_t> left_indices, right_indices;
     if (div_axis != -1) {
         left_indices.reserve((size_t)div_index);
-        right_indices.reserve(tri_indices.size() - div_index);
+        right_indices.reserve(tris_count - div_index);
         for (size_t i = 0; i < div_index; i++) {
             left_indices.push_back(tri_indices[axis_lists[div_axis][i]]);
         }
@@ -113,7 +112,7 @@ split_data_t SplitPrimitives_SAH(const prim_t *primitives, const std::vector<uin
             right_indices.push_back(tri_indices[axis_lists[div_axis][i]]);
         }
     } else {
-        left_indices = tri_indices;
+        left_indices.insert(left_indices.end(), tri_indices, tri_indices + tris_count);
         res_left_bounds = whole_box;
     }
 

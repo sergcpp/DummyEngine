@@ -9,6 +9,7 @@ set(GUI_SOURCES  Gui/FontStorage.h)
 set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/Renderer.h
                         Renderer/Renderer.cpp
+                        Renderer/Renderer_Frontend.cpp
                         Renderer/TextureAtlas.h
                         Renderer/TextureAtlas.cpp
                         Renderer/__skydome_mesh.inl)
@@ -37,8 +38,8 @@ set(UTILS_SOURCES Utils/BVHSplit.h
 if(${RENDERER} STREQUAL "GL")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                         Renderer/FrameBufGL.cpp
-                        Renderer/Renderer_GL_Shaders.inl
-                        Renderer/Renderer_GLES3.cpp)
+                        Renderer/Renderer_Backend_GLES3.cpp
+                        Renderer/Renderer_GL_Shaders.inl)
     set(STATES_SOURCES ${STATES_SOURCES}
                         States/GSOccTestGL.cpp
                         )

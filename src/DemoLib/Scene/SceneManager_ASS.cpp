@@ -289,18 +289,16 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
     }
 }
 
-std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int res) {
+std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int res, float invalid_threshold, int filter_size) {
     std::vector<Ray::pixel_color_t> temp_pixels1{ pixels, pixels + res * res },
                                     temp_pixels2{ (size_t)res * res };
-    const int FILTER_SIZE = 16;
-    const float INVAL_THRES = 0.5f;
 
     // Avoid bound checks in debug
     Ray::pixel_color_t *_temp_pixels1 = temp_pixels1.data(),
                        *_temp_pixels2 = temp_pixels2.data();
 
     // apply dilation filter
-    for (int i = 0; i < FILTER_SIZE; i++) {
+    for (int i = 0; i < filter_size; i++) {
         bool has_invalid = false;
 
         for (int y = 0; y < res; y++) {
@@ -309,7 +307,7 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
                 auto &out_p = _temp_pixels2[y * res + x];
 
                 float mul = 1.0f;
-                if (in_p.a < INVAL_THRES) {
+                if (in_p.a < invalid_threshold) {
                     has_invalid = true;
 
                     Ray::pixel_color_t new_p = { 0 };
@@ -319,7 +317,7 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
                             if (_x < 0 || _y < 0 || _x > res - 1 || _y > res - 1) continue;
 
                             const auto &p = _temp_pixels1[_y * res + _x];
-                            if (p.a >= INVAL_THRES) {
+                            if (p.a >= invalid_threshold) {
                                 new_p.r += p.r;
                                 new_p.g += p.g;
                                 new_p.b += p.b;
