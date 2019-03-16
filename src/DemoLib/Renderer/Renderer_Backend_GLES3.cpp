@@ -605,7 +605,6 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
 
                 if (!fb_bound) {
                     glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
-                    glClear(GL_DEPTH_BUFFER_BIT);
                     fb_bound = true;
                 }
 
@@ -1221,6 +1220,14 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
     }
 
     glQueryCounter(queries_[1][TimeBlitStart], GL_TIMESTAMP);
+
+    {   // Clear shadowmap buffer
+        glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
+        glViewport(0, 0, shadow_buf_.w, shadow_buf_.h);
+        glDepthMask(GL_TRUE);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glDepthMask(GL_FALSE);
+    }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
