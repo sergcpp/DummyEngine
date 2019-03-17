@@ -8,9 +8,9 @@ def main():
     NDK_ROOT = os.environ['NDK_ROOT']
     
     #archs = [ "armeabi", "armeabi-v7a", "arm64-v8a", "x86", "x86_64" ]
-    archs = [ "armeabi-v7a", "arm64-v8a", "x86", "x86_64" ]
+    #archs = [ "armeabi-v7a", "arm64-v8a", "x86", "x86_64" ]
     #archs = [ "arm64-v8a", "x86" ]
-    #archs = [ "arm64-v8a" ]
+    archs = [ "arm64-v8a" ]
     #archs = [ "x86_64" ]
     
     base_cmake_cmd = '"' + ANDROID_HOME + '\\cmake\\3.6.4111459\\bin\\cmake"' + ' -G"Android Gradle - Ninja" .. -DANDROID_NDK="' + NDK_ROOT + '" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MAKE_PROGRAM="' + ANDROID_HOME + '\\cmake\\3.6.4111459\\bin\\ninja" -DCMAKE_TOOLCHAIN_FILE="' + NDK_ROOT + '\\build\\cmake\\android.toolchain.cmake" -DANDROID_NATIVE_API_LEVEL=9 -DANDROID_PLATFORM=android-24 -DANDROID_STL=c++_static -DANDROID_CPP_FEATURES="rtti exceptions" -DANDROID_TOOLCHAIN=clang '

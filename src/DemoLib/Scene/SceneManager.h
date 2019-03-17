@@ -21,6 +21,7 @@ public:
                  Sys::ThreadPool &threads);
     ~SceneManager();
 
+    uint32_t render_flags() const;
     RenderInfo render_info() const;
     FrontendInfo frontend_info() const;
     BackendInfo backend_info() const;

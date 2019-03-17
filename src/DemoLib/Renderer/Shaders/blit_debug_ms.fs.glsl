@@ -39,9 +39,9 @@ void main() {
     int iy = int(gl_FragCoord.y);
     int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy * GRID_RES_Y / res.y) * GRID_RES_X + (ix * GRID_RES_X / res.x);
     
-    uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
-    uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
-    uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), 0);
+    highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
+    highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
+    highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), 0);
 
     if (mode == 0) {
         outColor = vec4(heatmap(float(offset_and_lcount.y) * (1.0 / 48.0)), 0.85);

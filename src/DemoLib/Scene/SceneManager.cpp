@@ -15,6 +15,7 @@
 
 extern "C" {
 #include <Ren/SOIL2/image_DXT.h>
+#include <Ren/SOIL2/stb_image.h>
 }
 
 #include "../Renderer/Renderer.h"
@@ -67,6 +68,10 @@ cam_(Ren::Vec3f{ 0.0f, 0.0f, 1.0f },
 
 SceneManager::~SceneManager() {
     renderer_.WaitForBackgroundThreadIteration();
+}
+
+uint32_t SceneManager::render_flags() const {
+    return renderer_.render_flags();
 }
 
 RenderInfo SceneManager::render_info() const {
@@ -388,8 +393,18 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             lm_tex_name += "_";
             lm_tex_name += std::to_string(objects_.size());
 
-            std::string lm_dir_tex_name = lm_tex_name + "_lm_direct.dds";
-            std::string lm_indir_tex_name = lm_tex_name + "_lm_indirect.dds";
+            std::string lm_dir_tex_name = lm_tex_name +
+#if !defined(__ANDROID__)
+                "_lm_direct.dds";
+#else
+                "_lm_direct.png";
+#endif
+            std::string lm_indir_tex_name = lm_tex_name +
+#if !defined(__ANDROID__)
+                "_lm_indirect.dds";
+#else
+                "_lm_indirect.png";
+#endif
 
             obj.flags |= HasLightmap;
             obj.lm_res = (uint32_t)js_lm_res.val;
@@ -410,7 +425,11 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 for (int sh_l = 0; sh_l < 4; sh_l++) {
                     std::string lm_file_name = base_file_name;
                     lm_file_name += std::to_string(sh_l);
+#if !defined(__ANDROID__)
                     lm_file_name += ".dds";
+#else
+                    lm_file_name += ".png";
+#endif
 
                     obj.lm_indir_sh_tex[sh_l] = OnLoadTexture(lm_file_name.c_str());
                 }
@@ -557,12 +576,21 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             const JsString &js_env_map = (const JsString &)js_env.at("env_map");
 
             const std::string tex_names[6] = {
+#if !defined(__ANDROID__)
                 TEXTURES_PATH + js_env_map.val + "_PX.dds",
                 TEXTURES_PATH + js_env_map.val + "_NX.dds",
                 TEXTURES_PATH + js_env_map.val + "_PY.dds",
                 TEXTURES_PATH + js_env_map.val + "_NY.dds",
                 TEXTURES_PATH + js_env_map.val + "_PZ.dds",
                 TEXTURES_PATH + js_env_map.val + "_NZ.dds"
+#else
+                TEXTURES_PATH + js_env_map.val + "_PX.png",
+                TEXTURES_PATH + js_env_map.val + "_NX.png",
+                TEXTURES_PATH + js_env_map.val + "_PY.png",
+                TEXTURES_PATH + js_env_map.val + "_NY.png",
+                TEXTURES_PATH + js_env_map.val + "_PZ.png",
+                TEXTURES_PATH + js_env_map.val + "_NZ.png"
+#endif
             };
 
             std::vector<uint8_t> tex_data[6];
@@ -571,39 +599,43 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             int res = 0;
 
             for (int i = 0; i < 6; i++) {
-                int w, h;
-#if 0
-                tex_data[i] = LoadHDR(tex_names[i], w, h);
-#else
-                std::ifstream in_file(tex_names[i], std::ios::binary | std::ios::ate);
-                size_t in_file_size = (size_t)in_file.tellg();
-                in_file.seekg(0, std::ios::beg);
+                Sys::AssetFile in_file(tex_names[i], Sys::AssetFile::IN);
+                size_t in_file_size = in_file.size();
 
                 tex_data[i].resize(in_file_size);
-                in_file.read((char *)&tex_data[i][0], in_file_size);
+                in_file.Read((char *)&tex_data[i][0], in_file_size);
 
+#if !defined(__ANDROID__)
                 DDS_header header;
                 memcpy(&header, &tex_data[i][0], sizeof(DDS_header));
 
-                w = (int)header.dwWidth;
-                h = (int)header.dwHeight;
-#endif
-                assert(w == h);
+                int w = (int)header.dwWidth;
+                int h = (int)header.dwHeight;
 
+                assert(w == h);
                 res = w;
+#else
+                
+#endif
+
                 data[i] = (const void *)&tex_data[i][0];
                 size[i] = (int)tex_data[i].size();
                 
             }
 
             Ren::Texture2DParams p;
-            p.format = Ren::RawRGBE8888;
+            p.format = Ren::RawRGBA8888;
             p.filter = Ren::Bilinear;
             p.repeat = Ren::ClampToEdge;
             p.w = res;
             p.h = res;
 
-            std::string tex_name = js_env_map.val + ".dds";
+            std::string tex_name = js_env_map.val +
+#if !defined(__ANDROID__)
+                ".dds";
+#else
+                ".png";
+#endif
 
             Ren::eTexLoadStatus load_status;
             env_.env_map = ctx_.LoadTextureCube(tex_name.c_str(), data, size, p, &load_status);

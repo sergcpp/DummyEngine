@@ -134,9 +134,9 @@ void main(void) {
     int iy = int(gl_FragCoord.y);
     int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy * GRID_RES_Y / res.y) * GRID_RES_X + ix * GRID_RES_X / res.x;
     
-    uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
-    uvec2 offset_and_lcount = uvec2(cell_data.x & 0x00ffffffu, cell_data.x >> 24);
-    uvec2 dcount_and_pcount = uvec2(cell_data.y & 0x000000ffu, 0);
+    highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
+    highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
+    highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), 0);
     
     vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma));
     vec3 normal_color = texture(normals_texture, aVertexUVs1_).xyz;
@@ -146,8 +146,8 @@ void main(void) {
     vec3 dp_dy = dFdy(aVertexPos_);
     
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.x; i++) {
-        uint item_data = texelFetch(items_buffer, int(i)).x;
-        int di = int((item_data >> 12) & 0x00000fffu);
+        highp uint item_data = texelFetch(items_buffer, int(i)).x;
+        int di = int(bitfieldExtract(item_data, 12, 24));
         
         mat4 de_proj;
         de_proj[0] = texelFetch(decals_buffer, di * 6 + 0);
@@ -212,11 +212,11 @@ void main(void) {
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
     
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
-        uint item_data = texelFetch(items_buffer, int(i)).x;
-        int li = int(item_data & 0x00000fffu);
-        
+        highp uint item_data = texelFetch(items_buffer, int(i)).x;
+        int li = int(bitfieldExtract(item_data, 0, 12));
+
         vec4 pos_and_radius = texelFetch(lights_buffer, li * 3 + 0);
-        vec4 col_and_brightness = texelFetch(lights_buffer, li * 3 + 1);
+        highp vec4 col_and_brightness = texelFetch(lights_buffer, li * 3 + 1);
         vec4 dir_and_spot = texelFetch(lights_buffer, li * 3 + 2);
         
         vec3 L = pos_and_radius.xyz - aVertexPos_;
@@ -224,10 +224,11 @@ void main(void) {
         float d = max(dist - pos_and_radius.w, 0.0);
         L /= dist;
         
-        float denom = d / pos_and_radius.w + 1.0;
-        float atten = 1.0 / (denom * denom);
+        highp float denom = d / pos_and_radius.w + 1.0;
+        highp float atten = 1.0 / (denom * denom);
         
-        atten = (atten - LIGHT_ATTEN_CUTOFF / col_and_brightness.w) / (1.0 - LIGHT_ATTEN_CUTOFF);
+        highp float factor = LIGHT_ATTEN_CUTOFF / col_and_brightness.w;
+        atten = (atten - factor) / (1.0 - LIGHT_ATTEN_CUTOFF);
         atten = max(atten, 0.0);
         
         float _dot1 = max(dot(L, normal), 0.0);

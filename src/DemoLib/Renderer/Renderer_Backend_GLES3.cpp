@@ -114,8 +114,19 @@ namespace RendererInternal {
     const int TEMP_BUF_SIZE = 256;
 
     const bool DEPTH_PREPASS = true;
-    const bool ENABLE_SSR = true;
-    const bool ENABLE_SSAO = true;
+    const bool ENABLE_SSR =
+#if !defined(__ANDROID__)
+        true;
+#else
+        false;
+#endif
+
+    const bool ENABLE_SSAO =
+#if !defined(__ANDROID__)
+        true;
+#else
+        false;
+#endif
 }
 
 void Renderer::InitRendererInternal() {
@@ -288,7 +299,7 @@ void Renderer::InitRendererInternal() {
         GLuint reduce_pbo;
         glGenBuffers(1, &reduce_pbo);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, reduce_pbo);
-        glBufferData(GL_PIXEL_PACK_BUFFER, reduced_buf_.w * reduced_buf_.h * sizeof(float), 0, GL_DYNAMIC_READ);
+        glBufferData(GL_PIXEL_PACK_BUFFER, 4 * reduced_buf_.w * reduced_buf_.h * sizeof(float), 0, GL_DYNAMIC_READ);
 
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         reduce_pbo_ = (uint32_t)reduce_pbo;
@@ -676,8 +687,8 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         glDepthFunc(GL_ALWAYS);
 
         // Write to color and specular
-        GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT2 };
-        glDrawBuffers(2, draw_buffers);
+        GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0, GL_NONE, GL_COLOR_ATTACHMENT2 };
+        glDrawBuffers(3, draw_buffers);
 
         cur_program = skydome_prog_.get();
         glUseProgram(cur_program->prog_id());
@@ -819,7 +830,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
 
     GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
     glDrawBuffers(3, draw_buffers);
-
+    
     // actual drawing
     for (size_t i = 0; i < drawable_count; i++) {
         const auto &dr = drawables[i];
@@ -886,7 +897,11 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
                 BindTexture(DECALSMAP_SLOT, decals_atlas->tex_id());
             }
 
-            BindTexture(AOMAP_SLOT, ssao_buf_.attachments[0].tex);
+            if (ENABLE_SSAO) {
+                BindTexture(AOMAP_SLOT, ssao_buf_.attachments[0].tex);
+            } else {
+                BindTexture(AOMAP_SLOT, default_ao_->tex_id());
+            }
 
             cur_program = p;
         }
@@ -1202,7 +1217,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
             glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)reduce_pbo_);
             float *reduced_pixels = (float *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, reduced_buf_.w * reduced_buf_.h, GL_MAP_READ_BIT);
             if (reduced_pixels) {
-                for (int i = 0; i < reduced_buf_.w * reduced_buf_.h; i++) {
+                for (int i = 0; i < 4 * reduced_buf_.w * reduced_buf_.h; i += 4) {
                     if (!std::isnan(reduced_pixels[i])) {
                         cur_average += std::min(reduced_pixels[i], max_value);
                     }
@@ -1220,6 +1235,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
     }
 
     glQueryCounter(queries_[1][TimeBlitStart], GL_TIMESTAMP);
+    
 
     {   // Clear shadowmap buffer
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
@@ -1228,7 +1244,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         glClear(GL_DEPTH_BUFFER_BIT);
         glDepthMask(GL_FALSE);
     }
-
+    
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 
@@ -1268,7 +1284,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
 
         glUniform1f(U_GAMMA, (render_flags & DebugLights) ? 1.0f : 2.2f);
 
-        float exposure = 0.85f / reduced_average_;
+        float exposure = reduced_average_ > FLT_EPSILON ? (0.85f / reduced_average_) : 1.0f;
         exposure = std::min(exposure, 1000.0f);
 
         glUniform1f(U_EXPOSURE, exposure);
@@ -1286,7 +1302,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         glDisableVertexAttribArray(A_POS);
         glDisableVertexAttribArray(A_UVS1);
     }
-
+    
     {   // Start asynchronous memory read from framebuffer
         BindTexture(DIFFUSEMAP_SLOT, down_buf_.attachments[0].tex);
         glGenerateMipmap(GL_TEXTURE_2D);
@@ -1295,7 +1311,8 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         glReadBuffer(GL_COLOR_ATTACHMENT0);
 
         glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)reduce_pbo_);
-        glReadPixels(0, 0, reduced_buf_.w, reduced_buf_.h, GL_RED, GL_FLOAT, nullptr);
+
+        glReadPixels(0, 0, reduced_buf_.w, reduced_buf_.h, GL_RGBA, GL_FLOAT, nullptr);
 
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);

@@ -25,10 +25,11 @@ const float FORWARD_SPEED = 0.5f;
 const int MAX_CMD_LINES = 8;
 
 #if defined(__ANDROID__)
-const char SCENE_NAME[] = "assets/scenes/street.json";
+const char SCENE_NAME[] = "assets/scenes/"
 #else
-const char SCENE_NAME[] = "assets_pc/scenes/jap_house.json";
+const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
+    "jap_house.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
@@ -142,7 +143,6 @@ void GSDrawTest::Enter() {
             uint32_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugLights;
             shrd_this->renderer_->set_render_flags(flags);
-            shrd_this->print_item_info_ = !shrd_this->print_item_info_;
         }
         return true;
     });
@@ -153,7 +153,6 @@ void GSDrawTest::Enter() {
             uint32_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugDecals;
             shrd_this->renderer_->set_render_flags(flags);
-            shrd_this->print_item_info_ = !shrd_this->print_item_info_;
         }
         return true;
     });
@@ -193,7 +192,6 @@ void GSDrawTest::Enter() {
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugTimings;
-            shrd_this->print_timeline_ = (flags & DebugTimings) != 0;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -299,6 +297,7 @@ void GSDrawTest::Draw(float dt_s) {
         }
 
         if (!use_pt_ && !use_lm_) {
+            auto render_flags = scene_manager_->render_flags();
             auto render_info = scene_manager_->render_info();
             auto front_info = scene_manager_->frontend_info();
             auto back_info = scene_manager_->backend_info();
@@ -314,6 +313,24 @@ void GSDrawTest::Draw(float dt_s) {
             float vertical_offset = 0.65f;
 
             {
+                uint64_t cur_frame_time = Sys::GetTimeUs();
+
+                double last_frame_dur = (cur_frame_time - last_frame_time_) * 0.000001;
+                double last_frame_fps = 1.0 / last_frame_dur;
+
+                last_frame_time_ = cur_frame_time;
+
+                const double alpha = 0.05;
+                cur_fps_ = alpha * last_frame_fps + (1.0 - alpha) * cur_fps_;
+
+                sprintf(text_buffer, "        fps: %.1f", cur_fps_);
+                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
+            }
+
+            {
+                vertical_offset -= font_->height(ui_root_.get());
+                font_->DrawText(ui_renderer_.get(), delimiter, { -1.0f, vertical_offset }, ui_root_.get());
+
                 vertical_offset -= font_->height(ui_root_.get());
                 sprintf(text_buffer, "   occ_rast: %u us", front_info.occluders_time_us);
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
@@ -370,7 +387,7 @@ void GSDrawTest::Draw(float dt_s) {
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
             }
 
-            if (print_item_info_) {
+            if (render_flags & (DebugLights | DebugDecals)) {
                 vertical_offset -= font_->height(ui_root_.get());
                 font_->DrawText(ui_renderer_.get(), delimiter, { -1.0f, vertical_offset }, ui_root_.get());
 
@@ -399,7 +416,7 @@ void GSDrawTest::Draw(float dt_s) {
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
             }
 
-            if (print_timeline_) {
+            if (render_flags & DebugTimings) {
                 double prev_cpu_start = double(prev_front_info_.start_timepoint_us),
                        prev_cpu_end = double(prev_front_info_.end_timepoint_us),
                        prev_gpu_start = double(prev_back_info_.gpu_start_timepoint_us),

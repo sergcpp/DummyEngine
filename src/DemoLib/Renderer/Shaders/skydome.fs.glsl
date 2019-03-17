@@ -12,7 +12,7 @@ layout(location = 0) uniform vec3 camera_pos;
 in vec3 aVertexPos_;
 
 layout(location = 0) out vec4 outColor;
-layout(location = 1) out vec4 outSpecular;
+layout(location = 2) out vec4 outSpecular;
 
 vec3 RGBMDecode(vec4 rgbm) {
     return 6.0 * rgbm.rgb * rgbm.a;

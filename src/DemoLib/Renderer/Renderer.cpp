@@ -50,7 +50,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     // Compile built-in shadres etc.
     InitRendererInternal();
 
-    uint8_t data[] = { 0, 0, 0, 0 };
+    uint8_t black[] = { 0, 0, 0, 0 }, white[] = { 255, 255, 255, 255 };
 
     Ren::Texture2DParams p;
     p.w = p.h = 1;
@@ -58,7 +58,10 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     p.filter = Ren::Bilinear;
 
     Ren::eTexLoadStatus status;
-    default_lightmap_ = ctx_.LoadTexture2D("default_lightmap", data, sizeof(data), p, &status);
+    default_lightmap_ = ctx_.LoadTexture2D("default_lightmap", black, sizeof(black), p, &status);
+    assert(status == Ren::TexCreatedFromData);
+
+    default_ao_ = ctx_.LoadTexture2D("default_ao", white, sizeof(white), p, &status);
     assert(status == Ren::TexCreatedFromData);
 
     /*try {

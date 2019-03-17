@@ -537,7 +537,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         SOIL_free_image_data(image_data);
     };
 
-    auto h_conv_hdr_to_dds = [](const char *in_file, const char *out_file) {
+    auto h_conv_hdr_to_rgbm = [](const char *in_file, const char *out_file) {
         LOGI("[PrepareAssets] Conv %s", out_file);
 
         int width, height;
@@ -624,8 +624,14 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         handlers["json"] = { "json", h_preprocess_scene };
         handlers["txt"] = { "txt", h_preprocess_material };
         handlers["tga"] = { "dds", h_conv_to_dds };
-        handlers["hdr"] = { "dds", h_conv_hdr_to_dds };
+        handlers["hdr"] = { "dds", h_conv_hdr_to_rgbm };
         handlers["png"] = { "dds", h_conv_to_dds };
+    } else if (strcmp(platform, "android") == 0) {
+        handlers["json"] = { "json", h_copy };
+        handlers["txt"] = { "txt", h_copy };
+        handlers["tga"] = { "tga", h_copy };
+        handlers["hdr"] = { "png", h_conv_hdr_to_rgbm };
+        handlers["png"] = { "png", h_copy };
     }
 
     auto convert_file = [out_folder, &handlers](const char *in_file) {

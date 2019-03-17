@@ -13,13 +13,13 @@ bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3
            p[2] > bbox_min[2] && p[2] < bbox_max[2];
 }
 
-static const uint8_t bbox_indices[] = { 0, 1, 2,    2, 1, 3,
-                                        0, 4, 5,    0, 5, 1,
-                                        0, 2, 4,    4, 2, 6,
-                                        2, 3, 6,    6, 3, 7,
-                                        3, 1, 5,    3, 5, 7,
-                                        4, 6, 5,    5, 6, 7
-                                      };
+const uint8_t bbox_indices[] = { 0, 1, 2,    2, 1, 3,
+                                 0, 4, 5,    0, 5, 1,
+                                 0, 2, 4,    4, 2, 6,
+                                 2, 3, 6,    6, 3, 7,
+                                 3, 1, 5,    3, 5, 7,
+                                 4, 6, 5,    5, 6, 7
+                               };
 }
 
 #define BBOX_POINTS(min, max) \

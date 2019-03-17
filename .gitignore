@@ -1,6 +1,7 @@
 .dumps
 .vs
 assets_pc
+assets_android
 build-*
 check*
 DemoApp.exe

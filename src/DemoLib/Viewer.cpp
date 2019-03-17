@@ -97,5 +97,6 @@ void Viewer::Resize(int w, int h) {
 void Viewer::PrepareAssets() {
 #if !defined(__ANDROID__)
     SceneManager::PrepareAssets("assets", "assets_pc", "pc_rel", nullptr);
+    SceneManager::PrepareAssets("assets", "assets_android", "android", nullptr);
 #endif
 }

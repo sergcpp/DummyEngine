@@ -147,12 +147,12 @@ private:
     SWcull_ctx cull_ctx_;
     Ren::ProgramRef skydome_prog_, fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_combine_ms_prog_,
         blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_, blit_debug_prog_, blit_debug_ms_prog_, blit_ssr_ms_prog_, blit_ao_ms_prog_;
-    Ren::Texture2DRef default_lightmap_;
+    Ren::Texture2DRef default_lightmap_, default_ao_;
 
     FrameBuf clean_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf_;
     int w_ = 0, h_ = 0;
 
-    const uint32_t default_flags = (EnableCulling | EnableSSR | EnableSSAO);
+    const uint32_t default_flags = (EnableCulling | EnableSSR | EnableSSAO /*| DebugLights*/);
     uint32_t render_flags_[2] = { default_flags, default_flags };
 
     int frame_counter_ = 0;

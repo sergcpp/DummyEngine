@@ -23,7 +23,8 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
         Ren::CheckError("[Renderer]: create framebuffer 1");
 
         GLenum format = Ren::GLFormatFromTexFormat(att.format),
-               internal_format = Ren::GLInternalFormatFromTexFormat(att.format);
+               internal_format = Ren::GLInternalFormatFromTexFormat(att.format),
+               type = Ren::GLTypeFromTexFormat(att.format);
         if (format == 0xffffffff || internal_format == 0xffffffff) {
             throw std::invalid_argument("Wrong format!");
         }
@@ -34,7 +35,7 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, _col_tex, 0);
         } else {
             glBindTexture(GL_TEXTURE_2D, _col_tex);
-            glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0, format, GL_UNSIGNED_BYTE, NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0, format, type, NULL);
 
             if (att.filter == Ren::NoFilter) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
