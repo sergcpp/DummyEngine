@@ -1303,9 +1303,13 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         glDisableVertexAttribArray(A_UVS1);
     }
     
-    {   // Start asynchronous memory read from framebuffer
-        BindTexture(DIFFUSEMAP_SLOT, down_buf_.attachments[0].tex);
-        glGenerateMipmap(GL_TEXTURE_2D);
+    {   
+        if (ENABLE_SSR) {
+            BindTexture(DIFFUSEMAP_SLOT, down_buf_.attachments[0].tex);
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
+
+        // Start asynchronous memory read from framebuffer
 
         glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
         glReadBuffer(GL_COLOR_ATTACHMENT0);
