@@ -16,7 +16,7 @@ enum eTexFilter { NoFilter, Bilinear, Trilinear, BilinearNoMipmap };
 enum eTexRepeat { Repeat, ClampToEdge };
 
 struct Texture2DParams {
-    int w = 0, h = 0;
+    int w = 0, h = 0, cube = 0;
     eTexColorFormat format = Undefined;
     eTexFilter filter = NoFilter;
     eTexRepeat repeat = Repeat;
@@ -40,6 +40,7 @@ class Texture2D : public RefCounter {
     void InitFromRAWData(const void *data[6], const Texture2DParams &p);
     void InitFromTGAFile(const void *data[6], const Texture2DParams &p);
     void InitFromTGA_RGBEFile(const void *data[6], const Texture2DParams &p);
+    void InitFromPNGFile(const void *data[6], const int size[6], const Texture2DParams &p);
     void InitFromDDSFile(const void *data[6], const int size[6], const Texture2DParams &p);
 public:
     Texture2D() {

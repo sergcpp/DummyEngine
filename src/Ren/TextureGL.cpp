@@ -173,6 +173,8 @@ void Ren::Texture2D::Init(const char *name, const void *data[6], const int size[
             InitFromTGA_RGBEFile(data, p);
         } else if (strstr(name, ".tga") != 0 || strstr(name, ".TGA") != 0) {
             InitFromTGAFile(data, p);
+        } else if (strstr(name, ".png") != 0 || strstr(name, ".PNG") != 0) {
+            InitFromPNGFile(data, size, p);
         } else if (strstr(name, ".dds") != 0 || strstr(name, ".DDS") != 0) {
             InitFromDDSFile(data, size, p);
         } else {
@@ -312,7 +314,7 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, int size, const Texture2D
     params_ = p;
     params_.format = Compressed;
 
-    int res = SOIL_load_OGL_texture_from_memory((unsigned char *)data, size, SOIL_LOAD_AUTO, tex_id, SOIL_FLAG_GL_MIPMAPS);
+    int res = SOIL_load_OGL_texture_from_memory((unsigned char *)data, size, SOIL_LOAD_AUTO, tex_id, SOIL_FLAG_INVERT_Y | SOIL_FLAG_GL_MIPMAPS);
     assert(res == tex_id);
 
     GLint w, h;
@@ -425,6 +427,40 @@ void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data[6], const Texture2DPa
     InitFromRAWData(_image_data, _p);
 }
 
+void Ren::Texture2D::InitFromPNGFile(const void *data[6], const int size[6], const Texture2DParams &p) {
+    GLuint tex_id;
+    if (params_.format == Undefined) {
+        glGenTextures(1, &tex_id);
+        tex_id_ = tex_id;
+    } else {
+        tex_id = (GLuint)tex_id_;
+    }
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, tex_id);
+
+    params_ = p;
+
+    unsigned int handle =
+        SOIL_load_OGL_cubemap_from_memory((const unsigned char *)data[0], size[0],
+                                          (const unsigned char *)data[1], size[1],
+                                          (const unsigned char *)data[2], size[2],
+                                          (const unsigned char *)data[3], size[3],
+                                          (const unsigned char *)data[4], size[4],
+                                          (const unsigned char *)data[5], size[5], 0, tex_id, SOIL_FLAG_INVERT_Y);
+    assert(handle == tex_id);
+
+    GLint w, h;
+    glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_WIDTH, &w);
+    glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_HEIGHT, &h);
+
+    params_.w = (int)w;
+    params_.h = (int)h;
+    params_.cube = 1;
+
+    ChangeFilter(p.filter, p.repeat);
+}
+
 void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], const Texture2DParams &p) {
     assert(p.w > 0 && p.h > 0);
     GLuint tex_id;
@@ -447,41 +483,51 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], con
                                       (const unsigned char *)data[3], size[3],
                                       (const unsigned char *)data[4], size[4],
                                       (const unsigned char *)data[5], size[5], 0, tex_id, SOIL_FLAG_DDS_LOAD_DIRECT);
-
     assert(handle == tex_id);
+
+    params_.cube = 1;
 
     ChangeFilter(p.filter, p.repeat);
 }
 
 void Ren::Texture2D::ChangeFilter(eTexFilter f, eTexRepeat r) {
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, tex_id_);
+
+    GLenum target = params_.cube ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
+
+    glBindTexture(target, tex_id_);
 
     if (f == NoFilter) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     } else if (f == Bilinear) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     } else if (f == Trilinear) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     } else if (f == BilinearNoMipmap) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
 
     if (r == Repeat) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        if (params_.cube) {
+            glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_REPEAT);
+        }
     } else if (r == ClampToEdge) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        if (params_.cube) {
+            glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        }
     }
 
     if (params_.format != Compressed && (f == Trilinear || f == Bilinear)) {
-        glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
-        glGenerateMipmap(GL_TEXTURE_2D);
+        //glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+        glGenerateMipmap(target);
     }
 }
 
