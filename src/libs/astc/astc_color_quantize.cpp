@@ -60,7 +60,7 @@ static inline float clamp255(float val)
 
 // clamp an input value to [0,1]; Nan is turned into 0.
 
-static inline float clamp01(float val)
+inline float clamp01(float val)
 {
 	if (val > 1.0f)
 		val = 1.0f;

@@ -21,18 +21,7 @@
 #include <math.h>
 
 // clamp an input value to [0,1]; Nan is turned into 0.
-static inline float clamp01(float val)
-{
-	if (val > 1.0f)
-		val = 1.0f;
-	else if (val > 0.0f)
-	{
-		// deliberately empty; switching the order of calculation here will fail to handle 0.
-	}
-	else
-		val = 0.0f;
-	return val;
-}
+float clamp01(float val);
 
 /*
    functions to determine, for a given partitioning, which color endpoint formats are the best to use.
@@ -170,7 +159,7 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 		float3 prd = ep1.xyz - float3(cf, cf, cf);
 		float3 pdif = prd - ep0.xyz;
 		// estimate of color-component spread in low endpoint color
-		float df = MAX(MAX(fabs(pdif.x), fabs(pdif.y)), fabs(pdif.z));
+		float df = (float)MAX(MAX(fabs(pdif.x), fabs(pdif.y)), fabs(pdif.z));
 
 		int b = (int)bf;
 		int c = (int)cf;

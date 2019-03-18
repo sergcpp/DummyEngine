@@ -607,7 +607,7 @@ void find_closest_blockdim_2d(float target_bitrate, int *x, int *y, int consider
 			if(consider_illegal || is_legal)
 			{
 				float bitrate = 128.0f / (blockdims[i] * blockdims[j]);
-				float bitrate_error = fabs(bitrate - target_bitrate);
+				float bitrate_error = (float)fabs(bitrate - target_bitrate);
 				float aspect = (float)blockdims[j] / blockdims[i];
 				if (bitrate_error < best_error || (bitrate_error == best_error && aspect < aspect_of_best))
 				{
@@ -641,7 +641,7 @@ void find_closest_blockdim_3d(float target_bitrate, int *x, int *y, int *z, int 
 				if(consider_illegal || is_legal)
 				{
 					float bitrate = 128.0f / (blockdims[i] * blockdims[j] * blockdims[k]);
-					float bitrate_error = fabs(bitrate - target_bitrate);
+					float bitrate_error = (float)fabs(bitrate - target_bitrate);
 					float aspect = (float)blockdims[k] / blockdims[j] + (float)blockdims[j] / blockdims[i] + (float)blockdims[k] / blockdims[i];
 
 					if (bitrate_error < best_error || (bitrate_error == best_error && aspect < aspect_of_best))
@@ -688,12 +688,14 @@ void compare_two_files(const char *filename1, const char *filename2, int low_fst
 }
 
 
-union if32
-{
-	float f;
-	int32_t s;
-	uint32_t u;
-};
+#ifndef if32_defined
+typedef union if32_ {
+    uint32_t u;
+    int32_t s;
+    float f;
+} if32;
+#define if32_defined
+#endif
 
 
 // The ASTC codec is written with the assumption that a float threaded through
@@ -749,7 +751,7 @@ void dump_image(astc_codec_image * img)
 }
 
 
-int main(int argc, char **argv)
+int astc_main(int argc, char **argv)
 {
 	int i;
 
@@ -1429,8 +1431,8 @@ int main(int argc, char **argv)
 			ydim_2d = ydim_3d;
 		}
 
-		log10_texels_2d = log((float)(xdim_2d * ydim_2d)) / log(10.0f);
-		log10_texels_3d = log((float)(xdim_3d * ydim_3d * zdim_3d)) / log(10.0f);
+		log10_texels_2d = (float)(log((float)(xdim_2d * ydim_2d)) / log(10.0f));
+		log10_texels_3d = (float)(log((float)(xdim_3d * ydim_3d * zdim_3d)) / log(10.0f));
 		argidx = 5;
 	}
 	else
@@ -2202,8 +2204,8 @@ int main(int argc, char **argv)
 
 		if (rgb_force_use_of_hdr == 0)
 		{
-			texel_avg_error_limit_2d = pow(0.1f, dblimit_2d * 0.1f) * 65535.0f * 65535.0f;
-			texel_avg_error_limit_3d = pow(0.1f, dblimit_3d * 0.1f) * 65535.0f * 65535.0f;
+			texel_avg_error_limit_2d = (float)pow(0.1f, dblimit_2d * 0.1f) * 65535.0f * 65535.0f;
+			texel_avg_error_limit_3d = (float)pow(0.1f, dblimit_3d * 0.1f) * 65535.0f * 65535.0f;
 		}
 		else
 		{

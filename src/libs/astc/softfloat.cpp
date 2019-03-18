@@ -371,13 +371,15 @@ sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 }
 
 
-
+#ifndef if32_defined
 typedef union if32_
 {
 	uint32_t u;
 	int32_t s;
 	float f;
 } if32;
+#define if32_defined
+#endif
 
 /* convert from soft-float to native-float */
 

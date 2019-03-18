@@ -25,7 +25,7 @@
 
 float inversesqrt(float p)
 {
-	return 1.0f / sqrt(p);
+	return static_cast < float >(1.0f / sqrt(p));
 }
 float acospi(float p)
 {
@@ -52,8 +52,8 @@ float nan(int p)
 	return v.q;
 }
 
-#if (!_MSC_VER) && (__cplusplus < 201103L)
-float fmax(float p, float q)
+#if (!_MSC_VER) || (__cplusplus < 201103L)
+/*float fmax(float p, float q)
 {
 	if (p != p)
 		return q;
@@ -73,7 +73,7 @@ float fmin(float p, float q)
 	if (p < q)
 		return p;
 	return q;
-}
+}*/
 #endif  // C++11
 
 float2 fmax(float2 p, float2 q)
@@ -123,22 +123,22 @@ float4 cross(float4 p, float4 q)
 
 float length(float2 p)
 {
-	return sqrt(dot(p, p));
+	return static_cast < float >(sqrt(dot(p, p)));
 }
 
 float length(float3 p)
 {
-	return sqrt(dot(p, p));
+	return static_cast < float >(sqrt(dot(p, p)));
 }
 
 float length(float4 p)
 {
-	return sqrt(dot(p, p));
+	return static_cast < float >(sqrt(dot(p, p)));
 }
 
 float length_sqr(float2 p)
 {
-	return dot(p, p);
+	return static_cast < float >(dot(p, p));
 }
 
 float length_sqr(float3 p)
@@ -301,7 +301,7 @@ float4 characteristic_poly(mat4 p)
 
 float2 solve_monic(float2 p)
 {
-	float v = sqrt(p.y * p.y - 4 * p.x);
+	float v = static_cast < float >(sqrt(p.y * p.y - 4 * p.x));
 	return (p.yy + float2(v, -v)) * -0.5f;
 }
 
@@ -334,7 +334,7 @@ float3 solve_monic(float3 p)
 	if (nq3 < r2)
 	{
 		// one root
-		float root = sqrt(r2 - nq3);	// div scal^3
+		float root = static_cast < float >(sqrt(r2 - nq3));	// div scal^3
 		float s = static_cast < float >(cbrt(r + root));	// div scal
 		float t = static_cast < float >(cbrt(r - root));	// div scal
 		return float3((s + t) * scal - pz, nan(0), nan(0));

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(RayDemo)
+project(OccDemo)
 
 set(CMAKE_CXX_STANDARD 11)
 
@@ -53,6 +53,8 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     include_directories(libs/dirent)
 endif()
 
+include_directories(libs)
+
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..)
 #set(WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..)
 enable_testing()
@@ -65,6 +67,8 @@ add_subdirectory(Ray)
 add_subdirectory(Ren)
 add_subdirectory(Sys)
 add_subdirectory(Gui)
+
+add_subdirectory(libs/astc)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -86,7 +90,8 @@ set_target_properties(test_Eng
                       test_Sys
                       test_Gui PROPERTIES FOLDER Tests)
                       
-set_target_properties(SOIL2 PROPERTIES FOLDER _)
+set_target_properties(SOIL2
+                      astc PROPERTIES FOLDER _)
 
 add_test(EngTest        Eng/tests/test_Eng)
 add_test(RayTest        Ray/tests/test_Ray)

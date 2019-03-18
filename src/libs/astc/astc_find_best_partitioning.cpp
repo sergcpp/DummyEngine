@@ -184,10 +184,10 @@ void compute_partition_error_color_weightings(int xdim, int ydim, int zdim, cons
 	}
 	for (i = 0; i < pcnt; i++)
 	{
-		color_scalefactors[i].x = sqrt(error_weightings[i].x);
-		color_scalefactors[i].y = sqrt(error_weightings[i].y);
-		color_scalefactors[i].z = sqrt(error_weightings[i].z);
-		color_scalefactors[i].w = sqrt(error_weightings[i].w);
+		color_scalefactors[i].x = (float)sqrt(error_weightings[i].x);
+		color_scalefactors[i].y = (float)sqrt(error_weightings[i].y);
+		color_scalefactors[i].z = (float)sqrt(error_weightings[i].z);
+		color_scalefactors[i].w = (float)sqrt(error_weightings[i].w);
 	}
 
 }

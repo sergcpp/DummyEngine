@@ -37,6 +37,7 @@
  */
 /*----------------------------------------------------------------------------*/
 
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include "astc_codec_internals.h"
 
@@ -133,12 +134,14 @@ void prepare_angular_tables(void)
 }
 
 
-union if32
-{
-	float f;
-	int32_t s;
-	uint32_t u;
-};
+#ifndef if32_defined
+typedef union if32_ {
+    uint32_t u;
+    int32_t s;
+    float f;
+} if32;
+#define if32_defined
+#endif
 
 
 // function to compute angular sums; then, from the
@@ -184,7 +187,7 @@ void compute_angular_offsets(int samplecount, const float *samples, const float 
 	// post-process the angle-sums
 	for (i = 0; i < max_angular_steps; i++)
 	{
-		float angle = atan2(anglesum_y[i], anglesum_x[i]);	// positive angle -> positive offset
+		float angle = (float)atan2(anglesum_y[i], anglesum_x[i]);	// positive angle -> positive offset
 		offsets[i] = angle * (stepsizes[i] * (1.0f / (2.0f * (float)M_PI)));
 	}
 }

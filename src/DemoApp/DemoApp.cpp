@@ -87,7 +87,7 @@ int DemoApp::Init(int w, int h) {
 
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
 #if !defined(__EMSCRIPTEN__)
-    SDL_GL_SetSwapInterval(1);
+    SDL_GL_SetSwapInterval(0);
 #endif
 #elif defined(USE_SW_RENDER)
     renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_ACCELERATED);
@@ -154,6 +154,14 @@ void DemoApp::AddEvent(int type, int key, float x, float y, float dx, float dy) 
 
 #if !defined(__ANDROID__)
 int DemoApp::Run(const std::vector<std::string> &args) {
+
+    for (const auto &arg : args) {
+        if (arg == "--prepare_assets_only") {
+            Viewer::PrepareAssets();
+            return 0;
+        }
+    }
+
 #if defined(__EMSCRIPTEN__)
     const int w = 1024;
     const int h = 576;

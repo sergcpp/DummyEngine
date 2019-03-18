@@ -302,9 +302,9 @@ float compute_imageblock_difference(int xdim, int ydim, int zdim, const imageblo
 	for (i = 0; i < texels_per_block; i++)
 	{
 		float rdiff = fabsf(f1[4 * i] - f2[4 * i]);
-		float gdiff = fabs(f1[4 * i + 1] - f2[4 * i + 1]);
-		float bdiff = fabs(f1[4 * i + 2] - f2[4 * i + 2]);
-		float adiff = fabs(f1[4 * i + 3] - f2[4 * i + 3]);
+		float gdiff = (float)fabs(f1[4 * i + 1] - f2[4 * i + 1]);
+		float bdiff = (float)fabs(f1[4 * i + 2] - f2[4 * i + 2]);
+		float adiff = (float)fabs(f1[4 * i + 3] - f2[4 * i + 3]);
 		rdiff = MIN(rdiff, 1e15f);
 		gdiff = MIN(gdiff, 1e15f);
 		bdiff = MIN(bdiff, 1e15f);

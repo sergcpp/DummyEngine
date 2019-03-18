@@ -17,34 +17,11 @@
 #include "astc_codec_internals.h"
 
 // routine to write up to 8 bits
-static inline void write_bits(int value, int bitcount, int bitoffset, uint8_t * ptr)
-{
-	int mask = (1 << bitcount) - 1;
-	value &= mask;
-	ptr += bitoffset >> 3;
-	bitoffset &= 7;
-	value <<= bitoffset;
-	mask <<= bitoffset;
-	mask = ~mask;
-
-	ptr[0] &= mask;
-	ptr[0] |= value;
-	ptr[1] &= mask >> 8;
-	ptr[1] |= value >> 8;
-}
+inline void write_bits(int value, int bitcount, int bitoffset, uint8_t * ptr);
 
 
 // routine to read up to 8 bits
-static inline int read_bits(int bitcount, int bitoffset, const uint8_t * ptr)
-{
-	int mask = (1 << bitcount) - 1;
-	ptr += bitoffset >> 3;
-	bitoffset &= 7;
-	int value = ptr[0] | (ptr[1] << 8);
-	value >>= bitoffset;
-	value &= mask;
-	return value;
-}
+inline int read_bits(int bitcount, int bitoffset, const uint8_t * ptr);
 
 
 int bitrev8(int p)

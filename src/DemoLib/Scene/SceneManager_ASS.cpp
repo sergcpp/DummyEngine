@@ -483,8 +483,32 @@ bool CreateFolders(const char *out_file) {
 
 }
 
+// these are from astc codec
+#undef IGNORE
+#include <astc/astc_codec_internals.h>
+#undef MAX
+
+int astc_main(int argc, char **argv);
+
+void test_inappropriate_extended_precision(void);
+void prepare_angular_tables(void);
+void build_quantization_mode_table(void);
+void find_closest_blockdim_2d(float target_bitrate, int *x, int *y, int consider_illegal);
+
+void encode_astc_image(const astc_codec_image *input_image,
+                       astc_codec_image *output_image,
+                       int xdim,
+                       int ydim,
+                       int zdim,
+                       const error_weighting_params *ewp, astc_decode_mode decode_mode, swizzlepattern swz_encode, swizzlepattern swz_decode, uint8_t * buffer, int pack_and_unpack, int threadcount);
+
 bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, const char *platform, Sys::ThreadPool *p_threads) {
     using namespace SceneManagerInternal;
+
+    // for astc codec
+    test_inappropriate_extended_precision();
+    prepare_angular_tables();
+    build_quantization_mode_table();
 
     auto replace_texture_extension = [](std::string &tex) {
         size_t n;
@@ -535,6 +559,131 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         Write_DDS(image_data, width, height, channels, out_file);
 
         SOIL_free_image_data(image_data);
+    };
+
+    auto h_conv_to_astc = [](const char *in_file, const char *out_file) {
+        LOGI("[PrepareAssets] Conv %s", out_file);
+
+        std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
+        auto src_size = src_stream.tellg();
+        src_stream.seekg(0, std::ios::beg);
+
+        std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
+        src_stream.read((char *)&src_buf[0], src_size);
+
+        int result;
+        astc_codec_image *src_image = astc_codec_load_image(in_file, 0, &result);
+
+        {
+            const float target_bitrate = 2.0f;
+            int xdim, ydim;
+
+            find_closest_blockdim_2d(target_bitrate, &xdim, &ydim, 0);
+
+            float log10_texels_2d = (std::log((float)(xdim * ydim)) / std::log(10.0f));
+
+            // 'medium' preset params
+            int plimit_autoset = 25;
+            float oplimit_autoset = 1.2f;
+            float mincorrel_autoset = 0.75f;
+            float dblimit_autoset_2d = std::max(95 - 35 * log10_texels_2d, 70 - 19 * log10_texels_2d);
+            float bmc_autoset = 75.0f;
+            int maxiters_autoset = 2;
+
+            int pcdiv;
+
+            switch (ydim) {
+            case 4:
+                pcdiv = 25;
+                break;
+            case 5:
+                pcdiv = 15;
+                break;
+            case 6:
+                pcdiv = 15;
+                break;
+            case 8:
+                pcdiv = 10;
+                break;
+            case 10:
+                pcdiv = 8;
+                break;
+            case 12:
+                pcdiv = 6;
+                break;
+            default:
+                pcdiv = 6;
+                break;
+            };
+
+            error_weighting_params ewp;
+
+            ewp.rgb_power = 1.0f;
+            ewp.alpha_power = 1.0f;
+            ewp.rgb_base_weight = 1.0f;
+            ewp.alpha_base_weight = 1.0f;
+            ewp.rgb_mean_weight = 0.0f;
+            ewp.rgb_stdev_weight = 0.0f;
+            ewp.alpha_mean_weight = 0.0f;
+            ewp.alpha_stdev_weight = 0.0f;
+
+            ewp.rgb_mean_and_stdev_mixing = 0.0f;
+            ewp.mean_stdev_radius = 0;
+            ewp.enable_rgb_scale_with_alpha = 0;
+            ewp.alpha_radius = 0;
+
+            ewp.block_artifact_suppression = 0.0f;
+            ewp.rgba_weights[0] = 1.0f;
+            ewp.rgba_weights[1] = 1.0f;
+            ewp.rgba_weights[2] = 1.0f;
+            ewp.rgba_weights[3] = 1.0f;
+            ewp.ra_normal_angular_scale = 0;
+
+            // if encode, process the parsed command line values
+
+            int partitions_to_test = plimit_autoset;
+            float dblimit_2d = dblimit_autoset_2d;
+            float oplimit = oplimit_autoset;
+            float mincorrel = mincorrel_autoset;
+
+            int maxiters = maxiters_autoset;
+            ewp.max_refinement_iters = maxiters;
+
+            ewp.block_mode_cutoff = (bmc_autoset) / 100.0f;
+
+            ewp.texel_avg_error_limit = std::pow(0.1f, dblimit_2d * 0.1f) * 65535.0f * 65535.0f;
+
+            ewp.partition_1_to_2_limit = oplimit;
+            ewp.lowest_correlation_cutoff = mincorrel;
+
+            if (partitions_to_test < 1)
+                partitions_to_test = 1;
+            else if (partitions_to_test > PARTITION_COUNT)
+                     partitions_to_test = PARTITION_COUNT;
+            ewp.partition_search_limit = partitions_to_test;
+
+            float max_color_component_weight = std::max(std::max(ewp.rgba_weights[0], ewp.rgba_weights[1]),
+                                                        std::max(ewp.rgba_weights[2], ewp.rgba_weights[3]));
+            ewp.rgba_weights[0] = std::max(ewp.rgba_weights[0], max_color_component_weight / 1000.0f);
+            ewp.rgba_weights[1] = std::max(ewp.rgba_weights[1], max_color_component_weight / 1000.0f);
+            ewp.rgba_weights[2] = std::max(ewp.rgba_weights[2], max_color_component_weight / 1000.0f);
+            ewp.rgba_weights[3] = std::max(ewp.rgba_weights[3], max_color_component_weight / 1000.0f);
+
+            swizzlepattern swz_encode = { 0, 1, 2, 3 };
+
+            int xsize = src_image->xsize;
+            int ysize = src_image->ysize;
+
+            int xblocks = (xsize + xdim - 1) / xdim;
+            int yblocks = (ysize + ydim - 1) / ydim;
+            int zblocks = 1;
+
+            std::unique_ptr<uint8_t[]> out_buf(new uint8_t[xblocks * yblocks * zblocks * 16]);
+
+            encode_astc_image(src_image, nullptr, xdim, ydim, 1, &ewp, DECODE_HDR, swz_encode, swz_encode, &out_buf[0], 0, 8);
+        }
+
+        destroy_image(src_image);
     };
 
     auto h_conv_hdr_to_rgbm = [](const char *in_file, const char *out_file) {
@@ -675,6 +824,15 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     } else {
         ReadAllFiles_r(in_folder, convert_file);
     }
+
+    /*if (strcmp(platform, "android") == 0) {
+        int argc = 6;
+        char *argv[] = { "astc", "-c", "barrel_diffuse.png", "barrel_diffuse.astc", "2.0", "-medium" };
+
+        astc_main(argc, argv);
+
+        h_conv_to_astc("barrel_diffuse.png", "barrel_diffuse.astc");
+    }*/
 
     return true;
 }
