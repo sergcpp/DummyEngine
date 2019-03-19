@@ -3,6 +3,8 @@
 #include <memory>
 
 #include "SOIL2/SOIL2.h"
+#undef min
+#undef max
 
 #include "GL.h"
 
@@ -141,6 +143,8 @@ void Ren::Texture2D::Init(const char *name, const void *data, int size,
             InitFromTGAFile(data, p);
         } else if (strstr(name, ".dds") != 0 || strstr(name, ".DDS") != 0) {
             InitFromDDSFile(data, size, p);
+        } else if (strstr(name, ".ktx") != 0 || strstr(name, ".ktx") != 0) {
+            InitFromKTXFile(data, size, p);
         } else if (strstr(name, ".png") != 0 || strstr(name, ".PNG") != 0) {
             InitFromPNGFile(data, size, p);
         } else {
@@ -324,6 +328,49 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, int size, const Texture2D
 
     params_.w = (int)w;
     params_.h = (int)h;
+
+    ChangeFilter(p.filter, p.repeat);
+}
+
+void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2DParams &p) {
+    GLuint tex_id;
+    if (params_.format == Undefined) {
+        glGenTextures(1, &tex_id);
+        tex_id_ = tex_id;
+    } else {
+        tex_id = (GLuint)tex_id_;
+    }
+
+    params_ = p;
+    params_.format = Compressed;
+
+    KTXHeader header;
+    memcpy(&header, data, sizeof(KTXHeader));
+
+    int w = (int)header.pixel_width;
+    int h = (int)header.pixel_height;
+
+    params_.w = w;
+    params_.h = h;
+
+    glBindTexture(GL_TEXTURE_2D, tex_id);
+
+    const auto *_data = (const uint8_t *)data;
+    int data_offset = sizeof(KTXHeader);
+
+    for (int i = 0; i < (int)header.mipmap_levels_count; i++) {
+        uint32_t img_size;
+        memcpy(&img_size, &_data[data_offset], sizeof(uint32_t));
+        data_offset += sizeof(uint32_t);
+        glCompressedTexImage2D(GL_TEXTURE_2D, i, (GLenum)header.gl_internal_format, w, h, 0, (GLsizei)img_size, &_data[data_offset]);
+        data_offset += img_size;
+
+        w = std::max(w / 2, 1);
+        h = std::max(h / 2, 1);
+
+        int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
+        data_offset += pad;
+    }
 
     ChangeFilter(p.filter, p.repeat);
 }

@@ -36,6 +36,7 @@ class Texture2D : public RefCounter {
     void InitFromTGA_RGBEFile(const void *data, const Texture2DParams &p);
     void InitFromDDSFile(const void *data, int size, const Texture2DParams &p);
     void InitFromPNGFile(const void *data, int size, const Texture2DParams &p);
+    void InitFromKTXFile(const void *data, int size, const Texture2DParams &p);
 
     void InitFromRAWData(const void *data[6], const Texture2DParams &p);
     void InitFromTGAFile(const void *data[6], const Texture2DParams &p);
