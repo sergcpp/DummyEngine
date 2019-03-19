@@ -2785,6 +2785,7 @@ int query_tex_rectangle_capability( void )
 
 int query_cubemap_capability( void )
 {
+#if !defined(__ANDROID__)
 	/*	check for the capability	*/
 	if( has_cubemap_capability == SOIL_CAPABILITY_UNKNOWN )
 	{
@@ -2807,6 +2808,9 @@ int query_cubemap_capability( void )
 	}
 	/*	let the user know if we can do cubemaps or not	*/
 	return has_cubemap_capability;
+#else
+    return 1;
+#endif
 }
 
 static P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC get_glCompressedTexImage2D_addr()

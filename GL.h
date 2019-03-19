@@ -94,8 +94,12 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 #define GL_STATIC_DRAW                      0x88E4
 #define GL_DYNAMIC_DRAW                     0x88E8
 
+#define GL_STREAM_READ                      0x88E1
+#define GL_DYNAMIC_READ                     0x88E9
+
 #define GL_DYNAMIC_COPY                     0x88EA
 
+#define GL_READ_ONLY                        0x88B8
 #define GL_WRITE_ONLY                       0x88B9
 
 #define GL_COPY_WRITE_BUFFER                0x8f37
@@ -111,6 +115,9 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 
 #define GL_FRAMEBUFFER                      0x8D40
 #define GL_RENDERBUFFER                     0x8D41
+
+#define GL_READ_FRAMEBUFFER                 0x8ca8
+#define GL_DRAW_FRAMEBUFFER                 0x8ca9
 
 #define GL_FRAMEBUFFER_COMPLETE             0x8CD5
 
@@ -177,9 +184,41 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 #define GL_TEXTURE_BUFFER                 0x8C2A
 #define GL_MAX_TEXTURE_BUFFER_SIZE        0x8C2B
 
+#define GL_PIXEL_PACK_BUFFER        0x88eb
+
 #define GL_TIMESTAMP 0x8E28
 
 #define GL_QUERY_RESULT	0x8866
+
+#define GL_COMPRESSED_RGBA_ASTC_4x4_KHR            0x93B0
+#define GL_COMPRESSED_RGBA_ASTC_5x4_KHR            0x93B1
+#define GL_COMPRESSED_RGBA_ASTC_5x5_KHR            0x93B2
+#define GL_COMPRESSED_RGBA_ASTC_6x5_KHR            0x93B3
+#define GL_COMPRESSED_RGBA_ASTC_6x6_KHR            0x93B4
+#define GL_COMPRESSED_RGBA_ASTC_8x5_KHR            0x93B5
+#define GL_COMPRESSED_RGBA_ASTC_8x6_KHR            0x93B6
+#define GL_COMPRESSED_RGBA_ASTC_8x8_KHR            0x93B7
+#define GL_COMPRESSED_RGBA_ASTC_10x5_KHR           0x93B8
+#define GL_COMPRESSED_RGBA_ASTC_10x6_KHR           0x93B9
+#define GL_COMPRESSED_RGBA_ASTC_10x8_KHR           0x93BA
+#define GL_COMPRESSED_RGBA_ASTC_10x10_KHR          0x93BB
+#define GL_COMPRESSED_RGBA_ASTC_12x10_KHR          0x93BC
+#define GL_COMPRESSED_RGBA_ASTC_12x12_KHR          0x93BD
+
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR    0x93D0
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR    0x93D1
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR    0x93D2
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR    0x93D3
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR    0x93D4
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR    0x93D5
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR    0x93D6
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR    0x93D7
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR   0x93D8
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR   0x93D9
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR   0x93DA
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR  0x93DB
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR  0x93DC
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR  0x93DD
 
 #ifndef APIENTRY
 #if defined(WIN32)
@@ -298,6 +337,8 @@ extern void (APIENTRY *glUniform4fv)(GLint location, GLsizei count, const GLfloa
 
 extern void (APIENTRY *glUniformMatrix4fv)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 
+extern void (APIENTRY *glCompressedTexImage2D)(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid * data);
+
 extern void (APIENTRY *glTexStorage2D)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
 extern void (APIENTRY *glTexStorage2DMultisample)(GLenum target, GLsizei samples, GLenum internalformat,
         GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
@@ -316,12 +357,19 @@ extern void (APIENTRY *glGenQueries)(GLsizei n, GLuint *ids);
 extern void (APIENTRY *glDeleteQueries)(GLsizei n, const GLuint *ids);
 extern void (APIENTRY *glQueryCounter)(GLuint id, GLenum target);
 
-extern void (APIENTRY *glGetQueryObjectiv)(GLuint id, GLenum pname, GLint * params);
-extern void (APIENTRY *glGetQueryObjectuiv)(GLuint id, GLenum pname, GLuint * params);
+extern void (APIENTRY *glGetQueryObjectiv)(GLuint id, GLenum pname, GLint *params);
+extern void (APIENTRY *glGetQueryObjectuiv)(GLuint id, GLenum pname, GLuint *params);
 extern void (APIENTRY *glGetQueryObjecti64v)(GLuint id, GLenum pname, GLint64 *params);
 extern void (APIENTRY *glGetQueryObjectui64v)(GLuint id, GLenum pname, GLuint64 *params);
 
 extern const GLubyte *(APIENTRY *glGetStringi)(GLenum name, GLuint index);
+
+extern void (APIENTRY *glGetInteger64v)(GLenum pname, GLint64 *data);
+extern void (APIENTRY *glGetBooleani_v)(GLenum target, GLuint index, GLboolean *data);
+extern void (APIENTRY *glGetIntegeri_v)(GLenum target, GLuint index, GLint *data);
+extern void (APIENTRY *glGetFloati_v)(GLenum target, GLuint index, GLfloat *data);
+extern void (APIENTRY *glGetDoublei_v)(GLenum target, GLuint index, GLdouble *data);
+extern void (APIENTRY *glGetInteger64i_v)(GLenum target, GLuint index, GLint64 *data);
 
 typedef void (APIENTRY *DEBUGPROC)(GLenum source,
                                    GLenum type,

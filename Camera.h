@@ -20,17 +20,20 @@ enum eCamPlane {
     LeftPlane, RightPlane, TopPlane, BottomPlane, NearPlane, FarPlane
 };
 
+enum eVisibilityResult { Invisible, FullyVisible, PartiallyVisible };
+
 struct Frustum {
     Ren::Plane planes[6] = { { Ren::Uninitialize },{ Ren::Uninitialize },{ Ren::Uninitialize },
                              { Ren::Uninitialize },{ Ren::Uninitialize },{ Ren::Uninitialize } };
-};
 
-enum eVisibilityResult { Invisible, FullyVisible, PartiallyVisible };
+    eVisibilityResult CheckVisibility(const float bbox[8][3]) const;
+    eVisibilityResult CheckVisibility(const Vec3f &bbox_min, const Vec3f &bbox_max) const;
+};
 
 class Camera {
 protected:
     Mat4f view_matrix_;
-    Mat4f projection_matrix_;
+    Mat4f proj_matrix_;
 
     Vec3f world_position_;
 
@@ -45,8 +48,8 @@ public:
     const Mat4f &view_matrix() const {
         return view_matrix_;
     }
-    const Mat4f &projection_matrix() const {
-        return projection_matrix_;
+    const Mat4f &proj_matrix() const {
+        return proj_matrix_;
     }
 
     const Vec3f &world_position() const {

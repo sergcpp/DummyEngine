@@ -161,8 +161,8 @@ std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eT
     return image_ret;
 }
 
-std::unique_ptr<uint16_t[]> Ren::ConvertRGBE_to_RGB16F(const uint8_t *image_data, int w, int h) {
-    std::unique_ptr<uint16_t[]> fp_data(new uint16_t[w * h * 3]);
+std::unique_ptr<float[]> Ren::ConvertRGBE_to_RGB32F(const uint8_t *image_data, int w, int h) {
+    std::unique_ptr<float[]> fp_data(new float[w * h * 3]);
 
     for (int i = 0; i < w * h; i++) {
         uint8_t r = image_data[4 * i + 0];
@@ -173,12 +173,184 @@ std::unique_ptr<uint16_t[]> Ren::ConvertRGBE_to_RGB16F(const uint8_t *image_data
         float f = std::exp2(float(a) - 128.0f);
         float k = 1.0f / 255;
 
-        fp_data[3 * i + 0] = f32_to_f16(k * r * f);
-        fp_data[3 * i + 1] = f32_to_f16(k * g * f);
-        fp_data[3 * i + 2] = f32_to_f16(k * b * f);
+        fp_data[3 * i + 0] = k * r * f;
+        fp_data[3 * i + 1] = k * g * f;
+        fp_data[3 * i + 2] = k * b * f;
     }
 
     return fp_data;
+}
+
+std::unique_ptr<uint16_t[]> Ren::ConvertRGBE_to_RGB16F(const uint8_t *image_data, int w, int h) {
+    std::unique_ptr<uint16_t[]> fp16_data(new uint16_t[w * h * 3]);
+
+    for (int i = 0; i < w * h; i++) {
+        uint8_t r = image_data[4 * i + 0];
+        uint8_t g = image_data[4 * i + 1];
+        uint8_t b = image_data[4 * i + 2];
+        uint8_t a = image_data[4 * i + 3];
+
+        float f = std::exp2(float(a) - 128.0f);
+        float k = 1.0f / 255;
+
+        fp16_data[3 * i + 0] = f32_to_f16(k * r * f);
+        fp16_data[3 * i + 1] = f32_to_f16(k * g * f);
+        fp16_data[3 * i + 2] = f32_to_f16(k * b * f);
+    }
+
+    return fp16_data;
+}
+
+std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBE(const float *image_data, int w, int h, int channels) {
+    std::unique_ptr<uint8_t[]> u8_data(new uint8_t[w * h * 4]);
+
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            Vec3f val = { Uninitialize };
+
+            if (channels == 3) {
+                val[0] = image_data[3 * (y * w + x) + 0];
+                val[1] = image_data[3 * (y * w + x) + 1];
+                val[2] = image_data[3 * (y * w + x) + 2];
+            } else if (channels == 4) {
+                val[0] = image_data[4 * (y * w + x) + 0];
+                val[1] = image_data[4 * (y * w + x) + 1];
+                val[2] = image_data[4 * (y * w + x) + 2];
+            }
+
+            Ren::Vec3f exp = { std::log2(val[0]), std::log2(val[1]), std::log2(val[2]) };
+            for (int i = 0; i < 3; i++) {
+                exp[i] = std::ceil(exp[i]);
+                if (exp[i] < -128.0f) exp[i] = -128.0f;
+                else if (exp[i] > 127.0f) exp[i] = 127.0f;
+            }
+
+            float common_exp = std::max(exp[0], std::max(exp[1], exp[2]));
+            float range = std::exp2(common_exp);
+
+            Ren::Vec3f mantissa = val / range;
+            for (int i = 0; i < 3; i++) {
+                if (mantissa[i] < 0.0f) mantissa[i] = 0.0f;
+                else if (mantissa[i] > 1.0f) mantissa[i] = 1.0f;
+            }
+
+            Ren::Vec4f res = { mantissa[0], mantissa[1], mantissa[2], common_exp + 128.0f };
+
+            uint8_t r = (uint8_t)std::max(std::min(int(res[0] * 255), 255), 0);
+            uint8_t g = (uint8_t)std::max(std::min(int(res[1] * 255), 255), 0);
+            uint8_t b = (uint8_t)std::max(std::min(int(res[2] * 255), 255), 0);
+            uint8_t a = (uint8_t)std::max(std::min(int(res[3]), 255), 0);
+
+            u8_data[(y * w + x) * 4 + 0] = r;
+            u8_data[(y * w + x) * 4 + 1] = g;
+            u8_data[(y * w + x) * 4 + 2] = b;
+            u8_data[(y * w + x) * 4 + 3] = a;
+        }
+    }
+
+    return u8_data;
+}
+
+std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBM(const float *image_data, int w, int h, int channels) {
+    std::unique_ptr<uint8_t[]> u8_data(new uint8_t[w * h * 4]);
+
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            float fr, fg, fb;
+
+            if (channels == 3) {
+                fr = image_data[3 * (y * w + x) + 0];
+                fg = image_data[3 * (y * w + x) + 1];
+                fb = image_data[3 * (y * w + x) + 2];
+            } else if (channels == 4) {
+                fr = image_data[4 * (y * w + x) + 0];
+                fg = image_data[4 * (y * w + x) + 1];
+                fb = image_data[4 * (y * w + x) + 2];
+            }
+
+            fr *= 1.0f / 6.0f;
+            fg *= 1.0f / 6.0f;
+            fb *= 1.0f / 6.0f;
+
+            float fa = std::max(std::max(fr, fg), std::max(fb, 1e-6f));
+            if (fa > 1.0f) fa = 1.0f;
+
+            fa = std::ceil(fa * 255.0f) / 255.0f;
+            fr /= fa;
+            fg /= fa;
+            fb /= fa;
+
+            uint8_t r = (uint8_t)std::max(std::min(int(fr * 255), 255), 0);
+            uint8_t g = (uint8_t)std::max(std::min(int(fg * 255), 255), 0);
+            uint8_t b = (uint8_t)std::max(std::min(int(fb * 255), 255), 0);
+            uint8_t a = (uint8_t)std::max(std::min(int(fa * 255), 255), 0);
+
+            u8_data[(y * w + x) * 4 + 0] = r;
+            u8_data[(y * w + x) * 4 + 1] = g;
+            u8_data[(y * w + x) * 4 + 2] = b;
+            u8_data[(y * w + x) * 4 + 3] = a;
+        }
+    }
+
+    return u8_data;
+}
+
+int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int heights[16], int channels) {
+    int mip_count = 1;
+
+    int _w = widths[0], _h = heights[0];
+    while (_w > 1 || _h > 1) {
+        int _prev_w = _w, _prev_h = _h;
+        _w = std::max(_w / 2, 1);
+        _h = std::max(_h / 2, 1);
+        mipmaps[mip_count].reset(new uint8_t[_w * _h * channels]);
+        widths[mip_count] = _w;
+        heights[mip_count] = _h;
+        const uint8_t *tex = mipmaps[mip_count - 1].get();
+
+        int count = 0;
+
+        if (channels == 4) {
+            for (int j = 0; j < _prev_h; j += 2) {
+                for (int i = 0; i < _prev_w; i += 2) {
+                    int r = tex[((j + 0) * _prev_w + i) * 4 + 0] + tex[((j + 0) * _prev_w + i + 1) * 4 + 0] +
+                            tex[((j + 1) * _prev_w + i) * 4 + 0] + tex[((j + 1) * _prev_w + i + 1) * 4 + 0];
+                    int g = tex[((j + 0) * _prev_w + i) * 4 + 1] + tex[((j + 0) * _prev_w + i + 1) * 4 + 1] +
+                            tex[((j + 1) * _prev_w + i) * 4 + 1] + tex[((j + 1) * _prev_w + i + 1) * 4 + 1];
+                    int b = tex[((j + 0) * _prev_w + i) * 4 + 2] + tex[((j + 0) * _prev_w + i + 1) * 4 + 2] +
+                            tex[((j + 1) * _prev_w + i) * 4 + 2] + tex[((j + 1) * _prev_w + i + 1) * 4 + 2];
+                    int a = tex[((j + 0) * _prev_w + i) * 4 + 3] + tex[((j + 0) * _prev_w + i + 1) * 4 + 3] +
+                            tex[((j + 1) * _prev_w + i) * 4 + 3] + tex[((j + 1) * _prev_w + i + 1) * 4 + 3];
+
+                    mipmaps[mip_count][count * 4 + 0] = uint8_t(r / 4);
+                    mipmaps[mip_count][count * 4 + 1] = uint8_t(g / 4);
+                    mipmaps[mip_count][count * 4 + 2] = uint8_t(b / 4);
+                    mipmaps[mip_count][count * 4 + 3] = uint8_t(a / 4);
+                    count++;
+                }
+            }
+        } else if (channels == 3) {
+            for (int j = 0; j < _prev_h; j += 2) {
+                for (int i = 0; i < _prev_w; i += 2) {
+                    int r = tex[((j + 0) * _prev_w + i) * 3 + 0] + tex[((j + 0) * _prev_w + i + 1) * 3 + 0] +
+                            tex[((j + 1) * _prev_w + i) * 3 + 0] + tex[((j + 1) * _prev_w + i + 1) * 3 + 0];
+                    int g = tex[((j + 0) * _prev_w + i) * 3 + 1] + tex[((j + 0) * _prev_w + i + 1) * 3 + 1] +
+                            tex[((j + 1) * _prev_w + i) * 3 + 1] + tex[((j + 1) * _prev_w + i + 1) * 3 + 1];
+                    int b = tex[((j + 0) * _prev_w + i) * 3 + 2] + tex[((j + 0) * _prev_w + i + 1) * 3 + 2] +
+                            tex[((j + 1) * _prev_w + i) * 3 + 2] + tex[((j + 1) * _prev_w + i + 1) * 3 + 2];
+
+                    mipmaps[mip_count][count * 3 + 0] = uint8_t(r / 4);
+                    mipmaps[mip_count][count * 3 + 1] = uint8_t(g / 4);
+                    mipmaps[mip_count][count * 3 + 2] = uint8_t(b / 4);
+                    count++;
+                }
+            }
+        }
+
+        mip_count++;
+    }
+
+    return mip_count;
 }
 
 void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count, uint32_t vtx_count, uint32_t *out_indices) {

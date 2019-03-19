@@ -20,6 +20,47 @@ int Ren::Plane::ClassifyPoint(const float point[3]) const {
     return OnPlane;
 }
 
+Ren::eVisibilityResult Ren::Frustum::CheckVisibility(const float bbox[8][3]) const {
+    eVisibilityResult res = FullyVisible;
+
+    for (int pl = LeftPlane; pl <= FarPlane; pl++) {
+        int in_count = 8;
+
+        for (int i = 0; i < 8; i++) {
+            switch (planes[pl].ClassifyPoint(&bbox[i][0])) {
+            case Back:
+                in_count--;
+                break;
+            }
+        }
+        if (in_count == 0) {
+            res = Invisible;
+            break;
+        }
+
+        if (in_count != 8) {
+            res = PartiallyVisible;
+        }
+    }
+
+    return res;
+}
+
+Ren::eVisibilityResult Ren::Frustum::CheckVisibility(const Vec3f &bbox_min, const Vec3f &bbox_max) const {
+    const float bbox_points[8][3] = {
+        bbox_min[0], bbox_min[1], bbox_min[2],
+        bbox_max[0], bbox_min[1], bbox_min[2],
+        bbox_min[0], bbox_min[1], bbox_max[2],
+        bbox_max[0], bbox_min[1], bbox_max[2],
+        bbox_min[0], bbox_max[1], bbox_min[2],
+        bbox_max[0], bbox_max[1], bbox_min[2],
+        bbox_min[0], bbox_max[1], bbox_max[2],
+        bbox_max[0], bbox_max[1], bbox_max[2]
+    };
+
+    return CheckVisibility(bbox_points);
+}
+
 Ren::Camera::Camera(const Vec3f &center, const Vec3f &target, const Vec3f &up)
     : is_orthographic_(false), angle_(0.0f), aspect_(0.0f), near_(0.0f), far_(0.0f) {
     SetupView(center, target, up);
@@ -39,12 +80,12 @@ void Ren::Camera::Perspective(float angle, float aspect, float nearr, float farr
     aspect_ = aspect;
     near_ = nearr;
     far_ = farr;
-    PerspectiveProjection(projection_matrix_, angle, aspect, nearr, farr);
+    PerspectiveProjection(proj_matrix_, angle, aspect, nearr, farr);
 }
 
 void Ren::Camera::Orthographic(float left, float right, float top, float down, float nearr, float farr) {
     is_orthographic_ = true;
-    OrthographicProjection(projection_matrix_, left, right, top, down, nearr, farr);
+    OrthographicProjection(proj_matrix_, left, right, top, down, nearr, farr);
 }
 
 void Ren::Camera::Move(const Vec3f &v, float delta_time) {
@@ -78,7 +119,7 @@ void Ren::Camera::Rotate(float rx, float ry, float delta_time) {
 }
 
 void Ren::Camera::UpdatePlanes() {
-    Mat4f combo_matrix = projection_matrix_ * view_matrix_;
+    Mat4f combo_matrix = proj_matrix_ * view_matrix_;
 
     frustum_.planes[LeftPlane].n[0] = combo_matrix[0][3] + combo_matrix[0][0];
     frustum_.planes[LeftPlane].n[1] = combo_matrix[1][3] + combo_matrix[1][0];
@@ -128,44 +169,11 @@ void Ren::Camera::UpdatePlanes() {
 }
 
 Ren::eVisibilityResult Ren::Camera::CheckFrustumVisibility(const float bbox[8][3]) const {
-    eVisibilityResult res = FullyVisible;
-
-    for (int pl = LeftPlane; pl <= FarPlane; pl++) {
-        int in_count = 8;
-
-        for (int i = 0; i < 8; i++) {
-            switch (frustum_.planes[pl].ClassifyPoint(&bbox[i][0])) {
-            case Back:
-                in_count--;
-                break;
-            }
-        }
-        if (in_count == 0) {
-            res = Invisible;
-            break;
-        }
-
-        if (in_count != 8) {
-            res = PartiallyVisible;
-        }
-    }
-
-    return res;
+    return frustum_.CheckVisibility(bbox);
 }
 
 Ren::eVisibilityResult Ren::Camera::CheckFrustumVisibility(const Vec3f &bbox_min, const Vec3f &bbox_max) const {
-    const float bbox_points[8][3] = {
-        bbox_min[0], bbox_min[1], bbox_min[2],
-        bbox_max[0], bbox_min[1], bbox_min[2],
-        bbox_min[0], bbox_min[1], bbox_max[2],
-        bbox_max[0], bbox_min[1], bbox_max[2],
-        bbox_min[0], bbox_max[1], bbox_min[2],
-        bbox_max[0], bbox_max[1], bbox_min[2],
-        bbox_min[0], bbox_max[1], bbox_max[2],
-        bbox_max[0], bbox_max[1], bbox_max[2]
-    };
-
-    return CheckFrustumVisibility(bbox_points);
+    return frustum_.CheckVisibility(bbox_min, bbox_max);
 }
 
 float Ren::Camera::GetBoundingSphere(Vec3f &out_center) const {
@@ -189,7 +197,7 @@ void Ren::Camera::ExtractSubFrustums(int resx, int resy, int resz, Frustum *sub_
     // grid size by x and y in clip space
     const float grid_size_cs[2] = { 2.0f / 16, 2.0f / 8 };
 
-    const Mat4f world_from_clip = Ren::Inverse(projection_matrix_ * view_matrix_);
+    const Mat4f world_from_clip = Ren::Inverse(proj_matrix_ * view_matrix_);
 
     {   // Construct cells for the first depth slice
         const float znear = near_,
