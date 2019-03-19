@@ -525,7 +525,7 @@ void store_astc_file(const astc_codec_image * input_image,
 	if (!suppress_progress_counter)
 		printf("%d blocks to process ..\n", xblocks * yblocks * zblocks);
 
-	encode_astc_image(input_image, NULL, xdim, ydim, zdim, ewp, decode_mode, swz_encode, swz_encode, buffer, 0, threadcount);
+	encode_astc_image(input_image, NULL, xdim, ydim, zdim, ewp, decode_mode, swz_encode, swz_encode, buffer, 0, /*threadcount*/ 1);
 
 	end_coding_time = get_time();
 

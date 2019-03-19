@@ -28,44 +28,7 @@ extern const char *SHADERS_PATH;
 void WriteImage(const uint8_t *out_data, int w, int h, int channels, const char *name);
 
 void Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
-    std::vector<uint8_t> u8_data(w * h * 4);
-
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            const auto &p = out_data[y * w + x];
-
-            Ren::Vec3f val = { p.r, p.g, p.b };
-
-            Ren::Vec3f exp = { std::log2(val[0]), std::log2(val[1]), std::log2(val[2]) };
-            for (int i = 0; i < 3; i++) {
-                exp[i] = std::ceil(exp[i]);
-                if (exp[i] < -128.0f) exp[i] = -128.0f;
-                else if (exp[i] > 127.0f) exp[i] = 127.0f;
-            }
-
-            float common_exp = std::max(exp[0], std::max(exp[1], exp[2]));
-            float range = std::exp2(common_exp);
-
-            Ren::Vec3f mantissa = val / range;
-            for (int i = 0; i < 3; i++) {
-                if (mantissa[i] < 0.0f) mantissa[i] = 0.0f;
-                else if (mantissa[i] > 1.0f) mantissa[i] = 1.0f;
-            }
-
-            Ren::Vec4f res = { mantissa[0], mantissa[1], mantissa[2], common_exp + 128.0f };
-
-            uint8_t r = (uint8_t)std::max(std::min(int(res[0] * 255), 255), 0);
-            uint8_t g = (uint8_t)std::max(std::min(int(res[1] * 255), 255), 0);
-            uint8_t b = (uint8_t)std::max(std::min(int(res[2] * 255), 255), 0);
-            uint8_t a = (uint8_t)std::max(std::min(int(res[3]), 255), 0);
-
-            u8_data[(y * w + x) * 4 + 0] = r;
-            u8_data[(y * w + x) * 4 + 1] = g;
-            u8_data[(y * w + x) * 4 + 2] = b;
-            u8_data[(y * w + x) * 4 + 3] = a;
-        }
-    }
-
+    auto u8_data = Ren::ConvertRGB32F_to_RGBE(&out_data[0].r, w, h, 4);
     WriteImage(&u8_data[0], w, h, 4, name);
 }
 
@@ -86,46 +49,7 @@ void Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *nam
 }
 
 void Write_RGBM(const float *out_data, int w, int h, int channels, const char *name) {
-    std::vector<uint8_t> u8_data(w * h * 4);
-
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            Ray::pixel_color_t p;
-
-            if (channels == 3) {
-                p.r = out_data[3 * (y * w + x) + 0];
-                p.g = out_data[3 * (y * w + x) + 1];
-                p.b = out_data[3 * (y * w + x) + 2];
-            } else if (channels == 4) {
-                p.r = out_data[4 * (y * w + x) + 0];
-                p.g = out_data[4 * (y * w + x) + 1];
-                p.b = out_data[4 * (y * w + x) + 2];
-            }
-
-            p.r *= 1.0f / 6.0f;
-            p.g *= 1.0f / 6.0f;
-            p.b *= 1.0f / 6.0f;
-
-            p.a = std::max(std::max(p.r, p.g), std::max(p.b, 1e-6f));
-            if (p.a > 1.0f) p.a = 1.0f;
-
-            p.a = std::ceil(p.a * 255.0f) / 255.0f;
-            p.r /= p.a;
-            p.g /= p.a;
-            p.b /= p.a;
-
-            uint8_t r = (uint8_t)std::max(std::min(int(p.r * 255), 255), 0);
-            uint8_t g = (uint8_t)std::max(std::min(int(p.g * 255), 255), 0);
-            uint8_t b = (uint8_t)std::max(std::min(int(p.b * 255), 255), 0);
-            uint8_t a = (uint8_t)std::max(std::min(int(p.a * 255), 255), 0);
-
-            u8_data[(y * w + x) * 4 + 0] = r;
-            u8_data[(y * w + x) * 4 + 1] = g;
-            u8_data[(y * w + x) * 4 + 2] = b;
-            u8_data[(y * w + x) * 4 + 3] = a;
-        }
-    }
-
+    auto u8_data = Ren::ConvertRGB32F_to_RGBM(out_data, w, h, channels);
     WriteImage(&u8_data[0], w, h, 4, name);
 }
 
@@ -144,72 +68,26 @@ void Write_DDS(const uint8_t *image_data, int w, int h, int channels, const char
     }
     widths[0] = w;
     heights[0] = h;
-    int mip_count = 1;
+    int mip_count;
 
-    int _w = w, _h = h;
-    while ((_w > 1 || _h > 1) && store_mipmaps) {
-        int _prev_w = _w, _prev_h = _h;
-        _w = std::max(_w / 2, 1);
-        _h = std::max(_h / 2, 1);
-        mipmaps[mip_count].reset(new uint8_t[_w * _h * channels]);
-        widths[mip_count] = _w;
-        heights[mip_count] = _h;
-        const uint8_t *tex = mipmaps[mip_count - 1].get();
-
-        int count = 0;
-
-        if (channels == 4) {
-            for (int j = 0; j < _prev_h; j += 2) {
-                for (int i = 0; i < _prev_w; i += 2) {
-                    int r = tex[((j + 0) * _prev_w + i) * 4 + 0] + tex[((j + 0) * _prev_w + i + 1) * 4 + 0] +
-                            tex[((j + 1) * _prev_w + i) * 4 + 0] + tex[((j + 1) * _prev_w + i + 1) * 4 + 0];
-                    int g = tex[((j + 0) * _prev_w + i) * 4 + 1] + tex[((j + 0) * _prev_w + i + 1) * 4 + 1] +
-                            tex[((j + 1) * _prev_w + i) * 4 + 1] + tex[((j + 1) * _prev_w + i + 1) * 4 + 1];
-                    int b = tex[((j + 0) * _prev_w + i) * 4 + 2] + tex[((j + 0) * _prev_w + i + 1) * 4 + 2] +
-                            tex[((j + 1) * _prev_w + i) * 4 + 2] + tex[((j + 1) * _prev_w + i + 1) * 4 + 2];
-                    int a = tex[((j + 0) * _prev_w + i) * 4 + 3] + tex[((j + 0) * _prev_w + i + 1) * 4 + 3] +
-                            tex[((j + 1) * _prev_w + i) * 4 + 3] + tex[((j + 1) * _prev_w + i + 1) * 4 + 3];
-
-                    mipmaps[mip_count][count * 4 + 0] = uint8_t(r / 4);
-                    mipmaps[mip_count][count * 4 + 1] = uint8_t(g / 4);
-                    mipmaps[mip_count][count * 4 + 2] = uint8_t(b / 4);
-                    mipmaps[mip_count][count * 4 + 3] = uint8_t(a / 4);
-                    count++;
-                }
-            }
-        } else if (channels == 3) {
-            for (int j = 0; j < _prev_h; j += 2) {
-                for (int i = 0; i < _prev_w; i += 2) {
-                    int r = tex[((j + 0) * _prev_w + i) * 3 + 0] + tex[((j + 0) * _prev_w + i + 1) * 3 + 0] +
-                            tex[((j + 1) * _prev_w + i) * 3 + 0] + tex[((j + 1) * _prev_w + i + 1) * 3 + 0];
-                    int g = tex[((j + 0) * _prev_w + i) * 3 + 1] + tex[((j + 0) * _prev_w + i + 1) * 3 + 1] +
-                            tex[((j + 1) * _prev_w + i) * 3 + 1] + tex[((j + 1) * _prev_w + i + 1) * 3 + 1];
-                    int b = tex[((j + 0) * _prev_w + i) * 3 + 2] + tex[((j + 0) * _prev_w + i + 1) * 3 + 2] +
-                            tex[((j + 1) * _prev_w + i) * 3 + 2] + tex[((j + 1) * _prev_w + i + 1) * 3 + 2];
-
-                    mipmaps[mip_count][count * 3 + 0] = uint8_t(r / 4);
-                    mipmaps[mip_count][count * 3 + 1] = uint8_t(g / 4);
-                    mipmaps[mip_count][count * 3 + 2] = uint8_t(b / 4);
-                    count++;
-                }
-            }
-        }
-
-        mip_count++;
+    if (store_mipmaps) {
+        mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
+    } else {
+        mip_count = 1;
     }
 
     {
-        uint8_t *dds_data[16] = {};
-        int dds_size[16] = {};
-        int dds_size_total = 0;
+        uint8_t *dxt_data[16] = {};
+        int dxt_size[16] = {};
+        int dxt_size_total = 0;
 
         for (int i = 0; i < mip_count; i++) {
             if (channels == 3) {
-                dds_data[i] = convert_image_to_DXT1(mipmaps[i].get(), widths[i], heights[i], channels, &dds_size[i]);
+                dxt_data[i] = convert_image_to_DXT1(mipmaps[i].get(), widths[i], heights[i], channels, &dxt_size[i]);
             } else if (channels == 4) {
-                dds_data[i] = convert_image_to_DXT5(mipmaps[i].get(), widths[i], heights[i], channels, &dds_size[i]);
+                dxt_data[i] = convert_image_to_DXT5(mipmaps[i].get(), widths[i], heights[i], channels, &dxt_size[i]);
             }
-            dds_size_total += dds_size[i];
+            dxt_size_total += dxt_size[i];
         }
 
         DDS_header header = {};
@@ -218,7 +96,7 @@ void Write_DDS(const uint8_t *image_data, int w, int h, int channels, const char
         header.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT | DDSD_LINEARSIZE | DDSD_MIPMAPCOUNT;
         header.dwWidth = w;
         header.dwHeight = h;
-        header.dwPitchOrLinearSize = dds_size_total;
+        header.dwPitchOrLinearSize = dxt_size_total;
         header.dwMipMapCount = mip_count;
         header.sPixelFormat.dwSize = 32;
         header.sPixelFormat.dwFlags = DDPF_FOURCC;
@@ -235,9 +113,182 @@ void Write_DDS(const uint8_t *image_data, int w, int h, int channels, const char
         out_stream.write((char *)&header, sizeof(header));
 
         for (int i = 0; i < mip_count; i++) {
-            out_stream.write((char *)dds_data[i], dds_size[i]);
-            SOIL_free_image_data(dds_data[i]);
-            dds_data[i] = nullptr;
+            out_stream.write((char *)dxt_data[i], dxt_size[i]);
+            SOIL_free_image_data(dxt_data[i]);
+            dxt_data[i] = nullptr;
+        }
+    }
+}
+
+void Write_KTX_DXT(const uint8_t *image_data, int w, int h, int channels, const char *out_file) {
+    // Check if power of two
+    bool store_mipmaps = (w & (w - 1)) == 0 && (h & (h - 1)) == 0;
+
+    std::unique_ptr<uint8_t[]> mipmaps[16] = {};
+    int widths[16] = {},
+        heights[16] = {};
+
+    mipmaps[0].reset(new uint8_t[w * h * channels]);
+    // mirror by y (????)
+    for (int j = 0; j < h; j++) {
+        memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels], w * channels);
+    }
+    widths[0] = w;
+    heights[0] = h;
+    int mip_count;
+
+    if (store_mipmaps) {
+        mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
+    } else {
+        mip_count = 1;
+    }
+
+    {   // Write file
+        uint8_t *dxt_data[16] = {};
+        int dxt_size[16] = {};
+        int dxt_size_total = 0;
+
+        for (int i = 0; i < mip_count; i++) {
+            if (channels == 3) {
+                dxt_data[i] = convert_image_to_DXT1(mipmaps[i].get(), widths[i], heights[i], channels, &dxt_size[i]);
+            } else if (channels == 4) {
+                dxt_data[i] = convert_image_to_DXT5(mipmaps[i].get(), widths[i], heights[i], channels, &dxt_size[i]);
+            }
+            dxt_size_total += dxt_size[i];
+        }
+
+        const uint32_t gl_rgb = 0x1907;
+        const uint32_t gl_rgba = 0x1908;
+
+        const uint32_t RGB_S3TC_DXT1 = 0x83F0;
+        const uint32_t RGBA_S3TC_DXT5 = 0x83F3;
+
+        Ren::KTXHeader header = {};
+        header.gl_type = 0;
+        header.gl_type_size = 1;
+        header.gl_format = 0; // should be zero for compressed texture
+        if (channels == 4) {
+            header.gl_internal_format = RGBA_S3TC_DXT5;
+            header.gl_base_internal_format = gl_rgba;
+        } else {
+            header.gl_internal_format = RGB_S3TC_DXT1;
+            header.gl_base_internal_format = gl_rgb;
+        }
+        header.pixel_width = w;
+        header.pixel_height = h;
+        header.pixel_depth = 0;
+
+        header.array_elements_count = 0;
+        header.faces_count = 1;
+        header.mipmap_levels_count = mip_count;
+        
+        header.key_value_data_size = 0;
+
+        uint32_t file_offset = 0;
+        std::ofstream out_stream(out_file, std::ios::binary);
+        out_stream.write((char *)&header, sizeof(header));
+        file_offset += sizeof(header);
+
+        for (int i = 0; i < mip_count; i++) {
+            assert((file_offset % 4) == 0);
+            uint32_t size = (uint32_t)dxt_size[i];
+            out_stream.write((char *)&size, sizeof(uint32_t));
+            file_offset += sizeof(uint32_t);
+            out_stream.write((char *)dxt_data[i], size);
+            file_offset += size;
+
+            uint32_t pad = (file_offset % 4) ? (4 - (file_offset % 4)) : 0;
+            while (pad) {
+                const uint8_t zero_byte = 0;
+                out_stream.write((char *)&zero_byte, 1);
+                pad--;
+            }
+
+            SOIL_free_image_data(dxt_data[i]);
+            dxt_data[i] = nullptr;
+        }
+    }
+}
+
+int ConvertToASTC(const uint8_t *image_data, int width, int height, int channels, std::unique_ptr<uint8_t[]> &out_buf);
+
+void Write_KTX_ASTC(const uint8_t *image_data, int w, int h, int channels, const char *out_file) {
+    // Check if power of two
+    bool store_mipmaps = (w & (w - 1)) == 0 && (h & (h - 1)) == 0;
+
+    std::unique_ptr<uint8_t[]> mipmaps[16] = {};
+    int widths[16] = {},
+        heights[16] = {};
+
+    mipmaps[0].reset(new uint8_t[w * h * channels]);
+    // mirror by y (????)
+    for (int j = 0; j < h; j++) {
+        memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels], w * channels);
+    }
+    widths[0] = w;
+    heights[0] = h;
+    int mip_count;
+
+    if (store_mipmaps) {
+        mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
+    } else {
+        mip_count = 1;
+    }
+
+    {   // Write file
+        std::unique_ptr<uint8_t[]> astc_data[16];
+        int astc_size[16] = {};
+        int astc_size_total = 0;
+
+        for (int i = 0; i < mip_count; i++) {
+            astc_size[i] = ConvertToASTC(mipmaps[i].get(), widths[i], heights[i], channels, astc_data[i]);
+            astc_size_total += astc_size[i];
+        }
+
+        const uint32_t gl_rgb = 0x1907;
+        const uint32_t gl_rgba = 0x1908;
+
+        const uint32_t gl_compressed_rgba_astc_8x8_khr = 0x93B7;
+
+        Ren::KTXHeader header = {};
+        header.gl_type = 0;
+        header.gl_type_size = 1;
+        header.gl_format = 0; // should be zero for compressed texture
+        header.gl_internal_format = gl_compressed_rgba_astc_8x8_khr;
+        if (channels == 4) {
+            header.gl_base_internal_format = gl_rgba;
+        } else {
+            header.gl_base_internal_format = gl_rgb;
+        }
+        header.pixel_width = w;
+        header.pixel_height = h;
+        header.pixel_depth = 0;
+
+        header.array_elements_count = 0;
+        header.faces_count = 1;
+        header.mipmap_levels_count = mip_count;
+
+        header.key_value_data_size = 0;
+
+        uint32_t file_offset = 0;
+        std::ofstream out_stream(out_file, std::ios::binary);
+        out_stream.write((char *)&header, sizeof(header));
+        file_offset += sizeof(header);
+
+        for (int i = 0; i < mip_count; i++) {
+            assert((file_offset % 4) == 0);
+            uint32_t size = (uint32_t)astc_size[i];
+            out_stream.write((char *)&size, sizeof(uint32_t));
+            file_offset += sizeof(uint32_t);
+            out_stream.write((char *)astc_data[i].get(), size);
+            file_offset += size;
+
+            uint32_t pad = (file_offset % 4) ? (4 - (file_offset % 4)) : 0;
+            while (pad) {
+                const uint8_t zero_byte = 0;
+                out_stream.write((char *)&zero_byte, 1);
+                pad--;
+            }
         }
     }
 }
@@ -251,6 +302,9 @@ void WriteImage(const uint8_t *out_data, int w, int h, int channels, const char 
     } else if (strstr(name, ".dds")) {
         res = 1;
         Write_DDS(out_data, w, h, channels, name);
+    } else if (strstr(name, ".ktx")) {
+        res = 1;
+        Write_KTX_ASTC(out_data, w, h, channels, name);
     }
 
     if (!res) {
@@ -514,13 +568,13 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         size_t n;
         if ((n = tex.find(".tga")) != std::string::npos) {
 #if defined(__ANDROID__)
-            // use astc textures later
+            tex.replace(n + 1, n + 3, "ktx");
 #else
             tex.replace(n + 1, n + 3, "dds");
 #endif
         } else if ((n = tex.find(".png")) != std::string::npos) {
 #if defined(__ANDROID__)
-            // use astc textures later
+            tex.replace(n + 1, n + 3, "ktx");
 #else
             tex.replace(n + 1, n + 3, "dds");
 #endif
@@ -571,119 +625,12 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
         src_stream.read((char *)&src_buf[0], src_size);
 
-        int result;
-        astc_codec_image *src_image = astc_codec_load_image(in_file, 0, &result);
+        int width, height, channels;
+        unsigned char *image_data = SOIL_load_image_from_memory(&src_buf[0], (int)src_size, &width, &height, &channels, 0);
 
-        {
-            const float target_bitrate = 2.0f;
-            int xdim, ydim;
+        Write_KTX_ASTC(image_data, width, height, channels, out_file);
 
-            find_closest_blockdim_2d(target_bitrate, &xdim, &ydim, 0);
-
-            float log10_texels_2d = (std::log((float)(xdim * ydim)) / std::log(10.0f));
-
-            // 'medium' preset params
-            int plimit_autoset = 25;
-            float oplimit_autoset = 1.2f;
-            float mincorrel_autoset = 0.75f;
-            float dblimit_autoset_2d = std::max(95 - 35 * log10_texels_2d, 70 - 19 * log10_texels_2d);
-            float bmc_autoset = 75.0f;
-            int maxiters_autoset = 2;
-
-            int pcdiv;
-
-            switch (ydim) {
-            case 4:
-                pcdiv = 25;
-                break;
-            case 5:
-                pcdiv = 15;
-                break;
-            case 6:
-                pcdiv = 15;
-                break;
-            case 8:
-                pcdiv = 10;
-                break;
-            case 10:
-                pcdiv = 8;
-                break;
-            case 12:
-                pcdiv = 6;
-                break;
-            default:
-                pcdiv = 6;
-                break;
-            };
-
-            error_weighting_params ewp;
-
-            ewp.rgb_power = 1.0f;
-            ewp.alpha_power = 1.0f;
-            ewp.rgb_base_weight = 1.0f;
-            ewp.alpha_base_weight = 1.0f;
-            ewp.rgb_mean_weight = 0.0f;
-            ewp.rgb_stdev_weight = 0.0f;
-            ewp.alpha_mean_weight = 0.0f;
-            ewp.alpha_stdev_weight = 0.0f;
-
-            ewp.rgb_mean_and_stdev_mixing = 0.0f;
-            ewp.mean_stdev_radius = 0;
-            ewp.enable_rgb_scale_with_alpha = 0;
-            ewp.alpha_radius = 0;
-
-            ewp.block_artifact_suppression = 0.0f;
-            ewp.rgba_weights[0] = 1.0f;
-            ewp.rgba_weights[1] = 1.0f;
-            ewp.rgba_weights[2] = 1.0f;
-            ewp.rgba_weights[3] = 1.0f;
-            ewp.ra_normal_angular_scale = 0;
-
-            // if encode, process the parsed command line values
-
-            int partitions_to_test = plimit_autoset;
-            float dblimit_2d = dblimit_autoset_2d;
-            float oplimit = oplimit_autoset;
-            float mincorrel = mincorrel_autoset;
-
-            int maxiters = maxiters_autoset;
-            ewp.max_refinement_iters = maxiters;
-
-            ewp.block_mode_cutoff = (bmc_autoset) / 100.0f;
-
-            ewp.texel_avg_error_limit = std::pow(0.1f, dblimit_2d * 0.1f) * 65535.0f * 65535.0f;
-
-            ewp.partition_1_to_2_limit = oplimit;
-            ewp.lowest_correlation_cutoff = mincorrel;
-
-            if (partitions_to_test < 1)
-                partitions_to_test = 1;
-            else if (partitions_to_test > PARTITION_COUNT)
-                     partitions_to_test = PARTITION_COUNT;
-            ewp.partition_search_limit = partitions_to_test;
-
-            float max_color_component_weight = std::max(std::max(ewp.rgba_weights[0], ewp.rgba_weights[1]),
-                                                        std::max(ewp.rgba_weights[2], ewp.rgba_weights[3]));
-            ewp.rgba_weights[0] = std::max(ewp.rgba_weights[0], max_color_component_weight / 1000.0f);
-            ewp.rgba_weights[1] = std::max(ewp.rgba_weights[1], max_color_component_weight / 1000.0f);
-            ewp.rgba_weights[2] = std::max(ewp.rgba_weights[2], max_color_component_weight / 1000.0f);
-            ewp.rgba_weights[3] = std::max(ewp.rgba_weights[3], max_color_component_weight / 1000.0f);
-
-            swizzlepattern swz_encode = { 0, 1, 2, 3 };
-
-            int xsize = src_image->xsize;
-            int ysize = src_image->ysize;
-
-            int xblocks = (xsize + xdim - 1) / xdim;
-            int yblocks = (ysize + ydim - 1) / ydim;
-            int zblocks = 1;
-
-            std::unique_ptr<uint8_t[]> out_buf(new uint8_t[xblocks * yblocks * zblocks * 16]);
-
-            encode_astc_image(src_image, nullptr, xdim, ydim, 1, &ewp, DECODE_HDR, swz_encode, swz_encode, &out_buf[0], 0, 8);
-        }
-
-        destroy_image(src_image);
+        SOIL_free_image_data(image_data);
     };
 
     auto h_conv_hdr_to_rgbm = [](const char *in_file, const char *out_file) {
@@ -764,23 +711,23 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     handlers["fs"]      = { "fs",   h_copy };
 
     if (strcmp(platform, "pc_deb") == 0) {
-        handlers["json"] = { "json", h_copy };
-        handlers["txt"] = { "txt", h_copy };
-        handlers["tga"] = { "tga", h_copy };
-        handlers["hdr"] = { "hdr", h_copy };
-        handlers["png"] = { "png", h_copy };
+        handlers["json"]    = { "json", h_copy };
+        handlers["txt"]     = { "txt", h_copy };
+        handlers["tga"]     = { "tga", h_copy };
+        handlers["hdr"]     = { "hdr", h_copy };
+        handlers["png"]     = { "png", h_copy };
     } else if (strcmp(platform, "pc_rel") == 0) {
-        handlers["json"] = { "json", h_preprocess_scene };
-        handlers["txt"] = { "txt", h_preprocess_material };
-        handlers["tga"] = { "dds", h_conv_to_dds };
-        handlers["hdr"] = { "dds", h_conv_hdr_to_rgbm };
-        handlers["png"] = { "dds", h_conv_to_dds };
+        handlers["json"]    = { "json", h_preprocess_scene };
+        handlers["txt"]     = { "txt", h_preprocess_material };
+        handlers["tga"]     = { "dds", h_conv_to_dds };
+        handlers["hdr"]     = { "dds", h_conv_hdr_to_rgbm };
+        handlers["png"]     = { "dds", h_conv_to_dds };
     } else if (strcmp(platform, "android") == 0) {
-        handlers["json"] = { "json", h_copy };
-        handlers["txt"] = { "txt", h_copy };
-        handlers["tga"] = { "tga", h_copy };
-        handlers["hdr"] = { "png", h_conv_hdr_to_rgbm };
-        handlers["png"] = { "png", h_copy };
+        handlers["json"]    = { "json", h_copy };
+        handlers["txt"]     = { "txt", h_copy };
+        handlers["tga"]     = { "ktx", h_conv_to_astc };
+        handlers["hdr"]     = { "ktx", h_conv_hdr_to_rgbm };
+        handlers["png"]     = { "ktx", h_conv_to_astc };
     }
 
     auto convert_file = [out_folder, &handlers](const char *in_file) {
@@ -829,10 +776,147 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         int argc = 6;
         char *argv[] = { "astc", "-c", "barrel_diffuse.png", "barrel_diffuse.astc", "2.0", "-medium" };
 
-        astc_main(argc, argv);
+        //astc_main(argc, argv);
 
-        h_conv_to_astc("barrel_diffuse.png", "barrel_diffuse.astc");
+        h_conv_to_astc("barrel_diffuse.png", "barrel_diffuse1.astc");
     }*/
 
     return true;
+}
+
+int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, int height, int channels, std::unique_ptr<uint8_t[]> &out_buf) {
+    astc_codec_image *src_image = allocate_image(8, width, height, 1, 0);
+
+    if (channels == 4) {
+        memcpy(&src_image->imagedata8[0][0][0], image_data, 4 * width * height);
+    } else {
+        uint8_t *_img = &src_image->imagedata8[0][0][0];
+        for (int j = 0; j < height; j++) {
+            for (int i = 0; i < width; i++) {
+                _img[4 * (j * width + i) + 0] = image_data[3 * (j * width + i) + 0];
+                _img[4 * (j * width + i) + 1] = image_data[3 * (j * width + i) + 1];
+                _img[4 * (j * width + i) + 2] = image_data[3 * (j * width + i) + 2];
+                _img[4 * (j * width + i) + 3] = 255;
+            }
+        }
+    }
+
+    int buf_size = 0;
+
+    {
+        const float target_bitrate = 2.0f;
+        int xdim, ydim;
+
+        find_closest_blockdim_2d(target_bitrate, &xdim, &ydim, 0);
+
+        float log10_texels_2d = (std::log((float)(xdim * ydim)) / std::log(10.0f));
+
+        // 'medium' preset params
+        int plimit_autoset = 25;
+        float oplimit_autoset = 1.2f;
+        float mincorrel_autoset = 0.75f;
+        float dblimit_autoset_2d = std::max(95 - 35 * log10_texels_2d, 70 - 19 * log10_texels_2d);
+        float bmc_autoset = 75.0f;
+        int maxiters_autoset = 2;
+
+        int pcdiv;
+
+        switch (ydim) {
+        case 4:
+            pcdiv = 25;
+            break;
+        case 5:
+            pcdiv = 15;
+            break;
+        case 6:
+            pcdiv = 15;
+            break;
+        case 8:
+            pcdiv = 10;
+            break;
+        case 10:
+            pcdiv = 8;
+            break;
+        case 12:
+            pcdiv = 6;
+            break;
+        default:
+            pcdiv = 6;
+            break;
+        };
+
+        error_weighting_params ewp;
+
+        ewp.rgb_power = 1.0f;
+        ewp.alpha_power = 1.0f;
+        ewp.rgb_base_weight = 1.0f;
+        ewp.alpha_base_weight = 1.0f;
+        ewp.rgb_mean_weight = 0.0f;
+        ewp.rgb_stdev_weight = 0.0f;
+        ewp.alpha_mean_weight = 0.0f;
+        ewp.alpha_stdev_weight = 0.0f;
+
+        ewp.rgb_mean_and_stdev_mixing = 0.0f;
+        ewp.mean_stdev_radius = 0;
+        ewp.enable_rgb_scale_with_alpha = 0;
+        ewp.alpha_radius = 0;
+
+        ewp.block_artifact_suppression = 0.0f;
+        ewp.rgba_weights[0] = 1.0f;
+        ewp.rgba_weights[1] = 1.0f;
+        ewp.rgba_weights[2] = 1.0f;
+        ewp.rgba_weights[3] = 1.0f;
+        ewp.ra_normal_angular_scale = 0;
+
+        // if encode, process the parsed command line values
+
+        int partitions_to_test = plimit_autoset;
+        float dblimit_2d = dblimit_autoset_2d;
+        float oplimit = oplimit_autoset;
+        float mincorrel = mincorrel_autoset;
+
+        int maxiters = maxiters_autoset;
+        ewp.max_refinement_iters = maxiters;
+
+        ewp.block_mode_cutoff = (bmc_autoset) / 100.0f;
+
+        ewp.texel_avg_error_limit = std::pow(0.1f, dblimit_2d * 0.1f) * 65535.0f * 65535.0f;
+
+        ewp.partition_1_to_2_limit = oplimit;
+        ewp.lowest_correlation_cutoff = mincorrel;
+
+        if (partitions_to_test < 1) {
+            partitions_to_test = 1;
+        } else if (partitions_to_test > PARTITION_COUNT) {
+            partitions_to_test = PARTITION_COUNT;
+        }
+        ewp.partition_search_limit = partitions_to_test;
+
+        float max_color_component_weight = std::max(std::max(ewp.rgba_weights[0], ewp.rgba_weights[1]),
+                                                    std::max(ewp.rgba_weights[2], ewp.rgba_weights[3]));
+        ewp.rgba_weights[0] = std::max(ewp.rgba_weights[0], max_color_component_weight / 1000.0f);
+        ewp.rgba_weights[1] = std::max(ewp.rgba_weights[1], max_color_component_weight / 1000.0f);
+        ewp.rgba_weights[2] = std::max(ewp.rgba_weights[2], max_color_component_weight / 1000.0f);
+        ewp.rgba_weights[3] = std::max(ewp.rgba_weights[3], max_color_component_weight / 1000.0f);
+
+        expand_block_artifact_suppression(xdim, ydim, 1, &ewp);
+
+        swizzlepattern swz_encode = { 0, 1, 2, 3 };
+
+        int xsize = src_image->xsize;
+        int ysize = src_image->ysize;
+
+        int xblocks = (xsize + xdim - 1) / xdim;
+        int yblocks = (ysize + ydim - 1) / ydim;
+        int zblocks = 1;
+
+        buf_size = xblocks * yblocks * zblocks * 16;
+        out_buf.reset(new uint8_t[buf_size]);
+
+        encode_astc_image(src_image, nullptr, xdim, ydim, 1, &ewp, DECODE_HDR, swz_encode, swz_encode, &out_buf[0], 0, 8);
+    }
+
+    destroy_image(src_image);
+
+    return buf_size;
 }

@@ -78,33 +78,33 @@ float fmin(float p, float q)
 
 float2 fmax(float2 p, float2 q)
 {
-	return float2(fmax(p.x, q.x), fmax(p.y, q.y));
+	return float2((float)fmax(p.x, q.x), (float)fmax(p.y, q.y));
 }
 
 float3 fmax(float3 p, float3 q)
 {
-	return float3(fmax(p.x, q.x), fmax(p.y, q.y), fmax(p.z, q.z));
+	return float3((float)fmax(p.x, q.x), (float)fmax(p.y, q.y), (float)fmax(p.z, q.z));
 }
 
 float4 fmax(float4 p, float4 q)
 {
-	return float4(fmax(p.x, q.x), fmax(p.y, q.y), fmax(p.z, q.z), fmax(p.w, q.w));
+	return float4((float)fmax(p.x, q.x), (float)fmax(p.y, q.y), (float)fmax(p.z, q.z), (float)fmax(p.w, q.w));
 }
 
 
 float2 fmin(float2 p, float2 q)
 {
-	return float2(fmin(p.x, q.x), fmin(p.y, q.y));
+	return float2((float)fmin(p.x, q.x), (float)fmin(p.y, q.y));
 }
 
 float3 fmin(float3 p, float3 q)
 {
-	return float3(fmin(p.x, q.x), fmin(p.y, q.y), fmin(p.z, q.z));
+	return float3((float)fmin(p.x, q.x), (float)fmin(p.y, q.y), (float)fmin(p.z, q.z));
 }
 
 float4 fmin(float4 p, float4 q)
 {
-	return float4(fmin(p.x, q.x), fmin(p.y, q.y), fmin(p.z, q.z), fmin(p.w, q.w));
+	return float4((float)fmin(p.x, q.x), (float)fmin(p.y, q.y), (float)fmin(p.z, q.z), (float)fmin(p.w, q.w));
 }
 
 /* 
@@ -320,7 +320,7 @@ float3 solve_monic(float3 p)
 
 	float cx = static_cast < float >(cbrt(fabs(p.x)));
 	float cy = static_cast < float >(cbrt(fabs(p.y)));
-	scal = fmax(fmax(fabsf(p.z), cx), cy * cy) * (1.0f / 1048576.0f);
+	scal = (float)fmax(fmax(fabsf(p.z), cx), cy * cy) * (1.0f / 1048576.0f);
 	float rscal = 1.0f / scal;
 	p = p * float3(rscal * rscal * rscal, rscal * rscal, rscal);
 
@@ -373,7 +373,7 @@ float4 solve_monic(float4 p)
 	// is numerically at least nonnegative (but may have become negative as a result of
 	// a roundoff error). We use fmax() to extract this value or a very small positive value.
 	float2 v2 = fmax(v.xy, v.zw);
-	float p2 = fmax(v2.x, v2.y);	// p^2
+	float p2 = (float)fmax(v2.x, v2.y);	// p^2
 	float pr = inversesqrt(p2);	// 1/p
 	float pm = p2 * pr;			// p
 
