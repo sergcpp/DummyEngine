@@ -36,7 +36,7 @@ public:
         return true;
     }
 
-    bool Push(const T &&item) {
+    bool Push(T &&item) {
         int head = head_.load(std::memory_order_relaxed);
         int next_head = next(head);
         if (next_head == tail_.load(std::memory_order_acquire)) {
