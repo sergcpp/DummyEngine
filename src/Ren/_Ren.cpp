@@ -6,6 +6,7 @@
 #include "Material.cpp"
 #include "Mesh.cpp"
 #include "RenderThread.cpp"
+#include "TextureSplitter.cpp"
 #include "Utils.cpp"
 
 extern "C" {

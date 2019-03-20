@@ -41,6 +41,8 @@ set(SOURCE_FILES Anim.h
                  SparseArray.h
                  Storage.h
                  Texture.h
+                 TextureSplitter.h
+                 TextureSplitter.cpp
                  Utils.h
                  Utils.cpp)
 
