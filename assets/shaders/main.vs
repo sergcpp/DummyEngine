@@ -42,15 +42,15 @@ void main(void) {
     
     const vec2 offsets[4] = vec2[4](
         vec2(0.0, 0.0),
-        vec2(0.5, 0.0),
+        vec2(0.25, 0.0),
         vec2(0.0, 0.5),
-        vec2(0.5, 0.5)
+        vec2(0.25, 0.5)
     );
     
     for (int i = 0; i < 4; i++) {
         aVertexShUVs_[i] = (uShadowMatrix[i] * vec4(aVertexPosition, 1.0)).xyz;
         aVertexShUVs_[i] = 0.5 * aVertexShUVs_[i] + 0.5;
-        aVertexShUVs_[i].xy *= 0.5;
+        aVertexShUVs_[i].xy *= vec2(0.25, 0.5);
         aVertexShUVs_[i].xy += offsets[i];
     }
     

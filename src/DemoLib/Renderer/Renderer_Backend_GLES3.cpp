@@ -619,16 +619,18 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
                     fb_bound = true;
                 }
 
+                const int OneCascadeRes = SUN_SHADOW_RES / 2;
+
                 if (casc == 0) {
-                    glViewport(0, 0, shadow_buf_.w / 2, shadow_buf_.h / 2);
+                    glViewport(0, 0, OneCascadeRes, OneCascadeRes);
                     glPolygonOffset(1.85f, 6.0f);
                 } else if (casc == 1) {
-                    glViewport(shadow_buf_.w / 2, 0, shadow_buf_.w / 2, shadow_buf_.h / 2);
+                    glViewport(OneCascadeRes, 0, OneCascadeRes, OneCascadeRes);
                 } else if (casc == 2) {
-                    glViewport(0, shadow_buf_.h / 2, shadow_buf_.w / 2, shadow_buf_.h / 2);
+                    glViewport(0, OneCascadeRes, OneCascadeRes, OneCascadeRes);
                     //glPolygonOffset(1.75f, 6.0f);
                 } else {
-                    glViewport(shadow_buf_.w / 2, shadow_buf_.h / 2, shadow_buf_.w / 2, shadow_buf_.h / 2);
+                    glViewport(OneCascadeRes, OneCascadeRes, OneCascadeRes, OneCascadeRes);
                 }
 
                 const auto *shadow_dr_list = shadow_drawables[casc];
@@ -1438,10 +1440,10 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         cur_program = blit_prog_.get();
         glUseProgram(cur_program->prog_id());
 
-        float k = float(w_) / h_;
+        float k = (float(shadow_buf_.h) / shadow_buf_.w) * (float(w_) / h_);
 
-        const float positions[] = { -1.0f, -1.0f,                       -1.0f + 0.25f, -1.0f,
-                                    -1.0f + 0.25f, -1.0f + 0.25f * k,   -1.0f, -1.0f + 0.25f * k };
+        const float positions[] = { -1.0f, -1.0f,                   -1.0f + 1.0f, -1.0f,
+                                    -1.0f + 1.0f, -1.0f + 1.0f * k, -1.0f, -1.0f + 1.0f * k };
 
         const float uvs[] = { 0.0f, 0.0f,       1.0f, 0.0f,
                               1.0f, 1.0f,       0.0f, 1.0f };

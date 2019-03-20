@@ -438,7 +438,7 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
 
             {
                 // Snap camera movement to shadow map pixels
-                const float move_step = (2 * bounding_radius) / (0.5f * SHADOWMAP_RES);
+                const float move_step = (2 * bounding_radius) / (0.5f * SUN_SHADOW_RES);
                 //                      |_shadow map extent_|   |_res of one cascade_|
 
                 // Project target on shadow cam view matrix

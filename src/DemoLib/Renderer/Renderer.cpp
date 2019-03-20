@@ -12,7 +12,11 @@ bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3
 extern const uint8_t bbox_indices[];
 
 const bool USE_TWO_THREADS = true;
-const int SHADOWMAP_RES = 2048;
+const int SHADOWMAP_WIDTH = 2048,
+          SHADOWMAP_HEIGHT = 1024;
+
+// Sun shadow occupies half of atlas
+const int SUN_SHADOW_RES = SHADOWMAP_WIDTH / 2;
 }
 
 #define BBOX_POINTS(min, max) \
@@ -25,7 +29,8 @@ const int SHADOWMAP_RES = 2048;
     (min)[0], (max)[1], (max)[2],     \
     (max)[0], (max)[1], (max)[2]
 
-Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads) : ctx_(ctx), threads_(threads) {
+Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
+    : ctx_(ctx), threads_(threads), shadow_splitter_(RendererInternal::SHADOWMAP_WIDTH, RendererInternal::SHADOWMAP_HEIGHT) {
     using namespace RendererInternal;
 
     {
@@ -36,7 +41,13 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     }
 
     {   // Create shadow map buffer
-        shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, nullptr, 0, true, Ren::BilinearNoMipmap);
+        shadow_buf_ = FrameBuf(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, nullptr, 0, true, Ren::BilinearNoMipmap);
+
+        // Reserve space for sun shadow
+        const int sun_shadow_res[] = { SUN_SHADOW_RES, SUN_SHADOW_RES };
+        int sun_shadow_pos[2];
+        int id = shadow_splitter_.Allocate(sun_shadow_res, sun_shadow_pos);
+        assert(id != -1 && sun_shadow_pos[0] == 0 && sun_shadow_pos[1] == 0);
     }
 
     {   // Create aux buffer which gathers frame luminance

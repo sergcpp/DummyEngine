@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Utils/TextureSplitter.h"
+#include <Ren/TextureSplitter.h>
 
 class TextureAtlas {
     Ren::Texture2DParams params_;
@@ -8,7 +8,7 @@ class TextureAtlas {
     uint32_t tex_id_ = 0xffffffff;
 #endif
 
-    TextureSplitter splitter_;
+    Ren::TextureSplitter splitter_;
 public:
     TextureAtlas() : splitter_(0, 0) {}
     explicit TextureAtlas(const Ren::Texture2DParams &p);

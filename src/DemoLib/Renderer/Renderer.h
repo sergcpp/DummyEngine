@@ -6,6 +6,7 @@
 
 #include <Ren/Camera.h>
 #include <Ren/RingBuffer.h>
+#include <Ren/TextureSplitter.h>
 extern "C" {
 #include <Ren/SW/SWculling.h>
 }
@@ -151,6 +152,8 @@ private:
 
     FrameBuf clean_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf_;
     int w_ = 0, h_ = 0;
+
+    Ren::TextureSplitter shadow_splitter_;
 
     const uint32_t default_flags = (EnableCulling | EnableSSR | EnableSSAO /*| DebugLights*/);
     uint32_t render_flags_[2] = { default_flags, default_flags };
