@@ -242,18 +242,6 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             
             auto load_decal_texture = [this](const std::string &name) {
                 std::string file_name = TEXTURES_PATH + name;
-                size_t n = file_name.find_last_of('.');
-                if (n != std::string::npos) {
-                    n++;
-                    if (strcmp(&file_name[n], "png") == 0) {
-                        file_name.erase(n);
-#if defined(__ANDROID__)
-                        file_name += "png"; // use astc textures later
-#else
-                        file_name += "dds";
-#endif
-                    }
-                }
 
                 Sys::AssetFile in_file(file_name, Sys::AssetFile::IN);
                 size_t in_file_size = in_file.size();
@@ -397,13 +385,13 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 #if !defined(__ANDROID__)
                 "_lm_direct.dds";
 #else
-                "_lm_direct.png";
+                "_lm_direct.ktx";
 #endif
             std::string lm_indir_tex_name = lm_tex_name +
 #if !defined(__ANDROID__)
                 "_lm_indirect.dds";
 #else
-                "_lm_indirect.png";
+                "_lm_indirect.ktx";
 #endif
 
             obj.flags |= HasLightmap;
@@ -428,7 +416,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 #if !defined(__ANDROID__)
                     lm_file_name += ".dds";
 #else
-                    lm_file_name += ".png";
+                    lm_file_name += ".ktx";
 #endif
 
                     obj.lm_indir_sh_tex[sh_l] = OnLoadTexture(lm_file_name.c_str());
@@ -584,12 +572,12 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 TEXTURES_PATH + js_env_map.val + "_PZ.dds",
                 TEXTURES_PATH + js_env_map.val + "_NZ.dds"
 #else
-                TEXTURES_PATH + js_env_map.val + "_PX.png",
-                TEXTURES_PATH + js_env_map.val + "_NX.png",
-                TEXTURES_PATH + js_env_map.val + "_PY.png",
-                TEXTURES_PATH + js_env_map.val + "_NY.png",
-                TEXTURES_PATH + js_env_map.val + "_PZ.png",
-                TEXTURES_PATH + js_env_map.val + "_NZ.png"
+                TEXTURES_PATH + js_env_map.val + "_PX.ktx",
+                TEXTURES_PATH + js_env_map.val + "_NX.ktx",
+                TEXTURES_PATH + js_env_map.val + "_PY.ktx",
+                TEXTURES_PATH + js_env_map.val + "_NY.ktx",
+                TEXTURES_PATH + js_env_map.val + "_PZ.ktx",
+                TEXTURES_PATH + js_env_map.val + "_NZ.ktx"
 #endif
             };
 
@@ -632,9 +620,9 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
             std::string tex_name = js_env_map.val +
 #if !defined(__ANDROID__)
-                ".dds";
+                "_*.dds";
 #else
-                ".png";
+                "_*.ktx";
 #endif
 
             Ren::eTexLoadStatus load_status;
@@ -664,6 +652,8 @@ void SceneManager::ClearScene() {
     ray_scene_ = nullptr;
 
     assert(transforms_.Size() == 0);
+    assert(lights_.Size() == 0);
+    assert(decals_.Size() == 0);
 }
 
 void SceneManager::Draw() {
@@ -746,7 +736,7 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
 
     Ren::eTexLoadStatus status;
     Ren::Texture2DRef ret = ctx_.LoadTexture2D(tex_name.c_str(), nullptr, 0, {}, &status);
-    if (!ret->ready()) {
+    if (status == Ren::TexCreatedDefault) {
         std::weak_ptr<SceneManager> _self = shared_from_this();
         Sys::LoadAssetComplete(tex_name.c_str(),
         [_self, tex_name](void *data, int size) {
