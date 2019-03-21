@@ -442,22 +442,24 @@ void GSDrawTest::Draw(float dt_s) {
                     next_back_gpu_start -= double(back_info.gpu_cpu_time_diff_us);
                     next_back_gpu_end -= double(back_info.gpu_cpu_time_diff_us);
 
-                    prev_front_end -= prev_front_start;
-                    prev_back_cpu_start -= prev_front_start;
-                    prev_back_cpu_end -= prev_front_start;
-                    prev_back_gpu_start -= prev_front_start;
-                    prev_back_gpu_end -= prev_front_start;
-                    prev_swap_start -= prev_front_start;
-                    prev_swap_end -= prev_front_start;
-                    next_front_start -= prev_front_start;
-                    next_front_end -= prev_front_start;
-                    next_back_cpu_start -= prev_front_start;
-                    next_back_cpu_end -= prev_front_start;
-                    next_back_gpu_start -= prev_front_start;
-                    next_back_gpu_end -= prev_front_start;
-                    next_swap_start -= prev_front_start;
-                    next_swap_end -= prev_front_start;
-                    prev_front_start = 0.0;
+                    auto start_point = prev_back_cpu_start;
+
+                    prev_front_start -= start_point;
+                    prev_front_end -= start_point;
+                    prev_back_cpu_start -= start_point;
+                    prev_back_cpu_end -= start_point;
+                    prev_back_gpu_start -= start_point;
+                    prev_back_gpu_end -= start_point;
+                    prev_swap_start -= start_point;
+                    prev_swap_end -= start_point;
+                    next_front_start -= start_point;
+                    next_front_end -= start_point;
+                    next_back_cpu_start -= start_point;
+                    next_back_cpu_end -= start_point;
+                    next_back_gpu_start -= start_point;
+                    next_back_gpu_end -= start_point;
+                    next_swap_start -= start_point;
+                    next_swap_end -= start_point;
 
                     double dur = 0.0;
                     int cc = 0;
@@ -467,6 +469,7 @@ void GSDrawTest::Draw(float dt_s) {
                         cc++;
                     }
 
+                    prev_front_start /= dur;
                     prev_front_end /= dur;
                     prev_back_cpu_start /= dur;
                     prev_back_cpu_end /= dur;
