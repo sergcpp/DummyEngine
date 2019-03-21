@@ -86,6 +86,9 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     });
 #endif
 
+    auto swap_interval = std::make_shared<TimeInterval>();
+    AddComponent(SWAP_TIMER_KEY, swap_interval);
+
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
     state_manager->Push(GSCreate(GS_DRAW_TEST, this));
 }

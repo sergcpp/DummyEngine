@@ -8,6 +8,8 @@ const char RENDERER_KEY[]               = "renderer";
 const char RAY_RENDERER_KEY[]           = "ray_renderer";
 const char SCENE_MANAGER_KEY[]          = "scene_manager";
 
+const char SWAP_TIMER_KEY[]             = "swap_timer";
+
 class Viewer : public GameBase {
 public:
     Viewer(int w, int h, const char *local_dir);

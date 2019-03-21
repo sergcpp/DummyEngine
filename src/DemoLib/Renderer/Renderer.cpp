@@ -117,7 +117,7 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint
         // Delegate gathering to background thread
         SwapDrawLists(cam, nodes, root_index, objects, obj_indices, object_count, env, &decals_atlas);
     } else {
-        // Gather object in main thread
+        // Gather objects in main thread
         GatherDrawables(cam, render_flags_[0], env, nodes, root_index, objects, obj_indices, object_count,
                         transforms_[0], draw_lists_[0], light_sources_[0], decals_[0], cells_[0].data(),
                         items_[0].data(), items_count_[0], shadow_cams_[0], shadow_list_[0], frontend_infos_[0]);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Eng/GameBase.h>
 #include <Eng/GameState.h>
 #include <Ren/Camera.h>
 #include <Ren/Mesh.h>
@@ -10,7 +11,6 @@
 
 #include "../Scene/SceneData.h"
 
-class GameBase;
 class GameStateManager;
 class FontStorage;
 class Renderer;
@@ -28,6 +28,7 @@ class GSDrawTest : public GameState {
     std::shared_ptr<Ren::Context> ctx_;
     std::shared_ptr<Renderer> renderer_;
     std::shared_ptr<SceneManager> scene_manager_;
+    std::shared_ptr<TimeInterval> swap_interval_;
 
     std::shared_ptr<Gui::Renderer> ui_renderer_;
     std::shared_ptr<Gui::BaseElement> ui_root_;
@@ -45,6 +46,7 @@ class GSDrawTest : public GameState {
 
     FrontendInfo prev_front_info_;
     BackendInfo prev_back_info_;
+    TimeInterval prev_swap_interval_;
 
     uint64_t last_frame_time_ = 0;
     double cur_fps_ = 0.0;

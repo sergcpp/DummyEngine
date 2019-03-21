@@ -44,6 +44,8 @@ GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
 
     const auto fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     font_ = fonts->FindFont("main_font");
+
+    swap_interval_  = game->GetComponent<TimeInterval>(SWAP_TIMER_KEY);
 }
 
 GSDrawTest::~GSDrawTest() {
@@ -303,7 +305,7 @@ void GSDrawTest::Draw(float dt_s) {
             auto back_info = scene_manager_->backend_info();
 
             uint64_t front_dur = front_info.end_timepoint_us - front_info.start_timepoint_us,
-                        back_dur = back_info.cpu_end_timepoint_us - back_info.cpu_start_timepoint_us;
+                     back_dur = back_info.cpu_end_timepoint_us - back_info.cpu_start_timepoint_us;
 
             LOGI("Frontend: %04lld\tBackend(cpu): %04lld", (long long)front_dur, (long long)back_dur);
 
@@ -417,88 +419,128 @@ void GSDrawTest::Draw(float dt_s) {
             }
 
             if (render_flags & DebugTimings) {
-                double prev_cpu_start = double(prev_front_info_.start_timepoint_us),
-                       prev_cpu_end = double(prev_front_info_.end_timepoint_us),
-                       prev_gpu_start = double(prev_back_info_.gpu_start_timepoint_us),
-                       prev_gpu_end = double(prev_back_info_.gpu_end_timepoint_us),
-                       next_cpu_start = double(front_info.start_timepoint_us),
-                       next_cpu_end = double(front_info.end_timepoint_us),
-                       next_gpu_start = double(back_info.gpu_start_timepoint_us),
-                       next_gpu_end = double(back_info.gpu_end_timepoint_us);
+                if (prev_front_info_.end_timepoint_us) {
+                    double prev_front_start = double(prev_front_info_.start_timepoint_us),
+                           prev_front_end = double(prev_front_info_.end_timepoint_us),
+                           prev_back_cpu_start = double(prev_back_info_.cpu_start_timepoint_us),
+                           prev_back_cpu_end = double(prev_back_info_.cpu_end_timepoint_us),
+                           prev_back_gpu_start = double(prev_back_info_.gpu_start_timepoint_us),
+                           prev_back_gpu_end = double(prev_back_info_.gpu_end_timepoint_us),
+                           prev_swap_start = double(prev_swap_interval_.start_timepoint_us),
+                           prev_swap_end = double(prev_swap_interval_.end_timepoint_us),
+                           next_front_start = double(front_info.start_timepoint_us),
+                           next_front_end = double(front_info.end_timepoint_us),
+                           next_back_cpu_start = double(back_info.cpu_start_timepoint_us),
+                           next_back_cpu_end = double(back_info.cpu_end_timepoint_us),
+                           next_back_gpu_start = double(back_info.gpu_start_timepoint_us),
+                           next_back_gpu_end = double(back_info.gpu_end_timepoint_us),
+                           next_swap_start = double(swap_interval_->start_timepoint_us),
+                           next_swap_end = double(swap_interval_->end_timepoint_us);
 
-                prev_gpu_start -= double(prev_back_info_.gpu_cpu_time_diff_us);
-                prev_gpu_end -= double(prev_back_info_.gpu_cpu_time_diff_us);
-                next_gpu_start -= double(back_info.gpu_cpu_time_diff_us);
-                next_gpu_end -= double(back_info.gpu_cpu_time_diff_us);
+                    prev_back_gpu_start -= double(prev_back_info_.gpu_cpu_time_diff_us);
+                    prev_back_gpu_end -= double(prev_back_info_.gpu_cpu_time_diff_us);
+                    next_back_gpu_start -= double(back_info.gpu_cpu_time_diff_us);
+                    next_back_gpu_end -= double(back_info.gpu_cpu_time_diff_us);
 
-                prev_cpu_end -= prev_cpu_start;
-                prev_gpu_start -= prev_cpu_start;
-                prev_gpu_end -= prev_cpu_start;
-                next_cpu_start -= prev_cpu_start;
-                next_cpu_end -= prev_cpu_start;
-                next_gpu_start -= prev_cpu_start;
-                next_gpu_end -= prev_cpu_start;
-                prev_cpu_start = 0.0;
+                    prev_front_end -= prev_front_start;
+                    prev_back_cpu_start -= prev_front_start;
+                    prev_back_cpu_end -= prev_front_start;
+                    prev_back_gpu_start -= prev_front_start;
+                    prev_back_gpu_end -= prev_front_start;
+                    prev_swap_start -= prev_front_start;
+                    prev_swap_end -= prev_front_start;
+                    next_front_start -= prev_front_start;
+                    next_front_end -= prev_front_start;
+                    next_back_cpu_start -= prev_front_start;
+                    next_back_cpu_end -= prev_front_start;
+                    next_back_gpu_start -= prev_front_start;
+                    next_back_gpu_end -= prev_front_start;
+                    next_swap_start -= prev_front_start;
+                    next_swap_end -= prev_front_start;
+                    prev_front_start = 0.0;
 
-                double dur = 0.0;
-                int cc = 0;
+                    double dur = 0.0;
+                    int cc = 0;
 
-                while (dur < std::max(next_cpu_end, next_gpu_end)) {
-                    dur += 1000000.0 / 60.0;
-                    cc++;
-                }
-
-                prev_cpu_end /= dur;
-                prev_gpu_start /= dur;
-                prev_gpu_end /= dur;
-
-                next_cpu_start /= dur;
-                next_cpu_end /= dur;
-                next_gpu_start /= dur;
-                next_gpu_end /= dur;
-
-                text_buffer[0] = '[';
-                text_buffer[101] = ']';
-
-                for (int i = 0; i < 100; i++) {
-                    double t = double(i) / 100;
-
-                    if ((t >= prev_cpu_start && t <= prev_cpu_end) ||
-                        (t >= next_cpu_start && t <= next_cpu_end)) {
-                        text_buffer[i + 1] = 'F';
-                    } else {
-                        text_buffer[i + 1] = '_';
+                    while (dur < std::max(next_front_end, next_back_gpu_end)) {
+                        dur += 1000000.0 / 60.0;
+                        cc++;
                     }
-                }
 
-                sprintf(&text_buffer[102], " [2 frames, %.1f ms]", cc * 1000.0 / 60.0);
+                    prev_front_end /= dur;
+                    prev_back_cpu_start /= dur;
+                    prev_back_cpu_end /= dur;
+                    prev_back_gpu_start /= dur;
+                    prev_back_gpu_end /= dur;
+                    prev_swap_start /= dur;
+                    prev_swap_end /= dur;
 
-                vertical_offset -= font_->height(ui_root_.get());
-                font_->DrawText(ui_renderer_.get(), delimiter, { -1.0f, vertical_offset }, ui_root_.get());
+                    next_front_start /= dur;
+                    next_front_end /= dur;
+                    next_back_cpu_start /= dur;
+                    next_back_cpu_end /= dur;
+                    next_back_gpu_start /= dur;
+                    next_back_gpu_end /= dur;
+                    next_swap_start /= dur;
+                    next_swap_end /= dur;
 
-                vertical_offset -= font_->height(ui_root_.get());
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
+                    text_buffer[0] = '[';
+                    text_buffer[101] = ']';
 
-                //LOGI("%s", text_buffer);
+                    for (int i = 0; i < 100; i++) {
+                        double t = double(i) / 100;
 
-                for (int i = 0; i < 100; i++) {
-                    double t = double(i) / 100;
-
-                    if ((t >= prev_gpu_start && t <= prev_gpu_end) ||
-                        (t >= next_gpu_start && t <= next_gpu_end)) {
-                        text_buffer[i + 1] = 'B';
-                    } else {
-                        text_buffer[i + 1] = '_';
+                        if ((t >= prev_front_start && t <= prev_front_end) ||
+                            (t >= next_front_start && t <= next_front_end)) {
+                            text_buffer[i + 1] = 'F';
+                        } else {
+                            text_buffer[i + 1] = '_';
+                        }
                     }
+
+                    sprintf(&text_buffer[102], " [2 frames, %.1f ms]", cc * 1000.0 / 60.0);
+
+                    vertical_offset -= font_->height(ui_root_.get());
+                    font_->DrawText(ui_renderer_.get(), delimiter, { -1.0f, vertical_offset }, ui_root_.get());
+
+                    vertical_offset -= font_->height(ui_root_.get());
+                    font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
+
+                    for (int i = 0; i < 100; i++) {
+                        double t = double(i) / 100;
+
+                        if ((t >= prev_back_cpu_start && t <= prev_back_cpu_end) ||
+                            (t >= next_back_cpu_start && t <= next_back_cpu_end)) {
+                            text_buffer[i + 1] = 'B';
+                        } else if ((t >= prev_swap_start && t <= prev_swap_end) ||
+                                   (t >= next_swap_start && t <= next_swap_end)) {
+                            text_buffer[i + 1] = 'S';
+                        } else {
+                            text_buffer[i + 1] = '_';
+                        }
+                    }
+
+                    vertical_offset -= font_->height(ui_root_.get());
+                    font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
+
+                    for (int i = 0; i < 100; i++) {
+                        double t = double(i) / 100;
+
+                        if ((t >= prev_back_gpu_start && t <= prev_back_gpu_end) ||
+                            (t >= next_back_gpu_start && t <= next_back_gpu_end)) {
+                            text_buffer[i + 1] = 'G';
+                        } else {
+                            text_buffer[i + 1] = '_';
+                        }
+                    }
+
+                    vertical_offset -= font_->height(ui_root_.get());
+                    font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
                 }
-
-                vertical_offset -= font_->height(ui_root_.get());
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                //LOGI("%s", text_buffer);
 
                 prev_front_info_ = front_info;
                 prev_back_info_ = back_info;
+                prev_swap_interval_ = *swap_interval_;
             }
         }
 
