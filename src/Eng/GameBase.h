@@ -12,6 +12,11 @@
 
 using CommandHandler = std::function<bool(const std::vector<std::string> &)>;
 
+struct TimeInterval {
+    uint64_t start_timepoint_us = 0,
+             end_timepoint_us = 0;
+};
+
 class GameBase {
 protected:
     std::map<std::string, std::shared_ptr<void>> components_;
