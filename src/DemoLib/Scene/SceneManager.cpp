@@ -743,7 +743,7 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
             auto self = _self.lock();
             if (!self) return;
 
-            self->ctx_.ProcessSingleTask([self, tex_name, data, size]() {
+            self->ctx_.ProcessSingleTask([&self, tex_name, data, size]() {
                 Ren::Texture2DParams p;
                 if (strstr(tex_name.c_str(), ".tga_rgbe")) {
                     p.filter = Ren::BilinearNoMipmap;
@@ -753,6 +753,7 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
                     p.repeat = Ren::Repeat;
                 }
                 self->ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, nullptr);
+                self.reset();
                 LOGI("Texture %s loaded", tex_name.c_str());
             });
         }, [tex_name]() {
