@@ -564,20 +564,20 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     prepare_angular_tables();
     build_quantization_mode_table();
 
-    auto replace_texture_extension = [](std::string &tex) {
+    auto replace_texture_extension = [platform](std::string &tex) {
         size_t n;
         if ((n = tex.find(".tga")) != std::string::npos) {
-#if defined(__ANDROID__)
-            tex.replace(n + 1, n + 3, "ktx");
-#else
-            tex.replace(n + 1, n + 3, "dds");
-#endif
+            if (strcmp(platform, "pc_rel") == 0) {
+                tex.replace(n + 1, n + 3, "dds");
+            } else if (strcmp(platform, "android") == 0) {
+                tex.replace(n + 1, n + 3, "ktx");
+            }
         } else if ((n = tex.find(".png")) != std::string::npos) {
-#if defined(__ANDROID__)
-            tex.replace(n + 1, n + 3, "ktx");
-#else
-            tex.replace(n + 1, n + 3, "dds");
-#endif
+            if (strcmp(platform, "pc_rel") == 0) {
+                tex.replace(n + 1, n + 3, "dds");
+            } else if (strcmp(platform, "android") == 0) {
+                tex.replace(n + 1, n + 3, "ktx");
+            }
         }
     };
 
@@ -723,8 +723,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         handlers["hdr"]     = { "dds", h_conv_hdr_to_rgbm };
         handlers["png"]     = { "dds", h_conv_to_dds };
     } else if (strcmp(platform, "android") == 0) {
-        handlers["json"]    = { "json", h_copy };
-        handlers["txt"]     = { "txt", h_copy };
+        handlers["json"]    = { "json", h_preprocess_scene };
+        handlers["txt"]     = { "txt", h_preprocess_material };
         handlers["tga"]     = { "ktx", h_conv_to_astc };
         handlers["hdr"]     = { "ktx", h_conv_hdr_to_rgbm };
         handlers["png"]     = { "ktx", h_conv_to_astc };
