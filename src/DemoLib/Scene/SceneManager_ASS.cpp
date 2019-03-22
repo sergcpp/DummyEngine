@@ -785,18 +785,37 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 }
 
 int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, int height, int channels, std::unique_ptr<uint8_t[]> &out_buf) {
-    astc_codec_image *src_image = allocate_image(8, width, height, 1, 0);
+    int padding = channels == 4 ? 1 : 0;
+    
+    astc_codec_image *src_image = allocate_image(8, width, height, 1, padding);
 
     if (channels == 4) {
-        memcpy(&src_image->imagedata8[0][0][0], image_data, 4 * width * height);
+        uint8_t *_img = &src_image->imagedata8[0][0][0];
+        for (int j = 0; j < height; j++) {
+            int y = j + padding;
+            for (int i = 0; i < width; i++) {
+                int x = i + padding;
+                /*_img[4 * (y * width + x) + 0] = image_data[4 * (j * width + i) + 0];
+                _img[4 * (y * width + x) + 1] = image_data[4 * (j * width + i) + 1];
+                _img[4 * (y * width + x) + 2] = image_data[4 * (j * width + i) + 2];
+                _img[4 * (y * width + x) + 3] = image_data[4 * (j * width + i) + 3];*/
+
+                src_image->imagedata8[0][y][4 * x + 0] = image_data[4 * (j * width + i) + 0];
+                src_image->imagedata8[0][y][4 * x + 1] = image_data[4 * (j * width + i) + 1];
+                src_image->imagedata8[0][y][4 * x + 2] = image_data[4 * (j * width + i) + 2];
+                src_image->imagedata8[0][y][4 * x + 3] = image_data[4 * (j * width + i) + 3];
+            }
+        }
     } else {
         uint8_t *_img = &src_image->imagedata8[0][0][0];
         for (int j = 0; j < height; j++) {
+            int y = j + padding;
             for (int i = 0; i < width; i++) {
-                _img[4 * (j * width + i) + 0] = image_data[3 * (j * width + i) + 0];
-                _img[4 * (j * width + i) + 1] = image_data[3 * (j * width + i) + 1];
-                _img[4 * (j * width + i) + 2] = image_data[3 * (j * width + i) + 2];
-                _img[4 * (j * width + i) + 3] = 255;
+                int x = i + padding;
+                _img[4 * (y * width + x) + 0] = image_data[3 * (j * width + i) + 0];
+                _img[4 * (y * width + x) + 1] = image_data[3 * (j * width + i) + 1];
+                _img[4 * (y * width + x) + 2] = image_data[3 * (j * width + i) + 2];
+                _img[4 * (y * width + x) + 3] = 255;
             }
         }
     }
@@ -868,8 +887,6 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
         ewp.rgba_weights[3] = 1.0f;
         ewp.ra_normal_angular_scale = 0;
 
-        // if encode, process the parsed command line values
-
         int partitions_to_test = plimit_autoset;
         float dblimit_2d = dblimit_autoset_2d;
         float oplimit = oplimit_autoset;
@@ -899,9 +916,21 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
         ewp.rgba_weights[2] = std::max(ewp.rgba_weights[2], max_color_component_weight / 1000.0f);
         ewp.rgba_weights[3] = std::max(ewp.rgba_weights[3], max_color_component_weight / 1000.0f);
 
+        if (channels == 4) {
+            ewp.enable_rgb_scale_with_alpha = 1;
+            ewp.alpha_radius = 1;
+        }
+
         expand_block_artifact_suppression(xdim, ydim, 1, &ewp);
 
         swizzlepattern swz_encode = { 0, 1, 2, 3 };
+
+        //int padding = std::max(ewp.mean_stdev_radius, ewp.alpha_radius);
+
+        if (channels == 4 /*ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f || ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f*/) {
+            
+            compute_averages_and_variances(src_image, ewp.rgb_power, ewp.alpha_power, ewp.mean_stdev_radius, ewp.alpha_radius, swz_encode);
+        }
 
         int xsize = src_image->xsize;
         int ysize = src_image->ysize;
