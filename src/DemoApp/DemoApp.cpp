@@ -105,7 +105,7 @@ int DemoApp::Init(int w, int h) {
 #endif
 #endif
     try {
-        Viewer::PrepareAssets();
+        Viewer::PrepareAssets("pc");
         viewer_.reset(new Viewer(w, h, nullptr));
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());
@@ -157,9 +157,12 @@ void DemoApp::AddEvent(int type, int key, float x, float y, float dx, float dy) 
 #if !defined(__ANDROID__)
 int DemoApp::Run(const std::vector<std::string> &args) {
 
-    for (const auto &arg : args) {
-        if (arg == "--prepare_assets_only") {
-            Viewer::PrepareAssets();
+    for (int i = 0; i < (int)args.size(); i++) {
+        const auto &arg = args[i];
+        if (arg == "--prepare_assets") {
+            Viewer::PrepareAssets(args[i + 1].c_str());
+            i++;
+        } else if (arg == "--norun") {
             return 0;
         }
     }

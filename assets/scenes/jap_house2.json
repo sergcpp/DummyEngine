@@ -45,34 +45,6 @@
         }
     },
     "decals" : {
-        "d0" : {
-            "pos" : [ -23.0, 0.5, 0.0 ],
-            "rot" : [ -90.0, 45.0, 0.0 ],
-            "dim" : [ 5.0, 5.0, 1.0 ],
-            "diff" : "manhole01_diff.png",
-            "norm" : "manhole01_norm.png"
-        },
-        "d1" : {
-            "pos" : [ -23.0, 0.5, 5.0 ],
-            "rot" : [ -90.0, 45.0, 0.0 ],
-            "dim" : [ 5.0, 5.0, 1.0 ],
-            "diff" : "manhole01_diff.png",
-            "norm" : "manhole01_norm.png"
-        },
-        "d2" : {
-            "pos" : [ -23.0, 0.5, 10.0 ],
-            "rot" : [ -90.0, 45.0, 0.0 ],
-            "dim" : [ 5.0, 5.0, 1.0 ],
-            "diff" : "manhole01_diff.png",
-            "norm" : "manhole01_norm.png"
-        },
-        "d3" : {
-            "pos" : [ -23.0, 0.5, 15.0 ],
-            "rot" : [ -90.0, 45.0, 0.0 ],
-            "dim" : [ 5.0, 5.0, 1.0 ],
-            "diff" : "manhole01_diff.png",
-            "norm" : "manhole01_norm.png"
-        }
     },
     "objects" : [
         {

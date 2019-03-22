@@ -438,6 +438,7 @@ void Renderer::CheckInitVAOs() {
 }
 
 void Renderer::DestroyRendererInternal() {
+    LOGI("DestroyRendererInternal");
 
     auto vtx_buf = ctx_.default_vertex_buf();
     auto ndx_buf = ctx_.default_indices_buf();
@@ -535,13 +536,19 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
     assert(decals_count < MAX_DECALS_TOTAL);
     assert(items_count < MAX_ITEMS_TOTAL);
 
+//#define USE_MAP_BUFFER
+
     {   // Update lights buffer
         size_t lights_mem_size = lights_count * sizeof(LightSourceItem);
         if (lights_mem_size) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)lights_buf_);
+#if defined(USE_MAP_BUFFER)
             void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, 0, lights_mem_size, GL_MAP_WRITE_BIT);
             memcpy(pinned_mem, lights, lights_mem_size);
             glUnmapBuffer(GL_TEXTURE_BUFFER);
+#else
+            glBufferSubData(GL_TEXTURE_BUFFER, 0, lights_mem_size, lights);
+#endif
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
@@ -552,9 +559,13 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         size_t decals_mem_size = decals_count * sizeof(DecalItem);
         if (decals_mem_size) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)decals_buf_);
+#if defined(USE_MAP_BUFFER)
             void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, 0, decals_mem_size, GL_MAP_WRITE_BIT);
             memcpy(pinned_mem, decals, decals_mem_size);
             glUnmapBuffer(GL_TEXTURE_BUFFER);
+#else
+            glBufferSubData(GL_TEXTURE_BUFFER, 0, decals_mem_size, decals);
+#endif
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
@@ -565,9 +576,13 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         size_t cells_mem_size = CELLS_COUNT * sizeof(CellData);
         if (cells_mem_size && cells) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)cells_buf_);
+#if defined(USE_MAP_BUFFER)
             void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, 0, cells_mem_size, GL_MAP_WRITE_BIT);
             memcpy(pinned_mem, cells, cells_mem_size);
             glUnmapBuffer(GL_TEXTURE_BUFFER);
+#else
+            glBufferSubData(GL_TEXTURE_BUFFER, 0, cells_mem_size, cells);
+#endif
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
@@ -577,9 +592,13 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         size_t items_mem_size = items_count * sizeof(ItemData);
         if (items_mem_size) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)items_buf_);
+#if defined(USE_MAP_BUFFER)
             void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, 0, items_mem_size, GL_MAP_WRITE_BIT);
             memcpy(pinned_mem, items, items_mem_size);
             glUnmapBuffer(GL_TEXTURE_BUFFER);
+#else
+            glBufferSubData(GL_TEXTURE_BUFFER, 0, items_mem_size, items);
+#endif
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 

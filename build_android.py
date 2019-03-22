@@ -19,6 +19,9 @@ def main():
     
     # -DANDROID_ABI=armeabi-v7a
     
+    # prepare assets
+    os.system('DemoApp --prepare_assets android --norun')
+    
     # build ndk part
     for arch in archs:
         if not os.path.exists("build-android-" + arch):

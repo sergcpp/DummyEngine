@@ -1,5 +1,5 @@
 R"(
-#version 300 es
+#version 310 es
 
 layout(location = 0) in vec2 aVertexPosition;
 layout(location = 3) in vec2 aVertexUVs;

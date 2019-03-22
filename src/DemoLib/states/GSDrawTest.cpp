@@ -29,7 +29,7 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-    "jap_house.json";
+    "jap_house2.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
@@ -217,7 +217,11 @@ void GSDrawTest::LoadScene(const char *name) {
         throw std::runtime_error("Cannot load scene!");
     }
 
-    scene_manager_->LoadScene(js_scene);
+    try {
+        scene_manager_->LoadScene(js_scene);
+    } catch (std::exception &e) {
+        LOGI("Error loading scene: %s", e.what());
+    }
 
     if (js_scene.Has("camera")) {
         const JsObject &js_cam = (const JsObject &)js_scene.at("camera");

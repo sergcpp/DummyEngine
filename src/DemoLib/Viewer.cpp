@@ -97,9 +97,15 @@ void Viewer::Resize(int w, int h) {
     GameBase::Resize(w, h);
 }
 
-void Viewer::PrepareAssets() {
+void Viewer::PrepareAssets(const char *platform) {
 #if !defined(__ANDROID__)
-    SceneManager::PrepareAssets("assets", "assets_pc", "pc_rel", nullptr);
-    SceneManager::PrepareAssets("assets", "assets_android", "android", nullptr);
+    if (strcmp(platform, "all") == 0) {
+        SceneManager::PrepareAssets("assets", "assets_pc", "pc", nullptr);
+        SceneManager::PrepareAssets("assets", "assets_android", "android", nullptr);
+    } else {
+        std::string out_folder = "assets_";
+        out_folder += platform;
+        SceneManager::PrepareAssets("assets", out_folder.c_str(), platform, nullptr);
+    }
 #endif
 }

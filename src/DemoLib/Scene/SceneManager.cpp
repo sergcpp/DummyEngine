@@ -251,6 +251,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 in_file.Read((char *)&in_file_data[0], in_file_size);
 
                 int res[2], channels;
+#if !defined(__ANDROID__)
                 uint8_t *image_data = SOIL_load_image_from_memory(&in_file_data[0], (int)in_file_size, &res[0], &res[1], &channels, 4);
                 assert(channels == 4);
 
@@ -263,6 +264,10 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                                    float(pos[1]) / DECALS_ATLAS_RESY,
                                    float(res[0]) / DECALS_ATLAS_RESX,
                                    float(res[1]) / DECALS_ATLAS_RESY };
+#else
+#warning "TODO!"
+                return Ren::Vec4f{};
+#endif
             };
 
             if (js_obj.Has("diff")) {

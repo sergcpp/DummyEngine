@@ -248,6 +248,8 @@ void Write_KTX_ASTC(const uint8_t *image_data, int w, int h, int channels, const
         const uint32_t gl_rgb = 0x1907;
         const uint32_t gl_rgba = 0x1908;
 
+        const uint32_t gl_compressed_rgba_astc_4x4_khr = 0x93B0;
+        const uint32_t gl_compressed_rgba_astc_6x6_khr = 0x93B4;
         const uint32_t gl_compressed_rgba_astc_8x8_khr = 0x93B7;
 
         Ren::KTXHeader header = {};
@@ -567,13 +569,13 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     auto replace_texture_extension = [platform](std::string &tex) {
         size_t n;
         if ((n = tex.find(".tga")) != std::string::npos) {
-            if (strcmp(platform, "pc_rel") == 0) {
+            if (strcmp(platform, "pc") == 0) {
                 tex.replace(n + 1, n + 3, "dds");
             } else if (strcmp(platform, "android") == 0) {
                 tex.replace(n + 1, n + 3, "ktx");
             }
         } else if ((n = tex.find(".png")) != std::string::npos) {
-            if (strcmp(platform, "pc_rel") == 0) {
+            if (strcmp(platform, "pc") == 0) {
                 tex.replace(n + 1, n + 3, "dds");
             } else if (strcmp(platform, "android") == 0) {
                 tex.replace(n + 1, n + 3, "ktx");
@@ -710,13 +712,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     handlers["vs"]      = { "vs",   h_copy };
     handlers["fs"]      = { "fs",   h_copy };
 
-    if (strcmp(platform, "pc_deb") == 0) {
-        handlers["json"]    = { "json", h_copy };
-        handlers["txt"]     = { "txt", h_copy };
-        handlers["tga"]     = { "tga", h_copy };
-        handlers["hdr"]     = { "hdr", h_copy };
-        handlers["png"]     = { "png", h_copy };
-    } else if (strcmp(platform, "pc_rel") == 0) {
+    if (strcmp(platform, "pc") == 0) {
         handlers["json"]    = { "json", h_preprocess_scene };
         handlers["txt"]     = { "txt", h_preprocess_material };
         handlers["tga"]     = { "dds", h_conv_to_dds };
@@ -795,11 +791,6 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
             int y = j + padding;
             for (int i = 0; i < width; i++) {
                 int x = i + padding;
-                /*_img[4 * (y * width + x) + 0] = image_data[4 * (j * width + i) + 0];
-                _img[4 * (y * width + x) + 1] = image_data[4 * (j * width + i) + 1];
-                _img[4 * (y * width + x) + 2] = image_data[4 * (j * width + i) + 2];
-                _img[4 * (y * width + x) + 3] = image_data[4 * (j * width + i) + 3];*/
-
                 src_image->imagedata8[0][y][4 * x + 0] = image_data[4 * (j * width + i) + 0];
                 src_image->imagedata8[0][y][4 * x + 1] = image_data[4 * (j * width + i) + 1];
                 src_image->imagedata8[0][y][4 * x + 2] = image_data[4 * (j * width + i) + 2];
@@ -835,7 +826,7 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
         float oplimit_autoset = 1.2f;
         float mincorrel_autoset = 0.75f;
         float dblimit_autoset_2d = std::max(95 - 35 * log10_texels_2d, 70 - 19 * log10_texels_2d);
-        float bmc_autoset = 75.0f;
+        float bmc_autoset = 75;
         int maxiters_autoset = 2;
 
         int pcdiv;
@@ -897,7 +888,7 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
 
         ewp.block_mode_cutoff = (bmc_autoset) / 100.0f;
 
-        ewp.texel_avg_error_limit = std::pow(0.1f, dblimit_2d * 0.1f) * 65535.0f * 65535.0f;
+        ewp.texel_avg_error_limit = 0.0f;
 
         ewp.partition_1_to_2_limit = oplimit;
         ewp.lowest_correlation_cutoff = mincorrel;
@@ -942,7 +933,7 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
         buf_size = xblocks * yblocks * zblocks * 16;
         out_buf.reset(new uint8_t[buf_size]);
 
-        encode_astc_image(src_image, nullptr, xdim, ydim, 1, &ewp, DECODE_HDR, swz_encode, swz_encode, &out_buf[0], 0, 8);
+        encode_astc_image(src_image, nullptr, xdim, ydim, 1, &ewp, DECODE_LDR, swz_encode, swz_encode, &out_buf[0], 0, 8);
     }
 
     destroy_image(src_image);
