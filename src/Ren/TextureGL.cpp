@@ -563,12 +563,12 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], con
 
     glBindTexture(GL_TEXTURE_CUBE_MAP, tex_id);
 
-    for (int i = 0; i < 6; i++) {
-        const auto *_data = (const uint8_t *)data[i];
+    for (int j = 0; j < 6; j++) {
+        const auto *_data = (const uint8_t *)data[j];
 
 #ifndef NDEBUG
         KTXHeader this_header;
-        memcpy(&this_header, data[i], sizeof(KTXHeader));
+        memcpy(&this_header, data[j], sizeof(KTXHeader));
 
         // make sure all images have same properties
         assert(this_header.pixel_width == first_header.pixel_width);
@@ -577,15 +577,17 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], con
 #endif
         int data_offset = sizeof(KTXHeader);
 
+        int _w = w, _h = h;
+
         for (int i = 0; i < (int)first_header.mipmap_levels_count; i++) {
             uint32_t img_size;
             memcpy(&img_size, &_data[data_offset], sizeof(uint32_t));
             data_offset += sizeof(uint32_t);
-            glCompressedTexImage2D((GLenum)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i), i, (GLenum)first_header.gl_internal_format, w, h, 0, (GLsizei)img_size, &_data[data_offset]);
+            glCompressedTexImage2D((GLenum)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + j), i, (GLenum)first_header.gl_internal_format, _w, _h, 0, (GLsizei)img_size, &_data[data_offset]);
             data_offset += img_size;
 
-            w = std::max(w / 2, 1);
-            h = std::max(h / 2, 1);
+            _w = std::max(_w / 2, 1);
+            _h = std::max(_h / 2, 1);
 
             int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
             data_offset += pad;
