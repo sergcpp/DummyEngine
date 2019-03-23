@@ -67,6 +67,7 @@ private:
     TextureAtlas decals_atlas_;
 
     Ren::Storage<Transform> transforms_;
+    Ren::Storage<LightmapRegion> lightmaps_;
     Ren::Storage<LightSource> lights_;
     Ren::Storage<Decal> decals_;
 

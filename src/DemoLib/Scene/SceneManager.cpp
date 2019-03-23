@@ -54,15 +54,9 @@ cam_(Ren::Vec3f{ 0.0f, 0.0f, 1.0f },
      Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
     using namespace SceneManagerConstants;
 
-    {   // Alloc texture for decals atlas
-        Ren::Texture2DParams p;
-        p.w = DECALS_ATLAS_RESX;
-        p.h = DECALS_ATLAS_RESY;
-        p.format = Ren::RawRGBA8888;
-        p.filter = Ren::Trilinear;
-        p.repeat = Ren::ClampToEdge;
-
-        decals_atlas_ = TextureAtlas{ p };
+    {   // Alloc texture for decals atlas        
+        Ren::eTexColorFormat formats[] = { Ren::RawRGBA8888, Ren::Undefined };
+        decals_atlas_ = TextureAtlas{ DECALS_ATLAS_RESX, DECALS_ATLAS_RESY, formats, Ren::Trilinear };
     }
 }
 
@@ -255,8 +249,11 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 uint8_t *image_data = SOIL_load_image_from_memory(&in_file_data[0], (int)in_file_size, &res[0], &res[1], &channels, 4);
                 assert(channels == 4);
 
+                const void *data[] = { (const void *)image_data, nullptr };
+                const Ren::eTexColorFormat formats[] = { Ren::RawRGBA8888, Ren::Undefined };
+
                 int pos[2];
-                int rc = decals_atlas_.Allocate(&image_data[0], Ren::RawRGBA8888, res, pos, 4);
+                int rc = decals_atlas_.Allocate(data, formats, res, pos, 4);
                 SOIL_free_image_data(image_data);
                 if (rc == -1) throw std::runtime_error("Cannot allocate decal!");
 
@@ -400,9 +397,11 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 #endif
 
             obj.flags |= HasLightmap;
-            obj.lm_res = (uint32_t)js_lm_res.val;
-            obj.lm_dir_tex = OnLoadTexture(lm_dir_tex_name.c_str());
-            obj.lm_indir_tex = OnLoadTexture(lm_indir_tex_name.c_str());
+            obj.lm = lightmaps_.Add();
+            obj.lm->size[0] = (int)js_lm_res.val;
+            obj.lm->size[1] = (int)js_lm_res.val;
+            obj.lm->dir_tex = OnLoadTexture(lm_dir_tex_name.c_str());
+            obj.lm->indir_tex = OnLoadTexture(lm_indir_tex_name.c_str());
         }
 
         if (js_obj.Has("lightmap_sh")) {
@@ -424,7 +423,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                     lm_file_name += ".ktx";
 #endif
 
-                    obj.lm_indir_sh_tex[sh_l] = OnLoadTexture(lm_file_name.c_str());
+                    obj.lm->indir_sh_tex[sh_l] = OnLoadTexture(lm_file_name.c_str());
                 }
             }
         }

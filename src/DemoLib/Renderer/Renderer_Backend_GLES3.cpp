@@ -915,7 +915,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
             glBindTexture(GL_TEXTURE_BUFFER, (GLuint)items_tbo_);
 
             if (decals_atlas) {
-                BindTexture(DECALSMAP_SLOT, decals_atlas->tex_id());
+                BindTexture(DECALSMAP_SLOT, decals_atlas->tex_id(0));
             }
 
             if (ENABLE_SSAO) {
@@ -1510,13 +1510,13 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
     }
 
     if ((render_flags & DebugDecals) && decals_atlas) {
-        int resx = decals_atlas->params().w,
-            resy = decals_atlas->params().h;
+        int resx = decals_atlas->resx(),
+            resy = decals_atlas->resy();
 
         float k = float(w_) / h_;
         k *= float(resy) / resx;
 
-        BlitTexture(-1.0f, -1.0f, 1.0f, 1.0f * k, decals_atlas->tex_id(), resx, resy);
+        BlitTexture(-1.0f, -1.0f, 1.0f, 1.0f * k, decals_atlas->tex_id(0), resx, resy);
     }
 
     glBindVertexArray(0);

@@ -47,6 +47,11 @@ struct Decal : public Ren::RefCounter {
     Ren::Vec4f diff, norm, spec;
 };
 
+struct LightmapRegion : public Ren::RefCounter {
+    int pos[2], size[2];
+    Ren::Texture2DRef dir_tex, indir_tex, indir_sh_tex[4];
+};
+
 enum eObjectFlags {
     HasTransform    = (1 << 0),
     HasMesh         = (1 << 1),
@@ -63,8 +68,8 @@ struct SceneObject {
     uint32_t flags;
     Ren::StorageRef<Transform> tr;
     Ren::MeshRef mesh, occ_mesh;
-    Ren::Texture2DRef lm_dir_tex, lm_indir_tex, lm_indir_sh_tex[4];
-    uint32_t lm_res, pt_mi;
+    uint32_t pt_mi;
+    Ren::StorageRef<LightmapRegion> lm;
     Ren::StorageRef<LightSource> ls[LIGHTS_PER_OBJECT];
     Ren::StorageRef<Decal> de[DECALS_PER_OBJECT];
 };

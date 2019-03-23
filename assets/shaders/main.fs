@@ -147,7 +147,7 @@ void main(void) {
     
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.x; i++) {
         highp uint item_data = texelFetch(items_buffer, int(i)).x;
-        int di = int(bitfieldExtract(item_data, 12, 24));
+        int di = int(bitfieldExtract(item_data, 12, 12));
         
         mat4 de_proj;
         de_proj[0] = texelFetch(decals_buffer, di * 6 + 0);

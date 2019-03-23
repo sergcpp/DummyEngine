@@ -111,7 +111,7 @@ bool SceneManager::PrepareLightmaps_PT() {
     const int LM_SAMPLES_PER_PASS = 16;
     const int TILE_SIZE = 64;
 
-    const int res = (int)objects_[cur_lm_obj_].lm_res;
+    const int res = (int)objects_[cur_lm_obj_].lm->size[0];
 
     if (ray_reg_ctx_.empty()) {
         if (ray_renderer_.type() == Ray::RendererOCL) {
