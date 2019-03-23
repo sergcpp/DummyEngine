@@ -27,6 +27,9 @@ public:
         nodes_.back().size[1] = resy;
     }
 
+    int resx() const { return nodes_[0].size[0]; }
+    int resy() const { return nodes_[0].size[1]; }
+
     bool empty() const {
         return nodes_.size() == 1;
     }
