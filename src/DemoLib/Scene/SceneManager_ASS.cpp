@@ -210,7 +210,7 @@ void Write_KTX_DXT(const uint8_t *image_data, int w, int h, int channels, const 
     }
 }
 
-int ConvertToASTC(const uint8_t *image_data, int width, int height, int channels, std::unique_ptr<uint8_t[]> &out_buf);
+int ConvertToASTC(const uint8_t *image_data, int width, int height, int channels, float bitrate, std::unique_ptr<uint8_t[]> &out_buf);
 
 void Write_KTX_ASTC(const uint8_t *image_data, int w, int h, int channels, const char *out_file) {
     // Check if power of two
@@ -235,13 +235,15 @@ void Write_KTX_ASTC(const uint8_t *image_data, int w, int h, int channels, const
         mip_count = 1;
     }
 
+    bool high_quality = strstr(out_file, "lightmaps");
+
     {   // Write file
         std::unique_ptr<uint8_t[]> astc_data[16];
         int astc_size[16] = {};
         int astc_size_total = 0;
 
         for (int i = 0; i < mip_count; i++) {
-            astc_size[i] = ConvertToASTC(mipmaps[i].get(), widths[i], heights[i], channels, astc_data[i]);
+            astc_size[i] = ConvertToASTC(mipmaps[i].get(), widths[i], heights[i], channels, high_quality ? 8.0f : 2.0f, astc_data[i]);
             astc_size_total += astc_size[i];
         }
 
@@ -256,7 +258,11 @@ void Write_KTX_ASTC(const uint8_t *image_data, int w, int h, int channels, const
         header.gl_type = 0;
         header.gl_type_size = 1;
         header.gl_format = 0; // should be zero for compressed texture
-        header.gl_internal_format = gl_compressed_rgba_astc_8x8_khr;
+        if (high_quality) {
+            header.gl_internal_format = gl_compressed_rgba_astc_4x4_khr;
+        } else {
+            header.gl_internal_format = gl_compressed_rgba_astc_8x8_khr;
+        }
         if (channels == 4) {
             header.gl_base_internal_format = gl_rgba;
         } else {
@@ -780,7 +786,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     return true;
 }
 
-int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, int height, int channels, std::unique_ptr<uint8_t[]> &out_buf) {
+int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, int height, int channels, float bitrate, std::unique_ptr<uint8_t[]> &out_buf) {
     int padding = channels == 4 ? 1 : 0;
     
     astc_codec_image *src_image = allocate_image(8, width, height, 1, padding);
@@ -814,7 +820,7 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
     int buf_size = 0;
 
     {
-        const float target_bitrate = 2.0f;
+        const float target_bitrate = bitrate;
         int xdim, ydim;
 
         find_closest_blockdim_2d(target_bitrate, &xdim, &ydim, 0);
