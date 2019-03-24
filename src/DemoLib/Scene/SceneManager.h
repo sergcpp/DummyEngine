@@ -66,8 +66,10 @@ private:
 
     TextureAtlas decals_atlas_;
 
+    Ren::TextureSplitter lightmap_splitter_;
+
     Ren::Storage<Transform> transforms_;
-    Ren::Storage<LightmapRegion> lightmaps_;
+    Ren::Storage<LightmapRegion> lm_regions_;
     Ren::Storage<LightSource> lights_;
     Ren::Storage<Decal> decals_;
 
@@ -75,4 +77,8 @@ private:
     std::vector<uint32_t> obj_indices_;
 
     std::vector<bvh_node_t> nodes_;
+
+    // PT temp data
+    std::vector<Ray::pixel_color_t> pt_lm_direct_, pt_lm_indir_,
+                                    pt_lm_indir_sh_[4];
 };

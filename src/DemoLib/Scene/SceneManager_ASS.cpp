@@ -351,9 +351,9 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
     }
 }
 
-std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int res, float invalid_threshold, int filter_size) {
-    std::vector<Ray::pixel_color_t> temp_pixels1{ pixels, pixels + res * res },
-                                    temp_pixels2{ (size_t)res * res };
+std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int width, int height, float invalid_threshold, int filter_size) {
+    std::vector<Ray::pixel_color_t> temp_pixels1{ pixels, pixels + width * height },
+                                    temp_pixels2{ (size_t)width * height };
 
     // Avoid bound checks in debug
     Ray::pixel_color_t *_temp_pixels1 = temp_pixels1.data(),
@@ -363,10 +363,10 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
     for (int i = 0; i < filter_size; i++) {
         bool has_invalid = false;
 
-        for (int y = 0; y < res; y++) {
-            for (int x = 0; x < res; x++) {
-                auto in_p = _temp_pixels1[y * res + x];
-                auto &out_p = _temp_pixels2[y * res + x];
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                auto in_p = _temp_pixels1[y * width + x];
+                auto &out_p = _temp_pixels2[y * width + x];
 
                 float mul = 1.0f;
                 if (in_p.a < invalid_threshold) {
@@ -376,9 +376,9 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
                     int count = 0;
                     for (int _y : { y - 1, y, y + 1 }) {
                         for (int _x : { x - 1, x, x + 1 }) {
-                            if (_x < 0 || _y < 0 || _x > res - 1 || _y > res - 1) continue;
+                            if (_x < 0 || _y < 0 || _x > width - 1 || _y > height - 1) continue;
 
-                            const auto &p = _temp_pixels1[_y * res + _x];
+                            const auto &p = _temp_pixels1[_y * width + _x];
                             if (p.a >= invalid_threshold) {
                                 new_p.r += p.r;
                                 new_p.g += p.g;

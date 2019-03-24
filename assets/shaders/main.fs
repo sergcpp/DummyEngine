@@ -240,7 +240,7 @@ void main(void) {
         }
     }
     
-    vec2 lm_uvs = vec2(aVertexUVs2_.x, aVertexUVs2_.y);
+    vec2 lm_uvs = aVertexUVs2_;
     
     float lambert = max(dot(normal, sun_dir), 0.0);
     float visibility = 0.0;

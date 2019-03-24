@@ -23,6 +23,8 @@ layout (std140) uniform MatricesBlock {
     vec4 uClipInfo;
 };
 
+layout(location = 16) uniform vec4 uLightmapTr;
+
 out vec3 aVertexPos_;
 out mat3 aVertexTBN_;
 out vec2 aVertexUVs1_;
@@ -38,7 +40,7 @@ void main(void) {
     aVertexPos_ = vertex_position_ws;
     aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);
     aVertexUVs1_ = aVertexUVs1;
-    aVertexUVs2_ = aVertexUVs2;
+    aVertexUVs2_ = uLightmapTr.xy + uLightmapTr.zw * aVertexUVs2;
     
     const vec2 offsets[4] = vec2[4](
         vec2(0.0, 0.0),

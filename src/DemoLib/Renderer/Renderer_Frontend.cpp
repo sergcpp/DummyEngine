@@ -241,13 +241,6 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
                             tr_list.push_back(clip_from_object);
 
                             const auto *mesh = obj.mesh.get();
-                            const Ren::Texture2D *lm_dir_tex = nullptr,
-                                                 *lm_indir_tex = nullptr;
-
-                            if (obj.flags & HasLightmap) {
-                                lm_dir_tex = obj.lm->dir_tex.get();
-                                lm_indir_tex = obj.lm->indir_tex.get();
-                            }
 
                             size_t dr_start = dr_list.size();
 
@@ -255,13 +248,10 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
 
                             const Ren::TriGroup *s = &mesh->group(0);
                             while (s->offset != -1) {
-                                dr_list.push_back({ &tr_list.back(), &world_from_object, s->mat.get(), mesh, s, lm_dir_tex, lm_indir_tex });
+                                dr_list.push_back({ &tr_list.back(), &world_from_object, s->mat.get(), mesh, s });
 
-                                if ((obj.flags & HasLightmap) && obj.lm->indir_sh_tex[0]) {
-                                    dr_list.back().lm_indir_sh_tex[0] = obj.lm->indir_sh_tex[0].get();
-                                    dr_list.back().lm_indir_sh_tex[1] = obj.lm->indir_sh_tex[1].get();
-                                    dr_list.back().lm_indir_sh_tex[2] = obj.lm->indir_sh_tex[2].get();
-                                    dr_list.back().lm_indir_sh_tex[3] = obj.lm->indir_sh_tex[3].get();
+                                if (obj.flags & HasLightmap) {
+                                    dr_list.back().lm_transform = obj.lm->xform;
                                 }
 
                                 ++s;
@@ -523,7 +513,7 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
 
                             const Ren::TriGroup* s = &mesh->group(0);
                             while (s->offset != -1) {
-                                sh_dr_list[casc].push_back({ &tr_list.back(), nullptr, s->mat.get(), mesh, s, nullptr, nullptr });
+                                sh_dr_list[casc].push_back({ &tr_list.back(), nullptr, s->mat.get(), mesh, s });
                                 ++s;
                             }
                         }

@@ -259,7 +259,7 @@ void GSDrawTest::Draw(float dt_s) {
     if (use_lm_) {
         if (!scene_manager_->PrepareLightmaps_PT()) {
             // Lightmap creation finished, convert textures
-            Viewer::PrepareAssets();
+            Viewer::PrepareAssets("pc");
             // Reload scene
             LoadScene(SCENE_NAME);
             // Switch back to normal mode

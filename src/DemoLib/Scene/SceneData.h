@@ -49,7 +49,7 @@ struct Decal : public Ren::RefCounter {
 
 struct LightmapRegion : public Ren::RefCounter {
     int pos[2], size[2];
-    Ren::Texture2DRef dir_tex, indir_tex, indir_sh_tex[4];
+    Ren::Vec4f xform;
 };
 
 enum eObjectFlags {
@@ -119,6 +119,8 @@ struct Environment {
     Ren::Vec3f sun_dir, sun_col;
     float sun_softness = 0.0f;
     Ren::Texture2DRef env_map;
+    Ren::Texture2DRef lm_direct_, lm_indir_,
+                      lm_indir_sh_[4];
 };
 
 struct BBox {

@@ -14,6 +14,9 @@ extern const char *MODELS_PATH;
 extern const char *TEXTURES_PATH;
 extern const char *MATERIALS_PATH;
 extern const char *SHADERS_PATH;
+
+extern const int LIGHTMAP_ATLAS_RESX,
+                 LIGHTMAP_ATLAS_RESY;
 }
 
 namespace SceneManagerInternal {
@@ -22,7 +25,7 @@ void Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *na
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data);
 
-std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int res, float invalid_threshold, int filter_size);
+std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int width, int height, float invalid_threshold, int filter_size);
 
 std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &tex_ref);
 }
@@ -152,27 +155,26 @@ bool SceneManager::PrepareLightmaps_PT() {
     // special lightmap camera
     ray_scene_->set_current_cam(1);
 
+    const float InvalidThreshold = 0.5f;
+
     if (ray_reg_ctx_[0].iteration >= LM_SAMPLES_TOTAL) {
         {
             // Save lightmap to file
             const auto *pixels = ray_renderer_.get_pixels_ref();
 
-            const float InvalidThreshold = 0.5f;
-            const int FilterSize = 16;
+            int xpos = objects_[cur_lm_obj_].lm->pos[0],
+                ypos = objects_[cur_lm_obj_].lm->pos[1];
 
-            // apply dilation filter
-            std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(pixels, res, InvalidThreshold, FilterSize);
-
-            std::string out_file_name = "./assets/textures/lightmaps/" + scene_name_;
-            out_file_name += "_";
-            out_file_name += std::to_string(cur_lm_obj_);
+            // Copy image to lightmap atlas
             if (!cur_lm_indir_) {
-                out_file_name += "_lm_direct.png";
+                for (int j = 0; j < res; j++) {
+                    memcpy(&pt_lm_direct_[(ypos + j) * LIGHTMAP_ATLAS_RESX + xpos], &pixels[(res - j - 1) * res], res * sizeof(Ray::pixel_color_t));
+                }
             } else {
-                out_file_name += "_lm_indirect.png";
+                for (int j = 0; j < res; j++) {
+                    memcpy(&pt_lm_indir_[(ypos + j) * LIGHTMAP_ATLAS_RESX + xpos], &pixels[(res - j - 1) * res], res * sizeof(Ray::pixel_color_t));
+                }
             }
-
-            SceneManagerInternal::Write_RGBM(&out_pixels[0].r, res, res, 4, out_file_name.c_str());
 
             if (cur_lm_indir_) {
                 std::vector<Ray::shl1_data_t> sh_data(ray_renderer_.get_sh_data_ref(), ray_renderer_.get_sh_data_ref() + res * res);
@@ -226,12 +228,9 @@ bool SceneManager::PrepareLightmaps_PT() {
                         sh_data[i].coeff_g[sh_l] = 0.25f * sh_data[i].coeff_g[sh_l] + 0.5f;
                         sh_data[i].coeff_b[sh_l] = 0.25f * sh_data[i].coeff_b[sh_l] + 0.5f;
 
-                        if (sh_data[i].coeff_r[sh_l] > 1.0f) sh_data[i].coeff_r[sh_l] = 1.0f;
-                        else if (sh_data[i].coeff_r[sh_l] < 0.0f) sh_data[i].coeff_r[sh_l] = 0.0f;
-                        if (sh_data[i].coeff_g[sh_l] > 1.0f) sh_data[i].coeff_g[sh_l] = 1.0f;
-                        else if (sh_data[i].coeff_g[sh_l] < 0.0f) sh_data[i].coeff_g[sh_l] = 0.0f;
-                        if (sh_data[i].coeff_b[sh_l] > 1.0f) sh_data[i].coeff_b[sh_l] = 1.0f;
-                        else if (sh_data[i].coeff_b[sh_l] < 0.0f) sh_data[i].coeff_b[sh_l] = 0.0f;
+                        sh_data[i].coeff_r[sh_l] = Ren::Clamp(sh_data[i].coeff_r[sh_l], 0.0f, 1.0f);
+                        sh_data[i].coeff_g[sh_l] = Ren::Clamp(sh_data[i].coeff_g[sh_l], 0.0f, 1.0f);
+                        sh_data[i].coeff_b[sh_l] = Ren::Clamp(sh_data[i].coeff_b[sh_l], 0.0f, 1.0f);
                     }
                 }
 
@@ -241,7 +240,7 @@ bool SceneManager::PrepareLightmaps_PT() {
                         temp_pixels1[i].g = sh_data[i].coeff_g[sh_l];
                         temp_pixels1[i].b = sh_data[i].coeff_b[sh_l];
 
-                        // coverage division is already applied in previous step
+                        // Coverage division is already applied in previous step
                         if (pixels[i].a > InvalidThreshold) {
                             temp_pixels1[i].a = 1.0f;
                         } else {
@@ -249,23 +248,10 @@ bool SceneManager::PrepareLightmaps_PT() {
                         }
                     }
 
-                    const auto out_pixels = SceneManagerInternal::FlushSeams(&temp_pixels1[0], res, InvalidThreshold, FilterSize);
-
-                    out_file_name = "./assets/textures/";
-                    out_file_name += "/lightmaps/";
-                    out_file_name += scene_name_;
-                    out_file_name += "_";
-                    out_file_name += std::to_string(cur_lm_obj_);
-                    out_file_name += "_lm_sh_";
-                    out_file_name += std::to_string(sh_l);
-                    out_file_name += ".png";
-
-                    if (sh_l == 0) {
-                        // Write as HDR image
-                        SceneManagerInternal::Write_RGBM(&out_pixels[0].r, res, res, 4, out_file_name.c_str());
-                    } else {
-                        // Write as LDR image
-                        SceneManagerInternal::Write_RGB(&out_pixels[0], res, res, out_file_name.c_str());
+                    {   // Add image to atlas
+                        for (int j = 0; j < res; j++) {
+                            memcpy(&pt_lm_indir_sh_[sh_l][(ypos + j) * LIGHTMAP_ATLAS_RESX + xpos], &temp_pixels1[(res - j - 1) * res], res * sizeof(Ray::pixel_color_t));
+                        }
                     }
                 }
             }
@@ -293,6 +279,50 @@ bool SceneManager::PrepareLightmaps_PT() {
             }
 
             if (!found) {
+                
+                const int FilterSize = 32;
+
+                {   // Save direct lightmap
+                    auto out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_direct_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
+
+                    std::string out_file_name = "./assets/textures/lightmaps/";
+                    out_file_name += scene_name_;
+                    out_file_name += "_lm_direct.png";
+
+                    SceneManagerInternal::Write_RGBM(&out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4, out_file_name.c_str());
+                }
+
+                {   // Save indirect lightmap
+                    auto out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_indir_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
+
+                    std::string out_file_name = "./assets/textures/lightmaps/";
+                    out_file_name += scene_name_;
+                    out_file_name += "_lm_indirect.png";
+
+                    SceneManagerInternal::Write_RGBM(&out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4, out_file_name.c_str());
+                }
+
+                {   // Save indirect SH-lightmap
+                    for (int sh_l = 0; sh_l < 4; sh_l++) {
+                        auto out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_indir_sh_[sh_l][0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
+
+                        std::string out_file_name = "./assets/textures/lightmaps/";
+                        out_file_name += scene_name_;
+                        out_file_name += "_lm_sh_";
+                        out_file_name += std::to_string(sh_l);
+                        out_file_name += ".png";
+
+                        SceneManagerInternal::Write_RGBM(&out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4, out_file_name.c_str());
+                    }
+                }
+
+                // Release memory
+                pt_lm_direct_ = {};
+                pt_lm_indir_ = {};
+                for (int sh_l = 0; sh_l < 4; sh_l++) {
+                    pt_lm_indir_sh_[sh_l] = {};
+                }
+
                 return false;
             }
 
@@ -526,6 +556,24 @@ void SceneManager::InitScene_PT(bool _override) {
             const auto *tr = obj.tr.get();
 
             obj.pt_mi = ray_scene_->AddMeshInstance(mesh_it->second, Ren::ValuePtr(tr->mat));
+        }
+    }
+
+    pt_lm_direct_.resize(LIGHTMAP_ATLAS_RESX * LIGHTMAP_ATLAS_RESY);
+    pt_lm_indir_.resize(LIGHTMAP_ATLAS_RESX * LIGHTMAP_ATLAS_RESY);
+    for (int i = 0; i < 4; i++) {
+        pt_lm_indir_sh_[i].resize(LIGHTMAP_ATLAS_RESX * LIGHTMAP_ATLAS_RESY);
+    }
+
+    for (int j = 0; j < LIGHTMAP_ATLAS_RESY; j++) {
+        for (int i = 0; i < LIGHTMAP_ATLAS_RESX; i++) {
+            int ndx = j * LIGHTMAP_ATLAS_RESX + i;
+
+            pt_lm_direct_[ndx] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            pt_lm_indir_[ndx] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            for (int i = 0; i < 4; i++) {
+                pt_lm_indir_sh_[i][ndx] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            }
         }
     }
 }

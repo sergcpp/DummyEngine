@@ -41,6 +41,9 @@ const float LIGHT_ATTEN_CUTOFF = 0.001f;
 
 const int DECALS_ATLAS_RESX = 2048,
           DECALS_ATLAS_RESY = 1024;
+
+const int LIGHTMAP_ATLAS_RESX = 2048,
+          LIGHTMAP_ATLAS_RESY = 1024;
 }
 
 SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererBase &ray_renderer,
@@ -49,9 +52,11 @@ SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererB
       renderer_(renderer),
       ray_renderer_(ray_renderer),
       threads_(threads),
-cam_(Ren::Vec3f{ 0.0f, 0.0f, 1.0f },
-     Ren::Vec3f{ 0.0f, 0.0f, 0.0f },
-     Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
+      cam_(Ren::Vec3f{ 0.0f, 0.0f, 1.0f },
+           Ren::Vec3f{ 0.0f, 0.0f, 0.0f },
+           Ren::Vec3f{ 0.0f, 1.0f, 0.0f }),
+     lightmap_splitter_(SceneManagerConstants::LIGHTMAP_ATLAS_RESX,
+                        SceneManagerConstants::LIGHTMAP_ATLAS_RESY) {
     using namespace SceneManagerConstants;
 
     {   // Alloc texture for decals atlas        
@@ -100,6 +105,41 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     if (js_scene.Has("name")) {
         const JsString &js_name = (const JsString &)js_scene.at("name");
         scene_name_ = js_name.val;
+    } else {
+        throw std::runtime_error("Level has no name!");
+    }
+
+    {
+        std::string lm_base_tex_name = "lightmaps/";
+        lm_base_tex_name += scene_name_;
+
+        const char tex_ext[] =
+#if !defined(__ANDROID__)
+            ".dds";
+#else
+            ".ktx";
+#endif
+
+        std::string lm_direct_tex_name = lm_base_tex_name;
+        lm_direct_tex_name += "_lm_direct";
+        lm_direct_tex_name += tex_ext;
+
+        std::string lm_indir_tex_name = lm_base_tex_name;
+        lm_indir_tex_name += "_lm_indirect";
+        lm_indir_tex_name += tex_ext;
+
+        std::string lm_indir_sh_tex_name[4] = { lm_base_tex_name, lm_base_tex_name, lm_base_tex_name, lm_base_tex_name };
+        for (int sh_l = 0; sh_l < 4; sh_l++) {
+            lm_indir_sh_tex_name[sh_l] += "_lm_sh_";
+            lm_indir_sh_tex_name[sh_l] += std::to_string(sh_l);
+            lm_indir_sh_tex_name[sh_l] += tex_ext;
+        }
+
+        env_.lm_direct_ = OnLoadTexture(lm_direct_tex_name.c_str());
+        env_.lm_indir_ = OnLoadTexture(lm_indir_tex_name.c_str());
+        for (int sh_l = 0; sh_l < 4; sh_l++) {
+            env_.lm_indir_sh_[sh_l] = OnLoadTexture(lm_indir_sh_tex_name[sh_l].c_str());
+        }
     }
 
     const JsObject &js_meshes = (const JsObject &)js_scene.at("meshes");
@@ -378,54 +418,18 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         if (js_obj.Has("lightmap_res")) {
             const JsNumber &js_lm_res = (const JsNumber &)js_obj.at("lightmap_res");
 
-            std::string lm_tex_name = "lightmaps/";
-            lm_tex_name += scene_name_;
-            lm_tex_name += "_";
-            lm_tex_name += std::to_string(objects_.size());
-
-            std::string lm_dir_tex_name = lm_tex_name +
-#if !defined(__ANDROID__)
-                "_lm_direct.dds";
-#else
-                "_lm_direct.ktx";
-#endif
-            std::string lm_indir_tex_name = lm_tex_name +
-#if !defined(__ANDROID__)
-                "_lm_indirect.dds";
-#else
-                "_lm_indirect.ktx";
-#endif
-
             obj.flags |= HasLightmap;
-            obj.lm = lightmaps_.Add();
+            obj.lm = lm_regions_.Add();
             obj.lm->size[0] = (int)js_lm_res.val;
             obj.lm->size[1] = (int)js_lm_res.val;
-            obj.lm->dir_tex = OnLoadTexture(lm_dir_tex_name.c_str());
-            obj.lm->indir_tex = OnLoadTexture(lm_indir_tex_name.c_str());
-        }
 
-        if (js_obj.Has("lightmap_sh")) {
-            const JsLiteral &js_lm_sh = (const JsLiteral &)js_obj.at("lightmap_sh");
+            int node_id = lightmap_splitter_.Allocate(obj.lm->size, obj.lm->pos);
+            assert(node_id != -1 && "Cannot allocate lightmap region");
 
-            if (js_lm_sh.val == JS_TRUE) {
-                std::string base_file_name = "lightmaps/";
-                base_file_name += scene_name_;
-                base_file_name += "_";
-                base_file_name += std::to_string(objects_.size());
-                base_file_name += "_lm_sh_";
-
-                for (int sh_l = 0; sh_l < 4; sh_l++) {
-                    std::string lm_file_name = base_file_name;
-                    lm_file_name += std::to_string(sh_l);
-#if !defined(__ANDROID__)
-                    lm_file_name += ".dds";
-#else
-                    lm_file_name += ".ktx";
-#endif
-
-                    obj.lm->indir_sh_tex[sh_l] = OnLoadTexture(lm_file_name.c_str());
-                }
-            }
+            obj.lm->xform = Ren::Vec4f{
+                float(obj.lm->pos[0]) / LIGHTMAP_ATLAS_RESX, 1.0f - float(obj.lm->pos[1]) / LIGHTMAP_ATLAS_RESY,
+                float(obj.lm->size[0]) / LIGHTMAP_ATLAS_RESX, -float(obj.lm->size[1]) / LIGHTMAP_ATLAS_RESY,
+            };
         }
 
         if (js_obj.Has("lights")) {
