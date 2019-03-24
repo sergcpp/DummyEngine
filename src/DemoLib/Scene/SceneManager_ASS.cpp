@@ -235,7 +235,7 @@ void Write_KTX_ASTC(const uint8_t *image_data, int w, int h, int channels, const
         mip_count = 1;
     }
 
-    bool high_quality = strstr(out_file, "lightmaps");
+    bool high_quality = strstr(out_file, "lightmaps") != 0;
 
     {   // Write file
         std::unique_ptr<uint8_t[]> astc_data[16];
