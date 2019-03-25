@@ -109,9 +109,11 @@ struct BackendInfo {
 
 struct bvh_node_t {
     uint32_t prim_index, prim_count,
-             left_child, right_child, parent,
-             space_axis; // axis with maximal child's centroids distance
-    Ren::Vec3f bbox[2];
+             left_child, right_child;
+    Ren::Vec3f bbox_min;
+    uint32_t parent;
+    Ren::Vec3f bbox_max;
+    uint32_t space_axis; // axis with maximal child's centroids distance
 };
 static_assert(sizeof(bvh_node_t) == 48, "!");
 

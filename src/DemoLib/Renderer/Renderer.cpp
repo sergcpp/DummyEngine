@@ -102,7 +102,7 @@ Renderer::~Renderer() {
     swCullCtxDestroy(&cull_ctx_);
 }
 
-void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_index,
+void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_index, uint32_t nodes_count,
                            const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
                            const TextureAtlas &decals_atlas) {
     using namespace RendererInternal;
@@ -115,7 +115,7 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint
 
     if (USE_TWO_THREADS) {
         // Delegate gathering to background thread
-        SwapDrawLists(cam, nodes, root_index, objects, obj_indices, object_count, env, &decals_atlas);
+        SwapDrawLists(cam, nodes, root_index, nodes_count, objects, obj_indices, object_count, env, &decals_atlas);
     } else {
         // Gather objects in main thread
         GatherDrawables(cam, render_flags_[0], env, nodes, root_index, objects, obj_indices, object_count,
@@ -227,7 +227,7 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint
 }
 
 void Renderer::WaitForBackgroundThreadIteration() {
-    SwapDrawLists(draw_cam_, nullptr, 0, nullptr, nullptr, 0, env_, nullptr);
+    SwapDrawLists(draw_cam_, nullptr, 0, 0, nullptr, nullptr, 0, env_, nullptr);
 }
 
 void Renderer::BackgroundProc() {
@@ -251,7 +251,7 @@ void Renderer::BackgroundProc() {
     }
 }
 
-void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_node,
+void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_node, uint32_t nodes_count,
                              const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
                              const TextureAtlas *decals_atlas) {
     using namespace RendererInternal;
@@ -278,6 +278,7 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, ui
         decals_atlas_[1] = decals_atlas;
         nodes_ = nodes;
         root_node_ = root_node;
+        nodes_count_ = nodes_count;
         objects_ = objects;
         obj_indices_ = obj_indices;
         object_count_ = object_count;

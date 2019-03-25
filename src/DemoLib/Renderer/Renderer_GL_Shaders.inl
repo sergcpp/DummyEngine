@@ -86,3 +86,11 @@ static const char blit_multiply_fs[] =
 static const char blit_multiply_ms_fs[] =
 #include "Shaders/blit_multiply_ms.fs.glsl"
 ;
+
+static const char blit_debug_bvh_fs[] =
+#include "Shaders/blit_debug_bvh.fs.glsl"
+;
+
+static const char blit_debug_bvh_ms_fs[] =
+#include "Shaders/blit_debug_bvh_ms.fs.glsl"
+;

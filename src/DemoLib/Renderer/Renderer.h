@@ -103,7 +103,8 @@ enum eRenderFlags {
     DebugBlur       = (1 << 10),
     DebugDecals     = (1 << 11),
     DebugSSAO       = (1 << 12),
-    DebugTimings    = (1 << 13)
+    DebugTimings    = (1 << 13),
+    DebugBVH        = (1 << 14)
 };
 
 class Renderer {
@@ -131,7 +132,7 @@ public:
         return backend_info_;
     }
 
-    void DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_index,
+    void DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_index, uint32_t nodes_count,
                      const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
                      const TextureAtlas &decals_atlas);
     void WaitForBackgroundThreadIteration();
@@ -146,7 +147,7 @@ private:
     SWcull_ctx cull_ctx_;
     Ren::ProgramRef skydome_prog_, fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_combine_ms_prog_,
         blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_, blit_debug_prog_, blit_debug_ms_prog_, blit_ssr_ms_prog_,
-        blit_ao_ms_prog_, blit_multiply_prog_, blit_multiply_ms_prog_;
+        blit_ao_ms_prog_, blit_multiply_prog_, blit_multiply_ms_prog_, blit_debug_bvh_prog_, blit_debug_bvh_ms_prog_;
     Ren::Texture2DRef default_lightmap_, default_ao_;
 
     FrameBuf clean_buf_, refl_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf_;
@@ -154,13 +155,13 @@ private:
 
     Ren::TextureSplitter shadow_splitter_;
 
-    const uint32_t default_flags = (EnableCulling | EnableSSR | EnableSSAO /*| DebugDecals*/);
+    const uint32_t default_flags = (EnableCulling | EnableSSR | EnableSSAO /*| DebugBVH*/);
     uint32_t render_flags_[2] = { default_flags, default_flags };
 
     int frame_counter_ = 0;
 
     const bvh_node_t *nodes_ = nullptr;
-    uint32_t root_node_ = 0;
+    uint32_t root_node_ = 0, nodes_count_ = 0;
     const SceneObject *objects_ = nullptr;
     const uint32_t *obj_indices_ = nullptr;
     uint32_t object_count_ = 0;
@@ -198,6 +199,8 @@ private:
     uint32_t lights_buf_, lights_tbo_, decals_buf_, decals_tbo_, cells_buf_, cells_tbo_, items_buf_, items_tbo_;
     uint32_t reduce_pbo_;
 
+    uint32_t nodes_buf_ = 0, nodes_tbo_ = 0;
+
     enum { TimeDrawStart, TimeShadowMapStart, TimeDepthPassStart, TimeAOPassStart, TimeOpaqueStart,
            TimeReflStart, TimeBlurStart, TimeBlitStart, TimeDrawEnd, TimersCount };
     uint32_t queries_[2][TimersCount];
@@ -208,7 +211,7 @@ private:
     //temp
     std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];
 
-    void SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_node,
+    void SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_node, uint32_t nodes_count,
                        const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
                        const TextureAtlas *decals_atlas);
 

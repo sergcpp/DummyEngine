@@ -105,7 +105,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
 
     vec3 Q = Q0;
     float k = k0;
-    float step_count = 0.0f;
+    float step_count = 0.0;
     float end = P1.x * step_dir;
     float prev_zmax_estimate = ray_origin_vs.z + 0.1;
     hit_pixel = vec2(-1.0, -1.0);
@@ -195,7 +195,7 @@ void main() {
 
     vec3 normal = DecodeNormal(texelFetch(norm_texture, ivec2(aVertexUVs_), 0).xy);
 
-    vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uZBufferSize, depth, 1.0f);
+    vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uZBufferSize, depth, 1.0);
     ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
 
     vec4 ray_origin_vs = uInvProjMatrix * ray_origin_cs;

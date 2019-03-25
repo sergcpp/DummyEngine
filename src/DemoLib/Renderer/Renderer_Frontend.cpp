@@ -92,7 +92,7 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
             const auto *n = &nodes[cur];
 
             if (!skip_check) {
-                auto res = draw_cam.CheckFrustumVisibility(n->bbox[0], n->bbox[1]);
+                auto res = draw_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
                 if (res == Ren::Invisible) continue;
                 else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
             }
@@ -158,7 +158,7 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
             const auto *n = &nodes[cur];
 
             if (!skip_check) {
-                const float bbox_points[8][3] = { BBOX_POINTS(n->bbox[0], n->bbox[1]) };
+                const float bbox_points[8][3] = { BBOX_POINTS(n->bbox_min, n->bbox_max) };
                 auto res = draw_cam.CheckFrustumVisibility(bbox_points);
                 if (res == Ren::Invisible) continue;
                 else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
@@ -167,8 +167,8 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
                     const auto &cam_pos = draw_cam.world_position();
 
                     // do not question visibility of the node in which we are inside
-                    if (cam_pos[0] < n->bbox[0][0] - 0.5f || cam_pos[1] < n->bbox[0][1] - 0.5f || cam_pos[2] < n->bbox[0][2] - 0.5f ||
-                        cam_pos[0] > n->bbox[1][0] + 0.5f || cam_pos[1] > n->bbox[1][1] + 0.5f || cam_pos[2] > n->bbox[1][2] + 0.5f) {
+                    if (cam_pos[0] < n->bbox_min[0] - 0.5f || cam_pos[1] < n->bbox_min[1] - 0.5f || cam_pos[2] < n->bbox_min[2] - 0.5f ||
+                        cam_pos[0] > n->bbox_max[0] + 0.5f || cam_pos[1] > n->bbox_max[1] + 0.5f || cam_pos[2] > n->bbox_max[2] + 0.5f) {
                         SWcull_surf surf;
 
                         surf.type = SW_OCCLUDEE;
@@ -409,7 +409,7 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
         auto cam_side = Normalize(Cross(light_dir, cam_up));
         cam_up = Cross(cam_side, light_dir);
 
-        const Ren::Vec3f scene_dims = Ren::Vec3f{ nodes[root_node_].bbox[1] } -Ren::Vec3f{ nodes[root_node_].bbox[0] };
+        const Ren::Vec3f scene_dims = nodes[root_node_].bbox_max - nodes[root_node_].bbox_min;
         const float max_dist = Ren::Length(scene_dims);
 
         // Gather drawables for each cascade
@@ -470,7 +470,7 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
                 uint32_t skip_check = stack[stack_size] & skip_check_bit;
                 const auto* n = &nodes[cur];
 
-                auto res = shadow_cam.CheckFrustumVisibility(n->bbox[0], n->bbox[1]);
+                auto res = shadow_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
                 if (res == Ren::Invisible) continue;
                 else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
 

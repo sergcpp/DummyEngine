@@ -183,6 +183,12 @@ void Renderer::InitRendererInternal() {
     LOGI("Compiling blit_multiply_ms");
     blit_multiply_ms_prog_ = ctx_.LoadProgramGLSL("blit_multiply_ms", blit_ms_vs, blit_multiply_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_debug_bvh");
+    blit_debug_bvh_prog_ = ctx_.LoadProgramGLSL("blit_debug_bvh", blit_vs, blit_debug_bvh_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_debug_bvh_ms");
+    blit_debug_bvh_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug_bvh_ms", blit_ms_vs, blit_debug_bvh_ms_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
 
     {
         GLuint matrices_ubo;
@@ -484,6 +490,14 @@ void Renderer::DestroyRendererInternal() {
 
         GLuint items_buf = (GLuint)items_buf_;
         glDeleteBuffers(1, &items_buf);
+    }
+
+    if (nodes_buf_) {
+        GLuint nodes_tbo = (GLuint)nodes_tbo_;
+        glDeleteTextures(1, &nodes_tbo);
+
+        GLuint nodes_buf = (GLuint)nodes_buf_;
+        glDeleteBuffers(1, &nodes_buf);
     }
 
     {
@@ -1513,6 +1527,80 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         k *= float(resy) / resx;
 
         BlitTexture(-1.0f, -1.0f, 1.0f, 1.0f * k, decals_atlas->tex_id(0), resx, resy);
+    }
+
+    if (render_flags & DebugBVH) {
+        if (!nodes_buf_) {
+            GLuint nodes_buf;
+            glGenBuffers(1, &nodes_buf);
+
+            glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)nodes_buf);
+            glBufferData(GL_TEXTURE_BUFFER, nodes_count_ * sizeof(bvh_node_t), nodes_, GL_DYNAMIC_DRAW);
+
+            nodes_buf_ = (uint32_t)nodes_buf;
+
+            GLuint nodes_tbo;
+
+            glGenTextures(1, &nodes_tbo);
+            glBindTexture(GL_TEXTURE_BUFFER, nodes_tbo);
+
+            glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, nodes_buf);
+            glBindTexture(GL_TEXTURE_BUFFER, 0);
+
+            nodes_tbo_ = (uint32_t)nodes_tbo;
+        } else {
+            glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)nodes_buf_);
+            glBufferData(GL_TEXTURE_BUFFER, nodes_count_ * sizeof(bvh_node_t), nodes_, GL_DYNAMIC_DRAW);
+        }
+
+        {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            cur_program = blit_debug_bvh_ms_prog_.get();
+            glUseProgram(cur_program->prog_id());
+
+            const float positions[] = { -1.0f, -1.0f,   1.0f, -1.0f,
+                                        1.0f, 1.0f,     -1.0f, 1.0f };
+
+            const float uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
+                                  float(w_), float(h_),     0.0f, float(h_) };
+
+            const uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
+
+            glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
+
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(indices), indices);
+
+            glEnableVertexAttribArray(A_POS);
+            glVertexAttribPointer(A_POS, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+
+            glEnableVertexAttribArray(A_UVS1);
+            glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
+
+            BindTextureMs(0, clean_buf_.depth_tex.GetValue());
+
+            glActiveTexture((GLenum)(GL_TEXTURE0 + 1));
+            glBindTexture(GL_TEXTURE_BUFFER, (GLuint)nodes_tbo_);
+
+            glUniform1i(12, 0);
+            glUniform2f(13, float(w_), float(h_));
+
+            auto world_from_clip = Ren::Inverse(clip_from_world);
+            glUniformMatrix4fv(14, 1, GL_FALSE, Ren::ValuePtr(world_from_clip));
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+
+            glDisableVertexAttribArray(A_POS);
+            glDisableVertexAttribArray(A_UVS1);
+
+            glDisable(GL_BLEND);
+        }
+
+        glBindBuffer(GL_TEXTURE_BUFFER, 0);
     }
 
     glBindVertexArray(0);

@@ -29,7 +29,7 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-    "street.json";
+    "jap_house.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
@@ -194,6 +194,16 @@ void GSDrawTest::Enter() {
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugTimings;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+    });
+
+    game_->RegisterCommand("debug_bvh", [weak_this](const std::vector<std::string> &args) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= DebugBVH;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
