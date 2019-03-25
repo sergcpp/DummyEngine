@@ -207,9 +207,9 @@ void main() {
     const float R0 = 0.25f;
     float ssr_factor = pow(1.0 - dot(normal, -view_ray_vs), 5.0);
     float fresnel = R0 + (1.0 - R0) * ssr_factor;
-    vec3 infl = vec3(fresnel) * specular.xyz;
+    vec3 infl = vec3(fresnel);
 
-    float tex_lod = 8.0 * (1.0 - specular.w);
+    float tex_lod = 4.0 * (1.0 - specular.w);
 
     vec3 refl_ray_ws = normalize((uInvViewMatrix * vec4(refl_ray_vs, 0.0)).xyz);
     outColor = vec4(infl * clamp(RGBMDecode(textureLod(env_texture, refl_ray_ws, tex_lod)), vec3(0.0), vec3(10.0)), 1.0);

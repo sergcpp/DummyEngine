@@ -29,7 +29,7 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-    "jap_house.json";
+    "street.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {

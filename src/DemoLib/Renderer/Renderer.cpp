@@ -182,7 +182,14 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint
                 desc.repeat = Ren::ClampToEdge;
                 ssao_buf_ = FrameBuf(ctx_.w() / 2, ctx_.h() / 2, &desc, 1, false);
             }
-            {   // Auxilary buffer for SSR
+            {   // Auxilary buffer for reflections
+                FrameBuf::ColorAttachmentDesc desc;
+                desc.format = Ren::RawRGB16F;
+                desc.filter = Ren::Bilinear;
+                desc.repeat = Ren::ClampToEdge;
+                refl_buf_ = FrameBuf(ctx_.w() / 2, ctx_.h() / 2, &desc, 1, false);
+            }
+            {   // Buffer that holds previous frame (used for SSR)
                 FrameBuf::ColorAttachmentDesc desc;
                 desc.format = Ren::RawRGB16F;
                 desc.filter = Ren::Bilinear;

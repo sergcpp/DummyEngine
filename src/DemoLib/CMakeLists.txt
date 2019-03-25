@@ -57,6 +57,8 @@ set(SHADERS_SOURCES Renderer/Shaders/blit.fs.glsl
                     Renderer/Shaders/blit_gauss.fs.glsl
                     Renderer/Shaders/blit_ms.fs.glsl
                     Renderer/Shaders/blit_ms.vs.glsl
+                    Renderer/Shaders/blit_multiply.fs.glsl
+                    Renderer/Shaders/blit_multiply_ms.fs.glsl
                     Renderer/Shaders/blit_reduced.fs.glsl
                     Renderer/Shaders/blit_ssao_ms.fs.glsl
                     Renderer/Shaders/blit_ssr_ms.fs.glsl

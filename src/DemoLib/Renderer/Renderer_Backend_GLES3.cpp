@@ -177,6 +177,12 @@ void Renderer::InitRendererInternal() {
     LOGI("Compiling blit_ao_ms");
     blit_ao_ms_prog_ = ctx_.LoadProgramGLSL("blit_ao_ms", blit_ms_vs, blit_ssao_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_multiply");
+    blit_multiply_prog_ = ctx_.LoadProgramGLSL("blit_multiply", blit_vs, blit_multiply_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_multiply_ms");
+    blit_multiply_ms_prog_ = ctx_.LoadProgramGLSL("blit_multiply_ms", blit_ms_vs, blit_multiply_ms_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
 
     {
         GLuint matrices_ubo;
@@ -991,22 +997,15 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
 
     glQueryCounter(queries_[1][TimeReflStart], GL_TIMESTAMP);
 
-    if (ENABLE_SSR) {   // Compose reflections on top of clean buffer
-        glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE);
-        glDisable(GL_DEPTH_TEST);
-        glDepthMask(GL_FALSE);
-
-        GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0 };
-        glDrawBuffers(1, draw_buffers);
+    if (ENABLE_SSR) {
+        glBindFramebuffer(GL_FRAMEBUFFER, refl_buf_.fb);
+        glViewport(0, 0, refl_buf_.w, refl_buf_.h);
 
         cur_program = blit_ssr_ms_prog_.get();
         glUseProgram(cur_program->prog_id());
 
-        const float positions[] = { -1.0f, -1.0f,                 -1.0f + 2.0f, -1.0f,
-                                    -1.0f + 2.0f, -1.0f + 2.0f,   -1.0f, -1.0f + 2.0f };
+        const float positions[] = { -1.0f, -1.0f,   1.0f, -1.0f,
+                                    1.0f, 1.0f,     -1.0f, 1.0f };
 
         const float uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
                               float(w_), float(h_),     0.0f, float(h_) };
@@ -1025,9 +1024,6 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
 
         glEnableVertexAttribArray(A_UVS1);
         glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
-
-        //glUniform1i(0, DIFFUSEMAP_SLOT);
-        //glUniform1f(cur_program->uniform(4).loc, 1.0f);
 
         glUniformMatrix4fv(0, 1, GL_FALSE, Ren::ValuePtr(clip_from_view));
         glUniformMatrix4fv(1, 1, GL_FALSE, Ren::ValuePtr(view_from_clip));
@@ -1049,6 +1045,33 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         BindTexture(3, down_buf_.attachments[0].tex);
         if (env.env_map) {
             BindCubemap(4, env.env_map->tex_id());
+        }
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+
+        // Compose reflections on top of clean buffer
+        glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
+        glViewport(0, 0, clean_buf_.w, clean_buf_.h);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+        glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
+
+        GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0 };
+        glDrawBuffers(1, draw_buffers);
+
+        cur_program = blit_multiply_ms_prog_.get();
+        glUseProgram(cur_program->prog_id());
+
+        glUniform2f(13, float(w_), float(h_));
+
+        BindTexture(0, refl_buf_.attachments[0].tex);
+
+        if (true) {
+            BindTextureMs(1, clean_buf_.attachments[CLEAN_BUF_SPECULAR_ATTACHMENT].tex);
+        } else {
+            BindTexture(1, clean_buf_.attachments[CLEAN_BUF_SPECULAR_ATTACHMENT].tex);
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
