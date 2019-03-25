@@ -211,6 +211,8 @@ void Write_KTX_DXT(const uint8_t *image_data, int w, int h, int channels, const 
 }
 
 int ConvertToASTC(const uint8_t *image_data, int width, int height, int channels, float bitrate, std::unique_ptr<uint8_t[]> &out_buf);
+std::unique_ptr<uint8_t[]> DecodeASTC(const uint8_t *image_data, int data_size, int xdim, int ydim, int width, int height);
+std::unique_ptr<uint8_t[]> Decode_KTX_ASTC(const uint8_t *image_data, int data_size, int &width, int &height);
 
 void Write_KTX_ASTC(const uint8_t *image_data, int w, int h, int channels, const char *out_file) {
     // Check if power of two
@@ -564,13 +566,18 @@ void encode_astc_image(const astc_codec_image *input_image,
                        int zdim,
                        const error_weighting_params *ewp, astc_decode_mode decode_mode, swizzlepattern swz_encode, swizzlepattern swz_decode, uint8_t * buffer, int pack_and_unpack, int threadcount);
 
+bool g_astc_initialized = false;
+
 bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, const char *platform, Sys::ThreadPool *p_threads) {
     using namespace SceneManagerInternal;
 
     // for astc codec
-    test_inappropriate_extended_precision();
-    prepare_angular_tables();
-    build_quantization_mode_table();
+    if (!g_astc_initialized) {
+        test_inappropriate_extended_precision();
+        prepare_angular_tables();
+        build_quantization_mode_table();
+        g_astc_initialized = true;
+    }
 
     auto replace_texture_extension = [platform](std::string &tex) {
         size_t n;
@@ -783,6 +790,19 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         h_conv_to_astc("barrel_diffuse.png", "barrel_diffuse1.astc");
     }*/
 
+    /*{
+        Sys::AssetFile in_file("D:\\repos\\occdemo\\assets_android\\textures\\lightmaps\\jap_house_lm_direct.ktx");
+        size_t in_file_size = in_file.size();
+
+        std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+        in_file.Read((char *)&in_file_data[0], in_file_size);
+
+        int width, height;
+        auto data = Decode_KTX_ASTC(&in_file_data[0], in_file_size, width, height);
+
+        volatile int ii = 0;
+    }*/
+
     return true;
 }
 
@@ -945,4 +965,90 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
     destroy_image(src_image);
 
     return buf_size;
+}
+
+std::unique_ptr<uint8_t[]> SceneManagerInternal::DecodeASTC(const uint8_t *image_data, int data_size, int xdim, int ydim, int width, int height) {
+    int xsize = width;
+    int ysize = height;
+    int zsize = 1;
+
+    int xblocks = (xsize + xdim - 1) / xdim;
+    int yblocks = (ysize + ydim - 1) / ydim;
+    int zblocks = 1;
+    
+    if (!g_astc_initialized) {
+        test_inappropriate_extended_precision();
+        prepare_angular_tables();
+        build_quantization_mode_table();
+        g_astc_initialized = true;
+    }
+
+    astc_codec_image *img = allocate_image(8, xsize, ysize, 1, 0);
+    initialize_image(img);
+
+    swizzlepattern swz_decode = { 0, 1, 2, 3 };
+
+    imageblock pb;
+    for (int z = 0; z < zblocks; z++) {
+        for (int y = 0; y < yblocks; y++) {
+            for (int x = 0; x < xblocks; x++) {
+                int offset = (((z * yblocks + y) * xblocks) + x) * 16;
+                const uint8_t *bp = image_data + offset;
+
+                physical_compressed_block pcb;
+                memcpy(&pcb, bp, sizeof(physical_compressed_block));
+
+                symbolic_compressed_block scb;
+                physical_to_symbolic(xdim, ydim, 1, pcb, &scb);
+                decompress_symbolic_block(DECODE_LDR, xdim, ydim, 1, x * xdim, y * ydim, z * 1, &scb, &pb);
+                write_imageblock(img, &pb, xdim, ydim, 1, x * xdim, y * ydim, z * 1, swz_decode);
+            }
+        }
+    }
+
+    std::unique_ptr<uint8_t[]> ret_data;
+    ret_data.reset(new uint8_t[xsize * ysize * 4]);
+
+    memcpy(&ret_data[0], &img->imagedata8[0][0][0], xsize * ysize * 4);
+
+    destroy_image(img);
+
+    return ret_data;
+}
+
+std::unique_ptr<uint8_t[]> SceneManagerInternal::Decode_KTX_ASTC(const uint8_t *image_data, int data_size, int &width, int &height) {
+    Ren::KTXHeader header;
+    memcpy(&header, &image_data[0], sizeof(Ren::KTXHeader));
+
+    width = (int)header.pixel_width;
+    height = (int)header.pixel_height;
+
+    int data_offset = sizeof(Ren::KTXHeader);
+
+    {   // Decode first mip level
+        uint32_t img_size;
+        memcpy(&img_size, &image_data[data_offset], sizeof(uint32_t));
+        data_offset += sizeof(uint32_t);
+
+        const uint32_t gl_compressed_rgba_astc_4x4_khr = 0x93B0;
+        const uint32_t gl_compressed_rgba_astc_6x6_khr = 0x93B4;
+        const uint32_t gl_compressed_rgba_astc_8x8_khr = 0x93B7;
+
+        int xdim, ydim;
+
+        if (header.gl_internal_format == gl_compressed_rgba_astc_4x4_khr) {
+            xdim = 4;
+            ydim = 4;
+        } else if (header.gl_internal_format == gl_compressed_rgba_astc_6x6_khr) {
+            xdim = 6;
+            ydim = 6;
+        } else if (header.gl_internal_format == gl_compressed_rgba_astc_8x8_khr) {
+            xdim = 8;
+            ydim = 8;
+        } else {
+            throw std::runtime_error("Unsupported block size!");
+        }
+
+        return DecodeASTC(&image_data[data_offset], img_size, xdim, ydim, width, height);
+    }
 }

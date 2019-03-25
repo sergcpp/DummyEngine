@@ -153,7 +153,7 @@ private:
 
     Ren::TextureSplitter shadow_splitter_;
 
-    const uint32_t default_flags = (EnableCulling | EnableSSR | EnableSSAO /*| DebugLights*/);
+    const uint32_t default_flags = (EnableCulling | EnableSSR | EnableSSAO /*| DebugDecals*/);
     uint32_t render_flags_[2] = { default_flags, default_flags };
 
     int frame_counter_ = 0;

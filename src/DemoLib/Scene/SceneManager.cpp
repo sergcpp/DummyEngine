@@ -46,6 +46,10 @@ const int LIGHTMAP_ATLAS_RESX = 2048,
           LIGHTMAP_ATLAS_RESY = 1024;
 }
 
+namespace SceneManagerInternal {
+    std::unique_ptr<uint8_t[]> Decode_KTX_ASTC(const uint8_t *image_data, int data_size, int &width, int &height);
+}
+
 SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererBase &ray_renderer,
                            Sys::ThreadPool &threads)
     : ctx_(ctx),
@@ -281,30 +285,33 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 size_t in_file_size = in_file.size();
 
                 std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
-
                 in_file.Read((char *)&in_file_data[0], in_file_size);
 
-                int res[2], channels;
+                int res[2];
 #if !defined(__ANDROID__)
+                int channels;
                 uint8_t *image_data = SOIL_load_image_from_memory(&in_file_data[0], (int)in_file_size, &res[0], &res[1], &channels, 4);
                 assert(channels == 4);
+#else
+                auto image_data = SceneManagerInternal::Decode_KTX_ASTC(&in_file_data[0], in_file_size, res[0], res[1]);
+                
+#endif
 
-                const void *data[] = { (const void *)image_data, nullptr };
+                const void *data[] = { (const void *)&image_data[0], nullptr };
                 const Ren::eTexColorFormat formats[] = { Ren::RawRGBA8888, Ren::Undefined };
 
                 int pos[2];
                 int rc = decals_atlas_.Allocate(data, formats, res, pos, 4);
-                SOIL_free_image_data(image_data);
                 if (rc == -1) throw std::runtime_error("Cannot allocate decal!");
+
+#if !defined(__ANDROID__)
+                SOIL_free_image_data(image_data);
+#endif
 
                 return Ren::Vec4f{ float(pos[0]) / DECALS_ATLAS_RESX,
                                    float(pos[1]) / DECALS_ATLAS_RESY,
                                    float(res[0]) / DECALS_ATLAS_RESX,
                                    float(res[1]) / DECALS_ATLAS_RESY };
-#else
-#warning "TODO!"
-                return Ren::Vec4f{};
-#endif
             };
 
             if (js_obj.Has("diff")) {
@@ -424,7 +431,9 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             obj.lm->size[1] = (int)js_lm_res.val;
 
             int node_id = lightmap_splitter_.Allocate(obj.lm->size, obj.lm->pos);
-            assert(node_id != -1 && "Cannot allocate lightmap region");
+            if (node_id == -1) {
+                throw std::runtime_error("Cannot allocate lightmap region!");
+            }
 
             obj.lm->xform = Ren::Vec4f{
                 float(obj.lm->pos[0]) / LIGHTMAP_ATLAS_RESX, 1.0f - float(obj.lm->pos[1]) / LIGHTMAP_ATLAS_RESY,
