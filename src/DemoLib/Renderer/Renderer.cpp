@@ -87,8 +87,8 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     }
 
     for (int i = 0; i < 2; i++) {
-        cells_[i].resize(CELLS_COUNT);
-        items_[i].resize(MAX_ITEMS_TOTAL);
+        drawables_data_[i].cells.resize(CELLS_COUNT);
+        drawables_data_[i].items.resize(MAX_ITEMS_TOTAL);
     }
 }
 
@@ -102,57 +102,63 @@ Renderer::~Renderer() {
     swCullCtxDestroy(&cull_ctx_);
 }
 
-void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_index, uint32_t nodes_count,
-                           const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
-                           const TextureAtlas &decals_atlas) {
+void Renderer::GatherObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_index, uint32_t nodes_count,
+                             const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
+                             const TextureAtlas &decals_atlas) {
     using namespace RendererInternal;
-
-    uint64_t gpu_draw_start = 0;
-    if (render_flags_[0] & DebugTimings) {
-        gpu_draw_start = GetGpuTimeBlockingUs();
-    }
-    auto cpu_draw_start = std::chrono::high_resolution_clock::now();
 
     if (USE_TWO_THREADS) {
         // Delegate gathering to background thread
         SwapDrawLists(cam, nodes, root_index, nodes_count, objects, obj_indices, object_count, env, &decals_atlas);
     } else {
         // Gather objects in main thread
-        GatherDrawables(cam, render_flags_[0], env, nodes, root_index, objects, obj_indices, object_count,
-                        transforms_[0], draw_lists_[0], light_sources_[0], decals_[0], cells_[0].data(),
-                        items_[0].data(), items_count_[0], shadow_cams_[0], shadow_list_[0], frontend_infos_[0]);
+
+        drawables_data_[0].draw_cam = cam;
+        drawables_data_[0].env = env;
+
+        GatherDrawables(nodes, root_index, objects, obj_indices, object_count, drawables_data_[0]);
     }
+}
+
+void Renderer::DrawObjects() {
+    using namespace RendererInternal;
+
+    uint64_t gpu_draw_start = 0;
+    if (drawables_data_[0].render_flags & DebugTimings) {
+        gpu_draw_start = GetGpuTimeBlockingUs();
+    }
+    auto cpu_draw_start = std::chrono::high_resolution_clock::now();
     
     {
-        size_t transforms_count = transforms_[0].size();
-        const auto *transforms = (transforms_count == 0) ? nullptr : &transforms_[0][0];
+        size_t transforms_count = drawables_data_[0].transforms.size();
+        const auto *transforms = (transforms_count == 0) ? nullptr : &drawables_data_[0].transforms[0];
 
-        size_t drawables_count = draw_lists_[0].size();
-        const auto *drawables = (drawables_count == 0) ? nullptr : &draw_lists_[0][0];
+        size_t drawables_count = drawables_data_[0].draw_list.size();
+        const auto *drawables = (drawables_count == 0) ? nullptr : &drawables_data_[0].draw_list[0];
 
-        size_t lights_count = light_sources_[0].size();
-        const auto *lights = (lights_count == 0) ? nullptr : &light_sources_[0][0];
+        size_t lights_count = drawables_data_[0].light_sources.size();
+        const auto *lights = (lights_count == 0) ? nullptr : &drawables_data_[0].light_sources[0];
 
-        size_t decals_count = decals_[0].size();
-        const auto *decals = (decals_count == 0) ? nullptr : &decals_[0][0];
+        size_t decals_count = drawables_data_[0].decals.size();
+        const auto *decals = (decals_count == 0) ? nullptr : &drawables_data_[0].decals[0];
 
-        const auto *cells = cells_[0].empty() ? nullptr : &cells_[0][0];
+        const auto *cells = drawables_data_[0].cells.empty() ? nullptr : &drawables_data_[0].cells[0];
 
-        size_t items_count = items_count_[0];
-        const auto *items = (items_count == 0) ? nullptr : &items_[0][0];
+        size_t items_count = drawables_data_[0].items_count;
+        const auto *items = (items_count == 0) ? nullptr : &drawables_data_[0].items[0];
 
-        const auto *p_decals_atlas = decals_atlas_[0];
+        const auto *p_decals_atlas = drawables_data_[0].decals_atlas;
 
         Ren::Mat4f shadow_transforms[4];
         size_t shadow_drawables_count[4];
         const DrawableItem *shadow_drawables[4];
 
         for (int i = 0; i < 4; i++) {
-            Ren::Mat4f view_from_world = shadow_cams_[0][i].view_matrix(),
-                       clip_from_view = shadow_cams_[0][i].proj_matrix();
+            Ren::Mat4f view_from_world = drawables_data_[0].shadow_cams[i].view_matrix(),
+                       clip_from_view = drawables_data_[0].shadow_cams[i].proj_matrix();
             shadow_transforms[i] = clip_from_view * view_from_world;
-            shadow_drawables_count[i] = shadow_list_[0][i].size();
-            shadow_drawables[i] = (shadow_drawables_count[i] == 0) ? nullptr : &shadow_list_[0][i][0];
+            shadow_drawables_count[i] = drawables_data_[0].shadow_list[i].size();
+            shadow_drawables[i] = (shadow_drawables_count[i] == 0) ? nullptr : &drawables_data_[0].shadow_list[i][0];
         }
 
         if (ctx_.w() != w_ || ctx_.h() != h_) {
@@ -209,12 +215,14 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint
             LOGI("CleanBuf resized to %ix%i", w_, h_);
         }
 
-        auto &_cam = USE_TWO_THREADS ? draw_cam_ : cam;
-        auto &_env = USE_TWO_THREADS ? env_ : env;
+        drawables_data_[0].render_info.lights_count = (uint32_t)lights_count;
+        drawables_data_[0].render_info.lights_data_size = (uint32_t)lights_count * sizeof(LightSourceItem);
+        drawables_data_[0].render_info.decals_count = (uint32_t)decals_count;
+        drawables_data_[0].render_info.decals_data_size = (uint32_t)decals_count * sizeof(DecalItem);
+        drawables_data_[0].render_info.cells_data_size = (uint32_t)CELLS_COUNT * sizeof(CellData);
+        drawables_data_[0].render_info.items_data_size = (uint32_t)drawables_data_[0].items.size() * sizeof(ItemData);
 
-        DrawObjectsInternal(_cam, render_flags_[0], transforms, drawables, drawables_count, lights, lights_count, decals, decals_count,
-                            cells, items, items_count, shadow_transforms, shadow_drawables, shadow_drawables_count, _env,
-                            p_decals_atlas);
+        DrawObjectsInternal(drawables_data_[0]);
     }
     
     auto cpu_draw_end = std::chrono::high_resolution_clock::now();
@@ -227,7 +235,7 @@ void Renderer::DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint
 }
 
 void Renderer::WaitForBackgroundThreadIteration() {
-    SwapDrawLists(draw_cam_, nullptr, 0, 0, nullptr, nullptr, 0, env_, nullptr);
+    SwapDrawLists(drawables_data_[0].draw_cam, nullptr, 0, 0, nullptr, nullptr, 0, drawables_data_[0].env, nullptr);
 }
 
 void Renderer::BackgroundProc() {
@@ -240,14 +248,11 @@ void Renderer::BackgroundProc() {
         }
 
         if (nodes_ && objects_) {
-            std::lock_guard<Sys::SpinlockMutex> _(job_mtx_);
-            
-            GatherDrawables(draw_cam_, render_flags_[1], env_, nodes_, root_node_, objects_, obj_indices_, object_count_,
-                            transforms_[1], draw_lists_[1], light_sources_[1], decals_[1], cells_[1].data(),
-                            items_[1].data(), items_count_[1], shadow_cams_[1], shadow_list_[1], frontend_infos_[1]);
+            GatherDrawables(nodes_, root_node_, objects_, obj_indices_, object_count_, drawables_data_[1]);
         }
 
         notified_ = false;
+        thr_done_.notify_one();
     }
 }
 
@@ -266,43 +271,29 @@ void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, ui
     }
 
     {
-        std::lock_guard<Sys::SpinlockMutex> _(job_mtx_);
-        std::swap(transforms_[0], transforms_[1]);
-        std::swap(draw_lists_[0], draw_lists_[1]);
-        std::swap(light_sources_[0], light_sources_[1]);
-        std::swap(decals_[0], decals_[1]);
-        std::swap(cells_[0], cells_[1]);
-        std::swap(items_[0], items_[1]);
-        std::swap(items_count_[0], items_count_[1]);
-        std::swap(decals_atlas_[0], decals_atlas_[1]);
-        decals_atlas_[1] = decals_atlas;
+        std::swap(drawables_data_[0], drawables_data_[1]);
+        drawables_data_[1].render_flags = render_flags_;
+        drawables_data_[1].decals_atlas = decals_atlas;
         nodes_ = nodes;
         root_node_ = root_node;
         nodes_count_ = nodes_count;
         objects_ = objects;
         obj_indices_ = obj_indices;
         object_count_ = object_count;
-        render_flags_[1] = render_flags_[0];
-        frontend_infos_[0] = frontend_infos_[1];
-        render_infos_[0] = render_infos_[1];
-        draw_cam_ = cam;
-        for (int i = 0; i < 4; i++) {
-            std::swap(shadow_list_[0][i], shadow_list_[1][i]);
-            std::swap(shadow_cams_[0][i], shadow_cams_[1][i]);
-        }
-        env_ = env;
+        drawables_data_[1].draw_cam = cam;
+        drawables_data_[1].env = env;
         std::swap(depth_pixels_[0], depth_pixels_[1]);
         std::swap(depth_tiles_[0], depth_tiles_[1]);
         if (nodes != nullptr) {
             should_notify = true;
         } else {
-            draw_lists_[1].clear();
+            drawables_data_[1].draw_list.clear();
         }
     }
 
     if (USE_TWO_THREADS && should_notify) {
         notified_ = true;
-        thr_notify_.notify_all();
+        thr_notify_.notify_one();
     }
 }
 

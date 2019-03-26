@@ -679,7 +679,8 @@ void SceneManager::Draw() {
     cam_.Perspective(60.0f, float(ctx_.w()) / ctx_.h(), NEAR_CLIP, FAR_CLIP);
     cam_.UpdatePlanes();
 
-    renderer_.DrawObjects(cam_, &nodes_[0], 0, (uint32_t)nodes_.size(), &objects_[0], &obj_indices_[0], (uint32_t)objects_.size(), env_, decals_atlas_);
+    renderer_.GatherObjects(cam_, &nodes_[0], 0, (uint32_t)nodes_.size(), &objects_[0], &obj_indices_[0], (uint32_t)objects_.size(), env_, decals_atlas_);
+    renderer_.DrawObjects();
 }
 
 Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {

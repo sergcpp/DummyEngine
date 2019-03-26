@@ -32,25 +32,22 @@ const uint8_t bbox_indices[] = { 0, 1, 2,    2, 1, 3,
     (min)[0], (max)[1], (max)[2],     \
     (max)[0], (max)[1], (max)[2]
 
-void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flags, const Environment &env, const bvh_node_t *nodes, uint32_t root_node,
-                               const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count,
-                               std::vector<Ren::Mat4f> &tr_list, std::vector<DrawableItem> &dr_list, std::vector<LightSourceItem> &ls_list,
-                               std::vector<DecalItem> &de_list, CellData *cells, ItemData *items, int &items_count,
-                               Ren::Camera shadow_cams[4], std::vector<DrawableItem> sh_dr_list[4], FrontendInfo &info) {
+void Renderer::GatherDrawables(const bvh_node_t *nodes, uint32_t root_node, const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count,
+                               DrawablesData &data) {
     using namespace RendererInternal;
 
     auto iteration_start = std::chrono::high_resolution_clock::now();
 
-    tr_list.clear();
-    tr_list.reserve(object_count * 6);
+    data.transforms.clear();
+    data.transforms.reserve(object_count * 6);
 
-    dr_list.clear();
-    dr_list.reserve(object_count * 16);
+    data.draw_list.clear();
+    data.draw_list.reserve(object_count * 16);
 
-    ls_list.clear();
-    de_list.clear();
+    data.light_sources.clear();
+    data.decals.clear();
 
-    const bool culling_enabled = (render_flags & EnableCulling) != 0;
+    const bool culling_enabled = (data.render_flags & EnableCulling) != 0;
 
     object_to_drawable_.clear();
     object_to_drawable_.resize(object_count, 0xffffffff);
@@ -60,20 +57,20 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
     decals_boxes_.clear();
 
     for (int i = 0; i < 4; i++) {
-        sh_dr_list[i].clear();
-        sh_dr_list[i].reserve(object_count * 16);
+        data.shadow_list[i].clear();
+        data.shadow_list[i].reserve(object_count * 16);
     }
 
-    Ren::Mat4f view_from_world = draw_cam.view_matrix(),
-               clip_from_view = draw_cam.proj_matrix();
+    Ren::Mat4f view_from_world = data.draw_cam.view_matrix(),
+               clip_from_view = data.draw_cam.proj_matrix();
 
     swCullCtxClear(&cull_ctx_);
 
     Ren::Mat4f view_from_identity = view_from_world * Ren::Mat4f{ 1.0f },
                clip_from_identity = clip_from_view * view_from_identity;
 
-    tr_list.push_back(view_from_identity);
-    tr_list.push_back(clip_from_view);
+    data.transforms.push_back(view_from_identity);
+    data.transforms.push_back(clip_from_view);
 
     const uint32_t skip_check_bit = (1u << 31);
     const uint32_t index_bits = ~skip_check_bit;
@@ -92,7 +89,7 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
             const auto *n = &nodes[cur];
 
             if (!skip_check) {
-                auto res = draw_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
+                auto res = data.draw_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
                 if (res == Ren::Invisible) continue;
                 else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
             }
@@ -109,7 +106,7 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
                         const auto *tr = obj.tr.get();
 
                         if (!skip_check &&
-                            draw_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
+                            data.draw_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
 
                         const Ren::Mat4f &world_from_object = tr->mat;
 
@@ -159,12 +156,12 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
 
             if (!skip_check) {
                 const float bbox_points[8][3] = { BBOX_POINTS(n->bbox_min, n->bbox_max) };
-                auto res = draw_cam.CheckFrustumVisibility(bbox_points);
+                auto res = data.draw_cam.CheckFrustumVisibility(bbox_points);
                 if (res == Ren::Invisible) continue;
                 else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
 
                 if (culling_enabled) {
-                    const auto &cam_pos = draw_cam.world_position();
+                    const auto &cam_pos = data.draw_cam.world_position();
 
                     // do not question visibility of the node in which we are inside
                     if (cam_pos[0] < n->bbox_min[0] - 0.5f || cam_pos[1] < n->bbox_min[1] - 0.5f || cam_pos[2] < n->bbox_min[2] - 0.5f ||
@@ -204,10 +201,10 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
 
                         if (!skip_check) {
                             const float bbox_points[8][3] = { BBOX_POINTS(tr->bbox_min_ws, tr->bbox_max_ws) };
-                            if (draw_cam.CheckFrustumVisibility(bbox_points) == Ren::Invisible) continue;
+                            if (data.draw_cam.CheckFrustumVisibility(bbox_points) == Ren::Invisible) continue;
 
                             if (culling_enabled) {
-                                const auto &cam_pos = draw_cam.world_position();
+                                const auto &cam_pos = data.draw_cam.world_position();
 
                                 // do not question visibility of the object in which we are inside
                                 if (cam_pos[0] < tr->bbox_min_ws[0] - 0.5f || cam_pos[1] < tr->bbox_min_ws[1] - 0.5f || cam_pos[2] < tr->bbox_min_ws[2] - 0.5f ||
@@ -238,20 +235,20 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
                                             clip_from_object = clip_from_view * view_from_object;
 
                         if (obj.flags & HasMesh) {
-                            tr_list.push_back(clip_from_object);
+                            data.transforms.push_back(clip_from_object);
 
                             const auto *mesh = obj.mesh.get();
 
-                            size_t dr_start = dr_list.size();
+                            size_t dr_start = data.draw_list.size();
 
-                            object_to_drawable_[i] = (uint32_t)dr_list.size();
+                            object_to_drawable_[i] = (uint32_t)data.draw_list.size();
 
                             const Ren::TriGroup *s = &mesh->group(0);
                             while (s->offset != -1) {
-                                dr_list.push_back({ &tr_list.back(), &world_from_object, s->mat.get(), mesh, s });
+                                data.draw_list.push_back({ &data.transforms.back(), &world_from_object, s->mat.get(), mesh, s });
 
                                 if (obj.flags & HasLightmap) {
-                                    dr_list.back().lm_transform = obj.lm->xform;
+                                    data.draw_list.back().lm_transform = obj.lm->xform;
                                 }
 
                                 ++s;
@@ -276,7 +273,7 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
                                     auto res = Ren::FullyVisible;
 
                                     for (int k = 0; k < 6; k++) {
-                                        const auto &plane = draw_cam.frustum_plane(k);
+                                        const auto &plane = data.draw_cam.frustum_plane(k);
 
                                         float dist = plane.n[0] * pos[0] +
                                                      plane.n[1] * pos[1] +
@@ -293,10 +290,10 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
                                     if (res == Ren::Invisible) continue;
                                 }
 
-                                ls_list.emplace_back();
+                                data.light_sources.emplace_back();
                                 litem_to_lsource_.push_back(light);
 
-                                auto &ls = ls_list.back();
+                                auto &ls = data.light_sources.back();
 
                                 memcpy(&ls.pos[0], &pos[0], 3 * sizeof(float));
                                 ls.radius = light->radius;
@@ -346,7 +343,7 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
 
                                 if (!skip_check) {
                                     for (int p = Ren::LeftPlane; p <= Ren::FarPlane; p++) {
-                                        const auto &plane = draw_cam.frustum_plane(p);
+                                        const auto &plane = data.draw_cam.frustum_plane(p);
 
                                         int in_count = 8;
 
@@ -369,13 +366,13 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
                                 }
 
                                 if (res != Ren::Invisible) {
-                                    de_list.emplace_back();
+                                    data.decals.emplace_back();
                                     ditem_to_decal_.push_back(decal);
                                     decals_boxes_.push_back({ bbox_min, bbox_max });
 
                                     Ren::Mat4f clip_from_world_transposed = Ren::Transpose(clip_from_world);
 
-                                    auto &de = de_list.back();
+                                    auto &de = data.decals.back();
                                     memcpy(&de.mat[0][0], &clip_from_world_transposed[0][0], 12 * sizeof(float));
                                     memcpy(&de.diff[0], &decal->diff[0], 4 * sizeof(float));
                                     memcpy(&de.norm[0], &decal->norm[0], 4 * sizeof(float));
@@ -391,13 +388,13 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
 
     auto shadow_gather_start = std::chrono::high_resolution_clock::now();
 
-    if (Ren::Length2(env.sun_dir) > 0.9f && Ren::Length2(env.sun_col) > FLT_EPSILON) {
+    if (Ren::Length2(data.env.sun_dir) > 0.9f && Ren::Length2(data.env.sun_col) > FLT_EPSILON) {
         // Planes, that define shadow map splits
         const float far_planes[] = { 8.0f, 24.0f, 56.0f, 120.0f };
-        const float near_planes[] = { draw_cam.near(), far_planes[0], far_planes[1], far_planes[2] };
+        const float near_planes[] = { data.draw_cam.near(), far_planes[0], far_planes[1], far_planes[2] };
 
         // Choose up vector for shadow camera
-        auto light_dir = env.sun_dir;
+        auto light_dir = data.env.sun_dir;
         auto cam_up = Ren::Vec3f{ 0.0f, 0.0, 1.0f };
         if (light_dir[0] <= light_dir[1] && light_dir[0] <= light_dir[2]) {
             cam_up = Ren::Vec3f{ 1.0f, 0.0, 0.0f };
@@ -414,10 +411,10 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
 
         // Gather drawables for each cascade
         for (int casc = 0; casc < 4; casc++) {
-            auto& shadow_cam = shadow_cams[casc];
+            auto& shadow_cam = data.shadow_cams[casc];
 
-            auto temp_cam = draw_cam;
-            temp_cam.Perspective(draw_cam.angle(), draw_cam.aspect(), near_planes[casc], far_planes[casc]);
+            auto temp_cam = data.draw_cam;
+            temp_cam.Perspective(data.draw_cam.angle(), data.draw_cam.aspect(), near_planes[casc], far_planes[casc]);
             temp_cam.UpdatePlanes();
 
             const Ren::Mat4f& _view_from_world = temp_cam.view_matrix(),
@@ -494,16 +491,16 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
                             Ren::Mat4f view_from_object = view_from_world * world_from_object,
                                        clip_from_object = clip_from_view * view_from_object;
 
-                            tr_list.push_back(clip_from_object);
+                            data.transforms.push_back(clip_from_object);
 
                             auto dr_index = object_to_drawable_[i];
                             if (dr_index != 0xffffffff) {
-                                auto* dr = &dr_list[dr_index];
+                                auto* dr = &data.draw_list[dr_index];
                                 const auto* mesh = dr->mesh;
 
                                 const Ren::TriGroup* s = &mesh->group(0);
                                 while (s->offset != -1) {
-                                    dr->sh_clip_from_object[casc] = &tr_list.back();
+                                    dr->sh_clip_from_object[casc] = &data.transforms.back();
                                     ++dr;
                                     ++s;
                                 }
@@ -513,7 +510,7 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
 
                             const Ren::TriGroup* s = &mesh->group(0);
                             while (s->offset != -1) {
-                                sh_dr_list[casc].push_back({ &tr_list.back(), nullptr, s->mat.get(), mesh, s });
+                                data.shadow_list[casc].push_back({ &data.transforms.back(), nullptr, s->mat.get(), mesh, s });
                                 ++s;
                             }
                         }
@@ -526,22 +523,22 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
     auto drawables_sort_start = std::chrono::high_resolution_clock::now();
 
     // Sort drawables to optimize state switches
-    std::sort(std::begin(dr_list), std::end(dr_list));
+    std::sort(std::begin(data.draw_list), std::end(data.draw_list));
 
     auto items_assignment_start = std::chrono::high_resolution_clock::now();
 
-    if (!ls_list.empty() || !de_list.empty()) {
+    if (!data.light_sources.empty() || !data.decals.empty()) {
         std::vector<Ren::Frustum> sub_frustums;
         sub_frustums.resize(CELLS_COUNT);
 
-        draw_cam.ExtractSubFrustums(GRID_RES_X, GRID_RES_Y, GRID_RES_Z, &sub_frustums[0]);
+        data.draw_cam.ExtractSubFrustums(GRID_RES_X, GRID_RES_Y, GRID_RES_Z, &sub_frustums[0]);
 
-        const int lights_count = (int)ls_list.size();
-        const auto *lights = lights_count ? &ls_list[0] : nullptr;
+        const int lights_count = (int)data.light_sources.size();
+        const auto *lights = lights_count ? &data.light_sources[0] : nullptr;
         const auto *litem_to_lsource = lights_count ? &litem_to_lsource_[0] : nullptr;
 
-        const int decals_count = (int)de_list.size();
-        const auto *decals = decals_count ? &de_list[0] : nullptr;
+        const int decals_count = (int)data.decals.size();
+        const auto *decals = decals_count ? &data.decals[0] : nullptr;
         const auto *decals_boxes = decals_count ? &decals_boxes_[0] : nullptr;
 
         std::vector<std::future<void>> futures;
@@ -549,7 +546,7 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
 
         for (int i = 0; i < GRID_RES_Z; i++) {
             futures.push_back(
-                threads_->enqueue(GatherItemsForZSlice_Job, i, &sub_frustums[0], lights, lights_count, decals, decals_count, decals_boxes, litem_to_lsource, &cells[0], &items[0], std::ref(a_items_count))
+                threads_->enqueue(GatherItemsForZSlice_Job, i, &sub_frustums[0], lights, lights_count, decals, decals_count, decals_boxes, litem_to_lsource, &data.cells[0], &data.items[0], std::ref(a_items_count))
             );
         }
 
@@ -557,10 +554,10 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
             futures[i].wait();
         }
 
-        items_count = std::min(a_items_count.load(), MAX_ITEMS_TOTAL);
+        data.items_count = std::min(a_items_count.load(), MAX_ITEMS_TOTAL);
     }
 
-    if ((render_flags & (EnableCulling | DebugCulling)) == (EnableCulling | DebugCulling)) {
+    if ((data.render_flags & (EnableCulling | DebugCulling)) == (EnableCulling | DebugCulling)) {
         const float NEAR_CLIP = 0.5f;
         const float FAR_CLIP = 10000.0f;
 
@@ -594,12 +591,12 @@ void Renderer::GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flag
 
     auto iteration_end = std::chrono::high_resolution_clock::now();
 
-    info.start_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ iteration_start.time_since_epoch() }.count();
-    info.end_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ iteration_end.time_since_epoch() }.count();
-    info.occluders_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ main_gather_start - occluders_start }.count();
-    info.main_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ shadow_gather_start - main_gather_start }.count();
-    info.shadow_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ items_assignment_start - shadow_gather_start }.count();
-    info.items_assignment_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ iteration_end - items_assignment_start }.count();
+    data.frontend_info.start_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ iteration_start.time_since_epoch() }.count();
+    data.frontend_info.end_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ iteration_end.time_since_epoch() }.count();
+    data.frontend_info.occluders_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ main_gather_start - occluders_start }.count();
+    data.frontend_info.main_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ shadow_gather_start - main_gather_start }.count();
+    data.frontend_info.shadow_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ items_assignment_start - shadow_gather_start }.count();
+    data.frontend_info.items_assignment_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ iteration_end - items_assignment_start }.count();
 }
 
 void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,

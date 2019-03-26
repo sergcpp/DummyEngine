@@ -10,7 +10,6 @@
 extern "C" {
 #include <Ren/SW/SWculling.h>
 }
-#include <Sys/SpinLock.h>
 
 #include "FrameBuf.h"
 #include "../Scene/SceneData.h"
@@ -113,28 +112,30 @@ public:
     ~Renderer();
 
     uint32_t render_flags() const {
-        return render_flags_[0];
+        return render_flags_;
     }
 
     void set_render_flags(uint32_t f) {
-        render_flags_[0] = f;
+        render_flags_ = f;
     }
 
     RenderInfo render_info() const {
-        return render_infos_[0];
+        return drawables_data_[0].render_info;
     }
 
     FrontendInfo frontend_info() const {
-        return frontend_infos_[0];
+        return drawables_data_[0].frontend_info;
     }
 
     BackendInfo backend_info() const {
         return backend_info_;
     }
 
-    void DrawObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_index, uint32_t nodes_count,
-                     const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
-                     const TextureAtlas &decals_atlas);
+    void GatherObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_index, uint32_t nodes_count,
+                       const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
+                       const TextureAtlas &decals_atlas);
+    void DrawObjects();
+
     void WaitForBackgroundThreadIteration();
 
     void BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format);
@@ -155,8 +156,8 @@ private:
 
     Ren::TextureSplitter shadow_splitter_;
 
-    const uint32_t default_flags = (EnableCulling | EnableSSR | EnableSSAO /*| DebugBVH*/);
-    uint32_t render_flags_[2] = { default_flags, default_flags };
+    static const uint32_t default_flags = (EnableCulling | EnableSSR | EnableSSAO /*| DebugBVH*/);
+    uint32_t render_flags_ = default_flags;
 
     int frame_counter_ = 0;
 
@@ -165,22 +166,27 @@ private:
     const SceneObject *objects_ = nullptr;
     const uint32_t *obj_indices_ = nullptr;
     uint32_t object_count_ = 0;
-    std::vector<Ren::Mat4f> transforms_[2];
-    std::vector<DrawableItem> draw_lists_[2], shadow_list_[2][4];
-    std::vector<LightSourceItem> light_sources_[2];
-    std::vector<DecalItem> decals_[2];
-    std::vector<CellData> cells_[2];
-    std::vector<ItemData> items_[2];
-    const TextureAtlas *decals_atlas_[2] = {};
-    int items_count_[2] = {};
+
+    struct DrawablesData {
+        Ren::Camera draw_cam, shadow_cams[4];
+        std::vector<Ren::Mat4f> transforms;
+        std::vector<DrawableItem> draw_list, shadow_list[4];
+        std::vector<LightSourceItem> light_sources;
+        std::vector<DecalItem> decals;
+        std::vector<CellData> cells;
+        std::vector<ItemData> items;
+        int items_count = 0;
+        const TextureAtlas *decals_atlas = nullptr;
+        Environment env;
+        RenderInfo render_info;
+        FrontendInfo frontend_info;
+        uint32_t render_flags = default_flags;
+    } drawables_data_[2];
+
     std::vector<uint32_t> object_to_drawable_;
     std::vector<const LightSource *> litem_to_lsource_;
     std::vector<const Decal *> ditem_to_decal_;
     std::vector<BBox> decals_boxes_;
-    Ren::Camera draw_cam_, shadow_cams_[2][4];
-    Environment env_;
-    RenderInfo render_infos_[2];
-    FrontendInfo frontend_infos_[2];
     BackendInfo backend_info_;
     uint64_t backend_cpu_start_, backend_cpu_end_;
     int64_t backend_time_diff_;
@@ -215,27 +221,18 @@ private:
                        const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
                        const TextureAtlas *decals_atlas);
 
-    void GatherDrawables(const Ren::Camera &draw_cam, uint32_t render_flags, const Environment &env, const bvh_node_t *nodes, uint32_t root_node,
-                         const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count,
-                         std::vector<Ren::Mat4f> &tr_list, std::vector<DrawableItem> &dr_list, std::vector<LightSourceItem> &ls_list,
-                         std::vector<DecalItem> &de_list, CellData *cells, ItemData *items, int &items_count,
-                         Ren::Camera shadow_cams[4], std::vector<DrawableItem> sh_dr_list[4], FrontendInfo &info);
+    void GatherDrawables(const bvh_node_t *nodes, uint32_t root_node, const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count,
+                         DrawablesData &data);
 
     void InitRendererInternal();
     void DestroyRendererInternal();
-    void DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_flags, const Ren::Mat4f *transforms,
-                             const DrawableItem *drawables, size_t drawable_count, const LightSourceItem *lights, size_t lights_count,
-                             const DecalItem *decals, size_t decals_count,
-                             const CellData *cells, const ItemData *items, size_t items_count, const Ren::Mat4f shadow_transforms[4],
-                             const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env,
-                             const TextureAtlas *decals_atlas);
+    void DrawObjectsInternal(const DrawablesData &data);
     uint64_t GetGpuTimeBlockingUs();
 
     std::thread background_thread_;
     std::mutex mtx_;
     std::condition_variable thr_notify_, thr_done_;
     bool shutdown_ = false, notified_ = false;
-    Sys::SpinlockMutex job_mtx_;
 
     void BackgroundProc();
 

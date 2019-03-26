@@ -533,12 +533,7 @@ void Renderer::DestroyRendererInternal() {
     }
 }
 
-void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_flags, const Ren::Mat4f *transforms,
-                                   const DrawableItem *drawables, size_t drawable_count, const LightSourceItem *lights, size_t lights_count,
-                                   const DecalItem *decals, size_t decals_count,
-                                   const CellData *cells, const ItemData *items, size_t items_count, const Ren::Mat4f shadow_transforms[4],
-                                   const DrawableItem *shadow_drawables[4], size_t shadow_drawable_count[4], const Environment &env,
-                                   const TextureAtlas *decals_atlas) {
+void Renderer::DrawObjectsInternal(const DrawablesData &data) {
     using namespace Ren;
     using namespace RendererInternal;
 
@@ -552,77 +547,41 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
 
     glDisable(GL_CULL_FACE);
 
-    assert(lights_count < MAX_LIGHTS_TOTAL);
-    assert(decals_count < MAX_DECALS_TOTAL);
-    assert(items_count < MAX_ITEMS_TOTAL);
-
-//#define USE_MAP_BUFFER
+    assert(data.light_sources.size() < MAX_LIGHTS_TOTAL);
+    assert(data.decals.size() < MAX_DECALS_TOTAL);
+    assert(data.items_count < MAX_ITEMS_TOTAL);
 
     {   // Update lights buffer
-        size_t lights_mem_size = lights_count * sizeof(LightSourceItem);
+        size_t lights_mem_size = data.light_sources.size() * sizeof(LightSourceItem);
         if (lights_mem_size) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)lights_buf_);
-#if defined(USE_MAP_BUFFER)
-            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, 0, lights_mem_size, GL_MAP_WRITE_BIT);
-            memcpy(pinned_mem, lights, lights_mem_size);
-            glUnmapBuffer(GL_TEXTURE_BUFFER);
-#else
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, lights_mem_size, lights);
-#endif
+            glBufferSubData(GL_TEXTURE_BUFFER, 0, lights_mem_size, data.light_sources.data());
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
-
-        render_infos_[1].lights_count = (uint32_t)lights_count;
-        render_infos_[1].lights_data_size = (uint32_t)lights_mem_size;
 
         // Update decals buffer
-        size_t decals_mem_size = decals_count * sizeof(DecalItem);
+        size_t decals_mem_size = data.decals.size() * sizeof(DecalItem);
         if (decals_mem_size) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)decals_buf_);
-#if defined(USE_MAP_BUFFER)
-            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, 0, decals_mem_size, GL_MAP_WRITE_BIT);
-            memcpy(pinned_mem, decals, decals_mem_size);
-            glUnmapBuffer(GL_TEXTURE_BUFFER);
-#else
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, decals_mem_size, decals);
-#endif
+            glBufferSubData(GL_TEXTURE_BUFFER, 0, decals_mem_size, data.decals.data());
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
-
-        render_infos_[1].decals_count = (uint32_t)decals_count;
-        render_infos_[1].decals_data_size = (uint32_t)decals_mem_size;
 
         // Update cells buffer
-        size_t cells_mem_size = CELLS_COUNT * sizeof(CellData);
-        if (cells_mem_size && cells) {
+        size_t cells_mem_size = data.cells.size() * sizeof(CellData);
+        if (cells_mem_size) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)cells_buf_);
-#if defined(USE_MAP_BUFFER)
-            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, 0, cells_mem_size, GL_MAP_WRITE_BIT);
-            memcpy(pinned_mem, cells, cells_mem_size);
-            glUnmapBuffer(GL_TEXTURE_BUFFER);
-#else
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, cells_mem_size, cells);
-#endif
+            glBufferSubData(GL_TEXTURE_BUFFER, 0, cells_mem_size, data.cells.data());
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
-
-        render_infos_[1].cells_data_size = (uint32_t)cells_mem_size;
 
         // Update items buffer
-        size_t items_mem_size = items_count * sizeof(ItemData);
+        size_t items_mem_size = data.items_count * sizeof(ItemData);
         if (items_mem_size) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)items_buf_);
-#if defined(USE_MAP_BUFFER)
-            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, 0, items_mem_size, GL_MAP_WRITE_BIT);
-            memcpy(pinned_mem, items, items_mem_size);
-            glUnmapBuffer(GL_TEXTURE_BUFFER);
-#else
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, items_mem_size, items);
-#endif
+            glBufferSubData(GL_TEXTURE_BUFFER, 0, items_mem_size, data.items.data());
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
-
-        render_infos_[1].items_data_size = (uint32_t)items_mem_size;
     }
 
     const Ren::Program *cur_program = nullptr;
@@ -644,7 +603,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         glBindVertexArray(shadow_pass_vao_);
 
         for (int casc = 0; casc < 4; casc++) {
-            if (shadow_drawable_count[casc]) {
+            if (!data.shadow_list[casc].empty()) {
                 if (cur_program != shadow_prog_.get()) {
                     cur_program = shadow_prog_.get();
                     glUseProgram(cur_program->prog_id());
@@ -669,9 +628,9 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
                     glViewport(OneCascadeRes, OneCascadeRes, OneCascadeRes, OneCascadeRes);
                 }
 
-                const auto *shadow_dr_list = shadow_drawables[casc];
+                const auto &shadow_dr_list = data.shadow_list[casc];
 
-                for (size_t i = 0; i < shadow_drawable_count[casc]; i++) {
+                for (size_t i = 0; i < data.shadow_list[casc].size(); i++) {
                     const auto &dr = shadow_dr_list[i];
                     
                     const Ren::Mat4f *clip_from_object = dr.clip_from_object;
@@ -696,16 +655,16 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
 
     Ren::Mat4f view_from_world, clip_from_view, clip_from_world;
 
-    if (transforms) {
-        view_from_world = transforms[0];
-        clip_from_view = transforms[1];
+    if (!data.transforms.empty()) {
+        view_from_world = data.transforms[0];
+        clip_from_view = data.transforms[1];
         clip_from_world = clip_from_view * view_from_world;
     }
 
     Ren::Vec4f clip_info;
 
     {   // Update camera clip info (used to linearize depth)
-        const float near = draw_cam.near(), far = draw_cam.far();
+        const float near = data.draw_cam.near(), far = data.draw_cam.far();
 
         clip_info = { near * far, near, far, std::log2(1.0f + far / near) };
 
@@ -721,7 +680,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
     glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
     glViewport(0, 0, clean_buf_.w, clean_buf_.h);
 
-    if ((render_flags & EnableWireframe) == 0) {   // Draw skydome (and clear depth with it)
+    if ((data.render_flags & EnableWireframe) == 0) {   // Draw skydome (and clear depth with it)
         glDepthFunc(GL_ALWAYS);
 
         // Write to color and specular
@@ -733,7 +692,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
 
         glBindVertexArray(skydome_vao_);
 
-        Ren::Vec3f cam_pos = draw_cam.world_position();
+        Ren::Vec3f cam_pos = data.draw_cam.world_position();
 
         Ren::Mat4f translate_matrix;
         translate_matrix = Ren::Translate(translate_matrix, cam_pos);
@@ -758,8 +717,8 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         //glUniformMatrix4fv(1, 1, GL_FALSE, ValuePtr(_world_from_clip));
         cur_clip_from_object = nullptr;
 
-        if (env.env_map) {
-            BindCubemap(0, env.env_map->tex_id());
+        if (data.env.env_map) {
+            BindCubemap(0, data.env.env_map->tex_id());
         }
 
         glDrawElements(GL_TRIANGLES, (GLsizei)__skydome_indices_count, GL_UNSIGNED_BYTE, (void *)uintptr_t(skydome_ndx_offset_));
@@ -771,7 +730,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
 
     glQueryCounter(queries_[1][TimeDepthPassStart], GL_TIMESTAMP);
 
-    if (DEPTH_PREPASS && ((render_flags & EnableWireframe) == 0)) {
+    if (DEPTH_PREPASS && ((data.render_flags & EnableWireframe) == 0)) {
         glDepthFunc(GL_LESS);
 
         cur_program = fill_depth_prog_.get();
@@ -780,8 +739,8 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         glBindVertexArray(depth_pass_vao_);
 
         // fill depth
-        for (size_t i = 0; i < drawable_count; i++) {
-            const auto &dr = drawables[i];
+        for (size_t i = 0; i < data.draw_list.size(); i++) {
+            const auto &dr = data.draw_list[i];
 
             const Ren::Mat4f *clip_from_object = dr.clip_from_object;
             const Ren::Mesh *mesh = dr.mesh;
@@ -853,7 +812,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
     glBindVertexArray(0);
 
 #if !defined(__ANDROID__)
-    if (render_flags & EnableWireframe) {
+    if (data.render_flags & EnableWireframe) {
         glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_FALSE);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -870,8 +829,8 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
     glDrawBuffers(3, draw_buffers);
     
     // actual drawing
-    for (size_t i = 0; i < drawable_count; i++) {
-        const auto &dr = drawables[i];
+    for (size_t i = 0; i < data.draw_list.size(); i++) {
+        const auto &dr = data.draw_list[i];
 
         const Ren::Mat4f *clip_from_object = dr.clip_from_object,
                          *world_from_object = dr.world_from_object,
@@ -887,8 +846,8 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
 
             glBindBufferBase(GL_UNIFORM_BUFFER, p->uniform_block(U_MATRICES).loc, (GLuint)unif_matrices_block_);
 
-            glUniform3fv(U_SUN_DIR, 1, Ren::ValuePtr(env.sun_dir));
-            glUniform3fv(U_SUN_COL, 1, Ren::ValuePtr(env.sun_col));
+            glUniform3fv(U_SUN_DIR, 1, Ren::ValuePtr(data.env.sun_dir));
+            glUniform3fv(U_SUN_COL, 1, Ren::ValuePtr(data.env.sun_col));
 
             glUniform2i(U_RES, w_, h_);
             glUniform1f(U_GAMMA, 2.2f);
@@ -931,8 +890,8 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
             glActiveTexture((GLenum)(GL_TEXTURE0 + ITEMS_BUFFER_SLOT));
             glBindTexture(GL_TEXTURE_BUFFER, (GLuint)items_tbo_);
 
-            if (decals_atlas) {
-                BindTexture(DECALSMAP_SLOT, decals_atlas->tex_id(0));
+            if (data.decals_atlas) {
+                BindTexture(DECALSMAP_SLOT, data.decals_atlas->tex_id(0));
             }
 
             if (ENABLE_SSAO) {
@@ -941,10 +900,10 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
                 BindTexture(AOMAP_SLOT, default_ao_->tex_id());
             }
 
-            BindTexture(LM_DIRECT_SLOT, env.lm_direct_->tex_id());
-            BindTexture(LM_INDIR_SLOT, env.lm_indir_->tex_id());
+            BindTexture(LM_DIRECT_SLOT, data.env.lm_direct_->tex_id());
+            BindTexture(LM_INDIR_SLOT, data.env.lm_indir_->tex_id());
             for (int sh_l = 0; sh_l < 4; sh_l++) {
-                BindTexture(LM_INDIR_SH_SLOT + sh_l, env.lm_indir_sh_[sh_l]->tex_id());
+                BindTexture(LM_INDIR_SH_SLOT + sh_l, data.env.lm_indir_sh_[sh_l]->tex_id());
             }
 
             cur_program = p;
@@ -1057,8 +1016,8 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         }
 
         BindTexture(3, down_buf_.attachments[0].tex);
-        if (env.env_map) {
-            BindCubemap(4, env.env_map->tex_id());
+        if (data.env.env_map) {
+            BindCubemap(4, data.env.env_map->tex_id());
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
@@ -1099,7 +1058,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
 
     prev_view_from_world_ = view_from_world;
     
-    if (render_flags & DebugDeferred) {
+    if (data.render_flags & DebugDeferred) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
         glClear(GL_DEPTH_BUFFER_BIT);
@@ -1313,7 +1272,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         //glUniform1i(cur_program->uniform(U_TEX + 2).loc, DIFFUSEMAP_SLOT + 2);
         glUniform2f(13, float(w_), float(h_));
 
-        glUniform1f(U_GAMMA, (render_flags & DebugLights) ? 1.0f : 2.2f);
+        glUniform1f(U_GAMMA, (data.render_flags & DebugLights) ? 1.0f : 2.2f);
 
         float exposure = reduced_average_ > FLT_EPSILON ? (0.85f / reduced_average_) : 1.0f;
         exposure = std::min(exposure, 1000.0f);
@@ -1353,7 +1312,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
-    if (render_flags & (DebugLights | DebugDecals)) {
+    if (data.render_flags & (DebugLights | DebugDecals)) {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -1366,9 +1325,9 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
 
         glUniform2i(U_RES, w_, h_);
 
-        if (render_flags & DebugLights) {
+        if (data.render_flags & DebugLights) {
             glUniform1i(16, 0);
-        } else if (render_flags & DebugDecals) {
+        } else if (data.render_flags & DebugDecals) {
             glUniform1i(16, 1);
         }
 
@@ -1415,7 +1374,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         glDisable(GL_BLEND);
     }
 
-    if (((render_flags & (EnableCulling | DebugCulling)) == (EnableCulling | DebugCulling)) && !depth_pixels_[0].empty()) {
+    if (((data.render_flags & (EnableCulling | DebugCulling)) == (EnableCulling | DebugCulling)) && !depth_pixels_[0].empty()) {
         cur_program = blit_prog_.get();
         glUseProgram(cur_program->prog_id());
 
@@ -1465,7 +1424,7 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         glDisableVertexAttribArray(A_UVS1);
     }
 
-    if (render_flags & DebugShadow) {
+    if (data.render_flags & DebugShadow) {
         cur_program = blit_prog_.get();
         glUseProgram(cur_program->prog_id());
 
@@ -1503,33 +1462,33 @@ void Renderer::DrawObjectsInternal(const Ren::Camera &draw_cam, uint32_t render_
         glDisableVertexAttribArray(A_UVS1);
     }
 
-    if (render_flags & DebugReduce) {
+    if (data.render_flags & DebugReduce) {
         BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, reduced_buf_, 0, 1, 10.0f);
     }
 
-    if (render_flags & DebugDeferred) {
+    if (data.render_flags & DebugDeferred) {
         BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, clean_buf_, 1, 2);
     }
 
-    if (render_flags & DebugBlur) {
+    if (data.render_flags & DebugBlur) {
         BlitBuffer(-1.0f, -1.0f, 1.0f, 1.0f, blur_buf1_, 0, 1, 400.0f);
     }
 
-    if (render_flags & DebugSSAO) {
+    if (data.render_flags & DebugSSAO) {
         BlitBuffer(-1.0f, -1.0f, 1.0f, 1.0f, ssao_buf_, 0, 1);
     }
 
-    if ((render_flags & DebugDecals) && decals_atlas) {
-        int resx = decals_atlas->resx(),
-            resy = decals_atlas->resy();
+    if ((data.render_flags & DebugDecals) && data.decals_atlas) {
+        int resx = data.decals_atlas->resx(),
+            resy = data.decals_atlas->resy();
 
         float k = float(w_) / h_;
         k *= float(resy) / resx;
 
-        BlitTexture(-1.0f, -1.0f, 1.0f, 1.0f * k, decals_atlas->tex_id(0), resx, resy);
+        BlitTexture(-1.0f, -1.0f, 1.0f, 1.0f * k, data.decals_atlas->tex_id(0), resx, resy);
     }
 
-    if (render_flags & DebugBVH) {
+    if (data.render_flags & DebugBVH) {
         if (!nodes_buf_) {
             GLuint nodes_buf;
             glGenBuffers(1, &nodes_buf);

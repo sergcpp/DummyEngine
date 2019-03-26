@@ -75,8 +75,8 @@ void main() {
         /*
             struct bvh_node_t {
                 uvec4 node_data0;   // { prim_index  (u32), prim_count  (u32), left_child  (u32), right_child (u32) }
-                xxx4 node_data1;    // { bbox_min[0] (f32), bbox_min[1] (f32), bbox_min[2] (f32), parent      (u32) }
-                xxx4 node_data2;    // { bbox_max[0] (f32), bbox_max[1] (f32), bbox_max[2] (f32), space_axis  (u32) }
+                xvec4 node_data1;   // { bbox_min[0] (f32), bbox_min[1] (f32), bbox_min[2] (f32), parent      (u32) }
+                xvec4 node_data2;   // { bbox_max[0] (f32), bbox_max[1] (f32), bbox_max[2] (f32), space_axis  (u32) }
             };
         */
 
@@ -94,6 +94,6 @@ void main() {
         }
     }
 
-    outColor = vec4(heatmap(float(tree_complexity) / 32.0), 0.85);
+    outColor = vec4(heatmap(float(tree_complexity) / 24.0), 0.85);
 }
 )"
