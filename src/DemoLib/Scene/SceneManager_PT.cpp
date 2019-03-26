@@ -312,7 +312,13 @@ bool SceneManager::PrepareLightmaps_PT() {
                         out_file_name += std::to_string(sh_l);
                         out_file_name += ".png";
 
-                        SceneManagerInternal::Write_RGBM(&out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4, out_file_name.c_str());
+                        if (sh_l == 0) {
+                            // Save first band as HDR
+                            SceneManagerInternal::Write_RGBM(&out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4, out_file_name.c_str());
+                        } else {
+                            // Save rest as LDR
+                            SceneManagerInternal::Write_RGB(&out_pixels[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, out_file_name.c_str());
+                        }
                     }
                 }
 
