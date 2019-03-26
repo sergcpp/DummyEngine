@@ -1,7 +1,8 @@
 R"(
 #version 310 es
+#extension GL_EXT_texture_buffer : enable
 #ifdef GL_ES
-    precision mediump float;
+    precision highp float;
 #endif
         
 layout(binding = 0) uniform mediump sampler2DMS depth_texture;
@@ -63,14 +64,14 @@ void main() {
     
     vec3 inv_dir = 1.0 / ray_dir_ws;
 
-    uint stack[32];
-    uint stack_size = 0;
-    stack[stack_size++] = uint(uRootIndex);
+    int stack[32];
+    int stack_size = 0;
+    stack[stack_size++] = uRootIndex;
 
     int tree_complexity = 0;
 
-    while (stack_size != 0u) {
-        uint cur = stack[--stack_size];
+    while (stack_size != 0) {
+        int cur = stack[--stack_size];
 
         /*
             struct bvh_node_t {
@@ -80,17 +81,17 @@ void main() {
             };
         */
 
-        vec4 node_data1 = texelFetch(nodes_buffer, cur * 3u + 1u);
-        vec4 node_data2 = texelFetch(nodes_buffer, cur * 3u + 2u);
+        vec4 node_data1 = texelFetch(nodes_buffer, cur * 3 + 1);
+        vec4 node_data2 = texelFetch(nodes_buffer, cur * 3 + 2);
 
         if (!_bbox_test(ray_start_ws.xyz, inv_dir, 100.0, node_data1.xyz, node_data2.xyz)) continue;
 
         tree_complexity++;
 
-        uvec4 node_data0 = floatBitsToUint(texelFetch(nodes_buffer, cur * 3u + 0u));
+        uvec4 node_data0 = floatBitsToUint(texelFetch(nodes_buffer, cur * 3 + 0));
         if (node_data0.y == 0u) {
-            stack[stack_size++] = node_data0.w;
-            stack[stack_size++] = node_data0.z;
+            stack[stack_size++] = int(node_data0.w);
+            stack[stack_size++] = int(node_data0.z);
         }
     }
 
