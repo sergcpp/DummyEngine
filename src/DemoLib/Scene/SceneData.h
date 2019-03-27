@@ -5,6 +5,7 @@
 #include <Ren/Mesh.h>
 #include <Ren/MMat.h>
 #include <Ren/Storage.h>
+#include <Ren/TextureAtlas.h>
 
 struct Transform : public Ren::RefCounter {
     Ren::Mat4f mat;
@@ -121,10 +122,27 @@ struct Environment {
     Ren::Vec3f sun_dir, sun_col;
     float sun_softness = 0.0f;
     Ren::Texture2DRef env_map;
-    Ren::Texture2DRef lm_direct_, lm_indir_,
-                      lm_indir_sh_[4];
+    Ren::Texture2DRef lm_direct, lm_indir,
+                      lm_indir_sh[4];
 };
 
 struct BBox {
     Ren::Vec3f bmin, bmax;
+};
+
+struct SceneData {
+    Environment env;
+    Ren::TextureAtlas decals_atlas;
+    Ren::TextureSplitter lm_splitter;
+
+    Ren::Storage<Transform> transforms;
+    Ren::Storage<LightmapRegion> lm_regions;
+    Ren::Storage<LightSource> lights;
+    Ren::Storage<Decal> decals;
+
+    std::vector<SceneObject> objects;
+
+    std::vector<bvh_node_t> nodes;
+    uint32_t root_node = 0;
+    std::vector<uint32_t> obj_indices;
 };

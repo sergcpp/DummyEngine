@@ -68,6 +68,7 @@ class GSDrawTest : public GameState {
     void LoadScene(const char *name);
 
     void BackgroundProc();
+    void UpdateFrame(int list_index);
 public:
     explicit GSDrawTest(GameBase *game);
     ~GSDrawTest();

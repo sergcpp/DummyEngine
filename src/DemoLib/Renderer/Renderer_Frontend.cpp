@@ -32,16 +32,28 @@ const uint8_t bbox_indices[] = { 0, 1, 2,    2, 1, 3,
     (min)[0], (max)[1], (max)[2],     \
     (max)[0], (max)[1], (max)[2]
 
-void Renderer::GatherDrawables(DrawablesData &data) {
+void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawablesData &data) {
     using namespace RendererInternal;
 
     auto iteration_start = std::chrono::high_resolution_clock::now();
 
+    data.draw_cam = cam;
+    data.env = scene.env;
+    data.render_flags = render_flags_;
+
+    if (data.render_flags & DebugBVH) {
+        // copy nodes list for debugging
+        data.temp_nodes = scene.nodes;
+    } else {
+        // free memory
+        data.temp_nodes = {};
+    }
+
     data.transforms.clear();
-    data.transforms.reserve(object_count_ * 6);
+    data.transforms.reserve(scene.objects.size() * 6);
 
     data.draw_list.clear();
-    data.draw_list.reserve(object_count_ * 16);
+    data.draw_list.reserve(scene.objects.size() * 16);
 
     data.light_sources.clear();
     data.decals.clear();
@@ -49,7 +61,7 @@ void Renderer::GatherDrawables(DrawablesData &data) {
     const bool culling_enabled = (data.render_flags & EnableCulling) != 0;
 
     object_to_drawable_.clear();
-    object_to_drawable_.resize(object_count_, 0xffffffff);
+    object_to_drawable_.resize(scene.objects.size(), 0xffffffff);
 
     litem_to_lsource_.clear();
     ditem_to_decal_.clear();
@@ -57,7 +69,7 @@ void Renderer::GatherDrawables(DrawablesData &data) {
 
     for (int i = 0; i < 4; i++) {
         data.shadow_list[i].clear();
-        data.shadow_list[i].reserve(object_count_ * 16);
+        data.shadow_list[i].reserve(scene.objects.size() * 16);
     }
 
     Ren::Mat4f view_from_world = data.draw_cam.view_matrix(),
@@ -80,12 +92,12 @@ void Renderer::GatherDrawables(DrawablesData &data) {
     auto occluders_start = std::chrono::high_resolution_clock::now();
 
     {   // Rasterize occluder meshes into a small framebuffer
-        stack[stack_size++] = (uint32_t)root_node_;
+        stack[stack_size++] = (uint32_t)scene.root_node;
 
         while (stack_size && culling_enabled) {
             uint32_t cur = stack[--stack_size] & index_bits;
             uint32_t skip_check = (stack[stack_size] & skip_check_bit);
-            const auto *n = &nodes_[cur];
+            const auto *n = &scene.nodes[cur];
 
             if (!skip_check) {
                 auto res = data.draw_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
@@ -98,7 +110,7 @@ void Renderer::GatherDrawables(DrawablesData &data) {
                 stack[stack_size++] = skip_check | n->right_child;
             } else {
                 for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
-                    const auto &obj = objects_[obj_indices_[i]];
+                    const auto &obj = scene.objects[scene.obj_indices[i]];
 
                     const uint32_t occluder_flags = HasTransform | HasOccluder;
                     if ((obj.flags & occluder_flags) == occluder_flags) {
@@ -146,12 +158,12 @@ void Renderer::GatherDrawables(DrawablesData &data) {
 
     {   // Gather meshes and lights, skip occluded and frustum culled
         stack_size = 0;
-        stack[stack_size++] = (uint32_t)root_node_;
+        stack[stack_size++] = (uint32_t)scene.root_node;
 
         while (stack_size) {
             uint32_t cur = stack[--stack_size] & index_bits;
             uint32_t skip_check = stack[stack_size] & skip_check_bit;
-            const auto *n = &nodes_[cur];
+            const auto *n = &scene.nodes[cur];
 
             if (!skip_check) {
                 const float bbox_points[8][3] = { BBOX_POINTS(n->bbox_min, n->bbox_max) };
@@ -190,7 +202,7 @@ void Renderer::GatherDrawables(DrawablesData &data) {
                 stack[stack_size++] = skip_check | n->right_child;
             } else {
                 for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
-                    const auto &obj = objects_[obj_indices_[i]];
+                    const auto &obj = scene.objects[scene.obj_indices[i]];
 
                     const uint32_t drawable_flags = HasMesh | HasTransform;
                     const uint32_t lightsource_flags = HasLightSource | HasTransform;
@@ -405,7 +417,7 @@ void Renderer::GatherDrawables(DrawablesData &data) {
         auto cam_side = Normalize(Cross(light_dir, cam_up));
         cam_up = Cross(cam_side, light_dir);
 
-        const Ren::Vec3f scene_dims = nodes_[root_node_].bbox_max - nodes_[root_node_].bbox_min;
+        const Ren::Vec3f scene_dims = scene.nodes[scene.root_node].bbox_max - scene.nodes[scene.root_node].bbox_min;
         const float max_dist = Ren::Length(scene_dims);
 
         // Gather drawables for each cascade
@@ -459,12 +471,12 @@ void Renderer::GatherDrawables(DrawablesData &data) {
             const uint32_t index_bits = ~skip_check_bit;
 
             stack_size = 0;
-            stack[stack_size++] = (uint32_t)root_node_;
+            stack[stack_size++] = (uint32_t)scene.root_node;
 
             while (stack_size) {
                 uint32_t cur = stack[--stack_size] & index_bits;
                 uint32_t skip_check = stack[stack_size] & skip_check_bit;
-                const auto* n = &nodes_[cur];
+                const auto* n = &scene.nodes[cur];
 
                 auto res = shadow_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
                 if (res == Ren::Invisible) continue;
@@ -476,7 +488,7 @@ void Renderer::GatherDrawables(DrawablesData &data) {
                 }
                 else {
                     for (uint32_t i = n->prim_index; i < n->prim_index + n->prim_count; i++) {
-                        const auto& obj = objects_[obj_indices_[i]];
+                        const auto& obj = scene.objects[scene.obj_indices[i]];
 
                         const uint32_t drawable_flags = HasMesh | HasTransform;
                         if ((obj.flags & drawable_flags) == drawable_flags) {

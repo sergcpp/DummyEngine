@@ -58,14 +58,17 @@ SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererB
       threads_(threads),
       cam_(Ren::Vec3f{ 0.0f, 0.0f, 1.0f },
            Ren::Vec3f{ 0.0f, 0.0f, 0.0f },
-           Ren::Vec3f{ 0.0f, 1.0f, 0.0f }),
-     lightmap_splitter_(SceneManagerConstants::LIGHTMAP_ATLAS_RESX,
-                        SceneManagerConstants::LIGHTMAP_ATLAS_RESY) {
+           Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
     using namespace SceneManagerConstants;
 
     {   // Alloc texture for decals atlas        
         Ren::eTexColorFormat formats[] = { Ren::RawRGBA8888, Ren::Undefined };
-        decals_atlas_ = TextureAtlas{ DECALS_ATLAS_RESX, DECALS_ATLAS_RESY, formats, Ren::Trilinear };
+        scene_data_.decals_atlas = Ren::TextureAtlas{ DECALS_ATLAS_RESX, DECALS_ATLAS_RESY, formats, Ren::Trilinear };
+    }
+
+    {   // Create splitter for lightmap atlas
+        scene_data_.lm_splitter = Ren::TextureSplitter(SceneManagerConstants::LIGHTMAP_ATLAS_RESX,
+                                                       SceneManagerConstants::LIGHTMAP_ATLAS_RESY);
     }
 }
 
@@ -87,11 +90,6 @@ FrontendInfo SceneManager::frontend_info() const {
 
 BackendInfo SceneManager::backend_info() const {
     return renderer_.backend_info();
-}
-
-void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up) {
-    cam_.SetupView(origin, target, up);
-    cam_.UpdatePlanes();
 }
 
 void SceneManager::LoadScene(const JsObject &js_scene) {
@@ -139,10 +137,10 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             lm_indir_sh_tex_name[sh_l] += tex_ext;
         }
 
-        env_.lm_direct_ = OnLoadTexture(lm_direct_tex_name.c_str());
-        env_.lm_indir_ = OnLoadTexture(lm_indir_tex_name.c_str());
+        scene_data_.env.lm_direct = OnLoadTexture(lm_direct_tex_name.c_str());
+        scene_data_.env.lm_indir = OnLoadTexture(lm_indir_tex_name.c_str());
         for (int sh_l = 0; sh_l < 4; sh_l++) {
-            env_.lm_indir_sh_[sh_l] = OnLoadTexture(lm_indir_sh_tex_name[sh_l].c_str());
+            scene_data_.env.lm_indir_sh[sh_l] = OnLoadTexture(lm_indir_sh_tex_name[sh_l].c_str());
         }
     }
 
@@ -173,7 +171,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
             const JsObject &js_obj = (const JsObject &)js_elem.second;
 
-            Ren::StorageRef<LightSource> ls = lights_.Add();
+            Ren::StorageRef<LightSource> ls = scene_data_.lights.Add();
 
             const auto &js_color = (const JsArray &)js_obj.at("color");
 
@@ -231,7 +229,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
             const JsObject &js_obj = (const JsObject &)js_elem.second;
 
-            Ren::StorageRef<Decal> de = decals_.Add();
+            Ren::StorageRef<Decal> de = scene_data_.decals.Add();
 
             if (js_obj.Has("pos")) {
                 const JsArray &js_pos = (const JsArray &)js_obj.at("pos");
@@ -301,7 +299,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 const Ren::eTexColorFormat formats[] = { Ren::RawRGBA8888, Ren::Undefined };
 
                 int pos[2];
-                int rc = decals_atlas_.Allocate(data, formats, res, pos, 4);
+                int rc = scene_data_.decals_atlas.Allocate(data, formats, res, pos, 4);
                 if (rc == -1) throw std::runtime_error("Cannot allocate decal!");
 
 #if !defined(__ANDROID__)
@@ -363,7 +361,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
         SceneObject obj;
         obj.flags = HasTransform;
-        obj.tr = transforms_.Add();
+        obj.tr = scene_data_.transforms.Add();
 
         Ren::Vec3f obj_bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
                    obj_bbox_max = Ren::Vec3f{ -std::numeric_limits<float>::max() };
@@ -426,11 +424,11 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             const JsNumber &js_lm_res = (const JsNumber &)js_obj.at("lightmap_res");
 
             obj.flags |= HasLightmap;
-            obj.lm = lm_regions_.Add();
+            obj.lm = scene_data_.lm_regions.Add();
             obj.lm->size[0] = (int)js_lm_res.val;
             obj.lm->size[1] = (int)js_lm_res.val;
 
-            int node_id = lightmap_splitter_.Allocate(obj.lm->size, obj.lm->pos);
+            int node_id = scene_data_.lm_splitter.Allocate(obj.lm->size, obj.lm->pos);
             if (node_id == -1) {
                 throw std::runtime_error("Cannot allocate lightmap region!");
             }
@@ -549,7 +547,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
         obj.tr->UpdateBBox(obj_bbox_min, obj_bbox_max);
 
-        objects_.push_back(obj);
+        scene_data_.objects.push_back(obj);
     }
 
     if (js_scene.Has("environment")) {
@@ -561,8 +559,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             double y = ((const JsNumber &)js_dir.at(1)).val;
             double z = ((const JsNumber &)js_dir.at(2)).val;
 
-            env_.sun_dir = Ren::Vec3f{ float(x), float(y), float(z) };
-            env_.sun_dir = -Ren::Normalize(env_.sun_dir);
+            scene_data_.env.sun_dir = Ren::Vec3f{ float(x), float(y), float(z) };
+            scene_data_.env.sun_dir = -Ren::Normalize(scene_data_.env.sun_dir);
         }
         if (js_env.Has("sun_col")) {
             const JsArray &js_col = (const JsArray &)js_env.at("sun_col");
@@ -571,11 +569,11 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             double g = ((const JsNumber &)js_col.at(1)).val;
             double b = ((const JsNumber &)js_col.at(2)).val;
 
-            env_.sun_col = Ren::Vec3f{ float(r), float(g), float(b) };
+            scene_data_.env.sun_col = Ren::Vec3f{ float(r), float(g), float(b) };
         }
         if (js_env.Has("sun_softness")) {
             const JsNumber &js_sun_softness = js_env.at("sun_softness");
-            env_.sun_softness = (float)js_sun_softness.val;
+            scene_data_.env.sun_softness = (float)js_sun_softness.val;
         }
         if (js_env.Has("env_map")) {
             const JsString &js_env_map = (const JsString &)js_env.at("env_map");
@@ -643,16 +641,16 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 #endif
 
             Ren::eTexLoadStatus load_status;
-            env_.env_map = ctx_.LoadTextureCube(tex_name.c_str(), data, size, p, &load_status);
+            scene_data_.env.env_map = ctx_.LoadTextureCube(tex_name.c_str(), data, size, p, &load_status);
         }
         if (js_env.Has("env_map_pt")) {
             env_map_pt_name_ = ((const JsString &)js_env.at("env_map_pt")).val;
         }
     } else {
-        env_ = {};
+        scene_data_.env = {};
     }
 
-    decals_atlas_.Finalize();
+    scene_data_.decals_atlas.Finalize();
 
     LOGI("SceneManager: RebuildBVH!");
 
@@ -661,31 +659,25 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
 void SceneManager::ClearScene() {
     scene_name_.clear();
-    objects_.clear();
+    scene_data_.objects.clear();
 
     ray_scene_ = nullptr;
 
-    assert(transforms_.Size() == 0);
-    assert(lights_.Size() == 0);
-    assert(decals_.Size() == 0);
+    assert(scene_data_.transforms.Size() == 0);
+    assert(scene_data_.lights.Size() == 0);
+    assert(scene_data_.decals.Size() == 0);
 }
 
-void SceneManager::PrepareNextFrame() {
+void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up) {
     using namespace SceneManagerConstants;
 
+    cam_.SetupView(origin, target, up);
     cam_.Perspective(60.0f, float(ctx_.w()) / ctx_.h(), NEAR_CLIP, FAR_CLIP);
     cam_.UpdatePlanes();
-
-    renderer_.SwapDrawLists(cam_, &nodes_[0], 0, (uint32_t)nodes_.size(), &objects_[0], &obj_indices_[0], (uint32_t)objects_.size(),
-                            env_, &decals_atlas_);
-}
-
-void SceneManager::PrepareFrame() {
-    renderer_.PrepareFrame();
 }
 
 void SceneManager::Frame() {
-    renderer_.DrawObjects();
+    renderer_.ExecuteDrawList(0);
 }
 
 Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {

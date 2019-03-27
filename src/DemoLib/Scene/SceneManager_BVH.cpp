@@ -6,17 +6,17 @@
 
 void SceneManager::RebuildBVH() {
     std::vector<prim_t> primitives;
-    primitives.reserve(objects_.size());
+    primitives.reserve(scene_data_.objects.size());
 
-    for (const auto &obj : objects_) {
+    for (const auto &obj : scene_data_.objects) {
         if (obj.flags & HasTransform) {
             const auto &tr = obj.tr;
             primitives.push_back({ tr->bbox_min_ws, tr->bbox_max_ws });
         }
     }
 
-    nodes_.clear();
-    obj_indices_.clear();
+    scene_data_.nodes.clear();
+    scene_data_.obj_indices.clear();
 
     struct prims_coll_t {
         std::vector<uint32_t> indices;
@@ -30,7 +30,7 @@ void SceneManager::RebuildBVH() {
     std::deque<prims_coll_t> prim_lists;
     prim_lists.emplace_back();
 
-    size_t num_nodes = nodes_.size();
+    size_t num_nodes = scene_data_.nodes.size();
     auto root_node_index = (uint32_t)num_nodes;
 
     for (size_t i = 0; i < primitives.size(); i++) {
@@ -46,12 +46,12 @@ void SceneManager::RebuildBVH() {
         auto split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices.data(), (uint32_t)prim_lists.back().indices.size(), prim_lists.back().min, prim_lists.back().max, root_min, root_max);
         prim_lists.pop_back();
 
-        uint32_t leaf_index = (uint32_t)nodes_.size(),
+        uint32_t leaf_index = (uint32_t)scene_data_.nodes.size(),
                  parent_index = 0xffffffff;
 
         if (leaf_index) {
             // skip bound checks in debug mode
-            const bvh_node_t *_out_nodes = &nodes_[0];
+            const bvh_node_t *_out_nodes = &scene_data_.nodes[0];
             for (uint32_t i = leaf_index - 1; i >= root_node_index; i--) {
                 if (_out_nodes[i].left_child == leaf_index || _out_nodes[i].right_child == leaf_index) {
                     parent_index = (uint32_t)i;
@@ -64,11 +64,11 @@ void SceneManager::RebuildBVH() {
             Ren::Vec3f bbox_min = split_data.left_bounds[0],
                        bbox_max = split_data.left_bounds[1];
 
-            nodes_.push_back({ (uint32_t)obj_indices_.size(), (uint32_t)split_data.left_indices.size(), 0, 0,
+            scene_data_.nodes.push_back({ (uint32_t)scene_data_.obj_indices.size(), (uint32_t)split_data.left_indices.size(), 0, 0,
                 { bbox_min[0], bbox_min[1], bbox_min[2] }, parent_index,
                 { bbox_max[0], bbox_max[1], bbox_max[2] }, 0
             });
-            obj_indices_.insert(obj_indices_.end(), split_data.left_indices.begin(), split_data.left_indices.end());
+            scene_data_.obj_indices.insert(scene_data_.obj_indices.end(), split_data.left_indices.begin(), split_data.left_indices.end());
         } else {
             auto index = (uint32_t)num_nodes;
 
@@ -89,7 +89,7 @@ void SceneManager::RebuildBVH() {
             Ren::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
                        bbox_max = Max(split_data.left_bounds[1], split_data.right_bounds[1]);
 
-            nodes_.push_back({ 0, 0, index + 1, index + 2, 
+            scene_data_.nodes.push_back({ 0, 0, index + 1, index + 2,
                 { bbox_min[0], bbox_min[1], bbox_min[2] }, parent_index,
                 { bbox_max[0], bbox_max[1], bbox_max[2] }, space_axis,
             });

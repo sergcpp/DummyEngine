@@ -7,7 +7,6 @@
 #include <Sys/Json.h>
 
 #include "SceneData.h"
-#include "../Renderer/TextureAtlas.h"
 
 class Renderer;
 
@@ -26,12 +25,13 @@ public:
     FrontendInfo frontend_info() const;
     BackendInfo backend_info() const;
 
+    const Ren::Camera &main_cam() const { return cam_; }
+    const SceneData &scene_data() const { return scene_data_; }
+
     void LoadScene(const JsObject &js_scene);
     void ClearScene();
 
     void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up);
-    void PrepareNextFrame();
-    void PrepareFrame();
     void Frame();
 
     void InitScene_PT(bool _override = false);
@@ -60,25 +60,12 @@ private:
     std::shared_ptr<Ray::SceneBase> ray_scene_;
 
     Ren::Camera cam_;
-    Environment env_;
     std::string env_map_pt_name_;
+
+    SceneData scene_data_;
 
     bool cur_lm_indir_ = false;
     size_t cur_lm_obj_ = 0;
-
-    TextureAtlas decals_atlas_;
-
-    Ren::TextureSplitter lightmap_splitter_;
-
-    Ren::Storage<Transform> transforms_;
-    Ren::Storage<LightmapRegion> lm_regions_;
-    Ren::Storage<LightSource> lights_;
-    Ren::Storage<Decal> decals_;
-
-    std::vector<SceneObject> objects_;
-    std::vector<uint32_t> obj_indices_;
-
-    std::vector<bvh_node_t> nodes_;
 
     // PT temp data
     std::vector<Ray::pixel_color_t> pt_lm_direct_, pt_lm_indir_,

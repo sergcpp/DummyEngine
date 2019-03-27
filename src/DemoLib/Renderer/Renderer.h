@@ -127,11 +127,9 @@ public:
         return backend_info_;
     }
 
-    void SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_node, uint32_t nodes_count,
-                       const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
-                       const TextureAtlas *decals_atlas);
-    void PrepareFrame();
-    void DrawObjects();
+    void SwapDrawLists();
+    void PrepareDrawList(int index, const SceneData &scene, const Ren::Camera &cam);
+    void ExecuteDrawList(int index);
 
     void BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format);
     void BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTexColorFormat format);
@@ -156,12 +154,6 @@ private:
 
     int frame_counter_ = 0;
 
-    const bvh_node_t *nodes_ = nullptr;
-    uint32_t root_node_ = 0, nodes_count_ = 0;
-    const SceneObject *objects_ = nullptr;
-    const uint32_t *obj_indices_ = nullptr;
-    uint32_t object_count_ = 0;
-
     struct DrawablesData {
         Ren::Camera draw_cam, shadow_cams[4];
         std::vector<Ren::Mat4f> transforms;
@@ -171,11 +163,14 @@ private:
         std::vector<CellData> cells;
         std::vector<ItemData> items;
         int items_count = 0;
-        const TextureAtlas *decals_atlas = nullptr;
+        const Ren::TextureAtlas *decals_atlas = nullptr;
         Environment env;
         RenderInfo render_info;
         FrontendInfo frontend_info;
         uint32_t render_flags = default_flags;
+
+        // for debugging only, backend does not require nodes for drawing
+        std::vector<bvh_node_t> temp_nodes;
     } drawables_data_[2];
 
     std::vector<uint32_t> object_to_drawable_;
@@ -212,7 +207,7 @@ private:
     //temp
     std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];
 
-    void GatherDrawables(DrawablesData &data);
+    void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawablesData &data);
 
     void InitRendererInternal();
     void DestroyRendererInternal();

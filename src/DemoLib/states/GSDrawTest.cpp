@@ -305,21 +305,19 @@ void GSDrawTest::Draw(float dt_s) {
                 thr_done_.wait(lock);
             }
 
-            bool should_notify = true;
-
             scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-            scene_manager_->PrepareNextFrame();
+            renderer_->SwapDrawLists();
 
-            if (should_notify) {
-                notified_ = true;
-                thr_notify_.notify_one();
-            }
+            notified_ = true;
+            thr_notify_.notify_one();
         } else {
-            // TODO!!!
+            scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+            // Gather drawables for list 0
+            UpdateFrame(0);
         }
 
-        // Render current frame
-        scene_manager_->Frame();
+        // Render current frame (from list 0)
+        renderer_->ExecuteDrawList(0);
     }
 
     //LOGI("(%f %f %f) (%f %f %f)", view_origin_[0], view_origin_[1], view_origin_[2],
@@ -792,9 +790,14 @@ void GSDrawTest::BackgroundProc() {
             thr_notify_.wait(lock);
         }
 
-        scene_manager_->PrepareFrame();
+        // Gather drawables for list 1
+        UpdateFrame(1);
 
         notified_ = false;
         thr_done_.notify_one();
     }
+}
+
+void GSDrawTest::UpdateFrame(int list_index) {
+    renderer_->PrepareDrawList(list_index, scene_manager_->scene_data(), scene_manager_->main_cam());
 }

@@ -5,7 +5,6 @@
 
 #include "Renderer.cpp"
 #include "Renderer_Frontend.cpp"
-#include "TextureAtlas.cpp"
 
 #if defined(USE_GL_RENDER)
 #include "FrameBufGL.cpp"

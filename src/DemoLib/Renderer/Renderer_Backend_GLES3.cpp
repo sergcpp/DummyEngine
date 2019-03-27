@@ -900,10 +900,10 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
                 BindTexture(AOMAP_SLOT, default_ao_->tex_id());
             }
 
-            BindTexture(LM_DIRECT_SLOT, data.env.lm_direct_->tex_id());
-            BindTexture(LM_INDIR_SLOT, data.env.lm_indir_->tex_id());
+            BindTexture(LM_DIRECT_SLOT, data.env.lm_direct->tex_id());
+            BindTexture(LM_INDIR_SLOT, data.env.lm_indir->tex_id());
             for (int sh_l = 0; sh_l < 4; sh_l++) {
-                BindTexture(LM_INDIR_SH_SLOT + sh_l, data.env.lm_indir_sh_[sh_l]->tex_id());
+                BindTexture(LM_INDIR_SH_SLOT + sh_l, data.env.lm_indir_sh[sh_l]->tex_id());
             }
 
             cur_program = p;
@@ -1494,7 +1494,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
             glGenBuffers(1, &nodes_buf);
 
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)nodes_buf);
-            glBufferData(GL_TEXTURE_BUFFER, nodes_count_ * sizeof(bvh_node_t), nodes_, GL_DYNAMIC_DRAW);
+            glBufferData(GL_TEXTURE_BUFFER, data.temp_nodes.size() * sizeof(bvh_node_t), data.temp_nodes.data(), GL_DYNAMIC_DRAW);
 
             nodes_buf_ = (uint32_t)nodes_buf;
 
@@ -1509,7 +1509,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
             nodes_tbo_ = (uint32_t)nodes_tbo;
         } else {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)nodes_buf_);
-            glBufferData(GL_TEXTURE_BUFFER, nodes_count_ * sizeof(bvh_node_t), nodes_, GL_DYNAMIC_DRAW);
+            glBufferData(GL_TEXTURE_BUFFER, data.temp_nodes.size() * sizeof(bvh_node_t), data.temp_nodes.data(), GL_DYNAMIC_DRAW);
         }
 
         {

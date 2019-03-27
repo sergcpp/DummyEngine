@@ -84,10 +84,10 @@ void SceneManager::ResetLightmaps_PT() {
     Ray::camera_desc_t cam_desc;
     ray_scene_->GetCamera(1, cam_desc);
 
-    for (size_t i = 0; i < objects_.size(); i++) {
-        if (objects_[i].flags & HasLightmap) {
+    for (size_t i = 0; i < scene_data_.objects.size(); i++) {
+        if (scene_data_.objects[i].flags & HasLightmap) {
             cur_lm_obj_ = i;
-            cam_desc.mi_index = objects_[i].pt_mi;
+            cam_desc.mi_index = scene_data_.objects[i].pt_mi;
             break;
         }
     }
@@ -114,7 +114,7 @@ bool SceneManager::PrepareLightmaps_PT() {
     const int LM_SAMPLES_PER_PASS = 16;
     const int TILE_SIZE = 64;
 
-    const int res = (int)objects_[cur_lm_obj_].lm->size[0];
+    const int res = (int)scene_data_.objects[cur_lm_obj_].lm->size[0];
 
     if (ray_reg_ctx_.empty()) {
         if (ray_renderer_.type() == Ray::RendererOCL) {
@@ -162,8 +162,8 @@ bool SceneManager::PrepareLightmaps_PT() {
             // Save lightmap to file
             const auto *pixels = ray_renderer_.get_pixels_ref();
 
-            int xpos = objects_[cur_lm_obj_].lm->pos[0],
-                ypos = objects_[cur_lm_obj_].lm->pos[1];
+            int xpos = scene_data_.objects[cur_lm_obj_].lm->pos[0],
+                ypos = scene_data_.objects[cur_lm_obj_].lm->pos[1];
 
             // Copy image to lightmap atlas
             if (!cur_lm_indir_) {
@@ -269,10 +269,10 @@ bool SceneManager::PrepareLightmaps_PT() {
         } else {
             bool found = false;
 
-            for (size_t i = cur_lm_obj_ + 1; i < objects_.size(); i++) {
-                if (objects_[i].flags & HasLightmap) {
+            for (size_t i = cur_lm_obj_ + 1; i < scene_data_.objects.size(); i++) {
+                if (scene_data_.objects[i].flags & HasLightmap) {
                     cur_lm_obj_ = i;
-                    cam_desc.mi_index = objects_[i].pt_mi;
+                    cam_desc.mi_index = scene_data_.objects[i].pt_mi;
                     found = true;
                     break;
                 }
@@ -441,17 +441,17 @@ void SceneManager::InitScene_PT(bool _override) {
     }
 
     // Add sun lamp
-    if (Ren::Dot(env_.sun_dir, env_.sun_dir) > 0.00001f && Ren::Dot(env_.sun_col, env_.sun_col) > 0.00001f) {
+    if (Ren::Dot(scene_data_.env.sun_dir, scene_data_.env.sun_dir) > 0.00001f && Ren::Dot(scene_data_.env.sun_col, scene_data_.env.sun_col) > 0.00001f) {
         Ray::light_desc_t sun_desc;
         sun_desc.type = Ray::DirectionalLight;
 
-        sun_desc.direction[0] = -env_.sun_dir[0];
-        sun_desc.direction[1] = -env_.sun_dir[1];
-        sun_desc.direction[2] = -env_.sun_dir[2];
+        sun_desc.direction[0] = -scene_data_.env.sun_dir[0];
+        sun_desc.direction[1] = -scene_data_.env.sun_dir[1];
+        sun_desc.direction[2] = -scene_data_.env.sun_dir[2];
 
-        memcpy(&sun_desc.color[0], &env_.sun_col[0], 3 * sizeof(float));
+        memcpy(&sun_desc.color[0], &scene_data_.env.sun_col[0], 3 * sizeof(float));
 
-        sun_desc.angle = env_.sun_softness;
+        sun_desc.angle = scene_data_.env.sun_softness;
 
         ray_scene_->AddLight(sun_desc);
     }
@@ -488,7 +488,7 @@ void SceneManager::InitScene_PT(bool _override) {
     }*/
 
     // Add objects
-    for (auto &obj : objects_) {
+    for (auto &obj : scene_data_.objects) {
         const uint32_t drawable_flags = HasMesh | HasTransform;
         if ((obj.flags & drawable_flags) == drawable_flags) {
             const auto *mesh = obj.mesh.get();

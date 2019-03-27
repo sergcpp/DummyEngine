@@ -92,49 +92,49 @@ Renderer::~Renderer() {
     swCullCtxDestroy(&cull_ctx_);
 }
 
-void Renderer::PrepareFrame() {
-    GatherDrawables(drawables_data_[1]);
+void Renderer::PrepareDrawList(int index, const SceneData &scene, const Ren::Camera &cam) {
+    GatherDrawables(scene, cam, drawables_data_[index]);
 }
 
-void Renderer::DrawObjects() {
+void Renderer::ExecuteDrawList(int index) {
     using namespace RendererInternal;
 
     uint64_t gpu_draw_start = 0;
-    if (drawables_data_[0].render_flags & DebugTimings) {
+    if (drawables_data_[index].render_flags & DebugTimings) {
         gpu_draw_start = GetGpuTimeBlockingUs();
     }
     auto cpu_draw_start = std::chrono::high_resolution_clock::now();
     
     {
-        size_t transforms_count = drawables_data_[0].transforms.size();
-        const auto *transforms = (transforms_count == 0) ? nullptr : &drawables_data_[0].transforms[0];
+        size_t transforms_count = drawables_data_[index].transforms.size();
+        const auto *transforms = (transforms_count == 0) ? nullptr : &drawables_data_[index].transforms[0];
 
-        size_t drawables_count = drawables_data_[0].draw_list.size();
-        const auto *drawables = (drawables_count == 0) ? nullptr : &drawables_data_[0].draw_list[0];
+        size_t drawables_count = drawables_data_[index].draw_list.size();
+        const auto *drawables = (drawables_count == 0) ? nullptr : &drawables_data_[index].draw_list[0];
 
-        size_t lights_count = drawables_data_[0].light_sources.size();
-        const auto *lights = (lights_count == 0) ? nullptr : &drawables_data_[0].light_sources[0];
+        size_t lights_count = drawables_data_[index].light_sources.size();
+        const auto *lights = (lights_count == 0) ? nullptr : &drawables_data_[index].light_sources[0];
 
-        size_t decals_count = drawables_data_[0].decals.size();
-        const auto *decals = (decals_count == 0) ? nullptr : &drawables_data_[0].decals[0];
+        size_t decals_count = drawables_data_[index].decals.size();
+        const auto *decals = (decals_count == 0) ? nullptr : &drawables_data_[index].decals[0];
 
-        const auto *cells = drawables_data_[0].cells.empty() ? nullptr : &drawables_data_[0].cells[0];
+        const auto *cells = drawables_data_[index].cells.empty() ? nullptr : &drawables_data_[index].cells[0];
 
-        size_t items_count = drawables_data_[0].items_count;
-        const auto *items = (items_count == 0) ? nullptr : &drawables_data_[0].items[0];
+        size_t items_count = drawables_data_[index].items_count;
+        const auto *items = (items_count == 0) ? nullptr : &drawables_data_[index].items[0];
 
-        const auto *p_decals_atlas = drawables_data_[0].decals_atlas;
+        const auto *p_decals_atlas = drawables_data_[index].decals_atlas;
 
         Ren::Mat4f shadow_transforms[4];
         size_t shadow_drawables_count[4];
         const DrawableItem *shadow_drawables[4];
 
         for (int i = 0; i < 4; i++) {
-            Ren::Mat4f view_from_world = drawables_data_[0].shadow_cams[i].view_matrix(),
-                       clip_from_view = drawables_data_[0].shadow_cams[i].proj_matrix();
+            Ren::Mat4f view_from_world = drawables_data_[index].shadow_cams[i].view_matrix(),
+                       clip_from_view = drawables_data_[index].shadow_cams[i].proj_matrix();
             shadow_transforms[i] = clip_from_view * view_from_world;
-            shadow_drawables_count[i] = drawables_data_[0].shadow_list[i].size();
-            shadow_drawables[i] = (shadow_drawables_count[i] == 0) ? nullptr : &drawables_data_[0].shadow_list[i][0];
+            shadow_drawables_count[i] = drawables_data_[index].shadow_list[i].size();
+            shadow_drawables[i] = (shadow_drawables_count[i] == 0) ? nullptr : &drawables_data_[index].shadow_list[i][0];
         }
 
         if (ctx_.w() != w_ || ctx_.h() != h_) {
@@ -191,14 +191,14 @@ void Renderer::DrawObjects() {
             LOGI("CleanBuf resized to %ix%i", w_, h_);
         }
 
-        drawables_data_[0].render_info.lights_count = (uint32_t)lights_count;
-        drawables_data_[0].render_info.lights_data_size = (uint32_t)lights_count * sizeof(LightSourceItem);
-        drawables_data_[0].render_info.decals_count = (uint32_t)decals_count;
-        drawables_data_[0].render_info.decals_data_size = (uint32_t)decals_count * sizeof(DecalItem);
-        drawables_data_[0].render_info.cells_data_size = (uint32_t)CELLS_COUNT * sizeof(CellData);
-        drawables_data_[0].render_info.items_data_size = (uint32_t)drawables_data_[0].items.size() * sizeof(ItemData);
+        drawables_data_[index].render_info.lights_count = (uint32_t)lights_count;
+        drawables_data_[index].render_info.lights_data_size = (uint32_t)lights_count * sizeof(LightSourceItem);
+        drawables_data_[index].render_info.decals_count = (uint32_t)decals_count;
+        drawables_data_[index].render_info.decals_data_size = (uint32_t)decals_count * sizeof(DecalItem);
+        drawables_data_[index].render_info.cells_data_size = (uint32_t)CELLS_COUNT * sizeof(CellData);
+        drawables_data_[index].render_info.items_data_size = (uint32_t)drawables_data_[0].items.size() * sizeof(ItemData);
 
-        DrawObjectsInternal(drawables_data_[0]);
+        DrawObjectsInternal(drawables_data_[index]);
     }
     
     auto cpu_draw_end = std::chrono::high_resolution_clock::now();
@@ -210,29 +210,10 @@ void Renderer::DrawObjects() {
     frame_counter_++;
 }
 
-void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_node, uint32_t nodes_count,
-                             const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
-                             const TextureAtlas *decals_atlas) {
-    using namespace RendererInternal;
-
+void Renderer::SwapDrawLists() {
     std::swap(drawables_data_[0], drawables_data_[1]);
-    drawables_data_[1].render_flags = render_flags_;
-    drawables_data_[1].decals_atlas = decals_atlas;
-    nodes_ = nodes;
-    root_node_ = root_node;
-    nodes_count_ = nodes_count;
-    objects_ = objects;
-    obj_indices_ = obj_indices;
-    object_count_ = object_count;
-    drawables_data_[1].draw_cam = cam;
-    drawables_data_[1].env = env;
     std::swap(depth_pixels_[0], depth_pixels_[1]);
     std::swap(depth_tiles_[0], depth_tiles_[1]);
-    if (nodes != nullptr) {
-        //should_notify = true;
-    } else {
-        drawables_data_[1].draw_list.clear();
-    }
 }
 
 #undef BBOX_POINTS
