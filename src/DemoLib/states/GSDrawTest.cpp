@@ -30,9 +30,13 @@ const char SCENE_NAME[] = "assets/scenes/"
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
     "jap_house.json";
+
+const bool USE_TWO_THREADS = true;
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
+    using namespace GSDrawTestInternal;
+
     state_manager_  = game->GetComponent<GameStateManager>(STATE_MANAGER_KEY);
     ctx_            = game->GetComponent<Ren::Context>(REN_CONTEXT_KEY);
 
@@ -54,6 +58,10 @@ GSDrawTest::~GSDrawTest() {
 
 void GSDrawTest::Enter() {
     using namespace GSDrawTestInternal;
+
+    if (USE_TWO_THREADS) {
+        background_thread_ = std::thread(std::bind(&GSDrawTest::BackgroundProc, this));
+    }
 
     LOGI("GSDrawTest: Loading scene!");
     LoadScene(SCENE_NAME);
@@ -260,7 +268,15 @@ void GSDrawTest::LoadScene(const char *name) {
 }
 
 void GSDrawTest::Exit() {
+    using namespace GSDrawTestInternal;
 
+    if (USE_TWO_THREADS) {
+        if (background_thread_.joinable()) {
+            shutdown_ = notified_ = true;
+            thr_notify_.notify_all();
+            background_thread_.join();
+        }
+    }
 }
 
 void GSDrawTest::Draw(float dt_s) {
@@ -283,8 +299,27 @@ void GSDrawTest::Draw(float dt_s) {
         }
         scene_manager_->Draw_PT();
     } else {
-        scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-        scene_manager_->Draw();
+        if (USE_TWO_THREADS) {
+            std::unique_lock<std::mutex> lock(mtx_);
+            while (notified_) {
+                thr_done_.wait(lock);
+            }
+
+            bool should_notify = true;
+
+            scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+            scene_manager_->PrepareNextFrame();
+
+            if (should_notify) {
+                notified_ = true;
+                thr_notify_.notify_one();
+            }
+        } else {
+            // TODO!!!
+        }
+
+        // Render current frame
+        scene_manager_->Frame();
     }
 
     //LOGI("(%f %f %f) (%f %f %f)", view_origin_[0], view_origin_[1], view_origin_[2],
@@ -747,5 +782,19 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
         break;
     default:
         break;
+    }
+}
+
+void GSDrawTest::BackgroundProc() {
+    std::unique_lock<std::mutex> lock(mtx_);
+    while (!shutdown_) {
+        while (!notified_) {
+            thr_notify_.wait(lock);
+        }
+
+        scene_manager_->PrepareFrame();
+
+        notified_ = false;
+        thr_done_.notify_one();
     }
 }

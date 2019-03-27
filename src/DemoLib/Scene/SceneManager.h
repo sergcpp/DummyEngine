@@ -30,7 +30,9 @@ public:
     void ClearScene();
 
     void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up);
-    void Draw();
+    void PrepareNextFrame();
+    void PrepareFrame();
+    void Frame();
 
     void InitScene_PT(bool _override = false);
     void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up);

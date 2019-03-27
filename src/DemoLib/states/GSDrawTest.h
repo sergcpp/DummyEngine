@@ -1,5 +1,8 @@
 #pragma once
 
+#include <mutex>
+#include <thread>
+
 #include <Eng/GameBase.h>
 #include <Eng/GameState.h>
 #include <Ren/Camera.h>
@@ -34,6 +37,11 @@ class GSDrawTest : public GameState {
     std::shared_ptr<Gui::BaseElement> ui_root_;
     std::shared_ptr<Gui::BitmapFont> font_;
 
+    std::mutex mtx_;
+    std::thread background_thread_;
+    std::condition_variable thr_notify_, thr_done_;
+    bool shutdown_ = false, notified_ = false;
+
     int view_pointer_ = 0, move_pointer_ = 0;
     Ren::Vec3f view_origin_ = { 0, 1, 0 },
                view_dir_ = { 0, 0, -1 };
@@ -58,6 +66,8 @@ class GSDrawTest : public GameState {
     bool shift_down_ = false;
 
     void LoadScene(const char *name);
+
+    void BackgroundProc();
 public:
     explicit GSDrawTest(GameBase *game);
     ~GSDrawTest();

@@ -70,7 +70,7 @@ SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererB
 }
 
 SceneManager::~SceneManager() {
-    renderer_.WaitForBackgroundThreadIteration();
+    
 }
 
 uint32_t SceneManager::render_flags() const {
@@ -660,9 +660,6 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 }
 
 void SceneManager::ClearScene() {
-    renderer_.WaitForBackgroundThreadIteration();
-    renderer_.WaitForBackgroundThreadIteration();
-
     scene_name_.clear();
     objects_.clear();
 
@@ -673,13 +670,21 @@ void SceneManager::ClearScene() {
     assert(decals_.Size() == 0);
 }
 
-void SceneManager::Draw() {
+void SceneManager::PrepareNextFrame() {
     using namespace SceneManagerConstants;
 
     cam_.Perspective(60.0f, float(ctx_.w()) / ctx_.h(), NEAR_CLIP, FAR_CLIP);
     cam_.UpdatePlanes();
 
-    renderer_.GatherObjects(cam_, &nodes_[0], 0, (uint32_t)nodes_.size(), &objects_[0], &obj_indices_[0], (uint32_t)objects_.size(), env_, decals_atlas_);
+    renderer_.SwapDrawLists(cam_, &nodes_[0], 0, (uint32_t)nodes_.size(), &objects_[0], &obj_indices_[0], (uint32_t)objects_.size(),
+                            env_, &decals_atlas_);
+}
+
+void SceneManager::PrepareFrame() {
+    renderer_.PrepareFrame();
+}
+
+void SceneManager::Frame() {
     renderer_.DrawObjects();
 }
 

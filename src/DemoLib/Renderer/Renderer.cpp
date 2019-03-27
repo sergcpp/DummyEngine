@@ -11,7 +11,6 @@ bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3
 
 extern const uint8_t bbox_indices[];
 
-const bool USE_TWO_THREADS = true;
 const int SHADOWMAP_WIDTH = 2048,
           SHADOWMAP_HEIGHT = 1024;
 
@@ -82,10 +81,6 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
         shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::RawRGB888, Ren::NoFilter, Ren::ClampToEdge, true);
     }*/
 
-    if (USE_TWO_THREADS) {
-        background_thread_ = std::thread(std::bind(&Renderer::BackgroundProc, this));
-    }
-
     for (int i = 0; i < 2; i++) {
         drawables_data_[i].cells.resize(CELLS_COUNT);
         drawables_data_[i].items.resize(MAX_ITEMS_TOTAL);
@@ -93,31 +88,12 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
 }
 
 Renderer::~Renderer() {
-    if (background_thread_.joinable()) {
-        shutdown_ = notified_ = true;
-        thr_notify_.notify_all();
-        background_thread_.join();
-    }
     DestroyRendererInternal();
     swCullCtxDestroy(&cull_ctx_);
 }
 
-void Renderer::GatherObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_index, uint32_t nodes_count,
-                             const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
-                             const TextureAtlas &decals_atlas) {
-    using namespace RendererInternal;
-
-    if (USE_TWO_THREADS) {
-        // Delegate gathering to background thread
-        SwapDrawLists(cam, nodes, root_index, nodes_count, objects, obj_indices, object_count, env, &decals_atlas);
-    } else {
-        // Gather objects in main thread
-
-        drawables_data_[0].draw_cam = cam;
-        drawables_data_[0].env = env;
-
-        GatherDrawables(nodes, root_index, objects, obj_indices, object_count, drawables_data_[0]);
-    }
+void Renderer::PrepareFrame() {
+    GatherDrawables(drawables_data_[1]);
 }
 
 void Renderer::DrawObjects() {
@@ -234,66 +210,28 @@ void Renderer::DrawObjects() {
     frame_counter_++;
 }
 
-void Renderer::WaitForBackgroundThreadIteration() {
-    SwapDrawLists(drawables_data_[0].draw_cam, nullptr, 0, 0, nullptr, nullptr, 0, drawables_data_[0].env, nullptr);
-}
-
-void Renderer::BackgroundProc() {
-    using namespace RendererInternal;
-
-    std::unique_lock<std::mutex> lock(mtx_);
-    while (!shutdown_) {
-        while (!notified_) {
-            thr_notify_.wait(lock);
-        }
-
-        if (nodes_ && objects_) {
-            GatherDrawables(nodes_, root_node_, objects_, obj_indices_, object_count_, drawables_data_[1]);
-        }
-
-        notified_ = false;
-        thr_done_.notify_one();
-    }
-}
-
 void Renderer::SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_node, uint32_t nodes_count,
                              const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
                              const TextureAtlas *decals_atlas) {
     using namespace RendererInternal;
 
-    bool should_notify = false;
-
-    if (USE_TWO_THREADS) {
-        std::unique_lock<std::mutex> lock(mtx_);
-        while (notified_) {
-            thr_done_.wait(lock);
-        }
-    }
-
-    {
-        std::swap(drawables_data_[0], drawables_data_[1]);
-        drawables_data_[1].render_flags = render_flags_;
-        drawables_data_[1].decals_atlas = decals_atlas;
-        nodes_ = nodes;
-        root_node_ = root_node;
-        nodes_count_ = nodes_count;
-        objects_ = objects;
-        obj_indices_ = obj_indices;
-        object_count_ = object_count;
-        drawables_data_[1].draw_cam = cam;
-        drawables_data_[1].env = env;
-        std::swap(depth_pixels_[0], depth_pixels_[1]);
-        std::swap(depth_tiles_[0], depth_tiles_[1]);
-        if (nodes != nullptr) {
-            should_notify = true;
-        } else {
-            drawables_data_[1].draw_list.clear();
-        }
-    }
-
-    if (USE_TWO_THREADS && should_notify) {
-        notified_ = true;
-        thr_notify_.notify_one();
+    std::swap(drawables_data_[0], drawables_data_[1]);
+    drawables_data_[1].render_flags = render_flags_;
+    drawables_data_[1].decals_atlas = decals_atlas;
+    nodes_ = nodes;
+    root_node_ = root_node;
+    nodes_count_ = nodes_count;
+    objects_ = objects;
+    obj_indices_ = obj_indices;
+    object_count_ = object_count;
+    drawables_data_[1].draw_cam = cam;
+    drawables_data_[1].env = env;
+    std::swap(depth_pixels_[0], depth_pixels_[1]);
+    std::swap(depth_tiles_[0], depth_tiles_[1]);
+    if (nodes != nullptr) {
+        //should_notify = true;
+    } else {
+        drawables_data_[1].draw_list.clear();
     }
 }
 

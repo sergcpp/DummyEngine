@@ -1,9 +1,5 @@
 #pragma once
 
-#include <condition_variable>
-#include <mutex>
-#include <thread>
-
 #include <Ren/Camera.h>
 #include <Ren/RingBuffer.h>
 #include <Ren/TextureSplitter.h>
@@ -131,12 +127,11 @@ public:
         return backend_info_;
     }
 
-    void GatherObjects(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_index, uint32_t nodes_count,
+    void SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_node, uint32_t nodes_count,
                        const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
-                       const TextureAtlas &decals_atlas);
+                       const TextureAtlas *decals_atlas);
+    void PrepareFrame();
     void DrawObjects();
-
-    void WaitForBackgroundThreadIteration();
 
     void BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format);
     void BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTexColorFormat format);
@@ -217,24 +212,12 @@ private:
     //temp
     std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];
 
-    void SwapDrawLists(const Ren::Camera &cam, const bvh_node_t *nodes, uint32_t root_node, uint32_t nodes_count,
-                       const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count, const Environment &env,
-                       const TextureAtlas *decals_atlas);
-
-    void GatherDrawables(const bvh_node_t *nodes, uint32_t root_node, const SceneObject *objects, const uint32_t *obj_indices, uint32_t object_count,
-                         DrawablesData &data);
+    void GatherDrawables(DrawablesData &data);
 
     void InitRendererInternal();
     void DestroyRendererInternal();
     void DrawObjectsInternal(const DrawablesData &data);
     uint64_t GetGpuTimeBlockingUs();
-
-    std::thread background_thread_;
-    std::mutex mtx_;
-    std::condition_variable thr_notify_, thr_done_;
-    bool shutdown_ = false, notified_ = false;
-
-    void BackgroundProc();
 
     // Parallel Jobs
     static void GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,
