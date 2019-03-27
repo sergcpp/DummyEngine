@@ -1,1 +1,5 @@
+src/libs/astc/* linguist-vendored
+src/libs/dirent/* linguist-vendored
+src/libs/SDL2/* linguist-vendored
 src/libs/SDL2/** linguist-vendored
+src/libs/SDL2/*** linguist-vendored
