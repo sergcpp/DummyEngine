@@ -17,7 +17,8 @@
         "rails" : "rails.mesh",
         "sidewalk" : "sidewalk.mesh",
         "main_house" : "main_house.mesh",
-        "house_04" : "house_04.mesh"
+        "house_04" : "house_04.mesh",
+        "monk" : "monk.mesh"
     },
     "lights" : {
         "l0" : {
@@ -182,6 +183,10 @@
         {
             "pos" : [ 13.2315, -8.0, 22.0001 ],
             "lights" : [ "l3", "l4", "l5", "l6", "l7", "l8", "l9", "l10", "l11", "l12", "l13", "l14" ],
+        },
+        {
+            "pos" : [ 0.0, 0.0, 8.0 ],
+            "mesh" : "monk"
         }
     ]
 }

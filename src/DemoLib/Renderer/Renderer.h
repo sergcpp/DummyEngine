@@ -86,10 +86,11 @@ namespace RendererInternal {
 }
 
 enum eRenderFlags {
+    EnableZFill     = (1 << 0),
     EnableCulling   = (1 << 1),
     EnableSSR       = (1 << 2),
     EnableSSAO      = (1 << 3),
-    EnableWireframe = (1 << 4),
+    DebugWireframe  = (1 << 4),
     DebugCulling    = (1 << 5),
     DebugShadow     = (1 << 6),
     DebugReduce     = (1 << 7),
@@ -149,7 +150,12 @@ private:
 
     Ren::TextureSplitter shadow_splitter_;
 
-    static const uint32_t default_flags = (EnableCulling | EnableSSR | EnableSSAO /*| DebugBVH*/);
+    static const uint32_t default_flags =
+#if !defined(__ANDROID__)
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO);
+#else
+        (EnableZFill | EnableCulling);
+#endif
     uint32_t render_flags_ = default_flags;
 
     int frame_counter_ = 0;

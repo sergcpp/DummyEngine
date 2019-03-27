@@ -112,21 +112,6 @@ namespace RendererInternal {
     }
 
     const int TEMP_BUF_SIZE = 256;
-
-    const bool DEPTH_PREPASS = true;
-    const bool ENABLE_SSR =
-#if !defined(__ANDROID__)
-        true;
-#else
-        false;
-#endif
-
-    const bool ENABLE_SSAO =
-#if !defined(__ANDROID__)
-        true;
-#else
-        false;
-#endif
 }
 
 void Renderer::InitRendererInternal() {
@@ -680,7 +665,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
     glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
     glViewport(0, 0, clean_buf_.w, clean_buf_.h);
 
-    if ((data.render_flags & EnableWireframe) == 0) {   // Draw skydome (and clear depth with it)
+    if ((data.render_flags & DebugWireframe) == 0) {   // Draw skydome (and clear depth with it)
         glDepthFunc(GL_ALWAYS);
 
         // Write to color and specular
@@ -730,7 +715,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
     glQueryCounter(queries_[1][TimeDepthPassStart], GL_TIMESTAMP);
 
-    if (DEPTH_PREPASS && ((data.render_flags & EnableWireframe) == 0)) {
+    if ((data.render_flags & EnableZFill) && ((data.render_flags & DebugWireframe) == 0)) {
         glDepthFunc(GL_LESS);
 
         cur_program = fill_depth_prog_.get();
@@ -763,7 +748,8 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
     glBindVertexArray((GLuint)temp_vao_);
 
-    if (ENABLE_SSAO) {   // prepare ao buffer
+    if (data.render_flags & EnableSSAO) {
+        // prepare ao buffer
         glBindFramebuffer(GL_FRAMEBUFFER, ssao_buf_.fb);
         glViewport(0, 0, ssao_buf_.w, ssao_buf_.h);
 
@@ -812,7 +798,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
     glBindVertexArray(0);
 
 #if !defined(__ANDROID__)
-    if (data.render_flags & EnableWireframe) {
+    if (data.render_flags & DebugWireframe) {
         glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_FALSE);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -894,7 +880,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
                 BindTexture(DECALSMAP_SLOT, data.decals_atlas->tex_id(0));
             }
 
-            if (ENABLE_SSAO) {
+            if (data.render_flags & EnableSSAO) {
                 BindTexture(AOMAP_SLOT, ssao_buf_.attachments[0].tex);
             } else {
                 BindTexture(AOMAP_SLOT, default_ao_->tex_id());
@@ -970,7 +956,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
     glQueryCounter(queries_[1][TimeReflStart], GL_TIMESTAMP);
 
-    if (ENABLE_SSR) {
+    if (data.render_flags & EnableSSR) {
         glBindFramebuffer(GL_FRAMEBUFFER, refl_buf_.fb);
         glViewport(0, 0, refl_buf_.w, refl_buf_.h);
 
@@ -1294,7 +1280,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
     }
     
     {   
-        if (ENABLE_SSR) {
+        if (data.render_flags & EnableSSR) {
             BindTexture(DIFFUSEMAP_SLOT, down_buf_.attachments[0].tex);
             glGenerateMipmap(GL_TEXTURE_2D);
         }

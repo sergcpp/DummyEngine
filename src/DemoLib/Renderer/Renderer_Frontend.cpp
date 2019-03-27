@@ -39,6 +39,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     data.draw_cam = cam;
     data.env = scene.env;
+    data.decals_atlas = &scene.decals_atlas;
     data.render_flags = render_flags_;
 
     if (data.render_flags & DebugBVH) {
