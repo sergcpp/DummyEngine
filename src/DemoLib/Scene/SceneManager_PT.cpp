@@ -30,8 +30,8 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
 std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &tex_ref);
 }
 
-void SceneManager::Draw_PT() {
-    if (!ray_scene_) return;
+const float *SceneManager::Draw_PT(int *w, int *h) {
+    if (!ray_scene_) return nullptr;
 
     if (ray_reg_ctx_.empty()) {
         if (ray_renderer_.type() == Ray::RendererOCL) {
@@ -75,7 +75,9 @@ void SceneManager::Draw_PT() {
     }
 
     const auto *pixels = ray_renderer_.get_pixels_ref();
-    renderer_.BlitPixelsTonemap(pixels, ray_renderer_.size().first, ray_renderer_.size().second, Ren::RawRGBA32F);
+    *w = ray_renderer_.size().first;
+    *h = ray_renderer_.size().second;
+    return &pixels[0].r;
 }
 
 void SceneManager::ResetLightmaps_PT() {
@@ -100,7 +102,7 @@ void SceneManager::ResetLightmaps_PT() {
     cur_lm_indir_ = false;
 }
 
-bool SceneManager::PrepareLightmaps_PT() {
+bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int *h) {
     using namespace SceneManagerConstants;
 
     if (!ray_scene_) return false;
@@ -364,7 +366,9 @@ bool SceneManager::PrepareLightmaps_PT() {
     LOGI("Lightmap: %i %i/%i", int(cur_lm_obj_), ray_reg_ctx_[0].iteration, LM_SAMPLES_TOTAL);
 
     const auto *pixels = ray_renderer_.get_pixels_ref();
-    renderer_.BlitPixels(pixels, res, res, Ren::RawRGBA32F);
+    *preview_pixels = &pixels[0].r;
+    *w = res;
+    *h = res;
 
     return true;
 }

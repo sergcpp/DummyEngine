@@ -283,7 +283,13 @@ void GSDrawTest::Draw(float dt_s) {
     using namespace GSDrawTestInternal;
 
     if (use_lm_) {
-        if (!scene_manager_->PrepareLightmaps_PT()) {
+        int w, h;
+        const float *preview_pixels = nullptr;
+        if (scene_manager_->PrepareLightmaps_PT(&preview_pixels, &w, &h)) {
+            if (preview_pixels) {
+                renderer_->BlitPixels(preview_pixels, w, h, Ren::RawRGBA32F);
+            }
+        } else {
             // Lightmap creation finished, convert textures
             Viewer::PrepareAssets("pc");
             // Reload scene
@@ -297,7 +303,11 @@ void GSDrawTest::Draw(float dt_s) {
             scene_manager_->Clear_PT();
             invalidate_view_ = false;
         }
-        scene_manager_->Draw_PT();
+        int w, h;
+        const float *preview_pixels = scene_manager_->Draw_PT(&w, &h);
+        if (preview_pixels) {
+            renderer_->BlitPixelsTonemap(preview_pixels, w, h, Ren::RawRGBA32F);
+        }
     } else {
         if (USE_TWO_THREADS) {
             std::unique_lock<std::mutex> lock(mtx_);
@@ -346,10 +356,10 @@ void GSDrawTest::Draw(float dt_s) {
         }
 
         if (!use_pt_ && !use_lm_) {
-            auto render_flags = scene_manager_->render_flags();
-            auto render_info = scene_manager_->render_info();
-            auto front_info = scene_manager_->frontend_info();
-            auto back_info = scene_manager_->backend_info();
+            auto render_flags = renderer_->render_flags();
+            auto render_info = renderer_->render_info();
+            auto front_info = renderer_->frontend_info();
+            auto back_info = renderer_->backend_info();
 
             uint64_t front_dur = front_info.end_timepoint_us - front_info.start_timepoint_us,
                      back_dur = back_info.cpu_end_timepoint_us - back_info.cpu_start_timepoint_us;

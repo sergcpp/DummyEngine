@@ -56,8 +56,6 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         }
     }
 
-    
-
     {
         auto threads = GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
         auto renderer = std::make_shared<Renderer>(*ctx, threads);
@@ -69,7 +67,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         auto ray_renderer = Ray::CreateRenderer(s, Ray::RendererRef);
         AddComponent(RAY_RENDERER_KEY, ray_renderer);
 
-        auto scene_manager = std::make_shared<SceneManager>(*ctx, *renderer, *ray_renderer, *threads);
+        auto scene_manager = std::make_shared<SceneManager>(*ctx, *ray_renderer, *threads);
         AddComponent(SCENE_MANAGER_KEY, scene_manager);
     }
 

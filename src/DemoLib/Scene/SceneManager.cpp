@@ -10,6 +10,7 @@
 #include <Ren/SOIL2/SOIL2.h>
 #include <Sys/AssetFile.h>
 #include <Sys/AssetFileIO.h>
+#include <Sys/Json.h>
 #include <Sys/Log.h>
 #include <Sys/MemBuf.h>
 
@@ -18,7 +19,6 @@ extern "C" {
 #include <Ren/SOIL2/stb_image.h>
 }
 
-#include "../Renderer/Renderer.h"
 #include "../Utils/Load.h"
 
 namespace SceneManagerConstants {
@@ -50,10 +50,8 @@ namespace SceneManagerInternal {
     std::unique_ptr<uint8_t[]> Decode_KTX_ASTC(const uint8_t *image_data, int data_size, int &width, int &height);
 }
 
-SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererBase &ray_renderer,
-                           Sys::ThreadPool &threads)
+SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads)
     : ctx_(ctx),
-      renderer_(renderer),
       ray_renderer_(ray_renderer),
       threads_(threads),
       cam_(Ren::Vec3f{ 0.0f, 0.0f, 1.0f },
@@ -73,23 +71,6 @@ SceneManager::SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererB
 }
 
 SceneManager::~SceneManager() {
-    
-}
-
-uint32_t SceneManager::render_flags() const {
-    return renderer_.render_flags();
-}
-
-RenderInfo SceneManager::render_info() const {
-    return renderer_.render_info();
-}
-
-FrontendInfo SceneManager::frontend_info() const {
-    return renderer_.frontend_info();
-}
-
-BackendInfo SceneManager::backend_info() const {
-    return renderer_.backend_info();
 }
 
 void SceneManager::LoadScene(const JsObject &js_scene) {
@@ -674,10 +655,6 @@ void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target,
     cam_.SetupView(origin, target, up);
     cam_.Perspective(60.0f, float(ctx_.w()) / ctx_.h(), NEAR_CLIP, FAR_CLIP);
     cam_.UpdatePlanes();
-}
-
-void SceneManager::Frame() {
-    renderer_.ExecuteDrawList(0);
 }
 
 Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {

@@ -4,11 +4,10 @@
 
 #include <Ray/RendererBase.h>
 #include <Ren/Camera.h>
-#include <Sys/Json.h>
 
 #include "SceneData.h"
 
-class Renderer;
+struct JsObject;
 
 namespace Sys {
     class ThreadPool;
@@ -16,14 +15,8 @@ namespace Sys {
 
 class SceneManager : public std::enable_shared_from_this<SceneManager> {
 public:
-    SceneManager(Ren::Context &ctx, Renderer &renderer, Ray::RendererBase &ray_renderer,
-                 Sys::ThreadPool &threads);
+    SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads);
     ~SceneManager();
-
-    uint32_t render_flags() const;
-    RenderInfo render_info() const;
-    FrontendInfo frontend_info() const;
-    BackendInfo backend_info() const;
 
     const Ren::Camera &main_cam() const { return cam_; }
     const SceneData &scene_data() const { return scene_data_; }
@@ -32,15 +25,14 @@ public:
     void ClearScene();
 
     void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up);
-    void Frame();
 
     void InitScene_PT(bool _override = false);
     void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up);
-    void Draw_PT();
+    const float *Draw_PT(int *w, int *h);
     void Clear_PT();
 
     void ResetLightmaps_PT();
-    bool PrepareLightmaps_PT();
+    bool PrepareLightmaps_PT(const float **preview_pixels, int *w, int *h);
 
     static bool PrepareAssets(const char *in_folder, const char *out_folder, const char *platform, Sys::ThreadPool *p_threads);
 private:
@@ -53,7 +45,6 @@ private:
     std::string scene_name_;
 
     Ren::Context &ctx_;
-    Renderer &renderer_;
     Ray::RendererBase &ray_renderer_;
     Sys::ThreadPool &threads_;
     std::vector<Ray::RegionContext> ray_reg_ctx_;
