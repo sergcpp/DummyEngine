@@ -24,7 +24,7 @@
     },
 	"ui_settings" : {
 		"fonts" : {
-			"main_font" : "assets/fonts/Lucida Console.bff"
+			"main_font" : "fonts/Lucida Console.bff"
 		}
 	}
 }

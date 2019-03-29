@@ -50,9 +50,16 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         const JsObject &fonts = ui_settings.at("fonts");
         for (auto &el : fonts.elements) {
             const std::string &name = el.first;
-            const JsString &file_name = el.second;
+            
 
-            font_storage->LoadFont(name, file_name.val, ctx.get());
+#if defined(__ANDROID__)
+            std::string file_name = std::string("assets/");
+#else
+            std::string file_name = std::string("assets_pc/");
+#endif
+            file_name += ((const JsString &)el.second).val;
+
+            font_storage->LoadFont(name, file_name, ctx.get());
         }
     }
 
