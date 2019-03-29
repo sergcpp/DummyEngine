@@ -80,7 +80,7 @@ float GetVisibility(in vec2 lm_uvs, inout vec3 additional_light) {
         vec2(0.75, -0.81)
     );
 
-    const highp float shadow_softness = 2.0 / 2048.0;
+    const highp float shadow_softness = 2.0 / $ShadRes.0;
     
     float visibility = 0.0;
     

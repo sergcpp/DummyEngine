@@ -638,6 +638,12 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     shader_constants.emplace("$OutSpecIndex",   AS_STR(REN_OUT_SPEC_INDEX));
 
     // Shadow properties
+    if (strcmp(platform, "pc") == 0) {
+        shader_constants.emplace("$ShadRes",    AS_STR(REN_SHAD_RES_PC));
+    } else if (strcmp(platform, "android") == 0) {
+        shader_constants.emplace("$ShadRes",    AS_STR(REN_SHAD_RES_ANDROID));
+    }
+
     shader_constants.emplace("$ShadCasc0Dist",  AS_STR(REN_SHAD_CASCADE0_DIST));
     shader_constants.emplace("$ShadCasc0Samp",  AS_STR(REN_SHAD_CASCADE0_SAMPLES));
     shader_constants.emplace("$ShadCasc1Dist",  AS_STR(REN_SHAD_CASCADE1_DIST));

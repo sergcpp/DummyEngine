@@ -11,8 +11,12 @@ bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3
 
 extern const uint8_t bbox_indices[];
 
-const int SHADOWMAP_WIDTH = 2048,
-          SHADOWMAP_HEIGHT = 1024;
+#if defined(__ANDROID__)
+const int SHADOWMAP_WIDTH = REN_SHAD_RES_ANDROID;
+#else
+const int SHADOWMAP_WIDTH = REN_SHAD_RES_PC;
+#endif
+const int SHADOWMAP_HEIGHT = SHADOWMAP_WIDTH / 2;
 
 // Sun shadow occupies half of atlas
 const int SUN_SHADOW_RES = SHADOWMAP_WIDTH / 2;
@@ -40,7 +44,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     }
 
     {   // Create shadow map buffer
-        shadow_buf_ = FrameBuf(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, nullptr, 0, true, Ren::BilinearNoMipmap);
+        shadow_buf_ = FrameBuf(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, nullptr, 0, true, Ren::NoFilter);
 
         // Reserve space for sun shadow
         const int sun_shadow_res[] = { SUN_SHADOW_RES, SUN_SHADOW_RES };
