@@ -9,11 +9,11 @@ UNIFORM_BLOCKS
     MatricesBlock : 0
 */
 
-layout(location = 0) in vec3 aVertexPosition;
-layout(location = 1) in vec3 aVertexNormal;
-layout(location = 2) in vec3 aVertexTangent;
-layout(location = 3) in vec2 aVertexUVs1;
-layout(location = 4) in vec2 aVertexUVs2;
+layout(location = $VtxPosLoc) in vec3 aVertexPosition;
+layout(location = $VtxNorLoc) in vec3 aVertexNormal;
+layout(location = $VtxTanLoc) in vec3 aVertexTangent;
+layout(location = $VtxUV1Loc) in vec2 aVertexUVs1;
+layout(location = $VtxUV2Loc) in vec2 aVertexUVs2;
 
 layout (std140) uniform MatricesBlock {
     mat4 uMVPMatrix;

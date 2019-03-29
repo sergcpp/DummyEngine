@@ -6,6 +6,12 @@
 #define REN_GRID_RES_Y 8
 #define REN_GRID_RES_Z 24
 
+#define REN_VTX_POS_LOC 0
+#define REN_VTX_NOR_LOC 1
+#define REN_VTX_TAN_LOC 2
+#define REN_VTX_UV1_LOC 3
+#define REN_VTX_UV2_LOC 4
+
 #define REN_DIFF_TEX_SLOT 0
 #define REN_NORM_TEX_SLOT 1
 #define REN_SPEC_TEX_SLOT 2

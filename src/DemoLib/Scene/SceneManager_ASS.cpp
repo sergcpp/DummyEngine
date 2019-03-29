@@ -610,6 +610,13 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     shader_constants.emplace_back("$ItemGridResY",  AS_STR(REN_GRID_RES_Y));
     shader_constants.emplace_back("$ItemGridResZ",  AS_STR(REN_GRID_RES_Z));
 
+    // Vertex attributes
+    shader_constants.emplace_back("$VtxPosLoc",     AS_STR(REN_VTX_POS_LOC));
+    shader_constants.emplace_back("$VtxNorLoc",     AS_STR(REN_VTX_NOR_LOC));
+    shader_constants.emplace_back("$VtxTanLoc",     AS_STR(REN_VTX_TAN_LOC));
+    shader_constants.emplace_back("$VtxUV1Loc",     AS_STR(REN_VTX_UV1_LOC));
+    shader_constants.emplace_back("$VtxUV2Loc",     AS_STR(REN_VTX_UV2_LOC));
+
     // Texture slots
     shader_constants.emplace_back("$DiffTexSlot",   AS_STR(REN_DIFF_TEX_SLOT));
     shader_constants.emplace_back("$NormTexSlot",   AS_STR(REN_NORM_TEX_SLOT));
@@ -780,8 +787,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     handlers["bff"]     = { "bff",  h_copy };
     handlers["mesh"]    = { "mesh", h_copy };
     handlers["anim"]    = { "anim", h_copy };
-    handlers["vs"]      = { "vs",   h_preprocess_shader };
-    handlers["fs"]      = { "fs",   h_preprocess_shader };
+    handlers["vs.glsl"] = { "vs.glsl", h_preprocess_shader };
+    handlers["fs.glsl"] = { "fs.glsl", h_preprocess_shader };
 
     if (strcmp(platform, "pc") == 0) {
         handlers["json"]    = { "json", h_preprocess_scene };
@@ -800,7 +807,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     auto convert_file = [out_folder, &handlers](const char *in_file) {
         const char *base_path = strchr(in_file, '/');
         if (!base_path) return;
-        const char *ext = strrchr(in_file, '.');
+        const char *ext = strchr(in_file, '.');
         if (!ext) return;
 
         ext++;
