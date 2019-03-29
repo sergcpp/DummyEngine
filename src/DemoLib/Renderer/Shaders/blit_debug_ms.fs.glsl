@@ -33,7 +33,7 @@ void main() {
     depth = uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
     
     float k = log2(depth / uClipInfo[1]) / uClipInfo[3];
-    int slice = int(floor(k * 24.0));
+    int slice = int(floor(k * float(GRID_RES_Z)));
     
     int ix = int(gl_FragCoord.x);
     int iy = int(gl_FragCoord.y);

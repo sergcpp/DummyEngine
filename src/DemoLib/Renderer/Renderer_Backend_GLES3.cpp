@@ -69,10 +69,6 @@ namespace RendererInternal {
 
     const int LIGHTS_BUFFER_BINDING = 0;
 
-    const int CLEAN_BUF_OPAQUE_ATTACHMENT = 0;
-    const int CLEAN_BUF_NORMAL_ATTACHMENT = 1;
-    const int CLEAN_BUF_SPECULAR_ATTACHMENT = 2;
-
     inline void BindTexture(int slot, uint32_t tex) {
         glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
         glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
@@ -970,12 +966,12 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         if (true) {
             BindTextureMs(0, clean_buf_.depth_tex.GetValue());
-            BindTextureMs(1, clean_buf_.attachments[CLEAN_BUF_NORMAL_ATTACHMENT].tex);
-            BindTextureMs(2, clean_buf_.attachments[CLEAN_BUF_SPECULAR_ATTACHMENT].tex);
+            BindTextureMs(1, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            BindTextureMs(2, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         } else {
             BindTexture(0, clean_buf_.depth_tex.GetValue());
-            BindTexture(1, clean_buf_.attachments[CLEAN_BUF_NORMAL_ATTACHMENT].tex);
-            BindTexture(2, clean_buf_.attachments[CLEAN_BUF_SPECULAR_ATTACHMENT].tex);
+            BindTexture(1, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            BindTexture(2, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         }
 
         BindTexture(3, down_buf_.attachments[0].tex);
@@ -1005,9 +1001,9 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         BindTexture(0, refl_buf_.attachments[0].tex);
 
         if (true) {
-            BindTextureMs(1, clean_buf_.attachments[CLEAN_BUF_SPECULAR_ATTACHMENT].tex);
+            BindTextureMs(1, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         } else {
-            BindTexture(1, clean_buf_.attachments[CLEAN_BUF_SPECULAR_ATTACHMENT].tex);
+            BindTexture(1, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
@@ -1243,9 +1239,9 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glUniform1f(U_EXPOSURE, exposure);
 
         if (clean_buf_.msaa > 1) {
-            BindTextureMs(REN_DIFF_TEX_SLOT, clean_buf_.attachments[CLEAN_BUF_OPAQUE_ATTACHMENT].tex);
+            BindTextureMs(REN_DIFF_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
         } else {
-            BindTexture(REN_DIFF_TEX_SLOT, clean_buf_.attachments[CLEAN_BUF_OPAQUE_ATTACHMENT].tex);
+            BindTexture(REN_DIFF_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
         }
 
         BindTexture(REN_DIFF_TEX_SLOT + 1, blur_buf1_.attachments[0].tex);
