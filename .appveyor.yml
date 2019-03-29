@@ -1,0 +1,56 @@
+branches:
+    only:
+        - master
+
+image:
+    - Visual Studio 2017
+
+clone_folder: c:\projects\occdemo
+
+clone_script:
+    - git clone -q --recursive --branch=%APPVEYOR_REPO_BRANCH% https://github.com/%APPVEYOR_REPO_NAME%.git %APPVEYOR_BUILD_FOLDER%
+    - git checkout -qf %APPVEYOR_REPO_COMMIT%
+
+shallow_clone: true
+
+matrix:
+    fast_finish: true
+
+platform:
+    - x86
+
+configuration:
+    - Release
+    
+init:
+    - set arch=
+    - if "%PLATFORM%"=="x64" ( set arch= Win64)
+    - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2017" ( set generator="Visual Studio 15 2017%arch%" )
+    - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2015" ( set generator="Visual Studio 14 2015%arch%" )
+    - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2013" ( set generator="Visual Studio 12 2013%arch%" )
+
+before_build:
+    - mkdir build
+    - cd build
+    - cmake .. -G %generator% -DENABLE_OPENCL=OFF
+        
+build:
+    project: build\ALL_BUILD.vcxproj
+
+after_build:
+    - cd ..
+    - DemoApp --prepare_assets pc --norun
+    - 7z a demo_app_%APPVEYOR_BUILD_VERSION%.zip DemoApp.exe
+    - 7z a demo_app_%APPVEYOR_BUILD_VERSION%.zip assets_pc
+    
+test_script:
+    - build\src\Eng\tests\%CONFIGURATION%\test_Eng
+    - build\src\Ray\tests\%CONFIGURATION%\test_Ray
+#    - build\src\Ren\tests\%CONFIGURATION%\test_Ren
+    - build\src\Ren\SW\tests\%CONFIGURATION%\test_SW
+    - build\src\Sys\tests\%CONFIGURATION%\test_Sys
+#    - build\src\Gui\tests\%CONFIGURATION%\test_Gui
+    
+artifacts:
+  - path: demo_app_%APPVEYOR_BUILD_VERSION%.zip
+    name: DemoApp
