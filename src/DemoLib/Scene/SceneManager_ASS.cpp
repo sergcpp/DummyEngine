@@ -791,6 +791,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     };
 
     auto h_preprocess_shader = [&inline_constants](const char *in_file, const char *out_file) {
+        LOGI("[PrepareAssets] Prep %s", out_file);
+
         std::ifstream src_stream(in_file, std::ios::binary);
         std::ofstream dst_stream(out_file, std::ios::binary);
         std::string line;

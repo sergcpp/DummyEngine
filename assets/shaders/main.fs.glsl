@@ -57,7 +57,7 @@ vec3 RGBMDecode(vec4 rgbm) {
     return 6.0 * rgbm.rgb * rgbm.a;
 }
 
-float GetVisibility(in vec2 lm_uvs, inout vec3 additional_light) {
+float GetVisibility(float frag_depth, in vec2 lm_uvs, inout vec3 additional_light) {
     const vec2 poisson_disk[16] = vec2[16](
         vec2(-0.5, 0.0),
         vec2(0.0, 0.5),
@@ -84,7 +84,6 @@ float GetVisibility(in vec2 lm_uvs, inout vec3 additional_light) {
     
     float visibility = 0.0;
     
-    float frag_depth = gl_FragCoord.z / gl_FragCoord.w;
     if (frag_depth < $ShadCasc0Dist) {
         const float weight = 1.0 / $ShadCasc0Samp.0;
         for (int i = 0; i < $ShadCasc0Samp; i++) {
@@ -245,7 +244,7 @@ void main(void) {
     float lambert = max(dot(normal, sun_dir), 0.0);
     float visibility = 0.0;
     if (lambert > 0.00001) {
-        visibility = GetVisibility(lm_uvs, additional_light);
+        visibility = GetVisibility(depth, lm_uvs, additional_light);
     }
     
     vec3 indirect_col = RGBMDecode(texture(lm_indirect_texture, lm_uvs));
