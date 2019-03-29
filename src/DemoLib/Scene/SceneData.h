@@ -7,9 +7,14 @@
 #include <Ren/Storage.h>
 #include <Ren/TextureAtlas.h>
 
+struct JsObject;
+
 struct Transform : public Ren::RefCounter {
     Ren::Mat4f mat;
     Ren::Vec3f bbox_min_ws, bbox_max_ws;
+
+    void Read(const JsObject &js_in);
+    void Write(JsObject &js_out);
 
     void UpdateBBox(const Ren::Vec3f &bbox_min, const Ren::Vec3f &bbox_max) {
         bbox_min_ws = bbox_max_ws = Ren::Vec3f(mat[3]);
@@ -41,11 +46,17 @@ struct LightSource : public Ren::RefCounter {
     float influence;
 
     Ren::Vec3f bbox_min, bbox_max;
+
+    void Read(const JsObject &js_in);
+    void Write(JsObject &js_out);
 };
 
 struct Decal : public Ren::RefCounter {
     Ren::Mat4f view, proj;
     Ren::Vec4f diff, norm, spec;
+
+    void Read(const JsObject &js_in);
+    void Write(JsObject &js_out);
 };
 
 struct LightmapRegion : public Ren::RefCounter {
@@ -64,6 +75,8 @@ enum eObjectFlags {
 
 const int LIGHTS_PER_OBJECT = 16;
 const int DECALS_PER_OBJECT = 16;
+
+const float LIGHT_ATTEN_CUTOFF = 0.001f;
 
 struct SceneObject {
     uint32_t flags;

@@ -37,8 +37,6 @@ const char *MATERIALS_PATH = "./assets_pc/materials/";
 const char *SHADERS_PATH = "./assets_pc/shaders/";
 #endif
 
-const float LIGHT_ATTEN_CUTOFF = 0.001f;
-
 const int DECALS_ATLAS_RESX = 2048,
           DECALS_ATLAS_RESY = 1024;
 
@@ -148,56 +146,11 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     if (js_scene.Has("lights")) {
         const JsObject &js_lights = (const JsObject &)js_scene.at("lights");
         for (const auto &js_elem : js_lights.elements) {
-            const std::string &name = js_elem.first;
-
-            const JsObject &js_obj = (const JsObject &)js_elem.second;
-
             Ren::StorageRef<LightSource> ls = scene_data_.lights.Add();
 
-            const auto &js_color = (const JsArray &)js_obj.at("color");
-
-            ls->col[0] = (float)static_cast<const JsNumber &>(js_color[0]).val;
-            ls->col[1] = (float)static_cast<const JsNumber &>(js_color[1]).val;
-            ls->col[2] = (float)static_cast<const JsNumber &>(js_color[2]).val;
-
-            ls->brightness = std::max(ls->col[0], std::max(ls->col[1], ls->col[2]));
-
-            if (js_obj.Has("offset")) {
-                const auto &js_offset = (const JsArray &)js_obj.at("offset");
-
-                ls->offset[0] = (float)static_cast<const JsNumber &>(js_offset[0]).val;
-                ls->offset[1] = (float)static_cast<const JsNumber &>(js_offset[1]).val;
-                ls->offset[2] = (float)static_cast<const JsNumber &>(js_offset[2]).val;
-            }
-
-            if (js_obj.Has("radius")) {
-                const auto &js_radius = (const JsNumber &)js_obj.at("radius");
-
-                ls->radius = (float)js_radius.val;
-            } else {
-                ls->radius = 1.0f;
-            }
-
-            ls->influence = ls->radius * (std::sqrt(ls->brightness / LIGHT_ATTEN_CUTOFF) - 1.0f);
-
-            if (js_obj.Has("direction")) {
-                const auto &js_dir = (const JsArray &)js_obj.at("direction");
-
-                ls->dir[0] = (float)static_cast<const JsNumber &>(js_dir[0]).val;
-                ls->dir[1] = (float)static_cast<const JsNumber &>(js_dir[1]).val;
-                ls->dir[2] = (float)static_cast<const JsNumber &>(js_dir[2]).val;
-
-                float angle = 45.0f;
-                if (js_obj.Has("angle")) {
-                    const auto &js_angle = (const JsNumber &)js_obj.at("angle");
-                    angle = (float)js_angle.val;
-                }
-
-                ls->spot = std::cos(angle * Ren::Pi<float>() / 180.0f);
-            } else {
-                ls->dir[1] = -1.0f;
-                ls->spot = -1.0f;
-            }
+            const std::string &name = js_elem.first;
+            const JsObject &js_obj = (const JsObject &)js_elem.second;
+            ls->Read(js_obj);
 
             all_lights[name] = ls;
         }
@@ -206,56 +159,11 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     if (js_scene.Has("decals")) {
         const JsObject &js_decals = (const JsObject &)js_scene.at("decals");
         for (const auto &js_elem : js_decals.elements) {
-            const std::string &name = js_elem.first;
-
-            const JsObject &js_obj = (const JsObject &)js_elem.second;
-
             Ren::StorageRef<Decal> de = scene_data_.decals.Add();
 
-            if (js_obj.Has("pos")) {
-                const JsArray &js_pos = (const JsArray &)js_obj.at("pos");
-
-                Ren::Vec3f pos = { (float)((const JsNumber &)js_pos.at(0)).val,
-                                   (float)((const JsNumber &)js_pos.at(1)).val,
-                                   (float)((const JsNumber &)js_pos.at(2)).val };
-
-                de->view = Ren::Translate(de->view, pos);
-            }
-
-            if (js_obj.Has("rot")) {
-                const JsArray &js_rot = (const JsArray &)js_obj.at("rot");
-
-                Ren::Vec3f rot = { (float)((const JsNumber &)js_rot.at(0)).val,
-                                   (float)((const JsNumber &)js_rot.at(1)).val,
-                                   (float)((const JsNumber &)js_rot.at(2)).val };
-
-                rot *= Ren::Pi<float>() / 180.0f;
-
-                //de->view = Ren::Rotate(de->view, rot[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
-                //de->view = Ren::Rotate(de->view, rot[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
-                //de->view = Ren::Rotate(de->view, rot[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-
-                auto rot_z = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
-                auto rot_x = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
-                auto rot_y = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-
-                auto rot_all = rot_y * rot_x * rot_z;
-                de->view = de->view * rot_all;
-            }
-
-            de->view = Ren::Inverse(de->view);
-
-            Ren::Vec3f dim = { 1.0f, 1.0f, 1.0f };
-
-            if (js_obj.Has("dim")) {
-                const JsArray &js_dim = (const JsArray &)js_obj.at("dim");
-
-                dim = { (float)((const JsNumber &)js_dim.at(0)).val,
-                        (float)((const JsNumber &)js_dim.at(1)).val,
-                        (float)((const JsNumber &)js_dim.at(2)).val };
-            }
-
-            Ren::OrthographicProjection(de->proj, -0.5f * dim[0], 0.5f * dim[0], -0.5f * dim[1], 0.5f * dim[1], 0.0f, 1.0f * dim[2]);
+            const std::string &name = js_elem.first;
+            const JsObject &js_obj = (const JsObject &)js_elem.second;
+            de->Read(js_obj);
             
             auto load_decal_texture = [this](const std::string &name) {
                 std::string file_name = TEXTURES_PATH + name;
@@ -360,36 +268,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             obj_bbox_max = Ren::Max(obj_bbox_max, obj.mesh->bbox_max());
         }
 
-        if (js_obj.Has("pos")) {
-            const JsArray &js_pos = (const JsArray &)js_obj.at("pos");
-
-            Ren::Vec3f pos = { (float)((const JsNumber &)js_pos.at(0)).val,
-                               (float)((const JsNumber &)js_pos.at(1)).val,
-                               (float)((const JsNumber &)js_pos.at(2)).val };
-
-            obj.tr->mat = Ren::Translate(obj.tr->mat, pos);
-        }
-
-        if (js_obj.Has("rot")) {
-            const JsArray &js_rot = (const JsArray &)js_obj.at("rot");
-
-            Ren::Vec3f rot = { (float)((const JsNumber &)js_rot.at(0)).val,
-                               (float)((const JsNumber &)js_rot.at(1)).val,
-                               (float)((const JsNumber &)js_rot.at(2)).val };
-
-            rot *= Ren::Pi<float>() / 180.0f;
-
-            //obj.tr->mat = Ren::Rotate(obj.tr->mat, rot[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
-            //obj.tr->mat = Ren::Rotate(obj.tr->mat, rot[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
-            //obj.tr->mat = Ren::Rotate(obj.tr->mat, rot[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-
-            auto rot_z = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
-            auto rot_x = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
-            auto rot_y = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-
-            auto rot_all = rot_y * rot_x * rot_z;
-            obj.tr->mat = obj.tr->mat * rot_all;
-        }
+        obj.tr->Read(js_obj);
 
         if (js_obj.Has("occluder_mesh")) {
             const JsString &js_occ_mesh = (const JsString &)js_obj.at("occluder_mesh");

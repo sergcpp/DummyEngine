@@ -13,6 +13,7 @@ set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/__skydome_mesh.inl)
 
 set(SCENE_SOURCES   Scene/SceneData.h
+                    Scene/SceneData.cpp
                     Scene/SceneManager.h
                     Scene/SceneManager.cpp
                     Scene/SceneManager_ASS.cpp
