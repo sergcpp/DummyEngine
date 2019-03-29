@@ -35,6 +35,7 @@ if(${RENDERER} STREQUAL "GL")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                         Renderer/FrameBufGL.cpp
                         Renderer/Renderer_Backend_GLES3.cpp
+                        Renderer/Renderer_GL_Defines.inl
                         Renderer/Renderer_GL_Shaders.inl)
     set(STATES_SOURCES ${STATES_SOURCES}
                         States/GSOccTestGL.cpp

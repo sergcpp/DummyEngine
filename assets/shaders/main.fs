@@ -1,31 +1,28 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
 
+$ModifyWarning
+
 #ifdef GL_ES
     precision mediump float;
     precision mediump sampler2DShadow;
 #endif
 
-#define GRID_RES_X 16
-#define GRID_RES_Y 8
-#define GRID_RES_Z 24
-
-#define FLT_EPS 0.0000001f
 #define LIGHT_ATTEN_CUTOFF 0.001f
 
-layout(binding = 0) uniform sampler2D diffuse_texture;
-layout(binding = 1) uniform sampler2D normals_texture;
-layout(binding = 2) uniform sampler2D specular_texture;
-layout(binding = 3) uniform sampler2DShadow shadow_texture;
-layout(binding = 4) uniform sampler2D lm_direct_texture;
-layout(binding = 5) uniform sampler2D lm_indirect_texture;
-layout(binding = 6) uniform sampler2D lm_indirect_sh_texture[4];
-layout(binding = 10) uniform sampler2D decals_texture;
-layout(binding = 11) uniform sampler2D ao_texture;
-layout(binding = 12) uniform mediump samplerBuffer lights_buffer;
-layout(binding = 13) uniform mediump samplerBuffer decals_buffer;
-layout(binding = 14) uniform highp usamplerBuffer cells_buffer;
-layout(binding = 15) uniform highp usamplerBuffer items_buffer;
+layout(binding = $DiffTexSlot) uniform sampler2D diffuse_texture;
+layout(binding = $NormTexSlot) uniform sampler2D normals_texture;
+layout(binding = $SpecTexSlot) uniform sampler2D specular_texture;
+layout(binding = $ShadTexSlot) uniform sampler2DShadow shadow_texture;
+layout(binding = $LmapDirSlot) uniform sampler2D lm_direct_texture;
+layout(binding = $LmapIndirSlot) uniform sampler2D lm_indirect_texture;
+layout(binding = $LmapSHSlot) uniform sampler2D lm_indirect_sh_texture[4];
+layout(binding = $DecalTexSlot) uniform sampler2D decals_texture;
+layout(binding = $SSAOTexSlot) uniform sampler2D ao_texture;
+layout(binding = $LightBufSlot) uniform mediump samplerBuffer lights_buffer;
+layout(binding = $DecalBufSlot) uniform mediump samplerBuffer decals_buffer;
+layout(binding = $CellsBufSlot) uniform highp usamplerBuffer cells_buffer;
+layout(binding = $ItemsBufSlot) uniform highp usamplerBuffer items_buffer;
 
 layout (std140) uniform MatricesBlock {
     mat4 uMVPMatrix;
@@ -47,9 +44,9 @@ in vec2 aVertexUVs2_;
 
 in vec3 aVertexShUVs_[4];
 
-layout(location = 0) out vec4 outColor;
-layout(location = 1) out vec2 outNormal;
-layout(location = 2) out vec4 outSpecular;
+layout(location = $OutColorIndex) out vec4 outColor;
+layout(location = $OutNormIndex) out vec2 outNormal;
+layout(location = $OutSpecIndex) out vec4 outSpecular;
 
 vec3 heatmap(float t) {
     vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
@@ -128,11 +125,11 @@ void main(void) {
     float depth = uClipInfo[0] / (gl_FragCoord.z * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
     
     float k = log2(depth / uClipInfo[1]) / uClipInfo[3];
-    int slice = int(floor(k * 24.0));
+    int slice = int(floor(k * $ItemGridResZ.0));
     
     int ix = int(gl_FragCoord.x);
     int iy = int(gl_FragCoord.y);
-    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy * GRID_RES_Y / res.y) * GRID_RES_X + ix * GRID_RES_X / res.x;
+    int cell_index = slice * $ItemGridResX * $ItemGridResY + (iy * $ItemGridResY / res.y) * $ItemGridResX + ix * $ItemGridResX / res.x;
     
     highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
@@ -235,7 +232,7 @@ void main(void) {
         float _dot2 = dot(L, dir_and_spot.xyz);
         
         atten = _dot1 * atten;
-        if (_dot2 > dir_and_spot.w && (col_and_brightness.w * atten) > FLT_EPS) {
+        if (_dot2 > dir_and_spot.w && (col_and_brightness.w * atten) > $FltEps) {
             additional_light += col_and_brightness.xyz * atten;
         }
     }

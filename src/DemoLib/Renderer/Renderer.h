@@ -8,6 +8,7 @@ extern "C" {
 }
 
 #include "FrameBuf.h"
+#include "Renderer_GL_Defines.inl"
 #include "../Scene/SceneData.h"
 
 namespace Sys {
@@ -60,10 +61,6 @@ struct ItemData {
     uint32_t probe_index : 8;
 };
 static_assert(sizeof(ItemData) == 4, "!");
-
-#define REN_GRID_RES_X 16
-#define REN_GRID_RES_Y 8
-#define REN_GRID_RES_Z 24
 
 #define MAX_STACK_SIZE 64
 
