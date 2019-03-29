@@ -637,6 +637,16 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     shader_constants.emplace_back("$OutNormIndex",  AS_STR(REN_OUT_NORM_INDEX));
     shader_constants.emplace_back("$OutSpecIndex",  AS_STR(REN_OUT_SPEC_INDEX));
 
+    // Shadow properties
+    shader_constants.emplace_back("$ShadCasc0Dist", AS_STR(REN_SHAD_CASCADE0_DIST));
+    shader_constants.emplace_back("$ShadCasc0Samp", AS_STR(REN_SHAD_CASCADE0_SAMPLES));
+    shader_constants.emplace_back("$ShadCasc1Dist", AS_STR(REN_SHAD_CASCADE1_DIST));
+    shader_constants.emplace_back("$ShadCasc1Samp", AS_STR(REN_SHAD_CASCADE1_SAMPLES));
+    shader_constants.emplace_back("$ShadCasc2Dist", AS_STR(REN_SHAD_CASCADE2_DIST));
+    shader_constants.emplace_back("$ShadCasc2Samp", AS_STR(REN_SHAD_CASCADE2_SAMPLES));
+    shader_constants.emplace_back("$ShadCasc3Dist", AS_STR(REN_SHAD_CASCADE3_DIST));
+    shader_constants.emplace_back("$ShadCasc3Samp", AS_STR(REN_SHAD_CASCADE3_SAMPLES));
+
     auto inline_constants = [&shader_constants](std::string &line) {
         size_t n = 0;
         while ((n = line.find('$', n)) != std::string::npos) {

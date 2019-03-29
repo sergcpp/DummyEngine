@@ -1,5 +1,7 @@
 #version 310 es
 
+$ModifyWarning
+
 /*
 UNIFORMS
     uMVPMatrix : 0

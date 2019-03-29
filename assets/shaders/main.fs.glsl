@@ -85,19 +85,22 @@ float GetVisibility(in vec2 lm_uvs, inout vec3 additional_light) {
     float visibility = 0.0;
     
     float frag_depth = gl_FragCoord.z / gl_FragCoord.w;
-    if (frag_depth < 8.0) {
-        for (int i = 0; i < 16; i++) {
-            visibility += texture(shadow_texture, aVertexShUVs_[0] + vec3(poisson_disk[i] * shadow_softness, 0.0)) / 16.0;
+    if (frag_depth < $ShadCasc0Dist) {
+        const float weight = 1.0 / $ShadCasc0Samp.0;
+        for (int i = 0; i < $ShadCasc0Samp; i++) {
+            visibility += texture(shadow_texture, aVertexShUVs_[0] + vec3(poisson_disk[i] * shadow_softness, 0.0)) * weight;
         }
-    } else if (frag_depth < 24.0) {
+    } else if (frag_depth < $ShadCasc1Dist) {
+        const float weight = 1.0 / $ShadCasc1Samp.0;
         for (int i = 0; i < 8; i++) {
-            visibility += texture(shadow_texture, aVertexShUVs_[1] + vec3(poisson_disk[i] * shadow_softness * 0.25, 0.0)) / 8.0;
+            visibility += texture(shadow_texture, aVertexShUVs_[1] + vec3(poisson_disk[i] * shadow_softness * 0.25, 0.0)) * weight;
         }
-    } else if (frag_depth < 56.0) {
+    } else if (frag_depth < $ShadCasc2Dist) {
+        const float weight = 1.0 / $ShadCasc2Samp.0;
         for (int i = 0; i < 4; i++) {
-            visibility += texture(shadow_texture, aVertexShUVs_[2] + vec3(poisson_disk[i] * shadow_softness * 0.125, 0.0)) / 4.0;
+            visibility += texture(shadow_texture, aVertexShUVs_[2] + vec3(poisson_disk[i] * shadow_softness * 0.125, 0.0)) * weight;
         }
-    } else if (frag_depth < 120.0) {
+    } else if (frag_depth < $ShadCasc3Dist) {
         visibility += texture(shadow_texture, aVertexShUVs_[3]);
     } else {
         // use direct lightmap

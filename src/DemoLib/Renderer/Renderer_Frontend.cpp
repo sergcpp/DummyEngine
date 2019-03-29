@@ -402,7 +402,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     if (Ren::Length2(data.env.sun_dir) > 0.9f && Ren::Length2(data.env.sun_col) > FLT_EPSILON) {
         // Planes, that define shadow map splits
-        const float far_planes[] = { 8.0f, 24.0f, 56.0f, 120.0f };
+        const float far_planes[] = { float(REN_SHAD_CASCADE0_DIST), float(REN_SHAD_CASCADE1_DIST),
+                                     float(REN_SHAD_CASCADE2_DIST), float(REN_SHAD_CASCADE3_DIST) };
         const float near_planes[] = { data.draw_cam.near(), far_planes[0], far_planes[1], far_planes[2] };
 
         // Choose up vector for shadow camera
