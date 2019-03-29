@@ -1,4 +1,4 @@
-gl_program: main main.vs main.fs
+gl_program: main main.vs.glsl main.fs.glsl
 sw_program: main
 texture: concrete_02.png
 texture: default_normalmap.png
