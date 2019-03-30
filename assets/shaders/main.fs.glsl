@@ -42,7 +42,7 @@ in mat3 aVertexTBN_;
 in vec2 aVertexUVs1_;
 in vec2 aVertexUVs2_;
 
-in vec3 aVertexShUVs_[4];
+in highp vec3 aVertexShUVs_[4];
 
 layout(location = $OutColorIndex) out vec4 outColor;
 layout(location = $OutNormIndex) out vec2 outNormal;
@@ -53,9 +53,15 @@ vec3 heatmap(float t) {
     return vec3(1.0) - r * r;
 }
 
+highp float rand(highp vec2 co) {
+    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
 vec3 RGBMDecode(vec4 rgbm) {
     return 6.0 * rgbm.rgb * rgbm.a;
 }
+
+#define M_PI 3.1415926535897932384626433832795
 
 float GetVisibility(float frag_depth, in vec2 lm_uvs, inout vec3 additional_light) {
     const vec2 poisson_disk[16] = vec2[16](
@@ -80,25 +86,32 @@ float GetVisibility(float frag_depth, in vec2 lm_uvs, inout vec3 additional_ligh
         vec2(0.75, -0.81)
     );
 
-    const highp float shadow_softness = 2.0 / $ShadRes.0;
+    const float shadow_softness = 3.0 / $ShadRes.0;
     
     float visibility = 0.0;
+
+    highp float r = M_PI * (-1.0 + 2.0 * rand(gl_FragCoord.xy));
+    highp vec2 rx = vec2(cos(r), sin(r));
+    highp vec2 ry = vec2(rx.y, -rx.x);
     
     if (frag_depth < $ShadCasc0Dist) {
-        const float weight = 1.0 / $ShadCasc0Samp.0;
+        const highp float weight = 1.0 / $ShadCasc0Samp.0;
         for (int i = 0; i < $ShadCasc0Samp; i++) {
-            visibility += texture(shadow_texture, aVertexShUVs_[0] + vec3(poisson_disk[i] * shadow_softness, 0.0)) * weight;
+            visibility += texture(shadow_texture, aVertexShUVs_[0] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
         }
+        visibility *= weight;
     } else if (frag_depth < $ShadCasc1Dist) {
-        const float weight = 1.0 / $ShadCasc1Samp.0;
+        const highp float weight = 1.0 / $ShadCasc1Samp.0;
         for (int i = 0; i < 8; i++) {
-            visibility += texture(shadow_texture, aVertexShUVs_[1] + vec3(poisson_disk[i] * shadow_softness * 0.25, 0.0)) * weight;
+            visibility += texture(shadow_texture, aVertexShUVs_[1] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
         }
+        visibility *= weight;
     } else if (frag_depth < $ShadCasc2Dist) {
-        const float weight = 1.0 / $ShadCasc2Samp.0;
+        const highp float weight = 1.0 / $ShadCasc2Samp.0;
         for (int i = 0; i < 4; i++) {
-            visibility += texture(shadow_texture, aVertexShUVs_[2] + vec3(poisson_disk[i] * shadow_softness * 0.125, 0.0)) * weight;
+            visibility += texture(shadow_texture, aVertexShUVs_[2] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
         }
+        visibility *= weight;
     } else if (frag_depth < $ShadCasc3Dist) {
         visibility += texture(shadow_texture, aVertexShUVs_[3]);
     } else {
@@ -124,9 +137,8 @@ vec3 DecodeNormal(vec2 enc) {
 }
 
 void main(void) {
-    float depth = uClipInfo[0] / (gl_FragCoord.z * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
-    
-    float k = log2(depth / uClipInfo[1]) / uClipInfo[3];
+    highp float depth = uClipInfo[0] / (gl_FragCoord.z * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
+    highp float k = log2(depth / uClipInfo[1]) / uClipInfo[3];
     int slice = int(floor(k * $ItemGridResZ.0));
     
     int ix = int(gl_FragCoord.x);
