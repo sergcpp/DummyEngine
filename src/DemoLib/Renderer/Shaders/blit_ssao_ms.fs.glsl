@@ -3,7 +3,7 @@ R"(
 #extension GL_ARB_texture_multisample : enable
 
 #ifdef GL_ES
-    precision mediump float;
+    precision lowp float;
 #endif
 
 layout(binding = 0) uniform mediump sampler2DMS depth_texture;
@@ -15,8 +15,10 @@ in vec2 aVertexUVs_;
 
 out vec4 outColor;
 
-float LinearDepthTexelFetch(ivec2 hit_pixel) {
-    float depth = texelFetch(depth_texture, hit_pixel, 0).r;
+float SampleDepthTexel(vec2 texcoord) {
+    ivec2 coord = ivec2(floor(texcoord));
+
+    float depth = texelFetch(depth_texture, coord, 0).r;
     return uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
 }
 
@@ -49,15 +51,11 @@ int hash(int x) {
 int hash(ivec2 v) { return hash(v.x ^ hash(v.y)); }
 
 void main() {
-    const mat2 transforms[8] = mat2[8](
+    const mat2 transforms[4] = mat2[4](
         mat2(1.0, 0.0, 0.0, 1.0),
         mat2(0.70710, 0.70710, -0.70710, 0.70710),
         mat2(0.0, 1.0, -1.0, 0.0),
-        mat2(-0.70710, 0.70710, -0.70710, -0.70710),
-        mat2(0.92388, 0.382683, -0.382683, 0.92388),
-        mat2(0.390335, 0.920673, -0.920673, 0.390335),
-        mat2(-0.372479, 0.928041, -0.928041, -0.372479),
-        mat2(-0.91451, 0.404562, -0.404562, -0.91451)
+        mat2(-0.70710, 0.70710, -0.70710, -0.70710)
     );
 
     const vec2 sample_points[3] = vec2[3](
@@ -73,7 +71,7 @@ void main() {
     const float fadeout_start = 16.0;
     const float fadeout_end = 64.0;
 
-    float depth = BilinearSampleDepthTexel(aVertexUVs_);
+    float depth = SampleDepthTexel(aVertexUVs_);
     if (depth > fadeout_end) {
         outColor = vec4(1.0, 1.0, 1.0, 1.0);
         return;
@@ -86,12 +84,13 @@ void main() {
     float occlusion = 0.5 * sample_weight;
 
     for (int i = 0; i < 3; i++) {
-        //int c = (int(gl_FragCoord.x + gl_FragCoord.y)) % 8;
-        int c = (hash(ivec2(gl_FragCoord.xy)) + i) % 8;
+        int c = (int(gl_FragCoord.x + gl_FragCoord.y * 2.0) + i) % 4;
+        //int c = (int(gl_FragCoord.x) + 0) % 2; 
+        //int c = (hash(ivec2(gl_FragCoord.xy)) + i) % 4;
         vec2 sample_point = transforms[c] * sample_points[i];
 
-        vec2 depth_values = vec2(BilinearSampleDepthTexel(aVertexUVs_ + ss_radius * sample_point * uScreenSize),
-                                 BilinearSampleDepthTexel(aVertexUVs_ - ss_radius * sample_point * uScreenSize));
+        vec2 depth_values = vec2(SampleDepthTexel(aVertexUVs_ + ss_radius * sample_point * uScreenSize),
+                                 SampleDepthTexel(aVertexUVs_ - ss_radius * sample_point * uScreenSize));
         float sphere_width = initial_radius * sphere_widths[i];
 
         vec2 depth_diff = vec2(depth) - depth_values;

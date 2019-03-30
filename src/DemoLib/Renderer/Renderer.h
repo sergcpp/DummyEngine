@@ -151,7 +151,7 @@ private:
 #if !defined(__ANDROID__)
         (EnableZFill | EnableCulling | EnableSSR | EnableSSAO);
 #else
-        (EnableZFill | EnableCulling);
+        (EnableZFill | EnableCulling | EnableSSAO);
 #endif
     uint32_t render_flags_ = default_flags;
 

@@ -653,6 +653,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     shader_constants.emplace("$ShadCasc3Dist",  AS_STR(REN_SHAD_CASCADE3_DIST));
     shader_constants.emplace("$ShadCasc3Samp",  AS_STR(REN_SHAD_CASCADE3_SAMPLES));
 
+    shader_constants.emplace("$SSAOBufResDiv", AS_STR(REN_SSAO_BUF_RES_DIV));
+
     auto inline_constants = [&shader_constants](std::string &line) {
         size_t n = 0;
         while ((n = line.find('$', n)) != std::string::npos) {

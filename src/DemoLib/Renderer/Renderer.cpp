@@ -166,7 +166,7 @@ void Renderer::ExecuteDrawList(int index) {
                 desc.format = Ren::RawR8;
                 desc.filter = Ren::BilinearNoMipmap;
                 desc.repeat = Ren::ClampToEdge;
-                ssao_buf_ = FrameBuf(ctx_.w() / 2, ctx_.h() / 2, &desc, 1, false);
+                ssao_buf_ = FrameBuf(ctx_.w() / REN_SSAO_BUF_RES_DIV, ctx_.h() / REN_SSAO_BUF_RES_DIV, &desc, 1, false);
             }
             {   // Auxilary buffer for reflections
                 FrameBuf::ColorAttachmentDesc desc;

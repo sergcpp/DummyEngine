@@ -273,8 +273,11 @@ void main(void) {
     indirect_col = max(indirect_col, vec3(0.0));
     
     vec2 ao_uvs = gl_FragCoord.xy / vec2(float(res.x), float(res.y));
-    float ambient_occlusion = texture(ao_texture, ao_uvs).r;
-    
+    float dx = $SSAOBufResDiv.0 / float(res.x), dy = $SSAOBufResDiv.0 / float(res.y);
+    float ambient_occlusion = texture(ao_texture, ao_uvs).r + texture(ao_texture, ao_uvs + vec2(dx, 0.0)).r +
+                              texture(ao_texture, ao_uvs + vec2(0.0, dy)).r + texture(ao_texture, ao_uvs + vec2(dx, dy)).r;
+    ambient_occlusion *= 0.25;
+                              
     vec3 diffuse_color = albedo_color * (sun_col * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
     
     outColor = vec4(diffuse_color, 1.0);
