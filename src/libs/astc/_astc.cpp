@@ -1,5 +1,7 @@
 
+#ifdef _MSC_VER
 #pragma warning(disable : 4996)
+#endif
 
 #include "astc_averages_and_directions.cpp"
 #include "astc_block_sizes2.cpp"

@@ -16,6 +16,10 @@
 	* everybody at gamedev.net
 */
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
 #define SOIL_CHECK_FOR_GL_ERRORS 0
 
 #if defined( __APPLE_CC__ ) || defined ( __APPLE__ )

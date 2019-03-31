@@ -7,6 +7,10 @@
 	public domain
 */
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
 #include "image_DXT.h"
 #include <math.h>
 #include <stdlib.h>
