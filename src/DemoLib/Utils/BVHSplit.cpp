@@ -2,11 +2,6 @@
 
 #include <algorithm>
 
-namespace UtilsConstants {
-const float SAHOversplitThreshold = 0.95f;
-const float NodeTraversalCost = 2.0f;
-}
-
 struct bbox_t {
     Ren::Vec3f min = Ren::Vec3f{ std::numeric_limits<float>::max() },
                max = Ren::Vec3f{ std::numeric_limits<float>::lowest() };
@@ -26,9 +21,7 @@ struct bbox_t {
 
 split_data_t SplitPrimitives_SAH(const prim_t *primitives, const uint32_t *tri_indices, uint32_t tris_count,
                                  const Ren::Vec3f &bbox_min, const Ren::Vec3f &bbox_max,
-                                 const Ren::Vec3f &root_min, const Ren::Vec3f &root_max) {
-    using namespace UtilsConstants;
-
+                                 const Ren::Vec3f &root_min, const Ren::Vec3f &root_max, const split_settings_t &s) {
     bbox_t whole_box = { bbox_min, bbox_max };
 
     std::vector<uint32_t> axis_lists[3];
@@ -45,7 +38,7 @@ split_data_t SplitPrimitives_SAH(const prim_t *primitives, const uint32_t *tri_i
     std::vector<bbox_t> new_prim_bounds;
     std::vector<bbox_t> right_bounds(tris_count);
 
-    float res_sah = SAHOversplitThreshold * whole_box.surface_area() * tris_count;
+    float res_sah = s.oversplit_threshold * whole_box.surface_area() * tris_count;
     int div_axis = -1;
     uint32_t div_index = 0;
     bbox_t res_left_bounds, res_right_bounds;
@@ -90,7 +83,7 @@ split_data_t SplitPrimitives_SAH(const prim_t *primitives, const uint32_t *tri_i
                 left_bounds.max = Max(left_bounds.max, new_prim_bounds[list[i - 1]].max);
             }
 
-            float sah = NodeTraversalCost + left_bounds.surface_area() * i + right_bounds[i - 1].surface_area() * (list.size() - i);
+            float sah = s.node_traversal_cost * whole_box.surface_area() + left_bounds.surface_area() * i + right_bounds[i - 1].surface_area() * (list.size() - i);
             if (sah < res_sah) {
                 res_sah = sah;
                 div_axis = axis;

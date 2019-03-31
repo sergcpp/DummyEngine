@@ -11,12 +11,15 @@ struct JsObject;
 
 struct Transform : public Ren::RefCounter {
     Ren::Mat4f mat;
+    Ren::Vec3f bbox_min;
+    uint32_t node_index;
+    Ren::Vec3f bbox_max;
     Ren::Vec3f bbox_min_ws, bbox_max_ws;
 
     void Read(const JsObject &js_in);
     void Write(JsObject &js_out);
 
-    void UpdateBBox(const Ren::Vec3f &bbox_min, const Ren::Vec3f &bbox_max) {
+    void UpdateBBox() {
         bbox_min_ws = bbox_max_ws = Ren::Vec3f(mat[3]);
 
         for (int j = 0; j < 3; j++) {
@@ -64,7 +67,7 @@ struct LightmapRegion : public Ren::RefCounter {
     Ren::Vec4f xform;
 };
 
-enum eObjectFlags {
+enum eObjectComp {
     HasTransform    = (1 << 0),
     HasMesh         = (1 << 1),
     HasOccluder     = (1 << 2),
@@ -73,13 +76,17 @@ enum eObjectFlags {
     HasDecal        = (1 << 5)
 };
 
+enum eObjectChange {
+    ChangePosition = (1 << 0),
+};
+
 const int LIGHTS_PER_OBJECT = 16;
 const int DECALS_PER_OBJECT = 16;
 
 const float LIGHT_ATTEN_CUTOFF = 0.001f;
 
 struct SceneObject {
-    uint32_t flags;
+    uint32_t comp_mask, change_mask;
     Ren::StorageRef<Transform> tr;
     Ren::MeshRef mesh, occ_mesh;
     uint32_t pt_mi;
@@ -157,5 +164,4 @@ struct SceneData {
 
     std::vector<bvh_node_t> nodes;
     uint32_t root_node = 0;
-    std::vector<uint32_t> obj_indices;
 };

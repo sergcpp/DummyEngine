@@ -249,7 +249,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         const JsObject &js_obj = (const JsObject &)js_elem;
 
         SceneObject obj;
-        obj.flags = HasTransform;
+        obj.comp_mask = HasTransform;
+        obj.change_mask = 0;
         obj.tr = scene_data_.transforms.Add();
 
         Ren::Vec3f obj_bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
@@ -261,7 +262,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             const auto it = all_meshes.find(js_mesh_name.val);
             if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
 
-            obj.flags |= HasMesh;
+            obj.comp_mask |= HasMesh;
             obj.mesh = it->second;
 
             obj_bbox_min = Ren::Min(obj_bbox_min, obj.mesh->bbox_min());
@@ -276,14 +277,14 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             const auto it = all_meshes.find(js_occ_mesh.val);
             if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
 
-            obj.flags |= HasOccluder;
+            obj.comp_mask |= HasOccluder;
             obj.occ_mesh = it->second;
         }
 
         if (js_obj.Has("lightmap_res")) {
             const JsNumber &js_lm_res = (const JsNumber &)js_obj.at("lightmap_res");
 
-            obj.flags |= HasLightmap;
+            obj.comp_mask |= HasLightmap;
             obj.lm = scene_data_.lm_regions.Add();
             obj.lm->size[0] = (int)js_lm_res.val;
             obj.lm->size[1] = (int)js_lm_res.val;
@@ -309,7 +310,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 auto it = all_lights.find(js_light_name.val);
                 if (it == all_lights.end()) throw std::runtime_error("Light not found!");
 
-                obj.flags |= HasLightSource;
+                obj.comp_mask |= HasLightSource;
                 obj.ls[index] = it->second;
                 const auto *ls = obj.ls[index].get();
 
@@ -357,7 +358,10 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                                          Ren::Vec4f{ side[1],  -_dir[1], up[1],    0.0f },
                                          Ren::Vec4f{ side[2],  -_dir[2], up[2],    0.0f },
                                          Ren::Vec4f{ ls->offset[0], ls->offset[1], ls->offset[2], 1.0f } };
-                    ls_transform.UpdateBBox(bbox_min, bbox_max);
+
+                    ls_transform.bbox_min = bbox_min;
+                    ls_transform.bbox_max = bbox_max;
+                    ls_transform.UpdateBBox();
 
                     // Combine light's bounding box with object's
                     obj_bbox_min = Ren::Min(obj_bbox_min, ls_transform.bbox_min_ws);
@@ -376,7 +380,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 auto it = all_decals.find(js_decal_name.val);
                 if (it == all_decals.end()) throw std::runtime_error("Decal not found!");
 
-                obj.flags |= HasDecal;
+                obj.comp_mask |= HasDecal;
                 obj.de[index] = it->second;
                 const auto *de = obj.de[index].get();
 
@@ -405,7 +409,9 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             }
         }
 
-        obj.tr->UpdateBBox(obj_bbox_min, obj_bbox_max);
+        obj.tr->bbox_min = obj_bbox_min;
+        obj.tr->bbox_max = obj_bbox_max;
+        obj.tr->UpdateBBox();
 
         scene_data_.objects.push_back(obj);
     }

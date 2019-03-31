@@ -149,7 +149,7 @@ private:
 
     static const uint32_t default_flags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO);
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO /*| DebugBVH*/);
 #else
         (EnableZFill | EnableCulling | EnableSSAO);
 #endif
@@ -174,6 +174,7 @@ private:
 
         // for debugging only, backend does not require nodes for drawing
         std::vector<bvh_node_t> temp_nodes;
+        uint32_t root_index;
     } drawables_data_[2];
 
     std::vector<uint32_t> object_to_drawable_;

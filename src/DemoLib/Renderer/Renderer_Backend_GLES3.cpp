@@ -1504,7 +1504,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
             glActiveTexture((GLenum)(GL_TEXTURE0 + 1));
             glBindTexture(GL_TEXTURE_BUFFER, (GLuint)nodes_tbo_);
 
-            glUniform1i(12, 0);
+            glUniform1i(12, data.root_index);
             glUniform2f(13, float(w_), float(h_));
 
             auto world_from_clip = Ren::Inverse(clip_from_world);

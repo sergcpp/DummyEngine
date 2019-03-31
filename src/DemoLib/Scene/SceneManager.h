@@ -21,6 +21,13 @@ public:
     const Ren::Camera &main_cam() const { return cam_; }
     const SceneData &scene_data() const { return scene_data_; }
 
+    SceneObject *GetObject(int i) { return &scene_data_.objects[i]; }
+
+    void InvalidateObject(int i, uint32_t change_mask) {
+        scene_data_.objects[i].change_mask |= change_mask;
+        changed_objects_.push_back(i);
+    }
+
     void LoadScene(const JsObject &js_scene);
     void ClearScene();
 
@@ -34,6 +41,8 @@ public:
     void ResetLightmaps_PT();
     bool PrepareLightmaps_PT(const float **preview_pixels, int *w, int *h);
 
+    void UpdateObjects();
+
     static bool PrepareAssets(const char *in_folder, const char *out_folder, const char *platform, Sys::ThreadPool *p_threads);
 private:
     Ren::MaterialRef OnLoadMaterial(const char *name);
@@ -41,6 +50,7 @@ private:
     Ren::Texture2DRef OnLoadTexture(const char *name);
 
     void RebuildBVH();
+    void UpdateBVH();
 
     std::string scene_name_;
 
@@ -54,6 +64,7 @@ private:
     std::string env_map_pt_name_;
 
     SceneData scene_data_;
+    std::vector<int> changed_objects_;
 
     bool cur_lm_indir_ = false;
     size_t cur_lm_obj_ = 0;

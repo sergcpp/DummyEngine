@@ -809,5 +809,20 @@ void GSDrawTest::BackgroundProc() {
 }
 
 void GSDrawTest::UpdateFrame(int list_index) {
+    uint32_t mask = HasTransform | HasMesh;
+#if 0
+    const int monkey_id = 12;
+
+    auto *monkey = scene_manager_->GetObject(monkey_id);
+    if ((monkey->comp_mask & mask) == mask) {
+        auto *tr = monkey->tr.get();
+        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f, 0.02f });
+    }
+
+    scene_manager_->InvalidateObject(monkey_id, ChangePosition);
+#endif
+
+    scene_manager_->UpdateObjects();
+
     renderer_->PrepareDrawList(list_index, scene_manager_->scene_data(), scene_manager_->main_cam());
 }
