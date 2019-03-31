@@ -23,9 +23,11 @@ public:
 
     SceneObject *GetObject(int i) { return &scene_data_.objects[i]; }
 
-    void InvalidateObject(int i, uint32_t change_mask) {
-        scene_data_.objects[i].change_mask |= change_mask;
-        changed_objects_.push_back(i);
+    void InvalidateObjects(const uint32_t *indices, uint32_t count, uint32_t change_mask) {
+        for (uint32_t i = 0; i < count; i++) {
+            scene_data_.objects[indices[i]].change_mask |= change_mask;
+        }
+        changed_objects_.insert(changed_objects_.end(), indices, indices + count);
     }
 
     void LoadScene(const JsObject &js_scene);
@@ -50,6 +52,7 @@ private:
     Ren::Texture2DRef OnLoadTexture(const char *name);
 
     void RebuildBVH();
+    void RemoveNode(uint32_t node_index);
     void UpdateBVH();
 
     std::string scene_name_;
@@ -64,7 +67,9 @@ private:
     std::string env_map_pt_name_;
 
     SceneData scene_data_;
-    std::vector<int> changed_objects_;
+    std::vector<uint32_t> changed_objects_;
+
+    std::vector<char> temp_buf;
 
     bool cur_lm_indir_ = false;
     size_t cur_lm_obj_ = 0;

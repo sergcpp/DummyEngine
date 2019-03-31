@@ -149,7 +149,7 @@ private:
 
     static const uint32_t default_flags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO /*| DebugBVH*/);
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | DebugBVH);
 #else
         (EnableZFill | EnableCulling | EnableSSAO);
 #endif

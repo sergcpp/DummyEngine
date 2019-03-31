@@ -163,5 +163,6 @@ struct SceneData {
     std::vector<SceneObject> objects;
 
     std::vector<bvh_node_t> nodes;
+    std::vector<uint32_t> free_nodes;
     uint32_t root_node = 0;
 };
