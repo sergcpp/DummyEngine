@@ -79,6 +79,9 @@ public:
     T *Get(size_t i) {
         return &array_[i].val;
     }
+    const T *Get(size_t i) const {
+        return &array_[i].val;
+    }
 
     size_t NextIndex(size_t i) {
         while (++i < array_.size()) {
