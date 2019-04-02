@@ -17,6 +17,7 @@ set(SOURCE_FILES AssetFile.h
                  AssetFile.cpp
                  AssetFileIO.h
                  AssetFileIO.cpp
+                 BinaryTree.h
                  Delegate.h
                  DynLib.h
                  DynLib.cpp
@@ -24,6 +25,7 @@ set(SOURCE_FILES AssetFile.h
                  Json.cpp
                  Log.h
                  MemBuf.h
+                 MonoAlloc.h
                  Optional.h
                  Pack.h
                  Pack.cpp
