@@ -14,8 +14,14 @@ unsigned int Sys::GetTicks() {
     return (unsigned int)tt.count();
 }
 
+uint64_t Sys::GetTimeUs() {
+    auto t = (std::chrono::steady_clock::now() - init_time);
+    auto tt = std::chrono::duration_cast<std::chrono::microseconds>(t);
+    return (uint64_t)tt.count();
+}
+
 uint64_t Sys::GetTimeNs() {
     auto t = (std::chrono::steady_clock::now() - init_time);
     auto tt = std::chrono::duration_cast<std::chrono::nanoseconds>(t);
-    return (unsigned int)tt.count();
+    return (uint64_t)tt.count();
 }

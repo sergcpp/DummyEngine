@@ -156,6 +156,15 @@ const JsElement &JsObject::at(const std::string &s) const {
     throw std::out_of_range(std::string("No such element! \"") + s + "\"");
 }
 
+JsElement &JsObject::at(const std::string &s) {
+    for (auto &e : elements) {
+        if (e.first == s) {
+            return e.second;
+        }
+    }
+    throw std::out_of_range(std::string("No such element! \"") + s + "\"");
+}
+
 bool JsObject::operator==(const JsObject &rhs) const {
     if (elements.size() != rhs.elements.size()) return false;
     return std::equal(elements.begin(), elements.end(), rhs.elements.begin());
