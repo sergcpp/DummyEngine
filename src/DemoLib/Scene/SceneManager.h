@@ -53,7 +53,6 @@ private:
 
     void RebuildBVH();
     void RemoveNode(uint32_t node_index);
-    void UpdateBVH();
 
     std::string scene_name_;
 

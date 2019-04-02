@@ -7,6 +7,52 @@
 
 #include "../Utils/BVHSplit.h"
 
+namespace SceneManagerInternal {
+    float surface_area(const bvh_node_t &n) {
+        Ren::Vec3f d = n.bbox_max - n.bbox_min;
+        return d[0] * d[1] + d[0] * d[2] + d[1] * d[2];
+    }
+
+    float surface_area_of_union(const bvh_node_t &n1, const bvh_node_t &n2) {
+        Ren::Vec3f d = Ren::Max(n1.bbox_max, n2.bbox_max) - Ren::Min(n1.bbox_min, n2.bbox_max);
+        return d[0] * d[1] + d[0] * d[2] + d[1] * d[2];
+    }
+
+    struct insert_candidate_t {
+        uint32_t node_index;
+        float direct_cost;
+    };
+
+    bool insert_candidate_compare(insert_candidate_t c1, insert_candidate_t c2) {
+        return c1.direct_cost > c2.direct_cost;
+    }
+
+    void sort_children(const bvh_node_t *nodes, bvh_node_t &node) {
+        uint32_t ch0 = node.left_child;
+        uint32_t ch1 = node.right_child;
+
+        uint32_t space_axis = 0;
+        Ren::Vec3f c_left = (nodes[ch0].bbox_min + nodes[ch0].bbox_max) / 2,
+                  c_right = (nodes[ch1].bbox_min + nodes[ch1].bbox_max) / 2;
+
+        Ren::Vec3f dist = Abs(c_left - c_right);
+
+        if (dist[0] > dist[1] && dist[0] > dist[2]) {
+            space_axis = 0;
+        } else if (dist[1] > dist[0] && dist[1] > dist[2]) {
+            space_axis = 1;
+        } else {
+            space_axis = 2;
+        }
+
+        node.space_axis = space_axis;
+
+        if (c_left[space_axis] > c_right[space_axis]) {
+            std::swap(node.left_child, node.right_child);
+        }
+    }
+}
+
 void SceneManager::RebuildBVH() {
     std::vector<prim_t> primitives;
     primitives.reserve(scene_data_.objects.size());
@@ -128,6 +174,8 @@ void SceneManager::RebuildBVH() {
 }
 
 void SceneManager::RemoveNode(uint32_t node_index) {
+    using namespace SceneManagerInternal;
+
     auto *nodes = scene_data_.nodes.data();
     auto &node = nodes[node_index];
 
@@ -153,27 +201,7 @@ void SceneManager::RemoveNode(uint32_t node_index) {
                 nodes[up_parent].bbox_min = Ren::Min(nodes[ch0].bbox_min, nodes[ch1].bbox_min);
                 nodes[up_parent].bbox_max = Ren::Max(nodes[ch0].bbox_max, nodes[ch1].bbox_max);
 
-                {   // Sort children
-                    uint32_t space_axis = 0;
-                    Ren::Vec3f c_left = (nodes[ch0].bbox_min + nodes[ch0].bbox_max) / 2.0f,
-                               c_right = (nodes[ch1].bbox_min + nodes[ch1].bbox_max) / 2.0f;
-
-                    Ren::Vec3f dist = Abs(c_left - c_right);
-
-                    if (dist[0] > dist[1] && dist[0] > dist[2]) {
-                        space_axis = 0;
-                    } else if (dist[1] > dist[0] && dist[1] > dist[2]) {
-                        space_axis = 1;
-                    } else {
-                        space_axis = 2;
-                    }
-
-                    nodes[up_parent].space_axis = space_axis;
-
-                    if (c_left[space_axis] > c_right[space_axis]) {
-                        std::swap(nodes[up_parent].left_child, nodes[up_parent].right_child);
-                    }
-                }
+                sort_children(nodes, nodes[up_parent]);
 
                 up_parent = nodes[up_parent].parent;
             }
@@ -189,11 +217,9 @@ void SceneManager::RemoveNode(uint32_t node_index) {
     scene_data_.free_nodes.push_back(node_index);
 }
 
-void SceneManager::UpdateBVH() {
-    RebuildBVH();
-}
-
 void SceneManager::UpdateObjects() {
+    using namespace SceneManagerInternal;
+
     auto *nodes = scene_data_.nodes.data();
 
     // Remove nodes with associated moved objects (they will be reinserted)
@@ -228,25 +254,8 @@ void SceneManager::UpdateObjects() {
             new_node.prim_index = obj_index;
             new_node.prim_count = 1;
 
-            auto surface_area = [](const bvh_node_t &n) {
-                Ren::Vec3f d = n.bbox_max - n.bbox_min;
-                return d[0] * d[1] + d[0] * d[2] + d[1] * d[2];
-            };
-
-            auto surface_area_of_union = [](const bvh_node_t &n1, const bvh_node_t &n2) {
-                Ren::Vec3f d = Ren::Max(n1.bbox_max, n2.bbox_max) - Ren::Min(n1.bbox_min, n2.bbox_max);
-                return d[0] * d[1] + d[0] * d[2] + d[1] * d[2];
-            };
-            
-            struct insert_candidate_t {
-                uint32_t node_index;
-                float direct_cost;
-            };
-
-            auto cmp = [](insert_candidate_t c1, insert_candidate_t c2) { return c1.direct_cost > c2.direct_cost; };
-
             Sys::MonoAlloc<insert_candidate_t> m_alloc(temp_buf.data(), temp_buf.size());
-            Sys::BinaryTree<insert_candidate_t, decltype(cmp), Sys::MonoAlloc<insert_candidate_t>> candidates(cmp, m_alloc);
+            Sys::BinaryTree<insert_candidate_t, decltype(&insert_candidate_compare), Sys::MonoAlloc<insert_candidate_t>> candidates(insert_candidate_compare, m_alloc);
 
             float node_cost = surface_area(new_node);
 
@@ -325,27 +334,7 @@ void SceneManager::UpdateObjects() {
 
                 // TODO: consider tree rotations
 
-                {   // Sort children
-                    uint32_t space_axis = 0;
-                    Ren::Vec3f c_left = (nodes[ch0].bbox_min + nodes[ch0].bbox_max) / 2,
-                              c_right = (nodes[ch1].bbox_min + nodes[ch1].bbox_max) / 2;
-
-                    Ren::Vec3f dist = Abs(c_left - c_right);
-
-                    if (dist[0] > dist[1] && dist[0] > dist[2]) {
-                        space_axis = 0;
-                    } else if (dist[1] > dist[0] && dist[1] > dist[2]) {
-                        space_axis = 1;
-                    } else {
-                        space_axis = 2;
-                    }
-
-                    nodes[parent].space_axis = space_axis;
-
-                    if (c_left[space_axis] > c_right[space_axis]) {
-                        std::swap(nodes[parent].left_child, nodes[parent].right_child);
-                    }
-                }
+                sort_children(nodes, nodes[parent]);
 
                 parent = nodes[parent].parent;
             }
