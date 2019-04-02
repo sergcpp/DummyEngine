@@ -84,7 +84,7 @@ public:
     }
 
     T *data() {
-        return &array_[i].val;
+        return array_.data();
     }
 
     size_t NextIndex(size_t i) {

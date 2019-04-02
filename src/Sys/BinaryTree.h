@@ -4,7 +4,7 @@
 #include <memory>
 
 namespace Sys {
-    template <typename T, typename Comp = std::less<typename T>, typename Alloc = std::allocator>
+    template <typename T, typename Comp = std::less<T>, typename Alloc = std::allocator<T>>
     class BinaryTree {
         struct Node {
             T val;
