@@ -83,6 +83,10 @@ public:
         return &array_[i].val;
     }
 
+    T *data() {
+        return &array_[i].val;
+    }
+
     size_t NextIndex(size_t i) {
         while (++i < array_.size()) {
             if (array_[i].used) {
