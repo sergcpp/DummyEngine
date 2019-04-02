@@ -117,8 +117,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 if ((obj.comp_mask & occluder_flags) == occluder_flags) {
                     const auto *tr = obj.tr.get();
 
-                    //if (!skip_check &&
-                    //    data.draw_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
+                    // Node has slightly enlarged bounds, so we need to check object's bounding box here
+                    if (!skip_check &&
+                        data.draw_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
 
                     const Ren::Mat4f &world_from_object = tr->mat;
 
@@ -211,7 +212,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                     if (!skip_check) {
                         const float bbox_points[8][3] = { BBOX_POINTS(tr->bbox_min_ws, tr->bbox_max_ws) };
-                        //if (data.draw_cam.CheckFrustumVisibility(bbox_points) == Ren::Invisible) continue;
+
+                        // Node has slightly enlarged bounds, so we need to check object's bounding box here
+                        if (data.draw_cam.CheckFrustumVisibility(bbox_points) == Ren::Invisible) continue;
 
                         if (culling_enabled) {
                             const auto &cam_pos = data.draw_cam.world_position();

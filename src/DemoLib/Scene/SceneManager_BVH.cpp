@@ -8,6 +8,8 @@
 #include "../Utils/BVHSplit.h"
 
 namespace SceneManagerInternal {
+    const float BoundsMargin = 0.2f;
+
     float surface_area(const bvh_node_t &n) {
         Ren::Vec3f d = n.bbox_max - n.bbox_min;
         return d[0] * d[1] + d[0] * d[2] + d[1] * d[2];
@@ -51,16 +53,24 @@ namespace SceneManagerInternal {
             std::swap(node.left_child, node.right_child);
         }
     }
+
+    void update_bbox(const bvh_node_t *nodes, bvh_node_t &node) {
+        node.bbox_min = Ren::Min(nodes[node.left_child].bbox_min, nodes[node.right_child].bbox_min);
+        node.bbox_max = Ren::Max(nodes[node.left_child].bbox_max, nodes[node.right_child].bbox_max);
+    }
 }
 
 void SceneManager::RebuildBVH() {
+    using namespace SceneManagerInternal;
+
     std::vector<prim_t> primitives;
     primitives.reserve(scene_data_.objects.size());
 
     for (const auto &obj : scene_data_.objects) {
         if (obj.comp_mask & HasTransform) {
             const auto &tr = obj.tr;
-            primitives.push_back({ tr->bbox_min_ws, tr->bbox_max_ws });
+            const Ren::Vec3f d = tr->bbox_max_ws - tr->bbox_min_ws;
+            primitives.push_back({ tr->bbox_min_ws - BoundsMargin * d, tr->bbox_max_ws + BoundsMargin * d });
         }
     }
 
@@ -228,9 +238,24 @@ void SceneManager::UpdateObjects() {
 
         if (obj.change_mask & ChangePosition) {
             auto *tr = obj.tr.get();
+            tr->UpdateBBox();
             if (tr->node_index != 0xffffffff) {
-                RemoveNode(tr->node_index);
-                tr->node_index = 0xffffffff;
+                const auto &node = nodes[tr->node_index];
+
+                bool is_fully_inside = tr->bbox_min_ws[0] >= node.bbox_min[0] &&
+                                       tr->bbox_min_ws[1] >= node.bbox_min[1] &&
+                                       tr->bbox_min_ws[2] >= node.bbox_min[2] &&
+                                       tr->bbox_max_ws[0] <= node.bbox_max[0] &&
+                                       tr->bbox_max_ws[1] <= node.bbox_max[1] &&
+                                       tr->bbox_max_ws[2] <= node.bbox_max[2];
+
+                if (is_fully_inside) {
+                    // Update is not needed
+                    obj.change_mask ^= ChangePosition;
+                } else {
+                    RemoveNode(tr->node_index);
+                    tr->node_index = 0xffffffff;
+                }
             }
         }
     }
@@ -245,12 +270,13 @@ void SceneManager::UpdateObjects() {
 
         if (obj.change_mask & ChangePosition) {
             auto *tr = obj.tr.get();
-            tr->UpdateBBox();
             tr->node_index = free_nodes[free_nodes_pos++];
 
             auto &new_node = nodes[tr->node_index];
-            new_node.bbox_min = tr->bbox_min_ws;
-            new_node.bbox_max = tr->bbox_max_ws;
+
+            const Ren::Vec3f d = tr->bbox_max_ws - tr->bbox_min_ws;
+            new_node.bbox_min = tr->bbox_min_ws - BoundsMargin * d;
+            new_node.bbox_max = tr->bbox_max_ws + BoundsMargin * d;
             new_node.prim_index = obj_index;
             new_node.prim_count = 1;
 
@@ -323,21 +349,82 @@ void SceneManager::UpdateObjects() {
                 scene_data_.root_node = new_parent;
             }
 
+#define left_child_of(x) nodes[x.left_child]
+#define right_child_of(x) nodes[x.right_child]
+
             // update hierarchy boxes
             uint32_t parent = new_parent;
             while (parent != 0xffffffff) {
-                uint32_t ch0 = nodes[parent].left_child;
-                uint32_t ch1 = nodes[parent].right_child;
+                auto &par_node = nodes[parent];
 
-                nodes[parent].bbox_min = Ren::Min(nodes[ch0].bbox_min, nodes[ch1].bbox_min);
-                nodes[parent].bbox_max = Ren::Max(nodes[ch0].bbox_max, nodes[ch1].bbox_max);
+                par_node.bbox_min = Ren::Min(left_child_of(par_node).bbox_min, right_child_of(par_node).bbox_min);
+                par_node.bbox_max = Ren::Max(left_child_of(par_node).bbox_max, right_child_of(par_node).bbox_max);
 
-                // TODO: consider tree rotations
+                // rotate left_child with children of right_child
+                if (!right_child_of(par_node).prim_count) {
+                    float cost_before = surface_area(nodes[par_node.right_child]);
 
-                sort_children(nodes, nodes[parent]);
+                    float rotation_costs[2] = { surface_area_of_union(left_child_of(par_node), right_child_of(right_child_of(par_node))),
+                                                surface_area_of_union(left_child_of(par_node), left_child_of(right_child_of(par_node))) };
 
-                parent = nodes[parent].parent;
+                    int best_rot = rotation_costs[0] < rotation_costs[1] ? 0 : 1;
+                    if (rotation_costs[best_rot] < cost_before) {
+                        left_child_of(par_node).parent = par_node.right_child;
+
+                        if (best_rot == 0) {
+                            left_child_of(right_child_of(par_node)).parent = parent;
+
+                            std::swap(par_node.left_child, right_child_of(par_node).left_child);
+                        } else {
+                            right_child_of(right_child_of(par_node)).parent = parent;
+
+                            std::swap(par_node.left_child, right_child_of(par_node).right_child);
+                        }
+
+                        update_bbox(nodes, nodes[par_node.right_child]);
+                        update_bbox(nodes, nodes[parent]);
+
+                        sort_children(nodes, nodes[par_node.right_child]);
+                        // parent children will be sorted below
+                    }
+                }
+
+                // rotate right_child with children of left_child
+                if (!left_child_of(par_node).prim_count) {
+                    float cost_before = surface_area(left_child_of(par_node));
+
+                    float rotation_costs[2] = { surface_area_of_union(right_child_of(par_node), right_child_of(left_child_of(par_node))),
+                                                surface_area_of_union(right_child_of(par_node), left_child_of(left_child_of(par_node))) };
+
+                    int best_rot = rotation_costs[0] < rotation_costs[1] ? 0 : 1;
+                    if (rotation_costs[best_rot] < cost_before) {
+                        right_child_of(par_node).parent = par_node.left_child;
+
+                        if (best_rot == 0) {
+                            left_child_of(left_child_of(par_node)).parent = parent;
+
+                            std::swap(par_node.right_child, left_child_of(par_node).left_child);
+                        } else {
+                            right_child_of(left_child_of(par_node)).parent = parent;
+
+                            std::swap(par_node.right_child, left_child_of(par_node).right_child);
+                        }
+
+                        update_bbox(nodes, nodes[par_node.left_child]);
+                        update_bbox(nodes, nodes[parent]);
+
+                        sort_children(nodes, nodes[par_node.left_child]);
+                        // parent children will be sorted below
+                    }
+                }
+
+                sort_children(nodes, par_node);
+
+                parent = par_node.parent;
             }
+
+#undef left_child_of
+#undef right_child_of
 
             obj.change_mask ^= ChangePosition;
         }
