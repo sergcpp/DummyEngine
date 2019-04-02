@@ -154,8 +154,8 @@ void Gui::BitmapFont::ReverseYAxis(bool state) {
     invert_y_ = state;
 }
 
-float Gui::BitmapFont::GetTriangles(const char *text, std::vector<float> &positions, std::vector<float> &uvs,
-                                    std::vector<uint16_t> &indices, const Vec2f &pos, const BaseElement *parent) {
+float Gui::BitmapFont::GetTriangles(const char *text, std::vector<float> &_positions, std::vector<float> &_uvs,
+                                    std::vector<uint16_t> &_indices, const Vec2f &pos, const BaseElement *parent) {
     using namespace BitmapFontConstants;
 
     int len;
@@ -163,7 +163,7 @@ float Gui::BitmapFont::GetTriangles(const char *text, std::vector<float> &positi
     len = (int)_strnlen(text, BFG_MAXSTRING);
 
     if (!len) {
-        positions.clear();
+        _positions.clear();
         return 0.0f;
     }
 
@@ -173,9 +173,13 @@ float Gui::BitmapFont::GetTriangles(const char *text, std::vector<float> &positi
     len = (int) _strnlen(w1251str, BFG_MAXSTRING);*/
     const char *w1251str = text;
 
-    positions.resize((size_t)len * 12);
-    uvs.resize((size_t)len * 8);
-    indices.resize((size_t)len * 6);
+    _positions.resize((size_t)len * 12);
+    _uvs.resize((size_t)len * 8);
+    _indices.resize((size_t)len * 6);
+
+    float *positions = _positions.data();
+    float *uvs = _uvs.data();
+    uint16_t *indices = _indices.data();
 
     Vec2f p = parent->pos() + 0.5f * (pos + Vec2f(1, 1)) * parent->size();
     Vec2f m = parent->size() / (Vec2f)parent->size_px();
