@@ -1,7 +1,10 @@
 #pragma once
 
+#include <functional>
+#include <memory>
+
 namespace Sys {
-    template <typename T, typename Comp, typename Alloc>
+    template <typename T, typename Comp = std::less<typename T>, typename Alloc = std::allocator>
     class BinaryTree {
         struct Node {
             T val;
@@ -13,10 +16,10 @@ namespace Sys {
 
         Node *root_;
         size_t size_;
-        const Comp &cmp_;
+        Comp cmp_;
         typename Alloc::template rebind<Node>::other alloc_;
     public:
-        BinaryTree(const Comp &cmp = std::less<T>(), const Alloc &alloc = Alloc())
+        BinaryTree(const Comp &cmp = Comp(), const Alloc &alloc = Alloc())
             : root_(nullptr), size_(0), cmp_(cmp), alloc_(alloc) {}
         ~BinaryTree() {
             if (root_) {
