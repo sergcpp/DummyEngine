@@ -329,7 +329,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                                 &clip_from_view = decal->proj;
 
                             Ren::Mat4f view_from_world = view_from_object * object_from_world,
-                                        clip_from_world = clip_from_view * view_from_world;
+                                       clip_from_world = clip_from_view * view_from_world;
 
                             Ren::Mat4f world_from_clip = Ren::Inverse(clip_from_world);
 
@@ -342,7 +342,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             };
 
                             Ren::Vec3f bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
-                                        bbox_max = Ren::Vec3f{ std::numeric_limits<float>::lowest() };
+                                       bbox_max = Ren::Vec3f{ std::numeric_limits<float>::lowest() };
 
                             for (int k = 0; k < 8; k++) {
                                 bbox_points[k] = world_from_clip * bbox_points[k];
@@ -448,8 +448,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                 // Project target on shadow cam view matrix
                 float _dot_f = Ren::Dot(cam_target, light_dir),
-                        _dot_s = Ren::Dot(cam_target, cam_side),
-                        _dot_u = Ren::Dot(cam_target, cam_up);
+                      _dot_s = Ren::Dot(cam_target, cam_side),
+                      _dot_u = Ren::Dot(cam_target, cam_up);
 
                 // Snap coordinates to pixels
                 _dot_f = std::round(_dot_f / move_step) * move_step;
@@ -557,7 +557,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
         for (int i = 0; i < GRID_RES_Z; i++) {
             futures.push_back(
-                threads_->enqueue(GatherItemsForZSlice_Job, i, &sub_frustums[0], lights, lights_count, decals, decals_count, decals_boxes, litem_to_lsource, &data.cells[0], &data.items[0], std::ref(a_items_count))
+                threads_->enqueue(GatherItemsForZSlice_Job, i, &sub_frustums[0], lights, lights_count, decals, decals_count, decals_boxes,
+                                  litem_to_lsource, &data.cells[0], &data.items[0], std::ref(a_items_count))
             );
         }
 

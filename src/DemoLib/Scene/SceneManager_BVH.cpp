@@ -250,9 +250,10 @@ void SceneManager::UpdateObjects() {
                                        tr->bbox_max_ws[2] <= node.bbox_max[2];
 
                 if (is_fully_inside) {
-                    // Update is not needed
+                    // Update is not needed (object is inside of node bounds)
                     obj.change_mask ^= ChangePosition;
                 } else {
+                    // Object is out of node bounds, remove node and re-insert it later
                     RemoveNode(tr->node_index);
                     tr->node_index = 0xffffffff;
                 }
@@ -263,6 +264,7 @@ void SceneManager::UpdateObjects() {
     auto *free_nodes = scene_data_.free_nodes.data();
     uint32_t free_nodes_pos = 0;
 
+    // temporary buffer used to optimize memory allocation
     temp_buf.resize(scene_data_.nodes.size() * 24);
 
     for (const uint32_t obj_index : changed_objects_) {
