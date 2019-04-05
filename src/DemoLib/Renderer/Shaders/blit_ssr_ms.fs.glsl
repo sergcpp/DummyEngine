@@ -6,20 +6,27 @@ R"(
 	precision mediump float;
 #endif
 
+/*
+UNIFORM_BLOCKS
+    SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
+*/
+
 #define BSEARCH_STEPS 4
 
-layout(binding = 0) uniform mediump sampler2DMS depth_texture;
-layout(binding = 1) uniform mediump sampler2DMS norm_texture;
-layout(binding = 2) uniform mediump sampler2DMS spec_texture;
-layout(binding = 3) uniform mediump sampler2D prev_texture;
-layout(binding = 4) uniform mediump samplerCube env_texture;
+layout (std140) uniform SharedDataBlock {
+    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
+    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix; // 'delta' matrix to transform points from current frame to previous
+    mat4 uSunShadowMatrix[4];
+    vec4 uSunDir, uSunCol;
+    vec4 uClipInfo, uCamPos;
+    vec4 uResGamma;
+};
 
-layout(location = 0) uniform mat4 uProjMatrix;      // projection matrix for current frame
-layout(location = 1) uniform mat4 uInvProjMatrix;   // inverse projection matrix for current frame
-layout(location = 2) uniform mat4 uDeltaMatrix;     // 'delta' matrix to transform points from current frame to previous
-layout(location = 3) uniform vec2 uZBufferSize;     // depth buffer resolution
-layout(location = 4) uniform mat4 uInvViewMatrix;   // inverse view matrix for current frame
-layout(location = 5) uniform vec4 uClipInfo;        // camera clip info
+layout(binding = )" AS_STR(REN_SSR_DEPTH_TEX_SLOT) R"() uniform mediump sampler2DMS depth_texture;
+layout(binding = )" AS_STR(REN_SSR_NORM_TEX_SLOT) R"() uniform mediump sampler2DMS norm_texture;
+layout(binding = )" AS_STR(REN_SSR_SPEC_TEX_SLOT) R"() uniform mediump sampler2DMS spec_texture;
+layout(binding = )" AS_STR(REN_SSR_PREV_TEX_SLOT) R"() uniform mediump sampler2D prev_texture;
+layout(binding = )" AS_STR(REN_SSR_ENV_TEX_SLOT) R"() uniform mediump samplerCube env_texture;  
 
 in vec2 aVertexUVs_;
 
@@ -71,8 +78,8 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     P0 = 0.5 * P0 + 0.5;
     P1 = 0.5 * P1 + 0.5;
 
-    P0 *= uZBufferSize;
-    P1 *= uZBufferSize;
+    P0 *= uResGamma.xy;
+    P1 *= uResGamma.xy;
 
     vec2 delta = P1 - P0;
 
@@ -91,7 +98,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     vec3 dQ = (Q1 - Q0) * inv_dx;
     float dk = (k1 - k0) * inv_dx;
 
-    float stride = 0.025 * uZBufferSize.x;
+    float stride = 0.025 * uResGamma.x;
     dP *= stride;
     dQ *= stride;
     dk *= stride;
@@ -139,7 +146,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     }
 
     vec2 test_pixel = permute ? hit_pixel.yx : hit_pixel;
-    bool res = all(lessThanEqual(abs(test_pixel - (uZBufferSize * 0.5)), uZBufferSize * 0.5));
+    bool res = all(lessThanEqual(abs(test_pixel - (uResGamma.xy * 0.5)), uResGamma.xy * 0.5));
 
 #if BSEARCH_STEPS != 0
     if (res) {
@@ -195,7 +202,7 @@ void main() {
 
     vec3 normal = DecodeNormal(texelFetch(norm_texture, ivec2(aVertexUVs_), 0).xy);
 
-    vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uZBufferSize, depth, 1.0);
+    vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uResGamma.xy, depth, 1.0);
     ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
 
     vec4 ray_origin_vs = uInvProjMatrix * ray_origin_cs;
@@ -218,7 +225,7 @@ void main() {
     vec3 hit_point;
     
     if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, hit_pixel, hit_point)) {
-        hit_pixel /= uZBufferSize;
+        hit_pixel /= uResGamma.xy;
 
         // reproject hitpoint in view space of previous frame
         vec4 hit_prev = uDeltaMatrix * vec4(hit_point, 1.0);

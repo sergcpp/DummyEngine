@@ -4,12 +4,24 @@ R"(
 #ifdef GL_ES
     precision highp float;
 #endif
+
+/*
+UNIFORM_BLOCKS
+    SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
+*/
         
+layout (std140) uniform SharedDataBlock {
+    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
+    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
+    mat4 uSunShadowMatrix[4];
+    vec4 uSunDir, uSunCol;
+    vec4 uClipInfo, uCamPos;
+    vec4 uResGamma;
+};
+
 layout(binding = 0) uniform mediump sampler2DMS depth_texture;
 layout(binding = 1) uniform highp samplerBuffer nodes_buffer;
 layout(location = 12) uniform int uRootIndex;
-layout(location = 13) uniform vec2 uZBufferSize;
-layout(location = 14) uniform mat4 uInvViewProjMatrix;
 
 in vec2 aVertexUVs_;
 
@@ -41,15 +53,15 @@ vec3 heatmap(float t) {
 }
 
 void main() {
-    vec2 norm_uvs = aVertexUVs_ / uZBufferSize;
+    vec2 norm_uvs = aVertexUVs_ / uResGamma.xy;
 
     float depth = texelFetch(depth_texture, ivec2(aVertexUVs_), 0).r;
     depth = 2.0 * depth - 1.0;
 
-    vec4 ray_start_cs = vec4(aVertexUVs_.xy / uZBufferSize, 0.0, 1.0);
+    vec4 ray_start_cs = vec4(aVertexUVs_.xy / uResGamma.xy, 0.0, 1.0);
     ray_start_cs.xy = 2.0 * ray_start_cs.xy - 1.0;
 
-    vec4 ray_end_cs = vec4(aVertexUVs_.xy / uZBufferSize, depth, 1.0);
+    vec4 ray_end_cs = vec4(aVertexUVs_.xy / uResGamma.xy, depth, 1.0);
     ray_end_cs.xy = 2.0 * ray_end_cs.xy - 1.0;
 
     vec4 ray_start_ws = uInvViewProjMatrix * ray_start_cs;

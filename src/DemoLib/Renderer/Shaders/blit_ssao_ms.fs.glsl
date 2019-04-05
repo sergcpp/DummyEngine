@@ -6,10 +6,21 @@ R"(
     precision lowp float;
 #endif
 
-layout(binding = 0) uniform mediump sampler2DMS depth_texture;
+/*
+UNIFORM_BLOCKS
+    SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
+*/
 
-layout(location = 0) uniform vec2 uScreenSize;
-layout(location = 1) uniform vec4 uClipInfo;
+layout (std140) uniform SharedDataBlock {
+    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
+    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
+    mat4 uSunShadowMatrix[4];
+    vec4 uSunDir, uSunCol;
+    vec4 uClipInfo, uCamPos;
+    vec4 uResGamma;
+};
+
+layout(binding = 0) uniform mediump sampler2DMS depth_texture;
 
 in vec2 aVertexUVs_;
 
@@ -89,8 +100,8 @@ void main() {
         //int c = (hash(ivec2(gl_FragCoord.xy)) + i) % 4;
         vec2 sample_point = transforms[c] * sample_points[i];
 
-        vec2 depth_values = vec2(SampleDepthTexel(aVertexUVs_ + ss_radius * sample_point * uScreenSize),
-                                 SampleDepthTexel(aVertexUVs_ - ss_radius * sample_point * uScreenSize));
+        vec2 depth_values = vec2(SampleDepthTexel(aVertexUVs_ + ss_radius * sample_point * uResGamma.xy),
+                                 SampleDepthTexel(aVertexUVs_ - ss_radius * sample_point * uResGamma.xy));
         float sphere_width = initial_radius * sphere_widths[i];
 
         vec2 depth_diff = vec2(depth) - depth_values;

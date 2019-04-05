@@ -1,8 +1,8 @@
 R"(
 #version 310 es
 
-layout(location = 0) in vec2 aVertexPosition;
-layout(location = 3) in vec2 aVertexUVs;
+layout(location = )" AS_STR(REN_VTX_POS_LOC) R"() in vec2 aVertexPosition;
+layout(location = )" AS_STR(REN_VTX_UV1_LOC) R"() in vec2 aVertexUVs;
 
 out vec2 aVertexUVs_;
 

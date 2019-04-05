@@ -110,12 +110,6 @@ void Renderer::ExecuteDrawList(int index) {
     auto cpu_draw_start = std::chrono::high_resolution_clock::now();
     
     {
-        size_t transforms_count = drawables_data_[index].transforms.size();
-        const auto *transforms = (transforms_count == 0) ? nullptr : &drawables_data_[index].transforms[0];
-
-        size_t drawables_count = drawables_data_[index].draw_list.size();
-        const auto *drawables = (drawables_count == 0) ? nullptr : &drawables_data_[index].draw_list[0];
-
         size_t lights_count = drawables_data_[index].light_sources.size();
         const auto *lights = (lights_count == 0) ? nullptr : &drawables_data_[index].light_sources[0];
 
@@ -128,18 +122,6 @@ void Renderer::ExecuteDrawList(int index) {
         const auto *items = (items_count == 0) ? nullptr : &drawables_data_[index].items[0];
 
         const auto *p_decals_atlas = drawables_data_[index].decals_atlas;
-
-        Ren::Mat4f shadow_transforms[4];
-        size_t shadow_drawables_count[4];
-        const DrawableItem *shadow_drawables[4];
-
-        for (int i = 0; i < 4; i++) {
-            Ren::Mat4f view_from_world = drawables_data_[index].shadow_cams[i].view_matrix(),
-                       clip_from_view = drawables_data_[index].shadow_cams[i].proj_matrix();
-            shadow_transforms[i] = clip_from_view * view_from_world;
-            shadow_drawables_count[i] = drawables_data_[index].shadow_list[i].size();
-            shadow_drawables[i] = (shadow_drawables_count[i] == 0) ? nullptr : &drawables_data_[index].shadow_list[i][0];
-        }
 
         if (ctx_.w() != w_ || ctx_.h() != h_) {
             {   // Main buffer for raw frame before tonemapping

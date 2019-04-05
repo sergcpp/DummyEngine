@@ -17,22 +17,6 @@ namespace Sys {
 
 class TextureAtlas;
 
-struct DrawableItem {
-    const Ren::Mat4f    *clip_from_object, *world_from_object, *sh_clip_from_object[4];
-    const Ren::Material *mat;
-    const Ren::Mesh     *mesh;
-    const Ren::TriGroup *tris;
-    Ren::Vec4f          lm_transform;
-
-    DrawableItem(const Ren::Mat4f *_clip_from_object, const Ren::Mat4f *_world_from_object, const Ren::Material *_mat,
-                 const Ren::Mesh *_mesh, const Ren::TriGroup *_strip) : clip_from_object(_clip_from_object), world_from_object(_world_from_object), sh_clip_from_object{ nullptr },
-        mat(_mat), mesh(_mesh), tris(_strip) { }
-
-    bool operator<(const DrawableItem& rhs) const {
-        return std::tie(mat, mesh, clip_from_object, world_from_object) < std::tie(rhs.mat, rhs.mesh, rhs.clip_from_object, rhs.world_from_object);
-    }
-};
-
 struct LightSourceItem {
     float pos[3], radius;
     float col[3], brightness;
@@ -62,6 +46,33 @@ struct ItemData {
 };
 static_assert(sizeof(ItemData) == 4, "!");
 
+struct InstanceData {
+    float model_matrix[3][4];
+    float lmap_transform[4];
+};
+static_assert(sizeof(InstanceData) == 64, "!");
+
+struct ShadowDrawBatch {
+    uint32_t indices_offset, indices_count;
+    int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
+};
+
+struct MainDrawBatch {
+    uint32_t prog_id;
+    uint32_t mat_id;
+
+    uint32_t indices_offset, indices_count;
+    int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
+
+    bool operator<(const MainDrawBatch& rhs) const {
+        return std::tie(prog_id, mat_id, indices_offset) < std::tie(rhs.prog_id, rhs.mat_id, indices_offset);
+    }
+};
+
+struct ShadowList {
+    uint32_t shadow_batch_start, shadow_batch_count;
+};
+
 #define MAX_STACK_SIZE 64
 
 namespace RendererInternal {
@@ -80,6 +91,8 @@ namespace RendererInternal {
     const int MAX_DECALS_TOTAL = 4096;
     const int MAX_PROBES_TOTAL = 256;
     const int MAX_ITEMS_TOTAL = (1 << 16);
+
+    const int MAX_INSTANCES_TOTAL = 262144;
 }
 
 enum eRenderFlags {
@@ -149,7 +162,7 @@ private:
 
     static const uint32_t default_flags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | DebugBVH);
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO /*| DebugBVH*/);
 #else
         (EnableZFill | EnableCulling);
 #endif
@@ -159,8 +172,10 @@ private:
 
     struct DrawablesData {
         Ren::Camera draw_cam, shadow_cams[4];
-        std::vector<Ren::Mat4f> transforms;
-        std::vector<DrawableItem> draw_list, shadow_list[4];
+        std::vector<InstanceData> instances;
+        std::vector<ShadowDrawBatch> shadow_batches;
+        ShadowList shadow_lists[4] = {};
+        std::vector<MainDrawBatch> main_batches;
         std::vector<LightSourceItem> light_sources;
         std::vector<DecalItem> decals;
         std::vector<CellData> cells;
@@ -177,7 +192,6 @@ private:
         uint32_t root_index;
     } drawables_data_[2];
 
-    std::vector<uint32_t> object_to_drawable_;
     std::vector<const LightSource *> litem_to_lsource_;
     std::vector<const Decal *> ditem_to_decal_;
     std::vector<BBox> decals_boxes_;
@@ -192,10 +206,11 @@ private:
     Ren::eTexColorFormat temp_tex_format_;
     int temp_tex_w_ = 0, temp_tex_h_ = 0;
 
-    uint32_t unif_matrices_block_;
+    uint32_t unif_shared_data_block_;
     uint32_t temp_vao_, shadow_pass_vao_, depth_pass_vao_, draw_pass_vao_, skydome_vao_;
     uint32_t temp_buf_vtx_offset_, temp_buf_ndx_offset_, skydome_vtx_offset_, skydome_ndx_offset_;
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
+    uint32_t instances_buf_, instances_tbo_;
     uint32_t lights_buf_, lights_tbo_, decals_buf_, decals_tbo_, cells_buf_, cells_tbo_, items_buf_, items_tbo_;
     uint32_t reduce_pbo_;
 

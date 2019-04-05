@@ -24,18 +24,14 @@ layout(binding = $DecalBufSlot) uniform mediump samplerBuffer decals_buffer;
 layout(binding = $CellsBufSlot) uniform highp usamplerBuffer cells_buffer;
 layout(binding = $ItemsBufSlot) uniform highp usamplerBuffer items_buffer;
 
-layout (std140) uniform MatricesBlock {
-    mat4 uMVPMatrix;
-    mat4 uVMatrix;
-    mat4 uMMatrix;
-    mat4 uShadowMatrix[4];
-    vec4 uClipInfo;
+layout (std140) uniform SharedDataBlock {
+    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
+    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
+    mat4 uSunShadowMatrix[4];
+    vec4 uSunDir, uSunCol;
+    vec4 uClipInfo, uCamPos;
+    vec4 uResGamma;
 };
-
-layout(location = 12) uniform vec3 sun_dir;
-layout(location = 13) uniform vec3 sun_col;
-layout(location = 14) uniform float gamma;
-layout(location = 15) uniform ivec2 res;
 
 in vec3 aVertexPos_;
 in mat3 aVertexTBN_;
@@ -143,13 +139,13 @@ void main(void) {
     
     int ix = int(gl_FragCoord.x);
     int iy = int(gl_FragCoord.y);
-    int cell_index = slice * $ItemGridResX * $ItemGridResY + (iy * $ItemGridResY / res.y) * $ItemGridResX + ix * $ItemGridResX / res.x;
+    int cell_index = slice * $ItemGridResX * $ItemGridResY + (iy * $ItemGridResY / int(uResGamma.y)) * $ItemGridResX + ix * $ItemGridResX / int(uResGamma.x);
     
     highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), 0);
     
-    vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(gamma));
+    vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(uResGamma.z));
     vec3 normal_color = texture(normals_texture, aVertexUVs1_).xyz;
     vec4 specular_color = texture(specular_texture, aVertexUVs1_);
     
@@ -253,7 +249,7 @@ void main(void) {
     
     vec2 lm_uvs = aVertexUVs2_;
     
-    float lambert = max(dot(normal, sun_dir), 0.0);
+    float lambert = max(dot(normal, uSunDir.xyz), 0.0);
     float visibility = 0.0;
     if (lambert > 0.00001) {
         visibility = GetVisibility(depth, lm_uvs, additional_light);
@@ -272,17 +268,17 @@ void main(void) {
                            (sh_l_12 - vec3(0.5)) * normal.x) * sh_l_00 * 2.0;
     indirect_col = max(indirect_col, vec3(0.0));
     
-    vec2 ao_uvs = gl_FragCoord.xy / vec2(float(res.x), float(res.y));
-    float dx = $SSAOBufResDiv.0 / float(res.x), dy = $SSAOBufResDiv.0 / float(res.y);
+    vec2 ao_uvs = gl_FragCoord.xy / uResGamma.xy;
+    float dx = $SSAOBufResDiv.0 / uResGamma.x, dy = $SSAOBufResDiv.0 / uResGamma.y;
     float ambient_occlusion = texture(ao_texture, ao_uvs).r + texture(ao_texture, ao_uvs + vec2(dx, 0.0)).r +
                               texture(ao_texture, ao_uvs + vec2(0.0, dy)).r + texture(ao_texture, ao_uvs + vec2(dx, dy)).r;
     ambient_occlusion *= 0.25;
                               
-    vec3 diffuse_color = albedo_color * (sun_col * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
+    vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
     
     outColor = vec4(diffuse_color, 1.0);
     
-    vec3 normal_vs = normalize((uVMatrix * vec4(normal, 0.0)).xyz);
+    vec3 normal_vs = normalize((uViewMatrix * vec4(normal, 0.0)).xyz);
     outNormal = EncodeNormal(normal_vs);
     
     outSpecular = vec4(vec3(ambient_occlusion), 1.0) * specular_color;
