@@ -20,6 +20,16 @@ int Ren::Plane::ClassifyPoint(const float point[3]) const {
     return OnPlane;
 }
 
+Ren::eVisibilityResult Ren::Frustum::CheckVisibility(const Vec3f &point) const {
+    for (int pl = LeftPlane; pl <= FarPlane; pl++) {
+        if (planes[pl].ClassifyPoint(&point[0]) == Back) {
+            return Invisible;
+        }
+    }
+
+    return FullyVisible;
+}
+
 Ren::eVisibilityResult Ren::Frustum::CheckVisibility(const float bbox[8][3]) const {
     eVisibilityResult res = FullyVisible;
 
@@ -166,6 +176,10 @@ void Ren::Camera::UpdatePlanes() {
     world_position_[0] = -Dot(view_matrix_[0], view_matrix_[3]);
     world_position_[1] = -Dot(view_matrix_[1], view_matrix_[3]);
     world_position_[2] = -Dot(view_matrix_[2], view_matrix_[3]);
+}
+
+Ren::eVisibilityResult Ren::Camera::CheckFrustumVisibility(const Vec3f &point) const {
+    return frustum_.CheckVisibility(point);
 }
 
 Ren::eVisibilityResult Ren::Camera::CheckFrustumVisibility(const float bbox[8][3]) const {
