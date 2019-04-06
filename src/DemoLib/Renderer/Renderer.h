@@ -65,7 +65,7 @@ struct MainDrawBatch {
     int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
 
     bool operator<(const MainDrawBatch& rhs) const {
-        return std::tie(prog_id, mat_id, indices_offset) < std::tie(rhs.prog_id, rhs.mat_id, indices_offset);
+        return std::tie(prog_id, mat_id, indices_offset) < std::tie(rhs.prog_id, rhs.mat_id, rhs.indices_offset);
     }
 };
 

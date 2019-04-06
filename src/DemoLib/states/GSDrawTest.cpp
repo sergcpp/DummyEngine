@@ -412,6 +412,11 @@ void GSDrawTest::Draw(float dt_s) {
                 font_->DrawText(ui_renderer_.get(), delimiter, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
+                sprintf(text_buffer, " draw_calls: [%u, %u, %u]", back_info.shadow_draw_calls_count,
+                        back_info.depth_fill_draw_calls_count, back_info.opaque_draw_calls_count);
+                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
                 sprintf(text_buffer, "shadow_maps: %u us", back_info.shadow_time_us);
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 

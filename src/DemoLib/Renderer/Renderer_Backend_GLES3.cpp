@@ -536,6 +536,10 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
     assert(data.decals.size() < MAX_DECALS_TOTAL);
     assert(data.items_count < MAX_ITEMS_TOTAL);
 
+    backend_info_.shadow_draw_calls_count = 0;
+    backend_info_.depth_fill_draw_calls_count = 0;
+    backend_info_.opaque_draw_calls_count = 0;
+
     {   
         // Update instance buffer
         size_t instance_mem_size = data.instances.size() * sizeof(InstanceData);
@@ -618,8 +622,6 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
     glQueryCounter(queries_[1][TimeShadowMapStart], GL_TIMESTAMP);
 
     {   // draw shadow map
-        bool fb_bound = false;
-
         glEnable(GL_POLYGON_OFFSET_FILL);
 
         glBindVertexArray(shadow_pass_vao_);
@@ -657,6 +659,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
                     glDrawElementsInstanced(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
                                             (GLsizei)batch.instance_count);
+                    backend_info_.shadow_draw_calls_count++;
                 }
             }
         }
@@ -729,10 +732,13 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         // fill depth
         for (const auto &batch : data.main_batches) {
+            if (!batch.instance_count) continue;
+
             glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
 
             glDrawElementsInstanced(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
                                     (GLsizei)batch.instance_count);
+            backend_info_.depth_fill_draw_calls_count++;
         }
 
         glBindVertexArray(0);
@@ -885,6 +891,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
             glDrawElementsInstanced(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
                                     (GLsizei)batch.instance_count);
+            backend_info_.opaque_draw_calls_count++;
         }
     }
 
