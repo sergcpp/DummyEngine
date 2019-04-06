@@ -332,6 +332,8 @@ extern void (APIENTRY *glUniform1i)(GLint location, GLint v0);
 extern void (APIENTRY *glUniform2i)(GLint location, GLint v0, GLint v1);
 extern void (APIENTRY *glUniform3i)(GLint location, GLint v0, GLint v1, GLint v2);
 
+extern void (APIENTRY *glUniform1iv)(GLint location, GLsizei count, const GLint *value);
+
 extern void (APIENTRY *glUniform3fv)(GLint location, GLsizei count, const GLfloat *value);
 extern void (APIENTRY *glUniform4fv)(GLint location, GLsizei count, const GLfloat *value);
 
@@ -346,6 +348,7 @@ extern void (APIENTRY *glRenderbufferStorageMultisample)(GLenum target, GLsizei 
         GLsizei width, GLsizei height);
 
 extern void (APIENTRY *glDrawElementsBaseVertex)(GLenum mode, GLsizei count, GLenum type, GLvoid *indices, GLint basevertex);
+extern void (APIENTRY *glDrawElementsInstanced)(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
 
 extern void (APIENTRY *glDispatchCompute)(GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z);
 extern void (APIENTRY *glMemoryBarrier)(GLbitfield barriers);
