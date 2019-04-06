@@ -44,6 +44,10 @@ Ren::MaterialRef Ren::Context::LoadMaterial(const char *name, const char *mat_sr
     return ref;
 }
 
+Ren::MaterialRef Ren::Context::GetMaterial(size_t index) {
+    return { &materials_, index };
+}
+
 int Ren::Context::NumMaterialsNotReady() {
     return (int)std::count_if(materials_.begin(), materials_.end(), [](const Material &m) {
         return !m.ready();
@@ -58,6 +62,10 @@ void Ren::Context::ReleaseMaterials() {
     }
     fprintf(stderr, "-----------------------------------\n");
     materials_.Clear();
+}
+
+Ren::ProgramRef Ren::Context::GetProgram(size_t index) {
+    return { &programs_, index };
 }
 
 int Ren::Context::NumProgramsNotReady() {

@@ -140,6 +140,10 @@ public:
         return storage_ != nullptr;
     }
 
+    size_t index() const {
+        return index_;
+    }
+
     void Release() {
         if (storage_) {
             T *p = storage_->Get(index_);
