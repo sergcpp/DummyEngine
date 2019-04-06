@@ -10,6 +10,8 @@ class Material;
 class Mesh;
 class Program;
 class Texture2D;
+class TextureAtlas;
+class TextureSplitter;
 
 typedef StorageRef<Anim> AnimRef;
 typedef StorageRef<Buffer> BufferRef;

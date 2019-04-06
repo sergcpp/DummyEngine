@@ -311,7 +311,7 @@ void Ren::ParseGLSLBindings(const std::string &shader_str, std::vector<Binding> 
         std::string item(p, q);
         if (item == "/*") {
             cur_bind_target = nullptr;
-        } else if (item == "*/") {
+        } else if (item == "*/" && cur_bind_target) {
             break;
         } else if (item == "ATTRIBUTES") {
             cur_bind_target = &attr_bindings;

@@ -179,6 +179,8 @@ void Ren::Texture2D::Init(const char *name, const void *data[6], const int size[
             InitFromTGAFile(data, p);
         } else if (strstr(name, ".png") != 0 || strstr(name, ".PNG") != 0) {
             InitFromPNGFile(data, size, p);
+        } else if (strstr(name, ".ktx") != 0 || strstr(name, ".KTX") != 0) {
+            InitFromKTXFile(data, size, p);
         } else if (strstr(name, ".dds") != 0 || strstr(name, ".DDS") != 0) {
             InitFromDDSFile(data, size, p);
         } else {
@@ -533,6 +535,64 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], con
     assert(handle == tex_id);
 
     params_.cube = 1;
+
+    ChangeFilter(p.filter, p.repeat);
+}
+
+void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], const Texture2DParams &p) {
+    GLuint tex_id;
+    if (params_.format == Undefined) {
+        glGenTextures(1, &tex_id);
+        tex_id_ = tex_id;
+    } else {
+        tex_id = (GLuint)tex_id_;
+    }
+
+    params_ = p;
+    params_.format = Compressed;
+
+    KTXHeader first_header;
+    memcpy(&first_header, data[0], sizeof(KTXHeader));
+
+    int w = (int)first_header.pixel_width;
+    int h = (int)first_header.pixel_height;
+
+    params_.w = w;
+    params_.h = h;
+    params_.cube = true;
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, tex_id);
+
+    for (int j = 0; j < 6; j++) {
+        const auto *_data = (const uint8_t *)data[j];
+
+#ifndef NDEBUG
+        KTXHeader this_header;
+        memcpy(&this_header, data[j], sizeof(KTXHeader));
+
+        // make sure all images have same properties
+        assert(this_header.pixel_width == first_header.pixel_width);
+        assert(this_header.pixel_height == first_header.pixel_height);
+        assert(this_header.gl_internal_format == first_header.gl_internal_format);
+#endif
+        int data_offset = sizeof(KTXHeader);
+
+        int _w = w, _h = h;
+
+        for (int i = 0; i < (int)first_header.mipmap_levels_count; i++) {
+            uint32_t img_size;
+            memcpy(&img_size, &_data[data_offset], sizeof(uint32_t));
+            data_offset += sizeof(uint32_t);
+            glCompressedTexImage2D((GLenum)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + j), i, (GLenum)first_header.gl_internal_format, _w, _h, 0, (GLsizei)img_size, &_data[data_offset]);
+            data_offset += img_size;
+
+            _w = std::max(_w / 2, 1);
+            _h = std::max(_h / 2, 1);
+
+            int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
+            data_offset += pad;
+        }
+    }
 
     ChangeFilter(p.filter, p.repeat);
 }

@@ -195,7 +195,7 @@ float Ren::Camera::GetBoundingSphere(Vec3f &out_center) const {
 
 void Ren::Camera::ExtractSubFrustums(int resx, int resy, int resz, Frustum *sub_frustums) const {
     // grid size by x and y in clip space
-    const float grid_size_cs[2] = { 2.0f / 16, 2.0f / 8 };
+    const float grid_size_cs[2] = { 2.0f / resx, 2.0f / resy };
 
     const Mat4f world_from_clip = Ren::Inverse(proj_matrix_ * view_matrix_);
 

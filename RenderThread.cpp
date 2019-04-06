@@ -8,7 +8,9 @@ Ren::TaskList::TaskList() {
 }
 
 void Ren::TaskList::Submit(RenderThread *r) {
+    auto done = done_event;
     r->AddTaskList(std::move(*this));
+    done_event = done;
 }
 
 void Ren::TaskList::Wait() {

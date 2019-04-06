@@ -24,7 +24,7 @@ void ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint32_t> 
                          const uint32_t *indices, size_t indices_count);
 
 struct KTXHeader {
-    char identifier[12] = { '«', 'K', 'T', 'X', ' ', '1', '1', '»', '\r', '\n', '\x1A', '\n' };
+    char identifier[12] = { '\xAB', 'K', 'T', 'X', ' ', '1', '1', '\xBB', '\r', '\n', '\x1A', '\n' };
     uint32_t endianness = 0x04030201;
     uint32_t gl_type;
     uint32_t gl_type_size;
