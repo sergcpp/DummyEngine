@@ -84,7 +84,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     auto occluders_start = std::chrono::high_resolution_clock::now();
 
     {   // Rasterize occluder meshes into a small framebuffer
-        stack[stack_size++] = (uint32_t)scene.root_node;
+        stack[stack_size++] = scene.root_node;
 
         while (stack_size && culling_enabled) {
             uint32_t cur = stack[--stack_size] & index_bits;
@@ -149,7 +149,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     {   // Gather meshes and lights, skip occluded and frustum culled
         stack_size = 0;
-        stack[stack_size++] = (uint32_t)scene.root_node;
+        stack[stack_size++] = scene.root_node;
 
         while (stack_size) {
             uint32_t cur = stack[--stack_size] & index_bits;
@@ -465,12 +465,56 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             shadow_cam.UpdatePlanes();
 
             data.shadow_lists[casc].shadow_batch_start = (uint32_t)data.shadow_batches.size();
+            data.shadow_lists[casc].shadow_batch_count = 0;
+
+            if (shadow_cam.CheckFrustumVisibility(cam.world_position()) != Ren::FullyVisible) {
+                // Check if shadowmap frustum is visible to main camera
+                
+                Ren::Mat4f clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
+                Ren::Mat4f world_from_clip = Ren::Inverse(clip_from_world);
+
+                Ren::Vec4f frustum_points[] = {
+                    { -1.0f, -1.0f, 0.0f, 1.0f },
+                    {  1.0f, -1.0f, 0.0f, 1.0f },
+                    { -1.0f, -1.0f, 1.0f, 1.0f },
+                    {  1.0f, -1.0f, 1.0f, 1.0f },
+
+                    { -1.0f,  1.0f, 0.0f, 1.0f },
+                    {  1.0f,  1.0f, 0.0f, 1.0f },
+                    { -1.0f,  1.0f, 1.0f, 1.0f },
+                    {  1.0f,  1.0f, 1.0f, 1.0f }
+                };
+
+                for (int k = 0; k < 8; k++) {
+                    frustum_points[k] = world_from_clip * frustum_points[k];
+                    frustum_points[k] /= frustum_points[k][3];
+                }
+
+                SWcull_surf surf;
+
+                surf.type = SW_OCCLUDEE;
+                surf.prim_type = SW_TRIANGLES;
+                surf.index_type = SW_UNSIGNED_BYTE;
+                surf.attribs = &frustum_points[0][0];
+                surf.indices = &bbox_indices[0];
+                surf.stride = 4 * sizeof(float);
+                surf.count = 36;
+                surf.base_vertex = 0;
+                surf.xform = Ren::ValuePtr(clip_from_identity);
+                surf.dont_skip = nullptr;
+
+                swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
+
+                if (surf.visible == 0) {
+                    continue;
+                }
+            }
 
             const uint32_t skip_check_bit = (1u << 31);
             const uint32_t index_bits = ~skip_check_bit;
 
             stack_size = 0;
-            stack[stack_size++] = (uint32_t)scene.root_node;
+            stack[stack_size++] = scene.root_node;
 
             while (stack_size) {
                 uint32_t cur = stack[--stack_size] & index_bits;
