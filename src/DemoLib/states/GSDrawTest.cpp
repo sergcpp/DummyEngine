@@ -92,6 +92,16 @@ void GSDrawTest::Enter() {
         return true;
     });
 
+    game_->RegisterCommand("lightmap", [weak_this](const std::vector<std::string> &args) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= EnableLightmap;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+                           });
+
     game_->RegisterCommand("pt", [weak_this](const std::vector<std::string> &args) ->bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
@@ -819,7 +829,8 @@ void GSDrawTest::UpdateFrame(int list_index) {
     static float t = 0.0f;
     t += 0.02f;
 
-    const uint32_t monkey_ids[] = { 12, 13, 14, 15, 16 };
+    //const uint32_t monkey_ids[] = { 12, 13, 14, 15, 16 };
+    const uint32_t monkey_ids[] = { 10, 11, 12, 13, 14 };
 
     auto *monkey1 = scene_manager_->GetObject(monkey_ids[0]);
     if ((monkey1->comp_mask & mask) == mask) {

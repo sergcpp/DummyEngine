@@ -850,11 +850,17 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         BindTexture(REN_SSAO_TEX_SLOT, default_ao_->tex_id());
     }
 
-    if (data.env.lm_direct) {
+    if ((data.render_flags & EnableLightmap) && data.env.lm_direct) {
         BindTexture(REN_LMAP_DIR_SLOT, data.env.lm_direct->tex_id());
         BindTexture(REN_LMAP_INDIR_SLOT, data.env.lm_indir->tex_id());
         for (int sh_l = 0; sh_l < 4; sh_l++) {
             BindTexture(REN_LMAP_SH_SLOT + sh_l, data.env.lm_indir_sh[sh_l]->tex_id());
+        }
+    } else {
+        BindTexture(REN_LMAP_DIR_SLOT, default_lightmap_->tex_id());
+        BindTexture(REN_LMAP_INDIR_SLOT, default_lightmap_->tex_id());
+        for (int sh_l = 0; sh_l < 4; sh_l++) {
+            BindTexture(REN_LMAP_SH_SLOT + sh_l, default_lightmap_->tex_id());
         }
     }
 

@@ -192,8 +192,8 @@ void Renderer::ExecuteDrawList(int index) {
         act_w_ = int(scr_w_ * 0.4f);
         act_h_ = int(scr_h_ * 0.6f);
 #else
-        act_w_ = scr_w_;
-        act_h_ = scr_h_;
+        act_w_ = int(scr_w_ * 1.0f);
+        act_h_ = int(scr_h_ * 1.0f);
 #endif
 
         drawables_data_[index].render_info.lights_count = (uint32_t)lights_count;
