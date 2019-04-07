@@ -20,6 +20,15 @@ const int SHADOWMAP_HEIGHT = SHADOWMAP_WIDTH / 2;
 
 // Sun shadow occupies half of atlas
 const int SUN_SHADOW_RES = SHADOWMAP_WIDTH / 2;
+
+int upper_power_of_two(int v) {
+    int res = 1;
+    while (res < v) {
+        res *= 2;
+    }
+    return res;
+}
+
 }
 
 #define BBOX_POINTS(min, max) \
@@ -141,36 +150,42 @@ void Renderer::ExecuteDrawList(int index) {
                     desc[2].filter = Ren::BilinearNoMipmap;
                     desc[2].repeat = Ren::ClampToEdge;
                 }
-                clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, true, Ren::NoFilter, 4);
+#if defined(__ANDROID__)
+                clean_buf_ = FrameBuf(int(ctx_.w() * 0.4f), int(ctx_.h() * 0.6f), desc, 3, true, Ren::NoFilter, 4);
+#else
+                clean_buf_ = FrameBuf(int(ctx_.w() * 1.0f), int(ctx_.h() * 1.0f), desc, 3, true, Ren::NoFilter, 4);
+#endif
             }
             {   // Buffer for SSAO
                 FrameBuf::ColorAttachmentDesc desc;
                 desc.format = Ren::RawR8;
                 desc.filter = Ren::BilinearNoMipmap;
                 desc.repeat = Ren::ClampToEdge;
-                ssao_buf_ = FrameBuf(ctx_.w() / REN_SSAO_BUF_RES_DIV, ctx_.h() / REN_SSAO_BUF_RES_DIV, &desc, 1, false);
+                ssao_buf_ = FrameBuf(clean_buf_.w / REN_SSAO_BUF_RES_DIV, clean_buf_.h / REN_SSAO_BUF_RES_DIV, &desc, 1, false);
             }
             {   // Auxilary buffer for reflections
                 FrameBuf::ColorAttachmentDesc desc;
                 desc.format = Ren::RawRGB16F;
                 desc.filter = Ren::Bilinear;
                 desc.repeat = Ren::ClampToEdge;
-                refl_buf_ = FrameBuf(ctx_.w() / 2, ctx_.h() / 2, &desc, 1, false);
+                refl_buf_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, false);
             }
             {   // Buffer that holds previous frame (used for SSR)
+                int base_res = upper_power_of_two(clean_buf_.w) / 4;
+
                 FrameBuf::ColorAttachmentDesc desc;
                 desc.format = Ren::RawRGB16F;
                 desc.filter = Ren::Bilinear;
                 desc.repeat = Ren::ClampToEdge;
-                down_buf_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, &desc, 1, false);
+                down_buf_ = FrameBuf(base_res, base_res / 2, &desc, 1, false);
             }
             {   // Auxilary buffers for bloom effect
                 FrameBuf::ColorAttachmentDesc desc;
                 desc.format = Ren::RawRGBA16F;
                 desc.filter = Ren::BilinearNoMipmap;
                 desc.repeat = Ren::ClampToEdge;
-                blur_buf1_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, &desc, 1, false);
-                blur_buf2_ = FrameBuf(ctx_.w() / 4, ctx_.h() / 4, &desc, 1, false);
+                blur_buf1_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, false);
+                blur_buf2_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, false);
             }
             w_ = ctx_.w();
             h_ = ctx_.h();

@@ -599,7 +599,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         shrd_data.uSunShadowMatrix[3] = data.shadow_cams[3].proj_matrix() * data.shadow_cams[3].view_matrix();
         shrd_data.uSunDir = Ren::Vec4f{ data.env.sun_dir[0], data.env.sun_dir[1], data.env.sun_dir[2], 0.0f };
         shrd_data.uSunCol = Ren::Vec4f{ data.env.sun_col[0], data.env.sun_col[1], data.env.sun_col[2], 0.0f };
-        shrd_data.uResGamma = Ren::Vec4f{ float(w_), float(h_), 2.2f, 0.0f };
+        shrd_data.uResGamma = Ren::Vec4f{ float(clean_buf_.w), float(clean_buf_.h), 2.2f, 0.0f };
 
         const float near = data.draw_cam.near(), far = data.draw_cam.far();
         shrd_data.uClipInfo = { near * far, near, far, std::log2(1.0f + far / near) };
@@ -918,8 +918,8 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         glBindBufferBase(GL_UNIFORM_BUFFER, cur_program->uniform_block(REN_UB_SHARED_DATA_LOC).loc, (GLuint)unif_shared_data_block_);
 
-        const float uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
-                              float(w_), float(h_),     0.0f, float(h_) };
+        const float uvs[] = { 0.0f, 0.0f,                                   float(clean_buf_.w), 0.0f,
+                              float(clean_buf_.w), float(clean_buf_.h),     0.0f, float(clean_buf_.h) };
 
         glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
@@ -1011,8 +1011,8 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glBindFramebuffer(GL_FRAMEBUFFER, down_buf_.fb);
         glViewport(0, 0, down_buf_.w, down_buf_.h);
 
-        const float fs_quad_uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
-                                      float(w_), float(h_),     0.0f, float(h_) };
+        const float fs_quad_uvs[] = { 0.0f, 0.0f,                                   float(clean_buf_.w), 0.0f,
+                                      float(clean_buf_.w), float(clean_buf_.h),     0.0f, float(clean_buf_.h) };
 
         const Ren::Program *cur_program = nullptr;
 
@@ -1088,17 +1088,14 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         glUseProgram(blit_red_prog_->prog_id());
 
-        const float fs_quad_pos[] = { -1.0f, -1.0f,       1.0f, -1.0f,
-                                      1.0f, 1.0f,         -1.0f, 1.0f };
-
         const float fs_quad_uvs[] = { 0.0f, 0.0f,     1.0f, 0.0f,
                                       1.0f, 1.0f,     0.0f, 1.0f };
 
         glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_pos), fs_quad_pos);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs), fs_quad_uvs);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs), fs_quad_uvs);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
         const Ren::Vec2f offset_step = { 1.0f / reduced_buf_.w, 1.0f / reduced_buf_.h };
@@ -1107,7 +1104,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
 
         glUniform1i(blit_red_prog_->uniform(U_TEX).loc, REN_DIFF_TEX_SLOT);
 
@@ -1171,8 +1168,8 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         }
         glUseProgram(blit_prog->prog_id());
 
-        const float fs_quad_uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
-                                      float(w_), float(h_),     0.0f, float(h_) };
+        const float fs_quad_uvs[] = { 0.0f, 0.0f,                                   float(clean_buf_.w), 0.0f,
+                                      float(clean_buf_.w), float(clean_buf_.h),     0.0f, float(clean_buf_.h) };
 
         glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
@@ -1187,10 +1184,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
         glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
 
-        //glUniform1i(cur_program->uniform(U_TEX).loc, REN_DIFF_TEX_SLOT);
-        //glUniform1i(cur_program->uniform(U_TEX + 1).loc, REN_DIFF_TEX_SLOT + 1);
-        //glUniform1i(cur_program->uniform(U_TEX + 2).loc, REN_DIFF_TEX_SLOT + 2);
-        glUniform2f(13, float(w_), float(h_));
+        glUniform2f(13, float(clean_buf_.w), float(clean_buf_.h));
 
         glUniform1f(U_GAMMA, (data.render_flags & DebugLights) ? 1.0f : 2.2f);
 
