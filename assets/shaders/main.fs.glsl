@@ -243,7 +243,7 @@ void main(void) {
         
         atten = _dot1 * atten;
         if (_dot2 > dir_and_spot.w && (col_and_brightness.w * atten) > $FltEps) {
-            additional_light += col_and_brightness.xyz * atten;
+            additional_light += col_and_brightness.xyz * atten * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
         }
     }
     

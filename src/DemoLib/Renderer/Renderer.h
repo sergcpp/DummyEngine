@@ -74,8 +74,15 @@ struct MainDrawBatch {
 };
 
 struct ShadowList {
+    int shadow_map_pos[2], shadow_map_size[2];
     uint32_t shadow_batch_start, shadow_batch_count;
 };
+
+struct ShadowMapRegion {
+    Ren::Vec4f transform;
+    Ren::Mat4f clip_from_world;
+};
+static_assert(sizeof(ShadowMapRegion) == 80, "!");
 
 #define MAX_STACK_SIZE 64
 
@@ -97,6 +104,7 @@ namespace RendererInternal {
     const int MAX_ITEMS_TOTAL = (1 << 16);
 
     const int MAX_INSTANCES_TOTAL = 262144;
+    const int MAX_SHADOWMAPS_TOTAL = 64;
 }
 
 enum eRenderFlags {
@@ -176,10 +184,11 @@ private:
     int frame_counter_ = 0;
 
     struct DrawablesData {
-        Ren::Camera draw_cam, shadow_cams[4];
+        Ren::Camera draw_cam;
         std::vector<InstanceData> instances;
         std::vector<ShadowDrawBatch> shadow_batches;
-        ShadowList shadow_lists[4] = {};
+        std::vector<ShadowList> shadow_lists;
+        std::vector<ShadowMapRegion> shadow_regions;
         std::vector<MainDrawBatch> main_batches;
         std::vector<LightSourceItem> light_sources;
         std::vector<DecalItem> decals;
@@ -215,7 +224,7 @@ private:
     uint32_t temp_vao_, shadow_pass_vao_, depth_pass_vao_, draw_pass_vao_, skydome_vao_;
     uint32_t temp_buf_vtx_offset_, temp_buf_ndx_offset_, skydome_vtx_offset_, skydome_ndx_offset_;
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
-    uint32_t instances_buf_, instances_tbo_;
+    uint32_t instances_buf_, instances_tbo_, shadow_reg_buf_, shadow_reg_tbo_;
     uint32_t lights_buf_, lights_tbo_, decals_buf_, decals_tbo_, cells_buf_, cells_tbo_, items_buf_, items_tbo_;
     uint32_t reduce_pbo_;
 

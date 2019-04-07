@@ -181,6 +181,29 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: instances TBO");
 
     {
+        GLuint shadow_reg_buf;
+
+        glGenBuffers(1, &shadow_reg_buf);
+        glBindBuffer(GL_TEXTURE_BUFFER, shadow_reg_buf);
+        glBufferData(GL_TEXTURE_BUFFER, sizeof(ShadowMapRegion) * MAX_SHADOWMAPS_TOTAL, nullptr, GL_DYNAMIC_COPY);
+        glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+        shadow_reg_buf_ = (uint32_t)shadow_reg_buf;
+
+        GLuint shadow_reg_tbo;
+
+        glGenTextures(1, &shadow_reg_tbo);
+        glBindTexture(GL_TEXTURE_BUFFER, shadow_reg_tbo);
+
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, shadow_reg_buf);
+        glBindTexture(GL_TEXTURE_BUFFER, 0);
+
+        shadow_reg_tbo_ = (uint32_t)shadow_reg_tbo;
+    }
+
+    Ren::CheckError("[InitRendererInternal]: shadow regions TBO");
+
+    {
         GLuint lights_buf;
 
         glGenBuffers(1, &lights_buf);
@@ -446,6 +469,14 @@ void Renderer::DestroyRendererInternal() {
     }
 
     {
+        GLuint shadow_reg_tbo = (GLuint)shadow_reg_tbo_;
+        glDeleteTextures(1, &shadow_reg_tbo);
+
+        GLuint shadow_reg_buf = (GLuint)shadow_reg_buf_;
+        glDeleteBuffers(1, &shadow_reg_buf);
+    }
+
+    {
         GLuint lights_tbo = (GLuint)lights_tbo_;
         glDeleteTextures(1, &lights_tbo);
 
@@ -549,6 +580,14 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
+        // Update shadowmap buffer
+        size_t shadowmap_mem_size = data.shadow_regions.size() * sizeof(ShadowMapRegion);
+        if (shadowmap_mem_size) {
+            glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)shadow_reg_buf_);
+            glBufferSubData(GL_TEXTURE_BUFFER, 0, shadowmap_mem_size, data.shadow_regions.data());
+            glBindBuffer(GL_TEXTURE_BUFFER, 0);
+        }
+
         // Update lights buffer
         size_t lights_mem_size = data.light_sources.size() * sizeof(LightSourceItem);
         if (lights_mem_size) {
@@ -593,10 +632,12 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         shrd_data.uInvViewProjMatrix = Ren::Inverse(shrd_data.uViewProjMatrix);
         // delta matrix between current and previous frame
         shrd_data.uDeltaMatrix = prev_view_from_world_ * shrd_data.uInvViewMatrix;
-        shrd_data.uSunShadowMatrix[0] = data.shadow_cams[0].proj_matrix() * data.shadow_cams[0].view_matrix();
-        shrd_data.uSunShadowMatrix[1] = data.shadow_cams[1].proj_matrix() * data.shadow_cams[1].view_matrix();
-        shrd_data.uSunShadowMatrix[2] = data.shadow_cams[2].proj_matrix() * data.shadow_cams[2].view_matrix();
-        shrd_data.uSunShadowMatrix[3] = data.shadow_cams[3].proj_matrix() * data.shadow_cams[3].view_matrix();
+        if (data.shadow_regions.size() >= 4) {
+            shrd_data.uSunShadowMatrix[0] = data.shadow_regions[0].clip_from_world;
+            shrd_data.uSunShadowMatrix[1] = data.shadow_regions[1].clip_from_world;
+            shrd_data.uSunShadowMatrix[2] = data.shadow_regions[2].clip_from_world;
+            shrd_data.uSunShadowMatrix[3] = data.shadow_regions[3].clip_from_world;
+        }
         shrd_data.uSunDir = Ren::Vec4f{ data.env.sun_dir[0], data.env.sun_dir[1], data.env.sun_dir[2], 0.0f };
         shrd_data.uSunCol = Ren::Vec4f{ data.env.sun_col[0], data.env.sun_col[1], data.env.sun_col[2], 0.0f };
         shrd_data.uResAndFRes = Ren::Vec4f{ float(act_w_), float(act_h_), float(clean_buf_.w), float(clean_buf_.h) };
@@ -633,35 +674,26 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         glUseProgram(shadow_prog_->prog_id());
 
-        for (int casc = 0; casc < 4; casc++) {
-            const auto &shadow_list = data.shadow_lists[casc];
+        glPolygonOffset(1.85f, 6.0f);
 
-            if (shadow_list.shadow_batch_count) {
-                const int OneCascadeRes = SUN_SHADOW_RES / 2;
+        for (int i = 0; i < (int)data.shadow_lists.size(); i++) {
+            const auto &shadow_list = data.shadow_lists[i];
+            if (!shadow_list.shadow_batch_count) continue;
 
-                if (casc == 0) {
-                    glViewport(0, 0, OneCascadeRes, OneCascadeRes);
-                    glPolygonOffset(1.85f, 6.0f);
-                } else if (casc == 1) {
-                    glViewport(OneCascadeRes, 0, OneCascadeRes, OneCascadeRes);
-                } else if (casc == 2) {
-                    glViewport(0, OneCascadeRes, OneCascadeRes, OneCascadeRes);
-                } else {
-                    glViewport(OneCascadeRes, OneCascadeRes, OneCascadeRes, OneCascadeRes);
-                }
+            glViewport(shadow_list.shadow_map_pos[0], shadow_list.shadow_map_pos[1],
+                       shadow_list.shadow_map_size[0], shadow_list.shadow_map_size[1]);
 
-                glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(shrd_data.uSunShadowMatrix[casc]));
+            glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(data.shadow_regions[i].clip_from_world));
 
-                for (uint32_t i = shadow_list.shadow_batch_start; i < shadow_list.shadow_batch_start + shadow_list.shadow_batch_count; i++) {
-                    const auto &batch = data.shadow_batches[i];
-                    if (!batch.instance_count) continue;
+            for (uint32_t i = shadow_list.shadow_batch_start; i < shadow_list.shadow_batch_start + shadow_list.shadow_batch_count; i++) {
+                const auto &batch = data.shadow_batches[i];
+                if (!batch.instance_count) continue;
 
-                    glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
+                glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
 
-                    glDrawElementsInstanced(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                            (GLsizei)batch.instance_count);
-                    backend_info_.shadow_draw_calls_count++;
-                }
+                glDrawElementsInstanced(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
+                                        (GLsizei)batch.instance_count);
+                backend_info_.shadow_draw_calls_count++;
             }
         }
 

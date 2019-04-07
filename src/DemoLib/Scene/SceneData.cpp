@@ -81,6 +81,18 @@ void LightSource::Read(const JsObject &js_in) {
         dir[1] = -1.0f;
         spot = -1.0f;
     }
+
+    if (js_in.Has("cast_shadow")) {
+        cast_shadow = ((const JsLiteral &)js_in.at("cast_shadow")).val == JS_TRUE;
+    } else {
+        cast_shadow = false;
+    }
+
+    if (js_in.Has("cache_shadow")) {
+        cache_shadow = ((const JsLiteral &)js_in.at("cache_shadow")).val == JS_TRUE;
+    } else {
+        cache_shadow = false;
+    }
 }
 
 void LightSource::Write(JsObject &js_out) {

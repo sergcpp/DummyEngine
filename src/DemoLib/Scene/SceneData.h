@@ -47,6 +47,7 @@ struct LightSource : public Ren::RefCounter {
     Ren::Vec3f dir;
     float spot;
     float influence;
+    bool cast_shadow, cache_shadow;
 
     Ren::Vec3f bbox_min, bbox_max;
 
