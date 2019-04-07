@@ -99,9 +99,8 @@ int Ren::TextureSplitter::Insert_Recursive(int i, const int res[2]) {
 }
 
 int Ren::TextureSplitter::Find_Recursive(int i, const int pos[2]) const {
-    if (nodes_[i].is_free ||
-            pos[0] < nodes_[i].pos[0] || pos[0] > (nodes_[i].pos[0] + nodes_[i].size[0]) ||
-            pos[1] < nodes_[i].pos[1] || pos[1] > (nodes_[i].pos[1] + nodes_[i].size[1])) {
+    if (pos[0] < nodes_[i].pos[0] || pos[0] > (nodes_[i].pos[0] + nodes_[i].size[0]) ||
+        pos[1] < nodes_[i].pos[1] || pos[1] > (nodes_[i].pos[1] + nodes_[i].size[1])) {
         return -1;
     }
 
@@ -112,7 +111,7 @@ int Ren::TextureSplitter::Find_Recursive(int i, const int pos[2]) const {
         if (ndx != -1) return ndx;
         return Find_Recursive(ch1, pos);
     } else {
-        if (pos[0] == nodes_[i].pos[0] && pos[1] == nodes_[i].pos[1]) {
+        if (!nodes_[i].is_free && pos[0] == nodes_[i].pos[0] && pos[1] == nodes_[i].pos[1]) {
             return i;
         } else {
             return -1;
