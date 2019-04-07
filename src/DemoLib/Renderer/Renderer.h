@@ -55,6 +55,10 @@ static_assert(sizeof(InstanceData) == 64, "!");
 struct ShadowDrawBatch {
     uint32_t indices_offset, indices_count;
     int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
+
+    bool operator<(const ShadowDrawBatch& rhs) const {
+        return indices_offset < rhs.indices_offset;
+    }
 };
 
 struct MainDrawBatch {

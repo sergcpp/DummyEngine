@@ -569,12 +569,12 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     std::sort(std::begin(data.main_batches), std::end(data.main_batches));
 
     // Merge similar batches
-    for (int start = 0, end = 1; end <= int(data.main_batches.size()); end++) {
+    for (uint32_t start = 0, end = 1; end <= uint32_t(data.main_batches.size()); end++) {
         if (end == data.main_batches.size() ||
             data.main_batches[start].indices_offset != data.main_batches[end].indices_offset) {
 
             auto &b1 = data.main_batches[start];
-            for (int i = start + 1; i < end; i++) {
+            for (uint32_t i = start + 1; i < end; i++) {
                 auto &b2 = data.main_batches[i];
 
                 if (b1.instance_count + b2.instance_count < REN_MAX_BATCH_SIZE) {
@@ -585,6 +585,35 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             }
 
             start = end;
+        }
+    }
+
+    for (int casc = 0; casc < 4; casc++) {
+        const auto &list = data.shadow_lists[casc];
+
+        uint32_t shadow_batch_end = list.shadow_batch_start + list.shadow_batch_count;
+
+        std::sort(std::begin(data.shadow_batches) + list.shadow_batch_start,
+                  std::begin(data.shadow_batches) + shadow_batch_end);
+
+        for (uint32_t start = list.shadow_batch_start, end = list.shadow_batch_start + 1;
+             end <= shadow_batch_end; end++) {
+            if (end == shadow_batch_end ||
+                data.shadow_batches[start].indices_offset != data.shadow_batches[end].indices_offset) {
+
+                auto &b1 = data.shadow_batches[start];
+                for (uint32_t i = start + 1; i < end; i++) {
+                    auto &b2 = data.shadow_batches[i];
+
+                    if (b1.instance_count + b2.instance_count < REN_MAX_BATCH_SIZE) {
+                        memcpy(&b1.instance_indices[b1.instance_count], &b2.instance_indices[0], b2.instance_count * sizeof(int));
+                        b1.instance_count += b2.instance_count;
+                        b2.instance_count = 0;
+                    }
+                }
+
+                start = end;
+            }
         }
     }
 

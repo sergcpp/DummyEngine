@@ -654,6 +654,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
                 for (uint32_t i = shadow_list.shadow_batch_start; i < shadow_list.shadow_batch_start + shadow_list.shadow_batch_count; i++) {
                     const auto &batch = data.shadow_batches[i];
+                    if (!batch.instance_count) continue;
 
                     glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
 
