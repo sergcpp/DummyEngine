@@ -16,8 +16,8 @@ layout (std140) uniform SharedDataBlock {
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     mat4 uSunShadowMatrix[4];
     vec4 uSunDir, uSunCol;
-    vec4 uClipInfo, uCamPos;
-    vec4 uResGamma;
+    vec4 uClipInfo, uCamPosAndGamma;
+    vec4 uResAndFRes;
 };
 
 layout(binding = 0) uniform mediump sampler2DMS depth_texture;
@@ -100,8 +100,8 @@ void main() {
         //int c = (hash(ivec2(gl_FragCoord.xy)) + i) % 4;
         vec2 sample_point = transforms[c] * sample_points[i];
 
-        vec2 depth_values = vec2(SampleDepthTexel(aVertexUVs_ + ss_radius * sample_point * uResGamma.xy),
-                                 SampleDepthTexel(aVertexUVs_ - ss_radius * sample_point * uResGamma.xy));
+        vec2 depth_values = vec2(SampleDepthTexel(aVertexUVs_ + ss_radius * sample_point * uResAndFRes.xy),
+                                 SampleDepthTexel(aVertexUVs_ - ss_radius * sample_point * uResAndFRes.xy));
         float sphere_width = initial_radius * sphere_widths[i];
 
         vec2 depth_diff = vec2(depth) - depth_values;

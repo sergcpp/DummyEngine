@@ -15,8 +15,8 @@ layout (std140) uniform SharedDataBlock {
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     mat4 uSunShadowMatrix[4];
     vec4 uSunDir, uSunCol;
-    vec4 uClipInfo, uCamPos;
-    vec4 uResGamma;
+    vec4 uClipInfo, uCamPosAndGamma;
+    vec4 uResAndFRes;
 };
 
 layout(binding = 0) uniform mediump sampler2DMS depth_texture;
@@ -53,15 +53,15 @@ vec3 heatmap(float t) {
 }
 
 void main() {
-    vec2 norm_uvs = aVertexUVs_ / uResGamma.xy;
+    vec2 norm_uvs = aVertexUVs_ / uResAndFRes.xy;
 
     float depth = texelFetch(depth_texture, ivec2(aVertexUVs_), 0).r;
     depth = 2.0 * depth - 1.0;
 
-    vec4 ray_start_cs = vec4(aVertexUVs_.xy / uResGamma.xy, 0.0, 1.0);
+    vec4 ray_start_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, 0.0, 1.0);
     ray_start_cs.xy = 2.0 * ray_start_cs.xy - 1.0;
 
-    vec4 ray_end_cs = vec4(aVertexUVs_.xy / uResGamma.xy, depth, 1.0);
+    vec4 ray_end_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, depth, 1.0);
     ray_end_cs.xy = 2.0 * ray_end_cs.xy - 1.0;
 
     vec4 ray_start_ws = uInvViewProjMatrix * ray_start_cs;

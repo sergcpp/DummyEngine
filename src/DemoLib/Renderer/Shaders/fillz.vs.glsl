@@ -14,8 +14,8 @@ layout (std140) uniform SharedDataBlock {
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     mat4 uSunShadowMatrix[4];
     vec4 uSunDir, uSunCol;
-    vec4 uClipInfo, uCamPos;
-    vec4 uResGamma;
+    vec4 uClipInfo, uCamPosAndGamma;
+    vec4 uResAndFRes;
 };
 
 layout(binding = )" AS_STR(REN_INSTANCE_BUF_SLOT) R"() uniform mediump samplerBuffer instances_buffer;

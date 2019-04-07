@@ -16,10 +16,10 @@ namespace RendererInternal {
         Ren::Mat4f uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
         Ren::Mat4f uSunShadowMatrix[4];
         Ren::Vec4f uSunDir, uSunCol;
-        Ren::Vec4f uClipInfo, uCamPos;
-        Ren::Vec4f uResGamma;
+        Ren::Vec4f uClipInfo, uCamPosAndGamma;
+        Ren::Vec4f uResAndFRes;
     };
-    //static_assert(sizeof(SharedDataBlock) == 480, "!");
+    static_assert(sizeof(SharedDataBlock) == 784, "!");
 
     const Ren::Vec2f poisson_disk[] = {
         { -0.705374f, -0.668203f }, { -0.780145f, 0.486251f  }, { 0.566637f, 0.605213f   }, { 0.488876f, -0.783441f  },
@@ -599,13 +599,13 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         shrd_data.uSunShadowMatrix[3] = data.shadow_cams[3].proj_matrix() * data.shadow_cams[3].view_matrix();
         shrd_data.uSunDir = Ren::Vec4f{ data.env.sun_dir[0], data.env.sun_dir[1], data.env.sun_dir[2], 0.0f };
         shrd_data.uSunCol = Ren::Vec4f{ data.env.sun_col[0], data.env.sun_col[1], data.env.sun_col[2], 0.0f };
-        shrd_data.uResGamma = Ren::Vec4f{ float(clean_buf_.w), float(clean_buf_.h), 2.2f, 0.0f };
+        shrd_data.uResAndFRes = Ren::Vec4f{ float(act_w_), float(act_h_), float(clean_buf_.w), float(clean_buf_.h) };
 
         const float near = data.draw_cam.near(), far = data.draw_cam.far();
         shrd_data.uClipInfo = { near * far, near, far, std::log2(1.0f + far / near) };
 
         const auto &pos = data.draw_cam.world_position();
-        shrd_data.uCamPos = Ren::Vec4f{ pos[0], pos[1], pos[2], 1.0f };
+        shrd_data.uCamPosAndGamma = Ren::Vec4f{ pos[0], pos[1], pos[2], 2.2f };
 
         glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_shared_data_block_);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SharedDataBlock), &shrd_data);
@@ -676,7 +676,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
     // Bind main buffer for drawing
     glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
-    glViewport(0, 0, clean_buf_.w, clean_buf_.h);
+    glViewport(0, 0, act_w_, act_h_);
 
     /**************************************************************************************************/
     /*                                          SKYDOME PASS                                          */
@@ -696,7 +696,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glBindBufferBase(GL_UNIFORM_BUFFER, skydome_prog_->uniform_block(REN_UB_SHARED_DATA_LOC).loc, (GLuint)unif_shared_data_block_);
 
         Ren::Mat4f translate_matrix;
-        translate_matrix = Ren::Translate(translate_matrix, Ren::Vec3f{ shrd_data.uCamPos });
+        translate_matrix = Ren::Translate(translate_matrix, Ren::Vec3f{ shrd_data.uCamPosAndGamma });
 
         Ren::Mat4f scale_matrix;
         scale_matrix = Ren::Scale(scale_matrix, Ren::Vec3f{ 5000.0f, 5000.0f, 5000.0f });
@@ -772,8 +772,8 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         glBindBufferBase(GL_UNIFORM_BUFFER, ssao_prog->uniform_block(REN_UB_SHARED_DATA_LOC).loc, (GLuint)unif_shared_data_block_);
 
-        const float uvs[] = { 0.0f, 0.0f,                                   float(clean_buf_.w), 0.0f,
-                              float(clean_buf_.w), float(clean_buf_.h),     0.0f, float(clean_buf_.h) };
+        const float uvs[] = { 0.0f, 0.0f,                       float(act_w_), 0.0f,
+                              float(act_w_), float(act_h_),     0.0f, float(act_h_) };
 
         glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
@@ -800,10 +800,8 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
 
         glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
-        glViewport(0, 0, clean_buf_.w, clean_buf_.h);
+        glViewport(0, 0, act_w_, act_h_);
     }
-
-    glBindVertexArray(0);
 
 #if !defined(__ANDROID__)
     if (data.render_flags & DebugWireframe) {
@@ -918,8 +916,8 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         glBindBufferBase(GL_UNIFORM_BUFFER, cur_program->uniform_block(REN_UB_SHARED_DATA_LOC).loc, (GLuint)unif_shared_data_block_);
 
-        const float uvs[] = { 0.0f, 0.0f,                                   float(clean_buf_.w), 0.0f,
-                              float(clean_buf_.w), float(clean_buf_.h),     0.0f, float(clean_buf_.h) };
+        const float uvs[] = { 0.0f, 0.0f,                       float(act_w_), 0.0f,
+                              float(act_w_), float(act_h_),     0.0f, float(act_h_) };
 
         glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
@@ -953,7 +951,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         // Compose reflections on top of clean buffer
         glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
-        glViewport(0, 0, clean_buf_.w, clean_buf_.h);
+        glViewport(0, 0, act_w_, act_h_);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_ONE, GL_ONE);
@@ -966,7 +964,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         cur_program = blit_multiply_ms_prog_.get();
         glUseProgram(cur_program->prog_id());
 
-        glUniform2f(13, float(w_), float(h_));
+        glUniform2f(13, float(act_w_), float(act_h_));
 
         BindTexture(0, refl_buf_.attachments[0].tex);
 
@@ -1011,8 +1009,8 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glBindFramebuffer(GL_FRAMEBUFFER, down_buf_.fb);
         glViewport(0, 0, down_buf_.w, down_buf_.h);
 
-        const float fs_quad_uvs[] = { 0.0f, 0.0f,                                   float(clean_buf_.w), 0.0f,
-                                      float(clean_buf_.w), float(clean_buf_.h),     0.0f, float(clean_buf_.h) };
+        const float fs_quad_uvs[] = { 0.0f, 0.0f,                       float(act_w_), 0.0f,
+                                      float(act_w_), float(act_h_),     0.0f, float(act_h_) };
 
         const Ren::Program *cur_program = nullptr;
 
@@ -1168,8 +1166,8 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         }
         glUseProgram(blit_prog->prog_id());
 
-        const float fs_quad_uvs[] = { 0.0f, 0.0f,                                   float(clean_buf_.w), 0.0f,
-                                      float(clean_buf_.w), float(clean_buf_.h),     0.0f, float(clean_buf_.h) };
+        const float fs_quad_uvs[] = { 0.0f, 0.0f,                       float(act_w_), 0.0f,
+                                      float(act_w_), float(act_h_),     0.0f, float(act_h_) };
 
         glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
@@ -1184,7 +1182,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
         glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
 
-        glUniform2f(13, float(clean_buf_.w), float(clean_buf_.h));
+        glUniform2f(13, float(act_w_), float(act_h_));
 
         glUniform1f(U_GAMMA, (data.render_flags & DebugLights) ? 1.0f : 2.2f);
 
@@ -1239,7 +1237,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         }
         glUseProgram(blit_prog->prog_id());
 
-        glUniform2i(U_RES, w_, h_);
+        glUniform2i(U_RES, scr_w_, scr_h_);
 
         if (data.render_flags & DebugLights) {
             glUniform1i(16, 0);
@@ -1249,8 +1247,8 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         glUniform4fv(17, 1, Ren::ValuePtr(shrd_data.uClipInfo));
 
-        const float fs_quad_uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
-                                      float(w_), float(h_),     0.0f, float(h_) };
+        const float fs_quad_uvs[] = { 0.0f, 0.0f,                       float(act_w_), 0.0f,
+                                      float(act_w_), float(act_h_),     0.0f, float(act_h_) };
 
         glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
@@ -1288,7 +1286,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
     if (((data.render_flags & (EnableCulling | DebugCulling)) == (EnableCulling | DebugCulling)) && !depth_pixels_[0].empty()) {
         glUseProgram(blit_prog_->prog_id());
 
-        float sx = 2 * 256.0f / w_, sy = 2 * 128.0f / h_;
+        float sx = 2 * 256.0f / scr_w_, sy = 2 * 128.0f / scr_h_;
 
         const float positions[] = { -1.0f, -1.0f,               -1.0f + sx, -1.0f,
                                     -1.0f + sx, -1.0f + sy,     -1.0f, -1.0f + sy };
@@ -1335,7 +1333,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
     if (data.render_flags & DebugShadow) {
         glUseProgram(blit_prog_->prog_id());
 
-        float k = (float(shadow_buf_.h) / shadow_buf_.w) * (float(w_) / h_);
+        float k = (float(shadow_buf_.h) / shadow_buf_.w) * (float(scr_w_) / scr_h_);
 
         const float positions[] = { -1.0f, -1.0f,                   -1.0f + 1.0f, -1.0f,
                                     -1.0f + 1.0f, -1.0f + 1.0f * k, -1.0f, -1.0f + 1.0f * k };
@@ -1387,7 +1385,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         int resx = data.decals_atlas->resx(),
             resy = data.decals_atlas->resy();
 
-        float k = float(w_) / h_;
+        float k = float(scr_w_) / scr_h_;
         k *= float(resy) / resx;
 
         BlitTexture(-1.0f, -1.0f, 1.0f, 1.0f * k, data.decals_atlas->tex_id(0), resx, resy);
@@ -1426,8 +1424,8 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
             debug_bvh_prog = blit_debug_bvh_ms_prog_.get();
             glUseProgram(debug_bvh_prog->prog_id());
 
-            const float uvs[] = { 0.0f, 0.0f,               float(w_), 0.0f,
-                                  float(w_), float(h_),     0.0f, float(h_) };
+            const float uvs[] = { 0.0f, 0.0f,                       float(scr_w_), 0.0f,
+                                  float(scr_w_), float(scr_h_),     0.0f, float(scr_h_) };
 
             glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
@@ -1684,7 +1682,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, w_, h_);
+    glViewport(0, 0, scr_w_, scr_h_);
 
     {   
         const Ren::Program *cur_program = blit_combine_prog_.get();

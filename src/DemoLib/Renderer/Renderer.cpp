@@ -132,7 +132,7 @@ void Renderer::ExecuteDrawList(int index) {
 
         const auto *p_decals_atlas = drawables_data_[index].decals_atlas;
 
-        if (ctx_.w() != w_ || ctx_.h() != h_) {
+        if (ctx_.w() != scr_w_ || ctx_.h() != scr_h_) {
             {   // Main buffer for raw frame before tonemapping
                 FrameBuf::ColorAttachmentDesc desc[3];
                 {   // Main color
@@ -150,11 +150,7 @@ void Renderer::ExecuteDrawList(int index) {
                     desc[2].filter = Ren::BilinearNoMipmap;
                     desc[2].repeat = Ren::ClampToEdge;
                 }
-#if defined(__ANDROID__)
-                clean_buf_ = FrameBuf(int(ctx_.w() * 0.4f), int(ctx_.h() * 0.6f), desc, 3, true, Ren::NoFilter, 4);
-#else
-                clean_buf_ = FrameBuf(int(ctx_.w() * 1.0f), int(ctx_.h() * 1.0f), desc, 3, true, Ren::NoFilter, 4);
-#endif
+                clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, true, Ren::NoFilter, 4);
             }
             {   // Buffer for SSAO
                 FrameBuf::ColorAttachmentDesc desc;
@@ -187,10 +183,18 @@ void Renderer::ExecuteDrawList(int index) {
                 blur_buf1_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, false);
                 blur_buf2_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, false);
             }
-            w_ = ctx_.w();
-            h_ = ctx_.h();
-            LOGI("CleanBuf resized to %ix%i", w_, h_);
+            scr_w_ = ctx_.w();
+            scr_h_ = ctx_.h();
+            LOGI("CleanBuf resized to %ix%i", scr_w_, scr_h_);
         }
+
+#if defined(__ANDROID__)
+        act_w_ = int(scr_w_ * 0.4f);
+        act_h_ = int(scr_h_ * 0.6f);
+#else
+        act_w_ = scr_w_;
+        act_h_ = scr_h_;
+#endif
 
         drawables_data_[index].render_info.lights_count = (uint32_t)lights_count;
         drawables_data_[index].render_info.lights_data_size = (uint32_t)lights_count * sizeof(LightSourceItem);

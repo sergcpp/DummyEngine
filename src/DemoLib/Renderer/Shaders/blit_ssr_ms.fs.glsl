@@ -18,8 +18,8 @@ layout (std140) uniform SharedDataBlock {
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix; // 'delta' matrix to transform points from current frame to previous
     mat4 uSunShadowMatrix[4];
     vec4 uSunDir, uSunCol;
-    vec4 uClipInfo, uCamPos;
-    vec4 uResGamma;
+    vec4 uClipInfo, uCamPosAndGamma;
+    vec4 uResAndFRes;
 };
 
 layout(binding = )" AS_STR(REN_SSR_DEPTH_TEX_SLOT) R"() uniform mediump sampler2DMS depth_texture;
@@ -78,8 +78,8 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     P0 = 0.5 * P0 + 0.5;
     P1 = 0.5 * P1 + 0.5;
 
-    P0 *= uResGamma.xy;
-    P1 *= uResGamma.xy;
+    P0 *= uResAndFRes.xy;
+    P1 *= uResAndFRes.xy;
 
     vec2 delta = P1 - P0;
 
@@ -98,7 +98,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     vec3 dQ = (Q1 - Q0) * inv_dx;
     float dk = (k1 - k0) * inv_dx;
 
-    float stride = 0.025 * uResGamma.x;
+    float stride = 0.025 * uResAndFRes.x;
     dP *= stride;
     dQ *= stride;
     dk *= stride;
@@ -146,7 +146,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     }
 
     vec2 test_pixel = permute ? hit_pixel.yx : hit_pixel;
-    bool res = all(lessThanEqual(abs(test_pixel - (uResGamma.xy * 0.5)), uResGamma.xy * 0.5));
+    bool res = all(lessThanEqual(abs(test_pixel - (uResAndFRes.xy * 0.5)), uResAndFRes.xy * 0.5));
 
 #if BSEARCH_STEPS != 0
     if (res) {
@@ -202,7 +202,7 @@ void main() {
 
     vec3 normal = DecodeNormal(texelFetch(norm_texture, ivec2(aVertexUVs_), 0).xy);
 
-    vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uResGamma.xy, depth, 1.0);
+    vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, depth, 1.0);
     ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
 
     vec4 ray_origin_vs = uInvProjMatrix * ray_origin_cs;
@@ -225,7 +225,7 @@ void main() {
     vec3 hit_point;
     
     if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, hit_pixel, hit_point)) {
-        hit_pixel /= uResGamma.xy;
+        hit_pixel /= uResAndFRes.xy;
 
         // reproject hitpoint in view space of previous frame
         vec4 hit_prev = uDeltaMatrix * vec4(hit_point, 1.0);

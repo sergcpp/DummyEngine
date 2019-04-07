@@ -29,8 +29,8 @@ layout (std140) uniform SharedDataBlock {
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     mat4 uSunShadowMatrix[4];
     vec4 uSunDir, uSunCol;
-    vec4 uClipInfo, uCamPos;
-    vec4 uResGamma;
+    vec4 uClipInfo, uCamPosAndGamma;
+    vec4 uResAndFRes;
 };
 
 in vec3 aVertexPos_;
@@ -139,13 +139,13 @@ void main(void) {
     
     int ix = int(gl_FragCoord.x);
     int iy = int(gl_FragCoord.y);
-    int cell_index = slice * $ItemGridResX * $ItemGridResY + (iy * $ItemGridResY / int(uResGamma.y)) * $ItemGridResX + ix * $ItemGridResX / int(uResGamma.x);
+    int cell_index = slice * $ItemGridResX * $ItemGridResY + (iy * $ItemGridResY / int(uResAndFRes.y)) * $ItemGridResX + ix * $ItemGridResX / int(uResAndFRes.x);
     
     highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), 0);
     
-    vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(uResGamma.z));
+    vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(uCamPosAndGamma.w));
     vec3 normal_color = texture(normals_texture, aVertexUVs1_).xyz;
     vec4 specular_color = texture(specular_texture, aVertexUVs1_);
     
@@ -268,8 +268,8 @@ void main(void) {
                            (sh_l_12 - vec3(0.5)) * normal.x) * sh_l_00 * 2.0;
     indirect_col = max(indirect_col, vec3(0.0));
     
-    vec2 ao_uvs = gl_FragCoord.xy / uResGamma.xy;
-    float dx = $SSAOBufResDiv.0 / uResGamma.x, dy = $SSAOBufResDiv.0 / uResGamma.y;
+    vec2 ao_uvs = gl_FragCoord.xy / uResAndFRes.xy;
+    float dx = $SSAOBufResDiv.0 / uResAndFRes.z, dy = $SSAOBufResDiv.0 / uResAndFRes.w;
     float ambient_occlusion = texture(ao_texture, ao_uvs).r + texture(ao_texture, ao_uvs + vec2(dx, 0.0)).r +
                               texture(ao_texture, ao_uvs + vec2(0.0, dy)).r + texture(ao_texture, ao_uvs + vec2(dx, dy)).r;
     ambient_occlusion *= 0.25;

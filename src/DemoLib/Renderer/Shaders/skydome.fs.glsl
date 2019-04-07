@@ -12,8 +12,8 @@ layout (std140) uniform SharedDataBlock {
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     mat4 uSunShadowMatrix[4];
     vec4 uSunDir, uSunCol;
-    vec4 uClipInfo, uCamPos;
-    vec4 uResGamma;
+    vec4 uClipInfo, uCamPosAndGamma;
+    vec4 uResAndFRes;
 };
 
 in vec3 aVertexPos_;
@@ -26,7 +26,7 @@ vec3 RGBMDecode(vec4 rgbm) {
 }
 
 void main() {
-    vec3 view_dir_ws = normalize(aVertexPos_ - uCamPos.xyz);
+    vec3 view_dir_ws = normalize(aVertexPos_ - uCamPosAndGamma.xyz);
 
     outColor.rgb = clamp(RGBMDecode(texture(env_texture, view_dir_ws)), vec3(0.0), vec3(16.0));
     outColor.a = 1.0;

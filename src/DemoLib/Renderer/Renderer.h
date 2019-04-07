@@ -160,7 +160,7 @@ private:
     Ren::Texture2DRef default_lightmap_, default_ao_;
 
     FrameBuf clean_buf_, refl_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf_;
-    int w_ = 0, h_ = 0;
+    int scr_w_ = 0, scr_h_ = 0, act_w_ = 0, act_h_ = 0;
 
     Ren::TextureSplitter shadow_splitter_;
 
