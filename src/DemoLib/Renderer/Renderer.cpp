@@ -182,6 +182,7 @@ void Renderer::ExecuteDrawList(int index) {
             LOGI("CleanBuf resized to %ix%i", scr_w_, scr_h_);
         }
 
+        // TODO: Change actual resolution dynamically
 #if defined(__ANDROID__)
         act_w_ = int(scr_w_ * 0.4f);
         act_h_ = int(scr_h_ * 0.6f);

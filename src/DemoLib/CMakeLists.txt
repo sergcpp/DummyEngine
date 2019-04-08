@@ -54,6 +54,7 @@ set(SHADERS_SOURCES Renderer/Shaders/blit.fs.glsl
                     Renderer/Shaders/blit_debug_ms.fs.glsl
                     Renderer/Shaders/blit_debug_bvh.fs.glsl
                     Renderer/Shaders/blit_debug_bvh_ms.fs.glsl
+                    Renderer/Shaders/blit_depth.fs.glsl
                     Renderer/Shaders/blit_down.fs.glsl
                     Renderer/Shaders/blit_down_ms.fs.glsl
                     Renderer/Shaders/blit_gauss.fs.glsl

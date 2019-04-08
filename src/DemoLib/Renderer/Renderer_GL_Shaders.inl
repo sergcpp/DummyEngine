@@ -71,6 +71,10 @@ static const char blit_debug_ms_fs[] =
 #include "Shaders/blit_debug_ms.fs.glsl"
 ;
 
+static const char blit_depth_fs[] =
+#include "Shaders/blit_depth.fs.glsl"
+;
+
 static const char blit_ssr_ms_fs[] =
 #include "Shaders/blit_ssr_ms.fs.glsl"
 ;

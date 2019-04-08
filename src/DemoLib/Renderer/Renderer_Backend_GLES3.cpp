@@ -80,6 +80,9 @@ namespace RendererInternal {
     const float fs_quad_positions[] = { -1.0f, -1.0f,   1.0f, -1.0f,
                                          1.0f, 1.0f,   -1.0f, 1.0f };
 
+    const float fs_quad_norm_uvs[] = { 0.0f, 0.0f,     1.0f, 0.0f,
+                                       1.0f, 1.0f,     0.0f, 1.0f };
+
     const uint8_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
 }
 
@@ -142,6 +145,9 @@ void Renderer::InitRendererInternal() {
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_debug_bvh_ms");
     blit_debug_bvh_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug_bvh_ms", blit_ms_vs, blit_debug_bvh_ms_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_depth");
+    blit_depth_prog_ = ctx_.LoadProgramGLSL("blit_depth", blit_vs, blit_depth_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
 
     {
@@ -257,9 +263,10 @@ void Renderer::InitRendererInternal() {
         glBufferData(GL_TEXTURE_BUFFER, sizeof(CellData) * CELLS_COUNT, nullptr, GL_DYNAMIC_COPY);
 
         // fill with zeros
-        CellData dummy[GRID_RES_X * GRID_RES_Y] = {};
-        for (int i = 0; i < GRID_RES_Z; i++) {
-            glBufferSubData(GL_TEXTURE_BUFFER, i * sizeof(CellData) * GRID_RES_X * GRID_RES_Y, sizeof(CellData) * GRID_RES_X * GRID_RES_Y, &dummy[0]);
+        CellData dummy[REN_GRID_RES_X * REN_GRID_RES_Y] = {};
+        for (int i = 0; i < REN_GRID_RES_Z; i++) {
+            glBufferSubData(GL_TEXTURE_BUFFER, i * sizeof(CellData) * REN_GRID_RES_X * REN_GRID_RES_Y,
+                            sizeof(CellData) * REN_GRID_RES_X * REN_GRID_RES_Y, &dummy[0]);
         }
 
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
@@ -571,7 +578,10 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
     backend_info_.depth_fill_draw_calls_count = 0;
     backend_info_.opaque_draw_calls_count = 0;
 
-    {   
+    {   // Update buffers
+
+        // TODO: try to use persistently mapped buffers
+
         // Update instance buffer
         size_t instance_mem_size = data.instances.size() * sizeof(InstanceData);
         if (instance_mem_size) {
@@ -657,7 +667,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
     glGetIntegerv(GL_VIEWPORT, viewport_before);
 
     /**************************************************************************************************/
-    /*                                           SHADOW PASS                                          */
+    /*                                           SHADOW MAPS                                          */
     /**************************************************************************************************/
 
     glQueryCounter(queries_[1][TimeShadowMapStart], GL_TIMESTAMP);
@@ -685,7 +695,8 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
             glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(data.shadow_regions[i].clip_from_world));
 
-            for (uint32_t i = shadow_list.shadow_batch_start; i < shadow_list.shadow_batch_start + shadow_list.shadow_batch_count; i++) {
+            for (uint32_t i = shadow_list.shadow_batch_start;
+                 i < shadow_list.shadow_batch_start + shadow_list.shadow_batch_count; i++) {
                 const auto &batch = data.shadow_batches[i];
                 if (!batch.instance_count) continue;
 
@@ -711,10 +722,11 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
     glViewport(0, 0, act_w_, act_h_);
 
     /**************************************************************************************************/
-    /*                                          SKYDOME PASS                                          */
+    /*                                   SKYDOME DRAW / DEPTH CLEAR                                   */
     /**************************************************************************************************/
 
-    if ((data.render_flags & DebugWireframe) == 0 && data.env.env_map) {   // Draw skydome (and clear depth with it)
+    if ((data.render_flags & DebugWireframe) == 0 && data.env.env_map) {
+        // Draw skydome (and clear depth with it)
         glDepthFunc(GL_ALWAYS);
 
         // Write to color and specular
@@ -871,6 +883,9 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
     glActiveTexture((GLenum)(GL_TEXTURE0 + REN_ITEMS_BUF_SLOT));
     glBindTexture(GL_TEXTURE_BUFFER, (GLuint)items_tbo_);
+
+    glActiveTexture((GLenum)(GL_TEXTURE0 + REN_SHADOW_BUF_SLOT));
+    glBindTexture(GL_TEXTURE_BUFFER, (GLuint)shadow_reg_tbo_);
 
     if (data.decals_atlas) {
         BindTexture(REN_DECAL_TEX_SLOT, data.decals_atlas->tex_id(0));
@@ -1037,6 +1052,10 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glDisable(GL_DEPTH_TEST);
     }
 
+    /**************************************************************************************************/
+    /*                                            BLUR PASS                                           */
+    /**************************************************************************************************/
+
     glQueryCounter(queries_[1][TimeBlurStart], GL_TIMESTAMP);
 
     //glDisable(GL_DEPTH_TEST);
@@ -1124,14 +1143,11 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         glUseProgram(blit_red_prog_->prog_id());
 
-        const float fs_quad_uvs[] = { 0.0f, 0.0f,     1.0f, 0.0f,
-                                      1.0f, 1.0f,     0.0f, 1.0f };
-
         glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
         glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs), fs_quad_uvs);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_norm_uvs), fs_quad_norm_uvs);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
         const Ren::Vec2f offset_step = { 1.0f / reduced_buf_.w, 1.0f / reduced_buf_.h };
@@ -1180,10 +1196,14 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         reduced_average_ = alpha * cur_average + (1.0f - alpha) * reduced_average_;
     }
 
+    /**************************************************************************************************/
+    /*                                            BLIT PASS                                           */
+    /**************************************************************************************************/
+
     glQueryCounter(queries_[1][TimeBlitStart], GL_TIMESTAMP);
     
-
-    {   // Clear shadowmap buffer
+    if (!(data.render_flags & DebugShadow)){
+        // Clear shadowmap buffer
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
         glViewport(0, 0, shadow_buf_.w, shadow_buf_.h);
         glDepthMask(GL_TRUE);
@@ -1261,6 +1281,10 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
+
+    /**************************************************************************************************/
+    /*                                            DEBUGGING                                           */
+    /**************************************************************************************************/
 
     if (data.render_flags & (DebugLights | DebugDecals)) {
         glEnable(GL_BLEND);
@@ -1369,38 +1393,58 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
     }
 
     if (data.render_flags & DebugShadow) {
-        glUseProgram(blit_prog_->prog_id());
-
-        float k = (float(shadow_buf_.h) / shadow_buf_.w) * (float(scr_w_) / scr_h_);
-
-        const float positions[] = { -1.0f, -1.0f,                   -1.0f + 1.0f, -1.0f,
-                                    -1.0f + 1.0f, -1.0f + 1.0f * k, -1.0f, -1.0f + 1.0f * k };
-
-        const float uvs[] = { 0.0f, 0.0f,       1.0f, 0.0f,
-                              1.0f, 1.0f,       0.0f, 1.0f };
-
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
-
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
+        glUseProgram(blit_depth_prog_->prog_id());
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
         glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + 8 * sizeof(float)));
 
-        glUniform1i(blit_prog_->uniform(U_TEX).loc, REN_DIFF_TEX_SLOT);
-        glUniform1f(blit_prog_->uniform(4).loc, 1.0f);
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
+
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
         BindTexture(REN_DIFF_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        float k = (float(shadow_buf_.h) / shadow_buf_.w) * (float(scr_w_) / scr_h_);
+
+        for (int i = 0; i < (int)data.shadow_lists.size(); i++) {
+            const auto &sh_list = data.shadow_lists[i];
+            const auto &reg = data.shadow_regions[i];
+
+            const float positions[] = { -1.0f + reg.transform[0],                       -1.0f + reg.transform[1] * k,
+                                        -1.0f + reg.transform[0] + reg.transform[2],    -1.0f + reg.transform[1] * k,
+                                        -1.0f + reg.transform[0] + reg.transform[2],    -1.0f + (reg.transform[1] + reg.transform[3]) * k,
+                                        -1.0f + reg.transform[0],                       -1.0f + (reg.transform[1] + reg.transform[3]) * k };
+
+            const float uvs[] = { float(sh_list.shadow_map_pos[0]),                                 float(sh_list.shadow_map_pos[1]),
+                                  float(sh_list.shadow_map_pos[0] + sh_list.shadow_map_size[0]),    float(sh_list.shadow_map_pos[1]),
+                                  float(sh_list.shadow_map_pos[0] + sh_list.shadow_map_size[0]),    float(sh_list.shadow_map_pos[1] + sh_list.shadow_map_size[1]),
+                                  float(sh_list.shadow_map_pos[0]),                                 float(sh_list.shadow_map_pos[1] + sh_list.shadow_map_size[1]) };
+
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
+            
+            glUniform1f(blit_depth_prog_->uniform("near").loc, sh_list.cam_near);
+            glUniform1f(blit_depth_prog_->uniform("far").loc, sh_list.cam_far);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        }
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
+
+        // Clear shadowmap buffer
+        glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
+        glViewport(0, 0, shadow_buf_.w, shadow_buf_.h);
+        glDepthMask(GL_TRUE);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glDepthMask(GL_FALSE);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
     }
 
     if (data.render_flags & DebugReduce) {
@@ -1499,6 +1543,11 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
     glBindVertexArray(0);
 
     glQueryCounter(queries_[1][TimeDrawEnd], GL_TIMESTAMP);
+
+
+    /**************************************************************************************************/
+    /*                                              TIMERS                                            */
+    /**************************************************************************************************/
 
     {   // Get timer queries result (for previous frame)
         GLuint64 time_draw_start,

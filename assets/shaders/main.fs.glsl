@@ -23,6 +23,7 @@ layout(binding = $LightBufSlot) uniform mediump samplerBuffer lights_buffer;
 layout(binding = $DecalBufSlot) uniform mediump samplerBuffer decals_buffer;
 layout(binding = $CellsBufSlot) uniform highp usamplerBuffer cells_buffer;
 layout(binding = $ItemsBufSlot) uniform highp usamplerBuffer items_buffer;
+layout(binding = $ShadowBufSlot) uniform highp samplerBuffer shadow_buffer;
 
 layout (std140) uniform SharedDataBlock {
     mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
@@ -82,7 +83,7 @@ float GetVisibility(float frag_depth, in vec2 lm_uvs, inout vec3 additional_ligh
         vec2(0.75, -0.81)
     );
 
-    const float shadow_softness = 3.0 / $ShadRes.0;
+    const vec2 shadow_softness = vec2(3.0 / $ShadRes.0, 1.5 / $ShadRes.0);
     
     float visibility = 0.0;
 
@@ -223,7 +224,7 @@ void main(void) {
         int li = int(bitfieldExtract(item_data, 0, 12));
 
         vec4 pos_and_radius = texelFetch(lights_buffer, li * 3 + 0);
-        highp vec4 col_and_brightness = texelFetch(lights_buffer, li * 3 + 1);
+        highp vec4 col_and_index = texelFetch(lights_buffer, li * 3 + 1);
         vec4 dir_and_spot = texelFetch(lights_buffer, li * 3 + 2);
         
         vec3 L = pos_and_radius.xyz - aVertexPos_;
@@ -234,7 +235,9 @@ void main(void) {
         highp float denom = d / pos_and_radius.w + 1.0;
         highp float atten = 1.0 / (denom * denom);
         
-        highp float factor = LIGHT_ATTEN_CUTOFF / col_and_brightness.w;
+        highp float brightness = max(col_and_index.x, max(col_and_index.y, col_and_index.z));
+        
+        highp float factor = LIGHT_ATTEN_CUTOFF / brightness;
         atten = (atten - factor) / (1.0 - LIGHT_ATTEN_CUTOFF);
         atten = max(atten, 0.0);
         
@@ -242,8 +245,64 @@ void main(void) {
         float _dot2 = dot(L, dir_and_spot.xyz);
         
         atten = _dot1 * atten;
-        if (_dot2 > dir_and_spot.w && (col_and_brightness.w * atten) > $FltEps) {
-            additional_light += col_and_brightness.xyz * atten * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
+        if (_dot2 > dir_and_spot.w && (brightness * atten) > $FltEps) {
+            int shadowreg_index = floatBitsToInt(col_and_index.w);
+            if (shadowreg_index != -1) {
+                vec4 reg_tr = texelFetch(shadow_buffer, shadowreg_index * 5 + 0);
+                
+                mat4 shad_matr;
+                shad_matr[0] = texelFetch(shadow_buffer, shadowreg_index * 5 + 1);
+                shad_matr[1] = texelFetch(shadow_buffer, shadowreg_index * 5 + 2);
+                shad_matr[2] = texelFetch(shadow_buffer, shadowreg_index * 5 + 3);
+                shad_matr[3] = texelFetch(shadow_buffer, shadowreg_index * 5 + 4);
+                
+                vec4 pp = shad_matr * vec4(aVertexPos_, 1.0);
+                pp /= pp.w;
+                pp.xyz = pp.xyz * 0.5 + vec3(0.5);
+                pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
+                
+                const vec2 shadow_softness = vec2(3.0 / $ShadRes.0, 1.5 / $ShadRes.0);
+
+                highp float r = M_PI * (-1.0 + 2.0 * rand(gl_FragCoord.xy));
+                highp vec2 rx = vec2(cos(r), sin(r));
+                highp vec2 ry = vec2(rx.y, -rx.x);
+                
+                const vec2 poisson_disk[16] = vec2[16](
+                    vec2(-0.5, 0.0),
+                    vec2(0.0, 0.5),
+                    vec2(0.5, 0.0),
+                    vec2(0.0, -0.5),
+                
+                    vec2(0.0, 0.0),
+                    vec2(-0.1, -0.32),
+                    vec2(0.17, 0.31),
+                    vec2(0.35, 0.04),
+                    
+                    vec2(0.07, 0.7),
+                    vec2(-0.72, 0.09),
+                    vec2(0.73, 0.05),
+                    vec2(0.1, -0.71),
+                    
+                    vec2(0.72, 0.8),
+                    vec2(-0.75, 0.74),
+                    vec2(-0.8, -0.73),
+                    vec2(0.75, -0.81)
+                );
+                
+                float visibility = 0.0;
+                
+                int num_samples = min(int(32.0 * reg_tr.w), 16);
+                
+                highp float weight = 1.0 / float(num_samples);
+                for (int i = 0; i < num_samples; i++) {
+                    visibility += texture(shadow_texture, pp.xyz + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
+                }
+                visibility *= weight;
+                
+                atten *= visibility;
+            }
+            
+            additional_light += col_and_index.xyz * atten * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
         }
     }
     

@@ -19,7 +19,7 @@ class TextureAtlas;
 
 struct LightSourceItem {
     float pos[3], radius;
-    float col[3], brightness;
+    float col[3]; int shadowreg_index;
     float dir[3], spot;
 };
 static_assert(sizeof(LightSourceItem) == 48, "!");
@@ -76,6 +76,7 @@ struct MainDrawBatch {
 struct ShadowList {
     int shadow_map_pos[2], shadow_map_size[2];
     uint32_t shadow_batch_start, shadow_batch_count;
+    float cam_near, cam_far; // for debugging
 };
 
 struct ShadowMapRegion {
@@ -87,11 +88,7 @@ static_assert(sizeof(ShadowMapRegion) == 80, "!");
 #define MAX_STACK_SIZE 64
 
 namespace RendererInternal {
-    const int GRID_RES_X = REN_GRID_RES_X;
-    const int GRID_RES_Y = REN_GRID_RES_Y;
-    const int GRID_RES_Z = REN_GRID_RES_Z;
-
-    const int CELLS_COUNT = GRID_RES_X * GRID_RES_Y * GRID_RES_Z;
+    const int CELLS_COUNT = REN_GRID_RES_X * REN_GRID_RES_Y * REN_GRID_RES_Z;
 
     const int MAX_LIGHTS_PER_CELL = 255;
     const int MAX_DECALS_PER_CELL = 255;
@@ -165,7 +162,7 @@ private:
     SWcull_ctx cull_ctx_;
     Ren::ProgramRef skydome_prog_, fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_combine_ms_prog_,
         blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_, blit_debug_prog_, blit_debug_ms_prog_, blit_ssr_ms_prog_,
-        blit_ao_ms_prog_, blit_multiply_prog_, blit_multiply_ms_prog_, blit_debug_bvh_prog_, blit_debug_bvh_ms_prog_;
+        blit_ao_ms_prog_, blit_multiply_prog_, blit_multiply_ms_prog_, blit_debug_bvh_prog_, blit_debug_bvh_ms_prog_, blit_depth_prog_;
     Ren::Texture2DRef default_lightmap_, default_ao_;
 
     FrameBuf clean_buf_, refl_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf_;
@@ -175,7 +172,7 @@ private:
 
     static const uint32_t default_flags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap /*| DebugBVH*/);
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap /*| DebugShadow*/);
 #else
         (EnableZFill | EnableCulling | EnableLightmap);
 #endif
