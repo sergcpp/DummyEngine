@@ -7,6 +7,7 @@ R"(
 layout(binding = )" AS_STR(REN_DIFF_TEX_SLOT) R"() uniform sampler2D s_texture;
 uniform float near;
 uniform float far;
+uniform vec3 color;
 
 in vec2 aVertexUVs_;
 
@@ -17,8 +18,8 @@ void main() {
     if (near > 0.0001) {
         // cam is not orthographic
         depth = (near * far) / (depth * (near - far) + far);
-        depth /= far;
     }
-    outColor = vec4(depth, depth, depth, 1.0);
+    depth /= far;
+    outColor = vec4(vec3(depth) * color, 1.0);
 }
 )"

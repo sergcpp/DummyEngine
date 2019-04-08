@@ -99,9 +99,6 @@ namespace RendererInternal {
     const int MAX_DECALS_TOTAL = 4096;
     const int MAX_PROBES_TOTAL = 256;
     const int MAX_ITEMS_TOTAL = (1 << 16);
-
-    const int MAX_INSTANCES_TOTAL = 262144;
-    const int MAX_SHADOWMAPS_TOTAL = 64;
 }
 
 enum eRenderFlags {
@@ -221,7 +218,7 @@ private:
     uint32_t temp_vao_, shadow_pass_vao_, depth_pass_vao_, draw_pass_vao_, skydome_vao_;
     uint32_t temp_buf_vtx_offset_, temp_buf_ndx_offset_, skydome_vtx_offset_, skydome_ndx_offset_;
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
-    uint32_t instances_buf_, instances_tbo_, shadow_reg_buf_, shadow_reg_tbo_;
+    uint32_t instances_buf_, instances_tbo_;
     uint32_t lights_buf_, lights_tbo_, decals_buf_, decals_tbo_, cells_buf_, cells_tbo_, items_buf_, items_tbo_;
     uint32_t reduce_pbo_;
 

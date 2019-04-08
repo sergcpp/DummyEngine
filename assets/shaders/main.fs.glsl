@@ -23,12 +23,16 @@ layout(binding = $LightBufSlot) uniform mediump samplerBuffer lights_buffer;
 layout(binding = $DecalBufSlot) uniform mediump samplerBuffer decals_buffer;
 layout(binding = $CellsBufSlot) uniform highp usamplerBuffer cells_buffer;
 layout(binding = $ItemsBufSlot) uniform highp usamplerBuffer items_buffer;
-layout(binding = $ShadowBufSlot) uniform highp samplerBuffer shadow_buffer;
+
+struct ShadowMapRegion {
+    vec4 transform;
+    mat4 clip_from_world;
+};
 
 layout (std140) uniform SharedDataBlock {
     mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    mat4 uSunShadowMatrix[4];
+    ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
     vec4 uResAndFRes;
@@ -248,15 +252,9 @@ void main(void) {
         if (_dot2 > dir_and_spot.w && (brightness * atten) > $FltEps) {
             int shadowreg_index = floatBitsToInt(col_and_index.w);
             if (shadowreg_index != -1) {
-                vec4 reg_tr = texelFetch(shadow_buffer, shadowreg_index * 5 + 0);
+                vec4 reg_tr = uShadowMapRegions[shadowreg_index].transform;
                 
-                mat4 shad_matr;
-                shad_matr[0] = texelFetch(shadow_buffer, shadowreg_index * 5 + 1);
-                shad_matr[1] = texelFetch(shadow_buffer, shadowreg_index * 5 + 2);
-                shad_matr[2] = texelFetch(shadow_buffer, shadowreg_index * 5 + 3);
-                shad_matr[3] = texelFetch(shadow_buffer, shadowreg_index * 5 + 4);
-                
-                vec4 pp = shad_matr * vec4(aVertexPos_, 1.0);
+                vec4 pp = uShadowMapRegions[shadowreg_index].clip_from_world * vec4(aVertexPos_, 1.0);
                 pp /= pp.w;
                 pp.xyz = pp.xyz * 0.5 + vec3(0.5);
                 pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
@@ -267,7 +265,7 @@ void main(void) {
                 highp vec2 rx = vec2(cos(r), sin(r));
                 highp vec2 ry = vec2(rx.y, -rx.x);
                 
-                const vec2 poisson_disk[16] = vec2[16](
+                const vec2 poisson_disk[8] = vec2[8](
                     vec2(-0.5, 0.0),
                     vec2(0.0, 0.5),
                     vec2(0.5, 0.0),
@@ -276,22 +274,12 @@ void main(void) {
                     vec2(0.0, 0.0),
                     vec2(-0.1, -0.32),
                     vec2(0.17, 0.31),
-                    vec2(0.35, 0.04),
-                    
-                    vec2(0.07, 0.7),
-                    vec2(-0.72, 0.09),
-                    vec2(0.73, 0.05),
-                    vec2(0.1, -0.71),
-                    
-                    vec2(0.72, 0.8),
-                    vec2(-0.75, 0.74),
-                    vec2(-0.8, -0.73),
-                    vec2(0.75, -0.81)
+                    vec2(0.35, 0.04)
                 );
                 
                 float visibility = 0.0;
                 
-                int num_samples = min(int(32.0 * reg_tr.w), 16);
+                int num_samples = min(int(16.0 * reg_tr.w), 8);
                 
                 highp float weight = 1.0 / float(num_samples);
                 for (int i = 0; i < num_samples; i++) {

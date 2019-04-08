@@ -14,10 +14,15 @@ layout(location = $VtxTanLoc) in vec3 aVertexTangent;
 layout(location = $VtxUV1Loc) in vec2 aVertexUVs1;
 layout(location = $VtxUV2Loc) in vec2 aVertexUVs2;
 
+struct ShadowMapRegion {
+    vec4 transform;
+    mat4 clip_from_world;
+};
+
 layout (std140) uniform SharedDataBlock {
     mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    mat4 uSunShadowMatrix[4];
+    ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
     vec4 uResAndFRes;
@@ -66,7 +71,7 @@ void main(void) {
     );
     
     for (int i = 0; i < 4; i++) {
-        aVertexShUVs_[i] = (uSunShadowMatrix[i] * MMatrix * vec4(aVertexPosition, 1.0)).xyz;
+        aVertexShUVs_[i] = (uShadowMapRegions[i].clip_from_world * MMatrix * vec4(aVertexPosition, 1.0)).xyz;
         aVertexShUVs_[i] = 0.5 * aVertexShUVs_[i] + 0.5;
         aVertexShUVs_[i].xy *= vec2(0.25, 0.5);
         aVertexShUVs_[i].xy += offsets[i];

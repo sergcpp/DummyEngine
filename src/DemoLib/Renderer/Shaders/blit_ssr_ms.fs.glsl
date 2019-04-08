@@ -13,10 +13,15 @@ UNIFORM_BLOCKS
 
 #define BSEARCH_STEPS 4
 
+struct ShadowMapRegion {
+    vec4 transform;
+    mat4 clip_from_world;
+};
+
 layout (std140) uniform SharedDataBlock {
     mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix; // 'delta' matrix to transform points from current frame to previous
-    mat4 uSunShadowMatrix[4];
+    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
+    ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
     vec4 uResAndFRes;

@@ -55,7 +55,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     data.decals.clear();
 
     data.instances.clear();
-    data.instances.reserve(MAX_INSTANCES_TOTAL);
+    data.instances.reserve(REN_MAX_INSTANCES_TOTAL);
     data.shadow_batches.clear();
     data.shadow_batches.reserve(scene.objects.size() * 16);
     data.main_batches.clear();

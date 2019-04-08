@@ -632,7 +632,6 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     shader_constants.emplace("$CellsBufSlot",   AS_STR(REN_CELLS_BUF_SLOT));
     shader_constants.emplace("$ItemsBufSlot",   AS_STR(REN_ITEMS_BUF_SLOT));
     shader_constants.emplace("$InstanceBufSlot",AS_STR(REN_INSTANCE_BUF_SLOT));
-    shader_constants.emplace("$ShadowBufSlot",  AS_STR(REN_SHADOW_BUF_SLOT));
 
     // Uniform locations
     shader_constants.emplace("$uMMatrixLoc",    AS_STR(REN_U_M_MATRIX_LOC));
@@ -662,14 +661,16 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     shader_constants.emplace("$ShadCasc3Dist",  AS_STR(REN_SHAD_CASCADE3_DIST));
     shader_constants.emplace("$ShadCasc3Samp",  AS_STR(REN_SHAD_CASCADE3_SAMPLES));
 
-    shader_constants.emplace("$SSAOBufResDiv", AS_STR(REN_SSAO_BUF_RES_DIV));
+    shader_constants.emplace("$SSAOBufResDiv",  AS_STR(REN_SSAO_BUF_RES_DIV));
+
+    shader_constants.emplace("$MaxShadowMaps",  AS_STR(REN_MAX_SHADOWMAPS_TOTAL));
 
     auto inline_constants = [&shader_constants](std::string &line) {
         size_t n = 0;
         while ((n = line.find('$', n)) != std::string::npos) {
             size_t l = 1;
 
-            const char punctuation_chars[] = ".,(); $*";
+            const char punctuation_chars[] = ".,(); $*[]";
             while (std::find(std::begin(punctuation_chars), std::end(punctuation_chars), line[n + l]) == std::end(punctuation_chars)) {
                 l++;
             }

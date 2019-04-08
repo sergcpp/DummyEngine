@@ -14,12 +14,12 @@ namespace RendererInternal {
     struct SharedDataBlock {
         Ren::Mat4f uViewMatrix, uProjMatrix, uViewProjMatrix;
         Ren::Mat4f uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-        Ren::Mat4f uSunShadowMatrix[4];
+        ShadowMapRegion uShadowMapRegions[REN_MAX_SHADOWMAPS_TOTAL];
         Ren::Vec4f uSunDir, uSunCol;
         Ren::Vec4f uClipInfo, uCamPosAndGamma;
         Ren::Vec4f uResAndFRes;
     };
-    static_assert(sizeof(SharedDataBlock) == 784, "!");
+    //static_assert(sizeof(SharedDataBlock) == 784, "!");
 
     const Ren::Vec2f poisson_disk[] = {
         { -0.705374f, -0.668203f }, { -0.780145f, 0.486251f  }, { 0.566637f, 0.605213f   }, { 0.488876f, -0.783441f  },
@@ -168,7 +168,7 @@ void Renderer::InitRendererInternal() {
 
         glGenBuffers(1, &instances_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, instances_buf);
-        glBufferData(GL_TEXTURE_BUFFER, sizeof(InstanceData) * MAX_INSTANCES_TOTAL, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL, nullptr, GL_DYNAMIC_COPY);
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
         instances_buf_ = (uint32_t)instances_buf;
@@ -185,29 +185,6 @@ void Renderer::InitRendererInternal() {
     }
 
     Ren::CheckError("[InitRendererInternal]: instances TBO");
-
-    {
-        GLuint shadow_reg_buf;
-
-        glGenBuffers(1, &shadow_reg_buf);
-        glBindBuffer(GL_TEXTURE_BUFFER, shadow_reg_buf);
-        glBufferData(GL_TEXTURE_BUFFER, sizeof(ShadowMapRegion) * MAX_SHADOWMAPS_TOTAL, nullptr, GL_DYNAMIC_COPY);
-        glBindBuffer(GL_TEXTURE_BUFFER, 0);
-
-        shadow_reg_buf_ = (uint32_t)shadow_reg_buf;
-
-        GLuint shadow_reg_tbo;
-
-        glGenTextures(1, &shadow_reg_tbo);
-        glBindTexture(GL_TEXTURE_BUFFER, shadow_reg_tbo);
-
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, shadow_reg_buf);
-        glBindTexture(GL_TEXTURE_BUFFER, 0);
-
-        shadow_reg_tbo_ = (uint32_t)shadow_reg_tbo;
-    }
-
-    Ren::CheckError("[InitRendererInternal]: shadow regions TBO");
 
     {
         GLuint lights_buf;
@@ -476,14 +453,6 @@ void Renderer::DestroyRendererInternal() {
     }
 
     {
-        GLuint shadow_reg_tbo = (GLuint)shadow_reg_tbo_;
-        glDeleteTextures(1, &shadow_reg_tbo);
-
-        GLuint shadow_reg_buf = (GLuint)shadow_reg_buf_;
-        glDeleteBuffers(1, &shadow_reg_buf);
-    }
-
-    {
         GLuint lights_tbo = (GLuint)lights_tbo_;
         glDeleteTextures(1, &lights_tbo);
 
@@ -590,14 +559,6 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
-        // Update shadowmap buffer
-        size_t shadowmap_mem_size = data.shadow_regions.size() * sizeof(ShadowMapRegion);
-        if (shadowmap_mem_size) {
-            glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)shadow_reg_buf_);
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, shadowmap_mem_size, data.shadow_regions.data());
-            glBindBuffer(GL_TEXTURE_BUFFER, 0);
-        }
-
         // Update lights buffer
         size_t lights_mem_size = data.light_sources.size() * sizeof(LightSourceItem);
         if (lights_mem_size) {
@@ -633,7 +594,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
     SharedDataBlock shrd_data;
 
-    {   // Prepare data that is shared for all instaces
+    {   // Prepare data that is shared for all instances
         shrd_data.uViewMatrix = data.draw_cam.view_matrix();
         shrd_data.uProjMatrix = data.draw_cam.proj_matrix();
         shrd_data.uViewProjMatrix = shrd_data.uProjMatrix * shrd_data.uViewMatrix;
@@ -642,12 +603,12 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         shrd_data.uInvViewProjMatrix = Ren::Inverse(shrd_data.uViewProjMatrix);
         // delta matrix between current and previous frame
         shrd_data.uDeltaMatrix = prev_view_from_world_ * shrd_data.uInvViewMatrix;
-        if (data.shadow_regions.size() >= 4) {
-            shrd_data.uSunShadowMatrix[0] = data.shadow_regions[0].clip_from_world;
-            shrd_data.uSunShadowMatrix[1] = data.shadow_regions[1].clip_from_world;
-            shrd_data.uSunShadowMatrix[2] = data.shadow_regions[2].clip_from_world;
-            shrd_data.uSunShadowMatrix[3] = data.shadow_regions[3].clip_from_world;
+
+        if (!data.shadow_regions.empty()) {
+            assert(data.shadow_regions.size() <= REN_MAX_SHADOWMAPS_TOTAL);
+            memcpy(&shrd_data.uShadowMapRegions[0], &data.shadow_regions[0], sizeof(ShadowMapRegion) * data.shadow_regions.size());
         }
+
         shrd_data.uSunDir = Ren::Vec4f{ data.env.sun_dir[0], data.env.sun_dir[1], data.env.sun_dir[2], 0.0f };
         shrd_data.uSunCol = Ren::Vec4f{ data.env.sun_col[0], data.env.sun_col[1], data.env.sun_col[2], 0.0f };
         shrd_data.uResAndFRes = Ren::Vec4f{ float(act_w_), float(act_h_), float(clean_buf_.w), float(clean_buf_.h) };
@@ -799,7 +760,8 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
     glBindVertexArray((GLuint)temp_vao_);
 
-    if (data.render_flags & EnableSSAO) {
+    const uint32_t use_ssao = (EnableZFill | EnableSSAO);
+    if ((data.render_flags & use_ssao) == use_ssao) {
         // prepare ao buffer
         glBindFramebuffer(GL_FRAMEBUFFER, ssao_buf_.fb);
         glViewport(0, 0, ssao_buf_.w, ssao_buf_.h);
@@ -883,9 +845,6 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
     glActiveTexture((GLenum)(GL_TEXTURE0 + REN_ITEMS_BUF_SLOT));
     glBindTexture(GL_TEXTURE_BUFFER, (GLuint)items_tbo_);
-
-    glActiveTexture((GLenum)(GL_TEXTURE0 + REN_SHADOW_BUF_SLOT));
-    glBindTexture(GL_TEXTURE_BUFFER, (GLuint)shadow_reg_tbo_);
 
     if (data.decals_atlas) {
         BindTexture(REN_DECAL_TEX_SLOT, data.decals_atlas->tex_id(0));
@@ -1429,6 +1388,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
             
             glUniform1f(blit_depth_prog_->uniform("near").loc, sh_list.cam_near);
             glUniform1f(blit_depth_prog_->uniform("far").loc, sh_list.cam_far);
+            glUniform3f(blit_depth_prog_->uniform("color").loc, 1.0f, 0.0f, 0.0f);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
         }
