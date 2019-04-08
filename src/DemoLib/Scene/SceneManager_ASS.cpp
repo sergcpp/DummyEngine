@@ -706,7 +706,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         LOGI("[PrepareAssets] Conv %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
-        auto src_size = src_stream.tellg();
+        auto src_size = (size_t)src_stream.tellg();
         src_stream.seekg(0, std::ios::beg);
 
         std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
@@ -724,7 +724,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         LOGI("[PrepareAssets] Conv %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
-        auto src_size = src_stream.tellg();
+        auto src_size = (size_t)src_stream.tellg();
         src_stream.seekg(0, std::ios::beg);
 
         std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
