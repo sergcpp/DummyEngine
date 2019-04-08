@@ -24,17 +24,26 @@
         "l0" : {
             "offset" : [ 0.0, 5.0, 0.0 ],
             "color" : [ 1000.0, 900.0, 700.0 ],
-            "radius" : 0.01
+            "radius" : 0.01,
+            "direction" : [ 0.0, -1.0, 0.0 ],
+            "angle" : 60.0,
+            "cast_shadow" : true
         },
         "l1" : {
             "offset" : [ 0.0, 5.0, 5.0 ],
             "color" : [ 1000.0, 900.0, 700.0 ],
-            "radius" : 0.01
+            "radius" : 0.01,
+            "direction" : [ 0.0, -1.0, 0.0 ],
+            "angle" : 60.0,
+            "cast_shadow" : true
         },
         "l2" : {
             "offset" : [ 0.0, 5.0, -5.0 ],
             "color" : [ 1000.0, 900.0, 700.0 ],
-            "radius" : 0.01
+            "radius" : 0.01,
+            "direction" : [ 0.0, -1.0, 0.0 ],
+            "angle" : 60.0,
+            "cast_shadow" : true
         },
         "l3" : {
             "offset" : [ -6.5, 10.0, 0.0 ],

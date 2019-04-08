@@ -604,9 +604,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             const auto light_center = Ren::Vec3f{ l.pos[0], l.pos[1], l.pos[2] };
             const float distance = Ren::Distance(light_center, cam_pos);
 
-            const int resolutions[][2] = { { 1024, 1024 }, { 512, 512 }, { 256, 256 }, { 128, 128 } };
+            const int resolutions[][2] = { { 512, 512 }, { 256, 256 }, { 128, 128 }, { 64, 64 } };
 
-            int res_index = std::min(int(distance * 0.025f), 3);
+            int res_index = std::min(int(distance * 0.01f), 3);
             int node, pos[2];
 
             // try to allocate best resolution possible
