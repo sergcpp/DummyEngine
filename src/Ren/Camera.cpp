@@ -95,6 +95,8 @@ void Ren::Camera::Perspective(float angle, float aspect, float nearr, float farr
 
 void Ren::Camera::Orthographic(float left, float right, float top, float down, float nearr, float farr) {
     is_orthographic_ = true;
+    near_ = nearr;
+    far_ = farr;
     OrthographicProjection(proj_matrix_, left, right, top, down, nearr, farr);
 }
 
