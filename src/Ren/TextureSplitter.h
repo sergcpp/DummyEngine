@@ -39,6 +39,8 @@ public:
     bool Free(const int pos[2]);
     bool Free(int i);
 
+    void Clear();
+
     int FindNode(const int pos[2], int size[2]) const;
 };
 }

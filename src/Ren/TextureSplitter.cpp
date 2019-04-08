@@ -39,6 +39,13 @@ bool Ren::TextureSplitter::Free(int i) {
     return true;
 }
 
+void Ren::TextureSplitter::Clear() {
+    nodes_.resize(1);
+
+    nodes_[0].child[0] = -1;
+    nodes_[0].child[1] = -1;
+}
+
 int Ren::TextureSplitter::FindNode(const int pos[2], int size[2]) const {
     int i = Find_Recursive(0, pos);
     if (i != -1) {
