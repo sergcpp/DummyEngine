@@ -214,6 +214,7 @@ private:
 
     std::vector<const LightSource *> litem_to_lsource_;
     std::vector<const Decal *> ditem_to_decal_;
+    std::vector<uint32_t> obj_to_instance_;
     std::vector<BBox> decals_boxes_;
     BackendInfo backend_info_;
     uint64_t backend_cpu_start_, backend_cpu_end_;

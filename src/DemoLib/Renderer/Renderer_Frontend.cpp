@@ -73,6 +73,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     ditem_to_decal_.clear();
     decals_boxes_.clear();
 
+    obj_to_instance_.clear();
+    obj_to_instance_.resize(scene.objects.size(), 0xffffffff);
+
     Ren::Mat4f view_from_world = data.draw_cam.view_matrix(),
                clip_from_view = data.draw_cam.proj_matrix();
 
@@ -248,6 +251,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                     const Ren::Mat4f &world_from_object = tr->mat;
                     const auto world_from_object_trans = Ren::Transpose(world_from_object);
+
+                    obj_to_instance_[n->prim_index] = (uint32_t)data.instances.size();
 
                     data.instances.emplace_back();
 
@@ -581,17 +586,20 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         
                         auto world_from_object_trans = Ren::Transpose(world_from_object);
 
-                        data.instances.emplace_back();
+                        if (obj_to_instance_[n->prim_index] == 0xffffffff) {
+                            obj_to_instance_[n->prim_index] = (uint32_t)data.instances.size();
+                            data.instances.emplace_back();
 
-                        auto &instance = data.instances.back();
-                        memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
+                            auto &instance = data.instances.back();
+                            memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
+                        }
 
                         data.shadow_batches.emplace_back();
 
                         auto &batch = data.shadow_batches.back();
                         batch.indices_offset = mesh->indices_offset();
                         batch.indices_count = mesh->indices_size() / sizeof(uint32_t);
-                        batch.instance_indices[0] = (uint32_t)(data.instances.size() - 1);
+                        batch.instance_indices[0] = obj_to_instance_[n->prim_index];
                         batch.instance_count = 1;
                     }
                 }
@@ -738,17 +746,20 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                             auto world_from_object_trans = Ren::Transpose(world_from_object);
 
-                            data.instances.emplace_back();
+                            if (obj_to_instance_[n->prim_index] == 0xffffffff) {
+                                obj_to_instance_[n->prim_index] = (uint32_t)data.instances.size();
+                                data.instances.emplace_back();
 
-                            auto &instance = data.instances.back();
-                            memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
+                                auto &instance = data.instances.back();
+                                memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
+                            }
 
                             data.shadow_batches.emplace_back();
 
                             auto &batch = data.shadow_batches.back();
                             batch.indices_offset = mesh->indices_offset();
                             batch.indices_count = mesh->indices_size() / sizeof(uint32_t);
-                            batch.instance_indices[0] = (uint32_t)(data.instances.size() - 1);
+                            batch.instance_indices[0] = obj_to_instance_[n->prim_index];
                             batch.instance_count = 1;
                         }
 
