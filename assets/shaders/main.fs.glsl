@@ -252,7 +252,7 @@ void main(void) {
             if (shadowreg_index != -1) {
                 vec4 reg_tr = uShadowMapRegions[shadowreg_index].transform;
                 
-                vec4 pp = uShadowMapRegions[shadowreg_index].clip_from_world * vec4(aVertexPos_, 1.0);
+                highp vec4 pp = uShadowMapRegions[shadowreg_index].clip_from_world * vec4(aVertexPos_, 1.0);
                 pp /= pp.w;
                 pp.xyz = pp.xyz * 0.5 + vec3(0.5);
                 pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;

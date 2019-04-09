@@ -1364,12 +1364,22 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
         BindTexture(REN_DIFF_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
         float k = (float(shadow_buf_.h) / shadow_buf_.w) * (float(scr_w_) / scr_h_);
 
         const int near_loc = blit_depth_prog_->uniform("near").loc;
         const int far_loc = blit_depth_prog_->uniform("far").loc;
         const int col_loc = blit_depth_prog_->uniform("color").loc;
+
+        {   // Clear region
+            glEnable(GL_SCISSOR_TEST);
+
+            glScissor(0, 0, scr_w_ / 2, int(k * scr_h_ / 2));
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            glDisable(GL_SCISSOR_TEST);
+        }
 
         // Draw visible shadow regions
         for (int i = 0; i < (int)data.shadow_lists.size(); i++) {
