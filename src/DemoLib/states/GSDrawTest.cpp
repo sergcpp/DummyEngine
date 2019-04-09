@@ -29,7 +29,7 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-    "jap_house.json";
+    "street2.json";
 
 const bool USE_TWO_THREADS = true;
 }
@@ -100,7 +100,37 @@ void GSDrawTest::Enter() {
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
-                           });
+    });
+
+    game_->RegisterCommand("lights", [weak_this](const std::vector<std::string> &args) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= EnableLights;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+    });
+
+    game_->RegisterCommand("decals", [weak_this](const std::vector<std::string> &args) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= EnableDecals;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+    });
+
+    game_->RegisterCommand("shadows", [weak_this](const std::vector<std::string> &args) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= EnableShadows;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+    });
 
     game_->RegisterCommand("pt", [weak_this](const std::vector<std::string> &args) ->bool {
         auto shrd_this = weak_this.lock();

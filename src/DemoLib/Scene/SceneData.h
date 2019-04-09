@@ -68,6 +68,11 @@ struct LightmapRegion : public Ren::RefCounter {
     Ren::Vec4f xform;
 };
 
+struct LightProbe : public Ren::RefCounter {
+    int layer_index;
+    Ren::Vec3f sh_factors[4];
+};
+
 enum eObjectComp {
     HasTransform    = (1 << 0),
     HasMesh         = (1 << 1),
@@ -94,6 +99,7 @@ struct SceneObject {
     Ren::StorageRef<LightmapRegion> lm;
     Ren::StorageRef<LightSource> ls[LIGHTS_PER_OBJECT];
     Ren::StorageRef<Decal> de[DECALS_PER_OBJECT];
+    Ren::StorageRef<LightProbe> pr;
 };
 
 struct RenderInfo {
@@ -164,6 +170,7 @@ struct SceneData {
     Ren::Storage<LightmapRegion> lm_regions;
     Ren::Storage<LightSource> lights;
     Ren::Storage<Decal> decals;
+    Ren::Storage<LightProbe> probes;
 
     std::vector<SceneObject> objects;
 

@@ -191,6 +191,7 @@ void Renderer::ExecuteDrawList(int index) {
         act_h_ = int(scr_h_ * 1.0f);
 #endif
 
+
         drawables_data_[index].render_info.lights_count = (uint32_t)lights_count;
         drawables_data_[index].render_info.lights_data_size = (uint32_t)lights_count * sizeof(LightSourceItem);
         drawables_data_[index].render_info.decals_count = (uint32_t)decals_count;

@@ -609,8 +609,11 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
             memcpy(&shrd_data.uShadowMapRegions[0], &data.shadow_regions[0], sizeof(ShadowMapRegion) * data.shadow_regions.size());
         }
 
-        shrd_data.uSunDir = Ren::Vec4f{ data.env.sun_dir[0], data.env.sun_dir[1], data.env.sun_dir[2], 0.0f };
-        shrd_data.uSunCol = Ren::Vec4f{ data.env.sun_col[0], data.env.sun_col[1], data.env.sun_col[2], 0.0f };
+        if (data.render_flags & EnableLights) {
+            shrd_data.uSunDir = Ren::Vec4f{ data.env.sun_dir[0], data.env.sun_dir[1], data.env.sun_dir[2], 0.0f };
+            shrd_data.uSunCol = Ren::Vec4f{ data.env.sun_col[0], data.env.sun_col[1], data.env.sun_col[2], 0.0f };
+        }
+
         shrd_data.uResAndFRes = Ren::Vec4f{ float(act_w_), float(act_h_), float(clean_buf_.w), float(clean_buf_.h) };
 
         const float near = data.draw_cam.near(), far = data.draw_cam.far();

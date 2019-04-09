@@ -65,6 +65,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     data.shadow_regions.clear();
 
     const bool culling_enabled = (data.render_flags & EnableCulling) != 0;
+    const bool lighting_enabled = (data.render_flags & EnableLights) != 0;
+    const bool decals_enabled = (data.render_flags & EnableDecals) != 0;
+    const bool shadows_enabled = (data.render_flags & EnableShadows) != 0;
 
     litem_to_lsource_.clear();
     ditem_to_decal_.clear();
@@ -85,6 +88,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     uint32_t stack[MAX_STACK_SIZE];
     uint32_t stack_size = 0;
+
+    /**************************************************************************************************/
+    /*                                     OCCLUDERS PROCESSING                                       */
+    /**************************************************************************************************/
 
     auto occluders_start = std::chrono::high_resolution_clock::now();
 
@@ -149,6 +156,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             }
         }
     }
+
+    /**************************************************************************************************/
+    /*                               LIGHTS/DECALS/PROBES GATHERING                                   */
+    /**************************************************************************************************/
 
     auto main_gather_start = std::chrono::high_resolution_clock::now();
 
@@ -271,7 +282,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         }
                     }
 
-                    if (obj.comp_mask & HasLightSource) {
+                    if (lighting_enabled && (obj.comp_mask & HasLightSource)) {
                         for (int li = 0; li < LIGHTS_PER_OBJECT; li++) {
                             if (!obj.ls[li]) break;
 
@@ -320,7 +331,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         }
                     }
 
-                    if (obj.comp_mask & HasDecal) {
+                    if (decals_enabled && (obj.comp_mask & HasDecal)) {
                         Ren::Mat4f object_from_world = Ren::Inverse(world_from_object);
 
                         for (int di = 0; di < DECALS_PER_OBJECT; di++) {
@@ -401,9 +412,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
     }
 
+    /**************************************************************************************************/
+    /*                                     SHADOWMAP GATHERING                                        */
+    /**************************************************************************************************/
+
     auto shadow_gather_start = std::chrono::high_resolution_clock::now();
 
-    if (Ren::Length2(data.env.sun_dir) > 0.9f && Ren::Length2(data.env.sun_col) > FLT_EPSILON) {
+    if (lighting_enabled && shadows_enabled && Ren::Length2(data.env.sun_dir) > 0.9f && Ren::Length2(data.env.sun_col) > FLT_EPSILON) {
         // Planes, that define shadow map splits
         const float far_planes[] = { float(REN_SHAD_CASCADE0_DIST), float(REN_SHAD_CASCADE1_DIST),
                                      float(REN_SHAD_CASCADE2_DIST), float(REN_SHAD_CASCADE3_DIST) };
@@ -596,7 +611,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     const Ren::Vec3f cam_pos = cam.world_position();
 
-    for (int i = 0; i < int(data.light_sources.size()); i++) {
+    for (int i = 0; i < int(data.light_sources.size()) && shadows_enabled; i++) {
         auto &l = data.light_sources[i];
         const auto *ls = litem_to_lsource_[i];
 
@@ -710,6 +725,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
     }
 
+    /**************************************************************************************************/
+    /*                                    OPTIMIZING DRAW LISTS                                       */
+    /**************************************************************************************************/
+
     auto drawables_sort_start = std::chrono::high_resolution_clock::now();
 
     // Sort drawables to optimize state switches
@@ -762,6 +781,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
     }
 
+    /**************************************************************************************************/
+    /*                                    ASSIGNING TO CLUSTERS                                       */
+    /**************************************************************************************************/
+
     auto items_assignment_start = std::chrono::high_resolution_clock::now();
 
     if (!data.light_sources.empty() || !data.decals.empty()) {
@@ -793,6 +816,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
 
         data.items_count = std::min(a_items_count.load(), MAX_ITEMS_TOTAL);
+    } else {
+        CellData _dummy = {};
+        std::fill(std::begin(data.cells), std::end(data.cells), _dummy);
+        data.items_count = 0;
     }
 
     if ((data.render_flags & (EnableCulling | DebugCulling)) == (EnableCulling | DebugCulling)) {

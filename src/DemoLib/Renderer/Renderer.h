@@ -107,17 +107,21 @@ enum eRenderFlags {
     EnableSSR       = (1 << 2),
     EnableSSAO      = (1 << 3),
     EnableLightmap  = (1 << 4),
-    DebugWireframe  = (1 << 5),
-    DebugCulling    = (1 << 6),
-    DebugShadow     = (1 << 7),
-    DebugReduce     = (1 << 8),
-    DebugLights     = (1 << 9),
-    DebugDeferred   = (1 << 10),
-    DebugBlur       = (1 << 11),
-    DebugDecals     = (1 << 12),
-    DebugSSAO       = (1 << 13),
-    DebugTimings    = (1 << 14),
-    DebugBVH        = (1 << 15)
+    EnableLights    = (1 << 5),
+    EnableDecals    = (1 << 6),
+    EnableProbes    = (1 << 7),
+    EnableShadows   = (1 << 8),
+    DebugWireframe  = (1 << 9),
+    DebugCulling    = (1 << 10),
+    DebugShadow     = (1 << 11),
+    DebugReduce     = (1 << 12),
+    DebugLights     = (1 << 13),
+    DebugDeferred   = (1 << 14),
+    DebugBlur       = (1 << 15),
+    DebugDecals     = (1 << 16),
+    DebugSSAO       = (1 << 17),
+    DebugTimings    = (1 << 18),
+    DebugBVH        = (1 << 19)
 };
 
 class Renderer {
@@ -169,9 +173,9 @@ private:
 
     static const uint32_t default_flags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap /*| DebugShadow*/);
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows);
 #else
-        (EnableZFill | EnableCulling | EnableLightmap);
+        (EnableZFill | EnableCulling | EnableLightmap | EnableLights | EnableDecals | EnableShadows);
 #endif
     uint32_t render_flags_ = default_flags;
 
