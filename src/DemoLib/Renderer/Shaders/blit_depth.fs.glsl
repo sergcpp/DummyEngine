@@ -18,8 +18,8 @@ void main() {
     if (near > 0.0001) {
         // cam is not orthographic
         depth = (near * far) / (depth * (near - far) + far);
+        depth /= far;
     }
-    depth /= far;
     outColor = vec4(vec3(depth) * color, 1.0);
 }
 )"

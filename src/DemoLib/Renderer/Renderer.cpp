@@ -54,6 +54,12 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
 
     {   // Create shadow map buffer
         shadow_buf_ = FrameBuf(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, nullptr, 0, true, Ren::NoFilter);
+
+        // Reserve space for sun shadow
+        const int sun_shadow_res[] = { SUN_SHADOW_RES, SUN_SHADOW_RES };
+        int sun_shadow_pos[2];
+        int id = shadow_splitter_.Allocate(sun_shadow_res, sun_shadow_pos);
+        assert(id != -1 && sun_shadow_pos[0] == 0 && sun_shadow_pos[1] == 0);
     }
 
     {   // Create aux buffer which gathers frame luminance

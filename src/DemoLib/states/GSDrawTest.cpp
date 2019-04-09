@@ -857,39 +857,39 @@ void GSDrawTest::UpdateFrame(int list_index) {
     uint32_t mask = HasTransform | HasMesh;
 #if 1
     static float t = 0.0f;
-    t += 0.02f;
+    t += 0.04f;
 
     //const uint32_t monkey_ids[] = { 12, 13, 14, 15, 16 };
-    const uint32_t monkey_ids[] = { 10, 11, 12, 13, 14 };
+    const uint32_t monkey_ids[] = { 28, 29, 30, 31, 32 };
 
     auto *monkey1 = scene_manager_->GetObject(monkey_ids[0]);
     if ((monkey1->comp_mask & mask) == mask) {
         auto *tr = monkey1->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.01f + 0.04f * std::cos(t) });
+        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
     }
 
     auto *monkey2 = scene_manager_->GetObject(monkey_ids[1]);
     if ((monkey2->comp_mask & mask) == mask) {
         auto *tr = monkey2->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.01f + 0.04f * std::cos(t) });
+        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.05f + 0.04f * std::cos(t) });
     }
 
     auto *monkey3 = scene_manager_->GetObject(monkey_ids[2]);
     if ((monkey3->comp_mask & mask) == mask) {
         auto *tr = monkey3->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.01f + 0.04f * std::cos(t) });
+        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.05f + 0.04f * std::cos(t) });
     }
 
     auto *monkey4 = scene_manager_->GetObject(monkey_ids[3]);
     if ((monkey4->comp_mask & mask) == mask) {
         auto *tr = monkey4->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.01f + 0.04f * std::cos(t) });
+        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
     }
 
     auto *monkey5 = scene_manager_->GetObject(monkey_ids[4]);
     if ((monkey5->comp_mask & mask) == mask) {
         auto *tr = monkey5->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.01f + 0.04f * std::cos(t) });
+        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
     }
 
     scene_manager_->InvalidateObjects(monkey_ids, 5, ChangePositional);

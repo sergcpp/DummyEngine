@@ -422,12 +422,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                      float(REN_SHAD_CASCADE2_DIST), float(REN_SHAD_CASCADE3_DIST) };
         const float near_planes[] = { data.draw_cam.near(), far_planes[0], far_planes[1], far_planes[2] };
 
-        // Reserve space for sun shadow
-        const int sun_shadow_res[] = { SUN_SHADOW_RES, SUN_SHADOW_RES };
-        int sun_shadow_pos[2];
-        int id = shadow_splitter_.Allocate(sun_shadow_res, sun_shadow_pos);
-        assert(id != -1 && sun_shadow_pos[0] == 0 && sun_shadow_pos[1] == 0);
-
         // Reserved positions for sun shadowmap
         const int OneCascadeRes = SUN_SHADOW_RES / 2;
         const int map_positions[][2] = { { 0, 0 }, { OneCascadeRes, 0 }, { 0, OneCascadeRes }, { OneCascadeRes, OneCascadeRes } };

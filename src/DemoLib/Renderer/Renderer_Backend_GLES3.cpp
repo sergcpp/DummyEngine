@@ -19,7 +19,7 @@ namespace RendererInternal {
         Ren::Vec4f uClipInfo, uCamPosAndGamma;
         Ren::Vec4f uResAndFRes;
     };
-    //static_assert(sizeof(SharedDataBlock) == 784, "!");
+    static_assert(sizeof(SharedDataBlock) == 3088, "!");
 
     const Ren::Vec2f poisson_disk[] = {
         { -0.705374f, -0.668203f }, { -0.780145f, 0.486251f  }, { 0.566637f, 0.605213f   }, { 0.488876f, -0.783441f  },
@@ -1398,10 +1398,10 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
             if (sh_list.shadow_batch_count) {
                 // mark updated region with red
-                glUniform3f(col_loc, 1.0f, 0.0f, 0.0f);
+                glUniform3f(col_loc, 1.0f, 0.5f, 0.5f);
             } else {
                 // mark cached region with green
-                glUniform3f(col_loc, 0.0f, 1.0f, 0.0f);
+                glUniform3f(col_loc, 0.5f, 1.0f, 0.5f);
             }
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
@@ -1428,7 +1428,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
             glUniform1f(far_loc, r.cam_far);
 
             // mark cached region with blue
-            glUniform3f(col_loc, 0.0f, 0.0f, 1.0f);
+            glUniform3f(col_loc, 0.5f, 0.5f, 1.0f);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
         }
