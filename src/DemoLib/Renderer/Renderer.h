@@ -189,22 +189,23 @@ private:
     };
 
     struct DrawablesData {
-        Ren::Camera draw_cam;
-        std::vector<InstanceData> instances;
-        std::vector<ShadowDrawBatch> shadow_batches;
-        std::vector<ShadowList> shadow_lists;
-        std::vector<ShadowMapRegion> shadow_regions;
-        std::vector<MainDrawBatch> main_batches;
-        std::vector<LightSourceItem> light_sources;
-        std::vector<DecalItem> decals;
-        std::vector<CellData> cells;
-        std::vector<ItemData> items;
+        Ren::Camera     draw_cam;
+        Environment     env;
+        RenderInfo      render_info;
+        FrontendInfo    frontend_info;
+        uint32_t        render_flags = default_flags;
+        std::vector<InstanceData>       instances;
+        std::vector<ShadowDrawBatch>    shadow_batches;
+        std::vector<ShadowList>         shadow_lists;
+        std::vector<ShadowMapRegion>    shadow_regions;
+        std::vector<MainDrawBatch>      main_batches;
+        std::vector<LightSourceItem>    light_sources;
+        std::vector<DecalItem>          decals;
+        std::vector<CellData>           cells;
+        std::vector<ItemData>           items;
         int items_count = 0;
         const Ren::TextureAtlas *decals_atlas = nullptr;
-        Environment env;
-        RenderInfo render_info;
-        FrontendInfo frontend_info;
-        uint32_t render_flags = default_flags;
+        
 
         // for debugging only, backend does not require nodes for drawing
         std::vector<bvh_node_t> temp_nodes;

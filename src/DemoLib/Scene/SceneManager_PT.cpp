@@ -87,7 +87,7 @@ void SceneManager::ResetLightmaps_PT() {
     ray_scene_->GetCamera(1, cam_desc);
 
     for (size_t i = 0; i < scene_data_.objects.size(); i++) {
-        if (scene_data_.objects[i].comp_mask & HasLightmap) {
+        if (scene_data_.objects[i].comp_mask & CompLightmap) {
             cur_lm_obj_ = i;
             cam_desc.mi_index = scene_data_.objects[i].pt_mi;
             break;
@@ -272,7 +272,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
             bool found = false;
 
             for (size_t i = cur_lm_obj_ + 1; i < scene_data_.objects.size(); i++) {
-                if (scene_data_.objects[i].comp_mask & HasLightmap) {
+                if (scene_data_.objects[i].comp_mask & CompLightmap) {
                     cur_lm_obj_ = i;
                     cam_desc.mi_index = scene_data_.objects[i].pt_mi;
                     found = true;
@@ -493,7 +493,7 @@ void SceneManager::InitScene_PT(bool _override) {
 
     // Add objects
     for (auto &obj : scene_data_.objects) {
-        const uint32_t drawable_flags = HasMesh | HasTransform;
+        const uint32_t drawable_flags = CompMesh | CompTransform;
         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
             const auto *mesh = obj.mesh.get();
             const char *mesh_name = mesh->name();

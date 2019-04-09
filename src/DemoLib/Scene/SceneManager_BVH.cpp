@@ -67,7 +67,7 @@ void SceneManager::RebuildBVH() {
     primitives.reserve(scene_data_.objects.size());
 
     for (const auto &obj : scene_data_.objects) {
-        if (obj.comp_mask & HasTransform) {
+        if (obj.comp_mask & CompTransform) {
             const auto &tr = obj.tr;
             const Ren::Vec3f d = tr->bbox_max_ws - tr->bbox_min_ws;
             primitives.push_back({ tr->bbox_min_ws - BoundsMargin * d, tr->bbox_max_ws + BoundsMargin * d });
@@ -244,7 +244,11 @@ void SceneManager::UpdateObjects() {
         auto &obj = scene_data_.objects[obj_index];
         obj.last_change_mask = obj.change_mask;
 
-        if (obj.change_mask & ChangePositional) {
+        if (obj.change_mask & CompMesh) {
+
+        }
+
+        if (obj.change_mask & CompTransform) {
             auto *tr = obj.tr.get();
             tr->UpdateBBox();
             if (tr->node_index != 0xffffffff) {
@@ -259,7 +263,7 @@ void SceneManager::UpdateObjects() {
 
                 if (is_fully_inside) {
                     // Update is not needed (object is inside of node bounds)
-                    obj.change_mask ^= ChangePositional;
+                    obj.change_mask ^= CompTransform;
                 } else {
                     // Object is out of node bounds, remove node and re-insert it later
                     RemoveNode(tr->node_index);
@@ -278,7 +282,7 @@ void SceneManager::UpdateObjects() {
     for (const uint32_t obj_index : changed_objects_) {
         auto &obj = scene_data_.objects[obj_index];
 
-        if (obj.change_mask & ChangePositional) {
+        if (obj.change_mask & CompTransform) {
             auto *tr = obj.tr.get();
             tr->node_index = free_nodes[free_nodes_pos++];
 
@@ -436,7 +440,7 @@ void SceneManager::UpdateObjects() {
 #undef left_child_of
 #undef right_child_of
 
-            obj.change_mask ^= ChangePositional;
+            obj.change_mask ^= CompTransform;
         }
     }
 

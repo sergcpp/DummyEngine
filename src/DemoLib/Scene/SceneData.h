@@ -10,11 +10,11 @@
 struct JsObject;
 
 struct Transform : public Ren::RefCounter {
-    Ren::Mat4f mat;
-    Ren::Vec3f bbox_min;
-    uint32_t node_index;
-    Ren::Vec3f bbox_max;
-    Ren::Vec3f bbox_min_ws, bbox_max_ws;
+    Ren::Mat4f  mat;
+    Ren::Vec3f  bbox_min;
+    uint32_t    node_index;
+    Ren::Vec3f  bbox_max;
+    Ren::Vec3f  bbox_min_ws, bbox_max_ws;
 
     void Read(const JsObject &js_in);
     void Write(JsObject &js_out);
@@ -40,14 +40,14 @@ struct Transform : public Ren::RefCounter {
 };
 
 struct LightSource : public Ren::RefCounter {
-    Ren::Vec3f offset;
-    float radius;
-    Ren::Vec3f col;
-    float brightness;
-    Ren::Vec3f dir;
-    float spot;
-    float influence;
-    bool cast_shadow, cache_shadow;
+    Ren::Vec3f  offset;
+    float       radius;
+    Ren::Vec3f  col;
+    float       brightness;
+    Ren::Vec3f  dir;
+    float       spot;
+    float       influence;
+    bool        cast_shadow, cache_shadow;
 
     Ren::Vec3f bbox_min, bbox_max;
 
@@ -74,16 +74,12 @@ struct LightProbe : public Ren::RefCounter {
 };
 
 enum eObjectComp {
-    HasTransform    = (1 << 0),
-    HasMesh         = (1 << 1),
-    HasOccluder     = (1 << 2),
-    HasLightmap     = (1 << 3),
-    HasLightSource  = (1 << 4),
-    HasDecal        = (1 << 5)
-};
-
-enum eObjectChange {
-    ChangePositional = (1 << 0),
+    CompTransform   = (1 << 0),
+    CompMesh        = (1 << 1),
+    CompOccluder    = (1 << 2),
+    CompLightmap    = (1 << 3),
+    CompLightSource = (1 << 4),
+    CompDecal       = (1 << 5)
 };
 
 const int LIGHTS_PER_OBJECT = 16;
@@ -97,9 +93,9 @@ struct SceneObject {
     Ren::MeshRef mesh, occ_mesh;
     uint32_t pt_mi;
     Ren::StorageRef<LightmapRegion> lm;
-    Ren::StorageRef<LightSource> ls[LIGHTS_PER_OBJECT];
-    Ren::StorageRef<Decal> de[DECALS_PER_OBJECT];
-    Ren::StorageRef<LightProbe> pr;
+    Ren::StorageRef<LightSource>    ls[LIGHTS_PER_OBJECT];
+    Ren::StorageRef<Decal>          de[DECALS_PER_OBJECT];
+    Ren::StorageRef<LightProbe>     pr;
 };
 
 struct RenderInfo {
@@ -150,8 +146,8 @@ struct bvh_node_t {
 static_assert(sizeof(bvh_node_t) == 48, "!");
 
 struct Environment {
-    Ren::Vec3f sun_dir, sun_col;
-    float sun_softness = 0.0f;
+    Ren::Vec3f  sun_dir, sun_col;
+    float       sun_softness = 0.0f;
     Ren::Texture2DRef env_map;
     Ren::Texture2DRef lm_direct, lm_indir,
                       lm_indir_sh[4];
@@ -162,21 +158,21 @@ struct BBox {
 };
 
 struct SceneData {
-    Environment env;
-    Ren::TextureAtlas decals_atlas;
-    Ren::TextureSplitter lm_splitter;
+    Environment             env;
+    Ren::TextureAtlas       decals_atlas;
+    Ren::TextureSplitter    lm_splitter;
 
-    Ren::Storage<Transform> transforms;
-    Ren::Storage<LightmapRegion> lm_regions;
-    Ren::Storage<LightSource> lights;
-    Ren::Storage<Decal> decals;
-    Ren::Storage<LightProbe> probes;
+    Ren::Storage<Transform>         transforms;
+    Ren::Storage<LightmapRegion>    lm_regions;
+    Ren::Storage<LightSource>       lights;
+    Ren::Storage<Decal>             decals;
+    Ren::Storage<LightProbe>        probes;
 
-    std::vector<SceneObject> objects;
+    std::vector<SceneObject>        objects;
 
-    std::vector<bvh_node_t> nodes;
-    std::vector<uint32_t> free_nodes;
-    uint32_t root_node = 0;
+    std::vector<bvh_node_t>         nodes;
+    std::vector<uint32_t>           free_nodes;
+    uint32_t                        root_node = 0;
 
-    uint32_t update_counter = 0;
+    uint32_t                        update_counter = 0;
 };

@@ -116,7 +116,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             } else {
                 const auto &obj = scene.objects[n->prim_index];
 
-                const uint32_t occluder_flags = HasTransform | HasOccluder;
+                const uint32_t occluder_flags = CompTransform | CompOccluder;
                 if ((obj.comp_mask & occluder_flags) == occluder_flags) {
                     const auto *tr = obj.tr.get();
 
@@ -211,8 +211,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             } else {
                 const auto &obj = scene.objects[n->prim_index];
 
-                const uint32_t drawable_flags = HasMesh | HasTransform;
-                const uint32_t lightsource_flags = HasLightSource | HasTransform;
+                const uint32_t drawable_flags = CompMesh | CompTransform;
+                const uint32_t lightsource_flags = CompLightSource | CompTransform;
                 if ((obj.comp_mask & drawable_flags) == drawable_flags ||
                     (obj.comp_mask & lightsource_flags) == lightsource_flags) {
                     const auto *tr = obj.tr.get();
@@ -259,14 +259,14 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     auto &instance = data.instances.back();
                     memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
 
-                    if (obj.comp_mask & HasLightmap) {
+                    if (obj.comp_mask & CompLightmap) {
                         memcpy(&instance.lmap_transform[0], Ren::ValuePtr(obj.lm->xform), 4 * sizeof(float));
                     }
 
                     const Ren::Mat4f view_from_object = view_from_world * world_from_object,
                                      clip_from_object = clip_from_view * view_from_object;
 
-                    if (obj.comp_mask & HasMesh) {
+                    if (obj.comp_mask & CompMesh) {
                         const auto *mesh = obj.mesh.get();
 
                         const Ren::TriGroup *s = &mesh->group(0);
@@ -285,7 +285,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         }
                     }
 
-                    if (lighting_enabled && (obj.comp_mask & HasLightSource)) {
+                    if (lighting_enabled && (obj.comp_mask & CompLightSource)) {
                         for (int li = 0; li < LIGHTS_PER_OBJECT; li++) {
                             if (!obj.ls[li]) break;
 
@@ -334,7 +334,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         }
                     }
 
-                    if (decals_enabled && (obj.comp_mask & HasDecal)) {
+                    if (decals_enabled && (obj.comp_mask & CompDecal)) {
                         Ren::Mat4f object_from_world = Ren::Inverse(world_from_object);
 
                         for (int di = 0; di < DECALS_PER_OBJECT; di++) {
@@ -505,6 +505,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
             Ren::Mat4f clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
 
+#if 0
             if (shadow_cam.CheckFrustumVisibility(cam.world_position()) != Ren::FullyVisible) {
                 // Check if shadowmap frustum is visible to main camera
                 
@@ -543,9 +544,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
                 if (surf.visible == 0) {
-                    //continue;
+                    continue;
                 }
             }
+#endif
 
             data.shadow_lists.emplace_back();
             auto &list = data.shadow_lists.back();
@@ -587,7 +589,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 } else {
                     const auto& obj = scene.objects[n->prim_index];
 
-                    const uint32_t drawable_flags = HasMesh | HasTransform;
+                    const uint32_t drawable_flags = CompMesh | CompTransform;
                     if ((obj.comp_mask & drawable_flags) == drawable_flags) {
                         const auto* tr = obj.tr.get();
 
@@ -747,7 +749,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     } else {
                         const auto& obj = scene.objects[n->prim_index];
 
-                        const uint32_t drawable_flags = HasMesh | HasTransform;
+                        const uint32_t drawable_flags = CompMesh | CompTransform;
                         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
                             const auto* tr = obj.tr.get();
 
@@ -776,7 +778,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             batch.instance_count = 1;
                         }
 
-                        if (obj.last_change_mask & ChangePositional) {
+                        if (obj.last_change_mask & CompTransform) {
                             light_sees_dynamic_objects = true;
                         }
                     }

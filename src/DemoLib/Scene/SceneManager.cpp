@@ -249,7 +249,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         const JsObject &js_obj = (const JsObject &)js_elem;
 
         SceneObject obj;
-        obj.comp_mask = HasTransform;
+        obj.comp_mask = CompTransform;
         obj.change_mask = 0;
         obj.tr = scene_data_.transforms.Add();
 
@@ -262,7 +262,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             const auto it = all_meshes.find(js_mesh_name.val);
             if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
 
-            obj.comp_mask |= HasMesh;
+            obj.comp_mask |= CompMesh;
             obj.mesh = it->second;
 
             obj_bbox_min = Ren::Min(obj_bbox_min, obj.mesh->bbox_min());
@@ -277,14 +277,14 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             const auto it = all_meshes.find(js_occ_mesh.val);
             if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
 
-            obj.comp_mask |= HasOccluder;
+            obj.comp_mask |= CompOccluder;
             obj.occ_mesh = it->second;
         }
 
         if (js_obj.Has("lightmap_res")) {
             const JsNumber &js_lm_res = (const JsNumber &)js_obj.at("lightmap_res");
 
-            obj.comp_mask |= HasLightmap;
+            obj.comp_mask |= CompLightmap;
             obj.lm = scene_data_.lm_regions.Add();
             obj.lm->size[0] = (int)js_lm_res.val;
             obj.lm->size[1] = (int)js_lm_res.val;
@@ -314,7 +314,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                     Ren::StorageRef<LightSource> ls = scene_data_.lights.Add();
                     ls->Read(js_light_obj);
 
-                    obj.comp_mask |= HasLightSource;
+                    obj.comp_mask |= CompLightSource;
                     obj.ls[index] = ls;
                 }
 
@@ -386,7 +386,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 auto it = all_decals.find(js_decal_name.val);
                 if (it == all_decals.end()) throw std::runtime_error("Decal not found!");
 
-                obj.comp_mask |= HasDecal;
+                obj.comp_mask |= CompDecal;
                 obj.de[index] = it->second;
                 const auto *de = obj.de[index].get();
 
