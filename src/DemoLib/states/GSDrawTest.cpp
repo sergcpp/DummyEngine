@@ -29,7 +29,7 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-    "street2.json";
+    "jap_house.json";
 
 const bool USE_TWO_THREADS = true;
 }
@@ -855,7 +855,7 @@ void GSDrawTest::BackgroundProc() {
 
 void GSDrawTest::UpdateFrame(int list_index) {
     uint32_t mask = HasTransform | HasMesh;
-#if 1
+#if 0
     static float t = 0.0f;
     t += 0.04f;
 

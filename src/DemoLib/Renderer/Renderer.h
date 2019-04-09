@@ -173,7 +173,7 @@ private:
 
     static const uint32_t default_flags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows | DebugShadow);
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows /*| DebugShadow*/);
 #else
         (EnableZFill | EnableCulling | EnableLightmap | EnableLights | EnableDecals | EnableShadows);
 #endif
