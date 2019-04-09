@@ -623,7 +623,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     if (it->size[0] != resolutions[res_index][0] || it->size[1] != resolutions[res_index][1]) {
                         // free and reallocate region
                         shadow_splitter_.Free(it->pos);
-                        it = allocated_shadow_regions_.erase(it);
+                        allocated_shadow_regions_.erase(it);
                     } else {
                         region = &(*it);
                     }
@@ -635,6 +635,21 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             for (; res_index < 4 && !region; res_index++) {
                 int pos[2];
                 int node = shadow_splitter_.Allocate(resolutions[res_index], pos);
+                if (node == -1 && !allocated_shadow_regions_.empty()) {
+                    auto oldest = allocated_shadow_regions_.begin();
+                    for (auto it = allocated_shadow_regions_.begin(); it != allocated_shadow_regions_.end(); ++it) {
+                        if (it->last_visible < oldest->last_visible) {
+                            oldest = it;
+                        }
+                    }
+                    if (oldest != allocated_shadow_regions_.end() && (scene.update_counter - oldest->last_visible) > 10) {
+                        // kick one of old cached regions
+                        shadow_splitter_.Free(oldest->pos);
+                        allocated_shadow_regions_.erase(oldest);
+                        // try again to insert
+                        node = shadow_splitter_.Allocate(resolutions[res_index], pos);
+                    }
+                }
                 if (node != -1) {
                     allocated_shadow_regions_.emplace_back();
                     region = &allocated_shadow_regions_.back();
