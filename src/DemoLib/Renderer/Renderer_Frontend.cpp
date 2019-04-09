@@ -422,6 +422,19 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     auto shadow_gather_start = std::chrono::high_resolution_clock::now();
 
     if (lighting_enabled && shadows_enabled && Ren::Length2(data.env.sun_dir) > 0.9f && Ren::Length2(data.env.sun_col) > FLT_EPSILON) {
+        // Reserve space for sun shadow
+        int sun_shadow_pos[2] = { 0, 0 };
+        int sun_shadow_res[2];
+        if (shadow_splitter_.FindNode(sun_shadow_pos, sun_shadow_res) == -1 || sun_shadow_res[0] != SUN_SHADOW_RES || sun_shadow_res[1] != SUN_SHADOW_RES) {
+            shadow_splitter_.Clear();
+
+            sun_shadow_res[0] = SUN_SHADOW_RES;
+            sun_shadow_res[1] = SUN_SHADOW_RES;
+
+            int id = shadow_splitter_.Allocate(sun_shadow_res, sun_shadow_pos);
+            assert(id != -1 && sun_shadow_pos[0] == 0 && sun_shadow_pos[1] == 0);
+        }
+
         // Planes, that define shadow map splits
         const float far_planes[] = { float(REN_SHAD_CASCADE0_DIST), float(REN_SHAD_CASCADE1_DIST),
                                      float(REN_SHAD_CASCADE2_DIST), float(REN_SHAD_CASCADE3_DIST) };
