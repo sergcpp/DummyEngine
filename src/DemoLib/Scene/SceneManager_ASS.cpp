@@ -622,8 +622,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     shader_constants.emplace("$NormTexSlot",    AS_STR(REN_NORM_TEX_SLOT));
     shader_constants.emplace("$SpecTexSlot",    AS_STR(REN_SPEC_TEX_SLOT));
     shader_constants.emplace("$ShadTexSlot",    AS_STR(REN_SHAD_TEX_SLOT));
-    shader_constants.emplace("$LmapDirSlot",    AS_STR(REN_LMAP_DIR_SLOT));
-    shader_constants.emplace("$LmapIndirSlot",  AS_STR(REN_LMAP_INDIR_SLOT));
+    //shader_constants.emplace("$LmapDirSlot",    AS_STR(REN_LMAP_DIR_SLOT));
+    //shader_constants.emplace("$LmapIndirSlot",  AS_STR(REN_LMAP_INDIR_SLOT));
     shader_constants.emplace("$LmapSHSlot",     AS_STR(REN_LMAP_SH_SLOT));
     shader_constants.emplace("$DecalTexSlot",   AS_STR(REN_DECAL_TEX_SLOT));
     shader_constants.emplace("$SSAOTexSlot",    AS_STR(REN_SSAO_TEX_SLOT));

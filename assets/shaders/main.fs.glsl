@@ -14,8 +14,6 @@ layout(binding = $DiffTexSlot) uniform sampler2D diffuse_texture;
 layout(binding = $NormTexSlot) uniform sampler2D normals_texture;
 layout(binding = $SpecTexSlot) uniform sampler2D specular_texture;
 layout(binding = $ShadTexSlot) uniform sampler2DShadow shadow_texture;
-layout(binding = $LmapDirSlot) uniform sampler2D lm_direct_texture;
-layout(binding = $LmapIndirSlot) uniform sampler2D lm_indirect_texture;
 layout(binding = $LmapSHSlot) uniform sampler2D lm_indirect_sh_texture[4];
 layout(binding = $DecalTexSlot) uniform sampler2D decals_texture;
 layout(binding = $SSAOTexSlot) uniform sampler2D ao_texture;
@@ -64,7 +62,7 @@ vec3 RGBMDecode(vec4 rgbm) {
 
 #define M_PI 3.1415926535897932384626433832795
 
-float GetVisibility(float frag_depth, in vec2 lm_uvs, inout vec3 additional_light) {
+float GetVisibility(float frag_depth, in vec2 lm_uvs) {
     const vec2 poisson_disk[16] = vec2[16](
         vec2(-0.5, 0.0),
         vec2(0.0, 0.5),
@@ -116,8 +114,8 @@ float GetVisibility(float frag_depth, in vec2 lm_uvs, inout vec3 additional_ligh
     } else if (frag_depth < $ShadCasc3Dist) {
         visibility += texture(shadow_texture, aVertexShUVs_[3]);
     } else {
-        // use direct lightmap
-        additional_light += RGBMDecode(texture(lm_direct_texture, lm_uvs));
+        // use direct sun lightmap?
+        visibility = 1.0;
     }
     
     return visibility;
@@ -299,10 +297,8 @@ void main(void) {
     float lambert = max(dot(normal, uSunDir.xyz), 0.0);
     float visibility = 0.0;
     if (lambert > 0.00001) {
-        visibility = GetVisibility(depth, lm_uvs, additional_light);
+        visibility = GetVisibility(depth, lm_uvs);
     }
-    
-    vec3 indirect_col = RGBMDecode(texture(lm_indirect_texture, lm_uvs));
     
     vec3 sh_l_00 = RGBMDecode(texture(lm_indirect_sh_texture[0], lm_uvs));
     vec3 sh_l_10 = texture(lm_indirect_sh_texture[1], lm_uvs).rgb;
@@ -310,9 +306,9 @@ void main(void) {
     vec3 sh_l_12 = texture(lm_indirect_sh_texture[3], lm_uvs).rgb;
     
     //indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
-    indirect_col += (0.5 + (sh_l_10 - vec3(0.5)) * normal.y +
-                           (sh_l_11 - vec3(0.5)) * normal.z +
-                           (sh_l_12 - vec3(0.5)) * normal.x) * sh_l_00 * 2.0;
+    vec3 indirect_col = (0.5 + (sh_l_10 - vec3(0.5)) * normal.y +
+                               (sh_l_11 - vec3(0.5)) * normal.z +
+                               (sh_l_12 - vec3(0.5)) * normal.x) * sh_l_00 * 2.0;
     indirect_col = max(indirect_col, vec3(0.0));
     
     vec2 ao_uvs = gl_FragCoord.xy / uResAndFRes.xy;
