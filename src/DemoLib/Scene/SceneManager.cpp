@@ -78,7 +78,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     ClearScene();
 
     std::map<std::string, Ren::MeshRef> all_meshes;
-    std::map<std::string, Ren::StorageRef<LightSource>> all_lights;
+    //std::map<std::string, Ren::StorageRef<LightSource>> all_lights;
     std::map<std::string, Ren::StorageRef<Decal>> all_decals;
 
     std::map<std::string, Ren::Vec4f> decals_textures;
@@ -143,7 +143,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         all_meshes[name] = ctx_.LoadMesh(name.c_str(), in_file_stream, std::bind(&SceneManager::OnLoadMaterial, this, _1));
     }
 
-    if (js_scene.Has("lights")) {
+    /*if (js_scene.Has("lights")) {
         const JsObject &js_lights = (const JsObject &)js_scene.at("lights");
         for (const auto &js_elem : js_lights.elements) {
             Ren::StorageRef<LightSource> ls = scene_data_.lights.Add();
@@ -154,7 +154,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
             all_lights[name] = ls;
         }
-    }
+    }*/
 
     if (js_scene.Has("decals")) {
         const JsObject &js_decals = (const JsObject &)js_scene.at("decals");
@@ -305,13 +305,19 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
             int index = 0;
             for (const auto &js_light : js_lights.elements) {
-                const auto &js_light_name = (const JsString &)js_light;
+                const auto &js_light_obj = (const JsObject &)js_light;
 
-                auto it = all_lights.find(js_light_name.val);
-                if (it == all_lights.end()) throw std::runtime_error("Light not found!");
+                //auto it = all_lights.find(js_light_name.val);
+                //if (it == all_lights.end()) throw std::runtime_error("Light not found!");
 
-                obj.comp_mask |= HasLightSource;
-                obj.ls[index] = it->second;
+                {
+                    Ren::StorageRef<LightSource> ls = scene_data_.lights.Add();
+                    ls->Read(js_light_obj);
+
+                    obj.comp_mask |= HasLightSource;
+                    obj.ls[index] = ls;
+                }
+
                 const auto *ls = obj.ls[index].get();
 
                 index++;

@@ -230,13 +230,21 @@ void SceneManager::RemoveNode(uint32_t node_index) {
 void SceneManager::UpdateObjects() {
     using namespace SceneManagerInternal;
 
+    scene_data_.update_counter++;
+
     auto *nodes = scene_data_.nodes.data();
+
+    for (const uint32_t obj_index : last_changed_objects_) {
+        auto &obj = scene_data_.objects[obj_index];
+        obj.last_change_mask = 0;
+    }
 
     // Remove nodes with associated moved objects (they will be reinserted)
     for (const uint32_t obj_index : changed_objects_) {
         auto &obj = scene_data_.objects[obj_index];
+        obj.last_change_mask = obj.change_mask;
 
-        if (obj.change_mask & ChangePosition) {
+        if (obj.change_mask & ChangePositional) {
             auto *tr = obj.tr.get();
             tr->UpdateBBox();
             if (tr->node_index != 0xffffffff) {
@@ -251,7 +259,7 @@ void SceneManager::UpdateObjects() {
 
                 if (is_fully_inside) {
                     // Update is not needed (object is inside of node bounds)
-                    obj.change_mask ^= ChangePosition;
+                    obj.change_mask ^= ChangePositional;
                 } else {
                     // Object is out of node bounds, remove node and re-insert it later
                     RemoveNode(tr->node_index);
@@ -270,7 +278,7 @@ void SceneManager::UpdateObjects() {
     for (const uint32_t obj_index : changed_objects_) {
         auto &obj = scene_data_.objects[obj_index];
 
-        if (obj.change_mask & ChangePosition) {
+        if (obj.change_mask & ChangePositional) {
             auto *tr = obj.tr.get();
             tr->node_index = free_nodes[free_nodes_pos++];
 
@@ -428,10 +436,10 @@ void SceneManager::UpdateObjects() {
 #undef left_child_of
 #undef right_child_of
 
-            obj.change_mask ^= ChangePosition;
+            obj.change_mask ^= ChangePositional;
         }
     }
 
     scene_data_.free_nodes.erase(scene_data_.free_nodes.begin(), scene_data_.free_nodes.begin() + free_nodes_pos);
-    changed_objects_.clear();
+    last_changed_objects_ = std::move(changed_objects_);
 }

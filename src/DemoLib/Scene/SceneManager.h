@@ -66,7 +66,7 @@ private:
     std::string env_map_pt_name_;
 
     SceneData scene_data_;
-    std::vector<uint32_t> changed_objects_;
+    std::vector<uint32_t> changed_objects_, last_changed_objects_;
 
     std::vector<char> temp_buf;
 

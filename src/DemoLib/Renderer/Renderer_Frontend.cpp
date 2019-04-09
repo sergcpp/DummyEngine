@@ -73,8 +73,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     ditem_to_decal_.clear();
     decals_boxes_.clear();
 
-    shadow_splitter_.Clear();
-
     Ren::Mat4f view_from_world = data.draw_cam.view_matrix(),
                clip_from_view = data.draw_cam.proj_matrix();
 
@@ -158,7 +156,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     }
 
     /**************************************************************************************************/
-    /*                               LIGHTS/DECALS/PROBES GATHERING                                   */
+    /*                           MESHES/LIGHTS/DECALS/PROBES GATHERING                                */
     /**************************************************************************************************/
 
     auto main_gather_start = std::chrono::high_resolution_clock::now();
@@ -621,16 +619,41 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
             const int resolutions[][2] = { { 512, 512 }, { 256, 256 }, { 128, 128 }, { 64, 64 } };
 
+            // choose resolution based on distance
             int res_index = std::min(int(distance * 0.01f), 3);
-            int node, pos[2];
 
-            // try to allocate best resolution possible
-            for ( ; res_index < 4; res_index++) {
-                node = shadow_splitter_.Allocate(resolutions[res_index], pos);
-                if (node != -1) break;
+            ShadReg *region = nullptr;
+
+            for (auto it = allocated_shadow_regions_.begin(); it != allocated_shadow_regions_.end(); ++it) {
+                if (it->ls == ls) {
+                    if (it->size[0] != resolutions[res_index][0] || it->size[1] != resolutions[res_index][1]) {
+                        // free and reallocate region
+                        shadow_splitter_.Free(it->pos);
+                        it = allocated_shadow_regions_.erase(it);
+                    } else {
+                        region = &(*it);
+                    }
+                    break;
+                }
             }
 
-            if (node != -1) {
+            // try to allocate best resolution possible
+            for (; res_index < 4 && !region; res_index++) {
+                int pos[2];
+                int node = shadow_splitter_.Allocate(resolutions[res_index], pos);
+                if (node != -1) {
+                    allocated_shadow_regions_.emplace_back();
+                    region = &allocated_shadow_regions_.back();
+                    region->ls = ls;
+                    region->pos[0] = pos[0];
+                    region->pos[1] = pos[1];
+                    region->size[0] = resolutions[res_index][0];
+                    region->size[1] = resolutions[res_index][1];
+                    region->last_update = region->last_visible = 0xffffffff;
+                }
+            }
+
+            if (region) {
                 const auto light_dir = Ren::Vec3f{ -l.dir[0], -l.dir[1], -l.dir[2] };
 
                 auto light_up = Ren::Vec3f{ 0.0f, 0.0, 1.0f };
@@ -654,14 +677,14 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 data.shadow_lists.emplace_back();
                 auto &list = data.shadow_lists.back();
 
-                list.shadow_map_pos[0] = pos[0];
-                list.shadow_map_pos[1] = pos[1];
-                list.shadow_map_size[0] = resolutions[res_index][0];
-                list.shadow_map_size[1] = resolutions[res_index][1];
+                list.shadow_map_pos[0] = region->pos[0];
+                list.shadow_map_pos[1] = region->pos[1];
+                list.shadow_map_size[0] = region->size[0];
+                list.shadow_map_size[1] = region->size[1];
                 list.shadow_batch_start = (uint32_t)data.shadow_batches.size();
                 list.shadow_batch_count = 0;
-                list.cam_near = shadow_cam.near();
-                list.cam_far = shadow_cam.far();
+                list.cam_near = region->cam_near = shadow_cam.near();
+                list.cam_far = region->cam_far = shadow_cam.far();
 
                 l.shadowreg_index = (int)data.shadow_regions.size();
                 data.shadow_regions.emplace_back();
@@ -670,6 +693,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 reg.transform = Ren::Vec4f{ float(list.shadow_map_pos[0]) / SHADOWMAP_WIDTH, float(list.shadow_map_pos[1]) / SHADOWMAP_HEIGHT,
                                             float(list.shadow_map_size[0]) / SHADOWMAP_WIDTH, float(list.shadow_map_size[1]) / SHADOWMAP_HEIGHT };
                 reg.clip_from_world = clip_from_world;
+
+                bool light_sees_dynamic_objects = false;
 
                 const uint32_t skip_check_bit = (1u << 31);
                 const uint32_t index_bits = ~skip_check_bit;
@@ -717,10 +742,33 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             batch.instance_indices[0] = (uint32_t)(data.instances.size() - 1);
                             batch.instance_count = 1;
                         }
+
+                        if (obj.last_change_mask & ChangePositional) {
+                            light_sees_dynamic_objects = true;
+                        }
                     }
                 }
 
-                list.shadow_batch_count = (uint32_t)(data.shadow_batches.size() - list.shadow_batch_start);
+                if (!light_sees_dynamic_objects && region->last_update != 0xffffffff && (scene.update_counter - region->last_update > 2)) {
+                    // nothing was changed within last two frames
+                    list.shadow_batch_count = 0;
+                } else {
+                    if (light_sees_dynamic_objects || region->last_update == 0xffffffff) {
+                        region->last_update = scene.update_counter;
+                    }
+                    list.shadow_batch_count = (uint32_t)(data.shadow_batches.size() - list.shadow_batch_start);
+                }
+
+                region->last_visible = scene.update_counter;
+            }
+        }
+    }
+
+    if (shadows_enabled && (data.render_flags & DebugShadow)) {
+        data.cached_shadow_regions.clear();
+        for (const auto &r : allocated_shadow_regions_) {
+            if (r.last_visible != scene.update_counter) {
+                data.cached_shadow_regions.push_back(r);
             }
         }
     }

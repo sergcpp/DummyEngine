@@ -83,7 +83,7 @@ enum eObjectComp {
 };
 
 enum eObjectChange {
-    ChangePosition = (1 << 0),
+    ChangePositional = (1 << 0),
 };
 
 const int LIGHTS_PER_OBJECT = 16;
@@ -92,7 +92,7 @@ const int DECALS_PER_OBJECT = 16;
 const float LIGHT_ATTEN_CUTOFF = 0.001f;
 
 struct SceneObject {
-    uint32_t comp_mask, change_mask;
+    uint32_t comp_mask, change_mask, last_change_mask;
     Ren::StorageRef<Transform> tr;
     Ren::MeshRef mesh, occ_mesh;
     uint32_t pt_mi;
@@ -177,4 +177,6 @@ struct SceneData {
     std::vector<bvh_node_t> nodes;
     std::vector<uint32_t> free_nodes;
     uint32_t root_node = 0;
+
+    uint32_t update_counter = 0;
 };

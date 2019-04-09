@@ -123,7 +123,16 @@
             "pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "rails",
             "lightmap_res1" : 512,
-            "lights" : [ "l0" ],
+            "lights" : [
+                {
+                    "offset" : [ 0.0, 12.0, 0.0 ],
+                    "color" : [ 10000.0, 9000.0, 7000.0 ],
+                    "radius" : 0.01,
+                    "direction" : [ 0.0, -1.0, 0.0 ],
+                    "angle" : 60.0,
+                    "cast_shadow" : true
+                }
+            ],
         },
         {
             "pos" : [ 0.0, 0.0, 0.0 ],
@@ -135,7 +144,16 @@
             "pos" : [ 0.0, 0.0, 16.0 ],
             "mesh" : "rails",
             "lightmap_res1" : 512,
-            "lights" : [ "l0" ]
+            "lights" : [
+                {
+                    "offset" : [ 0.0, 12.0, 0.0 ],
+                    "color" : [ 10000.0, 9000.0, 7000.0 ],
+                    "radius" : 0.01,
+                    "direction" : [ 0.0, -1.0, 0.0 ],
+                    "angle" : 60.0,
+                    "cast_shadow" : true
+                }
+            ],
         },
         {
             "pos" : [ 0.0, 0.0, 16.0 ],
@@ -147,7 +165,16 @@
             "pos" : [ 0.0, 0.0, 32.0 ],
             "mesh" : "rails",
             "lightmap_res1" : 512,
-            "lights" : [ "l0" ]
+            "lights" : [
+                {
+                    "offset" : [ 0.0, 12.0, 0.0 ],
+                    "color" : [ 10000.0, 9000.0, 7000.0 ],
+                    "radius" : 0.01,
+                    "direction" : [ 0.0, -1.0, 0.0 ],
+                    "angle" : 60.0,
+                    "cast_shadow" : true
+                }
+            ],
         },
         {
             "pos" : [ 0.0, 0.0, 32.0 ],
@@ -159,7 +186,16 @@
             "pos" : [ 0.0, 0.0, 48.0 ],
             "mesh" : "rails",
             "lightmap_res1" : 512,
-            "lights" : [ "l0" ]
+            "lights" : [
+                {
+                    "offset" : [ 0.0, 12.0, 0.0 ],
+                    "color" : [ 10000.0, 9000.0, 7000.0 ],
+                    "radius" : 0.01,
+                    "direction" : [ 0.0, -1.0, 0.0 ],
+                    "angle" : 60.0,
+                    "cast_shadow" : true
+                }
+            ],
         },
         {
             "pos" : [ 0.0, 0.0, 48.0 ],
@@ -171,7 +207,6 @@
             "pos" : [ 12.4276, 0.0, 1.15319 ],
             "mesh" : "main_house",
             "lightmap_res1" : 512,
-            "lights1" : [ "l0" ],
         },
         {
             "pos" : [ 14.2315, 0.0, 22.0001 ],

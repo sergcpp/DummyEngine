@@ -649,6 +649,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glUseProgram(shadow_prog_->prog_id());
 
         glPolygonOffset(1.85f, 6.0f);
+        glEnable(GL_SCISSOR_TEST);
 
         for (int i = 0; i < (int)data.shadow_lists.size(); i++) {
             const auto &shadow_list = data.shadow_lists[i];
@@ -656,6 +657,12 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
             glViewport(shadow_list.shadow_map_pos[0], shadow_list.shadow_map_pos[1],
                        shadow_list.shadow_map_size[0], shadow_list.shadow_map_size[1]);
+
+            {   // clear buffer region
+                glScissor(shadow_list.shadow_map_pos[0], shadow_list.shadow_map_pos[1],
+                          shadow_list.shadow_map_size[0], shadow_list.shadow_map_size[1]);
+                glClear(GL_DEPTH_BUFFER_BIT);
+            }
 
             glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(data.shadow_regions[i].clip_from_world));
 
@@ -672,6 +679,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
             }
         }
 
+        glDisable(GL_SCISSOR_TEST);
         glPolygonOffset(0.0f, 0.0f);
         glDisable(GL_POLYGON_OFFSET_FILL);
 
@@ -1164,15 +1172,6 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
     glQueryCounter(queries_[1][TimeBlitStart], GL_TIMESTAMP);
     
-    if (!(data.render_flags & DebugShadow)){
-        // Clear shadowmap buffer
-        glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
-        glViewport(0, 0, shadow_buf_.w, shadow_buf_.h);
-        glDepthMask(GL_TRUE);
-        glClear(GL_DEPTH_BUFFER_BIT);
-        glDepthMask(GL_FALSE);
-    }
-    
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 
@@ -1372,6 +1371,11 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         float k = (float(shadow_buf_.h) / shadow_buf_.w) * (float(scr_w_) / scr_h_);
 
+        const int near_loc = blit_depth_prog_->uniform("near").loc;
+        const int far_loc = blit_depth_prog_->uniform("far").loc;
+        const int col_loc = blit_depth_prog_->uniform("color").loc;
+
+        // Draw visible shadow regions
         for (int i = 0; i < (int)data.shadow_lists.size(); i++) {
             const auto &sh_list = data.shadow_lists[i];
             const auto &reg = data.shadow_regions[i];
@@ -1389,25 +1393,48 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
             glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
             glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
             
-            glUniform1f(blit_depth_prog_->uniform("near").loc, sh_list.cam_near);
-            glUniform1f(blit_depth_prog_->uniform("far").loc, sh_list.cam_far);
-            glUniform3f(blit_depth_prog_->uniform("color").loc, 1.0f, 0.0f, 0.0f);
+            glUniform1f(near_loc, sh_list.cam_near);
+            glUniform1f(far_loc, sh_list.cam_far);
+
+            if (sh_list.shadow_batch_count) {
+                // mark updated region with red
+                glUniform3f(col_loc, 1.0f, 0.0f, 0.0f);
+            } else {
+                // mark cached region with green
+                glUniform3f(col_loc, 0.0f, 1.0f, 0.0f);
+            }
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        }
+
+        // Draw invisible cached shadow regions
+        for (int i = 0; i < (int)data.cached_shadow_regions.size(); i++) {
+            const auto &r = data.cached_shadow_regions[i];
+
+            const float positions[] = { -1.0f + float(r.pos[0]) / SHADOWMAP_WIDTH,                       -1.0f + k * float(r.pos[1]) / SHADOWMAP_HEIGHT,
+                                        -1.0f + float(r.pos[0] + r.size[0]) / SHADOWMAP_WIDTH,           -1.0f + k * float(r.pos[1]) / SHADOWMAP_HEIGHT,
+                                        -1.0f + float(r.pos[0] + r.size[0]) / SHADOWMAP_WIDTH,           -1.0f + k * float(r.pos[1] + r.size[1]) / SHADOWMAP_HEIGHT,
+                                        -1.0f + float(r.pos[0]) / SHADOWMAP_WIDTH,                       -1.0f + k * float(r.pos[1] + r.size[1]) / SHADOWMAP_HEIGHT };
+
+            const float uvs[] = { float(r.pos[0]),                  float(r.pos[1]),
+                                  float(r.pos[0] + r.size[0]),      float(r.pos[1]),
+                                  float(r.pos[0] + r.size[0]),      float(r.pos[1] + r.size[1]),
+                                  float(r.pos[0]),                  float(r.pos[1] + r.size[1]) };
+
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
+
+            glUniform1f(near_loc, r.cam_near);
+            glUniform1f(far_loc, r.cam_far);
+
+            // mark cached region with blue
+            glUniform3f(col_loc, 0.0f, 0.0f, 1.0f);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
         }
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
-
-        // Clear shadowmap buffer
-        glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
-        glViewport(0, 0, shadow_buf_.w, shadow_buf_.h);
-        glDepthMask(GL_TRUE);
-        glClear(GL_DEPTH_BUFFER_BIT);
-        glDepthMask(GL_FALSE);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
     }
 
     if (data.render_flags & DebugReduce) {

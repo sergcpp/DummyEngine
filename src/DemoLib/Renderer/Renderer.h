@@ -173,13 +173,20 @@ private:
 
     static const uint32_t default_flags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows);
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows | DebugShadow);
 #else
         (EnableZFill | EnableCulling | EnableLightmap | EnableLights | EnableDecals | EnableShadows);
 #endif
     uint32_t render_flags_ = default_flags;
 
     int frame_counter_ = 0;
+
+    struct ShadReg {
+        const LightSource *ls;
+        int pos[2], size[2];
+        float cam_near, cam_far; // for debugging
+        uint32_t last_update, last_visible;
+    };
 
     struct DrawablesData {
         Ren::Camera draw_cam;
@@ -202,6 +209,7 @@ private:
         // for debugging only, backend does not require nodes for drawing
         std::vector<bvh_node_t> temp_nodes;
         uint32_t root_index;
+        std::vector<ShadReg> cached_shadow_regions;
     } drawables_data_[2];
 
     std::vector<const LightSource *> litem_to_lsource_;
@@ -234,6 +242,8 @@ private:
 
     void CheckInitVAOs();
 #endif
+
+    std::vector<ShadReg> allocated_shadow_regions_;
 
     //temp
     std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];

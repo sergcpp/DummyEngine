@@ -855,7 +855,7 @@ void GSDrawTest::BackgroundProc() {
 
 void GSDrawTest::UpdateFrame(int list_index) {
     uint32_t mask = HasTransform | HasMesh;
-#if 0
+#if 1
     static float t = 0.0f;
     t += 0.02f;
 
@@ -892,9 +892,10 @@ void GSDrawTest::UpdateFrame(int list_index) {
         tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.01f + 0.04f * std::cos(t) });
     }
 
-    scene_manager_->InvalidateObjects(monkey_ids, 5, ChangePosition);
-    scene_manager_->UpdateObjects();
+    scene_manager_->InvalidateObjects(monkey_ids, 5, ChangePositional);
 #endif
+
+    scene_manager_->UpdateObjects();
 
     renderer_->PrepareDrawList(list_index, scene_manager_->scene_data(), scene_manager_->main_cam());
 }
