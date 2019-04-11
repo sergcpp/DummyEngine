@@ -11,6 +11,8 @@ UNIFORM_BLOCKS
     SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
 */
 
+)" __ADDITIONAL_DEFINES_STR__ R"(
+
 #define BSEARCH_STEPS 4
 
 struct ShadowMapRegion {
@@ -27,9 +29,15 @@ layout (std140) uniform SharedDataBlock {
     vec4 uResAndFRes;
 };
 
+#if defined(MSAA_4)
 layout(binding = )" AS_STR(REN_SSR_DEPTH_TEX_SLOT) R"() uniform mediump sampler2DMS depth_texture;
 layout(binding = )" AS_STR(REN_SSR_NORM_TEX_SLOT) R"() uniform mediump sampler2DMS norm_texture;
 layout(binding = )" AS_STR(REN_SSR_SPEC_TEX_SLOT) R"() uniform mediump sampler2DMS spec_texture;
+#else
+layout(binding = )" AS_STR(REN_SSR_DEPTH_TEX_SLOT) R"() uniform mediump sampler2D depth_texture;
+layout(binding = )" AS_STR(REN_SSR_NORM_TEX_SLOT) R"() uniform mediump sampler2D norm_texture;
+layout(binding = )" AS_STR(REN_SSR_SPEC_TEX_SLOT) R"() uniform mediump sampler2D spec_texture;
+#endif
 layout(binding = )" AS_STR(REN_SSR_PREV_TEX_SLOT) R"() uniform mediump sampler2D prev_texture;
 layout(binding = )" AS_STR(REN_SSR_ENV_TEX_SLOT) R"() uniform mediump samplerCube env_texture;  
 

@@ -105,10 +105,10 @@ void Renderer::InitRendererInternal() {
     blit_combine_prog_ = ctx_.LoadProgramGLSL("blit_combine", blit_vs, blit_combine_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_combine_ms");
-    blit_combine_ms_prog_ = ctx_.LoadProgramGLSL("blit_combine_ms", blit_ms_vs, blit_combine_ms_fs, &status);
+    blit_combine_ms_prog_ = ctx_.LoadProgramGLSL("blit_combine_ms", blit_vs, blit_combine_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_ms");
-    blit_ms_prog_ = ctx_.LoadProgramGLSL("blit_ms", blit_ms_vs, blit_ms_fs, &status);
+    blit_ms_prog_ = ctx_.LoadProgramGLSL("blit_ms", blit_vs, blit_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_red");
     blit_red_prog_ = ctx_.LoadProgramGLSL("blit_red", blit_vs, blit_reduced_fs, &status);
@@ -117,7 +117,7 @@ void Renderer::InitRendererInternal() {
     blit_down_prog_ = ctx_.LoadProgramGLSL("blit_down", blit_vs, blit_down_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_down_ms");
-    blit_down_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_ms", blit_ms_vs, blit_down_ms_fs, &status);
+    blit_down_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_ms", blit_vs, blit_down_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_gauss");
     blit_gauss_prog_ = ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
@@ -128,23 +128,29 @@ void Renderer::InitRendererInternal() {
     LOGI("Compiling blit_debug_ms");
     blit_debug_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug_ms", blit_vs, blit_debug_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_ssr");
+    blit_ssr_prog_ = ctx_.LoadProgramGLSL("blit_ssr", blit_vs, blit_ssr_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_ssr_ms");
-    blit_ssr_ms_prog_ = ctx_.LoadProgramGLSL("blit_ssr_ms", blit_ms_vs, blit_ssr_ms_fs, &status);
+    blit_ssr_ms_prog_ = ctx_.LoadProgramGLSL("blit_ssr_ms", blit_vs, blit_ssr_ms_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_ao");
+    blit_ao_prog_ = ctx_.LoadProgramGLSL("blit_ao", blit_vs, blit_ssao_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_ao_ms");
-    blit_ao_ms_prog_ = ctx_.LoadProgramGLSL("blit_ao_ms", blit_ms_vs, blit_ssao_ms_fs, &status);
+    blit_ao_ms_prog_ = ctx_.LoadProgramGLSL("blit_ao_ms", blit_vs, blit_ssao_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_multiply");
     blit_multiply_prog_ = ctx_.LoadProgramGLSL("blit_multiply", blit_vs, blit_multiply_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_multiply_ms");
-    blit_multiply_ms_prog_ = ctx_.LoadProgramGLSL("blit_multiply_ms", blit_ms_vs, blit_multiply_ms_fs, &status);
+    blit_multiply_ms_prog_ = ctx_.LoadProgramGLSL("blit_multiply_ms", blit_vs, blit_multiply_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_debug_bvh");
     blit_debug_bvh_prog_ = ctx_.LoadProgramGLSL("blit_debug_bvh", blit_vs, blit_debug_bvh_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_debug_bvh_ms");
-    blit_debug_bvh_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug_bvh_ms", blit_ms_vs, blit_debug_bvh_ms_fs, &status);
+    blit_debug_bvh_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug_bvh_ms", blit_vs, blit_debug_bvh_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_depth");
     blit_depth_prog_ = ctx_.LoadProgramGLSL("blit_depth", blit_vs, blit_depth_fs, &status);
@@ -782,7 +788,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         if (clean_buf_.msaa > 1) {
             ssao_prog = blit_ao_ms_prog_.get();
         } else {
-
+            ssao_prog = blit_ao_prog_.get();
         }
 
         glUseProgram(ssao_prog->prog_id());
@@ -930,10 +936,15 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glBindFramebuffer(GL_FRAMEBUFFER, refl_buf_.fb);
         glViewport(0, 0, refl_buf_.w, refl_buf_.h);
 
-        const Ren::Program *cur_program = blit_ssr_ms_prog_.get();
-        glUseProgram(cur_program->prog_id());
+        const Ren::Program *ssr_program = nullptr;
+        if (clean_buf_.msaa > 1) {
+            ssr_program = blit_ssr_ms_prog_.get();
+        } else {
+            ssr_program = blit_ssr_prog_.get();
+        }
+        glUseProgram(ssr_program->prog_id());
 
-        glBindBufferBase(GL_UNIFORM_BUFFER, cur_program->uniform_block(REN_UB_SHARED_DATA_LOC).loc, (GLuint)unif_shared_data_block_);
+        glBindBufferBase(GL_UNIFORM_BUFFER, ssr_program->uniform_block(REN_UB_SHARED_DATA_LOC).loc, (GLuint)unif_shared_data_block_);
 
         const float uvs[] = { 0.0f, 0.0f,                       float(act_w_), 0.0f,
                               float(act_w_), float(act_h_),     0.0f, float(act_h_) };
@@ -951,7 +962,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
         glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
 
-        if (true) {
+        if (clean_buf_.msaa > 1) {
             BindTextureMs(REN_SSR_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
             BindTextureMs(REN_SSR_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
             BindTextureMs(REN_SSR_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
@@ -980,14 +991,20 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0 };
         glDrawBuffers(1, draw_buffers);
 
-        cur_program = blit_multiply_ms_prog_.get();
-        glUseProgram(cur_program->prog_id());
+        const Ren::Program *blit_mul_prog = nullptr;
+
+        if (clean_buf_.msaa > 1) {
+            blit_mul_prog = blit_multiply_ms_prog_.get();
+        } else {
+            blit_mul_prog = blit_multiply_prog_.get();
+        }
+        glUseProgram(blit_mul_prog->prog_id());
 
         glUniform2f(13, float(act_w_), float(act_h_));
 
         BindTexture(0, refl_buf_.attachments[0].tex);
 
-        if (true) {
+        if (clean_buf_.msaa > 1) {
             BindTextureMs(1, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         } else {
             BindTexture(1, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);

@@ -1,10 +1,18 @@
 R"(
 #version 310 es
+#extension GL_ARB_texture_multisample : enable
+
 #ifdef GL_ES
     precision mediump float;
 #endif
-        
-layout(binding = 0) uniform sampler2D s_texture;
+
+)" __ADDITIONAL_DEFINES_STR__ R"(
+
+#if defined(MSAA_4)
+layout(binding = 0) uniform mediump sampler2DMS s_texture;
+#else
+layout(binding = 0) uniform mediump sampler2D s_texture;
+#endif
 layout(binding = 1) uniform sampler2D s_blured_texture;
 layout(location = 13) uniform vec2 uTexSize;
 layout(location = 14) uniform float gamma;
@@ -15,32 +23,78 @@ in vec2 aVertexUVs_;
 out vec4 outColor;
 
 vec3 Unch2Tonemap(vec3 x) {
-    const float A = 0.15;
-    const float B = 0.50;
-    const float C = 0.10;
-    const float D = 0.20;
-    const float E = 0.02;
-    const float F = 0.30;
-    const float W = 11.2;
+    const highp float A = 0.15;
+    const highp float B = 0.50;
+    const highp float C = 0.10;
+    const highp float D = 0.20;
+    const highp float E = 0.02;
+    const highp float F = 0.30;
+    const highp float W = 11.2;
 
     return ((x * (A * x + vec3(C * B)) + vec3(D * E)) / (x * ( A * x + vec3(B)) + vec3(D * F))) - vec3(E / F);
 }
 
-void main() {
-    vec2 norm_uvs = aVertexUVs_ / uTexSize;
+#if defined(MSAA_4)
+vec3 BilinearTexelFetch(sampler2DMS texture, vec2 texcoord, int s) {
+    ivec2 coord = ivec2(floor(texcoord));
 
-    vec3 c0 = texelFetch(s_texture, ivec2(aVertexUVs_), 0).xyz;
-    vec3 c1 = 0.1 * texture(s_blured_texture, norm_uvs).xyz;
+    vec3 texel00 = texelFetch(texture, coord + ivec2(0, 0), s).rgb;
+    vec3 texel10 = texelFetch(texture, coord + ivec2(1, 0), s).rgb;
+    vec3 texel11 = texelFetch(texture, coord + ivec2(1, 1), s).rgb;
+    vec3 texel01 = texelFetch(texture, coord + ivec2(0, 1), s).rgb;
             
-    c0 += c1;
+    vec2 sample_coord = fract(texcoord.xy);
+            
+    vec3 texel0 = mix(texel00, texel01, sample_coord.y);
+    vec3 texel1 = mix(texel10, texel11, sample_coord.y);
+            
+    return mix(texel0, texel1, sample_coord.x);
+}
+#else
+vec3 BilinearTexelFetch(sampler2D texture, vec2 texcoord) {
+    ivec2 coord = ivec2(floor(texcoord));
 
-    c0 = Unch2Tonemap(exposure * c0);
+    vec3 texel00 = texelFetch(texture, coord + ivec2(0, 0), 0).rgb;
+    vec3 texel10 = texelFetch(texture, coord + ivec2(1, 0), 0).rgb;
+    vec3 texel11 = texelFetch(texture, coord + ivec2(1, 1), 0).rgb;
+    vec3 texel01 = texelFetch(texture, coord + ivec2(0, 1), 0).rgb;
+            
+    vec2 sample_coord = fract(texcoord.xy);
+            
+    vec3 texel0 = mix(texel00, texel01, sample_coord.y);
+    vec3 texel1 = mix(texel10, texel11, sample_coord.y);
+            
+    return mix(texel0, texel1, sample_coord.x);
+}
+#endif
 
-    const float W = 11.2;
+void main() {
+    vec2 uvs = aVertexUVs_ - vec2(0.5, 0.5);
+    vec2 norm_uvs = uvs / uTexSize;
+
+    vec3 col;
+
+#if defined(MSAA_4)
+    vec3 c0 = BilinearTexelFetch(s_texture, uvs, 0);
+    vec3 c1 = BilinearTexelFetch(s_texture, uvs, 1);
+    vec3 c2 = BilinearTexelFetch(s_texture, uvs, 2);
+    vec3 c3 = BilinearTexelFetch(s_texture, uvs, 3);
+    vec3 c4 = texture(s_blured_texture, norm_uvs).xyz;
+
+    col = 0.25 * (c0 + c1 + c2 + c3) + 0.1 * c4;
+#else
+    col = BilinearTexelFetch(s_texture, uvs) + 0.1 * texture(s_blured_texture, norm_uvs).xyz;
+#endif
+
+    col = Unch2Tonemap(exposure * col);
+
+    const highp float W = 11.2;
     vec3 white = 1.0 / Unch2Tonemap(vec3(W));
 
-    c0 = pow(c0 * white, vec3(1.0/gamma));
+    vec3 inv_gamma = vec3(1.0 / gamma);
 
-    outColor = vec4(c0, 1.0);
+    col = pow(col * white, inv_gamma);
+
+    outColor = vec4(col, 1.0);
 }
 )"

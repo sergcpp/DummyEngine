@@ -4,8 +4,14 @@ R"(
     precision mediump float;
 #endif
         
+)" __ADDITIONAL_DEFINES_STR__ R"(
+
 layout(binding = 0) uniform sampler2D s_texture;
-layout(binding = 1) uniform sampler2D s_mul_texture;
+#if defined(MSAA_4)
+layout(binding = 1) uniform mediump sampler2DMS s_mul_texture;
+#else
+layout(binding = 1) uniform mediump sampler2D s_mul_texture;
+#endif
 layout(location = 13) uniform vec2 uTexSize;
 
 in vec2 aVertexUVs_;
@@ -16,7 +22,7 @@ void main() {
     vec2 norm_uvs = aVertexUVs_ / uTexSize;
 
     vec3 c0 = texture(s_texture, norm_uvs).xyz;
-    vec3 c1 = texture(s_mul_texture, norm_uvs).xyz;
+    vec3 c1 = texelFetch(s_mul_texture, ivec2(aVertexUVs_), 0).xyz;
             
     c0 *= c1;
 

@@ -11,6 +11,8 @@ UNIFORM_BLOCKS
     SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
 */
 
+)" __ADDITIONAL_DEFINES_STR__ R"(
+
 struct ShadowMapRegion {
     vec4 transform;
     mat4 clip_from_world;
@@ -25,7 +27,11 @@ layout (std140) uniform SharedDataBlock {
     vec4 uResAndFRes;
 };
 
+#if defined(MSAA_4)
 layout(binding = 0) uniform mediump sampler2DMS depth_texture;
+#else
+layout(binding = 0) uniform mediump sampler2D depth_texture;
+#endif
 
 in vec2 aVertexUVs_;
 
