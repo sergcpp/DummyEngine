@@ -48,7 +48,7 @@ public:
         struct {
             float dx, dy;
         } move;
-        unsigned int time_stamp;
+        uint64_t time_stamp;
     };
 
     InputManager();
@@ -58,7 +58,7 @@ public:
 
     void SetConverter(RawInputEvent evt_type, const std::function<void(Event &)> &conv);
     void AddRawInputEvent(Event &evt);
-    bool PollEvent(unsigned int time, Event &evt);
+    bool PollEvent(uint64_t time_us, Event &evt);
     void ClearBuffer();
 };
 

@@ -13,10 +13,10 @@ public:
     virtual void Exit() {};
 
     // Drawing
-    virtual void Draw(float /*dt_s*/) {};
+    virtual void Draw(uint64_t /*dt_us*/) {};
 
     // Called UPDATE_RATE times per second (usually 60)
-    virtual void Update(int /*dt_ms*/) {};
+    virtual void Update(uint64_t /*dt_us*/) {};
 
     virtual void HandleInput(InputManager::Event) {};
 };

@@ -84,37 +84,37 @@ void GameBase::Frame() {
 
     FrameInfo &fr = fr_info_;
 
-    fr.cur_time = Sys::GetTicks();
-    if (fr.cur_time < fr.prev_time)fr.prev_time = 0;
-    fr.delta_time = fr.cur_time - fr.prev_time;
-    if (fr.delta_time > 200) {
-        fr.delta_time = 200;
+    fr.cur_time_us = Sys::GetTimeUs();
+    if (fr.cur_time_us < fr.prev_time_us) fr.prev_time_us = 0;
+    fr.delta_time_us = fr.cur_time_us - fr.prev_time_us;
+    if (fr.delta_time_us > 200000) {
+        fr.delta_time_us = 200000;
     }
-    fr.prev_time = fr.cur_time;
-    fr.time_acc += fr.delta_time;
+    fr.prev_time_us = fr.cur_time_us;
+    fr.time_acc_us += fr.delta_time_us;
 
-    Sys::cached_time = fr.cur_time - fr.time_acc;
+    uint64_t poll_time_point = fr.cur_time_us - fr.time_acc_us;
 
     {
         //PROFILE_BLOCK(Update);
-        while (fr.time_acc >= UPDATE_DELTA) {
+        while (fr.time_acc_us >= UPDATE_DELTA) {
             InputManager::Event evt;
-            while (input_manager->PollEvent(Sys::cached_time, evt)) {
+            while (input_manager->PollEvent(poll_time_point, evt)) {
                 state_manager->HandleInput(evt);
             }
 
             state_manager->Update(UPDATE_DELTA);
-            fr.time_acc -= UPDATE_DELTA;
+            fr.time_acc_us -= UPDATE_DELTA;
 
-            Sys::cached_time += UPDATE_DELTA;
+            poll_time_point += UPDATE_DELTA;
         }
     }
 
-    fr.time_fract = float(fr.time_acc) / UPDATE_DELTA;
+    fr.time_fract = double(fr.time_acc_us) / UPDATE_DELTA;
 
     {
         //PROFILE_BLOCK(Draw);
-        state_manager->Draw(0.001f * fr_info_.delta_time);
+        state_manager->Draw(fr_info_.delta_time_us);
     }
 }
 

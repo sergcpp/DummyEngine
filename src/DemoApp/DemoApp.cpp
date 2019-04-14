@@ -149,7 +149,7 @@ void DemoApp::AddEvent(int type, int key, float x, float y, float dx, float dy) 
     evt.point.y = y;
     evt.move.dx = dx;
     evt.move.dy = dy;
-    evt.time_stamp = Sys::GetTicks();
+    evt.time_stamp = Sys::GetTimeUs();
 
     input_manager->AddRawInputEvent(evt);
 }
@@ -358,7 +358,7 @@ return;
             return;
         }
         if (evt.type != InputManager::RAW_INPUT_NONE) {
-            evt.time_stamp = Sys::GetTicks() - (SDL_GetTicks() - e.common.timestamp);
+            evt.time_stamp = Sys::GetTimeUs() - 1000 * (SDL_GetTicks() - e.common.timestamp);
             input_manager->AddRawInputEvent(evt);
         }
     }

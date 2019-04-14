@@ -27,9 +27,9 @@ public:
 
     void Clear();
 
-    void Update(int dt_ms);
+    void Update(uint64_t dt_us);
 
-    void Draw(float dt_s);
+    void Draw(uint64_t dt_us);
 
     void HandleInput(InputManager::Event &);
 };
