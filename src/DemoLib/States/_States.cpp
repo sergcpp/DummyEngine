@@ -5,5 +5,3 @@
 
 #include "GSCreate.cpp"
 #include "GSDrawTest.cpp"
-#include "GSOccTest.cpp"
-#include "GSOccTestGL.cpp"

@@ -23,9 +23,7 @@ set(SCENE_SOURCES   Scene/SceneData.h
 set(STATES_SOURCES  States/GSCreate.h
                     States/GSCreate.cpp
                     States/GSDrawTest.h
-                    States/GSDrawTest.cpp
-                    States/GSOccTest.h
-                    States/GSOccTest.cpp)
+                    States/GSDrawTest.cpp)
 
 set(UTILS_SOURCES Utils/BVHSplit.h
                   Utils/BVHSplit.cpp
@@ -38,9 +36,6 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Renderer_Backend_GLES3.cpp
                         Renderer/Renderer_GL_Defines.inl
                         Renderer/Renderer_GL_Shaders.inl)
-    set(STATES_SOURCES ${STATES_SOURCES}
-                        States/GSOccTestGL.cpp
-                        )
 elseif(${RENDERER} STREQUAL "SW")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                         Renderer/RendererSW.cpp)
