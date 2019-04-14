@@ -785,7 +785,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         const Ren::Program *ssao_prog = nullptr;
 
-        if (clean_buf_.msaa > 1) {
+        if (clean_buf_.sample_count > 1) {
             ssao_prog = blit_ao_ms_prog_.get();
         } else {
             ssao_prog = blit_ao_prog_.get();
@@ -811,7 +811,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
         glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
 
-        if (clean_buf_.msaa > 1) {
+        if (clean_buf_.sample_count > 1) {
             BindTextureMs(0, clean_buf_.depth_tex.GetValue());
         } else {
             BindTexture(0, clean_buf_.depth_tex.GetValue());
@@ -937,7 +937,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glViewport(0, 0, refl_buf_.w, refl_buf_.h);
 
         const Ren::Program *ssr_program = nullptr;
-        if (clean_buf_.msaa > 1) {
+        if (clean_buf_.sample_count > 1) {
             ssr_program = blit_ssr_ms_prog_.get();
         } else {
             ssr_program = blit_ssr_prog_.get();
@@ -962,7 +962,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
         glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
 
-        if (clean_buf_.msaa > 1) {
+        if (clean_buf_.sample_count > 1) {
             BindTextureMs(REN_SSR_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
             BindTextureMs(REN_SSR_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
             BindTextureMs(REN_SSR_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
@@ -993,7 +993,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         const Ren::Program *blit_mul_prog = nullptr;
 
-        if (clean_buf_.msaa > 1) {
+        if (clean_buf_.sample_count > 1) {
             blit_mul_prog = blit_multiply_ms_prog_.get();
         } else {
             blit_mul_prog = blit_multiply_prog_.get();
@@ -1004,7 +1004,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         BindTexture(0, refl_buf_.attachments[0].tex);
 
-        if (clean_buf_.msaa > 1) {
+        if (clean_buf_.sample_count > 1) {
             BindTextureMs(1, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         } else {
             BindTexture(1, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
@@ -1054,7 +1054,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         const Ren::Program *cur_program = nullptr;
 
-        if (clean_buf_.msaa > 1) {
+        if (clean_buf_.sample_count > 1) {
             cur_program = blit_down_ms_prog_.get();
         } else {
             cur_program = blit_down_prog_.get();
@@ -1074,7 +1074,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
         glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
 
-        if (clean_buf_.msaa > 1) {
+        if (clean_buf_.sample_count > 1) {
             BindTextureMs(REN_DIFF_TEX_SLOT, clean_buf_.attachments[0].tex);
         } else {
             BindTexture(REN_DIFF_TEX_SLOT, clean_buf_.attachments[0].tex);
@@ -1191,7 +1191,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
     {   // Blit main framebuffer
         const Ren::Program *blit_prog = nullptr;
 
-        if (clean_buf_.msaa > 1) {
+        if (clean_buf_.sample_count > 1) {
             blit_prog = blit_combine_ms_prog_.get();
         } else {
             blit_prog = blit_combine_prog_.get();
@@ -1223,7 +1223,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         glUniform1f(U_EXPOSURE, exposure);
 
-        if (clean_buf_.msaa > 1) {
+        if (clean_buf_.sample_count > 1) {
             BindTextureMs(REN_DIFF_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
         } else {
             BindTexture(REN_DIFF_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
@@ -1266,7 +1266,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
 
         const Ren::Program *blit_prog = nullptr;
 
-        if (clean_buf_.msaa > 1) {
+        if (clean_buf_.sample_count > 1) {
             blit_prog = blit_debug_ms_prog_.get();
         } else {
             blit_prog = blit_debug_prog_.get();
@@ -1299,7 +1299,7 @@ void Renderer::DrawObjectsInternal(const DrawablesData &data) {
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
         glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
 
-        if (clean_buf_.msaa > 1) {
+        if (clean_buf_.sample_count > 1) {
             BindTextureMs(REN_DIFF_TEX_SLOT, clean_buf_.depth_tex.GetValue());
         } else {
             BindTexture(REN_DIFF_TEX_SLOT, clean_buf_.depth_tex.GetValue());
@@ -1829,7 +1829,7 @@ void Renderer::BlitBuffer(float px, float py, float sx, float sy, const FrameBuf
 
     Ren::Program *cur_program = nullptr;
 
-    if (buf.msaa > 1) {
+    if (buf.sample_count > 1) {
         cur_program = blit_ms_prog_.get();
     } else {
         cur_program = blit_prog_.get();
@@ -1864,7 +1864,7 @@ void Renderer::BlitBuffer(float px, float py, float sx, float sy, const FrameBuf
 
         glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
 
-        if (buf.msaa > 1) {
+        if (buf.sample_count > 1) {
             BindTextureMs(REN_DIFF_TEX_SLOT, buf.attachments[i].tex);
         } else {
             BindTexture(REN_DIFF_TEX_SLOT, buf.attachments[i].tex);

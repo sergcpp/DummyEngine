@@ -4,7 +4,7 @@
 #include <Sys/Optional.h>
 
 struct FrameBuf {
-    int w = -1, h = -1, msaa = 0;
+    int w = -1, h = -1, sample_count = 0;
 
     struct ColorAttachmentDesc {
         Ren::eTexColorFormat format;
@@ -24,7 +24,7 @@ struct FrameBuf {
 #endif
     FrameBuf() :  w(-1), h(-1), fb(0xffffffff) {}
     FrameBuf(int w, int h, const ColorAttachmentDesc *attachments, int attachments_count,
-             bool with_depth = true, Ren::eTexFilter depth_filter = Ren::NoFilter, int msaa = 1);
+             bool with_depth = true, Ren::eTexFilter depth_filter = Ren::NoFilter, int sample_count = 1);
     ~FrameBuf();
 
     FrameBuf(const FrameBuf &rhs) = delete;

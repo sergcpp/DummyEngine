@@ -8,7 +8,7 @@
 
 FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int attachments_count,
                    bool with_depth, Ren::eTexFilter depth_filter, int _msaa)
-    : w(_w), h(_h), msaa(_msaa) {
+    : w(_w), h(_h), sample_count(_msaa) {
     glGenFramebuffers(1, &fb);
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
 
@@ -29,9 +29,9 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
             throw std::invalid_argument("Wrong format!");
         }
 
-        if (msaa > 1) {
+        if (sample_count > 1) {
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, _col_tex);
-            glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa, internal_format, w, h, GL_TRUE);
+            glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, sample_count, internal_format, w, h, GL_TRUE);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, _col_tex, 0);
         } else {
             glBindTexture(GL_TEXTURE_2D, _col_tex);
@@ -77,7 +77,7 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
         glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT16, w, h);
 
         // multisample textures does not support sampler state
-        if (msaa == 1) {
+        if (sample_count == 1) {
             if (depth_filter == Ren::NoFilter) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -114,8 +114,8 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
 
         glGenRenderbuffers(1, &_depth_rb);
         glBindRenderbuffer(GL_RENDERBUFFER, _depth_rb);
-        if (msaa > 1) {
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, msaa, GL_DEPTH_COMPONENT16, w, h);
+        if (sample_count > 1) {
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, sample_count, GL_DEPTH_COMPONENT16, w, h);
         } else {
             glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, w, h);
         }
@@ -123,13 +123,13 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
 #else
         GLuint _depth_tex;
 
-        GLenum target = msaa > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
+        GLenum target = sample_count > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
 
         glGenTextures(1, &_depth_tex);
         glBindTexture(target, _depth_tex);
 
-        if (msaa > 1) {
-            glTexStorage2DMultisample(target, msaa, GL_DEPTH_COMPONENT16, w, h, GL_TRUE);
+        if (sample_count > 1) {
+            glTexStorage2DMultisample(target, sample_count, GL_DEPTH_COMPONENT16, w, h, GL_TRUE);
         } else {
             glTexStorage2D(target, 1, GL_DEPTH_COMPONENT16, w, h);
         }
@@ -137,7 +137,7 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
         Ren::CheckError("[Renderer]: create framebuffer 3");
 
         // multisample textures does not support sampler state
-        if (msaa == 1) {
+        if (sample_count == 1) {
             if (depth_filter == Ren::NoFilter) {
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -190,7 +190,7 @@ FrameBuf &FrameBuf::operator=(FrameBuf &&rhs) {
     attachments = std::move(rhs.attachments);
     w = rhs.w;
     h = rhs.h;
-    msaa = rhs.msaa;
+    sample_count = rhs.sample_count;
     fb = rhs.fb;
     depth_tex = std::move(rhs.depth_tex);
     depth_rb = std::move(rhs.depth_rb);
