@@ -42,6 +42,8 @@ class GSDrawTest : public GameState {
     std::condition_variable thr_notify_, thr_done_;
     bool shutdown_ = false, notified_ = false;
 
+    FrameInfo fr_info_;
+
     int view_pointer_ = 0, move_pointer_ = 0;
     Ren::Vec3f view_origin_ = { 0, 1, 0 },
                view_dir_ = { 0, 0, -1 };
@@ -76,9 +78,9 @@ public:
     void Enter() override;
     void Exit() override;
 
-    void Draw(float dt_s) override;
+    void Draw(uint64_t dt_us) override;
 
-    void Update(int dt_ms) override;
+    void Update(uint64_t dt_us) override;
 
     void HandleInput(InputManager::Event) override;
 };

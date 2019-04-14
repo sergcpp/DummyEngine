@@ -319,7 +319,7 @@ void GSDrawTest::Exit() {
     }
 }
 
-void GSDrawTest::Draw(float dt_s) {
+void GSDrawTest::Draw(uint64_t dt_us) {
     using namespace GSDrawTestInternal;
 
     if (use_lm_) {
@@ -659,7 +659,7 @@ void GSDrawTest::Draw(float dt_s) {
     ctx_->ProcessTasks();
 }
 
-void GSDrawTest::Update(int dt_ms) {
+void GSDrawTest::Update(uint64_t dt_us) {
     using namespace GSDrawTestInternal;
 
     Ren::Vec3f up = { 0, 1, 0 };
@@ -674,6 +674,47 @@ void GSDrawTest::Update(int dt_ms) {
     if (std::abs(fwd_speed) > 0.0f || std::abs(side_speed) > 0.0f) {
         invalidate_view_ = true;
     }
+
+    uint32_t mask = CompTransform | CompMesh;
+#if 0
+    static float t = 0.0f;
+    t += 0.04f;
+
+    //const uint32_t monkey_ids[] = { 12, 13, 14, 15, 16 };
+    const uint32_t monkey_ids[] = { 28, 29, 30, 31, 32 };
+
+    auto *monkey1 = scene_manager_->GetObject(monkey_ids[0]);
+    if ((monkey1->comp_mask & mask) == mask) {
+        auto *tr = monkey1->tr.get();
+        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
+    }
+
+    auto *monkey2 = scene_manager_->GetObject(monkey_ids[1]);
+    if ((monkey2->comp_mask & mask) == mask) {
+        auto *tr = monkey2->tr.get();
+        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.05f + 0.04f * std::cos(t) });
+    }
+
+    auto *monkey3 = scene_manager_->GetObject(monkey_ids[2]);
+    if ((monkey3->comp_mask & mask) == mask) {
+        auto *tr = monkey3->tr.get();
+        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.05f + 0.04f * std::cos(t) });
+    }
+
+    auto *monkey4 = scene_manager_->GetObject(monkey_ids[3]);
+    if ((monkey4->comp_mask & mask) == mask) {
+        auto *tr = monkey4->tr.get();
+        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
+    }
+
+    auto *monkey5 = scene_manager_->GetObject(monkey_ids[4]);
+    if ((monkey5->comp_mask & mask) == mask) {
+        auto *tr = monkey5->tr.get();
+        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
+    }
+
+    scene_manager_->InvalidateObjects(monkey_ids, 5, CompTransform);
+#endif
 }
 
 void GSDrawTest::HandleInput(InputManager::Event evt) {
@@ -683,7 +724,7 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
     // pt switch for touch controls
     if (evt.type == InputManager::RAW_INPUT_P1_DOWN || evt.type == InputManager::RAW_INPUT_P2_DOWN) {
         if (evt.point.x > ctx_->w() * 0.9f && evt.point.y < ctx_->h() * 0.1f) {
-            auto new_time = Sys::GetTicks();
+            auto new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {
@@ -854,47 +895,38 @@ void GSDrawTest::BackgroundProc() {
 }
 
 void GSDrawTest::UpdateFrame(int list_index) {
-    uint32_t mask = CompTransform | CompMesh;
-#if 0
-    static float t = 0.0f;
-    t += 0.04f;
+    {
+        auto input_manager = game_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
 
-    //const uint32_t monkey_ids[] = { 12, 13, 14, 15, 16 };
-    const uint32_t monkey_ids[] = { 28, 29, 30, 31, 32 };
+        FrameInfo &fr = fr_info_;
 
-    auto *monkey1 = scene_manager_->GetObject(monkey_ids[0]);
-    if ((monkey1->comp_mask & mask) == mask) {
-        auto *tr = monkey1->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
+        fr.cur_time_us = Sys::GetTimeUs();
+        if (fr.cur_time_us < fr.prev_time_us) fr.prev_time_us = 0;
+        fr.delta_time_us = fr.cur_time_us - fr.prev_time_us;
+        if (fr.delta_time_us > 200000) {
+            fr.delta_time_us = 200000;
+        }
+        fr.prev_time_us = fr.cur_time_us;
+        fr.time_acc_us += fr.delta_time_us;
+
+        uint64_t poll_time_point = fr.cur_time_us - fr.time_acc_us;
+
+        while (fr.time_acc_us >= UPDATE_DELTA) {
+            InputManager::Event evt;
+            while (input_manager->PollEvent(poll_time_point, evt)) {
+                this->HandleInput(evt);
+            }
+
+            this->Update(UPDATE_DELTA);
+            fr.time_acc_us -= UPDATE_DELTA;
+
+            poll_time_point += UPDATE_DELTA;
+        }
+
+        fr.time_fract = double(fr.time_acc_us) / UPDATE_DELTA;
     }
 
-    auto *monkey2 = scene_manager_->GetObject(monkey_ids[1]);
-    if ((monkey2->comp_mask & mask) == mask) {
-        auto *tr = monkey2->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.05f + 0.04f * std::cos(t) });
-    }
-
-    auto *monkey3 = scene_manager_->GetObject(monkey_ids[2]);
-    if ((monkey3->comp_mask & mask) == mask) {
-        auto *tr = monkey3->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.05f + 0.04f * std::cos(t) });
-    }
-
-    auto *monkey4 = scene_manager_->GetObject(monkey_ids[3]);
-    if ((monkey4->comp_mask & mask) == mask) {
-        auto *tr = monkey4->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
-    }
-
-    auto *monkey5 = scene_manager_->GetObject(monkey_ids[4]);
-    if ((monkey5->comp_mask & mask) == mask) {
-        auto *tr = monkey5->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
-    }
-
-    scene_manager_->InvalidateObjects(monkey_ids, 5, CompTransform);
-#endif
-
+    // Update invalidated objects
     scene_manager_->UpdateObjects();
 
     renderer_->PrepareDrawList(list_index, scene_manager_->scene_data(), scene_manager_->main_cam());

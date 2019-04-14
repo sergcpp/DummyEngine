@@ -16,6 +16,8 @@ public:
 
     void Resize(int w, int h) override;
 
+    void Frame() override;
+
     static void PrepareAssets(const char *platform = "all");
 };
 

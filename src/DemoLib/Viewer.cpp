@@ -102,6 +102,11 @@ void Viewer::Resize(int w, int h) {
     GameBase::Resize(w, h);
 }
 
+void Viewer::Frame() {
+    auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
+    state_manager->Draw(0);
+}
+
 void Viewer::PrepareAssets(const char *platform) {
 #if !defined(__ANDROID__)
     if (strcmp(platform, "all") == 0) {
