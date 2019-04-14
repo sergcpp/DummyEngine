@@ -50,6 +50,11 @@ GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
     font_ = fonts->FindFont("main_font");
 
     swap_interval_  = game->GetComponent<TimeInterval>(SWAP_TIMER_KEY);
+
+    for (int i = 0; i < 2; i++) {
+        main_view_lists_[i].cells.resize(Renderer::CELLS_COUNT);
+        main_view_lists_[i].items.resize(Renderer::MAX_ITEMS_TOTAL);
+    }
 }
 
 GSDrawTest::~GSDrawTest() {
@@ -349,6 +354,8 @@ void GSDrawTest::Draw(uint64_t dt_us) {
             renderer_->BlitPixelsTonemap(preview_pixels, w, h, Ren::RawRGBA32F);
         }
     } else {
+        int back_list;
+
         if (USE_TWO_THREADS) {
             std::unique_lock<std::mutex> lock(mtx_);
             while (notified_) {
@@ -356,7 +363,8 @@ void GSDrawTest::Draw(uint64_t dt_us) {
             }
 
             scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-            renderer_->SwapDrawLists();
+            back_list = front_list_;
+            front_list_ = (front_list_ + 1) % 2;
 
             notified_ = true;
             thr_notify_.notify_one();
@@ -364,10 +372,11 @@ void GSDrawTest::Draw(uint64_t dt_us) {
             scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
             // Gather drawables for list 0
             UpdateFrame(0);
+            back_list = 0;
         }
 
-        // Render current frame (from list 0)
-        renderer_->ExecuteDrawList(0);
+        // Render current frame (from back list)
+        renderer_->ExecuteDrawList(main_view_lists_[back_list]);
     }
 
     //LOGI("(%f %f %f) (%f %f %f)", view_origin_[0], view_origin_[1], view_origin_[2],
@@ -396,9 +405,11 @@ void GSDrawTest::Draw(uint64_t dt_us) {
         }
 
         if (!use_pt_ && !use_lm_) {
+            int back_list = (front_list_ + 1) % 2;
+
             auto render_flags = renderer_->render_flags();
-            auto render_info = renderer_->render_info();
-            auto front_info = renderer_->frontend_info();
+            auto render_info = main_view_lists_[back_list].render_info;
+            auto front_info = main_view_lists_[back_list].frontend_info;
             auto back_info = renderer_->backend_info();
 
             uint64_t front_dur = front_info.end_timepoint_us - front_info.start_timepoint_us,
@@ -887,7 +898,7 @@ void GSDrawTest::BackgroundProc() {
         }
 
         // Gather drawables for list 1
-        UpdateFrame(1);
+        UpdateFrame(front_list_);
 
         notified_ = false;
         thr_done_.notify_one();
@@ -929,5 +940,6 @@ void GSDrawTest::UpdateFrame(int list_index) {
     // Update invalidated objects
     scene_manager_->UpdateObjects();
 
-    renderer_->PrepareDrawList(list_index, scene_manager_->scene_data(), scene_manager_->main_cam());
+    renderer_->PrepareDrawList(scene_manager_->scene_data(),
+                               scene_manager_->main_cam(), main_view_lists_[list_index]);
 }

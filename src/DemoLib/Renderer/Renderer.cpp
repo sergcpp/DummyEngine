@@ -80,18 +80,6 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
 
     default_ao_ = ctx_.LoadTexture2D("default_ao", white, sizeof(white), p, &status);
     assert(status == Ren::TexCreatedFromData);
-
-    /*try {
-        shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::RawR32F, Ren::NoFilter, Ren::ClampToEdge, true);
-    } catch (std::runtime_error &) {
-        LOGI("Cannot create floating-point shadow buffer! Fallback to unsigned byte.");
-        shadow_buf_ = FrameBuf(SHADOWMAP_RES, SHADOWMAP_RES, Ren::RawRGB888, Ren::NoFilter, Ren::ClampToEdge, true);
-    }*/
-
-    for (int i = 0; i < 2; i++) {
-        drawables_data_[i].cells.resize(CELLS_COUNT);
-        drawables_data_[i].items.resize(MAX_ITEMS_TOTAL);
-    }
 }
 
 Renderer::~Renderer() {
@@ -99,108 +87,93 @@ Renderer::~Renderer() {
     swCullCtxDestroy(&cull_ctx_);
 }
 
-void Renderer::PrepareDrawList(int index, const SceneData &scene, const Ren::Camera &cam) {
-    GatherDrawables(scene, cam, drawables_data_[index]);
+void Renderer::PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, DrawList &list) {
+    GatherDrawables(scene, cam, list);
 }
 
-void Renderer::ExecuteDrawList(int index) {
+void Renderer::ExecuteDrawList(DrawList &list) {
     using namespace RendererInternal;
 
     uint64_t gpu_draw_start = 0;
-    if (drawables_data_[index].render_flags & DebugTimings) {
+    if (list.render_flags & DebugTimings) {
         gpu_draw_start = GetGpuTimeBlockingUs();
     }
     auto cpu_draw_start = std::chrono::high_resolution_clock::now();
     
-    {
-        size_t lights_count = drawables_data_[index].light_sources.size();
-        const auto *lights = (lights_count == 0) ? nullptr : &drawables_data_[index].light_sources[0];
-
-        size_t decals_count = drawables_data_[index].decals.size();
-        const auto *decals = (decals_count == 0) ? nullptr : &drawables_data_[index].decals[0];
-
-        const auto *cells = drawables_data_[index].cells.empty() ? nullptr : &drawables_data_[index].cells[0];
-
-        size_t items_count = drawables_data_[index].items_count;
-        const auto *items = (items_count == 0) ? nullptr : &drawables_data_[index].items[0];
-
-        const auto *p_decals_atlas = drawables_data_[index].decals_atlas;
-
-        if (ctx_.w() != scr_w_ || ctx_.h() != scr_h_) {
-            {   // Main buffer for raw frame before tonemapping
-                FrameBuf::ColorAttachmentDesc desc[3];
-                {   // Main color
-                    desc[0].format = Ren::RawRGBA16F;
-                    desc[0].filter = Ren::NoFilter;
-                    desc[0].repeat = Ren::ClampToEdge;
-                }
-                {   // View-space normal
-                    desc[1].format = Ren::RawRG88;
-                    desc[1].filter = Ren::BilinearNoMipmap;
-                    desc[1].repeat = Ren::ClampToEdge;
-                }
-                {   // 4-component specular (alpha is roughness)
-                    desc[2].format = Ren::RawRGBA8888;
-                    desc[2].filter = Ren::BilinearNoMipmap;
-                    desc[2].repeat = Ren::ClampToEdge;
-                }
-                clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, true, Ren::NoFilter, 4);
+    if (ctx_.w() != scr_w_ || ctx_.h() != scr_h_) {
+        {   // Main buffer for raw frame before tonemapping
+            FrameBuf::ColorAttachmentDesc desc[3];
+            {   // Main color
+                desc[0].format = Ren::RawRGBA16F;
+                desc[0].filter = Ren::NoFilter;
+                desc[0].repeat = Ren::ClampToEdge;
             }
-            {   // Buffer for SSAO
-                FrameBuf::ColorAttachmentDesc desc;
-                desc.format = Ren::RawR8;
-                desc.filter = Ren::BilinearNoMipmap;
-                desc.repeat = Ren::ClampToEdge;
-                ssao_buf_ = FrameBuf(clean_buf_.w / REN_SSAO_BUF_RES_DIV, clean_buf_.h / REN_SSAO_BUF_RES_DIV, &desc, 1, false);
+            {   // View-space normal
+                desc[1].format = Ren::RawRG88;
+                desc[1].filter = Ren::BilinearNoMipmap;
+                desc[1].repeat = Ren::ClampToEdge;
             }
-            {   // Auxilary buffer for reflections
-                FrameBuf::ColorAttachmentDesc desc;
-                desc.format = Ren::RawRGB16F;
-                desc.filter = Ren::Bilinear;
-                desc.repeat = Ren::ClampToEdge;
-                refl_buf_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, false);
+            {   // 4-component specular (alpha is roughness)
+                desc[2].format = Ren::RawRGBA8888;
+                desc[2].filter = Ren::BilinearNoMipmap;
+                desc[2].repeat = Ren::ClampToEdge;
             }
-            {   // Buffer that holds previous frame (used for SSR)
-                int base_res = upper_power_of_two(clean_buf_.w) / 4;
-
-                FrameBuf::ColorAttachmentDesc desc;
-                desc.format = Ren::RawRGB16F;
-                desc.filter = Ren::Bilinear;
-                desc.repeat = Ren::ClampToEdge;
-                down_buf_ = FrameBuf(base_res, base_res / 2, &desc, 1, false);
-            }
-            {   // Auxilary buffers for bloom effect
-                FrameBuf::ColorAttachmentDesc desc;
-                desc.format = Ren::RawRGBA16F;
-                desc.filter = Ren::BilinearNoMipmap;
-                desc.repeat = Ren::ClampToEdge;
-                blur_buf1_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, false);
-                blur_buf2_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, false);
-            }
-            scr_w_ = ctx_.w();
-            scr_h_ = ctx_.h();
-            LOGI("CleanBuf resized to %ix%i", scr_w_, scr_h_);
+            clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, true, Ren::NoFilter, 4);
         }
+        {   // Buffer for SSAO
+            FrameBuf::ColorAttachmentDesc desc;
+            desc.format = Ren::RawR8;
+            desc.filter = Ren::BilinearNoMipmap;
+            desc.repeat = Ren::ClampToEdge;
+            ssao_buf_ = FrameBuf(clean_buf_.w / REN_SSAO_BUF_RES_DIV, clean_buf_.h / REN_SSAO_BUF_RES_DIV, &desc, 1, false);
+        }
+        {   // Auxilary buffer for reflections
+            FrameBuf::ColorAttachmentDesc desc;
+            desc.format = Ren::RawRGB16F;
+            desc.filter = Ren::Bilinear;
+            desc.repeat = Ren::ClampToEdge;
+            refl_buf_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, false);
+        }
+        {   // Buffer that holds previous frame (used for SSR)
+            int base_res = upper_power_of_two(clean_buf_.w) / 4;
 
-        // TODO: Change actual resolution dynamically
+            FrameBuf::ColorAttachmentDesc desc;
+            desc.format = Ren::RawRGB16F;
+            desc.filter = Ren::Bilinear;
+            desc.repeat = Ren::ClampToEdge;
+            down_buf_ = FrameBuf(base_res, base_res / 2, &desc, 1, false);
+        }
+        {   // Auxilary buffers for bloom effect
+            FrameBuf::ColorAttachmentDesc desc;
+            desc.format = Ren::RawRGBA16F;
+            desc.filter = Ren::BilinearNoMipmap;
+            desc.repeat = Ren::ClampToEdge;
+            blur_buf1_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, false);
+            blur_buf2_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, false);
+        }
+        scr_w_ = ctx_.w();
+        scr_h_ = ctx_.h();
+        LOGI("CleanBuf resized to %ix%i", scr_w_, scr_h_);
+    }
+
+    // TODO: Change actual resolution dynamically
 #if defined(__ANDROID__)
-        act_w_ = int(scr_w_ * 0.4f);
-        act_h_ = int(scr_h_ * 0.6f);
+    act_w_ = int(scr_w_ * 0.4f);
+    act_h_ = int(scr_h_ * 0.6f);
 #else
-        act_w_ = int(scr_w_ * 1.0f);
-        act_h_ = int(scr_h_ * 1.0f);
+    act_w_ = int(scr_w_ * 1.0f);
+    act_h_ = int(scr_h_ * 1.0f);
 #endif
 
 
-        drawables_data_[index].render_info.lights_count = (uint32_t)lights_count;
-        drawables_data_[index].render_info.lights_data_size = (uint32_t)lights_count * sizeof(LightSourceItem);
-        drawables_data_[index].render_info.decals_count = (uint32_t)decals_count;
-        drawables_data_[index].render_info.decals_data_size = (uint32_t)decals_count * sizeof(DecalItem);
-        drawables_data_[index].render_info.cells_data_size = (uint32_t)CELLS_COUNT * sizeof(CellData);
-        drawables_data_[index].render_info.items_data_size = (uint32_t)drawables_data_[0].items.size() * sizeof(ItemData);
+    list.render_info.lights_count = (uint32_t)list.light_sources.size();
+    list.render_info.lights_data_size = (uint32_t)list.light_sources.size() * sizeof(LightSourceItem);
+    list.render_info.decals_count = (uint32_t)list.decals.size();
+    list.render_info.decals_data_size = (uint32_t)list.decals.size() * sizeof(DecalItem);
+    list.render_info.cells_data_size = (uint32_t)CELLS_COUNT * sizeof(CellData);
+    list.render_info.items_data_size = (uint32_t)list.items.size() * sizeof(ItemData);
 
-        DrawObjectsInternal(drawables_data_[index]);
-    }
+    DrawObjectsInternal(list);
     
     auto cpu_draw_end = std::chrono::high_resolution_clock::now();
 
@@ -209,12 +182,6 @@ void Renderer::ExecuteDrawList(int index) {
     backend_cpu_end_ = (uint64_t)std::chrono::duration<double, std::micro>{ cpu_draw_end.time_since_epoch() }.count();
     backend_time_diff_ = int64_t(gpu_draw_start) - int64_t(backend_cpu_start_);
     frame_counter_++;
-}
-
-void Renderer::SwapDrawLists() {
-    std::swap(drawables_data_[0], drawables_data_[1]);
-    std::swap(depth_pixels_[0], depth_pixels_[1]);
-    std::swap(depth_tiles_[0], depth_tiles_[1]);
 }
 
 #undef BBOX_POINTS

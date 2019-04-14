@@ -87,20 +87,6 @@ static_assert(sizeof(ShadowMapRegion) == 80, "!");
 
 #define MAX_STACK_SIZE 64
 
-namespace RendererInternal {
-    const int CELLS_COUNT = REN_GRID_RES_X * REN_GRID_RES_Y * REN_GRID_RES_Z;
-
-    const int MAX_LIGHTS_PER_CELL = 255;
-    const int MAX_DECALS_PER_CELL = 255;
-    const int MAX_PROBES_PER_CELL = 8;
-    const int MAX_ITEMS_PER_CELL = 255;
-
-    const int MAX_LIGHTS_TOTAL = 4096;
-    const int MAX_DECALS_TOTAL = 4096;
-    const int MAX_PROBES_TOTAL = 256;
-    const int MAX_ITEMS_TOTAL = (1 << 16);
-}
-
 enum eRenderFlags {
     EnableZFill     = (1 << 0),
     EnableCulling   = (1 << 1),
@@ -137,21 +123,56 @@ public:
         render_flags_ = f;
     }
 
-    RenderInfo render_info() const {
-        return drawables_data_[0].render_info;
-    }
-
-    FrontendInfo frontend_info() const {
-        return drawables_data_[0].frontend_info;
-    }
-
     BackendInfo backend_info() const {
         return backend_info_;
     }
 
-    void SwapDrawLists();
-    void PrepareDrawList(int index, const SceneData &scene, const Ren::Camera &cam);
-    void ExecuteDrawList(int index);
+    struct ShadReg {
+        const LightSource *ls;
+        int pos[2], size[2];
+        float cam_near, cam_far; // for debugging
+        uint32_t last_update, last_visible;
+    };
+
+    static const int CELLS_COUNT = REN_GRID_RES_X * REN_GRID_RES_Y * REN_GRID_RES_Z;
+
+    static const int MAX_LIGHTS_PER_CELL = 255;
+    static const int MAX_DECALS_PER_CELL = 255;
+    static const int MAX_PROBES_PER_CELL = 8;
+    static const int MAX_ITEMS_PER_CELL = 255;
+
+    static const int MAX_LIGHTS_TOTAL = 4096;
+    static const int MAX_DECALS_TOTAL = 4096;
+    static const int MAX_PROBES_TOTAL = 256;
+    static const int MAX_ITEMS_TOTAL = (1 << 16);
+
+    struct DrawList {
+        Ren::Camera     draw_cam;
+        Environment     env;
+        RenderInfo      render_info;
+        FrontendInfo    frontend_info;
+        uint32_t        render_flags = default_flags;
+        std::vector<InstanceData>       instances;
+        std::vector<ShadowDrawBatch>    shadow_batches;
+        std::vector<ShadowList>         shadow_lists;
+        std::vector<ShadowMapRegion>    shadow_regions;
+        std::vector<MainDrawBatch>      main_batches;
+        std::vector<LightSourceItem>    light_sources;
+        std::vector<DecalItem>          decals;
+        std::vector<CellData>           cells;
+        std::vector<ItemData>           items;
+        int items_count = 0;
+        const Ren::TextureAtlas *decals_atlas = nullptr;
+
+
+        // for debugging only, backend does not require nodes for drawing
+        std::vector<bvh_node_t> temp_nodes;
+        uint32_t root_index;
+        std::vector<ShadReg> cached_shadow_regions;
+    };
+
+    void PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
+    void ExecuteDrawList(DrawList &list);
 
     void BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format);
     void BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTexColorFormat format);
@@ -180,38 +201,6 @@ private:
     uint32_t render_flags_ = default_flags;
 
     int frame_counter_ = 0;
-
-    struct ShadReg {
-        const LightSource *ls;
-        int pos[2], size[2];
-        float cam_near, cam_far; // for debugging
-        uint32_t last_update, last_visible;
-    };
-
-    struct DrawablesData {
-        Ren::Camera     draw_cam;
-        Environment     env;
-        RenderInfo      render_info;
-        FrontendInfo    frontend_info;
-        uint32_t        render_flags = default_flags;
-        std::vector<InstanceData>       instances;
-        std::vector<ShadowDrawBatch>    shadow_batches;
-        std::vector<ShadowList>         shadow_lists;
-        std::vector<ShadowMapRegion>    shadow_regions;
-        std::vector<MainDrawBatch>      main_batches;
-        std::vector<LightSourceItem>    light_sources;
-        std::vector<DecalItem>          decals;
-        std::vector<CellData>           cells;
-        std::vector<ItemData>           items;
-        int items_count = 0;
-        const Ren::TextureAtlas *decals_atlas = nullptr;
-        
-
-        // for debugging only, backend does not require nodes for drawing
-        std::vector<bvh_node_t> temp_nodes;
-        uint32_t root_index;
-        std::vector<ShadReg> cached_shadow_regions;
-    } drawables_data_[2];
 
     std::vector<const LightSource *> litem_to_lsource_;
     std::vector<const Decal *> ditem_to_decal_;
@@ -250,11 +239,11 @@ private:
     //temp
     std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];
 
-    void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawablesData &data);
+    void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
 
     void InitRendererInternal();
     void DestroyRendererInternal();
-    void DrawObjectsInternal(const DrawablesData &data);
+    void DrawObjectsInternal(const DrawList &list);
     uint64_t GetGpuTimeBlockingUs();
 
     // Parallel Jobs

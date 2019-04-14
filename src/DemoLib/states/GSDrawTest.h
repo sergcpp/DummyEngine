@@ -13,10 +13,10 @@
 #include <Ren/SW/SW.h>
 
 #include "../Scene/SceneData.h"
+#include "../Renderer/Renderer.h"
 
 class GameStateManager;
 class FontStorage;
-class Renderer;
 class SceneManager;
 
 namespace Gui {
@@ -53,6 +53,9 @@ class GSDrawTest : public GameState {
 
     bool use_pt_ = false, use_lm_ = false;
     bool invalidate_view_ = true;
+
+    Renderer::DrawList main_view_lists_[2];
+    int front_list_ = 0;
 
     FrontendInfo prev_front_info_;
     BackendInfo prev_back_info_;
