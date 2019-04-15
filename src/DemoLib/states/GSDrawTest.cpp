@@ -408,7 +408,6 @@ void GSDrawTest::Draw(uint64_t dt_us) {
             int back_list = (front_list_ + 1) % 2;
 
             auto render_flags = renderer_->render_flags();
-            auto render_info = main_view_lists_[back_list].render_info;
             auto front_info = main_view_lists_[back_list].frontend_info;
             auto back_info = renderer_->backend_info();
 
@@ -507,27 +506,27 @@ void GSDrawTest::Draw(uint64_t dt_us) {
                 font_->DrawText(ui_renderer_.get(), delimiter, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " lights_cnt: %u", render_info.lights_count);
+                sprintf(text_buffer, " lights_cnt: %u", (unsigned)main_view_lists_[back_list].light_sources.size());
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "lights_data: %u kb", (render_info.lights_data_size / 1024));
+                sprintf(text_buffer, "lights_data: %u kb", (unsigned)(main_view_lists_[back_list].light_sources.size() * sizeof(LightSourceItem) / 1024));
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " decals_cnt: %u", render_info.decals_count);
+                sprintf(text_buffer, " decals_cnt: %u", (unsigned)main_view_lists_[back_list].decals.size());
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "decals_data: %u kb", (render_info.decals_data_size / 1024));
+                sprintf(text_buffer, "decals_data: %u kb", (unsigned)(main_view_lists_[back_list].decals.size() * sizeof(DecalItem) / 1024));
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " cells_data: %u kb", (render_info.cells_data_size / 1024));
+                sprintf(text_buffer, " cells_data: %u kb", (unsigned)(Renderer::CELLS_COUNT * sizeof(CellData) / 1024));
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " items_data: %u kb", (render_info.items_data_size / 1024));
+                sprintf(text_buffer, " items_data: %u kb", (unsigned)(main_view_lists_[back_list].items_count * sizeof(ItemData) / 1024));
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
             }
 
@@ -906,7 +905,7 @@ void GSDrawTest::BackgroundProc() {
 }
 
 void GSDrawTest::UpdateFrame(int list_index) {
-    {
+    {   // Update loop with fixed timestep
         auto input_manager = game_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
 
         FrameInfo &fr = fr_info_;

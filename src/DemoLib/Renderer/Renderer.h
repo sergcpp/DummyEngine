@@ -149,7 +149,6 @@ public:
     struct DrawList {
         Ren::Camera     draw_cam;
         Environment     env;
-        RenderInfo      render_info;
         FrontendInfo    frontend_info;
         uint32_t        render_flags = default_flags;
         std::vector<InstanceData>       instances;
@@ -172,7 +171,7 @@ public:
     };
 
     void PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
-    void ExecuteDrawList(DrawList &list);
+    void ExecuteDrawList(const DrawList &list, const FrameBuf *target = nullptr);
 
     void BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format);
     void BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTexColorFormat format);
@@ -243,7 +242,7 @@ private:
 
     void InitRendererInternal();
     void DestroyRendererInternal();
-    void DrawObjectsInternal(const DrawList &list);
+    void DrawObjectsInternal(const DrawList &list, const FrameBuf *target);
     uint64_t GetGpuTimeBlockingUs();
 
     // Parallel Jobs

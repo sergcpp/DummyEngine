@@ -91,7 +91,7 @@ void Renderer::PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, D
     GatherDrawables(scene, cam, list);
 }
 
-void Renderer::ExecuteDrawList(DrawList &list) {
+void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
     using namespace RendererInternal;
 
     uint64_t gpu_draw_start = 0;
@@ -156,24 +156,22 @@ void Renderer::ExecuteDrawList(DrawList &list) {
         LOGI("CleanBuf resized to %ix%i", scr_w_, scr_h_);
     }
 
-    // TODO: Change actual resolution dynamically
+    if (!target) {
+        // TODO: Change actual resolution dynamically
 #if defined(__ANDROID__)
-    act_w_ = int(scr_w_ * 0.4f);
-    act_h_ = int(scr_h_ * 0.6f);
+        act_w_ = int(scr_w_ * 0.4f);
+        act_h_ = int(scr_h_ * 0.6f);
 #else
-    act_w_ = int(scr_w_ * 1.0f);
-    act_h_ = int(scr_h_ * 1.0f);
+        act_w_ = int(scr_w_ * 1.0f);
+        act_h_ = int(scr_h_ * 1.0f);
 #endif
+    } else {
+        act_w_ = target->w;
+        act_h_ = target->h;
+        assert(act_w_ <= scr_w_ && act_h_ <= scr_h_);
+    }
 
-
-    list.render_info.lights_count = (uint32_t)list.light_sources.size();
-    list.render_info.lights_data_size = (uint32_t)list.light_sources.size() * sizeof(LightSourceItem);
-    list.render_info.decals_count = (uint32_t)list.decals.size();
-    list.render_info.decals_data_size = (uint32_t)list.decals.size() * sizeof(DecalItem);
-    list.render_info.cells_data_size = (uint32_t)CELLS_COUNT * sizeof(CellData);
-    list.render_info.items_data_size = (uint32_t)list.items.size() * sizeof(ItemData);
-
-    DrawObjectsInternal(list);
+    DrawObjectsInternal(list, target);
     
     auto cpu_draw_end = std::chrono::high_resolution_clock::now();
 

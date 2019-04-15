@@ -531,7 +531,7 @@ void Renderer::DestroyRendererInternal() {
     }
 }
 
-void Renderer::DrawObjectsInternal(const DrawList &list) {
+void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target) {
     using namespace Ren;
     using namespace RendererInternal;
 
@@ -633,7 +633,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list) {
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
-    int32_t viewport_before[4];
+    GLint viewport_before[4];
     glGetIntegerv(GL_VIEWPORT, viewport_before);
 
     /**************************************************************************************************/
@@ -1185,8 +1185,13 @@ void Renderer::DrawObjectsInternal(const DrawList &list) {
 
     glQueryCounter(queries_[1][TimeBlitStart], GL_TIMESTAMP);
     
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
+    if (!target) {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
+    } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, target->fb);
+        glViewport(0, 0, target->w, target->h);
+    }
 
     {   // Blit main framebuffer
         const Ren::Program *blit_prog = nullptr;

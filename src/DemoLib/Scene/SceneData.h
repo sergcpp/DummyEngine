@@ -98,14 +98,6 @@ struct SceneObject {
     Ren::StorageRef<LightProbe>     pr;
 };
 
-struct RenderInfo {
-    uint32_t lights_count = 0, decals_count = 0;
-    uint32_t lights_data_size = 0,
-             decals_data_size = 0,
-             cells_data_size = 0,
-             items_data_size = 0;
-};
-
 struct FrontendInfo {
     uint64_t start_timepoint_us = 0,
              end_timepoint_us = 0;
