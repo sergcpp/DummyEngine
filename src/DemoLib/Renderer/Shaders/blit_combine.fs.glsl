@@ -14,6 +14,7 @@ layout(binding = 0) uniform mediump sampler2DMS s_texture;
 layout(binding = 0) uniform mediump sampler2D s_texture;
 #endif
 layout(binding = 1) uniform sampler2D s_blured_texture;
+layout(location = 12) uniform float tonemap;
 layout(location = 13) uniform vec2 uTexSize;
 layout(location = 14) uniform float gamma;
 layout(location = 15) uniform float exposure;
@@ -86,14 +87,16 @@ void main() {
     col = BilinearTexelFetch(s_texture, uvs) + 0.1 * texture(s_blured_texture, norm_uvs).xyz;
 #endif
 
-    col = Unch2Tonemap(exposure * col);
+    if (tonemap > 0.5) {
+        col = Unch2Tonemap(exposure * col);
 
-    const highp float W = 11.2;
-    vec3 white = 1.0 / Unch2Tonemap(vec3(W));
+        const highp float W = 11.2;
+        vec3 white = 1.0 / Unch2Tonemap(vec3(W));
 
-    vec3 inv_gamma = vec3(1.0 / gamma);
+        vec3 inv_gamma = vec3(1.0 / gamma);
 
-    col = pow(col * white, inv_gamma);
+        col = pow(col * white, inv_gamma);
+    }
 
     outColor = vec4(col, 1.0);
 }

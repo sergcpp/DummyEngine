@@ -9,8 +9,16 @@
 FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int attachments_count,
                    bool with_depth, Ren::eTexFilter depth_filter, int _msaa)
     : w(_w), h(_h), sample_count(_msaa) {
+
+    GLint framebuf_before;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuf_before);
+
+    GLint viewport_before[4];
+    glGetIntegerv(GL_VIEWPORT, viewport_before);
+
     glGenFramebuffers(1, &fb);
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
+    glViewport(0, 0, w, h);
 
     for (int i = 0; i < attachments_count; i++) {
         const auto &att = _attachments[i];
@@ -170,13 +178,11 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
             throw std::runtime_error("Framebuffer error!");
         }
 
-        //depth_rb = _depth_rb;
-
-        //glBindRenderbuffer(GL_RENDERBUFFER, 0);
         glClear(GL_DEPTH_BUFFER_BIT);
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
+    glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 
     Ren::CheckError("[Renderer]: create framebuffer 3");
     LOGI("Framebuffer created (%ix%i)", w, h);

@@ -97,17 +97,19 @@ enum eRenderFlags {
     EnableDecals    = (1 << 6),
     EnableProbes    = (1 << 7),
     EnableShadows   = (1 << 8),
-    DebugWireframe  = (1 << 9),
-    DebugCulling    = (1 << 10),
-    DebugShadow     = (1 << 11),
-    DebugReduce     = (1 << 12),
-    DebugLights     = (1 << 13),
-    DebugDeferred   = (1 << 14),
-    DebugBlur       = (1 << 15),
-    DebugDecals     = (1 << 16),
-    DebugSSAO       = (1 << 17),
-    DebugTimings    = (1 << 18),
-    DebugBVH        = (1 << 19)
+    EnableTonemap   = (1 << 9),
+    EnableBloom     = (1 << 10),
+    DebugWireframe  = (1 << 11),
+    DebugCulling    = (1 << 12),
+    DebugShadow     = (1 << 13),
+    DebugReduce     = (1 << 14),
+    DebugLights     = (1 << 15),
+    DebugDeferred   = (1 << 16),
+    DebugBlur       = (1 << 17),
+    DebugDecals     = (1 << 18),
+    DebugSSAO       = (1 << 19),
+    DebugTimings    = (1 << 20),
+    DebugBVH        = (1 << 21)
 };
 
 class Renderer {
@@ -163,7 +165,6 @@ public:
         int items_count = 0;
         const Ren::TextureAtlas *decals_atlas = nullptr;
 
-
         // for debugging only, backend does not require nodes for drawing
         std::vector<bvh_node_t> temp_nodes;
         uint32_t root_index;
@@ -193,9 +194,9 @@ private:
 
     static const uint32_t default_flags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows /*| DebugShadow*/);
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap | EnableBloom /*| DebugShadow*/);
 #else
-        (EnableZFill | EnableCulling | EnableLightmap | EnableLights | EnableDecals | EnableShadows);
+        (EnableZFill | EnableCulling | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap);
 #endif
     uint32_t render_flags_ = default_flags;
 

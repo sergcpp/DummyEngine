@@ -633,6 +633,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
+    GLint framebuf_before;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuf_before);
+
     GLint viewport_before[4];
     glGetIntegerv(GL_VIEWPORT, viewport_before);
 
@@ -1045,7 +1048,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glDepthMask(GL_FALSE);
     glDepthFunc(GL_LESS);
 
-    {   // prepare blured buffer
+    if (list.render_flags & (EnableSSR | EnableBloom | EnableTonemap)) {
+        // prepare blured buffer
         glBindFramebuffer(GL_FRAMEBUFFER, down_buf_.fb);
         glViewport(0, 0, down_buf_.w, down_buf_.h);
 
@@ -1082,47 +1086,58 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
-        ////////////////
+        if (list.render_flags & EnableBloom) {
+            glBindFramebuffer(GL_FRAMEBUFFER, blur_buf2_.fb);
+            glViewport(0, 0, blur_buf2_.w, blur_buf2_.h);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, blur_buf2_.fb);
-        glViewport(0, 0, blur_buf2_.w, blur_buf2_.h);
+            const float fs_quad_uvs1[] = { 0.0f, 0.0f,                                 float(down_buf_.w), 0.0f,
+                                           float(down_buf_.w), float(down_buf_.h),     0.0f, float(down_buf_.h) };
 
-        const float fs_quad_uvs1[] = { 0.0f, 0.0f,                                 float(down_buf_.w), 0.0f,
-                                       float(down_buf_.w), float(down_buf_.h),     0.0f, float(down_buf_.h) };
+            cur_program = blit_gauss_prog_.get();
+            glUseProgram(cur_program->prog_id());
 
-        cur_program = blit_gauss_prog_.get();
-        glUseProgram(cur_program->prog_id());
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs1), fs_quad_uvs1);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs1), fs_quad_uvs1);
+            glUniform1i(cur_program->uniform(U_TEX).loc, REN_DIFF_TEX_SLOT);
+            glUniform1f(cur_program->uniform(4).loc, 0.5f);
 
-        glUniform1i(cur_program->uniform(U_TEX).loc, REN_DIFF_TEX_SLOT);
-        glUniform1f(cur_program->uniform(4).loc, 0.5f);
+            BindTexture(REN_DIFF_TEX_SLOT, down_buf_.attachments[0].tex);
 
-        BindTexture(REN_DIFF_TEX_SLOT, down_buf_.attachments[0].tex);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glUniform1f(cur_program->uniform(4).loc, 1.5f);
 
-        glUniform1f(cur_program->uniform(4).loc, 1.5f);
+            glBindFramebuffer(GL_FRAMEBUFFER, blur_buf1_.fb);
+            glViewport(0, 0, blur_buf1_.w, blur_buf1_.h);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, blur_buf1_.fb);
-        glViewport(0, 0, blur_buf1_.w, blur_buf1_.h);
+            const float fs_quad_uvs2[] = { 0.0f, 0.0f,                                   float(blur_buf2_.w), 0.0f,
+                                           float(blur_buf2_.w), float(blur_buf2_.h),     0.0f, float(blur_buf2_.h) };
 
-        const float fs_quad_uvs2[] = { 0.0f, 0.0f,                                   float(blur_buf2_.w), 0.0f,
-                                       float(blur_buf2_.w), float(blur_buf2_.h),     0.0f, float(blur_buf2_.h) };
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs2), fs_quad_uvs2);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs2), fs_quad_uvs2);
+            BindTexture(REN_DIFF_TEX_SLOT, blur_buf2_.attachments[0].tex);
 
-        BindTexture(REN_DIFF_TEX_SLOT, blur_buf2_.attachments[0].tex);
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        }
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
     }
 
-    {   // draw to small framebuffer
+    if (list.render_flags & EnableTonemap) {
+        // draw to small framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
         glViewport(0, 0, reduced_buf_.w, reduced_buf_.h);
+
+        FrameBuf *buf_to_sample = nullptr;
+
+        if (list.render_flags & EnableBloom) {
+            // sample blured buffer
+            buf_to_sample = &blur_buf1_;
+        } else {
+            // sample small buffer
+            buf_to_sample = &down_buf_;
+        }
 
         glUseProgram(blit_red_prog_->prog_id());
 
@@ -1148,7 +1163,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                                                     0.5f * poisson_disk[cur_offset][1] * offset_step[1]);
         cur_offset = cur_offset >= 63 ? 0 : (cur_offset + 1);
 
-        BindTexture(REN_DIFF_TEX_SLOT, blur_buf1_.attachments[0].tex);
+        BindTexture(REN_DIFF_TEX_SLOT, buf_to_sample->attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
@@ -1160,7 +1175,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         {   // Retrieve result of glReadPixels call from previous frame
             glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)reduce_pbo_);
-            float *reduced_pixels = (float *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, reduced_buf_.w * reduced_buf_.h, GL_MAP_READ_BIT);
+            float *reduced_pixels = (float *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, 4 * reduced_buf_.w * reduced_buf_.h * sizeof(float), GL_MAP_READ_BIT);
             if (reduced_pixels) {
                 for (int i = 0; i < 4 * reduced_buf_.w * reduced_buf_.h; i += 4) {
                     if (!std::isnan(reduced_pixels[i])) {
@@ -1186,7 +1201,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glQueryCounter(queries_[1][TimeBlitStart], GL_TIMESTAMP);
     
     if (!target) {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
         glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
     } else {
         glBindFramebuffer(GL_FRAMEBUFFER, target->fb);
@@ -1219,6 +1234,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
         glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
 
+        glUniform1f(12, (list.render_flags & EnableTonemap) ? 1.0f : 0.0f);
         glUniform2f(13, float(act_w_), float(act_h_));
 
         glUniform1f(U_GAMMA, (list.render_flags & DebugLights) ? 1.0f : 2.2f);
@@ -1248,17 +1264,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glGenerateMipmap(GL_TEXTURE_2D);
         }
 
-        // Start asynchronous memory read from framebuffer
+        if (list.render_flags & EnableTonemap) {
+            // Start asynchronous memory read from framebuffer
+            glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
+            glReadBuffer(GL_COLOR_ATTACHMENT0);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
-        glReadBuffer(GL_COLOR_ATTACHMENT0);
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)reduce_pbo_);
 
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)reduce_pbo_);
+            glReadPixels(0, 0, reduced_buf_.w, reduced_buf_.h, GL_RGBA, GL_FLOAT, nullptr);
 
-        glReadPixels(0, 0, reduced_buf_.w, reduced_buf_.h, GL_RGBA, GL_FLOAT, nullptr);
-
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
     }
 
     /**************************************************************************************************/
@@ -1562,6 +1579,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     glQueryCounter(queries_[1][TimeDrawEnd], GL_TIMESTAMP);
 
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
+    glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 
     /**************************************************************************************************/
     /*                                              TIMERS                                            */
