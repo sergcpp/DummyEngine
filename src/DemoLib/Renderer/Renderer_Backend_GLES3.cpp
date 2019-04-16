@@ -745,6 +745,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glQueryCounter(queries_[1][TimeDepthPassStart], GL_TIMESTAMP);
 
     if ((list.render_flags & EnableZFill) && ((list.render_flags & DebugWireframe) == 0)) {
+        // Write depth only
+        GLenum draw_buffers[] = { GL_NONE, GL_NONE, GL_NONE };
+        glDrawBuffers(3, draw_buffers);
+
         glDepthFunc(GL_LESS);
 
         glBindVertexArray(depth_pass_vao_);
