@@ -74,6 +74,8 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 #define GL_TEXTURE1                         0x84C1
 #define GL_TEXTURE_CUBE_MAP                 0x8513
 
+#define GL_TEXTURE_CUBE_MAP_ARRAY           0x9009
+
 #define GL_CLAMP_TO_EDGE                    0x812F
 #define GL_CLAMP_TO_BORDER                  0x812D
 #define GL_GENERATE_MIPMAP_HINT             0x8192
@@ -184,6 +186,8 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 #define GL_TEXTURE_COMPARE_FUNC     0x884D
 #define GL_COMPARE_REF_TO_TEXTURE   0x884E
 
+#define GL_TEXTURE_MAX_LEVEL 0x813D
+
 #define GL_TEXTURE_BUFFER                 0x8C2A
 #define GL_MAX_TEXTURE_BUFFER_SIZE        0x8C2B
 
@@ -222,6 +226,8 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR  0x93DB
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR  0x93DC
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR  0x93DD
+
+#define GL_TEXTURE_CUBE_MAP_SEAMLESS 0x884F
 
 #ifndef APIENTRY
 #if defined(WIN32)
@@ -310,6 +316,8 @@ extern void (APIENTRY *glGenFramebuffers)(GLsizei n, GLuint *ids);
 extern void (APIENTRY *glDeleteFramebuffers)(GLsizei n, const GLuint * framebuffers);
 extern void (APIENTRY *glBindFramebuffer)(GLenum target, GLuint framebuffer);
 extern void (APIENTRY *glFramebufferTexture2D)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+extern void (APIENTRY *glFramebufferTexture3D)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint layer);
+extern void (APIENTRY *glFramebufferTextureLayer)(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer);
 
 extern void (APIENTRY *glGenRenderbuffers)(GLsizei n, GLuint * renderbuffers);
 extern void (APIENTRY *glDeleteRenderbuffers)(GLsizei n, const GLuint * renderbuffers);
@@ -349,6 +357,9 @@ extern void (APIENTRY *glTexStorage2DMultisample)(GLenum target, GLsizei samples
         GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 extern void (APIENTRY *glRenderbufferStorageMultisample)(GLenum target, GLsizei samples, GLenum internalformat,
         GLsizei width, GLsizei height);
+
+extern void (APIENTRY *glTexImage3D)(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
+                                     GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid * data);
 
 extern void (APIENTRY *glDrawElementsBaseVertex)(GLenum mode, GLsizei count, GLenum type, GLvoid *indices, GLint basevertex);
 extern void (APIENTRY *glDrawElementsInstanced)(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);

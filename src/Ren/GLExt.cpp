@@ -62,6 +62,8 @@ void (APIENTRY *glGenFramebuffers)(GLsizei n, GLuint *ids);
 void (APIENTRY *glDeleteFramebuffers)(GLsizei n, const GLuint * framebuffers);
 void (APIENTRY *glBindFramebuffer)(GLenum target, GLuint framebuffer);
 void (APIENTRY *glFramebufferTexture2D)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+void (APIENTRY *glFramebufferTexture3D)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint layer);
+void (APIENTRY *glFramebufferTextureLayer)(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer);
 
 void (APIENTRY *glGenRenderbuffers)(GLsizei n, GLuint * renderbuffers);
 void (APIENTRY *glDeleteRenderbuffers)(GLsizei n, const GLuint * renderbuffers);
@@ -101,6 +103,9 @@ void (APIENTRY *glTexStorage2DMultisample)(GLenum target, GLsizei samples, GLenu
         GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 void (APIENTRY *glRenderbufferStorageMultisample)(GLenum target, GLsizei samples, GLenum internalformat,
         GLsizei width, GLsizei height);
+
+void (APIENTRY *glTexImage3D)(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
+                              GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid * data);
 
 void (APIENTRY *glDrawElementsBaseVertex)(GLenum mode, GLsizei count, GLenum type, GLvoid *indices, GLint basevertex);
 void (APIENTRY *glDrawElementsInstanced)(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
@@ -198,6 +203,8 @@ bool Ren::InitGLExtentions() {
     glDeleteFramebuffers = GetProcAddress(glDeleteFramebuffers);
     glBindFramebuffer = GetProcAddress(glBindFramebuffer);
     glFramebufferTexture2D = GetProcAddress(glFramebufferTexture2D);
+    glFramebufferTexture3D = GetProcAddress(glFramebufferTexture3D);
+    glFramebufferTextureLayer = GetProcAddress(glFramebufferTextureLayer);
 
     glGenRenderbuffers = GetProcAddress(glGenRenderbuffers);
     glDeleteRenderbuffers = GetProcAddress(glDeleteRenderbuffers);
@@ -235,6 +242,8 @@ bool Ren::InitGLExtentions() {
     glTexStorage2D = GetProcAddress(glTexStorage2D);
     glTexStorage2DMultisample = GetProcAddress(glTexStorage2DMultisample);
     glRenderbufferStorageMultisample = GetProcAddress(glRenderbufferStorageMultisample);
+
+    glTexImage3D = GetProcAddress(glTexImage3D);
 
     glDrawElementsBaseVertex = GetProcAddress(glDrawElementsBaseVertex);
     glDrawElementsInstanced = GetProcAddress(glDrawElementsInstanced);

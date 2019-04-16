@@ -1,8 +1,7 @@
 #include "Camera.h"
 
 Ren::Plane::Plane(const Ren::Vec3f &v0, const Ren::Vec3f &v1, const Ren::Vec3f &v2) : n(Uninitialize) {
-    const Ren::Vec3f e1 = { v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2] },
-                     e2 = { v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2] };
+    const Ren::Vec3f e1 = v1 - v0, e2 = v2 - v0;
 
     n = Ren::Normalize(Ren::Cross(e1, e2));
     d = -(v0[0] * n[0] + v0[1] * n[1] + v0[2] * n[2]);
@@ -37,10 +36,8 @@ Ren::eVisibilityResult Ren::Frustum::CheckVisibility(const float bbox[8][3]) con
         int in_count = 8;
 
         for (int i = 0; i < 8; i++) {
-            switch (planes[pl].ClassifyPoint(&bbox[i][0])) {
-            case Back:
+            if (planes[pl].ClassifyPoint(&bbox[i][0]) == Back) {
                 in_count--;
-                break;
             }
         }
         if (in_count == 0) {
@@ -57,18 +54,37 @@ Ren::eVisibilityResult Ren::Frustum::CheckVisibility(const float bbox[8][3]) con
 }
 
 Ren::eVisibilityResult Ren::Frustum::CheckVisibility(const Vec3f &bbox_min, const Vec3f &bbox_max) const {
-    const float bbox_points[8][3] = {
-        bbox_min[0], bbox_min[1], bbox_min[2],
-        bbox_max[0], bbox_min[1], bbox_min[2],
-        bbox_min[0], bbox_min[1], bbox_max[2],
-        bbox_max[0], bbox_min[1], bbox_max[2],
-        bbox_min[0], bbox_max[1], bbox_min[2],
-        bbox_max[0], bbox_max[1], bbox_min[2],
-        bbox_min[0], bbox_max[1], bbox_max[2],
-        bbox_max[0], bbox_max[1], bbox_max[2]
-    };
+    const float epsilon = 0.002f;
+    const float *_bbox_min = ValuePtr(bbox_min), *_bbox_max = ValuePtr(bbox_max);
 
-    return CheckVisibility(bbox_points);
+    eVisibilityResult res = FullyVisible;
+
+    for (int pl = LeftPlane; pl <= FarPlane; pl++) {
+        int in_count = 8;
+
+        const auto *p_n = ValuePtr(planes[pl].n);
+        const float p_d = planes[pl].d;
+
+        if (p_n[0] * _bbox_min[0] + p_n[1] * _bbox_min[1] + p_n[2] * _bbox_min[2] + p_d < -epsilon) --in_count;
+        if (p_n[0] * _bbox_max[0] + p_n[1] * _bbox_min[1] + p_n[2] * _bbox_min[2] + p_d < -epsilon) --in_count;
+        if (p_n[0] * _bbox_min[0] + p_n[1] * _bbox_min[1] + p_n[2] * _bbox_max[2] + p_d < -epsilon) --in_count;
+        if (p_n[0] * _bbox_max[0] + p_n[1] * _bbox_min[1] + p_n[2] * _bbox_max[2] + p_d < -epsilon) --in_count;
+        if (p_n[0] * _bbox_min[0] + p_n[1] * _bbox_max[1] + p_n[2] * _bbox_min[2] + p_d < -epsilon) --in_count;
+        if (p_n[0] * _bbox_max[0] + p_n[1] * _bbox_max[1] + p_n[2] * _bbox_min[2] + p_d < -epsilon) --in_count;
+        if (p_n[0] * _bbox_min[0] + p_n[1] * _bbox_max[1] + p_n[2] * _bbox_max[2] + p_d < -epsilon) --in_count;
+        if (p_n[0] * _bbox_max[0] + p_n[1] * _bbox_max[1] + p_n[2] * _bbox_max[2] + p_d < -epsilon) --in_count;
+
+        if (in_count == 0) {
+            res = Invisible;
+            break;
+        }
+
+        if (in_count != 8) {
+            res = PartiallyVisible;
+        }
+    }
+
+    return res;
 }
 
 Ren::Camera::Camera(const Vec3f &center, const Vec3f &target, const Vec3f &up)
