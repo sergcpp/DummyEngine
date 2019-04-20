@@ -101,18 +101,23 @@ float GetVisibility(float frag_depth, in vec2 lm_uvs) {
         visibility *= weight;
     } else if (frag_depth < $ShadCasc1Dist) {
         const highp float weight = 1.0 / $ShadCasc1Samp.0;
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < $ShadCasc1Samp; i++) {
             visibility += texture(shadow_texture, aVertexShUVs_[1] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
         }
         visibility *= weight;
     } else if (frag_depth < $ShadCasc2Dist) {
         const highp float weight = 1.0 / $ShadCasc2Samp.0;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < $ShadCasc2Samp; i++) {
             visibility += texture(shadow_texture, aVertexShUVs_[2] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
         }
         visibility *= weight;
     } else if (frag_depth < $ShadCasc3Dist) {
-        visibility += texture(shadow_texture, aVertexShUVs_[3]);
+        const highp float weight = 1.0 / $ShadCasc3Samp.0;
+        for (int i = 0; i < $ShadCasc3Samp; i++) {
+            visibility += texture(shadow_texture, aVertexShUVs_[3] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
+        }
+        float t = smoothstep(0.95 * $ShadCasc3Dist, $ShadCasc3Dist, frag_depth);
+        visibility = mix(visibility * weight, 1.0, t);
     } else {
         // use direct sun lightmap?
         visibility = 1.0;

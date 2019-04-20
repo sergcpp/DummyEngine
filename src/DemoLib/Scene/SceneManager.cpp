@@ -42,6 +42,9 @@ const int DECALS_ATLAS_RESX = 2048,
 
 const int LIGHTMAP_ATLAS_RESX = 2048,
           LIGHTMAP_ATLAS_RESY = 1024;
+
+const int PROBE_RES = 256;
+const int PROBE_COUNT = 16;
 }
 
 namespace SceneManagerInternal {
@@ -415,6 +418,24 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             }
         }
 
+        if (js_obj.Has("probe")) {
+            const auto &js_probe = (const JsObject &)js_obj.at("probe");
+
+            {
+                Ren::StorageRef<LightProbe> pr = scene_data_.probes.Add();
+                pr->Read(js_probe);
+
+                obj.comp_mask |= CompProbe;
+                obj.pr = pr;
+            }
+
+            const auto *pr = obj.pr.get();
+
+            // Combine probe's bounding box with object's
+            obj_bbox_min = Ren::Min(obj_bbox_min, pr->offset - Ren::Vec3f{ pr->radius });
+            obj_bbox_max = Ren::Max(obj_bbox_max, pr->offset + Ren::Vec3f{ pr->radius });
+        }
+
         obj.tr->bbox_min = obj_bbox_min;
         obj.tr->bbox_max = obj_bbox_max;
         obj.tr->UpdateBBox();
@@ -523,6 +544,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     }
 
     scene_data_.decals_atlas.Finalize();
+
+    scene_data_.probe_storage.Resize(PROBE_RES, PROBE_COUNT);
 
     LOGI("SceneManager: RebuildBVH!");
 

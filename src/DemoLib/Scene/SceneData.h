@@ -7,6 +7,8 @@
 #include <Ren/Storage.h>
 #include <Ren/TextureAtlas.h>
 
+#include "ProbeStorage.h"
+
 struct JsObject;
 
 struct Transform : public Ren::RefCounter {
@@ -70,7 +72,11 @@ struct LightmapRegion : public Ren::RefCounter {
 
 struct LightProbe : public Ren::RefCounter {
     int layer_index;
-    Ren::Vec3f sh_factors[4];
+    float radius = 0.0f;
+    Ren::Vec3f offset, sh_coeffs[4];
+
+    void Read(const JsObject &js_in);
+    void Write(JsObject &js_out);
 };
 
 enum eObjectComp {
@@ -79,7 +85,8 @@ enum eObjectComp {
     CompOccluder    = (1 << 2),
     CompLightmap    = (1 << 3),
     CompLightSource = (1 << 4),
-    CompDecal       = (1 << 5)
+    CompDecal       = (1 << 5),
+    CompProbe       = (1 << 6)
 };
 
 const int LIGHTS_PER_OBJECT = 16;
@@ -153,6 +160,7 @@ struct SceneData {
     Environment             env;
     Ren::TextureAtlas       decals_atlas;
     Ren::TextureSplitter    lm_splitter;
+    ProbeStorage            probe_storage;
 
     Ren::Storage<Transform>         transforms;
     Ren::Storage<LightmapRegion>    lm_regions;

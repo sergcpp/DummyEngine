@@ -55,6 +55,15 @@ GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
         main_view_lists_[i].cells.resize(Renderer::CELLS_COUNT);
         main_view_lists_[i].items.resize(Renderer::MAX_ITEMS_TOTAL);
     }
+
+    {   // Prepare lists for probes updating
+        for (int i = 0; i < 6; i++) {
+            temp_probe_lists_[i].cells.resize(Renderer::CELLS_COUNT);
+            temp_probe_lists_[i].items.resize(Renderer::MAX_ITEMS_TOTAL);
+        }
+
+        temp_probe_cam_.Perspective(90.0f, 1.0f, 0.1f, 10000.0f);
+    }
 }
 
 GSDrawTest::~GSDrawTest() {
@@ -70,6 +79,16 @@ void GSDrawTest::Enter() {
 
     LOGI("GSDrawTest: Loading scene!");
     LoadScene(SCENE_NAME);
+
+    {   // Create temporary buffer to update probes
+        FrameBuf::ColorAttachmentDesc desc;
+        desc.format = Ren::RawRGB16F;
+        desc.filter = Ren::NoFilter;
+        desc.repeat = Ren::ClampToEdge;
+
+        int res = scene_manager_->scene_data().probe_storage.res();
+        temp_probe_buf_ = FrameBuf(res, res, &desc, 1, false);
+    }
 
     cmdline_history_.resize(MAX_CMD_LINES, "~");
 
@@ -365,6 +384,28 @@ void GSDrawTest::Draw(uint64_t dt_us) {
             scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
             back_list = front_list_;
             front_list_ = (front_list_ + 1) % 2;
+
+            // Render probe cubemap
+            if (probe_to_render_ != -1) {
+                for (int i = 0; i < 6; i++) {
+                    renderer_->ExecuteDrawList(temp_probe_lists_[i], &temp_probe_buf_);
+                    renderer_->BlitToLightProbeFace(temp_probe_buf_, scene_manager_->scene_data().probe_storage, probe_to_render_, i);
+                }
+
+                probe_to_update_sh_ = probe_to_render_;
+                probe_to_render_ = -1;
+            }
+
+            if (probe_to_update_sh_ != -1) {
+                bool done = renderer_->BlitProjectSH(scene_manager_->scene_data().probe_storage, probe_to_render_, probe_sh_update_iteration_,
+                                                     *scene_manager_->scene_data().probes.Get(0));
+                probe_sh_update_iteration_++;
+
+                if (done) {
+                    probe_sh_update_iteration_ = 0;
+                    probe_to_update_sh_ = -1;
+                }
+            }
 
             notified_ = true;
             thr_notify_.notify_one();
@@ -835,7 +876,7 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT || (evt.raw_key == 'd' && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = FORWARD_SPEED;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SPACE) {
-
+            
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
             shift_down_ = true;
         }
@@ -850,6 +891,8 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
             side_press_speed_ = 0;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT || (evt.raw_key == 'd' && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = 0;
+        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SPACE) {
+            update_probe_ = true;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
             shift_down_ = false;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_BACKSPACE) {
@@ -939,6 +982,49 @@ void GSDrawTest::UpdateFrame(int list_index) {
     // Update invalidated objects
     scene_manager_->UpdateObjects();
 
+    // Enable all flags, Renderer will mask out what is not enabled
+    main_view_lists_[list_index].render_flags = 0xffffffff;
+
     renderer_->PrepareDrawList(scene_manager_->scene_data(),
                                scene_manager_->main_cam(), main_view_lists_[list_index]);
+
+
+    if (update_probe_ && probe_to_render_ == -1 && probe_to_update_sh_ == -1) {
+        const auto *probe_obj = scene_manager_->GetObject(33);
+        const auto *probe = scene_manager_->scene_data().probes.Get(0);
+
+        Ren::Vec4f pos = { probe->offset[0], probe->offset[1], probe->offset[2], 1.0f };
+        pos = probe_obj->tr->mat * pos;
+        pos /= pos[3];
+
+        const Ren::Vec3f axises[] = { {  1.0f,  0.0f,  0.0f },
+                                      { -1.0f,  0.0f,  0.0f },
+                                      {  0.0f,  1.0f,  0.0f },
+                                      {  0.0f, -1.0f,  0.0f },
+                                      {  0.0f,  0.0f,  1.0f },
+                                      {  0.0f,  0.0f, -1.0f } };
+
+        const Ren::Vec3f ups[] = { { 0.0f, -1.0f, 0.0f },
+                                   { 0.0f, -1.0f, 0.0f },
+                                   { 0.0f, 0.0f, -1.0f },
+                                   { 0.0f, 0.0f, -1.0f },
+                                   { 0.0f, -1.0f, 0.0f },
+                                   { 0.0f, -1.0f, 0.0f } };
+
+        const Ren::Vec3f center = { pos[0], pos[1], pos[2] };
+
+        for (int i = 0; i < 6; i++) {
+            const Ren::Vec3f target = center + axises[i];
+            temp_probe_cam_.SetupView(center, target, ups[i]);
+            temp_probe_cam_.UpdatePlanes();
+
+            temp_probe_lists_[i].render_flags = EnableZFill | EnableCulling | EnableLightmap | EnableLights | EnableDecals | EnableShadows;
+
+            renderer_->PrepareDrawList(scene_manager_->scene_data(),
+                                       temp_probe_cam_, temp_probe_lists_[i]);
+        }
+
+        probe_to_render_ = 0;
+        update_probe_ = false;
+    }
 }

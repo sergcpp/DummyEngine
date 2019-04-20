@@ -126,3 +126,23 @@ static const char blit_debug_bvh_ms_fs[] =
 #include "Shaders/blit_debug_bvh.fs.glsl"
 ;
 #undef __ADDITIONAL_DEFINES_STR__
+
+static const char blit_rgbm_fs[] =
+#include "Shaders/blit_rgbm.fs.glsl"
+;
+
+static const char blit_mipmap_fs[] =
+#include "Shaders/blit_mipmap.fs.glsl"
+;
+
+static const char blit_project_sh_fs[] =
+#include "Shaders/blit_project_sh.fs.glsl"
+;
+
+static const char probe_vs[] =
+#include "Shaders/probe.vs.glsl"
+;
+
+static const char probe_fs[] =
+#include "Shaders/probe.fs.glsl"
+;

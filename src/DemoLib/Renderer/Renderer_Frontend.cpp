@@ -32,6 +32,8 @@ const uint8_t bbox_indices[] = { 0, 1, 2,    2, 1, 3,
     (min)[0], (max)[1], (max)[2],     \
     (max)[0], (max)[1], (max)[2]
 
+#define _MAX(x, y) ((x) < (y) ? (y) : (x))
+
 void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list) {
     using namespace RendererInternal;
 
@@ -40,7 +42,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     list.draw_cam = cam;
     list.env = scene.env;
     list.decals_atlas = &scene.decals_atlas;
-    list.render_flags = render_flags_;
+    list.probe_storage = &scene.probe_storage;
+
+    // mask render flags with what renderer itself is capable of
+    list.render_flags &= render_flags_;
 
     if (list.render_flags & DebugBVH) {
         // copy nodes list for debugging
@@ -53,6 +58,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     list.light_sources.clear();
     list.decals.clear();
+    list.probes.clear();
 
     list.instances.clear();
     list.instances.reserve(REN_MAX_INSTANCES_TOTAL);
@@ -211,10 +217,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             } else {
                 const auto &obj = scene.objects[n->prim_index];
 
-                const uint32_t drawable_flags = CompMesh | CompTransform;
-                const uint32_t lightsource_flags = CompLightSource | CompTransform;
-                if ((obj.comp_mask & drawable_flags) == drawable_flags ||
-                    (obj.comp_mask & lightsource_flags) == lightsource_flags) {
+                if ((obj.comp_mask & CompTransform) && (obj.comp_mask & (CompMesh | CompLightSource | CompProbe))) {
                     const auto *tr = obj.tr.get();
 
                     if (!skip_check) {
@@ -408,6 +411,25 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 memcpy(&de.norm[0], &decal->norm[0], 4 * sizeof(float));
                                 memcpy(&de.spec[0], &decal->spec[0], 4 * sizeof(float));
                             }
+                        }
+                    }
+
+                    if (obj.comp_mask & CompProbe) {
+                        const auto *probe = obj.pr.get();
+                        
+                        Ren::Vec4f pos = { probe->offset[0], probe->offset[1], probe->offset[2], 1.0f };
+                        pos = world_from_object * pos;
+                        pos /= pos[3];
+
+                        list.probes.emplace_back();
+
+                        auto &pr = list.probes.back();
+                        pr.radius = probe->radius;
+                        memcpy(&pr.position[0], &pos[0], 3 * sizeof(float));
+                        for (int k = 0; k < 4; k++) {
+                            pr.sh_coeffs[0][k] = probe->sh_coeffs[k][0];
+                            pr.sh_coeffs[1][k] = probe->sh_coeffs[k][1];
+                            pr.sh_coeffs[2][k] = probe->sh_coeffs[k][2];
                         }
                     }
                 }
@@ -871,10 +893,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     auto items_assignment_start = std::chrono::high_resolution_clock::now();
 
     if (!list.light_sources.empty() || !list.decals.empty()) {
-        std::vector<Ren::Frustum> sub_frustums;
-        sub_frustums.resize(CELLS_COUNT);
-
-        list.draw_cam.ExtractSubFrustums(REN_GRID_RES_X, REN_GRID_RES_Y, REN_GRID_RES_Z, &sub_frustums[0]);
+        list.draw_cam.ExtractSubFrustums(REN_GRID_RES_X, REN_GRID_RES_Y, REN_GRID_RES_Z, &temp_sub_frustums_[0]);
 
         const int lights_count = (int)list.light_sources.size();
         const auto *lights = lights_count ? &list.light_sources[0] : nullptr;
@@ -884,13 +903,16 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         const auto *decals = decals_count ? &list.decals[0] : nullptr;
         const auto *decals_boxes = decals_count ? &decals_boxes_[0] : nullptr;
 
+        const int probes_count = (int)list.probes.size();
+        const auto *probes = probes_count ? &list.probes[0] : nullptr;
+
         std::vector<std::future<void>> futures;
         std::atomic_int a_items_count = {};
 
         for (int i = 0; i < REN_GRID_RES_Z; i++) {
             futures.push_back(
-                threads_->enqueue(GatherItemsForZSlice_Job, i, &sub_frustums[0], lights, lights_count, decals, decals_count, decals_boxes,
-                                  litem_to_lsource, &list.cells[0], &list.items[0], std::ref(a_items_count))
+                threads_->enqueue(GatherItemsForZSlice_Job, i, &temp_sub_frustums_[0], lights, lights_count, decals, decals_count, decals_boxes,
+                                  probes, probes_count, litem_to_lsource, &list.cells[0], &list.items[0], std::ref(a_items_count))
             );
         }
 
@@ -939,16 +961,18 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     auto iteration_end = std::chrono::high_resolution_clock::now();
 
-    list.frontend_info.start_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ iteration_start.time_since_epoch() }.count();
-    list.frontend_info.end_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ iteration_end.time_since_epoch() }.count();
-    list.frontend_info.occluders_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ main_gather_start - occluders_start }.count();
-    list.frontend_info.main_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ shadow_gather_start - main_gather_start }.count();
-    list.frontend_info.shadow_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ items_assignment_start - shadow_gather_start }.count();
-    list.frontend_info.items_assignment_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ iteration_end - items_assignment_start }.count();
+    if (list.render_flags & EnableTimers) {
+        list.frontend_info.start_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ iteration_start.time_since_epoch() }.count();
+        list.frontend_info.end_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ iteration_end.time_since_epoch() }.count();
+        list.frontend_info.occluders_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ main_gather_start - occluders_start }.count();
+        list.frontend_info.main_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ shadow_gather_start - main_gather_start }.count();
+        list.frontend_info.shadow_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ items_assignment_start - shadow_gather_start }.count();
+        list.frontend_info.items_assignment_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ iteration_end - items_assignment_start }.count();
+    }
 }
 
 void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,
-                                        const DecalItem *decals, int decals_count, const BBox *decals_boxes,
+                                        const DecalItem *decals, int decals_count, const BBox *decals_boxes, const ProbeItem *probes, int probes_count,
                                         const LightSource * const*litem_to_lsource, CellData *cells, ItemData *items, std::atomic_int &items_count) {
     using namespace RendererInternal;
 
@@ -1127,11 +1151,76 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
         }
     }
 
+    for (int j = 0; j < probes_count; j++) {
+        const auto &p = probes[j];
+        const float *p_pos = &p.position[0];
+
+        auto visible_to_slice = Ren::FullyVisible;
+
+        // Check if probe is inside of a whole slice
+        for (int k = Ren::NearPlane; k <= Ren::FarPlane; k++) {
+            float dist = first_sf->planes[k].n[0] * p_pos[0] +
+                         first_sf->planes[k].n[1] * p_pos[1] +
+                         first_sf->planes[k].n[2] * p_pos[2] + first_sf->planes[k].d;
+            if (dist < -p.radius) {
+                visible_to_slice = Ren::Invisible;
+            }
+        }
+
+        // Skip probe for whole slice
+        if (visible_to_slice == Ren::Invisible) continue;
+
+        for (int row_offset = 0; row_offset < frustums_per_slice; row_offset += REN_GRID_RES_X) {
+            const auto *first_line_sf = first_sf + row_offset;
+
+            auto visible_to_line = Ren::FullyVisible;
+
+            // Check if probe is inside of grid line
+            for (int k = Ren::TopPlane; k <= Ren::BottomPlane; k++) {
+                float dist = first_line_sf->planes[k].n[0] * p_pos[0] +
+                             first_line_sf->planes[k].n[1] * p_pos[1] +
+                             first_line_sf->planes[k].n[2] * p_pos[2] + first_line_sf->planes[k].d;
+                if (dist < -p.radius) {
+                    visible_to_line = Ren::Invisible;
+                }
+            }
+
+            // Skip probe for whole line
+            if (visible_to_line == Ren::Invisible) continue;
+
+            for (int col_offset = 0; col_offset < REN_GRID_RES_X; col_offset++) {
+                const auto *sf = first_line_sf + col_offset;
+
+                auto res = Ren::FullyVisible;
+
+                // Can skip near, far, top and bottom plane check
+                for (int k = Ren::LeftPlane; k <= Ren::RightPlane; k++) {
+                    float dist = sf->planes[k].n[0] * p_pos[0] +
+                                 sf->planes[k].n[1] * p_pos[1] +
+                                 sf->planes[k].n[2] * p_pos[2] + sf->planes[k].d;
+
+                    if (dist < -p.radius) {
+                        res = Ren::Invisible;
+                    }
+                }
+
+                if (res != Ren::Invisible) {
+                    const int index = base_index + row_offset + col_offset;
+                    auto &cell = cells[index];
+                    if (cell.probe_count < MAX_PROBES_PER_CELL) {
+                        local_items[row_offset + col_offset][cell.probe_count].probe_index = (uint16_t)j;
+                        cell.probe_count++;
+                    }
+                }
+            }
+        }
+    }
+
     // Pack gathered local item data to total list
     for (int s = 0; s < frustums_per_slice; s++) {
         auto &cell = cells[base_index + s];
 
-        int local_items_count = std::max((int)cell.light_count, (int)cell.decal_count);
+        int local_items_count = (int)_MAX(cell.light_count, _MAX(cell.decal_count, cell.probe_count));
 
         if (local_items_count) {
             cell.item_offset = items_count.fetch_add(local_items_count);
@@ -1139,11 +1228,13 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 cell.item_offset = 0;
                 cell.light_count = 0;
                 cell.decal_count = 0;
+                cell.probe_count = 0;
             } else {
                 int free_items_left = MAX_ITEMS_TOTAL - cell.item_offset;
 
                 if ((int)cell.light_count > free_items_left) cell.light_count = free_items_left;
                 if ((int)cell.decal_count > free_items_left) cell.decal_count = free_items_left;
+                if ((int)cell.probe_count > free_items_left) cell.probe_count = free_items_left;
 
                 memcpy(&items[cell.item_offset], &local_items[s][0], local_items_count * sizeof(ItemData));
             }
@@ -1152,3 +1243,4 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 }
 
 #undef BBOX_POINTS
+#undef _MAX

@@ -19,7 +19,7 @@ public:
     ~SceneManager();
 
     const Ren::Camera &main_cam() const { return cam_; }
-    const SceneData &scene_data() const { return scene_data_; }
+    SceneData &scene_data() { return scene_data_; }
 
     SceneObject *GetObject(int i) { return &scene_data_.objects[i]; }
 

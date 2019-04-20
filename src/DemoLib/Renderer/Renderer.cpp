@@ -29,6 +29,38 @@ int upper_power_of_two(int v) {
     return res;
 }
 
+const Ren::Vec2f HaltonSeq23[] = { { 0.0000000000f, 0.0000000000f }, { 0.5000000000f, 0.3333333430f },
+                                   { 0.2500000000f, 0.6666666870f }, { 0.7500000000f, 0.1111111190f },
+                                   { 0.1250000000f, 0.4444444780f }, { 0.6250000000f, 0.7777778510f },
+                                   { 0.3750000000f, 0.2222222390f }, { 0.8750000000f, 0.5555555820f },
+                                   { 0.0625000000f, 0.8888889550f }, { 0.5625000000f, 0.0370370410f },
+                                   { 0.3125000000f, 0.3703704180f }, { 0.8125000000f, 0.7037037610f },
+                                   { 0.1875000000f, 0.1481481640f }, { 0.6875000000f, 0.4814815220f },
+                                   { 0.4375000000f, 0.8148149250f }, { 0.9375000000f, 0.2592592840f },
+                                   { 0.0312500000f, 0.5925926570f }, { 0.5312500000f, 0.9259260300f },
+                                   { 0.2812500000f, 0.0740740821f }, { 0.7812500000f, 0.4074074630f },
+                                   { 0.1562500000f, 0.7407408360f }, { 0.6562500000f, 0.1851852090f },
+                                   { 0.4062500000f, 0.5185185670f }, { 0.9062500000f, 0.8518519400f },
+                                   { 0.0937500000f, 0.2962963280f }, { 0.5937500000f, 0.6296296720f },
+                                   { 0.3437500000f, 0.9629630450f }, { 0.8437500000f, 0.0123456810f },
+                                   { 0.2187500000f, 0.3456790750f }, { 0.7187500000f, 0.6790124770f },
+                                   { 0.4687500000f, 0.1234568060f }, { 0.9687500000f, 0.4567902090f },
+                                   { 0.0156250000f, 0.7901235820f }, { 0.5156250000f, 0.2345679400f },
+                                   { 0.2656250000f, 0.5679013130f }, { 0.7656250000f, 0.9012346860f },
+                                   { 0.1406250000f, 0.0493827239f }, { 0.6406250000f, 0.3827161190f },
+                                   { 0.3906250000f, 0.7160494920f }, { 0.8906250000f, 0.1604938510f },
+                                   { 0.0781250000f, 0.4938272240f }, { 0.5781250000f, 0.8271605970f },
+                                   { 0.3281250000f, 0.2716049850f }, { 0.8281250000f, 0.6049383880f },
+                                   { 0.2031250000f, 0.9382717610f }, { 0.7031250000f, 0.0864197686f },
+                                   { 0.4531250000f, 0.4197531640f }, { 0.9531250000f, 0.7530865670f },
+                                   { 0.0468750000f, 0.1975308950f }, { 0.5468750000f, 0.5308642980f },
+                                   { 0.2968750000f, 0.8641976710f }, { 0.7968750000f, 0.3086420300f },
+                                   { 0.1718750000f, 0.6419754030f }, { 0.6718750000f, 0.9753087760f },
+                                   { 0.4218750000f, 0.0246913619f }, { 0.9218750000f, 0.3580247460f },
+                                   { 0.1093750000f, 0.6913581490f }, { 0.6093750000f, 0.1358024920f },
+                                   { 0.3593750000f, 0.4691358800f }, { 0.8593750000f, 0.8024692540f },
+                                   { 0.2343750000f, 0.2469136120f }, { 0.7343750000f, 0.5802469850f },
+                                   { 0.4843750000f, 0.9135804180f }, { 0.9843750000f, 0.0617284030f } };
 }
 
 #define BBOX_POINTS(min, max) \
@@ -52,16 +84,24 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
         swCullCtxInit(&cull_ctx_, 256, 128, z);
     }
 
-    {   // Create shadow map buffer
+    {   // shadow map buffer
         shadow_buf_ = FrameBuf(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, nullptr, 0, true, Ren::NoFilter);
     }
 
-    {   // Create aux buffer which gathers frame luminance
+    {   // aux buffer which gathers frame luminance
         FrameBuf::ColorAttachmentDesc desc;
         desc.format = Ren::RawR16F;
         desc.filter = Ren::BilinearNoMipmap;
         desc.repeat = Ren::ClampToEdge;
         reduced_buf_ = FrameBuf(16, 8, &desc, 1, false);
+    }
+
+    {   // buffer used to sample probes
+        FrameBuf::ColorAttachmentDesc desc;
+        desc.format = Ren::RawRGBA32F;
+        desc.filter = Ren::NoFilter;
+        desc.repeat = Ren::ClampToEdge;
+        probe_sample_buf_ = FrameBuf(24, 8, &desc, 1, false);
     }
 
     // Compile built-in shadres etc.
@@ -75,11 +115,19 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     p.filter = Ren::Bilinear;
 
     Ren::eTexLoadStatus status;
-    default_lightmap_ = ctx_.LoadTexture2D("default_lightmap", black, sizeof(black), p, &status);
+    dummy_black_ = ctx_.LoadTexture2D("dummy_black", black, sizeof(black), p, &status);
     assert(status == Ren::TexCreatedFromData);
 
-    default_ao_ = ctx_.LoadTexture2D("default_ao", white, sizeof(white), p, &status);
+    dummy_white_ = ctx_.LoadTexture2D("dummy_white", white, sizeof(white), p, &status);
     assert(status == Ren::TexCreatedFromData);
+
+    p.w = p.h = 8;
+    p.format = Ren::RawRG32F;
+    p.filter = Ren::NoFilter;
+    rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", &HaltonSeq23[0], sizeof(HaltonSeq23), p, &status);
+    assert(status == Ren::TexCreatedFromData);
+
+    temp_sub_frustums_.resize(CELLS_COUNT);
 }
 
 Renderer::~Renderer() {

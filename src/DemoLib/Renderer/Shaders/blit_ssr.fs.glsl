@@ -1,6 +1,8 @@
 R"(
 #version 310 es
 #extension GL_ARB_texture_multisample : enable
+#extension GL_EXT_texture_buffer : enable
+#extension GL_EXT_texture_cube_map_array : enable
 
 #ifdef GL_ES
 	precision mediump float;
@@ -12,6 +14,10 @@ UNIFORM_BLOCKS
 */
 
 )" __ADDITIONAL_DEFINES_STR__ R"(
+
+#define GRID_RES_X )" AS_STR(REN_GRID_RES_X) R"(
+#define GRID_RES_Y )" AS_STR(REN_GRID_RES_Y) R"(
+#define GRID_RES_Z )" AS_STR(REN_GRID_RES_Z) R"(
 
 #define BSEARCH_STEPS 4
 
@@ -39,7 +45,9 @@ layout(binding = )" AS_STR(REN_SSR_NORM_TEX_SLOT) R"() uniform mediump sampler2D
 layout(binding = )" AS_STR(REN_SSR_SPEC_TEX_SLOT) R"() uniform mediump sampler2D spec_texture;
 #endif
 layout(binding = )" AS_STR(REN_SSR_PREV_TEX_SLOT) R"() uniform mediump sampler2D prev_texture;
-layout(binding = )" AS_STR(REN_SSR_ENV_TEX_SLOT) R"() uniform mediump samplerCube env_texture;  
+layout(binding = )" AS_STR(REN_SSR_ENV_TEX_SLOT) R"() uniform mediump samplerCubeArray env_texture;
+layout(binding = )" AS_STR(REN_CELLS_BUF_SLOT) R"() uniform highp usamplerBuffer cells_buffer;
+layout(binding = )" AS_STR(REN_ITEMS_BUF_SLOT) R"() uniform highp usamplerBuffer items_buffer;
 
 in vec2 aVertexUVs_;
 
@@ -211,11 +219,10 @@ void main() {
     if ((specular.x + specular.y + specular.z) < 0.0001) return;
 
     float depth = texelFetch(depth_texture, ivec2(aVertexUVs_), 0).r;
-    depth = 2.0 * depth - 1.0;
 
     vec3 normal = DecodeNormal(texelFetch(norm_texture, ivec2(aVertexUVs_), 0).xy);
 
-    vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, depth, 1.0);
+    vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, 2.0 * depth - 1.0, 1.0);
     ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
 
     vec4 ray_origin_vs = uInvProjMatrix * ray_origin_cs;
@@ -232,7 +239,7 @@ void main() {
     float tex_lod = 4.0 * (1.0 - specular.w);
 
     vec3 refl_ray_ws = normalize((uInvViewMatrix * vec4(refl_ray_vs, 0.0)).xyz);
-    outColor = vec4(infl * clamp(RGBMDecode(textureLod(env_texture, refl_ray_ws, tex_lod)), vec3(0.0), vec3(10.0)), 1.0);
+    //outColor = vec4(infl * clamp(RGBMDecode(textureLod(env_texture, refl_ray_ws, tex_lod)), vec3(0.0), vec3(10.0)), 1.0);
 
     vec2 hit_pixel;
     vec3 hit_point;
@@ -240,7 +247,7 @@ void main() {
     if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, hit_pixel, hit_point)) {
         hit_pixel /= uResAndFRes.xy;
 
-        // reproject hitpoint in view space of previous frame
+        // reproject hitpoint into a view space of previous frame
         vec4 hit_prev = uDeltaMatrix * vec4(hit_point, 1.0);
         hit_prev = uProjMatrix * hit_prev;
         hit_prev /= hit_prev.w;
@@ -250,6 +257,24 @@ void main() {
 
         float mix_factor = max(1.0 - 2.0 * distance(hit_pixel, vec2(0.5, 0.5)), 0.0);
         outColor.xyz = mix(outColor.xyz, tex_color.xyz, mix_factor);
+    } else {
+        highp float lin_depth = uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
+        highp float k = log2(lin_depth / uClipInfo[1]) / uClipInfo[3];
+        int slice = int(floor(k * float(GRID_RES_Z)));
+    
+        int ix = int(aVertexUVs_.x), iy = int(aVertexUVs_.y);
+        int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy * GRID_RES_Y / int(uResAndFRes.y)) * GRID_RES_X + (ix * GRID_RES_X / int(uResAndFRes.x));
+        
+        highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
+        highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
+        highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);
+
+        for (uint i = offset; i < offset + pcount; i++) {
+            highp uint item_data = texelFetch(items_buffer, int(i)).x;
+            int pi = int(bitfieldExtract(item_data, 24, 8));
+
+            outColor.rgb = RGBMDecode(textureLod(env_texture, vec4(refl_ray_ws, float(pi)), tex_lod));
+        }
     }
 }
 )"

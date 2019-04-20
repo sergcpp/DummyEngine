@@ -10,7 +10,8 @@ set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/Renderer.h
                         Renderer/Renderer.cpp
                         Renderer/Renderer_Frontend.cpp
-                        Renderer/__skydome_mesh.inl)
+                        Renderer/__skydome_mesh.inl
+                        Renderer/__sphere_mesh.inl)
 
 set(SCENE_SOURCES   Scene/SceneData.h
                     Scene/SceneData.cpp
@@ -18,7 +19,8 @@ set(SCENE_SOURCES   Scene/SceneData.h
                     Scene/SceneManager.cpp
                     Scene/SceneManager_ASS.cpp
                     Scene/SceneManager_BVH.cpp
-                    Scene/SceneManager_PT.cpp)
+                    Scene/SceneManager_PT.cpp
+                    Scene/ProbeStorage.h)
 
 set(STATES_SOURCES  States/GSCreate.h
                     States/GSCreate.cpp
@@ -36,6 +38,8 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Renderer_Backend_GLES3.cpp
                         Renderer/Renderer_GL_Defines.inl
                         Renderer/Renderer_GL_Shaders.inl)
+    set(SCENE_SOURCES ${SCENE_SOURCES}
+                        Scene/ProbeStorageGL.cpp)
 elseif(${RENDERER} STREQUAL "SW")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                         Renderer/RendererSW.cpp)
@@ -50,13 +54,18 @@ set(SHADERS_SOURCES Renderer/Shaders/blit.fs.glsl
                     Renderer/Shaders/blit_down.fs.glsl
                     Renderer/Shaders/blit_down_ms.fs.glsl
                     Renderer/Shaders/blit_gauss.fs.glsl
+                    Renderer/Shaders/blit_mipmap.fs.glsl
                     Renderer/Shaders/blit_ms.fs.glsl
                     Renderer/Shaders/blit_multiply.fs.glsl
+                    Renderer/Shaders/blit_project_sh.fs.glsl
                     Renderer/Shaders/blit_reduced.fs.glsl
+                    Renderer/Shaders/blit_rgbm.fs.glsl
                     Renderer/Shaders/blit_ssao.fs.glsl
                     Renderer/Shaders/blit_ssr.fs.glsl
                     Renderer/Shaders/fillz.fs.glsl
                     Renderer/Shaders/fillz.vs.glsl
+                    Renderer/Shaders/probe.vs.glsl
+                    Renderer/Shaders/probe.fs.glsl
                     Renderer/Shaders/shadow.fs.glsl
                     Renderer/Shaders/shadow.vs.glsl
                     Renderer/Shaders/skydome.fs.glsl
