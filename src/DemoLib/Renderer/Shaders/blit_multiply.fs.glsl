@@ -22,7 +22,14 @@ void main() {
     vec2 norm_uvs = aVertexUVs_ / uTexSize;
 
     vec3 c0 = texture(s_texture, norm_uvs).xyz;
+#if defined(MSAA_4)
+    vec3 c1 = 0.25 * (texelFetch(s_mul_texture, ivec2(aVertexUVs_), 0).xyz +
+                      texelFetch(s_mul_texture, ivec2(aVertexUVs_), 1).xyz +
+                      texelFetch(s_mul_texture, ivec2(aVertexUVs_), 2).xyz +
+                      texelFetch(s_mul_texture, ivec2(aVertexUVs_), 3).xyz);
+#else
     vec3 c1 = texelFetch(s_mul_texture, ivec2(aVertexUVs_), 0).xyz;
+#endif
             
     c0 *= c1;
 

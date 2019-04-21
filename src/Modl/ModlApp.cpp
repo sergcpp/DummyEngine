@@ -197,8 +197,8 @@ int ModlApp::Init(int w, int h) {
 #if defined(USE_GL_RENDER)
     {
         // load diagnostic shader
-        std::ifstream diag_vs("assets_pc/shaders/diag.vs", std::ios::binary | std::ios::ate),
-                      diag_fs("assets_pc/shaders/diag.fs", std::ios::binary | std::ios::ate);
+        std::ifstream diag_vs("assets/shaders/diag.vs.glsl", std::ios::binary | std::ios::ate),
+                      diag_fs("assets/shaders/diag.fs.glsl", std::ios::binary | std::ios::ate);
 
         size_t diag_vs_size = (size_t)diag_vs.tellg();
         diag_vs.seekg(0, std::ios::beg);

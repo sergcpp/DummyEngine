@@ -321,14 +321,14 @@ void GSDrawTest::LoadScene(const char *name) {
             view_dir_[2] = (float)((const JsNumber &)js_dir.at(2)).val;
         }
     }
+
+    /*view_origin_[0] = -8.299931f;
+    view_origin_[1] = 2.616435f;
+    view_origin_[2] = 1.848248f;
       
-    /*view_origin_[0] = 11.557284f;
-    view_origin_[1] = 8.070767f;
-    view_origin_[2] = 9.224744f;
-    
-    view_dir_[0] = -0.990718f;
-    view_dir_[1] = -0.134558f;
-    view_dir_[2] = 0.019319f;*/
+    view_dir_[0] = 0.864164f;
+    view_dir_[1] = -0.097669f;
+    view_dir_[2] = 0.493643f;*/
 }
 
 void GSDrawTest::Exit() {

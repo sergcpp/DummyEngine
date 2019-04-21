@@ -1,0 +1,5 @@
+gl_program: main main.vs.glsl main.fs.glsl
+sw_program: main
+texture: wood_02.png
+texture: default_normalmap.png
+texture: white.png

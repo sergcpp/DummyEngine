@@ -145,8 +145,7 @@ void main(void) {
     highp float k = log2(depth / uClipInfo[1]) / uClipInfo[3];
     int slice = int(floor(k * $ItemGridResZ.0));
     
-    int ix = int(gl_FragCoord.x);
-    int iy = int(gl_FragCoord.y);
+    int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
     int cell_index = slice * $ItemGridResX * $ItemGridResY + (iy * $ItemGridResY / int(uResAndFRes.y)) * $ItemGridResX + ix * $ItemGridResX / int(uResAndFRes.x);
     
     highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
