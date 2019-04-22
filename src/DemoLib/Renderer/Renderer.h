@@ -32,9 +32,10 @@ static_assert(sizeof(DecalItem) == 24 * sizeof(float), "!");
 
 struct ProbeItem {
     float position[3], radius;
+    float _unused[3], layer;
     float sh_coeffs[3][4];
 };
-static_assert(sizeof(ProbeItem) == 16 * sizeof(float), "!");
+static_assert(sizeof(ProbeItem) == 20 * sizeof(float), "!");
 
 struct CellData {
     uint32_t item_offset : 24;
@@ -208,7 +209,7 @@ private:
 
     static const uint32_t default_flags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableTimers);
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableTimers | DebugProbes);
 #else
         (EnableZFill | EnableCulling | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap | EnableTimers);
 #endif

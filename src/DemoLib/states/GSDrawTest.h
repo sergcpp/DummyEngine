@@ -47,9 +47,10 @@ class GSDrawTest : public GameState {
     Ren::Camera temp_probe_cam_;
     FrameBuf temp_probe_buf_;
     Renderer::DrawList temp_probe_lists_[6];
-    int probe_to_render_ = -1;
-    int probe_to_update_sh_ = -1, probe_sh_update_iteration_ = 0;
-    bool update_probe_ = false;
+    LightProbe *probe_to_render_ = nullptr,
+               *probe_to_update_sh_ = nullptr;
+    int probe_sh_update_iteration_ = 0;
+    std::vector<int> probes_to_update_;
 
     int view_pointer_ = 0, move_pointer_ = 0;
     Ren::Vec3f view_origin_ = { 0, 1, 0 },

@@ -424,6 +424,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         list.probes.emplace_back();
 
                         auto &pr = list.probes.back();
+                        pr.layer = float(probe->layer_index);
                         pr.radius = probe->radius;
                         memcpy(&pr.position[0], &pos[0], 3 * sizeof(float));
                         for (int k = 0; k < 4; k++) {

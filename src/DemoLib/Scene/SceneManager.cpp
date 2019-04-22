@@ -69,6 +69,10 @@ SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, S
         scene_data_.lm_splitter = Ren::TextureSplitter(SceneManagerConstants::LIGHTMAP_ATLAS_RESX,
                                                        SceneManagerConstants::LIGHTMAP_ATLAS_RESY);
     }
+
+    {   // Allocate cubemap array
+        scene_data_.probe_storage.Resize(PROBE_RES, PROBE_COUNT);
+    }
 }
 
 SceneManager::~SceneManager() {
@@ -429,7 +433,9 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 obj.pr = pr;
             }
 
-            const auto *pr = obj.pr.get();
+            auto *pr = obj.pr.get();
+
+            pr->layer_index = scene_data_.probe_storage.Allocate();
 
             // Combine probe's bounding box with object's
             obj_bbox_min = Ren::Min(obj_bbox_min, pr->offset - Ren::Vec3f{ pr->radius });
@@ -544,8 +550,6 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     }
 
     scene_data_.decals_atlas.Finalize();
-
-    scene_data_.probe_storage.Resize(PROBE_RES, PROBE_COUNT);
 
     LOGI("SceneManager: RebuildBVH!");
 

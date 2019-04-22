@@ -18,6 +18,7 @@ struct ShadowMapRegion {
 
 struct ProbeItem {
     vec4 pos_and_radius;
+    vec4 unused_and_layer;
     vec4 sh_coeffs[3];
 };
 
@@ -44,8 +45,9 @@ void main() {
 
     if (mip_level < 5.0) {
         // debug environment map
-        outColor.rgb = RGBMDecode(textureLod(env_texture, vec4(view_dir_ws, float(probe_index)), mip_level));
+        outColor.rgb = RGBMDecode(textureLod(env_texture, vec4(view_dir_ws, uProbes[probe_index].unused_and_layer.w), mip_level));
     } else {
+        // debug sh coeffs
         vec4 vv = vec4(0.25, 0.5 * view_dir_ws.yzx);
 
         outColor.r = dot(uProbes[probe_index].sh_coeffs[0], vv);

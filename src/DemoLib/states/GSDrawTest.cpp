@@ -386,24 +386,24 @@ void GSDrawTest::Draw(uint64_t dt_us) {
             front_list_ = (front_list_ + 1) % 2;
 
             // Render probe cubemap
-            if (probe_to_render_ != -1) {
+            if (probe_to_render_) {
                 for (int i = 0; i < 6; i++) {
                     renderer_->ExecuteDrawList(temp_probe_lists_[i], &temp_probe_buf_);
-                    renderer_->BlitToLightProbeFace(temp_probe_buf_, scene_manager_->scene_data().probe_storage, probe_to_render_, i);
+                    renderer_->BlitToLightProbeFace(temp_probe_buf_, scene_manager_->scene_data().probe_storage, probe_to_render_->layer_index, i);
                 }
 
                 probe_to_update_sh_ = probe_to_render_;
-                probe_to_render_ = -1;
+                probe_to_render_ = nullptr;
             }
 
-            if (probe_to_update_sh_ != -1) {
-                bool done = renderer_->BlitProjectSH(scene_manager_->scene_data().probe_storage, probe_to_render_, probe_sh_update_iteration_,
-                                                     *scene_manager_->scene_data().probes.Get(0));
+            if (probe_to_update_sh_) {
+                bool done = renderer_->BlitProjectSH(scene_manager_->scene_data().probe_storage, probe_to_update_sh_->layer_index,
+                                                     probe_sh_update_iteration_, *probe_to_update_sh_);
                 probe_sh_update_iteration_++;
 
                 if (done) {
                     probe_sh_update_iteration_ = 0;
-                    probe_to_update_sh_ = -1;
+                    probe_to_update_sh_ = nullptr;
                 }
             }
 
@@ -892,7 +892,10 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT || (evt.raw_key == 'd' && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = 0;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SPACE) {
-            update_probe_ = true;
+            if (probes_to_update_.empty()) {
+                probes_to_update_.push_back(33);
+                probes_to_update_.push_back(34);
+            }
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
             shift_down_ = false;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_BACKSPACE) {
@@ -989,9 +992,9 @@ void GSDrawTest::UpdateFrame(int list_index) {
                                scene_manager_->main_cam(), main_view_lists_[list_index]);
 
 
-    if (update_probe_ && probe_to_render_ == -1 && probe_to_update_sh_ == -1) {
-        const auto *probe_obj = scene_manager_->GetObject(33);
-        const auto *probe = scene_manager_->scene_data().probes.Get(0);
+    if (!probes_to_update_.empty() && !probe_to_render_ && !probe_to_update_sh_) {
+        auto *probe_obj = scene_manager_->GetObject(probes_to_update_.back());
+        auto *probe = probe_obj->pr.get();
 
         Ren::Vec4f pos = { probe->offset[0], probe->offset[1], probe->offset[2], 1.0f };
         pos = probe_obj->tr->mat * pos;
@@ -1024,7 +1027,7 @@ void GSDrawTest::UpdateFrame(int list_index) {
                                        temp_probe_cam_, temp_probe_lists_[i]);
         }
 
-        probe_to_render_ = 0;
-        update_probe_ = false;
+        probe_to_render_ = probe;
+        probes_to_update_.pop_back();
     }
 }

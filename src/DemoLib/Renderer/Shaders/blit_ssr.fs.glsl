@@ -28,6 +28,12 @@ struct ShadowMapRegion {
     mat4 clip_from_world;
 };
 
+struct ProbeItem {
+    vec4 pos_and_radius;
+    vec4 unused_and_layer;
+    vec4 sh_coeffs[3];
+};
+
 layout (std140) uniform SharedDataBlock {
     mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
@@ -35,6 +41,7 @@ layout (std140) uniform SharedDataBlock {
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
     vec4 uResAndFRes;
+    ProbeItem uProbes[)" AS_STR(REN_MAX_PROBES_TOTAL) R"(];
 };
 
 #if defined(MSAA_4)
@@ -244,6 +251,8 @@ void main() {
 
     float tex_lod = 4.0 * (1.0 - specular.w);
 
+    vec4 ray_origin_ws = uInvViewMatrix * ray_origin_vs;
+    ray_origin_ws /= ray_origin_ws.w;
     vec3 refl_ray_ws = normalize((uInvViewMatrix * vec4(refl_ray_vs, 0.0)).xyz);
 
     {   // apply cubemap contribution
@@ -258,11 +267,23 @@ void main() {
         highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
         highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);
 
+        float mul = exp2(tex_lod);
+        vec3 refl_dx = mul * dFdx(refl_ray_ws),
+             refl_dy = mul * dFdy(refl_ray_ws);
+
+        float total_distance = 0.0;
+
         for (uint i = offset; i < offset + pcount; i++) {
             highp uint item_data = texelFetch(items_buffer, int(i)).x;
             int pi = int(bitfieldExtract(item_data, 24, 8));
 
-            outColor.rgb = infl * RGBMDecode(textureLod(env_texture, vec4(refl_ray_ws, float(pi)), tex_lod));
+            float distance = distance(uProbes[pi].pos_and_radius.xyz, ray_origin_ws.xyz);
+            outColor.rgb += distance * RGBMDecode(textureGrad(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), refl_dx, refl_dy));
+            total_distance += distance;
+        }
+
+        if (pcount != 0u) {
+            outColor.rgb *= infl / total_distance;
         }
     }
 

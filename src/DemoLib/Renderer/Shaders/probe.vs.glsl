@@ -15,6 +15,7 @@ struct ShadowMapRegion {
 
 struct ProbeItem {
     vec4 pos_and_radius;
+    vec4 unused_and_layer;
     vec4 sh_coeffs[3];
 };
 

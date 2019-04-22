@@ -2,13 +2,31 @@
 
 #include <Ren/GL.h>
 
-ProbeStorage::ProbeStorage() : res_(0), capacity_(0) {
+ProbeStorage::ProbeStorage() : res_(0), size_(0), capacity_(0) {
 }
 
 ProbeStorage::~ProbeStorage() {
     if (tex_id_ != 0xffffffff) {
         GLuint tex_id = (GLuint)tex_id_;
         glDeleteTextures(1, &tex_id);
+    }
+}
+
+int ProbeStorage::Allocate() {
+    if (!free_indices_.empty()) {
+        int ret = free_indices_.back();
+        free_indices_.pop_back();
+        return ret;
+    } else {
+        return size_++;
+    }
+}
+
+void ProbeStorage::Free(int i) {
+    if (i == size_ - 1) {
+        size_--;
+    } else {
+        free_indices_.push_back(i);
     }
 }
 
