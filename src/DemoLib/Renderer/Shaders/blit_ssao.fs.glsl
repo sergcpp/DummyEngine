@@ -93,7 +93,7 @@ void main() {
     const float fadeout_start = 16.0;
     const float fadeout_end = 64.0;
 
-    float depth = SampleDepthTexel(aVertexUVs_);
+    float depth = BilinearSampleDepthTexel(aVertexUVs_);
     if (depth > fadeout_end) {
         outColor = vec4(1.0, 1.0, 1.0, 1.0);
         return;
@@ -111,8 +111,8 @@ void main() {
         //int c = (hash(ivec2(gl_FragCoord.xy)) + i) % 4;
         vec2 sample_point = transforms[c] * sample_points[i];
 
-        vec2 depth_values = vec2(SampleDepthTexel(aVertexUVs_ + ss_radius * sample_point * uResAndFRes.xy),
-                                 SampleDepthTexel(aVertexUVs_ - ss_radius * sample_point * uResAndFRes.xy));
+        vec2 depth_values = vec2(BilinearSampleDepthTexel(aVertexUVs_ + ss_radius * sample_point * uResAndFRes.xy),
+                                 BilinearSampleDepthTexel(aVertexUVs_ - ss_radius * sample_point * uResAndFRes.xy));
         float sphere_width = initial_radius * sphere_widths[i];
 
         vec2 depth_diff = vec2(depth) - depth_values;

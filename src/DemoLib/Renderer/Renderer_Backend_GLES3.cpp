@@ -1102,14 +1102,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
         glUseProgram(blit_mul_prog->prog_id());
 
-        glUniform2f(13, float(act_w_), float(act_h_));
+        glBindBufferBase(GL_UNIFORM_BUFFER, blit_mul_prog->uniform_block(REN_UB_SHARED_DATA_LOC).loc, (GLuint)unif_shared_data_block_);
 
         BindTexture(0, refl_buf_.attachments[0].tex);
 
         if (clean_buf_.sample_count > 1) {
             BindTextureMs(1, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+            BindTextureMs(2, clean_buf_.depth_tex.GetValue());
+            BindTextureMs(3, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
         } else {
             BindTexture(1, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+            BindTexture(2, clean_buf_.depth_tex.GetValue());
+            BindTexture(3, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));

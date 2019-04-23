@@ -60,31 +60,31 @@ vec3 RGBMDecode(vec4 rgbm) {
     return 6.0 * rgbm.rgb * rgbm.a;
 }
 
+const vec2 poisson_disk[16] = vec2[16](
+    vec2(-0.5, 0.0),
+    vec2(0.0, 0.5),
+    vec2(0.5, 0.0),
+    vec2(0.0, -0.5),
+
+    vec2(0.0, 0.0),
+    vec2(-0.1, -0.32),
+    vec2(0.17, 0.31),
+    vec2(0.35, 0.04),
+    
+    vec2(0.07, 0.7),
+    vec2(-0.72, 0.09),
+    vec2(0.73, 0.05),
+    vec2(0.1, -0.71),
+    
+    vec2(0.72, 0.8),
+    vec2(-0.75, 0.74),
+    vec2(-0.8, -0.73),
+    vec2(0.75, -0.81)
+);
+
 #define M_PI 3.1415926535897932384626433832795
 
 float GetVisibility(float frag_depth, in vec2 lm_uvs) {
-    const vec2 poisson_disk[16] = vec2[16](
-        vec2(-0.5, 0.0),
-        vec2(0.0, 0.5),
-        vec2(0.5, 0.0),
-        vec2(0.0, -0.5),
-    
-        vec2(0.0, 0.0),
-        vec2(-0.1, -0.32),
-        vec2(0.17, 0.31),
-        vec2(0.35, 0.04),
-        
-        vec2(0.07, 0.7),
-        vec2(-0.72, 0.09),
-        vec2(0.73, 0.05),
-        vec2(0.1, -0.71),
-        
-        vec2(0.72, 0.8),
-        vec2(-0.75, 0.74),
-        vec2(-0.8, -0.73),
-        vec2(0.75, -0.81)
-    );
-
     const vec2 shadow_softness = vec2(3.0 / $ShadRes.0, 1.5 / $ShadRes.0);
     
     float visibility = 0.0;
@@ -266,18 +266,6 @@ void main(void) {
                 highp float r = M_PI * (-1.0 + 2.0 * rand(gl_FragCoord.xy));
                 highp vec2 rx = vec2(cos(r), sin(r));
                 highp vec2 ry = vec2(rx.y, -rx.x);
-                
-                const vec2 poisson_disk[8] = vec2[8](
-                    vec2(-0.5, 0.0),
-                    vec2(0.0, 0.5),
-                    vec2(0.5, 0.0),
-                    vec2(0.0, -0.5),
-                
-                    vec2(0.0, 0.0),
-                    vec2(-0.1, -0.32),
-                    vec2(0.17, 0.31),
-                    vec2(0.35, 0.04)
-                );
                 
                 float visibility = 0.0;
                 

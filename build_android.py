@@ -22,7 +22,7 @@ def main():
     # prepare assets
     os.system('DemoApp --prepare_assets android --norun')
     
-    # build ndk part
+    # build native part
     for arch in archs:
         if not os.path.exists("build-android-" + arch):
             os.makedirs("build-android-" + arch)
@@ -43,6 +43,7 @@ def main():
             
         shutil.copy2("build-android-" + arch + "\\src\\DemoApp\\libDemoApp.so", "android\\lib\\" + arch + "\\")
         
+    # build java part
     os.system("android\\build.bat")
     shutil.copy2("android\\bin\\OccDemo.apk", "OccDemo.apk")
     

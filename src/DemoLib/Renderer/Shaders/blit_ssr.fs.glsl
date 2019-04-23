@@ -231,10 +231,6 @@ void main() {
 
     vec3 normal = DecodeNormal(texelFetch(norm_texture, ivec2(aVertexUVs_), 0).xy);
 
-    /*if (length(dFdx(normal)) > 0.1 || length(dFdy(normal)) > 0.1) {
-        return;
-    }*/
-
     vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, 2.0 * depth - 1.0, 1.0);
     ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
 
@@ -271,19 +267,19 @@ void main() {
         vec3 refl_dx = mul * dFdx(refl_ray_ws),
              refl_dy = mul * dFdy(refl_ray_ws);
 
-        float total_distance = 0.0;
+        float total_dist = 0.0;
 
         for (uint i = offset; i < offset + pcount; i++) {
             highp uint item_data = texelFetch(items_buffer, int(i)).x;
             int pi = int(bitfieldExtract(item_data, 24, 8));
 
-            float distance = distance(uProbes[pi].pos_and_radius.xyz, ray_origin_ws.xyz);
-            outColor.rgb += distance * RGBMDecode(textureGrad(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), refl_dx, refl_dy));
-            total_distance += distance;
+            float dist = distance(uProbes[pi].pos_and_radius.xyz, ray_origin_ws.xyz);
+            outColor.rgb += dist * RGBMDecode(textureGrad(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), refl_dx, refl_dy));
+            total_dist += dist;
         }
 
         if (pcount != 0u) {
-            outColor.rgb *= infl / total_distance;
+            outColor.rgb /= total_dist;
         }
     }
 
@@ -299,10 +295,12 @@ void main() {
         hit_prev /= hit_prev.w;
         hit_prev.xy = 0.5 * hit_prev.xy + 0.5;
             
-        vec4 tex_color = textureLod(prev_texture, hit_prev.xy, 0.05 * tex_lod * distance(ray_origin_vs.xyz, hit_point));
+        vec3 tex_color = textureLod(prev_texture, hit_prev.xy, 0.05 * tex_lod * distance(ray_origin_vs.xyz, hit_point)).xyz;
 
         float mix_factor = max(1.0 - 2.0 * distance(hit_pixel, vec2(0.5, 0.5)), 0.0);
-        outColor.xyz = mix(outColor.xyz, tex_color.xyz, mix_factor);
+        outColor.xyz = mix(outColor.xyz, tex_color, mix_factor);
     }
+
+    outColor.rgb *= infl;
 }
 )"
