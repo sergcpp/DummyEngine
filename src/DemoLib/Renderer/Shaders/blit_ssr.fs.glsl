@@ -20,7 +20,7 @@ UNIFORM_BLOCKS
 #define GRID_RES_Z )" AS_STR(REN_GRID_RES_Z) R"(
 
 #define STRIDE 0.0125
-#define MAX_STEPS 24.0
+#define MAX_STEPS 32.0
 #define BSEARCH_STEPS 4
 
 struct ShadowMapRegion {
@@ -224,12 +224,14 @@ vec3 DecodeNormal(vec2 enc) {
 }
 
 void main() {
-    vec4 specular = texelFetch(spec_texture, ivec2(aVertexUVs_), 0);
+    ivec2 pix_uvs = ivec2(aVertexUVs_ - vec2(0.5));
+
+    vec4 specular = texelFetch(spec_texture, pix_uvs, 0);
     if ((specular.x + specular.y + specular.z) < 0.0001) return;
 
-    float depth = texelFetch(depth_texture, ivec2(aVertexUVs_), 0).r;
+    float depth = texelFetch(depth_texture, pix_uvs, 0).r;
 
-    vec3 normal = DecodeNormal(texelFetch(norm_texture, ivec2(aVertexUVs_), 0).xy);
+    vec3 normal = DecodeNormal(texelFetch(norm_texture, pix_uvs, 0).xy);
 
     vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, 2.0 * depth - 1.0, 1.0);
     ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
@@ -246,6 +248,7 @@ void main() {
     vec3 infl = vec3(fresnel);
 
     float tex_lod = 4.0 * (1.0 - specular.w);
+    float mul = exp2(tex_lod);
 
     vec4 ray_origin_ws = uInvViewMatrix * ray_origin_vs;
     ray_origin_ws /= ray_origin_ws.w;
@@ -263,7 +266,6 @@ void main() {
         highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
         highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);
 
-        float mul = exp2(tex_lod);
         vec3 refl_dx = mul * dFdx(refl_ray_ws),
              refl_dy = mul * dFdy(refl_ray_ws);
 
@@ -294,8 +296,11 @@ void main() {
         hit_prev = uProjMatrix * hit_prev;
         hit_prev /= hit_prev.w;
         hit_prev.xy = 0.5 * hit_prev.xy + 0.5;
+        
+        vec2 refl_dx = mul * dFdx(hit_prev.xy),
+             refl_dy = mul * dFdy(hit_prev.xy);
             
-        vec3 tex_color = textureLod(prev_texture, hit_prev.xy, 0.05 * tex_lod * distance(ray_origin_vs.xyz, hit_point)).xyz;
+        vec3 tex_color = textureGrad(prev_texture, hit_prev.xy, refl_dx, refl_dy).xyz;
 
         float mix_factor = max(1.0 - 2.0 * distance(hit_pixel, vec2(0.5, 0.5)), 0.0);
         outColor.xyz = mix(outColor.xyz, tex_color, mix_factor);

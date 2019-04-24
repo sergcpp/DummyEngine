@@ -178,7 +178,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         {   // Auxilary buffer for reflections
             FrameBuf::ColorAttachmentDesc desc;
             desc.format = Ren::RawRGB16F;
-            desc.filter = Ren::Bilinear;
+            desc.filter = Ren::NoFilter;
             desc.repeat = Ren::ClampToEdge;
             refl_buf_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, false);
         }

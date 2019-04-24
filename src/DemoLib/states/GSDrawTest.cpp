@@ -322,13 +322,13 @@ void GSDrawTest::LoadScene(const char *name) {
         }
     }
 
-    /*view_origin_[0] = -8.299931f;
-    view_origin_[1] = 2.616435f;
-    view_origin_[2] = 1.848248f;
+    /*view_origin_[0] = 0.090376f;
+    view_origin_[1] = 3.457212f;
+    view_origin_[2] = 5.265417f;
       
-    view_dir_[0] = 0.864164f;
-    view_dir_[1] = -0.097669f;
-    view_dir_[2] = 0.493643f;*/
+    view_dir_[0] = 0.016737f;
+    view_dir_[1] = -0.194597f;
+    view_dir_[2] = 0.980741f;*/
 }
 
 void GSDrawTest::Exit() {
@@ -893,8 +893,9 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
             side_press_speed_ = 0;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SPACE) {
             if (probes_to_update_.empty()) {
-                probes_to_update_.push_back(33);
-                probes_to_update_.push_back(34);
+                int obj_count = (int)scene_manager_->scene_data().objects.size();
+                probes_to_update_.push_back(obj_count - 2);
+                probes_to_update_.push_back(obj_count - 1);
             }
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
             shift_down_ = false;

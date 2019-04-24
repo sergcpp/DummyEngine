@@ -54,9 +54,7 @@ vec3 DecodeNormal(vec2 enc) {
 }
 
 void main() {
-    vec2 norm_uvs = (aVertexUVs_ + vec2(1.0, 1.0)) / uResAndFRes.xy;
-    ivec2 c = ivec2(gl_FragCoord.xy);
-    ivec2 pix_uvs = (ivec2(aVertexUVs_ - 1.0) / 2) * 2 + 1;
+    ivec2 pix_uvs = ivec2(aVertexUVs_ / 2.0) * 2;
 
     const ivec2 offsets[] = ivec2[4](
         ivec2(0, 0), ivec2(1, 0), ivec2(0, 1), ivec2(1, 1)
@@ -66,17 +64,17 @@ void main() {
     vec3 normal = DecodeNormal(texelFetch(s_norm_texture, ivec2(aVertexUVs_), 0).xy);
     for (int i = 0; i < 4; i++) {
         vec3 norm_coarse = DecodeNormal(texelFetch(s_norm_texture, pix_uvs + 2 * offsets[i], 0).xy);
-        norm_weights[i] = 0.1 + step(0.9, dot(norm_coarse, normal));
+        norm_weights[i] = 0.0 + step(0.9, dot(norm_coarse, normal));
     }
 
     float depth_weights[4];
     float depth = LinearDepthTexelFetch(ivec2(aVertexUVs_));
     for (int i = 0; i < 4; i++) {
         float depth_coarse = LinearDepthTexelFetch(pix_uvs + 2 * offsets[i]);
-        depth_weights[i] = 1.0 / (0.0001 + abs(depth - depth_coarse));
+        depth_weights[i] = 1.0 / (0.01 + abs(depth - depth_coarse));
     }
 
-    vec2 sample_coord = fract((aVertexUVs_ - 1.0) / 2.0);
+    vec2 sample_coord = fract(aVertexUVs_ / 2.0);
 
     float sample_weights[4];
     sample_weights[0] = (1.0 - sample_coord.x) * (1.0 - sample_coord.y);
@@ -88,7 +86,7 @@ void main() {
     float weight_sum = 0.0;
     for (int i = 0; i < 4; i++) {
         float weight = sample_weights[i] * norm_weights[i] * depth_weights[i];
-        c0 += texelFetch(s_texture, ivec2(aVertexUVs_ - 1.0) / 2 + offsets[i], 0).xyz * weight;
+        c0 += texelFetch(s_texture, ivec2(aVertexUVs_)/2 + offsets[i], 0).xyz * weight;
         weight_sum += weight;
     }
 
