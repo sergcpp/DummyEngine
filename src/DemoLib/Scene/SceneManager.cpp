@@ -269,11 +269,17 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             const auto it = all_meshes.find(js_mesh_name.val);
             if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
 
-            obj.comp_mask |= CompMesh;
-            obj.mesh = it->second;
+            {
+                Ren::StorageRef<Drawable> dr = scene_data_.drawables.Add();
+                //dr->Read(js_light_obj);
 
-            obj_bbox_min = Ren::Min(obj_bbox_min, obj.mesh->bbox_min());
-            obj_bbox_max = Ren::Max(obj_bbox_max, obj.mesh->bbox_max());
+                obj.dr = dr;
+                obj.comp_mask |= CompDrawable;
+                obj.dr->mesh = it->second;
+            }
+
+            obj_bbox_min = Ren::Min(obj_bbox_min, obj.dr->mesh->bbox_min());
+            obj_bbox_max = Ren::Max(obj_bbox_max, obj.dr->mesh->bbox_max());
         }
 
         obj.tr->Read(js_obj);

@@ -22,6 +22,20 @@ set(SCENE_SOURCES   Scene/SceneData.h
                     Scene/SceneManager_PT.cpp
                     Scene/ProbeStorage.h)
 
+set(SCENE_COMP_SOURCES   Scene/Comp/Common.h
+                         Scene/Comp/Decal.h
+                         Scene/Comp/Decal.cpp
+                         Scene/Comp/Drawable.h
+                         Scene/Comp/Drawable.cpp
+                         Scene/Comp/LightmapRegion.h
+                         Scene/Comp/LightmapRegion.cpp
+                         Scene/Comp/LightProbe.h
+                         Scene/Comp/LightProbe.cpp
+                         Scene/Comp/LightSource.h
+                         Scene/Comp/LightSource.cpp
+                         Scene/Comp/Transform.h
+                         Scene/Comp/Transform.cpp)
+
 set(STATES_SOURCES  States/GSCreate.h
                     States/GSCreate.cpp
                     States/GSDrawTest.h
@@ -86,6 +100,10 @@ source_group("src\\Renderer" FILES ${RENDERER_SOURCES})
 list(APPEND ALL_SOURCE_FILES ${SCENE_SOURCES})
 set_source_files_properties(${SCENE_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Scene" FILES ${SCENE_SOURCES})
+
+list(APPEND ALL_SOURCE_FILES ${SCENE_COMP_SOURCES})
+set_source_files_properties(${SCENE_COMP_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+source_group("src\\Scene\\Comp" FILES ${SCENE_COMP_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${STATES_SOURCES})
 set_source_files_properties(${STATES_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)

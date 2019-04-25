@@ -726,7 +726,7 @@ void GSDrawTest::Update(uint64_t dt_us) {
         invalidate_view_ = true;
     }
 
-    uint32_t mask = CompTransform | CompMesh;
+    uint32_t mask = CompTransform | CompDrawable;
 #if 0
     static float t = 0.0f;
     t += 0.04f;

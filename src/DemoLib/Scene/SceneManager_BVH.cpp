@@ -244,10 +244,6 @@ void SceneManager::UpdateObjects() {
         auto &obj = scene_data_.objects[obj_index];
         obj.last_change_mask = obj.change_mask;
 
-        if (obj.change_mask & CompMesh) {
-
-        }
-
         if (obj.change_mask & CompTransform) {
             auto *tr = obj.tr.get();
             tr->UpdateBBox();

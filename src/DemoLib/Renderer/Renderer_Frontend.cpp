@@ -135,7 +135,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     const Ren::Mat4f view_from_object = view_from_world * world_from_object,
                                      clip_from_object = clip_from_view * view_from_object;
 
-                    const auto *mesh = obj.mesh.get();
+                    const auto *mesh = obj.dr->mesh.get();
 
                     SWcull_surf surf[16];
                     int surf_count = 0;
@@ -217,7 +217,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             } else {
                 const auto &obj = scene.objects[n->prim_index];
 
-                if ((obj.comp_mask & CompTransform) && (obj.comp_mask & (CompMesh | CompLightSource | CompProbe))) {
+                if ((obj.comp_mask & CompTransform) && (obj.comp_mask & (CompDrawable | CompLightSource | CompProbe))) {
                     const auto *tr = obj.tr.get();
 
                     if (!skip_check) {
@@ -269,8 +269,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     const Ren::Mat4f view_from_object = view_from_world * world_from_object,
                                      clip_from_object = clip_from_view * view_from_object;
 
-                    if (obj.comp_mask & CompMesh) {
-                        const auto *mesh = obj.mesh.get();
+                    if (obj.comp_mask & CompDrawable) {
+                        const auto *mesh = obj.dr->mesh.get();
 
                         const Ren::TriGroup *s = &mesh->group(0);
                         while (s->offset != -1) {
@@ -612,7 +612,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 } else {
                     const auto& obj = scene.objects[n->prim_index];
 
-                    const uint32_t drawable_flags = CompMesh | CompTransform;
+                    const uint32_t drawable_flags = CompDrawable | CompTransform;
                     if ((obj.comp_mask & drawable_flags) == drawable_flags) {
                         const auto* tr = obj.tr.get();
 
@@ -620,7 +620,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             shadow_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
 
                         const Ren::Mat4f & world_from_object = tr->mat;
-                        const Ren::Mesh *mesh = obj.mesh.get();
+                        const Ren::Mesh *mesh = obj.dr->mesh.get();
                         
                         auto world_from_object_trans = Ren::Transpose(world_from_object);
 
@@ -772,7 +772,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     } else {
                         const auto& obj = scene.objects[n->prim_index];
 
-                        const uint32_t drawable_flags = CompMesh | CompTransform;
+                        const uint32_t drawable_flags = CompDrawable | CompTransform;
                         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
                             const auto* tr = obj.tr.get();
 
@@ -780,7 +780,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 shadow_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
 
                             const Ren::Mat4f & world_from_object = tr->mat;
-                            const Ren::Mesh *mesh = obj.mesh.get();
+                            const Ren::Mesh *mesh = obj.dr->mesh.get();
 
                             auto world_from_object_trans = Ren::Transpose(world_from_object);
 

@@ -493,9 +493,9 @@ void SceneManager::InitScene_PT(bool _override) {
 
     // Add objects
     for (auto &obj : scene_data_.objects) {
-        const uint32_t drawable_flags = CompMesh | CompTransform;
+        const uint32_t drawable_flags = CompDrawable | CompTransform;
         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
-            const auto *mesh = obj.mesh.get();
+            const auto *mesh = obj.dr->mesh.get();
             const char *mesh_name = mesh->name();
 
             auto mesh_it = loaded_meshes.find(mesh_name);
