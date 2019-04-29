@@ -16,7 +16,7 @@ void test_sparse_array() {
 
     {
         // Resize method
-        SparseArray<int> s1;
+        Ren::SparseArray<int> s1;
         require(s1.Size() == 0);
         s1.Resize(128);
         require(s1.Size() == 0);
@@ -25,7 +25,7 @@ void test_sparse_array() {
 
     {
         // Adding elements to array
-        SparseArray<int> s1;
+        Ren::SparseArray<int> s1;
         size_t i1 = s1.Add(1);
         size_t i2 = s1.Add(12);
         size_t i3 = s1.Add(45);
@@ -66,7 +66,7 @@ void test_sparse_array() {
     {
         // Iteration test
         auto data = GenTestData(100);
-        SparseArray<int> s1;
+        Ren::SparseArray<int> s1;
         s1.Resize(100);
         for (auto v : data) {
             s1.Add(v);
