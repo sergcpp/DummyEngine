@@ -726,7 +726,7 @@ void GSDrawTest::Update(uint64_t dt_us) {
         invalidate_view_ = true;
     }
 
-    uint32_t mask = CompTransform | CompDrawable;
+    uint32_t mask = CompTransformBit | CompDrawableBit;
 #if 0
     static float t = 0.0f;
     t += 0.04f;
@@ -764,7 +764,7 @@ void GSDrawTest::Update(uint64_t dt_us) {
         tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
     }
 
-    scene_manager_->InvalidateObjects(monkey_ids, 5, CompTransform);
+    scene_manager_->InvalidateObjects(monkey_ids, 5, CompTransformBit);
 #endif
 }
 
@@ -995,10 +995,11 @@ void GSDrawTest::UpdateFrame(int list_index) {
 
     if (!probes_to_update_.empty() && !probe_to_render_ && !probe_to_update_sh_) {
         auto *probe_obj = scene_manager_->GetObject(probes_to_update_.back());
-        auto *probe = probe_obj->pr.get();
+        auto *probe = (LightProbe *)scene_manager_->scene_data().comp_store[CompProbe]->Get(probe_obj->components[CompProbe]);
+        auto *probe_tr = (Transform *)scene_manager_->scene_data().comp_store[CompTransform]->Get(probe_obj->components[CompTransform]);
 
         Ren::Vec4f pos = { probe->offset[0], probe->offset[1], probe->offset[2], 1.0f };
-        pos = probe_obj->tr->mat * pos;
+        pos = probe_tr->mat * pos;
         pos /= pos[3];
 
         const Ren::Vec3f axises[] = { {  1.0f,  0.0f,  0.0f },

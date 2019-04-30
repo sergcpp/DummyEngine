@@ -67,8 +67,8 @@ void SceneManager::RebuildBVH() {
     primitives.reserve(scene_data_.objects.size());
 
     for (const auto &obj : scene_data_.objects) {
-        if (obj.comp_mask & CompTransform) {
-            const auto &tr = obj.tr;
+        if (obj.comp_mask & CompTransformBit) {
+            const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
             const Ren::Vec3f d = tr->bbox_max_ws - tr->bbox_min_ws;
             primitives.push_back({ tr->bbox_min_ws - BoundsMargin * d, tr->bbox_max_ws + BoundsMargin * d });
         }
@@ -130,7 +130,8 @@ void SceneManager::RebuildBVH() {
             uint32_t new_node_index = (uint32_t)scene_data_.nodes.size();
 
             for (const uint32_t i : split_data.left_indices) {
-                scene_data_.objects[i].tr->node_index = new_node_index;
+                auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(scene_data_.objects[i].components[CompTransform]);
+                tr->node_index = new_node_index;
             }
 
             assert(split_data.left_indices.size() == 1 && "Wrong split!");
@@ -244,8 +245,8 @@ void SceneManager::UpdateObjects() {
         auto &obj = scene_data_.objects[obj_index];
         obj.last_change_mask = obj.change_mask;
 
-        if (obj.change_mask & CompTransform) {
-            auto *tr = obj.tr.get();
+        if (obj.change_mask & CompTransformBit) {
+            auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
             tr->UpdateBBox();
             if (tr->node_index != 0xffffffff) {
                 const auto &node = nodes[tr->node_index];
@@ -259,7 +260,7 @@ void SceneManager::UpdateObjects() {
 
                 if (is_fully_inside) {
                     // Update is not needed (object is inside of node bounds)
-                    obj.change_mask ^= CompTransform;
+                    obj.change_mask ^= CompTransformBit;
                 } else {
                     // Object is out of node bounds, remove node and re-insert it later
                     RemoveNode(tr->node_index);
@@ -278,8 +279,8 @@ void SceneManager::UpdateObjects() {
     for (const uint32_t obj_index : changed_objects_) {
         auto &obj = scene_data_.objects[obj_index];
 
-        if (obj.change_mask & CompTransform) {
-            auto *tr = obj.tr.get();
+        if (obj.change_mask & CompTransformBit) {
+            auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
             tr->node_index = free_nodes[free_nodes_pos++];
 
             auto &new_node = nodes[tr->node_index];
@@ -436,7 +437,7 @@ void SceneManager::UpdateObjects() {
 #undef left_child_of
 #undef right_child_of
 
-            obj.change_mask ^= CompTransform;
+            obj.change_mask ^= CompTransformBit;
         }
     }
 

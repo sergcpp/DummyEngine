@@ -122,9 +122,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             } else {
                 const auto &obj = scene.objects[n->prim_index];
 
-                const uint32_t occluder_flags = CompTransform | CompOccluder;
+                const uint32_t occluder_flags = CompTransformBit | CompOccluderBit;
                 if ((obj.comp_mask & occluder_flags) == occluder_flags) {
-                    const auto *tr = obj.tr.get();
+                    const auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(obj.components[CompTransform]);
 
                     // Node has slightly enlarged bounds, so we need to check object's bounding box here
                     if (!skip_check &&
@@ -135,7 +135,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     const Ren::Mat4f view_from_object = view_from_world * world_from_object,
                                      clip_from_object = clip_from_view * view_from_object;
 
-                    const auto *mesh = obj.dr->mesh.get();
+                    const auto *occ = (Occluder *)scene.comp_store[CompOccluder]->Get(obj.components[CompOccluder]);
+                    const auto *mesh = occ->mesh.get();
 
                     SWcull_surf surf[16];
                     int surf_count = 0;
@@ -217,8 +218,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             } else {
                 const auto &obj = scene.objects[n->prim_index];
 
-                if ((obj.comp_mask & CompTransform) && (obj.comp_mask & (CompDrawable | CompLightSource | CompProbe))) {
-                    const auto *tr = obj.tr.get();
+                if ((obj.comp_mask & CompTransformBit) && (obj.comp_mask & (CompDrawableBit | CompLightSourceBit | CompProbeBit))) {
+                    const auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(obj.components[CompTransform]);
 
                     if (!skip_check) {
                         const float bbox_points[8][3] = { BBOX_POINTS(tr->bbox_min_ws, tr->bbox_max_ws) };
@@ -262,15 +263,17 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     auto &instance = list.instances.back();
                     memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
 
-                    if (obj.comp_mask & CompLightmap) {
-                        memcpy(&instance.lmap_transform[0], Ren::ValuePtr(obj.lm->xform), 4 * sizeof(float));
+                    if (obj.comp_mask & CompLightmapBit) {
+                        const auto *lm = (Lightmap *)scene.comp_store[CompLightmap]->Get(obj.components[CompLightmap]);
+                        memcpy(&instance.lmap_transform[0], Ren::ValuePtr(lm->xform), 4 * sizeof(float));
                     }
 
                     const Ren::Mat4f view_from_object = view_from_world * world_from_object,
                                      clip_from_object = clip_from_view * view_from_object;
 
-                    if (obj.comp_mask & CompDrawable) {
-                        const auto *mesh = obj.dr->mesh.get();
+                    if (obj.comp_mask & CompDrawableBit) {
+                        const auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
+                        const auto *mesh = dr->mesh.get();
 
                         const Ren::TriGroup *s = &mesh->group(0);
                         while (s->offset != -1) {
@@ -288,41 +291,36 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         }
                     }
 
-                    if (lighting_enabled && (obj.comp_mask & CompLightSource)) {
-                        for (int li = 0; li < LIGHTS_PER_OBJECT; li++) {
-                            if (!obj.ls[li]) break;
+                    if (lighting_enabled && (obj.comp_mask & CompLightSourceBit)) {
+                        const auto *light = (LightSource *)scene.comp_store[CompLightSource]->Get(obj.components[CompLightSource]);
 
-                            const auto *light = obj.ls[li].get();
+                        Ren::Vec4f pos = { light->offset[0], light->offset[1], light->offset[2], 1.0f };
+                        pos = world_from_object * pos;
+                        pos /= pos[3];
 
-                            Ren::Vec4f pos = { light->offset[0], light->offset[1], light->offset[2], 1.0f };
-                            pos = world_from_object * pos;
-                            pos /= pos[3];
+                        Ren::Vec4f dir = { -light->dir[0], -light->dir[1], -light->dir[2], 0.0f };
+                        dir = world_from_object * dir;
 
-                            Ren::Vec4f dir = { -light->dir[0], -light->dir[1], -light->dir[2], 0.0f };
-                            dir = world_from_object * dir;
-
+                        auto res = Ren::FullyVisible;
                                         
-                            if (!skip_check) {
-                                auto res = Ren::FullyVisible;
+                        if (!skip_check) {
+                            for (int k = 0; k < 6; k++) {
+                                const auto &plane = list.draw_cam.frustum_plane(k);
 
-                                for (int k = 0; k < 6; k++) {
-                                    const auto &plane = list.draw_cam.frustum_plane(k);
+                                float dist = plane.n[0] * pos[0] +
+                                             plane.n[1] * pos[1] +
+                                             plane.n[2] * pos[2] + plane.d;
 
-                                    float dist = plane.n[0] * pos[0] +
-                                                 plane.n[1] * pos[1] +
-                                                 plane.n[2] * pos[2] + plane.d;
-
-                                    if (dist < -light->influence) {
-                                        res = Ren::Invisible;
-                                        break;
-                                    } else if (std::abs(dist) < light->influence) {
-                                        res = Ren::PartiallyVisible;
-                                    }
+                                if (dist < -light->influence) {
+                                    res = Ren::Invisible;
+                                    break;
+                                } else if (std::abs(dist) < light->influence) {
+                                    res = Ren::PartiallyVisible;
                                 }
-
-                                if (res == Ren::Invisible) continue;
                             }
+                        }
 
+                        if (res != Ren::Invisible) {
                             list.light_sources.emplace_back();
                             litem_to_lsource_.push_back(light);
 
@@ -337,85 +335,81 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         }
                     }
 
-                    if (decals_enabled && (obj.comp_mask & CompDecal)) {
+                    if (decals_enabled && (obj.comp_mask & CompDecalBit)) {
                         Ren::Mat4f object_from_world = Ren::Inverse(world_from_object);
 
-                        for (int di = 0; di < DECALS_PER_OBJECT; di++) {
-                            if (!obj.de[di]) break;
+                        const auto *decal = (Decal *)scene.comp_store[CompDecal]->Get(obj.components[CompDecal]);
 
-                            const auto *decal = obj.de[di].get();
+                        const Ren::Mat4f &view_from_object = decal->view,
+                                         &clip_from_view = decal->proj;
 
-                            const Ren::Mat4f &view_from_object = decal->view,
-                                             &clip_from_view = decal->proj;
+                        Ren::Mat4f view_from_world = view_from_object * object_from_world,
+                                   clip_from_world = clip_from_view * view_from_world;
 
-                            Ren::Mat4f view_from_world = view_from_object * object_from_world,
-                                       clip_from_world = clip_from_view * view_from_world;
+                        Ren::Mat4f world_from_clip = Ren::Inverse(clip_from_world);
 
-                            Ren::Mat4f world_from_clip = Ren::Inverse(clip_from_world);
+                        Ren::Vec4f bbox_points[] = {
+                            { -1.0f, -1.0f, -1.0f, 1.0f }, { -1.0f, 1.0f, -1.0f, 1.0f },
+                            { 1.0f, 1.0f, -1.0f, 1.0f }, { 1.0f, -1.0f, -1.0f, 1.0f },
 
-                            Ren::Vec4f bbox_points[] = {
-                                { -1.0f, -1.0f, -1.0f, 1.0f }, { -1.0f, 1.0f, -1.0f, 1.0f },
-                                { 1.0f, 1.0f, -1.0f, 1.0f }, { 1.0f, -1.0f, -1.0f, 1.0f },
+                            { -1.0f, -1.0f, 1.0f, 1.0f }, { -1.0f, 1.0f, 1.0f, 1.0f },
+                            { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, -1.0f, 1.0f, 1.0f }
+                        };
 
-                                { -1.0f, -1.0f, 1.0f, 1.0f }, { -1.0f, 1.0f, 1.0f, 1.0f },
-                                { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, -1.0f, 1.0f, 1.0f }
-                            };
+                        Ren::Vec3f bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
+                                   bbox_max = Ren::Vec3f{ std::numeric_limits<float>::lowest() };
 
-                            Ren::Vec3f bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
-                                       bbox_max = Ren::Vec3f{ std::numeric_limits<float>::lowest() };
+                        for (int k = 0; k < 8; k++) {
+                            bbox_points[k] = world_from_clip * bbox_points[k];
+                            bbox_points[k] /= bbox_points[k][3];
 
-                            for (int k = 0; k < 8; k++) {
-                                bbox_points[k] = world_from_clip * bbox_points[k];
-                                bbox_points[k] /= bbox_points[k][3];
+                            bbox_min = Ren::Min(bbox_min, Ren::Vec3f{ bbox_points[k] });
+                            bbox_max = Ren::Max(bbox_max, Ren::Vec3f{ bbox_points[k] });
+                        }
 
-                                bbox_min = Ren::Min(bbox_min, Ren::Vec3f{ bbox_points[k] });
-                                bbox_max = Ren::Max(bbox_max, Ren::Vec3f{ bbox_points[k] });
-                            }
+                        auto res = Ren::FullyVisible;
 
-                            auto res = Ren::FullyVisible;
+                        if (!skip_check) {
+                            for (int p = Ren::LeftPlane; p <= Ren::FarPlane; p++) {
+                                const auto &plane = list.draw_cam.frustum_plane(p);
 
-                            if (!skip_check) {
-                                for (int p = Ren::LeftPlane; p <= Ren::FarPlane; p++) {
-                                    const auto &plane = list.draw_cam.frustum_plane(p);
+                                int in_count = 8;
 
-                                    int in_count = 8;
-
-                                    for (int k = 0; k < 8; k++) {
-                                        float dist = plane.n[0] * bbox_points[k][0] +
-                                                     plane.n[1] * bbox_points[k][1] +
-                                                     plane.n[2] * bbox_points[k][2] + plane.d;
-                                        if (dist < 0.0f) {
-                                            in_count--;
-                                        }
-                                    }
-
-                                    if (in_count == 0) {
-                                        res = Ren::Invisible;
-                                        break;
-                                    } else if (in_count != 8) {
-                                        res = Ren::PartiallyVisible;
+                                for (int k = 0; k < 8; k++) {
+                                    float dist = plane.n[0] * bbox_points[k][0] +
+                                                    plane.n[1] * bbox_points[k][1] +
+                                                    plane.n[2] * bbox_points[k][2] + plane.d;
+                                    if (dist < 0.0f) {
+                                        in_count--;
                                     }
                                 }
+
+                                if (in_count == 0) {
+                                    res = Ren::Invisible;
+                                    break;
+                                } else if (in_count != 8) {
+                                    res = Ren::PartiallyVisible;
+                                }
                             }
+                        }
 
-                            if (res != Ren::Invisible) {
-                                list.decals.emplace_back();
-                                ditem_to_decal_.push_back(decal);
-                                decals_boxes_.push_back({ bbox_min, bbox_max });
+                        if (res != Ren::Invisible) {
+                            list.decals.emplace_back();
+                            ditem_to_decal_.push_back(decal);
+                            decals_boxes_.push_back({ bbox_min, bbox_max });
 
-                                Ren::Mat4f clip_from_world_transposed = Ren::Transpose(clip_from_world);
+                            Ren::Mat4f clip_from_world_transposed = Ren::Transpose(clip_from_world);
 
-                                auto &de = list.decals.back();
-                                memcpy(&de.mat[0][0], &clip_from_world_transposed[0][0], 12 * sizeof(float));
-                                memcpy(&de.diff[0], &decal->diff[0], 4 * sizeof(float));
-                                memcpy(&de.norm[0], &decal->norm[0], 4 * sizeof(float));
-                                memcpy(&de.spec[0], &decal->spec[0], 4 * sizeof(float));
-                            }
+                            auto &de = list.decals.back();
+                            memcpy(&de.mat[0][0], &clip_from_world_transposed[0][0], 12 * sizeof(float));
+                            memcpy(&de.diff[0], &decal->diff[0], 4 * sizeof(float));
+                            memcpy(&de.norm[0], &decal->norm[0], 4 * sizeof(float));
+                            memcpy(&de.spec[0], &decal->spec[0], 4 * sizeof(float));
                         }
                     }
 
-                    if (obj.comp_mask & CompProbe) {
-                        const auto *probe = obj.pr.get();
+                    if (obj.comp_mask & CompProbeBit) {
+                        const auto *probe = (LightProbe *)scene.comp_store[CompProbe]->Get(obj.components[CompProbe]);
                         
                         Ren::Vec4f pos = { probe->offset[0], probe->offset[1], probe->offset[2], 1.0f };
                         pos = world_from_object * pos;
@@ -612,15 +606,16 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 } else {
                     const auto& obj = scene.objects[n->prim_index];
 
-                    const uint32_t drawable_flags = CompDrawable | CompTransform;
+                    const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
                     if ((obj.comp_mask & drawable_flags) == drawable_flags) {
-                        const auto* tr = obj.tr.get();
+                        const auto* tr = (Transform *)scene.comp_store[CompTransform]->Get(obj.components[CompTransform]);
 
                         if (!skip_check &&
                             shadow_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
 
-                        const Ren::Mat4f & world_from_object = tr->mat;
-                        const Ren::Mesh *mesh = obj.dr->mesh.get();
+                        const auto &world_from_object = tr->mat;
+                        const auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
+                        const auto *mesh = dr->mesh.get();
                         
                         auto world_from_object_trans = Ren::Transpose(world_from_object);
 
@@ -772,15 +767,16 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     } else {
                         const auto& obj = scene.objects[n->prim_index];
 
-                        const uint32_t drawable_flags = CompDrawable | CompTransform;
+                        const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
                         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
-                            const auto* tr = obj.tr.get();
+                            const auto* tr = (Transform *)scene.comp_store[CompTransform]->Get(obj.components[CompTransform]);
 
                             if (!skip_check &&
                                 shadow_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
 
-                            const Ren::Mat4f & world_from_object = tr->mat;
-                            const Ren::Mesh *mesh = obj.dr->mesh.get();
+                            const auto &world_from_object = tr->mat;
+                            const auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
+                            const auto *mesh = dr->mesh.get();
 
                             auto world_from_object_trans = Ren::Transpose(world_from_object);
 
@@ -801,7 +797,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             batch.instance_count = 1;
                         }
 
-                        if (obj.last_change_mask & CompTransform) {
+                        if (obj.last_change_mask & CompTransformBit) {
                             light_sees_dynamic_objects = true;
                         }
                     }

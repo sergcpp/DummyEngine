@@ -20,86 +20,6 @@
         "house_04" : "house_04.mesh",
         "monk" : "monk.mesh"
     },
-    "lights" : {
-        "l0" : {
-            "offset" : [ 0.0, 12.0, 0.0 ],
-            "color" : [ 10000.0, 9000.0, 7000.0 ],
-            "radius" : 0.01,
-            "direction" : [ 0.0, -1.0, 0.0 ],
-            "angle" : 60.0,
-            "cast_shadow" : true
-        },
-        "l1" : {
-            "offset" : [ 0.0, 5.0, 5.0 ],
-            "color" : [ 1000.0, 900.0, 700.0 ],
-            "radius" : 0.01
-        },
-        "l2" : {
-            "offset" : [ 0.0, 5.0, -5.0 ],
-            "color" : [ 1000.0, 900.0, 700.0 ],
-            "radius" : 0.01
-        },
-        "l3" : {
-            "offset" : [ -6.5, 10.0, 0.0 ],
-            "color" : [ 200000.0, 0.0, 0.0 ],
-            "radius" : 0.0005
-        },
-        "l4" : {
-            "offset" : [ -6.5, 10.0, 2.0 ],
-            "color" : [ 0.0, 200000.0, 0.0 ],
-            "radius" : 0.0005
-        },
-        "l5" : {
-            "offset" : [ -6.5, 10.0, 4.0 ],
-            "color" : [ 0.0, 0.0, 200000.0 ],
-            "radius" : 0.0005
-        },
-        "l6" : {
-            "offset" : [ -6.5, 10.0, -6.0 ],
-            "color" : [ 200000.0, 0.0, 0.0 ],
-            "radius" : 0.0005
-        },
-        "l7" : {
-            "offset" : [ -6.5, 10.0, -4.0 ],
-            "color" : [ 0.0, 200000.0, 0.0 ],
-            "radius" : 0.0005
-        },
-        "l8" : {
-            "offset" : [ -6.5, 10.0, -2.0 ],
-            "color" : [ 0.0, 0.0, 200000.0 ],
-            "radius" : 0.0005
-        },
-        "l9" : {
-            "offset" : [ -6.5, 8.0, 1.0 ],
-            "color" : [ 200000.0, 0.0, 0.0 ],
-            "radius" : 0.0005
-        },
-        "l10" : {
-            "offset" : [ -6.5, 8.0, 3.0 ],
-            "color" : [ 0.0, 200000.0, 0.0 ],
-            "radius" : 0.0005
-        },
-        "l11" : {
-            "offset" : [ -6.5, 8.0, 5.0 ],
-            "color" : [ 0.0, 0.0, 200000.0 ],
-            "radius" : 0.0005
-        },
-        "l12" : {
-            "offset" : [ -6.5, 8.0, -5.0 ],
-            "color" : [ 200000.0, 0.0, 0.0 ],
-            "radius" : 0.0005
-        },
-        "l13" : {
-            "offset" : [ -6.5, 8.0, -3.0 ],
-            "color" : [ 0.0, 200000.0, 0.0 ],
-            "radius" : 0.0005
-        },
-        "l14" : {
-            "offset" : [ -6.5, 8.0, -1.0 ],
-            "color" : [ 0.0, 0.0, 200000.0 ],
-            "radius" : 0.0005
-        }
-    },
     "decals" : {
         "d0" : {
             "pos" : [ 6.0, 0.5, 0.0 ],
@@ -120,319 +40,409 @@
     },
     "objects" : [
         {
-            "pos" : [ 0.0, 0.0, 0.0 ],
-            "mesh" : "rails",
-            "lightmap_res1" : 512,
-            "lights" : [
-                {
-                    "offset" : [ 0.0, 12.0, 0.0 ],
-                    "color" : [ 10000.0, 9000.0, 7000.0 ],
-                    "radius" : 0.01,
-                    "direction" : [ 0.0, -1.0, 0.0 ],
-                    "angle" : 60.0,
-                    "cast_shadow" : true
-                }
-            ],
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+            },
+            "drawable" : {
+                "mesh" : "rails",
+            },
+            "light" : {
+                "offset" : [ 0.0, 12.0, 0.0 ],
+                "color" : [ 10000.0, 9000.0, 7000.0 ],
+                "radius" : 0.01,
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60.0,
+                "cast_shadow" : true
+            },
         },
         {
-            "pos" : [ 0.0, 0.0, 0.0 ],
-            "mesh" : "sidewalk",
-            "lightmap_res1" : 512,
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+            },
+            "drawable" : {
+                "mesh" : "sidewalk",
+            },
+            "decals" : [ "d0", "d1" ],
+            "decal" : {
+                "pos" : [ 6.0, 0.5, 0.0 ],
+                "rot" : [ -90.0, 0.0, 0.0 ],
+                "dim" : [ 1.0, 1.0, 1.0 ],
+                "diff" : "manhole01_diff.png",
+                "norm" : "manhole01_norm.png",
+                "spec" : "manhole01_spec.png"
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 16.0 ],
+            },
+            "drawable" : {
+                "mesh" : "rails",
+            },
+            "light" : {
+                "offset" : [ 0.0, 12.0, 0.0 ],
+                "color" : [ 10000.0, 9000.0, 7000.0 ],
+                "radius" : 0.01,
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60.0,
+                "cast_shadow" : true
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 16.0 ],
+            },
+            "drawable" : {
+                "mesh" : "sidewalk",
+            },
             "decals" : [ "d0", "d1" ]
         },
         {
-            "pos" : [ 0.0, 0.0, 16.0 ],
-            "mesh" : "rails",
-            "lightmap_res1" : 512,
-            "lights" : [
-                {
-                    "offset" : [ 0.0, 12.0, 0.0 ],
-                    "color" : [ 10000.0, 9000.0, 7000.0 ],
-                    "radius" : 0.01,
-                    "direction" : [ 0.0, -1.0, 0.0 ],
-                    "angle" : 60.0,
-                    "cast_shadow" : true
-                }
-            ],
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 32.0 ],
+            },
+            "drawable" : {
+                "mesh" : "rails",
+            },
+            "light" : {
+                "offset" : [ 0.0, 12.0, 0.0 ],
+                "color" : [ 10000.0, 9000.0, 7000.0 ],
+                "radius" : 0.01,
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60.0,
+                "cast_shadow" : true
+            },
         },
         {
-            "pos" : [ 0.0, 0.0, 16.0 ],
-            "mesh" : "sidewalk",
-            "lightmap_res1" : 512,
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 32.0 ],
+            },
+            "drawable" : {
+                "mesh" : "sidewalk",
+            },
             "decals" : [ "d0", "d1" ]
         },
         {
-            "pos" : [ 0.0, 0.0, 32.0 ],
-            "mesh" : "rails",
-            "lightmap_res1" : 512,
-            "lights" : [
-                {
-                    "offset" : [ 0.0, 12.0, 0.0 ],
-                    "color" : [ 10000.0, 9000.0, 7000.0 ],
-                    "radius" : 0.01,
-                    "direction" : [ 0.0, -1.0, 0.0 ],
-                    "angle" : 60.0,
-                    "cast_shadow" : true
-                }
-            ],
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 48.0 ],
+            },
+            "drawable" : {
+                "mesh" : "rails",
+            },
+            "light" : {
+                "offset" : [ 0.0, 12.0, 0.0 ],
+                "color" : [ 10000.0, 9000.0, 7000.0 ],
+                "radius" : 0.01,
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60.0,
+                "cast_shadow" : true
+            },
         },
         {
-            "pos" : [ 0.0, 0.0, 32.0 ],
-            "mesh" : "sidewalk",
-            "lightmap_res1" : 512,
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 48.0 ],
+            },
+            "drawable" : {
+                "mesh" : "sidewalk",
+            },
             "decals" : [ "d0", "d1" ]
         },
         {
-            "pos" : [ 0.0, 0.0, 48.0 ],
-            "mesh" : "rails",
-            "lightmap_res1" : 512,
-            "lights" : [
-                {
-                    "offset" : [ 0.0, 12.0, 0.0 ],
-                    "color" : [ 10000.0, 9000.0, 7000.0 ],
-                    "radius" : 0.01,
-                    "direction" : [ 0.0, -1.0, 0.0 ],
-                    "angle" : 60.0,
-                    "cast_shadow" : true
-                }
-            ],
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 64.0 ],
+            },
+            "drawable" : {
+                "mesh" : "rails",
+            },
+            "light" : {
+                "offset" : [ 0.0, 12.0, 0.0 ],
+                "color" : [ 10000.0, 9000.0, 7000.0 ],
+                "radius" : 0.01,
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60.0,
+                "cast_shadow" : true
+            },
         },
         {
-            "pos" : [ 0.0, 0.0, 48.0 ],
-            "mesh" : "sidewalk",
-            "lightmap_res1" : 512,
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 64.0 ],
+            },
+            "drawable" : {
+                "mesh" : "sidewalk",
+            },
             "decals" : [ "d0", "d1" ]
         },
         {
-            "pos" : [ 0.0, 0.0, 64.0 ],
-            "mesh" : "rails",
-            "lightmap_res1" : 512,
-            "lights" : [
-                {
-                    "offset" : [ 0.0, 12.0, 0.0 ],
-                    "color" : [ 10000.0, 9000.0, 7000.0 ],
-                    "radius" : 0.01,
-                    "direction" : [ 0.0, -1.0, 0.0 ],
-                    "angle" : 60.0,
-                    "cast_shadow" : true
-                }
-            ],
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 80.0 ],
+            },
+            "drawable" : {
+                "mesh" : "rails",
+            },
+            "light" : {
+                "offset" : [ 0.0, 12.0, 0.0 ],
+                "color" : [ 10000.0, 9000.0, 7000.0 ],
+                "radius" : 0.01,
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60.0,
+                "cast_shadow" : true
+            },
         },
         {
-            "pos" : [ 0.0, 0.0, 64.0 ],
-            "mesh" : "sidewalk",
-            "lightmap_res1" : 512,
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 80.0 ],
+            },
+            "drawable" : {
+                "mesh" : "sidewalk",
+            },
             "decals" : [ "d0", "d1" ]
         },
         {
-            "pos" : [ 0.0, 0.0, 80.0 ],
-            "mesh" : "rails",
-            "lightmap_res1" : 512,
-            "lights" : [
-                {
-                    "offset" : [ 0.0, 12.0, 0.0 ],
-                    "color" : [ 10000.0, 9000.0, 7000.0 ],
-                    "radius" : 0.01,
-                    "direction" : [ 0.0, -1.0, 0.0 ],
-                    "angle" : 60.0,
-                    "cast_shadow" : true
-                }
-            ],
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 96.0 ],
+            },
+            "drawable" : {
+                "mesh" : "rails",
+            },
+            "light" : {
+                "offset" : [ 0.0, 12.0, 0.0 ],
+                "color" : [ 10000.0, 9000.0, 7000.0 ],
+                "radius" : 0.01,
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60.0,
+                "cast_shadow" : true
+            },
         },
         {
-            "pos" : [ 0.0, 0.0, 80.0 ],
-            "mesh" : "sidewalk",
-            "lightmap_res1" : 512,
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 96.0 ],
+            },
+            "drawable" : {
+                "mesh" : "sidewalk",
+            },
             "decals" : [ "d0", "d1" ]
         },
         {
-            "pos" : [ 0.0, 0.0, 96.0 ],
-            "mesh" : "rails",
-            "lightmap_res1" : 512,
-            "lights" : [
-                {
-                    "offset" : [ 0.0, 12.0, 0.0 ],
-                    "color" : [ 10000.0, 9000.0, 7000.0 ],
-                    "radius" : 0.01,
-                    "direction" : [ 0.0, -1.0, 0.0 ],
-                    "angle" : 60.0,
-                    "cast_shadow" : true
-                }
-            ],
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 112.0 ],
+            },
+            "drawable" : {
+                "mesh" : "rails",
+            },
+            "light" : {
+                "offset" : [ 0.0, 12.0, 0.0 ],
+                "color" : [ 10000.0, 9000.0, 7000.0 ],
+                "radius" : 0.01,
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60.0,
+                "cast_shadow" : true
+            },
         },
         {
-            "pos" : [ 0.0, 0.0, 96.0 ],
-            "mesh" : "sidewalk",
-            "lightmap_res1" : 512,
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 112.0 ],
+            },
+            "drawable" : {
+                "mesh" : "sidewalk",
+            },
             "decals" : [ "d0", "d1" ]
         },
         {
-            "pos" : [ 0.0, 0.0, 112.0 ],
-            "mesh" : "rails",
-            "lightmap_res1" : 512,
-            "lights" : [
-                {
-                    "offset" : [ 0.0, 12.0, 0.0 ],
-                    "color" : [ 10000.0, 9000.0, 7000.0 ],
-                    "radius" : 0.01,
-                    "direction" : [ 0.0, -1.0, 0.0 ],
-                    "angle" : 60.0,
-                    "cast_shadow" : true
-                }
-            ],
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 128.0 ],
+            },
+            "drawable" : {
+                "mesh" : "rails",
+            },
+            "light" : {
+                "offset" : [ 0.0, 12.0, 0.0 ],
+                "color" : [ 10000.0, 9000.0, 7000.0 ],
+                "radius" : 0.01,
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60.0,
+                "cast_shadow" : true
+            },
         },
         {
-            "pos" : [ 0.0, 0.0, 112.0 ],
-            "mesh" : "sidewalk",
-            "lightmap_res1" : 512,
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 128.0 ],
+            },
+            "drawable" : {
+                "mesh" : "sidewalk",
+            },
             "decals" : [ "d0", "d1" ]
         },
         {
-            "pos" : [ 0.0, 0.0, 128.0 ],
-            "mesh" : "rails",
-            "lightmap_res1" : 512,
-            "lights" : [
-                {
-                    "offset" : [ 0.0, 12.0, 0.0 ],
-                    "color" : [ 10000.0, 9000.0, 7000.0 ],
-                    "radius" : 0.01,
-                    "direction" : [ 0.0, -1.0, 0.0 ],
-                    "angle" : 60.0,
-                    "cast_shadow" : true
-                }
-            ],
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 144.0 ],
+            },
+            "drawable" : {
+                "mesh" : "rails",
+            },
+            "light" : {
+                "offset" : [ 0.0, 12.0, 0.0 ],
+                "color" : [ 10000.0, 9000.0, 7000.0 ],
+                "radius" : 0.01,
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60.0,
+                "cast_shadow" : true
+            },
         },
         {
-            "pos" : [ 0.0, 0.0, 128.0 ],
-            "mesh" : "sidewalk",
-            "lightmap_res1" : 512,
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 144.0 ],
+            },
+            "drawable" : {
+                "mesh" : "sidewalk",
+            },
             "decals" : [ "d0", "d1" ]
         },
         {
-            "pos" : [ 0.0, 0.0, 144.0 ],
-            "mesh" : "rails",
-            "lightmap_res1" : 512,
-            "lights" : [
-                {
-                    "offset" : [ 0.0, 12.0, 0.0 ],
-                    "color" : [ 10000.0, 9000.0, 7000.0 ],
-                    "radius" : 0.01,
-                    "direction" : [ 0.0, -1.0, 0.0 ],
-                    "angle" : 60.0,
-                    "cast_shadow" : true
-                }
-            ],
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 160.0 ],
+            },
+            "drawable" : {
+                "mesh" : "rails",
+            },
+            "light" : {
+                "offset" : [ 0.0, 12.0, 0.0 ],
+                "color" : [ 10000.0, 9000.0, 7000.0 ],
+                "radius" : 0.01,
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60.0,
+                "cast_shadow" : true
+            },
         },
         {
-            "pos" : [ 0.0, 0.0, 144.0 ],
-            "mesh" : "sidewalk",
-            "lightmap_res1" : 512,
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 160.0 ],
+            },
+            "drawable" : {
+                "mesh" : "sidewalk",
+            },
             "decals" : [ "d0", "d1" ]
         },
         {
-            "pos" : [ 0.0, 0.0, 160.0 ],
-            "mesh" : "rails",
-            "lightmap_res1" : 512,
-            "lights" : [
-                {
-                    "offset" : [ 0.0, 12.0, 0.0 ],
-                    "color" : [ 10000.0, 9000.0, 7000.0 ],
-                    "radius" : 0.01,
-                    "direction" : [ 0.0, -1.0, 0.0 ],
-                    "angle" : 60.0,
-                    "cast_shadow" : true
-                }
-            ],
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 176.0 ],
+            },
+            "drawable" : {
+                "mesh" : "rails",
+            },
+            "light" : {
+                "offset" : [ 0.0, 12.0, 0.0 ],
+                "color" : [ 10000.0, 9000.0, 7000.0 ],
+                "radius" : 0.01,
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60.0,
+                "cast_shadow" : true
+            },
         },
         {
-            "pos" : [ 0.0, 0.0, 160.0 ],
-            "mesh" : "sidewalk",
-            "lightmap_res1" : 512,
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 176.0 ],
+            },
+            "drawable" : {
+                "mesh" : "sidewalk",
+            },
             "decals" : [ "d0", "d1" ]
         },
         {
-            "pos" : [ 0.0, 0.0, 176.0 ],
-            "mesh" : "rails",
-            "lightmap_res1" : 512,
-            "lights" : [
-                {
-                    "offset" : [ 0.0, 12.0, 0.0 ],
-                    "color" : [ 10000.0, 9000.0, 7000.0 ],
-                    "radius" : 0.01,
-                    "direction" : [ 0.0, -1.0, 0.0 ],
-                    "angle" : 60.0,
-                    "cast_shadow" : true
-                }
-            ],
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 192.0 ],
+            },
+            "drawable" : {
+                "mesh" : "rails",
+            },
+            "light" : {
+                "offset" : [ 0.0, 12.0, 0.0 ],
+                "color" : [ 10000.0, 9000.0, 7000.0 ],
+                "radius" : 0.01,
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60.0,
+                "cast_shadow" : true
+            },
         },
         {
-            "pos" : [ 0.0, 0.0, 176.0 ],
-            "mesh" : "sidewalk",
-            "lightmap_res1" : 512,
-            "decals" : [ "d0", "d1" ]
-        },
-        {
-            "pos" : [ 0.0, 0.0, 192.0 ],
-            "mesh" : "rails",
-            "lightmap_res1" : 512,
-            "lights" : [
-                {
-                    "offset" : [ 0.0, 12.0, 0.0 ],
-                    "color" : [ 10000.0, 9000.0, 7000.0 ],
-                    "radius" : 0.01,
-                    "direction" : [ 0.0, -1.0, 0.0 ],
-                    "angle" : 60.0,
-                    "cast_shadow" : true
-                }
-            ],
-        },
-        {
-            "pos" : [ 0.0, 0.0, 192.0 ],
-            "mesh" : "sidewalk",
-            "lightmap_res1" : 512,
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 192.0 ],
+            },
+            "drawable" : {
+                "mesh" : "sidewalk",
+            },
             "decals" : [ "d0", "d1" ]
         },
         
         
         {
-            "pos" : [ 12.4276, 0.0, 1.15319 ],
-            "mesh" : "main_house",
-            "lightmap_res1" : 512,
+            "transform" : {
+                "pos" : [ 12.4276, 0.0, 1.15319 ],
+            },
+            "drawable" : {
+                "mesh" : "main_house",
+            }
         },
         {
-            "pos" : [ 14.2315, 0.0, 22.0001 ],
-            "mesh" : "house_04",
-            "lightmap_res1" : 512,
+            "transform" : {
+                "pos" : [ 14.2315, 0.0, 22.0001 ],
+            },
+            "drawable" : {
+                "mesh" : "house_04",
+            },
         },
         {
-            "pos" : [ 0.0, 2.0, 8.0 ],
-            "mesh" : "monk"
+            "transform" : {
+                "pos" : [ 0.0, 2.0, 8.0 ],
+            },
+            "drawable" : {
+                "mesh" : "monk"
+            }
         },
         {
-            "pos" : [ 3.0, 2.0, 8.0 ],
-            "mesh" : "monk"
+            "transform" : {
+                "pos" : [ 3.0, 2.0, 8.0 ],
+            },
+            "drawable" : {
+                "mesh" : "monk"
+            }
         },
         {
-            "pos" : [ -3.0, 2.0, 8.0 ],
-            "mesh" : "monk"
+            "transform" : {
+                "pos" : [ -3.0, 2.0, 8.0 ],
+            },
+            "drawable" : {
+                "mesh" : "monk"
+            }
         },
         {
-            "pos" : [ 6.0, 2.0, 8.0 ],
-            "mesh" : "monk"
+            "transform" : {
+                "pos" : [ 6.0, 2.0, 8.0 ],
+            },
+            "drawable" : {
+                "mesh" : "monk"
+            }
         },
         {
-            "pos" : [ -6.0, 2.0, 8.0 ],
-            "mesh" : "monk"
+            "transform" : {
+                "pos" : [ -6.0, 2.0, 8.0 ],
+            },
+            "drawable" : {
+                "mesh" : "monk"
+            }
         },
         {
-            "pos" : [ 0.0, 5.0, 0.0 ],
+            "transform" : {
+                "pos" : [ 0.0, 5.0, 0.0 ],
+            },
             "probe" : {
                 "offset" : [ 0.0, 0.0, 0.0 ],
                 "radius" : 20.0
             }
         },
         {
-            "pos" : [ 0.0, 5.0, 15.0 ],
+            "transform" : {
+                "pos" : [ 0.0, 5.0, 15.0 ],
+            },
             "probe" : {
                 "offset" : [ 0.0, 0.0, 0.0 ],
                 "radius" : 20.0

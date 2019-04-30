@@ -49,6 +49,29 @@ const int PROBE_COUNT = 16;
 
 namespace SceneManagerInternal {
     std::unique_ptr<uint8_t[]> Decode_KTX_ASTC(const uint8_t *image_data, int data_size, int &width, int &height);
+
+    template <typename T>
+    class DefaultCompStorage : public CompStorage {
+        Ren::SparseArray<T> data_;
+    public:
+        const char *name() const override { return T::name(); }
+
+        uint32_t Create() override {
+            return (uint32_t)data_.Add();
+        }
+
+        void *Get(uint32_t i) override {
+            return (void *)data_.Get(i);
+        }
+
+        void ReadFromJs(const JsObject &js_obj, void *comp) override {
+            T::Read(js_obj, *(T *)comp);
+        }
+
+        void WriteToJs(const void *comp, JsObject &js_obj) override {
+            T::Write(*(T *)comp, js_obj);
+        }
+    };
 }
 
 SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads)
@@ -59,6 +82,7 @@ SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, S
            Ren::Vec3f{ 0.0f, 0.0f, 0.0f },
            Ren::Vec3f{ 0.0f, 1.0f, 0.0f }) {
     using namespace SceneManagerConstants;
+    using namespace SceneManagerInternal;
 
     {   // Alloc texture for decals atlas        
         Ren::eTexColorFormat formats[] = { Ren::RawRGBA8888, Ren::Undefined };
@@ -73,9 +97,36 @@ SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, S
     {   // Allocate cubemap array
         scene_data_.probe_storage.Resize(PROBE_RES, PROBE_COUNT);
     }
+
+    {   // Register default components
+        default_comp_storage_[CompTransform].reset(new DefaultCompStorage<Transform>);
+        RegisterComponent(CompTransform, default_comp_storage_[CompTransform].get());
+        
+        default_comp_storage_[CompDrawable].reset(new DefaultCompStorage<Drawable>);
+        RegisterComponent(CompDrawable, default_comp_storage_[CompDrawable].get());
+
+        default_comp_storage_[CompOccluder].reset(new DefaultCompStorage<Occluder>);
+        RegisterComponent(CompOccluder, default_comp_storage_[CompOccluder].get());
+
+        default_comp_storage_[CompLightmap].reset(new DefaultCompStorage<Lightmap>);
+        RegisterComponent(CompLightmap, default_comp_storage_[CompLightmap].get());
+
+        default_comp_storage_[CompLightSource].reset(new DefaultCompStorage<LightSource>);
+        RegisterComponent(CompLightSource, default_comp_storage_[CompLightSource].get());
+
+        default_comp_storage_[CompDecal].reset(new DefaultCompStorage<Decal>);
+        RegisterComponent(CompDecal, default_comp_storage_[CompDecal].get());
+
+        default_comp_storage_[CompProbe].reset(new DefaultCompStorage<LightProbe>);
+        RegisterComponent(CompProbe, default_comp_storage_[CompProbe].get());
+    }
 }
 
 SceneManager::~SceneManager() {
+}
+
+void SceneManager::RegisterComponent(uint32_t index, CompStorage *storage) {
+    scene_data_.comp_store[index] = storage;
 }
 
 void SceneManager::LoadScene(const JsObject &js_scene) {
@@ -85,9 +136,6 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     ClearScene();
 
     std::map<std::string, Ren::MeshRef> all_meshes;
-    //std::map<std::string, Ren::StorageRef<LightSource>> all_lights;
-    std::map<std::string, Ren::StorageRef<Decal>> all_decals;
-
     std::map<std::string, Ren::Vec4f> decals_textures;
 
     if (js_scene.Has("name")) {
@@ -150,307 +198,234 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         all_meshes[name] = ctx_.LoadMesh(name.c_str(), in_file_stream, std::bind(&SceneManager::OnLoadMaterial, this, _1));
     }
 
-    /*if (js_scene.Has("lights")) {
-        const JsObject &js_lights = (const JsObject &)js_scene.at("lights");
-        for (const auto &js_elem : js_lights.elements) {
-            Ren::StorageRef<LightSource> ls = scene_data_.lights.Add();
+    auto load_decal_texture = [this](const std::string &name) {
+        std::string file_name = TEXTURES_PATH + name;
 
-            const std::string &name = js_elem.first;
-            const JsObject &js_obj = (const JsObject &)js_elem.second;
-            ls->Read(js_obj);
+        Sys::AssetFile in_file(file_name, Sys::AssetFile::IN);
+        size_t in_file_size = in_file.size();
 
-            all_lights[name] = ls;
-        }
-    }*/
+        std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+        in_file.Read((char *)&in_file_data[0], in_file_size);
 
-    if (js_scene.Has("decals")) {
-        const JsObject &js_decals = (const JsObject &)js_scene.at("decals");
-        for (const auto &js_elem : js_decals.elements) {
-            Ren::StorageRef<Decal> de = scene_data_.decals.Add();
-
-            const std::string &name = js_elem.first;
-            const JsObject &js_obj = (const JsObject &)js_elem.second;
-            de->Read(js_obj);
-            
-            auto load_decal_texture = [this](const std::string &name) {
-                std::string file_name = TEXTURES_PATH + name;
-
-                Sys::AssetFile in_file(file_name, Sys::AssetFile::IN);
-                size_t in_file_size = in_file.size();
-
-                std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
-                in_file.Read((char *)&in_file_data[0], in_file_size);
-
-                int res[2];
+        int res[2];
 #if !defined(__ANDROID__)
-                int channels;
-                uint8_t *image_data = SOIL_load_image_from_memory(&in_file_data[0], (int)in_file_size, &res[0], &res[1], &channels, 4);
-                assert(channels == 4);
+        int channels;
+        uint8_t *image_data = SOIL_load_image_from_memory(&in_file_data[0], (int)in_file_size, &res[0], &res[1], &channels, 4);
+        assert(channels == 4);
 #else
-                auto image_data = SceneManagerInternal::Decode_KTX_ASTC(&in_file_data[0], in_file_size, res[0], res[1]);
-                
+        auto image_data = SceneManagerInternal::Decode_KTX_ASTC(&in_file_data[0], in_file_size, res[0], res[1]);
+
 #endif
 
-                const void *data[] = { (const void *)&image_data[0], nullptr };
-                const Ren::eTexColorFormat formats[] = { Ren::RawRGBA8888, Ren::Undefined };
+        const void *data[] = { (const void *)&image_data[0], nullptr };
+        const Ren::eTexColorFormat formats[] = { Ren::RawRGBA8888, Ren::Undefined };
 
-                int pos[2];
-                int rc = scene_data_.decals_atlas.Allocate(data, formats, res, pos, 4);
-                if (rc == -1) throw std::runtime_error("Cannot allocate decal!");
+        int pos[2];
+        int rc = scene_data_.decals_atlas.Allocate(data, formats, res, pos, 4);
+        if (rc == -1) throw std::runtime_error("Cannot allocate decal!");
 
 #if !defined(__ANDROID__)
-                SOIL_free_image_data(image_data);
+        SOIL_free_image_data(image_data);
 #endif
 
-                return Ren::Vec4f{ float(pos[0]) / DECALS_ATLAS_RESX,
-                                   float(pos[1]) / DECALS_ATLAS_RESY,
-                                   float(res[0]) / DECALS_ATLAS_RESX,
-                                   float(res[1]) / DECALS_ATLAS_RESY };
-            };
-
-            if (js_obj.Has("diff")) {
-                const JsString &js_diff = (const JsString &)js_obj.at("diff");
-
-                auto it = decals_textures.find(js_diff.val);
-
-                if (it == decals_textures.end()) {
-                    de->diff = load_decal_texture(js_diff.val);
-                    decals_textures[js_diff.val] = de->diff;
-                } else {
-                    de->diff = decals_textures[js_diff.val];
-                }
-            }
-
-            if (js_obj.Has("norm")) {
-                const JsString &js_norm = (const JsString &)js_obj.at("norm");
-
-                auto it = decals_textures.find(js_norm.val);
-
-                if (it == decals_textures.end()) {
-                    de->norm = load_decal_texture(js_norm.val);
-                    decals_textures[js_norm.val] = de->norm;
-                } else {
-                    de->norm = decals_textures[js_norm.val];
-                }
-            }
-
-            if (js_obj.Has("spec")) {
-                const JsString &js_spec = (const JsString &)js_obj.at("spec");
-
-                auto it = decals_textures.find(js_spec.val);
-
-                if (it == decals_textures.end()) {
-                    de->spec = load_decal_texture(js_spec.val);
-                    decals_textures[js_spec.val] = de->spec;
-                } else {
-                    de->spec = decals_textures[js_spec.val];
-                }
-            }
-
-            all_decals[name] = de;
-        }
-    }
+        return Ren::Vec4f{ float(pos[0]) / DECALS_ATLAS_RESX,
+                           float(pos[1]) / DECALS_ATLAS_RESY,
+                           float(res[0]) / DECALS_ATLAS_RESX,
+                           float(res[1]) / DECALS_ATLAS_RESY };
+    };
 
     const JsArray &js_objects = (const JsArray &)js_scene.at("objects");
     for (const auto &js_elem : js_objects.elements) {
         const JsObject &js_obj = (const JsObject &)js_elem;
 
         SceneObject obj;
-        obj.comp_mask = CompTransform;
+        obj.comp_mask = 0;
         obj.change_mask = 0;
-        obj.tr = scene_data_.transforms.Add();
 
         Ren::Vec3f obj_bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
                    obj_bbox_max = Ren::Vec3f{ -std::numeric_limits<float>::max() };
 
-        if (js_obj.Has("mesh")) {
-            const JsString &js_mesh_name = (const JsString &)js_obj.at("mesh");
+        for (const auto &js_comp : js_obj.elements) {
+            if (js_comp.second.type() != JS_OBJECT) continue;
+            const auto &js_comp_obj = (const JsObject &)js_comp.second;
+            const std::string &js_comp_name = js_comp.first;
 
-            const auto it = all_meshes.find(js_mesh_name.val);
-            if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
+            for (int i = 0; i < MAX_COMPONENT_TYPES; i++) {
+                auto *store = scene_data_.comp_store[i];
+                if (!store) continue;
 
-            {
-                Ren::StorageRef<Drawable> dr = scene_data_.drawables.Add();
-                //dr->Read(js_light_obj);
+                if (js_comp_name == store->name()) {
+                    uint32_t index = store->Create();
 
-                obj.dr = dr;
-                obj.comp_mask |= CompDrawable;
-                obj.dr->mesh = it->second;
-            }
+                    void *new_component = store->Get(index);
+                    store->ReadFromJs(js_comp_obj, new_component);
 
-            obj_bbox_min = Ren::Min(obj_bbox_min, obj.dr->mesh->bbox_min());
-            obj_bbox_max = Ren::Max(obj_bbox_max, obj.dr->mesh->bbox_max());
-        }
+                    obj.components[i] = index;
+                    obj.comp_mask |= (1 << i);
 
-        obj.tr->Read(js_obj);
+                    // TODO: refactor this into something generic
+                    if (i == CompDrawable) {
+                        const JsString &js_mesh_name = (const JsString &)js_comp_obj.at("mesh");
 
-        if (js_obj.Has("occluder_mesh")) {
-            const JsString &js_occ_mesh = (const JsString &)js_obj.at("occluder_mesh");
+                        const auto it = all_meshes.find(js_mesh_name.val);
+                        if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
 
-            const auto it = all_meshes.find(js_occ_mesh.val);
-            if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
+                        auto *dr = (Drawable *)new_component;
+                        dr->mesh = it->second;
 
-            obj.comp_mask |= CompOccluder;
-            obj.occ_mesh = it->second;
-        }
+                        obj_bbox_min = Ren::Min(obj_bbox_min, dr->mesh->bbox_min());
+                        obj_bbox_max = Ren::Max(obj_bbox_max, dr->mesh->bbox_max());
+                    } else if (i == CompOccluder) {
+                        const JsString &js_mesh_name = (const JsString &)js_comp_obj.at("mesh");
 
-        if (js_obj.Has("lightmap_res")) {
-            const JsNumber &js_lm_res = (const JsNumber &)js_obj.at("lightmap_res");
+                        const auto it = all_meshes.find(js_mesh_name.val);
+                        if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
 
-            obj.comp_mask |= CompLightmap;
-            obj.lm = scene_data_.lm_regions.Add();
-            obj.lm->size[0] = (int)js_lm_res.val;
-            obj.lm->size[1] = (int)js_lm_res.val;
+                        auto *occ = (Occluder *)new_component;
+                        occ->mesh = it->second;
 
-            int node_id = scene_data_.lm_splitter.Allocate(obj.lm->size, obj.lm->pos);
-            if (node_id == -1) {
-                throw std::runtime_error("Cannot allocate lightmap region!");
-            }
+                        obj_bbox_min = Ren::Min(obj_bbox_min, occ->mesh->bbox_min());
+                        obj_bbox_max = Ren::Max(obj_bbox_max, occ->mesh->bbox_max());
+                    } else if (i == CompLightmap) {
+                        auto *lm = (Lightmap *)new_component;
 
-            obj.lm->xform = Ren::Vec4f{
-                float(obj.lm->pos[0]) / LIGHTMAP_ATLAS_RESX, 1.0f - float(obj.lm->pos[1]) / LIGHTMAP_ATLAS_RESY,
-                float(obj.lm->size[0]) / LIGHTMAP_ATLAS_RESX, -float(obj.lm->size[1]) / LIGHTMAP_ATLAS_RESY,
-            };
-        }
+                        int node_id = scene_data_.lm_splitter.Allocate(lm->size, lm->pos);
+                        if (node_id == -1) {
+                            throw std::runtime_error("Cannot allocate lightmap region!");
+                        }
 
-        if (js_obj.Has("lights")) {
-            const auto &js_lights = (const JsArray &)js_obj.at("lights");
+                        lm->xform = Ren::Vec4f{
+                            float(lm->pos[0]) / LIGHTMAP_ATLAS_RESX, 1.0f - float(lm->pos[1]) / LIGHTMAP_ATLAS_RESY,
+                            float(lm->size[0]) / LIGHTMAP_ATLAS_RESX, -float(lm->size[1]) / LIGHTMAP_ATLAS_RESY,
+                        };
+                    } else if (i == CompLightSource) {
+                        auto *ls = (LightSource *)scene_data_.comp_store[CompLightSource]->Get(obj.components[CompLightSource]);
 
-            int index = 0;
-            for (const auto &js_light : js_lights.elements) {
-                const auto &js_light_obj = (const JsObject &)js_light;
+                        // Compute bounding box of light source
+                        Ren::Vec4f pos = { ls->offset[0], ls->offset[1], ls->offset[2], 1.0f },
+                            dir = { ls->dir[0], ls->dir[1], ls->dir[2], 0.0f };
 
-                //auto it = all_lights.find(js_light_name.val);
-                //if (it == all_lights.end()) throw std::runtime_error("Light not found!");
+                        Ren::Vec3f bbox_min, bbox_max;
 
-                {
-                    Ren::StorageRef<LightSource> ls = scene_data_.lights.Add();
-                    ls->Read(js_light_obj);
+                        Ren::Vec3f _dir = { dir[0], dir[1], dir[2] };
+                        Ren::Vec3f p1 = _dir * ls->influence;
 
-                    obj.comp_mask |= CompLightSource;
-                    obj.ls[index] = ls;
-                }
+                        bbox_min = Ren::Min(bbox_min, p1);
+                        bbox_max = Ren::Max(bbox_max, p1);
 
-                const auto *ls = obj.ls[index].get();
+                        Ren::Vec3f p2 = _dir * ls->spot * ls->influence;
 
-                index++;
+                        float d = std::sqrt(1.0f - ls->spot * ls->spot) * ls->influence;
 
-                {   // Compute bounding box of light source
-                    Ren::Vec4f pos = { ls->offset[0], ls->offset[1], ls->offset[2], 1.0f },
-                               dir = { ls->dir[0], ls->dir[1], ls->dir[2], 0.0f };
+                        bbox_min = Ren::Min(bbox_min, p2 - Ren::Vec3f{ d, 0.0f, d });
+                        bbox_max = Ren::Max(bbox_max, p2 + Ren::Vec3f{ d, 0.0f, d });
 
-                    pos = obj.tr->mat * pos;
-                    pos /= pos[3];
-                    dir = obj.tr->mat * dir;
+                        if (ls->spot < 0.0f) {
+                            bbox_min = Ren::Min(bbox_min, p1 - Ren::Vec3f{ ls->influence, 0.0f, ls->influence });
+                            bbox_max = Ren::Max(bbox_max, p1 + Ren::Vec3f{ ls->influence, 0.0f, ls->influence });
+                        }
 
-                    Ren::Vec3f bbox_min, bbox_max;
+                        Ren::Vec3f up = { 1.0f, 0.0f, 0.0f };
+                        if (std::abs(_dir[1]) < std::abs(_dir[2]) && std::abs(_dir[1]) < std::abs(_dir[0])) {
+                            up = { 0.0f, 1.0f, 0.0f };
+                        } else if (std::abs(_dir[2]) < std::abs(_dir[0]) && std::abs(_dir[2]) < std::abs(_dir[1])) {
+                            up = { 0.0f, 0.0f, 1.0f };
+                        }
 
-                    Ren::Vec3f _dir = { dir[0], dir[1], dir[2] };
-                    Ren::Vec3f p1 = _dir * ls->influence;
+                        Ren::Vec3f side = Ren::Cross(_dir, up);
 
-                    bbox_min = Ren::Min(bbox_min, p1);
-                    bbox_max = Ren::Max(bbox_max, p1);
+                        Transform ls_transform;
+                        ls_transform.mat = { Ren::Vec4f{ side[0],  -_dir[0], up[0],    0.0f },
+                                             Ren::Vec4f{ side[1],  -_dir[1], up[1],    0.0f },
+                                             Ren::Vec4f{ side[2],  -_dir[2], up[2],    0.0f },
+                                             Ren::Vec4f{ ls->offset[0], ls->offset[1], ls->offset[2], 1.0f } };
 
-                    Ren::Vec3f p2 = _dir * ls->spot * ls->influence;
+                        ls_transform.bbox_min = bbox_min;
+                        ls_transform.bbox_max = bbox_max;
+                        ls_transform.UpdateBBox();
 
-                    float d = std::sqrt(1.0f - ls->spot * ls->spot) * ls->influence;
+                        // Combine light's bounding box with object's
+                        obj_bbox_min = Ren::Min(obj_bbox_min, ls_transform.bbox_min_ws);
+                        obj_bbox_max = Ren::Max(obj_bbox_max, ls_transform.bbox_max_ws);
+                    } else if (i == CompDecal) {
+                        auto *de = (Decal *)new_component;
 
-                    bbox_min = Ren::Min(bbox_min, p2 - Ren::Vec3f{ d, 0.0f, d });
-                    bbox_max = Ren::Max(bbox_max, p2 + Ren::Vec3f{ d, 0.0f, d });
+                        if (js_comp_obj.Has("diff")) {
+                            const JsString &js_diff = (const JsString &)js_comp_obj.at("diff");
 
-                    if (ls->spot < 0.0f) {
-                        bbox_min = Ren::Min(bbox_min, p1 - Ren::Vec3f{ ls->influence, 0.0f, ls->influence });
-                        bbox_max = Ren::Max(bbox_max, p1 + Ren::Vec3f{ ls->influence, 0.0f, ls->influence });
+                            auto it = decals_textures.find(js_diff.val);
+
+                            if (it == decals_textures.end()) {
+                                de->diff = load_decal_texture(js_diff.val);
+                                decals_textures[js_diff.val] = de->diff;
+                            } else {
+                                de->diff = decals_textures[js_diff.val];
+                            }
+                        }
+
+                        if (js_comp_obj.Has("norm")) {
+                            const JsString &js_norm = (const JsString &)js_comp_obj.at("norm");
+
+                            auto it = decals_textures.find(js_norm.val);
+
+                            if (it == decals_textures.end()) {
+                                de->norm = load_decal_texture(js_norm.val);
+                                decals_textures[js_norm.val] = de->norm;
+                            } else {
+                                de->norm = decals_textures[js_norm.val];
+                            }
+                        }
+
+                        if (js_comp_obj.Has("spec")) {
+                            const JsString &js_spec = (const JsString &)js_comp_obj.at("spec");
+
+                            auto it = decals_textures.find(js_spec.val);
+
+                            if (it == decals_textures.end()) {
+                                de->spec = load_decal_texture(js_spec.val);
+                                decals_textures[js_spec.val] = de->spec;
+                            } else {
+                                de->spec = decals_textures[js_spec.val];
+                            }
+                        }
+
+                        Ren::Vec4f points[] = {
+                            { -1.0f, -1.0f, -1.0f, 1.0f }, { -1.0f, 1.0f, -1.0f, 1.0f },
+                            { 1.0f, 1.0f, -1.0f, 1.0f }, { 1.0f, -1.0f, -1.0f, 1.0f },
+
+                            { -1.0f, -1.0f, 1.0f, 1.0f }, { -1.0f, 1.0f, 1.0f, 1.0f },
+                            { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, -1.0f, 1.0f, 1.0f }
+                        };
+
+                        Ren::Mat4f world_from_clip = Ren::Inverse(de->proj * de->view);
+
+                        for (int i = 0; i < 8; i++) {
+                            points[i] = world_from_clip * points[i];
+                            points[i] /= points[i][3];
+
+                            // Combine decals's bounding box with object's
+                            obj_bbox_min = Ren::Min(obj_bbox_min, Ren::Vec3f{ points[i] });
+                            obj_bbox_max = Ren::Max(obj_bbox_max, Ren::Vec3f{ points[i] });
+                        }
+                    } else if (i == CompProbe) {
+                        auto *pr = (LightProbe *)new_component;
+
+                        pr->layer_index = scene_data_.probe_storage.Allocate();
+
+                        // Combine probe's bounding box with object's
+                        obj_bbox_min = Ren::Min(obj_bbox_min, pr->offset - Ren::Vec3f{ pr->radius });
+                        obj_bbox_max = Ren::Max(obj_bbox_max, pr->offset + Ren::Vec3f{ pr->radius });
                     }
 
-                    Ren::Vec3f up = { 1.0f, 0.0f, 0.0f };
-                    if (std::abs(_dir[1]) < std::abs(_dir[2]) && std::abs(_dir[1]) < std::abs(_dir[0])) {
-                        up = { 0.0f, 1.0f, 0.0f };
-                    } else if (std::abs(_dir[2]) < std::abs(_dir[0]) && std::abs(_dir[2]) < std::abs(_dir[1])) {
-                        up = { 0.0f, 0.0f, 1.0f };
-                    }
-
-                    Ren::Vec3f side = Ren::Cross(_dir, up);
-
-                    Transform ls_transform;
-                    ls_transform.mat = { Ren::Vec4f{ side[0],  -_dir[0], up[0],    0.0f },
-                                         Ren::Vec4f{ side[1],  -_dir[1], up[1],    0.0f },
-                                         Ren::Vec4f{ side[2],  -_dir[2], up[2],    0.0f },
-                                         Ren::Vec4f{ ls->offset[0], ls->offset[1], ls->offset[2], 1.0f } };
-
-                    ls_transform.bbox_min = bbox_min;
-                    ls_transform.bbox_max = bbox_max;
-                    ls_transform.UpdateBBox();
-
-                    // Combine light's bounding box with object's
-                    obj_bbox_min = Ren::Min(obj_bbox_min, ls_transform.bbox_min_ws);
-                    obj_bbox_max = Ren::Max(obj_bbox_max, ls_transform.bbox_max_ws);
+                    break;
                 }
             }
         }
 
-        if (js_obj.Has("decals")) {
-            const auto &js_decals = (const JsArray &)js_obj.at("decals");
-
-            int index = 0;
-            for (const auto &js_decal : js_decals.elements) {
-                const auto &js_decal_name = (const JsString &)js_decal;
-
-                auto it = all_decals.find(js_decal_name.val);
-                if (it == all_decals.end()) throw std::runtime_error("Decal not found!");
-
-                obj.comp_mask |= CompDecal;
-                obj.de[index] = it->second;
-                const auto *de = obj.de[index].get();
-
-                index++;
-
-                {   // Compute bounding box of decal
-                    Ren::Vec4f points[] = {
-                        { -1.0f, -1.0f, -1.0f, 1.0f }, { -1.0f, 1.0f, -1.0f, 1.0f },
-                        { 1.0f, 1.0f, -1.0f, 1.0f }, { 1.0f, -1.0f, -1.0f, 1.0f },
-
-                        { -1.0f, -1.0f, 1.0f, 1.0f }, { -1.0f, 1.0f, 1.0f, 1.0f },
-                        { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, -1.0f, 1.0f, 1.0f }
-                    };
-
-                    Ren::Mat4f object_from_view = Ren::Inverse(de->proj * de->view);
-
-                    for (int i = 0; i < 8; i++) {
-                        points[i] = object_from_view * points[i];
-                        points[i] /= points[i][3];
-
-                        // Combine decals's bounding box with object's
-                        obj_bbox_min = Ren::Min(obj_bbox_min, Ren::Vec3f{ points[i] });
-                        obj_bbox_max = Ren::Max(obj_bbox_max, Ren::Vec3f{ points[i] });
-                    }
-                }
-            }
-        }
-
-        if (js_obj.Has("probe")) {
-            const auto &js_probe = (const JsObject &)js_obj.at("probe");
-
-            {
-                Ren::StorageRef<LightProbe> pr = scene_data_.probes.Add();
-                pr->Read(js_probe);
-
-                obj.comp_mask |= CompProbe;
-                obj.pr = pr;
-            }
-
-            auto *pr = obj.pr.get();
-
-            pr->layer_index = scene_data_.probe_storage.Allocate();
-
-            // Combine probe's bounding box with object's
-            obj_bbox_min = Ren::Min(obj_bbox_min, pr->offset - Ren::Vec3f{ pr->radius });
-            obj_bbox_max = Ren::Max(obj_bbox_max, pr->offset + Ren::Vec3f{ pr->radius });
-        }
-
-        obj.tr->bbox_min = obj_bbox_min;
-        obj.tr->bbox_max = obj_bbox_max;
-        obj.tr->UpdateBBox();
+        auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
+        tr->bbox_min = obj_bbox_min;
+        tr->bbox_max = obj_bbox_max;
+        tr->UpdateBBox();
 
         scene_data_.objects.push_back(obj);
     }
@@ -567,10 +542,6 @@ void SceneManager::ClearScene() {
     scene_data_.objects.clear();
 
     ray_scene_ = nullptr;
-
-    assert(scene_data_.transforms.Size() == 0);
-    assert(scene_data_.lights.Size() == 0);
-    assert(scene_data_.decals.Size() == 0);
 }
 
 void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up) {

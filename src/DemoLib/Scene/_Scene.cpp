@@ -10,9 +10,11 @@
 #include "SceneManager_PT.cpp"
 
 #include "Comp/Decal.cpp"
-#include "Comp/LightmapRegion.cpp"
+#include "Comp/Drawable.cpp"
+#include "Comp/Lightmap.cpp"
 #include "Comp/LightProbe.cpp"
 #include "Comp/LightSource.cpp"
+#include "Comp/Occluder.cpp"
 #include "Comp/Transform.cpp"
 
 #if defined(USE_GL_RENDER)

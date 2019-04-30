@@ -87,9 +87,11 @@ void SceneManager::ResetLightmaps_PT() {
     ray_scene_->GetCamera(1, cam_desc);
 
     for (size_t i = 0; i < scene_data_.objects.size(); i++) {
-        if (scene_data_.objects[i].comp_mask & CompLightmap) {
+        if (scene_data_.objects[i].comp_mask & CompLightmapBit) {
+            const auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(scene_data_.objects[i].components[CompLightmap]);
+
             cur_lm_obj_ = i;
-            cam_desc.mi_index = scene_data_.objects[i].pt_mi;
+            cam_desc.mi_index = lm->pt_mi;
             break;
         }
     }
@@ -116,7 +118,9 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
     const int LM_SAMPLES_PER_PASS = 16;
     const int TILE_SIZE = 64;
 
-    const int res = (int)scene_data_.objects[cur_lm_obj_].lm->size[0];
+    const auto &cur_obj = scene_data_.objects[cur_lm_obj_];
+    const auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(cur_obj.components[CompLightmap]);
+    const int res = lm->size[0];
 
     if (ray_reg_ctx_.empty()) {
         if (ray_renderer_.type() == Ray::RendererOCL) {
@@ -164,8 +168,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
             // Save lightmap to file
             const auto *pixels = ray_renderer_.get_pixels_ref();
 
-            int xpos = scene_data_.objects[cur_lm_obj_].lm->pos[0],
-                ypos = scene_data_.objects[cur_lm_obj_].lm->pos[1];
+            int xpos = lm->pos[0], ypos = lm->pos[1];
 
             // Copy image to lightmap atlas
             if (!cur_lm_indir_) {
@@ -272,9 +275,11 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
             bool found = false;
 
             for (size_t i = cur_lm_obj_ + 1; i < scene_data_.objects.size(); i++) {
-                if (scene_data_.objects[i].comp_mask & CompLightmap) {
+                if (scene_data_.objects[i].comp_mask & CompLightmapBit) {
+                    const auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(scene_data_.objects[i].components[CompLightmap]);
+
                     cur_lm_obj_ = i;
-                    cam_desc.mi_index = scene_data_.objects[i].pt_mi;
+                    cam_desc.mi_index = lm->pt_mi;
                     found = true;
                     break;
                 }
@@ -493,9 +498,10 @@ void SceneManager::InitScene_PT(bool _override) {
 
     // Add objects
     for (auto &obj : scene_data_.objects) {
-        const uint32_t drawable_flags = CompDrawable | CompTransform;
+        const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
-            const auto *mesh = obj.dr->mesh.get();
+            const auto *dr = (Drawable *)scene_data_.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
+            const auto *mesh = dr->mesh.get();
             const char *mesh_name = mesh->name();
 
             auto mesh_it = loaded_meshes.find(mesh_name);
@@ -563,9 +569,10 @@ void SceneManager::InitScene_PT(bool _override) {
                 mesh_it = loaded_meshes.emplace(mesh_name, new_mesh).first;
             }
 
-            const auto *tr = obj.tr.get();
+            const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
+            auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(obj.components[CompLightmap]);
 
-            obj.pt_mi = ray_scene_->AddMeshInstance(mesh_it->second, Ren::ValuePtr(tr->mat));
+            lm->pt_mi = ray_scene_->AddMeshInstance(mesh_it->second, Ren::ValuePtr(tr->mat));
         }
     }
 

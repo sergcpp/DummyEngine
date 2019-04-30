@@ -35,6 +35,8 @@ public:
 
     void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up);
 
+    void RegisterComponent(uint32_t index, CompStorage *storage);
+
     void InitScene_PT(bool _override = false);
     void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up);
     const float *Draw_PT(int *w, int *h);
@@ -67,6 +69,8 @@ private:
 
     SceneData scene_data_;
     std::vector<uint32_t> changed_objects_, last_changed_objects_;
+
+    std::unique_ptr<CompStorage> default_comp_storage_[MAX_COMPONENT_TYPES];
 
     std::vector<char> temp_buf;
 

@@ -780,21 +780,25 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             throw std::runtime_error("Cannot load scene!");
         }
 
-        if (js_scene.Has("decals")) {
-            JsObject &js_decals = (JsObject &)js_scene.at("decals");
-            for (auto &d : js_decals.elements) {
-                auto &js_decal = (JsObject &)d.second;
-                if (js_decal.Has("diff")) {
-                    auto &js_diff_tex = (JsString &)js_decal.at("diff");
-                    replace_texture_extension(js_diff_tex.val);
-                }
-                if (js_decal.Has("norm")) {
-                    auto &js_norm_tex = (JsString &)js_decal.at("norm");
-                    replace_texture_extension(js_norm_tex.val);
-                }
-                if (js_decal.Has("spec")) {
-                    auto &js_spec_tex = (JsString &)js_decal.at("spec");
-                    replace_texture_extension(js_spec_tex.val);
+        if (js_scene.Has("objects")) {
+            JsArray &js_objects = (JsArray &)js_scene.at("objects");
+            for (auto &o : js_objects.elements) {
+                JsObject &js_obj = (JsObject &)o;
+
+                if (js_obj.Has("decal")) {
+                    auto &js_decal = (JsObject &)js_obj.at("decal");
+                    if (js_decal.Has("diff")) {
+                        auto &js_diff_tex = (JsString &)js_decal.at("diff");
+                        replace_texture_extension(js_diff_tex.val);
+                    }
+                    if (js_decal.Has("norm")) {
+                        auto &js_norm_tex = (JsString &)js_decal.at("norm");
+                        replace_texture_extension(js_norm_tex.val);
+                    }
+                    if (js_decal.Has("spec")) {
+                        auto &js_spec_tex = (JsString &)js_decal.at("spec");
+                        replace_texture_extension(js_spec_tex.val);
+                    }
                 }
             }
         }

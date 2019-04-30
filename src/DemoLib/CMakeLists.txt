@@ -27,12 +27,14 @@ set(SCENE_COMP_SOURCES   Scene/Comp/Common.h
                          Scene/Comp/Decal.cpp
                          Scene/Comp/Drawable.h
                          Scene/Comp/Drawable.cpp
-                         Scene/Comp/LightmapRegion.h
-                         Scene/Comp/LightmapRegion.cpp
+                         Scene/Comp/Lightmap.h
+                         Scene/Comp/Lightmap.cpp
                          Scene/Comp/LightProbe.h
                          Scene/Comp/LightProbe.cpp
                          Scene/Comp/LightSource.h
                          Scene/Comp/LightSource.cpp
+                         Scene/Comp/Occluder.h
+                         Scene/Comp/Occluder.cpp
                          Scene/Comp/Transform.h
                          Scene/Comp/Transform.cpp)
 

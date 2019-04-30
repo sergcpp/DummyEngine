@@ -4,9 +4,11 @@
 
 #include "Common.h"
 
-struct Drawable : public ComponentBase {
+struct Drawable {
     Ren::MeshRef mesh;
 
-    void Read(const JsObject &js_in) override {}
-    void Write(JsObject &js_out) override {}
+    static void Read(const JsObject &js_in, Drawable &dr) {}
+    static void Write(const Drawable &dr, JsObject &js_out) {}
+
+    static const char *name() { return "drawable"; }
 };

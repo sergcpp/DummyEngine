@@ -4,7 +4,7 @@
 
 #include "Common.h"
 
-struct LightSource : public ComponentBase {
+struct LightSource {
     Ren::Vec3f  offset;
     float       radius;
     Ren::Vec3f  col;
@@ -16,6 +16,8 @@ struct LightSource : public ComponentBase {
 
     Ren::Vec3f bbox_min, bbox_max;
 
-    void Read(const JsObject &js_in) override;
-    void Write(JsObject &js_out) override;
+    static void Read(const JsObject &js_in, LightSource &ls);
+    static void Write(const LightSource &ls, JsObject &js_out);
+
+    static const char *name() { return "light"; }
 };

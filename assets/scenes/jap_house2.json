@@ -22,51 +22,46 @@
         "ladder" : "ladder.mesh",
         "monk" : "monk.mesh",
     },
-    "lights" : {
-        "l0" : {
-            "offset" : [ -23.0, 1.0, 0.0 ],
-            "color" : [ 100.0, 0.0, 0.0 ],
-            "radius" : 0.01
-        },
-        "l1" : {
-            "offset" : [ -23.0, 1.0, 5.0 ],
-            "color" : [ 0.0, 100.0, 0.0 ],
-            "radius" : 0.01
-        },
-        "l2" : {
-            "offset" : [ -23.0, 1.0, 10.0 ],
-            "color" : [ 0.0, 0.0, 100.0 ],
-            "radius" : 0.01
-        },
-        "l3" : {
-            "offset" : [ -23.0, 1.0, 15.0 ],
-            "color" : [ 100.0, 0.0, 100.0 ],
-            "radius" : 0.01
-        }
-    },
     "decals" : {
     },
     "objects" : [
         {
-            "pos" : [ 0.0, 0.0, 0.0 ],
-            "mesh" : "inter_walls",
-            "occluder_mesh" : "inter_walls",
-            "lightmap_res" : 512,
-            "lightmap_sh" : true
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+            },
+            "drawable" : {
+                "mesh" : "inter_walls",
+            },
+            "occluder" : {
+                "mesh" : "inter_walls",
+            },
+            "lightmap" : {
+                "res" : 512
+            }
         },
         {
-            "pos" : [ 4.43021, 1.88348, -3.25406 ],
-            "rot" : [ 0.0, -90.0, 0.0 ],
-            "mesh" : "ladder",
-            "lightmap_res" : 256,
-            "lightmap_sh" : true
+            "transform" : {
+                "pos" : [ 4.43021, 1.88348, -3.25406 ],
+                "rot" : [ 0.0, -90.0, 0.0 ],
+            },
+            "drawable" : {
+                "mesh" : "ladder",
+            },
+            "lightmap" : {
+                "res" : 256
+            }
         },
         {
-            "pos" : [ -1.59414, 1.88348, 4.40305 ],
-            "rot" : [ 0.0, 0.0, 0.0 ],
-            "mesh" : "ladder",
-            "lightmap_res" : 256,
-            "lightmap_sh" : true
+            "transform" : {
+                "pos" : [ -1.59414, 1.88348, 4.40305 ],
+                "rot" : [ 0.0, 0.0, 0.0 ],
+            },
+            "drawable" : {
+                "mesh" : "ladder",
+            },
+            "lightmap" : {
+                "res" : 256
+            }
         }
     ]
 }
