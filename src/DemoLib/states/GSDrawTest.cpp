@@ -164,6 +164,7 @@ void GSDrawTest::Enter() {
                 shrd_this->scene_manager_->InitScene_PT();
                 shrd_this->invalidate_view_ = true;
             }
+            
         }
         return true;
     });
@@ -346,33 +347,7 @@ void GSDrawTest::Exit() {
 void GSDrawTest::Draw(uint64_t dt_us) {
     using namespace GSDrawTestInternal;
 
-    if (use_lm_) {
-        int w, h;
-        const float *preview_pixels = nullptr;
-        if (scene_manager_->PrepareLightmaps_PT(&preview_pixels, &w, &h)) {
-            if (preview_pixels) {
-                renderer_->BlitPixels(preview_pixels, w, h, Ren::RawRGBA32F);
-            }
-        } else {
-            // Lightmap creation finished, convert textures
-            Viewer::PrepareAssets("pc");
-            // Reload scene
-            LoadScene(SCENE_NAME);
-            // Switch back to normal mode
-            use_lm_ = false;
-        }
-    } else if (use_pt_) {
-        scene_manager_->SetupView_PT(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-        if (invalidate_view_) {
-            scene_manager_->Clear_PT();
-            invalidate_view_ = false;
-        }
-        int w, h;
-        const float *preview_pixels = scene_manager_->Draw_PT(&w, &h);
-        if (preview_pixels) {
-            renderer_->BlitPixelsTonemap(preview_pixels, w, h, Ren::RawRGBA32F);
-        }
-    } else {
+    {
         int back_list;
 
         if (USE_TWO_THREADS) {
@@ -381,29 +356,60 @@ void GSDrawTest::Draw(uint64_t dt_us) {
                 thr_done_.wait(lock);
             }
 
-            scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-            back_list = front_list_;
-            front_list_ = (front_list_ + 1) % 2;
-
-            // Render probe cubemap
-            if (probe_to_render_) {
-                for (int i = 0; i < 6; i++) {
-                    renderer_->ExecuteDrawList(temp_probe_lists_[i], &temp_probe_buf_);
-                    renderer_->BlitToLightProbeFace(temp_probe_buf_, scene_manager_->scene_data().probe_storage, probe_to_render_->layer_index, i);
+            if (use_lm_) {
+                int w, h;
+                const float *preview_pixels = nullptr;
+                if (scene_manager_->PrepareLightmaps_PT(&preview_pixels, &w, &h)) {
+                    if (preview_pixels) {
+                        renderer_->BlitPixels(preview_pixels, w, h, Ren::RawRGBA32F);
+                    }
+                } else {
+                    // Lightmap creation finished, convert textures
+                    Viewer::PrepareAssets("pc");
+                    // Reload scene
+                    LoadScene(SCENE_NAME);
+                    // Switch back to normal mode
+                    use_lm_ = false;
                 }
 
-                probe_to_update_sh_ = probe_to_render_;
-                probe_to_render_ = nullptr;
-            }
+                back_list = -1;
+            } else if (use_pt_) {
+                scene_manager_->SetupView_PT(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+                if (invalidate_view_) {
+                    scene_manager_->Clear_PT();
+                    invalidate_view_ = false;
+                }
+                int w, h;
+                const float *preview_pixels = scene_manager_->Draw_PT(&w, &h);
+                if (preview_pixels) {
+                    renderer_->BlitPixelsTonemap(preview_pixels, w, h, Ren::RawRGBA32F);
+                }
 
-            if (probe_to_update_sh_) {
-                bool done = renderer_->BlitProjectSH(scene_manager_->scene_data().probe_storage, probe_to_update_sh_->layer_index,
-                                                     probe_sh_update_iteration_, *probe_to_update_sh_);
-                probe_sh_update_iteration_++;
+                back_list = -1;
+            } else {
+                back_list = front_list_;
+                front_list_ = (front_list_ + 1) % 2;
 
-                if (done) {
-                    probe_sh_update_iteration_ = 0;
-                    probe_to_update_sh_ = nullptr;
+                // Render probe cubemap
+                if (probe_to_render_) {
+                    for (int i = 0; i < 6; i++) {
+                        renderer_->ExecuteDrawList(temp_probe_lists_[i], &temp_probe_buf_);
+                        renderer_->BlitToLightProbeFace(temp_probe_buf_, scene_manager_->scene_data().probe_storage, probe_to_render_->layer_index, i);
+                    }
+
+                    probe_to_update_sh_ = probe_to_render_;
+                    probe_to_render_ = nullptr;
+                }
+
+                if (probe_to_update_sh_) {
+                    bool done = renderer_->BlitProjectSH(scene_manager_->scene_data().probe_storage, probe_to_update_sh_->layer_index,
+                                                         probe_sh_update_iteration_, *probe_to_update_sh_);
+                    probe_sh_update_iteration_++;
+
+                    if (done) {
+                        probe_sh_update_iteration_ = 0;
+                        probe_to_update_sh_ = nullptr;
+                    }
                 }
             }
 
@@ -416,8 +422,10 @@ void GSDrawTest::Draw(uint64_t dt_us) {
             back_list = 0;
         }
 
-        // Render current frame (from back list)
-        renderer_->ExecuteDrawList(main_view_lists_[back_list]);
+        if (back_list != -1) {
+            // Render current frame (from back list)
+            renderer_->ExecuteDrawList(main_view_lists_[back_list]);
+        }
     }
 
     //LOGI("(%f %f %f) (%f %f %f)", view_origin_[0], view_origin_[1], view_origin_[2],
@@ -773,7 +781,7 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
     using namespace GSDrawTestInternal;
 
     // pt switch for touch controls
-    if (evt.type == InputManager::RAW_INPUT_P1_DOWN || evt.type == InputManager::RAW_INPUT_P2_DOWN) {
+    /*if (evt.type == InputManager::RAW_INPUT_P1_DOWN || evt.type == InputManager::RAW_INPUT_P2_DOWN) {
         if (evt.point.x > ctx_->w() * 0.9f && evt.point.y < ctx_->h() * 0.1f) {
             auto new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
@@ -787,7 +795,7 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
                 click_time_ = new_time;
             }
         }
-    }
+    }*/
 
     switch (evt.type) {
     case InputManager::RAW_INPUT_P1_DOWN:
@@ -905,7 +913,16 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
             }
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RETURN) {
             if (cmdline_enabled_) {
-                game_->ExecuteCommand(cmdline_history_.back(), {});
+                auto execute_cur_command = [](void *arg) {
+                    auto *_self = (GSDrawTest *)arg;
+                    _self->game_->ExecuteCommand(_self->cur_cmd_, {});
+                    _self->cur_cmd_.erase();
+                };
+
+                cur_cmd_ = cmdline_history_.back();
+                ctx_->AddSingleTask(execute_cur_command, this);
+
+                //game_->ExecuteCommand(cmdline_history_.back(), {});
                 cmdline_history_.emplace_back();
                 if (cmdline_history_.size() > MAX_CMD_LINES) {
                     cmdline_history_.erase(cmdline_history_.begin());
@@ -983,53 +1000,58 @@ void GSDrawTest::UpdateFrame(int list_index) {
         fr.time_fract = double(fr.time_acc_us) / UPDATE_DELTA;
     }
 
+    // Update camera
+    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+
     // Update invalidated objects
     scene_manager_->UpdateObjects();
 
-    // Enable all flags, Renderer will mask out what is not enabled
-    main_view_lists_[list_index].render_flags = 0xffffffff;
+    if (!use_pt_ && !use_lm_) {
+        // Enable all flags, Renderer will mask out what is not enabled
+        main_view_lists_[list_index].render_flags = 0xffffffff;
 
-    renderer_->PrepareDrawList(scene_manager_->scene_data(),
-                               scene_manager_->main_cam(), main_view_lists_[list_index]);
+        renderer_->PrepareDrawList(scene_manager_->scene_data(),
+                                   scene_manager_->main_cam(), main_view_lists_[list_index]);
 
 
-    if (!probes_to_update_.empty() && !probe_to_render_ && !probe_to_update_sh_) {
-        auto *probe_obj = scene_manager_->GetObject(probes_to_update_.back());
-        auto *probe = (LightProbe *)scene_manager_->scene_data().comp_store[CompProbe]->Get(probe_obj->components[CompProbe]);
-        auto *probe_tr = (Transform *)scene_manager_->scene_data().comp_store[CompTransform]->Get(probe_obj->components[CompTransform]);
+        if (!probes_to_update_.empty() && !probe_to_render_ && !probe_to_update_sh_) {
+            auto *probe_obj = scene_manager_->GetObject(probes_to_update_.back());
+            auto *probe = (LightProbe *)scene_manager_->scene_data().comp_store[CompProbe]->Get(probe_obj->components[CompProbe]);
+            auto *probe_tr = (Transform *)scene_manager_->scene_data().comp_store[CompTransform]->Get(probe_obj->components[CompTransform]);
 
-        Ren::Vec4f pos = { probe->offset[0], probe->offset[1], probe->offset[2], 1.0f };
-        pos = probe_tr->mat * pos;
-        pos /= pos[3];
+            Ren::Vec4f pos = { probe->offset[0], probe->offset[1], probe->offset[2], 1.0f };
+            pos = probe_tr->mat * pos;
+            pos /= pos[3];
 
-        const Ren::Vec3f axises[] = { {  1.0f,  0.0f,  0.0f },
-                                      { -1.0f,  0.0f,  0.0f },
-                                      {  0.0f,  1.0f,  0.0f },
-                                      {  0.0f, -1.0f,  0.0f },
-                                      {  0.0f,  0.0f,  1.0f },
-                                      {  0.0f,  0.0f, -1.0f } };
+            const Ren::Vec3f axises[] = { {  1.0f,  0.0f,  0.0f },
+                                          { -1.0f,  0.0f,  0.0f },
+                                          {  0.0f,  1.0f,  0.0f },
+                                          {  0.0f, -1.0f,  0.0f },
+                                          {  0.0f,  0.0f,  1.0f },
+                                          {  0.0f,  0.0f, -1.0f } };
 
-        const Ren::Vec3f ups[] = { { 0.0f, -1.0f, 0.0f },
-                                   { 0.0f, -1.0f, 0.0f },
-                                   { 0.0f, 0.0f, -1.0f },
-                                   { 0.0f, 0.0f, -1.0f },
-                                   { 0.0f, -1.0f, 0.0f },
-                                   { 0.0f, -1.0f, 0.0f } };
+            const Ren::Vec3f ups[] = { { 0.0f, -1.0f, 0.0f },
+                                       { 0.0f, -1.0f, 0.0f },
+                                       { 0.0f, 0.0f, -1.0f },
+                                       { 0.0f, 0.0f, -1.0f },
+                                       { 0.0f, -1.0f, 0.0f },
+                                       { 0.0f, -1.0f, 0.0f } };
 
-        const Ren::Vec3f center = { pos[0], pos[1], pos[2] };
+            const Ren::Vec3f center = { pos[0], pos[1], pos[2] };
 
-        for (int i = 0; i < 6; i++) {
-            const Ren::Vec3f target = center + axises[i];
-            temp_probe_cam_.SetupView(center, target, ups[i]);
-            temp_probe_cam_.UpdatePlanes();
+            for (int i = 0; i < 6; i++) {
+                const Ren::Vec3f target = center + axises[i];
+                temp_probe_cam_.SetupView(center, target, ups[i]);
+                temp_probe_cam_.UpdatePlanes();
 
-            temp_probe_lists_[i].render_flags = EnableZFill | EnableCulling | EnableLightmap | EnableLights | EnableDecals | EnableShadows;
+                temp_probe_lists_[i].render_flags = EnableZFill | EnableCulling | EnableLightmap | EnableLights | EnableDecals | EnableShadows;
 
-            renderer_->PrepareDrawList(scene_manager_->scene_data(),
-                                       temp_probe_cam_, temp_probe_lists_[i]);
+                renderer_->PrepareDrawList(scene_manager_->scene_data(),
+                                           temp_probe_cam_, temp_probe_lists_[i]);
+            }
+
+            probe_to_render_ = probe;
+            probes_to_update_.pop_back();
         }
-
-        probe_to_render_ = probe;
-        probes_to_update_.pop_back();
     }
 }

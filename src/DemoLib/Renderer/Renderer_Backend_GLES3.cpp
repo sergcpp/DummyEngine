@@ -1979,6 +1979,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
         glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
 
+        glUniform1f(12, 1.0f);
         glUniform2f(13, float(w), float(h));
         glUniform1f(U_GAMMA, 2.2f);
 
