@@ -631,7 +631,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     shader_constants.emplace("$DecalBufSlot",   AS_STR(REN_DECAL_BUF_SLOT));
     shader_constants.emplace("$CellsBufSlot",   AS_STR(REN_CELLS_BUF_SLOT));
     shader_constants.emplace("$ItemsBufSlot",   AS_STR(REN_ITEMS_BUF_SLOT));
-    shader_constants.emplace("$InstanceBufSlot",AS_STR(REN_INSTANCE_BUF_SLOT));
+    shader_constants.emplace("$InstanceBufSlot",AS_STR(REN_INST_BUF_SLOT));
 
     // Uniform locations
     shader_constants.emplace("$uMMatrixLoc",    AS_STR(REN_U_M_MATRIX_LOC));

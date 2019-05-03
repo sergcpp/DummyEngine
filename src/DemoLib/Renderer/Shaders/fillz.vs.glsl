@@ -23,7 +23,7 @@ layout (std140) uniform SharedDataBlock {
     vec4 uResAndFRes;
 };
 
-layout(binding = )" AS_STR(REN_INSTANCE_BUF_SLOT) R"() uniform mediump samplerBuffer instances_buffer;
+layout(binding = )" AS_STR(REN_INST_BUF_SLOT) R"() uniform mediump samplerBuffer instances_buffer;
 
 layout(location = )" AS_STR(REN_U_INSTANCES_LOC) R"() uniform int uInstanceIndices[8];
 

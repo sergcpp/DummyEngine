@@ -948,7 +948,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     glBindVertexArray((GLuint)draw_pass_vao_);
 
-    BindTexBuffer(REN_INSTANCE_BUF_SLOT, instances_tbo_);
+    BindTexBuffer(REN_INST_BUF_SLOT, instances_tbo_);
 
     BindTexture(REN_SHAD_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
