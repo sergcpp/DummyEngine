@@ -1,0 +1,222 @@
+{
+    "name" : "living_room_gumroad",
+    "environment" : {
+        "sun_dir" : [ -0.54, -0.54, -0.54 ],
+        "sun_col" : [ 2.0, 2.0, 1.7 ],
+        "sun_softness" : 0.1,
+        "env_col1" : [ 0.05, 0.075, 0.1 ],
+        "env_map" : "env/noon_grass",
+        "env_map_pt" : "env/noon_grass_2k.hdr"
+    },
+    "camera" : {
+        "view_origin" : [ 0.0, 5.0, 0.0 ],
+        "view_dir" : [ 0.0, 0.0, -1.0 ],
+        "fwd_speed" : 0.025
+    },
+    "meshes" : {
+        "room" : "room.mesh",
+        "wall_plugs" : "wall_plugs.mesh",
+        "radiator" : "radiator.mesh",
+        "sofa" : "sofa.mesh",
+        "wall_picture" : "wall_picture.mesh",
+        "wood_crate" : "wood_crate.mesh",
+        "carpet" : "carpet.mesh",
+        "books" : "books.mesh",
+        "box" : "box.mesh",
+        "lamp" : "lamp.mesh",
+        "laptop" : "laptop.mesh",
+        "ornament" : "ornament.mesh",
+        "ornaments" : "ornaments.mesh",
+        "plant_01" : "plant_01.mesh",
+        "plant_02" : "plant_02.mesh",
+        "plant_03" : "plant_03.mesh",
+        "plant_crate" : "plant_crate.mesh",
+        "small_lamp" : "small_lamp.mesh",
+    },
+    "decals" : {
+    },
+    "objects" : [
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.124862, 0.0 ],
+            },
+            "drawable" : {
+                "mesh" : "room",
+            },
+            "lightmap" : {
+                "res" : 512
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.706575, 0.179747, 2.272793 ],
+            },
+            "drawable" : {
+                "mesh" : "wall_plugs",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.706575, 1.872641, 1.745906 ],
+            },
+            "drawable" : {
+                "mesh" : "radiator",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 4.28384, 0.0, 1.492837 ],
+            },
+            "drawable" : {
+                "mesh" : "sofa",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.690325, 1.602013, -0.135741 ],
+                "rot" : [ 90.0, 90.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "wall_picture",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.13636, 0.0, -0.065834 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "wood_crate",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.370278, 0.0, -0.897776 ],
+                "rot" : [ 0.0, -90.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "wood_crate",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.252383, 0.0, -0.124408 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "carpet",
+            },
+            "lightmap" : {
+                "res" : 256
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.340485, 1.162902, -0.657499 ],
+                "rot" : [ 0.0, 90.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "books",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.563807, 0.117683, 1.271587 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "box",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.6274, 0.0, 2.260465 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "lamp",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.136136, 0.420322, -0.057079 ],
+                "rot" : [ 0.0, 34.4981, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "laptop",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.215166, 0.117702, -0.795519 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "ornament",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.018643, 0.420288, -0.782735 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "ornaments",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.156934, 0.11768, -1.735835 ],
+                "rot" : [ 0.0, 3.54891, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "plant_01",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.397674, 0.11768, -1.533395 ],
+                "rot" : [ 0.0, -12.4005, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "plant_02",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.148426, 0.11768, -1.185067 ],
+                "rot" : [ 0.0, -5.62711, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "plant_03",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 1.986768, 0.42196, 0.296369 ],
+                "rot" : [ 0.0, -3, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "plant_crate",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.494851, 0.117739, -0.499551 ],
+                "rot" : [ 0.0, -36, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "small_lamp",
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.5, 1.5, 0.0 ],
+            },
+            "probe" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "radius" : 20.0
+            }
+        }
+    ]
+}

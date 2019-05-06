@@ -1,0 +1,6 @@
+gl_program: main_probelit main_probelit.vs.glsl main_probelit.fs.glsl
+gl_program: main_probelit main_probelit.vs.glsl main_probelit.fs.glsl
+sw_program: main
+texture: worn_brass.png
+texture: default_normalmap.png
+texture: default_specular.png
