@@ -96,16 +96,20 @@ void (APIENTRY *glUniform4fv)(GLint location, GLsizei count, const GLfloat *valu
 
 void (APIENTRY *glUniformMatrix4fv)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 
+#if !defined(__linux__)
 void (APIENTRY *glCompressedTexImage2D)(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid * data);
+#endif
 
 void (APIENTRY *glTexStorage2D)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
 void (APIENTRY *glTexStorage2DMultisample)(GLenum target, GLsizei samples, GLenum internalformat,
-        GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
+                                           GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 void (APIENTRY *glRenderbufferStorageMultisample)(GLenum target, GLsizei samples, GLenum internalformat,
-        GLsizei width, GLsizei height);
+                                                  GLsizei width, GLsizei height);
 
+#if !defined(__linux__)
 void (APIENTRY *glTexImage3D)(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                               GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid * data);
+#endif
 
 void (APIENTRY *glDrawElementsBaseVertex)(GLenum mode, GLsizei count, GLenum type, GLvoid *indices, GLint basevertex);
 void (APIENTRY *glDrawElementsInstanced)(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
@@ -237,13 +241,17 @@ bool Ren::InitGLExtentions() {
 
     glUniformMatrix4fv = GetProcAddress(glUniformMatrix4fv);
 
+#if !defined(__linux__)
     glCompressedTexImage2D = GetProcAddress(glCompressedTexImage2D);
+#endif
 
     glTexStorage2D = GetProcAddress(glTexStorage2D);
     glTexStorage2DMultisample = GetProcAddress(glTexStorage2DMultisample);
     glRenderbufferStorageMultisample = GetProcAddress(glRenderbufferStorageMultisample);
 
+#if !defined(__linux__)
     glTexImage3D = GetProcAddress(glTexImage3D);
+#endif
 
     glDrawElementsBaseVertex = GetProcAddress(glDrawElementsBaseVertex);
     glDrawElementsInstanced = GetProcAddress(glDrawElementsInstanced);

@@ -176,6 +176,8 @@ void Ren::Program::InitFromGLSL(const char *name, const Shaders &shaders, eProgL
         u.loc = glGetUniformBlockIndex(program, b.name.c_str());
         if (u.loc != -1) {
             u.name = b.name;
+
+            glUniformBlockBinding(program, u.loc, b.loc);
         }
     }
 
