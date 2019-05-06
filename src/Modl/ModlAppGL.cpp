@@ -37,7 +37,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
 
     auto m		= ref.get();
     auto mat	= m->group(0).mat.get();
-    auto p      = mat->program();
+    auto p      = mat->program(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf_id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
@@ -113,7 +113,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
     auto m	    = ref.get();
     auto mat	= m->group(0).mat.get();
-    auto p		= mat->program();
+    auto p		= mat->program(0);
 
     Ren::Skeleton *skel = m->skel();
     if (!skel->anims.empty()) {

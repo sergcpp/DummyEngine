@@ -87,7 +87,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
     }
 
     // Setup camera
-    cam_.Perspective(45.0f, float(w)/h, 0.2f, 10000.0f);
+    cam_.Perspective(45.0f, float(w)/h, 0.05f, 10000.0f);
 
     // Compile model or anim and/or load from file
 
@@ -460,9 +460,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             }
 
             // parse vertex positions
-            for (auto j : {
-                        0, 1, 2
-                    }) {
+            for (int j : { 0, 1, 2 }) {
                 float v = stof(toks[j]);
                 positions.push_back(v);
                 mesh_info.bbox_min[j] = min(mesh_info.bbox_min[j], v);
@@ -470,23 +468,17 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             }
 
             // parse vertex normals
-            for (auto j : {
-                        3, 4, 5
-                    }) {
+            for (int j : { 3, 4, 5 }) {
                 normals.push_back(stof(toks[j]));
             }
 
             // parse vertex uvs
-            for (auto j : {
-                        6, 7
-                    }) {
+            for (int j : { 6, 7 }) {
                 uvs.push_back(stof(toks[j]));
             }
 
             // parse additional uvs
-            for (auto j : {
-                        8, 9
-                    }) {
+            for (int j : { 8, 9 }) {
                 uvs2.push_back(stof(toks[j]));
             }
 
@@ -497,18 +489,14 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 tex_ids.push_back(it->second);
             } else if (mesh_type == M_SKEL) {
                 // parse joint indices and weights
-                for (auto j : {
-                            8, 10, 12, 14, 9, 11, 13, 15
-                        }) {
+                for (int j : { 8, 10, 12, 14, 9, 11, 13, 15 }) {
                     weights.push_back(j < (int)toks.size() ? stof(toks[j]) : 0);
                 }
             }
         }
 
         // fix for flat objects
-        for (auto j : {
-                    0, 1, 2
-                }) {
+        for (int j : { 0, 1, 2 }) {
             if (fabs(mesh_info.bbox_min[j] - mesh_info.bbox_max[j]) < 0.01f) {
                 mesh_info.bbox_max[j] += 0.01f;
             }
@@ -528,9 +516,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             } else {
                 auto toks = Tokenize(str, " \t");
                 if (toks.size() != 3) return RES_PARSE_ERROR;
-                for (auto j : {
-                            0, 1, 2
-                        }) {
+                for (int j : { 0, 1, 2 }) {
                     indices.back().push_back((uint32_t)stoi(toks[j]));
                 }
                 i++;
@@ -564,14 +550,10 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                     auto toks = Tokenize(str, " \t()");
                     if (toks.size() != 8) return RES_PARSE_ERROR;
                     int bone_index = stoi(toks[0]);
-                    for (auto j : {
-                                0, 1, 2
-                            }) {
+                    for (int j : { 0, 1, 2 }) {
                         out_bones[bone_index].bind_pos[j] = stof(toks[1 + j]);
                     }
-                    for (auto j : {
-                                0, 1, 2, 3
-                            }) {
+                    for (int j : { 0, 1, 2, 3 }) {
                         out_bones[bone_index].bind_rot[j] = stof(toks[4 + j]);
                     }
                     getline(in_file, str);
@@ -647,7 +629,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
     vector<int> alpha_mats;
 
     for (int i = 0; i < (int)reordered_indices.size(); i++) {
-        bool alpha_blend = false;
+        bool alpha_test = false;
         {
             // check if material has transparency
             ifstream mat_file("assets_pc/materials/" + materials[i] + ".txt");
@@ -664,13 +646,13 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                                            std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
                                            std::bind(&ModlApp::OnTextureNeeded, this, _1));
                 Ren::Material *mat = mat_ref.get();
-                alpha_blend = (bool)(mat->flags() & Ren::AlphaBlend);
+                alpha_test = (bool)(mat->flags() & Ren::AlphaTest);
             } else {
                 cerr << "material " << materials[i] << " missing!" << endl;
             }
         }
 
-        if (alpha_blend) {
+        if (alpha_test) {
             alpha_chunks.emplace_back((uint32_t)total_indices.size(), (uint32_t)reordered_indices[i].size(), 1);
             alpha_mats.push_back(i);
         } else {
