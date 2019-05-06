@@ -18,16 +18,6 @@
 #include "Comp/Transform.h"
 
 enum eObjectComp {
-    CompTransformBit   = (1 << 0),
-    CompDrawableBit    = (1 << 1),
-    CompOccluderBit    = (1 << 2),
-    CompLightmapBit    = (1 << 3),
-    CompLightSourceBit = (1 << 4),
-    CompDecalBit       = (1 << 5),
-    CompProbeBit       = (1 << 6)
-};
-
-enum eObjectComp_ {
     CompTransform  = 0,
     CompDrawable   = 1,
     CompOccluder   = 2,
@@ -35,6 +25,16 @@ enum eObjectComp_ {
     CompLightSource = 4,
     CompDecal      = 5,
     CompProbe      = 6
+};
+
+enum eObjectCompBit {
+    CompTransformBit   = (1 << CompTransform),
+    CompDrawableBit    = (1 << CompDrawable),
+    CompOccluderBit    = (1 << CompOccluder),
+    CompLightmapBit    = (1 << CompLightmap),
+    CompLightSourceBit = (1 << CompLightSource),
+    CompDecalBit       = (1 << CompDecal),
+    CompProbeBit       = (1 << CompProbe)
 };
 
 const int MAX_COMPONENT_TYPES = 32;

@@ -22,8 +22,8 @@ extern "C" {
 #include "../Utils/Load.h"
 
 namespace SceneManagerConstants {
-const float NEAR_CLIP = 0.5f;
-const float FAR_CLIP = 10000;
+const float NEAR_CLIP = 0.1f;
+const float FAR_CLIP = 10000.0f;
 
 #if defined(__ANDROID__)
 const char *MODELS_PATH = "./assets/models/";
@@ -303,7 +303,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
                         // Compute bounding box of light source
                         Ren::Vec4f pos = { ls->offset[0], ls->offset[1], ls->offset[2], 1.0f },
-                            dir = { ls->dir[0], ls->dir[1], ls->dir[2], 0.0f };
+                                   dir = { ls->dir[0], ls->dir[1], ls->dir[2], 0.0f };
 
                         Ren::Vec3f bbox_min, bbox_max;
 

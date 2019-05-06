@@ -74,9 +74,9 @@ const float *SceneManager::Draw_PT(int *w, int *h) {
         }
     }
 
+    std::tie(*w, *h) = ray_renderer_.size();
+
     const auto *pixels = ray_renderer_.get_pixels_ref();
-    *w = ray_renderer_.size().first;
-    *h = ray_renderer_.size().second;
     return &pixels[0].r;
 }
 
@@ -88,10 +88,11 @@ void SceneManager::ResetLightmaps_PT() {
 
     for (size_t i = 0; i < scene_data_.objects.size(); i++) {
         if (scene_data_.objects[i].comp_mask & CompLightmapBit) {
+            const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(scene_data_.objects[i].components[CompTransform]);
             const auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(scene_data_.objects[i].components[CompLightmap]);
 
             cur_lm_obj_ = i;
-            cam_desc.mi_index = lm->pt_mi;
+            cam_desc.mi_index = tr->pt_mi;
             break;
         }
     }
@@ -111,7 +112,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
     const int LM_SAMPLES_TOTAL =
 #ifdef NDEBUG
-        4096;
+        128;
 #else
         32;
 #endif
@@ -219,13 +220,13 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                         sh_data[i].coeff_g[sh_l] /= coverage;
                         sh_data[i].coeff_b[sh_l] /= coverage;
 
-                        if (sh_data[i].coeff_r[0] > FLT_EPSILON) {
+                        if (sh_data[i].coeff_r[0] > std::numeric_limits<float>::epsilon()) {
                             sh_data[i].coeff_r[sh_l] /= sh_data[i].coeff_r[0];
                         }
-                        if (sh_data[i].coeff_g[0] > FLT_EPSILON) {
+                        if (sh_data[i].coeff_g[0] > std::numeric_limits<float>::epsilon()) {
                             sh_data[i].coeff_g[sh_l] /= sh_data[i].coeff_g[0];
                         }
-                        if (sh_data[i].coeff_b[0] > FLT_EPSILON) {
+                        if (sh_data[i].coeff_b[0] > std::numeric_limits<float>::epsilon()) {
                             sh_data[i].coeff_b[sh_l] /= sh_data[i].coeff_b[0];
                         }
 
@@ -276,17 +277,16 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
             for (size_t i = cur_lm_obj_ + 1; i < scene_data_.objects.size(); i++) {
                 if (scene_data_.objects[i].comp_mask & CompLightmapBit) {
-                    const auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(scene_data_.objects[i].components[CompLightmap]);
+                    const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(scene_data_.objects[i].components[CompTransform]);
 
                     cur_lm_obj_ = i;
-                    cam_desc.mi_index = lm->pt_mi;
+                    cam_desc.mi_index = tr->pt_mi;
                     found = true;
                     break;
                 }
             }
 
             if (!found) {
-                
                 const int FilterSize = 32;
 
                 {   // Save direct lightmap
@@ -569,10 +569,9 @@ void SceneManager::InitScene_PT(bool _override) {
                 mesh_it = loaded_meshes.emplace(mesh_name, new_mesh).first;
             }
 
-            const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
-            auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(obj.components[CompLightmap]);
+            auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
 
-            lm->pt_mi = ray_scene_->AddMeshInstance(mesh_it->second, Ren::ValuePtr(tr->mat));
+            tr->pt_mi = ray_scene_->AddMeshInstance(mesh_it->second, Ren::ValuePtr(tr->mat));
         }
     }
 

@@ -47,8 +47,11 @@ void main() {
         // debug environment map
         outColor.rgb = RGBMDecode(textureLod(env_texture, vec4(view_dir_ws, uProbes[probe_index].unused_and_layer.w), mip_level));
     } else {
+        const float SH_A0 = 0.886226952; // PI / sqrt(4.0f * Pi)
+        const float SH_A1 = 1.02332675;  // sqrt(PI / 3.0f)
+
         // debug sh coeffs
-        vec4 vv = vec4(0.25, 0.5 * view_dir_ws.yzx);
+        vec4 vv = vec4(SH_A0, SH_A1 * view_dir_ws.yzx);
 
         outColor.r = dot(uProbes[probe_index].sh_coeffs[0], vv);
         outColor.g = dot(uProbes[probe_index].sh_coeffs[1], vv);

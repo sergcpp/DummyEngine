@@ -75,6 +75,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     const bool decals_enabled = (list.render_flags & EnableDecals) != 0;
     const bool shadows_enabled = (list.render_flags & EnableShadows) != 0;
 
+    int program_index = 0;
+    if ((list.render_flags & EnableLightmap) == 0) {
+        program_index = 1;
+    }
+
     litem_to_lsource_.clear();
     ditem_to_decal_.clear();
     decals_boxes_.clear();
@@ -280,7 +285,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             list.main_batches.emplace_back();
 
                             auto &batch = list.main_batches.back();
-                            batch.prog_id = (uint32_t)s->mat->program().index();
+                            batch.prog_id = (uint32_t)s->mat->program(program_index).index();
                             batch.mat_id = (uint32_t)s->mat.index();
                             batch.indices_offset = mesh->indices_offset() + s->offset;
                             batch.indices_count = s->num_indices;
@@ -438,7 +443,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     auto shadow_gather_start = std::chrono::high_resolution_clock::now();
 
-    if (lighting_enabled && shadows_enabled && Ren::Length2(list.env.sun_dir) > 0.9f && Ren::Length2(list.env.sun_col) > FLT_EPSILON) {
+    if (lighting_enabled && shadows_enabled && Ren::Length2(list.env.sun_dir) > 0.9f && Ren::Length2(list.env.sun_col) > std::numeric_limits<float>::epsilon()) {
         // Reserve space for sun shadow
         int sun_shadow_pos[2] = { 0, 0 };
         int sun_shadow_res[2];
@@ -889,7 +894,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     auto items_assignment_start = std::chrono::high_resolution_clock::now();
 
-    if (!list.light_sources.empty() || !list.decals.empty()) {
+    if (!list.light_sources.empty() || !list.decals.empty() || !list.probes.empty()) {
         list.draw_cam.ExtractSubFrustums(REN_GRID_RES_X, REN_GRID_RES_Y, REN_GRID_RES_Z, &temp_sub_frustums_[0]);
 
         const int lights_count = (int)list.light_sources.size();

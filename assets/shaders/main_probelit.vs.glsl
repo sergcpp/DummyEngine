@@ -46,13 +46,11 @@ layout(binding = $InstanceBufSlot) uniform mediump samplerBuffer instances_buffe
 layout(location = 0) out vec3 aVertexPos_;
 layout(location = 1) out mat3 aVertexTBN_;
 layout(location = 4) out vec2 aVertexUVs1_;
-layout(location = 5) out vec2 aVertexUVs2_;
-layout(location = 6) out vec3 aVertexShUVs_[4];
+layout(location = 5) out vec3 aVertexShUVs_[4];
 #else
 out vec3 aVertexPos_;
 out mat3 aVertexTBN_;
 out vec2 aVertexUVs1_;
-out vec2 aVertexUVs2_;
 out vec3 aVertexShUVs_[4];
 #endif
 
@@ -72,9 +70,6 @@ void main(void) {
 
     MMatrix = transpose(MMatrix);
 
-    // load lightmap transform
-    vec4 LightmapTr = texelFetch(instances_buffer, instance * 4 + 3);
-    
     vec3 vertex_position_ws = (MMatrix * vec4(aVertexPosition, 1.0)).xyz;
     vec3 vertex_normal_ws = normalize((MMatrix * vec4(aVertexNormal, 0.0)).xyz);
     vec3 vertex_tangent_ws = normalize((MMatrix * vec4(aVertexTangent, 0.0)).xyz);
@@ -82,7 +77,6 @@ void main(void) {
     aVertexPos_ = vertex_position_ws;
     aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);
     aVertexUVs1_ = aVertexUVs1;
-    aVertexUVs2_ = LightmapTr.xy + LightmapTr.zw * aVertexUVs2;
     
     const vec2 offsets[4] = vec2[4](
         vec2(0.0, 0.0),

@@ -10,6 +10,7 @@ struct Transform {
     uint32_t    node_index;
     Ren::Vec3f  bbox_max;
     Ren::Vec3f  bbox_min_ws, bbox_max_ws;
+    uint32_t    pt_mi;
 
     void UpdateBBox();
 

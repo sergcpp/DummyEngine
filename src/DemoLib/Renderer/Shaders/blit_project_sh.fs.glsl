@@ -29,7 +29,7 @@ void main() {
     vec2 rand2d = texelFetch(s_rand, ivec2(x % 8, y), 0).xy + texelFetch(s_rand, ivec2(iteration % 8, iteration / 8), 0).xy;
     rand2d = fract(rand2d);
 
-    float theta = 2.0 * acos(sqrt(1.0 - rand2d.x));
+    float theta = acos(-1.0 + 2.0 * rand2d.x);
     float phi = 2.0 * M_PI * rand2d.y;
 
     vec3 rand_vec = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));

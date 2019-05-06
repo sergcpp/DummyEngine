@@ -21,7 +21,12 @@ namespace RendererInternal {
         Ren::Vec4f uResAndFRes;
         ProbeItem uProbes[REN_MAX_PROBES_TOTAL];
     };
-    //static_assert(sizeof(SharedDataBlock) == 3088, "!");
+    static_assert(sizeof(SharedDataBlock) == 5648, "!");
+
+    struct BatchDataBlock {
+        Ren::Vec4i uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
+    };
+    static_assert(sizeof(BatchDataBlock) == 32, "!");
 
     const Ren::Vec2f poisson_disk[] = {
         { -0.705374f, -0.668203f }, { -0.780145f, 0.486251f  }, { 0.566637f, 0.605213f   }, { 0.488876f, -0.783441f  },
@@ -184,6 +189,15 @@ void Renderer::InitRendererInternal() {
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
         unif_shared_data_block_ = (uint32_t)shared_data_ubo;
+
+        GLuint batch_data_ubo;
+
+        glGenBuffers(1, &batch_data_ubo);
+        glBindBuffer(GL_UNIFORM_BUFFER, batch_data_ubo);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(BatchDataBlock), NULL, GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+        unif_batch_data_block_ = (uint32_t)batch_data_ubo;
     }
 
     Ren::CheckError("[InitRendererInternal]: UBO creation");
@@ -404,6 +418,9 @@ void Renderer::CheckInitVAOs() {
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
         glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
+        glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
+
         glBindVertexArray(0);
 
         shadow_pass_vao_ = (uint32_t)shadow_pass_vao;
@@ -417,6 +434,9 @@ void Renderer::CheckInitVAOs() {
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
         glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+
+        glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
 
         glBindVertexArray(0);
         depth_pass_vao_ = (uint32_t)depth_pass_vao;
@@ -506,6 +526,9 @@ void Renderer::DestroyRendererInternal() {
     {
         GLuint shared_data_ubo = (GLuint)unif_shared_data_block_;
         glDeleteBuffers(1, &shared_data_ubo);
+
+        GLuint batch_data_ubo = (GLuint)unif_batch_data_block_;
+        glDeleteBuffers(1, &batch_data_ubo);
     }
 
     {
@@ -719,6 +742,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
+    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC, (GLuint)unif_shared_data_block_);
+    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_BATCH_DATA_LOC, (GLuint)unif_batch_data_block_);
+
     GLint framebuf_before;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuf_before);
 
@@ -808,8 +834,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glBindVertexArray(skydome_vao_);
 
-        glBindBufferBase(GL_UNIFORM_BUFFER, skydome_prog_->uniform_block(REN_UB_SHARED_DATA_LOC).loc, (GLuint)unif_shared_data_block_);
-
         Ren::Mat4f translate_matrix;
         translate_matrix = Ren::Translate(translate_matrix, Ren::Vec3f{ shrd_data.uCamPosAndGamma });
 
@@ -851,11 +875,25 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUseProgram(fill_depth_prog_->prog_id());
 
-        glBindBufferBase(GL_UNIFORM_BUFFER, fill_depth_prog_->uniform_block(REN_UB_SHARED_DATA_LOC).loc, (GLuint)unif_shared_data_block_);
+        uint32_t cur_mat = 0xffffffff,
+                 cur_flags = 0xffffffff;
 
         // fill depth
         for (const auto &batch : list.main_batches) {
             if (!batch.instance_count) continue;
+
+            if (cur_mat != batch.mat_id) {
+                const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
+                uint32_t flags = mat->flags();
+
+                if (flags != cur_flags) {
+                    BindTexture(REN_DIFF_TEX_SLOT, (flags & AlphaTest) ? mat->texture(0)->tex_id()
+                                                                       : dummy_white_->tex_id());
+                    cur_flags = flags;
+                }
+
+                cur_mat = batch.mat_id;
+            }
 
             glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
 
@@ -894,8 +932,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         glUseProgram(ssao_prog->prog_id());
-
-        glBindBufferBase(GL_UNIFORM_BUFFER, ssao_prog->uniform_block(REN_UB_SHARED_DATA_LOC).loc, (GLuint)unif_shared_data_block_);
 
         const float uvs[] = { 0.0f, 0.0f,                       float(act_w_), 0.0f,
                               float(act_w_), float(act_h_),     0.0f, float(act_h_) };
@@ -981,7 +1017,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
     glDrawBuffers(3, draw_buffers);
-    
+
     {   // actual drawing
         const Ren::Program *cur_program = nullptr;
         const Ren::Material *cur_mat = nullptr;
@@ -994,9 +1030,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             if (cur_program != p) {
                 glUseProgram(p->prog_id());
-
-                glBindBufferBase(GL_UNIFORM_BUFFER, p->uniform_block(REN_UB_SHARED_DATA_LOC).loc, (GLuint)unif_shared_data_block_);
-
                 cur_program = p;
             }
 
@@ -1007,7 +1040,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 cur_mat = mat;
             }
 
-            glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
+            glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_batch_data_block_);
+            glBufferSubData(GL_UNIFORM_BUFFER, offsetof(BatchDataBlock, uInstanceIndices[0]), batch.instance_count * sizeof(int), &batch.instance_indices[0]);
 
             glDrawElementsInstanced(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
                                     (GLsizei)batch.instance_count);
@@ -1041,8 +1075,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             ssr_program = blit_ssr_prog_.get();
         }
         glUseProgram(ssr_program->prog_id());
-
-        glBindBufferBase(GL_UNIFORM_BUFFER, ssr_program->uniform_block(REN_UB_SHARED_DATA_LOC).loc, (GLuint)unif_shared_data_block_);
 
         const float uvs[] = { 0.0f, 0.0f,                       float(act_w_), 0.0f,
                               float(act_w_), float(act_h_),     0.0f, float(act_h_) };
@@ -1102,8 +1134,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
         glUseProgram(blit_mul_prog->prog_id());
 
-        glBindBufferBase(GL_UNIFORM_BUFFER, blit_mul_prog->uniform_block(REN_UB_SHARED_DATA_LOC).loc, (GLuint)unif_shared_data_block_);
-
         BindTexture(0, refl_buf_.attachments[0].tex);
 
         if (clean_buf_.sample_count > 1) {
@@ -1135,8 +1165,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUseProgram(probe_prog_->prog_id());
 
         glBindVertexArray(sphere_vao_);
-
-        glBindBufferBase(GL_UNIFORM_BUFFER, probe_prog_->uniform_block(REN_UB_SHARED_DATA_LOC).loc, (GLuint)unif_shared_data_block_);
 
         glUniform1f(1, debug_roughness_);
         debug_roughness_ += 0.1f;
@@ -1386,7 +1414,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUniform1f(U_GAMMA, (list.render_flags & DebugLights) ? 1.0f : 2.2f);
 
-        float exposure = reduced_average_ > FLT_EPSILON ? (0.85f / reduced_average_) : 1.0f;
+        float exposure = reduced_average_ > std::numeric_limits<float>::epsilon() ? (0.95f / reduced_average_) : 1.0f;
         exposure = std::min(exposure, 1000.0f);
 
         glUniform1f(U_EXPOSURE, exposure);
@@ -1983,7 +2011,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         glUniform2f(13, float(w), float(h));
         glUniform1f(U_GAMMA, 2.2f);
 
-        float exposure = 0.85f / reduced_average_;
+        float exposure = 0.95f / reduced_average_;
         exposure = std::min(exposure, 1000.0f);
 
         glUniform1f(U_EXPOSURE, exposure);
@@ -2280,7 +2308,7 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
     }
 
     if (iteration < 64) {
-        {   // Sample cubemap and project to sh basis
+        {   // Sample cubemap and project on sh basis
             Ren::Program *prog = blit_project_sh_prog_.get();
             glUseProgram(prog->prog_id());
 

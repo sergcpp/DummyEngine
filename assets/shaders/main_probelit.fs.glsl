@@ -48,13 +48,11 @@ layout (std140) uniform SharedDataBlock {
 layout(location = 0) in vec3 aVertexPos_;
 layout(location = 1) in mat3 aVertexTBN_;
 layout(location = 4) in vec2 aVertexUVs1_;
-layout(location = 5) in vec2 aVertexUVs2_;
-layout(location = 6) in vec3 aVertexShUVs_[4];
+layout(location = 5) in vec3 aVertexShUVs_[4];
 #else
 in vec3 aVertexPos_;
 in mat3 aVertexTBN_;
 in vec2 aVertexUVs1_;
-in vec2 aVertexUVs2_;
 in vec3 aVertexShUVs_[4];
 #endif
 
@@ -62,98 +60,7 @@ layout(location = $OutColorIndex) out vec4 outColor;
 layout(location = $OutNormIndex) out vec2 outNormal;
 layout(location = $OutSpecIndex) out vec4 outSpecular;
 
-vec3 heatmap(float t) {
-    vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
-    return vec3(1.0) - r * r;
-}
-
-highp float rand(highp vec2 co) {
-    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
-}
-
-vec3 RGBMDecode(vec4 rgbm) {
-    return 6.0 * rgbm.rgb * rgbm.a;
-}
-
-const vec2 poisson_disk[16] = vec2[16](
-    vec2(-0.5, 0.0),
-    vec2(0.0, 0.5),
-    vec2(0.5, 0.0),
-    vec2(0.0, -0.5),
-
-    vec2(0.0, 0.0),
-    vec2(-0.1, -0.32),
-    vec2(0.17, 0.31),
-    vec2(0.35, 0.04),
-    
-    vec2(0.07, 0.7),
-    vec2(-0.72, 0.09),
-    vec2(0.73, 0.05),
-    vec2(0.1, -0.71),
-    
-    vec2(0.72, 0.8),
-    vec2(-0.75, 0.74),
-    vec2(-0.8, -0.73),
-    vec2(0.75, -0.81)
-);
-
-#define M_PI 3.1415926535897932384626433832795
-
-float GetVisibility(float frag_depth) {
-    const vec2 shadow_softness = vec2(3.0 / $ShadRes.0, 1.5 / $ShadRes.0);
-    
-    float visibility = 0.0;
-
-    highp float r = M_PI * (-1.0 + 2.0 * rand(gl_FragCoord.xy));
-    highp vec2 rx = vec2(cos(r), sin(r));
-    highp vec2 ry = vec2(rx.y, -rx.x);
-    
-    if (frag_depth < $ShadCasc0Dist) {
-        const highp float weight = 1.0 / $ShadCasc0Samp.0;
-        for (int i = 0; i < $ShadCasc0Samp; i++) {
-            visibility += texture(shadow_texture, aVertexShUVs_[0] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
-        }
-        visibility *= weight;
-    } else if (frag_depth < $ShadCasc1Dist) {
-        const highp float weight = 1.0 / $ShadCasc1Samp.0;
-        for (int i = 0; i < $ShadCasc1Samp; i++) {
-            visibility += texture(shadow_texture, aVertexShUVs_[1] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
-        }
-        visibility *= weight;
-    } else if (frag_depth < $ShadCasc2Dist) {
-        const highp float weight = 1.0 / $ShadCasc2Samp.0;
-        for (int i = 0; i < $ShadCasc2Samp; i++) {
-            visibility += texture(shadow_texture, aVertexShUVs_[2] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
-        }
-        visibility *= weight;
-    } else if (frag_depth < $ShadCasc3Dist) {
-        const highp float weight = 1.0 / $ShadCasc3Samp.0;
-        for (int i = 0; i < $ShadCasc3Samp; i++) {
-            visibility += texture(shadow_texture, aVertexShUVs_[3] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
-        }
-        float t = smoothstep(0.95 * $ShadCasc3Dist, $ShadCasc3Dist, frag_depth);
-        visibility = mix(visibility * weight, 1.0, t);
-    } else {
-        // use direct sun lightmap?
-        visibility = 1.0;
-    }
-    
-    return visibility;
-}
-
-vec2 EncodeNormal(vec3 n) {
-    vec2 enc = normalize(n.xy) * (sqrt(-n.z * 0.5 + 0.5));
-    enc = enc * 0.5 + 0.5;
-    return enc;
-}
-
-vec3 DecodeNormal(vec2 enc) {
-    vec4 nn = vec4(2.0 * enc, 0.0, 0.0) + vec4(-1.0, -1.0, 1.0, -1.0);
-    float l = dot(nn.xyz, -nn.xyw);
-    nn.z = l;
-    nn.xy *= sqrt(l);
-    return 2.0 * nn.xyz + vec3(0.0, 0.0, -1.0);
-}
+#include "common.glsl"
 
 void main(void) {
     highp float lin_depth = uClipInfo[0] / (gl_FragCoord.z * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
@@ -299,7 +206,7 @@ void main(void) {
         }
     }
     
-    vec3 probe_col = vec3(0.0);
+    vec3 indirect_col = vec3(0.0);
     float total_dist = 0.0;
     
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
@@ -312,27 +219,16 @@ void main(void) {
         float dist = length(uProbes[pi].pos_and_radius.xyz - aVertexPos_);
         vec4 vv = dist * vec4(SH_A0, SH_A1 * normal.yzx);
 
-        probe_col.r += dot(uProbes[pi].sh_coeffs[0], vv);
-        probe_col.g += dot(uProbes[pi].sh_coeffs[1], vv);
-        probe_col.b += dot(uProbes[pi].sh_coeffs[2], vv);
+        indirect_col.r += dot(uProbes[pi].sh_coeffs[0], vv);
+        indirect_col.g += dot(uProbes[pi].sh_coeffs[1], vv);
+        indirect_col.b += dot(uProbes[pi].sh_coeffs[2], vv);
         total_dist += dist;
     }
     
-    probe_col = max(probe_col, vec3(0.0));
-    
     if (dcount_and_pcount.y != 0u) {
-        probe_col /= total_dist;
+        indirect_col /= total_dist;
     }
     
-    vec3 sh_l_00 = RGBMDecode(texture(lm_indirect_sh_texture[0], aVertexUVs2_));
-    vec3 sh_l_10 = texture(lm_indirect_sh_texture[1], aVertexUVs2_).rgb;
-    vec3 sh_l_11 = texture(lm_indirect_sh_texture[2], aVertexUVs2_).rgb;
-    vec3 sh_l_12 = texture(lm_indirect_sh_texture[3], aVertexUVs2_).rgb;
-    
-    //indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
-    vec3 indirect_col = (0.5 + (sh_l_10 - vec3(0.5)) * normal.y +
-                               (sh_l_11 - vec3(0.5)) * normal.z +
-                               (sh_l_12 - vec3(0.5)) * normal.x) * sh_l_00 * 2.0;
     indirect_col = max(indirect_col, vec3(0.0));
     
     float lambert = max(dot(normal, uSunDir.xyz), 0.0);
@@ -347,7 +243,7 @@ void main(void) {
                               texture(ao_texture, ao_uvs + vec2(0.0, dy)).r + texture(ao_texture, ao_uvs + vec2(dx, dy)).r;
     ambient_occlusion *= 0.25;
                               
-    vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + ambient_occlusion * (indirect_col + probe_col) + additional_light);
+    vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
     
     outColor = vec4(diffuse_color, 1.0);
     

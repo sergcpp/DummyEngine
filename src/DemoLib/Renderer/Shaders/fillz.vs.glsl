@@ -8,6 +8,7 @@ UNIFORM_BLOCKS
 */
 
 layout(location = )" AS_STR(REN_VTX_POS_LOC) R"() in vec3 aVertexPosition;
+layout(location = )" AS_STR(REN_VTX_UV1_LOC) R"() in vec2 aVertexUVs1;
 
 struct ShadowMapRegion {
     vec4 transform;
@@ -27,6 +28,8 @@ layout(binding = )" AS_STR(REN_INST_BUF_SLOT) R"() uniform mediump samplerBuffer
 
 layout(location = )" AS_STR(REN_U_INSTANCES_LOC) R"() uniform int uInstanceIndices[8];
 
+out vec2 aVertexUVs1_;
+
 void main() {
     int instance = uInstanceIndices[gl_InstanceID];
 
@@ -37,6 +40,8 @@ void main() {
     MMatrix[3] = vec4(0.0, 0.0, 0.0, 1.0);
 
     MMatrix = transpose(MMatrix);
+
+    aVertexUVs1_ = aVertexUVs1;
 
     gl_Position = uViewProjMatrix * MMatrix * vec4(aVertexPosition, 1.0);
 } 
