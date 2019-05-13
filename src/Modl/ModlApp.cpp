@@ -606,14 +606,8 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             reordered_indices.emplace_back();
             auto &cur_strip = reordered_indices.back();
 
-            std::vector<uint32_t> reordered(index_group.size());
-
-            Ren::ReorderTriangleIndices(&index_group[0], (uint32_t)index_group.size(), (uint32_t)num_vertices, &reordered[0]);
-
-            cur_strip.resize(reordered.size());
-            for (size_t i = 0; i < reordered.size(); i++) {
-                cur_strip[i] = reordered[i];
-            }
+            cur_strip.resize(index_group.size());
+            Ren::ReorderTriangleIndices(&index_group[0], (uint32_t)index_group.size(), (uint32_t)num_vertices, &cur_strip[0]);
         }
     }
 
