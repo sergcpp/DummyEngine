@@ -38,7 +38,7 @@ public:
     void ReverseYAxis(bool state);
 
     float GetTriangles(const char *text, std::vector<float> &positions, std::vector<float> &uvs,
-                       std::vector<unsigned char> &indices, const Vec2f &pos, const BaseElement *parent);
+                       std::vector<uint16_t> &indices, const Vec2f &pos, const BaseElement *parent);
 
     float GetWidth(const char *text, const BaseElement *parent);
 
@@ -57,6 +57,6 @@ private:
     float scale_;
 
     static std::vector<float> std_positions, std_uvs;
-    static std::vector<unsigned char> std_indices;
+    static std::vector<uint16_t> std_indices;
 };
 }

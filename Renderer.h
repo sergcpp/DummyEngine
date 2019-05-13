@@ -95,7 +95,7 @@ public:
 
     void DrawUIElement(const Ren::Texture2DRef &tex, ePrimitiveType prim_type,
                        const std::vector<float> &pos, const std::vector<float> &uvs,
-                       const std::vector<unsigned char> &indices);
+                       const std::vector<uint16_t> &indices);
 private:
     Ren::Context &ctx_;
     Ren::ProgramRef ui_program_;

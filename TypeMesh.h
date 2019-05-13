@@ -9,7 +9,7 @@ namespace Gui {
 class TypeMesh : public BaseElement {
     std::string text_;
     std::vector<float> pos_, uvs_;
-    std::vector<unsigned char> indices_;
+    std::vector<uint16_t> indices_;
 
     Vec2f center_;
 

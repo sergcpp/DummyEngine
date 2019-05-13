@@ -12,7 +12,7 @@ class Frame : public BaseElement {
     float frame_offset_, frame_offset_uv_;
 
     std::vector<float> positions_, uvs_;
-    std::vector<unsigned char> indices_;
+    std::vector<uint16_t> indices_;
 public:
     Frame(const Ren::Texture2DRef &tex, const Vec2f &offsets,
           const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
