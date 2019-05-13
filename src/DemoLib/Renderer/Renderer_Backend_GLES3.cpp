@@ -1978,7 +1978,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                  time_depth_opaque_start,
                  time_ao_start,
                  time_opaque_start,
-                 time_depth_transp_start,
                  time_transp_start,
                  time_refl_start,
                  time_blur_start,
