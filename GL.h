@@ -91,6 +91,9 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 #define GL_UNIFORM_BUFFER                   0x8A11
 #define GL_SHADER_STORAGE_BUFFER            0x90D2
 
+#define GL_ARRAY_BUFFER_BINDING             0x8894
+#define GL_ELEMENT_ARRAY_BUFFER_BINDING     0x8895
+
 #define GL_STATIC_DRAW                      0x88E4
 #define GL_DYNAMIC_DRAW                     0x88E8
 
@@ -332,6 +335,8 @@ extern void (APIENTRY *glUniform1i)(GLint location, GLint v0);
 extern void (APIENTRY *glUniform2i)(GLint location, GLint v0, GLint v1);
 extern void (APIENTRY *glUniform3i)(GLint location, GLint v0, GLint v1, GLint v2);
 
+extern void (APIENTRY *glUniform1iv)(GLint location, GLsizei count, const GLint *value);
+
 extern void (APIENTRY *glUniform3fv)(GLint location, GLsizei count, const GLfloat *value);
 extern void (APIENTRY *glUniform4fv)(GLint location, GLsizei count, const GLfloat *value);
 
@@ -346,6 +351,7 @@ extern void (APIENTRY *glRenderbufferStorageMultisample)(GLenum target, GLsizei 
         GLsizei width, GLsizei height);
 
 extern void (APIENTRY *glDrawElementsBaseVertex)(GLenum mode, GLsizei count, GLenum type, GLvoid *indices, GLint basevertex);
+extern void (APIENTRY *glDrawElementsInstanced)(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
 
 extern void (APIENTRY *glDispatchCompute)(GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z);
 extern void (APIENTRY *glMemoryBarrier)(GLbitfield barriers);

@@ -87,6 +87,8 @@ void (APIENTRY *glUniform1i)(GLint location, GLint v0);
 void (APIENTRY *glUniform2i)(GLint location, GLint v0, GLint v1);
 void (APIENTRY *glUniform3i)(GLint location, GLint v0, GLint v1, GLint v2);
 
+void (APIENTRY *glUniform1iv)(GLint location, GLsizei count, const GLint *value);
+
 void (APIENTRY *glUniform3fv)(GLint location, GLsizei count, const GLfloat *value);
 void (APIENTRY *glUniform4fv)(GLint location, GLsizei count, const GLfloat *value);
 
@@ -101,6 +103,7 @@ void (APIENTRY *glRenderbufferStorageMultisample)(GLenum target, GLsizei samples
         GLsizei width, GLsizei height);
 
 void (APIENTRY *glDrawElementsBaseVertex)(GLenum mode, GLsizei count, GLenum type, GLvoid *indices, GLint basevertex);
+void (APIENTRY *glDrawElementsInstanced)(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
 
 void (APIENTRY *glDispatchCompute)(GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z);
 void (APIENTRY *glMemoryBarrier)(GLbitfield barriers);
@@ -220,6 +223,8 @@ bool Ren::InitGLExtentions() {
     glUniform2i = GetProcAddress(glUniform2i);
     glUniform3i = GetProcAddress(glUniform3i);
 
+    glUniform1iv = GetProcAddress(glUniform1iv);
+
     glUniform3fv = GetProcAddress(glUniform3fv);
     glUniform4fv = GetProcAddress(glUniform4fv);
 
@@ -232,6 +237,7 @@ bool Ren::InitGLExtentions() {
     glRenderbufferStorageMultisample = GetProcAddress(glRenderbufferStorageMultisample);
 
     glDrawElementsBaseVertex = GetProcAddress(glDrawElementsBaseVertex);
+    glDrawElementsInstanced = GetProcAddress(glDrawElementsInstanced);
 
     glDispatchCompute = GetProcAddress(glDispatchCompute);
     glMemoryBarrier = GetProcAddress(glMemoryBarrier);
