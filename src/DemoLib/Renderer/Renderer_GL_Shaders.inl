@@ -143,6 +143,10 @@ static const char blit_project_sh_fs[] =
 #include "Shaders/blit_project_sh.fs.glsl"
 ;
 
+static const char blit_fxaa_fs[] =
+#include "Shaders/blit_fxaa.fs.glsl"
+;
+
 static const char probe_vs[] =
 #include "Shaders/probe.vs.glsl"
 ;

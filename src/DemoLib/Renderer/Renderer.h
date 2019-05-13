@@ -131,19 +131,20 @@ enum eRenderFlags {
     EnableShadows   = (1 << 8),
     EnableTonemap   = (1 << 9),
     EnableBloom     = (1 << 10),
-    EnableTimers    = (1 << 11),
-    DebugWireframe  = (1 << 12),
-    DebugCulling    = (1 << 13),
-    DebugShadow     = (1 << 14),
-    DebugReduce     = (1 << 15),
-    DebugLights     = (1 << 16),
-    DebugDeferred   = (1 << 17),
-    DebugBlur       = (1 << 18),
-    DebugDecals     = (1 << 19),
-    DebugSSAO       = (1 << 20),
-    DebugTimings    = (1 << 21),
-    DebugBVH        = (1 << 22),
-    DebugProbes     = (1 << 23)
+    EnableFxaa      = (1 << 11),
+    EnableTimers    = (1 << 12),
+    DebugWireframe  = (1 << 13),
+    DebugCulling    = (1 << 14),
+    DebugShadow     = (1 << 15),
+    DebugReduce     = (1 << 16),
+    DebugLights     = (1 << 17),
+    DebugDeferred   = (1 << 18),
+    DebugBlur       = (1 << 19),
+    DebugDecals     = (1 << 20),
+    DebugSSAO       = (1 << 21),
+    DebugTimings    = (1 << 22),
+    DebugBVH        = (1 << 23),
+    DebugProbes     = (1 << 24)
 };
 
 class Renderer {
@@ -226,17 +227,17 @@ private:
     Ren::ProgramRef skydome_prog_, fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_combine_ms_prog_,
         blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_, blit_gauss_sep_prog_, blit_debug_prog_, blit_debug_ms_prog_, blit_ssr_prog_, blit_ssr_ms_prog_,
         blit_ao_prog_, blit_ao_ms_prog_, blit_multiply_prog_, blit_multiply_ms_prog_, blit_debug_bvh_prog_, blit_debug_bvh_ms_prog_, blit_depth_prog_,
-        blit_rgbm_prog_, blit_mipmap_prog_, blit_project_sh_prog_, probe_prog_;
+        blit_rgbm_prog_, blit_mipmap_prog_, blit_project_sh_prog_, blit_fxaa_prog_, probe_prog_;
     Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_;
 
-    FrameBuf clean_buf_, refl_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf_, probe_sample_buf_;
+    FrameBuf clean_buf_, refl_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf_, probe_sample_buf_, combined_buf_;
     int scr_w_ = 0, scr_h_ = 0, act_w_ = 0, act_h_ = 0;
 
     Ren::TextureSplitter shadow_splitter_;
 
     static const uint32_t default_flags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableTimers);
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableFxaa | EnableTimers);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap | EnableTimers);
 #endif

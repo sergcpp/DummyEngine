@@ -168,6 +168,13 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             }
             clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, true, Ren::NoFilter, 4);
         }
+        {   // Buffer that holds ldr frame before fxaa applied
+            FrameBuf::ColorAttachmentDesc desc;
+            desc.format = Ren::RawRGB888;
+            desc.filter = Ren::BilinearNoMipmap;
+            desc.repeat = Ren::ClampToEdge;
+            combined_buf_ = FrameBuf(ctx_.w(), ctx_.h(), &desc, 1, false);
+        }
         {   // Buffer for SSAO
             FrameBuf::ColorAttachmentDesc desc;
             desc.format = Ren::RawR8;

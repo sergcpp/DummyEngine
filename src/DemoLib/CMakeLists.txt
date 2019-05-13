@@ -69,6 +69,7 @@ set(SHADERS_SOURCES Renderer/Shaders/blit.fs.glsl
                     Renderer/Shaders/blit_depth.fs.glsl
                     Renderer/Shaders/blit_down.fs.glsl
                     Renderer/Shaders/blit_down_ms.fs.glsl
+                    Renderer/Shaders/blit_fxaa.fs.glsl
                     Renderer/Shaders/blit_gauss.fs.glsl
                     Renderer/Shaders/blit_gauss_sep.fs.glsl
                     Renderer/Shaders/blit_mipmap.fs.glsl

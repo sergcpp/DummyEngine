@@ -155,6 +155,16 @@ void GSDrawTest::Enter() {
         return true;
     });
 
+    game_->RegisterCommand("fxaa", [weak_this](const std::vector<std::string> &args) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= EnableFxaa;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+    });
+
     game_->RegisterCommand("pt", [weak_this](const std::vector<std::string> &args) ->bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {

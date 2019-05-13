@@ -179,6 +179,9 @@ void Renderer::InitRendererInternal() {
     LOGI("Compiling blit_project_sh_prog");
     blit_project_sh_prog_ = ctx_.LoadProgramGLSL("blit_project_sh_prog", blit_vs, blit_project_sh_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_fxaa_prog");
+    blit_fxaa_prog_ = ctx_.LoadProgramGLSL("blit_fxaa_prog", blit_vs, blit_fxaa_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling probe_prog");
     probe_prog_ = ctx_.LoadProgramGLSL("probe_prog", probe_vs, probe_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
@@ -1574,12 +1577,17 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[1][TimeBlitStart], GL_TIMESTAMP);
     }
     
-    if (!target) {
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
-        glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
+    if (list.render_flags & EnableFxaa) {
+        glBindFramebuffer(GL_FRAMEBUFFER, combined_buf_.fb);
+        glViewport(0, 0, act_w_, act_h_);
     } else {
-        glBindFramebuffer(GL_FRAMEBUFFER, target->fb);
-        glViewport(0, 0, target->w, target->h);
+        if (!target) {
+            glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
+            glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
+        } else {
+            glBindFramebuffer(GL_FRAMEBUFFER, target->fb);
+            glViewport(0, 0, target->w, target->h);
+        }
     }
 
     {   // Blit main framebuffer
@@ -1636,13 +1644,50 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
-#ifndef DISABLE_MARKERS
-        glPopDebugGroup();
-#endif
-
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
     }
+
+    if (list.render_flags & EnableFxaa) {
+        if (!target) {
+            glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
+            glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
+        } else {
+            glBindFramebuffer(GL_FRAMEBUFFER, target->fb);
+            glViewport(0, 0, target->w, target->h);
+        }
+
+        {   // Blit fxaa
+            const Ren::Program *blit_prog = blit_fxaa_prog_.get();
+            glUseProgram(blit_prog->prog_id());
+
+            glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
+
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_norm_uvs), fs_quad_norm_uvs);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
+
+            glEnableVertexAttribArray(REN_VTX_POS_LOC);
+            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+
+            glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
+
+            BindTexture(REN_DIFF_TEX_SLOT, combined_buf_.attachments[0].tex);
+
+            glUniform2f(12, 1.0f / act_w_, 1.0f / act_h_);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+
+            glDisableVertexAttribArray(REN_VTX_POS_LOC);
+            glDisableVertexAttribArray(REN_VTX_UV1_LOC);
+        }
+    }
+
+#ifndef DISABLE_MARKERS
+    glPopDebugGroup();
+#endif
     
     {   
         if (list.render_flags & EnableSSR) {
