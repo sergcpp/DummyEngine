@@ -52,6 +52,9 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 #define GL_DEBUG_SEVERITY_LOW               0x9148
 #define GL_DEBUG_SEVERITY_NOTIFICATION      0x826B
 
+#define GL_DEBUG_SOURCE_APPLICATION         0x824A
+#define GL_DEBUG_TYPE_MARKER	            0x8268
+
 #define GL_TEXTURE_MAX_ANISOTROPY_EXT       0x84FE
 #define GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT   0x84FF
 
@@ -400,6 +403,9 @@ typedef void (APIENTRY *DEBUGPROC)(GLenum source,
                                    const GLchar *message,
                                    const void *userParam);
 extern void (APIENTRY *glDebugMessageCallback)(DEBUGPROC callback, const void * userParam);
+extern void (APIENTRY *glDebugMessageInsert)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char *message);
+extern void (APIENTRY *glPushDebugGroup)(GLenum source, GLuint id, GLsizei length, const char *message);
+extern void (APIENTRY *glPopDebugGroup)();
 #endif
 #endif
 

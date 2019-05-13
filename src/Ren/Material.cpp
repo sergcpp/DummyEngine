@@ -88,6 +88,8 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
 
             if (flag == "alpha_test") {
                 flags_ |= AlphaTest;
+            } else if (flag == "alpha_blend") {
+                flags_ |= AlphaBlend;
             } else {
                 fprintf(stderr, "Unknown flag %s", flag.c_str());
             }

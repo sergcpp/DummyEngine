@@ -139,6 +139,9 @@ void (APIENTRY *glGetDoublei_v)(GLenum target, GLuint index, GLdouble *data);
 void (APIENTRY *glGetInteger64i_v)(GLenum target, GLuint index, GLint64 *data);
 
 void (APIENTRY *glDebugMessageCallback)(DEBUGPROC callback, const void * userParam);
+void (APIENTRY *glDebugMessageInsert)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char *message);
+void (APIENTRY *glPushDebugGroup)(GLenum source, GLuint id, GLsizei length, const char *message);
+void (APIENTRY *glPopDebugGroup)();
 #endif
 
 bool Ren::InitGLExtentions() {
@@ -281,6 +284,9 @@ bool Ren::InitGLExtentions() {
     glGetInteger64i_v = GetProcAddress(glGetInteger64i_v);
 
     glDebugMessageCallback = GetProcAddress(glDebugMessageCallback);
+    glDebugMessageInsert = GetProcAddress(glDebugMessageInsert);
+    glPushDebugGroup = GetProcAddress(glPushDebugGroup);
+    glPopDebugGroup = GetProcAddress(glPopDebugGroup);
 #endif
 
     return true;

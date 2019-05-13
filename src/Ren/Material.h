@@ -12,7 +12,10 @@
 #include "MVec.h"
 
 namespace Ren {
-enum eMaterialFlags { AlphaTest = (1 << 0) };
+enum eMaterialFlags {
+    AlphaTest = (1 << 0),
+    AlphaBlend = (1 << 1),
+};
 
 enum eMatLoadStatus { MatFound, MatSetToDefault, MatCreatedFromData };
 
