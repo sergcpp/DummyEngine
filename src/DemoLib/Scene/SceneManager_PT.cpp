@@ -594,7 +594,7 @@ void SceneManager::InitScene_PT(bool _override) {
     }
 }
 
-void SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up) {
+void SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov) {
     if (!ray_scene_) return;
 
     Ray::camera_desc_t cam_desc;
@@ -604,6 +604,8 @@ void SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &targ
 
     memcpy(&cam_desc.origin[0], Ren::ValuePtr(origin), 3 * sizeof(float));
     memcpy(&cam_desc.fwd[0], Ren::ValuePtr(fwd), 3 * sizeof(float));
+
+    cam_desc.fov = fov;
 
     ray_scene_->SetCamera(0, cam_desc);
 }

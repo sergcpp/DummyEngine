@@ -193,7 +193,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         }
         {   // Auxilary buffers for bloom effect
             FrameBuf::ColorAttachmentDesc desc;
-            desc.format = Ren::RawRGBA16F;
+            desc.format = Ren::RawRGB16F;
             desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;
             blur_buf1_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, false);

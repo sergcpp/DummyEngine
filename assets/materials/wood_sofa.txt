@@ -2,5 +2,5 @@ gl_program: main_probelit main_probelit.vs.glsl main_probelit.fs.glsl
 gl_program: main_probelit main_probelit.vs.glsl main_probelit.fs.glsl
 sw_program: main
 texture: wood_004.png
-texture: default_normalmap.png
-texture: default_specular.png
+texture: wood_004_norm.png
+texture: wood_004_spec.png

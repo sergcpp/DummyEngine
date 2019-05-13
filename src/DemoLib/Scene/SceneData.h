@@ -62,9 +62,10 @@ struct BackendInfo {
     uint64_t gpu_start_timepoint_us = 0,
              gpu_end_timepoint_us = 0;
     uint32_t shadow_time_us = 0,
-             depth_pass_time_us = 0,
+             depth_opaque_pass_time_us = 0,
              ao_pass_time_us = 0,
              opaque_pass_time_us = 0,
+             transp_pass_time_us = 0,
              refl_pass_time_us = 0,
              blur_pass_time_us = 0,
              blit_pass_time_us = 0;
@@ -99,6 +100,7 @@ struct BBox {
 
 class CompStorage {
 public:
+    virtual ~CompStorage() {}
     virtual const char *name() const = 0;
 
     virtual uint32_t Create() = 0;

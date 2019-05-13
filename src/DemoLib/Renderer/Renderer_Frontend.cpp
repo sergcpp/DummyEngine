@@ -20,6 +20,27 @@ const uint8_t bbox_indices[] = { 0, 1, 2,    2, 1, 3,
                                  3, 1, 5,    3, 5, 7,
                                  4, 6, 5,    5, 6, 7
                                };
+
+template <typename SpanType>
+void RadixSort_LSB(SpanType *begin, SpanType *end, SpanType *begin1) {
+    SpanType *end1 = begin1 + (end - begin);
+
+    for (unsigned shift = 0; shift < sizeof(SpanType::key) * 8; shift += 8) {
+        size_t count[0x100] = {};
+        for (SpanType *p = begin; p != end; p++) {
+            count[(p->key >> shift) & 0xFF]++;
+        }
+        SpanType *bucket[0x100], *q = begin1;
+        for (int i = 0; i < 0x100; q += count[i++]) {
+            bucket[i] = q;
+        }
+        for (SpanType *p = begin; p != end; p++) {
+            *bucket[(p->key >> shift) & 0xFF]++ = *p;
+        }
+        std::swap(begin, begin1);
+        std::swap(end, end1);
+    }
+}
 }
 
 #define BBOX_POINTS(min, max) \
@@ -32,6 +53,7 @@ const uint8_t bbox_indices[] = { 0, 1, 2,    2, 1, 3,
     (min)[0], (max)[1], (max)[2],     \
     (max)[0], (max)[1], (max)[2]
 
+#define _MIN(x, y) ((x) < (y) ? (x) : (y))
 #define _MAX(x, y) ((x) < (y) ? (y) : (x))
 
 void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list) {
@@ -280,13 +302,21 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         const auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
                         const auto *mesh = dr->mesh.get();
 
+                        const float max_sort_dist = 100.0f;
+                        const uint8_t dist = (uint8_t)_MIN(255 * Ren::Distance(tr->bbox_min_ws, cam.world_position()) / max_sort_dist, 255);
+
                         const Ren::TriGroup *s = &mesh->group(0);
                         while (s->offset != -1) {
-                            list.main_batches.emplace_back();
+                            const Ren::Material *mat = s->mat.get();
 
-                            auto &batch = list.main_batches.back();
-                            batch.prog_id = (uint32_t)s->mat->program(program_index).index();
+                            list.main_batches.emplace_back();
+                            MainDrawBatch &batch = list.main_batches.back();
+
+                            batch.prog_id = (uint32_t)mat->program(program_index).index();
+                            batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
+                            batch.alpha_blend_bit = (mat->flags() & Ren::AlphaBlend) ? 1 : 0;
                             batch.mat_id = (uint32_t)s->mat.index();
+                            batch.cam_dist = (uint32_t)dist;
                             batch.indices_offset = mesh->indices_offset() + s->offset;
                             batch.indices_count = s->num_indices;
                             batch.instance_indices[0] = (uint32_t)(list.instances.size() - 1);
@@ -620,6 +650,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                         const auto &world_from_object = tr->mat;
                         const auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
+                        if ((dr->flags & Drawable::DrVisibleToShadow) == 0) continue;
+
                         const auto *mesh = dr->mesh.get();
                         
                         auto world_from_object_trans = Ren::Transpose(world_from_object);
@@ -632,13 +664,23 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
                         }
 
-                        list.shadow_batches.emplace_back();
+                        const auto *s = &mesh->group(0);
+                        while (s->offset != -1) {
+                            const Ren::Material *mat = s->mat.get();
+                            if ((mat->flags() & Ren::AlphaBlend) == 0) {
+                                list.shadow_batches.emplace_back();
+                                ShadowDrawBatch &batch = list.shadow_batches.back();
 
-                        auto &batch = list.shadow_batches.back();
-                        batch.indices_offset = mesh->indices_offset();
-                        batch.indices_count = mesh->indices_size() / sizeof(uint32_t);
-                        batch.instance_indices[0] = obj_to_instance_[n->prim_index];
-                        batch.instance_count = 1;
+                                batch.mat_id = (uint32_t)s->mat.index();
+                                batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
+                                batch.indices_offset = mesh->indices_offset() + s->offset;
+                                batch.indices_count = s->num_indices;
+                                batch.instance_indices[0] = obj_to_instance_[n->prim_index];
+                                batch.instance_count = 1;
+                            }
+
+                            ++s;
+                        }
                     }
                 }
             }
@@ -689,7 +731,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         }
                     }
                     if (oldest != allocated_shadow_regions_.end() && (scene.update_counter - oldest->last_visible) > 10) {
-                        // kick one of old cached regions
+                        // kick out one of old cached regions
                         shadow_splitter_.Free(oldest->pos);
                         allocated_shadow_regions_.erase(oldest);
                         // try again to insert
@@ -781,6 +823,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                             const auto &world_from_object = tr->mat;
                             const auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
+                            if ((dr->flags & Drawable::DrVisibleToShadow) == 0) continue;
+
                             const auto *mesh = dr->mesh.get();
 
                             auto world_from_object_trans = Ren::Transpose(world_from_object);
@@ -793,13 +837,23 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
                             }
 
-                            list.shadow_batches.emplace_back();
+                            const Ren::TriGroup *s = &mesh->group(0);
+                            while (s->offset != -1) {
+                                const Ren::Material *mat = s->mat.get();
+                                if ((mat->flags() & Ren::AlphaBlend) == 0) {
+                                    list.shadow_batches.emplace_back();
+                                    ShadowDrawBatch &batch = list.shadow_batches.back();
 
-                            auto &batch = list.shadow_batches.back();
-                            batch.indices_offset = mesh->indices_offset();
-                            batch.indices_count = mesh->indices_size() / sizeof(uint32_t);
-                            batch.instance_indices[0] = obj_to_instance_[n->prim_index];
-                            batch.instance_count = 1;
+                                    batch.mat_id = (uint32_t)s->mat.index();
+                                    batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
+
+                                    batch.indices_offset = mesh->indices_offset() + s->offset;
+                                    batch.indices_count = s->num_indices;
+                                    batch.instance_indices[0] = (uint32_t)(list.instances.size() - 1);
+                                    batch.instance_count = 1;
+                                }
+                                ++s;
+                            }
                         }
 
                         if (obj.last_change_mask & CompTransformBit) {
@@ -810,6 +864,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                 if (!light_sees_dynamic_objects && region->last_update != 0xffffffff && (scene.update_counter - region->last_update > 2)) {
                     // nothing was changed within last two frames
+                    list.shadow_batches.resize(sh_list.shadow_batch_start);
                     sh_list.shadow_batch_count = 0;
                 } else {
                     if (light_sees_dynamic_objects || region->last_update == 0xffffffff) {
@@ -839,16 +894,39 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     auto drawables_sort_start = std::chrono::high_resolution_clock::now();
 
     // Sort drawables to optimize state switches
-    std::sort(std::begin(list.main_batches), std::end(list.main_batches));
+    temp_sort_spans_64_[0].resize(list.main_batches.size());
+    temp_sort_spans_64_[1].resize(list.main_batches.size());
+    list.main_batch_indices.resize(list.main_batches.size());
+    uint32_t spans_count = 0;
+
+    // compress batches into spans with indentical key values (makes sorting faster)
+    for (uint32_t start = 0, end = 1; end <= (uint32_t)list.main_batches.size(); end++) {
+        if (end == (uint32_t)list.main_batches.size() || (list.main_batches[start].sort_key != list.main_batches[end].sort_key)) {
+            temp_sort_spans_64_[0][spans_count].key = list.main_batches[start].sort_key;
+            temp_sort_spans_64_[0][spans_count].base = start;
+            temp_sort_spans_64_[0][spans_count++].count = end - start;
+            start = end;
+        }
+    }
+
+    RadixSort_LSB<SortSpan64>(temp_sort_spans_64_[0].data(), temp_sort_spans_64_[0].data() + spans_count, temp_sort_spans_64_[1].data());
+
+    // decompress sorted spans
+    size_t counter = 0;
+    for (uint32_t i = 0; i < spans_count; i++) {
+        for (uint32_t j = 0; j < temp_sort_spans_64_[0][i].count; j++) {
+            list.main_batch_indices[counter++] = temp_sort_spans_64_[0][i].base + j;
+        }
+    }
 
     // Merge similar batches
-    for (uint32_t start = 0, end = 1; end <= uint32_t(list.main_batches.size()); end++) {
-        if (end == list.main_batches.size() ||
-            list.main_batches[start].indices_offset != list.main_batches[end].indices_offset) {
+    for (uint32_t start = 0, end = 1; end <= uint32_t(list.main_batch_indices.size()); end++) {
+        if (end == list.main_batch_indices.size() ||
+            list.main_batches[list.main_batch_indices[start]].sort_key != list.main_batches[list.main_batch_indices[end]].sort_key) {
 
-            auto &b1 = list.main_batches[start];
+            auto &b1 = list.main_batches[list.main_batch_indices[start]];
             for (uint32_t i = start + 1; i < end; i++) {
-                auto &b2 = list.main_batches[i];
+                auto &b2 = list.main_batches[list.main_batch_indices[i]];
 
                 if (b1.instance_count + b2.instance_count < REN_MAX_BATCH_SIZE) {
                     memcpy(&b1.instance_indices[b1.instance_count], &b2.instance_indices[0], b2.instance_count * sizeof(int));
@@ -861,20 +939,46 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
     }
 
+    list.shadow_batch_indices.resize(list.shadow_batches.size());
+
+    uint32_t sh_batch_indices_counter = 0;
+
     for (const auto &sh_list : list.shadow_lists) {
         uint32_t shadow_batch_end = sh_list.shadow_batch_start + sh_list.shadow_batch_count;
 
-        std::sort(std::begin(list.shadow_batches) + sh_list.shadow_batch_start,
-                  std::begin(list.shadow_batches) + shadow_batch_end);
+        temp_sort_spans_32_[0].resize(sh_list.shadow_batch_count);
+        temp_sort_spans_32_[1].resize(sh_list.shadow_batch_count);
+        uint32_t spans_count = 0;
 
+        // compress batches into spans with indentical key values (makes sorting faster)
         for (uint32_t start = sh_list.shadow_batch_start, end = sh_list.shadow_batch_start + 1;
              end <= shadow_batch_end; end++) {
-            if (end == shadow_batch_end ||
-                list.shadow_batches[start].indices_offset != list.shadow_batches[end].indices_offset) {
+            if (end == shadow_batch_end || (list.shadow_batches[start].sort_key != list.shadow_batches[end].sort_key)) {
+                temp_sort_spans_32_[0][spans_count].key = list.shadow_batches[start].sort_key;
+                temp_sort_spans_32_[0][spans_count].base = start;
+                temp_sort_spans_32_[0][spans_count++].count = end - start;
+                start = end;
+            }
+        }
 
-                auto &b1 = list.shadow_batches[start];
+        RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data(), temp_sort_spans_32_[0].data() + spans_count, temp_sort_spans_32_[1].data());
+
+        // decompress sorted spans
+        for (uint32_t i = 0; i < spans_count; i++) {
+            for (uint32_t j = 0; j < temp_sort_spans_32_[0][i].count; j++) {
+                list.shadow_batch_indices[sh_batch_indices_counter++] = temp_sort_spans_32_[0][i].base + j;
+            }
+        }
+        assert(sh_batch_indices_counter == shadow_batch_end);
+
+        // Merge similar batches
+        for (uint32_t start = sh_list.shadow_batch_start, end = sh_list.shadow_batch_start + 1; end <= shadow_batch_end; end++) {
+            if (end == shadow_batch_end ||
+                list.shadow_batches[list.shadow_batch_indices[start]].sort_key != list.shadow_batches[list.shadow_batch_indices[end]].sort_key) {
+
+                auto &b1 = list.shadow_batches[list.shadow_batch_indices[start]];
                 for (uint32_t i = start + 1; i < end; i++) {
-                    auto &b2 = list.shadow_batches[i];
+                    auto &b2 = list.shadow_batches[list.shadow_batch_indices[i]];
 
                     if (b1.instance_count + b2.instance_count < REN_MAX_BATCH_SIZE) {
                         memcpy(&b1.instance_indices[b1.instance_count], &b2.instance_indices[0], b2.instance_count * sizeof(int));

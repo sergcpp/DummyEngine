@@ -2,5 +2,5 @@ gl_program: main_lightmapped main_lightmapped.vs.glsl main_lightmapped.fs.glsl
 gl_program: main_probelit main_probelit.vs.glsl main_probelit.fs.glsl
 sw_program: main
 texture: flowers_image.png
-texture: default_normalmap.png
-texture: default_specular.png
+texture: flowers_image_norm.png
+texture: rough_spec.png

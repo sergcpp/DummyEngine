@@ -20,7 +20,7 @@ UNIFORM_BLOCKS
 #define GRID_RES_Z )" AS_STR(REN_GRID_RES_Z) R"(
 
 #define STRIDE 0.0125
-#define MAX_STEPS 32.0
+#define MAX_STEPS 48.0
 #define BSEARCH_STEPS 4
 
 struct ShadowMapRegion {
@@ -54,7 +54,7 @@ layout(binding = )" AS_STR(REN_SSR_NORM_TEX_SLOT) R"() uniform mediump sampler2D
 layout(binding = )" AS_STR(REN_SSR_SPEC_TEX_SLOT) R"() uniform mediump sampler2D spec_texture;
 #endif
 layout(binding = )" AS_STR(REN_SSR_PREV_TEX_SLOT) R"() uniform mediump sampler2D prev_texture;
-layout(binding = )" AS_STR(REN_SSR_ENV_TEX_SLOT) R"() uniform mediump samplerCubeArray env_texture;
+layout(binding = )" AS_STR(REN_ENV_TEX_SLOT) R"() uniform mediump samplerCubeArray env_texture;
 layout(binding = )" AS_STR(REN_CELLS_BUF_SLOT) R"() uniform highp usamplerBuffer cells_buffer;
 layout(binding = )" AS_STR(REN_ITEMS_BUF_SLOT) R"() uniform highp usamplerBuffer items_buffer;
 
@@ -155,14 +155,14 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
 
         float ray_zmin = prev_zmax_estimate;
         // take half of step forward
-        float ray_zmax = (dQ.z * 0.5 + Q.z) / (dk * 0.5 + k) + 0.1;
+        float ray_zmax = (dQ.z * 0.5 + Q.z) / (dk * 0.5 + k);
         prev_zmax_estimate = ray_zmax;
 
         if(ray_zmin > ray_zmax) {
             float temp = ray_zmin; ray_zmin = ray_zmax; ray_zmax = temp;
         }
 
-        const float z_thickness = 1.0;
+        const float z_thickness = 0.1;
 
         vec2 pixel = permute ? P.yx : P;
 
@@ -208,6 +208,8 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
         hit_point = Q * (1.0 / k);
     }
 #else
+    Q.xy += dQ.xy * step_count;
+
     hit_pixel = permute ? hit_pixel.yx : hit_pixel;
     hit_point = Q * (1.0 / k);
 #endif
@@ -227,7 +229,6 @@ void main() {
     ivec2 pix_uvs = ivec2(aVertexUVs_ - vec2(0.5));
 
     vec4 specular = texelFetch(spec_texture, pix_uvs, 0);
-    if ((specular.x + specular.y + specular.z) < 0.0001) return;
 
     float depth = texelFetch(depth_texture, pix_uvs, 0).r;
 
@@ -243,7 +244,7 @@ void main() {
     vec3 refl_ray_vs = reflect(view_ray_vs, normal);
 
     const float R0 = 0.25f;
-    float ssr_factor = pow(1.0 - dot(normal, -view_ray_vs), 5.0);
+    float ssr_factor = pow(clamp(1.0 - dot(normal, -view_ray_vs), 0.0, 1.0), 5.0);
     float fresnel = R0 + (1.0 - R0) * ssr_factor;
     vec3 infl = vec3(fresnel);
 
@@ -253,6 +254,11 @@ void main() {
     vec4 ray_origin_ws = uInvViewMatrix * ray_origin_vs;
     ray_origin_ws /= ray_origin_ws.w;
     vec3 refl_ray_ws = normalize((uInvViewMatrix * vec4(refl_ray_vs, 0.0)).xyz);
+
+    vec3 refl_deriv_dx = dFdx(refl_ray_ws),
+         refl_deriv_dy = dFdy(refl_ray_ws);
+
+    if ((specular.x + specular.y + specular.z) < 0.0001) return;
 
     {   // apply cubemap contribution
         highp float lin_depth = uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
@@ -266,8 +272,8 @@ void main() {
         highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
         highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);
 
-        vec3 refl_dx = mul * dFdx(refl_ray_ws),
-             refl_dy = mul * dFdy(refl_ray_ws);
+        vec3 refl_dx = mul * refl_deriv_dx,
+             refl_dy = mul * refl_deriv_dy;
 
         float total_dist = 0.0;
 
@@ -276,7 +282,8 @@ void main() {
             int pi = int(bitfieldExtract(item_data, 24, 8));
 
             float dist = distance(uProbes[pi].pos_and_radius.xyz, ray_origin_ws.xyz);
-            outColor.rgb += dist * RGBMDecode(textureGrad(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), refl_dx, refl_dy));
+            //outColor.rgb += dist * RGBMDecode(textureGrad(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), refl_dx, refl_dy));
+            outColor.rgb += dist * RGBMDecode(textureLod(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), tex_lod));
             total_dist += dist;
         }
 
@@ -284,6 +291,7 @@ void main() {
             outColor.rgb /= total_dist;
         }
     }
+    outColor.a = 0.0;
 
     vec2 hit_pixel;
     vec3 hit_point;
@@ -296,14 +304,13 @@ void main() {
         hit_prev = uProjMatrix * hit_prev;
         hit_prev /= hit_prev.w;
         hit_prev.xy = 0.5 * hit_prev.xy + 0.5;
-        
-        vec2 refl_dx = mul * dFdx(hit_prev.xy),
-             refl_dy = mul * dFdy(hit_prev.xy);
-            
-        vec3 tex_color = textureGrad(prev_texture, hit_prev.xy, refl_dx, refl_dy).xyz;
 
-        float mix_factor = max(1.0 - 2.0 * distance(hit_pixel, vec2(0.5, 0.5)), 0.0);
+        vec3 tex_color = textureLod(prev_texture, hit_prev.xy, 0.5 * tex_lod).xyz;
+
+        float mm = max(abs(hit_pixel.x), abs(hit_pixel.y));
+        float mix_factor = min(4.0 * (1.0 - mm), 1.0);
         outColor.xyz = mix(outColor.xyz, tex_color, mix_factor);
+        outColor.a = 1.0;
     }
 
     outColor.rgb *= infl;

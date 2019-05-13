@@ -60,6 +60,8 @@ class GSDrawTest : public GameState {
     float fwd_press_speed_ = 0, side_press_speed_ = 0,
           fwd_touch_speed_ = 0, side_touch_speed_ = 0;
 
+    float max_fwd_speed_ = 0.5f, view_fov_ = 60.0f;
+
     bool use_pt_ = false, use_lm_ = false;
     bool invalidate_view_ = true;
 

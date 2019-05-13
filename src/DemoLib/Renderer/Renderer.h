@@ -60,25 +60,38 @@ struct InstanceData {
 static_assert(sizeof(InstanceData) == 64, "!");
 
 struct ShadowDrawBatch {
-    uint32_t indices_offset, indices_count;
-    int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
+    union {
+        struct {
+            uint32_t _pad1 : 3;
+            uint32_t indices_offset  : 28;
+            uint32_t alpha_test_bit  : 1;
+        };
+        uint32_t sort_key = 0;
+    };
 
-    bool operator<(const ShadowDrawBatch& rhs) const {
-        return indices_offset < rhs.indices_offset;
-    }
+    uint32_t indices_count, mat_id;
+    int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
 };
+static_assert(sizeof(ShadowDrawBatch) == sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(int) * REN_MAX_BATCH_SIZE + sizeof(int), "!");
 
 struct MainDrawBatch {
-    uint32_t prog_id;
-    uint32_t mat_id;
+    union {
+        struct {
+            uint32_t _pad1          : 4;
+            uint32_t indices_offset : 28;
+            uint32_t cam_dist       : 8;
+            uint32_t mat_id         : 14;
+            uint32_t alpha_test_bit : 1;
+            uint32_t prog_id        : 8;
+            uint32_t alpha_blend_bit: 1;
+        };
+        uint64_t sort_key = 0;
+    };
 
-    uint32_t indices_offset, indices_count;
+    uint32_t indices_count;
     int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
-
-    bool operator<(const MainDrawBatch& rhs) const {
-        return std::tie(prog_id, mat_id, indices_offset) < std::tie(rhs.prog_id, rhs.mat_id, rhs.indices_offset);
-    }
 };
+static_assert(sizeof(MainDrawBatch) == sizeof(uint64_t) + sizeof(uint32_t) + sizeof(int) * REN_MAX_BATCH_SIZE + sizeof(int), "!");
 
 struct ShadowList {
     int shadow_map_pos[2], shadow_map_size[2];
@@ -93,6 +106,18 @@ struct ShadowMapRegion {
 static_assert(sizeof(ShadowMapRegion) == 80, "!");
 
 #define MAX_STACK_SIZE 64
+
+struct SortSpan32 {
+    uint32_t key;
+    uint32_t base;
+    uint32_t count;
+};
+
+struct SortSpan64 {
+    uint64_t key;
+    uint32_t base;
+    uint32_t count;
+};
 
 enum eRenderFlags {
     EnableZFill     = (1 << 0),
@@ -164,9 +189,11 @@ public:
         FrontendInfo    frontend_info;
         std::vector<InstanceData>       instances;
         std::vector<ShadowDrawBatch>    shadow_batches;
+        std::vector<uint32_t>           shadow_batch_indices;
         std::vector<ShadowList>         shadow_lists;
         std::vector<ShadowMapRegion>    shadow_regions;
         std::vector<MainDrawBatch>      main_batches;
+        std::vector<uint32_t>           main_batch_indices;
         std::vector<LightSourceItem>    light_sources;
         std::vector<DecalItem>          decals;
         std::vector<ProbeItem>          probes;
@@ -197,7 +224,7 @@ private:
     std::shared_ptr<Sys::ThreadPool> threads_;
     SWcull_ctx cull_ctx_;
     Ren::ProgramRef skydome_prog_, fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_combine_ms_prog_,
-        blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_, blit_debug_prog_, blit_debug_ms_prog_, blit_ssr_prog_, blit_ssr_ms_prog_,
+        blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_, blit_gauss_sep_prog_, blit_debug_prog_, blit_debug_ms_prog_, blit_ssr_prog_, blit_ssr_ms_prog_,
         blit_ao_prog_, blit_ao_ms_prog_, blit_multiply_prog_, blit_multiply_ms_prog_, blit_debug_bvh_prog_, blit_debug_bvh_ms_prog_, blit_depth_prog_,
         blit_rgbm_prog_, blit_mipmap_prog_, blit_project_sh_prog_, probe_prog_;
     Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_;
@@ -209,9 +236,9 @@ private:
 
     static const uint32_t default_flags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableTimers /* | DebugProbes*/);
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableTimers);
 #else
-        (EnableZFill | EnableCulling | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap | EnableTimers);
+        (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap | EnableTimers);
 #endif
     uint32_t render_flags_ = default_flags;
 
@@ -228,6 +255,8 @@ private:
     Ren::Mat4f down_buf_view_from_world_;
 
     std::vector<Ren::Frustum> temp_sub_frustums_;
+    std::vector<SortSpan32> temp_sort_spans_32_[2];
+    std::vector<SortSpan64> temp_sort_spans_64_[2];
 
 #if defined(USE_GL_RENDER)
     uint32_t temp_tex_;
@@ -246,7 +275,7 @@ private:
 
     uint32_t nodes_buf_ = 0, nodes_tbo_ = 0;
 
-    enum { TimeDrawStart, TimeShadowMapStart, TimeDepthPassStart, TimeAOPassStart, TimeOpaqueStart,
+    enum { TimeDrawStart, TimeShadowMapStart, TimeDepthOpaqueStart, TimeAOPassStart, TimeOpaqueStart, TimeTranspStart,
            TimeReflStart, TimeBlurStart, TimeBlitStart, TimeDrawEnd, TimersCount };
     uint32_t queries_[2][TimersCount];
 

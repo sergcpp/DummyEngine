@@ -15,7 +15,6 @@ layout(binding = $DiffTexSlot) uniform sampler2D diffuse_texture;
 layout(binding = $NormTexSlot) uniform sampler2D normals_texture;
 layout(binding = $SpecTexSlot) uniform sampler2D specular_texture;
 layout(binding = $ShadTexSlot) uniform sampler2DShadow shadow_texture;
-layout(binding = $LmapSHSlot) uniform sampler2D lm_indirect_sh_texture[4];
 layout(binding = $DecalTexSlot) uniform sampler2D decals_texture;
 layout(binding = $SSAOTexSlot) uniform sampler2D ao_texture;
 layout(binding = $LightBufSlot) uniform mediump samplerBuffer lights_buffer;
@@ -75,8 +74,10 @@ void main(void) {
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
     
     vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(uCamPosAndGamma.w));
-    vec3 normal_color = texture(normals_texture, aVertexUVs1_).xyz;
-    vec4 specular_color = texture(specular_texture, aVertexUVs1_);
+    
+    vec2 duv_dx = dFdx(aVertexUVs1_), duv_dy = dFdy(aVertexUVs1_);
+    vec3 normal_color = textureGrad(normals_texture, aVertexUVs1_, 2.0 * duv_dx, 2.0 * duv_dy).xyz;
+    vec4 specular_color = textureGrad(specular_texture, aVertexUVs1_, duv_dx, duv_dy);
     
     vec3 dp_dx = dFdx(aVertexPos_);
     vec3 dp_dy = dFdy(aVertexPos_);
@@ -121,8 +122,8 @@ void main(void) {
             if (norm_uvs_tr.z > 0.0) {
                 vec2 norm_uvs = norm_uvs_tr.xy + norm_uvs_tr.zw * uvs;
                 
-                vec2 _duv_dx = norm_uvs_tr.zw * duv_dx;
-                vec2 _duv_dy = norm_uvs_tr.zw * duv_dy;
+                vec2 _duv_dx = 2.0 * norm_uvs_tr.zw * duv_dx;
+                vec2 _duv_dy = 2.0 * norm_uvs_tr.zw * duv_dy;
             
                 vec4 decal_norm = textureGrad(decals_texture, norm_uvs, _duv_dx, _duv_dy);
                 normal_color = mix(normal_color, decal_norm.xyz, decal_influence);
@@ -142,7 +143,7 @@ void main(void) {
         }
     }
     
-    vec3 normal = normalize(normal_color * 2.0 - 1.0);
+    vec3 normal = normal_color * 2.0 - 1.0;
     normal = aVertexTBN_ * normal;
     
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
@@ -216,7 +217,7 @@ void main(void) {
         const float SH_A0 = 0.886226952; // PI / sqrt(4.0f * Pi)
         const float SH_A1 = 1.02332675;  // sqrt(PI / 3.0f)
         
-        float dist = length(uProbes[pi].pos_and_radius.xyz - aVertexPos_);
+        float dist = distance(uProbes[pi].pos_and_radius.xyz, aVertexPos_);
         vec4 vv = dist * vec4(SH_A0, SH_A1 * normal.yzx);
 
         indirect_col.r += dot(uProbes[pi].sh_coeffs[0], vv);
@@ -229,12 +230,12 @@ void main(void) {
         indirect_col /= total_dist;
     }
     
-    indirect_col = max(indirect_col, vec3(0.0));
+    indirect_col = max(4.0 * indirect_col, vec3(0.0));
     
     float lambert = max(dot(normal, uSunDir.xyz), 0.0);
     float visibility = 0.0;
     if (lambert > 0.00001) {
-        visibility = GetVisibility(lin_depth);
+        visibility = GetSunVisibility(lin_depth, shadow_texture, aVertexShUVs_);
     }
     
     vec2 ao_uvs = gl_FragCoord.xy / uResAndFRes.xy;

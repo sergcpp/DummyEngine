@@ -36,7 +36,7 @@ const vec2 poisson_disk[16] = vec2[16](
 
 #define M_PI 3.1415926535897932384626433832795
 
-float GetVisibility(float frag_depth) {
+float GetSunVisibility(float frag_depth, sampler2DShadow shadow_texture, vec3 aVertexShUVs[4]) {
     const vec2 shadow_softness = vec2(3.0 / $ShadRes.0, 1.5 / $ShadRes.0);
     
     float visibility = 0.0;
@@ -48,25 +48,25 @@ float GetVisibility(float frag_depth) {
     if (frag_depth < $ShadCasc0Dist) {
         const highp float weight = 1.0 / $ShadCasc0Samp.0;
         for (int i = 0; i < $ShadCasc0Samp; i++) {
-            visibility += texture(shadow_texture, aVertexShUVs_[0] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
+            visibility += texture(shadow_texture, aVertexShUVs[0] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
         }
         visibility *= weight;
     } else if (frag_depth < $ShadCasc1Dist) {
         const highp float weight = 1.0 / $ShadCasc1Samp.0;
         for (int i = 0; i < $ShadCasc1Samp; i++) {
-            visibility += texture(shadow_texture, aVertexShUVs_[1] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
+            visibility += texture(shadow_texture, aVertexShUVs[1] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
         }
         visibility *= weight;
     } else if (frag_depth < $ShadCasc2Dist) {
         const highp float weight = 1.0 / $ShadCasc2Samp.0;
         for (int i = 0; i < $ShadCasc2Samp; i++) {
-            visibility += texture(shadow_texture, aVertexShUVs_[2] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
+            visibility += texture(shadow_texture, aVertexShUVs[2] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
         }
         visibility *= weight;
     } else if (frag_depth < $ShadCasc3Dist) {
         const highp float weight = 1.0 / $ShadCasc3Samp.0;
         for (int i = 0; i < $ShadCasc3Samp; i++) {
-            visibility += texture(shadow_texture, aVertexShUVs_[3] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
+            visibility += texture(shadow_texture, aVertexShUVs[3] + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
         }
         float t = smoothstep(0.95 * $ShadCasc3Dist, $ShadCasc3Dist, frag_depth);
         visibility = mix(visibility * weight, 1.0, t);

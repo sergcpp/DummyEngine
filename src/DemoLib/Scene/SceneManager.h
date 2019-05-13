@@ -33,12 +33,12 @@ public:
     void LoadScene(const JsObject &js_scene);
     void ClearScene();
 
-    void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up);
+    void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov);
 
     void RegisterComponent(uint32_t index, CompStorage *storage);
 
     void InitScene_PT(bool _override = false);
-    void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up);
+    void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov);
     const float *Draw_PT(int *w, int *h);
     void Clear_PT();
 

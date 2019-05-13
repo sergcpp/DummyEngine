@@ -28,9 +28,9 @@ layout (std140) uniform SharedDataBlock {
 };
 
 #if defined(MSAA_4)
-layout(binding = 0) uniform mediump sampler2DMS depth_texture;
+layout(binding = )" AS_STR(REN_DIFF_TEX_SLOT) R"() uniform mediump sampler2DMS depth_texture;
 #else
-layout(binding = 0) uniform mediump sampler2D depth_texture;
+layout(binding = )" AS_STR(REN_DIFF_TEX_SLOT) R"() uniform mediump sampler2D depth_texture;
 #endif
 
 in vec2 aVertexUVs_;

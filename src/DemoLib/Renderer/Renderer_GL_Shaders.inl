@@ -63,6 +63,10 @@ static const char blit_gauss_fs[] =
 #include "Shaders/blit_gauss.fs.glsl"
 ;
 
+static const char blit_gauss_sep_fs[] =
+#include "Shaders/blit_gauss_sep.fs.glsl"
+;
+
 #define __ADDITIONAL_DEFINES_STR__ ""
 static const char blit_debug_fs[] =
 #include "Shaders/blit_debug.fs.glsl"

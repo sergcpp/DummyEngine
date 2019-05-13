@@ -1,0 +1,8 @@
+gl_program: main_translucent main_translucent.vs.glsl main_translucent.fs.glsl
+gl_program: main_translucent main_translucent.vs.glsl main_translucent.fs.glsl
+sw_program: main
+flag: alpha_blend
+texture: curtain.png
+texture: default_normalmap.png
+texture: default_specular.png
+

@@ -20,8 +20,6 @@
 #include "../Scene/SceneManager.h"
 
 namespace GSDrawTestInternal {
-const float FORWARD_SPEED = 0.05f;
-
 const int MAX_CMD_LINES = 8;
 
 #if defined(__ANDROID__)
@@ -332,6 +330,16 @@ void GSDrawTest::LoadScene(const char *name) {
             view_dir_[1] = (float)((const JsNumber &)js_dir.at(1)).val;
             view_dir_[2] = (float)((const JsNumber &)js_dir.at(2)).val;
         }
+
+        if (js_cam.Has("fwd_speed")) {
+            const JsNumber &js_fwd_speed = (const JsNumber &)js_cam.at("fwd_speed");
+            max_fwd_speed_ = (float)js_fwd_speed.val;
+        }
+
+        if (js_cam.Has("fov")) {
+            const JsNumber &js_fov = (const JsNumber &)js_cam.at("fov");
+            view_fov_ = (float)js_fov.val;
+        }
     }
 
     /*view_origin_[0] = 0.090376f;
@@ -385,7 +393,7 @@ void GSDrawTest::Draw(uint64_t dt_us) {
 
                 back_list = -1;
             } else if (use_pt_) {
-                scene_manager_->SetupView_PT(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+                scene_manager_->SetupView_PT(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
                 if (invalidate_view_) {
                     scene_manager_->Clear_PT();
                     invalidate_view_ = false;
@@ -412,15 +420,12 @@ void GSDrawTest::Draw(uint64_t dt_us) {
                     }
                 }
 
-                static int cnt = 0;
-
                 // Render probe cubemap
                 if (probe_to_render_) {
-                    for (int i = 0; i < 6 && cnt < 2; i++) {
+                    for (int i = 0; i < 6; i++) {
                         renderer_->ExecuteDrawList(temp_probe_lists_[i], &temp_probe_buf_);
                         renderer_->BlitToLightProbeFace(temp_probe_buf_, scene_manager_->scene_data().probe_storage, probe_to_render_->layer_index, i);
                     }
-                    cnt++;
 
                     probe_to_update_sh_ = probe_to_render_;
                     probe_to_render_ = nullptr;
@@ -430,7 +435,7 @@ void GSDrawTest::Draw(uint64_t dt_us) {
             notified_ = true;
             thr_notify_.notify_one();
         } else {
-            scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+            scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
             // Gather drawables for list 0
             UpdateFrame(0);
             back_list = 0;
@@ -534,7 +539,7 @@ void GSDrawTest::Draw(uint64_t dt_us) {
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " depth_pass: %u us", back_info.depth_pass_time_us);
+                sprintf(text_buffer, " depth_fill: %u us", back_info.depth_opaque_pass_time_us);
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
@@ -543,6 +548,10 @@ void GSDrawTest::Draw(uint64_t dt_us) {
 
                 vertical_offset -= font_->height(ui_root_.get());
                 sprintf(text_buffer, "opaque_pass: %u us", back_info.opaque_pass_time_us);
+                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
+                sprintf(text_buffer, "transp_pass: %u us", back_info.transp_pass_time_us);
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
@@ -738,8 +747,8 @@ void GSDrawTest::Update(uint64_t dt_us) {
     Ren::Vec3f up = { 0, 1, 0 };
     Ren::Vec3f side = Normalize(Cross(view_dir_, up));
 
-    float fwd_speed = std::max(std::min(fwd_press_speed_ + fwd_touch_speed_, FORWARD_SPEED), -FORWARD_SPEED);
-    float side_speed = std::max(std::min(side_press_speed_ + side_touch_speed_, FORWARD_SPEED), -FORWARD_SPEED);
+    float fwd_speed = std::max(std::min(fwd_press_speed_ + fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+    float side_speed = std::max(std::min(side_press_speed_ + side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
     view_origin_ += view_dir_ * fwd_speed;
     view_origin_ += side * side_speed;
@@ -795,21 +804,32 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
     using namespace GSDrawTestInternal;
 
     // pt switch for touch controls
-    /*if (evt.type == InputManager::RAW_INPUT_P1_DOWN || evt.type == InputManager::RAW_INPUT_P2_DOWN) {
+    if (evt.type == InputManager::RAW_INPUT_P1_DOWN || evt.type == InputManager::RAW_INPUT_P2_DOWN) {
         if (evt.point.x > ctx_->w() * 0.9f && evt.point.y < ctx_->h() * 0.1f) {
             auto new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
-                use_pt_ = !use_pt_;
+                /*use_pt_ = !use_pt_;
                 if (use_pt_) {
                     scene_manager_->InitScene_PT();
                     invalidate_view_ = true;
+                }*/
+
+                if (probes_to_update_.empty()) {
+                    int obj_count = (int)scene_manager_->scene_data().objects.size();
+                    for (int i = 0; i < obj_count; i++) {
+                        auto *obj = scene_manager_->GetObject(i);
+                        if (obj->comp_mask & CompProbeBit) {
+                            probes_to_update_.push_back(i);
+                        }
+                    }
                 }
+
                 click_time_ = 0;
             } else {
                 click_time_ = new_time;
             }
         }
-    }*/
+    }
 
     switch (evt.type) {
     case InputManager::RAW_INPUT_P1_DOWN:
@@ -847,18 +867,18 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
     case InputManager::RAW_INPUT_P1_MOVE:
         if (move_pointer_ == 1) {
             side_touch_speed_ += evt.move.dx * 0.01f;
-            side_touch_speed_ = std::max(std::min(side_touch_speed_, FORWARD_SPEED), -FORWARD_SPEED);
+            side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
             fwd_touch_speed_ -= evt.move.dy * 0.01f;
-            fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, FORWARD_SPEED), -FORWARD_SPEED);
+            fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 1) {
             Vec3f up = { 0, 1, 0 };
             Vec3f side = Normalize(Cross(view_dir_, up));
             up = Cross(side, view_dir_);
 
             Mat4f rot;
-            rot = Rotate(rot, -0.01f * evt.move.dx, up);
-            rot = Rotate(rot, -0.01f * evt.move.dy, side);
+            rot = Rotate(rot, -0.005f * evt.move.dx, up);
+            rot = Rotate(rot, -0.005f * evt.move.dy, side);
 
             auto rot_m3 = Mat3f(rot);
             view_dir_ = rot_m3 * view_dir_;
@@ -869,10 +889,10 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
     case InputManager::RAW_INPUT_P2_MOVE:
         if (move_pointer_ == 2) {
             side_touch_speed_ += evt.move.dx * 0.01f;
-            side_touch_speed_ = std::max(std::min(side_touch_speed_, FORWARD_SPEED), -FORWARD_SPEED);
+            side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
             fwd_touch_speed_ -= evt.move.dy * 0.01f;
-            fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, FORWARD_SPEED), -FORWARD_SPEED);
+            fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 2) {
             Vec3f up = { 0, 1, 0 };
             Vec3f side = Normalize(Cross(view_dir_, up));
@@ -890,13 +910,13 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
         break;
     case InputManager::RAW_INPUT_KEY_DOWN: {
         if (evt.key == InputManager::RAW_INPUT_BUTTON_UP || (evt.raw_key == 'w' && (!cmdline_enabled_ || view_pointer_))) {
-            fwd_press_speed_ = FORWARD_SPEED;
+            fwd_press_speed_ = max_fwd_speed_;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN || (evt.raw_key == 's' && (!cmdline_enabled_ || view_pointer_))) {
-            fwd_press_speed_ = -FORWARD_SPEED;
+            fwd_press_speed_ = -max_fwd_speed_;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT || (evt.raw_key == 'a' && (!cmdline_enabled_ || view_pointer_))) {
-            side_press_speed_ = -FORWARD_SPEED;
+            side_press_speed_ = -max_fwd_speed_;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT || (evt.raw_key == 'd' && (!cmdline_enabled_ || view_pointer_))) {
-            side_press_speed_ = FORWARD_SPEED;
+            side_press_speed_ = max_fwd_speed_;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SPACE) {
             
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
@@ -1019,7 +1039,7 @@ void GSDrawTest::UpdateFrame(int list_index) {
     }
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
 
     // Update invalidated objects
     scene_manager_->UpdateObjects();

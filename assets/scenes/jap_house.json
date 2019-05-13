@@ -11,7 +11,7 @@
     "camera" : {
         "view_origin" : [ 0.0, 5.0, 0.0 ],
         "view_dir" : [ 0.0, 0.0, -1.0 ],
-        "fwd_speed" : 1.0
+        "fwd_speed" : 0.5
     },
     "meshes" : {
         "floor" : "floor.mesh",

@@ -43,7 +43,7 @@ void ProbeStorage::Resize(int res, int capacity) {
         
     int _res = res;
     int level = 0;
-    while (_res >= 16) {
+    while (_res >= 4) {
         glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, level, GL_RGBA8, _res, _res, capacity * 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         _res = _res / 2;
         level++;

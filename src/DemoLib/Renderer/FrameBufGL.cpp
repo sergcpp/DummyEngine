@@ -97,7 +97,7 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         }
-
+        
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_tex, 0);
 
         GLenum bufs[] = { GL_NONE };
