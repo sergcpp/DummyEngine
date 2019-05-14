@@ -1236,16 +1236,16 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
 
         if (clean_buf_.sample_count > 1) {
-            BindTextureMs(REN_SSR_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
-            BindTextureMs(REN_SSR_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
-            BindTextureMs(REN_SSR_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+            BindTextureMs(REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            BindTextureMs(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            BindTextureMs(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         } else {
-            BindTexture(REN_SSR_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
-            BindTexture(REN_SSR_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
-            BindTexture(REN_SSR_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+            BindTexture(REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            BindTexture(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            BindTexture(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         }
 
-        BindTexture(REN_SSR_PREV_TEX_SLOT, down_buf_.attachments[0].tex);
+        BindTexture(REN_REFL_PREV_TEX_SLOT, down_buf_.attachments[0].tex);
         if (list.probe_storage) {
             glActiveTexture(GL_TEXTURE0 + REN_ENV_TEX_SLOT);
             glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, list.probe_storage->tex_id());
@@ -1259,39 +1259,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 #endif
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
-
-        /*{   // Blur reflections buffer
-            glBindFramebuffer(GL_FRAMEBUFFER, blur_buf2_.fb);
-            glViewport(0, 0, blur_buf2_.w, blur_buf2_.h);
-
-            const float fs_quad_uvs1[] = { 0.0f, 0.0f,                                 float(act_w_ / 2), 0.0f,
-                                           float(act_w_ / 2), float(act_h_ / 2),       0.0f, float(act_h_ / 2) };
-
-            glUseProgram(blit_gauss_sep_prog_->prog_id());
-
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs1), fs_quad_uvs1);
-
-            glUniform1i(blit_gauss_sep_prog_->uniform(U_TEX).loc, REN_DIFF_TEX_SLOT);
-            glUniform1f(blit_gauss_sep_prog_->uniform(4).loc, 0.0f);
-
-            BindTexture(REN_DIFF_TEX_SLOT, refl_buf_.attachments[0].tex);
-
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
-
-            glUniform1f(blit_gauss_sep_prog_->uniform(4).loc, 1.0f);
-
-            glBindFramebuffer(GL_FRAMEBUFFER, blur_buf1_.fb);
-            glViewport(0, 0, blur_buf1_.w, blur_buf1_.h);
-
-            const float fs_quad_uvs2[] = { 0.0f, 0.0f,                                   float(blur_buf2_.w), 0.0f,
-                                           float(blur_buf2_.w), float(blur_buf2_.h),     0.0f, float(blur_buf2_.h) };
-
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs2), fs_quad_uvs2);
-
-            BindTexture(REN_DIFF_TEX_SLOT, blur_buf2_.attachments[0].tex);
-
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
-        }*/
 
         // Compose reflections on top of clean buffer
         glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
@@ -1316,17 +1283,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
         glUseProgram(blit_mul_prog->prog_id());
 
-        BindTexture(0, refl_buf_.attachments[0].tex);
+        BindTexture(REN_REFL_SSR_TEX_SLOT, refl_buf_.attachments[0].tex);
 
         if (clean_buf_.sample_count > 1) {
-            BindTextureMs(1, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
-            BindTextureMs(2, clean_buf_.depth_tex.GetValue());
-            BindTextureMs(3, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            BindTextureMs(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+            BindTextureMs(REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            BindTextureMs(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
         } else {
-            BindTexture(1, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
-            BindTexture(2, clean_buf_.depth_tex.GetValue());
-            BindTexture(3, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            BindTexture(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+            BindTexture(REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            BindTexture(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
         }
+        BindTexture(REN_REFL_PREV_TEX_SLOT, down_buf_.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 

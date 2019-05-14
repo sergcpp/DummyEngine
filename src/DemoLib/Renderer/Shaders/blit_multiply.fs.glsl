@@ -1,5 +1,7 @@
 R"(
 #version 310 es
+#extension GL_EXT_texture_buffer : enable
+#extension GL_EXT_texture_cube_map_array : enable
 #ifdef GL_ES
     precision mediump float;
 #endif
@@ -11,9 +13,19 @@ UNIFORM_BLOCKS
         
 )" __ADDITIONAL_DEFINES_STR__ R"(
 
+#define GRID_RES_X )" AS_STR(REN_GRID_RES_X) R"(
+#define GRID_RES_Y )" AS_STR(REN_GRID_RES_Y) R"(
+#define GRID_RES_Z )" AS_STR(REN_GRID_RES_Z) R"(
+
 struct ShadowMapRegion {
     vec4 transform;
     mat4 clip_from_world;
+};
+
+struct ProbeItem {
+    vec4 pos_and_radius;
+    vec4 unused_and_layer;
+    vec4 sh_coeffs[3];
 };
 
 layout (std140) uniform SharedDataBlock {
@@ -23,18 +35,23 @@ layout (std140) uniform SharedDataBlock {
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
     vec4 uResAndFRes;
+    ProbeItem uProbes[)" AS_STR(REN_MAX_PROBES_TOTAL) R"(];
 };
 
-layout(binding = 0) uniform sampler2D s_texture;
+layout(binding = )" AS_STR(REN_REFL_SSR_TEX_SLOT) R"() uniform sampler2D s_texture;
 #if defined(MSAA_4)
-layout(binding = 1) uniform mediump sampler2DMS s_mul_texture;
-layout(binding = 2) uniform mediump sampler2DMS s_depth_texture;
-layout(binding = 3) uniform mediump sampler2DMS s_norm_texture;
+layout(binding = )" AS_STR(REN_REFL_SPEC_TEX_SLOT) R"() uniform mediump sampler2DMS s_mul_texture;
+layout(binding = )" AS_STR(REN_REFL_DEPTH_TEX_SLOT) R"() uniform mediump sampler2DMS s_depth_texture;
+layout(binding = )" AS_STR(REN_REFL_NORM_TEX_SLOT) R"() uniform mediump sampler2DMS s_norm_texture;
 #else
-layout(binding = 1) uniform mediump sampler2D s_mul_texture;
-layout(binding = 2) uniform mediump sampler2DMS s_depth_texture;
-layout(binding = 3) uniform mediump sampler2D s_norm_texture;
+layout(binding = )" AS_STR(REN_REFL_SPEC_TEX_SLOT) R"() uniform mediump sampler2D s_mul_texture;
+layout(binding = )" AS_STR(REN_REFL_DEPTH_TEX_SLOT) R"() uniform mediump sampler2DMS s_depth_texture;
+layout(binding = )" AS_STR(REN_REFL_NORM_TEX_SLOT) R"() uniform mediump sampler2D s_norm_texture;
 #endif
+layout(binding = )" AS_STR(REN_REFL_PREV_TEX_SLOT) R"() uniform mediump sampler2D prev_texture;
+layout(binding = )" AS_STR(REN_ENV_TEX_SLOT) R"() uniform mediump samplerCubeArray env_texture;
+layout(binding = )" AS_STR(REN_CELLS_BUF_SLOT) R"() uniform highp usamplerBuffer cells_buffer;
+layout(binding = )" AS_STR(REN_ITEMS_BUF_SLOT) R"() uniform highp usamplerBuffer items_buffer;
 
 in vec2 aVertexUVs_;
 
@@ -96,7 +113,21 @@ vec4 textureBicubic(sampler2D sampler, vec2 texCoords){
     , sy);
 }
 
+vec3 RGBMDecode(vec4 rgbm) {
+    return 6.0 * rgbm.rgb * rgbm.a;
+}
+
 void main() {
+#if defined(MSAA_4)
+    vec4 specular = 0.25 * (texelFetch(s_mul_texture, ivec2(aVertexUVs_), 0) +
+                            texelFetch(s_mul_texture, ivec2(aVertexUVs_), 1) +
+                            texelFetch(s_mul_texture, ivec2(aVertexUVs_), 2) +
+                            texelFetch(s_mul_texture, ivec2(aVertexUVs_), 3));
+#else
+    vec4 specular = texelFetch(s_mul_texture, ivec2(aVertexUVs_), 0);
+#endif
+    if ((specular.x + specular.y + specular.z) < 0.0001) return;
+
     ivec2 pix_uvs = ivec2(aVertexUVs_ / 2.0) * 2;
 
     const ivec2 offsets[] = ivec2[4](
@@ -111,46 +142,94 @@ void main() {
     }
 
     float depth_weights[4];
-    float depth = LinearDepthTexelFetch(ivec2(aVertexUVs_));
+    float depth = texelFetch(s_depth_texture, ivec2(aVertexUVs_), 0).r;
+    float lin_depth = uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
     for (int i = 0; i < 4; i++) {
         float depth_coarse = LinearDepthTexelFetch(pix_uvs + 2 * offsets[i]);
-        depth_weights[i] = 1.0 / (0.01 + abs(depth - depth_coarse));
+        depth_weights[i] = 1.0 / (0.01 + abs(lin_depth - depth_coarse));
     }
 
-    vec2 sample_coord = fract(aVertexUVs_ / 2.0);
+    vec2 sample_coord = fract((aVertexUVs_ - vec2(0.5)) / 2.0);
 
     float sample_weights[4];
     sample_weights[0] = (1.0 - sample_coord.x) * (1.0 - sample_coord.y);
-    sample_weights[1] = sample_coord.x * (1.0 - sample_coord.y);
+    sample_weights[1] = (sample_coord.x) * (1.0 - sample_coord.y);
     sample_weights[2] = (1.0 - sample_coord.x) * sample_coord.y;
-    sample_weights[3] = sample_coord.x * sample_coord.y;
+    sample_weights[3] = (sample_coord.x) * sample_coord.y;
 
-    vec3 c0 = vec3(0.0);
-    float weight_sum = 0.0;
+    vec3 ssr_uvs = vec3(0.0);
+    float weight_sum = 0.0, weight_sum1 = 0.0;
     for (int i = 0; i < 4; i++) {
         float weight = sample_weights[i] * norm_weights[i] * depth_weights[i];
-        c0 += texelFetch(s_texture, ivec2(aVertexUVs_)/2 + offsets[i], 0).xyz * weight;
-        weight_sum += weight;
-    }
+        vec3 uvs = texelFetch(s_texture, ivec2((aVertexUVs_ - vec2(0.5)) / 2.0) + offsets[i], 0).xyz;
 
-    {
-        //c0 = textureBicubic(s_texture, (aVertexUVs_ / uResAndFRes.xy)).xyz;
+        ssr_uvs.b += uvs.b * weight;
+        weight_sum1 += weight;
+        
+        if (uvs.b > 0.0001) {
+            ssr_uvs.rg += uvs.rg * weight;
+            weight_sum += weight;
+        }
     }
 
     if (weight_sum > 0.0001) {
-        c0 /= weight_sum;
+        ssr_uvs.rg /= weight_sum;
+        ssr_uvs.b /= weight_sum1;
     }
 
-#if defined(MSAA_4)
-    vec3 c1 = 0.25 * (texelFetch(s_mul_texture, ivec2(aVertexUVs_), 0).xyz +
-                      texelFetch(s_mul_texture, ivec2(aVertexUVs_), 1).xyz +
-                      texelFetch(s_mul_texture, ivec2(aVertexUVs_), 2).xyz +
-                      texelFetch(s_mul_texture, ivec2(aVertexUVs_), 3).xyz);
-#else
-    vec3 c1 = texelFetch(s_mul_texture, ivec2(aVertexUVs_), 0).xyz;
-#endif
-            
-    c0 *= c1;
+    float tex_lod = 4.0 * (1.0 - specular.w);
+
+    vec3 c0 = vec3(0.0);
+
+    float fresnel;
+
+    {   // apply cubemap contribution
+        vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, 2.0 * depth - 1.0, 1.0);
+        ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
+
+        vec4 ray_origin_vs = uInvProjMatrix * ray_origin_cs;
+        ray_origin_vs /= ray_origin_vs.w;
+
+        vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
+        vec3 refl_ray_vs = reflect(view_ray_vs, normal);
+
+        const float R0 = 0.25f;
+        float factor = pow(clamp(1.0 - dot(normal, -view_ray_vs), 0.0, 1.0), 5.0);
+        fresnel = R0 + (1.0 - R0) * factor;
+
+        vec4 ray_origin_ws = uInvViewMatrix * ray_origin_vs;
+        ray_origin_ws /= ray_origin_ws.w;
+        vec3 refl_ray_ws = normalize((uInvViewMatrix * vec4(refl_ray_vs, 0.0)).xyz);
+
+        highp float k = log2(lin_depth / uClipInfo[1]) / uClipInfo[3];
+        int slice = int(floor(k * float(GRID_RES_Z)));
+    
+        int ix = int(aVertexUVs_.x), iy = int(aVertexUVs_.y);
+        int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy * GRID_RES_Y / int(uResAndFRes.y)) * GRID_RES_X + (ix * GRID_RES_X / int(uResAndFRes.x));
+        
+        highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
+        highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
+        highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);
+
+        float total_dist = 0.0;
+
+        for (uint i = offset; i < offset + pcount; i++) {
+            highp uint item_data = texelFetch(items_buffer, int(i)).x;
+            int pi = int(bitfieldExtract(item_data, 24, 8));
+
+            float dist = distance(uProbes[pi].pos_and_radius.xyz, ray_origin_ws.xyz);
+            //c0 += dist * RGBMDecode(textureGrad(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), refl_dx, refl_dy));
+            c0 += dist * RGBMDecode(textureLod(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), tex_lod));
+            total_dist += dist;
+        }
+
+        if (pcount != 0u) {
+            c0 /= total_dist;
+        }
+    }
+
+    c0 = mix(c0, textureLod(prev_texture, ssr_uvs.rg, tex_lod).xyz, ssr_uvs.b);
+    c0 *= specular.rgb * fresnel;
 
     outColor = vec4(c0, 1.0);
 }
