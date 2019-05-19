@@ -12,6 +12,8 @@
 #define WGL_CONTEXT_FLAGS_ARB             0x2094
 #define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB 0x00000002
 
+#else
+#include <SDL2/SDL.h>
 #endif
 
 class ProgramTest : public Ren::Context {

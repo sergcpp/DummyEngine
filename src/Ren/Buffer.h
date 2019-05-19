@@ -31,16 +31,16 @@ class Buffer : public RefCounter {
     void SafeErase(int i, int *indices, int num);
     bool Free_Node(int i);
 public:
-    Buffer() {}
+    Buffer() = default;
     explicit Buffer(uint32_t initial_size);
     Buffer(const Buffer &rhs) = delete;
-    Buffer(Buffer &&rhs) {
+    Buffer(Buffer &&rhs) noexcept {
         *this = std::move(rhs);
     }
     ~Buffer();
 
     Buffer &operator=(const Buffer &rhs) = delete;
-    Buffer &operator=(Buffer &&rhs);
+    Buffer &operator=(Buffer &&rhs) noexcept;
 
     uint32_t size() const { return size_; }
 

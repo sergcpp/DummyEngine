@@ -7,6 +7,7 @@
 #undef max
 
 #include "GL.h"
+#include "Utils.h"
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -14,9 +15,6 @@
 #endif
 
 namespace Ren {
-std::unique_ptr<uint8_t[]> ReadTGAFile(const void *data, int &w, int &h, eTexColorFormat &format);
-void CheckError(const char *op);
-
 uint32_t g_gl_formats[] = {
     0xffffffff,     // Undefined
     GL_RGB,         // RawRGB888

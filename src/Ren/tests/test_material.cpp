@@ -7,6 +7,8 @@
 
 #if defined(_WIN32)
 #include <Windows.h>
+#else
+#include <SDL2/SDL.h>
 #endif
 
 class MaterialTest : public Ren::Context {

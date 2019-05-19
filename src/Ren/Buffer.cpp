@@ -24,18 +24,18 @@ Ren::Buffer::Buffer(uint32_t initial_size) : size_(0) {
 Ren::Buffer::~Buffer() {
 #if defined(USE_GL_RENDER)
     if (buf_id_ != 0xffffffff) {
-        GLuint gl_buf = (GLuint)buf_id_;
+        auto gl_buf = (GLuint)buf_id_;
         glDeleteBuffers(1, &gl_buf);
     }
 #endif
 }
 
-Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) {
-    RefCounter::operator=(std::move(rhs));
+Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) noexcept {
+    RefCounter::operator=(std::move((RefCounter &)rhs));
 
     if (buf_id_ == 0xffffffff) {
 #if defined(USE_GL_RENDER)
-        GLuint buf = (GLuint)buf_id_;
+        auto buf = (GLuint)buf_id_;
         glDeleteBuffers(1, &buf);
 #endif
     }

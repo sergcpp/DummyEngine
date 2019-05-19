@@ -60,6 +60,8 @@ unsigned int __anim_len = 508;
 
 #if defined(_WIN32)
 #include <Windows.h>
+#else
+#include <SDL2/SDL.h>
 #endif
 
 class AnimTest : public Ren::Context {
