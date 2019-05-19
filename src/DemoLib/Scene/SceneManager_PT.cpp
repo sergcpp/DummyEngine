@@ -112,7 +112,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
     const int LM_SAMPLES_TOTAL =
 #ifdef NDEBUG
-        128;
+        4096;
 #else
         32;
 #endif
@@ -527,13 +527,13 @@ void SceneManager::InitScene_PT(bool _override) {
 
                         Ren::Texture2DRef tex_ref;
 
-                        //if (!mat->texture(2)) {
+                        if (mat->flags() & Ren::AlphaBlend) {
+                            mat_desc.type = Ray::TransparentMaterial;
+                            tex_ref = mat->texture(0);
+                        } else {
                             mat_desc.type = Ray::DiffuseMaterial;
                             tex_ref = mat->texture(0);
-                        //} else {
-                        //    mat_desc.type = Ray::EmissiveMaterial;
-                        //    tex_ref = mat->texture(2);
-                        //}
+                        }
 
                         if (tex_ref) {
                             const char *tex_name = tex_ref->name();
