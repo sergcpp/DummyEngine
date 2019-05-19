@@ -15,18 +15,15 @@ void test_vec();
 #include "../GL.h"
 
 int main() {
-
-    glQueryCounter(0, 0);
-
-    /*test_anim();
+    test_anim();
     test_buffer();
     test_mat();
     test_material();
-    test_mesh();*/
-    /*test_program();
+    test_mesh();
+    test_program();
     test_storage();
     test_sparse_array();
     test_texture();
-    test_vec();*/
+    test_vec();
     puts("OK");
 }

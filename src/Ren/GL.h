@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #if defined(__ANDROID__) || defined(__native_client__) || defined(EMSCRIPTEN)
 #include <GLES/egl.h>
 //#if __ANDROID_API__ >= 24

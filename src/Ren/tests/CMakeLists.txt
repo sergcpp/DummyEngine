@@ -61,11 +61,11 @@ set(SOURCE_FILES main.cpp
                  test_common.h
 				 test_mat.cpp
                  test_material.cpp
-                 #test_mesh.cpp
-                 #test_sparse_array.cpp
-                 #test_storage.cpp
-                 #test_texture.cpp
-				 #test_vec.cpp
+                 test_mesh.cpp
+                 test_sparse_array.cpp
+                 test_storage.cpp
+                 test_texture.cpp
+				 test_vec.cpp
                  )
 
 if(${RENDERER} STREQUAL "GL")
