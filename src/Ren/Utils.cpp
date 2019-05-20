@@ -256,21 +256,13 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBM(const float *image_data, i
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
-            float fr, fg, fb;
+            float fr = image_data[channels * (y * w + x) + 0];
+            float fg = image_data[channels * (y * w + x) + 1];
+            float fb = image_data[channels * (y * w + x) + 2];
 
-            if (channels == 3) {
-                fr = image_data[3 * (y * w + x) + 0];
-                fg = image_data[3 * (y * w + x) + 1];
-                fb = image_data[3 * (y * w + x) + 2];
-            } else if (channels == 4) {
-                fr = image_data[4 * (y * w + x) + 0];
-                fg = image_data[4 * (y * w + x) + 1];
-                fb = image_data[4 * (y * w + x) + 2];
-            }
-
-            fr *= 1.0f / 6.0f;
-            fg *= 1.0f / 6.0f;
-            fb *= 1.0f / 6.0f;
+            fr *= 1.0f / 4.0f;
+            fg *= 1.0f / 4.0f;
+            fb *= 1.0f / 4.0f;
 
             float fa = std::max(std::max(fr, fg), std::max(fb, 1e-6f));
             if (fa > 1.0f) fa = 1.0f;

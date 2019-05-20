@@ -372,6 +372,8 @@ typedef void (APIENTRY *PFNGLCOMPRESSEDTEXIMAGE2DPROC)(GLenum target, GLint leve
 typedef void (APIENTRY *PFNGLTEXSTORAGE2DPROC)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
 typedef void (APIENTRY *PFNGLTEXSTORAGE2DMULTISAMPLEPROC)(GLenum target, GLsizei samples, GLenum internalformat,
                                                           GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
+typedef void (APIENTRY *PFNGLTEXIMAGE2DMULTISAMPLEPROC)(GLenum target, GLsizei samples, GLenum internalformat,
+                                                        GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 typedef void (APIENTRY *PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)(GLenum target, GLsizei samples, GLenum internalformat,
                                                                  GLsizei width, GLsizei height);
 
@@ -501,6 +503,7 @@ typedef void (APIENTRY *PFNGLPOPDEBUGGROUPPROC)();
 
 #define glTexStorage2D              ren_glTexStorage2D
 #define glTexStorage2DMultisample   ren_glTexStorage2DMultisample
+#define glTexImage2DMultisample     ren_glTexImage2DMultisample
 #define glRenderbufferStorageMultisample ren_glRenderbufferStorageMultisample
 
 #define glTexImage3D                ren_glTexImage3D
@@ -619,6 +622,7 @@ EXTERN_FUNC PFNGLCOMPRESSEDTEXIMAGE2DPROC       ren_glCompressedTexImage2D;
 
 EXTERN_FUNC PFNGLTEXSTORAGE2DPROC               ren_glTexStorage2D;
 EXTERN_FUNC PFNGLTEXSTORAGE2DMULTISAMPLEPROC    ren_glTexStorage2DMultisample;
+EXTERN_FUNC PFNGLTEXIMAGE2DMULTISAMPLEPROC      ren_glTexImage2DMultisample;
 EXTERN_FUNC PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC ren_glRenderbufferStorageMultisample;
 
 EXTERN_FUNC PFNGLTEXIMAGE3DPROC                 ren_glTexImage3D;

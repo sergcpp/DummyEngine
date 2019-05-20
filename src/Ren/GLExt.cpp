@@ -111,56 +111,57 @@ bool Ren::InitGLExtentions() {
     ren_glUniform2i                 = (PFNGLUNIFORM2IPROC)GetProcAddress(glUniform2i);
     ren_glUniform3i                 = (PFNGLUNIFORM3IPROC)GetProcAddress(glUniform3i);
 
-    glUniform1iv                    = (PFNGLUNIFORM1IVPROC)GetProcAddress(glUniform1iv);
+    ren_glUniform1iv                = (PFNGLUNIFORM1IVPROC)GetProcAddress(glUniform1iv);
 
-    glUniform3fv                    = (PFNGLUNIFORM3FVPROC)GetProcAddress(glUniform3fv);
-    glUniform4fv                    = (PFNGLUNIFORM4FVPROC)GetProcAddress(glUniform4fv);
+    ren_glUniform3fv                = (PFNGLUNIFORM3FVPROC)GetProcAddress(glUniform3fv);
+    ren_glUniform4fv                = (PFNGLUNIFORM4FVPROC)GetProcAddress(glUniform4fv);
 
-    glUniformMatrix4fv              = (PFNGLUNIFORMMATRIX4FVPROC)GetProcAddress(glUniformMatrix4fv);
-
-#if !defined(__linux__)
-    glCompressedTexImage2D          = (PFNGLCOMPRESSEDTEXIMAGE2DPROC)GetProcAddress(glCompressedTexImage2D);
-#endif
-
-    glTexStorage2D                  = (PFNGLTEXSTORAGE2DPROC)GetProcAddress(glTexStorage2D);
-    glTexStorage2DMultisample       = (PFNGLTEXSTORAGE2DMULTISAMPLEPROC)GetProcAddress(glTexStorage2DMultisample);
-    glRenderbufferStorageMultisample = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)GetProcAddress(glRenderbufferStorageMultisample);
+    ren_glUniformMatrix4fv          = (PFNGLUNIFORMMATRIX4FVPROC)GetProcAddress(glUniformMatrix4fv);
 
 #if !defined(__linux__)
-    glTexImage3D                    = (PFNGLTEXIMAGE3DPROC)GetProcAddress(glTexImage3D);
+    ren_glCompressedTexImage2D      = (PFNGLCOMPRESSEDTEXIMAGE2DPROC)GetProcAddress(glCompressedTexImage2D);
 #endif
 
-    glDrawElementsBaseVertex        = (PFNGLDRAWELEMENTSBASEVERTEXPROC)GetProcAddress(glDrawElementsBaseVertex);
-    glDrawElementsInstanced         = (PFNGLDRAWELEMENTSINSTANCEDPROC)GetProcAddress(glDrawElementsInstanced);
+    ren_glTexStorage2D              = (PFNGLTEXSTORAGE2DPROC)GetProcAddress(glTexStorage2D);
+    ren_glTexStorage2DMultisample   = (PFNGLTEXSTORAGE2DMULTISAMPLEPROC)GetProcAddress(glTexStorage2DMultisample);
+    ren_glTexImage2DMultisample     = (PFNGLTEXIMAGE2DMULTISAMPLEPROC)GetProcAddress(glTexImage2DMultisample);
+    ren_glRenderbufferStorageMultisample = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)GetProcAddress(glRenderbufferStorageMultisample);
 
-    glDispatchCompute               = (PFNGLDISPATCHCOMPUTEPROC)GetProcAddress(glDispatchCompute);
-    glMemoryBarrier                 = (PFNGLMEMORYBARRIERPROC)GetProcAddress(glMemoryBarrier);
-    glGetBufferSubData              = (PFNGLGETBUFFERSUBDATAPROC)GetProcAddress(glGetBufferSubData);
+#if !defined(__linux__)
+    ren_glTexImage3D                = (PFNGLTEXIMAGE3DPROC)GetProcAddress(glTexImage3D);
+#endif
 
-    glTexBuffer                     = (PFNGLTEXBUFFERPROC)GetProcAddress(glTexBuffer);
+    ren_glDrawElementsBaseVertex    = (PFNGLDRAWELEMENTSBASEVERTEXPROC)GetProcAddress(glDrawElementsBaseVertex);
+    ren_glDrawElementsInstanced     = (PFNGLDRAWELEMENTSINSTANCEDPROC)GetProcAddress(glDrawElementsInstanced);
 
-    glGenQueries                    = (PFNGLGENQUERIESPROC)GetProcAddress(glGenQueries);
-    glDeleteQueries                 = (PFNGLDELETEQUERIESPROC)GetProcAddress(glDeleteQueries);
-    glQueryCounter                  = (PFNGLQUERYCOUNTERPROC)GetProcAddress(glQueryCounter);
+    ren_glDispatchCompute           = (PFNGLDISPATCHCOMPUTEPROC)GetProcAddress(glDispatchCompute);
+    ren_glMemoryBarrier             = (PFNGLMEMORYBARRIERPROC)GetProcAddress(glMemoryBarrier);
+    ren_glGetBufferSubData          = (PFNGLGETBUFFERSUBDATAPROC)GetProcAddress(glGetBufferSubData);
 
-    glGetQueryObjectiv              = (PFNGLGETQUERYOBJECTIVPROC)GetProcAddress(glGetQueryObjectiv);
-    glGetQueryObjectuiv             = (PFNGLGETQUERYOBJECTUIVPROC)GetProcAddress(glGetQueryObjectuiv);
-    glGetQueryObjecti64v            = (PFNGLGETQUERYOBJECTI64VPROC)GetProcAddress(glGetQueryObjecti64v);
-    glGetQueryObjectui64v           = (PFNGLGETQUERYOBJECTUI64V)GetProcAddress(glGetQueryObjectui64v);
+    ren_glTexBuffer                 = (PFNGLTEXBUFFERPROC)GetProcAddress(glTexBuffer);
 
-    glGetStringi                    = (PFNGLGETSTRINGIPROC)GetProcAddress(glGetStringi);
+    ren_glGenQueries                = (PFNGLGENQUERIESPROC)GetProcAddress(glGenQueries);
+    ren_glDeleteQueries             = (PFNGLDELETEQUERIESPROC)GetProcAddress(glDeleteQueries);
+    ren_glQueryCounter              = (PFNGLQUERYCOUNTERPROC)GetProcAddress(glQueryCounter);
 
-    glGetInteger64v                 = (PFNGLGETINTEGER64VPROC)GetProcAddress(glGetInteger64v);
-    glGetBooleani_v                 = (PFNGLGETBOOLEANI_VPROC)GetProcAddress(glGetBooleani_v);
-    glGetIntegeri_v                 = (PFNGLGETINTEGERI_VPROC)GetProcAddress(glGetIntegeri_v);
-    glGetFloati_v                   = (PFNGLGETFLOATI_VPROC)GetProcAddress(glGetFloati_v);
-    glGetDoublei_v                  = (PFNGLGETDOUBLEI_VPROC)GetProcAddress(glGetDoublei_v);
-    glGetInteger64i_v               = (PFNGLGETINTEGER64I_VPROC)GetProcAddress(glGetInteger64i_v);
+    ren_glGetQueryObjectiv          = (PFNGLGETQUERYOBJECTIVPROC)GetProcAddress(glGetQueryObjectiv);
+    ren_glGetQueryObjectuiv         = (PFNGLGETQUERYOBJECTUIVPROC)GetProcAddress(glGetQueryObjectuiv);
+    ren_glGetQueryObjecti64v        = (PFNGLGETQUERYOBJECTI64VPROC)GetProcAddress(glGetQueryObjecti64v);
+    ren_glGetQueryObjectui64v       = (PFNGLGETQUERYOBJECTUI64V)GetProcAddress(glGetQueryObjectui64v);
 
-    glDebugMessageCallback          = (PFNGLDEBUGMESSAGECALLBACKPROC)GetProcAddress(glDebugMessageCallback);
-    glDebugMessageInsert            = (PFNGLDEBUGMESSAGEINSERTPROC)GetProcAddress(glDebugMessageInsert);
-    glPushDebugGroup                = (PFNGLPUSHDEBUGGROUPPROC)GetProcAddress(glPushDebugGroup);
-    glPopDebugGroup                 = (PFNGLPOPDEBUGGROUPPROC)GetProcAddress(glPopDebugGroup);
+    ren_glGetStringi                = (PFNGLGETSTRINGIPROC)GetProcAddress(glGetStringi);
+
+    ren_glGetInteger64v             = (PFNGLGETINTEGER64VPROC)GetProcAddress(glGetInteger64v);
+    ren_glGetBooleani_v             = (PFNGLGETBOOLEANI_VPROC)GetProcAddress(glGetBooleani_v);
+    ren_glGetIntegeri_v             = (PFNGLGETINTEGERI_VPROC)GetProcAddress(glGetIntegeri_v);
+    ren_glGetFloati_v               = (PFNGLGETFLOATI_VPROC)GetProcAddress(glGetFloati_v);
+    ren_glGetDoublei_v              = (PFNGLGETDOUBLEI_VPROC)GetProcAddress(glGetDoublei_v);
+    ren_glGetInteger64i_v           = (PFNGLGETINTEGER64I_VPROC)GetProcAddress(glGetInteger64i_v);
+
+    ren_glDebugMessageCallback      = (PFNGLDEBUGMESSAGECALLBACKPROC)GetProcAddress(glDebugMessageCallback);
+    ren_glDebugMessageInsert        = (PFNGLDEBUGMESSAGEINSERTPROC)GetProcAddress(glDebugMessageInsert);
+    ren_glPushDebugGroup            = (PFNGLPUSHDEBUGGROUPPROC)GetProcAddress(glPushDebugGroup);
+    ren_glPopDebugGroup             = (PFNGLPOPDEBUGGROUPPROC)GetProcAddress(glPopDebugGroup);
 #endif
 
     return true;
