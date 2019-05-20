@@ -264,7 +264,7 @@ private:
     Ren::eTexColorFormat temp_tex_format_;
     int temp_tex_w_ = 0, temp_tex_h_ = 0;
 
-    uint32_t temp_framebuf_;
+    uint32_t temp_framebuf_, skydome_framebuf_ = 0, depth_fill_framebuf_ = 0, refl_comb_framebuf_ = 0;
 
     uint32_t unif_shared_data_block_, unif_batch_data_block_;
     uint32_t temp_vao_, shadow_pass_vao_, depth_pass_vao_, draw_pass_vao_, skydome_vao_, sphere_vao_;
@@ -292,6 +292,7 @@ private:
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
 
     void InitRendererInternal();
+    bool InitFramebuffersInternal();
     void DestroyRendererInternal();
     void DrawObjectsInternal(const DrawList &list, const FrameBuf *target);
     uint64_t GetGpuTimeBlockingUs();

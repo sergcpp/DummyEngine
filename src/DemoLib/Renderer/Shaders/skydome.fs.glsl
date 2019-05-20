@@ -13,12 +13,12 @@ struct ShadowMapRegion {
 };
 
 layout (std140) uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
+    highp mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
+    highp mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
-    vec4 uSunDir, uSunCol;
-    vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes;
+    highp vec4 uSunDir, uSunCol;
+    highp vec4 uClipInfo, uCamPosAndGamma;
+    highp vec4 uResAndFRes;
 };
 
 in vec3 aVertexPos_;
@@ -27,7 +27,7 @@ layout(location = )" AS_STR(REN_OUT_COLOR_INDEX) R"() out vec4 outColor;
 layout(location = )" AS_STR(REN_OUT_SPEC_INDEX) R"() out vec4 outSpecular;
 
 vec3 RGBMDecode(vec4 rgbm) {
-    return 6.0 * rgbm.rgb * rgbm.a;
+    return 4.0 * rgbm.rgb * rgbm.a;
 }
 
 void main() {

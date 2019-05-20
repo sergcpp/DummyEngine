@@ -168,6 +168,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             }
             clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, true, Ren::NoFilter, 4);
         }
+
         {   // Buffer that holds ldr frame before fxaa applied
             FrameBuf::ColorAttachmentDesc desc;
             desc.format = Ren::RawRGB888;
@@ -206,6 +207,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             blur_buf1_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, false);
             blur_buf2_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, false);
         }
+
+        InitFramebuffersInternal();
+
         scr_w_ = ctx_.w();
         scr_h_ = ctx_.h();
         LOGI("CleanBuf resized to %ix%i", scr_w_, scr_h_);

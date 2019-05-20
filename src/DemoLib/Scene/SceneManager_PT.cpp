@@ -112,7 +112,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
     const int LM_SAMPLES_TOTAL =
 #ifdef NDEBUG
-        4096;
+        16 * 4096;
 #else
         32;
 #endif
@@ -165,8 +165,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
     const float InvalidThreshold = 0.5f;
 
     if (ray_reg_ctx_[0].iteration >= LM_SAMPLES_TOTAL) {
-        {
-            // Save lightmap to file
+        {   // Save lightmap to file
             const auto *pixels = ray_renderer_.get_pixels_ref();
 
             int xpos = lm->pos[0], ypos = lm->pos[1];
@@ -208,7 +207,6 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
                 for (int i = 0; i < res * res; i++) {
                     const float coverage = pixels[i].a;
-
                     if (coverage < InvalidThreshold) continue;
 
                     sh_data[i].coeff_r[0] /= coverage;
@@ -415,8 +413,7 @@ void SceneManager::InitScene_PT(bool _override) {
         ray_scene_->SetEnvironment(env_desc);
     }
 
-    // Add main camera
-    {
+    {   // Add main camera
         Ray::camera_desc_t cam_desc;
         cam_desc.type = Ray::Persp;
         cam_desc.filter = Ray::Tent;
@@ -431,8 +428,7 @@ void SceneManager::InitScene_PT(bool _override) {
         ray_scene_->AddCamera(cam_desc);
     }
 
-    // Add camera for lightmapping
-    {
+    {   // Add camera for lightmapping
         Ray::camera_desc_t cam_desc;
         cam_desc.type = Ray::Geo;
         cam_desc.filter = Ray::Box;
@@ -501,6 +497,8 @@ void SceneManager::InitScene_PT(bool _override) {
         const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
             const auto *dr = (Drawable *)scene_data_.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
+            if (!(dr->flags & Drawable::DrVisibleToShadow)) continue;
+
             const auto *mesh = dr->mesh.get();
             const char *mesh_name = mesh->name();
 
@@ -527,13 +525,13 @@ void SceneManager::InitScene_PT(bool _override) {
 
                         Ren::Texture2DRef tex_ref;
 
-                        if (mat->flags() & Ren::AlphaBlend) {
-                            mat_desc.type = Ray::TransparentMaterial;
-                            tex_ref = mat->texture(0);
-                        } else {
+                        //if (mat->flags() & Ren::AlphaBlend) {
+                        //    mat_desc.type = Ray::TransparentMaterial;
+                        //    tex_ref = mat->texture(0);
+                        //} else {
                             mat_desc.type = Ray::DiffuseMaterial;
                             tex_ref = mat->texture(0);
-                        }
+                        //}
 
                         if (tex_ref) {
                             const char *tex_name = tex_ref->name();

@@ -39,7 +39,7 @@ enum eObjectCompBit {
 
 const int MAX_COMPONENT_TYPES = 32;
 
-const float LIGHT_ATTEN_CUTOFF = 0.001f;
+const float LIGHT_ATTEN_CUTOFF = 0.004f;
 
 struct SceneObject {
     uint32_t comp_mask, change_mask, last_change_mask;

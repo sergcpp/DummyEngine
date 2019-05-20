@@ -403,6 +403,99 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: timer queries");
 }
 
+bool Renderer::InitFramebuffersInternal() {
+    if (!skydome_framebuf_) {
+        GLuint new_framebuf;
+        glGenFramebuffers(1, &new_framebuf);
+        skydome_framebuf_ = (uint32_t)new_framebuf;
+    }
+
+    if (!depth_fill_framebuf_) {
+        GLuint new_framebuf;
+        glGenFramebuffers(1, &new_framebuf);
+        depth_fill_framebuf_ = (uint32_t)new_framebuf;
+    }
+
+    if (!refl_comb_framebuf_) {
+        GLuint new_framebuf;
+        glGenFramebuffers(1, &new_framebuf);
+        refl_comb_framebuf_ = (uint32_t)new_framebuf;
+    }
+
+    GLint framebuf_before;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuf_before);
+
+    bool result = true;
+
+    {   // Attach textures from clean framebuffer to skydome framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)skydome_framebuf_);
+
+        GLuint col_tex = (GLuint)clean_buf_.attachments[0].tex;
+        if (clean_buf_.sample_count > 1) {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
+        } else {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
+        }
+
+        GLuint spec_tex = (GLuint)clean_buf_.attachments[2].tex;
+        if (clean_buf_.sample_count > 1) {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D_MULTISAMPLE, spec_tex, 0);
+        } else {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, spec_tex, 0);
+        }
+
+        GLuint depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        if (clean_buf_.sample_count > 1) {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+        } else {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+        }
+
+        GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_NONE, GL_COLOR_ATTACHMENT2 };
+        glDrawBuffers(3, bufs);
+
+        auto s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        result = (s == GL_FRAMEBUFFER_COMPLETE);
+    }
+
+    {   // Attach textures from clean framebuffer to depth-fill framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
+
+        GLuint depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        if (clean_buf_.sample_count > 1) {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+        } else {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+        }
+
+        GLenum bufs[] = { GL_NONE };
+        glDrawBuffers(1, bufs);
+
+        auto s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        result = (s == GL_FRAMEBUFFER_COMPLETE);
+    }
+
+    {   // Attach textures from clean framebuffer to refl comb framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)refl_comb_framebuf_);
+
+        GLuint col_tex = (GLuint)clean_buf_.attachments[0].tex;
+        if (clean_buf_.sample_count > 1) {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
+        } else {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
+        }
+
+        GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
+        glDrawBuffers(1, bufs);
+
+        auto s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        result = (s == GL_FRAMEBUFFER_COMPLETE);
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)framebuf_before);
+    return result;
+}
+
 void Renderer::CheckInitVAOs() {
     using namespace RendererInternal;
 
@@ -603,6 +696,21 @@ void Renderer::DestroyRendererInternal() {
     {
         GLuint probe_sample_pbo = (GLuint)probe_sample_pbo_;
         glDeleteBuffers(1, &probe_sample_pbo);
+    }
+
+    if (skydome_framebuf_) {
+        GLuint framebuf = (GLuint)skydome_framebuf_;
+        glDeleteFramebuffers(1, &framebuf);
+    }
+
+    if (depth_fill_framebuf_) {
+        GLuint framebuf = (GLuint)depth_fill_framebuf_;
+        glDeleteFramebuffers(1, &framebuf);
+    }
+
+    if (refl_comb_framebuf_) {
+        GLuint framebuf = (GLuint)refl_comb_framebuf_;
+        glDeleteFramebuffers(1, &framebuf);
     }
 
     {
@@ -847,8 +955,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glDisable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Bind main buffer for drawing
-    glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
+    // Setup viewport
     glViewport(0, 0, act_w_, act_h_);
 
     // Can draw skydome without multisampling (not sure if it helps)
@@ -859,12 +966,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     /**************************************************************************************************/
 
     if ((list.render_flags & DebugWireframe) == 0 && list.env.env_map) {
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)skydome_framebuf_);
+
         // Draw skydome (and clear depth with it)
         glDepthFunc(GL_ALWAYS);
-
-        // Write to color and specular
-        GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0, GL_NONE, GL_COLOR_ATTACHMENT2 };
-        glDrawBuffers(3, draw_buffers);
 
         glUseProgram(skydome_prog_->prog_id());
 
@@ -939,7 +1044,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     BindTexBuffer(REN_INST_BUF_SLOT, instances_tbo_);
 
     /**************************************************************************************************/
-    /*                                     DEPTH-FILL OPAQUE PASS                                     */
+    /*                                         DEPTH-FILL PASS                                        */
     /**************************************************************************************************/
 
     if (list.render_flags & EnableTimers) {
@@ -948,8 +1053,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     if ((list.render_flags & EnableZFill) && ((list.render_flags & DebugWireframe) == 0)) {
         // Write depth only
-        GLenum draw_buffers[] = { GL_NONE, GL_NONE, GL_NONE };
-        glDrawBuffers(3, draw_buffers);
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
 
         glDepthFunc(GL_LESS);
 
@@ -961,7 +1065,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         BindTexture(REN_DIFF_TEX_SLOT, dummy_white_->tex_id());
 
 #ifndef DISABLE_MARKERS
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "DEPTH-FILL OPAQUE");
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "DEPTH-FILL");
 #endif
 
         // fill depth
@@ -1076,14 +1180,14 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     /*                                           OPAQUE PASS                                          */
     /**************************************************************************************************/
 
+    // Bind main buffer for drawing
+    glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
+
     if (list.render_flags & EnableTimers) {
         glQueryCounter(queries_[1][TimeOpaqueStart], GL_TIMESTAMP);
     }
 
     glBindVertexArray((GLuint)draw_pass_vao_);
-
-    GLenum main_draw_buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-    glDrawBuffers(3, main_draw_buffers);
 
     {   // actual drawing
 #ifndef DISABLE_MARKERS
@@ -1135,8 +1239,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     }
 
     glBindVertexArray((GLuint)draw_pass_vao_);
-
-    glDrawBuffers(3, main_draw_buffers);
 
     glEnable(GL_BLEND);
 
@@ -1261,7 +1363,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         // Compose reflections on top of clean buffer
-        glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
+        glBindFramebuffer(GL_FRAMEBUFFER, refl_comb_framebuf_);
         glViewport(0, 0, act_w_, act_h_);
 
         glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
@@ -1270,9 +1372,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBlendFunc(GL_ONE, GL_ONE);
         glDisable(GL_DEPTH_TEST);
         glDepthMask(GL_FALSE);
-
-        GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0 };
-        glDrawBuffers(1, draw_buffers);
 
         const Ren::Program *blit_mul_prog = nullptr;
 
@@ -1313,8 +1412,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glDisable(GL_DEPTH_TEST);
 
         // Write to color
-        GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0, GL_NONE, GL_NONE };
-        glDrawBuffers(3, draw_buffers);
+        glBindFramebuffer(GL_FRAMEBUFFER, refl_comb_framebuf_);
 
         glUseProgram(probe_prog_->prog_id());
 
@@ -2381,9 +2479,6 @@ void Renderer::BlitToLightProbeFace(const FrameBuf &src_buf, const ProbeStorage 
 
     glViewport(0, 0, (GLint)dst_store.res(), (GLint)dst_store.res());
 
-    GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0 };
-    glDrawBuffers(1, draw_buffers);
-
     glBindVertexArray((GLuint)temp_vao_);
 
     glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
@@ -2470,9 +2565,6 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
     glBindFramebuffer(GL_FRAMEBUFFER, probe_sample_buf_.fb);
 
     glViewport(0, 0, probe_sample_buf_.w, probe_sample_buf_.h);
-
-    GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0 };
-    glDrawBuffers(1, draw_buffers);
 
     glBindVertexArray((GLuint)temp_vao_);
 

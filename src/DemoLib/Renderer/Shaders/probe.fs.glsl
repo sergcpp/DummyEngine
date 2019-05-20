@@ -37,7 +37,7 @@ in vec3 aVertexPos_;
 layout(location = )" AS_STR(REN_OUT_COLOR_INDEX) R"() out vec4 outColor;
 
 vec3 RGBMDecode(vec4 rgbm) {
-    return 6.0 * rgbm.rgb * rgbm.a;
+    return 4.0 * rgbm.rgb * rgbm.a;
 }
 
 void main() {

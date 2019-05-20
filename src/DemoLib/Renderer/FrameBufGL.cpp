@@ -20,13 +20,14 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
     glViewport(0, 0, w, h);
 
+    glActiveTexture(GL_TEXTURE0);
+
     for (int i = 0; i < attachments_count; i++) {
         const auto &att = _attachments[i];
 
         GLuint _col_tex;
 
         glGenTextures(1, &_col_tex);
-        glActiveTexture(GL_TEXTURE0);
 
         Ren::CheckError("[Renderer]: create framebuffer 1");
 
@@ -39,7 +40,7 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
 
         if (sample_count > 1) {
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, _col_tex);
-            glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, sample_count, internal_format, w, h, GL_TRUE);
+            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, sample_count, internal_format, w, h, GL_TRUE);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, _col_tex, 0);
         } else {
             glBindTexture(GL_TEXTURE_2D, _col_tex);
@@ -73,62 +74,17 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
     }
 
     if (attachments_count) {
+        GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+        glDrawBuffers(attachments_count, bufs);
+
         glClear(GL_COLOR_BUFFER_BIT);
+    } else {
+        GLenum bufs[] = { GL_NONE };
+        glDrawBuffers(1, bufs);
     }
     Ren::CheckError("[Renderer]: create framebuffer 2");
 
-    if (with_depth && attachments_count == 0) {
-        GLuint _depth_tex;
-
-        glGenTextures(1, &_depth_tex);
-        glBindTexture(GL_TEXTURE_2D, _depth_tex);
-        glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT16, w, h);
-
-        // multisample textures does not support sampler state
-        if (sample_count == 1) {
-            if (depth_filter == Ren::NoFilter) {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            } else if (depth_filter == Ren::Bilinear || depth_filter == Ren::BilinearNoMipmap) {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            }
-
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        }
-        
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_tex, 0);
-
-        GLenum bufs[] = { GL_NONE };
-        glDrawBuffers(1, bufs);
-
-        glReadBuffer(GL_NONE);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        LOGI("%ix%i", w, h);
-        auto s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        if (s != GL_FRAMEBUFFER_COMPLETE) {
-            LOGI("Frambuffer error %i", int(s));
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            throw std::runtime_error("Framebuffer error!");
-        }
-
-        depth_tex = _depth_tex;
-        glClear(GL_DEPTH_BUFFER_BIT);
-    } else if (with_depth) {
-#if 0
-        GLuint _depth_rb;
-
-        glGenRenderbuffers(1, &_depth_rb);
-        glBindRenderbuffer(GL_RENDERBUFFER, _depth_rb);
-        if (sample_count > 1) {
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, sample_count, GL_DEPTH_COMPONENT16, w, h);
-        } else {
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, w, h);
-        }
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depth_rb);
-#else
+    if (with_depth) {
         GLuint _depth_tex;
 
         GLenum target = sample_count > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
@@ -137,9 +93,9 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
         glBindTexture(target, _depth_tex);
 
         if (sample_count > 1) {
-            glTexStorage2DMultisample(target, sample_count, GL_DEPTH_COMPONENT16, w, h, GL_TRUE);
+            glTexImage2DMultisample(target, sample_count, GL_DEPTH_COMPONENT24, w, h, GL_TRUE);
         } else {
-            glTexStorage2D(target, 1, GL_DEPTH_COMPONENT16, w, h);
+            glTexImage2D(target, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
         }
 
         Ren::CheckError("[Renderer]: create framebuffer 3");
@@ -161,13 +117,6 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, _depth_tex, 0);
 
         depth_tex = _depth_tex;
-
-        //GLenum bufs[] = { GL_NONE };
-        //glDrawBuffers(1, bufs);
-
-        //glReadBuffer(GL_NONE);
-        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-#endif
 
         LOGI("- %ix%i", w, h);
         auto s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -199,7 +148,6 @@ FrameBuf &FrameBuf::operator=(FrameBuf &&rhs) {
     sample_count = rhs.sample_count;
     fb = rhs.fb;
     depth_tex = std::move(rhs.depth_tex);
-    depth_rb = std::move(rhs.depth_rb);
 
     rhs.w = rhs.h = -1;
 
@@ -215,10 +163,6 @@ FrameBuf::~FrameBuf() {
     if (depth_tex.initialized()) {
         GLuint val = (GLuint)depth_tex.GetValue();
         glDeleteTextures(1, &val);
-    }
-    if (depth_rb.initialized()) {
-        GLuint val = (GLuint)depth_rb.GetValue();
-        glDeleteRenderbuffers(1, &val);
     }
 
     if (w != -1) {

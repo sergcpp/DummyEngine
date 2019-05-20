@@ -172,7 +172,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         }
 
         scene_data_.env.lm_direct = OnLoadTexture(lm_direct_tex_name.c_str());
-        scene_data_.env.lm_indir = OnLoadTexture(lm_indir_tex_name.c_str());
+        //scene_data_.env.lm_indir = OnLoadTexture(lm_indir_tex_name.c_str());
         for (int sh_l = 0; sh_l < 4; sh_l++) {
             scene_data_.env.lm_indir_sh[sh_l] = OnLoadTexture(lm_indir_sh_tex_name[sh_l].c_str());
         }

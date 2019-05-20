@@ -19,7 +19,7 @@ struct FrameBuf {
     };
 
     uint32_t fb;
-    Sys::Optional<uint32_t> depth_rb, depth_tex;
+    Sys::Optional<uint32_t> depth_tex;
     std::vector<ColorAttachment> attachments;
 #endif
     FrameBuf() :  w(-1), h(-1), fb(0xffffffff) {}

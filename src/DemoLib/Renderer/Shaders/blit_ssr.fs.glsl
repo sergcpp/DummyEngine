@@ -2,7 +2,6 @@ R"(
 #version 310 es
 #extension GL_ARB_texture_multisample : enable
 #extension GL_EXT_texture_buffer : enable
-#extension GL_EXT_texture_cube_map_array : enable
 
 #ifdef GL_ES
 	precision mediump float;
@@ -54,9 +53,6 @@ layout(binding = )" AS_STR(REN_REFL_NORM_TEX_SLOT) R"() uniform mediump sampler2
 layout(binding = )" AS_STR(REN_REFL_SPEC_TEX_SLOT) R"() uniform mediump sampler2D spec_texture;
 #endif
 layout(binding = )" AS_STR(REN_REFL_PREV_TEX_SLOT) R"() uniform mediump sampler2D prev_texture;
-layout(binding = )" AS_STR(REN_ENV_TEX_SLOT) R"() uniform mediump samplerCubeArray env_texture;
-layout(binding = )" AS_STR(REN_CELLS_BUF_SLOT) R"() uniform highp usamplerBuffer cells_buffer;
-layout(binding = )" AS_STR(REN_ITEMS_BUF_SLOT) R"() uniform highp usamplerBuffer items_buffer;
 
 in vec2 aVertexUVs_;
 
@@ -72,7 +68,7 @@ float rand(vec2 co) {
 }
 
 vec3 RGBMDecode(vec4 rgbm) {
-    return 6.0 * rgbm.rgb * rgbm.a;
+    return 4.0 * rgbm.rgb * rgbm.a;
 }
 
 float LinearDepthTexelFetch(ivec2 hit_pixel) {

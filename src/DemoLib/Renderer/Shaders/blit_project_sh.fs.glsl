@@ -17,7 +17,7 @@ in vec2 aVertexUVs_;
 out vec4 outColor;
 
 vec3 RGBMDecode(vec4 rgbm) {
-    return 6.0 * rgbm.rgb * rgbm.a;
+    return 4.0 * rgbm.rgb * rgbm.a;
 }
 
 #define M_PI 3.1415926535897932384626433832795

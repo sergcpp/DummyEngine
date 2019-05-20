@@ -114,7 +114,7 @@ vec4 textureBicubic(sampler2D sampler, vec2 texCoords){
 }
 
 vec3 RGBMDecode(vec4 rgbm) {
-    return 6.0 * rgbm.rgb * rgbm.a;
+    return 4.0 * rgbm.rgb * rgbm.a;
 }
 
 void main() {

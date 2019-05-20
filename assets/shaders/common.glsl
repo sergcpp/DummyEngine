@@ -9,7 +9,7 @@ highp float rand(highp vec2 co) {
 }
 
 vec3 RGBMDecode(vec4 rgbm) {
-    return 6.0 * rgbm.rgb * rgbm.a;
+    return 4.0 * rgbm.rgb * rgbm.a;
 }
 
 const vec2 poisson_disk[16] = vec2[16](
