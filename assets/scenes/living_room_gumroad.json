@@ -9,7 +9,7 @@
         "env_map_pt" : "env/room_env_mix_2k.hdr"
     },
     "camera" : {
-        "view_origin" : [ 6.9, 1.054862, 0.0 ],
+        "view_origin" : [ 6.9, 0.96, 0.0 ],
         "view_dir" : [ -1.0, 0.0, 0.0 ],
         "fwd_speed" : 0.025,
         "fov" : 29.0
@@ -40,10 +40,10 @@
     "objects" : [
         {
             "transform" : {
-                "pos" : [ 0.0, 0.124862, 0.0 ],
+                "pos" : [ 0.0, 0.124862, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "room",
+                "mesh" : "room"
             },
             "lightmap" : {
                 "res" : 1024
@@ -51,26 +51,26 @@
         },
         {
             "transform" : {
-                "pos" : [ -1.706575, 0.179747, 2.272793 ],
+                "pos" : [ -1.706575, 0.179747, 2.272793 ]
             },
             "drawable" : {
-                "mesh" : "wall_plugs",
+                "mesh" : "wall_plugs"
             }
         },
         {
             "transform" : {
-                "pos" : [ -1.706575, 1.872641, 1.745906 ],
+                "pos" : [ -1.706575, 1.872641, 1.745906 ]
             },
             "drawable" : {
-                "mesh" : "radiator",
+                "mesh" : "radiator"
             }
         },
         {
             "transform" : {
-                "pos" : [ 4.28384, 0.0, 1.492837 ],
+                "pos" : [ 4.28384, 0.0, 1.492837 ]
             },
             "drawable" : {
-                "mesh" : "sofa",
+                "mesh" : "sofa"
             }
         },
         {
@@ -79,7 +79,7 @@
                 "rot" : [ 90.0, 90.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "wall_picture",
+                "mesh" : "wall_picture"
             }
         },
         {
@@ -88,7 +88,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "wood_crate",
+                "mesh" : "wood_crate"
             }
         },
         {
@@ -97,7 +97,7 @@
                 "rot" : [ 0.0, -90.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "wood_crate",
+                "mesh" : "wood_crate"
             }
         },
         {
@@ -106,7 +106,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "carpet",
+                "mesh" : "carpet"
             },
             "lightmap" : {
                 "res" : 512
@@ -118,7 +118,7 @@
                 "rot" : [ 0.0, 90.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "books",
+                "mesh" : "books"
             }
         },
         {
@@ -127,7 +127,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "box",
+                "mesh" : "box"
             }
         },
         {
@@ -136,7 +136,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "lamp",
+                "mesh" : "lamp"
             }
         },
         {
@@ -145,7 +145,7 @@
                 "rot" : [ 0.0, 34.4981, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "laptop",
+                "mesh" : "laptop"
             }
         },
         {
@@ -154,7 +154,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "ornament",
+                "mesh" : "ornament"
             }
         },
         {
@@ -163,7 +163,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "ornaments",
+                "mesh" : "ornaments"
             }
         },
         {
@@ -172,7 +172,7 @@
                 "rot" : [ 0.0, 3.54891, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "plant_01",
+                "mesh" : "plant_01"
             }
         },
         {
@@ -181,7 +181,7 @@
                 "rot" : [ 0.0, -12.4005, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "plant_02",
+                "mesh" : "plant_02"
             }
         },
         {
@@ -190,7 +190,7 @@
                 "rot" : [ 0.0, -5.62711, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "plant_03",
+                "mesh" : "plant_03"
             }
         },
         {
@@ -199,7 +199,7 @@
                 "rot" : [ 0.0, -3, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "plant_crate",
+                "mesh" : "plant_crate"
             }
         },
         {
@@ -208,7 +208,7 @@
                 "rot" : [ 0.0, -36, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "small_lamp",
+                "mesh" : "small_lamp"
             }
         },
         {
@@ -218,407 +218,447 @@
             },
             "drawable" : {
                 "mesh" : "curtains",
-                "visible_to_shadow" : false,
+                "visible_to_shadow" : false
             }
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -1.8 ],
+                "pos" : [ -1.8, 0.5, -1.8 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -1.7 ],
+                "pos" : [ -1.8, 0.5, -1.7 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -1.6 ],
+                "pos" : [ -1.8, 0.5, -1.6 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -1.5 ],
+                "pos" : [ -1.8, 0.5, -1.5 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -1.4 ],
+                "pos" : [ -1.8, 0.5, -1.4 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -1.3 ],
+                "pos" : [ -1.8, 0.5, -1.3 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -1.2 ],
+                "pos" : [ -1.8, 0.5, -1.2 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -1.1 ],
+                "pos" : [ -1.8, 0.5, -1.1 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -1.0 ],
+                "pos" : [ -1.8, 0.5, -1.0 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -0.9 ],
+                "pos" : [ -1.8, 0.5, -0.9 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -0.8 ],
+                "pos" : [ -1.8, 0.5, -0.8 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -0.7 ],
+                "pos" : [ -1.8, 0.5, -0.7 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -0.6 ],
+                "pos" : [ -1.8, 0.5, -0.6 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -0.5 ],
+                "pos" : [ -1.8, 0.5, -0.5 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -0.4 ],
+                "pos" : [ -1.8, 0.5, -0.4 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -0.3 ],
+                "pos" : [ -1.8, 0.5, -0.3 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -0.2 ],
+                "pos" : [ -1.8, 0.5, -0.2 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, -0.1 ],
+                "pos" : [ -1.8, 0.5, -0.1 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 0.0 ],
+                "pos" : [ -1.8, 0.5, 0.0 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 0.1 ],
+                "pos" : [ -1.8, 0.5, 0.1 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 0.2 ],
+                "pos" : [ -1.8, 0.5, 0.2 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 0.3 ],
+                "pos" : [ -1.8, 0.5, 0.3 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 0.4 ],
+                "pos" : [ -1.8, 0.5, 0.4 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 0.5 ],
+                "pos" : [ -1.8, 0.5, 0.5 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 0.6 ],
+                "pos" : [ -1.8, 0.5, 0.6 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 0.7 ],
+                "pos" : [ -1.8, 0.5, 0.7 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 0.8 ],
+                "pos" : [ -1.8, 0.5, 0.8 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 0.9 ],
+                "pos" : [ -1.8, 0.5, 0.9 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 1.0 ],
+                "pos" : [ -1.8, 0.5, 1.0 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 1.1 ],
+                "pos" : [ -1.8, 0.5, 1.1 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 1.2 ],
+                "pos" : [ -1.8, 0.5, 1.2 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 1.3 ],
+                "pos" : [ -1.8, 0.5, 1.3 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 1.4 ],
+                "pos" : [ -1.8, 0.5, 1.4 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 1.5 ],
+                "pos" : [ -1.8, 0.5, 1.5 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 1.6 ],
+                "pos" : [ -1.8, 0.5, 1.6 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 1.7 ],
+                "pos" : [ -1.8, 0.5, 1.7 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 1.8 ],
+                "pos" : [ -1.8, 0.5, 1.8 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 1.9 ],
+                "pos" : [ -1.8, 0.5, 1.9 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 2.0 ],
+                "pos" : [ -1.8, 0.5, 2.0 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.8, 0.45, 2.1 ],
+                "pos" : [ -1.8, 0.5, 2.1 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
                 "radius" : 0.01,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         
@@ -627,391 +667,429 @@
 
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, -1.8 ],
+                "pos" : [ -1.35, 2.85, -1.8 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, -1.6 ],
+                "pos" : [ -1.35, 2.85, -1.6 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, -1.4 ],
+                "pos" : [ -1.35, 2.85, -1.4 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, -1.2 ],
+                "pos" : [ -1.35, 2.85, -1.2 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, -1.0 ],
+                "pos" : [ -1.35, 2.85, -1.0 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, -0.8 ],
+                "pos" : [ -1.35, 2.85, -0.8 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, -0.6 ],
+                "pos" : [ -1.35, 2.85, -0.6 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, -0.4 ],
+                "pos" : [ -1.35, 2.85, -0.4 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, -0.2 ],
+                "pos" : [ -1.35, 2.85, -0.2 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, 0.0 ],
+                "pos" : [ -1.35, 2.85, 0.0 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, 0.2 ],
+                "pos" : [ -1.35, 2.85, 0.2 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, 0.4 ],
+                "pos" : [ -1.35, 2.85, 0.4 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, 0.6 ],
+                "pos" : [ -1.35, 2.85, 0.6 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, 0.8 ],
+                "pos" : [ -1.35, 2.85, 0.8 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, 1.0 ],
+                "pos" : [ -1.35, 2.85, 1.0 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, 1.2 ],
+                "pos" : [ -1.35, 2.85, 1.2 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, 1.4 ],
+                "pos" : [ -1.35, 2.85, 1.4 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, 1.6 ],
+                "pos" : [ -1.35, 2.85, 1.6 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, 1.8 ],
+                "pos" : [ -1.35, 2.85, 1.8 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, 2.0 ],
+                "pos" : [ -1.35, 2.85, 2.0 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, 2.2 ],
+                "pos" : [ -1.35, 2.85, 2.2 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         {
             "transform" : {
-                "pos" : [ -1.4, 2.85, 2.4 ],
+                "pos" : [ -1.35, 2.85, 2.4 ]
             },
             "light" : {
                 "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ -1.0, 0.0, 0.0 ],
                 "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        
-        
-        {
-            "transform" : {
-                "pos" : [ -1.3, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ -1.0, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ -0.7, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ -0.4, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ -0.1, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ 0.2, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ 0.5, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ 0.8, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ 1.1, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ 1.4, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ 1.7, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ 2.0, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ 2.3, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ 2.6, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ 2.9, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
-            },
-        },
-        {
-            "transform" : {
-                "pos" : [ 3.2, 2.85, 2.52 ],
-            },
-            "light" : {
-                "color" : [ 15.74, 6.44, 2.14 ],
-                "radius" : 0.02,
-                "angle" : 180.0
+                "angle" : 85.0
             },
         },
         
         
         {
             "transform" : {
-                "pos" : [ 2.12, 0.45, -0.085 ],
+                "pos" : [ -1.3, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.0, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.7, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.4, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.1, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.2, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.5, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.8, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ 1.1, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ 1.4, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ 1.7, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.0, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.3, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.6, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.9, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        {
+            "transform" : {
+                "pos" : [ 3.2, 2.85, 2.48 ]
+            },
+            "light" : {
+                "color" : [ 15.74, 6.44, 2.14 ],
+                "direction" : [ 0.0, 0.0, 1.0 ],
+                "radius" : 0.02,
+                "angle" : 85.0
+            },
+        },
+        
+        
+        {
+            "transform" : {
+                "pos" : [ 2.12, 0.45, -0.085 ]
             },
             "light" : {
                 "color" : [ 1.0, 1.0, 1.0 ],
@@ -1022,7 +1100,7 @@
         
         {
             "transform" : {
-                "pos" : [ 5.0, 1.0, 0.0 ],
+                "pos" : [ 5.0, 1.0, 0.0 ]
             },
             "probe" : {
                 "offset" : [ 0.0, 0.0, 0.0 ],
@@ -1031,7 +1109,7 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 1.0, 0.0 ],
+                "pos" : [ 0.0, 1.0, 0.0 ]
             },
             "probe" : {
                 "offset" : [ 0.0, 0.0, 0.0 ],
@@ -1040,7 +1118,7 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 1.0, -5.0 ],
+                "pos" : [ 0.0, 1.0, -5.0 ]
             },
             "probe" : {
                 "offset" : [ 0.0, 0.0, 0.0 ],

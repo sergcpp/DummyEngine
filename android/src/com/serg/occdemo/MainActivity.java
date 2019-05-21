@@ -24,7 +24,7 @@ import javax.microedition.khronos.opengles.GL10;
 import java.io.File;
 
 public class MainActivity extends Activity {
-    MainView view_;
+    private MainView view_;
 
     @Override protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
@@ -197,6 +197,8 @@ class MainView extends GLSurfaceView {
                         prev_sec_y_ = y;
                     }
                 }
+            break;
+            default:
             break;
         }
         

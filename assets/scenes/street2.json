@@ -41,10 +41,10 @@
     "objects" : [
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 0.0 ],
+                "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "rails",
+                "mesh" : "rails"
             },
             "light" : {
                 "offset" : [ 0.0, 12.0, 0.0 ],
@@ -57,10 +57,10 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 0.0 ],
+                "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk",
+                "mesh" : "sidewalk"
             },
             "decals" : [ "d0", "d1" ],
             "decal" : {
@@ -74,10 +74,10 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 16.0 ],
+                "pos" : [ 0.0, 0.0, 16.0 ]
             },
             "drawable" : {
-                "mesh" : "rails",
+                "mesh" : "rails"
             },
             "light" : {
                 "offset" : [ 0.0, 12.0, 0.0 ],
@@ -90,19 +90,19 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 16.0 ],
+                "pos" : [ 0.0, 0.0, 16.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk",
+                "mesh" : "sidewalk"
             },
             "decals" : [ "d0", "d1" ]
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 32.0 ],
+                "pos" : [ 0.0, 0.0, 32.0 ]
             },
             "drawable" : {
-                "mesh" : "rails",
+                "mesh" : "rails"
             },
             "light" : {
                 "offset" : [ 0.0, 12.0, 0.0 ],
@@ -115,19 +115,19 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 32.0 ],
+                "pos" : [ 0.0, 0.0, 32.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk",
+                "mesh" : "sidewalk"
             },
             "decals" : [ "d0", "d1" ]
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 48.0 ],
+                "pos" : [ 0.0, 0.0, 48.0 ]
             },
             "drawable" : {
-                "mesh" : "rails",
+                "mesh" : "rails"
             },
             "light" : {
                 "offset" : [ 0.0, 12.0, 0.0 ],
@@ -140,19 +140,19 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 48.0 ],
+                "pos" : [ 0.0, 0.0, 48.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk",
+                "mesh" : "sidewalk"
             },
             "decals" : [ "d0", "d1" ]
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 64.0 ],
+                "pos" : [ 0.0, 0.0, 64.0 ]
             },
             "drawable" : {
-                "mesh" : "rails",
+                "mesh" : "rails"
             },
             "light" : {
                 "offset" : [ 0.0, 12.0, 0.0 ],
@@ -165,19 +165,19 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 64.0 ],
+                "pos" : [ 0.0, 0.0, 64.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk",
+                "mesh" : "sidewalk"
             },
             "decals" : [ "d0", "d1" ]
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 80.0 ],
+                "pos" : [ 0.0, 0.0, 80.0 ]
             },
             "drawable" : {
-                "mesh" : "rails",
+                "mesh" : "rails"
             },
             "light" : {
                 "offset" : [ 0.0, 12.0, 0.0 ],
@@ -190,19 +190,19 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 80.0 ],
+                "pos" : [ 0.0, 0.0, 80.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk",
+                "mesh" : "sidewalk"
             },
             "decals" : [ "d0", "d1" ]
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 96.0 ],
+                "pos" : [ 0.0, 0.0, 96.0 ]
             },
             "drawable" : {
-                "mesh" : "rails",
+                "mesh" : "rails"
             },
             "light" : {
                 "offset" : [ 0.0, 12.0, 0.0 ],
@@ -215,19 +215,19 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 96.0 ],
+                "pos" : [ 0.0, 0.0, 96.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk",
+                "mesh" : "sidewalk"
             },
             "decals" : [ "d0", "d1" ]
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 112.0 ],
+                "pos" : [ 0.0, 0.0, 112.0 ]
             },
             "drawable" : {
-                "mesh" : "rails",
+                "mesh" : "rails"
             },
             "light" : {
                 "offset" : [ 0.0, 12.0, 0.0 ],
@@ -240,19 +240,19 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 112.0 ],
+                "pos" : [ 0.0, 0.0, 112.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk",
+                "mesh" : "sidewalk"
             },
             "decals" : [ "d0", "d1" ]
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 128.0 ],
+                "pos" : [ 0.0, 0.0, 128.0 ]
             },
             "drawable" : {
-                "mesh" : "rails",
+                "mesh" : "rails"
             },
             "light" : {
                 "offset" : [ 0.0, 12.0, 0.0 ],
@@ -265,19 +265,19 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 128.0 ],
+                "pos" : [ 0.0, 0.0, 128.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk",
+                "mesh" : "sidewalk"
             },
             "decals" : [ "d0", "d1" ]
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 144.0 ],
+                "pos" : [ 0.0, 0.0, 144.0 ]
             },
             "drawable" : {
-                "mesh" : "rails",
+                "mesh" : "rails"
             },
             "light" : {
                 "offset" : [ 0.0, 12.0, 0.0 ],
@@ -290,19 +290,19 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 144.0 ],
+                "pos" : [ 0.0, 0.0, 144.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk",
+                "mesh" : "sidewalk"
             },
             "decals" : [ "d0", "d1" ]
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 160.0 ],
+                "pos" : [ 0.0, 0.0, 160.0 ]
             },
             "drawable" : {
-                "mesh" : "rails",
+                "mesh" : "rails"
             },
             "light" : {
                 "offset" : [ 0.0, 12.0, 0.0 ],
@@ -315,19 +315,19 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 160.0 ],
+                "pos" : [ 0.0, 0.0, 160.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk",
+                "mesh" : "sidewalk"
             },
             "decals" : [ "d0", "d1" ]
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 176.0 ],
+                "pos" : [ 0.0, 0.0, 176.0 ]
             },
             "drawable" : {
-                "mesh" : "rails",
+                "mesh" : "rails"
             },
             "light" : {
                 "offset" : [ 0.0, 12.0, 0.0 ],
@@ -340,19 +340,19 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 176.0 ],
+                "pos" : [ 0.0, 0.0, 176.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk",
+                "mesh" : "sidewalk"
             },
             "decals" : [ "d0", "d1" ]
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 192.0 ],
+                "pos" : [ 0.0, 0.0, 192.0 ]
             },
             "drawable" : {
-                "mesh" : "rails",
+                "mesh" : "rails"
             },
             "light" : {
                 "offset" : [ 0.0, 12.0, 0.0 ],
@@ -365,10 +365,10 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 0.0, 192.0 ],
+                "pos" : [ 0.0, 0.0, 192.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk",
+                "mesh" : "sidewalk"
             },
             "decals" : [ "d0", "d1" ]
         },
@@ -376,23 +376,23 @@
         
         {
             "transform" : {
-                "pos" : [ 12.4276, 0.0, 1.15319 ],
+                "pos" : [ 12.4276, 0.0, 1.15319 ]
             },
             "drawable" : {
-                "mesh" : "main_house",
+                "mesh" : "main_house"
             }
         },
         {
             "transform" : {
-                "pos" : [ 14.2315, 0.0, 22.0001 ],
+                "pos" : [ 14.2315, 0.0, 22.0001 ]
             },
             "drawable" : {
-                "mesh" : "house_04",
+                "mesh" : "house_04"
             },
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 2.0, 8.0 ],
+                "pos" : [ 0.0, 2.0, 8.0 ]
             },
             "drawable" : {
                 "mesh" : "monk"
@@ -400,7 +400,7 @@
         },
         {
             "transform" : {
-                "pos" : [ 3.0, 2.0, 8.0 ],
+                "pos" : [ 3.0, 2.0, 8.0 ]
             },
             "drawable" : {
                 "mesh" : "monk"
@@ -408,7 +408,7 @@
         },
         {
             "transform" : {
-                "pos" : [ -3.0, 2.0, 8.0 ],
+                "pos" : [ -3.0, 2.0, 8.0 ]
             },
             "drawable" : {
                 "mesh" : "monk"
@@ -416,7 +416,7 @@
         },
         {
             "transform" : {
-                "pos" : [ 6.0, 2.0, 8.0 ],
+                "pos" : [ 6.0, 2.0, 8.0 ]
             },
             "drawable" : {
                 "mesh" : "monk"
@@ -424,7 +424,7 @@
         },
         {
             "transform" : {
-                "pos" : [ -6.0, 2.0, 8.0 ],
+                "pos" : [ -6.0, 2.0, 8.0 ]
             },
             "drawable" : {
                 "mesh" : "monk"
@@ -432,7 +432,7 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 5.0, 0.0 ],
+                "pos" : [ 0.0, 5.0, 0.0 ]
             },
             "probe" : {
                 "offset" : [ 0.0, 0.0, 0.0 ],
@@ -441,7 +441,7 @@
         },
         {
             "transform" : {
-                "pos" : [ 0.0, 5.0, 15.0 ],
+                "pos" : [ 0.0, 5.0, 15.0 ]
             },
             "probe" : {
                 "offset" : [ 0.0, 0.0, 0.0 ],

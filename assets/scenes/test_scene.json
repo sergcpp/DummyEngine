@@ -13,18 +13,18 @@
     },
     "meshes" : {
         "test_floor" : "test_floor.mesh",
-        "test_lights" : "test_lights.mesh",
+        "test_lights" : "test_lights.mesh"
     },
     "objects" : [
         {
             "pos" : [ 0.0, 0.0, 0.0 ],
             "mesh" : "test_floor",
             "lightmap_res" : 256,
-            "lightmap_sh" : true,
+            "lightmap_sh" : true
         },
         {
             "pos" : [ 0.0, 0.0, 0.0 ],
-            "mesh" : "test_lights",
+            "mesh" : "test_lights"
         }
     ]
 }
