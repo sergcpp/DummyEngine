@@ -7,5 +7,7 @@ Personal playground for testing different realtime rendering stuff. Currently in
 
 Also trying to add clustered lighting, decals, SSR and SSAO.
 
-![Screenshot](img4.jpg)|![Screenshot](img5.jpg)|![Screenshot](img6.jpg)
-:-------------------------:|:-------------------------:|:-------------------------:
+![Screenshot](img7.jpg)|![Screenshot](img8.jpg)
+:-------------------------:|:-------------------------:
+
+(Scene is taken from here: https://www.blendernation.com/2018/07/20/3-interior-scenes-with-free-blend-files/)
