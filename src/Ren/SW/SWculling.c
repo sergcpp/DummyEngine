@@ -383,19 +383,19 @@ SWint swCullCtxCullTrianglesIndexed_Ubyte(SWcull_ctx *ctx, const void *attribs, 
 
     for (SWuint j = 0; j < count; j += 3) {
         SWuint i0 = indices[j] + base_vertex;
-        SWfloat v0_x = ((SWfloat *)((SWubyte *)attribs + i0 * stride))[0];
-        SWfloat v0_y = ((SWfloat *)((SWubyte *)attribs + i0 * stride))[1];
-        SWfloat v0_z = ((SWfloat *)((SWubyte *)attribs + i0 * stride))[2];
+        SWfloat v0_x = ((SWfloat *)((uintptr_t)attribs + i0 * stride))[0];
+        SWfloat v0_y = ((SWfloat *)((uintptr_t)attribs + i0 * stride))[1];
+        SWfloat v0_z = ((SWfloat *)((uintptr_t)attribs + i0 * stride))[2];
 
         SWuint i1 = indices[j + 1] + base_vertex;
-        SWfloat v1_x = ((SWfloat *)((SWubyte *)attribs + i1 * stride))[0];
-        SWfloat v1_y = ((SWfloat *)((SWubyte *)attribs + i1 * stride))[1];
-        SWfloat v1_z = ((SWfloat *)((SWubyte *)attribs + i1 * stride))[2];
+        SWfloat v1_x = ((SWfloat *)((uintptr_t)attribs + i1 * stride))[0];
+        SWfloat v1_y = ((SWfloat *)((uintptr_t)attribs + i1 * stride))[1];
+        SWfloat v1_z = ((SWfloat *)((uintptr_t)attribs + i1 * stride))[2];
 
         SWuint i2 = indices[j + 2] + base_vertex;
-        SWfloat v2_x = ((SWfloat *)((SWubyte *)attribs + i2 * stride))[0];
-        SWfloat v2_y = ((SWfloat *)((SWubyte *)attribs + i2 * stride))[1];
-        SWfloat v2_z = ((SWfloat *)((SWubyte *)attribs + i2 * stride))[2];
+        SWfloat v2_x = ((SWfloat *)((uintptr_t)attribs + i2 * stride))[0];
+        SWfloat v2_y = ((SWfloat *)((uintptr_t)attribs + i2 * stride))[1];
+        SWfloat v2_z = ((SWfloat *)((uintptr_t)attribs + i2 * stride))[2];
 
         vs_out[0][0] = xform[0] * v0_x + xform[4] * v0_y + xform[8] * v0_z + xform[12];
         vs_out[0][1] = xform[1] * v0_x + xform[5] * v0_y + xform[9] * v0_z + xform[13];
@@ -435,19 +435,19 @@ SWint swCullCtxCullTrianglesIndexed_Uint(SWcull_ctx *ctx, const void *attribs, c
 
     for (SWuint j = 0; j < count; j += 3) {
         SWuint i0 = indices[j] + base_vertex;
-        SWfloat v0_x = ((SWfloat *)((SWubyte *)attribs + i0 * stride))[0];
-        SWfloat v0_y = ((SWfloat *)((SWubyte *)attribs + i0 * stride))[1];
-        SWfloat v0_z = ((SWfloat *)((SWubyte *)attribs + i0 * stride))[2];
+        SWfloat v0_x = ((SWfloat *)((uintptr_t)attribs + i0 * stride))[0];
+        SWfloat v0_y = ((SWfloat *)((uintptr_t)attribs + i0 * stride))[1];
+        SWfloat v0_z = ((SWfloat *)((uintptr_t)attribs + i0 * stride))[2];
 
         SWuint i1 = indices[j + 1] + base_vertex;
-        SWfloat v1_x = ((SWfloat *)((SWubyte *)attribs + i1 * stride))[0];
-        SWfloat v1_y = ((SWfloat *)((SWubyte *)attribs + i1 * stride))[1];
-        SWfloat v1_z = ((SWfloat *)((SWubyte *)attribs + i1 * stride))[2];
+        SWfloat v1_x = ((SWfloat *)((uintptr_t)attribs + i1 * stride))[0];
+        SWfloat v1_y = ((SWfloat *)((uintptr_t)attribs + i1 * stride))[1];
+        SWfloat v1_z = ((SWfloat *)((uintptr_t)attribs + i1 * stride))[2];
 
         SWuint i2 = indices[j + 2] + base_vertex;
-        SWfloat v2_x = ((SWfloat *)((SWubyte *)attribs + i2 * stride))[0];
-        SWfloat v2_y = ((SWfloat *)((SWubyte *)attribs + i2 * stride))[1];
-        SWfloat v2_z = ((SWfloat *)((SWubyte *)attribs + i2 * stride))[2];
+        SWfloat v2_x = ((SWfloat *)((uintptr_t)attribs + i2 * stride))[0];
+        SWfloat v2_y = ((SWfloat *)((uintptr_t)attribs + i2 * stride))[1];
+        SWfloat v2_z = ((SWfloat *)((uintptr_t)attribs + i2 * stride))[2];
 
         vs_out[0][0] = xform[0] * v0_x + xform[4] * v0_y + xform[8] * v0_z + xform[12];
         vs_out[0][1] = xform[1] * v0_x + xform[5] * v0_y + xform[9] * v0_z + xform[13];
