@@ -404,8 +404,8 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
         uint32_t indices[3] = {};
     };
 
-    std::vector<vtx_data_t> vertices(vtx_count);
-    std::vector<tri_data_t> triangles(prim_count);
+    std::unique_ptr<vtx_data_t[]> vertices(new vtx_data_t[vtx_count]);
+    std::unique_ptr<tri_data_t[]> triangles(new tri_data_t[prim_count]);
 
     for (uint32_t i = 0; i < indices_count; i += 3) {
         tri_data_t &tri = triangles[i/3];
@@ -419,7 +419,8 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
         vertices[indices[i + 2]].active_tris_count++;
     }
 
-    for (auto &v : vertices) {
+    for (uint32_t i = 0; i < vtx_count; i++) {
+        auto &v = vertices[i];
         v.tris.reset(new int32_t[v.active_tris_count]);
         v.score = get_vertex_score(v.cache_pos, v.active_tris_count);
     }
