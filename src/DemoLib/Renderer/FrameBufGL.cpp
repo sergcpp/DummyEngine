@@ -40,11 +40,17 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
 
         if (sample_count > 1) {
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, _col_tex);
-            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, sample_count, internal_format, w, h, GL_TRUE);
+            glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, sample_count, internal_format, w, h, GL_TRUE);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, _col_tex, 0);
         } else {
             glBindTexture(GL_TEXTURE_2D, _col_tex);
-            glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0, format, type, NULL);
+
+            int mip_count = 1;
+            if (att.filter == Ren::Bilinear) {
+                mip_count = (int)std::floor(std::log2(std::max(w, h))) + 1;
+            }
+
+            glTexStorage2D(GL_TEXTURE_2D, mip_count, internal_format, w, h);
 
             if (att.filter == Ren::NoFilter) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -93,9 +99,9 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
         glBindTexture(target, _depth_tex);
 
         if (sample_count > 1) {
-            glTexImage2DMultisample(target, sample_count, GL_DEPTH_COMPONENT24, w, h, GL_TRUE);
+            glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, sample_count, GL_DEPTH_COMPONENT24, w, h, GL_TRUE);
         } else {
-            glTexImage2D(target, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+            glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT24, w, h);
         }
 
         Ren::CheckError("[Renderer]: create framebuffer 3");

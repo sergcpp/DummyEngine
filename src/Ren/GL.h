@@ -2,6 +2,12 @@
 
 #include <cstdint>
 
+#ifdef __GL_API_DEF__
+#define EXTERN_FUNC
+#else
+#define EXTERN_FUNC extern
+#endif
+
 #if defined(__ANDROID__) || defined(__native_client__) || defined(EMSCRIPTEN)
 #include <GLES/egl.h>
 //#if __ANDROID_API__ >= 24
@@ -22,9 +28,13 @@
 
 #define APIENTRY
 
-extern void (APIENTRY *glQueryCounterEXT)(GLuint id, GLenum target);
-extern void (APIENTRY *glGetQueryObjecti64vEXT)(GLuint id, GLenum pname, GLint64 *params);
-extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint64 *params);
+typedef void (APIENTRY *PFNGLQUERYCOUNTEREXTPROC)(GLuint id, GLenum target);
+typedef void (APIENTRY *PFNGLGETQUERYOBJECTI64VEXTPROC)(GLuint id, GLenum pname, GLint64 *params);
+typedef void (APIENTRY *PFNGLGETQUERYOBJECTUI64VEXTPROC)(GLuint id, GLenum pname, GLuint64 *params);
+
+EXTERN_FUNC PFNGLQUERYCOUNTEREXTPROC            glQueryCounterEXT;
+EXTERN_FUNC PFNGLGETQUERYOBJECTI64VEXTPROC      glGetQueryObjecti64vEXT;
+EXTERN_FUNC PFNGLGETQUERYOBJECTUI64VEXTPROC     glGetQueryObjectui64vEXT;
 #else
 //#include <GL/glew.h>
 
@@ -272,12 +282,6 @@ typedef ptrdiff_t GLintptr;
 typedef ptrdiff_t GLsizeiptr;
 //}
 
-#ifdef __GL_API_DEF__
-#define EXTERN_FUNC
-#else
-#define EXTERN_FUNC extern
-#endif
-
 extern "C" {
 
 #if !defined(__APPLE__)
@@ -419,7 +423,6 @@ typedef void (APIENTRY *PFNGLDEBUGMESSAGECALLBACKPROC)(DEBUGPROC callback, const
 typedef void (APIENTRY *PFNGLDEBUGMESSAGEINSERTPROC)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char *message);
 typedef void (APIENTRY *PFNGLPUSHDEBUGGROUPPROC)(GLenum source, GLuint id, GLsizei length, const char *message);
 typedef void (APIENTRY *PFNGLPOPDEBUGGROUPPROC)();
-#endif
 #endif
 
 #define glCreateProgram             ren_glCreateProgram
@@ -660,7 +663,9 @@ EXTERN_FUNC PFNGLPUSHDEBUGGROUPPROC             ren_glPushDebugGroup;
 EXTERN_FUNC PFNGLPOPDEBUGGROUPPROC              ren_glPopDebugGroup;
 
 }
+
 #undef EXTERN_FUNC
+#endif
 
 namespace Ren {
     bool InitGLExtentions();
