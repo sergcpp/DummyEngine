@@ -51,8 +51,8 @@ struct FrontendInfo {
              end_timepoint_us = 0;
     uint32_t occluders_time_us = 0,
              main_gather_time_us = 0,
-             drawables_sort_time_us = 0,
              shadow_gather_time_us = 0,
+             drawables_sort_time_us = 0,
              items_assignment_time_us = 0;
 };
 

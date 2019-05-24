@@ -1072,7 +1072,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         list.frontend_info.end_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ iteration_end.time_since_epoch() }.count();
         list.frontend_info.occluders_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ main_gather_start - occluders_start }.count();
         list.frontend_info.main_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ shadow_gather_start - main_gather_start }.count();
-        list.frontend_info.shadow_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ items_assignment_start - shadow_gather_start }.count();
+        list.frontend_info.shadow_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ drawables_sort_start - shadow_gather_start }.count();
+        list.frontend_info.drawables_sort_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ items_assignment_start - drawables_sort_start }.count();
         list.frontend_info.items_assignment_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ iteration_end - items_assignment_start }.count();
     }
 }

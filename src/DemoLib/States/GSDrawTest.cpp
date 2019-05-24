@@ -531,6 +531,10 @@ void GSDrawTest::Draw(uint64_t dt_us) {
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
+                sprintf(text_buffer, "    sorting: %u us", front_info.drawables_sort_time_us);
+                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
                 sprintf(text_buffer, "item_assign: %u us", front_info.items_assignment_time_us);
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
             }
