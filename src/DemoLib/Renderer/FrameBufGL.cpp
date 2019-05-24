@@ -6,7 +6,7 @@
 #include <Ren/GL.h>
 #include <Sys/Log.h>
 
-FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int attachments_count,
+FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int _attachments_count,
                    bool with_depth, Ren::eTexFilter depth_filter, int _msaa)
     : w(_w), h(_h), sample_count(_msaa) {
 
@@ -22,7 +22,7 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
 
     glActiveTexture(GL_TEXTURE0);
 
-    for (int i = 0; i < attachments_count; i++) {
+    for (int i = 0; i < _attachments_count; i++) {
         const auto &att = _attachments[i];
 
         GLuint _col_tex;
@@ -76,7 +76,7 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _col_tex, 0);
         }
 
-        attachments.push_back({ att, _col_tex });
+        attachments[attachments_count++] = { att, _col_tex };
     }
 
     if (attachments_count) {
@@ -148,7 +148,12 @@ FrameBuf::FrameBuf(FrameBuf &&rhs) {
 }
 
 FrameBuf &FrameBuf::operator=(FrameBuf &&rhs) {
-    attachments = std::move(rhs.attachments);
+    for (uint32_t i = 0; i < rhs.attachments_count; i++) {
+        attachments[i] = rhs.attachments[i];
+        rhs.attachments[i].desc.format = Ren::Undefined;
+        rhs.attachments[i].tex = 0xffffffff;
+    }
+    attachments_count = rhs.attachments_count;
     w = rhs.w;
     h = rhs.h;
     sample_count = rhs.sample_count;
@@ -156,13 +161,14 @@ FrameBuf &FrameBuf::operator=(FrameBuf &&rhs) {
     depth_tex = std::move(rhs.depth_tex);
 
     rhs.w = rhs.h = -1;
+    rhs.attachments_count = 0;
 
     return *this;
 }
 
 FrameBuf::~FrameBuf() {
-    for (const auto &att : attachments) {
-        GLuint val = (GLuint)att.tex;
+    for (uint32_t i = 0; i < attachments_count; i++) {
+        GLuint val = (GLuint)attachments[i].tex;
         glDeleteTextures(1, &val);
     }
 
