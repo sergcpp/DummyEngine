@@ -56,6 +56,10 @@ void RadixSort_LSB(SpanType *begin, SpanType *end, SpanType *begin1) {
 #define _MIN(x, y) ((x) < (y) ? (x) : (y))
 #define _MAX(x, y) ((x) < (y) ? (y) : (x))
 
+#define _CROSS(x, y) { (x)[1] * (y)[2] - (x)[2] * (y)[1],   \
+                       (x)[2] * (y)[0] - (x)[0] * (y)[2],   \
+                       (x)[0] * (y)[1] - (x)[1] * (y)[0] }
+
 void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list) {
     using namespace RendererInternal;
 
@@ -1083,6 +1087,8 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                                         const LightSource * const*litem_to_lsource, CellData *cells, ItemData *items, std::atomic_int &items_count) {
     using namespace RendererInternal;
 
+    const float epsilon = 0.001f;
+
     const int frustums_per_slice = REN_GRID_RES_X * REN_GRID_RES_Y;
     const int base_index = slice * frustums_per_slice;
     const auto *first_sf = &sub_frustums[base_index];
@@ -1098,18 +1104,31 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 
     for (int j = 0; j < lights_count; j++) {
         const auto &l = lights[j];
+        const float radius = litem_to_lsource[j]->radius;
         const float influence = litem_to_lsource[j]->influence;
-        const float *l_pos = &l.pos[0];
+        const float cap_radius = litem_to_lsource[j]->cap_radius;
 
         auto visible_to_slice = Ren::FullyVisible;
 
-        // Check if light is inside of a whole slice
+        // Check if light is inside of a whole z-slice
         for (int k = Ren::NearPlane; k <= Ren::FarPlane; k++) {
-            float dist = first_sf->planes[k].n[0] * l_pos[0] +
-                         first_sf->planes[k].n[1] * l_pos[1] +
-                         first_sf->planes[k].n[2] * l_pos[2] + first_sf->planes[k].d;
+            const float *p_n = ValuePtr(first_sf->planes[k].n);
+            const float p_d = first_sf->planes[k].d;
+
+            float dist = p_n[0] * l.pos[0] + p_n[1] * l.pos[1] + p_n[2] * l.pos[2] + p_d;
             if (dist < -influence) {
                 visible_to_slice = Ren::Invisible;
+            } else if (l.spot > epsilon) {
+                const float dn[3] = _CROSS(l.dir, p_n);
+                const float m[3] = _CROSS(l.dir, dn);
+
+                const float Q[3] = { l.pos[0] - influence * l.dir[0] - cap_radius * m[0],
+                                     l.pos[1] - influence * l.dir[1] - cap_radius * m[1],
+                                     l.pos[2] - influence * l.dir[2] - cap_radius * m[2] };
+
+                if (dist < -radius && p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d < -epsilon) {
+                    visible_to_slice = Ren::Invisible;
+                }
             }
         }
 
@@ -1123,11 +1142,25 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 
             // Check if light is inside of grid line
             for (int k = Ren::TopPlane; k <= Ren::BottomPlane; k++) {
-                float dist = first_line_sf->planes[k].n[0] * l_pos[0] +
-                             first_line_sf->planes[k].n[1] * l_pos[1] +
-                             first_line_sf->planes[k].n[2] * l_pos[2] + first_line_sf->planes[k].d;
+                const float *p_n = ValuePtr(first_line_sf->planes[k].n);
+                const float p_d = first_line_sf->planes[k].d;
+
+                float dist = p_n[0] * l.pos[0] + p_n[1] * l.pos[1] + p_n[2] * l.pos[2] + p_d;
                 if (dist < -influence) {
                     visible_to_line = Ren::Invisible;
+                } else if (l.spot > epsilon) {
+                    const float dn[3] = _CROSS(l.dir, p_n);
+                    const float m[3] = _CROSS(l.dir, dn);
+
+                    const float Q[3] = { l.pos[0] - influence * l.dir[0] - cap_radius * m[0],
+                                         l.pos[1] - influence * l.dir[1] - cap_radius * m[1],
+                                         l.pos[2] - influence * l.dir[2] - cap_radius * m[2] };
+
+                    float val = p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d;
+
+                    if (dist < -radius && p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d < -epsilon) {
+                        visible_to_line = Ren::Invisible;
+                    }
                 }
             }
 
@@ -1141,20 +1174,27 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 
                 // Can skip near, far, top and bottom plane check
                 for (int k = Ren::LeftPlane; k <= Ren::RightPlane; k++) {
-                    float dist = sf->planes[k].n[0] * l_pos[0] +
-                                 sf->planes[k].n[1] * l_pos[1] +
-                                 sf->planes[k].n[2] * l_pos[2] + sf->planes[k].d;
+                    const float *p_n = ValuePtr(sf->planes[k].n);
+                    const float p_d = sf->planes[k].d;
 
+                    float dist = p_n[0] * l.pos[0] + p_n[1] * l.pos[1] + p_n[2] * l.pos[2] + p_d;
                     if (dist < -influence) {
                         res = Ren::Invisible;
+                    } else if (l.spot > epsilon) {
+                        const float dn[3] = _CROSS(l.dir, p_n);
+                        const float m[3] = _CROSS(l.dir, dn);
+
+                        const float Q[3] = { l.pos[0] - influence * l.dir[0] - cap_radius * m[0],
+                                             l.pos[1] - influence * l.dir[1] - cap_radius * m[1],
+                                             l.pos[2] - influence * l.dir[2] - cap_radius * m[2] };
+
+                        if (dist < -radius && p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d < -epsilon) {
+                            res = Ren::Invisible;
+                        }
                     }
                 }
 
                 if (res != Ren::Invisible) {
-                    if (l.spot != 1.0f) {
-                        // TODO: more pricise test
-                    }
-
                     const int index = base_index + row_offset + col_offset;
                     auto &cell = cells[index];
                     if (cell.light_count < MAX_LIGHTS_PER_CELL) {
@@ -1351,3 +1391,4 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 
 #undef BBOX_POINTS
 #undef _MAX
+#undef _CROSS

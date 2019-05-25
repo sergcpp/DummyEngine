@@ -44,10 +44,13 @@ void LightSource::Read(const JsObject &js_in, LightSource &ls) {
             angle = (float)js_angle.val;
         }
 
-        ls.spot = std::cos(angle * Ren::Pi<float>() / 180.0f);
+        float angle_rad = angle * Ren::Pi<float>() / 180.0f;
+
+        ls.spot = std::cos(angle_rad);
+        ls.cap_radius = ls.influence * std::tan(angle_rad);
     } else {
         ls.dir[1] = -1.0f;
-        ls.spot = -1.0f;
+        ls.spot = -1.2f;
     }
 
     if (js_in.Has("cast_shadow")) {
