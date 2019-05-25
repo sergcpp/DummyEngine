@@ -9,7 +9,7 @@ $ModifyWarning
     precision mediump sampler2DShadow;
 #endif
 
-#define LIGHT_ATTEN_CUTOFF 0.001f
+#define LIGHT_ATTEN_CUTOFF 0.004f
 
 layout(binding = $DiffTexSlot) uniform sampler2D diffuse_texture;
 layout(binding = $NormTexSlot) uniform sampler2D normals_texture;
@@ -59,7 +59,7 @@ in vec3 aVertexShUVs_[4];
 #endif
 
 layout(location = $OutColorIndex) out vec4 outColor;
-layout(location = $OutNormIndex) out vec2 outNormal;
+layout(location = $OutNormIndex) out vec3 outNormal;
 layout(location = $OutSpecIndex) out vec4 outSpecular;
 
 #include "common.glsl"
@@ -77,9 +77,7 @@ void main(void) {
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
     
     vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(uCamPosAndGamma.w));
-    
-    vec2 duv_dx = dFdx(aVertexUVs1_), duv_dy = dFdy(aVertexUVs1_);
-    vec3 normal_color = textureGrad(normals_texture, aVertexUVs1_, 2.0 * duv_dx, 2.0 * duv_dy).xyz;
+    vec3 normal_color = texture(normals_texture, aVertexUVs1_).xyz;
     vec4 specular_color = texture(specular_texture, aVertexUVs1_);
     
     vec3 dp_dx = dFdx(aVertexPos_);
@@ -238,7 +236,7 @@ void main(void) {
     outColor = vec4(diffuse_color, 1.0);
     
     vec3 normal_vs = normalize((uViewMatrix * vec4(normal, 0.0)).xyz);
-    outNormal = EncodeNormal(normal_vs);
+    outNormal = normal_vs * 0.5 + 0.5;
     
     outSpecular = vec4(vec3(ambient_occlusion), 1.0) * specular_color;
 }

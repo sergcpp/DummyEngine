@@ -77,17 +77,3 @@ float GetSunVisibility(float frag_depth, sampler2DShadow shadow_texture, vec3 aV
     
     return visibility;
 }
-
-vec2 EncodeNormal(vec3 n) {
-    vec2 enc = normalize(n.xy) * (sqrt(-n.z * 0.5 + 0.5));
-    enc = enc * 0.5 + 0.5;
-    return enc;
-}
-
-vec3 DecodeNormal(vec2 enc) {
-    vec4 nn = vec4(2.0 * enc, 0.0, 0.0) + vec4(-1.0, -1.0, 1.0, -1.0);
-    float l = dot(nn.xyz, -nn.xyw);
-    nn.z = l;
-    nn.xy *= sqrt(l);
-    return 2.0 * nn.xyz + vec3(0.0, 0.0, -1.0);
-}

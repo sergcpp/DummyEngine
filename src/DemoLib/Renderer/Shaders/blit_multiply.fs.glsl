@@ -62,57 +62,6 @@ float LinearDepthTexelFetch(ivec2 hit_pixel) {
     return uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
 }
 
-vec3 DecodeNormal(vec2 enc) {
-    vec4 nn = vec4(2.0 * enc, 0.0, 0.0) + vec4(-1.0, -1.0, 1.0, -1.0);
-    float l = dot(nn.xyz, -nn.xyw);
-    nn.z = l;
-    nn.xy *= sqrt(max(l, 0.0));
-    return 2.0 * nn.xyz + vec3(0.0, 0.0, -1.0);
-}
-
-vec4 cubic(float v){
-    vec4 n = vec4(1.0, 2.0, 3.0, 4.0) - v;
-    vec4 s = n * n * n;
-    float x = s.x;
-    float y = s.y - 4.0 * s.x;
-    float z = s.z - 4.0 * s.y + 6.0 * s.x;
-    float w = 6.0 - x - y - z;
-    return vec4(x, y, z, w) * (1.0/6.0);
-}
-
-vec4 textureBicubic(sampler2D sampler, vec2 texCoords){
-   vec2 texSize = vec2(textureSize(sampler, 0));
-   vec2 invTexSize = 1.0 / texSize;
-
-   texCoords = texCoords * texSize - 0.5;
-
-
-    vec2 fxy = fract(texCoords);
-    texCoords -= fxy;
-
-    vec4 xcubic = cubic(fxy.x);
-    vec4 ycubic = cubic(fxy.y);
-
-    vec4 c = texCoords.xxyy + vec2 (-0.5, +1.5).xyxy;
-
-    vec4 s = vec4(xcubic.xz + xcubic.yw, ycubic.xz + ycubic.yw);
-    vec4 offset = c + vec4 (xcubic.yw, ycubic.yw) / s;
-
-    offset *= invTexSize.xxyy;
-
-    vec4 sample0 = texture(sampler, offset.xz);
-    vec4 sample1 = texture(sampler, offset.yz);
-    vec4 sample2 = texture(sampler, offset.xw);
-    vec4 sample3 = texture(sampler, offset.yw);
-
-    float sx = s.x / (s.x + s.y);
-    float sy = s.z / (s.z + s.w);
-
-    return mix(
-       mix(sample3, sample2, sx), mix(sample1, sample0, sx)
-    , sy);
-}
-
 vec3 RGBMDecode(vec4 rgbm) {
     return 4.0 * rgbm.rgb * rgbm.a;
 }
@@ -135,9 +84,9 @@ void main() {
     );
 
     float norm_weights[4];
-    vec3 normal = DecodeNormal(texelFetch(s_norm_texture, ivec2(aVertexUVs_), 0).xy);
+    vec3 normal = 2.0 * texelFetch(s_norm_texture, ivec2(aVertexUVs_), 0).xyz - 1.0;
     for (int i = 0; i < 4; i++) {
-        vec3 norm_coarse = DecodeNormal(texelFetch(s_norm_texture, pix_uvs + 2 * offsets[i], 0).xy);
+        vec3 norm_coarse = 2.0 * texelFetch(s_norm_texture, pix_uvs + 2 * offsets[i], 0).xyz - 1.0;
         norm_weights[i] = 0.0 + step(0.8, dot(norm_coarse, normal));
     }
 

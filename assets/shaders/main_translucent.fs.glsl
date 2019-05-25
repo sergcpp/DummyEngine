@@ -9,7 +9,7 @@ $ModifyWarning
     precision mediump sampler2DShadow;
 #endif
 
-#define LIGHT_ATTEN_CUTOFF 0.001f
+#define LIGHT_ATTEN_CUTOFF 0.004f
 
 layout(binding = $DiffTexSlot) uniform sampler2D diffuse_texture;
 layout(binding = $NormTexSlot) uniform sampler2D normals_texture;
@@ -56,7 +56,7 @@ in vec3 aVertexShUVs_[4];
 #endif
 
 layout(location = $OutColorIndex) out vec4 outColor;
-layout(location = $OutNormIndex) out vec2 outNormal;
+layout(location = $OutNormIndex) out vec3 outNormal;
 layout(location = $OutSpecIndex) out vec4 outSpecular;
 
 #include "common.glsl"
@@ -244,7 +244,7 @@ void main(void) {
     outColor = vec4(diffuse_color, diff_tex_color.a);
     
     vec3 normal_vs = normalize((uViewMatrix * vec4(normal, 0.0)).xyz);
-    outNormal = EncodeNormal(normal_vs);
+    outNormal = normal_vs * 0.5 + 0.5;
     
     outSpecular = specular_color;
 }

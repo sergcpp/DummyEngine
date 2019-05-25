@@ -229,7 +229,7 @@ void main() {
 
     float depth = texelFetch(depth_texture, pix_uvs, 0).r;
 
-    vec3 normal = DecodeNormal(texelFetch(norm_texture, pix_uvs, 0).xy);
+    vec3 normal = 2.0 * texelFetch(norm_texture, pix_uvs, 0).xyz - 1.0;//DecodeNormal(texelFetch(norm_texture, pix_uvs, 0).xy);
 
     vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, 2.0 * depth - 1.0, 1.0);
     ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
