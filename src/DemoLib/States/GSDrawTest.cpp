@@ -352,6 +352,8 @@ void GSDrawTest::LoadScene(const char *name) {
         }
     }
 
+    probes_dirty_ = true;
+
     /*view_origin_[0] = 0.090376f;
     view_origin_[1] = 3.457212f;
     view_origin_[2] = 5.265417f;
@@ -418,6 +420,12 @@ void GSDrawTest::Draw(uint64_t dt_us) {
             } else {
                 back_list = front_list_;
                 front_list_ = (front_list_ + 1) % 2;
+
+                if (probes_dirty_ && scene_manager_->load_complete()) {
+                    // Perform first update of reflection probes
+                    update_all_probes_ = true;
+                    probes_dirty_ = false;
+                }
 
                 if (probe_to_update_sh_) {
                     bool done = renderer_->BlitProjectSH(scene_manager_->scene_data().probe_storage, probe_to_update_sh_->layer_index,
@@ -1065,6 +1073,18 @@ void GSDrawTest::UpdateFrame(int list_index) {
         renderer_->PrepareDrawList(scene_manager_->scene_data(),
                                    scene_manager_->main_cam(), main_view_lists_[list_index]);
 
+        if (update_all_probes_) {
+            if (probes_to_update_.empty()) {
+                int obj_count = (int)scene_manager_->scene_data().objects.size();
+                for (int i = 0; i < obj_count; i++) {
+                    auto *obj = scene_manager_->GetObject(i);
+                    if (obj->comp_mask & CompProbeBit) {
+                        probes_to_update_.push_back(i);
+                    }
+                }
+            }
+            update_all_probes_ = false;
+        }
 
         if (!probes_to_update_.empty() && !probe_to_render_ && !probe_to_update_sh_) {
             auto *probe_obj = scene_manager_->GetObject(probes_to_update_.back());

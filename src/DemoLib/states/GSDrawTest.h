@@ -50,8 +50,11 @@ class GSDrawTest : public GameState {
     Renderer::DrawList temp_probe_lists_[6];
     LightProbe *probe_to_render_ = nullptr,
                *probe_to_update_sh_ = nullptr;
+    bool probes_dirty_ = true;
     int probe_sh_update_iteration_ = 0;
     std::vector<int> probes_to_update_;
+
+    std::atomic_bool update_all_probes_{ false };
 
     int view_pointer_ = 0, move_pointer_ = 0;
     Ren::Vec3f view_origin_ = { 0, 1, 0 },

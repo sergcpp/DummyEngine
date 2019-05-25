@@ -145,6 +145,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         throw std::runtime_error("Level has no name!");
     }
 
+    scene_texture_load_counter_ = 0;
+
     {
         std::string lm_base_tex_name = "lightmaps/";
         lm_base_tex_name += scene_name_;
@@ -624,6 +626,8 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
     Ren::eTexLoadStatus status;
     Ren::Texture2DRef ret = ctx_.LoadTexture2D(tex_name.c_str(), nullptr, 0, {}, &status);
     if (status == Ren::TexCreatedDefault) {
+        scene_texture_load_counter_++;
+
         std::weak_ptr<SceneManager> _self = shared_from_this();
         Sys::LoadAssetComplete(tex_name.c_str(),
         [_self, tex_name](void *data, int size) {
@@ -640,8 +644,9 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
                     p.repeat = Ren::Repeat;
                 }
                 self->ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, nullptr);
+                int count = --(self->scene_texture_load_counter_);
                 self.reset();
-                LOGI("Texture %s loaded", tex_name.c_str());
+                LOGI("Texture %s loaded (%i left)", tex_name.c_str(), count);
             });
         }, [tex_name]() {
             LOGE("Error loading %s", tex_name.c_str());

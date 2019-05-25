@@ -18,8 +18,11 @@ public:
     SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads);
     ~SceneManager();
 
+    SceneManager(const SceneManager &rhs) = delete;
+
     const Ren::Camera &main_cam() const { return cam_; }
     SceneData &scene_data() { return scene_data_; }
+    bool load_complete() const { return scene_texture_load_counter_ == 0; }
 
     SceneObject *GetObject(int i) { return &scene_data_.objects[i]; }
 
@@ -57,6 +60,7 @@ private:
     void RemoveNode(uint32_t node_index);
 
     std::string scene_name_;
+    int scene_texture_load_counter_ = 0;
 
     Ren::Context &ctx_;
     Ray::RendererBase &ray_renderer_;
