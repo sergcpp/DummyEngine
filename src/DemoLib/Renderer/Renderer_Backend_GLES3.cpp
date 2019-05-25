@@ -502,8 +502,8 @@ void Renderer::CheckInitVAOs() {
     auto vtx_buf = ctx_.default_vertex_buf();
     auto ndx_buf = ctx_.default_indices_buf();
 
-    GLuint gl_vertex_buf = (GLuint)ctx_.default_vertex_buf()->buf_id(),
-           gl_indices_buf = (GLuint)ctx_.default_indices_buf()->buf_id();
+    GLuint gl_vertex_buf = (GLuint)vtx_buf->buf_id(),
+           gl_indices_buf = (GLuint)ndx_buf->buf_id();
 
     if (gl_vertex_buf != last_vertex_buffer_ || gl_indices_buf != last_index_buffer_) {
         GLuint shadow_pass_vao;

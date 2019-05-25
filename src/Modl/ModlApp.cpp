@@ -177,57 +177,40 @@ int ModlApp::Init(int w, int h) {
         return -1;
     }
 
+#if defined(USE_GL_RENDER)
+    // This needs to be done before window creation
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+#endif
+
     window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                               w, h, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+                               w, h, SDL_WINDOW_OPENGL);
 
 #if defined(USE_GL_RENDER)
     gl_ctx_ = SDL_GL_CreateContext(window_);
-
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-
-    SDL_GL_SetSwapInterval(0);
+    SDL_GL_SetSwapInterval(1);
 #endif
 
     ctx_.Init(w, h);
+    InitInternal();
 
     Sys::InitWorker();
 
 #if defined(USE_GL_RENDER)
-    {
-        // load diagnostic shader
-        std::ifstream diag_vs("assets/shaders/diag.vs.glsl", std::ios::binary | std::ios::ate),
-                      diag_fs("assets/shaders/diag.fs.glsl", std::ios::binary | std::ios::ate);
-
-        size_t diag_vs_size = (size_t)diag_vs.tellg();
-        diag_vs.seekg(0, std::ios::beg);
-
-        size_t diag_fs_size = (size_t)diag_fs.tellg();
-        diag_fs.seekg(0, std::ios::beg);
-
-        std::string diag_vs_str, diag_fs_str;
-        diag_vs_str.resize(diag_vs_size);
-        diag_fs_str.resize(diag_fs_size);
-
-        diag_vs.read(&diag_vs_str[0], diag_vs_size);
-        diag_fs.read(&diag_fs_str[0], diag_fs_size);
-
-        diag_prog_ = ctx_.LoadProgramGLSL("__diag", diag_vs_str.c_str(), diag_fs_str.c_str(), nullptr);
-    }
-
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_CULL_FACE);
-    //glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 #elif defined(USE_SW_RENDER)
     swEnable(SW_DEPTH_TEST);
     swEnable(SW_FAST_PERSPECTIVE_CORRECTION);
 #endif
 
-    {
-        // load checker texture
+    {   // create checker texture
         const int checker_res = 512;
         std::vector<uint8_t> checker_data(512 * 512 * 3);
 
@@ -402,8 +385,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         return RES_FILE_NOT_FOUND;
     }
 
-    {
-        // get mesh type
+    {   // get mesh type
         string str;
         getline(in_file, str);
 
@@ -429,8 +411,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         }
     }
 
-    {
-        // prepare containers
+    {   // prepare containers
         string str;
 
         getline(in_file, str);
@@ -446,8 +427,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         num_indices = stoi(str);
     }
 
-    {
-        // parse vertex information
+    {   // parse vertex information
         for (int i = 0; i < num_vertices; i++) {
             string str;
             getline(in_file, str);
@@ -488,9 +468,39 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 if (it == vertex_textures.end()) return RES_PARSE_ERROR;
                 tex_ids.push_back(it->second);
             } else if (mesh_type == M_SKEL) {
-                // parse joint indices and weights
-                for (int j : { 8, 10, 12, 14, 9, 11, 13, 15 }) {
-                    weights.push_back(j < (int)toks.size() ? stof(toks[j]) : 0);
+                // parse joint indices and weights (limited to four bones)
+
+                int bones_count = ((int)toks.size() - 10) / 2;
+                int start_index = (int)weights.size();
+
+                std::pair<int, float> parsed_bones[16];
+                int parsed_bones_count = 0;
+                for (int j = 0; j < bones_count; j++) {
+                    parsed_bones[parsed_bones_count].first = stoi(toks[10 + j * 2 + 0]);
+                    parsed_bones[parsed_bones_count++].second = stof(toks[10 + j * 2 + 1]);
+                }
+
+                sort(begin(parsed_bones), begin(parsed_bones) + parsed_bones_count,
+                     [](const std::pair<int, float> &b1, const std::pair<int, float> &b2) {
+                         return b1.second > b2.second;
+                     });
+
+                float sum = 0.0f;
+                for (int j = 0; j < 4; j++) {
+                    if (j < parsed_bones_count) {
+                        weights.push_back((float)parsed_bones[j].first);
+                        sum += parsed_bones[j].second;
+                    } else {
+                        weights.push_back(0.0f);
+                    }
+                }
+
+                for (int j = 0; j < 4; j++) {
+                    if (j < parsed_bones_count) {
+                        weights.push_back(parsed_bones[j].second / sum);
+                    } else {
+                        weights.push_back(0.0f);
+                    }
                 }
             }
         }
@@ -503,8 +513,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         }
     }
 
-    {
-        // parse triangle information
+    {   // parse triangle information
         for (int i = 0; i < num_indices / 3; ) {
             string str;
             getline(in_file, str);
@@ -562,8 +571,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         }
     }
 
-    {
-        // generate tangents
+    {   // generate tangents
         std::vector<Ren::vertex_t> vertices(num_vertices);
 
         for (int i = 0; i < num_vertices; i++) {
@@ -572,6 +580,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             memset(&vertices[i].b[0], 0, sizeof(float) * 3);
             memcpy(&vertices[i].t[0][0], &uvs[i * 2], sizeof(float) * 2);
             memcpy(&vertices[i].t[1][0], &uvs2[i * 2], sizeof(float) * 2);
+            vertices[i].index = i;
         }
 
         for (auto &index_group : indices) {
@@ -595,13 +604,18 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             uvs.push_back(vertices[i].t[0][1]);
             uvs2.push_back(vertices[i].t[1][0]);
             uvs2.push_back(vertices[i].t[1][1]);
+
+            if (mesh_type == M_SKEL) {
+                for (int j = 0; j < 8; j++) {
+                    weights.push_back(weights[vertices[i].index * 8 + j]);
+                }
+            }
         }
 
         num_vertices = (int)vertices.size();
     }
 
-    {
-        // optimize mesh
+    {   // optimize mesh
         for (auto &index_group : indices) {
             reordered_indices.emplace_back();
             auto &cur_strip = reordered_indices.back();
@@ -624,8 +638,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
     for (int i = 0; i < (int)reordered_indices.size(); i++) {
         bool alpha_test = false;
-        {
-            // check if material has transparency
+        {   // check if material has transparency
             ifstream mat_file("assets_pc/materials/" + materials[i] + ".txt");
             if (mat_file) {
                 streampos file_size = mat_file.tellg();
@@ -667,7 +680,6 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
     }
 
     // Write output file
-
     ofstream out_file(out_file_name, ios::binary);
 
     if (mesh_type == M_STATIC) {
@@ -793,8 +805,7 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
     file_size = in_file.tellg() - file_size;
     in_file.seekg(0, ios::beg);
 
-    {
-        // check file type
+    {   // check file type
         string str;
         getline(in_file, str);
         if (str != "ANIM_SEQUENCE") {
@@ -825,8 +836,7 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
     vector<float> frames;
     int frame_size = 0;
 
-    {
-        // parse bones info
+    {   // parse bones info
         string str;
         getline(in_file, str);
         while (str.find("}") == string::npos) {
@@ -851,8 +861,7 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
         }
     }
 
-    {
-        // prepare containers
+    {   // prepare containers
         string str;
         getline(in_file, str);
         auto toks = Tokenize(str, " []/");
@@ -864,8 +873,7 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
         getline(in_file, str);
     }
 
-    {
-        // parse frame animation
+    {   // parse frame animation
         string str;
         for (int i = 0; i < anim_info.len; i++) {
             getline(in_file, str);

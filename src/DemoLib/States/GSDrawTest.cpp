@@ -27,8 +27,9 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-    "jap_house.json";
-    //"living_room_gumroad.json";
+    //"jap_house.json";
+    "living_room_gumroad.json";
+    //"street2.json;";
 
 const bool USE_TWO_THREADS = true;
 }

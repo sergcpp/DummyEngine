@@ -32,6 +32,10 @@ private:
     SDL_Window *window_ = nullptr;
 #if defined(USE_GL_RENDER)
     void *gl_ctx_ = nullptr;
+    uint32_t simple_vao_ = 0, skinned_vao_ = 0;
+    uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
+
+    void CheckInitVAOs();
 #endif
 
     Ren::MeshRef view_mesh_;
@@ -39,7 +43,7 @@ private:
     Ren::Camera cam_;
     Ren::Context ctx_;
 
-    Ren::ProgramRef diag_prog_;
+    Ren::ProgramRef diag_prog_, diag_skinned_prog_;
     Ren::Texture2DRef checker_tex_;
 
     float angle_x_ = 0.0f, angle_y_ = 0.0f;
@@ -48,6 +52,7 @@ private:
 
     enum eViewMode { Material, DiagNormals1, DiagNormals2, DiagUVs1, DiagUVs2 } view_mode_ = DiagNormals1;
 
+    void InitInternal();
     void DrawMeshSimple(Ren::MeshRef &ref);
     void DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s);
 

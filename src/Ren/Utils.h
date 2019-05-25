@@ -18,6 +18,7 @@ void ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count, uin
 
 struct vertex_t {
     float p[3], n[3], b[3], t[2][2];
+    int index;
 };
 
 void ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint32_t> &new_vtx_indices,

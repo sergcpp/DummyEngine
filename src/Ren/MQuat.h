@@ -178,10 +178,10 @@ Quat<T> Slerp(const Quat<T> &q0, const Quat<T> &q1, T a) {
     }
 
     if (cos_theta > 1 - std::numeric_limits<T>::epsilon()) {
-        return Quat<T> { Mix(q0.w, q1.w, a),
-                         Mix(q0.x, q1.x, a),
+        return Quat<T> { Mix(q0.x, q1.x, a),
                          Mix(q0.y, q1.y, a),
-                         Mix(q0.z, q1.z, a)
+                         Mix(q0.z, q1.z, a),
+                         Mix(q0.w, q1.w, a)
                        };
     } else {
         float angle = std::acos(cos_theta);
