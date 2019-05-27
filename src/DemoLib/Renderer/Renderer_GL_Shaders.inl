@@ -154,3 +154,7 @@ static const char probe_vs[] =
 static const char probe_fs[] =
 #include "Shaders/probe.fs.glsl"
 ;
+
+static const char skinning_cs[] =
+#include "Shaders/skinning.cs.glsl"
+;

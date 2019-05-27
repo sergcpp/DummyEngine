@@ -75,7 +75,7 @@ namespace Sys {
             GetFileSizeEx(h_file, &size);
 
             out_size = (size_t)size.QuadPart;
-            
+
             if (max_size < out_size) {
                 ::CloseHandle(h_file);
                 return false;
@@ -107,6 +107,11 @@ namespace Sys {
             ::CloseHandle(h_file);
             return true;
         }
+    };
+#else
+    class AsyncFileReaderImpl {
+    public:
+        bool ReadFile(const char *file_path, size_t max_size, void *out_data, size_t &out_size) { return false; }
     };
 #endif
 }

@@ -10,8 +10,8 @@ UNIFORM_BLOCKS
 */
 
 layout(location = $VtxPosLoc) in vec3 aVertexPosition;
-layout(location = $VtxNorLoc) in vec3 aVertexNormal;
-layout(location = $VtxTanLoc) in vec3 aVertexTangent;
+layout(location = $VtxNorLoc) in vec4 aVertexNormal;
+layout(location = $VtxTanLoc) in vec2 aVertexTangent;
 layout(location = $VtxUV1Loc) in vec2 aVertexUVs1;
 layout(location = $VtxUV2Loc) in vec2 aVertexUVs2;
 
@@ -49,9 +49,9 @@ layout(location = 4) out vec2 aVertexUVs1_;
 layout(location = 5) out vec3 aVertexShUVs_[4];
 #else
 out vec3 aVertexPos_;
-out mat3 aVertexTBN_;
-out vec2 aVertexUVs1_;
-out vec3 aVertexShUVs_[4];
+out mediump mat3 aVertexTBN_;
+out mediump vec2 aVertexUVs1_;
+out mediump vec3 aVertexShUVs_[4];
 #endif
 
 #ifdef VULKAN
@@ -71,8 +71,8 @@ void main(void) {
     MMatrix = transpose(MMatrix);
 
     vec3 vertex_position_ws = (MMatrix * vec4(aVertexPosition, 1.0)).xyz;
-    vec3 vertex_normal_ws = normalize((MMatrix * vec4(aVertexNormal, 0.0)).xyz);
-    vec3 vertex_tangent_ws = normalize((MMatrix * vec4(aVertexTangent, 0.0)).xyz);
+    vec3 vertex_normal_ws = normalize((MMatrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
+    vec3 vertex_tangent_ws = normalize((MMatrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
 
     aVertexPos_ = vertex_position_ws;
     aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);

@@ -46,16 +46,16 @@ layout (std140) uniform SharedDataBlock {
 
 #ifdef VULKAN
 layout(location = 0) in vec3 aVertexPos_;
-layout(location = 1) in mat3 aVertexTBN_;
-layout(location = 4) in vec2 aVertexUVs1_;
-layout(location = 5) in vec2 aVertexUVs2_;
-layout(location = 6) in vec3 aVertexShUVs_[4];
+layout(location = 1) in mediump mat3 aVertexTBN_;
+layout(location = 4) in mediump vec2 aVertexUVs1_;
+layout(location = 5) in mediump vec2 aVertexUVs2_;
+layout(location = 6) in mediump vec3 aVertexShUVs_[4];
 #else
 in vec3 aVertexPos_;
-in mat3 aVertexTBN_;
-in vec2 aVertexUVs1_;
-in vec2 aVertexUVs2_;
-in vec3 aVertexShUVs_[4];
+in mediump mat3 aVertexTBN_;
+in mediump vec2 aVertexUVs1_;
+in mediump vec2 aVertexUVs2_;
+in mediump vec3 aVertexShUVs_[4];
 #endif
 
 layout(location = $OutColorIndex) out vec4 outColor;

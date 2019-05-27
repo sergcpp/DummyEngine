@@ -185,6 +185,9 @@ void Renderer::InitRendererInternal() {
     LOGI("Compiling probe_prog");
     probe_prog_ = ctx_.LoadProgramGLSL("probe_prog", probe_vs, probe_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling skinning_prog");
+    //skinning_prog_ = ctx_.LoadProgramGLSL("skinning_prog", skinning_cs, &status);
+    //assert(status == Ren::ProgCreatedFromData);
     
     {
         GLuint shared_data_ubo;
@@ -513,12 +516,12 @@ void Renderer::CheckInitVAOs() {
         glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
-        int stride = 13 * sizeof(float);
+        int stride = 32;// 13 * sizeof(float);
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
         glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(uint16_t) /*9 * sizeof(float)*/));
 
         glBindVertexArray(0);
 
@@ -535,7 +538,7 @@ void Renderer::CheckInitVAOs() {
         glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(uint16_t) /*9 * sizeof(float)*/));
 
         glBindVertexArray(0);
         depth_pass_vao_ = (uint32_t)depth_pass_vao;
@@ -551,16 +554,16 @@ void Renderer::CheckInitVAOs() {
         glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
         glEnableVertexAttribArray(REN_VTX_NOR_LOC);
-        glVertexAttribPointer(REN_VTX_NOR_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
+        glVertexAttribPointer(REN_VTX_NOR_LOC, 4, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float)));
 
         glEnableVertexAttribArray(REN_VTX_TAN_LOC);
-        glVertexAttribPointer(REN_VTX_TAN_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(float)));
+        glVertexAttribPointer(REN_VTX_TAN_LOC, 2, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float) + 4 * sizeof(uint16_t) /*6 * sizeof(float)*/));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(uint16_t) /*9 * sizeof(float)*/));
 
         glEnableVertexAttribArray(REN_VTX_UV2_LOC);
-        glVertexAttribPointer(REN_VTX_UV2_LOC, 2, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
+        glVertexAttribPointer(REN_VTX_UV2_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 8 * sizeof(uint16_t) /*11 * sizeof(float)*/));
 
         glBindVertexArray(0);
         draw_pass_vao_ = (uint32_t)draw_pass_vao;

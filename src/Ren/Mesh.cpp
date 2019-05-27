@@ -16,6 +16,11 @@
 
 int Ren::Mesh::max_gpu_bones = 16;
 
+namespace Ren {
+    uint16_t f32_to_f16(float value);
+    int16_t f32_to_s16(float value);
+}
+
 Ren::Mesh::Mesh(const char *name, std::istream &data, const material_load_callback &on_mat_load,
                 BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf) {
     Init(name, data, on_mat_load, vertex_buf, index_buf, skin_vertex_buf, skin_index_buf);
@@ -114,11 +119,59 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
         groups_[num_strips].offset = -1;
     }
 
+    struct orig_vertex_t {
+        float p[3];
+        float n[3];
+        float b[3];
+        float t0[2];
+        float t1[2];
+    };
+    static_assert(sizeof(orig_vertex_t) == 52, "!");
+
+    struct packed_vertex_t {
+        float p[3];
+        uint16_t n_and_bx[4];
+        uint16_t byz[2];
+        uint16_t t0[2];
+        uint16_t t1[2];
+    };
+    static_assert(sizeof(packed_vertex_t) == 32, "!");
+
+    // make sure attributes are aligned to 4-bytes
+    static_assert(offsetof(packed_vertex_t, n_and_bx) % 4 == 0, "!");
+    static_assert(offsetof(packed_vertex_t, byz) % 4 == 0, "!");
+    static_assert(offsetof(packed_vertex_t, t0) % 4 == 0, "!");
+    static_assert(offsetof(packed_vertex_t, t1) % 4 == 0, "!");
+
+    uint32_t vertex_count = attribs_buf_.size / sizeof(orig_vertex_t);
+    std::unique_ptr<packed_vertex_t[]> vertices(new packed_vertex_t[vertex_count]);
+
+    const auto *orig_vertices = (const orig_vertex_t *)attribs_.get();
+
+    for (uint32_t i = 0; i < vertex_count; i++) {
+        const auto &in_v = orig_vertices[i];
+        auto &out_v = vertices[i];
+
+        out_v.p[0] = in_v.p[0];
+        out_v.p[1] = in_v.p[1];
+        out_v.p[2] = in_v.p[2];
+        out_v.n_and_bx[0] = f32_to_s16(in_v.n[0]);
+        out_v.n_and_bx[1] = f32_to_s16(in_v.n[1]);
+        out_v.n_and_bx[2] = f32_to_s16(in_v.n[2]);
+        out_v.n_and_bx[3] = f32_to_s16(in_v.b[0]);
+        out_v.byz[0] = f32_to_s16(in_v.b[1]);
+        out_v.byz[1] = f32_to_s16(in_v.b[2]);
+        out_v.t0[0] = f32_to_f16(in_v.t0[0]);
+        out_v.t0[1] = f32_to_f16(in_v.t0[1]);
+        out_v.t1[0] = f32_to_f16(in_v.t1[0]);
+        out_v.t1[1] = f32_to_f16(in_v.t1[1]);
+    }
+
     attribs_buf_.buf = vertex_buf;
-    attribs_buf_.offset = vertex_buf->Alloc(attribs_buf_.size, attribs_.get());
+    attribs_buf_.offset = vertex_buf->Alloc(vertex_count * sizeof(packed_vertex_t), vertices.get());
 
     if (attribs_buf_.offset != 0) {
-        uint32_t offset = attribs_buf_.offset / (13 * sizeof(float));
+        uint32_t offset = attribs_buf_.offset / 32;
 
         uint32_t *_indices = (uint32_t *)indices_.get();
         for (uint32_t i = 0; i < indices_buf_.size / sizeof(uint32_t); i++) {

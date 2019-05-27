@@ -181,7 +181,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         _surf->index_type = SW_UNSIGNED_INT;
                         _surf->attribs = mesh->attribs();
                         _surf->indices = ((const uint8_t *)mesh->indices() + s->offset);
-                        _surf->stride = 13 * sizeof(float);
+                        _surf->stride = 32;// 13 * sizeof(float);
                         _surf->count = (SWuint)s->num_indices;
                         _surf->base_vertex = -SWint(mesh->attribs_buf().offset / _surf->stride);
                         _surf->xform = Ren::ValuePtr(clip_from_object);

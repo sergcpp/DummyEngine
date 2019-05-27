@@ -227,7 +227,7 @@ private:
     Ren::ProgramRef skydome_prog_, fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_combine_ms_prog_,
         blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_, blit_gauss_sep_prog_, blit_debug_prog_, blit_debug_ms_prog_, blit_ssr_prog_, blit_ssr_ms_prog_,
         blit_ao_prog_, blit_ao_ms_prog_, blit_multiply_prog_, blit_multiply_ms_prog_, blit_debug_bvh_prog_, blit_debug_bvh_ms_prog_, blit_depth_prog_,
-        blit_rgbm_prog_, blit_mipmap_prog_, blit_project_sh_prog_, blit_fxaa_prog_, probe_prog_;
+        blit_rgbm_prog_, blit_mipmap_prog_, blit_project_sh_prog_, blit_fxaa_prog_, probe_prog_, skinning_prog_;
     Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_;
 
     FrameBuf clean_buf_, refl_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf_, probe_sample_buf_, combined_buf_;
