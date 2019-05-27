@@ -22,10 +22,11 @@
 bool Ren::InitGLExtentions() {
 #if defined(__ANDROID__) || defined(__native_client__) || defined(EMSCRIPTEN)
 #define GetProcAddress(name) eglGetProcAddress(#name);
-    
+
     glQueryCounterEXT               = (PFNGLQUERYCOUNTEREXTPROC)GetProcAddress(glQueryCounterEXT);
     glGetQueryObjecti64vEXT         = (PFNGLGETQUERYOBJECTI64VEXTPROC)GetProcAddress(glGetQueryObjecti64vEXT);
     glGetQueryObjectui64vEXT        = (PFNGLGETQUERYOBJECTUI64VEXTPROC)GetProcAddress(glGetQueryObjectui64vEXT);
+
 #else
 
 #if defined(WIN32)
