@@ -1,5 +1,7 @@
 #include "AsyncFileReader.h"
 
+#include <algorithm>
+
 #ifdef _WIN32
 #include <Windows.h>
 #undef min
