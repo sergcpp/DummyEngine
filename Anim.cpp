@@ -95,19 +95,20 @@ std::vector<Ren::AnimBone *> Ren::AnimSequence::LinkBones(std::vector<Bone> &_bo
 }
 
 void Ren::AnimSequence::Update(float delta, float *time) {
-    if (len_ < 2)return;
+    if (len_ < 2) return;
     *time += delta;
 
-    while (*time > anim_dur_)*time -= anim_dur_;
-    while (*time < 0.0f)*time += anim_dur_;
+    while (*time > anim_dur_) *time -= anim_dur_;
+    while (*time < 0.0f) *time += anim_dur_;
 
-    float frame = *time * (float)fps_;
-    int fr_0 = (int)std::floor(frame);
+    float frame = (*time) * fps_;
+    float frame_fl = std::floor(frame);
+    int fr_0 = (int)frame;
     int fr_1 = (int)std::ceil(frame);
 
     fr_0 = fr_0 % len_;
     fr_1 = fr_1 % len_;
-    float t = std::remainder(*time, frame_dur_) / frame_dur_;
+    float t = frame - frame_fl;
     InterpolateFrames(fr_0, fr_1, t);
 }
 

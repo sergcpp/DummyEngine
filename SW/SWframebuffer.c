@@ -13,7 +13,7 @@ void swFbufInit(SWframebuffer *f, SWenum type, SWint w, SWint h, SWint with_dept
     f->h = h;
     f->zbuf = NULL;
     
-    SWuint num_bytes;
+    SWuint num_bytes = 0;
     if (type == SW_BGRA8888) {
         num_bytes = (SWuint)w * h * 4;
     } else if (type == SW_FRGBA) {

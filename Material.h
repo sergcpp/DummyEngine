@@ -12,7 +12,10 @@
 #include "MVec.h"
 
 namespace Ren {
-enum eMaterialFlags { AlphaBlend = 1, DoubleSided = 2 };
+enum eMaterialFlags {
+    AlphaTest = (1 << 0),
+    AlphaBlend = (1 << 1),
+};
 
 enum eMatLoadStatus { MatFound, MatSetToDefault, MatCreatedFromData };
 
@@ -23,8 +26,8 @@ class Material : public RefCounter {
     uint32_t        flags_ = 0;
     bool            ready_ = false;
     char            name_[32];
-    ProgramRef      program_;
-    Texture2DRef    textures_[4];
+    ProgramRef      programs_[4];
+    Texture2DRef    textures_[8];
     Vec4f           params_[8];
 
     void InitFromTXT(const char *mat_src, eMatLoadStatus *status, const program_load_callback &on_prog_load,
@@ -54,8 +57,8 @@ public:
     const char *name() const {
         return name_;
     }
-    const ProgramRef &program() const {
-        return program_;
+    const ProgramRef &program(int i) const {
+        return programs_[i];
     }
     const Texture2DRef &texture(int i) const {
         return textures_[i];

@@ -1,15 +1,4 @@
 
-#include "Anim.cpp"
-#include "Buffer.cpp"
-#include "Camera.cpp"
-#include "Context.cpp"
-#include "Material.cpp"
-#include "Mesh.cpp"
-#include "RenderThread.cpp"
-#include "TextureAtlas.cpp"
-#include "TextureSplitter.cpp"
-#include "Utils.cpp"
-
 extern "C" {
 #include "SW/_SW.c"
 }
@@ -24,3 +13,14 @@ extern "C" {
 #include "ProgramSW.cpp"
 #include "TextureSW.cpp"
 #endif
+
+#include "Anim.cpp"
+#include "Buffer.cpp"
+#include "Camera.cpp"
+#include "Context.cpp"
+#include "Material.cpp"
+#include "Mesh.cpp"
+#include "RenderThread.cpp"
+#include "TextureAtlas.cpp"
+#include "TextureSplitter.cpp"
+#include "Utils.cpp"

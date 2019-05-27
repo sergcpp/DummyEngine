@@ -17,8 +17,10 @@ Ren::Material &Ren::Material::operator=(Material &&rhs) {
     flags_ = rhs.flags_;
     ready_ = rhs.ready_;
     strcpy(name_, rhs.name_);
-    program_ = std::move(rhs.program_);
     for (int i = 0; i < 4; i++) {
+        programs_[i] = std::move(rhs.programs_[i]);
+    }
+    for (int i = 0; i < 8; i++) {
         textures_[i] = rhs.textures_[i];
     }
     for (int i = 0; i < 8; i++) {
@@ -45,6 +47,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
     const char *p = mat_src;
     const char *q = strpbrk(p + 1, delims);
 
+    int num_programs = 0;
     int num_textures = 0;
     int num_params = 0;
 
@@ -67,7 +70,8 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             q = strpbrk(p, delims);
             std::string f_shader_name = std::string(p, q);
 
-            program_ = on_prog_load(program_name.c_str(), v_shader_name.c_str(), f_shader_name.c_str());
+            programs_[num_programs] = on_prog_load(program_name.c_str(), v_shader_name.c_str(), f_shader_name.c_str());
+            num_programs++;
 #endif
         } else if (item == "sw_program:") {
 #ifdef USE_SW_RENDER
@@ -82,10 +86,10 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             q = strpbrk(p, delims);
             std::string flag = std::string(p, q);
 
-            if (flag == "alpha_blend") {
+            if (flag == "alpha_test") {
+                flags_ |= AlphaTest;
+            } else if (flag == "alpha_blend") {
                 flags_ |= AlphaBlend;
-            } else if (flag == "doublesided") {
-                flags_ |= DoubleSided;
             } else {
                 fprintf(stderr, "Unknown flag %s", flag.c_str());
             }

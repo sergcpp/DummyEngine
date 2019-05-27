@@ -7,6 +7,8 @@
 
 #if defined(_WIN32)
 #include <Windows.h>
+#else
+#include <SDL2/SDL.h>
 #endif
 
 class MaterialTest : public Ren::Context {
@@ -138,7 +140,7 @@ void test_material() {
 
         const char *mat_src = "gl_program: constant constant.vs constant.fs\n"
                               "sw_program: constant\n"
-                              "flag: alpha_blend\n"
+                              "flag: alpha_test\n"
                               "texture: checker.tga\n"
                               "texture: checker.tga\n"
                               "texture: metal_01.tga\n"
@@ -157,11 +159,11 @@ void test_material() {
         test.LoadMaterial("mat1", mat_src, &status, on_program_needed, on_texture_needed);
 
         require(status == Ren::MatCreatedFromData);
-        require(m_ref->flags() & Ren::AlphaBlend);
+        require(m_ref->flags() & Ren::AlphaTest);
         require(m_ref->ready() == true);
         require(std::string(m_ref->name()) == "mat1");
 
-        Ren::ProgramRef p = m_ref->program();
+        Ren::ProgramRef p = m_ref->program(0);
 
         require(std::string(p->name()) == "constant");
         require(p->ready() == false);

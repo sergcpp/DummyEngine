@@ -1,10 +1,10 @@
-#ifndef SPARSE_ARRAY_H
-#define SPARSE_ARRAY_H
+#pragma once
 
 #include <cassert>
 #include <iterator>
 #include <vector>
 
+namespace Ren {
 template <typename val_t>
 using default_container = std::vector<val_t>;
 
@@ -169,5 +169,4 @@ public:
         return iterator(this, index);
     }
 };
-
-#endif // SPARSE_ARRAY_H
+}

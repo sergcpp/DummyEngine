@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #if defined(__ANDROID__) || defined(__native_client__) || defined(EMSCRIPTEN)
 #include <GLES/egl.h>
 //#if __ANDROID_API__ >= 24
@@ -52,6 +54,9 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 #define GL_DEBUG_SEVERITY_LOW               0x9148
 #define GL_DEBUG_SEVERITY_NOTIFICATION      0x826B
 
+#define GL_DEBUG_SOURCE_APPLICATION         0x824A
+#define GL_DEBUG_TYPE_MARKER	            0x8268
+
 #define GL_TEXTURE_MAX_ANISOTROPY_EXT       0x84FE
 #define GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT   0x84FF
 
@@ -73,6 +78,8 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 #define GL_TEXTURE0                         0x84C0
 #define GL_TEXTURE1                         0x84C1
 #define GL_TEXTURE_CUBE_MAP                 0x8513
+
+#define GL_TEXTURE_CUBE_MAP_ARRAY           0x9009
 
 #define GL_CLAMP_TO_EDGE                    0x812F
 #define GL_CLAMP_TO_BORDER                  0x812D
@@ -184,6 +191,8 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 #define GL_TEXTURE_COMPARE_FUNC     0x884D
 #define GL_COMPARE_REF_TO_TEXTURE   0x884E
 
+#define GL_TEXTURE_MAX_LEVEL 0x813D
+
 #define GL_TEXTURE_BUFFER                 0x8C2A
 #define GL_MAX_TEXTURE_BUFFER_SIZE        0x8C2B
 
@@ -223,6 +232,8 @@ extern void (APIENTRY *glGetQueryObjectui64vEXT)(GLuint id, GLenum pname, GLuint
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR  0x93DC
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR  0x93DD
 
+#define GL_TEXTURE_CUBE_MAP_SEAMLESS 0x884F
+
 #ifndef APIENTRY
 #if defined(WIN32)
 #define WINAPI      __stdcall
@@ -261,121 +272,141 @@ typedef ptrdiff_t GLintptr;
 typedef ptrdiff_t GLsizeiptr;
 //}
 
-#if !defined(__APPLE__)
-extern GLuint(APIENTRY *glCreateProgram)(void);
-extern void (APIENTRY *glDeleteProgram)(GLuint program);
-extern void (APIENTRY *glUseProgram)(GLuint program);
-extern void (APIENTRY *glAttachShader)(GLuint program, GLuint shader);
-extern void (APIENTRY *glLinkProgram)(GLuint program);
-extern void (APIENTRY *glGetProgramiv)(GLuint program, GLenum pname, GLint *params);
-extern void (APIENTRY *glGetProgramInfoLog)(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
-extern GLint(APIENTRY *glGetAttribLocation)(GLuint program, const GLchar *name);
-extern GLint(APIENTRY *glGetUniformLocation)(GLuint program, const GLchar *name);
-extern void (APIENTRY *glGetActiveAttrib)(GLuint program, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
-extern void (APIENTRY *glGetActiveUniform)(GLuint program, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
-extern GLuint (APIENTRY *glGetUniformBlockIndex)(GLuint program, const GLchar *uniformBlockName);
-extern void (APIENTRY *glUniformBlockBinding)(GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding);
-extern void (APIENTRY *glVertexAttribPointer)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid * pointer);
-extern void (APIENTRY *glEnableVertexAttribArray)(GLuint index);
-extern void (APIENTRY *glDisableVertexAttribArray)(GLuint index);
+#ifdef __GL_API_DEF__
+#define EXTERN_FUNC
+#else
+#define EXTERN_FUNC extern
+#endif
 
-extern GLuint(APIENTRY *glCreateShader)(GLenum shaderType);
-extern void (APIENTRY *glDeleteShader)(GLuint shader);
-extern void (APIENTRY *glShaderSource)(GLuint shader, GLsizei count, const GLchar **string, const GLint *length);
-extern void (APIENTRY *glCompileShader)(GLuint shader);
-extern void (APIENTRY *glGetShaderiv)(GLuint shader, GLenum pname, GLint *params);
-extern void (APIENTRY *glGetShaderInfoLog)(GLuint shader, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
+extern "C" {
+
+#if !defined(__APPLE__)
+typedef GLuint(APIENTRY *PFNGLCREATEPROGRAMPROC)(void);
+typedef void (APIENTRY *PFNGLDELETEPROGRAMPROC)(GLuint program);
+typedef void (APIENTRY *PFNGLUSEPROGRAMPROC)(GLuint program);
+typedef void (APIENTRY *PFNGLATTACHSHADERPROC)(GLuint program, GLuint shader);
+typedef void (APIENTRY *PFNGLLINKPROGRAMPROC)(GLuint program);
+typedef void (APIENTRY *PFNGLGETPROGRAMIVPROC)(GLuint program, GLenum pname, GLint *params);
+typedef void (APIENTRY *PFNGLGETPROGRAMINFOLOGPROC)(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
+typedef GLint(APIENTRY *PFNGLGETATTRIBLOCATIONPROC)(GLuint program, const GLchar *name);
+typedef GLint(APIENTRY *PFNGLGETUNIFORMLOCATIONPROC)(GLuint program, const GLchar *name);
+typedef void (APIENTRY *PFNGLGETACTIVEATTRIBPROC)(GLuint program, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
+typedef void (APIENTRY *PFNGLGETACTIVEUNIFORMPROC)(GLuint program, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
+typedef GLuint (APIENTRY *PFNGLGETUNIFORMBLOCKINDEXPROC)(GLuint program, const GLchar *uniformBlockName);
+typedef void (APIENTRY *PFNGLUNIFORMBLOCKBINDINGPROC)(GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding);
+typedef void (APIENTRY *PFNGLVERTEXATTRIBPOINTERPROC)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid * pointer);
+typedef void (APIENTRY *PFNGLENABLEVERTEXATTRIBARRAYPROC)(GLuint index);
+typedef void (APIENTRY *PFNGLDISABLEVERTEXATTRIBARRAYPROC)(GLuint index);
+
+typedef GLuint (APIENTRY *PFNGLCREATESHADERPROC)(GLenum shaderType);
+typedef void (APIENTRY *PFNGLDELETESHADERPROC)(GLuint shader);
+#if !defined(__linux__)
+typedef void (APIENTRY *PFNGLSHADERSOURCEPROC)(GLuint shader, GLsizei count, const GLchar **string, const GLint *length);
+#endif
+typedef void (APIENTRY *PFNGLCOMPILESHADERPROC)(GLuint shader);
+typedef void (APIENTRY *PFNGLGETSHADERIVPROC)(GLuint shader, GLenum pname, GLint *params);
+typedef void (APIENTRY *PFNGLGETSHADERINFOLOGPROC)(GLuint shader, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 #endif
 
 #if !defined(__APPLE__)
 #if !defined(__linux__)
-extern void (APIENTRY *glActiveTexture)(GLenum texture);
+typedef void (APIENTRY *PFNGLACTIVETEXTUREPROC)(GLenum texture);
 #endif
-extern void (APIENTRY *glGenerateMipmap)(GLenum target);
+typedef void (APIENTRY *PFNGLGENERATEMIPMAPPROC)(GLenum target);
 
-extern void (APIENTRY *glGenBuffers)(GLsizei n, GLuint * buffers);
-extern void (APIENTRY *glDeleteBuffers)(GLsizei n, const GLuint * buffers);
-extern void (APIENTRY *glBindBuffer)(GLenum target, GLuint buffer);
-extern void (APIENTRY *glBufferData)(GLenum target, GLsizeiptr size, const GLvoid * data, GLenum usage);
-extern void (APIENTRY *glBufferSubData)(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid * data);
-extern void (APIENTRY *glBindBufferBase)(GLenum target, GLuint index, GLuint buffer);
-extern void (APIENTRY *glBindVertexBuffer)(GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride);
-extern void (APIENTRY *glCopyBufferSubData)(GLenum readTarget, GLenum writeTarget, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size);
+typedef void (APIENTRY *PFNGLGENBUFFERSPROC)(GLsizei n, GLuint * buffers);
+typedef void (APIENTRY *PFNGLDELETEBUFFERSPROC)(GLsizei n, const GLuint * buffers);
+typedef void (APIENTRY *PFNGLBINDBUFFERPROC)(GLenum target, GLuint buffer);
+typedef void (APIENTRY *PFNGLBUFFERDATAPROC)(GLenum target, GLsizeiptr size, const GLvoid * data, GLenum usage);
+typedef void (APIENTRY *PFNGLBUFFERSUBDATAPROC)(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid * data);
+typedef void (APIENTRY *PFNGLBINDBUFFERBASEPROC)(GLenum target, GLuint index, GLuint buffer);
+typedef void (APIENTRY *PFNGLBINDVERTEXBUFFERPROC)(GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride);
+typedef void (APIENTRY *PFNGLCOPYBUFFERSUBDATAPROC)(GLenum readTarget, GLenum writeTarget, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size);
 
-extern void* (APIENTRY *glMapBuffer)(GLenum target, GLenum access);
-extern void* (APIENTRY *glMapBufferRange)(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
-extern GLboolean (APIENTRY *glUnmapBuffer)(GLenum target);
+typedef void* (APIENTRY *PFNGLMAPBUFFERPROC)(GLenum target, GLenum access);
+typedef void* (APIENTRY *PFNGLMAPBUFFERRANGEPROC)(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
+typedef GLboolean (APIENTRY *PFNGLUNMAPBUFFERPROC)(GLenum target);
 
-extern void (APIENTRY *glGenFramebuffers)(GLsizei n, GLuint *ids);
-extern void (APIENTRY *glDeleteFramebuffers)(GLsizei n, const GLuint * framebuffers);
-extern void (APIENTRY *glBindFramebuffer)(GLenum target, GLuint framebuffer);
-extern void (APIENTRY *glFramebufferTexture2D)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef void (APIENTRY *PFNGLGENFRAMEBUFFERSPROC)(GLsizei n, GLuint *ids);
+typedef void (APIENTRY *PFNGLDELETEFRAMEBUFFERSPROC)(GLsizei n, const GLuint * framebuffers);
+typedef void (APIENTRY *PFNGLBINDFRAMEBUFFERPROC)(GLenum target, GLuint framebuffer);
+typedef void (APIENTRY *PFNGLFRAMEBUFFERTEXTURE2DPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef void (APIENTRY *PFNGLFRAMEBUFFERTEXTURE3DPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint layer);
+typedef void (APIENTRY *PFNGLFRAMEBUFFERTEXTURELAYERPROC)(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer);
 
-extern void (APIENTRY *glGenRenderbuffers)(GLsizei n, GLuint * renderbuffers);
-extern void (APIENTRY *glDeleteRenderbuffers)(GLsizei n, const GLuint * renderbuffers);
-extern void (APIENTRY *glBindRenderbuffer)(GLenum target, GLuint renderbuffer);
-extern void (APIENTRY *glRenderbufferStorage)(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
+typedef void (APIENTRY *PFNGLGENRENDERBUFFERSPROC)(GLsizei n, GLuint * renderbuffers);
+typedef void (APIENTRY *PFNGLDELETERENDERBUFFERSPROC)(GLsizei n, const GLuint * renderbuffers);
+typedef void (APIENTRY *PFNGLBINDRENDERBUFFERPROC)(GLenum target, GLuint renderbuffer);
+typedef void (APIENTRY *PFNGLRENDERBUFFERSTORAGEPROC)(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
 
-extern void (APIENTRY *glFramebufferRenderbuffer)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
-extern GLenum(APIENTRY *glCheckFramebufferStatus)(GLenum target);
+typedef void (APIENTRY *PFNGLFRAMEBUFFERRENDERBUFFERPROC)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+typedef GLenum(APIENTRY *PFNGLCHECKFRAMEBUFFERSTATUSPROC)(GLenum target);
 
-extern void (APIENTRY *glDrawBuffers)(GLsizei n, const GLenum *bufs);
-extern void (APIENTRY *glBindFragDataLocation)(GLuint program, GLuint colorNumber, const char * name);
+typedef void (APIENTRY *PFNGLDRAWBUFFERSPROC)(GLsizei n, const GLenum *bufs);
+typedef void (APIENTRY *PFNGLBINDFRAGDATALOCATIONPROC)(GLuint program, GLuint colorNumber, const char * name);
 
-extern void (APIENTRY *glGenVertexArrays)(GLsizei n, GLuint *arrays);
-extern void (APIENTRY *glBindVertexArray)(GLuint array);
-extern void (APIENTRY *glDeleteVertexArrays)(GLsizei n, const GLuint *arrays);
+typedef void (APIENTRY *PFNGLGENVERTEXARRAYSPROC)(GLsizei n, GLuint *arrays);
+typedef void (APIENTRY *PFNGLBINDVERTEXARRAYPROC)(GLuint array);
+typedef void (APIENTRY *PFNGLDELETEVERTEXARRAYSPROC)(GLsizei n, const GLuint *arrays);
 
-extern void (APIENTRY *glUniform1f)(GLint location, GLfloat v0);
-extern void (APIENTRY *glUniform2f)(GLint location, GLfloat v0, GLfloat v1);
-extern void (APIENTRY *glUniform3f)(GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
-extern void (APIENTRY *glUniform4f)(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
+typedef void (APIENTRY *PFNGLUNIFORM1FPROC)(GLint location, GLfloat v0);
+typedef void (APIENTRY *PFNGLUNIFORM2FPROC)(GLint location, GLfloat v0, GLfloat v1);
+typedef void (APIENTRY *PFNGLUNIFORM3FPROC)(GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
+typedef void (APIENTRY *PFNGLUNIFORM4FPROC)(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
 
-extern void (APIENTRY *glUniform1i)(GLint location, GLint v0);
-extern void (APIENTRY *glUniform2i)(GLint location, GLint v0, GLint v1);
-extern void (APIENTRY *glUniform3i)(GLint location, GLint v0, GLint v1, GLint v2);
+typedef void (APIENTRY *PFNGLUNIFORM1IPROC)(GLint location, GLint v0);
+typedef void (APIENTRY *PFNGLUNIFORM2IPROC)(GLint location, GLint v0, GLint v1);
+typedef void (APIENTRY *PFNGLUNIFORM3IPROC)(GLint location, GLint v0, GLint v1, GLint v2);
 
-extern void (APIENTRY *glUniform1iv)(GLint location, GLsizei count, const GLint *value);
+typedef void (APIENTRY *PFNGLUNIFORM1IVPROC)(GLint location, GLsizei count, const GLint *value);
 
-extern void (APIENTRY *glUniform3fv)(GLint location, GLsizei count, const GLfloat *value);
-extern void (APIENTRY *glUniform4fv)(GLint location, GLsizei count, const GLfloat *value);
+typedef void (APIENTRY *PFNGLUNIFORM3FVPROC)(GLint location, GLsizei count, const GLfloat *value);
+typedef void (APIENTRY *PFNGLUNIFORM4FVPROC)(GLint location, GLsizei count, const GLfloat *value);
 
-extern void (APIENTRY *glUniformMatrix4fv)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
+typedef void (APIENTRY *PFNGLUNIFORMMATRIX4FVPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 
-extern void (APIENTRY *glCompressedTexImage2D)(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid * data);
+#if !defined(__linux__)
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXIMAGE2DPROC)(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid * data);
+#endif
 
-extern void (APIENTRY *glTexStorage2D)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
-extern void (APIENTRY *glTexStorage2DMultisample)(GLenum target, GLsizei samples, GLenum internalformat,
-        GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
-extern void (APIENTRY *glRenderbufferStorageMultisample)(GLenum target, GLsizei samples, GLenum internalformat,
-        GLsizei width, GLsizei height);
+typedef void (APIENTRY *PFNGLTEXSTORAGE2DPROC)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
+typedef void (APIENTRY *PFNGLTEXSTORAGE2DMULTISAMPLEPROC)(GLenum target, GLsizei samples, GLenum internalformat,
+                                                          GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
+typedef void (APIENTRY *PFNGLTEXIMAGE2DMULTISAMPLEPROC)(GLenum target, GLsizei samples, GLenum internalformat,
+                                                        GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
+typedef void (APIENTRY *PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)(GLenum target, GLsizei samples, GLenum internalformat,
+                                                                 GLsizei width, GLsizei height);
 
-extern void (APIENTRY *glDrawElementsBaseVertex)(GLenum mode, GLsizei count, GLenum type, GLvoid *indices, GLint basevertex);
-extern void (APIENTRY *glDrawElementsInstanced)(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
+#if !defined(__linux__)
+typedef void (APIENTRY *PFNGLTEXIMAGE3DPROC)(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
+                                             GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid * data);
+typedef void (APIENTRY *PFNGLDRAWELEMENTSBASEVERTEXPROC)(GLenum mode, GLsizei count, GLenum type, GLvoid *indices, GLint basevertex);
+#endif
+typedef void (APIENTRY *PFNGLDRAWELEMENTSINSTANCEDPROC)(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
 
-extern void (APIENTRY *glDispatchCompute)(GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z);
-extern void (APIENTRY *glMemoryBarrier)(GLbitfield barriers);
-extern void (APIENTRY *glGetBufferSubData)(GLenum target, GLintptr offset, GLsizeiptr size, GLvoid * data);
+typedef void (APIENTRY *PFNGLDISPATCHCOMPUTEPROC)(GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z);
+typedef void (APIENTRY *PFNGLMEMORYBARRIERPROC)(GLbitfield barriers);
+typedef void (APIENTRY *PFNGLGETBUFFERSUBDATAPROC)(GLenum target, GLintptr offset, GLsizeiptr size, GLvoid * data);
 
-extern void (APIENTRY *glTexBuffer)(GLenum target, GLenum internalformat, GLuint buffer);
+typedef void (APIENTRY *PFNGLTEXBUFFERPROC)(GLenum target, GLenum internalformat, GLuint buffer);
 
-extern void (APIENTRY *glGenQueries)(GLsizei n, GLuint *ids);
-extern void (APIENTRY *glDeleteQueries)(GLsizei n, const GLuint *ids);
-extern void (APIENTRY *glQueryCounter)(GLuint id, GLenum target);
+typedef void (APIENTRY *PFNGLGENQUERIESPROC)(GLsizei n, GLuint *ids);
+typedef void (APIENTRY *PFNGLDELETEQUERIESPROC)(GLsizei n, const GLuint *ids);
+typedef void (APIENTRY *PFNGLQUERYCOUNTERPROC)(GLuint id, GLenum target);
 
-extern void (APIENTRY *glGetQueryObjectiv)(GLuint id, GLenum pname, GLint *params);
-extern void (APIENTRY *glGetQueryObjectuiv)(GLuint id, GLenum pname, GLuint *params);
-extern void (APIENTRY *glGetQueryObjecti64v)(GLuint id, GLenum pname, GLint64 *params);
-extern void (APIENTRY *glGetQueryObjectui64v)(GLuint id, GLenum pname, GLuint64 *params);
+typedef void (APIENTRY *PFNGLGETQUERYOBJECTIVPROC)(GLuint id, GLenum pname, GLint *params);
+typedef void (APIENTRY *PFNGLGETQUERYOBJECTUIVPROC)(GLuint id, GLenum pname, GLuint *params);
+typedef void (APIENTRY *PFNGLGETQUERYOBJECTI64VPROC)(GLuint id, GLenum pname, GLint64 *params);
+typedef void (APIENTRY *PFNGLGETQUERYOBJECTUI64V)(GLuint id, GLenum pname, GLuint64 *params);
 
-extern const GLubyte *(APIENTRY *glGetStringi)(GLenum name, GLuint index);
+typedef const GLubyte *(APIENTRY *PFNGLGETSTRINGIPROC)(GLenum name, GLuint index);
 
-extern void (APIENTRY *glGetInteger64v)(GLenum pname, GLint64 *data);
-extern void (APIENTRY *glGetBooleani_v)(GLenum target, GLuint index, GLboolean *data);
-extern void (APIENTRY *glGetIntegeri_v)(GLenum target, GLuint index, GLint *data);
-extern void (APIENTRY *glGetFloati_v)(GLenum target, GLuint index, GLfloat *data);
-extern void (APIENTRY *glGetDoublei_v)(GLenum target, GLuint index, GLdouble *data);
-extern void (APIENTRY *glGetInteger64i_v)(GLenum target, GLuint index, GLint64 *data);
+typedef void (APIENTRY *PFNGLGETINTEGER64VPROC)(GLenum pname, GLint64 *data);
+typedef void (APIENTRY *PFNGLGETBOOLEANI_VPROC)(GLenum target, GLuint index, GLboolean *data);
+typedef void (APIENTRY *PFNGLGETINTEGERI_VPROC)(GLenum target, GLuint index, GLint *data);
+typedef void (APIENTRY *PFNGLGETFLOATI_VPROC)(GLenum target, GLuint index, GLfloat *data);
+typedef void (APIENTRY *PFNGLGETDOUBLEI_VPROC)(GLenum target, GLuint index, GLdouble *data);
+typedef void (APIENTRY *PFNGLGETINTEGER64I_VPROC)(GLenum target, GLuint index, GLint64 *data);
 
 typedef void (APIENTRY *DEBUGPROC)(GLenum source,
                                    GLenum type,
@@ -384,9 +415,252 @@ typedef void (APIENTRY *DEBUGPROC)(GLenum source,
                                    GLsizei length,
                                    const GLchar *message,
                                    const void *userParam);
-extern void (APIENTRY *glDebugMessageCallback)(DEBUGPROC callback, const void * userParam);
+typedef void (APIENTRY *PFNGLDEBUGMESSAGECALLBACKPROC)(DEBUGPROC callback, const void * userParam);
+typedef void (APIENTRY *PFNGLDEBUGMESSAGEINSERTPROC)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char *message);
+typedef void (APIENTRY *PFNGLPUSHDEBUGGROUPPROC)(GLenum source, GLuint id, GLsizei length, const char *message);
+typedef void (APIENTRY *PFNGLPOPDEBUGGROUPPROC)();
 #endif
 #endif
+
+#define glCreateProgram             ren_glCreateProgram
+#define glDeleteProgram             ren_glDeleteProgram
+#define glUseProgram                ren_glUseProgram
+#define glAttachShader              ren_glAttachShader
+#define glLinkProgram               ren_glLinkProgram
+#define glGetProgramiv              ren_glGetProgramiv
+#define glGetProgramInfoLog         ren_glGetProgramInfoLog
+#define glGetAttribLocation         ren_glGetAttribLocation
+#define glGetUniformLocation        ren_glGetUniformLocation
+#define glGetActiveAttrib           ren_glGetActiveAttrib
+#define glGetActiveUniform          ren_glGetActiveUniform
+#define glGetUniformBlockIndex      ren_glGetUniformBlockIndex
+#define glUniformBlockBinding       ren_glUniformBlockBinding
+#define glVertexAttribPointer       ren_glVertexAttribPointer
+#define glEnableVertexAttribArray   ren_glEnableVertexAttribArray
+#define glDisableVertexAttribArray  ren_glDisableVertexAttribArray
+#define glCreateShader              ren_glCreateShader
+#define glDeleteShader              ren_glDeleteShader
+#define glShaderSource              ren_glShaderSource
+#define glCompileShader             ren_glCompileShader
+#define glGetShaderiv               ren_glGetShaderiv
+#define glGetShaderInfoLog          ren_glGetShaderInfoLog
+
+#define glActiveTexture             ren_glActiveTexture
+#define glGenerateMipmap            ren_glGenerateMipmap
+
+#define glGenBuffers                ren_glGenBuffers
+#define glDeleteBuffers             ren_glDeleteBuffers
+#define glBindBuffer                ren_glBindBuffer
+#define glBufferData                ren_glBufferData
+#define glBufferSubData             ren_glBufferSubData
+#define glBindBufferBase            ren_glBindBufferBase
+#define glBindVertexBuffer          ren_glBindVertexBuffer
+#define glCopyBufferSubData         ren_glCopyBufferSubData
+
+#define glMapBuffer                 ren_glMapBuffer
+#define glMapBufferRange            ren_glMapBufferRange
+#define glUnmapBuffer               ren_glUnmapBuffer
+
+#define glGenFramebuffers           ren_glGenFramebuffers
+#define glDeleteFramebuffers        ren_glDeleteFramebuffers
+#define glBindFramebuffer           ren_glBindFramebuffer
+#define glFramebufferTexture2D      ren_glFramebufferTexture2D
+#define glFramebufferTexture3D      ren_glFramebufferTexture3D
+#define glFramebufferTextureLayer   ren_glFramebufferTextureLayer
+
+#define glGenRenderbuffers          ren_glGenRenderbuffers
+#define glDeleteRenderbuffers       ren_glDeleteRenderbuffers
+#define glBindRenderbuffer          ren_glBindRenderbuffer
+#define glRenderbufferStorage       ren_glRenderbufferStorage
+
+#define glFramebufferRenderbuffer   ren_glFramebufferRenderbuffer
+#define glCheckFramebufferStatus    ren_glCheckFramebufferStatus
+
+#define glDrawBuffers               ren_glDrawBuffers
+#define glBindFragDataLocation      ren_glBindFragDataLocation
+
+#define glGenVertexArrays           ren_glGenVertexArrays
+#define glBindVertexArray           ren_glBindVertexArray
+#define glDeleteVertexArrays        ren_glDeleteVertexArrays
+
+#define glUniform1f                 ren_glUniform1f
+#define glUniform2f                 ren_glUniform2f
+#define glUniform3f                 ren_glUniform3f
+#define glUniform4f                 ren_glUniform4f
+
+#define glUniform1i                 ren_glUniform1i
+#define glUniform2i                 ren_glUniform2i
+#define glUniform3i                 ren_glUniform3i
+
+#define glUniform1iv                ren_glUniform1iv
+
+#define glUniform3fv                ren_glUniform3fv
+#define glUniform4fv                ren_glUniform4fv
+
+#define glUniformMatrix4fv          ren_glUniformMatrix4fv
+
+#define glCompressedTexImage2D      ren_glCompressedTexImage2D
+
+#define glTexStorage2D              ren_glTexStorage2D
+#define glTexStorage2DMultisample   ren_glTexStorage2DMultisample
+#define glTexImage2DMultisample     ren_glTexImage2DMultisample
+#define glRenderbufferStorageMultisample ren_glRenderbufferStorageMultisample
+
+#define glTexImage3D                ren_glTexImage3D
+
+#define glDrawElementsBaseVertex    ren_glDrawElementsBaseVertex
+#define glDrawElementsInstanced     ren_glDrawElementsInstanced
+
+#define glDispatchCompute           ren_glDispatchCompute
+#define glMemoryBarrier             ren_glMemoryBarrier
+#define glGetBufferSubData          ren_glGetBufferSubData
+
+#define glTexBuffer                 ren_glTexBuffer
+
+#define glGenQueries                ren_glGenQueries
+#define glDeleteQueries             ren_glDeleteQueries
+#define glQueryCounter              ren_glQueryCounter
+
+#define glGetQueryObjectiv          ren_glGetQueryObjectiv
+#define glGetQueryObjectuiv         ren_glGetQueryObjectuiv
+#define glGetQueryObjecti64v        ren_glGetQueryObjecti64v
+#define glGetQueryObjectui64v       ren_glGetQueryObjectui64v
+
+#define glGetStringi                ren_glGetStringi
+
+#define glGetInteger64v             ren_glGetInteger64v
+#define glGetBooleani_v             ren_glGetBooleani_v
+#define glGetIntegeri_v             ren_glGetIntegeri_v
+#define glGetFloati_v               ren_glGetFloati_v
+#define glGetDoublei_v              ren_glGetDoublei_v
+#define glGetInteger64i_v           ren_glGetInteger64i_v
+
+#define glDebugMessageCallback      ren_glDebugMessageCallback
+#define glDebugMessageInsert        ren_glDebugMessageInsert
+#define glPushDebugGroup            ren_glPushDebugGroup
+#define glPopDebugGroup             ren_glPopDebugGroup
+
+EXTERN_FUNC PFNGLCREATEPROGRAMPROC              ren_glCreateProgram;
+EXTERN_FUNC PFNGLDELETEPROGRAMPROC              ren_glDeleteProgram;
+EXTERN_FUNC PFNGLUSEPROGRAMPROC                 ren_glUseProgram;
+EXTERN_FUNC PFNGLATTACHSHADERPROC               ren_glAttachShader;
+EXTERN_FUNC PFNGLLINKPROGRAMPROC                ren_glLinkProgram;
+EXTERN_FUNC PFNGLGETPROGRAMIVPROC               ren_glGetProgramiv;
+EXTERN_FUNC PFNGLGETPROGRAMINFOLOGPROC          ren_glGetProgramInfoLog;
+EXTERN_FUNC PFNGLGETATTRIBLOCATIONPROC          ren_glGetAttribLocation;
+EXTERN_FUNC PFNGLGETUNIFORMLOCATIONPROC         ren_glGetUniformLocation;
+EXTERN_FUNC PFNGLGETACTIVEATTRIBPROC            ren_glGetActiveAttrib;
+EXTERN_FUNC PFNGLGETACTIVEUNIFORMPROC           ren_glGetActiveUniform;
+EXTERN_FUNC PFNGLGETUNIFORMBLOCKINDEXPROC       ren_glGetUniformBlockIndex;
+EXTERN_FUNC PFNGLUNIFORMBLOCKBINDINGPROC        ren_glUniformBlockBinding;
+EXTERN_FUNC PFNGLVERTEXATTRIBPOINTERPROC        ren_glVertexAttribPointer;
+EXTERN_FUNC PFNGLENABLEVERTEXATTRIBARRAYPROC    ren_glEnableVertexAttribArray;
+EXTERN_FUNC PFNGLDISABLEVERTEXATTRIBARRAYPROC   ren_glDisableVertexAttribArray;
+
+EXTERN_FUNC PFNGLCREATESHADERPROC               ren_glCreateShader;
+EXTERN_FUNC PFNGLDELETESHADERPROC               ren_glDeleteShader;
+EXTERN_FUNC PFNGLSHADERSOURCEPROC               ren_glShaderSource;
+EXTERN_FUNC PFNGLCOMPILESHADERPROC              ren_glCompileShader;
+EXTERN_FUNC PFNGLGETSHADERIVPROC                ren_glGetShaderiv;
+EXTERN_FUNC PFNGLGETSHADERINFOLOGPROC           ren_glGetShaderInfoLog;
+
+EXTERN_FUNC PFNGLACTIVETEXTUREPROC              ren_glActiveTexture;
+EXTERN_FUNC PFNGLGENERATEMIPMAPPROC             ren_glGenerateMipmap;
+
+EXTERN_FUNC PFNGLGENBUFFERSPROC                 ren_glGenBuffers;
+EXTERN_FUNC PFNGLDELETEBUFFERSPROC              ren_glDeleteBuffers;
+EXTERN_FUNC PFNGLBINDBUFFERPROC                 ren_glBindBuffer;
+EXTERN_FUNC PFNGLBUFFERDATAPROC                 ren_glBufferData;
+EXTERN_FUNC PFNGLBUFFERSUBDATAPROC              ren_glBufferSubData;
+EXTERN_FUNC PFNGLBINDBUFFERBASEPROC             ren_glBindBufferBase;
+EXTERN_FUNC PFNGLBINDVERTEXBUFFERPROC           ren_glBindVertexBuffer;
+EXTERN_FUNC PFNGLCOPYBUFFERSUBDATAPROC          ren_glCopyBufferSubData;
+
+EXTERN_FUNC PFNGLMAPBUFFERPROC                  ren_glMapBuffer;
+EXTERN_FUNC PFNGLMAPBUFFERRANGEPROC             ren_glMapBufferRange;
+EXTERN_FUNC PFNGLUNMAPBUFFERPROC                ren_glUnmapBuffer;
+
+EXTERN_FUNC PFNGLGENFRAMEBUFFERSPROC            ren_glGenFramebuffers;
+EXTERN_FUNC PFNGLDELETEFRAMEBUFFERSPROC         ren_glDeleteFramebuffers;
+EXTERN_FUNC PFNGLBINDFRAMEBUFFERPROC            ren_glBindFramebuffer;
+EXTERN_FUNC PFNGLFRAMEBUFFERTEXTURE2DPROC       ren_glFramebufferTexture2D;
+EXTERN_FUNC PFNGLFRAMEBUFFERTEXTURE3DPROC       ren_glFramebufferTexture3D;
+EXTERN_FUNC PFNGLFRAMEBUFFERTEXTURELAYERPROC    ren_glFramebufferTextureLayer;
+
+EXTERN_FUNC PFNGLGENRENDERBUFFERSPROC           ren_glGenRenderbuffers;
+EXTERN_FUNC PFNGLDELETERENDERBUFFERSPROC        ren_glDeleteRenderbuffers;
+EXTERN_FUNC PFNGLBINDRENDERBUFFERPROC           ren_glBindRenderbuffer;
+EXTERN_FUNC PFNGLRENDERBUFFERSTORAGEPROC        ren_glRenderbufferStorage;
+
+EXTERN_FUNC PFNGLFRAMEBUFFERRENDERBUFFERPROC    ren_glFramebufferRenderbuffer;
+EXTERN_FUNC PFNGLCHECKFRAMEBUFFERSTATUSPROC     ren_glCheckFramebufferStatus;
+
+EXTERN_FUNC PFNGLDRAWBUFFERSPROC                ren_glDrawBuffers;
+EXTERN_FUNC PFNGLBINDFRAGDATALOCATIONPROC       ren_glBindFragDataLocation;
+
+EXTERN_FUNC PFNGLGENVERTEXARRAYSPROC            ren_glGenVertexArrays;
+EXTERN_FUNC PFNGLBINDVERTEXARRAYPROC            ren_glBindVertexArray;
+EXTERN_FUNC PFNGLDELETEVERTEXARRAYSPROC         ren_glDeleteVertexArrays;
+
+EXTERN_FUNC PFNGLUNIFORM1FPROC                  ren_glUniform1f;
+EXTERN_FUNC PFNGLUNIFORM2FPROC                  ren_glUniform2f;
+EXTERN_FUNC PFNGLUNIFORM3FPROC                  ren_glUniform3f;
+EXTERN_FUNC PFNGLUNIFORM4FPROC                  ren_glUniform4f;
+
+EXTERN_FUNC PFNGLUNIFORM1IPROC                  ren_glUniform1i;
+EXTERN_FUNC PFNGLUNIFORM2IPROC                  ren_glUniform2i;
+EXTERN_FUNC PFNGLUNIFORM3IPROC                  ren_glUniform3i;
+
+EXTERN_FUNC PFNGLUNIFORM1IVPROC                 ren_glUniform1iv;
+
+EXTERN_FUNC PFNGLUNIFORM3FVPROC                 ren_glUniform3fv;
+EXTERN_FUNC PFNGLUNIFORM4FVPROC                 ren_glUniform4fv;
+
+EXTERN_FUNC PFNGLUNIFORMMATRIX4FVPROC           ren_glUniformMatrix4fv;
+
+EXTERN_FUNC PFNGLCOMPRESSEDTEXIMAGE2DPROC       ren_glCompressedTexImage2D;
+
+EXTERN_FUNC PFNGLTEXSTORAGE2DPROC               ren_glTexStorage2D;
+EXTERN_FUNC PFNGLTEXSTORAGE2DMULTISAMPLEPROC    ren_glTexStorage2DMultisample;
+EXTERN_FUNC PFNGLTEXIMAGE2DMULTISAMPLEPROC      ren_glTexImage2DMultisample;
+EXTERN_FUNC PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC ren_glRenderbufferStorageMultisample;
+
+EXTERN_FUNC PFNGLTEXIMAGE3DPROC                 ren_glTexImage3D;
+
+EXTERN_FUNC PFNGLDRAWELEMENTSBASEVERTEXPROC     ren_glDrawElementsBaseVertex;
+EXTERN_FUNC PFNGLDRAWELEMENTSINSTANCEDPROC      ren_glDrawElementsInstanced;
+
+EXTERN_FUNC PFNGLDISPATCHCOMPUTEPROC            ren_glDispatchCompute;
+EXTERN_FUNC PFNGLMEMORYBARRIERPROC              ren_glMemoryBarrier;
+EXTERN_FUNC PFNGLGETBUFFERSUBDATAPROC           ren_glGetBufferSubData;
+
+EXTERN_FUNC PFNGLTEXBUFFERPROC                  ren_glTexBuffer;
+
+EXTERN_FUNC PFNGLGENQUERIESPROC                 ren_glGenQueries;
+EXTERN_FUNC PFNGLDELETEQUERIESPROC              ren_glDeleteQueries;
+EXTERN_FUNC PFNGLQUERYCOUNTERPROC               ren_glQueryCounter;
+
+EXTERN_FUNC PFNGLGETQUERYOBJECTIVPROC           ren_glGetQueryObjectiv;
+EXTERN_FUNC PFNGLGETQUERYOBJECTUIVPROC          ren_glGetQueryObjectuiv;
+EXTERN_FUNC PFNGLGETQUERYOBJECTI64VPROC         ren_glGetQueryObjecti64v;
+EXTERN_FUNC PFNGLGETQUERYOBJECTUI64V            ren_glGetQueryObjectui64v;
+
+EXTERN_FUNC PFNGLGETSTRINGIPROC                 ren_glGetStringi;
+
+EXTERN_FUNC PFNGLGETINTEGER64VPROC              ren_glGetInteger64v;
+EXTERN_FUNC PFNGLGETBOOLEANI_VPROC              ren_glGetBooleani_v;
+EXTERN_FUNC PFNGLGETINTEGERI_VPROC              ren_glGetIntegeri_v;
+EXTERN_FUNC PFNGLGETFLOATI_VPROC                ren_glGetFloati_v;
+EXTERN_FUNC PFNGLGETDOUBLEI_VPROC               ren_glGetDoublei_v;
+EXTERN_FUNC PFNGLGETINTEGER64I_VPROC            ren_glGetInteger64i_v;
+
+EXTERN_FUNC PFNGLDEBUGMESSAGECALLBACKPROC       ren_glDebugMessageCallback;
+EXTERN_FUNC PFNGLDEBUGMESSAGEINSERTPROC         ren_glDebugMessageInsert;
+EXTERN_FUNC PFNGLPUSHDEBUGGROUPPROC             ren_glPushDebugGroup;
+EXTERN_FUNC PFNGLPOPDEBUGGROUPPROC              ren_glPopDebugGroup;
+
+}
+#undef EXTERN_FUNC
 
 namespace Ren {
     bool InitGLExtentions();

@@ -341,7 +341,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
                 grp.bone_ids.push_back((uint32_t)i);
             }
             grp.strip_ids.push_back((uint32_t)s);
-            grp.strip_ids.push_back(groups_[s].offset / 2);
+            grp.strip_ids.push_back(groups_[s].offset / sizeof(uint32_t));
             grp.strip_ids.push_back(groups_[s].num_indices);
             skel_.bone_groups.push_back(grp);
         }
