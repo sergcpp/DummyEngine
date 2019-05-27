@@ -1016,14 +1016,12 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         const int probes_count = (int)list.probes.size();
         const auto *probes = probes_count ? &list.probes[0] : nullptr;
 
-        std::vector<std::future<void>> futures;
+        std::future<void> futures[REN_GRID_RES_Z];
         std::atomic_int a_items_count = {};
 
         for (int i = 0; i < REN_GRID_RES_Z; i++) {
-            futures.push_back(
-                threads_->enqueue(GatherItemsForZSlice_Job, i, &temp_sub_frustums_[0], lights, lights_count, decals, decals_count, decals_boxes,
-                                  probes, probes_count, litem_to_lsource, &list.cells[0], &list.items[0], std::ref(a_items_count))
-            );
+            futures[i] = threads_->enqueue(GatherItemsForZSlice_Job, i, &temp_sub_frustums_[0], lights, lights_count, decals, decals_count, decals_boxes,
+                                           probes, probes_count, litem_to_lsource, &list.cells[0], &list.items[0], std::ref(a_items_count));
         }
 
         for (int i = 0; i < REN_GRID_RES_Z; i++) {
