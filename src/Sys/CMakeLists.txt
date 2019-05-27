@@ -17,6 +17,8 @@ set(SOURCE_FILES AssetFile.h
                  AssetFile.cpp
                  AssetFileIO.h
                  AssetFileIO.cpp
+                 AsyncFileReader.h
+                 AsyncFileReader.cpp
                  BinaryTree.h
                  Delegate.h
                  DynLib.h

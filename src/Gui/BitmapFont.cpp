@@ -53,7 +53,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
     int img_x, img_y;
 
     try {
-        Sys::AssetFile in(fname, Sys::AssetFile::IN);
+        Sys::AssetFile in(fname, Sys::AssetFile::FileIn);
 
         file_size = in.size();
         dat.resize(file_size);

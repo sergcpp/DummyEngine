@@ -23,9 +23,9 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     {
         // load config
 #if defined(__ANDROID__)
-        Sys::AssetFile config_file("assets/config.json", Sys::AssetFile::IN);
+        Sys::AssetFile config_file("assets/config.json", Sys::AssetFile::FileIn);
 #else
-        Sys::AssetFile config_file("assets_pc/config.json", Sys::AssetFile::IN);
+        Sys::AssetFile config_file("assets_pc/config.json", Sys::AssetFile::FileIn);
 #endif
         size_t config_file_size = config_file.size();
         

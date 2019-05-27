@@ -203,7 +203,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     auto load_decal_texture = [this](const std::string &name) {
         std::string file_name = TEXTURES_PATH + name;
 
-        Sys::AssetFile in_file(file_name, Sys::AssetFile::IN);
+        Sys::AssetFile in_file(file_name, Sys::AssetFile::FileIn);
         size_t in_file_size = in_file.size();
 
         std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
@@ -484,7 +484,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             int res = 0;
 
             for (int i = 0; i < 6; i++) {
-                Sys::AssetFile in_file(tex_names[i], Sys::AssetFile::IN);
+                Sys::AssetFile in_file(tex_names[i], Sys::AssetFile::FileIn);
                 size_t in_file_size = in_file.size();
 
                 tex_data[i].resize(in_file_size);

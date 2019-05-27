@@ -22,7 +22,7 @@ Gui::Image::Image(Ren::Context &ctx, const char *tex_name, const Vec2f uvs[2],
     Ren::eTexLoadStatus status;
     tex_ = ctx.LoadTexture2D(tex_name, nullptr, 0, {}, &status);
     if (status == Ren::TexCreatedDefault) {
-        Sys::AssetFile in_file(tex_name, Sys::AssetFile::IN);
+        Sys::AssetFile in_file(tex_name, Sys::AssetFile::FileIn);
         size_t in_file_size = in_file.size();
         std::unique_ptr<char[]> data(new char[in_file_size]);
         in_file.Read(data.get(), in_file_size);
