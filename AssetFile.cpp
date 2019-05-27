@@ -49,7 +49,7 @@ AAssetManager* Sys::AssetFile::asset_manager_ = nullptr;
 Sys::AssetFile::AssetFile(const char *file_name, int mode) : mode_(mode), name_(file_name), size_(0), pos_override_(0) {
     using namespace std;
 
-    if (mode == IN) {
+    if (mode == FileIn) {
 #ifdef __ANDROID__
         if (file_name[0] == '.' && file_name[1] == '/') {
             file_name += 2;
@@ -118,7 +118,7 @@ OPENED:
             throw Sys::CannotOpenFileException(file_name);
         }
 #endif
-    } else if (mode == OUT) {
+    } else if (mode == FileOut) {
 #ifdef __ANDROID__
         throw std::runtime_error("Cannot write to assets folder!");
 #else
@@ -141,7 +141,7 @@ Sys::AssetFile::~AssetFile() {
 }
 
 bool Sys::AssetFile::Read(char *buf, size_t size) {
-    assert(mode_ == IN);
+    assert(mode_ == FileIn);
 #ifdef __ANDROID__
     return !(AAsset_read(asset_file_, buf, size) < 0);
 #else
