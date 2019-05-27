@@ -147,7 +147,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
         }
         BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
 
-        glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset));
+        glDrawElementsBaseVertex(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset), (GLint)m->sk_indices_buf().offset - m->indices_buf().offset);
         ++s;
     }
 
@@ -161,18 +161,23 @@ void ModlApp::ClearColorAndDepth(float r, float g, float b, float a) {
 
 void ModlApp::CheckInitVAOs() {
     auto vtx_buf = ctx_.default_vertex_buf();
+    auto skin_vtx_buf = ctx_.default_skin_vertex_buf();
     auto ndx_buf = ctx_.default_indices_buf();
+    auto skin_ndx_buf = ctx_.default_skin_indices_buf();
 
     GLuint gl_vertex_buf = (GLuint)vtx_buf->buf_id(),
-           gl_indices_buf = (GLuint)ndx_buf->buf_id();
+           gl_skin_vertex_buf = (GLuint)skin_vtx_buf->buf_id(),
+           gl_indices_buf = (GLuint)ndx_buf->buf_id(),
+           gl_skin_indices_buf = (GLuint)skin_ndx_buf->buf_id();
 
-    if (gl_vertex_buf != last_vertex_buffer_ || gl_indices_buf != last_index_buffer_) {
+    if (gl_vertex_buf != last_vertex_buffer_ || gl_skin_vertex_buf != last_skin_vertex_buffer_ ||
+        gl_indices_buf != last_index_buffer_ || gl_skin_indices_buf != last_skin_index_buffer_) {
         GLuint skinned_mesh_vao;
         glGenVertexArrays(1, &skinned_mesh_vao);
         glBindVertexArray(skinned_mesh_vao);
 
-        glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
+        glBindBuffer(GL_ARRAY_BUFFER, gl_skin_vertex_buf);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_skin_indices_buf);
 
         int stride = sizeof(float) * 21;
         glEnableVertexAttribArray(A_POS);
@@ -201,7 +206,9 @@ void ModlApp::CheckInitVAOs() {
         skinned_vao_ = (uint32_t)skinned_mesh_vao;
 
         last_vertex_buffer_ = (uint32_t)gl_vertex_buf;
+        last_skin_vertex_buffer_ = (uint32_t)gl_skin_vertex_buf;
         last_index_buffer_ = (uint32_t)gl_indices_buf;
+        last_skin_index_buffer_ = (uint32_t)gl_skin_indices_buf;
     }
 }
 

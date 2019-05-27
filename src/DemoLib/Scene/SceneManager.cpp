@@ -123,6 +123,7 @@ SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, S
 }
 
 SceneManager::~SceneManager() {
+    ClearScene();
 }
 
 void SceneManager::RegisterComponent(uint32_t index, CompStorage *storage) {

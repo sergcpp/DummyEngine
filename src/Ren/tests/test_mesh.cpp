@@ -263,9 +263,9 @@ void test_mesh() {
         require(m_ref->group(1).offset == -1);
 
         require(m_ref->attribs() != nullptr);
-        require(m_ref->attribs_size() == 192);
+        require(m_ref->attribs_buf().size == 192);
         require(m_ref->indices() != nullptr);
-        require(m_ref->indices_size() == 20);
+        require(m_ref->indices_buf().size == 20);
 
         require(m_ref->flags() == Ren::MeshHasAlpha);
         require(m_ref->group(0).flags == Ren::MeshHasAlpha);
@@ -313,21 +313,21 @@ void test_mesh() {
         require(m_ref->type() == Ren::MeshSkeletal);
         require(std::string(m_ref->name()) == "test");
 
-        require(m_ref->bbox_min()[0] == Approx(0).epsilon(0.01));
-        require(m_ref->bbox_min()[1] == Approx(0).epsilon(0.01));
-        require(m_ref->bbox_min()[2] == Approx(-5).epsilon(0.01));
-        require(m_ref->bbox_max()[0] == Approx(0).epsilon(0.01));
-        require(m_ref->bbox_max()[1] == Approx(20).epsilon(0.01));
-        require(m_ref->bbox_max()[2] == Approx(5).epsilon(0.01));
+        require(m_ref->bbox_min()[0] == Approx(0).epsilon(0.001));
+        require(m_ref->bbox_min()[1] == Approx(0).epsilon(0.001));
+        require(m_ref->bbox_min()[2] == Approx(-5).epsilon(0.001));
+        require(m_ref->bbox_max()[0] == Approx(0).epsilon(0.001));
+        require(m_ref->bbox_max()[1] == Approx(20).epsilon(0.001));
+        require(m_ref->bbox_max()[2] == Approx(5).epsilon(0.001));
 
         require(m_ref->group(0).offset != -1);
         require(m_ref->group(1).offset == -1);
 
         require(m_ref->attribs() != nullptr);
         // attribs have 16 floats for each vertex (3 pos, 3 normal, 2 uvs, 4 bone index-weight pairs)
-        require(m_ref->attribs_size() == 4 * 16 * 6);
+        require(m_ref->attribs_buf().size == 4 * 16 * 6);
         require(m_ref->indices() != nullptr);
-        require(m_ref->indices_size() == 22);
+        require(m_ref->indices_buf().size == 22);
 
         require(m_ref->flags() == 0);
         require(m_ref->group(0).flags == 0);

@@ -507,8 +507,8 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
         // fix for flat objects
         for (int j : { 0, 1, 2 }) {
-            if (fabs(mesh_info.bbox_min[j] - mesh_info.bbox_max[j]) < 0.01f) {
-                mesh_info.bbox_max[j] += 0.01f;
+            if (fabs(mesh_info.bbox_min[j] - mesh_info.bbox_max[j]) < 0.001f) {
+                mesh_info.bbox_max[j] += 0.001f;
             }
         }
     }

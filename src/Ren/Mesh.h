@@ -34,6 +34,48 @@ struct TriGroup {
     }
 };
 
+struct BufferRange {
+    BufferRef buf;
+    uint32_t  offset, size;
+
+    BufferRange() : offset(0), size(0) {}
+    BufferRange(BufferRef &_buf, uint32_t _offset, uint32_t _size) : buf(_buf), offset(_offset), size(_size) {}
+    ~BufferRange() {
+        Release();
+    }
+
+    BufferRange(const BufferRange &rhs) = delete;
+    BufferRange(BufferRange &&rhs) {
+        buf = std::move(rhs.buf);
+        offset = rhs.offset;
+        rhs.offset = 0;
+        size = rhs.size;
+        rhs.size = 0;
+    }
+
+    BufferRange &operator=(const BufferRange &rhs) = delete;
+    BufferRange &operator=(BufferRange &&rhs) {
+        Release();
+
+        buf = std::move(rhs.buf);
+        offset = rhs.offset;
+        rhs.offset = 0;
+        size = rhs.size;
+        rhs.size = 0;
+
+        return *this;
+    }
+
+    void Release() {
+        if (buf && size) {
+            assert(buf->Free(offset));
+            size = 0;
+            offset = 0;
+        }
+        buf = {};
+    }
+};
+
 enum eMeshType { MeshUndefined, MeshSimple, MeshTerrain, MeshSkeletal };
 
 typedef std::function<MaterialRef(const char *name)> material_load_callback;
@@ -41,13 +83,8 @@ typedef std::function<MaterialRef(const char *name)> material_load_callback;
 class Mesh : public RefCounter {
     int             type_ = MeshUndefined;
     uint32_t        flags_ = 0;
-    BufferRef       attribs_buf_, indices_buf_;
-    uint32_t        attribs_offset_ = 0;
-    uint32_t        indices_offset_ = 0;
-    std::shared_ptr<void> attribs_;
-    uint32_t        attribs_size_ = 0;
-    std::shared_ptr<void> indices_;
-    uint32_t        indices_size_ = 0;
+    BufferRange     attribs_buf_, sk_attribs_buf_, indices_buf_, sk_indices_buf_;
+    std::unique_ptr <char[]> attribs_, indices_;
     std::array<TriGroup, 16>    groups_;
     Vec3f           bbox_min_, bbox_max_;
     char            name_[32];
@@ -55,14 +92,12 @@ class Mesh : public RefCounter {
     Skeleton        skel_;
 
     // simple static mesh with normals
-    void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load,
-                        const BufferRef &vertex_buf, const BufferRef &index_buf);
+    void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, BufferRef &vertex_buf, BufferRef &index_buf);
     // simple mesh with tex index per vertex
-    void InitMeshTerrain(std::istream &data, const material_load_callback &on_mat_load,
-                         const BufferRef &vertex_buf, const BufferRef &index_buf);
+    void InitMeshTerrain(std::istream &data, const material_load_callback &on_mat_load, BufferRef &vertex_buf, BufferRef &index_buf);
     // mesh with 4 bone weights per vertex
     void InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load,
-                          const BufferRef &vertex_buf, const BufferRef &index_buf);
+                          BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf);
 
     // split skeletal mesh into chunks to fit uniforms limit in shader
     void SplitMesh(int bones_limit);
@@ -70,7 +105,8 @@ public:
     Mesh() {
         name_[0] = '\0';
     }
-    Mesh(const char *name, std::istream &data, const material_load_callback &on_mat_load, const BufferRef &vertex_buf, const BufferRef &index_buf);
+    Mesh(const char *name, std::istream &data, const material_load_callback &on_mat_load,
+         BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf);
 
     int type() const {
         return type_;
@@ -80,29 +116,29 @@ public:
     }
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
     uint32_t attribs_buf_id() const {
-        return attribs_buf_->buf_id();
+        return attribs_buf_.buf->buf_id();
     }
     uint32_t indices_buf_id() const {
-        return indices_buf_->buf_id();
+        return indices_buf_.buf->buf_id();
     }
 #endif
     const void *attribs() const {
         return attribs_.get();
     }
-    uint32_t attribs_offset() const {
-        return attribs_offset_;
+    const BufferRange &attribs_buf() const {
+        return attribs_buf_;
     }
-    uint32_t attribs_size() const {
-        return attribs_size_;
+    const BufferRange &sk_attribs_buf() const {
+        return sk_attribs_buf_;
     }
     const void *indices() const {
         return indices_.get();
     }
-    uint32_t indices_offset() const {
-        return indices_offset_;
+    const BufferRange &indices_buf() const {
+        return indices_buf_;
     }
-    uint32_t indices_size() const {
-        return indices_size_;
+    const BufferRange &sk_indices_buf() const {
+        return sk_indices_buf_;
     }
     const TriGroup &group(int i) const {
         return groups_[i];
@@ -122,7 +158,7 @@ public:
     }
 
     void Init(const char *name, std::istream &data, const material_load_callback &on_mat_load,
-              const BufferRef &vertex_buf, const BufferRef &index_buf);
+              BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf);
 
     static int max_gpu_bones;
 };

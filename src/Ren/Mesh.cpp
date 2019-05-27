@@ -17,12 +17,12 @@
 int Ren::Mesh::max_gpu_bones = 16;
 
 Ren::Mesh::Mesh(const char *name, std::istream &data, const material_load_callback &on_mat_load,
-                const BufferRef &vertex_buf, const BufferRef &index_buf) {
-    Init(name, data, on_mat_load, vertex_buf, index_buf);
+                BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf) {
+    Init(name, data, on_mat_load, vertex_buf, index_buf, skin_vertex_buf, skin_index_buf);
 }
 
 void Ren::Mesh::Init(const char *name, std::istream &data, const material_load_callback &on_mat_load,
-                     const BufferRef &vertex_buf, const BufferRef &index_buf) {
+                     BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf) {
     strcpy(name_, name);
 
     char mesh_type_str[12];
@@ -35,12 +35,12 @@ void Ren::Mesh::Init(const char *name, std::istream &data, const material_load_c
     } else if (strcmp(mesh_type_str, "TERRAI_MESH\0") == 0) {
         InitMeshTerrain(data, on_mat_load, vertex_buf, index_buf);
     } else if (strcmp(mesh_type_str, "SKELET_MESH\0") == 0) {
-        InitMeshSkeletal(data, on_mat_load, vertex_buf, index_buf);
+        InitMeshSkeletal(data, on_mat_load, vertex_buf, index_buf, skin_vertex_buf, skin_index_buf);
     }
 }
 
 void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load,
-                               const BufferRef &vertex_buf, const BufferRef &index_buf) {
+                               BufferRef &vertex_buf, BufferRef &index_buf) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "STATIC_MESH\0") == 0);
@@ -76,13 +76,13 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
     data.read((char *)&temp_f[0], sizeof(float) * 3);
     bbox_max_ = MakeVec3(temp_f);
 
-    attribs_size_ = (uint32_t)file_header.p[VTX_ATTR_CHUNK].length;
-    attribs_.reset(new char[attribs_size_], std::default_delete<char[]>());
-    data.read((char *)attribs_.get(), attribs_size_);
+    attribs_buf_.size = (uint32_t)file_header.p[VTX_ATTR_CHUNK].length;
+    attribs_.reset(new char[attribs_buf_.size]);
+    data.read((char *)attribs_.get(), attribs_buf_.size);
 
-    indices_size_ = (uint32_t)file_header.p[VTX_NDX_CHUNK].length;
-    indices_.reset(new char[indices_size_], std::default_delete<char[]>());
-    data.read((char *)indices_.get(), indices_size_);
+    indices_buf_.size = (uint32_t)file_header.p[VTX_NDX_CHUNK].length;
+    indices_.reset(new char[indices_buf_.size]);
+    data.read((char *)indices_.get(), indices_buf_.size);
 
     std::vector<std::array<char, 64>> material_names((size_t)file_header.p[MATERIALS_CHUNK].length / 64);
     for (auto &n : material_names) {
@@ -114,24 +114,23 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
         groups_[num_strips].offset = -1;
     }
 
-    attribs_buf_ = vertex_buf;
-    attribs_offset_ = attribs_buf_->Alloc(attribs_size_, attribs_.get());
+    attribs_buf_.buf = vertex_buf;
+    attribs_buf_.offset = vertex_buf->Alloc(attribs_buf_.size, attribs_.get());
 
-    if (attribs_offset_ != 0) {
-        uint32_t offset = attribs_offset_ / (13 * sizeof(float));
+    if (attribs_buf_.offset != 0) {
+        uint32_t offset = attribs_buf_.offset / (13 * sizeof(float));
 
         uint32_t *_indices = (uint32_t *)indices_.get();
-        for (uint32_t i = 0; i < indices_size_ / sizeof(uint32_t); i++) {
+        for (uint32_t i = 0; i < indices_buf_.size / sizeof(uint32_t); i++) {
             _indices[i] += offset;
         }
     }
 
-    indices_buf_ = index_buf;
-    indices_offset_ = indices_buf_->Alloc(indices_size_, indices_.get());
+    indices_buf_.buf = index_buf;
+    indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices_.get());
 }
 
-void Ren::Mesh::InitMeshTerrain(std::istream &data, const material_load_callback &on_mat_load,
-                                const BufferRef &vertex_buf, const BufferRef &index_buf) {
+void Ren::Mesh::InitMeshTerrain(std::istream &data, const material_load_callback &on_mat_load, BufferRef &vertex_buf, BufferRef &index_buf) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "TERRAI_MESH\0") == 0);
@@ -167,8 +166,8 @@ void Ren::Mesh::InitMeshTerrain(std::istream &data, const material_load_callback
     data.read((char *)&temp_f[0], sizeof(float) * 3);
     bbox_max_ = MakeVec3(temp_f);
 
-    attribs_size_ = file_header.p[VTX_ATTR_CHUNK].length + file_header.p[VTX_NDX_CHUNK].length * sizeof(float);
-    attribs_.reset(new char[attribs_size_], std::default_delete<char[]>());
+    attribs_buf_.size = file_header.p[VTX_ATTR_CHUNK].length + file_header.p[VTX_NDX_CHUNK].length * sizeof(float);
+    attribs_.reset(new char[attribs_buf_.size]);
 
     float *p_fattrs = (float *)attribs_.get();
     for (int i = 0; i < file_header.p[VTX_NDX_CHUNK].length; i++) {
@@ -181,9 +180,9 @@ void Ren::Mesh::InitMeshTerrain(std::istream &data, const material_load_callback
         p_fattrs[i * 9 + 8] = float(c);
     }
 
-    indices_size_ = (size_t)file_header.p[VTX_NDX_CHUNK].length;
-    indices_.reset(new char[indices_size_], std::default_delete<char[]>());
-    data.read((char *)indices_.get(), indices_size_);
+    indices_buf_.size = (size_t)file_header.p[VTX_NDX_CHUNK].length;
+    indices_.reset(new char[indices_buf_.size]);
+    data.read((char *)indices_.get(), indices_buf_.size);
 
     std::vector<std::array<char, 64>> material_names((size_t)file_header.p[MATERIALS_CHUNK].length / 64);
     for (auto &n : material_names) {
@@ -215,15 +214,15 @@ void Ren::Mesh::InitMeshTerrain(std::istream &data, const material_load_callback
         groups_[num_strips].offset = -1;
     }
 
-    attribs_buf_ = vertex_buf;
-    attribs_offset_ = attribs_buf_->Alloc(attribs_size_, attribs_.get());
+    attribs_buf_.buf = vertex_buf;
+    attribs_buf_.offset = vertex_buf->Alloc(attribs_buf_.size, attribs_.get());
 
-    indices_buf_ = index_buf;
-    indices_offset_ = indices_buf_->Alloc(indices_size_, indices_.get());
+    indices_buf_.buf = index_buf;
+    indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices_.get());
 }
 
 void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load,
-                                 const BufferRef &vertex_buf, const BufferRef &index_buf) {
+                                 BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "SKELET_MESH\0") == 0);
@@ -262,13 +261,13 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         bbox_max_ = MakeVec3(temp_f);
     }
 
-    attribs_size_ = (uint32_t)file_header.p[VTX_ATTR_CHUNK].length;
-    attribs_.reset(new char[attribs_size_], std::default_delete<char[]>());
-    data.read((char *)attribs_.get(), attribs_size_);
+    sk_attribs_buf_.size = (uint32_t)file_header.p[VTX_ATTR_CHUNK].length;
+    attribs_.reset(new char[sk_attribs_buf_.size]);
+    data.read((char *)attribs_.get(), sk_attribs_buf_.size);
 
-    indices_size_ = (uint32_t)file_header.p[VTX_NDX_CHUNK].length;
-    indices_.reset(new char[indices_size_], std::default_delete<char[]>());
-    data.read((char *)indices_.get(), indices_size_);
+    sk_indices_buf_.size = (uint32_t)file_header.p[VTX_NDX_CHUNK].length;
+    indices_.reset(new char[sk_indices_buf_.size]);
+    data.read((char *)indices_.get(), sk_indices_buf_.size);
 
     std::vector<std::array<char, 64>> material_names((size_t)file_header.p[MATERIALS_CHUNK].length / 64);
     for (auto &n : material_names) {
@@ -351,14 +350,41 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
 
     skel_.matr_palette.resize(skel_.bones.size());
 
-    attribs_buf_ = vertex_buf;
-    attribs_offset_ = attribs_buf_->Alloc(attribs_size_, attribs_.get());
+    // allocate space for untransformed vertices
+    sk_attribs_buf_.buf = skin_vertex_buf;
+    sk_attribs_buf_.offset = skin_vertex_buf->Alloc(sk_attribs_buf_.size, attribs_.get());
+    sk_indices_buf_.buf = skin_index_buf;
 
-    indices_buf_ = index_buf;
-    indices_offset_ = indices_buf_->Alloc(indices_size_, indices_.get());
+    if (sk_attribs_buf_.offset != 0) {
+        uint32_t offset = sk_attribs_buf_.offset / (21 * sizeof(float));
+
+        uint32_t *_indices = (uint32_t *)indices_.get();
+        for (uint32_t i = 0; i < sk_indices_buf_.size / sizeof(uint32_t); i++) {
+            _indices[i] += offset;
+        }
+    }
+
+    sk_indices_buf_.offset = skin_index_buf->Alloc(sk_indices_buf_.size, indices_.get());
+
+    // allocate space for transformed vertices
+    attribs_buf_.buf = vertex_buf;
+    attribs_buf_.size = 13 * (attribs_buf_.size / 21);
+    attribs_buf_.offset = vertex_buf->Alloc(attribs_buf_.size);
+
+    indices_buf_.buf = index_buf;
+
+    if (attribs_buf_.offset != 0) {
+        uint32_t offset = attribs_buf_.offset / (13 * sizeof(float)) - sk_attribs_buf_.offset / (21 * sizeof(float));
+
+        uint32_t *_indices = (uint32_t *)indices_.get();
+        for (uint32_t i = 0; i < indices_buf_.size / sizeof(uint32_t); i++) {
+            _indices[i] += offset;
+        }
+    }
+
+    indices_buf_.size = sk_indices_buf_.size;
+    indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices_.get());
 }
-
-#undef max
 
 void Ren::Mesh::SplitMesh(int bones_limit) {
     assert(type_ == MeshSkeletal);
@@ -367,9 +393,9 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
     bone_ids.reserve(12);
 
     float *vtx_attribs = (float *)attribs_.get();
-    size_t num_vtx_attribs = attribs_size_ / sizeof(float);
+    size_t num_vtx_attribs = attribs_buf_.size / sizeof(float);
     unsigned short *vtx_indices = (unsigned short *)indices_.get();
-    size_t num_vtx_indices = indices_size_ / sizeof(unsigned short);
+    size_t num_vtx_indices = indices_buf_.size / sizeof(unsigned short);
 
     auto t1 = clock();
 
@@ -536,13 +562,13 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
     printf("find_time = %li\n", find_time);
     printf("after bone broups2\n");
 
-    indices_size_ = (uint32_t)(new_indices.size() * sizeof(unsigned short));
-    indices_.reset(new char[indices_size_], std::default_delete<char[]>());
-    memcpy(indices_.get(), &new_indices[0], indices_size_);
+    indices_buf_.size = (uint32_t)(new_indices.size() * sizeof(unsigned short));
+    indices_.reset(new char[indices_buf_.size]);
+    memcpy(indices_.get(), &new_indices[0], indices_buf_.size);
 
-    attribs_size_ = (uint32_t)(new_attribs.size() * sizeof(float));
-    attribs_.reset(new char[attribs_size_], std::default_delete<char[]>());
-    memcpy(attribs_.get(), &new_attribs[0], attribs_size_);
+    attribs_buf_.size = (uint32_t)(new_attribs.size() * sizeof(float));
+    attribs_.reset(new char[attribs_buf_.size]);
+    memcpy(attribs_.get(), &new_attribs[0], attribs_buf_.size);
 }
 
 #ifdef _MSC_VER

@@ -183,7 +183,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         _surf->indices = ((const uint8_t *)mesh->indices() + s->offset);
                         _surf->stride = 13 * sizeof(float);
                         _surf->count = (SWuint)s->num_indices;
-                        _surf->base_vertex = -SWint(mesh->attribs_offset() / _surf->stride);
+                        _surf->base_vertex = -SWint(mesh->attribs_buf().offset / _surf->stride);
                         _surf->xform = Ren::ValuePtr(clip_from_object);
                         _surf->dont_skip = nullptr;
 
@@ -321,7 +321,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             batch.alpha_blend_bit = (mat->flags() & Ren::AlphaBlend) ? 1 : 0;
                             batch.mat_id = (uint32_t)s->mat.index();
                             batch.cam_dist = (uint32_t)dist;
-                            batch.indices_offset = mesh->indices_offset() + s->offset;
+                            batch.indices_offset = mesh->indices_buf().offset + s->offset;
                             batch.indices_count = s->num_indices;
                             batch.instance_indices[0] = (uint32_t)(list.instances.size() - 1);
                             batch.instance_count = 1;
@@ -677,7 +677,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                                 batch.mat_id = (uint32_t)s->mat.index();
                                 batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
-                                batch.indices_offset = mesh->indices_offset() + s->offset;
+                                batch.indices_offset = mesh->indices_buf().offset + s->offset;
                                 batch.indices_count = s->num_indices;
                                 batch.instance_indices[0] = obj_to_instance_[n->prim_index];
                                 batch.instance_count = 1;
@@ -851,7 +851,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                     batch.mat_id = (uint32_t)s->mat.index();
                                     batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
 
-                                    batch.indices_offset = mesh->indices_offset() + s->offset;
+                                    batch.indices_offset = mesh->indices_buf().offset + s->offset;
                                     batch.indices_count = s->num_indices;
                                     batch.instance_indices[0] = (uint32_t)(list.instances.size() - 1);
                                     batch.instance_count = 1;
