@@ -63,7 +63,7 @@ namespace Sys {
         bool ReadFile(const char *file_path, size_t max_size, void *out_data, size_t &out_size) {
             HANDLE h_file = ::CreateFile(file_path, GENERIC_READ, FILE_SHARE_READ,
                                          NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL |
-                                         FILE_FLAG_SEQUENTIAL_SCAN /*| FILE_FLAG_NO_BUFFERING*/ |
+                                         FILE_FLAG_SEQUENTIAL_SCAN | FILE_FLAG_NO_BUFFERING |
                                          FILE_FLAG_OVERLAPPED, NULL);
 
             if (h_file == INVALID_HANDLE_VALUE) {
