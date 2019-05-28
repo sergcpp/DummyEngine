@@ -95,7 +95,7 @@ namespace RendererInternal {
     const float fs_quad_norm_uvs[] = { 0.0f, 0.0f,     1.0f, 0.0f,
                                        1.0f, 1.0f,     0.0f, 1.0f };
 
-    const uint8_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
+    const uint16_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
 }
 
 void Renderer::InitRendererInternal() {
@@ -993,7 +993,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "DRAW SKYBOX");
 #endif
 
-        glDrawElements(GL_TRIANGLES, (GLsizei)__skydome_indices_count, GL_UNSIGNED_BYTE, (void *)uintptr_t(skydome_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, (GLsizei)__skydome_indices_count, GL_UNSIGNED_SHORT, (void *)uintptr_t(skydome_ndx_offset_));
 
 #ifndef DISABLE_MARKERS
         glPopDebugGroup();
@@ -1156,7 +1156,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "SSAO PASS");
 #endif
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
 #ifndef DISABLE_MARKERS
         glPopDebugGroup();
@@ -1363,7 +1363,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "REFLECTIONS PASS");
 #endif
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         // Compose reflections on top of clean buffer
         glBindFramebuffer(GL_FRAMEBUFFER, refl_comb_framebuf_);
@@ -1398,7 +1398,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
         BindTexture(REN_REFL_PREV_TEX_SLOT, down_buf_.attachments[0].tex);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
 #ifndef DISABLE_MARKERS
         glPopDebugGroup();
@@ -1516,7 +1516,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "BLUR PASS");
 #endif
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         if (list.render_flags & EnableBloom) {
             glBindFramebuffer(GL_FRAMEBUFFER, blur_buf2_.fb);
@@ -1535,7 +1535,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             BindTexture(REN_DIFF_TEX_SLOT, down_buf_.attachments[0].tex);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
             glUniform1f(cur_program->uniform(4).loc, 1.0f);
 
@@ -1549,7 +1549,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             BindTexture(REN_DIFF_TEX_SLOT, blur_buf2_.attachments[0].tex);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
         }
 
 #ifndef DISABLE_MARKERS
@@ -1605,7 +1605,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "SAMPLE FRAME BRIGHTNESS");
 #endif
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
 #ifndef DISABLE_MARKERS
         glPopDebugGroup();
@@ -1711,7 +1711,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "FINAL BLIT");
 #endif
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
@@ -1747,7 +1747,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUniform2f(12, 1.0f / act_w_, 1.0f / act_h_);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
             glDisableVertexAttribArray(REN_VTX_POS_LOC);
             glDisableVertexAttribArray(REN_VTX_UV1_LOC);
@@ -1830,7 +1830,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_);
         BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
@@ -1868,7 +1868,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         BindTexture(REN_DIFF_TEX_SLOT, temp_tex_);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, &depth_pixels_[0][0]);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         /////
 
@@ -1879,7 +1879,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, &depth_tiles_[0][0]);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
@@ -1946,7 +1946,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glUniform3f(col_loc, 0.5f, 1.0f, 0.5f);
             }
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
         }
 
         // Draw invisible cached shadow regions
@@ -1972,7 +1972,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             // mark cached region with blue
             glUniform3f(col_loc, 0.5f, 0.5f, 1.0f);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
         }
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
@@ -2060,7 +2060,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUniform1i(debug_bvh_prog->uniform("uRootIndex").loc, list.root_index);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
             glDisableVertexAttribArray(REN_VTX_POS_LOC);
             glDisableVertexAttribArray(REN_VTX_UV1_LOC);
@@ -2288,7 +2288,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
 
         BindTexture(REN_DIFF_TEX_SLOT, temp_tex_);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         glUniform1f(cur_program->uniform(4).loc, 1.0f);
 
@@ -2302,7 +2302,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
 
         BindTexture(REN_DIFF_TEX_SLOT, blur_buf2_.attachments[0].tex);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
@@ -2343,7 +2343,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         BindTexture(REN_DIFF_TEX_SLOT, temp_tex_);
         BindTexture(REN_DIFF_TEX_SLOT + 1, blur_buf2_.attachments[0].tex);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
@@ -2398,7 +2398,7 @@ void Renderer::BlitBuffer(float px, float py, float sx, float sy, const FrameBuf
             BindTexture(REN_DIFF_TEX_SLOT, buf.attachments[i].tex);
         }
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
     }
 
     glDisableVertexAttribArray(REN_VTX_POS_LOC);
@@ -2457,7 +2457,7 @@ void Renderer::BlitTexture(float px, float py, float sx, float sy, uint32_t tex_
             BindTexture(REN_DIFF_TEX_SLOT, tex_id);
         }
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
     }
 
     glDisableVertexAttribArray(REN_VTX_POS_LOC);
@@ -2509,7 +2509,7 @@ void Renderer::BlitToLightProbeFace(const FrameBuf &src_buf, const ProbeStorage 
 
         BindTexture(0, src_buf.attachments[0].tex);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
     }
 
     {   // Update rest of mipmaps
@@ -2540,7 +2540,7 @@ void Renderer::BlitToLightProbeFace(const FrameBuf &src_buf, const ProbeStorage 
 
             glUniform1f(3, float(level - 1));
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
             res /= 2;
             level++;
@@ -2638,7 +2638,7 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
             glUniform1f(1, float(probe_index));
             glUniform1i(2, iteration);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
         }
 
         {   // Start readback from buffer (result will be retrieved at the start of next iteration)
