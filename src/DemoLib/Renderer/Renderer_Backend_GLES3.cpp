@@ -339,14 +339,16 @@ void Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: items TBO");
 
-    {
-        GLuint reduce_pbo;
-        glGenBuffers(1, &reduce_pbo);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, reduce_pbo);
-        glBufferData(GL_PIXEL_PACK_BUFFER, 4 * reduced_buf_.w * reduced_buf_.h * sizeof(float), 0, GL_DYNAMIC_READ);
+    {   // Create pbo for reading back frame brightness
+        for (int i = 0; i < FrameSyncWindow; i++) {
+            GLuint reduce_pbo;
+            glGenBuffers(1, &reduce_pbo);
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, reduce_pbo);
+            glBufferData(GL_PIXEL_PACK_BUFFER, 4 * reduced_buf_.w * reduced_buf_.h * sizeof(float), 0, GL_DYNAMIC_READ);
 
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-        reduce_pbo_ = (uint32_t)reduce_pbo;
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+            reduce_pbo_[i] = (uint32_t)reduce_pbo;
+        }
     }
 
     Ren::CheckError("[InitRendererInternal]: reduce PBO");
@@ -394,7 +396,7 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: temp framebuffer");
 
     {   // Create timer queries
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < FrameSyncWindow; i++) {
             glGenQueries(TimersCount, queries_[i]);
             
             for (int j = 0; j < TimersCount; j++) {
@@ -710,8 +712,8 @@ void Renderer::DestroyRendererInternal() {
         glDeleteBuffers(1, &nodes_buf);
     }
 
-    {
-        GLuint reduce_pbo = (GLuint)reduce_pbo_;
+    for (int i = 0; i < FrameSyncWindow; i++) {
+        GLuint reduce_pbo = (GLuint)reduce_pbo_[i];
         glDeleteBuffers(1, &reduce_pbo);
     }
 
@@ -762,7 +764,7 @@ void Renderer::DestroyRendererInternal() {
     }
 
     {
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < FrameSyncWindow; i++) {
             static_assert(sizeof(queries_[0][0]) == sizeof(GLuint), "!");
             glDeleteQueries(TimersCount, queries_[i]);
         }
@@ -774,7 +776,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     using namespace RendererInternal;
 
     if (list.render_flags & EnableTimers) {
-        glQueryCounter(queries_[1][TimeDrawStart], GL_TIMESTAMP);
+        glQueryCounter(queries_[cur_query_][TimeDrawStart], GL_TIMESTAMP);
     }
 
     CheckInitVAOs();
@@ -900,7 +902,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     /**************************************************************************************************/
 
     if (list.render_flags & EnableTimers) {
-        glQueryCounter(queries_[1][TimeShadowMapStart], GL_TIMESTAMP);
+        glQueryCounter(queries_[cur_query_][TimeShadowMapStart], GL_TIMESTAMP);
     }
 
     {   // draw shadow map
@@ -1070,7 +1072,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     /**************************************************************************************************/
 
     if (list.render_flags & EnableTimers) {
-        glQueryCounter(queries_[1][TimeDepthOpaqueStart], GL_TIMESTAMP);
+        glQueryCounter(queries_[cur_query_][TimeDepthOpaqueStart], GL_TIMESTAMP);
     }
 
     if ((list.render_flags & EnableZFill) && ((list.render_flags & DebugWireframe) == 0)) {
@@ -1128,7 +1130,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     /**************************************************************************************************/
 
     if (list.render_flags & EnableTimers) {
-        glQueryCounter(queries_[1][TimeAOPassStart], GL_TIMESTAMP);
+        glQueryCounter(queries_[cur_query_][TimeAOPassStart], GL_TIMESTAMP);
     }
 
     glBindVertexArray((GLuint)temp_vao_);
@@ -1206,7 +1208,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
 
     if (list.render_flags & EnableTimers) {
-        glQueryCounter(queries_[1][TimeOpaqueStart], GL_TIMESTAMP);
+        glQueryCounter(queries_[cur_query_][TimeOpaqueStart], GL_TIMESTAMP);
     }
 
     glBindVertexArray((GLuint)draw_pass_vao_);
@@ -1257,7 +1259,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     /**************************************************************************************************/
 
     if (list.render_flags & EnableTimers) {
-        glQueryCounter(queries_[1][TimeTranspStart], GL_TIMESTAMP);
+        glQueryCounter(queries_[cur_query_][TimeTranspStart], GL_TIMESTAMP);
     }
 
     glBindVertexArray((GLuint)draw_pass_vao_);
@@ -1328,7 +1330,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     /**************************************************************************************************/
 
     if (list.render_flags & EnableTimers) {
-        glQueryCounter(queries_[1][TimeReflStart], GL_TIMESTAMP);
+        glQueryCounter(queries_[cur_query_][TimeReflStart], GL_TIMESTAMP);
     }
 
     if (list.render_flags & EnableSSR) {
@@ -1485,7 +1487,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     /**************************************************************************************************/
 
     if (list.render_flags & EnableTimers) {
-        glQueryCounter(queries_[1][TimeBlurStart], GL_TIMESTAMP);
+        glQueryCounter(queries_[cur_query_][TimeBlurStart], GL_TIMESTAMP);
     }
 
     //glDisable(GL_DEPTH_TEST);
@@ -1637,7 +1639,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         float cur_average = 0.0f;
 
         {   // Retrieve result of glReadPixels call from previous frame
-            glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)reduce_pbo_);
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)reduce_pbo_[cur_reduce_pbo_]);
             float *reduced_pixels = (float *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, 4 * reduced_buf_.w * reduced_buf_.h * sizeof(float), GL_MAP_READ_BIT);
             if (reduced_pixels) {
                 for (int i = 0; i < 4 * reduced_buf_.w * reduced_buf_.h; i += 4) {
@@ -1662,7 +1664,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     /**************************************************************************************************/
 
     if (list.render_flags & EnableTimers) {
-        glQueryCounter(queries_[1][TimeBlitStart], GL_TIMESTAMP);
+        glQueryCounter(queries_[cur_query_][TimeBlitStart], GL_TIMESTAMP);
     }
     
     if (list.render_flags & EnableFxaa) {
@@ -1777,24 +1779,19 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glPopDebugGroup();
 #endif
     
-    {   
-        if (list.render_flags & EnableSSR) {
-            BindTexture(REN_DIFF_TEX_SLOT, down_buf_.attachments[0].tex);
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
+    if (list.render_flags & EnableTonemap) {
+        // Start asynchronous memory read from framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
 
-        if (list.render_flags & EnableTonemap) {
-            // Start asynchronous memory read from framebuffer
-            glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
-            glReadBuffer(GL_COLOR_ATTACHMENT0);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)reduce_pbo_[cur_reduce_pbo_]);
 
-            glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)reduce_pbo_);
+        glReadPixels(0, 0, reduced_buf_.w, reduced_buf_.h, GL_RGBA, GL_FLOAT, nullptr);
 
-            glReadPixels(0, 0, reduced_buf_.w, reduced_buf_.h, GL_RGBA, GL_FLOAT, nullptr);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        }
+        cur_reduce_pbo_ = (cur_reduce_pbo_ + 1) % FrameSyncWindow;
     }
 
     /**************************************************************************************************/
@@ -2093,7 +2090,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glBindVertexArray(0);
 
     if (list.render_flags & EnableTimers) {
-        glQueryCounter(queries_[1][TimeDrawEnd], GL_TIMESTAMP);
+        glQueryCounter(queries_[cur_query_][TimeDrawEnd], GL_TIMESTAMP);
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
@@ -2117,16 +2114,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                  time_blit_start,
                  time_draw_end;
 
-        glGetQueryObjectui64v(queries_[0][TimeDrawStart], GL_QUERY_RESULT, &time_draw_start);
-        glGetQueryObjectui64v(queries_[0][TimeShadowMapStart], GL_QUERY_RESULT, &time_shadow_start);
-        glGetQueryObjectui64v(queries_[0][TimeDepthOpaqueStart], GL_QUERY_RESULT, &time_depth_opaque_start);
-        glGetQueryObjectui64v(queries_[0][TimeAOPassStart], GL_QUERY_RESULT, &time_ao_start);
-        glGetQueryObjectui64v(queries_[0][TimeOpaqueStart], GL_QUERY_RESULT, &time_opaque_start);
-        glGetQueryObjectui64v(queries_[0][TimeTranspStart], GL_QUERY_RESULT, &time_transp_start);
-        glGetQueryObjectui64v(queries_[0][TimeReflStart], GL_QUERY_RESULT, &time_refl_start);
-        glGetQueryObjectui64v(queries_[0][TimeBlurStart], GL_QUERY_RESULT, &time_blur_start);
-        glGetQueryObjectui64v(queries_[0][TimeBlitStart], GL_QUERY_RESULT, &time_blit_start);
-        glGetQueryObjectui64v(queries_[0][TimeDrawEnd], GL_QUERY_RESULT, &time_draw_end);
+        cur_query_ = (cur_query_ + 1) % FrameSyncWindow;
+
+        glGetQueryObjectui64v(queries_[cur_query_][TimeDrawStart], GL_QUERY_RESULT, &time_draw_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeShadowMapStart], GL_QUERY_RESULT, &time_shadow_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeDepthOpaqueStart], GL_QUERY_RESULT, &time_depth_opaque_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeAOPassStart], GL_QUERY_RESULT, &time_ao_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeOpaqueStart], GL_QUERY_RESULT, &time_opaque_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeTranspStart], GL_QUERY_RESULT, &time_transp_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeReflStart], GL_QUERY_RESULT, &time_refl_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeBlurStart], GL_QUERY_RESULT, &time_blur_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeBlitStart], GL_QUERY_RESULT, &time_blit_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeDrawEnd], GL_QUERY_RESULT, &time_draw_end);
 
         // assign values from previous frame
         backend_info_.cpu_start_timepoint_us = backend_cpu_start_;
@@ -2144,10 +2143,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         backend_info_.refl_pass_time_us = uint32_t((time_blur_start - time_refl_start) / 1000);
         backend_info_.blur_pass_time_us = uint32_t((time_blit_start - time_blur_start) / 1000);
         backend_info_.blit_pass_time_us = uint32_t((time_draw_end - time_blit_start) / 1000);
-
-        for (int i = 0; i < TimersCount; i++) {
-            std::swap(queries_[0][i], queries_[1][i]);
-        }
     }
 
 #if 0

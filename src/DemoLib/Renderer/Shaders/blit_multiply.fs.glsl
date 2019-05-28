@@ -177,7 +177,7 @@ void main() {
         }
     }
 
-    c0 = mix(c0, textureLod(prev_texture, ssr_uvs.rg, tex_lod).xyz, ssr_uvs.b);
+    c0 = mix(c0, textureLod(prev_texture, ssr_uvs.rg, /*tex_lod*/ 0.0).xyz, ssr_uvs.b);
     c0 *= specular.rgb * fresnel;
 
     outColor = vec4(c0, 1.0);

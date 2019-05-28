@@ -195,7 +195,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
 
             FrameBuf::ColorAttachmentDesc desc;
             desc.format = Ren::RawRGB16F;
-            desc.filter = Ren::Bilinear;
+            desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;
             down_buf_ = FrameBuf(base_res, base_res / 2, &desc, 1, false);
         }

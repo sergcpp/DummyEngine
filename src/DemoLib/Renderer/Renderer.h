@@ -260,6 +260,8 @@ private:
     std::vector<SortSpan64> temp_sort_spans_64_[2];
 
 #if defined(USE_GL_RENDER)
+    static const int FrameSyncWindow = 3;
+
     uint32_t temp_tex_;
     Ren::eTexColorFormat temp_tex_format_;
     int temp_tex_w_ = 0, temp_tex_h_ = 0;
@@ -272,13 +274,15 @@ private:
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
     uint32_t instances_buf_, instances_tbo_;
     uint32_t lights_buf_, lights_tbo_, decals_buf_, decals_tbo_, cells_buf_, cells_tbo_, items_buf_, items_tbo_;
-    uint32_t reduce_pbo_, probe_sample_pbo_;
+    uint32_t reduce_pbo_[FrameSyncWindow], probe_sample_pbo_;
+    int cur_reduce_pbo_ = 0;
 
     uint32_t nodes_buf_ = 0, nodes_tbo_ = 0;
 
     enum { TimeDrawStart, TimeShadowMapStart, TimeDepthOpaqueStart, TimeAOPassStart, TimeOpaqueStart, TimeTranspStart,
            TimeReflStart, TimeBlurStart, TimeBlitStart, TimeDrawEnd, TimersCount };
-    uint32_t queries_[2][TimersCount];
+    uint32_t queries_[FrameSyncWindow][TimersCount];
+    int cur_query_ = 0;
 
     void CheckInitVAOs();
 #endif
