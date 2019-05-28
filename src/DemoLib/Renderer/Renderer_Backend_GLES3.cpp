@@ -509,6 +509,25 @@ void Renderer::CheckInitVAOs() {
            gl_indices_buf = (GLuint)ndx_buf->buf_id();
 
     if (gl_vertex_buf != last_vertex_buffer_ || gl_indices_buf != last_index_buffer_) {
+        // buffers were reallocated, recreate vertex arrays
+
+        if (last_vertex_buffer_) {
+            GLuint sphere_vao = (GLuint)sphere_vao_;
+            glDeleteVertexArrays(1, &sphere_vao);
+
+            GLuint skydome_vao = (GLuint)skydome_vao_;
+            glDeleteVertexArrays(1, &skydome_vao);
+
+            GLuint temp_vao = (GLuint)temp_vao_;
+            glDeleteVertexArrays(1, &temp_vao);
+
+            GLuint shadow_pass_vao = (GLuint)shadow_pass_vao_;
+            glDeleteVertexArrays(1, &shadow_pass_vao);
+
+            GLuint depth_pass_vao = (GLuint)depth_pass_vao_;
+            glDeleteVertexArrays(1, &depth_pass_vao);
+        }
+
         GLuint shadow_pass_vao;
         glGenVertexArrays(1, &shadow_pass_vao);
         glBindVertexArray(shadow_pass_vao);
@@ -516,12 +535,12 @@ void Renderer::CheckInitVAOs() {
         glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
-        int stride = 32;// 13 * sizeof(float);
+        int stride = 32;
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
         glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(uint16_t) /*9 * sizeof(float)*/));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(uint16_t)));
 
         glBindVertexArray(0);
 
@@ -538,7 +557,7 @@ void Renderer::CheckInitVAOs() {
         glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(uint16_t) /*9 * sizeof(float)*/));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(uint16_t)));
 
         glBindVertexArray(0);
         depth_pass_vao_ = (uint32_t)depth_pass_vao;
@@ -557,13 +576,13 @@ void Renderer::CheckInitVAOs() {
         glVertexAttribPointer(REN_VTX_NOR_LOC, 4, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float)));
 
         glEnableVertexAttribArray(REN_VTX_TAN_LOC);
-        glVertexAttribPointer(REN_VTX_TAN_LOC, 2, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float) + 4 * sizeof(uint16_t) /*6 * sizeof(float)*/));
+        glVertexAttribPointer(REN_VTX_TAN_LOC, 2, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float) + 4 * sizeof(uint16_t)));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(uint16_t) /*9 * sizeof(float)*/));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(uint16_t)));
 
         glEnableVertexAttribArray(REN_VTX_UV2_LOC);
-        glVertexAttribPointer(REN_VTX_UV2_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 8 * sizeof(uint16_t) /*11 * sizeof(float)*/));
+        glVertexAttribPointer(REN_VTX_UV2_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 8 * sizeof(uint16_t)));
 
         glBindVertexArray(0);
         draw_pass_vao_ = (uint32_t)draw_pass_vao;

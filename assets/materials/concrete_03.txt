@@ -2,5 +2,5 @@ gl_program: main_lightmapped main_lightmapped.vs.glsl main_lightmapped.fs.glsl
 gl_program: main_probelit main_probelit.vs.glsl main_probelit.fs.glsl
 sw_program: main
 texture: concrete_03.png
-texture: concrete_03_nor.png
+texture: concrete_03_norm.png
 texture: default_specular.png

@@ -65,8 +65,7 @@ void main(void) {
     highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
     highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);
     
-    vec2 duv_dx = dFdx(aVertexUVs1_), duv_dy = dFdy(aVertexUVs1_);
-    vec3 normal_color = textureGrad(normals_texture, aVertexUVs1_, 2.0 * duv_dx, 2.0 * duv_dy).xyz;
+    vec3 normal_color = texture(normals_texture, aVertexUVs1_).wyz;
     vec4 specular_color = texture(specular_texture, aVertexUVs1_);
     
     vec3 normal = normal_color * 2.0 - 1.0;

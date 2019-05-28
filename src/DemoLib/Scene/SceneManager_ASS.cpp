@@ -725,9 +725,26 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         int width, height, channels;
         unsigned char *image_data = SOIL_load_image_from_memory(&src_buf[0], (int)src_size, &width, &height, &channels, 0);
 
-        Write_DDS(image_data, width, height, channels, out_file);
+        if (strstr(in_file, "_norm")) {
+            // this is normal map, store it in RxGB format
+            std::unique_ptr<uint8_t[]> temp_data(new uint8_t[width * height * 4]);
+            assert(channels == 3);
 
-        SOIL_free_image_data(image_data);
+            for (int j = 0; j < height; j++) {
+                for (int i = 0; i < width; i++) {
+                    temp_data[4 * (j * width + i) + 0] = 0;
+                    temp_data[4 * (j * width + i) + 1] = image_data[3 * (j * width + i) + 1];
+                    temp_data[4 * (j * width + i) + 2] = image_data[3 * (j * width + i) + 2];
+                    temp_data[4 * (j * width + i) + 3] = image_data[3 * (j * width + i) + 0];
+                }
+            }
+
+            Write_DDS(temp_data.get(), width, height, 4, out_file);
+            SOIL_free_image_data(image_data);
+        } else {
+            Write_DDS(image_data, width, height, channels, out_file);
+            SOIL_free_image_data(image_data);
+        }
     };
 
     auto h_conv_to_astc = [](const char *in_file, const char *out_file) {
@@ -743,9 +760,27 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         int width, height, channels;
         unsigned char *image_data = SOIL_load_image_from_memory(&src_buf[0], (int)src_size, &width, &height, &channels, 0);
 
-        Write_KTX_ASTC(image_data, width, height, channels, out_file);
 
-        SOIL_free_image_data(image_data);
+        if (strstr(in_file, "_norm")) {
+            // this is normal map, store it in RxGB format
+            std::unique_ptr<uint8_t[]> temp_data(new uint8_t[width * height * 4]);
+            assert(channels == 3);
+
+            for (int j = 0; j < height; j++) {
+                for (int i = 0; i < width; i++) {
+                    temp_data[4 * (j * width + i) + 0] = 0;
+                    temp_data[4 * (j * width + i) + 1] = image_data[3 * (j * width + i) + 1];
+                    temp_data[4 * (j * width + i) + 2] = image_data[3 * (j * width + i) + 2];
+                    temp_data[4 * (j * width + i) + 3] = image_data[3 * (j * width + i) + 0];
+                }
+            }
+
+            Write_KTX_ASTC(temp_data.get(), width, height, 4, out_file);
+            SOIL_free_image_data(image_data);
+        } else {
+            Write_KTX_ASTC(image_data, width, height, channels, out_file);
+            SOIL_free_image_data(image_data);
+        }
     };
 
     auto h_conv_hdr_to_rgbm = [](const char *in_file, const char *out_file) {

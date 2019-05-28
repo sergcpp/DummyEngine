@@ -327,6 +327,8 @@ void ModlApp::PrintUsage() {
 }
 
 void ModlApp::Destroy() {
+    DestroyInternal();
+
     view_mesh_.Release();
     ctx_.ReleaseAll();
 

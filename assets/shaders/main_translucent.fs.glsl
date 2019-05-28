@@ -76,9 +76,8 @@ void main(void) {
     vec4 diff_tex_color = texture(diffuse_texture, aVertexUVs1_);
     vec3 albedo_color = pow(diff_tex_color.rgb, vec3(uCamPosAndGamma.w));
     
-    vec2 duv_dx = dFdx(aVertexUVs1_), duv_dy = dFdy(aVertexUVs1_);
-    vec3 normal_color = textureGrad(normals_texture, aVertexUVs1_, 2.0 * duv_dx, 2.0 * duv_dy).xyz;
-    vec4 specular_color = textureGrad(specular_texture, aVertexUVs1_, duv_dx, duv_dy);
+    vec3 normal_color = texture(normals_texture, aVertexUVs1_).wyz;
+    vec4 specular_color = texture(specular_texture, aVertexUVs1_);
     
     vec3 dp_dx = dFdx(aVertexPos_);
     vec3 dp_dy = dFdy(aVertexPos_);

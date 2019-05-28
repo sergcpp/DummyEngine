@@ -40,6 +40,10 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     p = diag_prog_;
     glUniform1f(U_MODE, (float)view_mode_);
 
+    CheckInitVAOs();
+
+    glBindVertexArray((GLuint)simple_vao_);
+
     glUseProgram(p->prog_id());
 
     Mat4f world_from_object = Mat4f{ 1.0f };
@@ -55,22 +59,6 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
 
     glUniformMatrix4fv(U_MVP_MATR, 1, GL_FALSE, ValuePtr(proj_from_object));
     glUniformMatrix4fv(U_M_MATR, 1, GL_FALSE, ValuePtr(world_from_object));
-
-    int stride = sizeof(float) * 13;
-    glEnableVertexAttribArray(A_POS);
-    glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
-
-    glEnableVertexAttribArray(A_NORMAL);
-    glVertexAttribPointer(A_NORMAL, 3, GL_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
-
-    glEnableVertexAttribArray(A_TANGENT);
-    glVertexAttribPointer(A_TANGENT, 3, GL_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(float)));
-
-    glEnableVertexAttribArray(A_UVS1);
-    glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
-
-    glEnableVertexAttribArray(A_UVS2);
-    glVertexAttribPointer(A_UVS2, 2, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -172,6 +160,43 @@ void ModlApp::CheckInitVAOs() {
 
     if (gl_vertex_buf != last_vertex_buffer_ || gl_skin_vertex_buf != last_skin_vertex_buffer_ ||
         gl_indices_buf != last_index_buffer_ || gl_skin_indices_buf != last_skin_index_buffer_) {
+
+        if (last_vertex_buffer_) {
+            GLuint simple_mesh_vao = (GLuint)simple_vao_;
+            glDeleteVertexArrays(1, &simple_mesh_vao);
+
+            GLuint skinned_mesh_vao = (GLuint)skinned_vao_;
+            glDeleteVertexArrays(1, &skinned_mesh_vao);
+        }
+
+        GLuint simple_mesh_vao;
+
+        glGenVertexArrays(1, &simple_mesh_vao);
+        glBindVertexArray(simple_mesh_vao);
+
+        glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
+
+        int stride = 32;
+        glEnableVertexAttribArray(A_POS);
+        glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+
+        glEnableVertexAttribArray(A_NORMAL);
+        glVertexAttribPointer(A_NORMAL, 4, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float)));
+
+        glEnableVertexAttribArray(A_TANGENT);
+        glVertexAttribPointer(A_TANGENT, 2, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float) + 4 * sizeof(uint16_t)));
+
+        glEnableVertexAttribArray(A_UVS1);
+        glVertexAttribPointer(A_UVS1, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(uint16_t)));
+
+        glEnableVertexAttribArray(A_UVS2);
+        glVertexAttribPointer(A_UVS2, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 8 * sizeof(uint16_t)));
+
+        glBindVertexArray(0);
+
+        simple_vao_ = (uint32_t)simple_mesh_vao;
+
         GLuint skinned_mesh_vao;
         glGenVertexArrays(1, &skinned_mesh_vao);
         glBindVertexArray(skinned_mesh_vao);
@@ -179,7 +204,7 @@ void ModlApp::CheckInitVAOs() {
         glBindBuffer(GL_ARRAY_BUFFER, gl_skin_vertex_buf);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_skin_indices_buf);
 
-        int stride = sizeof(float) * 21;
+        stride = sizeof(float) * 21;
         glEnableVertexAttribArray(A_POS);
         glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
@@ -217,8 +242,8 @@ void ModlApp::InitInternal() {
             #version 310 es
 
             layout(location = 0) in vec3 aVertexPosition;
-            layout(location = 1) in vec3 aVertexNormal;
-            layout(location = 2) in vec3 aVertexTangent;
+            layout(location = 1) in vec4 aVertexNormal;
+            layout(location = 2) in vec2 aVertexTangent;
             layout(location = 3) in vec2 aVertexUVs1;
             layout(location = 4) in vec2 aVertexUVs2;
 
@@ -230,8 +255,8 @@ void ModlApp::InitInternal() {
             out vec2 aVertexUVs2_;
 
             void main(void) {
-                vec3 vertex_normal_ws = normalize((uMMatrix * vec4(aVertexNormal, 0.0)).xyz);
-                vec3 vertex_tangent_ws = normalize((uMMatrix * vec4(aVertexTangent, 0.0)).xyz);
+                vec3 vertex_normal_ws = normalize((uMMatrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
+                vec3 vertex_tangent_ws = normalize((uMMatrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
 
                 aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);
                 aVertexUVs1_ = aVertexUVs1;
@@ -326,4 +351,12 @@ void ModlApp::InitInternal() {
 
     diag_prog_ = ctx_.LoadProgramGLSL("__diag", diag_vs, diag_fs, nullptr);
     diag_skinned_prog_ = ctx_.LoadProgramGLSL("__diag_skinned", diag_skinned_vs, diag_fs, nullptr);
+}
+
+void ModlApp::DestroyInternal() {
+    GLuint simple_mesh_vao = (GLuint)simple_vao_;
+    glDeleteVertexArrays(1, &simple_mesh_vao);
+
+    GLuint skinned_mesh_vao = (GLuint)skinned_vao_;
+    glDeleteVertexArrays(1, &skinned_mesh_vao);
 }

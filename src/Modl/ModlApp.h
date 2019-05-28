@@ -54,6 +54,7 @@ private:
     enum eViewMode { Material, DiagNormals1, DiagNormals2, DiagUVs1, DiagUVs2 } view_mode_ = DiagNormals1;
 
     void InitInternal();
+    void DestroyInternal();
     void DrawMeshSimple(Ren::MeshRef &ref);
     void DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s);
 
