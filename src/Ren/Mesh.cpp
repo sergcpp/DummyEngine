@@ -19,6 +19,83 @@ int Ren::Mesh::max_gpu_bones = 16;
 namespace Ren {
     uint16_t f32_to_f16(float value);
     int16_t f32_to_s16(float value);
+    uint16_t f32_to_u16(float value);
+
+    struct orig_vertex_t {
+        float p[3];
+        float n[3];
+        float b[3];
+        float t0[2];
+        float t1[2];
+    };
+    static_assert(sizeof(orig_vertex_t) == 52, "!");
+
+    struct orig_vertex_skinned_t {
+        orig_vertex_t v;
+        float bone_indices[4]; // TODO: replace with uint32_t
+        float bone_weights[4];
+    };
+    static_assert(sizeof(orig_vertex_skinned_t) == 84, "!");
+
+    struct packed_vertex_t {
+        float p[3];
+        int16_t n_and_bx[4];
+        int16_t byz[2];
+        uint16_t t0[2];
+        uint16_t t1[2];
+    };
+    static_assert(sizeof(packed_vertex_t) == 32, "!");
+
+    // make sure attributes are aligned to 4-bytes
+    static_assert(offsetof(packed_vertex_t, n_and_bx) % 4 == 0, "!");
+    static_assert(offsetof(packed_vertex_t, byz) % 4 == 0, "!");
+    static_assert(offsetof(packed_vertex_t, t0) % 4 == 0, "!");
+    static_assert(offsetof(packed_vertex_t, t1) % 4 == 0, "!");
+
+    struct packed_vertex_skinned_t {
+        packed_vertex_t v;
+        uint16_t bone_indices[4];
+        uint16_t bone_weights[4];
+    };
+    static_assert(sizeof(packed_vertex_skinned_t) == 48, "!");
+
+    // make sure attributes are aligned to 4-bytes
+    static_assert(offsetof(packed_vertex_skinned_t, v.n_and_bx) % 4 == 0, "!");
+    static_assert(offsetof(packed_vertex_skinned_t, v.byz) % 4 == 0, "!");
+    static_assert(offsetof(packed_vertex_skinned_t, v.t0) % 4 == 0, "!");
+    static_assert(offsetof(packed_vertex_skinned_t, v.t1) % 4 == 0, "!");
+    static_assert(offsetof(packed_vertex_skinned_t, bone_indices) % 4 == 0, "!");
+    static_assert(offsetof(packed_vertex_skinned_t, bone_weights) % 4 == 0, "!");
+
+    void pack_vertex(const orig_vertex_t &in_v, packed_vertex_t &out_v) {
+        out_v.p[0] = in_v.p[0];
+        out_v.p[1] = in_v.p[1];
+        out_v.p[2] = in_v.p[2];
+        out_v.n_and_bx[0] = f32_to_s16(in_v.n[0]);
+        out_v.n_and_bx[1] = f32_to_s16(in_v.n[1]);
+        out_v.n_and_bx[2] = f32_to_s16(in_v.n[2]);
+        out_v.n_and_bx[3] = f32_to_s16(in_v.b[0]);
+        out_v.byz[0] = f32_to_s16(in_v.b[1]);
+        out_v.byz[1] = f32_to_s16(in_v.b[2]);
+        out_v.t0[0] = f32_to_f16(in_v.t0[0]);
+        out_v.t0[1] = f32_to_f16(in_v.t0[1]);
+        out_v.t1[0] = f32_to_f16(in_v.t1[0]);
+        out_v.t1[1] = f32_to_f16(in_v.t1[1]);
+    }
+
+    void pack_vertex(const orig_vertex_skinned_t &in_v, packed_vertex_skinned_t &out_v) {
+        pack_vertex(in_v.v, out_v.v);
+
+        out_v.bone_indices[0] = uint16_t(in_v.bone_indices[0]);
+        out_v.bone_indices[1] = uint16_t(in_v.bone_indices[1]);
+        out_v.bone_indices[2] = uint16_t(in_v.bone_indices[2]);
+        out_v.bone_indices[3] = uint16_t(in_v.bone_indices[3]);
+
+        out_v.bone_weights[0] = f32_to_u16(in_v.bone_weights[0]);
+        out_v.bone_weights[1] = f32_to_u16(in_v.bone_weights[1]);
+        out_v.bone_weights[2] = f32_to_u16(in_v.bone_weights[2]);
+        out_v.bone_weights[3] = f32_to_u16(in_v.bone_weights[3]);
+    }
 }
 
 Ren::Mesh::Mesh(const char *name, std::istream &data, const material_load_callback &on_mat_load,
@@ -119,56 +196,18 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
         groups_[num_strips].offset = -1;
     }
 
-    struct orig_vertex_t {
-        float p[3];
-        float n[3];
-        float b[3];
-        float t0[2];
-        float t1[2];
-    };
-    static_assert(sizeof(orig_vertex_t) == 52, "!");
-
-    struct packed_vertex_t {
-        float p[3];
-        uint16_t n_and_bx[4];
-        uint16_t byz[2];
-        uint16_t t0[2];
-        uint16_t t1[2];
-    };
-    static_assert(sizeof(packed_vertex_t) == 32, "!");
-
-    // make sure attributes are aligned to 4-bytes
-    static_assert(offsetof(packed_vertex_t, n_and_bx) % 4 == 0, "!");
-    static_assert(offsetof(packed_vertex_t, byz) % 4 == 0, "!");
-    static_assert(offsetof(packed_vertex_t, t0) % 4 == 0, "!");
-    static_assert(offsetof(packed_vertex_t, t1) % 4 == 0, "!");
-
     uint32_t vertex_count = attribs_buf_.size / sizeof(orig_vertex_t);
     std::unique_ptr<packed_vertex_t[]> vertices(new packed_vertex_t[vertex_count]);
 
     const auto *orig_vertices = (const orig_vertex_t *)attribs_.get();
 
     for (uint32_t i = 0; i < vertex_count; i++) {
-        const auto &in_v = orig_vertices[i];
-        auto &out_v = vertices[i];
-
-        out_v.p[0] = in_v.p[0];
-        out_v.p[1] = in_v.p[1];
-        out_v.p[2] = in_v.p[2];
-        out_v.n_and_bx[0] = f32_to_s16(in_v.n[0]);
-        out_v.n_and_bx[1] = f32_to_s16(in_v.n[1]);
-        out_v.n_and_bx[2] = f32_to_s16(in_v.n[2]);
-        out_v.n_and_bx[3] = f32_to_s16(in_v.b[0]);
-        out_v.byz[0] = f32_to_s16(in_v.b[1]);
-        out_v.byz[1] = f32_to_s16(in_v.b[2]);
-        out_v.t0[0] = f32_to_f16(in_v.t0[0]);
-        out_v.t0[1] = f32_to_f16(in_v.t0[1]);
-        out_v.t1[0] = f32_to_f16(in_v.t1[0]);
-        out_v.t1[1] = f32_to_f16(in_v.t1[1]);
+        pack_vertex(orig_vertices[i], vertices[i]);
     }
 
     attribs_buf_.buf = vertex_buf;
-    attribs_buf_.offset = vertex_buf->Alloc(vertex_count * sizeof(packed_vertex_t), vertices.get());
+    attribs_buf_.size = vertex_count * sizeof(packed_vertex_t);
+    attribs_buf_.offset = vertex_buf->Alloc(attribs_buf_.size, vertices.get());
 
     if (attribs_buf_.offset != 0) {
         uint32_t offset = attribs_buf_.offset / 32;
@@ -403,13 +442,22 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
 
     skel_.matr_palette.resize(skel_.bones.size());
 
+    uint32_t vertex_count = sk_attribs_buf_.size / sizeof(orig_vertex_skinned_t);
+    std::unique_ptr<packed_vertex_skinned_t[]> vertices(new packed_vertex_skinned_t[vertex_count]);
+    const auto *orig_vertices = (const orig_vertex_skinned_t *)attribs_.get();
+
+    for (uint32_t i = 0; i < vertex_count; i++) {
+        pack_vertex(orig_vertices[i], vertices[i]);
+    }
+
     // allocate space for untransformed vertices
     sk_attribs_buf_.buf = skin_vertex_buf;
-    sk_attribs_buf_.offset = skin_vertex_buf->Alloc(sk_attribs_buf_.size, attribs_.get());
+    sk_attribs_buf_.size = vertex_count * sizeof(packed_vertex_skinned_t);
+    sk_attribs_buf_.offset = skin_vertex_buf->Alloc(sk_attribs_buf_.size, vertices.get());
     sk_indices_buf_.buf = skin_index_buf;
 
     if (sk_attribs_buf_.offset != 0) {
-        uint32_t offset = sk_attribs_buf_.offset / (21 * sizeof(float));
+        uint32_t offset = sk_attribs_buf_.offset / 48;
 
         uint32_t *_indices = (uint32_t *)indices_.get();
         for (uint32_t i = 0; i < sk_indices_buf_.size / sizeof(uint32_t); i++) {
@@ -419,15 +467,20 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
 
     sk_indices_buf_.offset = skin_index_buf->Alloc(sk_indices_buf_.size, indices_.get());
 
+    std::unique_ptr<packed_vertex_t[]> _vertices(new packed_vertex_t[vertex_count]);
+    for (uint32_t i = 0; i < vertex_count; i++) {
+        _vertices[i] = vertices[i].v;
+    }
+
     // allocate space for transformed vertices
     attribs_buf_.buf = vertex_buf;
-    attribs_buf_.size = 13 * (attribs_buf_.size / 21);
-    attribs_buf_.offset = vertex_buf->Alloc(attribs_buf_.size);
+    attribs_buf_.size = vertex_count * sizeof(packed_vertex_t);
+    attribs_buf_.offset = vertex_buf->Alloc(attribs_buf_.size, _vertices.get());
 
     indices_buf_.buf = index_buf;
 
     if (attribs_buf_.offset != 0) {
-        uint32_t offset = attribs_buf_.offset / (13 * sizeof(float)) - sk_attribs_buf_.offset / (21 * sizeof(float));
+        uint32_t offset = attribs_buf_.offset / 32 - sk_attribs_buf_.offset / 48;
 
         uint32_t *_indices = (uint32_t *)indices_.get();
         for (uint32_t i = 0; i < indices_buf_.size / sizeof(uint32_t); i++) {

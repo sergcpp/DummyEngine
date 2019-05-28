@@ -204,27 +204,27 @@ void ModlApp::CheckInitVAOs() {
         glBindBuffer(GL_ARRAY_BUFFER, gl_skin_vertex_buf);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_skin_indices_buf);
 
-        stride = sizeof(float) * 21;
+        stride = 48;
         glEnableVertexAttribArray(A_POS);
         glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
         glEnableVertexAttribArray(A_NORMAL);
-        glVertexAttribPointer(A_NORMAL, 3, GL_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
+        glVertexAttribPointer(A_NORMAL, 4, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float)));
 
         glEnableVertexAttribArray(A_TANGENT);
-        glVertexAttribPointer(A_TANGENT, 3, GL_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(float)));
+        glVertexAttribPointer(A_TANGENT, 2, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float) + 4 * sizeof(int16_t)));
 
         glEnableVertexAttribArray(A_UVS1);
-        glVertexAttribPointer(A_UVS1, 2, GL_FLOAT, GL_FALSE, stride, (void *)(9 * sizeof(float)));
+        glVertexAttribPointer(A_UVS1, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t)));
 
         glEnableVertexAttribArray(A_UVS2);
-        glVertexAttribPointer(A_UVS2, 2, GL_FLOAT, GL_FALSE, stride, (void *)(11 * sizeof(float)));
+        glVertexAttribPointer(A_UVS2, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 2 * sizeof(uint16_t)));
 
         glEnableVertexAttribArray(A_INDICES);
-        glVertexAttribPointer(A_INDICES, 4, GL_FLOAT, GL_FALSE, stride, (void *)(13 * sizeof(float)));
+        glVertexAttribPointer(A_INDICES, 4, GL_UNSIGNED_SHORT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 4 * sizeof(uint16_t)));
 
         glEnableVertexAttribArray(A_WEIGHTS);
-        glVertexAttribPointer(A_WEIGHTS, 4, GL_FLOAT, GL_FALSE, stride, (void *)(17 * sizeof(float)));
+        glVertexAttribPointer(A_WEIGHTS, 4, GL_UNSIGNED_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 8 * sizeof(uint16_t)));
 
         glBindVertexArray(0);
 
@@ -270,12 +270,12 @@ void ModlApp::InitInternal() {
             #version 310 es
 
             layout(location = 0) in vec3 aVertexPosition;
-            layout(location = 1) in vec3 aVertexNormal;
-            layout(location = 2) in vec3 aVertexTangent;
-            layout(location = 3) in vec2 aVertexUVs1;
-            layout(location = 4) in vec2 aVertexUVs2;
-            layout(location = 5) in vec4 aVertexIndices;
-            layout(location = 6) in vec4 aVertexWeights;
+            layout(location = 1) in mediump vec4 aVertexNormal;
+            layout(location = 2) in mediump vec2 aVertexTangent;
+            layout(location = 3) in mediump vec2 aVertexUVs1;
+            layout(location = 4) in mediump vec2 aVertexUVs2;
+            layout(location = 5) in mediump vec4 aVertexIndices;
+            layout(location = 6) in mediump vec4 aVertexWeights;
 
             layout(location = 0) uniform mat4 uMVPMatrix;
             layout(location = 1) uniform mat4 uMMatrix;
@@ -286,22 +286,22 @@ void ModlApp::InitInternal() {
             out vec2 aVertexUVs2_;
 
             void main(void) {
-                mat4 mat = uMPalette[int(aVertexIndices.x)] * aVertexWeights.x;
-
-                vec4 vtx_indices = aVertexIndices;
+                uvec4 vtx_indices = uvec4(aVertexIndices);
                 vec4 vtx_weights = aVertexWeights;
+
+                mat4 mat = uMPalette[vtx_indices.x] * aVertexWeights.x;
                 for(int i = 0; i < 3; i++) {
                     vtx_indices = vtx_indices.yzwx;
                     vtx_weights = vtx_weights.yzwx;
                     if(vtx_weights.x > 0.0) {
-                        mat = mat + uMPalette[int(vtx_indices.x)] * vtx_weights.x;
+                        mat = mat + uMPalette[vtx_indices.x] * vtx_weights.x;
                     }
                 }
 
                 mat = uMMatrix * mat;
 
-                vec3 vertex_normal_ws = normalize((mat * vec4(aVertexNormal, 0.0)).xyz);
-                vec3 vertex_tangent_ws = normalize((mat * vec4(aVertexTangent, 0.0)).xyz);
+                vec3 vertex_normal_ws = normalize((mat * vec4(aVertexNormal.xyz, 0.0)).xyz);
+                vec3 vertex_tangent_ws = normalize((mat * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
 
                 aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);
                 aVertexUVs1_ = aVertexUVs1;

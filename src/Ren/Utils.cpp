@@ -69,6 +69,10 @@ namespace Ren {
     int16_t f32_to_s16(float value) {
         return int16_t(value * 32767);
     }
+
+    uint16_t f32_to_u16(float value) {
+        return int16_t(value * 65535);
+    }
 }
 
 std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eTexColorFormat &format) {
