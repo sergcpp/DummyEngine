@@ -47,7 +47,7 @@ namespace Ren {
                 m += 0x00002000;
 
                 if (m & 0x00800000) {
-                    m = 0;     // overflow in significand,
+                    m = 0;      // overflow in significand,
                     e += 1;     // adjust exponent
                 }
             }
@@ -71,7 +71,7 @@ namespace Ren {
     }
 
     uint16_t f32_to_u16(float value) {
-        return int16_t(value * 65535);
+        return uint16_t(value * 65535);
     }
 }
 

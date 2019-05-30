@@ -26,7 +26,7 @@
 #include <Sys/DynLib.h>
 #include <Sys/Log.h>
 
-#pragma warning(disable : 4351 4996)
+#pragma warning(disable : 4996)
 
 extern "C" {
     // Enable High Performance Graphics while using Integrated Graphics
@@ -48,9 +48,9 @@ std::vector<std::string> Tokenize(const std::string &str, const char *delims) {
     return toks;
 }
 
-Ren::Vec3f center = { -2.0f, 2.0f, 4.0f };
-Ren::Vec3f target = { 0.0f, 0.0f, 0.0f };
-Ren::Vec3f up = { 0.0f, 1.0f, 0.0f };
+const Ren::Vec3f center = { -2.0f, 2.0f, 4.0f };
+const Ren::Vec3f target = { 0.0f, 0.0f, 0.0f };
+const Ren::Vec3f up = { 0.0f, 1.0f, 0.0f };
 }
 
 ModlApp::ModlApp() : quit_(false),
@@ -148,7 +148,6 @@ int ModlApp::Run(const std::vector<std::string> &args) {
     } else {
         return 0;
     }
-    //
 
     while (!terminated()) {
         PollEvents();
@@ -475,7 +474,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 int bones_count = ((int)toks.size() - 10) / 2;
                 int start_index = (int)weights.size();
 
-                std::pair<int, float> parsed_bones[16];
+                std::pair<int32_t, float> parsed_bones[16];
                 int parsed_bones_count = 0;
                 for (int j = 0; j < bones_count; j++) {
                     parsed_bones[parsed_bones_count].first = stoi(toks[10 + j * 2 + 0]);
@@ -490,10 +489,11 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 float sum = 0.0f;
                 for (int j = 0; j < 4; j++) {
                     if (j < parsed_bones_count) {
-                        weights.push_back((float)parsed_bones[j].first);
+                        weights.push_back(reinterpret_cast<const float &>(parsed_bones[j].first));
                         sum += parsed_bones[j].second;
                     } else {
-                        weights.push_back(0.0f);
+                        const int32_t zero = 0;
+                        weights.push_back(reinterpret_cast<const float &>(zero));
                     }
                 }
 

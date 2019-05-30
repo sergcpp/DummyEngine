@@ -32,7 +32,7 @@ namespace Ren {
 
     struct orig_vertex_skinned_t {
         orig_vertex_t v;
-        float bone_indices[4]; // TODO: replace with uint32_t
+        int32_t bone_indices[4];
         float bone_weights[4];
     };
     static_assert(sizeof(orig_vertex_skinned_t) == 84, "!");
@@ -423,8 +423,8 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         bones[i].dirty = true;
     }
 
-    assert(max_gpu_bones);
-    if (bones.size() <= (size_t)max_gpu_bones) {
+    //assert(max_gpu_bones);
+    /*if (bones.size() <= (size_t)max_gpu_bones)*/ {
         for (size_t s = 0; s < groups_.size(); s++) {
             if (groups_[s].offset == -1) break;
             BoneGroup grp;
@@ -436,9 +436,9 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
             grp.strip_ids.push_back(groups_[s].num_indices);
             skel_.bone_groups.push_back(grp);
         }
-    } else {
+    } /*else {
         SplitMesh(max_gpu_bones);
-    }
+    }*/
 
     skel_.matr_palette.resize(skel_.bones.size());
 
