@@ -86,7 +86,6 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
     auto m	    = ref.get();
     auto mat	= m->group(0).mat.get();
-    auto p		= mat->program(0);
 
     Ren::Skeleton *skel = m->skel();
     if (!skel->anims.empty()) {
@@ -97,9 +96,10 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
     CheckInitVAOs();
 
+#if 0
     glBindVertexArray((GLuint)skinned_vao_);
 
-    p = diag_skinned_prog_;
+    const Ren::Program *p = diag_skinned_prog_.get();
     glUseProgram(p->prog_id());
 
     glUniform1f(U_MODE, (float)view_mode_);
@@ -140,6 +140,64 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     }
 
     Ren::CheckError();
+#else
+
+    {   // transform vertices
+        const Ren::Program *p = skinning_prog_.get();
+
+        glUseProgram(p->prog_id());
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, (GLuint)last_skin_vertex_buffer_);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)last_vertex_buffer_);
+
+        glUniform2i(0, m->attribs_buf().offset / 48, 0);
+
+        size_t num_bones = skel->matr_palette.size();
+        glUniformMatrix4fv(2, (GLsizei)num_bones, GL_FALSE, ValuePtr(skel->matr_palette[0]));
+
+        glDispatchCompute((GLuint)m->attribs_buf().size, 1, 1);
+    }
+
+    glBindVertexArray((GLuint)simple_vao_);
+
+    const Ren::Program *p = diag_prog_.get();
+    glUseProgram(p->prog_id());
+
+    glUniform1f(U_MODE, (float)view_mode_);
+
+    Mat4f world_from_object = Mat4f{ 1.0f };
+
+    //world_from_object = Rotate(world_from_object, angle_x_, { 1, 0, 0 });
+    world_from_object = Rotate(world_from_object, angle_y_, { 0, 1, 0 });
+
+    Mat4f view_from_world = cam_.view_matrix(),
+          proj_from_view = cam_.proj_matrix();
+
+    Mat4f view_from_object = view_from_world * world_from_object,
+        proj_from_object = proj_from_view * view_from_object;
+
+    glUniformMatrix4fv(U_MVP_MATR, 1, GL_FALSE, ValuePtr(proj_from_object));
+    glUniformMatrix4fv(U_M_MATR, 1, GL_FALSE, ValuePtr(world_from_object));
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    const Ren::TriGroup *s = &m->group(0);
+    while (s->offset != -1) {
+        const Ren::Material *mat = s->mat.get();
+
+        if (view_mode_ == DiagUVs1 || view_mode_ == DiagUVs2) {
+            BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
+        } else {
+            BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
+        }
+        BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
+
+        glDrawElementsBaseVertex(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset), (GLint)m->sk_indices_buf().offset - m->indices_buf().offset);
+        ++s;
+    }
+
+    Ren::CheckError();
+#endif
 }
 
 void ModlApp::ClearColorAndDepth(float r, float g, float b, float a) {
@@ -239,7 +297,7 @@ void ModlApp::CheckInitVAOs() {
 
 void ModlApp::InitInternal() {
     static const char diag_vs[] = R"(
-            #version 310 es
+            #version 430
 
             layout(location = 0) in vec3 aVertexPosition;
             layout(location = 1) in vec4 aVertexNormal;
@@ -267,7 +325,7 @@ void ModlApp::InitInternal() {
         )";
 
     static const char diag_skinned_vs[] = R"(
-            #version 310 es
+            #version 430
 
             layout(location = 0) in vec3 aVertexPosition;
             layout(location = 1) in mediump vec4 aVertexNormal;
@@ -312,7 +370,7 @@ void ModlApp::InitInternal() {
         )";
 
     static const char diag_fs[] = R"(
-            #version 310 es
+            #version 430
 
             #ifdef GL_ES
                 precision mediump float;
@@ -349,8 +407,90 @@ void ModlApp::InitInternal() {
             }
         )";
 
-    diag_prog_ = ctx_.LoadProgramGLSL("__diag", diag_vs, diag_fs, nullptr);
-    diag_skinned_prog_ = ctx_.LoadProgramGLSL("__diag_skinned", diag_skinned_vs, diag_fs, nullptr);
+    Ren::eProgLoadStatus status;
+    diag_prog_ = ctx_.LoadProgramGLSL("__diag", diag_vs, diag_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    diag_skinned_prog_ = ctx_.LoadProgramGLSL("__diag_skinned", diag_skinned_vs, diag_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+
+    static const char skinning_cs[] = R"(
+            #version 430
+
+            struct InVertex {
+                highp vec4 p_and_nxy;
+                highp uvec2 nz_and_b;
+                highp uvec2 t0_and_t1;
+                highp uvec2 bone_indices;
+                highp uvec2 bone_weights;
+            };
+
+            struct OutVertex {
+                highp vec4 p_and_nxy;
+                highp uvec2 nz_and_b;
+                highp uvec2 t0_and_t1;
+            };
+
+            layout(std430, binding = 0) readonly buffer Input0 {
+                InVertex vertices[];
+            } in_data;
+
+            layout(std430, binding = 1) writeonly buffer Output {
+                OutVertex vertices[];
+            } out_data;
+
+            layout(location = 0) uniform ivec2 uOffsets;
+            layout(location = 2) uniform mat4 uMPalette[64];
+            
+            layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+            void main() {
+                int i = int(uOffsets[0] + gl_GlobalInvocationID.x);
+
+                highp vec3 p = in_data.vertices[i].p_and_nxy.xyz;
+
+                highp uint _nxy = floatBitsToUint(in_data.vertices[i].p_and_nxy.w);
+                highp vec2 nxy = unpackSnorm2x16(_nxy);
+
+                highp uint _nz_and_bx = in_data.vertices[i].nz_and_b.x;
+                highp vec2 nz_and_bx = unpackSnorm2x16(_nz_and_bx);
+
+                highp uint _byz = in_data.vertices[i].nz_and_b.y;
+                highp vec2 byz = unpackSnorm2x16(_byz);
+
+                highp vec3 n = vec3(nxy, nz_and_bx.x),
+                           b = vec3(nz_and_bx.y, byz);
+
+                mediump uvec4 vtx_indices = uvec4(bitfieldExtract(in_data.vertices[i].bone_indices.x, 0, 16),
+                                                  bitfieldExtract(in_data.vertices[i].bone_indices.x, 16, 16),
+                                                  bitfieldExtract(in_data.vertices[i].bone_indices.y, 0, 16),
+                                                  bitfieldExtract(in_data.vertices[i].bone_indices.y, 16, 16));
+                mediump vec4 vtx_weights = vec4(unpackUnorm2x16(in_data.vertices[i].bone_weights.x),
+                                                unpackUnorm2x16(in_data.vertices[i].bone_weights.y));
+
+                highp mat4 mat = mat4(0.0);
+
+                for (int j = 0; j < 4; j++) {
+                    if (vtx_weights[j] > 0.0) {
+                        mat = mat + uMPalette[vtx_indices[j]] * vtx_weights[j];
+                    }
+                }
+
+                highp vec4 _p = mat * vec4(p, 1.0);
+
+                highp vec3 tr_p = _p.xyz / _p.w;
+                mediump vec3 tr_n = normalize((mat * vec4(n, 0.0)).xyz);
+                mediump vec3 tr_b = normalize((mat * vec4(b, 0.0)).xyz);
+
+                int k = int(uOffsets[1] + gl_GlobalInvocationID.x);
+                out_data.vertices[k].p_and_nxy.xyz = tr_p;
+                out_data.vertices[k].p_and_nxy.w = uintBitsToFloat(packSnorm2x16(tr_n.xy));
+                out_data.vertices[k].nz_and_b.x = packSnorm2x16(vec2(tr_n.z, tr_b.x));
+                out_data.vertices[k].nz_and_b.y = packSnorm2x16(tr_b.yz);
+            }
+        )";
+
+    skinning_prog_ = ctx_.LoadProgramGLSL("__skin", skinning_cs, &status);
+    assert(status == Ren::ProgCreatedFromData);
 }
 
 void ModlApp::DestroyInternal() {

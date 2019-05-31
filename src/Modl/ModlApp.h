@@ -44,7 +44,7 @@ private:
     Ren::Camera cam_;
     Ren::Context ctx_;
 
-    Ren::ProgramRef diag_prog_, diag_skinned_prog_;
+    Ren::ProgramRef diag_prog_, diag_skinned_prog_, skinning_prog_;
     Ren::Texture2DRef checker_tex_;
 
     float angle_x_ = 0.0f, angle_y_ = 0.0f;
