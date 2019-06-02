@@ -939,30 +939,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     }
 
     /**************************************************************************************************/
-    /*                                             SKINNING                                           */
-    /**************************************************************************************************/
-
-    if (list.skin_regions.count) {
-#ifndef DISABLE_MARKERS
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "SKINNING");
-#endif
-        const Ren::Program *p = skinning_prog_.get();
-
-        glUseProgram(p->prog_id());
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, (GLuint)ctx_.default_skin_vertex_buf()->buf_id());
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)skin_transforms_buf_);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)skin_regions_buf_);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, (GLuint)ctx_.default_vertex_buf()->buf_id());
-
-        glDispatchCompute(list.skin_regions.count, 1, 1);
-        glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
-
-#ifndef DISABLE_MARKERS
-        glPopDebugGroup();
-#endif
-    }
-
-    /**************************************************************************************************/
     /*                                            UBO setup                                           */
     /**************************************************************************************************/
 
@@ -1014,6 +990,34 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     GLint viewport_before[4];
     glGetIntegerv(GL_VIEWPORT, viewport_before);
+
+    /**************************************************************************************************/
+    /*                                             SKINNING                                           */
+    /**************************************************************************************************/
+
+    if (list.render_flags & EnableTimers) {
+        glQueryCounter(queries_[cur_query_][TimeSkinningStart], GL_TIMESTAMP);
+    }
+
+    if (list.skin_regions.count) {
+#ifndef DISABLE_MARKERS
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "SKINNING");
+#endif
+        const Ren::Program *p = skinning_prog_.get();
+
+        glUseProgram(p->prog_id());
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, (GLuint)ctx_.default_skin_vertex_buf()->buf_id());
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)skin_transforms_buf_);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)skin_regions_buf_);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, (GLuint)ctx_.default_vertex_buf()->buf_id());
+
+        glDispatchCompute(list.skin_regions.count, 1, 1);
+        glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+
+#ifndef DISABLE_MARKERS
+        glPopDebugGroup();
+#endif
+    }
 
     /**************************************************************************************************/
     /*                                           SHADOW MAPS                                          */
@@ -2222,6 +2226,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         // Get timer queries result (for previous frame)
 
         GLuint64 time_draw_start,
+                 time_skinning_start,
                  time_shadow_start,
                  time_depth_opaque_start,
                  time_ao_start,
@@ -2235,6 +2240,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         cur_query_ = (cur_query_ + 1) % FrameSyncWindow;
 
         glGetQueryObjectui64v(queries_[cur_query_][TimeDrawStart], GL_QUERY_RESULT, &time_draw_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeSkinningStart], GL_QUERY_RESULT, &time_skinning_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeShadowMapStart], GL_QUERY_RESULT, &time_shadow_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeDepthOpaqueStart], GL_QUERY_RESULT, &time_depth_opaque_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeAOPassStart], GL_QUERY_RESULT, &time_ao_start);
@@ -2253,6 +2259,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         backend_info_.gpu_start_timepoint_us = uint64_t(time_draw_start / 1000);
         backend_info_.gpu_end_timepoint_us = uint64_t(time_draw_end / 1000);
 
+        backend_info_.skinning_time_us = uint32_t((time_shadow_start - time_skinning_start) / 1000);
         backend_info_.shadow_time_us = uint32_t((time_depth_opaque_start - time_shadow_start) / 1000);
         backend_info_.depth_opaque_pass_time_us = uint32_t((time_ao_start - time_depth_opaque_start) / 1000);
         backend_info_.ao_pass_time_us = uint32_t((time_opaque_start - time_ao_start) / 1000);

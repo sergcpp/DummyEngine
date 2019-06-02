@@ -66,7 +66,8 @@ struct BackendInfo {
              cpu_end_timepoint_us = 0;
     uint64_t gpu_start_timepoint_us = 0,
              gpu_end_timepoint_us = 0;
-    uint32_t shadow_time_us = 0,
+    uint32_t skinning_time_us = 0,
+             shadow_time_us = 0,
              depth_opaque_pass_time_us = 0,
              ao_pass_time_us = 0,
              opaque_pass_time_us = 0,

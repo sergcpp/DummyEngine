@@ -355,8 +355,9 @@ private:
 
     uint32_t nodes_buf_ = 0, nodes_tbo_ = 0;
 
-    enum { TimeDrawStart, TimeShadowMapStart, TimeDepthOpaqueStart, TimeAOPassStart, TimeOpaqueStart, TimeTranspStart,
-           TimeReflStart, TimeBlurStart, TimeBlitStart, TimeDrawEnd, TimersCount };
+    enum { TimeDrawStart, TimeSkinningStart, TimeShadowMapStart, TimeDepthOpaqueStart,
+           TimeAOPassStart, TimeOpaqueStart, TimeTranspStart, TimeReflStart, TimeBlurStart,
+           TimeBlitStart, TimeDrawEnd, TimersCount };
     uint32_t queries_[FrameSyncWindow][TimersCount];
     int cur_query_ = 0;
 
