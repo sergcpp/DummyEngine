@@ -3,7 +3,7 @@
 #include "Storage.h"
 
 namespace Ren {
-class Anim;
+class AnimSequence;
 class Buffer;
 class Camera;
 class Material;
@@ -13,7 +13,7 @@ class Texture2D;
 class TextureAtlas;
 class TextureSplitter;
 
-typedef StorageRef<Anim> AnimRef;
+typedef StorageRef<AnimSequence> AnimSeqRef;
 typedef StorageRef<Buffer> BufferRef;
 typedef StorageRef<Material> MaterialRef;
 typedef StorageRef<Mesh> MeshRef;

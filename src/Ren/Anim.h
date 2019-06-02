@@ -83,7 +83,7 @@ public:
     void Init(const char *name, std::istream &data);
 
     std::vector<AnimBone *> LinkBones(std::vector<Bone> &bones);
-    void Update(float delta, float *time);
+    void Update(float time);
     void InterpolateFrames(int fr_0, int fr_1, float t);
 };
 
@@ -91,7 +91,6 @@ typedef StorageRef<AnimSequence> AnimSeqRef;
 typedef Storage<AnimSequence> AnimSeqStorage;
 
 struct AnimLink {
-    float                   anim_time = 0;
     AnimSeqRef              anim;
     std::vector<AnimBone *> anim_bones;
 };
@@ -120,7 +119,6 @@ struct BoneGroup {
 struct Skeleton {
     std::vector<Bone>           bones;
     std::vector<AnimLink>       anims;
-    std::vector<Mat4f>          matr_palette;
     std::vector<BoneGroup>      bone_groups;
 
     std::vector<Bone>::iterator bone(const char *name) {
@@ -153,7 +151,7 @@ struct Skeleton {
     void MarkChildren();
     void ApplyAnim(int id);
     void ApplyAnim(int anim_id1, int anim_id2, float t);
-    void UpdateAnim(int anim_id, float delta, float *t);
-    void UpdateBones();
+    void UpdateAnim(int anim_id, float t);
+    void UpdateBones(Ren::Mat4f *matr_palette);
 };
 }

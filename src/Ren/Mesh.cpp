@@ -209,14 +209,14 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
     attribs_buf_.size = vertex_count * sizeof(packed_vertex_t);
     attribs_buf_.offset = vertex_buf->Alloc(attribs_buf_.size, vertices.get());
 
-    if (attribs_buf_.offset != 0) {
-        uint32_t offset = attribs_buf_.offset / 32;
+    /*if (attribs_buf_.offset != 0) {
+        uint32_t offset = attribs_buf_.offset / sizeof(packed_vertex_t);
 
         uint32_t *_indices = (uint32_t *)indices_.get();
         for (uint32_t i = 0; i < indices_buf_.size / sizeof(uint32_t); i++) {
             _indices[i] += offset;
         }
-    }
+    }*/
 
     indices_buf_.buf = index_buf;
     indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices_.get());
@@ -440,8 +440,6 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         SplitMesh(max_gpu_bones);
     }*/
 
-    skel_.matr_palette.resize(skel_.bones.size());
-
     uint32_t vertex_count = sk_attribs_buf_.size / sizeof(orig_vertex_skinned_t);
     std::unique_ptr<packed_vertex_skinned_t[]> vertices(new packed_vertex_skinned_t[vertex_count]);
     const auto *orig_vertices = (const orig_vertex_skinned_t *)attribs_.get();
@@ -456,14 +454,14 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     sk_attribs_buf_.offset = skin_vertex_buf->Alloc(sk_attribs_buf_.size, vertices.get());
     sk_indices_buf_.buf = skin_index_buf;
 
-    if (sk_attribs_buf_.offset != 0) {
-        uint32_t offset = sk_attribs_buf_.offset / 48;
+    /*if (sk_attribs_buf_.offset != 0) {
+        uint32_t offset = sk_attribs_buf_.offset / sizeof(packed_vertex_skinned_t);
 
         uint32_t *_indices = (uint32_t *)indices_.get();
         for (uint32_t i = 0; i < sk_indices_buf_.size / sizeof(uint32_t); i++) {
             _indices[i] += offset;
         }
-    }
+    }*/
 
     sk_indices_buf_.offset = skin_index_buf->Alloc(sk_indices_buf_.size, indices_.get());
 
@@ -478,17 +476,18 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     attribs_buf_.offset = vertex_buf->Alloc(attribs_buf_.size, _vertices.get());
 
     indices_buf_.buf = index_buf;
+    indices_buf_.size = sk_indices_buf_.size;
 
-    if (attribs_buf_.offset != 0) {
-        uint32_t offset = attribs_buf_.offset / 32 - sk_attribs_buf_.offset / 48;
+    /*{   // apply offset to vertex indices
+        uint32_t offset = attribs_buf_.offset / sizeof(packed_vertex_t) -
+                          sk_attribs_buf_.offset / sizeof(packed_vertex_skinned_t);
 
         uint32_t *_indices = (uint32_t *)indices_.get();
         for (uint32_t i = 0; i < indices_buf_.size / sizeof(uint32_t); i++) {
             _indices[i] += offset;
         }
-    }
+    }*/
 
-    indices_buf_.size = sk_indices_buf_.size;
     indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices_.get());
 }
 

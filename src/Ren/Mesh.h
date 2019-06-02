@@ -157,6 +157,10 @@ public:
         return &skel_;
     }
 
+    const Skeleton *skel() const {
+        return &skel_;
+    }
+
     void Init(const char *name, std::istream &data, const material_load_callback &on_mat_load,
               BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf);
 

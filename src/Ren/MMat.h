@@ -172,6 +172,10 @@ using Mat3f = Mat<float, 3, 3>;
 using Mat3d = Mat<double, 3, 3>;
 using Mat4f = Mat<float, 4, 4>;
 using Mat4d = Mat<double, 4, 4>;
+using Mat4x3f = Mat<float, 4, 3>;
+using Mat4x3d = Mat<double, 4, 3>;
+using Mat3x4f = Mat<float, 3, 4>;
+using Mat3x4d = Mat<double, 3, 4>;
 
 template <typename T, int M, int N>
 Vec<T, M> operator*(const Vec<T, M> &lhs, const Mat<T, M, N> &rhs) {

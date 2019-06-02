@@ -94,14 +94,13 @@ std::vector<Ren::AnimBone *> Ren::AnimSequence::LinkBones(std::vector<Bone> &_bo
     return anim_bones;
 }
 
-void Ren::AnimSequence::Update(float delta, float *time) {
+void Ren::AnimSequence::Update(float time) {
     if (len_ < 2) return;
-    *time += delta;
 
-    while (*time > anim_dur_) *time -= anim_dur_;
-    while (*time < 0.0f) *time += anim_dur_;
+    while (time > anim_dur_) time -= anim_dur_;
+    while (time < 0.0f) time += anim_dur_;
 
-    float frame = (*time) * fps_;
+    float frame = time * fps_;
     float frame_fl = std::floor(frame);
     int fr_0 = (int)frame;
     int fr_1 = (int)std::ceil(frame);
@@ -161,17 +160,15 @@ Ren::Vec3f Ren::Skeleton::bone_pos(int i) {
 
 void Ren::Skeleton::bone_matrix(const char *name, Mat4f &mat) {
     auto b = bone(name);
-    UpdateBones();
     assert(b != bones.end());
     mat = b->cur_comb_matrix;
 }
 
 void Ren::Skeleton::bone_matrix(int i, Mat4f &mat) {
-    UpdateBones();
     mat = bones[i].cur_comb_matrix;
 }
 
-void Ren::Skeleton::UpdateBones() {
+void Ren::Skeleton::UpdateBones(Ren::Mat4f *matr_palette) {
     for (size_t i = 0; i < bones.size(); i++) {
         if (bones[i].dirty) {
             if (bones[i].parent_id != -1) {
@@ -189,7 +186,6 @@ int Ren::Skeleton::AddAnimSequence(const AnimSeqRef &ref) {
     anims.emplace_back();
     auto &a = anims.back();
     a.anim = ref;
-    a.anim_time = 0.0f;
     a.anim_bones = anims[anims.size() - 1].anim->LinkBones(bones);
     return int(anims.size() - 1);
 }
@@ -248,11 +244,8 @@ void Ren::Skeleton::ApplyAnim(int anim_id1, int anim_id2, float t) {
     MarkChildren();
 }
 
-void Ren::Skeleton::UpdateAnim(int anim_id, float delta, float *t) {
-    if (!t) {
-        t = &anims[anim_id].anim_time;
-    }
-    anims[anim_id].anim->Update(delta, t);
+void Ren::Skeleton::UpdateAnim(int anim_id, float t) {
+    anims[anim_id].anim->Update(t);
 }
 
 #ifdef _MSC_VER
