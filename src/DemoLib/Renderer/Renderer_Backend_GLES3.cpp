@@ -186,9 +186,9 @@ void Renderer::InitRendererInternal() {
     probe_prog_ = ctx_.LoadProgramGLSL("probe_prog", probe_vs, probe_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling skinning_prog");
-    //skinning_prog_ = ctx_.LoadProgramGLSL("skinning_prog", skinning_cs, &status);
-    //assert(status == Ren::ProgCreatedFromData);
-    
+    skinning_prog_ = ctx_.LoadProgramGLSL("skinning_prog", skinning_cs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+
     {
         GLuint shared_data_ubo;
 
@@ -233,6 +233,52 @@ void Renderer::InitRendererInternal() {
     }
 
     Ren::CheckError("[InitRendererInternal]: instances TBO");
+
+    {
+        GLuint skin_regions_buf;
+
+        glGenBuffers(1, &skin_regions_buf);
+        glBindBuffer(GL_TEXTURE_BUFFER, skin_regions_buf);
+        glBufferData(GL_TEXTURE_BUFFER, sizeof(SkinRegion) * REN_MAX_SKIN_REGIONS_TOTAL, nullptr, GL_DYNAMIC_COPY);
+        glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+        skin_regions_buf_ = (uint32_t)skin_regions_buf;
+
+        GLuint skin_regions_tbo;
+
+        glGenTextures(1, &skin_regions_tbo);
+        glBindTexture(GL_TEXTURE_BUFFER, skin_regions_tbo);
+
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, skin_regions_tbo);
+        glBindTexture(GL_TEXTURE_BUFFER, 0);
+
+        skin_regions_tbo_ = (uint32_t)skin_regions_tbo;
+    }
+
+    Ren::CheckError("[InitRendererInternal]: skin regions TBO");
+
+    {
+        GLuint skin_transforms_buf;
+
+        glGenBuffers(1, &skin_transforms_buf);
+        glBindBuffer(GL_TEXTURE_BUFFER, skin_transforms_buf);
+        glBufferData(GL_TEXTURE_BUFFER, sizeof(SkinTransform) * REN_MAX_SKIN_XFORMS_TOTAL, nullptr, GL_DYNAMIC_COPY);
+        glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+        skin_transforms_buf_ = (uint32_t)skin_transforms_buf;
+
+        GLuint skin_transforms_tbo;
+
+        glGenTextures(1, &skin_transforms_tbo);
+        glBindTexture(GL_TEXTURE_BUFFER, skin_transforms_tbo);
+
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, skin_transforms_tbo);
+        glBindTexture(GL_TEXTURE_BUFFER, 0);
+
+        skin_transforms_tbo_ = (uint32_t)skin_transforms_tbo;
+    }
+
+    Ren::CheckError("[InitRendererInternal]: skin transforms TBO");
 
     {
         GLuint lights_buf;
@@ -406,6 +452,28 @@ void Renderer::InitRendererInternal() {
     }
 
     Ren::CheckError("[InitRendererInternal]: timer queries");
+
+    {
+        auto vtx_buf = ctx_.default_vertex_buf(),
+             ndx_buf = ctx_.default_indices_buf();
+
+        // Allocate temporary buffer
+        temp_buf_vtx_offset_ = vtx_buf->Alloc(TEMP_BUF_SIZE);
+        temp_buf_ndx_offset_ = ndx_buf->Alloc(TEMP_BUF_SIZE);
+
+        // Allocate buffer for skinned vertices
+        skinned_buf_vtx_offset_ = vtx_buf->Alloc(REN_MAX_SKIN_VERTICES_TOTAL * 32);
+
+        // Allocate skydome vertices
+        skydome_vtx_offset_ = vtx_buf->Alloc(sizeof(__skydome_positions) + (32 - sizeof(__skydome_positions) % 32), __skydome_positions);
+        skydome_ndx_offset_ = ndx_buf->Alloc(sizeof(__skydome_indices), __skydome_indices);
+
+        // Allocate sphere vertices
+        sphere_vtx_offset_ = vtx_buf->Alloc(sizeof(__sphere_positions) + (32 - sizeof(__sphere_positions) % 32), __sphere_positions);
+        sphere_ndx_offset_ = ndx_buf->Alloc(sizeof(__sphere_indices), __sphere_indices);
+    }
+
+    Ren::CheckError("[InitRendererInternal]: additional data allocation");
 }
 
 bool Renderer::InitFramebuffersInternal() {
@@ -589,20 +657,14 @@ void Renderer::CheckInitVAOs() {
         glBindVertexArray(0);
         draw_pass_vao_ = (uint32_t)draw_pass_vao;
 
-        {   // Allocate temporary buffer
-            temp_buf_vtx_offset_ = vtx_buf->Alloc(TEMP_BUF_SIZE);
-            temp_buf_ndx_offset_ = ndx_buf->Alloc(TEMP_BUF_SIZE);
-
+        {   // Create vao for temporary buffer
             GLuint temp_vao;
             glGenVertexArrays(1, &temp_vao);
 
             temp_vao_ = (uint32_t)temp_vao;
         }
 
-        {   // Allocate skydome vertices
-            skydome_vtx_offset_ = vtx_buf->Alloc(sizeof(__skydome_positions), __skydome_positions);
-            skydome_ndx_offset_ = ndx_buf->Alloc(sizeof(__skydome_indices), __skydome_indices);
-
+        {   // Allocate vao for skydome vertices
             GLuint skydome_vao;
             glGenVertexArrays(1, &skydome_vao);
             glBindVertexArray(skydome_vao);
@@ -617,10 +679,7 @@ void Renderer::CheckInitVAOs() {
             skydome_vao_ = (uint32_t)skydome_vao;
         }
 
-        {   // Allocate sphere vertices
-            sphere_vtx_offset_ = vtx_buf->Alloc(sizeof(__sphere_positions), __sphere_positions);
-            sphere_ndx_offset_ = ndx_buf->Alloc(sizeof(__sphere_indices), __sphere_indices);
-
+        {   // Allocate vao for sphere vertices
             GLuint sphere_vao;
             glGenVertexArrays(1, &sphere_vao);
             glBindVertexArray(sphere_vao);
@@ -660,6 +719,22 @@ void Renderer::DestroyRendererInternal() {
 
         GLuint instances_buf = (GLuint)instances_buf_;
         glDeleteBuffers(1, &instances_buf);
+    }
+
+    {
+        GLuint skin_transforms_tbo = (GLuint)skin_transforms_tbo_;
+        glDeleteTextures(1, &skin_transforms_tbo);
+
+        GLuint skin_transforms_buf = (GLuint)skin_transforms_buf_;
+        glDeleteBuffers(1, &skin_transforms_buf);
+    }
+
+    {
+        GLuint skin_regions_tbo = (GLuint)skin_regions_tbo_;
+        glDeleteTextures(1, &skin_regions_tbo);
+
+        GLuint skin_regions_buf = (GLuint)skin_regions_buf_;
+        glDeleteBuffers(1, &skin_regions_buf);
     }
 
     {
@@ -787,9 +862,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     glDisable(GL_CULL_FACE);
 
-    assert(list.light_sources.size() < MAX_LIGHTS_TOTAL);
-    assert(list.decals.size() < MAX_DECALS_TOTAL);
-    assert(list.items_count < MAX_ITEMS_TOTAL);
+    assert(list.light_sources.count < MAX_LIGHTS_TOTAL);
+    assert(list.decals.count < MAX_DECALS_TOTAL);
+    assert(list.items.count < MAX_ITEMS_TOTAL);
 
     backend_info_.shadow_draw_calls_count = 0;
     backend_info_.depth_fill_draw_calls_count = 0;
@@ -803,43 +878,58 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "UPDATE BUFFERS");
 #endif
 
+        // Update skinning buffers
+        size_t skin_transforms_mem_size = list.skin_transforms.count * sizeof(SkinTransform);
+        if (skin_transforms_mem_size) {
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)skin_transforms_buf_);
+            glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, skin_transforms_mem_size, list.skin_transforms.data.get());
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        }
+
+        size_t skin_regions_mem_size = list.skin_regions.count * sizeof(SkinRegion);
+        if (skin_regions_mem_size) {
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)skin_regions_buf_);
+            glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, skin_regions_mem_size, list.skin_regions.data.get());
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        }
+
         // Update instance buffer
-        size_t instance_mem_size = list.instances.size() * sizeof(InstanceData);
+        size_t instance_mem_size = list.instances.count * sizeof(InstanceData);
         if (instance_mem_size) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)instances_buf_);
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, instance_mem_size, list.instances.data());
+            glBufferSubData(GL_TEXTURE_BUFFER, 0, instance_mem_size, list.instances.data.get());
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
         // Update lights buffer
-        size_t lights_mem_size = list.light_sources.size() * sizeof(LightSourceItem);
+        size_t lights_mem_size = list.light_sources.count * sizeof(LightSourceItem);
         if (lights_mem_size) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)lights_buf_);
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, lights_mem_size, list.light_sources.data());
+            glBufferSubData(GL_TEXTURE_BUFFER, 0, lights_mem_size, list.light_sources.data.get());
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
         // Update decals buffer
-        size_t decals_mem_size = list.decals.size() * sizeof(DecalItem);
+        size_t decals_mem_size = list.decals.count * sizeof(DecalItem);
         if (decals_mem_size) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)decals_buf_);
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, decals_mem_size, list.decals.data());
+            glBufferSubData(GL_TEXTURE_BUFFER, 0, decals_mem_size, list.decals.data.get());
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
         // Update cells buffer
-        size_t cells_mem_size = list.cells.size() * sizeof(CellData);
+        size_t cells_mem_size = list.cells.count * sizeof(CellData);
         if (cells_mem_size) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)cells_buf_);
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, cells_mem_size, list.cells.data());
+            glBufferSubData(GL_TEXTURE_BUFFER, 0, cells_mem_size, list.cells.data.get());
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
         // Update items buffer
-        size_t items_mem_size = list.items_count * sizeof(ItemData);
+        size_t items_mem_size = list.items.count * sizeof(ItemData);
         if (items_mem_size) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)items_buf_);
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, items_mem_size, list.items.data());
+            glBufferSubData(GL_TEXTURE_BUFFER, 0, items_mem_size, list.items.data.get());
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
@@ -847,6 +937,34 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glPopDebugGroup();
 #endif
     }
+
+    /**************************************************************************************************/
+    /*                                             SKINNING                                           */
+    /**************************************************************************************************/
+
+    if (list.skin_regions.count) {
+#ifndef DISABLE_MARKERS
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "SKINNING");
+#endif
+        const Ren::Program *p = skinning_prog_.get();
+
+        glUseProgram(p->prog_id());
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, (GLuint)ctx_.default_skin_vertex_buf()->buf_id());
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)skin_transforms_buf_);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)skin_regions_buf_);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, (GLuint)ctx_.default_vertex_buf()->buf_id());
+
+        glDispatchCompute(list.skin_regions.count, 1, 1);
+        glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+
+#ifndef DISABLE_MARKERS
+        glPopDebugGroup();
+#endif
+    }
+
+    /**************************************************************************************************/
+    /*                                            UBO setup                                           */
+    /**************************************************************************************************/
 
     SharedDataBlock shrd_data;
 
@@ -860,9 +978,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         // delta matrix between current and previous frame
         shrd_data.uDeltaMatrix = down_buf_view_from_world_ * shrd_data.uInvViewMatrix;
 
-        if (!list.shadow_regions.empty()) {
-            assert(list.shadow_regions.size() <= REN_MAX_SHADOWMAPS_TOTAL);
-            memcpy(&shrd_data.uShadowMapRegions[0], &list.shadow_regions[0], sizeof(ShadowMapRegion) * list.shadow_regions.size());
+        if (list.shadow_regions.count) {
+            assert(list.shadow_regions.count <= REN_MAX_SHADOWMAPS_TOTAL);
+            memcpy(&shrd_data.uShadowMapRegions[0], &list.shadow_regions.data[0], sizeof(ShadowMapRegion) * list.shadow_regions.count);
         }
 
         if (list.render_flags & EnableLights) {
@@ -878,9 +996,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const auto &pos = list.draw_cam.world_position();
         shrd_data.uCamPosAndGamma = Ren::Vec4f{ pos[0], pos[1], pos[2], 2.2f };
 
-        if (!list.probes.empty()) {
-            assert(list.probes.size() <= REN_MAX_PROBES_TOTAL);
-            memcpy(&shrd_data.uProbes[0], &list.probes[0], sizeof(ProbeItem) * list.probes.size());
+        if (list.probes.count) {
+            assert(list.probes.count <= REN_MAX_PROBES_TOTAL);
+            memcpy(&shrd_data.uProbes[0], list.probes.data.get(), sizeof(ProbeItem) * list.probes.count);
         }
 
         glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_shared_data_block_);
@@ -925,8 +1043,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         uint32_t cur_alpha_test = 0;
         BindTexture(REN_DIFF_TEX_SLOT, dummy_white_->tex_id());
 
-        for (int i = 0; i < (int)list.shadow_lists.size(); i++) {
-            const auto &shadow_list = list.shadow_lists[i];
+        for (int i = 0; i < (int)list.shadow_lists.count; i++) {
+            const auto &shadow_list = list.shadow_lists.data[i];
             if (!shadow_list.shadow_batch_count) continue;
 
             glViewport(shadow_list.shadow_map_pos[0], shadow_list.shadow_map_pos[1],
@@ -938,7 +1056,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glClear(GL_DEPTH_BUFFER_BIT);
             }
 
-            glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(list.shadow_regions[i].clip_from_world));
+            glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
 
             for (uint32_t j = shadow_list.shadow_batch_start; j < shadow_list.shadow_batch_start + shadow_list.shadow_batch_count; j++) {
                 const auto &batch = list.shadow_batches[list.shadow_batch_indices[j]];
@@ -957,8 +1075,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
                 glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
 
-                glDrawElementsInstanced(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                        (GLsizei)batch.instance_count);
+                glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
+                                                  (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
                 backend_info_.shadow_draw_calls_count++;
             }
         }
@@ -1111,8 +1229,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
 
-            glDrawElementsInstanced(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                    (GLsizei)batch.instance_count);
+            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
+                                              (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
 
@@ -1244,8 +1362,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_batch_data_block_);
             glBufferSubData(GL_UNIFORM_BUFFER, offsetof(BatchDataBlock, uInstanceIndices[0]), batch.instance_count * sizeof(int), &batch.instance_indices[0]);
 
-            glDrawElementsInstanced(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                    (GLsizei)batch.instance_count);
+            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
+                                              (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.opaque_draw_calls_count++;
         }
 
@@ -1266,7 +1384,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     glEnable(GL_BLEND);
 
-    {   // actual drawing
+    {
 #ifndef DISABLE_MARKERS
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "TRANSPARENT PASS");
 #endif
@@ -1300,14 +1418,14 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
             glDepthFunc(GL_LEQUAL);
 
-            glDrawElementsInstanced(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                    (GLsizei)batch.instance_count);
+            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
+                                              (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
             glDepthFunc(GL_EQUAL);
 
-            glDrawElementsInstanced(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                    (GLsizei)batch.instance_count);
+            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
+                                              (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
             backend_info_.opaque_draw_calls_count++;
         }
@@ -1453,8 +1571,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, list.probe_storage->tex_id());
         }
 
-        for (int i = 0; i < (int)list.probes.size(); i++) {
-            const auto &pr = list.probes[i];
+        for (int i = 0; i < (int)list.probes.count; i++) {
+            const auto &pr = list.probes.data[i];
 
             glUniform1i(2, i);
 
@@ -1934,9 +2052,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         // Draw visible shadow regions
-        for (int i = 0; i < (int)list.shadow_lists.size(); i++) {
-            const auto &sh_list = list.shadow_lists[i];
-            const auto &reg = list.shadow_regions[i];
+        for (int i = 0; i < (int)list.shadow_lists.count; i++) {
+            const auto &sh_list = list.shadow_lists.data[i];
+            const auto &reg = list.shadow_regions.data[i];
 
             const float positions[] = { -1.0f + reg.transform[0],                       -1.0f + reg.transform[1] * k,
                                         -1.0f + reg.transform[0] + reg.transform[2],    -1.0f + reg.transform[1] * k,

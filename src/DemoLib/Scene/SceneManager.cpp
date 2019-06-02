@@ -119,6 +119,9 @@ SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, S
 
         default_comp_storage_[CompProbe].reset(new DefaultCompStorage<LightProbe>);
         RegisterComponent(CompProbe, default_comp_storage_[CompProbe].get());
+
+        default_comp_storage_[CompAnimState].reset(new DefaultCompStorage<AnimState>);
+        RegisterComponent(CompAnimState, default_comp_storage_[CompAnimState].get());
     }
 }
 
@@ -184,21 +187,53 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     const JsObject &js_meshes = (const JsObject &)js_scene.at("meshes");
     for (const auto &js_elem : js_meshes.elements) {
         const std::string &name = js_elem.first;
-        const JsString &path = (const JsString &)js_elem.second;
 
-        std::string mesh_path = std::string(MODELS_PATH) + path.val;
+        const JsObject &js_mesh = (const JsObject &)js_elem.second;
+        const JsString &js_mesh_file = (const JsString &)js_mesh.at("mesh_file");
 
-        Sys::AssetFile in_file(mesh_path.c_str());
-        size_t in_file_size = in_file.size();
+        Ren::MeshRef mesh_ref;
 
-        std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
-        in_file.Read((char *)&in_file_data[0], in_file_size);
+        {   // load mesh file
+            std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file.val;
 
-        Sys::MemBuf mem = { &in_file_data[0], in_file_size };
-        std::istream in_file_stream(&mem);
+            Sys::AssetFile in_file(mesh_path.c_str());
+            size_t in_file_size = in_file.size();
 
-        using namespace std::placeholders;
-        all_meshes[name] = ctx_.LoadMesh(name.c_str(), in_file_stream, std::bind(&SceneManager::OnLoadMaterial, this, _1));
+            std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+            in_file.Read((char *)&in_file_data[0], in_file_size);
+
+            Sys::MemBuf mem = { &in_file_data[0], in_file_size };
+            std::istream in_file_stream(&mem);
+
+            using namespace std::placeholders;
+            mesh_ref = ctx_.LoadMesh(name.c_str(), in_file_stream, std::bind(&SceneManager::OnLoadMaterial, this, _1));
+        }
+
+        all_meshes[name] = mesh_ref;
+
+        if (js_mesh.Has("anims")) {
+            const JsArray &js_anims = (const JsArray &)js_mesh.at("anims");
+
+            assert(mesh_ref->type() == Ren::MeshSkeletal);
+            Ren::Skeleton *skel = mesh_ref->skel();
+
+            for (const auto &js_anim : js_anims.elements) {
+                const auto &js_anim_name = (const JsString &)js_anim;
+                std::string anim_path = std::string(MODELS_PATH) + js_anim_name.val;
+
+                Sys::AssetFile in_file(anim_path.c_str());
+                size_t in_file_size = in_file.size();
+
+                std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+                in_file.Read((char *)&in_file_data[0], in_file_size);
+
+                Sys::MemBuf mem = { &in_file_data[0], in_file_size };
+                std::istream in_file_stream(&mem);
+
+                Ren::AnimSeqRef anim_ref = ctx_.LoadAnimSequence(js_anim_name.val.c_str(), in_file_stream);
+                skel->AddAnimSequence(anim_ref);
+            }
+        }
     }
 
     auto load_decal_texture = [this](const std::string &name) {
@@ -430,6 +465,11 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         tr->bbox_max = obj_bbox_max;
         tr->UpdateBBox();
 
+        if (js_obj.Has("name")) {
+            const auto &js_name = (const JsString &)js_obj.at("name");
+            scene_data_.name_to_object[js_name.val] = (uint32_t)scene_data_.objects.size();
+        }
+
         scene_data_.objects.push_back(obj);
     }
 
@@ -543,6 +583,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 void SceneManager::ClearScene() {
     scene_name_.clear();
     scene_data_.objects.clear();
+    scene_data_.name_to_object.clear();
 
     ray_scene_ = nullptr;
 }

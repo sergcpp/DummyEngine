@@ -85,6 +85,9 @@ class GSDrawTest : public GameState {
     bool cmdline_enabled_ = false;
     bool shift_down_ = false;
 
+    // test test
+    uint32_t wolf_indices_[32] = { 0xffffffff };
+
     void LoadScene(const char *name);
 
     void BackgroundProc();

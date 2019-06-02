@@ -11,3 +11,5 @@ Also trying to add clustered lighting, decals, SSR and SSAO.
 :-------------------------:|:-------------------------:
 
 (Scene is taken from here: <https://www.blendernation.com/2018/07/20/3-interior-scenes-with-free-blend-files/>)
+
+![](anim1.gif)

@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include <map>
+
 #include <Ren/Mesh.h>
 #include <Ren/MMat.h>
 #include <Ren/Storage.h>
@@ -9,6 +11,7 @@
 
 #include "ProbeStorage.h"
 
+#include "Comp/AnimState.h"
 #include "Comp/Decal.h"
 #include "Comp/Drawable.h"
 #include "Comp/Lightmap.h"
@@ -18,23 +21,25 @@
 #include "Comp/Transform.h"
 
 enum eObjectComp {
-    CompTransform  = 0,
-    CompDrawable   = 1,
-    CompOccluder   = 2,
-    CompLightmap   = 3,
+    CompTransform   = 0,
+    CompDrawable    = 1,
+    CompOccluder    = 2,
+    CompLightmap    = 3,
     CompLightSource = 4,
-    CompDecal      = 5,
-    CompProbe      = 6
+    CompDecal       = 5,
+    CompProbe       = 6,
+    CompAnimState   = 7
 };
 
 enum eObjectCompBit {
-    CompTransformBit   = (1 << CompTransform),
-    CompDrawableBit    = (1 << CompDrawable),
-    CompOccluderBit    = (1 << CompOccluder),
-    CompLightmapBit    = (1 << CompLightmap),
-    CompLightSourceBit = (1 << CompLightSource),
-    CompDecalBit       = (1 << CompDecal),
-    CompProbeBit       = (1 << CompProbe)
+    CompTransformBit    = (1 << CompTransform),
+    CompDrawableBit     = (1 << CompDrawable),
+    CompOccluderBit     = (1 << CompOccluder),
+    CompLightmapBit     = (1 << CompLightmap),
+    CompLightSourceBit  = (1 << CompLightSource),
+    CompDecalBit        = (1 << CompDecal),
+    CompProbeBit        = (1 << CompProbe),
+    CompAnimStateBit    = (1 << CompAnimState)
 };
 
 const int MAX_COMPONENT_TYPES = 32;
@@ -119,6 +124,7 @@ struct SceneData {
     CompStorage                     *comp_store[MAX_COMPONENT_TYPES] = {};
 
     std::vector<SceneObject>        objects;
+    std::map<std::string, uint32_t> name_to_object;
 
     std::vector<bvh_node_t>         nodes;
     std::vector<uint32_t>           free_nodes;

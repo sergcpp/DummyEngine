@@ -24,7 +24,16 @@ public:
     SceneData &scene_data() { return scene_data_; }
     bool load_complete() const { return scene_texture_load_counter_ == 0; }
 
-    SceneObject *GetObject(int i) { return &scene_data_.objects[i]; }
+    SceneObject *GetObject(uint32_t i) { return &scene_data_.objects[i]; }
+
+    uint32_t FindObject(const char *name) {
+        auto it = scene_data_.name_to_object.find(name);
+        if (it != scene_data_.name_to_object.end()) {
+            return it->second;
+        } else {
+            return 0xffffffff;
+        }
+    }
 
     void InvalidateObjects(const uint32_t *indices, uint32_t count, uint32_t change_mask) {
         for (uint32_t i = 0; i < count; i++) {

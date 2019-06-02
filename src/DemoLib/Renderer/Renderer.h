@@ -63,16 +63,17 @@ struct ShadowDrawBatch {
     union {
         struct {
             uint32_t _pad1 : 3;
-            uint32_t indices_offset  : 28;
+            uint32_t indices_offset : 28;
             uint32_t alpha_test_bit  : 1;
         };
         uint32_t sort_key = 0;
     };
 
     uint32_t indices_count, mat_id;
+    int32_t base_vertex;
     int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
 };
-static_assert(sizeof(ShadowDrawBatch) == sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(int) * REN_MAX_BATCH_SIZE + sizeof(int), "!");
+static_assert(sizeof(ShadowDrawBatch) == sizeof(uint32_t) + 3 * sizeof(uint32_t) + sizeof(int) * REN_MAX_BATCH_SIZE + sizeof(int), "!");
 
 struct MainDrawBatch {
     union {
@@ -89,9 +90,10 @@ struct MainDrawBatch {
     };
 
     uint32_t indices_count;
+    int32_t base_vertex;
     int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
 };
-static_assert(sizeof(MainDrawBatch) == sizeof(uint64_t) + sizeof(uint32_t) + sizeof(int) * REN_MAX_BATCH_SIZE + sizeof(int), "!");
+//static_assert(sizeof(MainDrawBatch) == sizeof(uint64_t) + 2 * sizeof(uint32_t) + sizeof(int) * REN_MAX_BATCH_SIZE + sizeof(int), "!");
 
 struct ShadowList {
     int shadow_map_pos[2], shadow_map_size[2];
@@ -119,6 +121,17 @@ struct SortSpan64 {
     uint32_t count;
 };
 
+struct SkinTransform {
+    float matr[3][4];
+};
+static_assert(sizeof(SkinTransform) == 48, "!");
+
+struct SkinRegion {
+    uint32_t in_vtx_offset, out_vtx_offset;
+    uint16_t xform_offset, vertex_count;
+};
+static_assert(sizeof(SkinRegion) == 12, "!");
+
 enum eRenderFlags {
     EnableZFill     = (1 << 0),
     EnableCulling   = (1 << 1),
@@ -145,6 +158,12 @@ enum eRenderFlags {
     DebugTimings    = (1 << 22),
     DebugBVH        = (1 << 23),
     DebugProbes     = (1 << 24)
+};
+
+template <typename T>
+struct DynArray {
+    std::unique_ptr<T[]> data;
+    uint32_t count, capacity;
 };
 
 class Renderer {
@@ -188,19 +207,21 @@ public:
         Ren::Camera     draw_cam;
         Environment     env;
         FrontendInfo    frontend_info;
-        std::vector<InstanceData>       instances;
+        DynArray<InstanceData>          instances;
         std::vector<ShadowDrawBatch>    shadow_batches;
         std::vector<uint32_t>           shadow_batch_indices;
-        std::vector<ShadowList>         shadow_lists;
-        std::vector<ShadowMapRegion>    shadow_regions;
+        DynArray<ShadowList>            shadow_lists;
+        DynArray<ShadowMapRegion>       shadow_regions;
         std::vector<MainDrawBatch>      main_batches;
         std::vector<uint32_t>           main_batch_indices;
-        std::vector<LightSourceItem>    light_sources;
-        std::vector<DecalItem>          decals;
-        std::vector<ProbeItem>          probes;
-        std::vector<CellData>           cells;
-        std::vector<ItemData>           items;
-        int items_count = 0;
+        DynArray<SkinTransform>         skin_transforms;
+        DynArray<SkinRegion>            skin_regions;
+        uint32_t                        skin_vertices_count;
+        DynArray<LightSourceItem>       light_sources;
+        DynArray<DecalItem>             decals;
+        DynArray<ProbeItem>             probes;
+        DynArray<CellData>              cells;
+        DynArray<ItemData>              items;
         const Ren::TextureAtlas *decals_atlas = nullptr;
         const ProbeStorage *probe_storage = nullptr;
 
@@ -208,6 +229,48 @@ public:
         std::vector<bvh_node_t> temp_nodes;
         uint32_t root_index;
         std::vector<ShadReg> cached_shadow_regions;
+
+        DrawList() {
+            skin_transforms.data.reset(new SkinTransform[REN_MAX_SKIN_XFORMS_TOTAL]);
+            skin_transforms.capacity = REN_MAX_SKIN_XFORMS_TOTAL;
+            skin_transforms.count = 0;
+
+            skin_regions.data.reset(new SkinRegion[REN_MAX_SKIN_REGIONS_TOTAL]);
+            skin_regions.capacity = REN_MAX_SKIN_REGIONS_TOTAL;
+            skin_regions.count = 0;
+
+            instances.data.reset(new InstanceData[REN_MAX_INSTANCES_TOTAL]);
+            instances.capacity = MAX_LIGHTS_TOTAL;
+            instances.count = 0;
+
+            shadow_lists.data.reset(new ShadowList[REN_MAX_SHADOWMAPS_TOTAL]);
+            shadow_lists.capacity = REN_MAX_SHADOWMAPS_TOTAL;
+            shadow_lists.count = 0;
+
+            shadow_regions.data.reset(new ShadowMapRegion[REN_MAX_SHADOWMAPS_TOTAL]);
+            shadow_regions.capacity = REN_MAX_SHADOWMAPS_TOTAL;
+            shadow_regions.count = 0;
+
+            light_sources.data.reset(new LightSourceItem[MAX_LIGHTS_TOTAL]);
+            light_sources.capacity = MAX_LIGHTS_TOTAL;
+            light_sources.count = 0;
+
+            decals.data.reset(new DecalItem[MAX_DECALS_TOTAL]);
+            decals.capacity = MAX_DECALS_TOTAL;
+            decals.count = 0;
+
+            probes.data.reset(new ProbeItem[MAX_PROBES_TOTAL]);
+            probes.capacity = MAX_PROBES_TOTAL;
+            probes.count = 0;
+
+            cells.data.reset(new CellData[CELLS_COUNT]);
+            cells.capacity = CELLS_COUNT;
+            cells.count = CELLS_COUNT;
+
+            items.data.reset(new ItemData[MAX_ITEMS_TOTAL]);
+            items.capacity = MAX_ITEMS_TOTAL;
+            items.count = 0;
+        }
     };
 
     void PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
@@ -245,17 +308,22 @@ private:
 
     int frame_counter_ = 0;
 
-    std::vector<const LightSource *> litem_to_lsource_;
-    std::vector<const Decal *> ditem_to_decal_;
-    std::vector<uint32_t> obj_to_instance_;
-    std::vector<BBox> decals_boxes_;
+    DynArray<const LightSource *> litem_to_lsource_;
+    DynArray<const Decal *> ditem_to_decal_;
+
+    struct ProcessedObjData {
+        uint32_t instance_index;
+        uint32_t base_vertex;
+    };
+    std::vector<ProcessedObjData> proc_objects_;
+    DynArray<BBox> decals_boxes_;
     BackendInfo backend_info_;
     uint64_t backend_cpu_start_, backend_cpu_end_;
     int64_t backend_time_diff_;
     float reduced_average_ = 0.0f;
     Ren::Mat4f down_buf_view_from_world_;
 
-    std::vector<Ren::Frustum> temp_sub_frustums_;
+    DynArray<Ren::Frustum> temp_sub_frustums_;
     std::vector<SortSpan32> temp_sort_spans_32_[2];
     std::vector<SortSpan64> temp_sort_spans_64_[2];
 
@@ -270,10 +338,18 @@ private:
 
     uint32_t unif_shared_data_block_, unif_batch_data_block_;
     uint32_t temp_vao_, shadow_pass_vao_, depth_pass_vao_, draw_pass_vao_, skydome_vao_, sphere_vao_;
-    uint32_t temp_buf_vtx_offset_, temp_buf_ndx_offset_, skydome_vtx_offset_, skydome_ndx_offset_, sphere_vtx_offset_, sphere_ndx_offset_;
+    uint32_t temp_buf_vtx_offset_, temp_buf_ndx_offset_,
+             skydome_vtx_offset_, skydome_ndx_offset_,
+             sphere_vtx_offset_, sphere_ndx_offset_,
+             skinned_buf_vtx_offset_;
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
-    uint32_t instances_buf_, instances_tbo_;
-    uint32_t lights_buf_, lights_tbo_, decals_buf_, decals_tbo_, cells_buf_, cells_tbo_, items_buf_, items_tbo_;
+    uint32_t instances_buf_, instances_tbo_,
+             skin_transforms_buf_, skin_transforms_tbo_,
+             skin_regions_buf_, skin_regions_tbo_;
+    uint32_t lights_buf_, lights_tbo_,
+             decals_buf_, decals_tbo_,
+             cells_buf_, cells_tbo_,
+             items_buf_, items_tbo_;
     uint32_t reduce_pbo_[FrameSyncWindow], probe_sample_pbo_;
     int cur_reduce_pbo_ = 0;
 
@@ -294,6 +370,8 @@ private:
     float debug_roughness_ = 0.0f;
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
+
+    void __push_skeletal_mesh(uint32_t obj_index, const AnimState *as, const Ren::Mesh *mesh, DrawList &list);
 
     void InitRendererInternal();
     bool InitFramebuffersInternal();

@@ -52,17 +52,7 @@ GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
 
     swap_interval_  = game->GetComponent<TimeInterval>(SWAP_TIMER_KEY);
 
-    for (int i = 0; i < 2; i++) {
-        main_view_lists_[i].cells.resize(Renderer::CELLS_COUNT);
-        main_view_lists_[i].items.resize(Renderer::MAX_ITEMS_TOTAL);
-    }
-
-    {   // Prepare lists for probes updating
-        for (int i = 0; i < 6; i++) {
-            temp_probe_lists_[i].cells.resize(Renderer::CELLS_COUNT);
-            temp_probe_lists_[i].items.resize(Renderer::MAX_ITEMS_TOTAL);
-        }
-
+    {   // Prepare cam for probes updating
         temp_probe_cam_.Perspective(90.0f, 1.0f, 0.1f, 10000.0f);
     }
 }
@@ -354,6 +344,32 @@ void GSDrawTest::LoadScene(const char *name) {
         }
     }
 
+    char wolf_name[] = "wolf00";
+
+    auto &scene = scene_manager_->scene_data();
+
+    for (int j = 0; j < 4; j++) {
+        for (int i = 0; i < 8; i++) {
+            int index = j * 8 + i;
+
+            wolf_name[4] = '0' + j;
+            wolf_name[5] = '0' + i;
+
+            uint32_t wolf_index = scene_manager_->FindObject(wolf_name);
+            wolf_indices_[index] = wolf_index;
+
+            if (wolf_index != 0xffffffff) {
+                SceneObject *wolf = scene_manager_->GetObject(wolf_index);
+
+                uint32_t mask = CompDrawableBit | CompAnimStateBit;
+                if ((wolf->comp_mask & mask) == mask) {
+                    auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
+                    as->anim_time_s = 4.0f * (float(rand()) / RAND_MAX);
+                }
+            }
+        }
+    }
+
     probes_dirty_ = true;
 
     /*view_origin_[0] = 0.090376f;
@@ -602,19 +618,19 @@ void GSDrawTest::Draw(uint64_t dt_us) {
                 font_->DrawText(ui_renderer_.get(), delimiter, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " lights_cnt: %u", (unsigned)main_view_lists_[back_list].light_sources.size());
+                sprintf(text_buffer, " lights_cnt: %u", (unsigned)main_view_lists_[back_list].light_sources.count);
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "lights_data: %u kb", (unsigned)(main_view_lists_[back_list].light_sources.size() * sizeof(LightSourceItem) / 1024));
+                sprintf(text_buffer, "lights_data: %u kb", (unsigned)(main_view_lists_[back_list].light_sources.count * sizeof(LightSourceItem) / 1024));
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " decals_cnt: %u", (unsigned)main_view_lists_[back_list].decals.size());
+                sprintf(text_buffer, " decals_cnt: %u", (unsigned)main_view_lists_[back_list].decals.count);
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "decals_data: %u kb", (unsigned)(main_view_lists_[back_list].decals.size() * sizeof(DecalItem) / 1024));
+                sprintf(text_buffer, "decals_data: %u kb", (unsigned)(main_view_lists_[back_list].decals.count * sizeof(DecalItem) / 1024));
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
@@ -622,7 +638,7 @@ void GSDrawTest::Draw(uint64_t dt_us) {
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " items_data: %u kb", (unsigned)(main_view_lists_[back_list].items_count * sizeof(ItemData) / 1024));
+                sprintf(text_buffer, " items_data: %u kb", (unsigned)(main_view_lists_[back_list].items.count * sizeof(ItemData) / 1024));
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
             }
 
@@ -1060,6 +1076,34 @@ void GSDrawTest::UpdateFrame(int list_index) {
         }
 
         fr.time_fract = double(fr.time_acc_us) / UPDATE_DELTA;
+    }
+
+
+    float delta_time_s = fr_info_.delta_time_us * 0.000001f;
+
+    if (wolf_indices_[0] != 0xffffffff) {
+        const auto &scene = scene_manager_->scene_data();
+
+        for (int i = 0; i < 32; i++) {
+            if (wolf_indices_[i] == 0xffffffff) break;
+
+            SceneObject *wolf = scene_manager_->GetObject(wolf_indices_[i]);
+
+            uint32_t mask = CompDrawableBit | CompAnimStateBit;
+            if ((wolf->comp_mask & mask) == mask) {
+                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(wolf->components[CompDrawable]);
+                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
+
+                as->anim_time_s += delta_time_s;
+
+                Ren::Mesh *mesh = dr->mesh.get();
+                Ren::Skeleton *skel = mesh->skel();
+
+                skel->UpdateAnim(0, as->anim_time_s);
+                skel->ApplyAnim(0);
+                skel->UpdateBones(as->matr_palette);
+            }
+        }
     }
 
     // Update camera

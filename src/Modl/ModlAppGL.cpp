@@ -87,11 +87,13 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     auto m	    = ref.get();
     auto mat	= m->group(0).mat.get();
 
+    anim_time_ += dt_s;
+
     Ren::Skeleton *skel = m->skel();
     if (!skel->anims.empty()) {
-        skel->UpdateAnim(0, dt_s, nullptr);
+        skel->UpdateAnim(0, anim_time_);
         skel->ApplyAnim(0);
-        skel->UpdateBones();
+        skel->UpdateBones(matr_palette_);
     }
 
     CheckInitVAOs();
@@ -151,8 +153,8 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
         glUniform2i(0, m->attribs_buf().offset / 48, 0);
 
-        size_t num_bones = skel->matr_palette.size();
-        glUniformMatrix4fv(2, (GLsizei)num_bones, GL_FALSE, ValuePtr(skel->matr_palette[0]));
+        size_t num_bones = skel->bones.size();
+        glUniformMatrix4fv(2, (GLsizei)num_bones, GL_FALSE, ValuePtr(matr_palette_[0]));
 
         glDispatchCompute((GLuint)m->attribs_buf().size, 1, 1);
     }
@@ -173,7 +175,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
           proj_from_view = cam_.proj_matrix();
 
     Mat4f view_from_object = view_from_world * world_from_object,
-        proj_from_object = proj_from_view * view_from_object;
+          proj_from_object = proj_from_view * view_from_object;
 
     glUniformMatrix4fv(U_MVP_MATR, 1, GL_FALSE, ValuePtr(proj_from_object));
     glUniformMatrix4fv(U_M_MATR, 1, GL_FALSE, ValuePtr(world_from_object));

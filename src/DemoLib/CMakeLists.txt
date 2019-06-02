@@ -23,6 +23,8 @@ set(SCENE_SOURCES   Scene/SceneData.h
                     Scene/ProbeStorage.h)
 
 set(SCENE_COMP_SOURCES   Scene/Comp/Common.h
+                         Scene/Comp/AnimState.h
+                         Scene/Comp/AnimState.cpp
                          Scene/Comp/Decal.h
                          Scene/Comp/Decal.cpp
                          Scene/Comp/Drawable.h

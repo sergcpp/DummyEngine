@@ -9,6 +9,7 @@
 #include "SceneManager_BVH.cpp"
 #include "SceneManager_PT.cpp"
 
+#include "Comp/AnimState.cpp"
 #include "Comp/Decal.cpp"
 #include "Comp/Drawable.cpp"
 #include "Comp/Lightmap.cpp"

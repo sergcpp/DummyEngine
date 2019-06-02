@@ -41,6 +41,8 @@ private:
 
     Ren::MeshRef view_mesh_;
     Ren::AnimSeqRef anim_seq_;
+    float anim_time_ = 0.0f;
+    Ren::Mat4f matr_palette_[64];
     Ren::Camera cam_;
     Ren::Context ctx_;
 

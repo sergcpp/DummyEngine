@@ -40,7 +40,7 @@ layout (std140) uniform BatchDataBlock {
     ivec4 uInstanceIndices[$MaxBatchSize / 4];
 };
 
-layout(binding = $InstanceBufSlot) uniform mediump samplerBuffer instances_buffer;
+layout(binding = $InstanceBufSlot) uniform highp samplerBuffer instances_buffer;
 
 #ifdef VULKAN
 layout(location = 0) out vec3 aVertexPos_;

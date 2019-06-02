@@ -4,7 +4,7 @@ import shutil
 
 def main():
     ANDROID_HOME = os.environ['ANDROID_HOME']
-    JAVA_HOME = os.environ['JAVA_HOME']
+    #JAVA_HOME = os.environ['JAVA_HOME']
     NDK_ROOT = os.environ['NDK_ROOT']
     
     #archs = [ "armeabi", "armeabi-v7a", "arm64-v8a", "x86", "x86_64" ]

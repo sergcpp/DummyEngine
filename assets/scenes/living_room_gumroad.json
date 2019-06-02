@@ -15,25 +15,63 @@
         "fov" : 29.0
     },
     "meshes" : {
-        "room" : "room.mesh",
-        "wall_plugs" : "wall_plugs.mesh",
-        "radiator" : "radiator.mesh",
-        "sofa" : "sofa.mesh",
-        "wall_picture" : "wall_picture.mesh",
-        "wood_crate" : "wood_crate.mesh",
-        "carpet" : "carpet.mesh",
-        "books" : "books.mesh",
-        "box" : "box.mesh",
-        "lamp" : "lamp.mesh",
-        "laptop" : "laptop.mesh",
-        "ornament" : "ornament.mesh",
-        "ornaments" : "ornaments.mesh",
-        "plant_01" : "plant_01.mesh",
-        "plant_02" : "plant_02.mesh",
-        "plant_03" : "plant_03.mesh",
-        "plant_crate" : "plant_crate.mesh",
-        "small_lamp" : "small_lamp.mesh",
-        "curtains" : "curtains.mesh"
+        "room" : {
+            "mesh_file" : "room.mesh"
+        },
+        "wall_plugs" : {
+            "mesh_file" : "wall_plugs.mesh"
+        },
+        "radiator" : {
+            "mesh_file" : "radiator.mesh"
+        },
+        "sofa" : {
+            "mesh_file" : "sofa.mesh"
+        },
+        "wall_picture" : {
+            "mesh_file" : "wall_picture.mesh"
+        },
+        "wood_crate" : {
+            "mesh_file" : "wood_crate.mesh"
+        },
+        "carpet" : {
+            "mesh_file" : "carpet.mesh"
+        },
+        "books" : {
+            "mesh_file" : "books.mesh"
+        },
+        "box" : {
+            "mesh_file" : "box.mesh"
+        },
+        "lamp" : {
+            "mesh_file" : "lamp.mesh"
+        },
+        "laptop" : {
+            "mesh_file" : "laptop.mesh"
+        },
+        "ornament" : {
+            "mesh_file" : "ornament.mesh"
+        },
+        "ornaments" : {
+            "mesh_file" : "ornaments.mesh"
+        },
+        "plant_01" : {
+            "mesh_file" : "plant_01.mesh"
+        },
+        "plant_02" : {
+            "mesh_file" : "plant_02.mesh"
+        },
+        "plant_03" : {
+            "mesh_file" : "plant_03.mesh"
+        },
+        "plant_crate" : {
+            "mesh_file" : "plant_crate.mesh"
+        },
+        "small_lamp" : {
+            "mesh_file" : "small_lamp.mesh"
+        },
+        "curtains" : {
+            "mesh_file" : "curtains.mesh"
+        }
     },
     "decals" : {
     },
