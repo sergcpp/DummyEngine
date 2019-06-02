@@ -114,6 +114,11 @@ bool Ren::InitGLExtentions() {
 
     ren_glUniform1iv                = (PFNGLUNIFORM1IVPROC)GetProcAddress(glUniform1iv);
 
+    ren_glUniform1ui                = (PFNGLUNIFORM1UIPROC)GetProcAddress(glUniform1ui);
+    ren_glUniform2ui                = (PFNGLUNIFORM2UIPROC)GetProcAddress(glUniform2ui);
+    ren_glUniform3ui                = (PFNGLUNIFORM3UIPROC)GetProcAddress(glUniform3ui);
+    ren_glUniform4ui                = (PFNGLUNIFORM4UIPROC)GetProcAddress(glUniform4ui);
+
     ren_glUniform3fv                = (PFNGLUNIFORM3FVPROC)GetProcAddress(glUniform3fv);
     ren_glUniform4fv                = (PFNGLUNIFORM4FVPROC)GetProcAddress(glUniform4fv);
 
@@ -134,6 +139,7 @@ bool Ren::InitGLExtentions() {
 
     ren_glDrawElementsBaseVertex    = (PFNGLDRAWELEMENTSBASEVERTEXPROC)GetProcAddress(glDrawElementsBaseVertex);
     ren_glDrawElementsInstanced     = (PFNGLDRAWELEMENTSINSTANCEDPROC)GetProcAddress(glDrawElementsInstanced);
+    ren_glDrawElementsInstancedBaseVertex = (PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC)GetProcAddress(glDrawElementsInstancedBaseVertex);
 
     ren_glDispatchCompute           = (PFNGLDISPATCHCOMPUTEPROC)GetProcAddress(glDispatchCompute);
     ren_glMemoryBarrier             = (PFNGLMEMORYBARRIERPROC)GetProcAddress(glMemoryBarrier);

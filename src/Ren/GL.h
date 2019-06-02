@@ -195,6 +195,7 @@ EXTERN_FUNC PFNGLGETQUERYOBJECTUI64VEXTPROC     glGetQueryObjectui64vEXT;
 #define GL_FRAMEBUFFER_BARRIER_BIT          0x00000400
 #define GL_TRANSFORM_FEEDBACK_BARRIER_BIT   0x00000800
 #define GL_ATOMIC_COUNTER_BARRIER_BIT       0x00001000
+#define GL_SHADER_STORAGE_BARRIER_BIT       0x2000
 #define GL_ALL_BARRIER_BITS                 0xFFFFFFFF
 
 #define GL_TEXTURE_COMPARE_MODE     0x884C
@@ -364,6 +365,11 @@ typedef void (APIENTRY *PFNGLUNIFORM3IPROC)(GLint location, GLint v0, GLint v1, 
 
 typedef void (APIENTRY *PFNGLUNIFORM1IVPROC)(GLint location, GLsizei count, const GLint *value);
 
+typedef void (APIENTRY *PFNGLUNIFORM1UIPROC)(GLint location, GLuint v0);
+typedef void (APIENTRY *PFNGLUNIFORM2UIPROC)(GLint location, GLuint v0, GLuint v1);
+typedef void (APIENTRY *PFNGLUNIFORM3UIPROC)(GLint location, GLuint v0, GLuint v1, GLuint v2);
+typedef void (APIENTRY *PFNGLUNIFORM4UIPROC)(GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3);
+
 typedef void (APIENTRY *PFNGLUNIFORM3FVPROC)(GLint location, GLsizei count, const GLfloat *value);
 typedef void (APIENTRY *PFNGLUNIFORM4FVPROC)(GLint location, GLsizei count, const GLfloat *value);
 
@@ -387,6 +393,7 @@ typedef void (APIENTRY *PFNGLTEXIMAGE3DPROC)(GLenum target, GLint level, GLint i
 typedef void (APIENTRY *PFNGLDRAWELEMENTSBASEVERTEXPROC)(GLenum mode, GLsizei count, GLenum type, GLvoid *indices, GLint basevertex);
 #endif
 typedef void (APIENTRY *PFNGLDRAWELEMENTSINSTANCEDPROC)(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
+typedef void (APIENTRY *PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC)(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices, GLsizei instancecount, GLint basevertex);
 
 typedef void (APIENTRY *PFNGLDISPATCHCOMPUTEPROC)(GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z);
 typedef void (APIENTRY *PFNGLMEMORYBARRIERPROC)(GLbitfield barriers);
@@ -497,6 +504,11 @@ typedef void (APIENTRY *PFNGLPOPDEBUGGROUPPROC)();
 
 #define glUniform1iv                ren_glUniform1iv
 
+#define glUniform1ui                ren_glUniform1ui
+#define glUniform2ui                ren_glUniform2ui
+#define glUniform3ui                ren_glUniform3ui
+#define glUniform4ui                ren_glUniform4ui
+
 #define glUniform3fv                ren_glUniform3fv
 #define glUniform4fv                ren_glUniform4fv
 
@@ -513,6 +525,7 @@ typedef void (APIENTRY *PFNGLPOPDEBUGGROUPPROC)();
 
 #define glDrawElementsBaseVertex    ren_glDrawElementsBaseVertex
 #define glDrawElementsInstanced     ren_glDrawElementsInstanced
+#define glDrawElementsInstancedBaseVertex ren_glDrawElementsInstancedBaseVertex
 
 #define glDispatchCompute           ren_glDispatchCompute
 #define glMemoryBarrier             ren_glMemoryBarrier
@@ -616,6 +629,11 @@ EXTERN_FUNC PFNGLUNIFORM3IPROC                  ren_glUniform3i;
 
 EXTERN_FUNC PFNGLUNIFORM1IVPROC                 ren_glUniform1iv;
 
+EXTERN_FUNC PFNGLUNIFORM1UIPROC                 ren_glUniform1ui;
+EXTERN_FUNC PFNGLUNIFORM2UIPROC                 ren_glUniform2ui;
+EXTERN_FUNC PFNGLUNIFORM3UIPROC                 ren_glUniform3ui;
+EXTERN_FUNC PFNGLUNIFORM4UIPROC                 ren_glUniform4ui;
+
 EXTERN_FUNC PFNGLUNIFORM3FVPROC                 ren_glUniform3fv;
 EXTERN_FUNC PFNGLUNIFORM4FVPROC                 ren_glUniform4fv;
 
@@ -632,6 +650,7 @@ EXTERN_FUNC PFNGLTEXIMAGE3DPROC                 ren_glTexImage3D;
 
 EXTERN_FUNC PFNGLDRAWELEMENTSBASEVERTEXPROC     ren_glDrawElementsBaseVertex;
 EXTERN_FUNC PFNGLDRAWELEMENTSINSTANCEDPROC      ren_glDrawElementsInstanced;
+EXTERN_FUNC PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC ren_glDrawElementsInstancedBaseVertex;
 
 EXTERN_FUNC PFNGLDISPATCHCOMPUTEPROC            ren_glDispatchCompute;
 EXTERN_FUNC PFNGLMEMORYBARRIERPROC              ren_glMemoryBarrier;
