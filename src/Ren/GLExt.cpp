@@ -74,11 +74,13 @@ bool Ren::InitGLExtentions() {
     ren_glBufferData                = (PFNGLBUFFERDATAPROC)GetProcAddress(glBufferData);
     ren_glBufferSubData             = (PFNGLBUFFERSUBDATAPROC)GetProcAddress(glBufferSubData);
     ren_glBindBufferBase            = (PFNGLBINDBUFFERBASEPROC)GetProcAddress(glBindBufferBase);
+    ren_glBindBufferRange           = (PFNGLBINDBUFFERRANGEPROC)GetProcAddress(glBindBufferRange);
     ren_glBindVertexBuffer          = (PFNGLBINDVERTEXBUFFERPROC)GetProcAddress(glBindVertexBuffer);
     ren_glCopyBufferSubData         = (PFNGLCOPYBUFFERSUBDATAPROC)GetProcAddress(glCopyBufferSubData);
 
     ren_glMapBuffer                 = (PFNGLMAPBUFFERPROC)GetProcAddress(glMapBuffer);
     ren_glMapBufferRange            = (PFNGLMAPBUFFERRANGEPROC)GetProcAddress(glMapBufferRange);
+    ren_glFlushMappedBufferRange    = (PFNGLFLUSHMAPPEDBUFFERRANGEPROC)GetProcAddress(glFlushMappedBufferRange);
     ren_glUnmapBuffer               = (PFNGLUNMAPBUFFERPROC)GetProcAddress(glUnmapBuffer);
 
     ren_glGenFramebuffers           = (PFNGLGENFRAMEBUFFERSPROC)GetProcAddress(glGenFramebuffers);
@@ -146,6 +148,7 @@ bool Ren::InitGLExtentions() {
     ren_glGetBufferSubData          = (PFNGLGETBUFFERSUBDATAPROC)GetProcAddress(glGetBufferSubData);
 
     ren_glTexBuffer                 = (PFNGLTEXBUFFERPROC)GetProcAddress(glTexBuffer);
+    ren_glTexBufferRange            = (PFNGLTEXBUFFERRANGEPROC)GetProcAddress(glTexBufferRange);
 
     ren_glGenQueries                = (PFNGLGENQUERIESPROC)GetProcAddress(glGenQueries);
     ren_glDeleteQueries             = (PFNGLDELETEQUERIESPROC)GetProcAddress(glDeleteQueries);
@@ -165,10 +168,17 @@ bool Ren::InitGLExtentions() {
     ren_glGetDoublei_v              = (PFNGLGETDOUBLEI_VPROC)GetProcAddress(glGetDoublei_v);
     ren_glGetInteger64i_v           = (PFNGLGETINTEGER64I_VPROC)GetProcAddress(glGetInteger64i_v);
 
+    ren_glGetTextureLevelParameterfv = (PFNGLGETTEXTURELEVELPARAMETERFVPROC)GetProcAddress(glGetTextureLevelParameterfv);
+    ren_glGetTextureLevelParameteriv = (PFNGLGETTEXTURELEVELPARAMETERIVPROC)GetProcAddress(glGetTextureLevelParameteriv);
+
     ren_glDebugMessageCallback      = (PFNGLDEBUGMESSAGECALLBACKPROC)GetProcAddress(glDebugMessageCallback);
     ren_glDebugMessageInsert        = (PFNGLDEBUGMESSAGEINSERTPROC)GetProcAddress(glDebugMessageInsert);
     ren_glPushDebugGroup            = (PFNGLPUSHDEBUGGROUPPROC)GetProcAddress(glPushDebugGroup);
     ren_glPopDebugGroup             = (PFNGLPOPDEBUGGROUPPROC)GetProcAddress(glPopDebugGroup);
+
+    ren_glFenceSync                 = (PFNGLFENCESYNCPROC)GetProcAddress(glFenceSync);
+    ren_glClientWaitSync            = (PFNGLCLIENTWAITSYNCPROC)GetProcAddress(glClientWaitSync);
+    ren_glDeleteSync                = (PFNGLDELETESYNCPROC)GetProcAddress(glDeleteSync);
 #endif
 
     return true;
