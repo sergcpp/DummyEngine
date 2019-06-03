@@ -155,6 +155,12 @@ static const char probe_fs[] =
 #include "Shaders/probe.fs.glsl"
 ;
 
+#ifndef __ANDROID__
+#define GLSL_VERSION_STR "430"
+#else
+#define GLSL_VERSION_STR "310 es"
+#endif
+
 static const char skinning_cs[] =
 #include "Shaders/skinning.cs.glsl"
 ;

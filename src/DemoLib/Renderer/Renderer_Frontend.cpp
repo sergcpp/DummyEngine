@@ -901,10 +901,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     }
 
     if (shadows_enabled && (list.render_flags & DebugShadow)) {
-        list.cached_shadow_regions.clear();
+        list.cached_shadow_regions.count = 0;
         for (const auto &r : allocated_shadow_regions_) {
             if (r.last_visible != scene.update_counter) {
-                list.cached_shadow_regions.push_back(r);
+                list.cached_shadow_regions.data[list.cached_shadow_regions.count++] = r;
             }
         }
     }

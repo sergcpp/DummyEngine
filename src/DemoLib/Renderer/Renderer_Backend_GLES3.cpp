@@ -2088,8 +2088,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         // Draw invisible cached shadow regions
-        for (int i = 0; i < (int)list.cached_shadow_regions.size(); i++) {
-            const auto &r = list.cached_shadow_regions[i];
+        for (int i = 0; i < (int)list.cached_shadow_regions.count; i++) {
+            const auto &r = list.cached_shadow_regions.data[i];
 
             const float positions[] = { -1.0f + float(r.pos[0]) / SHADOWMAP_WIDTH,                       -1.0f + k * float(r.pos[1]) / SHADOWMAP_HEIGHT,
                                         -1.0f + float(r.pos[0] + r.size[0]) / SHADOWMAP_WIDTH,           -1.0f + k * float(r.pos[1]) / SHADOWMAP_HEIGHT,

@@ -228,7 +228,7 @@ public:
         // for debugging only, backend does not require nodes for drawing
         std::vector<bvh_node_t> temp_nodes;
         uint32_t root_index;
-        std::vector<ShadReg> cached_shadow_regions;
+        DynArray<ShadReg>               cached_shadow_regions;
 
         DrawList() {
             skin_transforms.data.reset(new SkinTransform[REN_MAX_SKIN_XFORMS_TOTAL]);
@@ -270,6 +270,10 @@ public:
             items.data.reset(new ItemData[MAX_ITEMS_TOTAL]);
             items.capacity = MAX_ITEMS_TOTAL;
             items.count = 0;
+
+            cached_shadow_regions.data.reset(new ShadReg[REN_MAX_SHADOWMAPS_TOTAL]);
+            cached_shadow_regions.capacity = REN_MAX_SHADOWMAPS_TOTAL;
+            cached_shadow_regions.count = 0;
         }
     };
 
