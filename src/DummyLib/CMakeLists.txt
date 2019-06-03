@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(DemoLib)
+project(DummyLib)
 
 set(SOURCE_FILES    Viewer.h
                     Viewer.cpp)
@@ -137,6 +137,6 @@ source_group("src\\States" FILES States/_States.cpp)
 list(APPEND ALL_SOURCE_FILES Utils/_Utils.cpp)
 source_group("src\\Utils" FILES Utils/_Utils.cpp)
 
-add_library(DemoLib STATIC ${ALL_SOURCE_FILES})
-target_link_libraries(DemoLib Eng Ray Ren Sys astc ${LIBS})
+add_library(DummyLib STATIC ${ALL_SOURCE_FILES})
+target_link_libraries(DummyLib Eng Ray Ren Sys astc ${LIBS})
 

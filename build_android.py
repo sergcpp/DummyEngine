@@ -20,7 +20,7 @@ def main():
     # -DANDROID_ABI=armeabi-v7a
     
     # prepare assets
-    os.system('DemoApp --prepare_assets android --norun')
+    os.system('DummyApp --prepare_assets android --norun')
     
     # build native part
     for arch in archs:
@@ -31,7 +31,7 @@ def main():
             os.chdir('..')
         
         os.chdir("build-android-" + arch)
-        ret = os.system('"' + base_build_cmd + 'DemoApp' + '"')
+        ret = os.system('"' + base_build_cmd + 'DummyApp' + '"')
         
         if ret != 0:
             return
@@ -41,10 +41,10 @@ def main():
         if not os.path.exists("android\\lib\\" + arch + "\\"):
             os.makedirs("android\\lib\\" + arch + "\\")
             
-        shutil.copy2("build-android-" + arch + "\\src\\DemoApp\\libDemoApp.so", "android\\lib\\" + arch + "\\")
+        shutil.copy2("build-android-" + arch + "\\src\\DummyApp\\libDummyApp.so", "android\\lib\\" + arch + "\\")
         
     # build java part
     os.system("android\\build.bat")
-    shutil.copy2("android\\bin\\OccDemo.apk", "OccDemo.apk")
+    shutil.copy2("android\\bin\\DummyApp.apk", "DummyApp.apk")
     
 main()

@@ -60,8 +60,8 @@ include_directories(libs)
 enable_testing()
 
 add_subdirectory(Eng)
-add_subdirectory(DemoApp)
-add_subdirectory(DemoLib)
+add_subdirectory(DummyApp)
+add_subdirectory(DummyLib)
 add_subdirectory(Modl)
 add_subdirectory(Ray)
 add_subdirectory(Ren)
@@ -72,9 +72,9 @@ add_subdirectory(libs/astc)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set_target_properties(DemoApp
-                      DemoLib
-                      Modl PROPERTIES FOLDER App)
+set_target_properties(DummyApp
+                      DummyLib
+                      ModlApp PROPERTIES FOLDER App)
 
 set_target_properties(Eng
                       Ray

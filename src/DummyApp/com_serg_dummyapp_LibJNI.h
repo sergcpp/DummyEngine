@@ -2,49 +2,49 @@
 #include <jni.h>
 /* Header for class com_serg_occdemo_LibJNI */
 
-#ifndef _Included_com_serg_occdemo_LibJNI
-#define _Included_com_serg_occdemo_LibJNI
+#ifndef _Included_com_serg_dummyapp_LibJNI
+#define _Included_com_serg_dummyapp_LibJNI
 #ifdef __cplusplus
 extern "C" {
 #endif
 /*
- * Class:     com_serg_occdemo_LibJNI
+ * Class:     com_serg_dummyapp_LibJNI
  * Method:    Init
  * Signature: (IILandroid/content/res/AssetManager;)V
  */
-JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_Init
+JNIEXPORT void JNICALL Java_com_serg_dummyapp_LibJNI_Init
   (JNIEnv *, jclass, jint, jint, jobject);
 
 /*
- * Class:     com_serg_occdemo_LibJNI
+ * Class:     com_serg_dummyapp_LibJNI
  * Method:    Destroy
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_Destroy
+JNIEXPORT void JNICALL Java_com_serg_dummyapp_LibJNI_Destroy
   (JNIEnv *, jclass);
 
 /*
- * Class:     com_serg_occdemo_LibJNI
+ * Class:     com_serg_dummyapp_LibJNI
  * Method:    Frame
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_Frame
+JNIEXPORT void JNICALL Java_com_serg_dummyapp_LibJNI_Frame
   (JNIEnv *, jclass);
 
 /*
- * Class:     com_serg_occdemo_LibJNI
+ * Class:     com_serg_dummyapp_LibJNI
  * Method:    Resize
  * Signature: (II)V
  */
-JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_Resize
+JNIEXPORT void JNICALL Java_com_serg_dummyapp_LibJNI_Resize
   (JNIEnv *, jclass, jint, jint);
 
 /*
- * Class:     com_serg_occdemo_LibJNI
+ * Class:     com_serg_dummyapp_LibJNI
  * Method:    AddEvent
  * Signature: (IIFFFF)V
  */
-JNIEXPORT void JNICALL Java_com_serg_occdemo_LibJNI_AddEvent
+JNIEXPORT void JNICALL Java_com_serg_dummyapp_LibJNI_AddEvent
   (JNIEnv *, jclass, jint, jint, jfloat, jfloat, jfloat, jfloat);
 
 #ifdef __cplusplus

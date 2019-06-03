@@ -1,10 +1,10 @@
-package com.serg.occdemo;
+package com.serg.dummyapp;
 
 import android.content.res.AssetManager;
 
 public class LibJNI {
     static {
-        System.loadLibrary("DemoApp"); 
+        System.loadLibrary("DummyApp"); 
     }
    
     public static native void Init(int w, int h, AssetManager asset_manager);

@@ -1,4 +1,4 @@
-#include "DemoApp.h"
+#include "DummyApp.h"
 
 #include <chrono>
 
@@ -26,10 +26,10 @@
 #include <Sys/Log.h>
 #include <Sys/Time_.h>
 
-#include "../DemoLib/Viewer.h"
+#include "../DummyLib/Viewer.h"
 
 namespace {
-DemoApp *g_app = nullptr;
+    DummyApp *g_app = nullptr;
 }
 
 extern "C" {
@@ -38,15 +38,15 @@ extern "C" {
     DLL_EXPORT int AmdPowerXpressRequestHighPerformance = 1;    // AMD
 }
 
-DemoApp::DemoApp() : quit_(false) {
+DummyApp::DummyApp() : quit_(false) {
     g_app = this;
 }
 
-DemoApp::~DemoApp() {
+DummyApp::~DummyApp() {
 
 }
 
-int DemoApp::Init(int w, int h) {
+int DummyApp::Init(int w, int h) {
 #if !defined(__ANDROID__)
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         return -1;
@@ -119,7 +119,7 @@ int DemoApp::Init(int w, int h) {
     return 0;
 }
 
-void DemoApp::Destroy() {
+void DummyApp::Destroy() {
     viewer_.reset();
 
 #if !defined(__ANDROID__)
@@ -134,15 +134,15 @@ void DemoApp::Destroy() {
 #endif
 }
 
-void DemoApp::Frame() {
+void DummyApp::Frame() {
     viewer_->Frame();
 }
 
-void DemoApp::Resize(int w, int h) {
+void DummyApp::Resize(int w, int h) {
     viewer_->Resize(w, h);
 }
 
-void DemoApp::AddEvent(int type, int key, float x, float y, float dx, float dy) {
+void DummyApp::AddEvent(int type, int key, float x, float y, float dx, float dy) {
     auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
     if (!input_manager) return;
 
@@ -159,7 +159,7 @@ void DemoApp::AddEvent(int type, int key, float x, float y, float dx, float dy) 
 }
 
 #if !defined(__ANDROID__)
-int DemoApp::Run(const std::vector<std::string> &args) {
+int DummyApp::Run(const std::vector<std::string> &args) {
 
     for (int i = 0; i < (int)args.size(); i++) {
         const auto &arg = args[i];
@@ -225,7 +225,7 @@ int DemoApp::Run(const std::vector<std::string> &args) {
     return 0;
 }
 
-bool DemoApp::ConvertToRawButton(int32_t key, InputManager::RawInputButton &button) {
+bool DummyApp::ConvertToRawButton(int32_t key, InputManager::RawInputButton &button) {
     switch (key) {
     case SDLK_UP:
         button = InputManager::RAW_INPUT_BUTTON_UP;
@@ -268,7 +268,7 @@ bool DemoApp::ConvertToRawButton(int32_t key, InputManager::RawInputButton &butt
     return true;
 }
 
-void DemoApp::PollEvents() {
+void DummyApp::PollEvents() {
     auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
     if (!input_manager) return;
 

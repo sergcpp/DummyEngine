@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(Modl)
+project(ModlApp)
 
 IF(WIN32)
     IF(SDL_STATIC)
@@ -27,11 +27,11 @@ set(SOURCE_FILES main.cpp
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
-add_executable(Modl ${ALL_SOURCE_FILES})
-target_link_libraries(Modl ${LIBS} Ren Sys)
+add_executable(ModlApp ${ALL_SOURCE_FILES})
+target_link_libraries(ModlApp ${LIBS} Ren Sys)
 
-add_custom_command(TARGET Modl 
+add_custom_command(TARGET ModlApp 
                    POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:Modl> ${WORKING_DIRECTORY})
+                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ModlApp> ${WORKING_DIRECTORY})
 
-set_target_properties(Modl PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}")
+set_target_properties(ModlApp PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}")

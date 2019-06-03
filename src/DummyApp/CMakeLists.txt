@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(DemoApp)
+project(DummyApp)
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     if(WIN32)
@@ -54,8 +54,8 @@ else()
 	set(LIBS android log)
 endif()
 
-set(SOURCE_FILES    DemoApp.h
-                    DemoApp.cpp)
+set(SOURCE_FILES    DummyApp.h
+                    DummyApp.cpp)
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
 	list(APPEND SOURCE_FILES main_pc.cpp)
@@ -68,15 +68,15 @@ list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
-	add_executable(DemoApp ${ALL_SOURCE_FILES})
+	add_executable(DummyApp ${ALL_SOURCE_FILES})
 else()
-	add_library(DemoApp SHARED ${ALL_SOURCE_FILES})
+	add_library(DummyApp SHARED ${ALL_SOURCE_FILES})
 endif()
 
-target_link_libraries(DemoApp DemoLib ${LIBS})
+target_link_libraries(DummyApp DummyLib ${LIBS})
 
-add_custom_command(TARGET DemoApp 
+add_custom_command(TARGET DummyApp 
                    POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:DemoApp> ${WORKING_DIRECTORY})
+                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:DummyApp> ${WORKING_DIRECTORY})
                    
-set_target_properties(DemoApp PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}")
+set_target_properties(DummyApp PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}")

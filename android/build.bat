@@ -18,12 +18,12 @@ SET ANDROID_DX="%ANDROID-SDK%\build-tools\%ANDROID_BUILD_TOOLS_VERS%\dx.bat" --d
 SET ANDROID_ZIPALIGN="%ANDROID-SDK%\build-tools\%ANDROID_BUILD_TOOLS_VERS%\zipalign.exe"
 SET JAVAC="%JAVA_HOME%\bin\javac.exe" -classpath "%ANDROID-SDK%\platforms\%ANDROID_REV%\android.jar";"D:\repos\raymark\android\libs\classes.jar";classes
 
-SET APP_NAME=OccDemo
+SET APP_NAME=DummyApp
 SET JAVAC_BUILD=%JAVAC% -source 1.7 -target 1.7 -bootclasspath "%JAVA_HOME%\jre\lib\rt.jar" -sourcepath "src;gen;libs" -d "bin"
 
 xcopy "%CD%\..\assets_android" "%CD%\assets\" /E /C /I /Y || exit \b
 
-call %JAVAC_BUILD% src\com\serg\occdemo\*.java || exit \b
+call %JAVAC_BUILD% src\com\serg\dummyapp\*.java || exit \b
 
 call %ANDROID_AAPT_PACK% -M "AndroidManifest.xml" -A "assets" -S "res" -m -J "gen" -F "%CD%\bin\resources.ap_" || exit \b
 
@@ -35,11 +35,11 @@ cd bin
 call %ANDROID_AAPT_ADD% "%APP_NAME%.ap_" "classes.dex" || exit \b
 cd ..
 
-REM call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/armeabi/libDemoApp.so" || exit \b
-REM call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/armeabi-v7a/libDemoApp.so" || exit \b
-call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/arm64-v8a/libDemoApp.so" || exit \b
-REM call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/x86/libDemoApp.so" || exit \b
-REM call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/x86_64/libDemoApp.so" || exit \b
+REM call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/armeabi/libDummyApp.so" || exit \b
+REM call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/armeabi-v7a/libDummyApp.so" || exit \b
+call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/arm64-v8a/libDummyApp.so" || exit \b
+REM call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/x86/libDummyApp.so" || exit \b
+REM call %ANDROID_AAPT_ADD% "%CD%\bin\%APP_NAME%.ap_" "lib/x86_64/libDummyApp.so" || exit \b
 
 call "%JAVA_HOME%\bin\jarsigner" -keystore "%CD%\keystore\test_key.keystore" -storepass "123456" -keypass "123456" -tsa "http://timestamp.comodoca.com/rfc3161" -sigalg SHA1withRSA -digestalg SHA1 -signedjar "%CD%\bin\%APP_NAME%.ap_" "%CD%\bin\%APP_NAME%.ap_" "Test" || exit \b
 

@@ -14,7 +14,7 @@ struct SDL_Window;
 
 class GameBase;
 
-class DemoApp {
+class DummyApp {
 #if defined(USE_GL_RENDER)
     void            *gl_ctx_ = nullptr;
 #elif defined(USE_SW_RENDER)
@@ -32,8 +32,8 @@ class DemoApp {
 
     std::unique_ptr<GameBase> viewer_;
 public:
-    DemoApp();
-    ~DemoApp();
+    DummyApp();
+    ~DummyApp();
 
     int Init(int w, int h);
     void Destroy();

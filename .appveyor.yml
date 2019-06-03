@@ -5,7 +5,7 @@ branches:
 image:
     - Visual Studio 2017
 
-clone_folder: c:\projects\occdemo
+clone_folder: c:\projects\dummy
 
 clone_script:
     - git clone -q --recursive --branch=%APPVEYOR_REPO_BRANCH% https://github.com/%APPVEYOR_REPO_NAME%.git %APPVEYOR_BUILD_FOLDER%
@@ -39,9 +39,9 @@ build:
 
 after_build:
     - cd ..
-    - DemoApp --prepare_assets pc --norun
-    - 7z a -mx9 demo_app_%APPVEYOR_BUILD_VERSION%.zip DemoApp.exe
-    - 7z a -mx9 demo_app_%APPVEYOR_BUILD_VERSION%.zip assets_pc
+    - DummyApp --prepare_assets pc --norun
+    - 7z a -mx9 dummy_app_%APPVEYOR_BUILD_VERSION%.zip DummyApp.exe
+    - 7z a -mx9 dummy_app_%APPVEYOR_BUILD_VERSION%.zip assets_pc
     
 test_script:
     - build\src\Eng\tests\%CONFIGURATION%\test_Eng
@@ -52,5 +52,5 @@ test_script:
 #    - build\src\Gui\tests\%CONFIGURATION%\test_Gui
     
 artifacts:
-  - path: demo_app_%APPVEYOR_BUILD_VERSION%.zip
-    name: DemoApp
+  - path: dummy_app_%APPVEYOR_BUILD_VERSION%.zip
+    name: DummyApp

@@ -1,4 +1,4 @@
-package com.serg.occdemo;
+package com.serg.dummyapp;
 
 import android.app.Activity;
 import android.os.Bundle;
