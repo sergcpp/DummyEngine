@@ -722,14 +722,16 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
             ShadReg *region = nullptr;
 
-            for (auto it = allocated_shadow_regions_.begin(); it != allocated_shadow_regions_.end(); ++it) {
-                if (it->ls == ls) {
-                    if (it->size[0] != resolutions[res_index][0] || it->size[1] != resolutions[res_index][1]) {
+            for (int j = 0; j < (int)allocated_shadow_regions_.count; j++) {
+                auto &reg = allocated_shadow_regions_.data[j];
+
+                if (reg.ls == ls) {
+                    if (reg.size[0] != resolutions[res_index][0] || reg.size[1] != resolutions[res_index][1]) {
                         // free and reallocate region
-                        shadow_splitter_.Free(it->pos);
-                        allocated_shadow_regions_.erase(it);
+                        shadow_splitter_.Free(reg.pos);
+                        reg = allocated_shadow_regions_.data[--allocated_shadow_regions_.count];
                     } else {
-                        region = &(*it);
+                        region = &reg;
                     }
                     break;
                 }
@@ -739,24 +741,23 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             for (; res_index < 4 && !region; res_index++) {
                 int pos[2];
                 int node = shadow_splitter_.Allocate(resolutions[res_index], pos);
-                if (node == -1 && !allocated_shadow_regions_.empty()) {
-                    auto oldest = allocated_shadow_regions_.begin();
-                    for (auto it = allocated_shadow_regions_.begin(); it != allocated_shadow_regions_.end(); ++it) {
-                        if (it->last_visible < oldest->last_visible) {
-                            oldest = it;
+                if (node == -1 && allocated_shadow_regions_.count) {
+                    ShadReg *oldest = &allocated_shadow_regions_.data[0];
+                    for (int j = 0; j < (int)allocated_shadow_regions_.count; j++) {
+                        if (allocated_shadow_regions_.data[j].last_visible < oldest->last_visible) {
+                            oldest = &allocated_shadow_regions_.data[j];
                         }
                     }
-                    if (oldest != allocated_shadow_regions_.end() && (scene.update_counter - oldest->last_visible) > 10) {
-                        // kick out one of old cached regions
+                    if ((scene.update_counter - oldest->last_visible) > 10) {
+                        // kick out one of old cached region
                         shadow_splitter_.Free(oldest->pos);
-                        allocated_shadow_regions_.erase(oldest);
+                        *oldest = allocated_shadow_regions_.data[--allocated_shadow_regions_.count];
                         // try again to insert
                         node = shadow_splitter_.Allocate(resolutions[res_index], pos);
                     }
                 }
                 if (node != -1) {
-                    allocated_shadow_regions_.emplace_back();
-                    region = &allocated_shadow_regions_.back();
+                    region = &allocated_shadow_regions_.data[allocated_shadow_regions_.count++];
                     region->ls = ls;
                     region->pos[0] = pos[0];
                     region->pos[1] = pos[1];
@@ -902,7 +903,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     if (shadows_enabled && (list.render_flags & DebugShadow)) {
         list.cached_shadow_regions.count = 0;
-        for (const auto &r : allocated_shadow_regions_) {
+        for (int i = 0; i < (int)allocated_shadow_regions_.count; i++) {
+            const auto &r = allocated_shadow_regions_.data[i];
             if (r.last_visible != scene.update_counter) {
                 list.cached_shadow_regions.data[list.cached_shadow_regions.count++] = r;
             }

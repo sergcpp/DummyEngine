@@ -8,6 +8,7 @@ set(GUI_SOURCES  Gui/FontStorage.h)
 
 set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/Renderer.h
+                        Renderer/Renderer_Structs.h
                         Renderer/Renderer.cpp
                         Renderer/Renderer_Frontend.cpp
                         Renderer/__skydome_mesh.inl

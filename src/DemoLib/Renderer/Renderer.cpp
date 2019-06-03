@@ -141,6 +141,10 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     ditem_to_decal_.data.reset(new const Decal *[MAX_DECALS_TOTAL]);
     ditem_to_decal_.capacity = MAX_DECALS_TOTAL;
     ditem_to_decal_.count = 0;
+
+    allocated_shadow_regions_.data.reset(new ShadReg[REN_MAX_SHADOWMAPS_TOTAL]);
+    allocated_shadow_regions_.capacity = REN_MAX_SHADOWMAPS_TOTAL;
+    allocated_shadow_regions_.count = 0;
 }
 
 Renderer::~Renderer() {
