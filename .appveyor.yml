@@ -40,8 +40,8 @@ build:
 after_build:
     - cd ..
     - DemoApp --prepare_assets pc --norun
-    - 7z a demo_app_%APPVEYOR_BUILD_VERSION%.zip DemoApp.exe
-    - 7z a demo_app_%APPVEYOR_BUILD_VERSION%.zip assets_pc
+    - 7z a -mx9 demo_app_%APPVEYOR_BUILD_VERSION%.zip DemoApp.exe
+    - 7z a -mx9 demo_app_%APPVEYOR_BUILD_VERSION%.zip assets_pc
     
 test_script:
     - build\src\Eng\tests\%CONFIGURATION%\test_Eng
