@@ -1169,6 +1169,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         uint32_t cur_alpha_test = 0;
         BindTexture(REN_DIFF_TEX_SLOT, dummy_white_->tex_id());
 
+        uint32_t cur_mat_id = 0xffffffff;
+
         for (int i = 0; i < (int)list.shadow_lists.count; i++) {
             const auto &shadow_list = list.shadow_lists.data[i];
             if (!shadow_list.shadow_batch_count) continue;
@@ -1188,15 +1190,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 const auto &batch = list.shadow_batches[list.shadow_batch_indices[j]];
                 if (!batch.instance_count) continue;
 
-                if (cur_alpha_test != batch.alpha_test_bit) {
-                    if (batch.alpha_test_bit && false) {
-                        const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                        BindTexture(REN_DIFF_TEX_SLOT, mat->texture(0)->tex_id());
-                    } else {
-                        BindTexture(REN_DIFF_TEX_SLOT, dummy_white_->tex_id());
-                    }
-
-                    cur_alpha_test = batch.alpha_test_bit;
+                if (batch.alpha_test_bit && (!cur_alpha_test || batch.mat_id != cur_mat_id)) {
+                    const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
+                    BindTexture(REN_DIFF_TEX_SLOT, mat->texture(0)->tex_id());
+                    cur_mat_id = batch.mat_id;
+                    cur_alpha_test = 1;
+                } else if (!batch.alpha_test_bit && cur_alpha_test) {
+                    BindTexture(REN_DIFF_TEX_SLOT, dummy_white_->tex_id());
+                    cur_mat_id = 0xffffffff;
+                    cur_alpha_test = 0;
                 }
 
                 glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
@@ -1330,6 +1332,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         uint32_t cur_alpha_test = 0;
         BindTexture(REN_DIFF_TEX_SLOT, dummy_white_->tex_id());
 
+        uint32_t cur_mat_id = 0xffffffff;
+
 #ifndef DISABLE_MARKERS
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "DEPTH-FILL");
 #endif
@@ -1340,15 +1344,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             if (!batch.instance_count) continue;
             if (batch.alpha_blend_bit) break;
 
-            if (cur_alpha_test != batch.alpha_test_bit) {
-                if (batch.alpha_test_bit) {
-                    const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                    BindTexture(REN_DIFF_TEX_SLOT, mat->texture(0)->tex_id());
-                } else {
-                    BindTexture(REN_DIFF_TEX_SLOT, dummy_white_->tex_id());
-                }
-
-                cur_alpha_test = batch.alpha_test_bit;
+            if (batch.alpha_test_bit && (!cur_alpha_test || batch.mat_id != cur_mat_id)) {
+                const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
+                BindTexture(REN_DIFF_TEX_SLOT, mat->texture(0)->tex_id());
+                cur_mat_id = batch.mat_id;
+                cur_alpha_test = 1;
+            } else if (!batch.alpha_test_bit && cur_alpha_test) {
+                BindTexture(REN_DIFF_TEX_SLOT, dummy_white_->tex_id());
+                cur_mat_id = 0xffffffff;
+                cur_alpha_test = 0;
             }
 
             glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
