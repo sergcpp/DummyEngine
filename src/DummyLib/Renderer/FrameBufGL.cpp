@@ -6,8 +6,7 @@
 #include <Ren/GL.h>
 #include <Sys/Log.h>
 
-FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int _attachments_count,
-                   bool with_depth, Ren::eTexFilter depth_filter, int _msaa)
+FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int _attachments_count, const DepthAttachmentDesc &depth_att, int _msaa)
     : w(_w), h(_h), sample_count(_msaa) {
 
     GLint framebuf_before;
@@ -90,7 +89,7 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
     }
     Ren::CheckError("[Renderer]: create framebuffer 2");
 
-    if (with_depth) {
+    if (depth_att.format != DepthNone) {
         GLuint _depth_tex;
 
         GLenum target = sample_count > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
@@ -98,20 +97,30 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
         glGenTextures(1, &_depth_tex);
         glBindTexture(target, _depth_tex);
 
-        if (sample_count > 1) {
-            glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, sample_count, GL_DEPTH_COMPONENT24, w, h, GL_TRUE);
+        GLenum internal_format;
+
+        if (depth_att.format == Depth16) {
+            internal_format = GL_DEPTH_COMPONENT16;
+        } else if (depth_att.format == Depth24) {
+            internal_format = GL_DEPTH_COMPONENT24;
         } else {
-            glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT24, w, h);
+            throw std::invalid_argument("Wrong format!");
+        }
+
+        if (sample_count > 1) {
+            glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, sample_count, internal_format, w, h, GL_TRUE);
+        } else {
+            glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, w, h);
         }
 
         Ren::CheckError("[Renderer]: create framebuffer 3");
 
         // multisample textures does not support sampler state
         if (sample_count == 1) {
-            if (depth_filter == Ren::NoFilter) {
+            if (depth_att.filter == Ren::NoFilter) {
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            } else if (depth_filter == Ren::Bilinear || depth_filter == Ren::BilinearNoMipmap) {
+            } else if (depth_att.filter == Ren::Bilinear || depth_att.filter == Ren::BilinearNoMipmap) {
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             }

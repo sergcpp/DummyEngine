@@ -62,7 +62,7 @@ struct ShadowDrawBatch {
     int32_t base_vertex;
     int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
 };
-static_assert(sizeof(ShadowDrawBatch) == sizeof(uint32_t) + 3 * sizeof(uint32_t) + sizeof(int) * REN_MAX_BATCH_SIZE + sizeof(int), "!");
+static_assert(offsetof(ShadowDrawBatch, indices_count) == 4, "!");
 
 struct MainDrawBatch {
     union {
@@ -83,7 +83,6 @@ struct MainDrawBatch {
     int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
 };
 static_assert(offsetof(MainDrawBatch, indices_count) == 8, "!");
-//static_assert(sizeof(MainDrawBatch) == sizeof(uint64_t) + 2 * sizeof(uint32_t) + sizeof(int) * REN_MAX_BATCH_SIZE + sizeof(int), "!");
 
 struct ShadowList {
     int shadow_map_pos[2], shadow_map_size[2];

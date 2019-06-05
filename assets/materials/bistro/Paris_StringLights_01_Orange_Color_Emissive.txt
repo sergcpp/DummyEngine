@@ -1,0 +1,6 @@
+gl_program: main_probelit_nossr main_probelit_nossr.vs.glsl main_probelit_nossr.fs.glsl
+gl_program: main_probelit_nossr main_probelit_nossr.vs.glsl main_probelit_nossr.fs.glsl
+sw_program: main
+texture: bistro/Paris_StringLights_01_Orange_Color_Emissive_diff.png
+texture: default_normalmap.png
+texture: shiny_spec.png

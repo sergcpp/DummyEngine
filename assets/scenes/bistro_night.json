@@ -1,0 +1,3560 @@
+{
+    "name" : "jap_house2",
+    "environment" : {
+        "sun_dir" : [ 0.35, -0.707, -0.3 ],
+        "sun_col" : [ 0.0, 0.0, 0.0 ],
+        "sun_softness" : 0.1,
+        "env_map" : "env/satara_night_no_lamps",
+        "env_map_pt" : "env/satara_night_no_lamps_2k.hdr"
+    },
+    "camera" : {
+        "view_origin" : [ 0.0, 5.0, 0.0 ],
+        "view_dir" : [ 0.0, 0.0, -1.0 ],
+        "fov" : 45.0,
+        "fwd_speed" : 0.1
+    },
+    "meshes" : {
+        "street_6225" : {
+            "mesh_file" : "bistro/street_6225.mesh"
+        },
+        "street_6185" : {
+            "mesh_file" : "bistro/street_6185.mesh"
+        },
+        "street_14" : {
+            "mesh_file" : "bistro/street_14.mesh"
+        },
+        "street_6253" : {
+            "mesh_file" : "bistro/street_6253.mesh"
+        },
+        "street_6255" : {
+            "mesh_file" : "bistro/street_6255.mesh"
+        },
+        "street_13" : {
+            "mesh_file" : "bistro/street_13.mesh"
+        },
+        "street_6195" : {
+            "mesh_file" : "bistro/street_6195.mesh"
+        },
+        "street_6183" : {
+            "mesh_file" : "bistro/street_6183.mesh"
+        },
+        "street_6231" : {
+            "mesh_file" : "bistro/street_6231.mesh"
+        },
+        "street_6251" : {
+            "mesh_file" : "bistro/street_6251.mesh"
+        },
+        "street_6227" : {
+            "mesh_file" : "bistro/street_6227.mesh"
+        },
+        "street_6235" : {
+            "mesh_file" : "bistro/street_6235.mesh"
+        },
+        "street_6181" : {
+            "mesh_file" : "bistro/street_6181.mesh"
+        },
+        "street_6179" : {
+            "mesh_file" : "bistro/street_6179.mesh"
+        },
+        "Linde_Tree_Large_4051" : {
+            "mesh_file" : "bistro/Linde_Tree_Large_4051.mesh"
+        },
+        "bux_hedge_box_bend_3987" : {
+            "mesh_file" : "bistro/bux_hedge_box_bend_3987.mesh"
+        },
+        "bux_hedge_cylinder_low_4007" : {
+            "mesh_file" : "bistro/bux_hedge_cylinder_low_4007.mesh"
+        },
+        "bux_hedge_box_low_3975" : {
+            "mesh_file" : "bistro/bux_hedge_box_low_3975.mesh"
+        },
+        "bux_hedge_box_high_3957" : {
+            "mesh_file" : "bistro/bux_hedge_box_high_3957.mesh"
+        },
+        "building_03" : {
+            "mesh_file" : "bistro/building_03.mesh"
+        },
+        "building_5317" : {
+            "mesh_file" : "bistro/building_5317.mesh"
+        },
+        "building_5351" : {
+            "mesh_file" : "bistro/building_5351.mesh"
+        },
+        "building_5523" : {
+            "mesh_file" : "bistro/building_5523.mesh"
+        },
+        "building_5195" : {
+            "mesh_file" : "bistro/building_5195.mesh"
+        },
+        "building_4027" : {
+            "mesh_file" : "bistro/building_4027.mesh"
+        },
+        "building_5891" : {
+            "mesh_file" : "bistro/building_5891.mesh"
+        },
+        "building_5313" : {
+            "mesh_file" : "bistro/building_5313.mesh"
+        },
+        "building_5987" : {
+            "mesh_file" : "bistro/building_5987.mesh"
+        },
+        "building_3a3b" : {
+            "mesh_file" : "bistro/building_3a3b.mesh"
+        },
+        "building_4957" : {
+            "mesh_file" : "bistro/building_4957.mesh"
+        },
+        "building_5439" : {
+            "mesh_file" : "bistro/building_5439.mesh"
+        },
+        "building_5471" : {
+            "mesh_file" : "bistro/building_5471.mesh"
+        },
+        "building_df3c" : {
+            "mesh_file" : "bistro/building_df3c.mesh"
+        },
+        "building_5027" : {
+            "mesh_file" : "bistro/building_5027.mesh"
+        },
+        "building_10ca" : {
+            "mesh_file" : "bistro/building_10ca.mesh",
+            "material_override" : [ null, null, null, null, null, null, null, null,
+                                    null, null, null, null, null, null, null, null,
+                                    null, null, null, null, null, null, null, null,
+                                    null, null, null, null, null, null, null, "bistro/Paris_StringLights_01_White_Color2.txt" ]
+        },
+        "Paris_StreetPivot_01" : {
+            "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
+        },
+        "Bollard_4135" : {
+            "mesh_file" : "bistro/Bollard_4135.mesh"
+        },
+        "Manhole" : {
+            "mesh_file" : "bistro/Manhole.mesh"
+        },
+        "bux_hedge_box_long_high_3961" : {
+            "mesh_file" : "bistro/bux_hedge_box_long_high_3961.mesh"
+        },
+        "tree_01" : {
+            "mesh_file" : "bistro/tree_01.mesh"
+        },
+        "bush_01" : {
+            "mesh_file" : "bistro/bush_01.mesh"
+        },
+        "bush_02" : {
+            "mesh_file" : "bistro/bush_02.mesh"
+        },
+        "trashcan_6515" : {
+            "mesh_file" : "bistro/trashcan_6515.mesh"
+        },
+        "streetlight_01a" : {
+            "mesh_file" : "bistro/streetlight_01a.mesh",
+            "material_override" : [ null, null, "bistro/Paris_StringLights_01_White_Color2.txt", "bistro/Paris_StringLights_01_White_Color2.txt", null, null ]
+        },
+        "table_01" : {
+            "mesh_file" : "bistro/table_01.mesh"
+        },
+        "plantpot_01" : {
+            "mesh_file" : "bistro/plantpot_01.mesh"
+        },
+        "plantpot_02" : {
+            "mesh_file" : "bistro/plantpot_02.mesh"
+        },
+        "sidewalk_barrier" : {
+            "mesh_file" : "bistro/sidewalk_barrier.mesh"
+        },
+        "menu_sign_01" : {
+            "mesh_file" : "bistro/menu_sign_01.mesh"
+        },
+        "stringlight_wind" : {
+            "mesh_file" : "bistro/stringlight_wind.mesh",
+            "material_override" : [ null,
+                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt"
+                                  ]
+        },
+        "stringlight_wind" : {
+            "mesh_file" : "bistro/stringlight_wind.mesh"
+        },
+        "stringlight_wind_14" : {
+            "mesh_file" : "bistro/stringlight_wind_14.mesh",
+            "material_override" : [ null,
+                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.txt"
+                                  ]
+        },
+        "stringlight_wind_15" : {
+            "mesh_file" : "bistro/stringlight_wind_15.mesh",
+            "material_override" : [ null,
+                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.txt"
+                                  ]
+        },
+        "stringlight_wind_16" : {
+            "mesh_file" : "bistro/stringlight_wind_16.mesh",
+            "material_override" : [ null,
+                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt"
+                                  ]
+        },
+        "stringlight_wind_17" : {
+            "mesh_file" : "bistro/stringlight_wind_17.mesh",
+            "material_override" : [ null,
+                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.txt"
+                                  ]
+        },
+        "stringlight_wind_18" : {
+            "mesh_file" : "bistro/stringlight_wind_18.mesh",
+            "material_override" : [ null,
+                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt"
+                                  ]
+        },
+        "stringlight_wind_19" : {
+            "mesh_file" : "bistro/stringlight_wind_19.mesh",
+            "material_override" : [ null,
+                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.txt"
+                                  ]
+        },
+        "stringlight_wind_20" : {
+            "mesh_file" : "bistro/stringlight_wind_20.mesh",
+            "material_override" : [ null,
+                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.txt",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt"
+                                  ]
+        },
+        "Lantern_Wind" : {
+            "mesh_file" : "bistro/Lantern_Wind.mesh"
+        },
+        "Vespa_static" : {
+            "mesh_file" : "bistro/Vespa_static.mesh"
+        },
+        "occ_10ca" : {
+            "mesh_file" : "bistro/occluders/occ_10ca.mesh"
+        },
+        "occ_5027" : {
+            "mesh_file" : "bistro/occluders/occ_5027.mesh"
+        },
+        "occ_5195" : {
+            "mesh_file" : "bistro/occluders/occ_5195.mesh"
+        },
+        "occ_df3c" : {
+            "mesh_file" : "bistro/occluders/occ_df3c.mesh"
+        },
+        "occ_5471" : {
+            "mesh_file" : "bistro/occluders/occ_5471.mesh"
+        },
+        "occ_5439" : {
+            "mesh_file" : "bistro/occluders/occ_5439.mesh"
+        },
+        "occ_4957" : {
+            "mesh_file" : "bistro/occluders/occ_4957.mesh"
+        },
+        "occ_3a3b" : {
+            "mesh_file" : "bistro/occluders/occ_3a3b.mesh"
+        },
+        "occ_5351" : {
+            "mesh_file" : "bistro/occluders/occ_5351.mesh"
+        },
+        "occ_5987" : {
+            "mesh_file" : "bistro/occluders/occ_5987.mesh"
+        },
+        "occ_5891" : {
+            "mesh_file" : "bistro/occluders/occ_5891.mesh"
+        },
+        "occ_4027" : {
+            "mesh_file" : "bistro/occluders/occ_4027.mesh"
+        },
+        "occ_5523" : {
+            "mesh_file" : "bistro/occluders/occ_5523.mesh"
+        },
+        "occ_03" : {
+            "mesh_file" : "bistro/occluders/occ_03.mesh"
+        },
+        "occ_6255" : {
+            "mesh_file" : "bistro/occluders/occ_6255.mesh"
+        },
+        "scooter" : {
+            "mesh_file" : "bistro/scooter_skinned.mesh",
+            "anims" : [
+                "bistro/scooter_idle.anim",
+                "bistro/scooter_move_straight.anim",
+                "bistro/scooter_move_left.anim",
+                "bistro/scooter_move_right.anim"
+            ]
+        },
+        "sophia" : {
+            "mesh_file" : "sophia.mesh",
+            "anims" : [
+                "sophia_idle.anim"
+            ]
+        },
+        "eric" : {
+            "mesh_file" : "eric.mesh",
+            "anims" : [
+                "eric_idle.anim"
+            ]
+        }
+    },
+    "decals" : {
+    },
+    "objects" : [
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "street_6225"
+            },
+            "decal" : {
+                "pos" : [ -7.52863, 0.0, -3.09351 ],
+                "rot" : [ 90.0, 0.0, 0.0 ],
+                "dim" : [ 3.0, 3.0, 1.0 ],
+                "diff" : "puddle_diff.png",
+                "norm" : "puddle_norm.png",
+                "spec" : "puddle_spec.png"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "decal" : {
+                "pos" : [ 2.51003, 0.0, 9.24158 ],
+                "rot" : [ 90.0, 0.0, 0.0 ],
+                "dim" : [ 3.0, 3.0, 1.0 ],
+                "diff" : "puddle_diff.png",
+                "norm" : "puddle_norm.png",
+                "spec" : "puddle_spec.png"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "decal" : {
+                "pos" : [ 42.5767, 0.15, 17.6971 ],
+                "rot" : [ 90.0, 0.0, 0.0 ],
+                "dim" : [ 4.0, 4.0, 0.1 ],
+                "diff" : "leaves_diff.png",
+                "norm" : "leaves_norm.png"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "decal" : {
+                "pos" : [ 45.4408, 0.15, 17.1317 ],
+                "rot" : [ 90.0, 0.0, 0.0 ],
+                "dim" : [ 4.0, 4.0, 0.1 ],
+                "diff" : "leaves_diff.png",
+                "norm" : "leaves_norm.png"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "decal" : {
+                "pos" : [ 49.7567, 0.15, 19.304 ],
+                "rot" : [ 90.0, 0.0, 0.0 ],
+                "dim" : [ 4.0, 4.0, 0.1 ],
+                "diff" : "leaves_diff.png",
+                "norm" : "leaves_norm.png"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "decal" : {
+                "pos" : [ 52.1393, 0.15, 24.1341 ],
+                "rot" : [ 90.0, 0.0, 0.0 ],
+                "dim" : [ 4.0, 4.0, 0.1 ],
+                "diff" : "leaves_diff.png",
+                "norm" : "leaves_norm.png"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "decal" : {
+                "pos" : [ 51.5841, 0.15, 27.7802 ],
+                "rot" : [ 90.0, 0.0, 0.0 ],
+                "dim" : [ 4.0, 4.0, 0.1 ],
+                "diff" : "leaves_diff.png",
+                "norm" : "leaves_norm.png"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "decal" : {
+                "pos" : [ 48.1798, 0.15, 31.1594 ],
+                "rot" : [ 90.0, 0.0, 0.0 ],
+                "dim" : [ 4.0, 4.0, 0.1 ],
+                "diff" : "leaves_diff.png",
+                "norm" : "leaves_norm.png"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "decal" : {
+                "pos" : [ 43.4004, 0.15, 31.8237 ],
+                "rot" : [ 90.0, 0.0, 0.0 ],
+                "dim" : [ 4.0, 4.0, 0.1 ],
+                "diff" : "leaves_diff.png",
+                "norm" : "leaves_norm.png"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "decal" : {
+                "pos" : [ 38.8927, 0.15, 29.5045 ],
+                "rot" : [ 90.0, -45.0, 0.0 ],
+                "dim" : [ 4.0, 4.0, 0.1 ],
+                "diff" : "leaves_diff.png",
+                "norm" : "leaves_norm.png"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "decal" : {
+                "pos" : [ 38.1462, 0.15, 24.5281 ],
+                "rot" : [ 90.0, 0.0, 0.0 ],
+                "dim" : [ 4.0, 4.0, 0.1 ],
+                "diff" : "leaves_diff.png",
+                "norm" : "leaves_norm.png"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "decal" : {
+                "pos" : [ 37.2846, 0.15, 20.4854 ],
+                "rot" : [ 90.0, 45.0, 0.0 ],
+                "dim" : [ 4.0, 4.0, 0.1 ],
+                "diff" : "leaves_diff.png",
+                "norm" : "leaves_norm.png"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "street_6185"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "street_14"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "street_6253"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "street_6255"
+            },
+            "occluder" : {
+                "mesh" : "occ_6255"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "street_13"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "street_6195"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "street_6183"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "street_6231"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "street_6251"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "street_6227"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "street_6235"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "street_6181"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "street_6179"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Linde_Tree_Large_4051"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 44.5799, 0.465841, 24.7763 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bux_hedge_box_bend_3987"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 44.5799, 0.465841, 24.7763 ],
+                "rot" : [ 0.0, 72.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bux_hedge_box_bend_3987"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 44.5799, 0.465841, 24.7763 ],
+                "rot" : [ 0.0, 144.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bux_hedge_box_bend_3987"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 44.5799, 0.465841, 24.7763 ],
+                "rot" : [ 0.0, 216.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bux_hedge_box_bend_3987"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 44.5799, 0.465841, 24.7763 ],
+                "rot" : [ 0.0, 288.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bux_hedge_box_bend_3987"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 33.9982, 2.70013, 29.6956 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bux_hedge_cylinder_low_4007"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 44.002, 2.70013, 36.5165 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bux_hedge_cylinder_low_4007"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bux_hedge_box_high_3957"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 46.9194, 6.84392, 43.5741 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_03"
+            },
+            "occluder" : {
+                "mesh" : "occ_03"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_5317"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 58.7051, 8.86515, 28.5187 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_5351"
+            },
+            "occluder" : {
+                "mesh" : "occ_5351"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 23.7309, 5.54858, 24.0745 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_5523"
+            },
+            "occluder" : {
+                "mesh" : "occ_5523"
+            },
+            "light" : {
+                "offset" : [ 0.733118, -0.851635, -0.907694 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 29.6725, 6.0787, 12.8548 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_5195"
+            },
+            "occluder" : {
+                "mesh" : "occ_5195"
+            },
+            "light" : {
+                "offset" : [ 0.334522, -1.93378, 0.647922 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_4027"
+            },
+            "occluder" : {
+                "mesh" : "occ_4027"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_5891"
+            },
+            "occluder" : {
+                "mesh" : "occ_5891"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_5313"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_5987"
+            },
+            "occluder" : {
+                "mesh" : "occ_5987"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -18.9561, 8.86515, -3.09571 ],
+                "rot" : [ 0.0, -120.195, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_5351"
+            },
+            "occluder" : {
+                "mesh" : "occ_5351"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_3a3b"
+            },
+            "occluder" : {
+                "mesh" : "occ_3a3b"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -28.5144, 3.3858, -17.1927 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -26.8914, 3.3858, -21.0589 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_4957"
+            },
+            "occluder" : {
+                "mesh" : "occ_4957"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_5439"
+            },
+            "occluder" : {
+                "mesh" : "occ_5439"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -8.43265, 4.15556, -11.4122 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.12157, 4.31849, -18.281 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -11.9383, 4.12885, -9.61915 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -17.7321, 4.13211, -14.9422 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_5471"
+            },
+            "occluder" : {
+                "mesh" : "occ_5471"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_df3c"
+            },
+            "occluder" : {
+                "mesh" : "occ_df3c"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 13.2905, 6.0787, -25.9451 ],
+                "rot" : [ 0.0, -98.5553, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_5195"
+            },
+            "occluder" : {
+                "mesh" : "occ_5195"
+            },
+            "light" : {
+                "offset" : [ 0.334522, -1.93378, 0.647922 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_5027"
+            },
+            "occluder" : {
+                "mesh" : "occ_5027"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 8.98234, 4.64329, -20.0837 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "building_10ca"
+            },
+            "occluder" : {
+                "mesh" : "occ_10ca"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.10623, 4.11483, -10.4092 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 20.0, 20.0, 20.0 ],
+                "direction" : [ -0.700208, -0.604231, -0.380283 ],
+                "angle" : 70,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.944328, 4.11483, -8.23856 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 20.0, 20.0, 20.0 ],
+                "direction" : [ -0.700208, -0.604231, -0.380283 ],
+                "angle" : 70,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.073371, 4.11483, -6.35097 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 20.0, 20.0, 20.0 ],
+                "direction" : [ -0.700208, -0.604231, -0.380283 ],
+                "angle" : 70,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.18273, 4.11483, -4.29337 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 20.0, 20.0, 20.0 ],
+                "direction" : [ -0.700208, -0.604231, -0.380283 ],
+                "angle" : 70,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 1.28763, 4.11483, 1.9072 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 20.0, 20.0, 20.0 ],
+                "direction" : [ -0.27538, -0.70349, 0.655185 ],
+                "angle" : 70,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 3.58225, 4.11483, 2.8102 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 20.0, 20.0, 20.0 ],
+                "direction" : [ -0.27538, -0.70349, 0.655185 ],
+                "angle" : 70,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 5.57639, 4.11483, 3.59894 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 20.0, 20.0, 20.0 ],
+                "direction" : [ -0.27538, -0.70349, 0.655185 ],
+                "angle" : 70,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 7.75014, 4.11483, 4.45871 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 20.0, 20.0, 20.0 ],
+                "direction" : [ -0.27538, -0.70349, 0.655185 ],
+                "angle" : 70,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 27.3993, 0.774271, 22.9046 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bux_hedge_box_low_3975"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 19.805, 0.774271, 19.9675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bux_hedge_box_low_3975"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 30.6665, 0.774271, 16.5436 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bux_hedge_box_low_3975"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 22.6058, 0.774271, 13.4529 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bux_hedge_box_low_3975"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 26.8304, 1.07282, 15.9815 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 25.8206, 1.07282, 15.5556 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 24.798, 1.07282, 15.1481 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 25.2295, 1.07282, 20.0513 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 24.2197, 1.07282, 19.6254 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 23.1971, 1.07282, 19.2179 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 7.14739, 1.07282, 13.2833 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 4.6234, 1.07282, 12.3732 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 1.96954, 1.07282, 11.4034 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.68812, 1.07282, 10.4698 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.66132, 1.07282, 9.70551 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -4.72999, 1.07282, 8.62547 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -6.59394, 1.07282, 7.10449 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -8.0155, 1.07282, 5.23621 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -9.09484, 1.07282, 2.9761 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -9.63855, 1.07282, 1.0691 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -9.7782, 1.07282, -1.26023 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -9.43433, 1.07282, -3.6414 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -8.56519, 1.07282, -5.82219 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -7.18367, 1.07282, -7.91136 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -5.67578, 1.07282, -9.70359 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -4.14843, 1.07282, -11.5953 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.34437, 1.07282, -13.6635 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.510307, 1.07282, -15.7375 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 1.30567, 1.07282, -17.8959 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 3.07606, 1.07282, -20.0439 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 4.72571, 1.07282, -22.5383 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 6.1718, 1.07282, -24.8993 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 7.5854, 1.07282, -27.3402 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 8.95586, 1.07282, -29.7629 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 10.4462, 1.07282, -32.2747 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 11.8357, 1.07282, -34.6846 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 12.6633, 1.07282, -37.1837 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 10.6789, 1.07282, -39.0518 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -4.55695, 1.07282, 1.83864 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -5.24085, 1.07282, -1.39129 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 1.83379, 1.07282, -12.0963 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 3.67001, 1.07282, -14.1734 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 5.49227, 1.07282, -16.2552 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 7.14516, 1.07282, -18.4097 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 8.85426, 1.07282, -21.0435 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 10.3126, 1.07282, -23.3684 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 11.7456, 1.07282, -25.7352 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 13.1754, 1.07282, -28.2248 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 14.6215, 1.07282, -30.5857 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 15.9713, 1.07282, -32.9796 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 16.9743, 1.07282, -35.2591 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 17.1618, 1.07282, -37.8371 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 16.2886, 1.07282, -40.1394 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 14.1671, 1.07282, -42.0547 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Paris_StreetPivot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 8.4999, 0.546009, 12.2582 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Bollard_4135"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 9.02493, 0.546009, 10.8453 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Bollard_4135"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 6.5186, -0.024713, 10.8136 ],
+                "rot" : [ 0.0, 73.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Manhole"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.195712, -0.024713, 8.30611 ],
+                "rot" : [ 0.0, 109.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Manhole"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -5.17876, -0.024713, 5.50237 ],
+                "rot" : [ 0.0, -51.9, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Manhole"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -7.5731, -0.024713, -0.860051 ],
+                "rot" : [ 0.0, 175.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Manhole"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -5.26628, -0.024713, -6.59485 ],
+                "rot" : [ 0.0, -130.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Manhole"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.01659, -0.024713, -11.8821 ],
+                "rot" : [ 0.0, 7.36, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Manhole"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bux_hedge_box_long_high_3961"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -20.0523, 2.78519, -16.3212 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "tree_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -15.1407, 2.78519, -11.5446 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "tree_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -10.7623, 2.78519, -7.48964 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "tree_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -5.73709, 2.78519, -12.4179 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "tree_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.33053, 2.78519, -17.3493 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "tree_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -19.0004, 0.774271, -17.3925 ],
+                "rot" : [ 0.0, -112.581, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bush_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -18.9086, 0.774271, -15.1026 ],
+                "rot" : [ 0.0, -22.581, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bush_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -17.0097, 0.774271, -13.3814 ],
+                "rot" : [ 0.0, -22.581, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bush_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -14.5215, 0.774271, -10.9405 ],
+                "rot" : [ 0.0, -22.581, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bush_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -11.926, 0.774271, -8.42288 ],
+                "rot" : [ 0.0, -22.581, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bush_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -9.33547, 0.774271, -8.70401 ],
+                "rot" : [ 0.0, -114.842, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bush_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -6.65159, 0.774271, -11.4286 ],
+                "rot" : [ 0.0, -114.842, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bush_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.35229, 0.774271, -16.1999 ],
+                "rot" : [ 0.0, -114.842, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bush_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "bush_02"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "trashcan_6515"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.809338, 0.546009, -12.7954 ],
+                "rot" : [ 0.0, -21.8545, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Bollard_4135"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.295037, 0.546009, -13.8143 ],
+                "rot" : [ 0.0, -21.8545, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Bollard_4135"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 38.7979, 3.10635, 33.9462 ],
+                "rot" : [ 0.0, 58.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "streetlight_01a"
+            },
+            "light" : {
+                "offset" : [ 0.0, 1.4, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 33.3058, 3.10635, 24.0987 ],
+                "rot" : [ 0.0, 38.8329, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "streetlight_01a"
+            },
+            "light" : {
+                "offset" : [ 0.0, 1.4, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 49.3277, 3.10635, 34.3578 ],
+                "rot" : [ 0.0, 123.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "streetlight_01a"
+            },
+            "light" : {
+                "offset" : [ 0.0, 1.4, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 35.1023, 3.10635, 18.3214 ],
+                "rot" : [ 0.0, 95.7767, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "streetlight_01a"
+            },
+            "light" : {
+                "offset" : [ 0.0, 1.4, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 21.5795, 3.10635, 18.8197 ],
+                "rot" : [ 0.0, 72.7592, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "streetlight_01a"
+            },
+            "light" : {
+                "offset" : [ 0.0, 1.4, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 7.81192, 3.10635, 8.64538 ],
+                "rot" : [ 0.0, 70.5844, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "streetlight_01a"
+            },
+            "light" : {
+                "offset" : [ 0.0, 1.4, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.08828, 3.10635, 4.65037 ],
+                "rot" : [ 0.0, 70.5844, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "streetlight_01a"
+            },
+            "light" : {
+                "offset" : [ 0.0, 1.4, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.75676, 3.10635, 10.0399 ],
+                "rot" : [ 0.0, 70.5844, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "streetlight_01a"
+            },
+            "light" : {
+                "offset" : [ 0.0, 1.4, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -9.65238, 3.10635, 2.08711 ],
+                "rot" : [ 0.0, 19.8058, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "streetlight_01a"
+            },
+            "light" : {
+                "offset" : [ 0.0, 1.4, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -4.33221, 3.10635, -4.19046 ],
+                "rot" : [ 0.0, -36.9879, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "streetlight_01a"
+            },
+            "light" : {
+                "offset" : [ 0.0, 1.4, 0.0 ],
+                "color" : [ 100.0, 100.0, 100.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 60,
+                "radius" : 0.1,
+                "cast_shadow" : true,
+                "cache_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 6.50019, 1.07503, 4.91643 ],
+                "rot" : [ 0.0, -21.672, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "table_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 3.71709, 1.07503, 3.81146 ],
+                "rot" : [ 0.0, -21.672, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "table_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.950879, 1.07503, 2.71319 ],
+                "rot" : [ 0.0, -21.672, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "table_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 8.06702, 1.07503, 6.53108 ],
+                "rot" : [ 0.0, 158.328, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "table_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 5.67805, 1.07503, 5.55878 ],
+                "rot" : [ 0.0, 158.328, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "table_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.98336, 1.07503, 4.46205 ],
+                "rot" : [ 0.0, 158.328, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "table_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.174223, 1.07503, 3.31875 ],
+                "rot" : [ 0.0, 158.328, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "table_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.51462, 1.07503, -5.42764 ],
+                "rot" : [ 0.0, -117.873, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "table_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.157202, 1.07503, -7.99795 ],
+                "rot" : [ 0.0, -117.873, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "table_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 1.16921, 1.07503, -10.5096 ],
+                "rot" : [ 0.0, -117.873, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "table_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -3.48342, 1.07503, -5.97249 ],
+                "rot" : [ 0.0, -125.4, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "table_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 10.2317, 0.756867, 5.92195 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "plantpot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.32495, 0.756867, -2.1679 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "plantpot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.890021, 0.756867, 1.11414 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "plantpot_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 8.00995, 0.686067, 8.17008 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "plantpot_02"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 6.21553, 0.686067, 7.42098 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "plantpot_02"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 4.19706, 0.686067, 6.60352 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "plantpot_02"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.21646, 0.686067, 5.84571 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "plantpot_02"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.205429, 0.686067, 5.00218 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "plantpot_02"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.70675, 0.686067, 4.25568 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "plantpot_02"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 6.39577, 1.40333, 7.0224 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "sidewalk_barrier"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 4.38049, 1.40333, 6.21599 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "sidewalk_barrier"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.37104, 1.40333, 5.41192 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "sidewalk_barrier"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.337999, 1.40333, 4.5984 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "sidewalk_barrier"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.67616, 1.40333, 3.79244 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "sidewalk_barrier"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.6173, 0.920268, 4.02139 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "menu_sign_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -4.40448, 0.920268, -3.13213 ],
+                "rot" : [ 0.0, 69.5, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "menu_sign_01"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "stringlight_wind"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 3.93644, 3.2314, 3.64244 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 3.43442, 2.99195, 4.77527 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.92587, 2.82887, 5.92282 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 1.90607, 2.73614, 8.22406 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 1.38177, 2.80908, 9.40715 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.858161, 2.96454, 10.5887 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.359691, 3.19096, 11.7135 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "stringlight_wind_14"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 6.59161, 4.83767, 8.72573 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 7.56382, 4.30272, 6.34598 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 7.06871, 4.35481, 7.55789 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 6.58359, 4.48485, 8.74535 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 6.09128, 4.69836, 9.95041 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 5.59671, 4.99805, 11.161 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 5.10823, 5.38165, 12.3567 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 4.64836, 5.82684, 13.4823 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "stringlight_wind_15"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.343004, 4.37419, 2.21973 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.447934, 4.29208, 3.38037 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.24674, 4.29627, 4.5437 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.03526, 4.38496, 5.68346 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.8415, 4.56226, 6.83999 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -3.65773, 4.83161, 8.00171 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -4.47038, 5.19143, 9.14902 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -5.24163, 5.62019, 10.229 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "stringlight_wind_16"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.955874, 4.22971, 1.17043 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.03383, 4.0256, 1.93404 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -3.12404, 3.90293, 2.70457 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -4.20171, 3.86287, 3.46454 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -5.30511, 3.90491, 4.24091 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -6.42376, 4.03358, 5.0262 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -7.53913, 4.2495, 5.80735 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -8.59921, 4.53805, 6.54803 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "stringlight_wind_17"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.65816, 4.2608, -2.22829 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -4.06456, 4.02081, -1.72577 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -5.48726, 3.87288, -1.22011 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -6.89388, 3.81851, -0.722771 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -8.33438, 3.85682, -0.21611 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -9.79511, 3.99302, 0.294905 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -11.2519, 4.22796, 0.80173 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -12.6367, 4.54555, 1.28086 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "stringlight_wind_18"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.65987, 4.49461, -4.79129 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.81667, 4.34965, -5.43135 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -3.98086, 4.28622, -6.0794 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -5.12607, 4.30412, -6.72069 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -6.29293, 4.40491, -7.378 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -7.46999, 4.59251, -8.04513 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -8.63759, 4.86656, -8.71106 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -9.74157, 5.20976, -9.34469 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "stringlight_wind_19"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.339517, 4.45439, -7.01802 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.32568, 4.31288, -7.74215 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.31759, 4.24677, -8.4754 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -4.28585, 4.3419, -9.9449 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -5.28701, 4.50802, -10.6999 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -6.27952, 4.75422, -11.4537 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -7.21738, 5.06481, -12.1709 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "stringlight_wind_20"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 1.60811, 4.49313, -10.4451 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.764638, 4.47094, -11.1915 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.078079, 4.51825, -11.9427 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.73346, 4.81888, -13.4343 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.56672, 5.07936, -14.1936 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 0.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -3.38671, 5.41205, -14.9467 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 10.0, 10.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -4.15577, 5.79763, -15.6587 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 0.0, 0.0, 10.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 7.25889, 3.18912, 4.35032 ],
+                "rot" : [ 0.0, -22.2714, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Lantern_Wind"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 4.49699, 3.18912, 3.25823 ],
+                "rot" : [ 0.0, -22.2714, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Lantern_Wind"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 1.71644, 3.18912, 2.15798 ],
+                "rot" : [ 0.0, -22.2714, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Lantern_Wind"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -1.1022, 3.19074, -4.73938 ],
+                "rot" : [ 0.0, 61.4374, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Lantern_Wind"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -0.008421, 3.16058, -7.27907 ],
+                "rot" : [ 0.0, 61.4374, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Lantern_Wind"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "Vespa_static"
+            }
+        },
+        {
+            "name" : "scooter_00",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_01",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_02",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_03",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_04",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_05",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_06",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_07",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_10",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_11",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_12",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_13",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_14",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_15",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_16",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "scooter_17",
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "scooter"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "sophia_00",
+            "transform" : {
+                "pos" : [ -1.00435, 0.25336, 5.16927 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "sophia"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "sophia_01",
+            "transform" : {
+                "pos" : [ 48.514, 0.25336, 38.7656 ],
+                "rot" : [ 0.0, 180.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "sophia"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "eric_00",
+            "transform" : {
+                "pos" : [ 5.0, 0.25336, 5.16927 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "eric"
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "eric_01",
+            "transform" : {
+                "pos" : [ 57.2581, 0.25336, 29.9506 ],
+                "rot" : [ 0.0, -90.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "eric"
+            },
+            "anim_state" : {}
+        },
+        
+        
+        {
+            "transform" : {
+                "pos" : [ 15.0868, 2.0, -36.1392 ]
+            },
+            "probe" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "radius" : 30.0
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 7.48615, 2.0, -22.5299 ]
+            },
+            "probe" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "radius" : 30.0
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -3.76081, 2.0, -9.43412 ]
+            },
+            "probe" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "radius" : 30.0
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -18.9841, 2.0, -10.7051 ]
+            },
+            "probe" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "radius" : 30.0
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -7.27465, 2.0, 1.21576 ]
+            },
+            "probe" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "radius" : 30.0
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 2.98379, 2.0, 9.39157 ]
+            },
+            "probe" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "radius" : 30.0
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 13.9366, 2.0, 13.3216 ]
+            },
+            "probe" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "radius" : 30.0
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 26.0566, 2.0, 18.2004 ]
+            },
+            "probe" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "radius" : 30.0
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 47.6775, 2.0, 17.3787 ]
+            },
+            "probe" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "radius" : 30.0
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 42.4905, 2.0, 32.3233 ]
+            },
+            "probe" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "radius" : 30.0
+            }
+        }
+    ]
+}

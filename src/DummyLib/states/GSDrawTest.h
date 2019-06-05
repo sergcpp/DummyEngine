@@ -87,11 +87,16 @@ class GSDrawTest : public GameState {
 
     // test test
     uint32_t wolf_indices_[32] = { 0xffffffff };
+    uint32_t scooter_indices_[16] = { 0xffffffff };
+    uint32_t sophia_indices_[2] = { 0xffffffff }, eric_indices_[2] = { 0xffffffff };
+    float scooters_angle_ = 0.0f;
 
     void LoadScene(const char *name);
 
     void BackgroundProc();
     void UpdateFrame(int list_index);
+
+    void TestUpdateAnims(float delta_time_s);
 public:
     explicit GSDrawTest(GameBase *game);
     ~GSDrawTest();

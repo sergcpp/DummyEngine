@@ -1,0 +1,6 @@
+gl_program: main_probelit_nossr main_probelit.vs.glsl main_probelit_nossr.fs.glsl
+gl_program: main_probelit_nossr main_probelit.vs.glsl main_probelit_nossr.fs.glsl
+sw_program: main
+texture: rp_sophia_animated_003_diff.png
+texture: rp_sophia_animated_003_norm.png
+texture: default_specular.png

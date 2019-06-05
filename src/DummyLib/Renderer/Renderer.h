@@ -76,6 +76,14 @@ public:
         uint32_t last_update, last_visible;
     };
 
+    struct DrawElementsIndirectCommand {
+        uint32_t count;
+        uint32_t instance_ount;
+        uint32_t first_index;
+        uint32_t base_vertex;
+        uint32_t base_instance;
+    };
+
     struct DrawList {
         uint32_t        render_flags = default_flags;
         Ren::Camera     draw_cam;

@@ -61,6 +61,8 @@ static const uint8_t SunShadowUpdatePattern[4] = {
 };
 }
 
+#define REN_UNINITIALIZE_X8  Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize
+
 #define BBOX_POINTS(min, max) \
     (min)[0], (min)[1], (min)[2],     \
     (max)[0], (min)[1], (min)[2],     \
@@ -200,9 +202,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         _surf->index_type = SW_UNSIGNED_INT;
                         _surf->attribs = mesh->attribs();
                         _surf->indices = ((const uint8_t *)mesh->indices() + s->offset);
-                        _surf->stride = 16;// 13 * sizeof(float);
+                        _surf->stride = 13 * sizeof(float);
                         _surf->count = (SWuint)s->num_indices;
-                        _surf->base_vertex = -SWint(mesh->attribs_buf1().offset / _surf->stride);
+                        _surf->base_vertex = 0;
                         _surf->xform = Ren::ValuePtr(clip_from_object);
                         _surf->dont_skip = nullptr;
 
@@ -268,7 +270,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             } else {
                 const auto &obj = scene.objects[n->prim_index];
 
-                if ((obj.comp_mask & CompTransformBit) && (obj.comp_mask & (CompDrawableBit | CompLightSourceBit | CompProbeBit))) {
+                if ((obj.comp_mask & CompTransformBit) && (obj.comp_mask & (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit))) {
                     const auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(obj.components[CompTransform]);
 
                     if (!skip_check) {
@@ -412,19 +414,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                         Ren::Mat4f world_from_clip = Ren::Inverse(clip_from_world);
 
-                        Ren::Vec4f bbox_points[] = {
-                            { -1.0f, -1.0f, -1.0f, 1.0f }, { -1.0f, 1.0f, -1.0f, 1.0f },
-                            { 1.0f, 1.0f, -1.0f, 1.0f }, { 1.0f, -1.0f, -1.0f, 1.0f },
-
-                            { -1.0f, -1.0f, 1.0f, 1.0f }, { -1.0f, 1.0f, 1.0f, 1.0f },
-                            { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, -1.0f, 1.0f, 1.0f }
-                        };
+                        Ren::Vec4f bbox_points[] = { REN_UNINITIALIZE_X8 };
 
                         Ren::Vec3f bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
                                    bbox_max = Ren::Vec3f{ std::numeric_limits<float>::lowest() };
 
                         for (int k = 0; k < 8; k++) {
-                            bbox_points[k] = world_from_clip * bbox_points[k];
+                            bbox_points[k] = world_from_clip * ClipFrustumPoints[k];
                             bbox_points[k] /= bbox_points[k][3];
 
                             bbox_min = Ren::Min(bbox_min, Ren::Vec3f{ bbox_points[k] });
@@ -603,8 +599,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             Ren::Frustum sh_clip_frustum;
 
             {   // Construct shadow clipping frustum
-                Ren::Vec4f frustum_points[8] = { Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize,
-                                                 Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize };
+                Ren::Vec4f frustum_points[8] = { REN_UNINITIALIZE_X8 };
 
                 for (int k = 0; k < 8; k++) {
                     frustum_points[k] = tmp_cam_world_from_clip * ClipFrustumPoints[k];
@@ -887,7 +882,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         const int resolutions[][2] = { { 512, 512 }, { 256, 256 }, { 128, 128 }, { 64, 64 } };
 
         // choose resolution based on distance
-        int res_index = std::min(int(distance * 0.01f), 3);
+        int res_index = std::min(int(distance * 0.02f), 4);
 
         ShadReg *region = nullptr;
 
@@ -1296,6 +1291,8 @@ void Renderer::__push_skeletal_mesh(uint32_t obj_index, const AnimState *as, con
         list.skin_regions.data[list.skin_regions.count++] = { i, out_offset, palette_start, count };
         list.skin_vertices_count += count;
     }
+
+    assert(list.skin_vertices_count <= REN_MAX_SKIN_VERTICES_TOTAL);
 }
 
 void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,

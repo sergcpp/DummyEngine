@@ -126,7 +126,7 @@ void main() {
         ssr_uvs.b /= weight_sum1;
     }
 
-    float tex_lod = 4.0 * (1.0 - specular.w);
+    float tex_lod = 8.0 * (1.0 - specular.w);
 
     vec3 c0 = vec3(0.0);
 

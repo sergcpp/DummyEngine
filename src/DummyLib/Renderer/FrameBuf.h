@@ -12,6 +12,13 @@ struct FrameBuf {
         Ren::eTexRepeat repeat;
     };
 
+    enum eDepthFormat { DepthNone, Depth16, Depth24 };
+
+    struct DepthAttachmentDesc {
+        eDepthFormat format;
+        Ren::eTexFilter filter;
+    };
+
 #if defined(USE_GL_RENDER)
     struct ColorAttachment {
         ColorAttachmentDesc desc;
@@ -24,8 +31,7 @@ struct FrameBuf {
     uint32_t        attachments_count = 0;
 #endif
     FrameBuf() :  w(-1), h(-1), fb(0xffffffff), attachments_count(0) {}
-    FrameBuf(int w, int h, const ColorAttachmentDesc *attachments, int attachments_count,
-             bool with_depth = true, Ren::eTexFilter depth_filter = Ren::NoFilter, int sample_count = 1);
+    FrameBuf(int w, int h, const ColorAttachmentDesc *attachments, int attachments_count, const DepthAttachmentDesc &depth_att, int sample_count = 1);
     ~FrameBuf();
 
     FrameBuf(const FrameBuf &rhs) = delete;

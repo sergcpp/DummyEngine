@@ -114,7 +114,7 @@ void main(void) {
             
                 vec4 decal_diff = textureGrad(decals_texture, diff_uvs, _duv_dx, _duv_dy);
                 decal_influence = decal_diff.a;
-                albedo_color = mix(albedo_color, decal_diff.xyz, decal_influence);
+                albedo_color = mix(albedo_color, pow(decal_diff.xyz, vec3(2.2)), decal_influence);
             }
             
             vec4 norm_uvs_tr = texelFetch(decals_buffer, di * 6 + 4);
@@ -125,8 +125,8 @@ void main(void) {
                 vec2 _duv_dx = 2.0 * norm_uvs_tr.zw * duv_dx;
                 vec2 _duv_dy = 2.0 * norm_uvs_tr.zw * duv_dy;
             
-                vec4 decal_norm = textureGrad(decals_texture, norm_uvs, _duv_dx, _duv_dy);
-                normal_color = mix(normal_color, decal_norm.xyz, decal_influence);
+                vec3 decal_norm = textureGrad(decals_texture, norm_uvs, _duv_dx, _duv_dy).wyz;
+                normal_color = mix(normal_color, decal_norm, decal_influence);
             }
             
             vec4 spec_uvs_tr = texelFetch(decals_buffer, di * 6 + 5);
@@ -184,23 +184,7 @@ void main(void) {
                 pp.xyz = pp.xyz * 0.5 + vec3(0.5);
                 pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
                 
-                const vec2 shadow_softness = vec2(3.0 / $ShadRes.0, 1.5 / $ShadRes.0);
-
-                highp float r = M_PI * (-1.0 + 2.0 * rand(gl_FragCoord.xy));
-                highp vec2 rx = vec2(cos(r), sin(r));
-                highp vec2 ry = vec2(rx.y, -rx.x);
-                
-                float visibility = 0.0;
-                
-                int num_samples = min(int(16.0 * reg_tr.w), 8);
-                
-                highp float weight = 1.0 / float(num_samples);
-                for (int i = 0; i < num_samples; i++) {
-                    visibility += texture(shadow_texture, pp.xyz + vec3((rx * poisson_disk[i].x + ry * poisson_disk[i].y) * shadow_softness, 0.0));
-                }
-                visibility *= weight;
-                
-                atten *= visibility;
+                atten *= SampleShadowPCF5x5(shadow_texture, pp.xyz);
             }
             
             additional_light += col_and_index.xyz * atten * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);

@@ -461,7 +461,7 @@ void ModlApp::InitInternal() {
             } out_data1;
 
             layout(location = 0) uniform ivec2 uOffsets;
-            layout(location = 2) uniform mat4 uMPalette[64];
+            layout(location = 2) uniform mat4 uMPalette[96];
             
             layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 

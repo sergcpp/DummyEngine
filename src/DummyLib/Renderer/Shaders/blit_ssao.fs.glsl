@@ -74,7 +74,7 @@ void main() {
         return;
     }
 
-    float initial_radius = 0.15;
+    float initial_radius = 0.3;
     float ss_radius = min(initial_radius / depth, 0.1);
 
     const float sample_weight = 1.0 / 7.0;

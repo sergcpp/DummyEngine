@@ -118,6 +118,6 @@ void main() {
         }
     }
 
-    outColor = vec4(heatmap(float(tree_complexity) / 24.0), 0.85);
+    outColor = vec4(heatmap(float(tree_complexity) / 128.0), 0.85);
 }
 )"

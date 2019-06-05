@@ -1,0 +1,6 @@
+gl_program: main_probelit_nossr main_probelit.vs.glsl main_probelit_nossr.fs.glsl
+gl_program: main_probelit_nossr main_probelit.vs.glsl main_probelit_nossr.fs.glsl
+sw_program: main
+texture: bistro/Vespa_diff.png
+texture: bistro/Vespa_norm.png
+texture: bistro/Vespa_spec.png

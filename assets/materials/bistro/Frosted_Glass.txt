@@ -1,0 +1,7 @@
+gl_program: main_probelit_nossr main_probelit.vs.glsl main_probelit_nossr.fs.glsl
+gl_program: main_probelit_nossr main_probelit.vs.glsl main_probelit_nossr.fs.glsl
+sw_program: main
+flag: alpha_blend
+texture: bistro/Frosted_Glass_diff.png
+texture: bistro/Frosted_Glass_norm.png
+texture: default_specular.png

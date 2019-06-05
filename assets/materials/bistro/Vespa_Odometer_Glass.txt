@@ -1,0 +1,7 @@
+gl_program: main_glass_thin main_glass_thin.vs.glsl main_glass_thin.fs.glsl
+gl_program: main_glass_thin main_glass_thin.vs.glsl main_glass_thin.fs.glsl
+sw_program: main
+flag: alpha_blend
+texture: bistro/Vespa_Odometer_Glass_diff.png
+texture: default_normalmap.png
+texture: white.png

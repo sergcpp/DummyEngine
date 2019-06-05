@@ -43,16 +43,14 @@ layout (std140) uniform SharedDataBlock {
     ProbeItem uProbes[)" AS_STR(REN_MAX_PROBES_TOTAL) R"(];
 };
 
+layout(binding = )" AS_STR(REN_REFL_DEPTH_TEX_SLOT) R"() uniform mediump sampler2D depth_texture;
 #if defined(MSAA_4)
-layout(binding = )" AS_STR(REN_REFL_DEPTH_TEX_SLOT) R"() uniform mediump sampler2DMS depth_texture;
 layout(binding = )" AS_STR(REN_REFL_NORM_TEX_SLOT) R"() uniform mediump sampler2DMS norm_texture;
 layout(binding = )" AS_STR(REN_REFL_SPEC_TEX_SLOT) R"() uniform mediump sampler2DMS spec_texture;
 #else
-layout(binding = )" AS_STR(REN_REFL_DEPTH_TEX_SLOT) R"() uniform mediump sampler2D depth_texture;
 layout(binding = )" AS_STR(REN_REFL_NORM_TEX_SLOT) R"() uniform mediump sampler2D norm_texture;
 layout(binding = )" AS_STR(REN_REFL_SPEC_TEX_SLOT) R"() uniform mediump sampler2D spec_texture;
 #endif
-layout(binding = )" AS_STR(REN_REFL_PREV_TEX_SLOT) R"() uniform mediump sampler2D prev_texture;
 
 in vec2 aVertexUVs_;
 
@@ -72,8 +70,8 @@ vec3 RGBMDecode(vec4 rgbm) {
 }
 
 float LinearDepthTexelFetch(ivec2 hit_pixel) {
-    float depth = texelFetch(depth_texture, hit_pixel, 0).r;
-    return uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
+    float depth = texelFetch(depth_texture, hit_pixel / 2, 0).r;
+    return depth; //uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
 }
 
 bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel, out vec3 hit_point) {
@@ -220,7 +218,8 @@ void main() {
     vec4 normal_tex = texelFetch(norm_texture, pix_uvs, 0);
     if (normal_tex.w < 0.0001) return;
 
-    float depth = texelFetch(depth_texture, pix_uvs, 0).r;
+    float depth = texelFetch(depth_texture, pix_uvs / 2, 0).r;
+    depth = (uClipInfo[0] / depth - uClipInfo[2]) / (uClipInfo[1] - uClipInfo[2]);
 
     vec3 normal_ws = 2.0 * normal_tex.xyz - 1.0;
     vec3 normal_vs = (uViewMatrix * vec4(normal_ws, 0.0)).xyz;

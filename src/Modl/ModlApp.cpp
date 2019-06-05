@@ -113,6 +113,8 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         view_file_name = out_file_name;
     }
 
+    system("DummyApp.exe --prepare_assets pc --norun");
+
     if (in_file_type == IN_ANIM) {
         int res = CompileAnim(in_file_name, out_file_name);
         return (res == RES_SUCCESS) ? 0 : -1;
@@ -648,10 +650,10 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 file_size = mat_file.tellg() - file_size;
                 mat_file.seekg(0, ios::beg);
 
-                unique_ptr<char[]> img_data(new char[(size_t)file_size]);
-                mat_file.read(img_data.get(), file_size);
+                unique_ptr<char[]> mat_data(new char[(size_t)file_size]);
+                mat_file.read(mat_data.get(), file_size);
 
-                Ren::MaterialRef mat_ref = ctx_.LoadMaterial(materials[i].c_str(), img_data.get(), nullptr,
+                Ren::MaterialRef mat_ref = ctx_.LoadMaterial(materials[i].c_str(), mat_data.get(), nullptr,
                                            std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
                                            std::bind(&ModlApp::OnTextureNeeded, this, _1));
                 Ren::Material *mat = mat_ref.get();

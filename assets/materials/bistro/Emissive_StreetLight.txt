@@ -1,0 +1,7 @@
+gl_program: main_glass_thin main_glass_thin.vs.glsl main_glass_thin.fs.glsl
+gl_program: main_glass_thin main_glass_thin.vs.glsl main_glass_thin.fs.glsl
+sw_program: main
+flag: alpha_blend
+texture: bistro/Emissive_StreetLight_diff.png
+texture: default_normalmap.png
+texture: bistro/Emissive_StreetLight_spec.png

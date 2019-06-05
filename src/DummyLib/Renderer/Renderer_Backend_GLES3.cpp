@@ -1132,6 +1132,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         if (list.render_flags & EnableLights) {
             shrd_data.uSunDir = Ren::Vec4f{ list.env.sun_dir[0], list.env.sun_dir[1], list.env.sun_dir[2], 0.0f };
             shrd_data.uSunCol = Ren::Vec4f{ list.env.sun_col[0], list.env.sun_col[1], list.env.sun_col[2], 0.0f };
+        } else {
+            shrd_data.uSunDir = {};
+            shrd_data.uSunCol = {};
         }
 
         // actual resolution and full resolution
@@ -1765,24 +1768,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
         glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
+        BindTexture(REN_REFL_DEPTH_TEX_SLOT, down_depth_.attachments[0].tex);
+
         if (clean_buf_.sample_count > 1) {
-            BindTextureMs(REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
             BindTextureMs(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
             BindTextureMs(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         } else {
-            BindTexture(REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
             BindTexture(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
             BindTexture(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         }
-
-        BindTexture(REN_REFL_PREV_TEX_SLOT, down_buf_.attachments[0].tex);
-        if (list.probe_storage) {
-            glActiveTexture(GL_TEXTURE0 + REN_ENV_TEX_SLOT);
-            glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, list.probe_storage->tex_id());
-        }
-        
-        BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
-        BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
 
 #ifndef DISABLE_MARKERS
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "REFLECTIONS PASS");
@@ -1822,6 +1816,14 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             BindTexture(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
         }
         BindTexture(REN_REFL_PREV_TEX_SLOT, down_buf_.attachments[0].tex);
+
+        if (list.probe_storage) {
+            glActiveTexture(GL_TEXTURE0 + REN_ENV_TEX_SLOT);
+            glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, list.probe_storage->tex_id());
+        }
+
+        BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
+        BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 

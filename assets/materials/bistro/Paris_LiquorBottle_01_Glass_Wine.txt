@@ -1,0 +1,6 @@
+gl_program: main_probelit_nossr main_probelit.vs.glsl main_probelit_nossr.fs.glsl
+gl_program: main_probelit_nossr main_probelit.vs.glsl main_probelit_nossr.fs.glsl
+sw_program: main
+texture: bistro/Paris_LiquorBottle_01_Glass_Wine_diff.png
+texture: default_normalmap.png
+texture: glossy_spec.png

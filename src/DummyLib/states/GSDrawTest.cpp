@@ -30,6 +30,7 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
     //"jap_house.json";
     //"skin_test.json";
     "living_room_gumroad.json";
+    //"bistro_night.json";
     //"street2.json;";
 
 const bool USE_TWO_THREADS = true;
@@ -78,7 +79,7 @@ void GSDrawTest::Enter() {
         desc.repeat = Ren::ClampToEdge;
 
         int res = scene_manager_->scene_data().probe_storage.res();
-        temp_probe_buf_ = FrameBuf(res, res, &desc, 1, false);
+        temp_probe_buf_ = FrameBuf(res, res, &desc, 1, { FrameBuf::DepthNone });
     }
 
     cmdline_history_.resize(MAX_CMD_LINES, "~");
@@ -344,41 +345,74 @@ void GSDrawTest::LoadScene(const char *name) {
         }
     }
 
-    char wolf_name[] = "wolf00";
-
     auto &scene = scene_manager_->scene_data();
 
-    for (int j = 0; j < 4; j++) {
-        for (int i = 0; i < 8; i++) {
-            int index = j * 8 + i;
+    {
+        char wolf_name[] = "wolf00";
 
-            wolf_name[4] = '0' + j;
-            wolf_name[5] = '0' + i;
+        for (int j = 0; j < 4; j++) {
+            for (int i = 0; i < 8; i++) {
+                int index = j * 8 + i;
 
-            uint32_t wolf_index = scene_manager_->FindObject(wolf_name);
-            wolf_indices_[index] = wolf_index;
+                wolf_name[4] = '0' + j;
+                wolf_name[5] = '0' + i;
 
-            if (wolf_index != 0xffffffff) {
-                SceneObject *wolf = scene_manager_->GetObject(wolf_index);
+                uint32_t wolf_index = scene_manager_->FindObject(wolf_name);
+                wolf_indices_[index] = wolf_index;
 
-                uint32_t mask = CompDrawableBit | CompAnimStateBit;
-                if ((wolf->comp_mask & mask) == mask) {
-                    auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
-                    as->anim_time_s = 4.0f * (float(rand()) / RAND_MAX);
+                if (wolf_index != 0xffffffff) {
+                    SceneObject *wolf = scene_manager_->GetObject(wolf_index);
+
+                    uint32_t mask = CompDrawableBit | CompAnimStateBit;
+                    if ((wolf->comp_mask & mask) == mask) {
+                        auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
+                        as->anim_time_s = 4.0f * (float(rand()) / RAND_MAX);
+                    }
                 }
             }
         }
     }
 
+    {
+        char scooter_name[] = "scooter_00";
+
+        for (int j = 0; j < 2; j++) {
+            for (int i = 0; i < 8; i++) {
+                scooter_name[8] = '0' + j;
+                scooter_name[9] = '0' + i;
+
+                uint32_t scooter_index = scene_manager_->FindObject(scooter_name);
+                scooter_indices_[j * 8 + i] = scooter_index;
+            }
+        }
+    }
+
+    {
+        char sophia_name[] = "sophia_00";
+
+        for (int i = 0; i < 2; i++) {
+            sophia_name[8] = '0' + i;
+
+            uint32_t sophia_index = scene_manager_->FindObject(sophia_name);
+            sophia_indices_[i] = sophia_index;
+        }
+    }
+
+    {
+        char eric_name[] = "eric_00";
+
+        for (int i = 0; i < 2; i++) {
+            eric_name[6] = '0' + i;
+
+            uint32_t eric_index = scene_manager_->FindObject(eric_name);
+            eric_indices_[i] = eric_index;
+        }
+    }
+
     probes_dirty_ = true;
 
-    /*view_origin_[0] = 0.090376f;
-    view_origin_[1] = 3.457212f;
-    view_origin_[2] = 5.265417f;
-      
-    view_dir_[0] = 0.016737f;
-    view_dir_[1] = -0.194597f;
-    view_dir_[2] = 0.980741f;*/
+    //view_origin_ = { -10.8793468f, 4.8534384f, 1.6284955f }; 
+    //view_dir_ = { 0.9387828f, -0.1395938f, -0.3149569f };
 }
 
 void GSDrawTest::Exit() {
@@ -483,8 +517,8 @@ void GSDrawTest::Draw(uint64_t dt_us) {
         }
     }
 
-    //LOGI("(%f %f %f) (%f %f %f)", view_origin_[0], view_origin_[1], view_origin_[2],
-    //                              view_dir_[0], view_dir_[1], view_dir_[2]);
+    //LOGI("{ %.7f, %.7f, %.7f } { %.7f, %.7f, %.7f }", view_origin_[0], view_origin_[1], view_origin_[2],
+    //                                                  view_dir_[0], view_dir_[1], view_dir_[2]);
 
     {
         // ui draw
@@ -845,6 +879,39 @@ void GSDrawTest::Update(uint64_t dt_us) {
 
     scene_manager_->InvalidateObjects(monkey_ids, 5, CompTransformBit);
 #endif
+    auto &scene = scene_manager_->scene_data();
+
+    if (scooter_indices_[0] != 0xffffffff) {
+        const Ren::Vec3f rot_center = { 44.5799f, 0.15f, 24.7763f };
+
+        scooters_angle_ += 0.0000005f * dt_us;
+
+        for (int i = 0; i < 16; i++) {
+            if (scooter_indices_[i] == 0xffffffff) break;
+
+            SceneObject *scooter = scene_manager_->GetObject(scooter_indices_[i]);
+
+            uint32_t mask = CompTransform;
+            if ((scooter->comp_mask & mask) == mask) {
+                auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(scooter->components[CompTransform]);
+
+                tr->mat = Ren::Mat4f{ 1.0f };
+                tr->mat = Ren::Translate(tr->mat, rot_center);
+                
+                if (i < 8) {
+                    // inner circle
+                    tr->mat = Ren::Rotate(tr->mat, scooters_angle_ + i * 0.25f * Ren::Pi<float>(), { 0.0f, 1.0f, 0.0f });
+                    tr->mat = Ren::Translate(tr->mat, { 6.5f, 0.0f, 0.0f });
+                } else {
+                    // outer circle
+                    tr->mat = Ren::Rotate(tr->mat, -scooters_angle_ + (i - 8) * 0.25f * Ren::Pi<float>(), { 0.0f, 1.0f, 0.0f });
+                    tr->mat = Ren::Translate(tr->mat, { -8.5f, 0.0f, 0.0f });
+                }
+            }
+        }
+
+        scene_manager_->InvalidateObjects(scooter_indices_, 16, CompTransformBit);
+    }
 }
 
 void GSDrawTest::HandleInput(InputManager::Event evt) {
@@ -914,10 +981,10 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
         break;
     case InputManager::RAW_INPUT_P1_MOVE:
         if (move_pointer_ == 1) {
-            side_touch_speed_ += evt.move.dx * 0.01f;
+            side_touch_speed_ += evt.move.dx * 0.002f;
             side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
-            fwd_touch_speed_ -= evt.move.dy * 0.01f;
+            fwd_touch_speed_ -= evt.move.dy * 0.002f;
             fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 1) {
             Vec3f up = { 0, 1, 0 };
@@ -936,10 +1003,10 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
         break;
     case InputManager::RAW_INPUT_P2_MOVE:
         if (move_pointer_ == 2) {
-            side_touch_speed_ += evt.move.dx * 0.01f;
+            side_touch_speed_ += evt.move.dx * 0.002f;
             side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
-            fwd_touch_speed_ -= evt.move.dy * 0.01f;
+            fwd_touch_speed_ -= evt.move.dy * 0.002f;
             fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 2) {
             Vec3f up = { 0, 1, 0 };
@@ -1089,30 +1156,8 @@ void GSDrawTest::UpdateFrame(int list_index) {
 
     float delta_time_s = fr_info_.delta_time_us * 0.000001f;
 
-    if (wolf_indices_[0] != 0xffffffff) {
-        const auto &scene = scene_manager_->scene_data();
-
-        for (int i = 0; i < 32; i++) {
-            if (wolf_indices_[i] == 0xffffffff) break;
-
-            SceneObject *wolf = scene_manager_->GetObject(wolf_indices_[i]);
-
-            uint32_t mask = CompDrawableBit | CompAnimStateBit;
-            if ((wolf->comp_mask & mask) == mask) {
-                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(wolf->components[CompDrawable]);
-                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
-
-                as->anim_time_s += delta_time_s;
-
-                Ren::Mesh *mesh = dr->mesh.get();
-                Ren::Skeleton *skel = mesh->skel();
-
-                skel->UpdateAnim(0, as->anim_time_s);
-                skel->ApplyAnim(0);
-                skel->UpdateBones(as->matr_palette);
-            }
-        }
-    }
+    // test test test
+    TestUpdateAnims(delta_time_s);
 
     // Update camera
     scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
@@ -1135,6 +1180,7 @@ void GSDrawTest::UpdateFrame(int list_index) {
         }
 
         if (!probes_to_update_.empty() && !probe_to_render_ && !probe_to_update_sh_) {
+            LOGI("Updating probe");
             auto *probe_obj = scene_manager_->GetObject(probes_to_update_.back());
             auto *probe = (LightProbe *)scene_manager_->scene_data().comp_store[CompProbe]->Get(probe_obj->components[CompProbe]);
             auto *probe_tr = (Transform *)scene_manager_->scene_data().comp_store[CompTransform]->Get(probe_obj->components[CompTransform]);
@@ -1181,5 +1227,107 @@ void GSDrawTest::UpdateFrame(int list_index) {
         main_view_lists_[list_index].render_flags = 0xffffffff;
 
         renderer_->PrepareDrawList(scene_manager_->scene_data(), scene_manager_->main_cam(), main_view_lists_[list_index]);
+    }
+}
+
+void GSDrawTest::TestUpdateAnims(float delta_time_s) {
+    const auto &scene = scene_manager_->scene_data();
+
+    if (wolf_indices_[0] != 0xffffffff) {
+        for (int i = 0; i < 32; i++) {
+            if (wolf_indices_[i] == 0xffffffff) break;
+
+            SceneObject *wolf = scene_manager_->GetObject(wolf_indices_[i]);
+
+            uint32_t mask = CompDrawableBit | CompAnimStateBit;
+            if ((wolf->comp_mask & mask) == mask) {
+                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(wolf->components[CompDrawable]);
+                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
+
+                as->anim_time_s += delta_time_s;
+
+                Ren::Mesh *mesh = dr->mesh.get();
+                Ren::Skeleton *skel = mesh->skel();
+
+                skel->UpdateAnim(0, as->anim_time_s);
+                skel->ApplyAnim(0);
+                skel->UpdateBones(as->matr_palette);
+            }
+        }
+    }
+
+    if (scooter_indices_[0] != 0xffffffff) {
+        for (int i = 0; i < 16; i++) {
+            if (scooter_indices_[i] == 0xffffffff) break;
+
+            SceneObject *scooter = scene_manager_->GetObject(scooter_indices_[i]);
+
+            uint32_t mask = CompDrawableBit | CompAnimStateBit;
+            if ((scooter->comp_mask & mask) == mask) {
+                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(scooter->components[CompDrawable]);
+                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(scooter->components[CompAnimState]);
+
+                as->anim_time_s += delta_time_s;
+
+                Ren::Mesh *mesh = dr->mesh.get();
+                Ren::Skeleton *skel = mesh->skel();
+
+                const int anim_index = (i < 8) ? 2 : 3;
+
+                skel->UpdateAnim(anim_index, as->anim_time_s);
+                skel->ApplyAnim(anim_index);
+                skel->UpdateBones(as->matr_palette);
+            }
+        }
+    }
+
+    if (sophia_indices_[0] != 0xffffffff) {
+        for (int i = 0; i < 2; i++) {
+            if (sophia_indices_[i] == 0xffffffff) break;
+
+            SceneObject *sophia = scene_manager_->GetObject(sophia_indices_[i]);
+
+            uint32_t mask = CompDrawableBit | CompAnimStateBit;
+            if ((sophia->comp_mask & mask) == mask) {
+                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(sophia->components[CompDrawable]);
+                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(sophia->components[CompAnimState]);
+
+                as->anim_time_s += delta_time_s;
+
+                Ren::Mesh *mesh = dr->mesh.get();
+                Ren::Skeleton *skel = mesh->skel();
+
+                const int anim_index = 0;
+
+                skel->UpdateAnim(anim_index, as->anim_time_s);
+                skel->ApplyAnim(anim_index);
+                skel->UpdateBones(as->matr_palette);
+            }
+        }
+    }
+
+    if (eric_indices_[0] != 0xffffffff) {
+        for (int i = 0; i < 2; i++) {
+            if (eric_indices_[i] == 0xffffffff) break;
+
+            SceneObject *eric = scene_manager_->GetObject(eric_indices_[i]);
+
+            uint32_t mask = CompDrawableBit | CompAnimStateBit;
+            if ((eric->comp_mask & mask) == mask) {
+                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(eric->components[CompDrawable]);
+                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(eric->components[CompAnimState]);
+
+                as->anim_time_s += delta_time_s;
+
+                Ren::Mesh *mesh = dr->mesh.get();
+                Ren::Skeleton *skel = mesh->skel();
+
+                const int anim_index = 0;
+
+                skel->UpdateAnim(anim_index, as->anim_time_s);
+                skel->ApplyAnim(anim_index);
+                skel->UpdateBones(as->matr_palette);
+            }
+        }
     }
 }

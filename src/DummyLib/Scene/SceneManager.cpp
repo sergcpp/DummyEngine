@@ -37,8 +37,8 @@ const char *MATERIALS_PATH = "./assets_pc/materials/";
 const char *SHADERS_PATH = "./assets_pc/shaders/";
 #endif
 
-const int DECALS_ATLAS_RESX = 2048,
-          DECALS_ATLAS_RESY = 1024;
+const int DECALS_ATLAS_RESX = 4096,
+          DECALS_ATLAS_RESY = 2048;
 
 const int LIGHTMAP_ATLAS_RESX = 2048,
           LIGHTMAP_ATLAS_RESY = 1024;
@@ -210,6 +210,18 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         }
 
         all_meshes[name] = mesh_ref;
+
+        if (js_mesh.Has("material_override")) {
+            const auto &js_materials = (const JsArray &)js_mesh.at("material_override");
+
+            int index = 0;
+            for (const auto &js_mat : js_materials.elements) {
+                if (js_mat.type() == JS_STRING) {
+                    mesh_ref->group(index).mat = OnLoadMaterial(((const JsString &)js_mat).val.c_str());
+                }
+                index++;
+            }
+        }
 
         if (js_mesh.Has("anims")) {
             const JsArray &js_anims = (const JsArray &)js_mesh.at("anims");
