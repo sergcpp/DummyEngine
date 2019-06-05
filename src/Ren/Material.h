@@ -25,7 +25,7 @@ typedef std::function<ProgramRef(const char *name, const char *arg1, const char 
 class Material : public RefCounter {
     uint32_t        flags_ = 0;
     bool            ready_ = false;
-    char            name_[32];
+    char            name_[48];
     ProgramRef      programs_[4];
     Texture2DRef    textures_[8];
     Vec4f           params_[8];
