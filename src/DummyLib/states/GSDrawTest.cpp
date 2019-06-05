@@ -638,7 +638,7 @@ void GSDrawTest::Draw(uint64_t dt_us) {
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " cells_data: %u kb", (unsigned)(Renderer::CELLS_COUNT * sizeof(CellData) / 1024));
+                sprintf(text_buffer, " cells_data: %u kb", (unsigned)(REN_CELLS_COUNT * sizeof(CellData) / 1024));
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());

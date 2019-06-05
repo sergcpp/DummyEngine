@@ -316,6 +316,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             const auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(obj.components[CompAnimState]);
                             __push_skeletal_mesh(n->prim_index, as, mesh, list);
                             base_vertex = proc_objects_[n->prim_index].base_vertex;
+                        } else {
+                            proc_objects_[n->prim_index].base_vertex = base_vertex;
                         }
 
                         const Ren::TriGroup *s = &mesh->group(0);
@@ -538,8 +540,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
             auto cam_target = bounding_center;
 
-            {
-                // Snap camera movement to shadow map pixels
+            {   // Snap camera movement to shadow map pixels
                 const float move_step = (2 * bounding_radius) / (0.5f * SUN_SHADOW_RES);
                 //                      |_shadow map extent_|   |_res of one cascade_|
 
@@ -651,20 +652,19 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
                     if ((obj.comp_mask & drawable_flags) == drawable_flags) {
                         const auto* tr = (Transform *)scene.comp_store[CompTransform]->Get(obj.components[CompTransform]);
+                        const auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
+                        if ((dr->flags & Drawable::DrVisibleToShadow) == 0) continue;
 
                         if (!skip_check &&
                             shadow_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
 
                         const auto &world_from_object = tr->mat;
-                        const auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
-                        if ((dr->flags & Drawable::DrVisibleToShadow) == 0) continue;
-
                         const auto *mesh = dr->mesh.get();
-                        
-                        auto world_from_object_trans = Ren::Transpose(world_from_object);
 
                         if (proc_objects_[n->prim_index].instance_index == 0xffffffff) {
                             proc_objects_[n->prim_index].instance_index = list.instances.count;
+
+                            auto world_from_object_trans = Ren::Transpose(world_from_object);
 
                             auto &instance = list.instances.data[list.instances.count++];
                             memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
@@ -711,193 +711,193 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         auto &l = list.light_sources.data[i];
         const auto *ls = litem_to_lsource_.data[i];
 
-        if (ls->cast_shadow) {
-            const auto light_center = Ren::Vec3f{ l.pos[0], l.pos[1], l.pos[2] };
-            const float distance = Ren::Distance(light_center, cam_pos);
+        if (!ls->cast_shadow) continue;
 
-            const int resolutions[][2] = { { 512, 512 }, { 256, 256 }, { 128, 128 }, { 64, 64 } };
+        const auto light_center = Ren::Vec3f{ l.pos[0], l.pos[1], l.pos[2] };
+        const float distance = Ren::Distance(light_center, cam_pos);
 
-            // choose resolution based on distance
-            int res_index = std::min(int(distance * 0.01f), 3);
+        const int resolutions[][2] = { { 512, 512 }, { 256, 256 }, { 128, 128 }, { 64, 64 } };
 
-            ShadReg *region = nullptr;
+        // choose resolution based on distance
+        int res_index = std::min(int(distance * 0.01f), 3);
 
-            for (int j = 0; j < (int)allocated_shadow_regions_.count; j++) {
-                auto &reg = allocated_shadow_regions_.data[j];
+        ShadReg *region = nullptr;
 
-                if (reg.ls == ls) {
-                    if (reg.size[0] != resolutions[res_index][0] || reg.size[1] != resolutions[res_index][1]) {
-                        // free and reallocate region
-                        shadow_splitter_.Free(reg.pos);
-                        reg = allocated_shadow_regions_.data[--allocated_shadow_regions_.count];
-                    } else {
-                        region = &reg;
-                    }
-                    break;
-                }
-            }
+        for (int j = 0; j < (int)allocated_shadow_regions_.count; j++) {
+            auto &reg = allocated_shadow_regions_.data[j];
 
-            // try to allocate best resolution possible
-            for (; res_index < 4 && !region; res_index++) {
-                int pos[2];
-                int node = shadow_splitter_.Allocate(resolutions[res_index], pos);
-                if (node == -1 && allocated_shadow_regions_.count) {
-                    ShadReg *oldest = &allocated_shadow_regions_.data[0];
-                    for (int j = 0; j < (int)allocated_shadow_regions_.count; j++) {
-                        if (allocated_shadow_regions_.data[j].last_visible < oldest->last_visible) {
-                            oldest = &allocated_shadow_regions_.data[j];
-                        }
-                    }
-                    if ((scene.update_counter - oldest->last_visible) > 10) {
-                        // kick out one of old cached region
-                        shadow_splitter_.Free(oldest->pos);
-                        *oldest = allocated_shadow_regions_.data[--allocated_shadow_regions_.count];
-                        // try again to insert
-                        node = shadow_splitter_.Allocate(resolutions[res_index], pos);
-                    }
-                }
-                if (node != -1) {
-                    region = &allocated_shadow_regions_.data[allocated_shadow_regions_.count++];
-                    region->ls = ls;
-                    region->pos[0] = pos[0];
-                    region->pos[1] = pos[1];
-                    region->size[0] = resolutions[res_index][0];
-                    region->size[1] = resolutions[res_index][1];
-                    region->last_update = region->last_visible = 0xffffffff;
-                }
-            }
-
-            if (region) {
-                const auto light_dir = Ren::Vec3f{ -l.dir[0], -l.dir[1], -l.dir[2] };
-
-                auto light_up = Ren::Vec3f{ 0.0f, 0.0, 1.0f };
-                if (std::abs(light_dir[0]) <= std::abs(light_dir[1]) && std::abs(light_dir[0]) <= std::abs(light_dir[2])) {
-                    light_up = Ren::Vec3f{ 1.0f, 0.0, 0.0f };
-                } else if (std::abs(light_dir[1]) <= std::abs(light_dir[0]) && std::abs(light_dir[1]) <= std::abs(light_dir[2])) {
-                    light_up = Ren::Vec3f{ 0.0f, 1.0, 0.0f };
-                }
-
-                float light_angle = 2.0f * std::acos(l.spot) * 180.0f / Ren::Pi<float>();
-
-                Ren::Camera shadow_cam;
-                shadow_cam.SetupView(light_center, light_center + light_dir, light_up);
-                shadow_cam.Perspective(light_angle, 1.0f, 0.1f, ls->influence);
-                shadow_cam.UpdatePlanes();
-
-                // TODO: Check visibility of shadow frustum
-
-                auto clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
-
-                auto &sh_list = list.shadow_lists.data[list.shadow_lists.count++];
-
-                sh_list.shadow_map_pos[0] = region->pos[0];
-                sh_list.shadow_map_pos[1] = region->pos[1];
-                sh_list.shadow_map_size[0] = region->size[0];
-                sh_list.shadow_map_size[1] = region->size[1];
-                sh_list.shadow_batch_start = (uint32_t)list.shadow_batches.size();
-                sh_list.shadow_batch_count = 0;
-                sh_list.cam_near = region->cam_near = shadow_cam.near();
-                sh_list.cam_far = region->cam_far = shadow_cam.far();
-
-                l.shadowreg_index = (int)list.shadow_regions.count;
-                auto &reg = list.shadow_regions.data[list.shadow_regions.count++];
-
-                reg.transform = Ren::Vec4f{ float(sh_list.shadow_map_pos[0]) / SHADOWMAP_WIDTH, float(sh_list.shadow_map_pos[1]) / SHADOWMAP_HEIGHT,
-                                            float(sh_list.shadow_map_size[0]) / SHADOWMAP_WIDTH, float(sh_list.shadow_map_size[1]) / SHADOWMAP_HEIGHT };
-                reg.clip_from_world = clip_from_world;
-
-                bool light_sees_dynamic_objects = false;
-
-                const uint32_t skip_check_bit = (1u << 31);
-                const uint32_t index_bits = ~skip_check_bit;
-
-                stack_size = 0;
-                stack[stack_size++] = scene.root_node;
-
-                while (stack_size) {
-                    uint32_t cur = stack[--stack_size] & index_bits;
-                    uint32_t skip_check = stack[stack_size] & skip_check_bit;
-                    const auto* n = &scene.nodes[cur];
-
-                    auto res = shadow_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
-                    if (res == Ren::Invisible) continue;
-                    else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
-
-                    if (!n->prim_count) {
-                        stack[stack_size++] = skip_check | n->left_child;
-                        stack[stack_size++] = skip_check | n->right_child;
-                    } else {
-                        const auto& obj = scene.objects[n->prim_index];
-
-                        const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
-                        if ((obj.comp_mask & drawable_flags) == drawable_flags) {
-                            const auto* tr = (Transform *)scene.comp_store[CompTransform]->Get(obj.components[CompTransform]);
-
-                            if (!skip_check &&
-                                shadow_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
-
-                            const auto &world_from_object = tr->mat;
-                            const auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
-                            if ((dr->flags & Drawable::DrVisibleToShadow) == 0) continue;
-
-                            const auto *mesh = dr->mesh.get();
-
-                            auto world_from_object_trans = Ren::Transpose(world_from_object);
-
-                            if (proc_objects_[n->prim_index].instance_index == 0xffffffff) {
-                                proc_objects_[n->prim_index].instance_index = list.instances.count;
-
-                                auto &instance = list.instances.data[list.instances.count++];
-                                memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
-                            }
-
-                            if (proc_objects_[n->prim_index].base_vertex == 0xffffffff) {
-                                proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf().offset / 32;
-
-                                if (obj.comp_mask & CompAnimStateBit) {
-                                    const auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(obj.components[CompAnimState]);
-                                    __push_skeletal_mesh(n->prim_index, as, mesh, list);
-                                }
-                            }
-
-                            const Ren::TriGroup *s = &mesh->group(0);
-                            while (s->offset != -1) {
-                                const Ren::Material *mat = s->mat.get();
-                                if ((mat->flags() & Ren::AlphaBlend) == 0) {
-                                    list.shadow_batches.emplace_back();
-                                    ShadowDrawBatch &batch = list.shadow_batches.back();
-
-                                    batch.mat_id = (uint32_t)s->mat.index();
-                                    batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
-                                    batch.indices_offset = mesh->indices_buf().offset + s->offset;
-                                    batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
-                                    batch.indices_count = s->num_indices;
-                                    batch.instance_indices[0] = proc_objects_[n->prim_index].instance_index;
-                                    batch.instance_count = 1;
-                                }
-                                ++s;
-                            }
-                        }
-
-                        if (obj.last_change_mask & CompTransformBit) {
-                            light_sees_dynamic_objects = true;
-                        }
-                    }
-                }
-
-                if (!light_sees_dynamic_objects && region->last_update != 0xffffffff && (scene.update_counter - region->last_update > 2)) {
-                    // nothing was changed within last two frames
-                    list.shadow_batches.resize(sh_list.shadow_batch_start);
-                    sh_list.shadow_batch_count = 0;
+            if (reg.ls == ls) {
+                if (reg.size[0] != resolutions[res_index][0] || reg.size[1] != resolutions[res_index][1]) {
+                    // free and reallocate region
+                    shadow_splitter_.Free(reg.pos);
+                    reg = allocated_shadow_regions_.data[--allocated_shadow_regions_.count];
                 } else {
-                    if (light_sees_dynamic_objects || region->last_update == 0xffffffff) {
-                        region->last_update = scene.update_counter;
-                    }
-                    sh_list.shadow_batch_count = (uint32_t)(list.shadow_batches.size() - sh_list.shadow_batch_start);
+                    region = &reg;
                 }
-
-                region->last_visible = scene.update_counter;
+                break;
             }
+        }
+
+        // try to allocate best resolution possible
+        for (; res_index < 4 && !region; res_index++) {
+            int pos[2];
+            int node = shadow_splitter_.Allocate(resolutions[res_index], pos);
+            if (node == -1 && allocated_shadow_regions_.count) {
+                ShadReg *oldest = &allocated_shadow_regions_.data[0];
+                for (int j = 0; j < (int)allocated_shadow_regions_.count; j++) {
+                    if (allocated_shadow_regions_.data[j].last_visible < oldest->last_visible) {
+                        oldest = &allocated_shadow_regions_.data[j];
+                    }
+                }
+                if ((scene.update_counter - oldest->last_visible) > 10) {
+                    // kick out one of old cached region
+                    shadow_splitter_.Free(oldest->pos);
+                    *oldest = allocated_shadow_regions_.data[--allocated_shadow_regions_.count];
+                    // try again to insert
+                    node = shadow_splitter_.Allocate(resolutions[res_index], pos);
+                }
+            }
+            if (node != -1) {
+                region = &allocated_shadow_regions_.data[allocated_shadow_regions_.count++];
+                region->ls = ls;
+                region->pos[0] = pos[0];
+                region->pos[1] = pos[1];
+                region->size[0] = resolutions[res_index][0];
+                region->size[1] = resolutions[res_index][1];
+                region->last_update = region->last_visible = 0xffffffff;
+            }
+        }
+
+        if (region) {
+            const auto light_dir = Ren::Vec3f{ -l.dir[0], -l.dir[1], -l.dir[2] };
+
+            auto light_up = Ren::Vec3f{ 0.0f, 0.0, 1.0f };
+            if (std::abs(light_dir[0]) <= std::abs(light_dir[1]) && std::abs(light_dir[0]) <= std::abs(light_dir[2])) {
+                light_up = Ren::Vec3f{ 1.0f, 0.0, 0.0f };
+            } else if (std::abs(light_dir[1]) <= std::abs(light_dir[0]) && std::abs(light_dir[1]) <= std::abs(light_dir[2])) {
+                light_up = Ren::Vec3f{ 0.0f, 1.0, 0.0f };
+            }
+
+            float light_angle = 2.0f * std::acos(l.spot) * 180.0f / Ren::Pi<float>();
+
+            Ren::Camera shadow_cam;
+            shadow_cam.SetupView(light_center, light_center + light_dir, light_up);
+            shadow_cam.Perspective(light_angle, 1.0f, 0.1f, ls->influence);
+            shadow_cam.UpdatePlanes();
+
+            // TODO: Check visibility of shadow frustum
+
+            auto clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
+
+            auto &sh_list = list.shadow_lists.data[list.shadow_lists.count++];
+
+            sh_list.shadow_map_pos[0] = region->pos[0];
+            sh_list.shadow_map_pos[1] = region->pos[1];
+            sh_list.shadow_map_size[0] = region->size[0];
+            sh_list.shadow_map_size[1] = region->size[1];
+            sh_list.shadow_batch_start = (uint32_t)list.shadow_batches.size();
+            sh_list.shadow_batch_count = 0;
+            sh_list.cam_near = region->cam_near = shadow_cam.near();
+            sh_list.cam_far = region->cam_far = shadow_cam.far();
+
+            l.shadowreg_index = (int)list.shadow_regions.count;
+            auto &reg = list.shadow_regions.data[list.shadow_regions.count++];
+
+            reg.transform = Ren::Vec4f{ float(sh_list.shadow_map_pos[0]) / SHADOWMAP_WIDTH, float(sh_list.shadow_map_pos[1]) / SHADOWMAP_HEIGHT,
+                                        float(sh_list.shadow_map_size[0]) / SHADOWMAP_WIDTH, float(sh_list.shadow_map_size[1]) / SHADOWMAP_HEIGHT };
+            reg.clip_from_world = clip_from_world;
+
+            bool light_sees_dynamic_objects = false;
+
+            const uint32_t skip_check_bit = (1u << 31);
+            const uint32_t index_bits = ~skip_check_bit;
+
+            stack_size = 0;
+            stack[stack_size++] = scene.root_node;
+
+            while (stack_size) {
+                uint32_t cur = stack[--stack_size] & index_bits;
+                uint32_t skip_check = stack[stack_size] & skip_check_bit;
+                const auto* n = &scene.nodes[cur];
+
+                auto res = shadow_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
+                if (res == Ren::Invisible) continue;
+                else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
+
+                if (!n->prim_count) {
+                    stack[stack_size++] = skip_check | n->left_child;
+                    stack[stack_size++] = skip_check | n->right_child;
+                } else {
+                    const auto& obj = scene.objects[n->prim_index];
+
+                    const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
+                    if ((obj.comp_mask & drawable_flags) == drawable_flags) {
+                        const auto* tr = (Transform *)scene.comp_store[CompTransform]->Get(obj.components[CompTransform]);
+
+                        if (!skip_check &&
+                            shadow_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
+
+                        const auto &world_from_object = tr->mat;
+                        const auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
+                        if ((dr->flags & Drawable::DrVisibleToShadow) == 0) continue;
+
+                        const auto *mesh = dr->mesh.get();
+
+                        auto world_from_object_trans = Ren::Transpose(world_from_object);
+
+                        if (proc_objects_[n->prim_index].instance_index == 0xffffffff) {
+                            proc_objects_[n->prim_index].instance_index = list.instances.count;
+
+                            auto &instance = list.instances.data[list.instances.count++];
+                            memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
+                        }
+
+                        if (proc_objects_[n->prim_index].base_vertex == 0xffffffff) {
+                            proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf().offset / 32;
+
+                            if (obj.comp_mask & CompAnimStateBit) {
+                                const auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(obj.components[CompAnimState]);
+                                __push_skeletal_mesh(n->prim_index, as, mesh, list);
+                            }
+                        }
+
+                        const Ren::TriGroup *s = &mesh->group(0);
+                        while (s->offset != -1) {
+                            const Ren::Material *mat = s->mat.get();
+                            if ((mat->flags() & Ren::AlphaBlend) == 0) {
+                                list.shadow_batches.emplace_back();
+                                ShadowDrawBatch &batch = list.shadow_batches.back();
+
+                                batch.mat_id = (uint32_t)s->mat.index();
+                                batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
+                                batch.indices_offset = mesh->indices_buf().offset + s->offset;
+                                batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
+                                batch.indices_count = s->num_indices;
+                                batch.instance_indices[0] = proc_objects_[n->prim_index].instance_index;
+                                batch.instance_count = 1;
+                            }
+                            ++s;
+                        }
+                    }
+
+                    if (obj.last_change_mask & CompTransformBit) {
+                        light_sees_dynamic_objects = true;
+                    }
+                }
+            }
+
+            if (!light_sees_dynamic_objects && region->last_update != 0xffffffff && (scene.update_counter - region->last_update > 2)) {
+                // nothing was changed within last two frames
+                list.shadow_batches.resize(sh_list.shadow_batch_start);
+                sh_list.shadow_batch_count = 0;
+            } else {
+                if (light_sees_dynamic_objects || region->last_update == 0xffffffff) {
+                    region->last_update = scene.update_counter;
+                }
+                sh_list.shadow_batch_count = (uint32_t)(list.shadow_batches.size() - sh_list.shadow_batch_start);
+            }
+
+            region->last_visible = scene.update_counter;
         }
     }
 
@@ -1039,10 +1039,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             futures[i].wait();
         }
 
-        list.items.count = std::min(a_items_count.load(), MAX_ITEMS_TOTAL);
+        list.items.count = std::min(a_items_count.load(), REN_MAX_ITEMS_TOTAL);
     } else {
         CellData _dummy = {};
-        std::fill(list.cells.data.get(), list.cells.data.get() + CELLS_COUNT, _dummy);
+        std::fill(list.cells.data.get(), list.cells.data.get() + REN_CELLS_COUNT, _dummy);
         list.items.count = 0;
     }
 
@@ -1136,7 +1136,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
     }
 
     // Gather to local list first
-    ItemData local_items[REN_GRID_RES_X * REN_GRID_RES_Y][MAX_ITEMS_PER_CELL];
+    ItemData local_items[REN_GRID_RES_X * REN_GRID_RES_Y][REN_MAX_ITEMS_PER_CELL];
 
     for (int j = 0; j < lights_count; j++) {
         const auto &l = lights[j];
@@ -1233,7 +1233,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 if (res != Ren::Invisible) {
                     const int index = base_index + row_offset + col_offset;
                     auto &cell = cells[index];
-                    if (cell.light_count < MAX_LIGHTS_PER_CELL) {
+                    if (cell.light_count < REN_MAX_LIGHTS_PER_CELL) {
                         local_items[row_offset + col_offset][cell.light_count].light_index = (uint16_t)j;
                         cell.light_count++;
                     }
@@ -1325,7 +1325,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 if (res != Ren::Invisible) {
                     const int index = base_index + row_offset + col_offset;
                     auto &cell = cells[index];
-                    if (cell.decal_count < MAX_DECALS_PER_CELL) {
+                    if (cell.decal_count < REN_MAX_DECALS_PER_CELL) {
                         local_items[row_offset + col_offset][cell.decal_count].decal_index = (uint16_t)j;
                         cell.decal_count++;
                     }
@@ -1390,7 +1390,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 if (res != Ren::Invisible) {
                     const int index = base_index + row_offset + col_offset;
                     auto &cell = cells[index];
-                    if (cell.probe_count < MAX_PROBES_PER_CELL) {
+                    if (cell.probe_count < REN_MAX_PROBES_PER_CELL) {
                         local_items[row_offset + col_offset][cell.probe_count].probe_index = (uint16_t)j;
                         cell.probe_count++;
                     }
@@ -1407,13 +1407,13 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 
         if (local_items_count) {
             cell.item_offset = items_count.fetch_add(local_items_count);
-            if (cell.item_offset > MAX_ITEMS_TOTAL) {
+            if (cell.item_offset > REN_MAX_ITEMS_TOTAL) {
                 cell.item_offset = 0;
                 cell.light_count = 0;
                 cell.decal_count = 0;
                 cell.probe_count = 0;
             } else {
-                int free_items_left = MAX_ITEMS_TOTAL - cell.item_offset;
+                int free_items_left = REN_MAX_ITEMS_TOTAL - cell.item_offset;
 
                 if ((int)cell.light_count > free_items_left) cell.light_count = free_items_left;
                 if ((int)cell.decal_count > free_items_left) cell.decal_count = free_items_left;

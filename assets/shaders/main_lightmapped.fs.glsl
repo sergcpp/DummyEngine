@@ -1,6 +1,5 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
-#extension GL_EXT_texture_cube_map_array : enable
 
 $ModifyWarning
 

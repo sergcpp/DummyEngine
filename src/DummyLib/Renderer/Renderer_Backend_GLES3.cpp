@@ -96,6 +96,14 @@ namespace RendererInternal {
                                        1.0f, 1.0f,     0.0f, 1.0f };
 
     const uint16_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
+
+    const size_t SkinTransformsBufChunkSize = sizeof(SkinTransform) * REN_MAX_SKIN_XFORMS_TOTAL;
+    const size_t SkinRegionsBufChunkSize    = sizeof(SkinRegion) * REN_MAX_SKIN_REGIONS_TOTAL;
+    const size_t InstanceDataBufChunkSize   = sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL;
+    const size_t LightsBufChunkSize         = sizeof(LightSourceItem) * REN_MAX_LIGHTS_TOTAL;
+    const size_t DecalsBufChunkSize         = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
+    const size_t CellsBufChunkSize          = sizeof(CellData) * REN_CELLS_COUNT;
+    const size_t ItemsBufChunkSize          = sizeof(ItemData) * REN_MAX_ITEMS_TOTAL;
 }
 
 void Renderer::InitRendererInternal() {
@@ -189,6 +197,9 @@ void Renderer::InitRendererInternal() {
     skinning_prog_ = ctx_.LoadProgramGLSL("skinning_prog", skinning_cs, &status);
     assert(status == Ren::ProgCreatedFromData);
 
+    GLint tex_buf_offset_alignment;
+    glGetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT, &tex_buf_offset_alignment);
+
     {
         GLuint shared_data_ubo;
 
@@ -211,35 +222,49 @@ void Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: UBO creation");
 
-    {
+    {   // Create buffer that holds per-instance transform matrices
         GLuint instances_buf;
 
         glGenBuffers(1, &instances_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, instances_buf);
-        glBufferData(GL_TEXTURE_BUFFER, sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * InstanceDataBufChunkSize, nullptr, GL_DYNAMIC_COPY);
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
         instances_buf_ = (uint32_t)instances_buf;
 
-        GLuint instances_tbo;
+        for (int i = 0; i < FrameSyncWindow; i++) {
+            GLuint instances_tbo;
 
-        glGenTextures(1, &instances_tbo);
-        glBindTexture(GL_TEXTURE_BUFFER, instances_tbo);
+            glGenTextures(1, &instances_tbo);
+            glBindTexture(GL_TEXTURE_BUFFER, instances_tbo);
 
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, instances_buf);
-        glBindTexture(GL_TEXTURE_BUFFER, 0);
+            GLuint offset = i * InstanceDataBufChunkSize;
+            assert((offset % tex_buf_offset_alignment == 0) && "Offset is not properly aligned!");
+            glTexBufferRange(GL_TEXTURE_BUFFER, GL_RGBA32F, instances_buf, offset, InstanceDataBufChunkSize);
+            glBindTexture(GL_TEXTURE_BUFFER, 0);
 
-        instances_tbo_ = (uint32_t)instances_tbo;
+            instances_tbo_[i] = (uint32_t)instances_tbo;
+        }
+
+        for (int i = 0; i < FrameSyncWindow; i++) {
+            glBindTexture(GL_TEXTURE_BUFFER, instances_tbo_[i]);
+
+            GLint offset, size;
+            glGetTexLevelParameteriv(GL_TEXTURE_BUFFER, 0, GL_TEXTURE_BUFFER_OFFSET, &offset);
+            glGetTexLevelParameteriv(GL_TEXTURE_BUFFER, 0, GL_TEXTURE_BUFFER_SIZE, &size);
+
+            glBindTexture(GL_TEXTURE_BUFFER, 0);
+        }
     }
 
     Ren::CheckError("[InitRendererInternal]: instances TBO");
 
-    {
+    {   // Create buffer that holds offsets for skinning shader invocation
         GLuint skin_regions_buf;
 
         glGenBuffers(1, &skin_regions_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, skin_regions_buf);
-        glBufferData(GL_TEXTURE_BUFFER, sizeof(SkinRegion) * REN_MAX_SKIN_REGIONS_TOTAL, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * SkinRegionsBufChunkSize, nullptr, GL_DYNAMIC_COPY);
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
         skin_regions_buf_ = (uint32_t)skin_regions_buf;
@@ -257,12 +282,12 @@ void Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: skin regions TBO");
 
-    {
+    {   // Create buffer that holds bones transformation matrices
         GLuint skin_transforms_buf;
 
         glGenBuffers(1, &skin_transforms_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, skin_transforms_buf);
-        glBufferData(GL_TEXTURE_BUFFER, sizeof(SkinTransform) * REN_MAX_SKIN_XFORMS_TOTAL, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * SkinTransformsBufChunkSize, nullptr, GL_DYNAMIC_COPY);
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
         skin_transforms_buf_ = (uint32_t)skin_transforms_buf;
@@ -280,107 +305,130 @@ void Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: skin transforms TBO");
 
-    {
+    {   // Create buffer for lights information
         GLuint lights_buf;
 
         glGenBuffers(1, &lights_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, lights_buf);
-        glBufferData(GL_TEXTURE_BUFFER, sizeof(LightSourceItem) * MAX_LIGHTS_TOTAL, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * LightsBufChunkSize, nullptr, GL_DYNAMIC_COPY);
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
         lights_buf_ = (uint32_t)lights_buf;
 
-        GLuint lights_tbo;
+        for (int i = 0; i < FrameSyncWindow; i++) {
+            GLuint lights_tbo;
 
-        glGenTextures(1, &lights_tbo);
-        glBindTexture(GL_TEXTURE_BUFFER, lights_tbo);
+            glGenTextures(1, &lights_tbo);
+            glBindTexture(GL_TEXTURE_BUFFER, lights_tbo);
 
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, lights_buf);
-        glBindTexture(GL_TEXTURE_BUFFER, 0);
+            GLuint offset = i * LightsBufChunkSize;
+            assert((offset % tex_buf_offset_alignment == 0) && "Offset is not properly aligned!");
+            glTexBufferRange(GL_TEXTURE_BUFFER, GL_RGBA32F, lights_buf, offset, LightsBufChunkSize);
+            glBindTexture(GL_TEXTURE_BUFFER, 0);
 
-        lights_tbo_ = (uint32_t)lights_tbo;
+            lights_tbo_[i] = (uint32_t)lights_tbo;
+        }
     }
 
     Ren::CheckError("[InitRendererInternal]: lights TBO");
 
-    {
+    {   // Create buffer for decals
         GLuint decals_buf;
 
         glGenBuffers(1, &decals_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, decals_buf);
-        glBufferData(GL_TEXTURE_BUFFER, sizeof(DecalItem) * MAX_DECALS_TOTAL, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * DecalsBufChunkSize, nullptr, GL_DYNAMIC_COPY);
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
         decals_buf_ = (uint32_t)decals_buf;
 
-        GLuint decals_tbo;
+        for (int i = 0; i < FrameSyncWindow; i++) {
+            GLuint decals_tbo;
 
-        glGenTextures(1, &decals_tbo);
-        glBindTexture(GL_TEXTURE_BUFFER, decals_tbo);
+            glGenTextures(1, &decals_tbo);
+            glBindTexture(GL_TEXTURE_BUFFER, decals_tbo);
 
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, decals_buf);
-        glBindTexture(GL_TEXTURE_BUFFER, 0);
+            GLuint offset = i * DecalsBufChunkSize;
+            assert((offset % tex_buf_offset_alignment == 0) && "Offset is not properly aligned!");
+            glTexBufferRange(GL_TEXTURE_BUFFER, GL_RGBA32F, decals_buf, offset, DecalsBufChunkSize);
+            glBindTexture(GL_TEXTURE_BUFFER, 0);
 
-        decals_tbo_ = (uint32_t)decals_tbo;
+            decals_tbo_[i] = (uint32_t)decals_tbo;
+        }
     }
 
     Ren::CheckError("[InitRendererInternal]: decals TBO");
 
-    {
+    {   // Create buffer for fructum cells
         GLuint cells_buf;
 
         glGenBuffers(1, &cells_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, cells_buf);
-        glBufferData(GL_TEXTURE_BUFFER, sizeof(CellData) * CELLS_COUNT, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * CellsBufChunkSize, nullptr, GL_DYNAMIC_COPY);
+
+        const GLuint CellsZSliceSize = sizeof(CellData) * REN_GRID_RES_X * REN_GRID_RES_Y;
 
         // fill with zeros
         CellData dummy[REN_GRID_RES_X * REN_GRID_RES_Y] = {};
-        for (int i = 0; i < REN_GRID_RES_Z; i++) {
-            glBufferSubData(GL_TEXTURE_BUFFER, i * sizeof(CellData) * REN_GRID_RES_X * REN_GRID_RES_Y,
-                            sizeof(CellData) * REN_GRID_RES_X * REN_GRID_RES_Y, &dummy[0]);
+
+        for (int i = 0; i < FrameSyncWindow; i++) {
+            for (int j = 0; j < REN_GRID_RES_Z; j++) {
+                glBufferSubData(GL_TEXTURE_BUFFER, i * CellsBufChunkSize + j * CellsZSliceSize, CellsZSliceSize, &dummy[0]);
+            }
         }
 
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
         cells_buf_ = (uint32_t)cells_buf;
 
-        GLuint cells_tbo;
+        for (int i = 0; i < FrameSyncWindow; i++) {
+            GLuint cells_tbo;
 
-        glGenTextures(1, &cells_tbo);
-        glBindTexture(GL_TEXTURE_BUFFER, cells_tbo);
+            glGenTextures(1, &cells_tbo);
+            glBindTexture(GL_TEXTURE_BUFFER, cells_tbo);
 
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RG32UI, cells_buf);
-        glBindTexture(GL_TEXTURE_BUFFER, 0);
+            GLuint offset = i * CellsBufChunkSize;
+            assert((offset % tex_buf_offset_alignment == 0) && "Offset is not properly aligned!");
+            glTexBufferRange(GL_TEXTURE_BUFFER, GL_RG32UI, cells_buf, offset, CellsBufChunkSize);
+            glBindTexture(GL_TEXTURE_BUFFER, 0);
 
-        cells_tbo_ = (uint32_t)cells_tbo;
+            cells_tbo_[i] = (uint32_t)cells_tbo;
+        }
     }
 
     Ren::CheckError("[InitRendererInternal]: cells TBO");
 
-    {
+    {   // Create buffer for item offsets
         GLuint items_buf;
 
         glGenBuffers(1, &items_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, items_buf);
-        glBufferData(GL_TEXTURE_BUFFER, sizeof(ItemData) * MAX_ITEMS_TOTAL, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * ItemsBufChunkSize, nullptr, GL_DYNAMIC_COPY);
 
         // fill first entry with zeroes
         ItemData dummy = {};
-        glBufferSubData(GL_TEXTURE_BUFFER, 0, sizeof(ItemData), &dummy);
+
+        for (int i = 0; i < FrameSyncWindow; i++) {
+            glBufferSubData(GL_TEXTURE_BUFFER, i * ItemsBufChunkSize, sizeof(ItemData), &dummy);
+        }
 
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
         items_buf_ = (uint32_t)items_buf;
 
-        GLuint items_tbo;
+        for (int i = 0; i < FrameSyncWindow; i++) {
+            GLuint items_tbo;
 
-        glGenTextures(1, &items_tbo);
-        glBindTexture(GL_TEXTURE_BUFFER, items_tbo);
+            glGenTextures(1, &items_tbo);
+            glBindTexture(GL_TEXTURE_BUFFER, items_tbo);
 
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_R32UI, items_buf);
-        glBindTexture(GL_TEXTURE_BUFFER, 0);
+            GLuint offset = i * ItemsBufChunkSize;
+            assert((offset % tex_buf_offset_alignment == 0) && "Offset is not properly aligned!");
+            glTexBufferRange(GL_TEXTURE_BUFFER, GL_R32UI, items_buf, offset, ItemsBufChunkSize);
+            glBindTexture(GL_TEXTURE_BUFFER, 0);
 
-        items_tbo_ = (uint32_t)items_tbo;
+            items_tbo_[i] = (uint32_t)items_tbo;
+        }
     }
 
     Ren::CheckError("[InitRendererInternal]: items TBO");
@@ -713,9 +761,10 @@ void Renderer::DestroyRendererInternal() {
         glDeleteBuffers(1, &batch_data_ubo);
     }
 
+    static_assert(sizeof(GLuint) == sizeof(uint32_t), "!");
+
     {
-        GLuint instances_tbo = (GLuint)instances_tbo_;
-        glDeleteTextures(1, &instances_tbo);
+        glDeleteTextures(FrameSyncWindow, instances_tbo_);
 
         GLuint instances_buf = (GLuint)instances_buf_;
         glDeleteBuffers(1, &instances_buf);
@@ -738,32 +787,28 @@ void Renderer::DestroyRendererInternal() {
     }
 
     {
-        GLuint lights_tbo = (GLuint)lights_tbo_;
-        glDeleteTextures(1, &lights_tbo);
+        glDeleteTextures(FrameSyncWindow, lights_tbo_);
 
         GLuint lights_buf = (GLuint)lights_buf_;
         glDeleteBuffers(1, &lights_buf);
     }
 
     {
-        GLuint decals_tbo = (GLuint)decals_tbo_;
-        glDeleteTextures(1, &decals_tbo);
+        glDeleteTextures(FrameSyncWindow, decals_tbo_);
 
         GLuint lights_buf = (GLuint)lights_buf_;
         glDeleteBuffers(1, &lights_buf);
     }
 
     {
-        GLuint cells_tbo = (GLuint)cells_tbo_;
-        glDeleteTextures(1, &cells_tbo);
+        glDeleteTextures(FrameSyncWindow, cells_tbo_);
 
         GLuint cells_buf = (GLuint)cells_buf_;
         glDeleteBuffers(1, &cells_buf);
     }
 
     {
-        GLuint items_tbo = (GLuint)items_tbo_;
-        glDeleteTextures(1, &items_tbo);
+        glDeleteTextures(FrameSyncWindow, items_tbo_);
 
         GLuint items_buf = (GLuint)items_buf_;
         glDeleteBuffers(1, &items_buf);
@@ -862,74 +907,151 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     glDisable(GL_CULL_FACE);
 
-    assert(list.light_sources.count < MAX_LIGHTS_TOTAL);
-    assert(list.decals.count < MAX_DECALS_TOTAL);
-    assert(list.items.count < MAX_ITEMS_TOTAL);
+    assert(list.instances.count < REN_MAX_INSTANCES_TOTAL);
+    assert(list.skin_transforms.count < REN_MAX_SKIN_XFORMS_TOTAL);
+    assert(list.light_sources.count < REN_MAX_LIGHTS_TOTAL);
+    assert(list.decals.count < REN_MAX_DECALS_TOTAL);
+    assert(list.probes.count < REN_MAX_PROBES_TOTAL);
+    assert(list.items.count < REN_MAX_ITEMS_TOTAL);
 
     backend_info_.shadow_draw_calls_count = 0;
     backend_info_.depth_fill_draw_calls_count = 0;
     backend_info_.opaque_draw_calls_count = 0;
 
     {   // Update buffers
-
         // TODO: try to use persistently mapped buffers
 
 #ifndef DISABLE_MARKERS
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "UPDATE BUFFERS");
 #endif
+        cur_buf_chunk_ = (cur_buf_chunk_ + 1) % FrameSyncWindow;
+        if (buf_range_fences_[cur_buf_chunk_]) {
+            GLsync sync = reinterpret_cast<GLsync>(buf_range_fences_[cur_buf_chunk_]);
+            GLenum res = glClientWaitSync(sync, 0, 1000000000);
+            if (res != GL_ALREADY_SIGNALED && res != GL_CONDITION_SATISFIED) {
+                LOGE("[Renderer::DrawObjectsInternal]: Wait failed!");
+            }
+            glDeleteSync(sync);
+            buf_range_fences_[cur_buf_chunk_] = nullptr;
+        }
+
+        GLbitfield BufferRangeBindFlags = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_FLUSH_EXPLICIT_BIT;
 
         // Update skinning buffers
-        size_t skin_transforms_mem_size = list.skin_transforms.count * sizeof(SkinTransform);
-        if (skin_transforms_mem_size) {
+        if (list.skin_transforms.count) {
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)skin_transforms_buf_);
-            glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, skin_transforms_mem_size, list.skin_transforms.data.get());
+
+            void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, cur_buf_chunk_ * SkinTransformsBufChunkSize, SkinTransformsBufChunkSize, BufferRangeBindFlags);
+            if (pinned_mem) {
+                size_t skin_transforms_mem_size = list.skin_transforms.count * sizeof(SkinTransform);
+                memcpy(pinned_mem, list.skin_transforms.data.get(), skin_transforms_mem_size);
+                glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0, skin_transforms_mem_size);
+                glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+            } else {
+                LOGE("[Renderer::DrawObjectsInternal]: Failed to map skin transforms buffer!");
+            }
+
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
         }
 
-        size_t skin_regions_mem_size = list.skin_regions.count * sizeof(SkinRegion);
-        if (skin_regions_mem_size) {
+        if (list.skin_regions.count) {
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)skin_regions_buf_);
-            glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, skin_regions_mem_size, list.skin_regions.data.get());
+
+            void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, cur_buf_chunk_ * SkinRegionsBufChunkSize, SkinRegionsBufChunkSize, BufferRangeBindFlags);
+            if (pinned_mem) {
+                size_t skin_regions_mem_size = list.skin_regions.count * sizeof(SkinRegion);
+                memcpy(pinned_mem, list.skin_regions.data.get(), skin_regions_mem_size);
+                glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0, skin_regions_mem_size);
+                glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+            } else {
+                LOGE("[Renderer::DrawObjectsInternal]: Failed to map skin regions buffer!");
+            }
+
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
         }
 
         // Update instance buffer
-        size_t instance_mem_size = list.instances.count * sizeof(InstanceData);
-        if (instance_mem_size) {
+        if (list.instances.count) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)instances_buf_);
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, instance_mem_size, list.instances.data.get());
-            glBindBuffer(GL_TEXTURE_BUFFER, 0);
-        }
 
-        // Update lights buffer
-        size_t lights_mem_size = list.light_sources.count * sizeof(LightSourceItem);
-        if (lights_mem_size) {
-            glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)lights_buf_);
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, lights_mem_size, list.light_sources.data.get());
-            glBindBuffer(GL_TEXTURE_BUFFER, 0);
-        }
+            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * InstanceDataBufChunkSize, InstanceDataBufChunkSize, BufferRangeBindFlags);
+            if (pinned_mem) {
+                size_t instance_mem_size = list.instances.count * sizeof(InstanceData);
+                memcpy(pinned_mem, list.instances.data.get(), instance_mem_size);
+                glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, instance_mem_size);
+                glUnmapBuffer(GL_TEXTURE_BUFFER);
+            } else {
+                LOGE("[Renderer::DrawObjectsInternal]: Failed to map instance buffer!");
+            }
 
-        // Update decals buffer
-        size_t decals_mem_size = list.decals.count * sizeof(DecalItem);
-        if (decals_mem_size) {
-            glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)decals_buf_);
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, decals_mem_size, list.decals.data.get());
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
         // Update cells buffer
-        size_t cells_mem_size = list.cells.count * sizeof(CellData);
-        if (cells_mem_size) {
+        if (list.cells.count) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)cells_buf_);
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, cells_mem_size, list.cells.data.get());
+
+            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * CellsBufChunkSize, CellsBufChunkSize, BufferRangeBindFlags);
+            if (pinned_mem) {
+                size_t cells_mem_size = list.cells.count * sizeof(CellData);
+                memcpy(pinned_mem, list.cells.data.get(), cells_mem_size);
+                glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, cells_mem_size);
+                glUnmapBuffer(GL_TEXTURE_BUFFER);
+            } else {
+                LOGE("[Renderer::DrawObjectsInternal]: Failed to map cells buffer!");
+            }
+
+            glBindBuffer(GL_TEXTURE_BUFFER, 0);
+        }
+
+        // Update lights buffer
+        if (list.light_sources.count) {
+            glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)lights_buf_);
+
+            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * LightsBufChunkSize, LightsBufChunkSize, BufferRangeBindFlags);
+            if (pinned_mem) {
+                size_t lights_mem_size = list.light_sources.count * sizeof(LightSourceItem);
+                memcpy(pinned_mem, list.light_sources.data.get(), lights_mem_size);
+                glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, lights_mem_size);
+                glUnmapBuffer(GL_TEXTURE_BUFFER);
+            } else {
+                LOGE("[Renderer::DrawObjectsInternal]: Failed to map lights buffer!");
+            }
+
+            glBindBuffer(GL_TEXTURE_BUFFER, 0);
+        }
+
+        // Update decals buffer
+        if (list.decals.count) {
+            glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)decals_buf_);
+
+            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * DecalsBufChunkSize, DecalsBufChunkSize, BufferRangeBindFlags);
+            if (pinned_mem) {
+                size_t decals_mem_size = list.decals.count * sizeof(DecalItem);
+                memcpy(pinned_mem, list.decals.data.get(), decals_mem_size);
+                glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, decals_mem_size);
+                glUnmapBuffer(GL_TEXTURE_BUFFER);
+            } else {
+                LOGE("[Renderer::DrawObjectsInternal]: Failed to map decals buffer!");
+            }
+
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
         // Update items buffer
-        size_t items_mem_size = list.items.count * sizeof(ItemData);
-        if (items_mem_size) {
+        if (list.items.count) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)items_buf_);
-            glBufferSubData(GL_TEXTURE_BUFFER, 0, items_mem_size, list.items.data.get());
+
+            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * ItemsBufChunkSize, ItemsBufChunkSize, BufferRangeBindFlags);
+            if (pinned_mem) {
+                size_t items_mem_size = list.items.count * sizeof(ItemData);
+                memcpy(pinned_mem, list.items.data.get(), items_mem_size);
+                glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, items_mem_size);
+                glUnmapBuffer(GL_TEXTURE_BUFFER);
+            } else {
+                LOGE("[Renderer::DrawObjectsInternal]: Failed to map items buffer!");
+            }
+
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
 
@@ -1007,8 +1129,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUseProgram(p->prog_id());
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, (GLuint)ctx_.default_skin_vertex_buf()->buf_id());
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)skin_transforms_buf_);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)skin_regions_buf_);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)skin_transforms_buf_, cur_buf_chunk_ * SkinTransformsBufChunkSize, SkinTransformsBufChunkSize);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)skin_regions_buf_, cur_buf_chunk_ * SkinRegionsBufChunkSize, SkinRegionsBufChunkSize);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, (GLuint)ctx_.default_vertex_buf()->buf_id());
 
         glDispatchCompute(list.skin_regions.count, 1, 1);
@@ -1027,12 +1149,12 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeShadowMapStart], GL_TIMESTAMP);
     }
 
+    BindTexBuffer(REN_INST_BUF_SLOT, instances_tbo_[cur_buf_chunk_]);
+
     {   // draw shadow map
         glEnable(GL_POLYGON_OFFSET_FILL);
 
         glBindVertexArray(shadow_pass_vao_);
-
-        BindTexBuffer(0, instances_tbo_);
 
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
 
@@ -1067,7 +1189,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 if (!batch.instance_count) continue;
 
                 if (cur_alpha_test != batch.alpha_test_bit) {
-                    if (batch.alpha_test_bit) {
+                    if (batch.alpha_test_bit && false) {
                         const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
                         BindTexture(REN_DIFF_TEX_SLOT, mat->texture(0)->tex_id());
                     } else {
@@ -1182,12 +1304,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, list.probe_storage->tex_id());
     }
 
-    BindTexBuffer(REN_LIGHT_BUF_SLOT, lights_tbo_);
-    BindTexBuffer(REN_DECAL_BUF_SLOT, decals_tbo_);
-    BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_);
-    BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_);
-
-    BindTexBuffer(REN_INST_BUF_SLOT, instances_tbo_);
+    BindTexBuffer(REN_LIGHT_BUF_SLOT, lights_tbo_[cur_buf_chunk_]);
+    BindTexBuffer(REN_DECAL_BUF_SLOT, decals_tbo_[cur_buf_chunk_]);
+    BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
+    BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
 
     /**************************************************************************************************/
     /*                                         DEPTH-FILL PASS                                        */
@@ -1499,8 +1619,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, list.probe_storage->tex_id());
         }
         
-        BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_);
-        BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_);
+        BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
+        BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
 
 #ifndef DISABLE_MARKERS
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "REFLECTIONS PASS");
@@ -1702,6 +1822,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
     }
+
+    assert(!buf_range_fences_[cur_buf_chunk_]);
+    buf_range_fences_[cur_buf_chunk_] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
     if (list.render_flags & EnableTonemap) {
         // draw to small framebuffer
@@ -1965,8 +2088,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             BindTexture(REN_DIFF_TEX_SLOT, clean_buf_.depth_tex.GetValue());
         }
 
-        BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_);
-        BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_);
+        BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
+        BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 

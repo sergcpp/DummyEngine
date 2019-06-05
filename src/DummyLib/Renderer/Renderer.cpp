@@ -127,19 +127,19 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", &HaltonSeq23[0], sizeof(HaltonSeq23), p, &status);
     assert(status == Ren::TexCreatedFromData);
 
-    temp_sub_frustums_.data.reset(new Ren::Frustum[CELLS_COUNT]);
-    temp_sub_frustums_.count = temp_sub_frustums_.capacity = CELLS_COUNT;
+    temp_sub_frustums_.data.reset(new Ren::Frustum[REN_CELLS_COUNT]);
+    temp_sub_frustums_.count = temp_sub_frustums_.capacity = REN_CELLS_COUNT;
 
-    decals_boxes_.data.reset(new BBox[MAX_DECALS_TOTAL]);
-    decals_boxes_.capacity = MAX_DECALS_TOTAL;
+    decals_boxes_.data.reset(new BBox[REN_MAX_DECALS_TOTAL]);
+    decals_boxes_.capacity = REN_MAX_DECALS_TOTAL;
     decals_boxes_.count = 0;
 
-    litem_to_lsource_.data.reset(new const LightSource *[MAX_LIGHTS_TOTAL]);
-    litem_to_lsource_.capacity = MAX_LIGHTS_TOTAL;
+    litem_to_lsource_.data.reset(new const LightSource *[REN_MAX_LIGHTS_TOTAL]);
+    litem_to_lsource_.capacity = REN_MAX_LIGHTS_TOTAL;
     litem_to_lsource_.count = 0;
 
-    ditem_to_decal_.data.reset(new const Decal *[MAX_DECALS_TOTAL]);
-    ditem_to_decal_.capacity = MAX_DECALS_TOTAL;
+    ditem_to_decal_.data.reset(new const Decal *[REN_MAX_DECALS_TOTAL]);
+    ditem_to_decal_.capacity = REN_MAX_DECALS_TOTAL;
     ditem_to_decal_.count = 0;
 
     allocated_shadow_regions_.data.reset(new ShadReg[REN_MAX_SHADOWMAPS_TOTAL]);

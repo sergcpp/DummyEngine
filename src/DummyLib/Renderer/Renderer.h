@@ -76,18 +76,6 @@ public:
         uint32_t last_update, last_visible;
     };
 
-    static const int CELLS_COUNT = REN_GRID_RES_X * REN_GRID_RES_Y * REN_GRID_RES_Z;
-
-    static const int MAX_LIGHTS_PER_CELL = 255;
-    static const int MAX_DECALS_PER_CELL = 255;
-    static const int MAX_PROBES_PER_CELL = 8;
-    static const int MAX_ITEMS_PER_CELL = 255;
-
-    static const int MAX_LIGHTS_TOTAL = 4096;
-    static const int MAX_DECALS_TOTAL = 4096;
-    static const int MAX_PROBES_TOTAL = 256;
-    static const int MAX_ITEMS_TOTAL = (1 << 16);
-
     struct DrawList {
         uint32_t        render_flags = default_flags;
         Ren::Camera     draw_cam;
@@ -126,7 +114,7 @@ public:
             skin_regions.count = 0;
 
             instances.data.reset(new InstanceData[REN_MAX_INSTANCES_TOTAL]);
-            instances.capacity = MAX_LIGHTS_TOTAL;
+            instances.capacity = REN_MAX_INSTANCES_TOTAL;
             instances.count = 0;
 
             shadow_lists.data.reset(new ShadowList[REN_MAX_SHADOWMAPS_TOTAL]);
@@ -137,24 +125,24 @@ public:
             shadow_regions.capacity = REN_MAX_SHADOWMAPS_TOTAL;
             shadow_regions.count = 0;
 
-            light_sources.data.reset(new LightSourceItem[MAX_LIGHTS_TOTAL]);
-            light_sources.capacity = MAX_LIGHTS_TOTAL;
+            light_sources.data.reset(new LightSourceItem[REN_MAX_LIGHTS_TOTAL]);
+            light_sources.capacity = REN_MAX_LIGHTS_TOTAL;
             light_sources.count = 0;
 
-            decals.data.reset(new DecalItem[MAX_DECALS_TOTAL]);
-            decals.capacity = MAX_DECALS_TOTAL;
+            decals.data.reset(new DecalItem[REN_MAX_DECALS_TOTAL]);
+            decals.capacity = REN_MAX_DECALS_TOTAL;
             decals.count = 0;
 
-            probes.data.reset(new ProbeItem[MAX_PROBES_TOTAL]);
-            probes.capacity = MAX_PROBES_TOTAL;
+            probes.data.reset(new ProbeItem[REN_MAX_PROBES_TOTAL]);
+            probes.capacity = REN_MAX_PROBES_TOTAL;
             probes.count = 0;
 
-            cells.data.reset(new CellData[CELLS_COUNT]);
-            cells.capacity = CELLS_COUNT;
-            cells.count = CELLS_COUNT;
+            cells.data.reset(new CellData[REN_CELLS_COUNT]);
+            cells.capacity = REN_CELLS_COUNT;
+            cells.count = REN_CELLS_COUNT;
 
-            items.data.reset(new ItemData[MAX_ITEMS_TOTAL]);
-            items.capacity = MAX_ITEMS_TOTAL;
+            items.data.reset(new ItemData[REN_MAX_ITEMS_TOTAL]);
+            items.capacity = REN_MAX_ITEMS_TOTAL;
             items.count = 0;
 
             cached_shadow_regions.data.reset(new ShadReg[REN_MAX_SHADOWMAPS_TOTAL]);
@@ -218,7 +206,7 @@ private:
     std::vector<SortSpan64> temp_sort_spans_64_[2];
 
 #if defined(USE_GL_RENDER)
-    static const int FrameSyncWindow = 3;
+    static const int FrameSyncWindow = 2;
 
     uint32_t temp_tex_;
     Ren::eTexColorFormat temp_tex_format_;
@@ -233,13 +221,13 @@ private:
              sphere_vtx_offset_, sphere_ndx_offset_,
              skinned_buf_vtx_offset_;
     uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
-    uint32_t instances_buf_, instances_tbo_,
+    uint32_t instances_buf_, instances_tbo_[FrameSyncWindow],
              skin_transforms_buf_, skin_transforms_tbo_,
              skin_regions_buf_, skin_regions_tbo_;
-    uint32_t lights_buf_, lights_tbo_,
-             decals_buf_, decals_tbo_,
-             cells_buf_, cells_tbo_,
-             items_buf_, items_tbo_;
+    uint32_t lights_buf_, lights_tbo_[FrameSyncWindow],
+             decals_buf_, decals_tbo_[FrameSyncWindow],
+             cells_buf_, cells_tbo_[FrameSyncWindow],
+             items_buf_, items_tbo_[FrameSyncWindow];
     uint32_t reduce_pbo_[FrameSyncWindow], probe_sample_pbo_;
     int cur_reduce_pbo_ = 0;
 
@@ -250,6 +238,9 @@ private:
            TimeBlitStart, TimeDrawEnd, TimersCount };
     uint32_t queries_[FrameSyncWindow][TimersCount];
     int cur_query_ = 0;
+
+    void *buf_range_fences_[FrameSyncWindow] = {};
+    int cur_buf_chunk_ = 0;
 
     void CheckInitVAOs();
 #endif
