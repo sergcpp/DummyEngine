@@ -34,6 +34,8 @@ struct TriGroup {
     }
 };
 
+const int MaxMeshTriGroupsCount = 32;
+
 struct BufferRange {
     BufferRef buf;
     uint32_t  offset, size;
@@ -85,7 +87,7 @@ class Mesh : public RefCounter {
     uint32_t        flags_ = 0;
     BufferRange     attribs_buf_, sk_attribs_buf_, indices_buf_, sk_indices_buf_;
     std::unique_ptr <char[]> attribs_, indices_;
-    std::array<TriGroup, 16>    groups_;
+    std::array<TriGroup, MaxMeshTriGroupsCount>    groups_;
     Vec3f           bbox_min_, bbox_max_;
     char            name_[32];
 
