@@ -58,7 +58,7 @@ in mediump vec3 aVertexShUVs_[4];
 #endif
 
 layout(location = $OutColorIndex) out vec4 outColor;
-layout(location = $OutNormIndex) out vec3 outNormal;
+layout(location = $OutNormIndex) out vec4 outNormal;
 layout(location = $OutSpecIndex) out vec4 outSpecular;
 
 #include "common.glsl"
@@ -75,7 +75,7 @@ void main(void) {
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
     
-    vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(uCamPosAndGamma.w));
+    vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(2.2));
     vec3 normal_color = texture(normals_texture, aVertexUVs1_).wyz;
     vec4 specular_color = texture(specular_texture, aVertexUVs1_);
     
@@ -144,7 +144,7 @@ void main(void) {
     }
     
     vec3 normal = normal_color * 2.0 - 1.0;
-    normal = aVertexTBN_ * normal;
+    normal = normalize(aVertexTBN_ * normal);
     
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
     
@@ -232,7 +232,11 @@ void main(void) {
                               
     vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
     
-    outColor = vec4(diffuse_color, 1.0);
-    outNormal = normal * 0.5 + 0.5;
+    vec3 view_ray_ws = normalize(uCamPosAndGamma.xyz - aVertexPos_);
+    vec3 kS = FresnelSchlickRoughness(max(dot(normal, view_ray_ws), 0.0), specular_color.xyz, 1.0 - specular_color.a);
+    
+    outColor = vec4(diffuse_color * (1.0 - kS), 1.0);
+    outNormal.xyz = normal * 0.5 + 0.5;
+    outNormal.w = 1.0;
     outSpecular = vec4(vec3(ambient_occlusion), 1.0) * specular_color;
 }

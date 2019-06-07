@@ -74,7 +74,7 @@ void main(void) {
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
     
     vec4 diff_tex_color = texture(diffuse_texture, aVertexUVs1_);
-    vec3 albedo_color = pow(diff_tex_color.rgb, vec3(uCamPosAndGamma.w));
+    vec3 albedo_color = pow(diff_tex_color.rgb, vec3(2.2));
     
     vec3 normal_color = texture(normals_texture, aVertexUVs1_).wyz;
     vec4 specular_color = texture(specular_texture, aVertexUVs1_);
@@ -144,7 +144,7 @@ void main(void) {
     }
     
     vec3 normal = normal_color * 2.0 - 1.0;
-    normal = aVertexTBN_ * normal;
+    normal = normalize(aVertexTBN_ * normal);
     
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
     

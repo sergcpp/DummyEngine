@@ -44,7 +44,7 @@ layout(location = $OutColorIndex) out vec4 outColor;
 layout(location = $OutSpecIndex) out vec4 outSpecular;
 
 void main(void) {
-    vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(uCamPosAndGamma.w));
+    vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(2.2));
     
     outColor = vec4(albedo_color, 1.0);
     outSpecular = vec4(0.0);

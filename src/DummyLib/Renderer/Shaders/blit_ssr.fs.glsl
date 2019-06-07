@@ -217,12 +217,12 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
 void main() {
     ivec2 pix_uvs = ivec2(aVertexUVs_ - vec2(0.5));
 
-    vec4 specular = texelFetch(spec_texture, pix_uvs, 0);
-    if ((specular.x + specular.y + specular.z) < 0.0001) return;
+    vec4 normal_tex = texelFetch(norm_texture, pix_uvs, 0);
+    if (normal_tex.w < 0.0001) return;
 
     float depth = texelFetch(depth_texture, pix_uvs, 0).r;
 
-    vec3 normal_ws = 2.0 * texelFetch(norm_texture, pix_uvs, 0).xyz - 1.0;
+    vec3 normal_ws = 2.0 * normal_tex.xyz - 1.0;
     vec3 normal_vs = (uViewMatrix * vec4(normal_ws, 0.0)).xyz;
 
     vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, 2.0 * depth - 1.0, 1.0);

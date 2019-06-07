@@ -130,8 +130,6 @@ void main() {
 
     vec3 c0 = vec3(0.0);
 
-    float fresnel;
-
     {   // apply cubemap contribution
         vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, 2.0 * depth - 1.0, 1.0);
         ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
@@ -141,10 +139,6 @@ void main() {
 
         vec3 view_ray_ws = normalize((uInvViewMatrix * vec4(ray_origin_vs.xyz, 0.0)).xyz);
         vec3 refl_ray_ws = reflect(view_ray_ws, normal);
-
-        const float R0 = 0.25f;
-        float factor = pow(clamp(1.0 - dot(normal, -view_ray_ws), 0.0, 1.0), 5.0);
-        fresnel = R0 + (1.0 - R0) * factor;
 
         vec4 ray_origin_ws = uInvViewMatrix * ray_origin_vs;
         ray_origin_ws /= ray_origin_ws.w;
@@ -176,7 +170,7 @@ void main() {
     }
 
     c0 = mix(c0, textureLod(prev_texture, ssr_uvs.rg, /*tex_lod*/ 0.0).xyz, ssr_uvs.b);
-    c0 *= specular.rgb * fresnel;
+    c0 *= specular.rgb;
 
     outColor = vec4(c0, 1.0);
 }

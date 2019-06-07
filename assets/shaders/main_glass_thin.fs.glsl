@@ -69,7 +69,7 @@ void main(void) {
     vec4 specular_color = texture(specular_texture, aVertexUVs1_);
     
     vec3 normal = normal_color * 2.0 - 1.0;
-    normal = aVertexTBN_ * normal;
+    normal = normalize(aVertexTBN_ * normal);
     
     vec3 view_ray_ws = normalize(aVertexPos_ - uCamPosAndGamma.xyz);
     vec3 refl_ray_ws = reflect(view_ray_ws, normal);
@@ -91,9 +91,9 @@ void main(void) {
         reflected_color /= total_dist;
     }
     
-    const float R0 = 0.25f;
+    const float R0 = 0.15f;
     float factor = pow(clamp(1.0 - dot(normal, -view_ray_ws), 0.0, 1.0), 5.0);
     float fresnel = R0 + (1.0 - R0) * factor;
     
-    outColor = vec4(fresnel * reflected_color * specular_color.xyz, 0.5);
+    outColor = vec4(reflected_color * specular_color.xyz, fresnel);
 }

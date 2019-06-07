@@ -1,5 +1,5 @@
-gl_program: main_lightmapped main_lightmapped.vs.glsl main_lightmapped.fs.glsl
-gl_program: main_probelit main_probelit.vs.glsl main_probelit.fs.glsl
+gl_program: main_lightmapped_nossr main_lightmapped.vs.glsl main_lightmapped_nossr.fs.glsl
+gl_program: main_probelit_nossr main_probelit.vs.glsl main_probelit_nossr.fs.glsl
 sw_program: main
 texture: grey_133.png
 texture: default_normalmap.png

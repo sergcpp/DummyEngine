@@ -1,0 +1,42 @@
+{
+    "name" : "jap_house2",
+    "environment" : {
+        "sun_dir" : [ 0.54, -0.54, -0.54 ],
+        "sun_col" : [ 0.0, 0.0, 0.0 ],
+        "sun_softness" : 0.1,
+        "env_col1" : [ 0.05, 0.075, 0.1 ],
+        "env_map" : "env/studio_small_03",
+        "env_map_pt" : "env/studio_small_03_2k.hdr"
+    },
+    "camera" : {
+        "view_origin" : [ 0.0, 0.0, 3.0 ],
+        "view_dir" : [ 0.0, 0.0, -1.0 ],
+        "fwd_speed" : 0.025
+    },
+    "meshes" : {
+        "sphere" : {
+            "mesh_file" : "sphere_hi.mesh"
+        }
+    },
+    "decals" : {
+    },
+    "objects" : [
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "sphere"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "probe" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "radius" : 12.0
+            }
+        },
+    ]
+}

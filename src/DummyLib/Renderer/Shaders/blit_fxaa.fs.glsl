@@ -204,13 +204,6 @@ vec4 FxaaPixelShader(vec2 pos,
 }
 
 void main() {
-    outColor = FxaaPixelShader(
-                aVertexUVs_,
-                s_texture,
-                texcoord_offset,
-                0.25,
-                0.125,//0.063,//0.166,
-                0.0312//0.0625
-                );
+    outColor = FxaaPixelShader(aVertexUVs_, s_texture, texcoord_offset, 0.75, 0.125, 0.0625);
 }
 )"

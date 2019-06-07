@@ -12,6 +12,10 @@ vec3 RGBMDecode(vec4 rgbm) {
     return 4.0 * rgbm.rgb * rgbm.a;
 }
 
+vec3 FresnelSchlickRoughness(float cos_theta, vec3 F0, float roughness) {
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cos_theta, 5.0);
+}  
+
 const vec2 poisson_disk[16] = vec2[16](
     vec2(-0.5, 0.0),
     vec2(0.0, 0.5),
