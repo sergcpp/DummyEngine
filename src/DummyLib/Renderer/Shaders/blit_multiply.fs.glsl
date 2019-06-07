@@ -139,16 +139,15 @@ void main() {
         vec4 ray_origin_vs = uInvProjMatrix * ray_origin_cs;
         ray_origin_vs /= ray_origin_vs.w;
 
-        vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
-        vec3 refl_ray_vs = reflect(view_ray_vs, normal);
+        vec3 view_ray_ws = normalize((uInvViewMatrix * vec4(ray_origin_vs.xyz, 0.0)).xyz);
+        vec3 refl_ray_ws = reflect(view_ray_ws, normal);
 
         const float R0 = 0.25f;
-        float factor = pow(clamp(1.0 - dot(normal, -view_ray_vs), 0.0, 1.0), 5.0);
+        float factor = pow(clamp(1.0 - dot(normal, -view_ray_ws), 0.0, 1.0), 5.0);
         fresnel = R0 + (1.0 - R0) * factor;
 
         vec4 ray_origin_ws = uInvViewMatrix * ray_origin_vs;
         ray_origin_ws /= ray_origin_ws.w;
-        vec3 refl_ray_ws = normalize((uInvViewMatrix * vec4(refl_ray_vs, 0.0)).xyz);
 
         highp float k = log2(lin_depth / uClipInfo[1]) / uClipInfo[3];
         int slice = int(floor(k * float(GRID_RES_Z)));
@@ -167,7 +166,6 @@ void main() {
             int pi = int(bitfieldExtract(item_data, 24, 8));
 
             float dist = distance(uProbes[pi].pos_and_radius.xyz, ray_origin_ws.xyz);
-            //c0 += dist * RGBMDecode(textureGrad(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), refl_dx, refl_dy));
             c0 += dist * RGBMDecode(textureLod(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), tex_lod));
             total_dist += dist;
         }

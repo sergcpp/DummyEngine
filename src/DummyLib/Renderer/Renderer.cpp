@@ -174,7 +174,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
                 desc[0].repeat = Ren::ClampToEdge;
             }
             {   // View-space normal
-                desc[1].format = Ren::RawRGB888;
+                desc[1].format = Ren::RawRGB10_A2;
                 desc[1].filter = Ren::BilinearNoMipmap;
                 desc[1].repeat = Ren::ClampToEdge;
             }

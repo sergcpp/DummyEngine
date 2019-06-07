@@ -213,13 +213,6 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     return res;
 }
 
-vec3 DecodeNormal(vec2 enc) {
-    vec4 nn = vec4(2.0 * enc, 0.0, 0.0) + vec4(-1.0, -1.0, 1.0, -1.0);
-    float l = dot(nn.xyz, -nn.xyw);
-    nn.z = l;
-    nn.xy *= sqrt(max(l, 0.0));
-    return 2.0 * nn.xyz + vec3(0.0, 0.0, -1.0);
-}
 
 void main() {
     ivec2 pix_uvs = ivec2(aVertexUVs_ - vec2(0.5));
@@ -229,7 +222,8 @@ void main() {
 
     float depth = texelFetch(depth_texture, pix_uvs, 0).r;
 
-    vec3 normal = 2.0 * texelFetch(norm_texture, pix_uvs, 0).xyz - 1.0;//DecodeNormal(texelFetch(norm_texture, pix_uvs, 0).xy);
+    vec3 normal_ws = 2.0 * texelFetch(norm_texture, pix_uvs, 0).xyz - 1.0;
+    vec3 normal_vs = (uViewMatrix * vec4(normal_ws, 0.0)).xyz;
 
     vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, 2.0 * depth - 1.0, 1.0);
     ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
@@ -238,7 +232,7 @@ void main() {
     ray_origin_vs /= ray_origin_vs.w;
 
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
-    vec3 refl_ray_vs = reflect(view_ray_vs, normal);
+    vec3 refl_ray_vs = reflect(view_ray_vs, normal_vs);
 
     vec2 hit_pixel;
     vec3 hit_point;

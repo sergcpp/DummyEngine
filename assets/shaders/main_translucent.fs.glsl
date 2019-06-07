@@ -241,9 +241,6 @@ void main(void) {
     vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + indirect_col + additional_light);
     
     outColor = vec4(diffuse_color, diff_tex_color.a);
-    
-    vec3 normal_vs = normalize((uViewMatrix * vec4(normal, 0.0)).xyz);
-    outNormal = normal_vs * 0.5 + 0.5;
-    
+    outNormal = normal * 0.5 + 0.5;
     outSpecular = specular_color;
 }
