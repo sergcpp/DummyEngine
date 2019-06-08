@@ -70,7 +70,8 @@ struct BufferRange {
 
     void Release() {
         if (buf && size) {
-            assert(buf->Free(offset));
+            bool res = buf->Free(offset);
+            assert(res);
             size = 0;
             offset = 0;
         }
@@ -89,7 +90,7 @@ class Mesh : public RefCounter {
     std::unique_ptr <char[]> attribs_, indices_;
     std::array<TriGroup, MaxMeshTriGroupsCount>    groups_;
     Vec3f           bbox_min_, bbox_max_;
-    char            name_[32];
+    char            name_[48];
 
     Skeleton        skel_;
 
