@@ -169,11 +169,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         {   // Main buffer for raw frame before tonemapping
             FrameBuf::ColorAttachmentDesc desc[3];
             {   // Main color
-                desc[0].format = Ren::RawRGBA16F;
+                desc[0].format = Ren::RawRGB16F;
                 desc[0].filter = Ren::NoFilter;
                 desc[0].repeat = Ren::ClampToEdge;
             }
-            {   // View-space normal
+            {   // 4-component world-space normal (alpha is 'ssr' flag)
                 desc[1].format = Ren::RawRGB10_A2;
                 desc[1].filter = Ren::BilinearNoMipmap;
                 desc[1].repeat = Ren::ClampToEdge;
@@ -186,7 +186,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, true, Ren::NoFilter, 4);
         }
 
-        {   // Buffer that holds ldr frame before fxaa applied
+        {   // Buffer that holds tonemapped ldr frame before fxaa applied
             FrameBuf::ColorAttachmentDesc desc;
             desc.format = Ren::RawRGB888;
             desc.filter = Ren::BilinearNoMipmap;
@@ -202,7 +202,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         }
         {   // Auxilary buffer for reflections
             FrameBuf::ColorAttachmentDesc desc;
-            desc.format = Ren::RawRGB16F;
+            desc.format = Ren::RawRGB10_A2;
             desc.filter = Ren::NoFilter;
             desc.repeat = Ren::ClampToEdge;
             refl_buf_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, false);
@@ -224,6 +224,15 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             blur_buf1_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, false);
             blur_buf2_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, false);
         }
+
+        // Memory consumption for FullHD frame:
+        // combined_buf_    : ~5.93 Mb
+        // ssao_buf_        : ~0.49 Mb
+        // refl_buf_        : ~1.97 Mb
+        // down_buf_        : ~0.75 Mb
+        // blur_buf1_       : ~0.74 Mb
+        // blur_buf2_       : ~0.74 Mb
+        // Total            : ~10.62 Mb
 
         InitFramebuffersInternal();
 

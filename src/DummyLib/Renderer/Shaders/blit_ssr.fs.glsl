@@ -246,8 +246,8 @@ void main() {
         hit_prev /= hit_prev.w;
         hit_prev.xy = 0.5 * hit_prev.xy + 0.5;
 
-        float mm = max(abs(hit_pixel.x), abs(hit_pixel.y));
-        float mix_factor = min(4.0 * (1.0 - mm), 1.0);
+        float mm = max(abs(0.5 - hit_prev.x), abs(0.5 - hit_prev.y));
+        float mix_factor = min(4.0 * (1.0 - 2.0 * mm), 1.0);
 
         outColor.rg = hit_prev.xy;
         outColor.b = mix_factor;

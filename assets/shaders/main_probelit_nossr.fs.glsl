@@ -247,10 +247,12 @@ void main(void) {
     vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
     
     vec3 view_ray_ws = normalize(uCamPosAndGamma.xyz - aVertexPos_);
-    vec3 kS = FresnelSchlickRoughness(max(dot(normal, view_ray_ws), 0.0), specular_color.xyz, 1.0 - specular_color.a);
+    float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);
+    
+    vec3 kS = FresnelSchlickRoughness(N_dot_V, specular_color.xyz, 1.0 - specular_color.a);
     
     outColor = vec4(diffuse_color * (1.0 - kS), 1.0);
     outNormal.xyz = normal * 0.5 + 0.5;
     outNormal.w = 0.0;
-    outSpecular = vec4(vec3(ambient_occlusion), 1.0) * vec4(kS, specular_color.a);
+    outSpecular = vec4(vec3(ambient_occlusion) * kS, specular_color.a);
 }
