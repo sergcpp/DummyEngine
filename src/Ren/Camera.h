@@ -23,8 +23,9 @@ enum eCamPlane {
 enum eVisibilityResult { Invisible, FullyVisible, PartiallyVisible };
 
 struct Frustum {
-    Ren::Plane planes[6] = { { Ren::Uninitialize },{ Ren::Uninitialize },{ Ren::Uninitialize },
-                             { Ren::Uninitialize },{ Ren::Uninitialize },{ Ren::Uninitialize } };
+    Ren::Plane planes[8] = { { Ren::Uninitialize }, { Ren::Uninitialize }, { Ren::Uninitialize }, { Ren::Uninitialize },
+                             { Ren::Uninitialize }, { Ren::Uninitialize }, { Ren::Uninitialize }, { Ren::Uninitialize } };
+    int planes_count = 6;
 
     eVisibilityResult CheckVisibility(const Vec3f &point) const;
     eVisibilityResult CheckVisibility(const float bbox[8][3]) const;
