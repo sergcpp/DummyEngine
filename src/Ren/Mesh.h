@@ -34,7 +34,7 @@ struct TriGroup {
     }
 };
 
-const int MaxMeshTriGroupsCount = 32;
+const int MaxMeshTriGroupsCount = 52;
 
 struct BufferRange {
     BufferRef buf;

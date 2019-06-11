@@ -537,6 +537,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
             Ren::Vec3f bounding_center;
             const float bounding_radius = temp_cam.GetBoundingSphere(bounding_center);
+            float object_dim_thres = 0.0f;
 
             auto cam_target = bounding_center;
 
@@ -556,6 +557,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                 // Update target coordinates in world space
                 cam_target = _dot_f * light_dir + _dot_s * cam_side + _dot_u * cam_up;
+
+                // Set object size requirenment
+                object_dim_thres = move_step;
             }
 
             auto cam_center = cam_target + max_dist * light_dir;
@@ -637,11 +641,17 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             while (stack_size) {
                 uint32_t cur = stack[--stack_size] & index_bits;
                 uint32_t skip_check = stack[stack_size] & skip_check_bit;
-                const auto* n = &scene.nodes[cur];
+                const auto *n = &scene.nodes[cur];
 
-                auto res = shadow_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
-                if (res == Ren::Invisible) continue;
-                else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
+                if (!skip_check) {
+                    auto res = shadow_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
+                    if (res == Ren::Invisible) continue;
+                    else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
+                }
+
+                if ((n->bbox_max[0] - n->bbox_min[0]) < object_dim_thres ||
+                    (n->bbox_max[1] - n->bbox_min[1]) < object_dim_thres ||
+                    (n->bbox_max[2] - n->bbox_min[2]) < object_dim_thres) continue;
 
                 if (!n->prim_count) {
                     stack[stack_size++] = skip_check | n->left_child;

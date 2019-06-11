@@ -153,19 +153,20 @@ void main() {
         highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
         highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);
 
-        float total_dist = 0.0;
+        float total_fade = 0.0;
 
         for (uint i = offset; i < offset + pcount; i++) {
             highp uint item_data = texelFetch(items_buffer, int(i)).x;
             int pi = int(bitfieldExtract(item_data, 24, 8));
 
             float dist = distance(uProbes[pi].pos_and_radius.xyz, ray_origin_ws.xyz);
-            c0 += dist * RGBMDecode(textureLod(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), tex_lod));
-            total_dist += dist;
+            float fade = 1.0 - smoothstep(0.9, 1.0, dist / uProbes[pi].pos_and_radius.w);
+            c0 += fade * RGBMDecode(textureLod(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), tex_lod));
+            total_fade += fade;
         }
 
-        if (pcount != 0u) {
-            c0 /= total_dist;
+        if (total_fade > 1.0) {
+            c0 /= total_fade;
         }
     }
 

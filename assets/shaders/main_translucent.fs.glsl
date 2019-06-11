@@ -208,7 +208,7 @@ void main(void) {
     }
     
     vec3 indirect_col = vec3(0.0);
-    float total_dist = 0.0;
+    float total_fade = 0.0;
     
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
         highp uint item_data = texelFetch(items_buffer, int(i)).x;
@@ -218,16 +218,17 @@ void main(void) {
         const float SH_A1 = 1.02332675;  // sqrt(PI / 3.0f)
         
         float dist = distance(uProbes[pi].pos_and_radius.xyz, aVertexPos_);
-        vec4 vv = dist * vec4(SH_A0, SH_A1 * normal.yzx);
+        float fade = 1.0 - smoothstep(0.9, 1.0, dist / uProbes[pi].pos_and_radius.w);
+        vec4 vv = fade * vec4(SH_A0, SH_A1 * normal.yzx);
 
         indirect_col.r += dot(uProbes[pi].sh_coeffs[0], vv);
         indirect_col.g += dot(uProbes[pi].sh_coeffs[1], vv);
         indirect_col.b += dot(uProbes[pi].sh_coeffs[2], vv);
-        total_dist += dist;
+        total_fade += fade;
     }
     
-    if (dcount_and_pcount.y != 0u) {
-        indirect_col /= total_dist;
+    if (total_fade > 1.0) {
+        indirect_col /= total_fade;
     }
     
     indirect_col = max(4.0 * indirect_col, vec3(0.0));

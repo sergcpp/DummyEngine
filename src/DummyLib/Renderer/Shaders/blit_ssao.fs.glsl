@@ -99,7 +99,7 @@ void main() {
         return;
     }
 
-    float initial_radius = 0.2;
+    float initial_radius = 0.15;
     float ss_radius = min(initial_radius / depth, 0.1);
 
     const float sample_weight = 1.0 / 7.0;
@@ -133,7 +133,7 @@ void main() {
 
     // smooth fadeout
     float k = max((depth - fadeout_start) / (fadeout_end - fadeout_start), 0.0);
-    occlusion = mix(occlusion, 1.0, k);
+    occlusion = mix(occlusion * occlusion, 1.0, k);
 
     outColor = vec4(occlusion, occlusion, occlusion, 1.0);
 }

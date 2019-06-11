@@ -75,20 +75,21 @@ void main(void) {
     vec3 refl_ray_ws = reflect(view_ray_ws, normal);
     
     vec3 reflected_color = vec3(0.0);
-    float total_dist = 0.0;
+    float total_fade = 0.0;
     
     for (uint i = offset; i < offset + pcount; i++) {
         highp uint item_data = texelFetch(items_buffer, int(i)).x;
         int pi = int(bitfieldExtract(item_data, 24, 8));
         
         float dist = distance(uProbes[pi].pos_and_radius.xyz, aVertexPos_);
+        float fade = 1.0 - smoothstep(0.9, 1.0, dist / uProbes[pi].pos_and_radius.w);
         
-        reflected_color += dist * RGBMDecode(texture(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w)));
-        total_dist += dist;
+        reflected_color += fade * RGBMDecode(texture(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w)));
+        total_fade += fade;
     }
     
-    if (pcount != 0u) {
-        reflected_color /= total_dist;
+    if (total_fade > 1.0) {
+        reflected_color /= total_fade;
     }
     
     const float R0 = 0.15f;
