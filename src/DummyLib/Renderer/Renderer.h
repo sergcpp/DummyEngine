@@ -216,11 +216,11 @@ private:
 
     uint32_t unif_shared_data_block_, unif_batch_data_block_;
     uint32_t temp_vao_, shadow_pass_vao_, depth_pass_vao_, draw_pass_vao_, skydome_vao_, sphere_vao_;
-    uint32_t temp_buf_vtx_offset_, temp_buf_ndx_offset_,
-             skydome_vtx_offset_, skydome_ndx_offset_,
-             sphere_vtx_offset_, sphere_ndx_offset_,
-             skinned_buf_vtx_offset_;
-    uint32_t last_vertex_buffer_ = 0, last_index_buffer_ = 0;
+    uint32_t temp_buf1_vtx_offset_, temp_buf2_vtx_offset_, temp_buf_ndx_offset_,
+             skydome_vtx1_offset_, skydome_vtx2_offset_, skydome_ndx_offset_,
+             sphere_vtx1_offset_, sphere_vtx2_offset_, sphere_ndx_offset_,
+             skinned_buf1_vtx_offset_, skinned_buf2_vtx_offset_;
+    uint32_t last_vertex_buf1_ = 0, last_vertex_buf2_ = 0, last_index_buffer_ = 0;
     uint32_t instances_buf_, instances_tbo_[FrameSyncWindow],
              skin_transforms_buf_, skin_transforms_tbo_,
              skin_regions_buf_, skin_regions_tbo_;

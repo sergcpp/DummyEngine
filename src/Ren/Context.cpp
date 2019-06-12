@@ -3,11 +3,11 @@
 #include <algorithm>
 
 Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream &data, material_load_callback on_mat_load) {
-    return LoadMesh(name, data, on_mat_load, default_vertex_buf_, default_indices_buf_, default_skin_vertex_buf_, default_skin_indices_buf_);
+    return LoadMesh(name, data, on_mat_load, default_vertex_buf1_, default_vertex_buf2_, default_indices_buf_, default_skin_vertex_buf_);
 }
 
 Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream &data, material_load_callback on_mat_load,
-                                    BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf) {
+                                    BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf) {
     MeshRef ref;
     for (auto it = meshes_.begin(); it != meshes_.end(); ++it) {
         if (strcmp(it->name(), name) == 0) {
@@ -16,7 +16,7 @@ Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream &data, materi
     }
 
     if (!ref) {
-        ref = meshes_.Add(name, data, on_mat_load, vertex_buf, index_buf, skin_vertex_buf, skin_index_buf);
+        ref = meshes_.Add(name, data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf);
     }
 
     return ref;
@@ -200,10 +200,10 @@ void Ren::Context::ReleaseBuffers() {
 
 void Ren::Context::ReleaseAll() {
     meshes_.Clear();
-    default_vertex_buf_ = {};
+    default_vertex_buf1_ = {};
+    default_vertex_buf2_ = {};
     default_skin_vertex_buf_ = {};
     default_indices_buf_ = {};
-    default_skin_indices_buf_ = {};
 
     ReleaseAnims();
     ReleaseMaterials();

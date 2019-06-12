@@ -502,22 +502,31 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: timer queries");
 
     {
-        auto vtx_buf = ctx_.default_vertex_buf(),
+        auto vtx_buf1 = ctx_.default_vertex_buf1(),
+             vtx_buf2 = ctx_.default_vertex_buf2(),
              ndx_buf = ctx_.default_indices_buf();
 
         // Allocate temporary buffer
-        temp_buf_vtx_offset_ = vtx_buf->Alloc(TEMP_BUF_SIZE);
+        temp_buf1_vtx_offset_ = vtx_buf1->Alloc(TEMP_BUF_SIZE);
+        temp_buf2_vtx_offset_ = vtx_buf2->Alloc(TEMP_BUF_SIZE);
+        assert(temp_buf1_vtx_offset_ == temp_buf2_vtx_offset_ && "Offsets do not match!");
         temp_buf_ndx_offset_ = ndx_buf->Alloc(TEMP_BUF_SIZE);
 
         // Allocate buffer for skinned vertices
-        skinned_buf_vtx_offset_ = vtx_buf->Alloc(REN_MAX_SKIN_VERTICES_TOTAL * 32);
+        skinned_buf1_vtx_offset_ = vtx_buf1->Alloc(REN_MAX_SKIN_VERTICES_TOTAL * 16);
+        skinned_buf2_vtx_offset_ = vtx_buf2->Alloc(REN_MAX_SKIN_VERTICES_TOTAL * 16);
+        assert(skinned_buf1_vtx_offset_ == skinned_buf2_vtx_offset_ && "Offsets do not match!");
 
         // Allocate skydome vertices
-        skydome_vtx_offset_ = vtx_buf->Alloc(sizeof(__skydome_positions) + (32 - sizeof(__skydome_positions) % 32), __skydome_positions);
+        skydome_vtx1_offset_ = vtx_buf1->Alloc(sizeof(__skydome_positions) + (16 - sizeof(__skydome_positions) % 16), __skydome_positions);
+        skydome_vtx2_offset_ = vtx_buf2->Alloc(sizeof(__skydome_positions) + (16 - sizeof(__skydome_positions) % 16), nullptr);
+        assert(skydome_vtx1_offset_ == skydome_vtx2_offset_ && "Offsets do not match!");
         skydome_ndx_offset_ = ndx_buf->Alloc(sizeof(__skydome_indices), __skydome_indices);
 
         // Allocate sphere vertices
-        sphere_vtx_offset_ = vtx_buf->Alloc(sizeof(__sphere_positions) + (32 - sizeof(__sphere_positions) % 32), __sphere_positions);
+        sphere_vtx1_offset_ = vtx_buf1->Alloc(sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16), __sphere_positions);
+        sphere_vtx2_offset_ = vtx_buf2->Alloc(sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16), nullptr);
+        assert(sphere_vtx1_offset_ == sphere_vtx2_offset_ && "Offsets do not match!");
         sphere_ndx_offset_ = ndx_buf->Alloc(sizeof(__sphere_indices), __sphere_indices);
     }
 
@@ -620,16 +629,18 @@ bool Renderer::InitFramebuffersInternal() {
 void Renderer::CheckInitVAOs() {
     using namespace RendererInternal;
 
-    auto vtx_buf = ctx_.default_vertex_buf();
+    auto vtx_buf1 = ctx_.default_vertex_buf1();
+    auto vtx_buf2 = ctx_.default_vertex_buf2();
     auto ndx_buf = ctx_.default_indices_buf();
 
-    GLuint gl_vertex_buf = (GLuint)vtx_buf->buf_id(),
+    GLuint gl_vertex_buf1 = (GLuint)vtx_buf1->buf_id(),
+           gl_vertex_buf2 = (GLuint)vtx_buf2->buf_id(),
            gl_indices_buf = (GLuint)ndx_buf->buf_id();
 
-    if (gl_vertex_buf != last_vertex_buffer_ || gl_indices_buf != last_index_buffer_) {
+    if (gl_vertex_buf1 != last_vertex_buf1_ || gl_vertex_buf2 != last_vertex_buf2_ || gl_indices_buf != last_index_buffer_) {
         // buffers were reallocated, recreate vertex arrays
 
-        if (last_vertex_buffer_) {
+        if (last_vertex_buf1_) {
             GLuint sphere_vao = (GLuint)sphere_vao_;
             glDeleteVertexArrays(1, &sphere_vao);
 
@@ -650,15 +661,15 @@ void Renderer::CheckInitVAOs() {
         glGenVertexArrays(1, &shadow_pass_vao);
         glBindVertexArray(shadow_pass_vao);
 
-        glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf);
+        glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
-        int stride = 32;
+        int stride = 16;
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
         glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(uint16_t)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
 
         glBindVertexArray(0);
 
@@ -668,14 +679,14 @@ void Renderer::CheckInitVAOs() {
         glGenVertexArrays(1, &depth_pass_vao);
         glBindVertexArray(depth_pass_vao);
 
-        glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf);
+        glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
         glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(uint16_t)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
 
         glBindVertexArray(0);
         depth_pass_vao_ = (uint32_t)depth_pass_vao;
@@ -684,23 +695,30 @@ void Renderer::CheckInitVAOs() {
         glGenVertexArrays(1, &draw_pass_vao);
         glBindVertexArray(draw_pass_vao);
 
-        glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
-        glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+        {   // Setup attributes from buffer 1
+            glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
 
-        glEnableVertexAttribArray(REN_VTX_NOR_LOC);
-        glVertexAttribPointer(REN_VTX_NOR_LOC, 4, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float)));
+            glEnableVertexAttribArray(REN_VTX_POS_LOC);
+            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
 
-        glEnableVertexAttribArray(REN_VTX_TAN_LOC);
-        glVertexAttribPointer(REN_VTX_TAN_LOC, 2, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float) + 4 * sizeof(uint16_t)));
+            glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
+        }
 
-        glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(uint16_t)));
+        {   // Setup attributes from buffer 2
+            glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf2);
 
-        glEnableVertexAttribArray(REN_VTX_UV2_LOC);
-        glVertexAttribPointer(REN_VTX_UV2_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 8 * sizeof(uint16_t)));
+            glEnableVertexAttribArray(REN_VTX_NOR_LOC);
+            glVertexAttribPointer(REN_VTX_NOR_LOC, 4, GL_SHORT, GL_TRUE, stride, (void *)0);
+
+            glEnableVertexAttribArray(REN_VTX_TAN_LOC);
+            glVertexAttribPointer(REN_VTX_TAN_LOC, 2, GL_SHORT, GL_TRUE, stride, (void *)(4 * sizeof(uint16_t)));
+
+            glEnableVertexAttribArray(REN_VTX_UV2_LOC);
+            glVertexAttribPointer(REN_VTX_UV2_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(uint16_t)));
+        }
 
         glBindVertexArray(0);
         draw_pass_vao_ = (uint32_t)draw_pass_vao;
@@ -717,11 +735,11 @@ void Renderer::CheckInitVAOs() {
             glGenVertexArrays(1, &skydome_vao);
             glBindVertexArray(skydome_vao);
 
-            glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf);
+            glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, 0, (void *)uintptr_t(skydome_vtx_offset_));
+            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, 0, (void *)uintptr_t(skydome_vtx1_offset_));
 
             glBindVertexArray(0);
             skydome_vao_ = (uint32_t)skydome_vao;
@@ -732,17 +750,18 @@ void Renderer::CheckInitVAOs() {
             glGenVertexArrays(1, &sphere_vao);
             glBindVertexArray(sphere_vao);
 
-            glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf);
+            glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, 0, (void *)uintptr_t(sphere_vtx_offset_));
+            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, 0, (void *)uintptr_t(sphere_vtx1_offset_));
 
             glBindVertexArray(0);
             sphere_vao_ = (uint32_t)sphere_vao;
         }
 
-        last_vertex_buffer_ = (uint32_t)gl_vertex_buf;
+        last_vertex_buf1_ = (uint32_t)gl_vertex_buf1;
+        last_vertex_buf2_ = (uint32_t)gl_vertex_buf2;
         last_index_buffer_ = (uint32_t)gl_indices_buf;
     }
 }
@@ -750,7 +769,8 @@ void Renderer::CheckInitVAOs() {
 void Renderer::DestroyRendererInternal() {
     LOGI("DestroyRendererInternal");
 
-    auto vtx_buf = ctx_.default_vertex_buf();
+    auto vtx_buf1 = ctx_.default_vertex_buf1();
+    auto vtx_buf2 = ctx_.default_vertex_buf2();
     auto ndx_buf = ctx_.default_indices_buf();
 
     {
@@ -858,14 +878,17 @@ void Renderer::DestroyRendererInternal() {
     }
 
     {
-        vtx_buf->Free(sphere_vtx_offset_);
-        ndx_buf->Free(sphere_ndx_offset_);
+        assert(vtx_buf1->Free(sphere_vtx1_offset_));
+        assert(vtx_buf2->Free(sphere_vtx2_offset_));
+        assert(ndx_buf->Free(sphere_ndx_offset_));
 
-        vtx_buf->Free(skydome_vtx_offset_);
-        ndx_buf->Free(skydome_ndx_offset_);
+        assert(vtx_buf1->Free(skydome_vtx1_offset_));
+        assert(vtx_buf2->Free(skydome_vtx2_offset_));
+        assert(ndx_buf->Free(skydome_ndx_offset_));
 
-        vtx_buf->Free(temp_buf_vtx_offset_);
-        ndx_buf->Free(temp_buf_ndx_offset_);
+        assert(vtx_buf1->Free(temp_buf1_vtx_offset_));
+        assert(vtx_buf2->Free(temp_buf2_vtx_offset_));
+        assert(ndx_buf->Free(temp_buf_ndx_offset_));
 
         GLuint sphere_vao = (GLuint)sphere_vao_;
         glDeleteVertexArrays(1, &sphere_vao);
@@ -935,7 +958,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             buf_range_fences_[cur_buf_chunk_] = nullptr;
         }
 
-        GLbitfield BufferRangeBindFlags = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_FLUSH_EXPLICIT_BIT;
+        const GLbitfield BufferRangeBindFlags = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_FLUSH_EXPLICIT_BIT;
 
         // Update skinning buffers
         if (list.skin_transforms.count) {
@@ -1131,7 +1154,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, (GLuint)ctx_.default_skin_vertex_buf()->buf_id());
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)skin_transforms_buf_, cur_buf_chunk_ * SkinTransformsBufChunkSize, SkinTransformsBufChunkSize);
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)skin_regions_buf_, cur_buf_chunk_ * SkinRegionsBufChunkSize, SkinRegionsBufChunkSize);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, (GLuint)ctx_.default_vertex_buf()->buf_id());
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, (GLuint)ctx_.default_vertex_buf1()->buf_id());
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, (GLuint)ctx_.default_vertex_buf2()->buf_id());
 
         glDispatchCompute(list.skin_regions.count, 1, 1);
         glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
@@ -1158,6 +1182,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
 
+        // TODO: Split into two programs (with and without alpha test)
         glUseProgram(shadow_prog_->prog_id());
 
         glPolygonOffset(1.85f, 6.0f);
@@ -1400,18 +1425,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const float uvs[] = { 0.0f, 0.0f,                       float(act_w_), 0.0f,
                               float(act_w_), float(act_h_),     0.0f, float(act_h_) };
 
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
         if (clean_buf_.sample_count > 1) {
             BindTextureMs(REN_DIFF_TEX_SLOT, clean_buf_.depth_tex.GetValue());
@@ -1596,18 +1621,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const float uvs[] = { 0.0f, 0.0f,                       float(act_w_), 0.0f,
                               float(act_w_), float(act_h_),     0.0f, float(act_h_) };
 
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
         if (clean_buf_.sample_count > 1) {
             BindTextureMs(REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
@@ -1638,7 +1663,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindFramebuffer(GL_FRAMEBUFFER, refl_comb_framebuf_);
         glViewport(0, 0, act_w_, act_h_);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_ONE, GL_ONE);
@@ -1762,18 +1787,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
         glUseProgram(cur_program->prog_id());
 
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs), fs_quad_uvs);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs), fs_quad_uvs);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
         if (clean_buf_.sample_count > 1) {
             BindTextureMs(REN_DIFF_TEX_SLOT, clean_buf_.attachments[0].tex);
@@ -1797,7 +1822,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             cur_program = blit_gauss_prog_.get();
             glUseProgram(cur_program->prog_id());
 
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs1), fs_quad_uvs1);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs1), fs_quad_uvs1);
 
             glUniform1i(cur_program->uniform(U_TEX).loc, REN_DIFF_TEX_SLOT);
             glUniform1f(cur_program->uniform(4).loc, 0.0f);
@@ -1814,7 +1839,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             const float fs_quad_uvs2[] = { 0.0f, 0.0f,                                   float(blur_buf2_.w), 0.0f,
                                            float(blur_buf2_.w), float(blur_buf2_.h),     0.0f, float(blur_buf2_.h) };
 
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs2), fs_quad_uvs2);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs2), fs_quad_uvs2);
 
             BindTexture(REN_DIFF_TEX_SLOT, blur_buf2_.attachments[0].tex);
 
@@ -1849,20 +1874,20 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUseProgram(blit_red_prog_->prog_id());
 
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_norm_uvs), fs_quad_norm_uvs);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_norm_uvs), fs_quad_norm_uvs);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
         const Ren::Vec2f offset_step = { 1.0f / reduced_buf_.w, 1.0f / reduced_buf_.h };
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
         glUniform1i(blit_red_prog_->uniform(U_TEX).loc, REN_DIFF_TEX_SLOT);
 
@@ -1944,18 +1969,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const float fs_quad_uvs[] = { 0.0f, 0.0f,                       float(act_w_), 0.0f,
                                       float(act_w_), float(act_h_),     0.0f, float(act_h_) };
 
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs), fs_quad_uvs);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs), fs_quad_uvs);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
         glUniform1f(12, (list.render_flags & EnableTonemap) ? 1.0f : 0.0f);
         glUniform2f(13, float(act_w_), float(act_h_));
@@ -2002,18 +2027,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             const Ren::Program *blit_prog = blit_fxaa_prog_.get();
             glUseProgram(blit_prog->prog_id());
 
-            glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+            glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_norm_uvs), fs_quad_norm_uvs);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_norm_uvs), fs_quad_norm_uvs);
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
             glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
+            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
             BindTexture(REN_DIFF_TEX_SLOT, combined_buf_.attachments[0].tex);
 
@@ -2075,18 +2100,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const float fs_quad_uvs[] = { 0.0f, 0.0f,                       float(act_w_), 0.0f,
                                       float(act_w_), float(act_h_),     0.0f, float(act_h_) };
 
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs), fs_quad_uvs);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs), fs_quad_uvs);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
         if (clean_buf_.sample_count > 1) {
             BindTextureMs(REN_DIFF_TEX_SLOT, clean_buf_.depth_tex.GetValue());
@@ -2116,18 +2141,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const float uvs[] = { 0.0f, 0.0f,       256.0f, 0.0f,
                               256.0f, 128.0f,   0.0f, 128.0f };
 
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(positions)));
 
         glUniform1i(blit_prog_->uniform(U_TEX).loc, REN_DIFF_TEX_SLOT);
         glUniform1f(blit_prog_->uniform(4).loc, 1.0f);
@@ -2142,7 +2167,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const float positions2[] = { -1.0f + sx, -1.0f,               -1.0f + sx + sx, -1.0f,
                                      -1.0f + sx + sx, -1.0f + sy,     -1.0f + sx, -1.0f + sy };
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions2), positions2);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions2), positions2);
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, &depth_tiles_[0][0]);
 
@@ -2156,12 +2181,12 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUseProgram(blit_depth_prog_->prog_id());
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + 8 * sizeof(float)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + 8 * sizeof(float)));
 
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
@@ -2199,8 +2224,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                                   float(sh_list.shadow_map_pos[0] + sh_list.shadow_map_size[0]),    float(sh_list.shadow_map_pos[1] + sh_list.shadow_map_size[1]),
                                   float(sh_list.shadow_map_pos[0]),                                 float(sh_list.shadow_map_pos[1] + sh_list.shadow_map_size[1]) };
 
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
             
             glUniform1f(near_loc, sh_list.cam_near);
             glUniform1f(far_loc, sh_list.cam_far);
@@ -2230,8 +2255,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                                   float(r.pos[0] + r.size[0]),      float(r.pos[1] + r.size[1]),
                                   float(r.pos[0]),                  float(r.pos[1] + r.size[1]) };
 
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
 
             glUniform1f(near_loc, r.cam_near);
             glUniform1f(far_loc, r.cam_far);
@@ -2308,18 +2333,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             const float uvs[] = { 0.0f, 0.0f,                       float(scr_w_), 0.0f,
                                   float(scr_w_), float(scr_h_),     0.0f, float(scr_h_) };
 
-            glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+            glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
             glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
+            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
             BindTextureMs(0, clean_buf_.depth_tex.GetValue());
 
@@ -2538,18 +2563,18 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         const Ren::Program *cur_program = blit_gauss_prog_.get();
         glUseProgram(cur_program->prog_id());
 
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_pos), fs_quad_pos);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs1), fs_quad_uvs1);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_pos), fs_quad_pos);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs1), fs_quad_uvs1);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_pos)));
 
         glUniform1i(cur_program->uniform(U_TEX).loc, REN_DIFF_TEX_SLOT);
         glUniform1f(cur_program->uniform(4).loc, 0.0f);
@@ -2566,7 +2591,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         const float fs_quad_uvs2[] = { 0.0f, float(blur_buf2_.h),     float(blur_buf2_.w), float(blur_buf2_.h),
                                        float(blur_buf2_.w), 0.0f,     0.0f, 0.0f };
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs2), fs_quad_uvs2);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs2), fs_quad_uvs2);
 
         BindTexture(REN_DIFF_TEX_SLOT, blur_buf2_.attachments[0].tex);
 
@@ -2586,18 +2611,18 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         const float fs_quad_uvs[] = { 0.0f, float(h),       float(w), float(h),
                                       float(w), 0.0f,       0.0f, 0.0f };
 
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs), fs_quad_uvs);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_uvs), fs_quad_uvs);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
         glUniform1f(12, 1.0f);
         glUniform2f(13, float(w), float(h));
@@ -2642,23 +2667,23 @@ void Renderer::BlitBuffer(float px, float py, float sx, float sy, const FrameBuf
                 (float)buf.w, (float)buf.h,  0.0f, (float)buf.h
             };
 
-            glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+            glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
             glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
+            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(positions)));
 
             glUniform1i(cur_program->uniform(U_TEX).loc, REN_DIFF_TEX_SLOT);
             glUniform1f(cur_program->uniform(4).loc, multiplier);
         }
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
 
         if (buf.sample_count > 1) {
             BindTextureMs(REN_DIFF_TEX_SLOT, buf.attachments[i].tex);
@@ -2702,22 +2727,22 @@ void Renderer::BlitTexture(float px, float py, float sx, float sy, uint32_t tex_
             std::swap(indices[3], indices[5]);
         }
 
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(indices), indices);
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(positions)));
+        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(positions)));
 
         glUniform1i(cur_program->uniform(U_TEX).loc, REN_DIFF_TEX_SLOT);
         glUniform1f(cur_program->uniform(4).loc, 1.0f);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(positions), positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
 
         if (is_ms) {
             BindTextureMs(REN_DIFF_TEX_SLOT, tex_id);
@@ -2752,16 +2777,16 @@ void Renderer::BlitToLightProbeFace(const FrameBuf &src_buf, const ProbeStorage 
 
     glBindVertexArray((GLuint)temp_vao_);
 
-    glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+    glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
     glEnableVertexAttribArray(REN_VTX_POS_LOC);
-    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
     glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-    glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
+    glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
-    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
+    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
     {   // Update first mip level of a cubemap
@@ -2773,7 +2798,7 @@ void Renderer::BlitToLightProbeFace(const FrameBuf &src_buf, const ProbeStorage 
             (float)src_buf.w, (float)src_buf.h,     0.0f, (float)src_buf.h
         };
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
 
         BindTexture(0, src_buf.attachments[0].tex);
 
@@ -2792,7 +2817,7 @@ void Renderer::BlitToLightProbeFace(const FrameBuf &src_buf, const ProbeStorage 
             1.0f, -1.0f,   1.0f, 1.0f
         };
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, cube_array);
@@ -2839,22 +2864,22 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
 
     glBindVertexArray((GLuint)temp_vao_);
 
-    glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buffer_);
+    glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
     glEnableVertexAttribArray(REN_VTX_POS_LOC);
-    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_));
+    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
     glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-    glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)));
+    glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
     const float uvs[] = {
             0.0f, 0.0f,                                                 (float)probe_sample_buf_.w, 0.0f,
             (float)probe_sample_buf_.w, (float)probe_sample_buf_.h,     0.0f, (float)probe_sample_buf_.h
     };
 
-    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
+    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
+    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
     if (iteration != 0) {

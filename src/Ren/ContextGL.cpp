@@ -84,10 +84,10 @@ void Ren::Context::Init(int w, int h) {
     }
 #endif
 
-    default_vertex_buf_         = buffers_.Add(128 * 1024 * 1024);
+    default_vertex_buf1_        = buffers_.Add(64 * 1024 * 1024);
+    default_vertex_buf2_        = buffers_.Add(64 * 1024 * 1024);
     default_skin_vertex_buf_    = buffers_.Add(16 * 1024 * 1024);
     default_indices_buf_        = buffers_.Add(64 * 1024 * 1024);
-    default_skin_indices_buf_   = buffers_.Add(16 * 1024 * 1024);
 }
 
 void Ren::Context::Resize(int w, int h) {

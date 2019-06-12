@@ -37,6 +37,25 @@ namespace Ren {
     };
     static_assert(sizeof(orig_vertex_skinned_t) == 84, "!");
 
+    struct packed_vertex_data1_t {
+        float p[3];
+        uint16_t t0[2];
+    };
+    static_assert(sizeof(packed_vertex_data1_t) == 16, "!");
+
+    struct packed_vertex_data2_t {
+        int16_t n_and_bx[4];
+        int16_t byz[2];
+        uint16_t t1[2];
+    };
+    static_assert(sizeof(packed_vertex_data2_t) == 16, "!");
+
+    // make sure attributes are aligned to 4-bytes
+    static_assert(offsetof(packed_vertex_data1_t, t0) % 4 == 0, "!");
+    static_assert(offsetof(packed_vertex_data2_t, n_and_bx) % 4 == 0, "!");
+    static_assert(offsetof(packed_vertex_data2_t, byz) % 4 == 0, "!");
+    static_assert(offsetof(packed_vertex_data2_t, t1) % 4 == 0, "!");
+
     struct packed_vertex_t {
         float p[3];
         int16_t n_and_bx[4];
@@ -83,6 +102,25 @@ namespace Ren {
         out_v.t1[1] = f32_to_f16(in_v.t1[1]);
     }
 
+    void pack_vertex_data1(const orig_vertex_t &in_v, packed_vertex_data1_t &out_v) {
+        out_v.p[0] = in_v.p[0];
+        out_v.p[1] = in_v.p[1];
+        out_v.p[2] = in_v.p[2];
+        out_v.t0[0] = f32_to_f16(in_v.t0[0]);
+        out_v.t0[1] = f32_to_f16(in_v.t0[1]);
+    }
+
+    void pack_vertex_data2(const orig_vertex_t &in_v, packed_vertex_data2_t &out_v) {
+        out_v.n_and_bx[0] = f32_to_s16(in_v.n[0]);
+        out_v.n_and_bx[1] = f32_to_s16(in_v.n[1]);
+        out_v.n_and_bx[2] = f32_to_s16(in_v.n[2]);
+        out_v.n_and_bx[3] = f32_to_s16(in_v.b[0]);
+        out_v.byz[0] = f32_to_s16(in_v.b[1]);
+        out_v.byz[1] = f32_to_s16(in_v.b[2]);
+        out_v.t1[0] = f32_to_f16(in_v.t1[0]);
+        out_v.t1[1] = f32_to_f16(in_v.t1[1]);
+    }
+
     void pack_vertex(const orig_vertex_skinned_t &in_v, packed_vertex_skinned_t &out_v) {
         pack_vertex(in_v.v, out_v.v);
 
@@ -99,12 +137,12 @@ namespace Ren {
 }
 
 Ren::Mesh::Mesh(const char *name, std::istream &data, const material_load_callback &on_mat_load,
-                BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf) {
-    Init(name, data, on_mat_load, vertex_buf, index_buf, skin_vertex_buf, skin_index_buf);
+                BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf) {
+    Init(name, data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf);
 }
 
 void Ren::Mesh::Init(const char *name, std::istream &data, const material_load_callback &on_mat_load,
-                     BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf) {
+                     BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf) {
     strcpy(name_, name);
 
     char mesh_type_str[12];
@@ -113,16 +151,16 @@ void Ren::Mesh::Init(const char *name, std::istream &data, const material_load_c
     data.seekg(pos, std::ios::beg);
 
     if (strcmp(mesh_type_str, "STATIC_MESH\0") == 0) {
-        InitMeshSimple(data, on_mat_load, vertex_buf, index_buf);
+        InitMeshSimple(data, on_mat_load, vertex_buf1, vertex_buf2, index_buf);
     } else if (strcmp(mesh_type_str, "TERRAI_MESH\0") == 0) {
-        InitMeshTerrain(data, on_mat_load, vertex_buf, index_buf);
+        InitMeshTerrain(data, on_mat_load, vertex_buf1, index_buf);
     } else if (strcmp(mesh_type_str, "SKELET_MESH\0") == 0) {
-        InitMeshSkeletal(data, on_mat_load, vertex_buf, index_buf, skin_vertex_buf, skin_index_buf);
+        InitMeshSkeletal(data, on_mat_load, skin_vertex_buf, index_buf);
     }
 }
 
 void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load,
-                               BufferRef &vertex_buf, BufferRef &index_buf) {
+                               BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "STATIC_MESH\0") == 0);
@@ -158,9 +196,10 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
     data.read((char *)&temp_f[0], sizeof(float) * 3);
     bbox_max_ = MakeVec3(temp_f);
 
-    attribs_buf_.size = (uint32_t)file_header.p[VTX_ATTR_CHUNK].length;
-    attribs_.reset(new char[attribs_buf_.size]);
-    data.read((char *)attribs_.get(), attribs_buf_.size);
+    uint32_t attribs_size = (uint32_t)file_header.p[VTX_ATTR_CHUNK].length;
+
+    attribs_.reset(new char[attribs_size]);
+    data.read((char *)attribs_.get(), attribs_size);
 
     indices_buf_.size = (uint32_t)file_header.p[VTX_NDX_CHUNK].length;
     indices_.reset(new char[indices_buf_.size]);
@@ -196,18 +235,26 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
         groups_[num_strips].offset = -1;
     }
 
-    uint32_t vertex_count = attribs_buf_.size / sizeof(orig_vertex_t);
-    std::unique_ptr<packed_vertex_t[]> vertices(new packed_vertex_t[vertex_count]);
+    uint32_t vertex_count = attribs_size / sizeof(orig_vertex_t);
+    std::unique_ptr<packed_vertex_data1_t[]> vertices_data1(new packed_vertex_data1_t[vertex_count]);
+    std::unique_ptr<packed_vertex_data2_t[]> vertices_data2(new packed_vertex_data2_t[vertex_count]);
 
     const auto *orig_vertices = (const orig_vertex_t *)attribs_.get();
 
     for (uint32_t i = 0; i < vertex_count; i++) {
-        pack_vertex(orig_vertices[i], vertices[i]);
+        pack_vertex_data1(orig_vertices[i], vertices_data1[i]);
+        pack_vertex_data2(orig_vertices[i], vertices_data2[i]);
     }
 
-    attribs_buf_.buf = vertex_buf;
-    attribs_buf_.size = vertex_count * sizeof(packed_vertex_t);
-    attribs_buf_.offset = vertex_buf->Alloc(attribs_buf_.size, vertices.get());
+    attribs_buf1_.buf = vertex_buf1;
+    attribs_buf1_.size = vertex_count * sizeof(packed_vertex_data1_t);
+    attribs_buf1_.offset = vertex_buf1->Alloc(attribs_buf1_.size, vertices_data1.get());
+
+    attribs_buf2_.buf = vertex_buf2;
+    attribs_buf2_.size = vertex_count * sizeof(packed_vertex_data2_t);
+    attribs_buf2_.offset = vertex_buf2->Alloc(attribs_buf2_.size, vertices_data2.get());
+
+    assert(attribs_buf1_.offset == attribs_buf2_.offset && "Offsets do not match!");
 
     /*if (attribs_buf_.offset != 0) {
         uint32_t offset = attribs_buf_.offset / sizeof(packed_vertex_t);
@@ -223,7 +270,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
 }
 
 void Ren::Mesh::InitMeshTerrain(std::istream &data, const material_load_callback &on_mat_load, BufferRef &vertex_buf, BufferRef &index_buf) {
-    char mesh_type_str[12];
+    /*char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "TERRAI_MESH\0") == 0);
 
@@ -310,11 +357,10 @@ void Ren::Mesh::InitMeshTerrain(std::istream &data, const material_load_callback
     attribs_buf_.offset = vertex_buf->Alloc(attribs_buf_.size, attribs_.get());
 
     indices_buf_.buf = index_buf;
-    indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices_.get());
+    indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices_.get());*/
 }
 
-void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load,
-                                 BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf) {
+void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load, BufferRef &skin_vertex_buf, BufferRef &index_buf) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "SKELET_MESH\0") == 0);
@@ -357,9 +403,9 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     attribs_.reset(new char[sk_attribs_buf_.size]);
     data.read((char *)attribs_.get(), sk_attribs_buf_.size);
 
-    sk_indices_buf_.size = (uint32_t)file_header.p[VTX_NDX_CHUNK].length;
-    indices_.reset(new char[sk_indices_buf_.size]);
-    data.read((char *)indices_.get(), sk_indices_buf_.size);
+    indices_buf_.size = (uint32_t)file_header.p[VTX_NDX_CHUNK].length;
+    indices_.reset(new char[indices_buf_.size]);
+    data.read((char *)indices_.get(), indices_buf_.size);
 
     std::vector<std::array<char, 64>> material_names((size_t)file_header.p[MATERIALS_CHUNK].length / 64);
     for (auto &n : material_names) {
@@ -452,7 +498,6 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     sk_attribs_buf_.buf = skin_vertex_buf;
     sk_attribs_buf_.size = vertex_count * sizeof(packed_vertex_skinned_t);
     sk_attribs_buf_.offset = skin_vertex_buf->Alloc(sk_attribs_buf_.size, vertices.get());
-    sk_indices_buf_.buf = skin_index_buf;
 
     /*if (sk_attribs_buf_.offset != 0) {
         uint32_t offset = sk_attribs_buf_.offset / sizeof(packed_vertex_skinned_t);
@@ -463,7 +508,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         }
     }*/
 
-    sk_indices_buf_.offset = skin_index_buf->Alloc(sk_indices_buf_.size, indices_.get());
+    indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices_.get());
 
     std::unique_ptr<packed_vertex_t[]> _vertices(new packed_vertex_t[vertex_count]);
     for (uint32_t i = 0; i < vertex_count; i++) {
@@ -471,12 +516,12 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     }
 
     // allocate space for transformed vertices
-    attribs_buf_.buf = vertex_buf;
+    /*attribs_buf_.buf = vertex_buf;
     attribs_buf_.size = vertex_count * sizeof(packed_vertex_t);
     attribs_buf_.offset = vertex_buf->Alloc(attribs_buf_.size, _vertices.get());
 
     indices_buf_.buf = index_buf;
-    indices_buf_.size = sk_indices_buf_.size;
+    indices_buf_.size = sk_indices_buf_.size;*/
 
     /*{   // apply offset to vertex indices
         uint32_t offset = attribs_buf_.offset / sizeof(packed_vertex_t) -
@@ -498,7 +543,7 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
     bone_ids.reserve(12);
 
     float *vtx_attribs = (float *)attribs_.get();
-    size_t num_vtx_attribs = attribs_buf_.size / sizeof(float);
+    size_t num_vtx_attribs = attribs_buf1_.size / sizeof(float);
     unsigned short *vtx_indices = (unsigned short *)indices_.get();
     size_t num_vtx_indices = indices_buf_.size / sizeof(unsigned short);
 
@@ -671,9 +716,9 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
     indices_.reset(new char[indices_buf_.size]);
     memcpy(indices_.get(), &new_indices[0], indices_buf_.size);
 
-    attribs_buf_.size = (uint32_t)(new_attribs.size() * sizeof(float));
-    attribs_.reset(new char[attribs_buf_.size]);
-    memcpy(attribs_.get(), &new_attribs[0], attribs_buf_.size);
+    attribs_buf1_.size = (uint32_t)(new_attribs.size() * sizeof(float));
+    attribs_.reset(new char[attribs_buf1_.size]);
+    memcpy(attribs_.get(), &new_attribs[0], attribs_buf1_.size);
 }
 
 #ifdef _MSC_VER

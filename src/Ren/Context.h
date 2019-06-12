@@ -22,8 +22,8 @@ protected:
     AnimSeqStorage   anims_;
     BufferStorage    buffers_;
 
-    BufferRef       default_vertex_buf_, default_skin_vertex_buf_,
-                    default_indices_buf_, default_skin_indices_buf_;
+    BufferRef       default_vertex_buf1_, default_vertex_buf2_, default_skin_vertex_buf_,
+                    default_indices_buf_;
 
 #if defined(USE_SW_RENDER)
     SWcontext       *sw_ctx_;
@@ -44,17 +44,17 @@ public:
         return h_;
     }
 
-    BufferRef default_vertex_buf() const { return default_vertex_buf_; }
+    BufferRef default_vertex_buf1() const { return default_vertex_buf1_; }
+    BufferRef default_vertex_buf2() const { return default_vertex_buf2_; }
     BufferRef default_skin_vertex_buf() const { return default_skin_vertex_buf_; }
     BufferRef default_indices_buf() const { return default_indices_buf_; }
-    BufferRef default_skin_indices_buf() const { return default_skin_indices_buf_; }
 
     void Resize(int w, int h);
 
     /*** Mesh ***/
     MeshRef LoadMesh(const char *name, std::istream &data, material_load_callback on_mat_load);
     MeshRef LoadMesh(const char *name, std::istream &data, material_load_callback on_mat_load,
-                     BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf);
+                     BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf);
 
     /*** Material ***/
     MaterialRef LoadMaterial(const char *name, const char *mat_src, eMatLoadStatus *status, const program_load_callback &on_prog_load,

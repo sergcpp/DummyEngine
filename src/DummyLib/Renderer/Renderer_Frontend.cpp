@@ -184,9 +184,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         _surf->index_type = SW_UNSIGNED_INT;
                         _surf->attribs = mesh->attribs();
                         _surf->indices = ((const uint8_t *)mesh->indices() + s->offset);
-                        _surf->stride = 32;// 13 * sizeof(float);
+                        _surf->stride = 16;// 13 * sizeof(float);
                         _surf->count = (SWuint)s->num_indices;
-                        _surf->base_vertex = -SWint(mesh->attribs_buf().offset / _surf->stride);
+                        _surf->base_vertex = -SWint(mesh->attribs_buf1().offset / _surf->stride);
                         _surf->xform = Ren::ValuePtr(clip_from_object);
                         _surf->dont_skip = nullptr;
 
@@ -310,7 +310,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         const float max_sort_dist = 100.0f;
                         const uint8_t dist = (uint8_t)_MIN(255 * Ren::Distance(tr->bbox_min_ws, cam.world_position()) / max_sort_dist, 255);
 
-                        uint32_t base_vertex = mesh->attribs_buf().offset / 32;
+                        uint32_t base_vertex = mesh->attribs_buf1().offset / 16;
 
                         if (obj.comp_mask & CompAnimStateBit) {
                             const auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(obj.components[CompAnimState]);
@@ -633,6 +633,22 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         if (last_sign == 1) {
                             std::swap(frustum_edges[i][0], frustum_edges[i][1]);
                         }
+
+                        float f0 = (frustum_points_proj[frustum_edges[i][0]][0] - frustum_points_proj[frustum_edges[i][1]][0]) /
+                                   (frustum_points_proj[frustum_edges[i][0]][1] - frustum_points_proj[frustum_edges[i][1]][1]);
+
+                        // Check if it is duplicate
+                        for (int k = 0; k < silhouette_edges_count - 1; k++) {
+                            int j = silhouette_edges[k];
+
+                            float f1 = (frustum_points_proj[frustum_edges[j][0]][0] - frustum_points_proj[frustum_edges[j][1]][0]) /
+                                       (frustum_points_proj[frustum_edges[j][0]][1] - frustum_points_proj[frustum_edges[j][1]][1]);
+
+                            if (std::abs(f1 - f0) < 0.001f) {
+                                silhouette_edges_count--;
+                                break;
+                            }
+                        }
                     }
                 }
 
@@ -768,7 +784,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         }
 
                         if (proc_objects_[n->prim_index].base_vertex == 0xffffffff) {
-                            proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf().offset / 32;
+                            proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf1().offset / 16;
 
                             if (obj.comp_mask & CompAnimStateBit) {
                                 const auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(obj.components[CompAnimState]);
@@ -950,7 +966,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         }
 
                         if (proc_objects_[n->prim_index].base_vertex == 0xffffffff) {
-                            proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf().offset / 32;
+                            proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf1().offset / 16;
 
                             if (obj.comp_mask & CompAnimStateBit) {
                                 const auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(obj.components[CompAnimState]);
@@ -1205,11 +1221,11 @@ void Renderer::__push_skeletal_mesh(uint32_t obj_index, const AnimState *as, con
     uint32_t vertex_beg = buf.offset / 48,
              vertex_end = (buf.offset + buf.size) / 48;
 
-    proc_objects_[obj_index].base_vertex = (skinned_buf_vtx_offset_ / 32) + list.skin_vertices_count;
+    proc_objects_[obj_index].base_vertex = (skinned_buf1_vtx_offset_ / 16) + list.skin_vertices_count;
 
     for (uint32_t i = vertex_beg; i < vertex_end; i += REN_SKIN_REGION_SIZE) {
         uint16_t count = (uint16_t)_MIN(vertex_end - i, REN_SKIN_REGION_SIZE);
-        uint32_t out_offset = (skinned_buf_vtx_offset_ / 32) + list.skin_vertices_count;
+        uint32_t out_offset = (skinned_buf1_vtx_offset_ / 16) + list.skin_vertices_count;
         list.skin_regions.data[list.skin_regions.count++] = { i, out_offset, palette_start, count };
         list.skin_vertices_count += count;
     }

@@ -86,7 +86,7 @@ typedef std::function<MaterialRef(const char *name)> material_load_callback;
 class Mesh : public RefCounter {
     int             type_ = MeshUndefined;
     uint32_t        flags_ = 0;
-    BufferRange     attribs_buf_, sk_attribs_buf_, indices_buf_, sk_indices_buf_;
+    BufferRange     attribs_buf1_, attribs_buf2_, sk_attribs_buf_, indices_buf_;
     std::unique_ptr <char[]> attribs_, indices_;
     std::array<TriGroup, MaxMeshTriGroupsCount>    groups_;
     Vec3f           bbox_min_, bbox_max_;
@@ -95,12 +95,11 @@ class Mesh : public RefCounter {
     Skeleton        skel_;
 
     // simple static mesh with normals
-    void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, BufferRef &vertex_buf, BufferRef &index_buf);
+    void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf);
     // simple mesh with tex index per vertex
     void InitMeshTerrain(std::istream &data, const material_load_callback &on_mat_load, BufferRef &vertex_buf, BufferRef &index_buf);
     // mesh with 4 bone weights per vertex
-    void InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load,
-                          BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf);
+    void InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load, BufferRef &skin_vertex_buf, BufferRef &index_buf);
 
     // split skeletal mesh into chunks to fit uniforms limit in shader
     void SplitMesh(int bones_limit);
@@ -109,7 +108,7 @@ public:
         name_[0] = '\0';
     }
     Mesh(const char *name, std::istream &data, const material_load_callback &on_mat_load,
-         BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf);
+         BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf);
 
     int type() const {
         return type_;
@@ -118,8 +117,11 @@ public:
         return flags_;
     }
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
-    uint32_t attribs_buf_id() const {
-        return attribs_buf_.buf->buf_id();
+    uint32_t attribs_buf1_id() const {
+        return attribs_buf1_.buf->buf_id();
+    }
+    uint32_t attribs_buf2_id() const {
+        return attribs_buf2_.buf->buf_id();
     }
     uint32_t indices_buf_id() const {
         return indices_buf_.buf->buf_id();
@@ -128,8 +130,11 @@ public:
     const void *attribs() const {
         return attribs_.get();
     }
-    const BufferRange &attribs_buf() const {
-        return attribs_buf_;
+    const BufferRange &attribs_buf1() const {
+        return attribs_buf1_;
+    }
+    const BufferRange &attribs_buf2() const {
+        return attribs_buf2_;
     }
     const BufferRange &sk_attribs_buf() const {
         return sk_attribs_buf_;
@@ -139,9 +144,6 @@ public:
     }
     const BufferRange &indices_buf() const {
         return indices_buf_;
-    }
-    const BufferRange &sk_indices_buf() const {
-        return sk_indices_buf_;
     }
     const TriGroup &group(int i) const {
         return groups_[i];
@@ -165,7 +167,7 @@ public:
     }
 
     void Init(const char *name, std::istream &data, const material_load_callback &on_mat_load,
-              BufferRef &vertex_buf, BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &skin_index_buf);
+              BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf);
 
     static int max_gpu_bones;
 };

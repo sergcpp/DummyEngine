@@ -14,10 +14,13 @@ struct SkinRegion {
     highp uint xform_offset_and_vertex_count;
 };
 
-struct OutVertex {
-    highp vec4 p_and_nxy;
-    highp uvec2 nz_and_b;
-    highp uvec2 t0_and_t1;
+struct OutVertexData0 {
+    highp vec4 p_and_t0;
+};
+
+struct OutVertexData1 {
+    highp uvec2 n_and_bx;
+    highp uvec2 byz_and_t1;
 };
 
 layout(std430, binding = 0) readonly buffer Input0 {
@@ -32,9 +35,13 @@ layout(std430, binding = 2) readonly buffer Input2 {
     SkinRegion skin_regions[];
 } in_data2;
 
-layout(std430, binding = 3) writeonly buffer Output {
-    OutVertex vertices[];
-} out_data;
+layout(std430, binding = 3) writeonly buffer Output0 {
+    OutVertexData0 vertices[];
+} out_data0;
+
+layout(std430, binding = 4) writeonly buffer Output1 {
+    OutVertexData1 vertices[];
+} out_data1;
 
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
@@ -85,13 +92,15 @@ void main() {
 
     highp uint out_ndx = in_data2.skin_regions[reg_id].out_vtx_offset + gl_LocalInvocationID.x;
 
-    out_data.vertices[out_ndx].p_and_nxy.xyz = tr_p;
-    out_data.vertices[out_ndx].p_and_nxy.w = uintBitsToFloat(packSnorm2x16(tr_n.xy));
-    out_data.vertices[out_ndx].nz_and_b.x = packSnorm2x16(vec2(tr_n.z, tr_b.x));
-    out_data.vertices[out_ndx].nz_and_b.y = packSnorm2x16(tr_b.yz);
-
+    out_data0.vertices[out_ndx].p_and_t0.xyz = tr_p;
     // copy texture coordinates unchanged
-    out_data.vertices[out_ndx].t0_and_t1 = in_data0.vertices[in_ndx].t0_and_t1;
+    out_data0.vertices[out_ndx].p_and_t0.w = uintBitsToFloat(in_data0.vertices[in_ndx].t0_and_t1.x);
+
+    out_data1.vertices[out_ndx].n_and_bx.x = packSnorm2x16(tr_n.xy);
+    out_data1.vertices[out_ndx].n_and_bx.y = packSnorm2x16(vec2(tr_n.z, tr_b.x));
+    out_data1.vertices[out_ndx].byz_and_t1.x = packSnorm2x16(tr_b.yz);
+    // copy texture coordinates unchanged
+    out_data1.vertices[out_ndx].byz_and_t1.y = in_data0.vertices[in_ndx].t0_and_t1.y;
 }
 
 )"
