@@ -783,7 +783,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 list.shadow_batches.emplace_back();
                                 ShadowDrawBatch &batch = list.shadow_batches.back();
 
-                                batch.mat_id = (uint32_t)s->mat.index();
+                                batch.mat_id = (mat->flags() & Ren::AlphaTest) ? (uint32_t)s->mat.index() : 0;
                                 batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
                                 batch.indices_offset = mesh->indices_buf().offset + s->offset;
                                 batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
@@ -965,7 +965,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 list.shadow_batches.emplace_back();
                                 ShadowDrawBatch &batch = list.shadow_batches.back();
 
-                                batch.mat_id = (uint32_t)s->mat.index();
+                                batch.mat_id = (mat->flags() & Ren::AlphaTest) ? (uint32_t)s->mat.index() : 0;
                                 batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
                                 batch.indices_offset = mesh->indices_buf().offset + s->offset;
                                 batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
