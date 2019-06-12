@@ -331,7 +331,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
                             batch.alpha_blend_bit = (mat->flags() & Ren::AlphaBlend) ? 1 : 0;
                             batch.mat_id = (uint32_t)s->mat.index();
-                            batch.cam_dist = (uint32_t)dist;
+                            batch.cam_dist = (mat->flags() & Ren::AlphaBlend) ? uint32_t(dist) : 0;
                             batch.indices_offset = mesh->indices_buf().offset + s->offset;
                             batch.base_vertex = base_vertex;
                             batch.indices_count = s->num_indices;
@@ -539,7 +539,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             const float bounding_radius = temp_cam.GetBoundingSphere(bounding_center);
             float object_dim_thres = 0.0f;
 
-            auto cam_target = bounding_center;
+            Ren::Vec3f cam_target = bounding_center;
 
             {   // Snap camera movement to shadow map pixels
                 const float move_step = (2 * bounding_radius) / (0.5f * SUN_SHADOW_RES);
@@ -559,15 +559,102 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 cam_target = _dot_f * light_dir + _dot_s * cam_side + _dot_u * cam_up;
 
                 // Set object size requirenment
-                object_dim_thres = move_step;
+                object_dim_thres = 2.0f * move_step;
             }
 
-            auto cam_center = cam_target + max_dist * light_dir;
+            Ren::Vec3f cam_center = cam_target + max_dist * light_dir;
 
             Ren::Camera shadow_cam;
             shadow_cam.SetupView(cam_center, cam_target, cam_up);
             shadow_cam.Orthographic(-bounding_radius, bounding_radius, bounding_radius, -bounding_radius, 0.0f, max_dist + bounding_radius);
             shadow_cam.UpdatePlanes();
+
+            Ren::Frustum sh_clip_frustum;
+
+            {   // Construct shadow clipping frustum
+                Ren::Vec4f frustum_points[] = {
+                    { -1.0f, -1.0f, -1.0f, 1.0f },
+                    {  1.0f, -1.0f, -1.0f, 1.0f },
+                    {  1.0f,  1.0f, -1.0f, 1.0f },
+                    { -1.0f,  1.0f, -1.0f, 1.0f },
+                    
+                    { -1.0f, -1.0f, 1.0f, 1.0f },
+                    {  1.0f, -1.0f, 1.0f, 1.0f },
+                    {  1.0f,  1.0f, 1.0f, 1.0f },
+                    { -1.0f,  1.0f, 1.0f, 1.0f }
+                };
+
+                for (int k = 0; k < 8; k++) {
+                    frustum_points[k] = _world_from_clip * frustum_points[k];
+                    frustum_points[k] /= frustum_points[k][3];
+                }
+
+                Ren::Vec2f frustum_points_proj[8];
+
+                for (int k = 0; k < 8; k++) {
+                    const auto p = Ren::Vec3f{ frustum_points[k] };
+
+                    float _dot_s = Ren::Dot(p, cam_side),
+                          _dot_u = Ren::Dot(p, cam_up);
+
+                    frustum_points_proj[k] = { _dot_s, _dot_u };
+                }
+
+                Ren::Vec2i frustum_edges[] = { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 },
+                                               { 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 },
+                                               { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 } };
+
+                int silhouette_edges[12], silhouette_edges_count = 0;
+
+                for (int i = 0; i < 12; i++) {
+                    int k1 = frustum_edges[i][0], k2 = frustum_edges[i][1];
+
+                    int last_sign = 0;
+                    bool is_silhouette = true;
+
+                    for (int k = 0; k < 8; k++) {
+                        if (k == k1 || k == k2) continue;
+
+                        float d = (frustum_points_proj[k][0] - frustum_points_proj[k1][0]) * (frustum_points_proj[k2][1] - frustum_points_proj[k1][1]) -
+                                  (frustum_points_proj[k][1] - frustum_points_proj[k1][1]) * (frustum_points_proj[k2][0] - frustum_points_proj[k1][0]);
+
+                        int sign = (d > 0.0f) ? 1 : -1;
+
+                        if (last_sign && sign != last_sign) {
+                            is_silhouette = false;
+                            break;
+                        }
+
+                        last_sign = sign;
+                    }
+
+                    if (is_silhouette) {
+                        silhouette_edges[silhouette_edges_count++] = i;
+                        if (last_sign == 1) {
+                            std::swap(frustum_edges[i][0], frustum_edges[i][1]);
+                        }
+                    }
+                }
+
+                assert(silhouette_edges_count <= 6);
+                
+                for (int i = 0; i < silhouette_edges_count; i++) {
+                    const Ren::Vec2i edge = frustum_edges[silhouette_edges[i]];
+
+                    const auto p1 = Ren::Vec3f{ frustum_points[edge[0]] },
+                               p2 = Ren::Vec3f{ frustum_points[edge[1]] };
+
+                    Ren::Vec3f p3 = p2 + light_dir;
+
+                    sh_clip_frustum.planes[i] = Ren::Plane{ p1, p2, p3 };
+                }
+
+                sh_clip_frustum.planes_count = silhouette_edges_count;
+
+                // add near and far planes
+                sh_clip_frustum.planes[sh_clip_frustum.planes_count++] = shadow_cam.frustum_plane(Ren::NearPlane);
+                sh_clip_frustum.planes[sh_clip_frustum.planes_count++] = shadow_cam.frustum_plane(Ren::FarPlane);
+            }
 
             Ren::Mat4f clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
 
@@ -644,14 +731,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 const auto *n = &scene.nodes[cur];
 
                 if (!skip_check) {
-                    auto res = shadow_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
+                    auto res = sh_clip_frustum.CheckVisibility(n->bbox_min, n->bbox_max);
                     if (res == Ren::Invisible) continue;
                     else if (res == Ren::FullyVisible) skip_check = skip_check_bit;
                 }
-
-                if ((n->bbox_max[0] - n->bbox_min[0]) < object_dim_thres ||
-                    (n->bbox_max[1] - n->bbox_min[1]) < object_dim_thres ||
-                    (n->bbox_max[2] - n->bbox_min[2]) < object_dim_thres) continue;
 
                 if (!n->prim_count) {
                     stack[stack_size++] = skip_check | n->left_child;
@@ -666,7 +749,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         if ((dr->flags & Drawable::DrVisibleToShadow) == 0) continue;
 
                         if (!skip_check &&
-                            shadow_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
+                            sh_clip_frustum.CheckVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
+
+                        if ((tr->bbox_max_ws[0] - tr->bbox_min_ws[0]) < object_dim_thres &&
+                            (tr->bbox_max_ws[1] - tr->bbox_min_ws[1]) < object_dim_thres &&
+                            (tr->bbox_max_ws[2] - tr->bbox_min_ws[2]) < object_dim_thres) continue;
 
                         const auto &world_from_object = tr->mat;
                         const auto *mesh = dr->mesh.get();

@@ -1467,6 +1467,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const Ren::Program *cur_program = nullptr;
         const Ren::Material *cur_mat = nullptr;
 
+        glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_batch_data_block_);
+
         for (uint32_t i : list.main_batch_indices) {
             const auto &batch = list.main_batches[i];
             if (!batch.instance_count) continue;
@@ -1487,7 +1489,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 cur_mat = mat;
             }
 
-            glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_batch_data_block_);
             glBufferSubData(GL_UNIFORM_BUFFER, offsetof(BatchDataBlock, uInstanceIndices[0]), batch.instance_count * sizeof(int), &batch.instance_indices[0]);
 
             glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
@@ -1520,6 +1521,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const Ren::Program *cur_program = nullptr;
         const Ren::Material *cur_mat = nullptr;
 
+        glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_batch_data_block_);
+
         for (int j = (int)list.main_batch_indices.size() - 1; j >= 0; j--) {
             const auto &batch = list.main_batches[list.main_batch_indices[j]];
             if (!batch.instance_count) continue;
@@ -1540,7 +1543,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 cur_mat = mat;
             }
 
-            glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_batch_data_block_);
             glBufferSubData(GL_UNIFORM_BUFFER, offsetof(BatchDataBlock, uInstanceIndices[0]), batch.instance_count * sizeof(int), &batch.instance_indices[0]);
 
             glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);

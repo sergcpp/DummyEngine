@@ -67,13 +67,13 @@ static_assert(sizeof(ShadowDrawBatch) == sizeof(uint32_t) + 3 * sizeof(uint32_t)
 struct MainDrawBatch {
     union {
         struct {
-            uint32_t _pad1 : 4;
-            uint32_t indices_offset : 28;
-            uint32_t cam_dist : 8;
-            uint32_t mat_id : 14;
-            uint32_t alpha_test_bit : 1;
-            uint32_t prog_id : 8;
-            uint32_t alpha_blend_bit : 1;
+            uint32_t _pad1              : 4;
+            uint32_t indices_offset     : 28;
+            uint32_t cam_dist           : 8;
+            uint32_t mat_id             : 14;
+            uint32_t alpha_test_bit     : 1;
+            uint32_t prog_id            : 8;
+            uint32_t alpha_blend_bit    : 1;
         };
         uint64_t sort_key = 0;
     };
@@ -82,6 +82,7 @@ struct MainDrawBatch {
     int32_t base_vertex;
     int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
 };
+static_assert(offsetof(MainDrawBatch, indices_count) == 8, "!");
 //static_assert(sizeof(MainDrawBatch) == sizeof(uint64_t) + 2 * sizeof(uint32_t) + sizeof(int) * REN_MAX_BATCH_SIZE + sizeof(int), "!");
 
 struct ShadowList {

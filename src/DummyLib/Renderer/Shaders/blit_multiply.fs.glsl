@@ -165,9 +165,7 @@ void main() {
             total_fade += fade;
         }
 
-        if (total_fade > 1.0) {
-            c0 /= total_fade;
-        }
+        c0 /= max(total_fade, 1.0);
     }
 
     c0 = mix(c0, textureLod(prev_texture, ssr_uvs.rg, /*tex_lod*/ 0.0).xyz, ssr_uvs.b);

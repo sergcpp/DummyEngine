@@ -227,10 +227,7 @@ void main(void) {
         total_fade += fade;
     }
     
-    if (total_fade > 1.0) {
-        indirect_col /= total_fade;
-    }
-    
+    indirect_col /= max(total_fade, 1.0);
     indirect_col = max(4.0 * indirect_col, vec3(0.0));
     
     float lambert = max(dot(normal, uSunDir.xyz), 0.0);
