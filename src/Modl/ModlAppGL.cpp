@@ -34,7 +34,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     auto mat	= m->group(0).mat.get();
     auto p      = mat->program(0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf_id());
+    glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
 
     p = diag_prog_;
@@ -149,14 +149,15 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
         glUseProgram(p->prog_id());
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, (GLuint)last_skin_vertex_buffer_);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)last_vertex_buffer_);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)last_vertex_buf1_);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)last_vertex_buf2_);
 
-        glUniform2i(0, m->attribs_buf().offset / 48, 0);
+        glUniform2i(0, m->sk_attribs_buf().offset / 48, 0);
 
         size_t num_bones = skel->bones.size();
         glUniformMatrix4fv(2, (GLsizei)num_bones, GL_FALSE, ValuePtr(matr_palette_[0]));
 
-        glDispatchCompute((GLuint)m->attribs_buf().size, 1, 1);
+        glDispatchCompute((GLuint)m->attribs_buf1().size, 1, 1);
     }
 
     glBindVertexArray((GLuint)simple_vao_);
@@ -194,7 +195,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
         }
         BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
 
-        glDrawElementsBaseVertex(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset), (GLint)m->sk_indices_buf().offset - m->indices_buf().offset);
+        glDrawElementsBaseVertex(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset), (GLint)0);
         ++s;
     }
 
@@ -208,20 +209,20 @@ void ModlApp::ClearColorAndDepth(float r, float g, float b, float a) {
 }
 
 void ModlApp::CheckInitVAOs() {
-    auto vtx_buf = ctx_.default_vertex_buf();
+    auto vtx_buf1 = ctx_.default_vertex_buf1(),
+         vtx_buf2 = ctx_.default_vertex_buf2();
     auto skin_vtx_buf = ctx_.default_skin_vertex_buf();
     auto ndx_buf = ctx_.default_indices_buf();
-    auto skin_ndx_buf = ctx_.default_skin_indices_buf();
 
-    GLuint gl_vertex_buf = (GLuint)vtx_buf->buf_id(),
+    GLuint gl_vertex_buf1 = (GLuint)vtx_buf1->buf_id(),
+           gl_vertex_buf2 = (GLuint)vtx_buf2->buf_id(),
            gl_skin_vertex_buf = (GLuint)skin_vtx_buf->buf_id(),
-           gl_indices_buf = (GLuint)ndx_buf->buf_id(),
-           gl_skin_indices_buf = (GLuint)skin_ndx_buf->buf_id();
+           gl_indices_buf = (GLuint)ndx_buf->buf_id();
 
-    if (gl_vertex_buf != last_vertex_buffer_ || gl_skin_vertex_buf != last_skin_vertex_buffer_ ||
-        gl_indices_buf != last_index_buffer_ || gl_skin_indices_buf != last_skin_index_buffer_) {
+    if (gl_vertex_buf1 != last_vertex_buf1_ || gl_vertex_buf2 != last_vertex_buf2_ ||
+        gl_skin_vertex_buf != last_skin_vertex_buffer_ || gl_indices_buf != last_index_buffer_) {
 
-        if (last_vertex_buffer_) {
+        if (last_vertex_buf1_) {
             GLuint simple_mesh_vao = (GLuint)simple_vao_;
             glDeleteVertexArrays(1, &simple_mesh_vao);
 
@@ -234,24 +235,32 @@ void ModlApp::CheckInitVAOs() {
         glGenVertexArrays(1, &simple_mesh_vao);
         glBindVertexArray(simple_mesh_vao);
 
-        glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
-        int stride = 32;
-        glEnableVertexAttribArray(A_POS);
-        glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+        const int buf1_stride = 16, buf2_stride = 16;
 
-        glEnableVertexAttribArray(A_NORMAL);
-        glVertexAttribPointer(A_NORMAL, 4, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float)));
+        {   // Assign attributes from buf1
+            glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
 
-        glEnableVertexAttribArray(A_TANGENT);
-        glVertexAttribPointer(A_TANGENT, 2, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float) + 4 * sizeof(uint16_t)));
+            glEnableVertexAttribArray(A_POS);
+            glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);
 
-        glEnableVertexAttribArray(A_UVS1);
-        glVertexAttribPointer(A_UVS1, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(uint16_t)));
+            glEnableVertexAttribArray(A_UVS1);
+            glVertexAttribPointer(A_UVS1, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride, (void *)(3 * sizeof(float)));
+        }
 
-        glEnableVertexAttribArray(A_UVS2);
-        glVertexAttribPointer(A_UVS2, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 8 * sizeof(uint16_t)));
+        {   // Assign attributes from buf2
+            glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf2);
+
+            glEnableVertexAttribArray(A_NORMAL);
+            glVertexAttribPointer(A_NORMAL, 4, GL_SHORT, GL_TRUE, buf2_stride, (void *)0);
+
+            glEnableVertexAttribArray(A_TANGENT);
+            glVertexAttribPointer(A_TANGENT, 2, GL_SHORT, GL_TRUE, buf2_stride, (void *)(4 * sizeof(uint16_t)));
+
+            glEnableVertexAttribArray(A_UVS2);
+            glVertexAttribPointer(A_UVS2, 2, GL_HALF_FLOAT, GL_FALSE, buf2_stride, (void *)(6 * sizeof(uint16_t)));
+        }
 
         glBindVertexArray(0);
 
@@ -262,38 +271,37 @@ void ModlApp::CheckInitVAOs() {
         glBindVertexArray(skinned_mesh_vao);
 
         glBindBuffer(GL_ARRAY_BUFFER, gl_skin_vertex_buf);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_skin_indices_buf);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
-        stride = 48;
+        const int stride_skin_buf = 48;
         glEnableVertexAttribArray(A_POS);
-        glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+        glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride_skin_buf, (void *)0);
 
         glEnableVertexAttribArray(A_NORMAL);
-        glVertexAttribPointer(A_NORMAL, 4, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float)));
+        glVertexAttribPointer(A_NORMAL, 4, GL_SHORT, GL_TRUE, stride_skin_buf, (void *)(3 * sizeof(float)));
 
         glEnableVertexAttribArray(A_TANGENT);
-        glVertexAttribPointer(A_TANGENT, 2, GL_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float) + 4 * sizeof(int16_t)));
+        glVertexAttribPointer(A_TANGENT, 2, GL_SHORT, GL_TRUE, stride_skin_buf, (void *)(3 * sizeof(float) + 4 * sizeof(int16_t)));
 
         glEnableVertexAttribArray(A_UVS1);
-        glVertexAttribPointer(A_UVS1, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t)));
+        glVertexAttribPointer(A_UVS1, 2, GL_HALF_FLOAT, GL_FALSE, stride_skin_buf, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t)));
 
         glEnableVertexAttribArray(A_UVS2);
-        glVertexAttribPointer(A_UVS2, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 2 * sizeof(uint16_t)));
+        glVertexAttribPointer(A_UVS2, 2, GL_HALF_FLOAT, GL_FALSE, stride_skin_buf, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 2 * sizeof(uint16_t)));
 
         glEnableVertexAttribArray(A_INDICES);
-        glVertexAttribPointer(A_INDICES, 4, GL_UNSIGNED_SHORT, GL_FALSE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 4 * sizeof(uint16_t)));
+        glVertexAttribPointer(A_INDICES, 4, GL_UNSIGNED_SHORT, GL_FALSE, stride_skin_buf, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 4 * sizeof(uint16_t)));
 
         glEnableVertexAttribArray(A_WEIGHTS);
-        glVertexAttribPointer(A_WEIGHTS, 4, GL_UNSIGNED_SHORT, GL_TRUE, stride, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 8 * sizeof(uint16_t)));
+        glVertexAttribPointer(A_WEIGHTS, 4, GL_UNSIGNED_SHORT, GL_TRUE, stride_skin_buf, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 8 * sizeof(uint16_t)));
 
         glBindVertexArray(0);
 
         skinned_vao_ = (uint32_t)skinned_mesh_vao;
 
-        last_vertex_buffer_ = (uint32_t)gl_vertex_buf;
-        last_skin_vertex_buffer_ = (uint32_t)gl_skin_vertex_buf;
+        last_vertex_buf1_ = (uint32_t)gl_vertex_buf1;
+        last_vertex_buf2_ = (uint32_t)gl_vertex_buf2;
         last_index_buffer_ = (uint32_t)gl_indices_buf;
-        last_skin_index_buffer_ = (uint32_t)gl_skin_indices_buf;
     }
 }
 
@@ -426,19 +434,26 @@ void ModlApp::InitInternal() {
                 highp uvec2 bone_weights;
             };
 
-            struct OutVertex {
-                highp vec4 p_and_nxy;
-                highp uvec2 nz_and_b;
-                highp uvec2 t0_and_t1;
+            struct OutVertexData0 {
+                highp vec4 p_and_t0;
+            };
+
+            struct OutVertexData1 {
+                highp uvec2 n_and_bx;
+                highp uvec2 byz_and_t1;
             };
 
             layout(std430, binding = 0) readonly buffer Input0 {
                 InVertex vertices[];
             } in_data;
 
-            layout(std430, binding = 1) writeonly buffer Output {
-                OutVertex vertices[];
-            } out_data;
+            layout(std430, binding = 1) writeonly buffer Output0 {
+                OutVertexData0 vertices[];
+            } out_data0;
+
+            layout(std430, binding = 2) writeonly buffer Output1 {
+                OutVertexData1 vertices[];
+            } out_data1;
 
             layout(location = 0) uniform ivec2 uOffsets;
             layout(location = 2) uniform mat4 uMPalette[64];
@@ -483,11 +498,17 @@ void ModlApp::InitInternal() {
                 mediump vec3 tr_n = normalize((mat * vec4(n, 0.0)).xyz);
                 mediump vec3 tr_b = normalize((mat * vec4(b, 0.0)).xyz);
 
-                int k = int(uOffsets[1] + gl_GlobalInvocationID.x);
-                out_data.vertices[k].p_and_nxy.xyz = tr_p;
-                out_data.vertices[k].p_and_nxy.w = uintBitsToFloat(packSnorm2x16(tr_n.xy));
-                out_data.vertices[k].nz_and_b.x = packSnorm2x16(vec2(tr_n.z, tr_b.x));
-                out_data.vertices[k].nz_and_b.y = packSnorm2x16(tr_b.yz);
+                int out_ndx = int(uOffsets[1] + gl_GlobalInvocationID.x);
+                
+                out_data0.vertices[out_ndx].p_and_t0.xyz = tr_p;
+                // copy texture coordinates unchanged
+                out_data0.vertices[out_ndx].p_and_t0.w = uintBitsToFloat(in_data.vertices[i].t0_and_t1.x);
+
+                out_data1.vertices[out_ndx].n_and_bx.x = packSnorm2x16(tr_n.xy);
+                out_data1.vertices[out_ndx].n_and_bx.y = packSnorm2x16(vec2(tr_n.z, tr_b.x));
+                out_data1.vertices[out_ndx].byz_and_t1.x = packSnorm2x16(tr_b.yz);
+                // copy texture coordinates unchanged
+                out_data1.vertices[out_ndx].byz_and_t1.y = in_data.vertices[i].t0_and_t1.y;
             }
         )";
 

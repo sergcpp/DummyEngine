@@ -33,8 +33,8 @@ private:
 #if defined(USE_GL_RENDER)
     void *gl_ctx_ = nullptr;
     uint32_t simple_vao_ = 0, skinned_vao_ = 0;
-    uint32_t last_vertex_buffer_ = 0, last_skin_vertex_buffer_ = 0,
-             last_index_buffer_ = 0, last_skin_index_buffer_ = 0;
+    uint32_t last_vertex_buf1_ = 0, last_vertex_buf2_, last_skin_vertex_buffer_ = 0,
+             last_index_buffer_ = 0;
 
     void CheckInitVAOs();
 #endif
