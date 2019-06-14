@@ -82,12 +82,12 @@ public:
         Environment     env;
         FrontendInfo    frontend_info;
         DynArray<InstanceData>          instances;
-        std::vector<ShadowDrawBatch>    shadow_batches;
-        std::vector<uint32_t>           shadow_batch_indices;
+        DynArray<ShadowDrawBatch>       shadow_batches;
+        DynArray<uint32_t>              shadow_batch_indices;
         DynArray<ShadowList>            shadow_lists;
         DynArray<ShadowMapRegion>       shadow_regions;
-        std::vector<MainDrawBatch>      main_batches;
-        std::vector<uint32_t>           main_batch_indices;
+        DynArray<MainDrawBatch>         main_batches;
+        DynArray<uint32_t>              main_batch_indices;
         DynArray<SkinTransform>         skin_transforms;
         DynArray<SkinRegion>            skin_regions;
         uint32_t                        skin_vertices_count;
@@ -117,6 +117,14 @@ public:
             instances.capacity = REN_MAX_INSTANCES_TOTAL;
             instances.count = 0;
 
+            shadow_batches.data.reset(new ShadowDrawBatch[REN_MAX_SHADOW_BATCHES]);
+            shadow_batches.capacity = REN_MAX_SHADOW_BATCHES;
+            shadow_batches.count = 0;
+
+            shadow_batch_indices.data.reset(new uint32_t[REN_MAX_SHADOW_BATCHES]);
+            shadow_batch_indices.capacity = REN_MAX_SHADOW_BATCHES;
+            shadow_batch_indices.count = 0;
+
             shadow_lists.data.reset(new ShadowList[REN_MAX_SHADOWMAPS_TOTAL]);
             shadow_lists.capacity = REN_MAX_SHADOWMAPS_TOTAL;
             shadow_lists.count = 0;
@@ -124,6 +132,14 @@ public:
             shadow_regions.data.reset(new ShadowMapRegion[REN_MAX_SHADOWMAPS_TOTAL]);
             shadow_regions.capacity = REN_MAX_SHADOWMAPS_TOTAL;
             shadow_regions.count = 0;
+
+            main_batches.data.reset(new MainDrawBatch[REN_MAX_MAIN_BATCHES]);
+            main_batches.capacity = REN_MAX_MAIN_BATCHES;
+            main_batches.count = 0;
+
+            main_batch_indices.data.reset(new uint32_t[REN_MAX_MAIN_BATCHES]);
+            main_batch_indices.capacity = REN_MAX_MAIN_BATCHES;
+            main_batch_indices.count = 0;
 
             light_sources.data.reset(new LightSourceItem[REN_MAX_LIGHTS_TOTAL]);
             light_sources.capacity = REN_MAX_LIGHTS_TOTAL;
@@ -165,7 +181,7 @@ private:
     Ren::Context &ctx_;
     std::shared_ptr<Sys::ThreadPool> threads_;
     SWcull_ctx cull_ctx_;
-    Ren::ProgramRef skydome_prog_, fill_depth_prog_, shadow_prog_, blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_combine_ms_prog_,
+    Ren::ProgramRef skydome_prog_, fillz_solid_prog_, fillz_transp_prog_, shadow_solid_prog_, shadow_transp_prog_, blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_combine_ms_prog_,
         blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_gauss_prog_, blit_gauss_sep_prog_, blit_debug_prog_, blit_debug_ms_prog_, blit_ssr_prog_, blit_ssr_ms_prog_,
         blit_ao_prog_, blit_ao_ms_prog_, blit_multiply_prog_, blit_multiply_ms_prog_, blit_debug_bvh_prog_, blit_debug_bvh_ms_prog_, blit_depth_prog_,
         blit_rgbm_prog_, blit_mipmap_prog_, blit_project_sh_prog_, blit_fxaa_prog_, probe_prog_, skinning_prog_;
@@ -202,8 +218,8 @@ private:
     Ren::Mat4f down_buf_view_from_world_;
 
     DynArray<Ren::Frustum> temp_sub_frustums_;
-    std::vector<SortSpan32> temp_sort_spans_32_[2];
-    std::vector<SortSpan64> temp_sort_spans_64_[2];
+    DynArray<SortSpan32> temp_sort_spans_32_[2];
+    DynArray<SortSpan64> temp_sort_spans_64_[2];
 
 #if defined(USE_GL_RENDER)
     static const int FrameSyncWindow = 2;
@@ -215,7 +231,7 @@ private:
     uint32_t temp_framebuf_, skydome_framebuf_ = 0, depth_fill_framebuf_ = 0, refl_comb_framebuf_ = 0;
 
     uint32_t unif_shared_data_block_, unif_batch_data_block_;
-    uint32_t temp_vao_, shadow_pass_vao_, depth_pass_vao_, draw_pass_vao_, skydome_vao_, sphere_vao_;
+    uint32_t temp_vao_, depth_pass_solid_vao_, depth_pass_transp_vao_, draw_pass_vao_, skydome_vao_, sphere_vao_;
     uint32_t temp_buf1_vtx_offset_, temp_buf2_vtx_offset_, temp_buf_ndx_offset_,
              skydome_vtx1_offset_, skydome_vtx2_offset_, skydome_ndx_offset_,
              sphere_vtx1_offset_, sphere_vtx2_offset_, sphere_ndx_offset_,

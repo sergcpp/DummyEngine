@@ -87,8 +87,8 @@ set(SHADERS_SOURCES Renderer/Shaders/blit.fs.glsl
                     Renderer/Shaders/fillz.vs.glsl
                     Renderer/Shaders/probe.vs.glsl
                     Renderer/Shaders/probe.fs.glsl
-                    Renderer/Shaders/shadow.fs.glsl
                     Renderer/Shaders/shadow.vs.glsl
+                    Renderer/Shaders/shadow.fs.glsl
                     Renderer/Shaders/skinning.cs.glsl
                     Renderer/Shaders/skydome.fs.glsl
                     Renderer/Shaders/skydome.vs.glsl)

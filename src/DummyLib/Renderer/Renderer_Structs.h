@@ -88,6 +88,7 @@ static_assert(offsetof(MainDrawBatch, indices_count) == 8, "!");
 struct ShadowList {
     int shadow_map_pos[2], shadow_map_size[2];
     uint32_t shadow_batch_start, shadow_batch_count;
+    uint32_t solid_batches_count;
     float cam_near, cam_far; // for debugging
 };
 

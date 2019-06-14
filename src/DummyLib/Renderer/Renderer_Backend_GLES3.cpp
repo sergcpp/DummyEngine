@@ -112,11 +112,17 @@ void Renderer::InitRendererInternal() {
     LOGI("Compiling skydome");
     skydome_prog_ = ctx_.LoadProgramGLSL("skydome", skydome_vs, skydome_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling fill_depth");
-    fill_depth_prog_ = ctx_.LoadProgramGLSL("fill_depth", fillz_vs, fillz_fs, &status);
+    LOGI("Compiling fillz_solid");
+    fillz_solid_prog_ = ctx_.LoadProgramGLSL("fillz_solid", fillz_solid_vs, fillz_solid_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling shadow");
-    shadow_prog_ = ctx_.LoadProgramGLSL("shadow", shadow_vs, shadow_fs, &status);
+    LOGI("Compiling fillz_transp");
+    fillz_transp_prog_ = ctx_.LoadProgramGLSL("fillz_transp", fillz_transp_vs, fillz_transp_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling shadow_solid");
+    shadow_solid_prog_ = ctx_.LoadProgramGLSL("shadow_solid", shadow_solid_vs, shadow_solid_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling shadow_transp");
+    shadow_transp_prog_ = ctx_.LoadProgramGLSL("shadow_transp", shadow_transp_vs, shadow_transp_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit");
     blit_prog_ = ctx_.LoadProgramGLSL("blit", blit_vs, blit_fs, &status);
@@ -244,16 +250,6 @@ void Renderer::InitRendererInternal() {
             glBindTexture(GL_TEXTURE_BUFFER, 0);
 
             instances_tbo_[i] = (uint32_t)instances_tbo;
-        }
-
-        for (int i = 0; i < FrameSyncWindow; i++) {
-            glBindTexture(GL_TEXTURE_BUFFER, instances_tbo_[i]);
-
-            GLint offset, size;
-            glGetTexLevelParameteriv(GL_TEXTURE_BUFFER, 0, GL_TEXTURE_BUFFER_OFFSET, &offset);
-            glGetTexLevelParameteriv(GL_TEXTURE_BUFFER, 0, GL_TEXTURE_BUFFER_SIZE, &size);
-
-            glBindTexture(GL_TEXTURE_BUFFER, 0);
         }
     }
 
@@ -650,46 +646,49 @@ void Renderer::CheckInitVAOs() {
             GLuint temp_vao = (GLuint)temp_vao_;
             glDeleteVertexArrays(1, &temp_vao);
 
-            GLuint shadow_pass_vao = (GLuint)shadow_pass_vao_;
-            glDeleteVertexArrays(1, &shadow_pass_vao);
+            GLuint depth_pass_solid_vao = (GLuint)depth_pass_solid_vao_;
+            glDeleteVertexArrays(1, &depth_pass_solid_vao);
 
-            GLuint depth_pass_vao = (GLuint)depth_pass_vao_;
-            glDeleteVertexArrays(1, &depth_pass_vao);
+            GLuint depth_pass_transp_vao = (GLuint)depth_pass_transp_vao_;
+            glDeleteVertexArrays(1, &depth_pass_transp_vao);
         }
 
-        GLuint shadow_pass_vao;
-        glGenVertexArrays(1, &shadow_pass_vao);
-        glBindVertexArray(shadow_pass_vao);
+        const int buf1_stride = 16, buf2_stride = 16;
 
-        glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
+        {   // VAO for shadow and depth-fill passes (solid)
+            GLuint depth_pass_solid_vao;
+            glGenVertexArrays(1, &depth_pass_solid_vao);
+            glBindVertexArray(depth_pass_solid_vao);
 
-        int stride = 16;
-        glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+            glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
-        glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
+            glEnableVertexAttribArray(REN_VTX_POS_LOC);
+            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);
 
-        glBindVertexArray(0);
+            glBindVertexArray(0);
 
-        shadow_pass_vao_ = (uint32_t)shadow_pass_vao;
+            depth_pass_solid_vao_ = (uint32_t)depth_pass_solid_vao;
+        }
 
-        GLuint depth_pass_vao;
-        glGenVertexArrays(1, &depth_pass_vao);
-        glBindVertexArray(depth_pass_vao);
+        {   // VAO for shadow and depth-fill passes (alpha-tested)
+            GLuint depth_pass_transp_vao;
+            glGenVertexArrays(1, &depth_pass_transp_vao);
+            glBindVertexArray(depth_pass_transp_vao);
 
-        glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
+            glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
-        glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+            glEnableVertexAttribArray(REN_VTX_POS_LOC);
+            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);
 
-        glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
+            glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride, (void *)(3 * sizeof(float)));
 
-        glBindVertexArray(0);
-        depth_pass_vao_ = (uint32_t)depth_pass_vao;
+            glBindVertexArray(0);
+
+            depth_pass_transp_vao_ = (uint32_t)depth_pass_transp_vao;
+        }
 
         GLuint draw_pass_vao;
         glGenVertexArrays(1, &draw_pass_vao);
@@ -701,23 +700,23 @@ void Renderer::CheckInitVAOs() {
             glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);
 
             glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
+            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride, (void *)(3 * sizeof(float)));
         }
 
         {   // Setup attributes from buffer 2
             glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf2);
 
             glEnableVertexAttribArray(REN_VTX_NOR_LOC);
-            glVertexAttribPointer(REN_VTX_NOR_LOC, 4, GL_SHORT, GL_TRUE, stride, (void *)0);
+            glVertexAttribPointer(REN_VTX_NOR_LOC, 4, GL_SHORT, GL_TRUE, buf2_stride, (void *)0);
 
             glEnableVertexAttribArray(REN_VTX_TAN_LOC);
-            glVertexAttribPointer(REN_VTX_TAN_LOC, 2, GL_SHORT, GL_TRUE, stride, (void *)(4 * sizeof(uint16_t)));
+            glVertexAttribPointer(REN_VTX_TAN_LOC, 2, GL_SHORT, GL_TRUE, buf2_stride, (void *)(4 * sizeof(uint16_t)));
 
             glEnableVertexAttribArray(REN_VTX_UV2_LOC);
-            glVertexAttribPointer(REN_VTX_UV2_LOC, 2, GL_HALF_FLOAT, GL_FALSE, stride, (void *)(6 * sizeof(uint16_t)));
+            glVertexAttribPointer(REN_VTX_UV2_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf2_stride, (void *)(6 * sizeof(uint16_t)));
         }
 
         glBindVertexArray(0);
@@ -899,11 +898,11 @@ void Renderer::DestroyRendererInternal() {
         GLuint temp_vao = (GLuint)temp_vao_;
         glDeleteVertexArrays(1, &temp_vao);
 
-        GLuint shadow_pass_vao = (GLuint)shadow_pass_vao_;
-        glDeleteVertexArrays(1, &shadow_pass_vao);
+        GLuint depth_pass_solid_vao = (GLuint)depth_pass_solid_vao_;
+        glDeleteVertexArrays(1, &depth_pass_solid_vao);
 
-        GLuint depth_pass_vao = (GLuint)depth_pass_vao_;
-        glDeleteVertexArrays(1, &depth_pass_vao);
+        GLuint depth_pass_transp_vao = (GLuint)depth_pass_transp_vao_;
+        glDeleteVertexArrays(1, &depth_pass_transp_vao);
     }
 
     {
@@ -1130,12 +1129,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC, (GLuint)unif_shared_data_block_);
     glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_BATCH_DATA_LOC, (GLuint)unif_batch_data_block_);
 
-    GLint framebuf_before;
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuf_before);
-
-    GLint viewport_before[4];
-    glGetIntegerv(GL_VIEWPORT, viewport_before);
-
     /**************************************************************************************************/
     /*                                             SKINNING                                           */
     /**************************************************************************************************/
@@ -1176,54 +1169,81 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     BindTexBuffer(REN_INST_BUF_SLOT, instances_tbo_[cur_buf_chunk_]);
 
     {   // draw shadow map
-        glEnable(GL_POLYGON_OFFSET_FILL);
-
-        glBindVertexArray(shadow_pass_vao_);
-
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
 
-        // TODO: Split into two programs (with and without alpha test)
-        glUseProgram(shadow_prog_->prog_id());
-
-        glPolygonOffset(1.85f, 6.0f);
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(1.85f, 1.0f);
         glEnable(GL_SCISSOR_TEST);
 
 #ifndef DISABLE_MARKERS
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "UPDATE SHADOW MAPS");
 #endif
-        uint32_t cur_alpha_test = 0;
-        BindTexture(REN_DIFF_TEX_SLOT, dummy_white_->tex_id());
 
-        uint32_t cur_mat_id = 0xffffffff;
+        // draw opaque objects
+        glBindVertexArray(depth_pass_solid_vao_);
+        glUseProgram(shadow_solid_prog_->prog_id());
+
+        bool region_cleared[REN_MAX_SHADOWMAPS_TOTAL] = {};
 
         for (int i = 0; i < (int)list.shadow_lists.count; i++) {
-            const auto &shadow_list = list.shadow_lists.data[i];
-            if (!shadow_list.shadow_batch_count) continue;
+            const auto &sh_list = list.shadow_lists.data[i];
+            if (!sh_list.solid_batches_count) continue;
 
-            glViewport(shadow_list.shadow_map_pos[0], shadow_list.shadow_map_pos[1],
-                       shadow_list.shadow_map_size[0], shadow_list.shadow_map_size[1]);
+            glViewport(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
+                       sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
 
             {   // clear buffer region
-                glScissor(shadow_list.shadow_map_pos[0], shadow_list.shadow_map_pos[1],
-                          shadow_list.shadow_map_size[0], shadow_list.shadow_map_size[1]);
+                glScissor(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
+                          sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
                 glClear(GL_DEPTH_BUFFER_BIT);
+                region_cleared[i] = true;
             }
 
             glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
 
-            for (uint32_t j = shadow_list.shadow_batch_start; j < shadow_list.shadow_batch_start + shadow_list.shadow_batch_count; j++) {
-                const auto &batch = list.shadow_batches[list.shadow_batch_indices[j]];
+            for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.solid_batches_count; j++) {
+                const auto &batch = list.shadow_batches.data[list.shadow_batch_indices.data[j]];
                 if (!batch.instance_count) continue;
 
-                if (batch.alpha_test_bit && (!cur_alpha_test || batch.mat_id != cur_mat_id)) {
+                glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
+
+                glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
+                                                  (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+                backend_info_.shadow_draw_calls_count++;
+            }
+        }
+
+        // draw transparent objects
+        glBindVertexArray(depth_pass_transp_vao_);
+        glUseProgram(shadow_transp_prog_->prog_id());
+
+        for (int i = 0; i < (int)list.shadow_lists.count; i++) {
+            const auto &sh_list = list.shadow_lists.data[i];
+            if (sh_list.shadow_batch_count == sh_list.solid_batches_count) continue;
+
+            glViewport(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
+                       sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
+            glScissor(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
+                      sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
+
+            if (!region_cleared[i]) {
+                // clear buffer region
+                glClear(GL_DEPTH_BUFFER_BIT);
+                region_cleared[i] = true;
+            }
+
+            glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
+
+            uint32_t cur_mat_id = 0xffffffff;
+
+            for (uint32_t j = sh_list.shadow_batch_start + sh_list.solid_batches_count; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
+                const auto &batch = list.shadow_batches.data[list.shadow_batch_indices.data[j]];
+                if (!batch.instance_count) continue;
+
+                if (batch.mat_id != cur_mat_id) {
                     const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
                     BindTexture(REN_DIFF_TEX_SLOT, mat->texture(0)->tex_id());
                     cur_mat_id = batch.mat_id;
-                    cur_alpha_test = 1;
-                } else if (!batch.alpha_test_bit && cur_alpha_test) {
-                    BindTexture(REN_DIFF_TEX_SLOT, dummy_white_->tex_id());
-                    cur_mat_id = 0xffffffff;
-                    cur_alpha_test = 0;
                 }
 
                 glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
@@ -1350,34 +1370,43 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glDepthFunc(GL_LESS);
 
-        glBindVertexArray(depth_pass_vao_);
-
-        glUseProgram(fill_depth_prog_->prog_id());
-
-        uint32_t cur_alpha_test = 0;
-        BindTexture(REN_DIFF_TEX_SLOT, dummy_white_->tex_id());
-
-        uint32_t cur_mat_id = 0xffffffff;
-
 #ifndef DISABLE_MARKERS
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "DEPTH-FILL");
 #endif
 
-        // fill depth
-        for (uint32_t i : list.main_batch_indices) {
-            const auto &batch = list.main_batches[i];
-            if (!batch.instance_count) continue;
+        // draw solid objects
+        glBindVertexArray(depth_pass_solid_vao_);
+        glUseProgram(fillz_solid_prog_->prog_id());
+
+        for (uint32_t i = 0; i < list.main_batch_indices.count; i++) {
+            const auto &batch = list.main_batches.data[list.main_batch_indices.data[i]];
+            if (!batch.instance_count || batch.alpha_test_bit) continue;
             if (batch.alpha_blend_bit) break;
 
-            if (batch.alpha_test_bit && (!cur_alpha_test || batch.mat_id != cur_mat_id)) {
+            glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
+
+            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
+                                              (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+            backend_info_.depth_fill_draw_calls_count++;
+        }
+
+        // draw alpha-tested objects
+        glBindVertexArray(depth_pass_transp_vao_);
+        glUseProgram(fillz_transp_prog_->prog_id());
+
+        BindTexture(REN_DIFF_TEX_SLOT, dummy_white_->tex_id());
+
+        uint32_t cur_mat_id = 0xffffffff;
+
+        for (uint32_t i = 0; i < list.main_batch_indices.count; i++) {
+            const auto &batch = list.main_batches.data[list.main_batch_indices.data[i]];
+            if (!batch.instance_count || !batch.alpha_test_bit) continue;
+            if (batch.alpha_blend_bit) break;
+
+            if (batch.mat_id != cur_mat_id) {
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
                 BindTexture(REN_DIFF_TEX_SLOT, mat->texture(0)->tex_id());
                 cur_mat_id = batch.mat_id;
-                cur_alpha_test = 1;
-            } else if (!batch.alpha_test_bit && cur_alpha_test) {
-                BindTexture(REN_DIFF_TEX_SLOT, dummy_white_->tex_id());
-                cur_mat_id = 0xffffffff;
-                cur_alpha_test = 0;
             }
 
             glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
@@ -1387,11 +1416,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             backend_info_.depth_fill_draw_calls_count++;
         }
 
+        glBindVertexArray(0);
+
 #ifndef DISABLE_MARKERS
         glPopDebugGroup();
 #endif
-
-        glBindVertexArray(0);
 
         glDepthFunc(GL_EQUAL);
     }
@@ -1494,8 +1523,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_batch_data_block_);
 
-        for (uint32_t i : list.main_batch_indices) {
-            const auto &batch = list.main_batches[i];
+        for (uint32_t i = 0; i < list.main_batch_indices.count; i++) {
+            const auto &batch = list.main_batches.data[list.main_batch_indices.data[i]];
             if (!batch.instance_count) continue;
             if (batch.alpha_blend_bit) break;
 
@@ -1548,8 +1577,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_batch_data_block_);
 
-        for (int j = (int)list.main_batch_indices.size() - 1; j >= 0; j--) {
-            const auto &batch = list.main_batches[list.main_batch_indices[j]];
+        for (int j = (int)list.main_batch_indices.count - 1; j >= 0; j--) {
+            const auto &batch = list.main_batches.data[list.main_batch_indices.data[j]];
             if (!batch.instance_count) continue;
             if (!batch.alpha_blend_bit) break;
 
@@ -1743,7 +1772,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     if (list.render_flags & DebugDeferred) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
+        glViewport(0, 0, scr_w_, scr_h_);
         glClear(GL_DEPTH_BUFFER_BIT);
 
         glEnable(GL_DEPTH_TEST);
@@ -1948,8 +1977,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glViewport(0, 0, act_w_, act_h_);
     } else {
         if (!target) {
-            glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
-            glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glViewport(0, 0, scr_w_, scr_h_);
         } else {
             glBindFramebuffer(GL_FRAMEBUFFER, target->fb);
             glViewport(0, 0, target->w, target->h);
@@ -2016,8 +2045,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     if (list.render_flags & EnableFxaa) {
         if (!target) {
-            glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
-            glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glViewport(0, 0, scr_w_, scr_h_);
         } else {
             glBindFramebuffer(GL_FRAMEBUFFER, target->fb);
             glViewport(0, 0, target->w, target->h);
@@ -2369,8 +2398,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeDrawEnd], GL_TIMESTAMP);
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
-    glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, scr_w_, scr_h_);
 
     /**************************************************************************************************/
     /*                                              TIMERS                                            */

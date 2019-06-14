@@ -145,6 +145,16 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     allocated_shadow_regions_.data.reset(new ShadReg[REN_MAX_SHADOWMAPS_TOTAL]);
     allocated_shadow_regions_.capacity = REN_MAX_SHADOWMAPS_TOTAL;
     allocated_shadow_regions_.count = 0;
+
+    for (int i = 0; i < 2; i++) {
+        temp_sort_spans_32_[i].data.reset(new SortSpan32[REN_MAX_SHADOW_BATCHES]);
+        temp_sort_spans_32_[i].capacity = REN_MAX_SHADOW_BATCHES;
+        temp_sort_spans_32_[i].count = 0;
+
+        temp_sort_spans_64_[i].data.reset(new SortSpan64[REN_MAX_MAIN_BATCHES]);
+        temp_sort_spans_64_[i].capacity = REN_MAX_MAIN_BATCHES;
+        temp_sort_spans_64_[i].count = 0;
+    }
 }
 
 Renderer::~Renderer() {

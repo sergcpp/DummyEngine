@@ -7,21 +7,41 @@ static const char skydome_fs[] =
 #include "Shaders/skydome.fs.glsl"
 ;
 
-static const char fillz_vs[] =
+#define __ADDITIONAL_DEFINES_STR__ ""
+static const char fillz_solid_vs[] =
 #include "Shaders/fillz.vs.glsl"
 ;
-
-static const char fillz_fs[] =
+static const char fillz_solid_fs[] =
 #include "Shaders/fillz.fs.glsl"
 ;
+#undef __ADDITIONAL_DEFINES_STR__
 
-static const char shadow_vs[] =
+#define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM"
+static const char fillz_transp_vs[] =
+#include "Shaders/fillz.vs.glsl"
+;
+static const char fillz_transp_fs[] =
+#include "Shaders/fillz.fs.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ ""
+static const char shadow_solid_vs[] =
 #include "Shaders/shadow.vs.glsl"
 ;
-
-static const char shadow_fs[] =
+static const char shadow_solid_fs[] =
 #include "Shaders/shadow.fs.glsl"
 ;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM"
+static const char shadow_transp_vs[] =
+#include "Shaders/shadow.vs.glsl"
+;
+static const char shadow_transp_fs[] =
+#include "Shaders/shadow.fs.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
 
 static const char blit_vs[] =
 #include "Shaders/blit.vs.glsl"

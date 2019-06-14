@@ -87,10 +87,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     list.probes.count = 0;
 
     list.instances.count = 0;
-    list.shadow_batches.clear();
-    list.shadow_batches.reserve(scene.objects.size() * 16);
-    list.main_batches.clear();
-    list.main_batches.reserve(scene.objects.size() * 16);
+    list.shadow_batches.count = 0;
+    list.main_batches.count = 0;
 
     list.shadow_lists.count = 0;
     list.shadow_regions.count = 0;
@@ -323,9 +321,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         const Ren::TriGroup *s = &mesh->group(0);
                         while (s->offset != -1) {
                             const Ren::Material *mat = s->mat.get();
-
-                            list.main_batches.emplace_back();
-                            MainDrawBatch &batch = list.main_batches.back();
+                            
+                            MainDrawBatch &batch = list.main_batches.data[list.main_batches.count++];
 
                             batch.prog_id = (uint32_t)mat->program(program_index).index();
                             batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
@@ -724,7 +721,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             sh_list.shadow_map_pos[1] = map_positions[casc][1];
             sh_list.shadow_map_size[0] = OneCascadeRes;
             sh_list.shadow_map_size[1] = OneCascadeRes;
-            sh_list.shadow_batch_start = (uint32_t)list.shadow_batches.size();
+            sh_list.shadow_batch_start = list.shadow_batches.count;
             sh_list.shadow_batch_count = 0;
             sh_list.cam_near = shadow_cam.near();
             sh_list.cam_far = shadow_cam.far();
@@ -796,8 +793,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         while (s->offset != -1) {
                             const Ren::Material *mat = s->mat.get();
                             if ((mat->flags() & Ren::AlphaBlend) == 0) {
-                                list.shadow_batches.emplace_back();
-                                ShadowDrawBatch &batch = list.shadow_batches.back();
+                                ShadowDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
 
                                 batch.mat_id = (mat->flags() & Ren::AlphaTest) ? (uint32_t)s->mat.index() : 0;
                                 batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
@@ -814,7 +810,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 }
             }
 
-            sh_list.shadow_batch_count = (uint32_t)(list.shadow_batches.size() - sh_list.shadow_batch_start);
+            sh_list.shadow_batch_count = list.shadow_batches.count - sh_list.shadow_batch_start;
         }
     }
 
@@ -908,7 +904,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             sh_list.shadow_map_pos[1] = region->pos[1];
             sh_list.shadow_map_size[0] = region->size[0];
             sh_list.shadow_map_size[1] = region->size[1];
-            sh_list.shadow_batch_start = (uint32_t)list.shadow_batches.size();
+            sh_list.shadow_batch_start = list.shadow_batches.count;
             sh_list.shadow_batch_count = 0;
             sh_list.cam_near = region->cam_near = shadow_cam.near();
             sh_list.cam_far = region->cam_far = shadow_cam.far();
@@ -978,8 +974,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         while (s->offset != -1) {
                             const Ren::Material *mat = s->mat.get();
                             if ((mat->flags() & Ren::AlphaBlend) == 0) {
-                                list.shadow_batches.emplace_back();
-                                ShadowDrawBatch &batch = list.shadow_batches.back();
+                                ShadowDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
 
                                 batch.mat_id = (mat->flags() & Ren::AlphaTest) ? (uint32_t)s->mat.index() : 0;
                                 batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
@@ -1000,14 +995,14 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             }
 
             if (!light_sees_dynamic_objects && region->last_update != 0xffffffff && (scene.update_counter - region->last_update > 2)) {
-                // nothing was changed within last two frames
-                list.shadow_batches.resize(sh_list.shadow_batch_start);
+                // nothing was changed within last two frames, discard added batches
+                list.shadow_batches.count = sh_list.shadow_batch_start;
                 sh_list.shadow_batch_count = 0;
             } else {
                 if (light_sees_dynamic_objects || region->last_update == 0xffffffff) {
                     region->last_update = scene.update_counter;
                 }
-                sh_list.shadow_batch_count = (uint32_t)(list.shadow_batches.size() - sh_list.shadow_batch_start);
+                sh_list.shadow_batch_count = list.shadow_batches.count - sh_list.shadow_batch_start;
             }
 
             region->last_visible = scene.update_counter;
@@ -1031,39 +1026,41 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     auto drawables_sort_start = std::chrono::high_resolution_clock::now();
 
     // Sort drawables to optimize state switches
-    temp_sort_spans_64_[0].resize(list.main_batches.size());
-    temp_sort_spans_64_[1].resize(list.main_batches.size());
-    list.main_batch_indices.resize(list.main_batches.size());
+    temp_sort_spans_64_[0].count = list.main_batches.count;
+    temp_sort_spans_64_[1].count = list.main_batches.count;
     uint32_t spans_count = 0;
 
+    list.main_batch_indices.count = list.main_batches.count;
+    
+
     // compress batches into spans with indentical key values (makes sorting faster)
-    for (uint32_t start = 0, end = 1; end <= (uint32_t)list.main_batches.size(); end++) {
-        if (end == (uint32_t)list.main_batches.size() || (list.main_batches[start].sort_key != list.main_batches[end].sort_key)) {
-            temp_sort_spans_64_[0][spans_count].key = list.main_batches[start].sort_key;
-            temp_sort_spans_64_[0][spans_count].base = start;
-            temp_sort_spans_64_[0][spans_count++].count = end - start;
+    for (uint32_t start = 0, end = 1; end <= list.main_batches.count; end++) {
+        if (end == list.main_batches.count || (list.main_batches.data[start].sort_key != list.main_batches.data[end].sort_key)) {
+            temp_sort_spans_64_[0].data[spans_count].key = list.main_batches.data[start].sort_key;
+            temp_sort_spans_64_[0].data[spans_count].base = start;
+            temp_sort_spans_64_[0].data[spans_count++].count = end - start;
             start = end;
         }
     }
 
-    RadixSort_LSB<SortSpan64>(temp_sort_spans_64_[0].data(), temp_sort_spans_64_[0].data() + spans_count, temp_sort_spans_64_[1].data());
+    RadixSort_LSB<SortSpan64>(temp_sort_spans_64_[0].data.get(), temp_sort_spans_64_[0].data.get() + spans_count, temp_sort_spans_64_[1].data.get());
 
     // decompress sorted spans
     size_t counter = 0;
     for (uint32_t i = 0; i < spans_count; i++) {
-        for (uint32_t j = 0; j < temp_sort_spans_64_[0][i].count; j++) {
-            list.main_batch_indices[counter++] = temp_sort_spans_64_[0][i].base + j;
+        for (uint32_t j = 0; j < temp_sort_spans_64_[0].data[i].count; j++) {
+            list.main_batch_indices.data[counter++] = temp_sort_spans_64_[0].data[i].base + j;
         }
     }
 
     // Merge similar batches
-    for (uint32_t start = 0, end = 1; end <= uint32_t(list.main_batch_indices.size()); end++) {
-        if (end == list.main_batch_indices.size() ||
-            list.main_batches[list.main_batch_indices[start]].sort_key != list.main_batches[list.main_batch_indices[end]].sort_key) {
+    for (uint32_t start = 0, end = 1; end <= list.main_batch_indices.count; end++) {
+        if (end == list.main_batch_indices.count ||
+            list.main_batches.data[list.main_batch_indices.data[start]].sort_key != list.main_batches.data[list.main_batch_indices.data[end]].sort_key) {
 
-            auto &b1 = list.main_batches[list.main_batch_indices[start]];
+            auto &b1 = list.main_batches.data[list.main_batch_indices.data[start]];
             for (uint32_t i = start + 1; i < end; i++) {
-                auto &b2 = list.main_batches[list.main_batch_indices[i]];
+                auto &b2 = list.main_batches.data[list.main_batch_indices.data[i]];
 
                 if (b1.base_vertex == b2.base_vertex && b1.instance_count + b2.instance_count < REN_MAX_BATCH_SIZE) {
                     memcpy(&b1.instance_indices[b1.instance_count], &b2.instance_indices[0], b2.instance_count * sizeof(int));
@@ -1076,48 +1073,54 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
     }
 
-    list.shadow_batch_indices.resize(list.shadow_batches.size());
+    list.shadow_batch_indices.count = list.shadow_batches.count;
 
     uint32_t sh_batch_indices_counter = 0;
 
     for (int i = 0; i < (int)list.shadow_lists.count; i++) {
-        const auto &sh_list = list.shadow_lists.data[i];
+        auto &sh_list = list.shadow_lists.data[i];
 
         uint32_t shadow_batch_end = sh_list.shadow_batch_start + sh_list.shadow_batch_count;
 
-        temp_sort_spans_32_[0].resize(sh_list.shadow_batch_count);
-        temp_sort_spans_32_[1].resize(sh_list.shadow_batch_count);
+        temp_sort_spans_32_[0].count = sh_list.shadow_batch_count;
+        temp_sort_spans_32_[1].count = sh_list.shadow_batch_count;
         uint32_t spans_count = 0;
 
         // compress batches into spans with indentical key values (makes sorting faster)
         for (uint32_t start = sh_list.shadow_batch_start, end = sh_list.shadow_batch_start + 1;
              end <= shadow_batch_end; end++) {
-            if (end == shadow_batch_end || (list.shadow_batches[start].sort_key != list.shadow_batches[end].sort_key)) {
-                temp_sort_spans_32_[0][spans_count].key = list.shadow_batches[start].sort_key;
-                temp_sort_spans_32_[0][spans_count].base = start;
-                temp_sort_spans_32_[0][spans_count++].count = end - start;
+            if (end == shadow_batch_end || (list.shadow_batches.data[start].sort_key != list.shadow_batches.data[end].sort_key)) {
+                temp_sort_spans_32_[0].data[spans_count].key = list.shadow_batches.data[start].sort_key;
+                temp_sort_spans_32_[0].data[spans_count].base = start;
+                temp_sort_spans_32_[0].data[spans_count++].count = end - start;
                 start = end;
             }
         }
 
-        RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data(), temp_sort_spans_32_[0].data() + spans_count, temp_sort_spans_32_[1].data());
+        RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data.get(), temp_sort_spans_32_[0].data.get() + spans_count, temp_sort_spans_32_[1].data.get());
 
         // decompress sorted spans
         for (uint32_t i = 0; i < spans_count; i++) {
-            for (uint32_t j = 0; j < temp_sort_spans_32_[0][i].count; j++) {
-                list.shadow_batch_indices[sh_batch_indices_counter++] = temp_sort_spans_32_[0][i].base + j;
+            for (uint32_t j = 0; j < temp_sort_spans_32_[0].data[i].count; j++) {
+                list.shadow_batch_indices.data[sh_batch_indices_counter++] = temp_sort_spans_32_[0].data[i].base + j;
             }
         }
         assert(sh_batch_indices_counter == shadow_batch_end);
 
+        sh_list.solid_batches_count = 0xffffffff;
+
         // Merge similar batches
         for (uint32_t start = sh_list.shadow_batch_start, end = sh_list.shadow_batch_start + 1; end <= shadow_batch_end; end++) {
-            if (end == shadow_batch_end ||
-                list.shadow_batches[list.shadow_batch_indices[start]].sort_key != list.shadow_batches[list.shadow_batch_indices[end]].sort_key) {
+            if (sh_list.solid_batches_count == 0xffffffff && list.shadow_batches.data[list.shadow_batch_indices.data[start]].alpha_test_bit) {
+                sh_list.solid_batches_count = (start - sh_list.shadow_batch_start);
+            }
 
-                auto &b1 = list.shadow_batches[list.shadow_batch_indices[start]];
+            if (end == shadow_batch_end ||
+                list.shadow_batches.data[list.shadow_batch_indices.data[start]].sort_key != list.shadow_batches.data[list.shadow_batch_indices.data[end]].sort_key) {
+
+                auto &b1 = list.shadow_batches.data[list.shadow_batch_indices.data[start]];
                 for (uint32_t i = start + 1; i < end; i++) {
-                    auto &b2 = list.shadow_batches[list.shadow_batch_indices[i]];
+                    auto &b2 = list.shadow_batches.data[list.shadow_batch_indices.data[i]];
 
                     if (b1.base_vertex == b2.base_vertex && b1.instance_count + b2.instance_count < REN_MAX_BATCH_SIZE) {
                         memcpy(&b1.instance_indices[b1.instance_count], &b2.instance_indices[0], b2.instance_count * sizeof(int));
@@ -1128,6 +1131,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                 start = end;
             }
+        }
+
+        if (sh_list.solid_batches_count == 0xffffffff) {
+            sh_list.solid_batches_count = sh_list.shadow_batch_count;
         }
     }
 
