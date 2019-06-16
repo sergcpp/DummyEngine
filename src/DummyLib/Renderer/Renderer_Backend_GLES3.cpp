@@ -1442,8 +1442,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     glBindVertexArray((GLuint)temp_vao_);
 
+    const uint32_t use_ssao_mask = (EnableZFill | EnableSSAO | DebugWireframe);
     const uint32_t use_ssao = (EnableZFill | EnableSSAO);
-    if ((list.render_flags & use_ssao) == use_ssao) {
+    if ((list.render_flags & use_ssao_mask) == use_ssao) {
         // prepare ao buffer
         glBindFramebuffer(GL_FRAMEBUFFER, ssao_buf_.fb);
         glViewport(0, 0, ssao_buf_.w, ssao_buf_.h);
@@ -1642,7 +1643,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeReflStart], GL_TIMESTAMP);
     }
 
-    if (list.render_flags & EnableSSR) {
+    const uint32_t use_ssr_mask = (EnableSSR | DebugWireframe);
+    const uint32_t use_ssr = EnableSSR;
+    if ((list.render_flags & use_ssr_mask) == use_ssr) {
         glBindFramebuffer(GL_FRAMEBUFFER, refl_buf_.fb);
         glViewport(0, 0, act_w_ / 2, act_h_ / 2);
 
@@ -1799,11 +1802,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeBlurStart], GL_TIMESTAMP);
     }
 
-    //glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
     glDepthFunc(GL_LESS);
 
-    if (list.render_flags & (EnableSSR | EnableBloom | EnableTonemap)) {
+    if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap)) && ((list.render_flags & DebugWireframe) == 0)) {
         // store matrix to use it in next frame
         down_buf_view_from_world_ = shrd_data.uViewMatrix;
 
@@ -2034,7 +2036,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             BindTexture(REN_DIFF_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
         }
 
-        if (list.render_flags & EnableBloom) {
+        if ((list.render_flags & EnableBloom) && !(list.render_flags & DebugWireframe)) {
             BindTexture(REN_DIFF_TEX_SLOT + 1, blur_buf1_.attachments[0].tex);
         } else {
             BindTexture(REN_DIFF_TEX_SLOT + 1, dummy_black_->tex_id());
