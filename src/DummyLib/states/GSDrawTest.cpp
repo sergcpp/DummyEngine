@@ -575,6 +575,10 @@ void GSDrawTest::Draw(uint64_t dt_us) {
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 
                 vertical_offset -= font_->height(ui_root_.get());
+                sprintf(text_buffer, "  triangles: %.2f M", back_info.triangles_rendered * 0.000001);
+                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
+
+                vertical_offset -= font_->height(ui_root_.get());
                 sprintf(text_buffer, "   skinning: %u us", back_info.skinning_time_us);
                 font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
 

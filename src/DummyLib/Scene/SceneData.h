@@ -80,6 +80,8 @@ struct BackendInfo {
     uint32_t shadow_draw_calls_count = 0,
              depth_fill_draw_calls_count = 0,
              opaque_draw_calls_count = 0;
+
+    uint32_t triangles_rendered = 0;
 };
 
 struct bvh_node_t {

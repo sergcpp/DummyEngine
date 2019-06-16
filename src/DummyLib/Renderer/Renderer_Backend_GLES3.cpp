@@ -211,7 +211,7 @@ void Renderer::InitRendererInternal() {
 
         glGenBuffers(1, &shared_data_ubo);
         glBindBuffer(GL_UNIFORM_BUFFER, shared_data_ubo);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedDataBlock), NULL, GL_DYNAMIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedDataBlock), NULL, GL_DYNAMIC_COPY);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
         unif_shared_data_block_ = (uint32_t)shared_data_ubo;
@@ -954,6 +954,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     backend_info_.depth_fill_draw_calls_count = 0;
     backend_info_.opaque_draw_calls_count = 0;
 
+    backend_info_.triangles_rendered = 0;
+
     {   // Update buffers
         // TODO: try to use persistently mapped buffers
 
@@ -1563,6 +1565,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
                                               (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.opaque_draw_calls_count++;
+            backend_info_.triangles_rendered += (batch.indices_count / 3) * batch.instance_count;
         }
 
 #ifndef DISABLE_MARKERS
@@ -1626,7 +1629,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
                                               (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
-            backend_info_.opaque_draw_calls_count++;
+            backend_info_.opaque_draw_calls_count += 2;
+            backend_info_.triangles_rendered += (batch.indices_count / 3) * batch.instance_count;
         }
 
 #ifndef DISABLE_MARKERS
