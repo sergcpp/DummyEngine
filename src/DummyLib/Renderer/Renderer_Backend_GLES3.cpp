@@ -527,6 +527,14 @@ void Renderer::InitRendererInternal() {
     }
 
     Ren::CheckError("[InitRendererInternal]: additional data allocation");
+
+    {   // Set shadowmap compare mode
+        BindTexture(REN_SHAD_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+    }
+
+    Ren::CheckError("[InitRendererInternal]: shadowmap compare mode setup");
 }
 
 bool Renderer::InitFramebuffersInternal() {
@@ -1302,7 +1310,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         BindCubemap(REN_DIFF_TEX_SLOT, list.env.env_map->tex_id());
 
 #ifndef DISABLE_MARKERS
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "DRAW SKYBOX");
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "DRAW SKYDOME");
 #endif
 
         glDrawElements(GL_TRIANGLES, (GLsizei)__skydome_indices_count, GL_UNSIGNED_SHORT, (void *)uintptr_t(skydome_ndx_offset_));
@@ -1324,8 +1332,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     /**************************************************************************************************/
 
     BindTexture(REN_SHAD_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
     if (list.decals_atlas) {
         BindTexture(REN_DECAL_TEX_SLOT, list.decals_atlas->tex_id(0));
@@ -2296,6 +2302,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
         }
+
+        // Restore compare mode
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
