@@ -1313,6 +1313,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glDepthFunc(GL_LESS);
     } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)skydome_framebuf_);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     }
 
