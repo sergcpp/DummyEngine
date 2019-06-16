@@ -9,19 +9,20 @@
 
 Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *status,
                         const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load) {
-    Init(name, mat_src, status, on_prog_load, on_tex_load);
+    name_ = name;
+    Init(mat_src, status, on_prog_load, on_tex_load);
 }
 
 Ren::Material &Ren::Material::operator=(Material &&rhs) {
     RefCounter::operator=(std::move(rhs));
     flags_ = rhs.flags_;
     ready_ = rhs.ready_;
-    strcpy(name_, rhs.name_);
+    name_ = std::move(rhs.name_);
     for (int i = 0; i < 4; i++) {
         programs_[i] = std::move(rhs.programs_[i]);
     }
     for (int i = 0; i < 8; i++) {
-        textures_[i] = rhs.textures_[i];
+        textures_[i] = std::move(rhs.textures_[i]);
     }
     for (int i = 0; i < 8; i++) {
         params_[i] = rhs.params_[i];
@@ -29,9 +30,8 @@ Ren::Material &Ren::Material::operator=(Material &&rhs) {
     return *this;
 }
 
-void Ren::Material::Init(const char *name, const char *mat_src, eMatLoadStatus *status,
+void Ren::Material::Init(const char *mat_src, eMatLoadStatus *status,
                          const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load) {
-    strcpy(name_, name);
     InitFromTXT(mat_src, status, on_prog_load, on_tex_load);
 }
 

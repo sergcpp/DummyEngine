@@ -8,11 +8,11 @@
 #endif
 
 Ren::AnimSequence::AnimSequence(const char *name, std::istream &data) {
-    Init(name, data);
+    name_ = name;
+    Init(data);
 }
 
-void Ren::AnimSequence::Init(const char *name, std::istream &data) {
-    strcpy(name_, name);
+void Ren::AnimSequence::Init(std::istream &data) {
     if (!data) {
         ready_ = false;
         return;
@@ -59,7 +59,9 @@ void Ren::AnimSequence::Init(const char *name, std::istream &data) {
         }
     }
     frame_size_ = offset;
-    data.read(name_, 64);
+    char act_name[64];
+    data.read(act_name, 64);
+    act_name_ = act_name;
     data.read((char *)&fps_, 4);
     data.read((char *)&len_, 4);
 

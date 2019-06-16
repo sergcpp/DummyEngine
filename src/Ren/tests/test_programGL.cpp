@@ -230,7 +230,7 @@ void main() {
             Ren::Vec4f p, c;
         };
 
-        auto buf = Ren::Buffer{ sizeof(AttribData) * 128 };
+        auto buf = Ren::Buffer{ "buf", sizeof(AttribData) * 128 };
 
         std::vector<AttribData> _data;
         for (int i = 0; i < 128; i++) {

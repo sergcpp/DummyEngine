@@ -4,10 +4,11 @@
 
 void test_storage() {
     struct MyObj : public Ren::RefCounter {
+        std::string name_;
         int *ref;
 
         MyObj() : ref(nullptr) {}
-        explicit MyObj(int *r) : ref(r) {
+        MyObj(const char *name, int *r) : name_(name), ref(r) {
             (*ref)++;
         }
         MyObj(const MyObj &rhs) = delete;
@@ -24,6 +25,8 @@ void test_storage() {
             return (*this);
         }
 
+        const char *name() { return name_.c_str(); }
+
         ~MyObj() {
             if (ref) {
                 (*ref)--;
@@ -36,7 +39,7 @@ void test_storage() {
         Ren::Storage<MyObj> my_obj_storage;
         int counter = 0;
 
-        auto ref1 = my_obj_storage.Add(&counter);
+        auto ref1 = my_obj_storage.Add("obj", &counter);
         require(counter == 1);
         ref1 = {};
         require(counter == 0);
@@ -47,7 +50,7 @@ void test_storage() {
         Ren::Storage<MyObj> my_obj_storage;
         int counter = 0;
 
-        auto ref1 = my_obj_storage.Add(&counter);
+        auto ref1 = my_obj_storage.Add("obj1", &counter);
         require(counter == 1);
         auto ref2 = ref1;
         require(counter == 1);
@@ -56,7 +59,7 @@ void test_storage() {
         ref2 = {};
         require(counter == 0);
 
-        ref1 = my_obj_storage.Add(&counter);
+        ref1 = my_obj_storage.Add("obj2", &counter);
         require(counter == 1);
         ref2 = std::move(ref1);
         require(counter == 1);

@@ -84,12 +84,14 @@ static_assert(sizeof(g_gl_types) / sizeof(g_gl_types[0]) == FormatCount, "!");
 
 Ren::Texture2D::Texture2D(const char *name, const void *data, int size,
                           const Texture2DParams &p, eTexLoadStatus *load_status) {
-    Init(name, data, size, p, load_status);
+    name_ = name;
+    Init(data, size, p, load_status);
 }
 
 Ren::Texture2D::Texture2D(const char *name, const void *data[6], const int size[6],
                           const Texture2DParams &p, eTexLoadStatus *load_status) {
-    Init(name, data, size, p, load_status);
+    name_ = name;
+    Init(data, size, p, load_status);
 }
 
 Ren::Texture2D::~Texture2D() {
@@ -117,15 +119,11 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) {
     rhs.ready_ = false;
     cubemap_ready_ = rhs.cubemap_ready_;
     rhs.cubemap_ready_ = 0;
-    strcpy(name_, rhs.name_);
-    rhs.name_[0] = '\0';
+    name_ = std::move(rhs.name_);
     return *this;
 }
 
-void Ren::Texture2D::Init(const char *name, const void *data, int size,
-                          const Texture2DParams &p, eTexLoadStatus *load_status) {
-    strcpy(name_, name);
-
+void Ren::Texture2D::Init(const void *data, int size, const Texture2DParams &p, eTexLoadStatus *load_status) {
     if (!data) {
         unsigned char cyan[3] = { 0, 255, 255 };
         Texture2DParams _p;
@@ -138,15 +136,15 @@ void Ren::Texture2D::Init(const char *name, const void *data, int size,
         ready_ = false;
         if (load_status) *load_status = TexCreatedDefault;
     } else {
-        if (strstr(name, ".tga_rgbe") != 0 || strstr(name, ".TGA_RGBE") != 0) {
+        if (name_.EndsWith(".tga_rgbe") != 0 || name_.EndsWith(".TGA_RGBE") != 0) {
             InitFromTGA_RGBEFile(data, p);
-        } else if (strstr(name, ".tga") != 0 || strstr(name, ".TGA") != 0) {
+        } else if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
             InitFromTGAFile(data, p);
-        } else if (strstr(name, ".dds") != 0 || strstr(name, ".DDS") != 0) {
+        } else if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
             InitFromDDSFile(data, size, p);
-        } else if (strstr(name, ".ktx") != 0 || strstr(name, ".ktx") != 0) {
+        } else if (name_.EndsWith(".ktx") != 0 || name_.EndsWith(".ktx") != 0) {
             InitFromKTXFile(data, size, p);
-        } else if (strstr(name, ".png") != 0 || strstr(name, ".PNG") != 0) {
+        } else if (name_.EndsWith(".png") != 0 || name_.EndsWith(".PNG") != 0) {
             InitFromPNGFile(data, size, p);
         } else {
             InitFromRAWData(data, p);
@@ -156,10 +154,7 @@ void Ren::Texture2D::Init(const char *name, const void *data, int size,
     }
 }
 
-void Ren::Texture2D::Init(const char *name, const void *data[6], const int size[6],
-                          const Texture2DParams &p, eTexLoadStatus *load_status) {
-    strcpy(name_, name);
-
+void Ren::Texture2D::Init(const void *data[6], const int size[6], const Texture2DParams &p, eTexLoadStatus *load_status) {
     if (!data) {
         const unsigned char cyan[3] = { 0, 255, 255 };
         const void *data[6] = { cyan, cyan, cyan, cyan, cyan, cyan };
@@ -174,15 +169,15 @@ void Ren::Texture2D::Init(const char *name, const void *data[6], const int size[
         cubemap_ready_ = 0;
         if (load_status) *load_status = TexCreatedDefault;
     } else {
-        if (strstr(name, ".tga_rgbe") != 0 || strstr(name, ".TGA_RGBE") != 0) {
+        if (name_.EndsWith(".tga_rgbe") != 0 || name_.EndsWith(".TGA_RGBE") != 0) {
             InitFromTGA_RGBEFile(data, p);
-        } else if (strstr(name, ".tga") != 0 || strstr(name, ".TGA") != 0) {
+        } else if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
             InitFromTGAFile(data, p);
-        } else if (strstr(name, ".png") != 0 || strstr(name, ".PNG") != 0) {
+        } else if (name_.EndsWith(".png") != 0 || name_.EndsWith(".PNG") != 0) {
             InitFromPNGFile(data, size, p);
-        } else if (strstr(name, ".ktx") != 0 || strstr(name, ".KTX") != 0) {
+        } else if (name_.EndsWith(".ktx") != 0 || name_.EndsWith(".KTX") != 0) {
             InitFromKTXFile(data, size, p);
-        } else if (strstr(name, ".dds") != 0 || strstr(name, ".DDS") != 0) {
+        } else if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
             InitFromDDSFile(data, size, p);
         } else {
             InitFromRAWData(data, p);

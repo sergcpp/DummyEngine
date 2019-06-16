@@ -7,6 +7,7 @@
 #include <string>
 
 #include "Storage.h"
+#include "String.h"
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -33,18 +34,16 @@ class Program : public RefCounter {
     std::array<Uniform, MAX_NUM_UNIFORMS>       uniforms_;
     std::array<UniformBlock, MAX_NUM_UNIFORM_BLOCKS> uniform_blocks_;
     bool        ready_ = false;
-    char        name_[32];
+    String      name_;
 
     struct Shaders {
         const char *vs_source, *fs_source;
         const char *cs_source;
     };
 
-    void InitFromGLSL(const char *name, const Shaders &shaders, eProgLoadStatus *status);
+    void InitFromGLSL(const Shaders &shaders, eProgLoadStatus *status);
 public:
-    Program() {
-        name_[0] = '\0';
-    }
+    Program() {}
     Program(const char *name, uint32_t prog_id, const Attribute *attrs, const Uniform *unifs, const UniformBlock *unif_blocks) : prog_id_(prog_id) {
         for (int i = 0; i < MAX_NUM_ATTRIBUTES; i++) {
             if (attrs[i].loc == -1) break;
@@ -59,7 +58,7 @@ public:
             uniform_blocks_[i] = unif_blocks[i];
         }
         ready_ = true;
-        strcpy(name_, name);
+        name_ = name;
     }
     Program(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status = nullptr);
     Program(const char *name, const char *cs_source, eProgLoadStatus *status = nullptr);
@@ -79,7 +78,7 @@ public:
         return ready_;
     }
     const char *name() const {
-        return name_;
+        return name_.c_str();
     }
 
     const Attribute &attribute(int i) const {
@@ -121,8 +120,8 @@ public:
         return uniform_blocks_[0];
     }
 
-    void Init(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status);
-    void Init(const char *name, const char *cs_source, eProgLoadStatus *status);
+    void Init(const char *vs_source, const char *fs_source, eProgLoadStatus *status);
+    void Init(const char *cs_source, eProgLoadStatus *status);
 };
 
 typedef StorageRef<Program> ProgramRef;

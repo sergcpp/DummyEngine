@@ -115,7 +115,7 @@ void test_buffer() {
     {
         BufferTest test;
 
-        auto buf = Ren::Buffer{ 256 };
+        auto buf = Ren::Buffer{ "buf", 256 };
 
         require(buf.Alloc(16) == 0);
         require(buf.Alloc(32) == 16);

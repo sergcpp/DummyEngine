@@ -88,7 +88,7 @@ public:
     void ReleaseAnims();
 
     /*** Buffers ***/
-    BufferRef CreateBuffer(uint32_t initial_size);
+    BufferRef CreateBuffer(const char *name, uint32_t initial_size);
     void ReleaseBuffers();
 
     void ReleaseAll();

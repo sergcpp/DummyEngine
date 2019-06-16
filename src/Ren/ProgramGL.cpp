@@ -18,11 +18,13 @@ void ParseGLSLBindings(const std::string &shader_str, std::vector<Binding> &attr
 }
 
 Ren::Program::Program(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status) {
-    Init(name, vs_source, fs_source, status);
+    name_ = name;
+    Init(vs_source, fs_source, status);
 }
 
 Ren::Program::Program(const char *name, const char *cs_source, eProgLoadStatus *status) {
-    Init(name, cs_source, status);
+    name_ = name;
+    Init(cs_source, status);
 }
 
 Ren::Program::~Program() {
@@ -47,23 +49,20 @@ Ren::Program &Ren::Program::operator=(Program &&rhs) {
     uniform_blocks_ = std::move(rhs.uniform_blocks_);
     ready_ = rhs.ready_;
     rhs.ready_ = false;
-    strcpy(name_, rhs.name_);
-    rhs.name_[0] = '\0';
+    name_ = std::move(rhs.name_);
 
     return *this;
 }
 
-void Ren::Program::Init(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status) {
-    strcpy(name_, name);
-    InitFromGLSL(name, { vs_source, fs_source, nullptr }, status);
+void Ren::Program::Init(const char *vs_source, const char *fs_source, eProgLoadStatus *status) {
+    InitFromGLSL({ vs_source, fs_source, nullptr }, status);
 }
 
-void Ren::Program::Init(const char *name, const char *cs_source, eProgLoadStatus *status) {
-    strcpy(name_, name);
-    InitFromGLSL(name, { nullptr, nullptr, cs_source }, status);
+void Ren::Program::Init(const char *cs_source, eProgLoadStatus *status) {
+    InitFromGLSL({ nullptr, nullptr, cs_source }, status);
 }
 
-void Ren::Program::InitFromGLSL(const char *name, const Shaders &shaders, eProgLoadStatus *status) {
+void Ren::Program::InitFromGLSL(const Shaders &shaders, eProgLoadStatus *status) {
     if ((!shaders.vs_source || !shaders.fs_source) && !shaders.cs_source) {
         if (status) *status = ProgSetToDefault;
         return;
@@ -81,12 +80,12 @@ void Ren::Program::InitFromGLSL(const char *name, const Shaders &shaders, eProgL
 
         GLuint v_shader = LoadShader(GL_VERTEX_SHADER, vs_source_str.c_str());
         if (!v_shader) {
-            fprintf(stderr, "VertexShader %s error", name);
+            fprintf(stderr, "VertexShader %s error", name_.c_str());
         }
 
         GLuint f_shader = LoadShader(GL_FRAGMENT_SHADER, fs_source_str.c_str());
         if (!f_shader) {
-            fprintf(stderr, "FragmentShader %s error", name);
+            fprintf(stderr, "FragmentShader %s error", name_.c_str());
         }
 
         program = glCreateProgram();
@@ -123,7 +122,7 @@ void Ren::Program::InitFromGLSL(const char *name, const Shaders &shaders, eProgL
 
         GLuint c_shader = LoadShader(GL_COMPUTE_SHADER, cs_source_str.c_str());
         if (!c_shader) {
-            fprintf(stderr, "ComputeShader %s error", name);
+            fprintf(stderr, "ComputeShader %s error", name_.c_str());
         }
 
         program = glCreateProgram();
@@ -207,7 +206,7 @@ void Ren::Program::InitFromGLSL(const char *name, const Shaders &shaders, eProgL
         }
     }
 
-    printf("PROGRAM %s\n", name);
+    printf("PROGRAM %s\n", name_.c_str());
 
     // Print all attributes
     printf("\tATTRIBUTES\n");

@@ -10,7 +10,7 @@
 #include "SW/SW.h"
 #endif
 
-Ren::Buffer::Buffer(uint32_t initial_size) : size_(0) {
+Ren::Buffer::Buffer(const char *name, uint32_t initial_size) : name_(name), size_(0) {
     nodes_.emplace_back();
     nodes_.back().size = initial_size;
 
@@ -49,6 +49,8 @@ Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) noexcept {
 
     size_ = rhs.size_;
     rhs.size_ = 0;
+
+    name_ = std::move(rhs.name_);
 
     return *this;
 }

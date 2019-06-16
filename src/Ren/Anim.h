@@ -10,6 +10,7 @@
 #include "MQuat.h"
 
 #include "Storage.h"
+#include "String.h"
 
 namespace Ren {
 enum eAnimBoneFlags { AnimHasTranslate = 1 };
@@ -31,7 +32,7 @@ struct AnimBone {
 struct Bone;
 
 class AnimSequence : public RefCounter {
-    char        name_[64];
+    String      name_, act_name_;
     int         fps_ = 0;
     int         len_ = 0;
     int         frame_size_ = 0;
@@ -42,14 +43,14 @@ class AnimSequence : public RefCounter {
     bool        ready_ = false;
 
 public:
-    AnimSequence() {
-        name_[0] = '\0';
-    }
-
+    AnimSequence() {}
     AnimSequence(const char *name, std::istream &data);
 
     const char *name() const {
-        return name_;
+        return name_.c_str();
+    }
+    const char *act_name() const {
+        return act_name_.c_str();
     }
     int fps() const {
         return fps_;
@@ -80,7 +81,7 @@ public:
         return &bones_[i];
     }
 
-    void Init(const char *name, std::istream &data);
+    void Init(std::istream &data);
 
     std::vector<AnimBone *> LinkBones(std::vector<Bone> &bones);
     void Update(float time);

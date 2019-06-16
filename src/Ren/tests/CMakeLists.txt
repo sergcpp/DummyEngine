@@ -59,11 +59,13 @@ set(SOURCE_FILES main.cpp
                  test_anim.cpp
                  test_buffer.cpp
                  test_common.h
+                 test_hashmap.cpp
 				 test_mat.cpp
                  test_material.cpp
                  test_mesh.cpp
                  test_sparse_array.cpp
                  test_storage.cpp
+                 test_string.cpp
                  test_texture.cpp
 				 test_vec.cpp
                  )

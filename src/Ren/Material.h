@@ -7,6 +7,7 @@
 #include "Fwd.h"
 #include "Program.h"
 #include "Storage.h"
+#include "String.h"
 #include "Texture.h"
 
 #include "MVec.h"
@@ -25,17 +26,16 @@ typedef std::function<ProgramRef(const char *name, const char *arg1, const char 
 class Material : public RefCounter {
     uint32_t        flags_ = 0;
     bool            ready_ = false;
-    char            name_[48];
     ProgramRef      programs_[4];
     Texture2DRef    textures_[8];
     Vec4f           params_[8];
 
+    String          name_;
+
     void InitFromTXT(const char *mat_src, eMatLoadStatus *status, const program_load_callback &on_prog_load,
                      const texture_load_callback &on_tex_load);
 public:
-    Material() {
-        name_[0] = '\0';
-    }
+    Material() {}
     Material(const char *name, const char *mat_src, eMatLoadStatus *status,
              const program_load_callback &on_prog_load,
              const texture_load_callback &on_tex_load);
@@ -55,7 +55,7 @@ public:
         return ready_;
     }
     const char *name() const {
-        return name_;
+        return name_.c_str();
     }
     const ProgramRef &program(int i) const {
         return programs_[i];
@@ -67,7 +67,7 @@ public:
         return params_[i];
     }
 
-    void Init(const char *name, const char *mat_src, eMatLoadStatus *status,
+    void Init(const char *mat_src, eMatLoadStatus *status,
               const program_load_callback &on_prog_load,
               const texture_load_callback &on_tex_load);
 };

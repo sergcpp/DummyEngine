@@ -24,20 +24,14 @@ Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream &data, materi
 
 Ren::MaterialRef Ren::Context::LoadMaterial(const char *name, const char *mat_src, eMatLoadStatus *status, const program_load_callback &on_prog_load,
         const texture_load_callback &on_tex_load) {
-    MaterialRef ref;
-    for (auto it = materials_.begin(); it != materials_.end(); ++it) {
-        if (strcmp(it->name(), name) == 0) {
-            ref = { &materials_, it.index() };
-        }
-    }
-
+    MaterialRef ref = materials_.FindByName(name);
     if (!ref) {
         ref = materials_.Add(name, mat_src, status, on_prog_load, on_tex_load);
     } else {
         if (ref->ready()) {
             if (status) *status = MatFound;
         } else if (!ref->ready() && mat_src) {
-            ref->Init(name, mat_src, status, on_prog_load, on_tex_load);
+            ref->Init(mat_src, status, on_prog_load, on_tex_load);
         }
     }
 
@@ -88,20 +82,13 @@ void Ren::Context::ReleasePrograms() {
 
 Ren::Texture2DRef Ren::Context::LoadTexture2D(const char *name, const void *data, int size,
         const Texture2DParams &p, eTexLoadStatus *load_status) {
-    Texture2DRef ref;
-    for (auto it = textures_.begin(); it != textures_.end(); ++it) {
-        if (strcmp(it->name(), name) == 0) {
-            ref = { &textures_, it.index() };
-            break;
-        }
-    }
-
+    Texture2DRef ref = textures_.FindByName(name);
     if (!ref) {
         ref = textures_.Add(name, data, size, p, load_status);
     } else {
         if (load_status) *load_status = TexFound;
         if (!ref->ready() && data) {
-            ref->Init(name, data, size, p, load_status);
+            ref->Init(data, size, p, load_status);
         }
     }
 
@@ -110,21 +97,14 @@ Ren::Texture2DRef Ren::Context::LoadTexture2D(const char *name, const void *data
 
 Ren::Texture2DRef Ren::Context::LoadTextureCube(const char *name, const void *data[6], const int size[6],
         const Texture2DParams &p, eTexLoadStatus *load_status) {
-    Texture2DRef ref;
-    for (auto it = textures_.begin(); it != textures_.end(); ++it) {
-        if (strcmp(it->name(), name) == 0) {
-            ref = { &textures_, it.index() };
-            break;
-        }
-    }
-
+    Texture2DRef ref = textures_.FindByName(name);
     if (!ref) {
         ref = textures_.Add(name, data, size, p, load_status);
     } else {
         if (ref->ready()) {
             if (load_status) *load_status = TexFound;
         } else if (!ref->ready() && data) {
-            ref->Init(name, data, size, p, load_status);
+            ref->Init(data, size, p, load_status);
         }
     }
 
@@ -148,20 +128,13 @@ void Ren::Context::ReleaseTextures() {
 }
 
 Ren::AnimSeqRef Ren::Context::LoadAnimSequence(const char *name, std::istream &data) {
-    AnimSeqRef ref;
-    for (auto it = anims_.begin(); it != anims_.end(); ++it) {
-        if (strcmp(it->name(), name) == 0) {
-            ref = { &anims_, it.index() };
-            break;
-        }
-    }
-
+    AnimSeqRef ref = anims_.FindByName(name);
     if (!ref) {
         ref = anims_.Add(name, data);
     } else {
         if (ref->ready()) {
         } else if (!ref->ready() && data) {
-            ref->Init(name, data);
+            ref->Init(data);
         }
     }
 
@@ -184,8 +157,8 @@ void Ren::Context::ReleaseAnims() {
     anims_.Clear();
 }
 
-Ren::BufferRef Ren::Context::CreateBuffer(uint32_t initial_size) {
-    return buffers_.Add(initial_size);
+Ren::BufferRef Ren::Context::CreateBuffer(const char *name, uint32_t initial_size) {
+    return buffers_.Add(name, initial_size);
 }
 
 void Ren::Context::ReleaseBuffers() {

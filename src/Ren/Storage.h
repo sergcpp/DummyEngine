@@ -1,5 +1,6 @@
 #pragma once
 
+#include "HashMap32.h"
 #include "SparseArray.h"
 
 namespace Ren {
@@ -8,11 +9,34 @@ class StorageRef;
 
 template<typename T, template<typename val_t> class container = default_container>
 class Storage : public SparseArray<T, container> {
+    HashMap32<const char *, size_t> items_by_name_;
 public:
     template<class... Args>
     StorageRef<T, container> Add(Args &&... args) {
         size_t index = SparseArray<T, container>::Add(args...);
+
+        bool res = items_by_name_.Insert(Get(index)->name(), index);
+        assert(res);
+
         return { this, index };
+    }
+
+    void Remove(size_t i) {
+        const char *name = this->Get(i)->name();
+
+        bool res = items_by_name_.Erase(name);
+        assert(res);
+
+        SparseArray<T, container>::Remove(i);
+    }
+
+    StorageRef<T, container> FindByName(const char *name) {
+        size_t *p_index = items_by_name_.Find(name);
+        if (p_index) {
+            return { this, *p_index };
+        } else {
+            return { nullptr, 0 };
+        }
     }
 };
 

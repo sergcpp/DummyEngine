@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "Storage.h"
+#include "String.h"
 
 namespace Ren {
 enum eBufferType { UndefinedBuffer, VertexBuffer, IndexBuffer };
@@ -19,8 +20,9 @@ class Buffer : public RefCounter {
         }
     };
 
-    uint32_t size_ = 0;
-    std::vector<Node> nodes_;
+    String              name_;
+    uint32_t            size_ = 0;
+    std::vector<Node>   nodes_;
 
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
     uint32_t buf_id_ = 0xffffffff;
@@ -32,7 +34,7 @@ class Buffer : public RefCounter {
     bool Free_Node(int i);
 public:
     Buffer() = default;
-    explicit Buffer(uint32_t initial_size);
+    explicit Buffer(const char *name, uint32_t initial_size);
     Buffer(const Buffer &rhs) = delete;
     Buffer(Buffer &&rhs) noexcept {
         *this = std::move(rhs);
@@ -42,6 +44,7 @@ public:
     Buffer &operator=(const Buffer &rhs) = delete;
     Buffer &operator=(Buffer &&rhs) noexcept;
 
+    const char *name() const { return name_.c_str(); }
     uint32_t size() const { return size_; }
 
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)

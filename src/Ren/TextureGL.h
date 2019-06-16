@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "Storage.h"
+#include "String.h"
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -25,11 +26,11 @@ struct Texture2DParams {
 enum eTexLoadStatus { TexFound, TexCreatedDefault, TexCreatedFromData };
 
 class Texture2D : public RefCounter {
-    uint32_t    tex_id_ = 0;
+    uint32_t        tex_id_ = 0;
     Texture2DParams params_;
-    bool        ready_ = false;
-    uint32_t    cubemap_ready_ = 0;
-    char        name_[128];
+    bool            ready_ = false;
+    uint32_t        cubemap_ready_ = 0;
+    String          name_;
 
     void InitFromRAWData(const void *data, const Texture2DParams &p);
     void InitFromTGAFile(const void *data, const Texture2DParams &p);
@@ -46,11 +47,9 @@ class Texture2D : public RefCounter {
     void InitFromKTXFile(const void *data[6], const int size[6], const Texture2DParams &p);
 
 public:
-    Texture2D() {
-        name_[0] = '\0';
-    }
-    Texture2D(const char *name, uint32_t tex_id, const Texture2DParams &params) : tex_id_(tex_id), params_(params), ready_(0) {
-        strcpy(name_, name);
+    Texture2D() {}
+    Texture2D(const char *name, uint32_t tex_id, const Texture2DParams &params)
+        : tex_id_(tex_id), params_(params), ready_(0), name_(name) {        
     }
     Texture2D(const char *name, const void *data, int size, const Texture2DParams &params, eTexLoadStatus *load_status);
     Texture2D(const char *name, const void *data[6], const int size[6], const Texture2DParams &params, eTexLoadStatus *load_status);
@@ -63,8 +62,8 @@ public:
     Texture2D &operator=(const Texture2D &rhs) = delete;
     Texture2D &operator=(Texture2D &&rhs);
 
-    void Init(const char *name, const void *data, int size, const Texture2DParams &params, eTexLoadStatus *load_status);
-    void Init(const char *name, const void *data[6], const int size[6], const Texture2DParams &params, eTexLoadStatus *load_status);
+    void Init(const void *data, int size, const Texture2DParams &params, eTexLoadStatus *load_status);
+    void Init(const void *data[6], const int size[6], const Texture2DParams &params, eTexLoadStatus *load_status);
 
     uint32_t tex_id() const {
         return tex_id_;
@@ -76,7 +75,7 @@ public:
         return ready_;
     }
     const char *name() const {
-        return name_;
+        return name_.c_str();
     }
 
     void ChangeFilter(eTexFilter f, eTexRepeat r);

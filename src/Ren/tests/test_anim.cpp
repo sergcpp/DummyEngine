@@ -173,7 +173,7 @@ void test_anim() {
         ctx.Init(1, 1);
         Ren::AnimSeqRef anim_ref = ctx.LoadAnimSequence("anim", in);
 
-        require(std::string(anim_ref->name()) == "ArmatureAction");
+        require(std::string(anim_ref->act_name()) == "ArmatureAction");
         require(anim_ref->fps() == 24);
         require(anim_ref->len() == 3);
         require(anim_ref->frame_size() == 11);

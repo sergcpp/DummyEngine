@@ -27,6 +27,7 @@ set(SOURCE_FILES Anim.h
                  Context.h
                  Context.cpp
                  Fwd.h
+                 HashMap32.h
                  Material.h
                  Material.cpp
                  Mesh.h
@@ -40,6 +41,7 @@ set(SOURCE_FILES Anim.h
                  RingBuffer.h
                  SparseArray.h
                  Storage.h
+                 String.h
                  Texture.h
                  TextureAtlas.h
                  TextureAtlas.cpp

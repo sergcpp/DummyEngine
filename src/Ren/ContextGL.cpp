@@ -84,10 +84,10 @@ void Ren::Context::Init(int w, int h) {
     }
 #endif
 
-    default_vertex_buf1_        = buffers_.Add(64 * 1024 * 1024);
-    default_vertex_buf2_        = buffers_.Add(64 * 1024 * 1024);
-    default_skin_vertex_buf_    = buffers_.Add(16 * 1024 * 1024);
-    default_indices_buf_        = buffers_.Add(64 * 1024 * 1024);
+    default_vertex_buf1_        = buffers_.Add("default_vtx_buf1", 64 * 1024 * 1024);
+    default_vertex_buf2_        = buffers_.Add("default_vtx_buf2", 64 * 1024 * 1024);
+    default_skin_vertex_buf_    = buffers_.Add("default_skin_buf", 16 * 1024 * 1024);
+    default_indices_buf_        = buffers_.Add("default_ndx_buf2", 64 * 1024 * 1024);
 }
 
 void Ren::Context::Resize(int w, int h) {
@@ -97,13 +97,7 @@ void Ren::Context::Resize(int w, int h) {
 }
 
 Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *load_status) {
-    ProgramRef ref;
-    for (auto it = programs_.begin(); it != programs_.end(); ++it) {
-        if (strcmp(it->name(), name) == 0) {
-            ref = { &programs_, it.index() };
-            break;
-        }
-    }
+    ProgramRef ref = programs_.FindByName(name);
 
     std::string vs_source_str, fs_source_str;
 
@@ -123,7 +117,7 @@ Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *vs_s
         if (ref->ready()) {
             if (load_status) *load_status = ProgFound;
         } else if (!ref->ready() && vs_source && fs_source) {
-            ref->Init(name, vs_source, fs_source, load_status);
+            ref->Init(vs_source, fs_source, load_status);
         }
     }
 
@@ -131,13 +125,7 @@ Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *vs_s
 }
 
 Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *cs_source, eProgLoadStatus *load_status) {
-    ProgramRef ref;
-    for (auto it = programs_.begin(); it != programs_.end(); ++it) {
-        if (strcmp(it->name(), name) == 0) {
-            ref = { &programs_, it.index() };
-            break;
-        }
-    }
+    ProgramRef ref = programs_.FindByName(name);
 
     std::string cs_source_str;
 

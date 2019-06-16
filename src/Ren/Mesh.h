@@ -6,6 +6,7 @@
 #include "Anim.h"
 #include "Buffer.h"
 #include "Material.h"
+#include "String.h"
 
 namespace Ren {
 enum eMeshFlags { MeshHasAlpha = 1 };
@@ -90,7 +91,7 @@ class Mesh : public RefCounter {
     std::unique_ptr <char[]> attribs_, indices_;
     std::array<TriGroup, MaxMeshTriGroupsCount>    groups_;
     Vec3f           bbox_min_, bbox_max_;
-    char            name_[48];
+    String          name_;
 
     Skeleton        skel_;
 
@@ -104,11 +105,15 @@ class Mesh : public RefCounter {
     // split skeletal mesh into chunks to fit uniforms limit in shader
     void SplitMesh(int bones_limit);
 public:
-    Mesh() {
-        name_[0] = '\0';
-    }
+    Mesh() {}
     Mesh(const char *name, std::istream &data, const material_load_callback &on_mat_load,
          BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf);
+
+    Mesh(const Mesh &rhs) = delete;
+    Mesh(Mesh &&rhs) = default;
+
+    Mesh &operator=(const Mesh &rhs) = delete;
+    Mesh &operator=(Mesh &&rhs) = default;
 
     int type() const {
         return type_;
@@ -155,7 +160,7 @@ public:
         return bbox_max_;
     }
     const char *name() const {
-        return &name_[0];
+        return name_.c_str();
     }
 
     Skeleton *skel() {
@@ -166,7 +171,7 @@ public:
         return &skel_;
     }
 
-    void Init(const char *name, std::istream &data, const material_load_callback &on_mat_load,
+    void Init(std::istream &data, const material_load_callback &on_mat_load,
               BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf);
 
     static int max_gpu_bones;
