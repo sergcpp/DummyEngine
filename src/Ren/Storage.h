@@ -15,7 +15,7 @@ public:
     StorageRef<T, container> Add(Args &&... args) {
         size_t index = SparseArray<T, container>::Add(args...);
 
-        bool res = items_by_name_.Insert(Get(index)->name(), index);
+        bool res = items_by_name_.Insert(this->Get(index)->name(), index);
         assert(res);
 
         return { this, index };
