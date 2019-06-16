@@ -211,7 +211,7 @@ void Renderer::InitRendererInternal() {
 
         glGenBuffers(1, &shared_data_ubo);
         glBindBuffer(GL_UNIFORM_BUFFER, shared_data_ubo);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedDataBlock), NULL, GL_STATIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedDataBlock), NULL, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
         unif_shared_data_block_ = (uint32_t)shared_data_ubo;
@@ -917,6 +917,12 @@ void Renderer::DestroyRendererInternal() {
         for (int i = 0; i < FrameSyncWindow; i++) {
             static_assert(sizeof(queries_[0][0]) == sizeof(GLuint), "!");
             glDeleteQueries(TimersCount, queries_[i]);
+
+            if (buf_range_fences_[i]) {
+                GLsync sync = reinterpret_cast<GLsync>(buf_range_fences_[i]);
+                glDeleteSync(sync);
+                buf_range_fences_[i] = nullptr;
+            }
         }
     }
 }
@@ -1116,6 +1122,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             shrd_data.uSunCol = Ren::Vec4f{ list.env.sun_col[0], list.env.sun_col[1], list.env.sun_col[2], 0.0f };
         }
 
+        // actual resolution and full resolution
         shrd_data.uResAndFRes = Ren::Vec4f{ float(act_w_), float(act_h_), float(clean_buf_.w), float(clean_buf_.h) };
 
         const float near = list.draw_cam.near(), far = list.draw_cam.far();

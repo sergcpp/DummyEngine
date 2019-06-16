@@ -222,6 +222,7 @@ private:
     DynArray<SortSpan64> temp_sort_spans_64_[2];
 
 #if defined(USE_GL_RENDER)
+    // Constant that controlls buffers orphaning
     static const int FrameSyncWindow = 2;
 
     uint32_t temp_tex_;
