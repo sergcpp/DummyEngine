@@ -1208,8 +1208,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                        sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
 
             {   // clear buffer region
-                glScissor(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
-                          sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
+                glScissor(sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
+                          sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]);
                 glClear(GL_DEPTH_BUFFER_BIT);
                 region_cleared[i] = true;
             }
@@ -1238,8 +1238,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glViewport(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
                        sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
-            glScissor(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
-                      sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
+            glScissor(sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
+                      sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]);
 
             if (!region_cleared[i]) {
                 // clear buffer region
@@ -2312,6 +2312,29 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniform3f(col_loc, 0.5f, 0.5f, 1.0f);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        }
+
+        // Draw view frustum edges
+        for (int i = 0; i < (int)list.shadow_lists.count; i++) {
+            const auto &sh_list = list.shadow_lists.data[i];
+            const auto &reg = list.shadow_regions.data[i];
+
+            if (!sh_list.view_frustum_outline_count) continue;
+
+            for (int j = 0; j < sh_list.view_frustum_outline_count; j += 2) {
+                const Ren::Vec2f &p1 = sh_list.view_frustum_outline[j],
+                                 &p2 = sh_list.view_frustum_outline[j + 1];
+
+                const float positions[] = { -1.0f + reg.transform[0] + (p1[0] * 0.5f + 0.5f) * reg.transform[2],    -1.0f + (reg.transform[1] + (p1[1] * 0.5f + 0.5f) * reg.transform[3]) * k,
+                                            -1.0f + reg.transform[0] + (p2[0] * 0.5f + 0.5f) * reg.transform[2],    -1.0f + (reg.transform[1] + (p2[1] * 0.5f + 0.5f) * reg.transform[3]) * k, };
+
+                glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
+
+                // draw line with black color
+                glUniform3f(col_loc, 0.0f, 0.0f, 0.0f);
+
+                glDrawElements(GL_LINES, 2, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            }
         }
 
         // Restore compare mode
