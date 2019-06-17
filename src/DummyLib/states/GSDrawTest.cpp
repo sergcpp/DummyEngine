@@ -533,7 +533,7 @@ void GSDrawTest::Draw(uint64_t dt_us) {
 
                 last_frame_time_ = cur_frame_time;
 
-                const double alpha = 0.05;
+                const double alpha = 0.025;
                 cur_fps_ = alpha * last_frame_fps + (1.0 - alpha) * cur_fps_;
 
                 sprintf(text_buffer, "        fps: %.1f", cur_fps_);
@@ -1121,12 +1121,6 @@ void GSDrawTest::UpdateFrame(int list_index) {
     scene_manager_->UpdateObjects();
 
     if (!use_pt_ && !use_lm_) {
-        // Enable all flags, Renderer will mask out what is not enabled
-        main_view_lists_[list_index].render_flags = 0xffffffff;
-
-        renderer_->PrepareDrawList(scene_manager_->scene_data(),
-                                   scene_manager_->main_cam(), main_view_lists_[list_index]);
-
         if (update_all_probes_) {
             if (probes_to_update_.empty()) {
                 int obj_count = (int)scene_manager_->scene_data().objects.size();
@@ -1149,19 +1143,23 @@ void GSDrawTest::UpdateFrame(int list_index) {
             pos = probe_tr->mat * pos;
             pos /= pos[3];
 
-            const Ren::Vec3f axises[] = { {  1.0f,  0.0f,  0.0f },
-                                          { -1.0f,  0.0f,  0.0f },
-                                          {  0.0f,  1.0f,  0.0f },
-                                          {  0.0f, -1.0f,  0.0f },
-                                          {  0.0f,  0.0f,  1.0f },
-                                          {  0.0f,  0.0f, -1.0f } };
+            static const Ren::Vec3f axises[] = {
+                { 1.0f,  0.0f,  0.0f },
+                { -1.0f,  0.0f,  0.0f },
+                { 0.0f,  1.0f,  0.0f },
+                { 0.0f, -1.0f,  0.0f },
+                { 0.0f,  0.0f,  1.0f },
+                { 0.0f,  0.0f, -1.0f }
+            };
 
-            const Ren::Vec3f ups[] = { { 0.0f, -1.0f, 0.0f },
-                                       { 0.0f, -1.0f, 0.0f },
-                                       { 0.0f,  0.0f, 1.0f },
-                                       { 0.0f,  0.0f, -1.0f },
-                                       { 0.0f, -1.0f, 0.0f },
-                                       { 0.0f, -1.0f, 0.0f } };
+            static const Ren::Vec3f ups[] = {
+                { 0.0f, -1.0f, 0.0f },
+                { 0.0f, -1.0f, 0.0f },
+                { 0.0f,  0.0f, 1.0f },
+                { 0.0f,  0.0f, -1.0f },
+                { 0.0f, -1.0f, 0.0f },
+                { 0.0f, -1.0f, 0.0f }
+            };
 
             const Ren::Vec3f center = { pos[0], pos[1], pos[2] };
 
@@ -1172,12 +1170,16 @@ void GSDrawTest::UpdateFrame(int list_index) {
 
                 temp_probe_lists_[i].render_flags = EnableZFill | EnableCulling | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableProbes;
 
-                renderer_->PrepareDrawList(scene_manager_->scene_data(),
-                                           temp_probe_cam_, temp_probe_lists_[i]);
+                renderer_->PrepareDrawList(scene_manager_->scene_data(), temp_probe_cam_, temp_probe_lists_[i]);
             }
 
             probe_to_render_ = probe;
             probes_to_update_.pop_back();
         }
+
+        // Enable all flags, Renderer will mask out what is not enabled
+        main_view_lists_[list_index].render_flags = 0xffffffff;
+
+        renderer_->PrepareDrawList(scene_manager_->scene_data(), scene_manager_->main_cam(), main_view_lists_[list_index]);
     }
 }

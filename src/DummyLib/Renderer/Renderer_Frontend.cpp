@@ -52,6 +52,13 @@ static const Ren::Vec4f ClipFrustumPoints[] = {
     { 1.0f,  1.0f, 1.0f, 1.0f },
     { -1.0f,  1.0f, 1.0f, 1.0f }
 };
+
+static const uint8_t SunShadowUpdatePattern[4] = {
+    0b11111111,  // update cascade 0 every frame
+    0b11111111,  // update cascade 1 every frame
+    0b01010101,  // update cascade 2 once in two frames
+    0b00100010   // update cascade 3 once in four frames
+};
 }
 
 #define BBOX_POINTS(min, max) \
@@ -531,6 +538,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         const Ren::Vec3f scene_dims = scene.nodes[scene.root_node].bbox_max - scene.nodes[scene.root_node].bbox_min;
         const float max_dist = Ren::Length(scene_dims);
 
+        const Ren::Vec3f view_dir = list.draw_cam.view_dir();
+
         // Gather drawables for each cascade
         for (int casc = 0; casc < 4; casc++) {
             auto temp_cam = list.draw_cam;
@@ -587,6 +596,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             sh_list.shadow_map_size[1] = OneCascadeRes;
             sh_list.shadow_batch_start = list.shadow_batches.count;
             sh_list.shadow_batch_count = 0;
+            sh_list.solid_batches_count = 0;
             sh_list.cam_near = shadow_cam.near();
             sh_list.cam_far = shadow_cam.far();
 
@@ -689,6 +699,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     sh_list.view_frustum_outline[2 * i + 0] = frustum_points_proj[edge[0]];
                     sh_list.view_frustum_outline[2 * i + 1] = frustum_points_proj[edge[1]];
 
+                    // Find region for scissor test
                     const Ren::Vec2i p1i = { sh_list.shadow_map_pos[0] + int((0.5f * sh_list.view_frustum_outline[2 * i + 0][0] + 0.5f) * sh_list.shadow_map_size[0]),
                                              sh_list.shadow_map_pos[1] + int((0.5f * sh_list.view_frustum_outline[2 * i + 0][1] + 0.5f) * sh_list.shadow_map_size[1]) };
 
@@ -707,6 +718,33 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 // add near and far planes
                 sh_clip_frustum.planes[sh_clip_frustum.planes_count++] = shadow_cam.frustum_plane(Ren::NearPlane);
                 sh_clip_frustum.planes[sh_clip_frustum.planes_count++] = shadow_cam.frustum_plane(Ren::FarPlane);
+            }
+
+            auto &reg = list.shadow_regions.data[list.shadow_regions.count++];
+
+            reg.transform = Ren::Vec4f{ float(sh_list.shadow_map_pos[0]) / SHADOWMAP_WIDTH, float(sh_list.shadow_map_pos[1]) / SHADOWMAP_HEIGHT,
+                                        float(sh_list.shadow_map_size[0]) / SHADOWMAP_WIDTH, float(sh_list.shadow_map_size[1]) / SHADOWMAP_HEIGHT };
+
+            float cached_dist = Ren::Distance(list.draw_cam.world_position(), sun_shadow_cache_[casc].view_pos),
+                  cached_dir_dist = Ren::Distance(view_dir, sun_shadow_cache_[casc].view_dir);
+            
+            // discard cached cascade if view changed significantly
+            sun_shadow_cache_[casc].valid &= (cached_dist < 1.0f && cached_dir_dist < 0.1f);
+
+            const uint8_t pattern_bit = (1 << (frame_counter_ % 8));
+            const bool should_update = (pattern_bit & SunShadowUpdatePattern[casc]) != 0;
+
+            if (sun_shadow_cache_[casc].valid && !should_update) {
+                // keep this cascade unchanged
+                reg.clip_from_world = sun_shadow_cache_[casc].clip_from_world;
+                continue;
+            } else {
+                reg.clip_from_world = sh_clip_from_world;
+
+                sun_shadow_cache_[casc].valid = true;
+                sun_shadow_cache_[casc].view_pos = list.draw_cam.world_position();
+                sun_shadow_cache_[casc].view_dir = view_dir;
+                sun_shadow_cache_[casc].clip_from_world = sh_clip_from_world;
             }
 
 #if 0
@@ -752,12 +790,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 }
             }
 #endif
-
-            auto &reg = list.shadow_regions.data[list.shadow_regions.count++];
-
-            reg.transform = Ren::Vec4f{ float(sh_list.shadow_map_pos[0]) / SHADOWMAP_WIDTH, float(sh_list.shadow_map_pos[1]) / SHADOWMAP_HEIGHT,
-                                        float(sh_list.shadow_map_size[0]) / SHADOWMAP_WIDTH, float(sh_list.shadow_map_size[1]) / SHADOWMAP_HEIGHT };
-            reg.clip_from_world = sh_clip_from_world;
 
             const uint32_t skip_check_bit = (1u << 31);
             const uint32_t index_bits = ~skip_check_bit;

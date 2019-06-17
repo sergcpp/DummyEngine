@@ -221,6 +221,14 @@ private:
     DynArray<SortSpan32> temp_sort_spans_32_[2];
     DynArray<SortSpan64> temp_sort_spans_64_[2];
 
+    struct ShadowFrustumCache {
+        bool valid = false;
+        Ren::Vec3f view_pos, view_dir;
+        Ren::Mat4f clip_from_world;
+    };
+
+    ShadowFrustumCache sun_shadow_cache_[4];
+
 #if defined(USE_GL_RENDER)
     // Constant that controlls buffers orphaning
     static const int FrameSyncWindow = 2;
