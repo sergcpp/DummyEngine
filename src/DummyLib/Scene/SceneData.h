@@ -2,8 +2,7 @@
 
 #include <cstdint>
 
-#include <map>
-
+#include <Ren/HashMap32.h>
 #include <Ren/Mesh.h>
 #include <Ren/MMat.h>
 #include <Ren/Storage.h>
@@ -47,8 +46,16 @@ const int MAX_COMPONENT_TYPES = 32;
 const float LIGHT_ATTEN_CUTOFF = 0.004f;
 
 struct SceneObject {
-    uint32_t comp_mask, change_mask, last_change_mask;
-    uint32_t components[MAX_COMPONENT_TYPES];
+    uint32_t    comp_mask, change_mask, last_change_mask;
+    uint32_t    components[MAX_COMPONENT_TYPES];
+    Ren::String name;
+
+    SceneObject() : comp_mask(0), change_mask(0), last_change_mask(0) {}
+    SceneObject(const SceneObject &rhs) = delete;
+    SceneObject(SceneObject &&rhs) = default;
+
+    SceneObject &operator=(const SceneObject &rhs) = delete;
+    SceneObject &operator=(SceneObject &&rhs) = default;
 };
 
 struct FrontendInfo {
@@ -129,7 +136,7 @@ struct SceneData {
     CompStorage                     *comp_store[MAX_COMPONENT_TYPES] = {};
 
     std::vector<SceneObject>        objects;
-    std::map<std::string, uint32_t> name_to_object;
+    Ren::HashMap32<const char *, uint32_t> name_to_object;
 
     std::vector<bvh_node_t>         nodes;
     std::vector<uint32_t>           free_nodes;

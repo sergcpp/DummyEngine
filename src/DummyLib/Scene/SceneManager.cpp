@@ -277,8 +277,6 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         const JsObject &js_obj = (const JsObject &)js_elem;
 
         SceneObject obj;
-        obj.comp_mask = 0;
-        obj.change_mask = 0;
 
         Ren::Vec3f obj_bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
                    obj_bbox_max = Ren::Vec3f{ -std::numeric_limits<float>::max() };
@@ -467,10 +465,11 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
         if (js_obj.Has("name")) {
             const auto &js_name = (const JsString &)js_obj.at("name");
-            scene_data_.name_to_object[js_name.val] = (uint32_t)scene_data_.objects.size();
+            obj.name = js_name.val.c_str();
+            scene_data_.name_to_object[obj.name.c_str()] = (uint32_t)scene_data_.objects.size();
         }
 
-        scene_data_.objects.push_back(obj);
+        scene_data_.objects.emplace_back(std::move(obj));
     }
 
     if (js_scene.Has("environment")) {

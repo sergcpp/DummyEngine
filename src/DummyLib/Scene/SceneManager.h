@@ -27,12 +27,8 @@ public:
     SceneObject *GetObject(uint32_t i) { return &scene_data_.objects[i]; }
 
     uint32_t FindObject(const char *name) {
-        auto it = scene_data_.name_to_object.find(name);
-        if (it != scene_data_.name_to_object.end()) {
-            return it->second;
-        } else {
-            return 0xffffffff;
-        }
+        uint32_t *p_ndx = scene_data_.name_to_object.Find(name);
+        return p_ndx ? (*p_ndx) : 0xffffffff;
     }
 
     void InvalidateObjects(const uint32_t *indices, uint32_t count, uint32_t change_mask) {
