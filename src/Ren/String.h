@@ -21,8 +21,12 @@ public:
 
     BasicString(const BasicString &rhs) {
         len_ = rhs.len_;
-        str_ = alloc_.allocate(len_ + 1);
-        memcpy(str_, rhs.str_, len_ + 1);
+        if (len_) {
+            str_ = alloc_.allocate(len_ + 1);
+            memcpy(str_, rhs.str_, len_ + 1);
+        } else {
+            str_ = nullptr;
+        }
     }
 
     BasicString(BasicString &&rhs) {
@@ -40,8 +44,12 @@ public:
         Release();
 
         len_ = rhs.len_;
-        str_ = alloc_.allocate(len_ + 1);
-        memcpy(str_, rhs.str_, len_ + 1);
+        if (len_) {
+            str_ = alloc_.allocate(len_ + 1);
+            memcpy(str_, rhs.str_, len_ + 1);
+        } else {
+            str_ = nullptr;
+        }
 
         return *this;
     }
