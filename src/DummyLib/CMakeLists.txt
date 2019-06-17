@@ -66,11 +66,13 @@ endif()
 
 set(SHADERS_SOURCES Renderer/Shaders/blit.fs.glsl
                     Renderer/Shaders/blit.vs.glsl
+                    Renderer/Shaders/blit_bilateral.fs.glsl
                     Renderer/Shaders/blit_combine.fs.glsl
                     Renderer/Shaders/blit_debug.fs.glsl
                     Renderer/Shaders/blit_debug_bvh.fs.glsl
                     Renderer/Shaders/blit_depth.fs.glsl
                     Renderer/Shaders/blit_down.fs.glsl
+                    Renderer/Shaders/blit_down_depth.fs.glsl
                     Renderer/Shaders/blit_down_ms.fs.glsl
                     Renderer/Shaders/blit_fxaa.fs.glsl
                     Renderer/Shaders/blit_gauss.fs.glsl
@@ -83,6 +85,7 @@ set(SHADERS_SOURCES Renderer/Shaders/blit.fs.glsl
                     Renderer/Shaders/blit_rgbm.fs.glsl
                     Renderer/Shaders/blit_ssao.fs.glsl
                     Renderer/Shaders/blit_ssr.fs.glsl
+                    Renderer/Shaders/blit_upscale.fs.glsl
                     Renderer/Shaders/fillz.fs.glsl
                     Renderer/Shaders/fillz.vs.glsl
                     Renderer/Shaders/probe.vs.glsl

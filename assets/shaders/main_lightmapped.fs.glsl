@@ -224,12 +224,7 @@ void main(void) {
         visibility = GetSunVisibility(lin_depth, shadow_texture, aVertexShUVs_);
     }
     
-    vec2 ao_uvs = gl_FragCoord.xy / uResAndFRes.xy;
-    float dx = $SSAOBufResDiv.0 / uResAndFRes.z, dy = $SSAOBufResDiv.0 / uResAndFRes.w;
-    float ambient_occlusion = texture(ao_texture, ao_uvs).r + texture(ao_texture, ao_uvs + vec2(dx, 0.0)).r +
-                              texture(ao_texture, ao_uvs + vec2(0.0, dy)).r + texture(ao_texture, ao_uvs + vec2(dx, dy)).r;
-    ambient_occlusion *= 0.25;
-                              
+    float ambient_occlusion = texelFetch(ao_texture, ivec2(gl_FragCoord.xy), 0).r;                      
     vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
     
     vec3 view_ray_ws = normalize(uCamPosAndGamma.xyz - aVertexPos_);

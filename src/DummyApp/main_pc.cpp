@@ -6,5 +6,6 @@ int main(int argc, char *argv[]) {
 }
 
 // TODO:
+// make full screen quad passes differently
 // refactor repetitive things in shaders
 // add pure metal shader permutation (without diffuse component)

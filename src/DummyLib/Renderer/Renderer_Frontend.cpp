@@ -728,7 +728,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             float cached_dist = Ren::Distance(list.draw_cam.world_position(), sun_shadow_cache_[casc].view_pos),
                   cached_dir_dist = Ren::Distance(view_dir, sun_shadow_cache_[casc].view_dir);
             
-            // discard cached cascade if view changed significantly
+            // discard cached cascade if view change was significant
             sun_shadow_cache_[casc].valid &= (cached_dist < 1.0f && cached_dir_dist < 0.1f);
 
             const uint8_t pattern_bit = (1 << (frame_counter_ % 8));

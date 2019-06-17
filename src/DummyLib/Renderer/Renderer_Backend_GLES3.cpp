@@ -88,7 +88,7 @@ namespace RendererInternal {
     const int TEMP_BUF_SIZE = 256;
 
     const float fs_quad_positions[] = { -1.0f, -1.0f,   1.0f, -1.0f,
-                                         1.0f, 1.0f,   -1.0f, 1.0f };
+                                         1.0f, 1.0f,    -1.0f, 1.0f };
 
     const float fs_quad_norm_uvs[] = { 0.0f, 0.0f,     1.0f, 0.0f,
                                        1.0f, 1.0f,     0.0f, 1.0f };
@@ -143,11 +143,26 @@ void Renderer::InitRendererInternal() {
     LOGI("Compiling blit_down_ms");
     blit_down_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_ms", blit_vs, blit_down_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_down_depth");
+    blit_down_depth_prog_ = ctx_.LoadProgramGLSL("blit_down_depth", blit_vs, blit_down_depth_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_down_depth_ms");
+    blit_down_depth_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_depth_ms", blit_vs, blit_down_depth_ms_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_gauss");
     blit_gauss_prog_ = ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_gauss_sep");
     blit_gauss_sep_prog_ = ctx_.LoadProgramGLSL("blit_gauss_sep", blit_vs, blit_gauss_sep_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_bilateral");
+    blit_bilateral_prog_ = ctx_.LoadProgramGLSL("blit_bilateral", blit_vs, blit_bilateral_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_upscale");
+    blit_upscale_prog_ = ctx_.LoadProgramGLSL("blit_upscale", blit_vs, blit_upscale_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_upscale_ms");
+    blit_upscale_ms_prog_ = ctx_.LoadProgramGLSL("blit_upscale_ms", blit_vs, blit_upscale_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_debug");
     blit_debug_prog_ = ctx_.LoadProgramGLSL("blit_debug", blit_vs, blit_debug_fs, &status);
@@ -163,9 +178,6 @@ void Renderer::InitRendererInternal() {
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_ao");
     blit_ao_prog_ = ctx_.LoadProgramGLSL("blit_ao", blit_vs, blit_ssao_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_ao_ms");
-    blit_ao_ms_prog_ = ctx_.LoadProgramGLSL("blit_ao_ms", blit_vs, blit_ssao_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_multiply");
     blit_multiply_prog_ = ctx_.LoadProgramGLSL("blit_multiply", blit_vs, blit_multiply_fs, &status);
@@ -1345,7 +1357,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     }
 
     if (list.render_flags & EnableSSAO) {
-        BindTexture(REN_SSAO_TEX_SLOT, ssao_buf_.attachments[0].tex);
+        BindTexture(REN_SSAO_TEX_SLOT, combined_buf_.attachments[0].tex);
     } else {
         BindTexture(REN_SSAO_TEX_SLOT, dummy_white_->tex_id());
     }
@@ -1452,47 +1464,118 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     const uint32_t use_ssao_mask = (EnableZFill | EnableSSAO | DebugWireframe);
     const uint32_t use_ssao = (EnableZFill | EnableSSAO);
     if ((list.render_flags & use_ssao_mask) == use_ssao) {
-        // prepare ao buffer
-        glBindFramebuffer(GL_FRAMEBUFFER, ssao_buf_.fb);
-        glViewport(0, 0, ssao_buf_.w, ssao_buf_.h);
-
-        const Ren::Program *ssao_prog = nullptr;
-
-        if (clean_buf_.sample_count > 1) {
-            ssao_prog = blit_ao_ms_prog_.get();
-        } else {
-            ssao_prog = blit_ao_prog_.get();
-        }
-
-        glUseProgram(ssao_prog->prog_id());
-
-        const float uvs[] = { 0.0f, 0.0f,                       float(act_w_), 0.0f,
-                              float(act_w_), float(act_h_),     0.0f, float(act_h_) };
-
-        glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
-
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
-
-        glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
-
-        glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
-
-        if (clean_buf_.sample_count > 1) {
-            BindTextureMs(REN_DIFF_TEX_SLOT, clean_buf_.depth_tex.GetValue());
-        } else {
-            BindTexture(REN_DIFF_TEX_SLOT, clean_buf_.depth_tex.GetValue());
-        }
-
 #ifndef DISABLE_MARKERS
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "SSAO PASS");
 #endif
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        assert(down_depth_.w == ssao_buf1_.w && down_depth_.w == ssao_buf2_.w &&
+               down_depth_.h == ssao_buf1_.h && down_depth_.h == ssao_buf2_.h);
+
+        // Setup viewport once for all ssao passes
+        glViewport(0, 0, down_depth_.w, down_depth_.h);
+
+        {   // downsample depth buffer
+            glBindFramebuffer(GL_FRAMEBUFFER, down_depth_.fb);
+
+            const Ren::Program *down_depth_prog = nullptr;
+
+            if (clean_buf_.sample_count > 1) {
+                down_depth_prog = blit_down_depth_ms_prog_.get();
+            } else {
+                down_depth_prog = blit_down_depth_prog_.get();
+            }
+
+            const float uvs[] = { 0.0f, 0.0f,                       float(act_w_), 0.0f,
+                                  float(act_w_), float(act_h_),     0.0f, float(act_h_) };
+
+            glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
+
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
+
+            glEnableVertexAttribArray(REN_VTX_POS_LOC);
+            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
+
+            glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
+
+            glUseProgram(down_depth_prog->prog_id());
+
+            if (clean_buf_.sample_count > 1) {
+                BindTextureMs(REN_DIFF_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            } else {
+                BindTexture(REN_DIFF_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            }
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        }
+
+        const float uvs1[] = { 0.0f, 0.0f,                                   float(down_depth_.w), 0.0f,
+                               float(down_depth_.w), float(down_depth_.h),   0.0f, float(down_depth_.h) };
+
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs1), uvs1);
+
+        {   // prepare ao buffer
+            glBindFramebuffer(GL_FRAMEBUFFER, ssao_buf1_.fb);
+            glViewport(0, 0, ssao_buf1_.w, ssao_buf1_.h);
+
+            const Ren::Program *ssao_prog = blit_ao_prog_.get();
+
+            glUseProgram(ssao_prog->prog_id());
+
+            BindTexture(REN_DIFF_TEX_SLOT, down_depth_.attachments[0].tex);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        }
+
+        {   // blur ao buffer
+            glBindFramebuffer(GL_FRAMEBUFFER, ssao_buf2_.fb);
+
+            const Ren::Program *blur_prog = blit_bilateral_prog_.get();
+
+            glUseProgram(blur_prog->prog_id());
+
+            BindTexture(0, down_depth_.attachments[0].tex);
+            BindTexture(1, ssao_buf1_.attachments[0].tex);
+            glUniform1f(3, 0.0f);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+
+            glBindFramebuffer(GL_FRAMEBUFFER, ssao_buf1_.fb);
+
+            glUseProgram(blur_prog->prog_id());
+
+            BindTexture(1, ssao_buf2_.attachments[0].tex);
+            glUniform1f(3, 1.0f);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        }
+
+        {   // upsample ao
+            glBindFramebuffer(GL_FRAMEBUFFER, combined_buf_.fb);
+            glViewport(0, 0, combined_buf_.w, combined_buf_.h);
+
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_norm_uvs), fs_quad_norm_uvs);
+
+            const Ren::Program *blit_upscale_prog = nullptr;
+
+            if (clean_buf_.sample_count > 1) {
+                blit_upscale_prog = blit_upscale_ms_prog_.get();
+                BindTextureMs(0, clean_buf_.depth_tex.GetValue());
+            } else {
+                blit_upscale_prog = blit_upscale_prog_.get();
+                BindTexture(0, clean_buf_.depth_tex.GetValue());
+            }
+            
+            glUseProgram(blit_upscale_prog->prog_id());
+
+            BindTexture(1, down_depth_.attachments[0].tex);
+            BindTexture(2, ssao_buf1_.attachments[0].tex);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        }
 
 #ifndef DISABLE_MARKERS
         glPopDebugGroup();
@@ -2357,7 +2440,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     }
 
     if (list.render_flags & DebugSSAO) {
-        BlitBuffer(-1.0f, -1.0f, 1.0f, 1.0f, ssao_buf_, 0, 1);
+        BlitBuffer(-1.0f, -1.0f, 1.0f, 1.0f, ssao_buf1_, 0, 1);
     }
 
     if ((list.render_flags & DebugDecals) && list.decals_atlas) {

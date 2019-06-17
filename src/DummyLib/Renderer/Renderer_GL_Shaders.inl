@@ -79,6 +79,19 @@ static const char blit_down_ms_fs[] =
 #include "Shaders/blit_down_ms.fs.glsl"
 ;
 
+#define __ADDITIONAL_DEFINES_STR__ ""
+static const char blit_down_depth_fs[] =
+#include "Shaders/blit_down_depth.fs.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+
+#define __ADDITIONAL_DEFINES_STR__ "#define MSAA_4"
+static const char blit_down_depth_ms_fs[] =
+#include "Shaders/blit_down_depth.fs.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
 static const char blit_gauss_fs[] =
 #include "Shaders/blit_gauss.fs.glsl"
 ;
@@ -86,6 +99,22 @@ static const char blit_gauss_fs[] =
 static const char blit_gauss_sep_fs[] =
 #include "Shaders/blit_gauss_sep.fs.glsl"
 ;
+
+static const char blit_bilateral_fs[] =
+#include "Shaders/blit_bilateral.fs.glsl"
+;
+
+#define __ADDITIONAL_DEFINES_STR__ ""
+static const char blit_upscale_fs[] =
+#include "Shaders/blit_upscale.fs.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ "#define MSAA_4"
+static const char blit_upscale_ms_fs[] =
+#include "Shaders/blit_upscale.fs.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
 
 #define __ADDITIONAL_DEFINES_STR__ ""
 static const char blit_debug_fs[] =
@@ -115,17 +144,9 @@ static const char blit_ssr_ms_fs[] =
 ;
 #undef __ADDITIONAL_DEFINES_STR__
 
-#define __ADDITIONAL_DEFINES_STR__ ""
 static const char blit_ssao_fs[] =
 #include "Shaders/blit_ssao.fs.glsl"
 ;
-#undef __ADDITIONAL_DEFINES_STR__
-
-#define __ADDITIONAL_DEFINES_STR__ "#define MSAA_4"
-static const char blit_ssao_ms_fs[] =
-#include "Shaders/blit_ssao.fs.glsl"
-;
-#undef __ADDITIONAL_DEFINES_STR__
 
 #define __ADDITIONAL_DEFINES_STR__ ""
 static const char blit_multiply_fs[] =

@@ -195,19 +195,28 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, true, Ren::NoFilter, 4);
         }
 
+        {   // Buffer that holds downsampled depth
+            FrameBuf::ColorAttachmentDesc desc;
+            desc.format = Ren::RawR32F;
+            desc.filter = Ren::NoFilter;
+            desc.repeat = Ren::ClampToEdge;
+            down_depth_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, false);
+        }
+
         {   // Buffer that holds tonemapped ldr frame before fxaa applied
             FrameBuf::ColorAttachmentDesc desc;
             desc.format = Ren::RawRGB888;
             desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;
-            combined_buf_ = FrameBuf(ctx_.w(), ctx_.h(), &desc, 1, false);
+            combined_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, false);
         }
         {   // Buffer for SSAO
             FrameBuf::ColorAttachmentDesc desc;
             desc.format = Ren::RawR8;
             desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;
-            ssao_buf_ = FrameBuf(clean_buf_.w / REN_SSAO_BUF_RES_DIV, clean_buf_.h / REN_SSAO_BUF_RES_DIV, &desc, 1, false);
+            ssao_buf1_ = FrameBuf(clean_buf_.w / REN_SSAO_BUF_RES_DIV, clean_buf_.h / REN_SSAO_BUF_RES_DIV, &desc, 1, false);
+            ssao_buf2_ = FrameBuf(clean_buf_.w / REN_SSAO_BUF_RES_DIV, clean_buf_.h / REN_SSAO_BUF_RES_DIV, &desc, 1, false);
         }
         {   // Auxilary buffer for reflections
             FrameBuf::ColorAttachmentDesc desc;
