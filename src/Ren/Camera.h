@@ -58,6 +58,10 @@ public:
         return world_position_;
     }
 
+    Vec3f view_dir() const {
+        return Vec3f{ view_matrix_[0][2], view_matrix_[1][2], view_matrix_[2][2] };
+    }
+
     float angle() const {
         return angle_;
     }
