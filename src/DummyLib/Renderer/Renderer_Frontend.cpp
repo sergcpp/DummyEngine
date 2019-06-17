@@ -1,10 +1,9 @@
 #include "Renderer.h"
 
-#include <chrono>
-
 #include <Ren/Context.h>
 #include <Sys/Log.h>
 #include <Sys/ThreadPool.h>
+#include <Sys/Time_.h>
 
 namespace RendererInternal {
 bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]) {
@@ -63,7 +62,7 @@ void RadixSort_LSB(SpanType *begin, SpanType *end, SpanType *begin1) {
 void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list) {
     using namespace RendererInternal;
 
-    auto iteration_start = std::chrono::high_resolution_clock::now();
+    uint64_t iteration_start = Sys::GetTimeUs();
 
     list.draw_cam = cam;
     list.env = scene.env;
@@ -132,7 +131,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     /*                                     OCCLUDERS PROCESSING                                       */
     /**************************************************************************************************/
 
-    auto occluders_start = std::chrono::high_resolution_clock::now();
+    uint64_t occluders_start = Sys::GetTimeUs();
 
     {   // Rasterize occluder meshes into a small framebuffer
         stack[stack_size++] = scene.root_node;
@@ -201,7 +200,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     /*                           MESHES/LIGHTS/DECALS/PROBES GATHERING                                */
     /**************************************************************************************************/
 
-    auto main_gather_start = std::chrono::high_resolution_clock::now();
+    uint64_t main_gather_start = Sys::GetTimeUs();
 
     {   // Gather meshes and lights, skip occluded and frustum culled
         stack_size = 0;
@@ -479,7 +478,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     /*                                     SHADOWMAP GATHERING                                        */
     /**************************************************************************************************/
 
-    auto shadow_gather_start = std::chrono::high_resolution_clock::now();
+    uint64_t shadow_gather_start = Sys::GetTimeUs();
 
     if (lighting_enabled && shadows_enabled && Ren::Length2(list.env.sun_dir) > 0.9f && Ren::Length2(list.env.sun_col) > std::numeric_limits<float>::epsilon()) {
         // Reserve space for sun shadow
@@ -1023,7 +1022,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     /*                                    OPTIMIZING DRAW LISTS                                       */
     /**************************************************************************************************/
 
-    auto drawables_sort_start = std::chrono::high_resolution_clock::now();
+    uint64_t drawables_sort_start = Sys::GetTimeUs();
 
     // Sort drawables to optimize state switches
     temp_sort_spans_64_[0].count = list.main_batches.count;
@@ -1142,7 +1141,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     /*                                    ASSIGNING TO CLUSTERS                                       */
     /**************************************************************************************************/
 
-    auto items_assignment_start = std::chrono::high_resolution_clock::now();
+    uint64_t items_assignment_start = Sys::GetTimeUs();
 
     if (list.light_sources.count || list.decals.count || list.probes.count) {
         list.draw_cam.ExtractSubFrustums(REN_GRID_RES_X, REN_GRID_RES_Y, REN_GRID_RES_Z, temp_sub_frustums_.data.get());
@@ -1198,16 +1197,16 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
     }
 
-    auto iteration_end = std::chrono::high_resolution_clock::now();
+    uint64_t iteration_end = Sys::GetTimeUs();
 
     if (list.render_flags & EnableTimers) {
-        list.frontend_info.start_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ iteration_start.time_since_epoch() }.count();
-        list.frontend_info.end_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ iteration_end.time_since_epoch() }.count();
-        list.frontend_info.occluders_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ main_gather_start - occluders_start }.count();
-        list.frontend_info.main_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ shadow_gather_start - main_gather_start }.count();
-        list.frontend_info.shadow_gather_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ drawables_sort_start - shadow_gather_start }.count();
-        list.frontend_info.drawables_sort_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ items_assignment_start - drawables_sort_start }.count();
-        list.frontend_info.items_assignment_time_us = (uint32_t)std::chrono::duration<double, std::micro>{ iteration_end - items_assignment_start }.count();
+        list.frontend_info.start_timepoint_us = iteration_start;
+        list.frontend_info.end_timepoint_us = iteration_end;
+        list.frontend_info.occluders_time_us = uint32_t(main_gather_start - occluders_start);
+        list.frontend_info.main_gather_time_us = uint32_t(shadow_gather_start - main_gather_start);
+        list.frontend_info.shadow_gather_time_us = uint32_t(drawables_sort_start - shadow_gather_start);
+        list.frontend_info.drawables_sort_time_us = uint32_t(items_assignment_start - drawables_sort_start);
+        list.frontend_info.items_assignment_time_us = uint32_t(iteration_end - items_assignment_start);
     }
 }
 

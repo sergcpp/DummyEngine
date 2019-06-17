@@ -1,7 +1,5 @@
 #include "Renderer.h"
 
-#include <chrono>
-
 #include <Ren/Camera.h>
 #include <Ren/Context.h>
 #include <Ren/GL.h>

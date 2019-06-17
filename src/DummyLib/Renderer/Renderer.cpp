@@ -1,10 +1,9 @@
 #include "Renderer.h"
 
-#include <chrono>
-
 #include <Ren/Context.h>
 #include <Sys/Log.h>
 #include <Sys/ThreadPool.h>
+#include <Sys/Time_.h>
 
 namespace RendererInternal {
 bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]);
@@ -173,7 +172,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
     if (list.render_flags & DebugTimings) {
         gpu_draw_start = GetGpuTimeBlockingUs();
     }
-    auto cpu_draw_start = std::chrono::high_resolution_clock::now();
+    uint64_t cpu_draw_start_us = Sys::GetTimeUs();
     
     if (ctx_.w() != scr_w_ || ctx_.h() != scr_h_) {
         {   // Main buffer for raw frame before tonemapping
@@ -235,7 +234,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             blur_buf2_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, false);
         }
 
-        // Memory consumption for FullHD frame:
+        // Memory consumption for FullHD frame (except clean_buf_):
         // combined_buf_    : ~5.93 Mb
         // ssao_buf_        : ~0.49 Mb
         // refl_buf_        : ~1.97 Mb
@@ -268,11 +267,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
 
     DrawObjectsInternal(list, target);
     
-    auto cpu_draw_end = std::chrono::high_resolution_clock::now();
+    uint64_t cpu_draw_end_us = Sys::GetTimeUs();
 
     // store values for current frame
-    backend_cpu_start_ = (uint64_t)std::chrono::duration<double, std::micro>{ cpu_draw_start.time_since_epoch() }.count();
-    backend_cpu_end_ = (uint64_t)std::chrono::duration<double, std::micro>{ cpu_draw_end.time_since_epoch() }.count();
+    backend_cpu_start_ = cpu_draw_start_us;
+    backend_cpu_end_ = cpu_draw_end_us;
     backend_time_diff_ = int64_t(gpu_draw_start) - int64_t(backend_cpu_start_);
     frame_counter_++;
 }

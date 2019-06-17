@@ -1,7 +1,5 @@
 #include "DummyApp.h"
 
-#include <chrono>
-
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #include <html5.h>
@@ -202,14 +200,14 @@ int DummyApp::Run(const std::vector<std::string> &args) {
         this->Frame();
 
 #if defined(USE_GL_RENDER)
-        auto swap_start = std::chrono::high_resolution_clock::now();
+        uint64_t swap_start = Sys::GetTimeUs();
         SDL_GL_SwapWindow(window_);
-        auto swap_end = std::chrono::high_resolution_clock::now();
+        uint64_t swap_end = Sys::GetTimeUs();
 
         auto swap_interval = viewer_->GetComponent<TimeInterval>(SWAP_TIMER_KEY);
         if (swap_interval) {
-            swap_interval->start_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ swap_start.time_since_epoch() }.count();
-            swap_interval->end_timepoint_us = (uint64_t)std::chrono::duration<double, std::micro>{ swap_end.time_since_epoch() }.count();
+            swap_interval->start_timepoint_us = swap_start;
+            swap_interval->end_timepoint_us = swap_end;
         }
 #elif defined(USE_SW_RENDER)
         SDL_UpdateTexture(texture_, NULL, p_get_renderer_pixels_(viewer_.get()), viewer_->width * sizeof(Uint32));
