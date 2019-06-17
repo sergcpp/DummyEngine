@@ -1990,7 +1990,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeBlitStart], GL_TIMESTAMP);
     }
     
-    if (list.render_flags & EnableFxaa) {
+    if ((list.render_flags & EnableFxaa) && !(list.render_flags & DebugWireframe)) {
         glBindFramebuffer(GL_FRAMEBUFFER, combined_buf_.fb);
         glViewport(0, 0, act_w_, act_h_);
     } else {
@@ -2061,7 +2061,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
     }
 
-    if (list.render_flags & EnableFxaa) {
+    if ((list.render_flags & EnableFxaa) && !(list.render_flags & DebugWireframe)) {
         if (!target) {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glViewport(0, 0, scr_w_, scr_h_);
