@@ -1199,7 +1199,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
 
         glEnable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(1.85f, 1.0f);
+        glPolygonOffset(4.0f, 8.0f);
         glEnable(GL_SCISSOR_TEST);
 
 #ifndef DISABLE_MARKERS
