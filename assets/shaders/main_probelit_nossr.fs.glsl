@@ -247,5 +247,5 @@ void main(void) {
     outColor = vec4(diffuse_color * (1.0 - kS), 1.0);
     outNormal.xyz = normal * 0.5 + 0.5;
     outNormal.w = 0.0;
-    outSpecular = vec4(vec3(ambient_occlusion) * kS*0.0, specular_color.a);
+    outSpecular = vec4(vec3(ambient_occlusion) * kS, specular_color.a);
 }
