@@ -178,9 +178,9 @@ void Ren::Skeleton::UpdateBones(Ren::Mat4f *matr_palette) {
             } else {
                 bones[i].cur_comb_matrix = bones[i].cur_matrix;
             }
-            matr_palette[i] = bones[i].cur_comb_matrix * bones[i].inv_bind_matrix;
             bones[i].dirty = false;
         }
+        matr_palette[i] = bones[i].cur_comb_matrix * bones[i].inv_bind_matrix;
     }
 }
 
