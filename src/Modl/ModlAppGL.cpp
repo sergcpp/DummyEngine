@@ -93,8 +93,9 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     if (!skel->anims.empty()) {
         skel->UpdateAnim(0, anim_time_);
         skel->ApplyAnim(0);
-        skel->UpdateBones(matr_palette_);
     }
+
+    skel->UpdateBones(matr_palette_);
 
     CheckInitVAOs();
 
@@ -152,12 +153,15 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)last_vertex_buf1_);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)last_vertex_buf2_);
 
-        glUniform2i(0, m->sk_attribs_buf().offset / 48, 0);
+        int vertex_offset = m->sk_attribs_buf().offset / 48,
+            vertex_count = m->sk_attribs_buf().size / 48;
+
+        glUniform2i(0, vertex_offset, 0);
 
         size_t num_bones = skel->bones.size();
         glUniformMatrix4fv(2, (GLsizei)num_bones, GL_FALSE, ValuePtr(matr_palette_[0]));
 
-        glDispatchCompute((GLuint)m->attribs_buf1().size, 1, 1);
+        glDispatchCompute(vertex_count, 1, 1);
     }
 
     glBindVertexArray((GLuint)simple_vao_);
@@ -299,6 +303,7 @@ void ModlApp::CheckInitVAOs() {
 
         skinned_vao_ = (uint32_t)skinned_mesh_vao;
 
+        last_skin_vertex_buffer_ = (uint32_t)gl_skin_vertex_buf;
         last_vertex_buf1_ = (uint32_t)gl_vertex_buf1;
         last_vertex_buf2_ = (uint32_t)gl_vertex_buf2;
         last_index_buffer_ = (uint32_t)gl_indices_buf;
