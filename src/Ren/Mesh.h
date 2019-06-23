@@ -153,6 +153,9 @@ public:
     const TriGroup &group(int i) const {
         return groups_[i];
     }
+    TriGroup &group(int i) {
+        return groups_[i];
+    }
     const Vec3f &bbox_min() const {
         return bbox_min_;
     }
