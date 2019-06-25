@@ -11,6 +11,7 @@ set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/Renderer_Structs.h
                         Renderer/Renderer.cpp
                         Renderer/Renderer_Frontend.cpp
+                        Renderer/__brdf_lut.inl
                         Renderer/__skydome_mesh.inl
                         Renderer/__sphere_mesh.inl)
 
@@ -80,6 +81,7 @@ set(SHADERS_SOURCES Renderer/Shaders/blit.fs.glsl
                     Renderer/Shaders/blit_mipmap.fs.glsl
                     Renderer/Shaders/blit_ms.fs.glsl
                     Renderer/Shaders/blit_multiply.fs.glsl
+					Renderer/Shaders/blit_prefilter.fs.glsl
                     Renderer/Shaders/blit_project_sh.fs.glsl
                     Renderer/Shaders/blit_reduced.fs.glsl
                     Renderer/Shaders/blit_rgbm.fs.glsl

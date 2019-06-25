@@ -14,9 +14,9 @@ R"(
 #define GRID_RES_Z )" AS_STR(REN_GRID_RES_Z) R"(
         
 #if defined(MSAA_4)
-layout(binding = 0) uniform mediump sampler2DMS s_texture;
+layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform mediump sampler2DMS s_texture;
 #else
-layout(binding = 0) uniform mediump sampler2D s_texture;
+layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform mediump sampler2D s_texture;
 #endif
 layout(binding = )" AS_STR(REN_CELLS_BUF_SLOT) R"() uniform highp usamplerBuffer cells_buffer;
 layout(binding = )" AS_STR(REN_ITEMS_BUF_SLOT) R"() uniform highp usamplerBuffer items_buffer;

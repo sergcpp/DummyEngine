@@ -11,9 +11,9 @@ $ModifyWarning
 
 #define LIGHT_ATTEN_CUTOFF 0.004f
 
-layout(binding = $DiffTexSlot) uniform sampler2D diffuse_texture;
-layout(binding = $NormTexSlot) uniform sampler2D normals_texture;
-layout(binding = $SpecTexSlot) uniform sampler2D specular_texture;
+layout(binding = $MatTex0Slot) uniform sampler2D diffuse_texture;
+layout(binding = $MatTex1Slot) uniform sampler2D normals_texture;
+layout(binding = $MatTex2Slot) uniform sampler2D specular_texture;
 layout(binding = $ShadTexSlot) uniform sampler2DShadow shadow_texture;
 layout(binding = $DecalTexSlot) uniform sampler2D decals_texture;
 layout(binding = $SSAOTexSlot) uniform sampler2D ao_texture;
@@ -56,7 +56,7 @@ in vec3 aVertexShUVs_[4];
 #endif
 
 layout(location = $OutColorIndex) out vec4 outColor;
-layout(location = $OutNormIndex) out vec3 outNormal;
+layout(location = $OutNormIndex) out vec4 outNormal;
 layout(location = $OutSpecIndex) out vec4 outSpecular;
 
 #include "common.glsl"
@@ -223,6 +223,6 @@ void main(void) {
     vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + indirect_col + additional_light);
     
     outColor = vec4(diffuse_color, diff_tex_color.a);
-    outNormal = normal * 0.5 + 0.5;
+    outNormal = vec4(normal * 0.5 + 0.5, 0.0);
     outSpecular = specular_color;
 }

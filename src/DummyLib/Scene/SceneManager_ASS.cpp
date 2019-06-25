@@ -623,15 +623,16 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     shader_constants.emplace("$VtxUV2Loc",      AS_STR(REN_VTX_UV2_LOC));
 
     // Texture slots
-    shader_constants.emplace("$DiffTexSlot",    AS_STR(REN_DIFF_TEX_SLOT));
-    shader_constants.emplace("$NormTexSlot",    AS_STR(REN_NORM_TEX_SLOT));
-    shader_constants.emplace("$SpecTexSlot",    AS_STR(REN_SPEC_TEX_SLOT));
+    shader_constants.emplace("$MatTex0Slot",    AS_STR(REN_MAT_TEX0_SLOT));
+    shader_constants.emplace("$MatTex1Slot",    AS_STR(REN_MAT_TEX1_SLOT));
+    shader_constants.emplace("$MatTex2Slot",    AS_STR(REN_MAT_TEX2_SLOT));
     shader_constants.emplace("$ShadTexSlot",    AS_STR(REN_SHAD_TEX_SLOT));
     //shader_constants.emplace("$LmapDirSlot",    AS_STR(REN_LMAP_DIR_SLOT));
     //shader_constants.emplace("$LmapIndirSlot",  AS_STR(REN_LMAP_INDIR_SLOT));
     shader_constants.emplace("$LmapSHSlot",     AS_STR(REN_LMAP_SH_SLOT));
     shader_constants.emplace("$DecalTexSlot",   AS_STR(REN_DECAL_TEX_SLOT));
     shader_constants.emplace("$SSAOTexSlot",    AS_STR(REN_SSAO_TEX_SLOT));
+    shader_constants.emplace("$BRDFLutTexSlot", AS_STR(REN_BRDF_TEX_SLOT));
     shader_constants.emplace("$LightBufSlot",   AS_STR(REN_LIGHT_BUF_SLOT));
     shader_constants.emplace("$DecalBufSlot",   AS_STR(REN_DECAL_BUF_SLOT));
     shader_constants.emplace("$CellsBufSlot",   AS_STR(REN_CELLS_BUF_SLOT));
@@ -970,28 +971,6 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         ReadAllFiles_r(in_folder, convert_file);
     }
 
-    /*if (strcmp(platform, "android") == 0) {
-        int argc = 6;
-        char *argv[] = { "astc", "-c", "barrel_diffuse.png", "barrel_diffuse.astc", "2.0", "-medium" };
-
-        //astc_main(argc, argv);
-
-        h_conv_to_astc("barrel_diffuse.png", "barrel_diffuse1.astc");
-    }*/
-
-    /*{
-        Sys::AssetFile in_file("D:\\repos\\occdemo\\assets_android\\textures\\lightmaps\\jap_house_lm_direct.ktx");
-        size_t in_file_size = in_file.size();
-
-        std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
-        in_file.Read((char *)&in_file_data[0], in_file_size);
-
-        int width, height;
-        auto data = Decode_KTX_ASTC(&in_file_data[0], in_file_size, width, height);
-
-        volatile int ii = 0;
-    }*/
-
     return true;
 }
 
@@ -1126,6 +1105,8 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
             ewp.enable_rgb_scale_with_alpha = 1;
             ewp.alpha_radius = 1;
         }
+
+        ewp.texel_avg_error_limit = (float)pow(0.1f, dblimit_2d * 0.1f) * 65535.0f * 65535.0f;
 
         expand_block_artifact_suppression(xdim, ydim, 1, &ewp);
 

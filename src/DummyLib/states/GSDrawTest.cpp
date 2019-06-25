@@ -30,8 +30,8 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
     //"jap_house.json";
     //"skin_test.json";
     "living_room_gumroad.json";
-    //"bistro_night.json";
-    //"street2.json;";
+    //"bistro.json";
+    //"pbr_test.json";
 
 const bool USE_TWO_THREADS = true;
 }
@@ -78,7 +78,7 @@ void GSDrawTest::Enter() {
         desc.filter = Ren::NoFilter;
         desc.repeat = Ren::ClampToEdge;
 
-        int res = scene_manager_->scene_data().probe_storage.res();
+        const int res = scene_manager_->scene_data().probe_storage.res();
         temp_probe_buf_ = FrameBuf(res, res, &desc, 1, { FrameBuf::DepthNone });
     }
 
@@ -479,8 +479,10 @@ void GSDrawTest::Draw(uint64_t dt_us) {
                     probes_dirty_ = false;
                 }
 
+                const auto &scene_data = scene_manager_->scene_data();
+
                 if (probe_to_update_sh_) {
-                    bool done = renderer_->BlitProjectSH(scene_manager_->scene_data().probe_storage, probe_to_update_sh_->layer_index,
+                    bool done = renderer_->BlitProjectSH(scene_data.probe_storage, probe_to_update_sh_->layer_index,
                                                          probe_sh_update_iteration_, *probe_to_update_sh_);
                     probe_sh_update_iteration_++;
 
@@ -494,8 +496,10 @@ void GSDrawTest::Draw(uint64_t dt_us) {
                 if (probe_to_render_) {
                     for (int i = 0; i < 6; i++) {
                         renderer_->ExecuteDrawList(temp_probe_lists_[i], &temp_probe_buf_);
-                        renderer_->BlitToLightProbeFace(temp_probe_buf_, scene_manager_->scene_data().probe_storage, probe_to_render_->layer_index, i);
+                        renderer_->BlitToTempProbeFace(temp_probe_buf_, scene_data.probe_storage, i);
                     }
+
+                    renderer_->BlitPrefilterFromTemp(scene_data.probe_storage, probe_to_render_->layer_index);
 
                     probe_to_update_sh_ = probe_to_render_;
                     probe_to_render_ = nullptr;
@@ -520,8 +524,7 @@ void GSDrawTest::Draw(uint64_t dt_us) {
     //LOGI("{ %.7f, %.7f, %.7f } { %.7f, %.7f, %.7f }", view_origin_[0], view_origin_[1], view_origin_[2],
     //                                                  view_dir_[0], view_dir_[1], view_dir_[2]);
 
-    {
-        // ui draw
+    {   // ui draw
         ui_renderer_->BeginDraw();
 
         if (cmdline_enabled_) {

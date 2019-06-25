@@ -716,9 +716,14 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     const Ren::Vec2i p2i = { sh_list.shadow_map_pos[0] + int((0.5f * sh_list.view_frustum_outline[2 * i + 1][0] + 0.5f) * sh_list.shadow_map_size[0]),
                                              sh_list.shadow_map_pos[1] + int((0.5f * sh_list.view_frustum_outline[2 * i + 1][1] + 0.5f) * sh_list.shadow_map_size[1]) };
 
-                    scissor_min = Ren::Min(scissor_min, Ren::Min(p1i, p2i));
-                    scissor_max = Ren::Max(scissor_max, Ren::Max(p1i, p2i));
+                    const auto scissor_margin = Ren::Vec2i{ 2 }; // shadow uses 5x5 filter
+
+                    scissor_min = Ren::Min(scissor_min, Ren::Min(p1i - scissor_margin, p2i - scissor_margin));
+                    scissor_max = Ren::Max(scissor_max, Ren::Max(p1i + scissor_margin, p2i + scissor_margin));
                 }
+
+                scissor_min = Ren::Max(scissor_min, Ren::Vec2i{ 0 });
+                scissor_max = Ren::Min(scissor_max, Ren::Vec2i{ map_positions[casc][0] + OneCascadeRes, map_positions[casc][1] + OneCascadeRes });
 
                 sh_list.scissor_test_pos[0] = scissor_min[0];
                 sh_list.scissor_test_pos[1] = scissor_min[1];

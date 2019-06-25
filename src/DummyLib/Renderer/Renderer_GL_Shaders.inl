@@ -180,6 +180,10 @@ static const char blit_mipmap_fs[] =
 #include "Shaders/blit_mipmap.fs.glsl"
 ;
 
+static const char blit_prefilter_fs[] =
+#include "Shaders/blit_prefilter.fs.glsl"
+;
+
 static const char blit_project_sh_fs[] =
 #include "Shaders/blit_project_sh.fs.glsl"
 ;

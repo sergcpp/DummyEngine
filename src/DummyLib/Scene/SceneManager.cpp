@@ -43,7 +43,7 @@ const int DECALS_ATLAS_RESX = 4096,
 const int LIGHTMAP_ATLAS_RESX = 2048,
           LIGHTMAP_ATLAS_RESY = 1024;
 
-const int PROBE_RES = 256;
+const int PROBE_RES = 512;
 const int PROBE_COUNT = 16;
 }
 

@@ -49,6 +49,7 @@ layout(binding = )" AS_STR(REN_REFL_DEPTH_TEX_SLOT) R"() uniform mediump sampler
 layout(binding = )" AS_STR(REN_REFL_NORM_TEX_SLOT) R"() uniform mediump sampler2D s_norm_texture;
 #endif
 layout(binding = )" AS_STR(REN_REFL_PREV_TEX_SLOT) R"() uniform mediump sampler2D prev_texture;
+layout(binding = )" AS_STR(REN_REFL_BRDF_TEX_SLOT) R"() uniform sampler2D brdf_lut_texture;
 layout(binding = )" AS_STR(REN_ENV_TEX_SLOT) R"() uniform mediump samplerCubeArray env_texture;
 layout(binding = )" AS_STR(REN_CELLS_BUF_SLOT) R"() uniform highp usamplerBuffer cells_buffer;
 layout(binding = )" AS_STR(REN_ITEMS_BUF_SLOT) R"() uniform highp usamplerBuffer items_buffer;
@@ -66,6 +67,10 @@ vec3 RGBMDecode(vec4 rgbm) {
     return 4.0 * rgbm.rgb * rgbm.a;
 }
 
+vec3 FresnelSchlickRoughness(float cos_theta, vec3 F0, float roughness) {
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cos_theta, 5.0);
+}
+
 void main() {
 #if defined(MSAA_4)
     vec4 specular = 0.25 * (texelFetch(s_mul_texture, ivec2(aVertexUVs_), 0) +
@@ -75,7 +80,7 @@ void main() {
 #else
     vec4 specular = texelFetch(s_mul_texture, ivec2(aVertexUVs_), 0);
 #endif
-    if ((specular.x + specular.y + specular.z) < 0.0001) return;
+    if ((specular.r + specular.g + specular.b) < 0.0001) return;
 
     ivec2 pix_uvs = ivec2(aVertexUVs_ / 2.0) * 2;
 
@@ -126,9 +131,11 @@ void main() {
         ssr_uvs.b /= weight_sum1;
     }
 
-    float tex_lod = 8.0 * (1.0 - specular.w);
+    float tex_lod = 6.0 * specular.a;
+    float N_dot_V;
 
     vec3 c0 = vec3(0.0);
+    vec2 brdf;
 
     {   // apply cubemap contribution
         vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, 2.0 * depth - 1.0, 1.0);
@@ -166,11 +173,14 @@ void main() {
         }
 
         c0 /= max(total_fade, 1.0);
+
+        N_dot_V = clamp(dot(normal, -view_ray_ws), 0.0, 1.0);
+        brdf = texture(brdf_lut_texture, vec2(N_dot_V, specular.a)).xy;
     }
 
-    c0 = mix(c0, textureLod(prev_texture, ssr_uvs.rg, /*tex_lod*/ 0.0).xyz, ssr_uvs.b);
-    c0 *= specular.rgb;
+    vec3 kS = FresnelSchlickRoughness(N_dot_V, specular.rgb, specular.a);
 
-    outColor = vec4(c0, 1.0);
+    c0 = mix(c0, textureLod(prev_texture, ssr_uvs.rg, /*tex_lod*/ 0.0).xyz, ssr_uvs.b);
+    outColor = vec4(c0 * (kS * brdf.x + brdf.y), 1.0);
 }
 )"

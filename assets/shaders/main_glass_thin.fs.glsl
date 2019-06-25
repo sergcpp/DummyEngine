@@ -9,8 +9,8 @@ $ModifyWarning
     precision mediump sampler2DShadow;
 #endif
 
-layout(binding = $NormTexSlot) uniform sampler2D normals_texture;
-layout(binding = $SpecTexSlot) uniform sampler2D specular_texture;
+layout(binding = $MatTex1Slot) uniform sampler2D normals_texture;
+layout(binding = $MatTex2Slot) uniform sampler2D specular_texture;
 layout(binding = $SSAOTexSlot) uniform sampler2D ao_texture;
 layout(binding = $EnvTexSlot) uniform mediump samplerCubeArray env_texture;
 layout(binding = $LightBufSlot) uniform mediump samplerBuffer lights_buffer;
@@ -84,7 +84,7 @@ void main(void) {
         float dist = distance(uProbes[pi].pos_and_radius.xyz, aVertexPos_);
         float fade = 1.0 - smoothstep(0.9, 1.0, dist / uProbes[pi].pos_and_radius.w);
         
-        reflected_color += fade * RGBMDecode(texture(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w)));
+        reflected_color += fade * RGBMDecode(textureLod(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), 0.0));
         total_fade += fade;
     }
     
@@ -96,5 +96,5 @@ void main(void) {
     float factor = pow(clamp(1.0 - dot(normal, -view_ray_ws), 0.0, 1.0), 5.0);
     float fresnel = R0 + (1.0 - R0) * factor;
     
-    outColor = vec4(reflected_color * specular_color.xyz, fresnel);
+    outColor = vec4(reflected_color * specular_color.rgb, fresnel);
 }

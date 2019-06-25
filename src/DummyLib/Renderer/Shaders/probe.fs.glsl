@@ -6,7 +6,7 @@ R"(
     precision mediump float;
 #endif
 
-layout(binding = )" AS_STR(REN_DIFF_TEX_SLOT) R"() uniform mediump samplerCubeArray env_texture;
+layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform mediump samplerCubeArray env_texture;
 
 layout(location = 1) uniform float mip_level;
 layout(location = 2) uniform int probe_index;

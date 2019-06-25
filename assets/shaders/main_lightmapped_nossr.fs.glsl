@@ -10,9 +10,9 @@ $ModifyWarning
 
 #define LIGHT_ATTEN_CUTOFF 0.004f
 
-layout(binding = $DiffTexSlot) uniform sampler2D diffuse_texture;
-layout(binding = $NormTexSlot) uniform sampler2D normals_texture;
-layout(binding = $SpecTexSlot) uniform sampler2D specular_texture;
+layout(binding = $MatTex0Slot) uniform sampler2D diffuse_texture;
+layout(binding = $MatTex1Slot) uniform sampler2D normals_texture;
+layout(binding = $MatTex2Slot) uniform sampler2D specular_texture;
 layout(binding = $ShadTexSlot) uniform sampler2DShadow shadow_texture;
 layout(binding = $LmapSHSlot) uniform sampler2D lm_indirect_sh_texture[4];
 layout(binding = $DecalTexSlot) uniform sampler2D decals_texture;
@@ -208,16 +208,16 @@ void main(void) {
         visibility = GetSunVisibility(lin_depth, shadow_texture, aVertexShUVs_);
     }
     
-    float ambient_occlusion = texelFetch(ao_texture, ivec2(gl_FragCoord.xy), 0).r;                       
+    vec2 ao_uvs = vec2(ix, iy) / uResAndFRes.xy;
+    float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;
     vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
     
     vec3 view_ray_ws = normalize(uCamPosAndGamma.xyz - aVertexPos_);
     float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);
     
-    vec3 kS = FresnelSchlickRoughness(N_dot_V, specular_color.xyz, 1.0 - specular_color.a);
+    vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, specular_color.xyz, specular_color.a);
     
-    outColor = vec4(diffuse_color * (1.0 - kS), 1.0);
-    outNormal.xyz = normal * 0.5 + 0.5;
-    outNormal.w = 0.0;
-    outSpecular = vec4(vec3(ambient_occlusion), 1.0) * specular_color;
+    outColor = vec4(diffuse_color * kD, 1.0);
+    outNormal = vec4(normal * 0.5 + 0.5, 0.0);
+    outSpecular = specular_color;
 }

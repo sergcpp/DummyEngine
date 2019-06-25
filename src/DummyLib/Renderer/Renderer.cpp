@@ -60,6 +60,97 @@ const Ren::Vec2f HaltonSeq23[] = { { 0.0000000000f, 0.0000000000f }, { 0.5000000
                                    { 0.3593750000f, 0.4691358800f }, { 0.8593750000f, 0.8024692540f },
                                    { 0.2343750000f, 0.2469136120f }, { 0.7343750000f, 0.5802469850f },
                                    { 0.4843750000f, 0.9135804180f }, { 0.9843750000f, 0.0617284030f } };
+
+float RadicalInverse_VdC(uint32_t bits) {
+    bits = (bits << 16u) | (bits >> 16u);
+    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+
+    return float(bits) * 2.3283064365386963e-10f; // / 0x100000000
+}
+
+Ren::Vec2f Hammersley2D(int i, int N) {
+    return Ren::Vec2f{ float(i) / float(N), RadicalInverse_VdC((uint32_t)i) };
+}
+
+Ren::Vec3f ImportanceSampleGGX(const Ren::Vec2f &Xi, float roughness, const Ren::Vec3f &N) {
+    float a = roughness * roughness;
+
+    float Phi = 2.0f * Ren::Pi<float>() * Xi[0];
+    float CosTheta = std::sqrt((1.0f - Xi[1]) / (1.0f + (a * a - 1.0f) * Xi[1]));
+    float SinTheta = std::sqrt(1.0f - CosTheta * CosTheta);
+
+    Ren::Vec3f H = { SinTheta * std::cos(Phi), SinTheta * std::sin(Phi), CosTheta };
+
+    Ren::Vec3f up = std::abs(N[1]) < 0.999f ? Ren::Vec3f{ 0.0, 1.0, 0.0 } : Ren::Vec3f{ 1.0, 0.0, 0.0 };
+    Ren::Vec3f TangentX = Ren::Normalize(Ren::Cross(up, N));
+    Ren::Vec3f TangentY = Ren::Cross(N, TangentX);
+    // Tangent to world space
+    return TangentX * H[0] + TangentY * H[1] + N * H[2];
+}
+
+float GeometrySchlickGGX(float NdotV, float k) {
+    float nom = NdotV;
+    float denom = NdotV * (1.0f - k) + k;
+
+    return nom / denom;
+}
+
+float GeometrySmith(const Ren::Vec3f &N, const Ren::Vec3f &V, const Ren::Vec3f &L, float k) {
+    float NdotV = std::max(Ren::Dot(N, V), 0.0f);
+    float NdotL = std::max(Ren::Dot(N, L), 0.0f);
+    float ggx1 = GeometrySchlickGGX(NdotV, k);
+    float ggx2 = GeometrySchlickGGX(NdotL, k);
+
+    return ggx1 * ggx2;
+}
+
+float G1V_Epic(float roughness, float n_dot_v) {
+    float k = roughness * roughness;
+    return n_dot_v / (n_dot_v * (1.0f - k) + k);
+}
+
+float G_Smith(float roughness, float n_dot_v, float n_dot_l) {
+    return G1V_Epic(roughness, n_dot_v) * G1V_Epic(roughness, n_dot_v);
+}
+
+Ren::Vec2f IntegrateBRDF(float NdotV, float roughness) {
+    Ren::Vec3f V;
+    V[0] = std::sqrt(1.0f - NdotV * NdotV);
+    V[1] = 0.0f;
+    V[2] = NdotV;
+
+    float A = 0.0f;
+    float B = 0.0f;
+
+    Ren::Vec3f N = { 0.0f, 0.0f, 1.0f };
+
+    const int SampleCount = 1024;
+    for (int i = 0; i < SampleCount; ++i) {
+        Ren::Vec2f Xi = Hammersley2D(i, SampleCount);
+        Ren::Vec3f H = ImportanceSampleGGX(Xi, roughness, N);
+        Ren::Vec3f L = Ren::Normalize(2.0f * Ren::Dot(V, H) * H - V);
+
+        float NdotL = std::max(L[2], 0.0f);
+        float NdotH = std::max(H[2], 0.0f);
+        float VdotH = std::max(Ren::Dot(V, H), 0.0f);
+
+        if (NdotL > 0.0f) {
+            float G = G1V_Epic(roughness, NdotV);
+            float G_Vis = (G * VdotH) / (NdotH * NdotV);
+            float Fc = std::pow(1.0f - VdotH, 5.0f);
+
+            A += (1.0f - Fc) * G_Vis;
+            B += Fc * G_Vis;
+        }
+    }
+
+    return Ren::Vec2f{ A, B } / float(SampleCount);
+}
+
+#include "__brdf_lut.inl"
 }
 
 #define BBOX_POINTS(min, max) \
@@ -103,15 +194,13 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
         probe_sample_buf_ = FrameBuf(24, 8, &desc, 1, { FrameBuf::DepthNone });
     }
 
-    // Compile built-in shadres etc.
-    InitRendererInternal();
-
     uint8_t black[] = { 0, 0, 0, 0 }, white[] = { 255, 255, 255, 255 };
 
     Ren::Texture2DParams p;
     p.w = p.h = 1;
     p.format = Ren::RawRGBA8888;
     p.filter = Ren::Bilinear;
+    p.repeat = Ren::ClampToEdge;
 
     Ren::eTexLoadStatus status;
     dummy_black_ = ctx_.LoadTexture2D("dummy_black", black, sizeof(black), p, &status);
@@ -125,6 +214,43 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     p.filter = Ren::NoFilter;
     rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", &HaltonSeq23[0], sizeof(HaltonSeq23), p, &status);
     assert(status == Ren::TexCreatedFromData);
+
+    {   
+#if 0
+        const int res = 256;
+        std::string str;
+
+        str += "static const uint32_t __brdf_lut_res = " + std::to_string(res) + ";\n";
+        str += "static const uint16_t __brdf_lut[] = {\n";
+
+        for (int j = 0; j < res; j++) {
+            str += '\t';
+            for (int i = 0; i < res; i++) {
+                Ren::Vec2f val = IntegrateBRDF((float(i) + 0.5f) / res, (float(j) + 0.5f) / res);
+
+                uint16_t r = (uint16_t)std::min(std::max(int(val[0] * 65535), 0), 65535);
+                uint16_t g = (uint16_t)std::min(std::max(int(val[1] * 65535), 0), 65535);
+
+                //uint8_t r = (uint8_t)std::min(std::max(int(val[0] * 255), 0), 255);
+                //uint8_t g = (uint8_t)std::min(std::max(int(val[1] * 255), 0), 255);
+
+                str += std::to_string(r) + ", " + std::to_string(g) + ", ";
+            }
+            str += '\n';
+        }
+
+        str += "};\n";
+#endif
+
+        p.w = p.h = RendererInternal::__brdf_lut_res;
+        p.format = Ren::RawRG16U;
+        p.filter = Ren::BilinearNoMipmap;
+        brdf_lut_ = ctx_.LoadTexture2D("brdf_lut", &RendererInternal::__brdf_lut[0], sizeof(__brdf_lut), p, &status);
+        assert(status == Ren::TexCreatedFromData);
+    }
+
+    // Compile built-in shaders etc.
+    InitRendererInternal();
 
     temp_sub_frustums_.data.reset(new Ren::Frustum[REN_CELLS_COUNT]);
     temp_sub_frustums_.count = temp_sub_frustums_.capacity = REN_CELLS_COUNT;
@@ -183,7 +309,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
                 desc[0].repeat = Ren::ClampToEdge;
             }
             {   // 4-component world-space normal (alpha is 'ssr' flag)
-                desc[1].format = Ren::RawRGB10_A2;
+                desc[1].format = Ren::RawRGBA32F;//Ren::RawRGB10_A2;
                 desc[1].filter = Ren::BilinearNoMipmap;
                 desc[1].repeat = Ren::ClampToEdge;
             }

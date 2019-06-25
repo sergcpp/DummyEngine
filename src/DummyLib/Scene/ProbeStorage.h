@@ -17,6 +17,7 @@ public:
     int size() const { return size_; }
     int capacity() const { return capacity_; }
     int max_level() const { return max_level_; }
+    int reserved_temp_layer() const { return reserved_temp_layer_; }
 
 #if defined(USE_GL_RENDER)
     uint32_t tex_id() const { return tex_id_; }
@@ -26,6 +27,7 @@ public:
 
 private:
     int res_, size_, capacity_, max_level_;
+    int reserved_temp_layer_;
     std::vector<int> free_indices_;
 #if defined(USE_GL_RENDER)
     uint32_t tex_id_ = 0xffffffff;

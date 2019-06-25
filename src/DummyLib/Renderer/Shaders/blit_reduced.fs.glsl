@@ -4,14 +4,8 @@ R"(
     precision mediump float;
 #endif
 
-/*
-UNIFORMS
-    s_texture : 3
-    uOffset : 4
-*/
-        
-uniform sampler2D s_texture;
-uniform vec2 uOffset;
+layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform sampler2D s_texture;
+layout(location = 4) uniform vec2 uOffset;
 
 in vec2 aVertexUVs_;
 

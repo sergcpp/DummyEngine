@@ -10,7 +10,7 @@ UNIFORMS
     s_texture : 3
 */
         
-layout(binding = 0) uniform sampler2D s_texture;
+layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform sampler2D s_texture;
 layout(location = 12) uniform vec2 texcoord_offset;
 
 in vec2 aVertexUVs_;

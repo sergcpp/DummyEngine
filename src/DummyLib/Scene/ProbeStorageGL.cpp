@@ -18,7 +18,11 @@ int ProbeStorage::Allocate() {
         free_indices_.pop_back();
         return ret;
     } else {
-        return size_++;
+        if (size_ < capacity_ - 1) {
+            return size_++;
+        } else {
+            return -1;
+        }
     }
 }
 
@@ -43,7 +47,7 @@ void ProbeStorage::Resize(int res, int capacity) {
         
     int _res = res;
     int level = 0;
-    while (_res >= 4) {
+    while (_res >= 16) {
         glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, level, GL_RGBA8, _res, _res, capacity * 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         _res = _res / 2;
         level++;
@@ -65,4 +69,6 @@ void ProbeStorage::Resize(int res, int capacity) {
     res_ = res;
     capacity_ = capacity;
     max_level_ = level - 1;
+
+    reserved_temp_layer_ = capacity_ - 1;
 }

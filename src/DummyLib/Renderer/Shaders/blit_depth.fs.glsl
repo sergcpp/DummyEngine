@@ -4,7 +4,7 @@ R"(
     precision mediump float;
 #endif
         
-layout(binding = )" AS_STR(REN_DIFF_TEX_SLOT) R"() uniform sampler2D s_texture;
+layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform sampler2D s_texture;
 uniform float near;
 uniform float far;
 uniform vec3 color;

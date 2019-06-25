@@ -21,7 +21,7 @@ SET JAVAC="%JAVA_HOME%\bin\javac.exe" -classpath "%ANDROID-SDK%\platforms\%ANDRO
 SET APP_NAME=DummyApp
 SET JAVAC_BUILD=%JAVAC% -source 1.7 -target 1.7 -bootclasspath "%JAVA_HOME%\jre\lib\rt.jar" -sourcepath "src;gen;libs" -d "bin"
 
-xcopy "%CD%\..\assets_android" "%CD%\assets\" /E /C /I /Y || exit \b
+xcopy "%CD%\..\assets_android" "%CD%\assets\" /E /C /I /Y /D /S || exit \b
 
 call %JAVAC_BUILD% src\com\serg\dummyapp\*.java || exit \b
 

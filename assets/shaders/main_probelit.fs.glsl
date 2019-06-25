@@ -11,12 +11,13 @@ $ModifyWarning
 
 #define LIGHT_ATTEN_CUTOFF 0.004f
 
-layout(binding = $DiffTexSlot) uniform sampler2D diffuse_texture;
-layout(binding = $NormTexSlot) uniform sampler2D normals_texture;
-layout(binding = $SpecTexSlot) uniform sampler2D specular_texture;
+layout(binding = $MatTex0Slot) uniform sampler2D diffuse_texture;
+layout(binding = $MatTex1Slot) uniform sampler2D normals_texture;
+layout(binding = $MatTex2Slot) uniform sampler2D specular_texture;
 layout(binding = $ShadTexSlot) uniform sampler2DShadow shadow_texture;
 layout(binding = $DecalTexSlot) uniform sampler2D decals_texture;
 layout(binding = $SSAOTexSlot) uniform sampler2D ao_texture;
+layout(binding = $BRDFLutTexSlot) uniform sampler2D brdf_lut_texture;
 layout(binding = $LightBufSlot) uniform mediump samplerBuffer lights_buffer;
 layout(binding = $DecalBufSlot) uniform mediump samplerBuffer decals_buffer;
 layout(binding = $CellsBufSlot) uniform highp usamplerBuffer cells_buffer;
@@ -184,12 +185,6 @@ void main(void) {
                 pp.xyz = pp.xyz * 0.5 + vec3(0.5);
                 pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
                 
-                const vec2 shadow_softness = vec2(3.0 / $ShadRes.0, 1.5 / $ShadRes.0);
-
-                highp float r = M_PI * (-1.0 + 2.0 * rand(gl_FragCoord.xy));
-                highp vec2 rx = vec2(cos(r), sin(r));
-                highp vec2 ry = vec2(rx.y, -rx.x);
-                
                 atten *= SampleShadowPCF5x5(shadow_texture, pp.xyz);
             }
             
@@ -204,16 +199,10 @@ void main(void) {
         highp uint item_data = texelFetch(items_buffer, int(i)).x;
         int pi = int(bitfieldExtract(item_data, 24, 8));
         
-        const float SH_A0 = 0.886226952; // PI / sqrt(4.0f * Pi)
-        const float SH_A1 = 1.02332675;  // sqrt(PI / 3.0f)
-        
         float dist = distance(uProbes[pi].pos_and_radius.xyz, aVertexPos_);
         float fade = 1.0 - smoothstep(0.9, 1.0, dist / uProbes[pi].pos_and_radius.w);
-        vec4 vv = fade * vec4(SH_A0, SH_A1 * normal.yzx);
-
-        indirect_col.r += dot(uProbes[pi].sh_coeffs[0], vv);
-        indirect_col.g += dot(uProbes[pi].sh_coeffs[1], vv);
-        indirect_col.b += dot(uProbes[pi].sh_coeffs[2], vv);
+        
+        indirect_col += fade * EvaluateSH(normal, uProbes[pi].sh_coeffs);
         total_fade += fade;
     }
     
@@ -226,16 +215,16 @@ void main(void) {
         visibility = GetSunVisibility(lin_depth, shadow_texture, aVertexShUVs_);
     }
     
-    float ambient_occlusion = texelFetch(ao_texture, ivec2(gl_FragCoord.xy), 0).r;                      
+    vec2 ao_uvs = vec2(ix, iy) / uResAndFRes.xy;
+    float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;
     vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
     
     vec3 view_ray_ws = normalize(uCamPosAndGamma.xyz - aVertexPos_);
     float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);
     
-    vec3 kS = FresnelSchlickRoughness(N_dot_V, specular_color.xyz, 1.0 - specular_color.a);
-    
-    outColor = vec4(diffuse_color * (1.0 - kS), 1.0);
-    outNormal.xyz = normal * 0.5 + 0.5;
-    outNormal.w = 1.0;
-    outSpecular = vec4(vec3(ambient_occlusion), 1.0) * vec4(kS, specular_color.a);
+    vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, specular_color.rgb, specular_color.a);
+
+    outColor = vec4(diffuse_color * kD, 1.0);
+    outNormal = vec4(normal * 0.5 + 0.5, 1.0);
+    outSpecular = specular_color;
 }

@@ -24,7 +24,7 @@ layout (std140) uniform SharedDataBlock {
     vec4 uResAndFRes;
 };
 
-layout(binding = )" AS_STR(REN_DIFF_TEX_SLOT) R"() uniform mediump sampler2D depth_texture;
+layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform mediump sampler2D depth_texture;
 
 in vec2 aVertexUVs_;
 

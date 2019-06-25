@@ -5,7 +5,7 @@ R"(
     precision mediump float;
 #endif
         
-layout(binding = 0) uniform sampler2D s_texture;
+layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform sampler2D s_texture;
 
 in vec2 aVertexUVs_;
 

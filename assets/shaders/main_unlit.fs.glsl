@@ -11,7 +11,7 @@ $ModifyWarning
 
 #define LIGHT_ATTEN_CUTOFF 0.001f
 
-layout(binding = $DiffTexSlot) uniform sampler2D diffuse_texture;
+layout(binding = $MatTex0Slot) uniform sampler2D diffuse_texture;
 
 struct ShadowMapRegion {
     vec4 transform;

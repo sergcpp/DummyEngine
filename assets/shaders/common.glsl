@@ -14,7 +14,7 @@ vec3 RGBMDecode(vec4 rgbm) {
 
 vec3 FresnelSchlickRoughness(float cos_theta, vec3 F0, float roughness) {
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cos_theta, 5.0);
-}  
+}
 
 const vec2 poisson_disk[16] = vec2[16](
     vec2(-0.5, 0.0),
@@ -140,4 +140,13 @@ float GetSunVisibility(float frag_depth, sampler2DShadow shadow_texture, vec3 aV
     }
     
     return visibility;
+}
+
+vec3 EvaluateSH(in vec3 normal, in vec4 sh_coeffs[3]) {
+    const float SH_A0 = 0.886226952; // PI / sqrt(4.0f * Pi)
+    const float SH_A1 = 1.02332675;  // sqrt(PI / 3.0f)
+
+    vec4 vv = vec4(SH_A0, SH_A1 * normal.yzx);
+
+    return vec3(dot(sh_coeffs[0], vv), dot(sh_coeffs[1], vv), dot(sh_coeffs[2], vv));
 }
