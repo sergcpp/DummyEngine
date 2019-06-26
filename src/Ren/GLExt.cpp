@@ -176,6 +176,8 @@ bool Ren::InitGLExtentions() {
     ren_glPushDebugGroup            = (PFNGLPUSHDEBUGGROUPPROC)GetProcAddress(glPushDebugGroup);
     ren_glPopDebugGroup             = (PFNGLPOPDEBUGGROUPPROC)GetProcAddress(glPopDebugGroup);
 
+    ren_glObjectLabel               = (PFNGLOBJECTLABELPROC)GetProcAddress(glObjectLabel);
+
     ren_glFenceSync                 = (PFNGLFENCESYNCPROC)GetProcAddress(glFenceSync);
     ren_glClientWaitSync            = (PFNGLCLIENTWAITSYNCPROC)GetProcAddress(glClientWaitSync);
     ren_glDeleteSync                = (PFNGLDELETESYNCPROC)GetProcAddress(glDeleteSync);

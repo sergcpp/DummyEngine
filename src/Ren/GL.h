@@ -453,6 +453,8 @@ typedef void (APIENTRY *PFNGLDEBUGMESSAGEINSERTPROC)(GLenum source, GLenum type,
 typedef void (APIENTRY *PFNGLPUSHDEBUGGROUPPROC)(GLenum source, GLuint id, GLsizei length, const char *message);
 typedef void (APIENTRY *PFNGLPOPDEBUGGROUPPROC)();
 
+typedef void (APIENTRY *PFNGLOBJECTLABELPROC)(GLenum identifier, GLuint name, GLsizei length, const char *label);
+
 typedef GLsync (APIENTRY *PFNGLFENCESYNCPROC)(GLenum condition, GLbitfield flags);
 typedef GLenum (APIENTRY *PFNGLCLIENTWAITSYNCPROC)(GLsync sync, GLbitfield flags, GLuint64 timeout);
 typedef void (APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
@@ -589,6 +591,8 @@ typedef void (APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
 #define glPushDebugGroup            ren_glPushDebugGroup
 #define glPopDebugGroup             ren_glPopDebugGroup
 
+#define glObjectLabel               ren_glObjectLabel
+
 #define glFenceSync                 ren_glFenceSync
 #define glClientWaitSync            ren_glClientWaitSync
 #define glDeleteSync                ren_glDeleteSync
@@ -723,6 +727,8 @@ EXTERN_FUNC PFNGLDEBUGMESSAGECALLBACKPROC       ren_glDebugMessageCallback;
 EXTERN_FUNC PFNGLDEBUGMESSAGEINSERTPROC         ren_glDebugMessageInsert;
 EXTERN_FUNC PFNGLPUSHDEBUGGROUPPROC             ren_glPushDebugGroup;
 EXTERN_FUNC PFNGLPOPDEBUGGROUPPROC              ren_glPopDebugGroup;
+
+EXTERN_FUNC PFNGLOBJECTLABELPROC                ren_glObjectLabel;
 
 EXTERN_FUNC PFNGLFENCESYNCPROC                  ren_glFenceSync;
 EXTERN_FUNC PFNGLCLIENTWAITSYNCPROC             ren_glClientWaitSync;
