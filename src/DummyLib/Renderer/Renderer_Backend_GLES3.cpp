@@ -280,7 +280,7 @@ void Renderer::InitRendererInternal() {
         glGenTextures(1, &skin_regions_tbo);
         glBindTexture(GL_TEXTURE_BUFFER, skin_regions_tbo);
 
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, skin_regions_tbo);
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, skin_regions_buf);
         glBindTexture(GL_TEXTURE_BUFFER, 0);
 
         skin_regions_tbo_ = (uint32_t)skin_regions_tbo;
@@ -303,7 +303,7 @@ void Renderer::InitRendererInternal() {
         glGenTextures(1, &skin_transforms_tbo);
         glBindTexture(GL_TEXTURE_BUFFER, skin_transforms_tbo);
 
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, skin_transforms_tbo);
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, skin_transforms_buf);
         glBindTexture(GL_TEXTURE_BUFFER, 0);
 
         skin_transforms_tbo_ = (uint32_t)skin_transforms_tbo;
