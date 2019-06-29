@@ -1407,10 +1407,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindVertexArray(depth_pass_solid_vao_);
         glUseProgram(fillz_solid_prog_->prog_id());
 
-        for (uint32_t i = 0; i < list.main_batch_indices.count; i++) {
-            const auto &batch = list.main_batches.data[list.main_batch_indices.data[i]];
+        for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
+            const auto &batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
             if (!batch.instance_count || batch.alpha_test_bit) continue;
-            if (batch.alpha_blend_bit) break;
 
             glUniform1iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0]);
 
@@ -1427,10 +1426,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         uint32_t cur_mat_id = 0xffffffff;
 
-        for (uint32_t i = 0; i < list.main_batch_indices.count; i++) {
-            const auto &batch = list.main_batches.data[list.main_batch_indices.data[i]];
+        for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
+            const auto &batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
             if (!batch.instance_count || !batch.alpha_test_bit) continue;
-            if (batch.alpha_blend_bit) break;
 
             if (batch.mat_id != cur_mat_id) {
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();

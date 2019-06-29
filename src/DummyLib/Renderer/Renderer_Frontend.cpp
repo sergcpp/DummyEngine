@@ -108,6 +108,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     list.instances.count = 0;
     list.shadow_batches.count = 0;
+    list.zfill_batches.count = 0;
     list.main_batches.count = 0;
 
     list.shadow_lists.count = 0;
@@ -121,6 +122,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     const bool lighting_enabled = (list.render_flags & EnableLights) != 0;
     const bool decals_enabled = (list.render_flags & EnableDecals) != 0;
     const bool shadows_enabled = (list.render_flags & EnableShadows) != 0;
+    const bool zfill_enabled = (list.render_flags & (EnableZFill | EnableSSAO)) != 0;
 
     int program_index = 0;
     if ((list.render_flags & EnableLightmap) == 0) {
@@ -341,19 +343,32 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         const Ren::TriGroup *s = &mesh->group(0);
                         while (s->offset != -1) {
                             const Ren::Material *mat = s->mat.get();
+                            uint32_t mat_flags = mat->flags();
                             
-                            MainDrawBatch &batch = list.main_batches.data[list.main_batches.count++];
+                            MainDrawBatch &main_batch = list.main_batches.data[list.main_batches.count++];
 
-                            batch.prog_id = (uint32_t)mat->program(program_index).index();
-                            batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
-                            batch.alpha_blend_bit = (mat->flags() & Ren::AlphaBlend) ? 1 : 0;
-                            batch.mat_id = (uint32_t)s->mat.index();
-                            batch.cam_dist = (mat->flags() & Ren::AlphaBlend) ? uint32_t(dist) : 0;
-                            batch.indices_offset = mesh->indices_buf().offset + s->offset;
-                            batch.base_vertex = base_vertex;
-                            batch.indices_count = s->num_indices;
-                            batch.instance_indices[0] = (uint32_t)(list.instances.count - 1);
-                            batch.instance_count = 1;
+                            main_batch.prog_id = (uint32_t)mat->program(program_index).index();
+                            main_batch.alpha_test_bit = (mat_flags & Ren::AlphaTest) ? 1 : 0;
+                            main_batch.alpha_blend_bit = (mat_flags & Ren::AlphaBlend) ? 1 : 0;
+                            main_batch.mat_id = (uint32_t)s->mat.index();
+                            main_batch.cam_dist = (mat_flags & Ren::AlphaBlend) ? uint32_t(dist) : 0;
+                            main_batch.indices_offset = mesh->indices_buf().offset + s->offset;
+                            main_batch.base_vertex = base_vertex;
+                            main_batch.indices_count = s->num_indices;
+                            main_batch.instance_indices[0] = (uint32_t)(list.instances.count - 1);
+                            main_batch.instance_count = 1;
+
+                            if (zfill_enabled && !(mat->flags() & Ren::AlphaBlend)) {
+                                DepthDrawBatch &zfill_batch = list.zfill_batches.data[list.zfill_batches.count++];
+
+                                zfill_batch.alpha_test_bit = (mat_flags & Ren::AlphaTest) ? 1 : 0;
+                                zfill_batch.mat_id = (mat_flags & Ren::AlphaTest) ? main_batch.mat_id : 0;
+                                zfill_batch.indices_offset = main_batch.indices_offset;
+                                zfill_batch.base_vertex = base_vertex;
+                                zfill_batch.indices_count = s->num_indices;
+                                zfill_batch.instance_indices[0] = (uint32_t)(list.instances.count - 1);
+                                zfill_batch.instance_count = 1;
+                            }
 
                             ++s;
                         }
@@ -847,7 +862,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         while (s->offset != -1) {
                             const Ren::Material *mat = s->mat.get();
                             if ((mat->flags() & Ren::AlphaBlend) == 0) {
-                                ShadowDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
+                                DepthDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
 
                                 batch.mat_id = (mat->flags() & Ren::AlphaTest) ? (uint32_t)s->mat.index() : 0;
                                 batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
@@ -1029,7 +1044,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         while (s->offset != -1) {
                             const Ren::Material *mat = s->mat.get();
                             if ((mat->flags() & Ren::AlphaBlend) == 0) {
-                                ShadowDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
+                                DepthDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
 
                                 batch.mat_id = (mat->flags() & Ren::AlphaTest) ? (uint32_t)s->mat.index() : 0;
                                 batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
@@ -1081,13 +1096,59 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     uint64_t drawables_sort_start = Sys::GetTimeUs();
 
     // Sort drawables to optimize state switches
+
+    if (zfill_enabled) {
+        temp_sort_spans_32_[0].count = list.zfill_batches.count;
+        temp_sort_spans_32_[1].count = list.zfill_batches.count;
+        list.zfill_batch_indices.count = list.zfill_batches.count;
+        uint32_t spans_count = 0;
+
+        // compress batches into spans with indentical key values (makes sorting faster)
+        for (uint32_t start = 0, end = 1; end <= list.zfill_batches.count; end++) {
+            if (end == list.zfill_batches.count || (list.zfill_batches.data[start].sort_key != list.zfill_batches.data[end].sort_key)) {
+                temp_sort_spans_32_[0].data[spans_count].key = list.zfill_batches.data[start].sort_key;
+                temp_sort_spans_32_[0].data[spans_count].base = start;
+                temp_sort_spans_32_[0].data[spans_count++].count = end - start;
+                start = end;
+            }
+        }
+
+        RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data.get(), temp_sort_spans_32_[0].data.get() + spans_count, temp_sort_spans_32_[1].data.get());
+
+        // decompress sorted spans
+        size_t counter = 0;
+        for (uint32_t i = 0; i < spans_count; i++) {
+            for (uint32_t j = 0; j < temp_sort_spans_32_[0].data[i].count; j++) {
+                list.zfill_batch_indices.data[counter++] = temp_sort_spans_32_[0].data[i].base + j;
+            }
+        }
+
+        // Merge similar batches
+        for (uint32_t start = 0, end = 1; end <= list.zfill_batch_indices.count; end++) {
+            if (end == list.zfill_batch_indices.count ||
+                list.zfill_batches.data[list.zfill_batch_indices.data[start]].sort_key != list.zfill_batches.data[list.zfill_batch_indices.data[end]].sort_key) {
+
+                auto &b1 = list.zfill_batches.data[list.zfill_batch_indices.data[start]];
+                for (uint32_t i = start + 1; i < end; i++) {
+                    auto &b2 = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+
+                    if (b1.base_vertex == b2.base_vertex && b1.instance_count + b2.instance_count < REN_MAX_BATCH_SIZE) {
+                        memcpy(&b1.instance_indices[b1.instance_count], &b2.instance_indices[0], b2.instance_count * sizeof(int));
+                        b1.instance_count += b2.instance_count;
+                        b2.instance_count = 0;
+                    }
+                }
+
+                start = end;
+            }
+        }
+    }
+
     temp_sort_spans_64_[0].count = list.main_batches.count;
     temp_sort_spans_64_[1].count = list.main_batches.count;
-    uint32_t spans_count = 0;
-
     list.main_batch_indices.count = list.main_batches.count;
+    uint32_t spans_count = 0;
     
-
     // compress batches into spans with indentical key values (makes sorting faster)
     for (uint32_t start = 0, end = 1; end <= list.main_batches.count; end++) {
         if (end == list.main_batches.count || (list.main_batches.data[start].sort_key != list.main_batches.data[end].sort_key)) {

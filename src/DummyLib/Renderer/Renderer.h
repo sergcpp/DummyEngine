@@ -90,10 +90,12 @@ public:
         Environment     env;
         FrontendInfo    frontend_info;
         DynArray<InstanceData>          instances;
-        DynArray<ShadowDrawBatch>       shadow_batches;
+        DynArray<DepthDrawBatch>        shadow_batches;
         DynArray<uint32_t>              shadow_batch_indices;
         DynArray<ShadowList>            shadow_lists;
         DynArray<ShadowMapRegion>       shadow_regions;
+        DynArray<DepthDrawBatch>        zfill_batches;
+        DynArray<uint32_t>              zfill_batch_indices;
         DynArray<MainDrawBatch>         main_batches;
         DynArray<uint32_t>              main_batch_indices;
         DynArray<SkinTransform>         skin_transforms;
@@ -125,7 +127,7 @@ public:
             instances.capacity = REN_MAX_INSTANCES_TOTAL;
             instances.count = 0;
 
-            shadow_batches.data.reset(new ShadowDrawBatch[REN_MAX_SHADOW_BATCHES]);
+            shadow_batches.data.reset(new DepthDrawBatch[REN_MAX_SHADOW_BATCHES]);
             shadow_batches.capacity = REN_MAX_SHADOW_BATCHES;
             shadow_batches.count = 0;
 
@@ -140,6 +142,14 @@ public:
             shadow_regions.data.reset(new ShadowMapRegion[REN_MAX_SHADOWMAPS_TOTAL]);
             shadow_regions.capacity = REN_MAX_SHADOWMAPS_TOTAL;
             shadow_regions.count = 0;
+
+            zfill_batches.data.reset(new DepthDrawBatch[REN_MAX_MAIN_BATCHES]);
+            zfill_batches.capacity = REN_MAX_MAIN_BATCHES;
+            zfill_batches.count = 0;
+
+            zfill_batch_indices.data.reset(new uint32_t[REN_MAX_MAIN_BATCHES]);
+            zfill_batch_indices.capacity = REN_MAX_MAIN_BATCHES;
+            zfill_batch_indices.count = 0;
 
             main_batches.data.reset(new MainDrawBatch[REN_MAX_MAIN_BATCHES]);
             main_batches.capacity = REN_MAX_MAIN_BATCHES;

@@ -48,7 +48,7 @@ struct InstanceData {
 };
 static_assert(sizeof(InstanceData) == 64, "!");
 
-struct ShadowDrawBatch {
+struct DepthDrawBatch {
     union {
         struct {
             uint32_t _pad1 : 3;
@@ -62,7 +62,7 @@ struct ShadowDrawBatch {
     int32_t base_vertex;
     int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
 };
-static_assert(offsetof(ShadowDrawBatch, indices_count) == 4, "!");
+static_assert(offsetof(DepthDrawBatch, indices_count) == 4, "!");
 
 struct MainDrawBatch {
     union {
