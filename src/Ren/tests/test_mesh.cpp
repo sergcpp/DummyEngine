@@ -254,7 +254,7 @@ void test_mesh() {
 
         Ren::MeshRef m_ref = test.LoadMesh("ivy", in, on_material_needed);
         require(m_ref->type() == Ren::MeshSimple);
-        require(std::string(m_ref->name()) == "ivy");
+        require(m_ref->name() == "ivy");
 
         require(m_ref->bbox_min() == Ren::Vec3f(-10.389862f, -220.607803f, -441.704651f));
         require(m_ref->bbox_max() == Ren::Vec3f(83.354584f, 179.815552f, 441.704651f));
@@ -313,7 +313,7 @@ void test_mesh() {
         Ren::MeshRef m_ref = test.LoadMesh("test", in, on_material_needed);
         require(m_ref);
         require(m_ref->type() == Ren::MeshSkeletal);
-        require(std::string(m_ref->name()) == "test");
+        require(m_ref->name() == "test");
 
         require(m_ref->bbox_min()[0] == Approx(0).epsilon(0.01));
         require(m_ref->bbox_min()[1] == Approx(0).epsilon(0.01));

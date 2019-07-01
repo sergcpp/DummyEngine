@@ -58,7 +58,7 @@ public:
             uniform_blocks_[i] = unif_blocks[i];
         }
         ready_ = true;
-        name_ = name;
+        name_ = String{ name };
     }
     Program(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status = nullptr);
     Program(const char *name, const char *cs_source, eProgLoadStatus *status = nullptr);
@@ -77,8 +77,8 @@ public:
     bool ready() const {
         return ready_;
     }
-    const char *name() const {
-        return name_.c_str();
+    const String &name() const {
+        return name_;
     }
 
     const Attribute &attribute(int i) const {

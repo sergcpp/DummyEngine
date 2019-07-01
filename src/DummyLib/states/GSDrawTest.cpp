@@ -53,9 +53,8 @@ GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
 
     swap_interval_  = game->GetComponent<TimeInterval>(SWAP_TIMER_KEY);
 
-    {   // Prepare cam for probes updating
-        temp_probe_cam_.Perspective(90.0f, 1.0f, 0.1f, 10000.0f);
-    }
+    // Prepare cam for probes updating
+    temp_probe_cam_.Perspective(90.0f, 1.0f, 0.1f, 10000.0f);
 }
 
 GSDrawTest::~GSDrawTest() {

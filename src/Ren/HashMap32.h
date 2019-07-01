@@ -3,12 +3,28 @@
 #include <cassert>
 #include <string>
 
+#include "String.h"
+
 namespace Ren {
 inline uint32_t _lua_hash(void const *v, uint32_t l) {
     uint32_t i, step = (l >> 5) + 1;
     uint32_t h = l + (l >= 4 ? *(uint32_t*)v : 0);
     for (i = l; i >= step; i -= step) {
         h = h ^ ((h << 5) + (h >> 2) + ((unsigned char *)v)[i - 1]);
+    }
+    return h;
+}
+
+inline uint32_t _str_hash(const char *s) {
+    const uint32_t A = 54059;
+    const uint32_t B = 76963;
+    const uint32_t C = 86969;
+    const uint32_t FIRSTH = 37;
+
+    uint32_t h = FIRSTH;
+    while (*s) {
+        h = (h * A) ^ (s[0] * B);
+        s++;
     }
     return h;
 }
@@ -25,15 +41,19 @@ template <>
 class Hash<std::string> {
 public:
     uint32_t operator()(const std::string &s) const {
-        return _lua_hash(s.c_str(), (uint32_t)s.length());
+        return _str_hash(s.c_str());
     }
 };
 
 template <>
-class Hash<const char *> {
+class Hash<String> {
 public:
+    uint32_t operator()(const String &s) const {
+        return _str_hash(s.c_str());
+    }
+
     uint32_t operator()(const char *s) const {
-        return _lua_hash(s, (uint32_t)strlen(s));
+        return _str_hash(s);
     }
 };
 
@@ -47,10 +67,12 @@ public:
 };
 
 template <>
-class Equal<const char *> {
+class Equal<String> {
 public:
-    bool operator()(const char *k1, const char *k2) const {
-        return strcmp(k1, k2) == 0;
+
+    template <typename K2>
+    bool operator()(const String &k1, const K2 &k2) const {
+        return k1 == k2;
     }
 };
 
@@ -182,12 +204,14 @@ public:
         return false;
     }
 
-    V *Find(const K &key) {
+    template <typename K2>
+    V *Find(const K2 &key) {
         uint32_t hash = hash_func_(key);
         return Find(hash, key);
     }
 
-    V *Find(uint32_t hash, const K &key) {
+    template <typename K2>
+    V *Find(uint32_t hash, const K2 &key) {
         if (!capacity_) return nullptr;
 
         uint8_t ctrl = OccupiedBit | (hash & HashMask);

@@ -8,7 +8,7 @@
 #endif
 
 Ren::AnimSequence::AnimSequence(const char *name, std::istream &data) {
-    name_ = name;
+    name_ = String{ name };
     Init(data);
 }
 
@@ -61,7 +61,7 @@ void Ren::AnimSequence::Init(std::istream &data) {
     frame_size_ = offset;
     char act_name[64];
     data.read(act_name, 64);
-    act_name_ = act_name;
+    act_name_ = String{ act_name };
     data.read((char *)&fps_, 4);
     data.read((char *)&len_, 4);
 

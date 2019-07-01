@@ -46,11 +46,11 @@ public:
     AnimSequence() {}
     AnimSequence(const char *name, std::istream &data);
 
-    const char *name() const {
-        return name_.c_str();
+    const String &name() const {
+        return name_;
     }
-    const char *act_name() const {
-        return act_name_.c_str();
+    const String &act_name() const {
+        return act_name_;
     }
     int fps() const {
         return fps_;

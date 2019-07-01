@@ -44,7 +44,7 @@ public:
     Buffer &operator=(const Buffer &rhs) = delete;
     Buffer &operator=(Buffer &&rhs) noexcept;
 
-    const char *name() const { return name_.c_str(); }
+    const String &name() const { return name_; }
     uint32_t size() const { return size_; }
 
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)

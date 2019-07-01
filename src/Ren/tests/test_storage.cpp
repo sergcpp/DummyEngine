@@ -3,8 +3,10 @@
 #include "../Storage.h"
 
 void test_storage() {
-    struct MyObj : public Ren::RefCounter {
-        std::string name_;
+    class MyObj : public Ren::RefCounter {
+        Ren::String name_;
+
+    public:
         int *ref;
 
         MyObj() : ref(nullptr) {}
@@ -12,7 +14,9 @@ void test_storage() {
             (*ref)++;
         }
         MyObj(const MyObj &rhs) = delete;
-        MyObj(MyObj &&rhs) : ref(rhs.ref) {
+        MyObj(MyObj &&rhs) {
+            name_ = std::move(rhs.name_);
+            ref = rhs.ref;
             rhs.ref = nullptr;
         }
         MyObj &operator=(const MyObj &rhs) = delete;
@@ -20,12 +24,13 @@ void test_storage() {
             if (ref) {
                 (*ref)--;
             }
+            name_ = std::move(rhs.name_);
             ref = rhs.ref;
             rhs.ref = nullptr;
             return (*this);
         }
 
-        const char *name() { return name_.c_str(); }
+        const Ren::String &name() { return name_; }
 
         ~MyObj() {
             if (ref) {

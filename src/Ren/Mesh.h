@@ -162,8 +162,8 @@ public:
     const Vec3f &bbox_max() const {
         return bbox_max_;
     }
-    const char *name() const {
-        return name_.c_str();
+    const String &name() const {
+        return name_;
     }
 
     Skeleton *skel() {

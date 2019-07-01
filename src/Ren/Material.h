@@ -54,8 +54,8 @@ public:
     bool ready() const {
         return ready_;
     }
-    const char *name() const {
-        return name_.c_str();
+    const String &name() const {
+        return name_;
     }
     const ProgramRef &program(int i) const {
         return programs_[i];

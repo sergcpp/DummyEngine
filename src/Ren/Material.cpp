@@ -9,7 +9,7 @@
 
 Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *status,
                         const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load) {
-    name_ = name;
+    name_ = String{ name };
     Init(mat_src, status, on_prog_load, on_tex_load);
 }
 

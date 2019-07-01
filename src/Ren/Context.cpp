@@ -8,12 +8,7 @@ Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream &data, materi
 
 Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream &data, material_load_callback on_mat_load,
                                     BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf) {
-    MeshRef ref;
-    for (auto it = meshes_.begin(); it != meshes_.end(); ++it) {
-        if (strcmp(it->name(), name) == 0) {
-            ref = { &meshes_, it.index() };
-        }
-    }
+    MeshRef ref = meshes_.FindByName(name);
 
     if (!ref) {
         ref = meshes_.Add(name, data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf);
@@ -52,7 +47,7 @@ void Ren::Context::ReleaseMaterials() {
     if (!materials_.Size()) return;
     fprintf(stderr, "---------REMAINING MATERIALS--------\n");
     for (const auto &m : materials_) {
-        fprintf(stderr, "%s\n", m.name());
+        fprintf(stderr, "%s\n", m.name().c_str());
     }
     fprintf(stderr, "-----------------------------------\n");
     materials_.Clear();
@@ -73,7 +68,7 @@ void Ren::Context::ReleasePrograms() {
     fprintf(stderr, "---------REMAINING PROGRAMS--------\n");
     for (const auto &p : programs_) {
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
-        fprintf(stderr, "%s %i\n", p.name(), (int)p.prog_id());
+        fprintf(stderr, "%s %i\n", p.name().c_str(), (int)p.prog_id());
 #endif
     }
     fprintf(stderr, "-----------------------------------\n");
@@ -121,7 +116,7 @@ void Ren::Context::ReleaseTextures() {
     if (!textures_.Size()) return;
     fprintf(stderr, "---------REMAINING TEXTURES--------\n");
     for (const auto &t : textures_) {
-        fprintf(stderr, "%s\n", t.name());
+        fprintf(stderr, "%s\n", t.name().c_str());
     }
     fprintf(stderr, "-----------------------------------\n");
     textures_.Clear();
@@ -151,7 +146,7 @@ void Ren::Context::ReleaseAnims() {
     if (!anims_.Size()) return;
     fprintf(stderr, "---------REMAINING ANIMS--------\n");
     for (const auto &a : anims_) {
-        fprintf(stderr, "%s\n", a.name());
+        fprintf(stderr, "%s\n", a.name().c_str());
     }
     fprintf(stderr, "-----------------------------------\n");
     anims_.Clear();

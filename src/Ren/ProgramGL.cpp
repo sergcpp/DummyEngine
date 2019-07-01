@@ -18,12 +18,12 @@ void ParseGLSLBindings(const std::string &shader_str, std::vector<Binding> &attr
 }
 
 Ren::Program::Program(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status) {
-    name_ = name;
+    name_ = String{ name };
     Init(vs_source, fs_source, status);
 }
 
 Ren::Program::Program(const char *name, const char *cs_source, eProgLoadStatus *status) {
-    name_ = name;
+    name_ = String{ name };
     Init(cs_source, status);
 }
 

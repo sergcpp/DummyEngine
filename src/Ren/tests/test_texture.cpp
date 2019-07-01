@@ -124,7 +124,7 @@ void test_texture() {
         Ren::Texture2DRef t_ref = test.LoadTexture2D("checker.tga", nullptr, 0, p, &status);
         require(status == Ren::TexCreatedDefault);
 
-        require(std::string(t_ref->name()) == "checker.tga");
+        require(t_ref->name() == "checker.tga");
         require(t_ref->params().w == 1);
         require(t_ref->params().h == 1);
         require(t_ref->params().format == Ren::RawRGB888);

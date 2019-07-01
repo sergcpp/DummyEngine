@@ -500,7 +500,7 @@ void SceneManager::InitScene_PT(bool _override) {
             if (!(dr->flags & Drawable::DrVisibleToShadow)) continue;
 
             const auto *mesh = dr->mesh.get();
-            const char *mesh_name = mesh->name();
+            const char *mesh_name = mesh->name().c_str();
 
             auto mesh_it = loaded_meshes.find(mesh_name);
             if (mesh_it == loaded_meshes.end()) {
@@ -516,7 +516,7 @@ void SceneManager::InitScene_PT(bool _override) {
                 const Ren::TriGroup *s = &mesh->group(0);
                 while (s->offset != -1) {
                     const auto *mat = s->mat.get();
-                    const char *mat_name = mat->name();
+                    const char *mat_name = mat->name().c_str();
 
                     auto mat_it = loaded_materials.find(mat_name);
                     if (mat_it == loaded_materials.end()) {
@@ -534,7 +534,7 @@ void SceneManager::InitScene_PT(bool _override) {
                         //}
 
                         if (tex_ref) {
-                            const char *tex_name = tex_ref->name();
+                            const char *tex_name = tex_ref->name().c_str();
 
                             auto tex_it = loaded_textures.find(tex_name);
                             if (tex_it == loaded_textures.end()) {

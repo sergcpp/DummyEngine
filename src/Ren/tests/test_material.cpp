@@ -161,11 +161,11 @@ void test_material() {
         require(status == Ren::MatCreatedFromData);
         require(m_ref->flags() & Ren::AlphaTest);
         require(m_ref->ready() == true);
-        require(std::string(m_ref->name()) == "mat1");
+        require(m_ref->name() == "mat1");
 
         Ren::ProgramRef p = m_ref->program(0);
 
-        require(std::string(p->name()) == "constant");
+        require(p->name() == "constant");
         require(p->ready() == false);
 
         Ren::Texture2DRef t0 = m_ref->texture(0);
@@ -176,10 +176,10 @@ void test_material() {
         require(t0 == t1);
         require(t0 == t3);
 
-        require(std::string(t0->name()) == "checker.tga");
-        require(std::string(t1->name()) == "checker.tga");
-        require(std::string(t2->name()) == "metal_01.tga");
-        require(std::string(t3->name()) == "checker.tga");
+        require(t0->name() == "checker.tga");
+        require(t1->name() == "checker.tga");
+        require(t2->name() == "metal_01.tga");
+        require(t3->name() == "checker.tga");
 
         require(m_ref->param(0) == Ren::Vec4f(0, 1, 2, 3));
         require(m_ref->param(1) == Ren::Vec4f(0.5f, 1.2f, 11, 15));

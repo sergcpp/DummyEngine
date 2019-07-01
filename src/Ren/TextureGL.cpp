@@ -87,13 +87,13 @@ static_assert(sizeof(g_gl_types) / sizeof(g_gl_types[0]) == FormatCount, "!");
 
 Ren::Texture2D::Texture2D(const char *name, const void *data, int size,
                           const Texture2DParams &p, eTexLoadStatus *load_status) {
-    name_ = name;
+    name_ = String{ name };
     Init(data, size, p, load_status);
 }
 
 Ren::Texture2D::Texture2D(const char *name, const void *data[6], const int size[6],
                           const Texture2DParams &p, eTexLoadStatus *load_status) {
-    name_ = name;
+    name_ = String{ name };
     Init(data, size, p, load_status);
 }
 

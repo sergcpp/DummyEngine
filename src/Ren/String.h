@@ -2,7 +2,7 @@
 
 #include <memory>
 
-// Simple String class WITHOUT small-string optimization
+// Simple COW string class WITHOUT small-string optimization, NOT thread safe
 // Pointer returned by c_str() is persistent and safe to use after std::move
 
 namespace Ren {
@@ -13,19 +13,22 @@ class BasicString {
     Alloc   alloc_;
 public:
     BasicString() : str_(nullptr), len_(0) {}
-    BasicString(const char *str) {
+    explicit BasicString(const char *str) {
         len_ = strlen(str);
-        str_ = alloc_.allocate(len_ + 1);
+        uint32_t *storage = (uint32_t *)alloc_.allocate(sizeof(uint32_t) + len_ + 1);
+        // set number of users to 1
+        *storage = 1;
+        str_ = (char *)(storage + 1);
         memcpy(str_, str, len_ + 1);
     }
 
     BasicString(const BasicString &rhs) {
+        str_ = rhs.str_;
         len_ = rhs.len_;
-        if (len_) {
-            str_ = alloc_.allocate(len_ + 1);
-            memcpy(str_, rhs.str_, len_ + 1);
-        } else {
-            str_ = nullptr;
+        if (str_) {
+            // increase number of users
+            uint32_t *counter = (uint32_t *)(str_ - sizeof(uint32_t));
+            ++(*counter);
         }
     }
 
@@ -34,6 +37,7 @@ public:
         rhs.len_ = 0;
         str_ = rhs.str_;
         rhs.str_ = nullptr;
+        alloc_ = std::move(rhs.alloc_);
     }
 
     ~BasicString() {
@@ -43,12 +47,12 @@ public:
     BasicString &operator=(const BasicString &rhs) {
         Release();
 
+        str_ = rhs.str_;
         len_ = rhs.len_;
-        if (len_) {
-            str_ = alloc_.allocate(len_ + 1);
-            memcpy(str_, rhs.str_, len_ + 1);
-        } else {
-            str_ = nullptr;
+        if (str_) {
+            // increase number of users
+            uint32_t *counter = str_ - sizeof(uint32_t);
+            ++(*counter);
         }
 
         return *this;
@@ -61,6 +65,7 @@ public:
         rhs.len_ = 0;
         str_ = rhs.str_;
         rhs.str_ = nullptr;
+        alloc_ = std::move(rhs.alloc_);
 
         return *this;
     }
@@ -69,9 +74,17 @@ public:
     size_t length() const { return len_; }
 
     void Release() {
-        alloc_.deallocate(str_, len_ + 1);
-        str_ = nullptr;
-        len_ = 0;
+        if (str_) {
+            uint32_t *counter = (uint32_t *)(str_ - sizeof(uint32_t));
+            --(*counter);
+
+            if (!*counter) {
+                alloc_.deallocate((char *)counter, len_ + 1 + sizeof(uint32_t));
+            }
+
+            str_ = nullptr;
+            len_ = 0;
+        }
     }
 
     bool EndsWith(const char *str) {
@@ -85,11 +98,27 @@ public:
     }
 
     friend bool operator==(const BasicString &s1, const BasicString &s2) {
-        return s1.len_ == s2.len_ && memcmp(s1.str_, s2.str_, s1.len_) == 0;
+        return s1.str_ == s2.str_ || (s1.len_ == s2.len_ && memcmp(s1.str_, s2.str_, s1.len_) == 0);
     }
 
     friend bool operator!=(const BasicString &s1, const BasicString &s2) {
-        return s1.len_ != s2.len_ || memcmp(s1.str_, s2.str_, s1.len_) != 0;
+        return s1.str_ != s2.str_ && (s1.len_ != s2.len_ || memcmp(s1.str_, s2.str_, s1.len_) != 0);
+    }
+
+    friend bool operator==(const BasicString &s1, const char *s2) {
+        return strcmp(s1.str_, s2) == 0;
+    }
+
+    friend bool operator==(const char *s1, const BasicString &s2) {
+        return strcmp(s1, s2.str_) == 0;
+    }
+
+    friend bool operator!=(const BasicString &s1, const char *s2) {
+        return strcmp(s1.str_, s2) != 0;
+    }
+
+    friend bool operator!=(const char *s1, const BasicString &s2) {
+        return strcmp(s1, s2.str_) != 0;
     }
 };
 

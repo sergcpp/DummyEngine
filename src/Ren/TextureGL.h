@@ -74,8 +74,8 @@ public:
     bool ready() const {
         return ready_;
     }
-    const char *name() const {
-        return name_.c_str();
+    const String &name() const {
+        return name_;
     }
 
     void ChangeFilter(eTexFilter f, eTexRepeat r);

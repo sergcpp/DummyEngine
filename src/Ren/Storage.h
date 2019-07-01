@@ -9,7 +9,7 @@ class StorageRef;
 
 template<typename T, template<typename val_t> class container = default_container>
 class Storage : public SparseArray<T, container> {
-    HashMap32<const char *, size_t> items_by_name_;
+    HashMap32<String, size_t> items_by_name_;
 public:
     template<class... Args>
     StorageRef<T, container> Add(Args &&... args) {
@@ -22,7 +22,7 @@ public:
     }
 
     void Remove(size_t i) {
-        const char *name = this->Get(i)->name();
+        const String &name = this->Get(i)->name();
 
         bool res = items_by_name_.Erase(name);
         assert(res);

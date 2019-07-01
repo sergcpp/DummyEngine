@@ -136,7 +136,7 @@ struct SceneData {
     CompStorage                     *comp_store[MAX_COMPONENT_TYPES] = {};
 
     std::vector<SceneObject>        objects;
-    Ren::HashMap32<const char *, uint32_t> name_to_object;
+    Ren::HashMap32<Ren::String, uint32_t> name_to_object;
 
     std::vector<bvh_node_t>         nodes;
     std::vector<uint32_t>           free_nodes;

@@ -138,7 +138,7 @@ namespace Ren {
 
 Ren::Mesh::Mesh(const char *name, std::istream &data, const material_load_callback &on_mat_load,
                 BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf) {
-    name_ = name;
+    name_ = String{ name };
     Init(data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf);
 }
 

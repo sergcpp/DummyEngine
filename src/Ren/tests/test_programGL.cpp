@@ -163,7 +163,7 @@ void main(void) {
         Ren::ProgramRef p = test.LoadProgramGLSL("constant", nullptr, nullptr, &status);
 
         require(status == Ren::ProgSetToDefault);
-        require(std::string(p->name()) == "constant");
+        require(p->name() == "constant");
         require(p->prog_id() == 0); // not initialized
         require(p->ready() == false);
 
@@ -171,7 +171,7 @@ void main(void) {
 
         require(status == Ren::ProgCreatedFromData);
 
-        require(std::string(p->name()) == "constant");
+        require(p->name() == "constant");
 
         require(p->ready() == true);
 
