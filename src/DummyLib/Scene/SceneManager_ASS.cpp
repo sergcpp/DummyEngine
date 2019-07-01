@@ -431,7 +431,7 @@ std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &t
 
     std::unique_ptr<Ray::pixel_color8_t[]> tex_data(new Ray::pixel_color8_t[params.w * params.h]);
 #if defined(__ANDROID__)
-    Sys::AssetFile in_file((std::string("assets/textures/") + tex_ref->name()).c_str());
+    Sys::AssetFile in_file((std::string("assets/textures/") + tex_ref->name().c_str()).c_str());
     SceneManagerInternal::LoadTGA(in_file, params.w, params.h, &tex_data[0]);
 #else
     tex_ref->ReadTextureData(Ren::RawRGBA8888, (void *)&tex_data[0]);
