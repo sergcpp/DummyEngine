@@ -29,6 +29,7 @@ uint32_t g_gl_formats[] = {
     0xffffffff,     // RawRGBE8888
     GL_RGB,         // RawRGB16F
     GL_RGBA,        // RawRGBA16F
+    GL_RG,          // RawRG16U
     GL_RG,          // RawRG16F
     GL_RG,          // RawRG32F
     GL_RGBA,        // RawRGB10_A2
@@ -51,6 +52,7 @@ uint32_t g_gl_internal_formats[] = {
     0xffffffff,     // RawRGBE8888
     GL_RGB16F,      // RawRGB16F
     GL_RGBA16F,     // RawRGBA16F
+    GL_RG16_EXT,    // RawRG16U
     GL_RG16F,       // RawRG16F
     GL_RG32F,       // RawRG32F
     GL_RGB10_A2,    // RawRGB10_A2
@@ -73,6 +75,7 @@ uint32_t g_gl_types[] = {
     0xffffffff,         // RawRGBE8888
     GL_HALF_FLOAT,      // RawRGB16F
     GL_HALF_FLOAT,      // RawRGBA16F
+    GL_UNSIGNED_SHORT,  // RawRG16U
     GL_HALF_FLOAT,      // RawRG16F
     GL_FLOAT,           // RawRG32F
     GL_UNSIGNED_BYTE,   // RawRGB10_A2
