@@ -207,7 +207,8 @@ private:
     Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_, brdf_lut_;
 
     FrameBuf clean_buf_, refl_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf1_, ssao_buf2_, probe_sample_buf_, combined_buf_, down_depth_;
-    int scr_w_ = 0, scr_h_ = 0, act_w_ = 0, act_h_ = 0;
+    int scr_w_ = 0, scr_h_ = 0, // allocated screen resolution
+        act_w_ = 0, act_h_ = 0; // actual resolution
 
     Ren::TextureSplitter shadow_splitter_;
 
