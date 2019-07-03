@@ -61,7 +61,9 @@ static const uint8_t SunShadowUpdatePattern[4] = {
 };
 }
 
-#define REN_UNINITIALIZE_X8  Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize, Ren::Uninitialize
+#define REN_UNINITIALIZE_X2  Ren::Uninitialize, Ren::Uninitialize
+#define REN_UNINITIALIZE_X4  REN_UNINITIALIZE_X2, REN_UNINITIALIZE_X2
+#define REN_UNINITIALIZE_X8  REN_UNINITIALIZE_X4, REN_UNINITIALIZE_X4
 
 #define BBOX_POINTS(min, max) \
     (min)[0], (min)[1], (min)[2],     \
@@ -527,7 +529,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         // Planes, that define shadow map splits
         const float far_planes[] = { float(REN_SHAD_CASCADE0_DIST), float(REN_SHAD_CASCADE1_DIST),
                                      float(REN_SHAD_CASCADE2_DIST), float(REN_SHAD_CASCADE3_DIST) };
-        const float near_planes[] = { list.draw_cam.near(), far_planes[0], far_planes[1], far_planes[2] };
+        const float near_planes[] = { list.draw_cam.near(), 0.9f * far_planes[0], 0.9f * far_planes[1], 0.9f * far_planes[2] };
 
         // Reserved positions for sun shadowmap
         const int OneCascadeRes = SUN_SHADOW_RES / 2;
@@ -1671,3 +1673,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 #undef BBOX_POINTS
 #undef _MAX
 #undef _CROSS
+
+#undef REN_UNINITIALIZE_X2
+#undef REN_UNINITIALIZE_X4
+#undef REN_UNINITIALIZE_X8

@@ -96,7 +96,7 @@ float SampleShadowPCF5x5(sampler2DShadow shadow_texture, vec3 shadow_coord) {
 
     sum *= 1.0f / 144.0;
 
-    return sum;
+    return sum * sum;
 }
 
 float GetSunVisibility(float frag_depth, sampler2DShadow shadow_texture, vec3 aVertexShUVs[4]) {
