@@ -309,7 +309,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
                 desc[0].repeat = Ren::ClampToEdge;
             }
             {   // 4-component world-space normal (alpha is 'ssr' flag)
-                desc[1].format = Ren::RawRGBA32F;//Ren::RawRGB10_A2;
+                desc[1].format = Ren::RawRGB10_A2;
                 desc[1].filter = Ren::BilinearNoMipmap;
                 desc[1].repeat = Ren::ClampToEdge;
             }
