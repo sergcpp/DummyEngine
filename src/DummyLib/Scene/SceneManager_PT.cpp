@@ -511,7 +511,7 @@ void SceneManager::InitScene_PT(bool _override) {
                 mesh_desc.vtx_attrs_count = (uint32_t)(mesh->attribs_buf1().size / 16);
                 mesh_desc.vtx_indices = (const uint32_t *)mesh->indices();
                 mesh_desc.vtx_indices_count = (uint32_t)(mesh->indices_buf().size / sizeof(uint32_t));
-                mesh_desc.base_vertex = -int(mesh->attribs_buf1().offset / 16);
+                mesh_desc.base_vertex = 0;
 
                 const Ren::TriGroup *s = &mesh->group(0);
                 while (s->offset != -1) {
