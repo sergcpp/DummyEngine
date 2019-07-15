@@ -49,6 +49,8 @@ set(STATES_SOURCES  States/GSCreate.h
 
 set(UTILS_SOURCES Utils/BVHSplit.h
                   Utils/BVHSplit.cpp
+                  Utils/Cmdline.h
+                  Utils/Cmdline.cpp
                   Utils/Load.h
                   Utils/Load.cpp)
 
@@ -145,3 +147,4 @@ source_group("src\\Utils" FILES Utils/_Utils.cpp)
 add_library(DummyLib STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(DummyLib Eng Ray Ren Sys astc ${LIBS})
 
+add_subdirectory(tests)

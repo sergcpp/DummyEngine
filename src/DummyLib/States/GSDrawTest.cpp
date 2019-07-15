@@ -18,6 +18,7 @@
 #include "../Viewer.h"
 #include "../Renderer/Renderer.h"
 #include "../Scene/SceneManager.h"
+#include "../Utils/Cmdline.h"
 
 namespace GSDrawTestInternal {
 const int MAX_CMD_LINES = 8;
@@ -27,7 +28,7 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-    //"jap_house.json";
+    //"jap_house2.json";
     //"skin_test.json";
     "living_room_gumroad.json";
     //"bistro.json";
@@ -38,6 +39,8 @@ const bool USE_TWO_THREADS = true;
 
 GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
     using namespace GSDrawTestInternal;
+
+    cmdline_        = game->GetComponent<Cmdline>(CMDLINE_KEY);
 
     state_manager_  = game->GetComponent<GameStateManager>(STATE_MANAGER_KEY);
     ctx_            = game->GetComponent<Ren::Context>(REN_CONTEXT_KEY);
@@ -87,7 +90,7 @@ void GSDrawTest::Enter() {
 
     std::weak_ptr<GSDrawTest> weak_this = std::dynamic_pointer_cast<GSDrawTest>(state_manager->Peek());
 
-    game_->RegisterCommand("wireframe", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("wireframe", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -97,7 +100,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("culling", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("culling", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -107,7 +110,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("lightmap", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("lightmap", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -117,7 +120,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("lights", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("lights", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -127,7 +130,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("decals", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("decals", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -137,7 +140,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("shadows", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("shadows", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -147,7 +150,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("fxaa", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("fxaa", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -157,7 +160,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("pt", [weak_this](const std::vector<std::string> &args) ->bool {
+    cmdline_->RegisterCommand("pt", [weak_this](int argc, Cmdline::ArgData *argv) ->bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             shrd_this->use_pt_ = !shrd_this->use_pt_;
@@ -170,7 +173,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("lm", [weak_this](const std::vector<std::string> &args) ->bool {
+    cmdline_->RegisterCommand("lm", [weak_this](int argc, Cmdline::ArgData *argv) ->bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             shrd_this->use_lm_ = !shrd_this->use_lm_;
@@ -183,7 +186,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("debug_cull", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("debug_cull", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -193,7 +196,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("debug_shadow", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("debug_shadow", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -203,7 +206,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("debug_reduce", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("debug_reduce", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -213,7 +216,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("debug_lights", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("debug_lights", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -223,7 +226,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("debug_decals", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("debug_decals", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -233,7 +236,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("debug_deferred", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("debug_deferred", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -243,7 +246,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("debug_blur", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("debug_blur", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -253,7 +256,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("debug_ssao", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("debug_ssao", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -263,7 +266,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("debug_timings", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("debug_timings", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -273,7 +276,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("debug_bvh", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("debug_bvh", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -283,7 +286,7 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    game_->RegisterCommand("debug_probes", [weak_this](const std::vector<std::string> &args) -> bool {
+    cmdline_->RegisterCommand("debug_probes", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
@@ -428,6 +431,40 @@ void GSDrawTest::Exit() {
 
 void GSDrawTest::Draw(uint64_t dt_us) {
     using namespace GSDrawTestInternal;
+
+    if (cmdline_enabled_) {
+        // Process comandline input
+        for (const auto &evt : cmdline_input_) {
+            if (evt.key == InputManager::RAW_INPUT_BUTTON_BACKSPACE) {
+                if (!cmdline_history_.back().empty()) {
+                    cmdline_history_.back().pop_back();
+                }
+
+            } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RETURN) {
+                cmdline_->Execute(cmdline_history_.back().c_str());
+
+                cmdline_history_.emplace_back();
+                if (cmdline_history_.size() > MAX_CMD_LINES) {
+                    cmdline_history_.erase(cmdline_history_.begin());
+                }
+            } else if (evt.raw_key == (int)'`') {
+                if (!cmdline_history_.back().empty()) {
+                    cmdline_history_.emplace_back();
+                    if (cmdline_history_.size() > MAX_CMD_LINES) {
+                        cmdline_history_.erase(cmdline_history_.begin());
+                    }
+                }
+            } else {
+                char ch = (char)evt.raw_key;
+                if (shift_down_) {
+                    if (ch == '-') ch = '_';
+                }
+                cmdline_history_.back() += ch;
+            }
+        }
+
+        cmdline_input_.clear();
+    }
 
     {
         int back_list;
@@ -916,7 +953,7 @@ void GSDrawTest::Update(uint64_t dt_us) {
     }
 }
 
-void GSDrawTest::HandleInput(InputManager::Event evt) {
+void GSDrawTest::HandleInput(const InputManager::Event &evt) {
     using namespace Ren;
     using namespace GSDrawTestInternal;
 
@@ -1063,42 +1100,20 @@ void GSDrawTest::HandleInput(InputManager::Event evt) {
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
             shift_down_ = false;
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_BACKSPACE) {
-            if (!cmdline_history_.back().empty()) {
-                cmdline_history_.back().pop_back();
+            if (cmdline_enabled_) {
+                cmdline_input_.push_back(evt);
             }
         } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RETURN) {
             if (cmdline_enabled_) {
-                auto execute_cur_command = [](void *arg) {
-                    auto *_self = (GSDrawTest *)arg;
-                    _self->game_->ExecuteCommand(_self->cur_cmd_, {});
-                    _self->cur_cmd_.erase();
-                };
-
-                cur_cmd_ = cmdline_history_.back();
-                ctx_->AddSingleTask(execute_cur_command, this);
-
-                //game_->ExecuteCommand(cmdline_history_.back(), {});
-                cmdline_history_.emplace_back();
-                if (cmdline_history_.size() > MAX_CMD_LINES) {
-                    cmdline_history_.erase(cmdline_history_.begin());
-                }
+                cmdline_input_.push_back(evt);
             }
         } else if (evt.raw_key == (int)'`') {
             cmdline_enabled_ = !cmdline_enabled_;
             if (cmdline_enabled_) {
-                if (!cmdline_history_.back().empty()) {
-                    cmdline_history_.emplace_back();
-                    if (cmdline_history_.size() > MAX_CMD_LINES) {
-                        cmdline_history_.erase(cmdline_history_.begin());
-                    }
-                }
+                cmdline_input_.push_back(evt);
             }
         } else if (cmdline_enabled_) {
-            char ch = (char)evt.raw_key;
-            if (shift_down_) {
-                if (ch == '-') ch = '_';
-            }
-            cmdline_history_.back() += ch;
+            cmdline_input_.push_back(evt);
         }
     }
     case InputManager::RAW_INPUT_RESIZE:
@@ -1183,7 +1198,7 @@ void GSDrawTest::UpdateFrame(int list_index) {
 
         if (!probes_to_update_.empty() && !probe_to_render_ && !probe_to_update_sh_) {
             LOGI("Updating probe");
-            auto *probe_obj = scene_manager_->GetObject(probes_to_update_.back());
+            SceneObject *probe_obj = scene_manager_->GetObject(probes_to_update_.back());
             auto *probe = (LightProbe *)scene_manager_->scene_data().comp_store[CompProbe]->Get(probe_obj->components[CompProbe]);
             auto *probe_tr = (Transform *)scene_manager_->scene_data().comp_store[CompTransform]->Get(probe_obj->components[CompTransform]);
 

@@ -83,7 +83,8 @@ set_target_properties(Eng
                       Sys 
                       Gui PROPERTIES FOLDER Libs)
 
-set_target_properties(test_Eng
+set_target_properties(test_DummyLib
+                      test_Eng
                       test_Ray
                       test_Ren
                       test_SW
@@ -93,6 +94,7 @@ set_target_properties(test_Eng
 set_target_properties(SOIL2
                       astc PROPERTIES FOLDER _)
 
+add_test(DummyLibTest   DummyLib/tests/test_DummyLib)
 add_test(EngTest        Eng/tests/test_Eng)
 add_test(RayTest        Ray/tests/test_Ray)
 add_test(RenTest        Ren/tests/test_Ren)
@@ -100,7 +102,8 @@ add_test(SWTest         Ren/SW/tests/test_SW)
 add_test(SysTest        Sys/tests/test_Sys)
 add_test(GuiTest        Gui/tests/test_Gui)
 
-add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_Eng
+add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_DummyLib
+                                                               test_Eng
                                                                test_Ray
                                                                test_Ren
                                                                test_SW

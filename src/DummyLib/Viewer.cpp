@@ -14,6 +14,7 @@
 #include "Renderer/Renderer.h"
 #include "Scene/SceneManager.h"
 #include "States/GSCreate.h"
+#include "Utils/Cmdline.h"
 
 Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) {
     auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
@@ -64,6 +65,11 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     }
 
     {
+        auto cmdline = std::make_shared<Cmdline>();
+        AddComponent(CMDLINE_KEY, cmdline);
+    }
+
+    {
         auto threads = GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
         auto renderer = std::make_shared<Renderer>(*ctx, threads);
         AddComponent(RENDERER_KEY, renderer);
@@ -71,7 +77,8 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         Ray::settings_t s;
         s.w = w;
         s.h = h;
-        auto ray_renderer = Ray::CreateRenderer(s, Ray::RendererRef);
+
+        auto ray_renderer = Ray::CreateRenderer(s, Ray::RendererSSE2 | Ray::RendererAVX | Ray::RendererAVX2 /*| Ray::RendererOCL*/);
         AddComponent(RAY_RENDERER_KEY, ray_renderer);
 
         auto scene_manager = std::make_shared<SceneManager>(*ctx, *ray_renderer, *threads);

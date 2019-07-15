@@ -16,6 +16,7 @@
 #include "../Scene/SceneData.h"
 #include "../Renderer/Renderer.h"
 
+class Cmdline;
 class GameStateManager;
 class FontStorage;
 class SceneManager;
@@ -27,19 +28,20 @@ class Renderer;
 }
 
 class GSDrawTest : public GameState {
-    GameBase *game_;
+    GameBase                        *game_;
     std::weak_ptr<GameStateManager> state_manager_;
-    std::shared_ptr<Ren::Context> ctx_;
-    std::shared_ptr<Renderer> renderer_;
-    std::shared_ptr<SceneManager> scene_manager_;
-    std::shared_ptr<TimeInterval> swap_interval_;
+    std::shared_ptr<Cmdline>        cmdline_;
+    std::shared_ptr<Ren::Context>   ctx_;
+    std::shared_ptr<Renderer>       renderer_;
+    std::shared_ptr<SceneManager>   scene_manager_;
+    std::shared_ptr<TimeInterval>   swap_interval_;
 
-    std::shared_ptr<Gui::Renderer> ui_renderer_;
-    std::shared_ptr<Gui::BaseElement> ui_root_;
-    std::shared_ptr<Gui::BitmapFont> font_;
+    std::shared_ptr<Gui::Renderer>      ui_renderer_;
+    std::shared_ptr<Gui::BaseElement>   ui_root_;
+    std::shared_ptr<Gui::BitmapFont>    font_;
 
-    std::mutex mtx_;
-    std::thread background_thread_;
+    std::mutex              mtx_;
+    std::thread             background_thread_;
     std::condition_variable thr_notify_, thr_done_;
     bool shutdown_ = false, notified_ = false;
 
@@ -80,15 +82,15 @@ class GSDrawTest : public GameState {
 
     uint32_t click_time_ = 0;
 
-    std::vector<std::string> cmdline_history_;
-    std::string cur_cmd_;
-    bool cmdline_enabled_ = false;
-    bool shift_down_ = false;
+    std::vector<InputManager::Event>    cmdline_input_;
+    std::vector<std::string>            cmdline_history_;
+    bool                                cmdline_enabled_ = false;
+    bool                                shift_down_ = false;
 
     // test test
-    uint32_t wolf_indices_[32] = { 0xffffffff };
-    uint32_t scooter_indices_[16] = { 0xffffffff };
-    uint32_t sophia_indices_[2] = { 0xffffffff }, eric_indices_[2] = { 0xffffffff };
+    uint32_t wolf_indices_[32]      = { 0xffffffff };
+    uint32_t scooter_indices_[16]   = { 0xffffffff };
+    uint32_t sophia_indices_[2]     = { 0xffffffff }, eric_indices_[2] = { 0xffffffff };
     float scooters_angle_ = 0.0f;
 
     void LoadScene(const char *name);
@@ -108,5 +110,5 @@ public:
 
     void Update(uint64_t dt_us) override;
 
-    void HandleInput(InputManager::Event) override;
+    void HandleInput(const InputManager::Event &evt) override;
 };
