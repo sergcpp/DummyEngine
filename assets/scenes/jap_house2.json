@@ -14,13 +14,27 @@
         "fwd_speed" : 0.025
     },
     "meshes" : {
-        "floor" : "floor.mesh",
-        "walls" : "walls.mesh",
-        "roof" : "roof.mesh",
-        "roof_plate" : "roof_plate.mesh",
-        "inter_walls" : "inter_walls.mesh",
-        "ladder" : "ladder.mesh",
-        "monk" : "monk.mesh"
+        "floor" : {
+            "mesh_file" : "floor.mesh"
+        },
+        "walls" : {
+            "mesh_file" : "walls.mesh"
+        },
+        "roof" : {
+            "mesh_file" : "roof.mesh"
+        },
+        "roof_plate" : {
+            "mesh_file" : "roof_plate.mesh"
+        },
+        "inter_walls" : {
+            "mesh_file" : "inter_walls.mesh"
+        },
+        "ladder" : {
+            "mesh_file" : "ladder.mesh"
+        },
+        "monk" : {
+            "mesh_file" : "monk.mesh"
+        }
     },
     "decals" : {
     },
