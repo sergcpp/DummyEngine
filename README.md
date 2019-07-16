@@ -8,9 +8,6 @@ Small 3d engine with focus on running on high end mobile devices.
   <img src="/img9.jpg" width="95.5%" />
 </div>
 <div float="center">
-  <img src="/img10.jpg" width="95.5%" />
-</div>
-<div float="center">
   <img src="/img7.jpg" width="47.5%" />
   <img src="/img8.jpg" width="47.5%" />
 </div>
