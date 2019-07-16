@@ -2643,8 +2643,10 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, scr_w_, scr_h_);
 
     glBindVertexArray((GLuint)temp_vao_);
+    glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
 
@@ -2888,7 +2890,7 @@ void Renderer::BlitTexture(float px, float py, float sx, float sy, uint32_t tex_
             (float)resx, (float)resy,   0.0f, (float)resy
         };
 
-        uint8_t indices[] = { 0, 1, 2,    0, 2, 3 };
+        uint16_t indices[] = { 0, 1, 2,    0, 2, 3 };
 
         if (sy < 0.0f) {
             // keep counter-clockwise winding order
@@ -2899,6 +2901,7 @@ void Renderer::BlitTexture(float px, float py, float sx, float sy, uint32_t tex_
         glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
         glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(indices), indices);
 
@@ -2909,8 +2912,6 @@ void Renderer::BlitTexture(float px, float py, float sx, float sy, uint32_t tex_
         glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(positions)));
 
         glUniform1f(4, 1.0f);
-
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
 
         if (is_ms) {
             BindTextureMs(REN_BASE_TEX_SLOT, tex_id);

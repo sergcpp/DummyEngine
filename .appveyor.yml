@@ -50,6 +50,7 @@ test_script:
     - build\src\Ren\SW\tests\%CONFIGURATION%\test_SW
     - build\src\Sys\tests\%CONFIGURATION%\test_Sys
 #    - build\src\Gui\tests\%CONFIGURATION%\test_Gui
+    - build\src\DummyLib\tests\%CONFIGURATION%\test_DummyLib
     
 artifacts:
   - path: dummy_app_%APPVEYOR_BUILD_VERSION%.zip
