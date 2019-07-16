@@ -121,15 +121,3 @@ void GameBase::Frame() {
 void GameBase::Quit() {
     terminated = true;
 }
-
-void GameBase::RegisterCommand(const std::string &cmd, const CommandHandler &handler) {
-    command_handers_[cmd] = handler;
-}
-
-bool GameBase::ExecuteCommand(const std::string &cmd, const std::vector<std::string> &args) {
-    auto it = command_handers_.find(cmd);
-    if (it != command_handers_.end()) {
-        return it->second(args);
-    }
-    return false;
-}
