@@ -1,7 +1,8 @@
 #pragma once
 
+#include <atomic>
+
 #include <Ren/Camera.h>
-#include <Ren/RingBuffer.h>
 #include <Ren/TextureSplitter.h>
 extern "C" {
 #include <Ren/SW/SWculling.h>
