@@ -29,6 +29,21 @@ inline uint32_t _str_hash(const char *s) {
     return h;
 }
 
+inline uint32_t _str_hash_len(const char *s, size_t len) {
+    const uint32_t A = 54059;
+    const uint32_t B = 76963;
+    const uint32_t C = 86969;
+    const uint32_t FIRSTH = 37;
+
+    uint32_t h = FIRSTH;
+    while (len) {
+        h = (h * A) ^ (s[0] * B);
+        s++;
+        len--;
+    }
+    return h;
+}
+
 template <typename K>
 class Hash {
 public:
@@ -50,6 +65,10 @@ class Hash<String> {
 public:
     uint32_t operator()(const String &s) const {
         return _str_hash(s.c_str());
+    }
+
+    uint32_t operator()(const StringPart &s) const {
+        return _str_hash_len(s.str, s.len);
     }
 
     uint32_t operator()(const char *s) const {

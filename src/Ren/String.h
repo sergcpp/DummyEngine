@@ -6,6 +6,11 @@
 // Pointer returned by c_str() is persistent and safe to use after std::move
 
 namespace Ren {
+struct StringPart {
+    const char  *str;
+    size_t      len;
+};
+
 template <typename Alloc = std::allocator<char>>
 class BasicString {
     char    *str_;
@@ -20,6 +25,16 @@ public:
         *storage = 1;
         str_ = (char *)(storage + 1);
         memcpy(str_, str, len_ + 1);
+    }
+
+    explicit BasicString(const StringPart &str) {
+        len_ = str.len;
+        uint32_t *storage = (uint32_t *)alloc_.allocate(sizeof(uint32_t) + len_ + 1);
+        // set number of users to 1
+        *storage = 1;
+        str_ = (char *)(storage + 1);
+        memcpy(str_, str.str, len_);
+        str_[len_] = '\0';
     }
 
     BasicString(const BasicString &rhs) {
@@ -73,6 +88,16 @@ public:
     const char *c_str() const { return str_; }
     size_t length() const { return len_; }
 
+    template <typename IntType>
+    const char &operator[](IntType i) const {
+        return str_[i];
+    }
+
+    template <typename IntType>
+    char &operator[](IntType i) {
+        return str_[i];
+    }
+
     void Release() {
         if (str_) {
             uint32_t *counter = (uint32_t *)(str_ - sizeof(uint32_t));
@@ -109,16 +134,32 @@ public:
         return strcmp(s1.str_, s2) == 0;
     }
 
-    friend bool operator==(const char *s1, const BasicString &s2) {
-        return strcmp(s1, s2.str_) == 0;
-    }
-
     friend bool operator!=(const BasicString &s1, const char *s2) {
         return strcmp(s1.str_, s2) != 0;
     }
 
+    friend bool operator==(const BasicString &s1, const StringPart &s2) {
+        return strncmp(s1.str_, s2.str, s2.len) == 0;
+    }
+
+    friend bool operator!=(const BasicString &s1, const StringPart &s2) {
+        return strncmp(s1.str_, s2.str, s2.len) != 0;
+    }
+
+    friend bool operator==(const char *s1, const BasicString &s2) {
+        return strcmp(s1, s2.str_) == 0;
+    }
+
     friend bool operator!=(const char *s1, const BasicString &s2) {
         return strcmp(s1, s2.str_) != 0;
+    }
+
+    friend bool operator==(const StringPart &s1, const BasicString &s2) {
+        return strncmp(s1.str, s2.str_, s1.len) == 0;
+    }
+
+    friend bool operator!=(const StringPart &s1, const BasicString &s2) {
+        return strncmp(s1.str, s2.str_, s1.len) != 0;
     }
 };
 
