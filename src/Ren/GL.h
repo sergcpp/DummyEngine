@@ -184,6 +184,7 @@ EXTERN_FUNC PFNGLGETQUERYOBJECTUI64VEXTPROC     glGetQueryObjectui64vEXT;
 #define GL_RGBA16F              0x881A
 
 #define GL_RGB10_A2             0x8059
+#define GL_R11F_G11F_B10F       0x8C3A
 
 #define GL_HALF_FLOAT   0x140B
 
