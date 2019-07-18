@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <cstring>
 #include <functional> // for std::equal_to
 #include <string>
 

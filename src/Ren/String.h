@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include <memory>
 
 // Simple COW string class WITHOUT small-string optimization, NOT thread safe
