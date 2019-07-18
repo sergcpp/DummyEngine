@@ -113,7 +113,10 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         view_file_name = out_file_name;
     }
 
-    system("DummyApp.exe --prepare_assets pc --norun");
+    int res = system("DummyApp.exe --prepare_assets pc --norun");
+    if (res == -1) {
+        std::cerr << "Failed to update assets" << std::endl;
+    }
 
     if (in_file_type == IN_ANIM) {
         int res = CompileAnim(in_file_name, out_file_name);
