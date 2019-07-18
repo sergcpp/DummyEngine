@@ -1,5 +1,6 @@
 #include "test_common.h"
 
+#include <cstring>
 #include <fstream>
 
 #include "../AssetFile.h"
