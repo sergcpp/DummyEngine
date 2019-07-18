@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <functional> // for std::equal_to
 #include <string>
 
 #include "String.h"
