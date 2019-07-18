@@ -3,6 +3,7 @@
 
 #include "AssetFile.cpp"
 #include "AssetFileIO.cpp"
+#include "AsyncFileReader.cpp"
 #include "Json.cpp"
 #include "Pack.cpp"
 #include "Time.cpp"

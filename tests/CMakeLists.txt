@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.2)
 project(test_Sys)
 
 add_executable(test_Sys main.cpp
+                        test_alloc.cpp
+                        test_async_file.cpp
                         test_common.h
                         test_json.cpp
                         test_optional.cpp

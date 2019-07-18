@@ -24,8 +24,8 @@ class AssetFile {
     std::string name_;
     size_t size_ = 0, pos_override_ = 0;
 public:
-    AssetFile(const char *file_name, int mode = IN);
-    AssetFile(const std::string &file_name, int mode = IN) : AssetFile(file_name.c_str(), mode) {}
+    AssetFile(const char *file_name, int mode = FileIn);
+    AssetFile(const std::string &file_name, int mode = FileIn) : AssetFile(file_name.c_str(), mode) {}
     AssetFile(const AssetFile &) = delete;
     AssetFile &operator=(const AssetFile &) = delete;
 
@@ -58,7 +58,7 @@ public:
     operator bool();
 
     enum {
-        IN, OUT
+        FileIn, FileOut
     };
 
     static void AddPackage(const char *name);

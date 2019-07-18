@@ -21,7 +21,7 @@ void test_pack() {
             auto it = std::find(file_list.begin(), file_list.end(), name);
             require(it != file_list.end());
 
-            Sys::AssetFile in_file(name, Sys::AssetFile::IN);
+            Sys::AssetFile in_file(name, Sys::AssetFile::FileIn);
             require(in_file.size() == size);
 
             std::unique_ptr<char[]> buf(new char[size]);
@@ -42,7 +42,7 @@ void test_pack() {
         // Add package to AssetFile
         Sys::AssetFile::AddPackage("./my_pack.pack");
 
-        Sys::AssetFile in_file1("./constant.fs", Sys::AssetFile::IN);
+        Sys::AssetFile in_file1("./constant.fs", Sys::AssetFile::FileIn);
         std::ifstream in_file2("./constant.fs", std::ios::ate | std::ios::binary);
         size_t size = (size_t)in_file2.tellg();
         in_file2.seekg(0, std::ios::beg);
