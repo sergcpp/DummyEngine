@@ -19,34 +19,6 @@ namespace Sys {
 
 class TextureAtlas;
 
-enum eRenderFlags {
-    EnableZFill     = (1 << 0),
-    EnableCulling   = (1 << 1),
-    EnableSSR       = (1 << 2),
-    EnableSSAO      = (1 << 3),
-    EnableLightmap  = (1 << 4),
-    EnableLights    = (1 << 5),
-    EnableDecals    = (1 << 6),
-    EnableProbes    = (1 << 7),
-    EnableShadows   = (1 << 8),
-    EnableTonemap   = (1 << 9),
-    EnableBloom     = (1 << 10),
-    EnableFxaa      = (1 << 11),
-    EnableTimers    = (1 << 12),
-    DebugWireframe  = (1 << 13),
-    DebugCulling    = (1 << 14),
-    DebugShadow     = (1 << 15),
-    DebugReduce     = (1 << 16),
-    DebugLights     = (1 << 17),
-    DebugDeferred   = (1 << 18),
-    DebugBlur       = (1 << 19),
-    DebugDecals     = (1 << 20),
-    DebugSSAO       = (1 << 21),
-    DebugTimings    = (1 << 22),
-    DebugBVH        = (1 << 23),
-    DebugProbes     = (1 << 24)
-};
-
 template <typename T>
 struct DynArray {
     std::unique_ptr<T[]> data;
@@ -84,6 +56,7 @@ public:
         uint32_t base_vertex;
         uint32_t base_instance;
     };
+    static_assert(sizeof(DrawElementsIndirectCommand) == 20, "!");
 
     struct DrawList {
         uint32_t                    render_flags = default_flags;
@@ -251,7 +224,7 @@ private:
     ShadowFrustumCache sun_shadow_cache_[4];
 
 #if defined(USE_GL_RENDER)
-    // Constant that controlls buffers orphaning
+    // Constant that controls buffers orphaning
     static const int FrameSyncWindow = 2;
 
     uint32_t temp_tex_;

@@ -233,8 +233,7 @@ int ModlApp::Init(int w, int h) {
         }
 
         Ren::Texture2DParams p;
-        p.w = checker_res;
-        p.h = checker_res;
+        p.w = p.h = checker_res;
         p.format = Ren::RawRGB888;
         p.filter = Ren::NoFilter;
         p.repeat = Ren::Repeat;

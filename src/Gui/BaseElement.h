@@ -89,9 +89,7 @@ public:
 
 class RootElement : public BaseElement {
 public:
-    explicit RootElement(const Vec2i &zone_size) : BaseElement( {
-        -1, -1
-    }, { 2, 2 }, nullptr) {
+    explicit RootElement(const Vec2i &zone_size) : BaseElement({ -1, -1 }, { 2, 2 }, nullptr) {
         set_zone(zone_size);
         Resize(Vec2f{ -1, -1 }, Vec2f{ 2, 2 }, nullptr);
     }

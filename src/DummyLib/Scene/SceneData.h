@@ -58,39 +58,6 @@ struct SceneObject {
     SceneObject &operator=(SceneObject &&rhs) = default;
 };
 
-struct FrontendInfo {
-    uint64_t start_timepoint_us = 0,
-             end_timepoint_us = 0;
-    uint32_t occluders_time_us = 0,
-             main_gather_time_us = 0,
-             shadow_gather_time_us = 0,
-             drawables_sort_time_us = 0,
-             items_assignment_time_us = 0;
-};
-
-struct BackendInfo {
-    uint64_t cpu_start_timepoint_us = 0,
-             cpu_end_timepoint_us = 0;
-    uint64_t gpu_start_timepoint_us = 0,
-             gpu_end_timepoint_us = 0;
-    uint32_t skinning_time_us = 0,
-             shadow_time_us = 0,
-             depth_opaque_pass_time_us = 0,
-             ao_pass_time_us = 0,
-             opaque_pass_time_us = 0,
-             transp_pass_time_us = 0,
-             refl_pass_time_us = 0,
-             blur_pass_time_us = 0,
-             blit_pass_time_us = 0;
-    int64_t gpu_cpu_time_diff_us = 0;
-
-    uint32_t shadow_draw_calls_count = 0,
-             depth_fill_draw_calls_count = 0,
-             opaque_draw_calls_count = 0;
-
-    uint32_t triangles_rendered = 0;
-};
-
 struct bvh_node_t {
     uint32_t prim_index, prim_count,
              left_child, right_child;

@@ -14,6 +14,7 @@
 #include <Sys/MemBuf.h>
 #include <Sys/Time_.h>
 
+#include "../Gui/DebugInfoUI.h"
 #include "../Gui/FontStorage.h"
 #include "../Viewer.h"
 #include "../Renderer/Renderer.h"
@@ -53,6 +54,8 @@ GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
 
     const auto fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     font_ = fonts->FindFont("main_font");
+
+    debug_ui_       = game->GetComponent<DebugInfoUI>(UI_DEBUG_KEY);
 
     swap_interval_  = game->GetComponent<TimeInterval>(SWAP_TIMER_KEY);
 
@@ -584,7 +587,7 @@ void GSDrawTest::Draw(uint64_t dt_us) {
         if (!use_pt_ && !use_lm_) {
             int back_list = (front_list_ + 1) % 2;
 
-            auto render_flags = renderer_->render_flags();
+            uint32_t render_flags = renderer_->render_flags();
             auto front_info = main_view_lists_[back_list].frontend_info;
             auto back_info = renderer_->backend_info();
 
@@ -593,268 +596,15 @@ void GSDrawTest::Draw(uint64_t dt_us) {
 
             LOGI("Frontend: %04lld\tBackend(cpu): %04lld", (long long)front_dur, (long long)back_dur);
 
-            const char delimiter[] = "------------------";
-            char text_buffer[256];
+            ItemsInfo items_info;
+            items_info.light_sources_count  = main_view_lists_[back_list].light_sources.count;
+            items_info.decals_count         = main_view_lists_[back_list].decals.count;
+            items_info.probes_count         = main_view_lists_[back_list].probes.count;
+            items_info.items_total          = main_view_lists_[back_list].items.count;
 
-            float vertical_offset = 0.65f;
-
-            {
-                uint64_t cur_frame_time = Sys::GetTimeUs();
-
-                double last_frame_dur = (cur_frame_time - last_frame_time_) * 0.000001;
-                double last_frame_fps = 1.0 / last_frame_dur;
-
-                last_frame_time_ = cur_frame_time;
-
-                const double alpha = 0.025;
-                cur_fps_ = alpha * last_frame_fps + (1.0 - alpha) * cur_fps_;
-
-                sprintf(text_buffer, "        fps: %.1f", cur_fps_);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-            }
-
-            {
-                vertical_offset -= font_->height(ui_root_.get());
-                font_->DrawText(ui_renderer_.get(), delimiter, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "   occ_rast: %u us", front_info.occluders_time_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "main_gather: %u us", front_info.main_gather_time_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "shad_gather: %u us", front_info.shadow_gather_time_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "    sorting: %u us", front_info.drawables_sort_time_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "item_assign: %u us", front_info.items_assignment_time_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-            }
-
-            {
-                vertical_offset -= font_->height(ui_root_.get());
-                font_->DrawText(ui_renderer_.get(), delimiter, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " draw_calls: [%u, %u, %u]", back_info.shadow_draw_calls_count,
-                        back_info.depth_fill_draw_calls_count, back_info.opaque_draw_calls_count);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "  triangles: %.2f M", back_info.triangles_rendered * 0.000001);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "   skinning: %u us", back_info.skinning_time_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "shadow_maps: %u us", back_info.shadow_time_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " depth_fill: %u us", back_info.depth_opaque_pass_time_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "       ssao: %u us", back_info.ao_pass_time_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "opaque_pass: %u us", back_info.opaque_pass_time_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "transp_pass: %u us", back_info.transp_pass_time_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "  refl_pass: %u us", back_info.refl_pass_time_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "  blur_pass: %u us", back_info.blur_pass_time_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "  blit_pass: %u us", back_info.blit_pass_time_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                uint32_t gpu_total_us = (uint32_t)(back_info.gpu_end_timepoint_us - back_info.gpu_start_timepoint_us);
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "  gpu_total: %u us", gpu_total_us);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-            }
-
-            if (render_flags & (DebugLights | DebugDecals)) {
-                vertical_offset -= font_->height(ui_root_.get());
-                font_->DrawText(ui_renderer_.get(), delimiter, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " lights_cnt: %u", (unsigned)main_view_lists_[back_list].light_sources.count);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "lights_data: %u kb", (unsigned)(main_view_lists_[back_list].light_sources.count * sizeof(LightSourceItem) / 1024));
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " decals_cnt: %u", (unsigned)main_view_lists_[back_list].decals.count);
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, "decals_data: %u kb", (unsigned)(main_view_lists_[back_list].decals.count * sizeof(DecalItem) / 1024));
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " cells_data: %u kb", (unsigned)(REN_CELLS_COUNT * sizeof(CellData) / 1024));
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                vertical_offset -= font_->height(ui_root_.get());
-                sprintf(text_buffer, " items_data: %u kb", (unsigned)(main_view_lists_[back_list].items.count * sizeof(ItemData) / 1024));
-                font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-            }
-
-            if (render_flags & DebugTimings) {
-                if (prev_front_info_.end_timepoint_us) {
-                    double prev_front_start = double(prev_front_info_.start_timepoint_us),
-                           prev_front_end = double(prev_front_info_.end_timepoint_us),
-                           prev_back_cpu_start = double(prev_back_info_.cpu_start_timepoint_us),
-                           prev_back_cpu_end = double(prev_back_info_.cpu_end_timepoint_us),
-                           prev_back_gpu_start = double(prev_back_info_.gpu_start_timepoint_us),
-                           prev_back_gpu_end = double(prev_back_info_.gpu_end_timepoint_us),
-                           prev_swap_start = double(prev_swap_interval_.start_timepoint_us),
-                           prev_swap_end = double(prev_swap_interval_.end_timepoint_us),
-                           next_front_start = double(front_info.start_timepoint_us),
-                           next_front_end = double(front_info.end_timepoint_us),
-                           next_back_cpu_start = double(back_info.cpu_start_timepoint_us),
-                           next_back_cpu_end = double(back_info.cpu_end_timepoint_us),
-                           next_back_gpu_start = double(back_info.gpu_start_timepoint_us),
-                           next_back_gpu_end = double(back_info.gpu_end_timepoint_us),
-                           next_swap_start = double(swap_interval_->start_timepoint_us),
-                           next_swap_end = double(swap_interval_->end_timepoint_us);
-
-                    prev_back_gpu_start -= double(prev_back_info_.gpu_cpu_time_diff_us);
-                    prev_back_gpu_end -= double(prev_back_info_.gpu_cpu_time_diff_us);
-                    next_back_gpu_start -= double(back_info.gpu_cpu_time_diff_us);
-                    next_back_gpu_end -= double(back_info.gpu_cpu_time_diff_us);
-
-                    auto start_point = prev_back_cpu_start;
-
-                    prev_front_start -= start_point;
-                    prev_front_end -= start_point;
-                    prev_back_cpu_start -= start_point;
-                    prev_back_cpu_end -= start_point;
-                    prev_back_gpu_start -= start_point;
-                    prev_back_gpu_end -= start_point;
-                    prev_swap_start -= start_point;
-                    prev_swap_end -= start_point;
-                    next_front_start -= start_point;
-                    next_front_end -= start_point;
-                    next_back_cpu_start -= start_point;
-                    next_back_cpu_end -= start_point;
-                    next_back_gpu_start -= start_point;
-                    next_back_gpu_end -= start_point;
-                    next_swap_start -= start_point;
-                    next_swap_end -= start_point;
-
-                    double dur = 0.0;
-                    int cc = 0;
-
-                    while (dur < std::max(next_front_end, next_back_gpu_end)) {
-                        dur += 1000000.0 / 60.0;
-                        cc++;
-                    }
-
-                    prev_front_start /= dur;
-                    prev_front_end /= dur;
-                    prev_back_cpu_start /= dur;
-                    prev_back_cpu_end /= dur;
-                    prev_back_gpu_start /= dur;
-                    prev_back_gpu_end /= dur;
-                    prev_swap_start /= dur;
-                    prev_swap_end /= dur;
-
-                    next_front_start /= dur;
-                    next_front_end /= dur;
-                    next_back_cpu_start /= dur;
-                    next_back_cpu_end /= dur;
-                    next_back_gpu_start /= dur;
-                    next_back_gpu_end /= dur;
-                    next_swap_start /= dur;
-                    next_swap_end /= dur;
-
-                    text_buffer[0] = '[';
-                    text_buffer[101] = ']';
-
-                    for (int i = 0; i < 100; i++) {
-                        double t = double(i) / 100;
-
-                        if ((t >= prev_front_start && t <= prev_front_end) ||
-                            (t >= next_front_start && t <= next_front_end)) {
-                            text_buffer[i + 1] = 'F';
-                        } else {
-                            text_buffer[i + 1] = '_';
-                        }
-                    }
-
-                    sprintf(&text_buffer[102], " [2 frames, %.1f ms]", cc * 1000.0 / 60.0);
-
-                    vertical_offset -= font_->height(ui_root_.get());
-                    font_->DrawText(ui_renderer_.get(), delimiter, { -1.0f, vertical_offset }, ui_root_.get());
-
-                    vertical_offset -= font_->height(ui_root_.get());
-                    font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                    for (int i = 0; i < 100; i++) {
-                        double t = double(i) / 100;
-
-                        if ((t >= prev_back_cpu_start && t <= prev_back_cpu_end) ||
-                            (t >= next_back_cpu_start && t <= next_back_cpu_end)) {
-                            text_buffer[i + 1] = 'B';
-                        } else if ((t >= prev_swap_start && t <= prev_swap_end) ||
-                                   (t >= next_swap_start && t <= next_swap_end)) {
-                            text_buffer[i + 1] = 'S';
-                        } else {
-                            text_buffer[i + 1] = '_';
-                        }
-                    }
-
-                    vertical_offset -= font_->height(ui_root_.get());
-                    font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-
-                    for (int i = 0; i < 100; i++) {
-                        double t = double(i) / 100;
-
-                        if ((t >= prev_back_gpu_start && t <= prev_back_gpu_end) ||
-                            (t >= next_back_gpu_start && t <= next_back_gpu_end)) {
-                            text_buffer[i + 1] = 'G';
-                        } else {
-                            text_buffer[i + 1] = '_';
-                        }
-                    }
-
-                    vertical_offset -= font_->height(ui_root_.get());
-                    font_->DrawText(ui_renderer_.get(), text_buffer, { -1.0f, vertical_offset }, ui_root_.get());
-                }
-
-                prev_front_info_ = front_info;
-                prev_back_info_ = back_info;
-                prev_swap_interval_ = *swap_interval_;
-            }
+            debug_ui_->UpdateInfo(front_info, back_info, items_info, *swap_interval_, render_flags);
+            debug_ui_->Draw(ui_renderer_.get());
         }
-
-        //font_->DrawText(ui_renderer_.get(), s2.c_str(), { -1, 1.0f - 2 * font_->height(ui_root_.get()) }, ui_root_.get());
-        //font_->DrawText(ui_renderer_.get(), s3.c_str(), { -1, 1.0f - 3 * font_->height(ui_root_.get()) }, ui_root_.get());
-        //font_->DrawText(ui_renderer_.get(), s4.c_str(), { -1, 1.0f - 4 * font_->height(ui_root_.get()) }, ui_root_.get());
 
         ui_renderer_->EndDraw();
     }

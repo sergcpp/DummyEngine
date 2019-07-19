@@ -4,7 +4,9 @@ project(DummyLib)
 set(SOURCE_FILES    Viewer.h
                     Viewer.cpp)
 
-set(GUI_SOURCES  Gui/FontStorage.h)
+set(GUI_SOURCES Gui/DebugInfoUI.h
+                Gui/DebugInfoUI.cpp 
+                Gui/FontStorage.h)
 
 set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/Renderer.h
@@ -105,7 +107,7 @@ list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
 list(APPEND ALL_SOURCE_FILES ${GUI_SOURCES})
-#set_source_files_properties(${GUI_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties(${GUI_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Gui" FILES ${GUI_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${RENDERER_SOURCES})
@@ -131,6 +133,9 @@ source_group("src\\Utils" FILES ${UTILS_SOURCES})
 list(APPEND ALL_SOURCE_FILES ${SHADERS_SOURCES})
 set_source_files_properties(${SHADERS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Renderer\\Shaders" FILES ${SHADERS_SOURCES})
+
+list(APPEND ALL_SOURCE_FILES Gui/_Gui1.cpp)
+source_group("src\\Gui" FILES Gui/_Gui1.cpp)
 
 list(APPEND ALL_SOURCE_FILES Renderer/_Renderer.cpp)
 source_group("src\\Renderer" FILES Renderer/_Renderer.cpp)

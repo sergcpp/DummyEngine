@@ -3,6 +3,7 @@
 #include <Eng/GameBase.h>
 
 const char UI_FONTS_KEY[]               = "ui_fonts";
+const char UI_DEBUG_KEY[]               = "ui_debug";
 
 const char RENDERER_KEY[]               = "renderer";
 const char RAY_RENDERER_KEY[]           = "ray_renderer";

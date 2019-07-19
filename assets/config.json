@@ -1,26 +1,6 @@
 {
     "gfx_settings" : {
-        "general" : {
-            "setting1" : 1
-        },
-        "postprocess" : {
-            "shaders_dir" : "./game_assets/shaders",
-            "low" : {
-                "enable_fxaa" : false,
-                "enable_bloom" : false,
-                "quality" : 0
-            },
-            "medium" : {
-                "enable_fxaa" : true,
-                "enable_bloom" : false,
-                "quality" : 1
-            },
-            "high" : {
-                "enable_fxaa" : true,
-                "enable_bloom" : true,
-                "quality" : 2
-            }
-        }
+        
     },
 	"ui_settings" : {
 		"fonts" : {

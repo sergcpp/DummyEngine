@@ -124,3 +124,71 @@ struct SkinRegion {
     uint16_t xform_offset, vertex_count;
 };
 static_assert(sizeof(SkinRegion) == 12, "!");
+
+enum eRenderFlags {
+    EnableZFill     = (1 << 0),
+    EnableCulling   = (1 << 1),
+    EnableSSR       = (1 << 2),
+    EnableSSAO      = (1 << 3),
+    EnableLightmap  = (1 << 4),
+    EnableLights    = (1 << 5),
+    EnableDecals    = (1 << 6),
+    EnableProbes    = (1 << 7),
+    EnableShadows   = (1 << 8),
+    EnableTonemap   = (1 << 9),
+    EnableBloom     = (1 << 10),
+    EnableFxaa      = (1 << 11),
+    EnableTimers    = (1 << 12),
+    DebugWireframe  = (1 << 13),
+    DebugCulling    = (1 << 14),
+    DebugShadow     = (1 << 15),
+    DebugReduce     = (1 << 16),
+    DebugLights     = (1 << 17),
+    DebugDeferred   = (1 << 18),
+    DebugBlur       = (1 << 19),
+    DebugDecals     = (1 << 20),
+    DebugSSAO       = (1 << 21),
+    DebugTimings    = (1 << 22),
+    DebugBVH        = (1 << 23),
+    DebugProbes     = (1 << 24)
+};
+
+struct FrontendInfo {
+    uint64_t start_timepoint_us = 0,
+             end_timepoint_us = 0;
+    uint32_t occluders_time_us = 0,
+             main_gather_time_us = 0,
+             shadow_gather_time_us = 0,
+             drawables_sort_time_us = 0,
+             items_assignment_time_us = 0;
+};
+
+struct BackendInfo {
+    uint64_t cpu_start_timepoint_us = 0,
+             cpu_end_timepoint_us = 0;
+    uint64_t gpu_start_timepoint_us = 0,
+             gpu_end_timepoint_us = 0;
+    uint32_t skinning_time_us = 0,
+             shadow_time_us = 0,
+             depth_opaque_pass_time_us = 0,
+             ao_pass_time_us = 0,
+             opaque_pass_time_us = 0,
+             transp_pass_time_us = 0,
+             refl_pass_time_us = 0,
+             blur_pass_time_us = 0,
+             blit_pass_time_us = 0;
+    int64_t gpu_cpu_time_diff_us = 0;
+
+    uint32_t shadow_draw_calls_count = 0,
+             depth_fill_draw_calls_count = 0,
+             opaque_draw_calls_count = 0;
+
+    uint32_t triangles_rendered = 0;
+};
+
+struct ItemsInfo {
+    uint32_t light_sources_count = 0,
+             decals_count = 0,
+             probes_count = 0;
+    uint32_t items_total = 0;
+};

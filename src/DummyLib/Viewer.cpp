@@ -10,6 +10,7 @@
 #include <Sys/Json.h>
 #include <Sys/Log.h>
 
+#include "Gui/DebugInfoUI.h"
 #include "Gui/FontStorage.h"
 #include "Renderer/Renderer.h"
 #include "Scene/SceneManager.h"
@@ -43,8 +44,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
 
     const JsObject &ui_settings = main_config.at("ui_settings");
 
-    {
-        // load fonts
+    {   // load fonts
         auto font_storage = std::make_shared<FontStorage>();
         AddComponent(UI_FONTS_KEY, font_storage);
 
@@ -64,9 +64,16 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         }
     }
 
-    {
+    {   // create commnadline
         auto cmdline = std::make_shared<Cmdline>();
         AddComponent(CMDLINE_KEY, cmdline);
+    }
+
+    {   // create UI for performance debugging
+        auto font_storage = GetComponent<FontStorage>(UI_FONTS_KEY);
+        auto ui_root = GetComponent<Gui::BaseElement>(UI_ROOT_KEY);
+        auto debug_ui = std::make_shared<DebugInfoUI>(Ren::Vec2f{ -1.0f, -1.0f }, Ren::Vec2f{ 2.0f, 2.0f }, ui_root.get(), font_storage->FindFont("main_font"));
+        AddComponent(UI_DEBUG_KEY, debug_ui);
     }
 
     {

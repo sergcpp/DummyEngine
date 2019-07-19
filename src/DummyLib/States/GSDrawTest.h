@@ -17,6 +17,7 @@
 #include "../Renderer/Renderer.h"
 
 class Cmdline;
+class DebugInfoUI;
 class GameStateManager;
 class FontStorage;
 class SceneManager;
@@ -39,6 +40,7 @@ class GSDrawTest : public GameState {
     std::shared_ptr<Gui::Renderer>      ui_renderer_;
     std::shared_ptr<Gui::BaseElement>   ui_root_;
     std::shared_ptr<Gui::BitmapFont>    font_;
+    std::shared_ptr<DebugInfoUI>        debug_ui_;
 
     std::mutex              mtx_;
     std::thread             background_thread_;
