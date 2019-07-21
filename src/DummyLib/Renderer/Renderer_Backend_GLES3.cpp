@@ -102,6 +102,20 @@ namespace RendererInternal {
     const size_t DecalsBufChunkSize         = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
     const size_t CellsBufChunkSize          = sizeof(CellData) * REN_CELLS_COUNT;
     const size_t ItemsBufChunkSize          = sizeof(ItemData) * REN_MAX_ITEMS_TOTAL;
+
+    struct DebugMarker {
+        DebugMarker(const char *name) {
+#ifndef DISABLE_MARKERS
+            glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name);
+#endif
+        }
+
+        ~DebugMarker() {
+#ifndef DISABLE_MARKERS
+            glPopDebugGroup();
+#endif
+        }
+    };
 }
 
 void Renderer::InitRendererInternal() {
@@ -970,11 +984,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     backend_info_.triangles_rendered = 0;
 
     {   // Update buffers
+        DebugMarker _("UPDATE BUFFERS");
+
         // TODO: try to use persistently mapped buffers
 
-#ifndef DISABLE_MARKERS
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "UPDATE BUFFERS");
-#endif
         cur_buf_chunk_ = (cur_buf_chunk_ + 1) % FrameSyncWindow;
         if (buf_range_fences_[cur_buf_chunk_]) {
             GLsync sync = reinterpret_cast<GLsync>(buf_range_fences_[cur_buf_chunk_]);
@@ -1105,10 +1118,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
         }
-
-#ifndef DISABLE_MARKERS
-        glPopDebugGroup();
-#endif
     }
 
     /**************************************************************************************************/
@@ -1171,9 +1180,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     }
 
     if (list.skin_regions.count) {
-#ifndef DISABLE_MARKERS
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "SKINNING");
-#endif
+        DebugMarker _("SKINNING");
+
         const Ren::Program *p = skinning_prog_.get();
 
         glUseProgram(p->prog_id());
@@ -1185,10 +1193,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glDispatchCompute(list.skin_regions.count, 1, 1);
         glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
-
-#ifndef DISABLE_MARKERS
-        glPopDebugGroup();
-#endif
     }
 
     /**************************************************************************************************/
@@ -1208,9 +1212,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glPolygonOffset(4.0f, 8.0f);
         glEnable(GL_SCISSOR_TEST);
 
-#ifndef DISABLE_MARKERS
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "UPDATE SHADOW MAPS");
-#endif
+        DebugMarker _("UPDATE SHADOW MAPS");
 
         // draw opaque objects
         glBindVertexArray(depth_pass_solid_vao_);
@@ -1287,10 +1289,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             }
         }
 
-#ifndef DISABLE_MARKERS
-        glPopDebugGroup();
-#endif
-
         glDisable(GL_SCISSOR_TEST);
         glPolygonOffset(0.0f, 0.0f);
         glDisable(GL_POLYGON_OFFSET_FILL);
@@ -1334,15 +1332,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         BindCubemap(REN_BASE_TEX_SLOT, list.env.env_map->tex_id());
 
-#ifndef DISABLE_MARKERS
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "DRAW SKYDOME");
-#endif
+        DebugMarker _("DRAW SKYDOME");
 
         glDrawElements(GL_TRIANGLES, (GLsizei)__skydome_indices_count, GL_UNSIGNED_SHORT, (void *)uintptr_t(skydome_ndx_offset_));
-
-#ifndef DISABLE_MARKERS
-        glPopDebugGroup();
-#endif
 
         glDepthFunc(GL_LESS);
     } else {
@@ -1404,9 +1396,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glDepthFunc(GL_LESS);
 
-#ifndef DISABLE_MARKERS
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "DEPTH-FILL");
-#endif
+        DebugMarker _("DEPTH-FILL");
 
         // draw solid objects
         glBindVertexArray(depth_pass_solid_vao_);
@@ -1450,10 +1440,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glBindVertexArray(0);
 
-#ifndef DISABLE_MARKERS
-        glPopDebugGroup();
-#endif
-
         glDepthFunc(GL_EQUAL);
     }
 
@@ -1467,12 +1453,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     glBindVertexArray((GLuint)temp_vao_);
 
-#ifndef DISABLE_MARKERS
-    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "SSAO PASS");
-#endif
-
     const uint32_t use_down_depth_mask = (EnableZFill | EnableSSAO | EnableSSR);
     if ((list.render_flags & EnableZFill) && (list.render_flags & (EnableSSAO | EnableSSR))) {
+        DebugMarker _("DOWNSAMPLE DEPTH");
+
         // Setup viewport once for all ssao passes
         glViewport(0, 0, down_depth_.w, down_depth_.h);
 
@@ -1520,6 +1504,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     const uint32_t use_ssao_mask = (EnableZFill | EnableSSAO | DebugWireframe);
     const uint32_t use_ssao = (EnableZFill | EnableSSAO);
     if ((list.render_flags & use_ssao_mask) == use_ssao) {
+        DebugMarker _("SSAO PASS");
+
         assert(down_depth_.w == ssao_buf1_.w && down_depth_.w == ssao_buf2_.w &&
                down_depth_.h == ssao_buf1_.h && down_depth_.h == ssao_buf2_.h);
 
@@ -1602,10 +1588,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
     }
 
-#ifndef DISABLE_MARKERS
-    glPopDebugGroup();
-#endif
-
 #if !defined(__ANDROID__)
     if (list.render_flags & DebugWireframe) {
         glDepthFunc(GL_LEQUAL);
@@ -1631,9 +1613,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glBindVertexArray((GLuint)draw_pass_vao_);
 
     {   // actual drawing
-#ifndef DISABLE_MARKERS
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "OPAQUE PASS");
-#endif
+        DebugMarker _("OPAQUE PASS");
 
         const Ren::Program *cur_program = nullptr;
         const Ren::Material *cur_mat = nullptr;
@@ -1667,10 +1647,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             backend_info_.opaque_draw_calls_count++;
             backend_info_.triangles_rendered += (batch.indices_count / 3) * batch.instance_count;
         }
-
-#ifndef DISABLE_MARKERS
-        glPopDebugGroup();
-#endif
     }
 
     /**************************************************************************************************/
@@ -1686,9 +1662,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glEnable(GL_BLEND);
 
     {
-#ifndef DISABLE_MARKERS
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "TRANSPARENT PASS");
-#endif
+        DebugMarker _("TRANSPARENT PASS");
 
         const Ren::Program *cur_program = nullptr;
         const Ren::Material *cur_mat = nullptr;
@@ -1732,10 +1706,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             backend_info_.opaque_draw_calls_count += 2;
             backend_info_.triangles_rendered += (batch.indices_count / 3) * batch.instance_count;
         }
-
-#ifndef DISABLE_MARKERS
-        glPopDebugGroup();
-#endif
     }
 
 #if !defined(__ANDROID__)
@@ -1794,9 +1764,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             BindTexture(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         }
 
-#ifndef DISABLE_MARKERS
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "REFLECTIONS PASS");
-#endif
+        DebugMarker _("REFLECTIONS PASS");
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
@@ -1843,10 +1811,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
-
-#ifndef DISABLE_MARKERS
-        glPopDebugGroup();
-#endif
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
@@ -1955,9 +1919,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             BindTexture(REN_BASE_TEX_SLOT, clean_buf_.attachments[0].tex);
         }
 
-#ifndef DISABLE_MARKERS
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "BLUR PASS");
-#endif
+        DebugMarker _("BLUR PASS");
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
@@ -1993,10 +1955,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
         }
-
-#ifndef DISABLE_MARKERS
-        glPopDebugGroup();
-#endif
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
@@ -2044,15 +2002,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         BindTexture(REN_BASE_TEX_SLOT, buf_to_sample->attachments[0].tex);
 
-#ifndef DISABLE_MARKERS
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "SAMPLE FRAME BRIGHTNESS");
-#endif
+        DebugMarker _("SAMPLE FRAME BRIGHTNESS");
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
-
-#ifndef DISABLE_MARKERS
-        glPopDebugGroup();
-#endif
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);

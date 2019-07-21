@@ -13,7 +13,7 @@ DebugInfoUI::DebugInfoUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, const Ba
 
 void DebugInfoUI::UpdateInfo(const FrontendInfo &frontend_info, const BackendInfo &backend_info,
                              const ItemsInfo &items_info, const TimeInterval &swap_interval, uint32_t render_flags) {
-    const float alpha = 0.025f;
+    const float alpha = 0.98f;
     const float k = (1.0f - alpha);
 
     auto us_to_ms = [](uint64_t v) -> float { return 0.001f * v; };
