@@ -385,6 +385,9 @@ typedef void (APIENTRY *PFNGLUNIFORM2IPROC)(GLint location, GLint v0, GLint v1);
 typedef void (APIENTRY *PFNGLUNIFORM3IPROC)(GLint location, GLint v0, GLint v1, GLint v2);
 
 typedef void (APIENTRY *PFNGLUNIFORM1IVPROC)(GLint location, GLsizei count, const GLint *value);
+typedef void (APIENTRY *PFNGLUNIFORM2IVPROC)(GLint location, GLsizei count, const GLint *value);
+typedef void (APIENTRY *PFNGLUNIFORM3IVPROC)(GLint location, GLsizei count, const GLint *value);
+typedef void (APIENTRY *PFNGLUNIFORM4IVPROC)(GLint location, GLsizei count, const GLint *value);
 
 typedef void (APIENTRY *PFNGLUNIFORM1UIPROC)(GLint location, GLuint v0);
 typedef void (APIENTRY *PFNGLUNIFORM2UIPROC)(GLint location, GLuint v0, GLuint v1);
@@ -537,6 +540,9 @@ typedef void (APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
 #define glUniform3i                 ren_glUniform3i
 
 #define glUniform1iv                ren_glUniform1iv
+#define glUniform2iv                ren_glUniform2iv
+#define glUniform3iv                ren_glUniform3iv
+#define glUniform4iv                ren_glUniform4iv
 
 #define glUniform1ui                ren_glUniform1ui
 #define glUniform2ui                ren_glUniform2ui
@@ -674,6 +680,9 @@ EXTERN_FUNC PFNGLUNIFORM2IPROC                  ren_glUniform2i;
 EXTERN_FUNC PFNGLUNIFORM3IPROC                  ren_glUniform3i;
 
 EXTERN_FUNC PFNGLUNIFORM1IVPROC                 ren_glUniform1iv;
+EXTERN_FUNC PFNGLUNIFORM2IVPROC                 ren_glUniform2iv;
+EXTERN_FUNC PFNGLUNIFORM3IVPROC                 ren_glUniform3iv;
+EXTERN_FUNC PFNGLUNIFORM4IVPROC                 ren_glUniform4iv;
 
 EXTERN_FUNC PFNGLUNIFORM1UIPROC                 ren_glUniform1ui;
 EXTERN_FUNC PFNGLUNIFORM2UIPROC                 ren_glUniform2ui;
