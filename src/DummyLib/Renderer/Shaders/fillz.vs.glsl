@@ -29,15 +29,14 @@ layout (std140) uniform SharedDataBlock {
 };
 
 layout(binding = )" AS_STR(REN_INST_BUF_SLOT) R"() uniform mediump samplerBuffer instances_buffer;
-
-layout(location = )" AS_STR(REN_U_INSTANCES_LOC) R"() uniform int uInstanceIndices[8];
+layout(location = )" AS_STR(REN_U_INSTANCES_LOC) R"() uniform ivec4 uInstanceIndices[)" AS_STR(REN_MAX_BATCH_SIZE) R"( / 4];
 
 #ifdef TRANSPARENT_PERM
 out vec2 aVertexUVs1_;
 #endif
 
 void main() {
-    int instance = uInstanceIndices[gl_InstanceID];
+    int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
 
     mat4 MMatrix;
     MMatrix[0] = texelFetch(instances_buffer, instance * 4 + 0);

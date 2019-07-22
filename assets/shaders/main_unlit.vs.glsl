@@ -33,9 +33,7 @@ layout (std140) uniform SharedDataBlock {
     ProbeItem uProbes[$MaxProbes];
 };
 
-layout (std140) uniform BatchDataBlock {
-    ivec4 uInstanceIndices[$MaxBatchSize / 4];
-};
+layout (location = $uInstancesLoc) uniform ivec4 uInstanceIndices[$MaxBatchSize / 4];
 
 layout(binding = $InstanceBufSlot) uniform highp samplerBuffer instances_buffer;
 

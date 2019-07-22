@@ -233,7 +233,7 @@ private:
 
     uint32_t temp_framebuf_, skydome_framebuf_ = 0, depth_fill_framebuf_ = 0, refl_comb_framebuf_ = 0;
 
-    uint32_t unif_shared_data_block_, unif_batch_data_block_;
+    uint32_t unif_shared_data_block_;
     uint32_t temp_vao_, depth_pass_solid_vao_, depth_pass_transp_vao_, draw_pass_vao_, skydome_vao_, sphere_vao_;
     uint32_t temp_buf1_vtx_offset_, temp_buf2_vtx_offset_, temp_buf_ndx_offset_,
              skydome_vtx1_offset_, skydome_vtx2_offset_, skydome_ndx_offset_,
