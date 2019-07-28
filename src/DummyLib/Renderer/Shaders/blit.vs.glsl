@@ -9,7 +9,7 @@ layout(location = 0) uniform vec4 uTransform;
 out vec2 aVertexUVs_;
 
 void main() {
-    aVertexUVs_ = aVertexUVs;
+    aVertexUVs_ = uTransform.xy + aVertexUVs * uTransform.zw;
     gl_Position = vec4(aVertexPosition, 0.5, 1.0);
 } 
 )"

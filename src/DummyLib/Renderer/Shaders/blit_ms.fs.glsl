@@ -5,16 +5,9 @@ R"(
 #ifdef GL_ES
     precision mediump float;
 #endif
-
-/*
-UNIFORMS
-    s_texture : 3
-    multiplier : 4
-    uTexSize : 5
-*/
-        
-layout(location = 14) uniform mediump sampler2DMS s_texture;
-uniform float multiplier;
+    
+layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform mediump sampler2DMS s_texture;
+layout(location = 4) uniform float multiplier;
 
 in vec2 aVertexUVs_;
 
