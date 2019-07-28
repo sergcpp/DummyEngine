@@ -128,7 +128,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     dk *= stride;
 
     ivec2 c = ivec2(gl_FragCoord.xy);
-    float jitter = 0.0;//rand(gl_FragCoord.xy); //float((c.x + c.y) & 1) * 0.5;    
+    float jitter = float((c.x + c.y) & 1) * 0.5;    
 
     P0 += dP * (1.0 + jitter);
     Q0 += dQ * (1.0 + jitter);
@@ -156,7 +156,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
             float temp = ray_zmin; ray_zmin = ray_zmax; ray_zmax = temp;
         }
 
-        const float z_thickness = 0.1;
+        const float z_thickness = 0.05;
 
         vec2 pixel = permute ? P.yx : P;
 

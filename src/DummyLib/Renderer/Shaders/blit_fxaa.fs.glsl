@@ -5,10 +5,26 @@ R"(
     precision mediump float;
 #endif
 
-/*
-UNIFORMS
-    s_texture : 3
-*/
+struct ShadowMapRegion {
+    vec4 transform;
+    mat4 clip_from_world;
+};
+
+struct ProbeItem {
+    vec4 pos_and_radius;
+    vec4 unused_and_layer;
+    vec4 sh_coeffs[3];
+};
+
+layout (std140) uniform SharedDataBlock {
+    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
+    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
+    ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
+    vec4 uSunDir, uSunCol;
+    vec4 uClipInfo, uCamPosAndGamma;
+    vec4 uResAndFRes;
+    ProbeItem uProbes[)" AS_STR(REN_MAX_PROBES_TOTAL) R"(];
+};
         
 layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform sampler2D s_texture;
 layout(location = 12) uniform vec2 texcoord_offset;
@@ -204,6 +220,6 @@ vec4 FxaaPixelShader(vec2 pos,
 }
 
 void main() {
-    outColor = FxaaPixelShader(aVertexUVs_, s_texture, texcoord_offset, 0.75, 0.125, 0.0625);
+    outColor = FxaaPixelShader(aVertexUVs_ * uResAndFRes.xy / uResAndFRes.zw, s_texture, texcoord_offset, 0.75, 0.125, 0.0625);
 }
 )"

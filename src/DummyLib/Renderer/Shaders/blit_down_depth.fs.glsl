@@ -49,7 +49,7 @@ void main() {
     highp float d3 = texelFetch(depth_texture, coord + ivec2(1, 1), 0).r;
     highp float d4 = texelFetch(depth_texture, coord + ivec2(1, 0), 0).r;
 
-    highp float res = max(max(d1, d2), max(d3, d4));
-    outColor = LinearizeDepth(res);
+    highp float max_depth = max(max(d1, d2), max(d3, d4));
+    outColor = LinearizeDepth(max_depth);
 }
 )"

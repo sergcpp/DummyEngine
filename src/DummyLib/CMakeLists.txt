@@ -84,6 +84,7 @@ set(SHADERS_SOURCES Renderer/Shaders/blit.fs.glsl
                     Renderer/Shaders/blit_gauss_sep.fs.glsl
                     Renderer/Shaders/blit_mipmap.fs.glsl
                     Renderer/Shaders/blit_ms.fs.glsl
+                    Renderer/Shaders/blit_ms_resolve.fs.glsl
                     Renderer/Shaders/blit_multiply.fs.glsl
 					Renderer/Shaders/blit_prefilter.fs.glsl
                     Renderer/Shaders/blit_project_sh.fs.glsl
@@ -91,6 +92,8 @@ set(SHADERS_SOURCES Renderer/Shaders/blit.fs.glsl
                     Renderer/Shaders/blit_rgbm.fs.glsl
                     Renderer/Shaders/blit_ssao.fs.glsl
                     Renderer/Shaders/blit_ssr.fs.glsl
+                    Renderer/Shaders/blit_ssr_compose.fs.glsl
+                    Renderer/Shaders/blit_ssr_dilate.fs.glsl
                     Renderer/Shaders/blit_upscale.fs.glsl
                     Renderer/Shaders/fillz.fs.glsl
                     Renderer/Shaders/fillz.vs.glsl

@@ -416,8 +416,8 @@ void GSDrawTest::LoadScene(const char *name) {
 
     probes_dirty_ = true;
 
-    //view_origin_ = { -10.8793468f, 4.8534384f, 1.6284955f }; 
-    //view_dir_ = { 0.9387828f, -0.1395938f, -0.3149569f };
+    //view_origin_ = { 6.7802925f, 0.8486559f, -0.4856785f };
+    //view_dir_ = { -0.6488109f, -0.3389851f, 0.6812727f };
 }
 
 void GSDrawTest::Exit() {

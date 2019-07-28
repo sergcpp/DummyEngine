@@ -9,7 +9,7 @@ $ModifyWarning
     precision mediump sampler2DShadow;
 #endif
 
-#define LIGHT_ATTEN_CUTOFF 0.001f
+#define LIGHT_ATTEN_CUTOFF 0.004
 
 layout(binding = $MatTex0Slot) uniform sampler2D diffuse_texture;
 
@@ -41,11 +41,11 @@ in vec2 aVertexUVs1_;
 #endif
 
 layout(location = $OutColorIndex) out vec4 outColor;
-layout(location = $OutSpecIndex) out vec4 outSpecular;
+layout(location = $OutNormIndex) out vec4 outNormal;
 
 void main(void) {
     vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(2.2));
     
     outColor = vec4(albedo_color, 1.0);
-    outSpecular = vec4(0.0);
+    outNormal = vec4(0.0);
 }

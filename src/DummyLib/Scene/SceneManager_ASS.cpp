@@ -669,8 +669,6 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     shader_constants.emplace("$ShadCasc3Dist",  AS_STR(REN_SHAD_CASCADE3_DIST));
     shader_constants.emplace("$ShadCasc3Samp",  AS_STR(REN_SHAD_CASCADE3_SAMPLES));
 
-    shader_constants.emplace("$SSAOBufResDiv",  AS_STR(REN_SSAO_BUF_RES_DIV));
-
     shader_constants.emplace("$MaxShadowMaps",  AS_STR(REN_MAX_SHADOWMAPS_TOTAL));
     shader_constants.emplace("$MaxProbes",      AS_STR(REN_MAX_PROBES_TOTAL));
 

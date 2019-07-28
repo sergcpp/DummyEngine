@@ -33,7 +33,6 @@ layout(binding = 0) uniform highp sampler2D depth_texture;
 #endif
 layout(binding = 1) uniform mediump sampler2D depth_low_texture;
 layout(binding = 2) uniform lowp sampler2D source_texture;
-layout(location = 3)uniform float vertical;
 
 in vec2 aVertexUVs_;
 
@@ -57,7 +56,7 @@ void main() {
     float dmin = min(min(d1, d2), min(d3, d4));
  
     if (dmin < 0.05) {
-        outColor = texture(source_texture, aVertexUVs_);
+        outColor = texture(source_texture, aVertexUVs_ * uResAndFRes.xy / uResAndFRes.zw);
     } else {
         if (dmin == d1) {
             outColor = texelFetch(source_texture, icoord_low + ivec2(0, 0), 0);
@@ -67,8 +66,6 @@ void main() {
             outColor = texelFetch(source_texture, icoord_low + ivec2(1, 0), 0);
         } else if (dmin == d4) {
             outColor = texelFetch(source_texture, icoord_low + ivec2(1, 1), 0);
-        } else {
-            outColor.g = 1.0;
         }
     }
 }

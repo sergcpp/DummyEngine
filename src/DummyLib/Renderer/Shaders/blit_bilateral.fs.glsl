@@ -7,7 +7,7 @@ R"(
         
 layout(binding = 0) uniform mediump sampler2D depth_texture;
 layout(binding = 1) uniform lowp sampler2D source_texture;
-layout(location = 3)uniform float vertical;
+layout(location = 3) uniform float vertical;
 
 in vec2 aVertexUVs_;
 

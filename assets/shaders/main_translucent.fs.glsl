@@ -9,7 +9,7 @@ $ModifyWarning
     precision mediump sampler2DShadow;
 #endif
 
-#define LIGHT_ATTEN_CUTOFF 0.004f
+#define LIGHT_ATTEN_CUTOFF 0.004
 
 layout(binding = $MatTex0Slot) uniform sampler2D diffuse_texture;
 layout(binding = $MatTex1Slot) uniform sampler2D normals_texture;
@@ -52,7 +52,7 @@ layout(location = 5) in vec3 aVertexShUVs_[4];
 in vec3 aVertexPos_;
 in mat3 aVertexTBN_;
 in vec2 aVertexUVs1_;
-in vec3 aVertexShUVs_[4];
+in highp vec3 aVertexShUVs_[4];
 #endif
 
 layout(location = $OutColorIndex) out vec4 outColor;

@@ -40,20 +40,19 @@ const vec2 poisson_disk[16] = vec2[16](
 
 #define M_PI 3.1415926535897932384626433832795
 
-float SampleShadowPCF5x5(sampler2DShadow shadow_texture, vec3 shadow_coord) {
+float SampleShadowPCF5x5(sampler2DShadow shadow_texture, highp vec3 shadow_coord) {
     // http://the-witness.net/news/2013/09/shadow-mapping-summary-part-1/
 
-    const vec2 shadow_size = vec2($ShadRes.0, $ShadRes.0 / 2.0);
+    const highp vec2 shadow_size = vec2($ShadRes.0, $ShadRes.0 / 2.0);
+    const highp vec2 shadow_size_inv = vec2(1.0) / shadow_size;
     
     float z = shadow_coord.z;
-    vec2 uv = shadow_coord.xy * shadow_size;
-    vec2 shadowMapSizeInv = vec2(1.0) / shadow_size;
-    vec2 base_uv = floor(uv + 0.5);
+    highp vec2 uv = shadow_coord.xy * shadow_size;
+    highp vec2 base_uv = floor(uv + 0.5);
     float s = (uv.x + 0.5 - base_uv.x);
     float t = (uv.y + 0.5 - base_uv.y);
     base_uv -= vec2(0.5);
-    base_uv *= shadowMapSizeInv;
-
+    base_uv *= shadow_size_inv;
 
     float uw0 = (4.0 - 3.0 * s);
     float uw1 = 7.0;
@@ -73,14 +72,14 @@ float SampleShadowPCF5x5(sampler2DShadow shadow_texture, vec3 shadow_coord) {
 
     float sum = 0.0;
 
-    u0 = u0 * shadowMapSizeInv.x + base_uv.x;
-    v0 = v0 * shadowMapSizeInv.y + base_uv.y;
+    u0 = u0 * shadow_size_inv.x + base_uv.x;
+    v0 = v0 * shadow_size_inv.y + base_uv.y;
 
-    u1 = u1 * shadowMapSizeInv.x + base_uv.x;
-    v1 = v1 * shadowMapSizeInv.y + base_uv.y;
+    u1 = u1 * shadow_size_inv.x + base_uv.x;
+    v1 = v1 * shadow_size_inv.y + base_uv.y;
 
-    u2 = u2 * shadowMapSizeInv.x + base_uv.x;
-    v2 = v2 * shadowMapSizeInv.y + base_uv.y;
+    u2 = u2 * shadow_size_inv.x + base_uv.x;
+    v2 = v2 * shadow_size_inv.y + base_uv.y;
 
     sum += uw0 * vw0 * texture(shadow_texture, vec3(u0, v0, z));
     sum += uw1 * vw0 * texture(shadow_texture, vec3(u1, v0, z));
@@ -94,12 +93,12 @@ float SampleShadowPCF5x5(sampler2DShadow shadow_texture, vec3 shadow_coord) {
     sum += uw1 * vw2 * texture(shadow_texture, vec3(u1, v2, z));
     sum += uw2 * vw2 * texture(shadow_texture, vec3(u2, v2, z));
 
-    sum *= 1.0f / 144.0;
+    sum *= (1.0 / 144.0);
 
     return sum * sum;
 }
 
-float GetSunVisibility(float frag_depth, sampler2DShadow shadow_texture, vec3 aVertexShUVs[4]) {
+float GetSunVisibility(float frag_depth, sampler2DShadow shadow_texture, highp vec3 aVertexShUVs[4]) {
     float visibility = 0.0;
     
     if (frag_depth < $ShadCasc0Dist) {
@@ -143,8 +142,8 @@ float GetSunVisibility(float frag_depth, sampler2DShadow shadow_texture, vec3 aV
 }
 
 vec3 EvaluateSH(in vec3 normal, in vec4 sh_coeffs[3]) {
-    const float SH_A0 = 0.886226952; // PI / sqrt(4.0f * Pi)
-    const float SH_A1 = 1.02332675;  // sqrt(PI / 3.0f)
+    const float SH_A0 = 0.886226952; // PI / sqrt(4.0 * Pi)
+    const float SH_A1 = 1.02332675;  // sqrt(PI / 3.0)
 
     vec4 vv = vec4(SH_A0, SH_A1 * normal.yzx);
 

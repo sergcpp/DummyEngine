@@ -55,6 +55,10 @@ static const char blit_ms_fs[] =
 #include "Shaders/blit_ms.fs.glsl"
 ;
 
+static const char blit_ms_resolve_fs[] =
+#include "Shaders/blit_ms_resolve.fs.glsl"
+;
+
 #define __ADDITIONAL_DEFINES_STR__ ""
 static const char blit_combine_fs[] =
 #include "Shaders/blit_combine.fs.glsl"
@@ -143,6 +147,22 @@ static const char blit_ssr_ms_fs[] =
 #include "Shaders/blit_ssr.fs.glsl"
 ;
 #undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ ""
+static const char blit_ssr_compose_fs[] =
+#include "Shaders/blit_ssr_compose.fs.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ "#define MSAA_4"
+static const char blit_ssr_compose_ms_fs[] =
+#include "Shaders/blit_ssr_compose.fs.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+static const char blit_ssr_dilate_fs[] =
+#include "Shaders/blit_ssr_dilate.fs.glsl"
+;
 
 static const char blit_ssao_fs[] =
 #include "Shaders/blit_ssao.fs.glsl"

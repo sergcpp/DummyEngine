@@ -175,12 +175,16 @@ private:
     std::shared_ptr<Sys::ThreadPool> threads_;
     SWcull_ctx cull_ctx_;
     Ren::ProgramRef skydome_prog_, fillz_solid_prog_, fillz_transp_prog_, shadow_solid_prog_, shadow_transp_prog_, blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_combine_ms_prog_,
-        blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_down_depth_prog_, blit_down_depth_ms_prog_, blit_gauss_prog_, blit_gauss_sep_prog_, blit_bilateral_prog_, blit_upscale_prog_, blit_upscale_ms_prog_, blit_debug_prog_, blit_debug_ms_prog_, blit_ssr_prog_, blit_ssr_ms_prog_,
+        blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_down_depth_prog_, blit_down_depth_ms_prog_, blit_gauss_prog_, blit_gauss_sep_prog_, blit_bilateral_prog_, blit_upscale_prog_, blit_upscale_ms_prog_, blit_debug_prog_, blit_debug_ms_prog_,
+        blit_ssr_prog_, blit_ssr_ms_prog_,
+        blit_ssr_compose_prog_, blit_ssr_compose_ms_prog_,
+        blit_ssr_dilate_prog_,
+        blit_ms_resolve_prog_,
         blit_ao_prog_, blit_multiply_prog_, blit_multiply_ms_prog_, blit_debug_bvh_prog_, blit_debug_bvh_ms_prog_, blit_depth_prog_,
         blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_, blit_project_sh_prog_, blit_fxaa_prog_, probe_prog_, skinning_prog_;
     Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_, brdf_lut_;
 
-    FrameBuf clean_buf_, refl_buf_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf1_, ssao_buf2_, probe_sample_buf_, combined_buf_, down_depth_;
+    FrameBuf clean_buf_, resolved_buf1_, ssr_buf1_, ssr_buf2_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf1_, ssao_buf2_, probe_sample_buf_, combined_buf_, down_depth_;
     int scr_w_ = 0, scr_h_ = 0, // allocated screen resolution
         act_w_ = 0, act_h_ = 0; // actual resolution
 

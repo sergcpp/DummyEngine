@@ -9,7 +9,7 @@ $ModifyWarning
     precision mediump sampler2DShadow;
 #endif
 
-#define LIGHT_ATTEN_CUTOFF 0.004f
+#define LIGHT_ATTEN_CUTOFF 0.004
 
 layout(binding = $MatTex0Slot) uniform sampler2D diffuse_texture;
 layout(binding = $MatTex1Slot) uniform sampler2D normals_texture;
@@ -49,10 +49,10 @@ layout(location = 1) in mat3 aVertexTBN_;
 layout(location = 4) in vec2 aVertexUVs1_;
 layout(location = 5) in vec3 aVertexShUVs_[4];
 #else
-in vec3 aVertexPos_;
-in mat3 aVertexTBN_;
-in vec2 aVertexUVs1_;
-in vec3 aVertexShUVs_[4];
+in mediump vec3 aVertexPos_;
+in mediump mat3 aVertexTBN_;
+in mediump vec2 aVertexUVs1_;
+in highp vec3 aVertexShUVs_[4];
 #endif
 
 layout(location = $OutColorIndex) out vec4 outColor;
@@ -220,7 +220,7 @@ void main(void) {
         visibility = GetSunVisibility(lin_depth, shadow_texture, aVertexShUVs_);
     }
     
-    vec2 ao_uvs = vec2(ix, iy) / uResAndFRes.xy;
+    vec2 ao_uvs = vec2(ix, iy) / uResAndFRes.zw;
     float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;
     vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
     
