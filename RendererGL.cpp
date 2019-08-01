@@ -116,6 +116,10 @@ void Gui::Renderer::BeginDraw() {
     glBindVertexArray(main_vao_);
     glBindBuffer(GL_ARRAY_BUFFER, attribs_buf_id_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_buf_id_);
+
+#ifndef DISABLE_MARKERS
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "UI DRAW");
+#endif
 }
 
 void Gui::Renderer::EndDraw() {
@@ -128,6 +132,10 @@ void Gui::Renderer::EndDraw() {
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+#ifndef DISABLE_MARKERS
+    glPopDebugGroup();
+#endif
 }
 
 void Gui::Renderer::DrawImageQuad(const Ren::Texture2DRef &tex, const Vec2f dims[2], const Vec2f uvs[2]) {
