@@ -12,6 +12,11 @@
 
 using CommandHandler = std::function<bool(const std::vector<std::string> &)>;
 
+struct TimeInterval {
+    uint64_t start_timepoint_us = 0,
+             end_timepoint_us = 0;
+};
+
 class GameBase {
 protected:
     std::map<std::string, std::shared_ptr<void>> components_;
@@ -26,9 +31,9 @@ public:
     virtual void RegisterCommand(const std::string &cmd, const CommandHandler &handler);
     virtual bool ExecuteCommand(const std::string &cmd, const std::vector<std::string> &args);
 
-    void Start();
-    void Frame();
-    void Quit();
+    virtual void Start();
+    virtual void Frame();
+    virtual void Quit();
 
     template <class T>
     void AddComponent(const std::string &name, const std::shared_ptr<T> &p) {

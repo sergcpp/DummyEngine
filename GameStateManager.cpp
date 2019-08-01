@@ -56,19 +56,19 @@ void GameStateManager::Clear() {
     }
 }
 
-void GameStateManager::Update(int dt_ms) {
+void GameStateManager::Update(uint64_t dt_us) {
     if (pop_later_) {
         Pop();
         pop_later_ = false;
     }
 
     auto &st = states_.back();
-    st->Update(dt_ms);
+    st->Update(dt_us);
 }
 
-void GameStateManager::Draw(float dt_s) {
+void GameStateManager::Draw(uint64_t dt_us) {
     auto &st = states_.back();
-    st->Draw(dt_s);
+    st->Draw(dt_us);
 }
 
 void GameStateManager::HandleInput(InputManager::Event &evt) {

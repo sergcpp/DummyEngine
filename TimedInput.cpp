@@ -20,7 +20,7 @@ void InputManager::SetConverter(RawInputEvent evt_type, const std::function<void
 }
 
 void InputManager::AddRawInputEvent(Event &evt) {
-    if (imp_->input_buffer.size() > 10) {
+    if (imp_->input_buffer.size() > 100) {
         return;
     }
     auto conv = imp_->input_converters[evt.type];
@@ -30,12 +30,12 @@ void InputManager::AddRawInputEvent(Event &evt) {
     imp_->input_buffer.push(evt);
 }
 
-bool InputManager::PollEvent(unsigned int time, Event &evt) {
+bool InputManager::PollEvent(uint64_t time_us, Event &evt) {
     if (imp_->input_buffer.empty()) {
         return false;
     } else {
         evt = imp_->input_buffer.front();
-        if (evt.time_stamp <= time) {
+        if (evt.time_stamp <= time_us) {
             imp_->input_buffer.pop();
             return true;
         } else {

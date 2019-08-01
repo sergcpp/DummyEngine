@@ -1,7 +1,7 @@
 #pragma once
 
 struct FrameInfo {
-    unsigned int cur_time = 0, delta_time = 0, prev_time = 0, time_acc = 0;
-    float time_fract = 0.0f;
+    uint64_t cur_time_us = 0, delta_time_us = 0, prev_time_us = 0, time_acc_us = 0;
+    double time_fract = 0.0;
 };
 
