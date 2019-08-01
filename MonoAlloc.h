@@ -49,7 +49,6 @@ namespace Sys {
 
         template<class U>
         void destroy(U *p) {
-            ((void)p);
             p->~U();
         }
 

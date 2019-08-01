@@ -17,6 +17,8 @@ set(SOURCE_FILES AssetFile.h
                  AssetFile.cpp
                  AssetFileIO.h
                  AssetFileIO.cpp
+                 AsyncFileReader.h
+                 AsyncFileReader.cpp
                  BinaryTree.h
                  Delegate.h
                  DynLib.h
@@ -32,6 +34,7 @@ set(SOURCE_FILES AssetFile.h
                  Platform.h
                  PlatformSDL.h
                  PlatformSDL.cpp
+                 PoolAlloc.h
                  Signal_.h
                  SpinLock.h
                  ThreadPool.h

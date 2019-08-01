@@ -8,6 +8,7 @@
 
 #include "../BinaryTree.h"
 #include "../MonoAlloc.h"
+#include "../PoolAlloc.h"
 
 void test_alloc() {
     {   // Basic usage
@@ -98,5 +99,75 @@ void test_alloc() {
 
         require(tree.size() == 0);
         require(tree.empty());
+    }
+
+    {   // Pool alloc usage
+        Sys::PoolAllocator allocator(4, 255);
+
+        int *pointers[512];
+
+        for (int i = 0; i < 512; i++) {
+            pointers[i] = (int *)allocator.Alloc();
+            *pointers[i] = i;
+        }
+
+        for (int i = 0; i < 512; i++) {
+            require(*pointers[i] == i);
+        }
+
+        for (int i = 0; i < 512; i += 2) {
+            allocator.Free(pointers[i]);
+        }
+
+        for (int i = 1; i < 512; i += 2) {
+            require(*pointers[i] == i);
+        }
+
+        for (int i = 1; i < 512; i += 2) {
+            allocator.Free(pointers[i]);
+        }
+    }
+
+    {   // Multi-pool alloc
+        Sys::MultiPoolAllocator<uint8_t> allocator(32, 512);
+
+        uint8_t *pointers[16][256];
+
+        for (int i = 0; i < 16; i++) {
+            for (int j = 0; j < 256; j++) {
+                pointers[i][j] = allocator.allocate(j + 1);
+                for (int k = 0; k < j; k++) {
+                    *(pointers[i][j] + k) = (uint8_t)k;
+                }
+            }
+        }
+
+        for (int i = 0; i < 16; i++) {
+            for (int j = 0; j < 256; j++) {
+                for (int k = 0; k < j; k++) {
+                    require(*(pointers[i][j] + k) == (uint8_t)k);
+                }
+            }
+        }
+
+        for (int i = 0; i < 16; i++) {
+            for (int j = 0; j < 256; j += 2) {
+                allocator.deallocate(pointers[i][j], j + 1);
+            }
+        }
+
+        for (int i = 0; i < 16; i++) {
+            for (int j = 1; j < 256; j += 2) {
+                for (int k = 0; k < j; k++) {
+                    require(*(pointers[i][j] + k) == (uint8_t)k);
+                }
+            }
+        }
+
+        for (int i = 0; i < 16; i++) {
+            for (int j = 1; j < 256; j += 2) {
+                allocator.deallocate(pointers[i][j], j + 1);
+            }
+        }
     }
 }
