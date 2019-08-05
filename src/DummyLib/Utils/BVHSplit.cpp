@@ -44,7 +44,7 @@ split_data_t SplitPrimitives_SAH(const prim_t *primitives, const uint32_t *tri_i
     bbox_t res_left_bounds, res_right_bounds;
 
     for (int axis = 0; axis < 3; axis++) {
-        auto &list = axis_lists[axis];
+        std::vector<uint32_t> &list = axis_lists[axis];
 
         if (new_prim_bounds.empty()) {
             std::sort(list.begin(), list.end(),

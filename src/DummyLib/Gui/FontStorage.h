@@ -21,7 +21,7 @@ public:
     }
 
     std::shared_ptr<Gui::BitmapFont> LoadFont(const std::string &name, const std::string &file_name, Ren::Context *ctx) {
-        auto font = FindFont(name);
+        std::shared_ptr<Gui::BitmapFont> font = FindFont(name);
         if (!font) {
             font = std::make_shared<Gui::BitmapFont>(file_name.c_str(), ctx);
             fonts_.push_back(std::make_pair(name, font));

@@ -259,7 +259,7 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Texture2DParams &p)
 void Ren::Texture2D::InitFromTGAFile(const void *data, const Texture2DParams &p) {
     int w = 0, h = 0;
     eTexColorFormat format = Undefined;
-    auto image_data = ReadTGAFile(data, w, h, format);
+    std::unique_ptr<uint8_t[]> image_data = ReadTGAFile(data, w, h, format);
 
     Texture2DParams _p = p;
     _p.w = w;
@@ -272,7 +272,7 @@ void Ren::Texture2D::InitFromTGAFile(const void *data, const Texture2DParams &p)
 void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data, const Texture2DParams &p) {
     int w = 0, h = 0;
     eTexColorFormat format = Undefined;
-    auto image_data = ReadTGAFile(data, w, h, format);
+    std::unique_ptr<uint8_t[]> image_data = ReadTGAFile(data, w, h, format);
 
     std::unique_ptr<uint16_t[]> fp_data = ConvertRGBE_to_RGB16F(image_data.get(), w, h);
 
@@ -412,7 +412,7 @@ void Ren::Texture2D::InitFromRAWData(const void *data[6], const Texture2DParams 
         }
     }
 
-    auto f = params_.filter;
+    eTexFilter f = params_.filter;
     if (f == NoFilter) {
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

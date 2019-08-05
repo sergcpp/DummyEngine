@@ -527,9 +527,9 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: timer queries");
 
     {
-        auto vtx_buf1 = ctx_.default_vertex_buf1(),
-             vtx_buf2 = ctx_.default_vertex_buf2(),
-             ndx_buf = ctx_.default_indices_buf();
+        Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
+                       vtx_buf2 = ctx_.default_vertex_buf2(),
+                       ndx_buf = ctx_.default_indices_buf();
 
         // Allocate temporary buffer
         temp_buf1_vtx_offset_ = vtx_buf1->Alloc(TEMP_BUF_SIZE);
@@ -624,7 +624,7 @@ bool Renderer::InitFramebuffersInternal() {
         GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_NONE, GL_COLOR_ATTACHMENT2 };
         glDrawBuffers(3, bufs);
 
-        auto s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result = (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
@@ -641,7 +641,7 @@ bool Renderer::InitFramebuffersInternal() {
         GLenum bufs[] = { GL_NONE };
         glDrawBuffers(1, bufs);
 
-        auto s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result = (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
@@ -658,7 +658,7 @@ bool Renderer::InitFramebuffersInternal() {
         GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
         glDrawBuffers(1, bufs);
 
-        auto s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result = (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
@@ -669,9 +669,9 @@ bool Renderer::InitFramebuffersInternal() {
 void Renderer::CheckInitVAOs() {
     using namespace RendererInternal;
 
-    auto vtx_buf1 = ctx_.default_vertex_buf1();
-    auto vtx_buf2 = ctx_.default_vertex_buf2();
-    auto ndx_buf = ctx_.default_indices_buf();
+    Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
+                   vtx_buf2 = ctx_.default_vertex_buf2(),
+                   ndx_buf = ctx_.default_indices_buf();
 
     GLuint gl_vertex_buf1 = (GLuint)vtx_buf1->buf_id(),
            gl_vertex_buf2 = (GLuint)vtx_buf2->buf_id(),
@@ -834,9 +834,9 @@ void Renderer::CheckInitVAOs() {
 void Renderer::DestroyRendererInternal() {
     LOGI("DestroyRendererInternal");
 
-    auto vtx_buf1 = ctx_.default_vertex_buf1();
-    auto vtx_buf2 = ctx_.default_vertex_buf2();
-    auto ndx_buf = ctx_.default_indices_buf();
+    Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
+                   vtx_buf2 = ctx_.default_vertex_buf2(),
+                   ndx_buf = ctx_.default_indices_buf();
 
     {
         GLuint shared_data_ubo = (GLuint)unif_shared_data_block_;
@@ -1188,7 +1188,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const float near = list.draw_cam.near(), far = list.draw_cam.far();
         shrd_data.uClipInfo = { near * far, near, far, std::log2(1.0f + far / near) };
 
-        const auto &pos = list.draw_cam.world_position();
+        const Ren::Vec3f &pos = list.draw_cam.world_position();
         shrd_data.uCamPosAndGamma = Ren::Vec4f{ pos[0], pos[1], pos[2], 2.2f };
 
         if (list.probes.count) {
@@ -1253,7 +1253,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         bool region_cleared[REN_MAX_SHADOWMAPS_TOTAL] = {};
 
         for (int i = 0; i < (int)list.shadow_lists.count; i++) {
-            const auto &sh_list = list.shadow_lists.data[i];
+            const ShadowList &sh_list = list.shadow_lists.data[i];
             if (!sh_list.solid_batches_count) continue;
 
             glViewport(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
@@ -1269,7 +1269,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
 
             for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.solid_batches_count; j++) {
-                const auto &batch = list.shadow_batches.data[list.shadow_batch_indices.data[j]];
+                const DepthDrawBatch &batch = list.shadow_batches.data[list.shadow_batch_indices.data[j]];
                 if (!batch.instance_count) continue;
 
                 glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
@@ -1285,7 +1285,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUseProgram(shadow_transp_prog_->prog_id());
 
         for (int i = 0; i < (int)list.shadow_lists.count; i++) {
-            const auto &sh_list = list.shadow_lists.data[i];
+            const ShadowList &sh_list = list.shadow_lists.data[i];
             if (sh_list.shadow_batch_count == sh_list.solid_batches_count) continue;
 
             glViewport(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
@@ -1304,7 +1304,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             uint32_t cur_mat_id = 0xffffffff;
 
             for (uint32_t j = sh_list.shadow_batch_start + sh_list.solid_batches_count; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
-                const auto &batch = list.shadow_batches.data[list.shadow_batch_indices.data[j]];
+                const DepthDrawBatch &batch = list.shadow_batches.data[list.shadow_batch_indices.data[j]];
                 if (!batch.instance_count) continue;
 
                 if (batch.mat_id != cur_mat_id) {
@@ -1435,7 +1435,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUseProgram(fillz_solid_prog_->prog_id());
 
         for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const auto &batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+            const DepthDrawBatch &batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
             if (!batch.instance_count || batch.alpha_test_bit) continue;
 
             glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
@@ -1454,7 +1454,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         uint32_t cur_mat_id = 0xffffffff;
 
         for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const auto &batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+            const DepthDrawBatch &batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
             if (!batch.instance_count || !batch.alpha_test_bit) continue;
 
             if (batch.mat_id != cur_mat_id) {
@@ -1622,7 +1622,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const Ren::Material *cur_mat = nullptr;
 
         for (uint32_t i = 0; i < list.main_batch_indices.count; i++) {
-            const auto &batch = list.main_batches.data[list.main_batch_indices.data[i]];
+            const MainDrawBatch &batch = list.main_batches.data[list.main_batch_indices.data[i]];
             if (!batch.instance_count) continue;
             if (batch.alpha_blend_bit) break;
 
@@ -1669,7 +1669,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const Ren::Material *cur_mat = nullptr;
 
         for (int j = (int)list.main_batch_indices.count - 1; j >= 0; j--) {
-            const auto &batch = list.main_batches.data[list.main_batch_indices.data[j]];
+            const MainDrawBatch &batch = list.main_batches.data[list.main_batch_indices.data[j]];
             if (!batch.instance_count) continue;
             if (!batch.alpha_blend_bit) break;
 
@@ -1862,7 +1862,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         for (int i = 0; i < (int)list.probes.count; i++) {
-            const auto &pr = list.probes.data[i];
+            const ProbeItem &pr = list.probes.data[i];
 
             glUniform1i(2, i);
 
@@ -2207,8 +2207,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         // Draw visible shadow regions
         for (int i = 0; i < (int)list.shadow_lists.count; i++) {
-            const auto &sh_list = list.shadow_lists.data[i];
-            const auto &reg = list.shadow_regions.data[i];
+            const ShadowList &sh_list = list.shadow_lists.data[i];
+            const ShadowMapRegion &reg = list.shadow_regions.data[i];
 
             const float positions[] = { -1.0f + reg.transform[0],                       -1.0f + reg.transform[1] * k,
                                         -1.0f + reg.transform[0] + reg.transform[2],    -1.0f + reg.transform[1] * k,
@@ -2239,7 +2239,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         // Draw invisible cached shadow regions
         for (int i = 0; i < (int)list.cached_shadow_regions.count; i++) {
-            const auto &r = list.cached_shadow_regions.data[i];
+            const ShadReg &r = list.cached_shadow_regions.data[i];
 
             const float positions[] = { -1.0f + float(r.pos[0]) / SHADOWMAP_WIDTH,                       -1.0f + k * float(r.pos[1]) / SHADOWMAP_HEIGHT,
                                         -1.0f + float(r.pos[0] + r.size[0]) / SHADOWMAP_WIDTH,           -1.0f + k * float(r.pos[1]) / SHADOWMAP_HEIGHT,
@@ -2265,8 +2265,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         // Draw view frustum edges
         for (int i = 0; i < (int)list.shadow_lists.count; i++) {
-            const auto &sh_list = list.shadow_lists.data[i];
-            const auto &reg = list.shadow_regions.data[i];
+            const ShadowList &sh_list = list.shadow_lists.data[i];
+            const ShadowMapRegion &reg = list.shadow_regions.data[i];
 
             if (!sh_list.view_frustum_outline_count) continue;
 

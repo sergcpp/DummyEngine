@@ -69,14 +69,14 @@ const float *SceneManager::Draw_PT(int *w, int *h) {
         for (int i = 0; i < (int)ray_reg_ctx_.size(); i++) {
             ev[i] = threads_.enqueue(render_task, i);
         }
-        for (const auto &e : ev) {
+        for (const std::future<void> &e : ev) {
             e.wait();
         }
     }
 
     std::tie(*w, *h) = ray_renderer_.size();
 
-    const auto *pixels = ray_renderer_.get_pixels_ref();
+    const Ray::pixel_color_t *pixels = ray_renderer_.get_pixels_ref();
     return &pixels[0].r;
 }
 
@@ -119,7 +119,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
     const int LM_SAMPLES_PER_PASS = 16;
     const int TILE_SIZE = 64;
 
-    const auto &cur_obj = scene_data_.objects[cur_lm_obj_];
+    const SceneObject &cur_obj = scene_data_.objects[cur_lm_obj_];
     const auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(cur_obj.components[CompLightmap]);
     const int res = lm->size[0];
 
@@ -139,7 +139,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
         }
     }
 
-    const auto &cur_size = ray_renderer_.size();
+    const std::pair<int, int> &cur_size = ray_renderer_.size();
 
     if (cur_size.first != res || cur_size.second != res) {
         if (ray_renderer_.type() == Ray::RendererOCL) {
@@ -166,7 +166,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
     if (ray_reg_ctx_[0].iteration >= LM_SAMPLES_TOTAL) {
         {   // Save lightmap to file
-            const auto *pixels = ray_renderer_.get_pixels_ref();
+            const Ray::pixel_color_t *pixels = ray_renderer_.get_pixels_ref();
 
             int xpos = lm->pos[0], ypos = lm->pos[1];
 
@@ -288,7 +288,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                 const int FilterSize = 32;
 
                 {   // Save direct lightmap
-                    auto out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_direct_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
+                    std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_direct_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
 
                     std::string out_file_name = "./assets/textures/lightmaps/";
                     out_file_name += scene_name_;
@@ -298,7 +298,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                 }
 
                 {   // Save indirect lightmap
-                    auto out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_indir_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
+                    std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_indir_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
 
                     std::string out_file_name = "./assets/textures/lightmaps/";
                     out_file_name += scene_name_;
@@ -309,7 +309,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
                 {   // Save indirect SH-lightmap
                     for (int sh_l = 0; sh_l < 4; sh_l++) {
-                        auto out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_indir_sh_[sh_l][0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
+                        std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_indir_sh_[sh_l][0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
 
                         std::string out_file_name = "./assets/textures/lightmaps/";
                         out_file_name += scene_name_;
@@ -346,7 +346,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
         ray_scene_->SetCamera(1, cam_desc);
 
         ray_renderer_.Clear();
-        for (auto &c : ray_reg_ctx_) {
+        for (Ray::RegionContext &c : ray_reg_ctx_) {
             c.Clear();
         }
     }
@@ -360,7 +360,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
             for (int i = 0; i < (int)ray_reg_ctx_.size(); i++) {
                 ev[i] = threads_.enqueue(render_task, i);
             }
-            for (const auto &e : ev) {
+            for (const std::future<void> &e : ev) {
                 e.wait();
             }
         }
@@ -368,7 +368,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
     LOGI("Lightmap: %i %i/%i", int(cur_lm_obj_), ray_reg_ctx_[0].iteration, LM_SAMPLES_TOTAL);
 
-    const auto *pixels = ray_renderer_.get_pixels_ref();
+    const Ray::pixel_color_t *pixels = ray_renderer_.get_pixels_ref();
     *preview_pixels = &pixels[0].r;
     *w = res;
     *h = res;
@@ -398,7 +398,7 @@ void SceneManager::InitScene_PT(bool _override) {
 
         if (!env_map_pt_name_.empty()) {
             int w, h;
-            auto tex_data = LoadHDR(("./assets/textures/" + env_map_pt_name_).c_str(), w, h);
+            std::vector<uint8_t> tex_data = LoadHDR(("./assets/textures/" + env_map_pt_name_).c_str(), w, h);
 
             Ray::tex_desc_t tex_desc;
             tex_desc.data = (const Ray::pixel_color8_t *)&tex_data[0];
@@ -493,13 +493,13 @@ void SceneManager::InitScene_PT(bool _override) {
     }*/
 
     // Add objects
-    for (auto &obj : scene_data_.objects) {
+    for (SceneObject &obj : scene_data_.objects) {
         const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
             const auto *dr = (Drawable *)scene_data_.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
             if (!(dr->flags & Drawable::DrVisibleToShadow)) continue;
 
-            const auto *mesh = dr->mesh.get();
+            const Ren::Mesh *mesh = dr->mesh.get();
             const char *mesh_name = mesh->name().c_str();
 
             auto mesh_it = loaded_meshes.find(mesh_name);
@@ -515,7 +515,7 @@ void SceneManager::InitScene_PT(bool _override) {
 
                 const Ren::TriGroup *s = &mesh->group(0);
                 while (s->offset != -1) {
-                    const auto *mat = s->mat.get();
+                    const Ren::Material *mat = s->mat.get();
                     const char *mat_name = mat->name().c_str();
 
                     auto mat_it = loaded_materials.find(mat_name);
@@ -598,7 +598,7 @@ void SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &targ
     Ray::camera_desc_t cam_desc;
     ray_scene_->GetCamera(0, cam_desc);
 
-    auto fwd = Ren::Normalize(target - origin);
+    Ren::Vec3f fwd = Ren::Normalize(target - origin);
 
     memcpy(&cam_desc.origin[0], Ren::ValuePtr(origin), 3 * sizeof(float));
     memcpy(&cam_desc.fwd[0], Ren::ValuePtr(fwd), 3 * sizeof(float));
@@ -611,7 +611,7 @@ void SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &targ
 void SceneManager::Clear_PT() {
     if (!ray_scene_) return;
 
-    for (auto &c : ray_reg_ctx_) {
+    for (Ray::RegionContext &c : ray_reg_ctx_) {
         c.Clear();
     }
     ray_renderer_.Clear();

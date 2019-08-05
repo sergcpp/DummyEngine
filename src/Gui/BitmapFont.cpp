@@ -249,7 +249,7 @@ void Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos, 
         return;
     }
 
-    const auto &cur = r->GetParams();
+    const Renderer::DrawParams &cur = r->GetParams();
 
     r->EmplaceParams(cur.col(), cur.z_val(), (eBlendMode)blend_mode(), cur.scissor_test());
     r->DrawUIElement(tex_, Gui::PRIM_TRIANGLE, std_positions, std_uvs, std_indices);

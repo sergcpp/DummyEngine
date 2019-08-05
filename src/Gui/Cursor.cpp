@@ -22,7 +22,7 @@ void Gui::Cursor::SetPos(const Vec2f &pos, const BaseElement *parent) {
 }
 
 void Gui::Cursor::Draw(Renderer *r) {
-    const auto &cur = r->GetParams();
+    const Renderer::DrawParams &cur = r->GetParams();
 
     r->EmplaceParams(clicked_ ? Vec3f(0.8f, 0.8f, 0.8f) : Vec3f(1, 1, 1),
                      cur.z_val(), cur.blend_mode(), cur.scissor_test());

@@ -94,8 +94,8 @@ Sys::AssetFile::AssetFile(const char *file_name, int mode) : mode_(mode), name_(
         file_stream_ = new std::fstream();
 
         string fname = file_name;
-        for (auto &p : added_packages) {
-            for (auto &f : p.file_list) {
+        for (Package &p : added_packages) {
+            for (FileDesc &f : p.file_list) {
                 if (fname == f.name) {
                     file_stream_->open(p.name, std::ios::in | std::ios::binary);
                     if (!file_stream_->good()) {

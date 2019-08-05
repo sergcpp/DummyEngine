@@ -22,7 +22,7 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
     glActiveTexture(GL_TEXTURE0);
 
     for (int i = 0; i < _attachments_count; i++) {
-        const auto &att = _attachments[i];
+        const ColorAttachmentDesc &att = _attachments[i];
 
         GLuint _col_tex;
 
@@ -134,7 +134,7 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
         depth_tex = _depth_tex;
 
         LOGI("- %ix%i", w, h);
-        auto s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         if (s != GL_FRAMEBUFFER_COMPLETE) {
             LOGI("Frambuffer error %i", int(s));
             glBindRenderbuffer(GL_RENDERBUFFER, 0);

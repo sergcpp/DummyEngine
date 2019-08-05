@@ -62,7 +62,7 @@ Ren::eVisibilityResult Ren::Frustum::CheckVisibility(const Vec3f &bbox_min, cons
     for (int pl = 0; pl < planes_count; pl++) {
         int in_count = 8;
 
-        const auto *p_n = ValuePtr(planes[pl].n);
+        const float *p_n = ValuePtr(planes[pl].n);
         const float p_d = planes[pl].d;
 
         if (p_n[0] * _bbox_min[0] + p_n[1] * _bbox_min[1] + p_n[2] * _bbox_min[2] + p_d < -epsilon) --in_count;

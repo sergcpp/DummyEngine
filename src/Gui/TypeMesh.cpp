@@ -51,7 +51,7 @@ void Gui::TypeMesh::Resize(const BaseElement *parent) {
 }
 
 void Gui::TypeMesh::Draw(Renderer *r) {
-    const auto &cur = r->GetParams();
+    const Renderer::DrawParams &cur = r->GetParams();
 
     r->EmplaceParams(cur.col(), cur.z_val(), (eBlendMode)font_->blend_mode(), cur.scissor_test());
     r->DrawUIElement(font_->tex(), Gui::PRIM_TRIANGLE, pos_, uvs_, indices_);

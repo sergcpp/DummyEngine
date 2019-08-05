@@ -428,7 +428,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
     }
 
     for (uint32_t i = 0; i < vtx_count; i++) {
-        auto &v = vertices[i];
+        vtx_data_t &v = vertices[i];
         v.tris.reset(new int32_t[v.active_tris_count]);
         v.score = get_vertex_score(v.cache_pos, v.active_tris_count);
     }
@@ -439,9 +439,9 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
     for (uint32_t i = 0; i < indices_count; i += 3) {
         tri_data_t &tri = triangles[i / 3];
 
-        auto &v0 = vertices[indices[i + 0]];
-        auto &v1 = vertices[indices[i + 1]];
-        auto &v2 = vertices[indices[i + 2]];
+        vtx_data_t &v0 = vertices[indices[i + 0]];
+        vtx_data_t &v1 = vertices[indices[i + 1]];
+        vtx_data_t &v2 = vertices[indices[i + 2]];
 
         v0.tris[v0.ref_count++] = i / 3;
         v1.tris[v1.ref_count++] = i / 3;
@@ -488,7 +488,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
         }
 
         for (size_t i = 0; i < lru_cache.size(); i++) {
-            auto &v = vertices[lru_cache[i]];
+            vtx_data_t &v = vertices[lru_cache[i]];
 
             v.cache_pos = (int32_t)i;
             v.score = get_vertex_score(v.cache_pos, v.active_tris_count);
@@ -511,7 +511,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
             next_best_index = next_next_best_index = -1;
 
             for (int32_t i = 0; i < (int32_t)prim_count; i++) {
-                auto &tri = triangles[i];
+                tri_data_t &tri = triangles[i];
 
                 if (!tri.is_in_list) {
                     if (tri.score > next_best_score) {
@@ -531,12 +531,12 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
             }
         }
 
-        auto &next_best_tri = triangles[next_best_index];
+        tri_data_t &next_best_tri = triangles[next_best_index];
 
         for (int32_t j = 0; j < 3; j++) {
             out_indices[out_index++] = next_best_tri.indices[j];
 
-            auto &v = vertices[next_best_tri.indices[j]];
+            vtx_data_t &v = vertices[next_best_tri.indices[j]];
             v.active_tris_count--;
             for (uint32_t k = 0; k < v.ref_count; k++) {
                 if (v.tris[k] == next_best_index) {
@@ -556,8 +556,8 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
         next_best_score = -1.0f;
         next_best_index = -1;
 
-        for (const auto ti : tris_to_update) {
-            auto &tri = triangles[ti];
+        for (const uint32_t ti : tris_to_update) {
+            tri_data_t &tri = triangles[ti];
 
             if (!tri.is_in_list) {
                 tri.score = vertices[tri.indices[0]].score + vertices[tri.indices[1]].score + vertices[tri.indices[2]].score;
@@ -597,13 +597,13 @@ void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint3
     std::vector<std::array<uint32_t, 3>> twin_verts(vertices.size(), { 0, 0, 0 });
     std::vector<Vec3f> binormals(vertices.size());
     for (size_t i = 0; i < indices_count; i += 3) {
-        auto *v0 = &vertices[indices[i + 0]];
-        auto *v1 = &vertices[indices[i + 1]];
-        auto *v2 = &vertices[indices[i + 2]];
+        vertex_t *v0 = &vertices[indices[i + 0]];
+        vertex_t *v1 = &vertices[indices[i + 1]];
+        vertex_t *v2 = &vertices[indices[i + 2]];
 
-        auto &b0 = binormals[indices[i + 0]];
-        auto &b1 = binormals[indices[i + 1]];
-        auto &b2 = binormals[indices[i + 2]];
+        Vec3f &b0 = binormals[indices[i + 0]];
+        Vec3f &b1 = binormals[indices[i + 1]];
+        Vec3f &b2 = binormals[indices[i + 2]];
 
         Vec3f dp1 = MakeVec3(v1->p) - MakeVec3(v0->p);
         Vec3f dp2 = MakeVec3(v2->p) - MakeVec3(v0->p);
@@ -704,7 +704,7 @@ void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint3
         v2->b[2] += tangent[2];
     }
 
-    for (auto &v : vertices) {
+    for (vertex_t &v : vertices) {
         if (std::abs(v.b[0]) > flt_eps || std::abs(v.b[1]) > flt_eps || std::abs(v.b[2]) > flt_eps) {
             Vec3f tangent = MakeVec3(v.b);
             Vec3f binormal = Cross(MakeVec3(v.n), tangent);

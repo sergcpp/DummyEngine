@@ -80,7 +80,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         }
     }
 
-    const auto w = 1024, h = 576;
+    const int w = 1024, h = 576;
 
     if (Init(w, h) < 0) {
         return -1;
@@ -135,15 +135,15 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         if (mesh_file) {
             view_mesh_ = ctx_.LoadMesh(out_file_name.c_str(), mesh_file, std::bind(&ModlApp::OnMaterialNeeded, this, _1));
 
-            auto bbox_min = view_mesh_->bbox_min(), bbox_max = view_mesh_->bbox_max();
-            auto dims = bbox_max - bbox_min;
+            Ren::Vec3f bbox_min = view_mesh_->bbox_min(), bbox_max = view_mesh_->bbox_max();
+            Ren::Vec3f dims = bbox_max - bbox_min;
             float max_dim = std::max(dims[0], std::max(dims[1], dims[2]));
             view_dist_ = 2.0f * max_dim;
 
             if (!anim_file_name.empty()) {
                 ifstream anim_file(anim_file_name, ios::binary);
                 if (anim_file) {
-                    auto anim_ref = ctx_.LoadAnimSequence(anim_file_name.c_str(), anim_file);
+                    Ren::AnimSeqRef anim_ref = ctx_.LoadAnimSequence(anim_file_name.c_str(), anim_file);
 
                     Ren::Mesh *m = view_mesh_.get();
                     m->skel()->AddAnimSequence(anim_ref);
@@ -253,7 +253,7 @@ void ModlApp::Frame() {
     ClearColorAndDepth(0.1f, 0.75f, 0.75f, 1);
 
     {   // Update camera position
-        auto center = 0.5f * (view_mesh_->bbox_min() + view_mesh_->bbox_max());
+        Ren::Vec3f center = 0.5f * (view_mesh_->bbox_min() + view_mesh_->bbox_max());
         cam_.SetupView(center - Ren::Vec3f{ 0.0f, 0.0f, 1.0f } * view_dist_, center, up);
     }
 
@@ -395,7 +395,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         getline(in_file, str);
 
         {
-            auto toks = Tokenize(str, " ");
+            std::vector<std::string> toks = Tokenize(str, " ");
             if (toks.empty()) return RES_PARSE_ERROR;
             str = toks[0];
         }
@@ -404,7 +404,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             mesh_type = M_STATIC;
         } else if (str == "TERRAIN_MESH") {
             mesh_type = M_TERR;
-            auto toks = Tokenize(str, " ");
+            std::vector<std::string> toks = Tokenize(str, " ");
             for (int i = 1; i < (int)toks.size(); i++) {
                 vertex_textures[toks[i]] = i - 1;
             }
@@ -436,7 +436,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         for (int i = 0; i < num_vertices; i++) {
             string str;
             getline(in_file, str);
-            auto toks = Tokenize(str, " ");
+            std::vector<std::string> toks = Tokenize(str, " ");
             if ((mesh_type == M_STATIC && toks.size() != 10) ||
                     (mesh_type == M_TERR && toks.size() != 9) ||
                     (mesh_type == M_SKEL && toks.size() < 10)) {
@@ -525,11 +525,11 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             getline(in_file, str);
 
             if (str[0] > '9' || str[0] < '0') {
-                auto toks = Tokenize(str, " ");
+                std::vector<std::string> toks = Tokenize(str, " ");
                 materials.push_back(toks[0]);
                 indices.emplace_back();
             } else {
-                auto toks = Tokenize(str, " \t");
+                std::vector<std::string> toks = Tokenize(str, " \t");
                 if (toks.size() != 3) return RES_PARSE_ERROR;
                 for (int j : { 0, 1, 2 }) {
                     indices.back().push_back((uint32_t)stoi(toks[j]));
@@ -546,7 +546,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 while (str.find("{") == string::npos) getline(in_file, str);
                 getline(in_file, str);
                 while (str.find("}") == string::npos) {
-                    auto toks = Tokenize(str, " \t\"");
+                    std::vector<std::string> toks = Tokenize(str, " \t\"");
                     if (toks.size() != 3) return RES_PARSE_ERROR;
                     out_bones.emplace_back();
                     out_bones.back().id = stoi(toks[0]);
@@ -562,7 +562,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 while(str.find("{") == string::npos)getline(in_file, str);
                 getline(in_file, str);
                 while(str.find("}") == string::npos) {
-                    auto toks = Tokenize(str, " \t()");
+                    std::vector<std::string> toks = Tokenize(str, " \t()");
                     if (toks.size() != 8) return RES_PARSE_ERROR;
                     int bone_index = stoi(toks[0]);
                     for (int j : { 0, 1, 2 }) {
@@ -589,7 +589,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             vertices[i].index = i;
         }
 
-        for (auto &index_group : indices) {
+        for (std::vector<uint32_t> &index_group : indices) {
             Ren::ComputeTextureBasis(vertices, index_group, &index_group[0], index_group.size());
         }
 
@@ -622,9 +622,9 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
     }
 
     {   // optimize mesh
-        for (auto &index_group : indices) {
+        for (std::vector<uint32_t> &index_group : indices) {
             reordered_indices.emplace_back();
-            auto &cur_strip = reordered_indices.back();
+            std::vector<uint32_t> &cur_strip = reordered_indices.back();
 
             cur_strip.resize(index_group.size());
             Ren::ReorderTriangleIndices(&index_group[0], (uint32_t)index_group.size(), (uint32_t)num_vertices, &cur_strip[0]);
@@ -775,7 +775,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
     out_file.write((char *)&total_indices[0], sizeof(uint32_t) * total_indices.size());
 
-    for (auto &str : materials) {
+    for (std::string &str : materials) {
         char name[64] {};
         strcpy(name, str.c_str());
         strcat(name, ".txt");
@@ -785,7 +785,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
     out_file.write((char *)&total_chunks[0], sizeof(MeshChunk) * total_chunks.size());
 
     if (mesh_type == M_SKEL) {
-        for (auto &bone : out_bones) {
+        for (OutBone &bone : out_bones) {
             out_file.write((char *)&bone.name, 64);
             out_file.write((char *)&bone.id, sizeof(int32_t));
             out_file.write((char *)&bone.parent_id, sizeof(int32_t));
@@ -846,7 +846,7 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
         string str;
         getline(in_file, str);
         while (str.find("}") == string::npos) {
-            auto toks = Tokenize(str, " \"");
+            std::vector<std::string> toks = Tokenize(str, " \"");
             if (toks.size() < 3) return -1;
             OutAnimBone b;
             if (toks[1] == "RT") {
@@ -870,7 +870,7 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
     {   // prepare containers
         string str;
         getline(in_file, str);
-        auto toks = Tokenize(str, " []/");
+        std::vector<std::string> toks = Tokenize(str, " []/");
         if (toks.size() != 3) return -1;
         strcpy(anim_info.name, toks[0].c_str());
         anim_info.len = stoi(toks[1]);
@@ -885,7 +885,7 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
             getline(in_file, str);
             for (int j = 0; j < (int)out_bones.size(); j++) {
                 getline(in_file, str);
-                auto toks = Tokenize(str, " ");
+                std::vector<std::string> toks = Tokenize(str, " ");
                 for (int k = 1; k < ((out_bones[j].anim_type == ANIM_RT) ? 8 : 5); k++) {
                     frames.push_back(stof(toks[k]));
                 }

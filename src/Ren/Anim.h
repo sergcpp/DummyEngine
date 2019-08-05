@@ -123,21 +123,21 @@ struct Skeleton {
     std::vector<BoneGroup>      bone_groups;
 
     std::vector<Bone>::iterator bone(const char *name) {
-        auto b = bones.begin();
-        for (; b != bones.end(); ++b) {
-            if (strcmp(b->name, name) == 0) {
+        auto bone_it = bones.begin();
+        for (; bone_it != bones.end(); ++bone_it) {
+            if (strcmp(bone_it->name, name) == 0) {
                 break;
             }
         }
-        return b;
+        return bone_it;
     }
 
     int bone_index(const char *name) {
-        auto b = bone(name);
-        if (b == bones.end()) {
+        auto bone_it = bone(name);
+        if (bone_it == bones.end()) {
             return -1;
         } else {
-            return int(b - bones.begin());
+            return int(bone_it - bones.begin());
         }
     }
 

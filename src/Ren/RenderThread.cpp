@@ -8,7 +8,7 @@ Ren::TaskList::TaskList() {
 }
 
 void Ren::TaskList::Submit(RenderThread *r) {
-    auto done = done_event;
+    std::shared_ptr<void> done = done_event;
     r->AddTaskList(std::move(*this));
     done_event = done;
 }
@@ -26,7 +26,7 @@ void Ren::RenderThread::AddTaskList(TaskList &&list) {
     std::lock_guard<std::mutex> lck(add_list_mtx_);
     task_lists_.Push(std::move(list));
 #else
-    for (auto &t : list) {
+    for (Task &t : list) {
         t.func(t.arg);
     }
     *(std::atomic_bool*)list.done_event.get() = true;
@@ -58,7 +58,7 @@ bool Ren::RenderThread::ProcessTasks() {
 #ifndef __EMSCRIPTEN__
     TaskList list;
     if (task_lists_.Pop(list)) {
-        for (auto &t : list) {
+        for (Task &t : list) {
             t.func(t.arg);
         }
         *(std::atomic_bool*)list.done_event.get() = true;

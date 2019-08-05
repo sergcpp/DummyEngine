@@ -160,7 +160,7 @@ void DummyApp::AddEvent(int type, int key, float x, float y, float dx, float dy)
 int DummyApp::Run(const std::vector<std::string> &args) {
 
     for (int i = 0; i < (int)args.size(); i++) {
-        const auto &arg = args[i];
+        const std::string &arg = args[i];
         if (arg == "--prepare_assets") {
             Viewer::PrepareAssets(args[i + 1].c_str());
             i++;

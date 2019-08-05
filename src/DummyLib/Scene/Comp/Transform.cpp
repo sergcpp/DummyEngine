@@ -41,11 +41,11 @@ void Transform::Read(const JsObject &js_in, Transform &tr) {
 
         rot *= Ren::Pi<float>() / 180.0f;
 
-        auto rot_z = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
-        auto rot_x = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
-        auto rot_y = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+        Ren::Mat4f rot_z = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f });
+        Ren::Mat4f rot_x = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f });
+        Ren::Mat4f rot_y = Ren::Rotate(Ren::Mat4f{ 1.0f }, rot[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
 
-        auto rot_all = rot_y * rot_x * rot_z;
+        Ren::Mat4f rot_all = rot_y * rot_x * rot_z;
         tr.mat = tr.mat * rot_all;
     }
 }

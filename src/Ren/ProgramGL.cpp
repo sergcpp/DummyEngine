@@ -154,24 +154,24 @@ void Ren::Program::InitFromGLSL(const Shaders &shaders, eProgLoadStatus *status)
         ParseGLSLBindings(cs_source_str, attr_bindings, uniform_bindings, uniform_block_bindings);
     }
 
-    for (auto &b : attr_bindings) {
-        auto &a = attributes_[b.loc];
+    for (Binding &b : attr_bindings) {
+        Attribute &a = attributes_[b.loc];
         a.loc = glGetAttribLocation(program, b.name.c_str());
         if (a.loc != -1) {
             a.name = b.name;
         }
     }
 
-    for (auto &b : uniform_bindings) {
-        auto &u = uniforms_[b.loc];
+    for (Binding &b : uniform_bindings) {
+        Attribute &u = uniforms_[b.loc];
         u.loc = glGetUniformLocation(program, b.name.c_str());
         if (u.loc != -1) {
             u.name = b.name;
         }
     }
 
-    for (auto &b : uniform_block_bindings) {
-        auto &u = uniform_blocks_[b.loc];
+    for (Binding &b : uniform_block_bindings) {
+        Attribute &u = uniform_blocks_[b.loc];
         u.loc = glGetUniformBlockIndex(program, b.name.c_str());
         if (u.loc != -1) {
             u.name = b.name;

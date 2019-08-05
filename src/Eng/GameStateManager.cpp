@@ -62,16 +62,16 @@ void GameStateManager::Update(uint64_t dt_us) {
         pop_later_ = false;
     }
 
-    auto &st = states_.back();
+    std::shared_ptr<GameState> &st = states_.back();
     st->Update(dt_us);
 }
 
 void GameStateManager::Draw(uint64_t dt_us) {
-    auto &st = states_.back();
+    std::shared_ptr<GameState> &st = states_.back();
     st->Draw(dt_us);
 }
 
 void GameStateManager::HandleInput(InputManager::Event &evt) {
-    auto &st = states_.back();
+    std::shared_ptr<GameState> &st = states_.back();
     st->HandleInput(evt);
 }

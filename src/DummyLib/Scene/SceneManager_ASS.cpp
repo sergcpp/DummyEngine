@@ -30,7 +30,7 @@ extern const char *SHADERS_PATH;
 void WriteImage(const uint8_t *out_data, int w, int h, int channels, const char *name);
 
 void Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
-    auto u8_data = Ren::ConvertRGB32F_to_RGBE(&out_data[0].r, w, h, 4);
+    std::unique_ptr<uint8_t[]> u8_data = Ren::ConvertRGB32F_to_RGBE(&out_data[0].r, w, h, 4);
     WriteImage(&u8_data[0], w, h, 4, name);
 }
 
@@ -39,7 +39,7 @@ void Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *nam
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
-            const auto &p = out_data[y * w + x];
+            const Ray::pixel_color_t &p = out_data[y * w + x];
 
             u8_data[(y * w + x) * 3 + 0] = uint8_t(std::min(int(p.r * 255), 255));
             u8_data[(y * w + x) * 3 + 1] = uint8_t(std::min(int(p.g * 255), 255));
@@ -51,7 +51,7 @@ void Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *nam
 }
 
 void Write_RGBM(const float *out_data, int w, int h, int channels, const char *name) {
-    auto u8_data = Ren::ConvertRGB32F_to_RGBM(out_data, w, h, channels);
+    std::unique_ptr<uint8_t[]> u8_data = Ren::ConvertRGB32F_to_RGBM(out_data, w, h, channels);
     WriteImage(&u8_data[0], w, h, 4, name);
 }
 
@@ -332,7 +332,7 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
 
     Ren::eTexColorFormat format;
     int _w, _h;
-    auto pixels = Ren::ReadTGAFile(&in_file_data[0], _w, _h, format);
+    std::unique_ptr<uint8_t[]> pixels = Ren::ReadTGAFile(&in_file_data[0], _w, _h, format);
 
     if (_w != w || _h != h) return;
 
@@ -369,8 +369,8 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                auto in_p = _temp_pixels1[y * width + x];
-                auto &out_p = _temp_pixels2[y * width + x];
+                Ray::pixel_color_t in_p = _temp_pixels1[y * width + x];
+                Ray::pixel_color_t &out_p = _temp_pixels2[y * width + x];
 
                 float mul = 1.0f;
                 if (in_p.a < invalid_threshold) {
@@ -387,7 +387,7 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
                         for (int _x : _xs) {
                             if (_x < 0 || _x > width - 1) continue;
 
-                            const auto &p = _temp_pixels1[_y * width + _x];
+                            const Ray::pixel_color_t &p = _temp_pixels1[_y * width + _x];
                             if (p.a >= invalid_threshold) {
                                 new_p.r += p.r;
                                 new_p.g += p.g;
@@ -427,7 +427,7 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
 }
 
 std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &tex_ref) {
-    auto params = tex_ref->params();
+    const Ren::Texture2DParams &params = tex_ref->params();
 
     std::unique_ptr<Ray::pixel_color8_t[]> tex_data(new Ray::pixel_color8_t[params.w * params.h]);
 #if defined(__ANDROID__)
@@ -786,8 +786,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         LOGI("[PrepareAssets] Conv %s", out_file);
 
         int width, height;
-        auto image_rgbe = LoadHDR(in_file, width, height);
-        auto image_f32 = Ren::ConvertRGBE_to_RGB32F(&image_rgbe[0], width, height);
+        std::vector<uint8_t> image_rgbe = LoadHDR(in_file, width, height);
+        std::unique_ptr<float[]> image_f32 = Ren::ConvertRGBE_to_RGB32F(&image_rgbe[0], width, height);
         
         std::unique_ptr<float[]> temp(new float[width * 3]);
         for (int j = 0; j < height / 2; j++) {
@@ -962,7 +962,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         std::vector<std::future<void>> events;
         ReadAllFiles_MT_r(in_folder, convert_file, *p_threads, events);
 
-        for (auto &e : events) {
+        for (std::future<void> &e : events) {
             e.wait();
         }
     } else {

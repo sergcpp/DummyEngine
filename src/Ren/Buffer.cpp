@@ -78,7 +78,7 @@ int Ren::Buffer::Alloc_Recursive(int i, uint32_t req_size) {
         nodes_[i].child[1] = ch1 = (int)nodes_.size();
         nodes_.emplace_back();
 
-        auto &n = nodes_[i];
+        Node &n = nodes_[i];
 
         nodes_[ch0].offset = n.offset;
         nodes_[ch0].size = req_size;
@@ -172,7 +172,7 @@ bool Ren::Buffer::Free_Node(int i) {
 uint32_t Ren::Buffer::Alloc(uint32_t req_size, const void *init_data) {
     int i = Alloc_Recursive(0, req_size);
     if (i != -1) {
-        auto &n = nodes_[i];
+        Node &n = nodes_[i];
         assert(n.size == req_size);
 
         if (init_data) {
@@ -200,7 +200,7 @@ bool Ren::Buffer::Free(uint32_t offset) {
 void Ren::Buffer::Resize(uint32_t new_size) {
     if (size_ >= new_size) return;
 
-    auto old_size = size_;
+    uint32_t old_size = size_;
 
     if (!size_) size_ = new_size;
 

@@ -68,7 +68,7 @@ void test_sparse_array() {
         auto data = GenTestData(100);
         Ren::SparseArray<int> s1;
         s1.Resize(100);
-        for (auto v : data) {
+        for (int v : data) {
             s1.Add(v);
         }
 

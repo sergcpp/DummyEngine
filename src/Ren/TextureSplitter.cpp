@@ -80,7 +80,7 @@ int Ren::TextureSplitter::Insert_Recursive(int i, const int res[2]) {
         nodes_[i].child[1] = ch1 = (int)nodes_.size();
         nodes_.emplace_back();
 
-        auto &n = nodes_[i];
+        node_t &n = nodes_[i];
 
         int dw = n.size[0] - res[0];
         int dh = n.size[1] - res[1];

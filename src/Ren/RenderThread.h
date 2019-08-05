@@ -38,7 +38,7 @@ public:
 
     template<typename T>
     void ProcessSingleTask(T func) {
-        auto f = new T(func);
+        T *f = new T(func);
         ProcessSingleTask([](void *arg) {
             auto ff = (T *)arg;
             (*ff)();

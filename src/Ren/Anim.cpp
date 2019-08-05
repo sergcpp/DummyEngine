@@ -131,9 +131,9 @@ void Ren::AnimSequence::InterpolateFrames(int fr_0, int fr_1, float t) {
 // skeleton
 
 Ren::Vec3f Ren::Skeleton::bone_pos(const char *name) {
-    auto b = bone(name);
+    auto bone_it = bone(name);
     Vec3f ret;
-    const float *m = ValuePtr(b->cur_comb_matrix);
+    const float *m = ValuePtr(bone_it->cur_comb_matrix);
     /*ret[0] = -(m[0] * m[12] + m[1] * m[13] + m[2] * m[14]);
     ret[1] = -(m[4] * m[12] + m[5] * m[13] + m[6] * m[14]);
     ret[2] = -(m[8] * m[12] + m[9] * m[13] + m[10] * m[14]);*/
@@ -146,9 +146,9 @@ Ren::Vec3f Ren::Skeleton::bone_pos(const char *name) {
 }
 
 Ren::Vec3f Ren::Skeleton::bone_pos(int i) {
-    auto b = &bones[i];
+    auto bone_it = &bones[i];
     Vec3f ret;
-    const float *m = ValuePtr(b->cur_comb_matrix);
+    const float *m = ValuePtr(bone_it->cur_comb_matrix);
     /*ret[0] = -(m[0] * m[12] + m[1] * m[13] + m[2] * m[14]);
     ret[1] = -(m[4] * m[12] + m[5] * m[13] + m[6] * m[14]);
     ret[2] = -(m[8] * m[12] + m[9] * m[13] + m[10] * m[14]);*/
@@ -161,9 +161,9 @@ Ren::Vec3f Ren::Skeleton::bone_pos(int i) {
 }
 
 void Ren::Skeleton::bone_matrix(const char *name, Mat4f &mat) {
-    auto b = bone(name);
-    assert(b != bones.end());
-    mat = b->cur_comb_matrix;
+    auto bone_it = bone(name);
+    assert(bone_it != bones.end());
+    mat = bone_it->cur_comb_matrix;
 }
 
 void Ren::Skeleton::bone_matrix(int i, Mat4f &mat) {
@@ -186,7 +186,7 @@ void Ren::Skeleton::UpdateBones(Ren::Mat4f *matr_palette) {
 
 int Ren::Skeleton::AddAnimSequence(const AnimSeqRef &ref) {
     anims.emplace_back();
-    auto &a = anims.back();
+    AnimLink &a = anims.back();
     a.anim = ref;
     a.anim_bones = anims[anims.size() - 1].anim->LinkBones(bones);
     return int(anims.size() - 1);

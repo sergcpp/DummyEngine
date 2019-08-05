@@ -30,9 +30,9 @@ inline void BindTexture(int slot, uint32_t tex) {
 void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     using namespace Ren;
 
-    auto m		= ref.get();
-    auto mat	= m->group(0).mat.get();
-    auto p      = mat->program(0);
+    Ren::Mesh *m		= ref.get();
+    Ren::Material *mat	= m->group(0).mat.get();
+    Ren::ProgramRef p   = mat->program(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
@@ -84,8 +84,8 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
 void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     using namespace Ren;
 
-    auto m	    = ref.get();
-    auto mat	= m->group(0).mat.get();
+    Ren::Mesh *m	    = ref.get();
+    Ren::Material *mat	= m->group(0).mat.get();
 
     anim_time_ += dt_s;
 
@@ -213,10 +213,10 @@ void ModlApp::ClearColorAndDepth(float r, float g, float b, float a) {
 }
 
 void ModlApp::CheckInitVAOs() {
-    auto vtx_buf1 = ctx_.default_vertex_buf1(),
-         vtx_buf2 = ctx_.default_vertex_buf2();
-    auto skin_vtx_buf = ctx_.default_skin_vertex_buf();
-    auto ndx_buf = ctx_.default_indices_buf();
+    Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
+                   vtx_buf2 = ctx_.default_vertex_buf2();
+    Ren::BufferRef skin_vtx_buf = ctx_.default_skin_vertex_buf();
+    Ren::BufferRef ndx_buf = ctx_.default_indices_buf();
 
     GLuint gl_vertex_buf1 = (GLuint)vtx_buf1->buf_id(),
            gl_vertex_buf2 = (GLuint)vtx_buf2->buf_id(),

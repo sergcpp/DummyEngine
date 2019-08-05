@@ -23,7 +23,7 @@ void Gui::ButtonText::Move(const Vec2f &pos, const BaseElement *parent) {
 }
 
 void Gui::ButtonText::Draw(Renderer *r) {
-    const auto &cur = r->GetParams();
+    const Renderer::DrawParams &cur = r->GetParams();
 
     if (state_ == ST_NORMAL) {
         r->EmplaceParams(Vec3f(0.9f, 0.9f, 0.9f), cur.z_val(), cur.blend_mode(), cur.scissor_test());

@@ -52,7 +52,7 @@ GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
     ui_renderer_    = game->GetComponent<Gui::Renderer>(UI_RENDERER_KEY);
     ui_root_        = game->GetComponent<Gui::BaseElement>(UI_ROOT_KEY);
 
-    const auto fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
+    const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     font_ = fonts->FindFont("main_font");
 
     debug_ui_       = game->GetComponent<DebugInfoUI>(UI_DEBUG_KEY);
@@ -89,7 +89,7 @@ void GSDrawTest::Enter() {
 
     cmdline_history_.resize(MAX_CMD_LINES, "~");
 
-    auto state_manager = state_manager_.lock();
+    std::shared_ptr<GameStateManager> state_manager = state_manager_.lock();
 
     std::weak_ptr<GSDrawTest> weak_this = std::dynamic_pointer_cast<GSDrawTest>(state_manager->Peek());
 
@@ -350,7 +350,7 @@ void GSDrawTest::LoadScene(const char *name) {
         }
     }
 
-    auto &scene = scene_manager_->scene_data();
+    SceneData &scene = scene_manager_->scene_data();
 
     {
         char wolf_name[] = "wolf00";
@@ -437,7 +437,7 @@ void GSDrawTest::Draw(uint64_t dt_us) {
 
     if (cmdline_enabled_) {
         // Process comandline input
-        for (const auto &evt : cmdline_input_) {
+        for (const InputManager::Event &evt : cmdline_input_) {
             if (evt.key == InputManager::RAW_INPUT_BUTTON_BACKSPACE) {
                 if (!cmdline_history_.back().empty()) {
                     cmdline_history_.back().pop_back();
@@ -518,7 +518,7 @@ void GSDrawTest::Draw(uint64_t dt_us) {
                     probes_dirty_ = false;
                 }
 
-                const auto &scene_data = scene_manager_->scene_data();
+                const SceneData &scene_data = scene_manager_->scene_data();
 
                 if (probe_to_update_sh_) {
                     bool done = renderer_->BlitProjectSH(scene_data.probe_storage, probe_to_update_sh_->layer_index,
@@ -578,7 +578,7 @@ void GSDrawTest::Draw(uint64_t dt_us) {
 #endif
             float cur_y = 1.0f - font_->height(ui_root_.get());
 
-            for (const auto &cmd : cmdline_history_) {
+            for (const std::string &cmd : cmdline_history_) {
                 font_->DrawText(ui_renderer_.get(), cmd.c_str(), { -1, cur_y }, ui_root_.get());
                 cur_y -= font_->height(ui_root_.get());
             }
@@ -588,8 +588,8 @@ void GSDrawTest::Draw(uint64_t dt_us) {
             int back_list = (front_list_ + 1) % 2;
 
             uint32_t render_flags = renderer_->render_flags();
-            auto front_info = main_view_lists_[back_list].frontend_info;
-            auto back_info = renderer_->backend_info();
+            FrontendInfo front_info = main_view_lists_[back_list].frontend_info;
+            BackendInfo back_info = renderer_->backend_info();
 
             uint64_t front_dur = front_info.end_timepoint_us - front_info.start_timepoint_us,
                      back_dur = back_info.cpu_end_timepoint_us - back_info.cpu_start_timepoint_us;
@@ -636,31 +636,31 @@ void GSDrawTest::Update(uint64_t dt_us) {
     //const uint32_t monkey_ids[] = { 12, 13, 14, 15, 16 };
     const uint32_t monkey_ids[] = { 28, 29, 30, 31, 32 };
 
-    auto *monkey1 = scene_manager_->GetObject(monkey_ids[0]);
+    SceneObject *monkey1 = scene_manager_->GetObject(monkey_ids[0]);
     if ((monkey1->comp_mask & mask) == mask) {
         auto *tr = monkey1->tr.get();
         tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
     }
 
-    auto *monkey2 = scene_manager_->GetObject(monkey_ids[1]);
+    SceneObject *monkey2 = scene_manager_->GetObject(monkey_ids[1]);
     if ((monkey2->comp_mask & mask) == mask) {
         auto *tr = monkey2->tr.get();
         tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.05f + 0.04f * std::cos(t) });
     }
 
-    auto *monkey3 = scene_manager_->GetObject(monkey_ids[2]);
+    SceneObject *monkey3 = scene_manager_->GetObject(monkey_ids[2]);
     if ((monkey3->comp_mask & mask) == mask) {
         auto *tr = monkey3->tr.get();
         tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.05f + 0.04f * std::cos(t) });
     }
 
-    auto *monkey4 = scene_manager_->GetObject(monkey_ids[3]);
+    SceneObject *monkey4 = scene_manager_->GetObject(monkey_ids[3]);
     if ((monkey4->comp_mask & mask) == mask) {
         auto *tr = monkey4->tr.get();
         tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
     }
 
-    auto *monkey5 = scene_manager_->GetObject(monkey_ids[4]);
+    SceneObject *monkey5 = scene_manager_->GetObject(monkey_ids[4]);
     if ((monkey5->comp_mask & mask) == mask) {
         auto *tr = monkey5->tr.get();
         tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
@@ -668,7 +668,7 @@ void GSDrawTest::Update(uint64_t dt_us) {
 
     scene_manager_->InvalidateObjects(monkey_ids, 5, CompTransformBit);
 #endif
-    auto &scene = scene_manager_->scene_data();
+    SceneData &scene = scene_manager_->scene_data();
 
     if (scooter_indices_[0] != 0xffffffff) {
         const Ren::Vec3f rot_center = { 44.5799f, 0.15f, 24.7763f };
@@ -710,7 +710,7 @@ void GSDrawTest::HandleInput(const InputManager::Event &evt) {
     // pt switch for touch controls
     if (evt.type == InputManager::RAW_INPUT_P1_DOWN || evt.type == InputManager::RAW_INPUT_P2_DOWN) {
         if (evt.point.x > ctx_->w() * 0.9f && evt.point.y < ctx_->h() * 0.1f) {
-            auto new_time = Sys::GetTimeMs();
+            uint32_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 /*use_pt_ = !use_pt_;
                 if (use_pt_) {
@@ -721,7 +721,7 @@ void GSDrawTest::HandleInput(const InputManager::Event &evt) {
                 if (probes_to_update_.empty()) {
                     int obj_count = (int)scene_manager_->scene_data().objects.size();
                     for (int i = 0; i < obj_count; i++) {
-                        auto *obj = scene_manager_->GetObject(i);
+                        SceneObject *obj = scene_manager_->GetObject(i);
                         if (obj->comp_mask & CompProbeBit) {
                             probes_to_update_.push_back(i);
                         }
@@ -841,7 +841,7 @@ void GSDrawTest::HandleInput(const InputManager::Event &evt) {
             if (probes_to_update_.empty()) {
                 int obj_count = (int)scene_manager_->scene_data().objects.size();
                 for (int i = 0; i < obj_count; i++) {
-                    auto *obj = scene_manager_->GetObject(i);
+                    SceneObject *obj = scene_manager_->GetObject(i);
                     if (obj->comp_mask & CompProbeBit) {
                         probes_to_update_.push_back(i);
                     }
@@ -937,7 +937,7 @@ void GSDrawTest::UpdateFrame(int list_index) {
             if (probes_to_update_.empty()) {
                 int obj_count = (int)scene_manager_->scene_data().objects.size();
                 for (int i = 0; i < obj_count; i++) {
-                    auto *obj = scene_manager_->GetObject(i);
+                    SceneObject *obj = scene_manager_->GetObject(i);
                     if (obj->comp_mask & CompProbeBit) {
                         probes_to_update_.push_back(i);
                     }
@@ -998,7 +998,7 @@ void GSDrawTest::UpdateFrame(int list_index) {
 }
 
 void GSDrawTest::TestUpdateAnims(float delta_time_s) {
-    const auto &scene = scene_manager_->scene_data();
+    const SceneData &scene = scene_manager_->scene_data();
 
     if (wolf_indices_[0] != 0xffffffff) {
         for (int i = 0; i < 32; i++) {

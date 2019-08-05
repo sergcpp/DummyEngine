@@ -51,7 +51,7 @@ void Gui::EditBox::Press(const Vec2f &p, bool push) {
         for (auto it = lines_.begin(); it != lines_.end(); ++it) {
             if (it->Check(p)) {
                 current_line_ = (int)std::distance(lines_.begin(), it);
-                const auto &pos = it->positions();
+                const std::vector<float> &pos = it->positions();
                 for (unsigned i = 0; i < pos.size(); i += 4 * 3) {
                     if ((i == 0 && p[0] > pos[i]) || (i > 0 && p[0] > 0.5f * (pos[i] + pos[i - 3]))) {
                         current_char_ = i / 12;
@@ -72,7 +72,7 @@ void Gui::EditBox::Press(const Vec2f &p, bool push) {
 }
 
 void Gui::EditBox::Draw(Renderer *r) {
-    auto &cur = r->GetParams();
+    const Renderer::DrawParams &cur = r->GetParams();
     r->EmplaceParams(cur.col(), cur.z_val(), cur.blend_mode(), dims_px_);
 
     frame_.Draw(r);
@@ -115,7 +115,7 @@ void Gui::EditBox::DeleteLine(unsigned line) {
 
 void Gui::EditBox::UpdateLayout() {
     lay_.Clear();
-    for (auto &l : lines_) {
+    for (TypeMesh &l : lines_) {
         lay_.AddElement(&l);
     }
     lay_.Resize(this);
@@ -125,7 +125,7 @@ void Gui::EditBox::UpdateCursor() {
     using namespace EditBoxConstants;
 
     if (current_line_ >= (int)lines_.size()) return;
-    const auto &cur_line = lines_[current_line_];
+    const TypeMesh &cur_line = lines_[current_line_];
 
     Vec2f cur_pos = { 0, cur_line.pos()[1] };
     if (current_char_ < (int)line_text(current_line_).length()) {

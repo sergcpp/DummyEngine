@@ -66,7 +66,7 @@ void SceneManager::RebuildBVH() {
     std::vector<prim_t> primitives;
     primitives.reserve(scene_data_.objects.size());
 
-    for (const auto &obj : scene_data_.objects) {
+    for (const SceneObject &obj : scene_data_.objects) {
         if (obj.comp_mask & CompTransformBit) {
             const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
             const Ren::Vec3f d = tr->bbox_max_ws - tr->bbox_min_ws;
@@ -187,11 +187,11 @@ void SceneManager::RebuildBVH() {
 void SceneManager::RemoveNode(uint32_t node_index) {
     using namespace SceneManagerInternal;
 
-    auto *nodes = scene_data_.nodes.data();
-    auto &node = nodes[node_index];
+    bvh_node_t *nodes = scene_data_.nodes.data();
+    bvh_node_t &node = nodes[node_index];
 
     if (node.parent != 0xffffffff) {
-        auto &parent = nodes[node.parent];
+        bvh_node_t &parent = nodes[node.parent];
 
         uint32_t other_child = (parent.left_child == node_index) ? parent.right_child : parent.left_child;
         uint32_t up_parent = parent.parent;
@@ -233,23 +233,23 @@ void SceneManager::UpdateObjects() {
 
     scene_data_.update_counter++;
 
-    auto *nodes = scene_data_.nodes.data();
+    bvh_node_t *nodes = scene_data_.nodes.data();
 
     for (const uint32_t obj_index : last_changed_objects_) {
-        auto &obj = scene_data_.objects[obj_index];
+        SceneObject &obj = scene_data_.objects[obj_index];
         obj.last_change_mask = 0;
     }
 
     // Remove nodes with associated moved objects (they will be reinserted)
     for (const uint32_t obj_index : changed_objects_) {
-        auto &obj = scene_data_.objects[obj_index];
+        SceneObject &obj = scene_data_.objects[obj_index];
         obj.last_change_mask = obj.change_mask;
 
         if (obj.change_mask & CompTransformBit) {
             auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
             tr->UpdateBBox();
             if (tr->node_index != 0xffffffff) {
-                const auto &node = nodes[tr->node_index];
+                const bvh_node_t &node = nodes[tr->node_index];
 
                 bool is_fully_inside = tr->bbox_min_ws[0] >= node.bbox_min[0] &&
                                        tr->bbox_min_ws[1] >= node.bbox_min[1] &&
@@ -270,20 +270,20 @@ void SceneManager::UpdateObjects() {
         }
     }
 
-    auto *free_nodes = scene_data_.free_nodes.data();
+    uint32_t *free_nodes = scene_data_.free_nodes.data();
     uint32_t free_nodes_pos = 0;
 
     // temporary buffer used to optimize memory allocation
     temp_buf.resize(scene_data_.nodes.size() * 24);
 
     for (const uint32_t obj_index : changed_objects_) {
-        auto &obj = scene_data_.objects[obj_index];
+        SceneObject &obj = scene_data_.objects[obj_index];
 
         if (obj.change_mask & CompTransformBit) {
             auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
             tr->node_index = free_nodes[free_nodes_pos++];
 
-            auto &new_node = nodes[tr->node_index];
+            bvh_node_t &new_node = nodes[tr->node_index];
 
             const Ren::Vec3f d = tr->bbox_max_ws - tr->bbox_min_ws;
             new_node.bbox_min = tr->bbox_min_ws - BoundsMargin * d;
@@ -366,7 +366,7 @@ void SceneManager::UpdateObjects() {
             // update hierarchy boxes
             uint32_t parent = new_parent;
             while (parent != 0xffffffff) {
-                auto &par_node = nodes[parent];
+                bvh_node_t &par_node = nodes[parent];
 
                 par_node.bbox_min = Ren::Min(left_child_of(par_node).bbox_min, right_child_of(par_node).bbox_min);
                 par_node.bbox_max = Ren::Max(left_child_of(par_node).bbox_max, right_child_of(par_node).bbox_max);

@@ -145,7 +145,7 @@ Ren::Mesh::Mesh(const char *name, std::istream &data, const material_load_callba
 void Ren::Mesh::Init(std::istream &data, const material_load_callback &on_mat_load,
                      BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf) {
     char mesh_type_str[12];
-    auto pos = data.tellg();
+    std::streampos pos = data.tellg();
     data.read(mesh_type_str, 12);
     data.seekg(pos, std::ios::beg);
 
@@ -205,7 +205,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
     data.read((char *)indices_.get(), indices_buf_.size);
 
     std::vector<std::array<char, 64>> material_names((size_t)file_header.p[MATERIALS_CHUNK].length / 64);
-    for (auto &n : material_names) {
+    for (std::array<char, 64> &n : material_names) {
         data.read(&n[0], 64);
     }
 
@@ -323,7 +323,7 @@ void Ren::Mesh::InitMeshTerrain(std::istream &data, const material_load_callback
     data.read((char *)indices_.get(), indices_buf_.size);
 
     std::vector<std::array<char, 64>> material_names((size_t)file_header.p[MATERIALS_CHUNK].length / 64);
-    for (auto &n : material_names) {
+    for (std::array<char, 64> &n : material_names) {
         data.read(&n[0], 64);
     }
 
@@ -407,7 +407,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     data.read((char *)indices_.get(), indices_buf_.size);
 
     std::vector<std::array<char, 64>> material_names((size_t)file_header.p[MATERIALS_CHUNK].length / 64);
-    for (auto &n : material_names) {
+    for (std::array<char, 64> &n : material_names) {
         data.read(&n[0], 64);
     }
 
@@ -436,7 +436,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         groups_[num_strips].offset = -1;
     }
 
-    auto &bones = skel_.bones;
+    std::vector<Bone> &bones = skel_.bones;
 
     int num_bones = file_header.p[BONES_CHUNK].length / (64 + 8 + 12 + 16);
     bones.resize((size_t)num_bones);
@@ -546,7 +546,7 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
     unsigned short *vtx_indices = (unsigned short *)indices_.get();
     size_t num_vtx_indices = indices_buf_.size / sizeof(unsigned short);
 
-    auto t1 = clock();
+    clock_t t1 = clock();
 
     for (size_t s = 0; s < groups_.size(); s++) {
         if (groups_[s].offset == -1) break;
@@ -567,7 +567,7 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
             }
             Ren::BoneGroup *best_fit = nullptr;
             int best_k = std::numeric_limits<int>::max();
-            for (auto &g : skel_.bone_groups) {
+            for (BoneGroup &g : skel_.bone_groups) {
                 bool b = true;
                 int k = 0;
                 for (size_t j = 0; j < bone_ids.size(); j++) {
@@ -616,7 +616,7 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
 
     std::vector<unsigned short> new_indices;
     new_indices.reserve((size_t)(num_vtx_indices * 1.2f));
-    for (auto &g : skel_.bone_groups) {
+    for (BoneGroup &g : skel_.bone_groups) {
         std::sort(g.bone_ids.begin(), g.bone_ids.end());
         int cur_s = g.strip_ids[0];
 
@@ -661,7 +661,7 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
 
     std::vector<bool> done_bools(num_vtx_attribs);
     std::vector<float> new_attribs(vtx_attribs, vtx_attribs + num_vtx_attribs);
-    for (auto &g : skel_.bone_groups) {
+    for (BoneGroup &g : skel_.bone_groups) {
         std::vector<int> moved_points;
         for (size_t i = 0; i < g.strip_ids.size(); i += 3) {
             for (int j = g.strip_ids[i + 1]; j < g.strip_ids[i + 1] + g.strip_ids[i + 2]; j++) {
@@ -702,7 +702,7 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
     }
 
     printf("---------------------------\n");
-    for (auto &g : skel_.bone_groups) {
+    for (BoneGroup &g : skel_.bone_groups) {
         printf("%u\n", (unsigned int)g.strip_ids.size() / 3);
     }
     printf("---------------------------\n");

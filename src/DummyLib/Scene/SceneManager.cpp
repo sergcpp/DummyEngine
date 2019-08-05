@@ -263,7 +263,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         uint8_t *image_data = SOIL_load_image_from_memory(&in_file_data[0], (int)in_file_size, &res[0], &res[1], &channels, 4);
         assert(channels == 4);
 #else
-        auto image_data = SceneManagerInternal::Decode_KTX_ASTC(&in_file_data[0], in_file_size, res[0], res[1]);
+        std::unique_ptr<uint8_t[]> image_data = SceneManagerInternal::Decode_KTX_ASTC(&in_file_data[0], in_file_size, res[0], res[1]);
 
 #endif
 
@@ -299,7 +299,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             const std::string &js_comp_name = js_comp.first;
 
             for (int i = 0; i < MAX_COMPONENT_TYPES; i++) {
-                auto *store = scene_data_.comp_store[i];
+                CompStorage *store = scene_data_.comp_store[i];
                 if (!store) continue;
 
                 if (js_comp_name == store->name()) {
@@ -684,7 +684,7 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
         std::weak_ptr<SceneManager> _self = shared_from_this();
         Sys::LoadAssetComplete(tex_name.c_str(),
         [_self, tex_name](void *data, int size) {
-            auto self = _self.lock();
+            std::shared_ptr<SceneManager> self = _self.lock();
             if (!self) return;
 
             self->ctx_.ProcessSingleTask([&self, tex_name, data, size]() {
