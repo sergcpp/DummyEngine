@@ -140,13 +140,14 @@ void DummyApp::Resize(int w, int h) {
     viewer_->Resize(w, h);
 }
 
-void DummyApp::AddEvent(int type, int key, float x, float y, float dx, float dy) {
+void DummyApp::AddEvent(int type, int key, int raw_key, float x, float y, float dx, float dy) {
     auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
     if (!input_manager) return;
 
     InputManager::Event evt;
     evt.type = (InputManager::RawInputEvent)type;
     evt.key = (InputManager::RawInputButton)key;
+    evt.raw_key = raw_key;
     evt.point.x = x;
     evt.point.y = y;
     evt.move.dx = dx;
@@ -225,8 +226,8 @@ int DummyApp::Run(const std::vector<std::string> &args) {
     return 0;
 }
 
-bool DummyApp::ConvertToRawButton(int32_t key, InputManager::RawInputButton &button) {
-    switch (key) {
+bool DummyApp::ConvertToRawButton(int &raw_key, InputManager::RawInputButton &button) {
+    switch (raw_key) {
     case SDLK_UP:
         button = InputManager::RAW_INPUT_BUTTON_UP;
         break;

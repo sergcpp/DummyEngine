@@ -7,6 +7,17 @@
 #include <Eng/TimedInput.h>
 
 #if !defined(__ANDROID__)
+#if defined(_WIN32)
+#ifndef _WINDEF_
+struct HWND__; // Forward or never
+typedef HWND__* HWND;
+struct HDC__;
+typedef HDC__* HDC;
+struct HGLRC__;
+typedef HGLRC__* HGLRC;
+#endif
+#endif
+
 struct SDL_Renderer;
 struct SDL_Texture;
 struct SDL_Window;
@@ -15,22 +26,30 @@ struct SDL_Window;
 class GameBase;
 
 class DummyApp {
+    bool quit_;
+
+#if !defined(__ANDROID__)
+#if defined(_WIN32)
+    HWND            window_handle_;
+    HDC             device_context_;
+    HGLRC           gl_ctx_;
+#else
 #if defined(USE_GL_RENDER)
     void            *gl_ctx_ = nullptr;
 #elif defined(USE_SW_RENDER)
     SDL_Renderer    *renderer_ = nullptr;
     SDL_Texture     *texture_ = nullptr;
 #endif
-    bool quit_;
 
-#if !defined(__ANDROID__)
     SDL_Window		*window_ = nullptr;
+#endif
 
-    bool ConvertToRawButton(int32_t key, InputManager::RawInputButton &button);
+    
     void PollEvents();
 #endif
 
-    std::unique_ptr<GameBase> viewer_;
+    std::unique_ptr<GameBase>   viewer_;
+    std::weak_ptr<InputManager> input_manager_;
 public:
     DummyApp();
     ~DummyApp();
@@ -41,7 +60,8 @@ public:
     void Frame();
     void Resize(int w, int h);
 
-    void AddEvent(int type, int key, float x, float y, float dx, float dy);
+    void AddEvent(int type, int key, int raw_key, float x, float y, float dx, float dy);
+    static bool ConvertToRawButton(int &raw_key, InputManager::RawInputButton &button);
 
 #if !defined(__ANDROID__)
     int Run(const std::vector<std::string> &args);
