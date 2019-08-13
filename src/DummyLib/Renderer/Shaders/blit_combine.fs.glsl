@@ -35,7 +35,7 @@ vec3 Unch2Tonemap(vec3 x) {
 }
 
 #if defined(MSAA_4)
-vec3 BilinearTexelFetch(sampler2DMS texture, vec2 texcoord, int s) {
+vec3 BilinearTexelFetch(mediump sampler2DMS texture, vec2 texcoord, int s) {
     ivec2 coord = ivec2(floor(texcoord));
 
     vec3 texel00 = texelFetch(texture, coord + ivec2(0, 0), s).rgb;

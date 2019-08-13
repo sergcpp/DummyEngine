@@ -107,7 +107,10 @@ int DummyApp::Init(int w, int h) {
 #endif
 #endif
     try {
+#if defined(WIN32)
+        // TODO: make it work on linux
         Viewer::PrepareAssets("pc");
+#endif
         viewer_.reset(new Viewer(w, h, nullptr));
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());

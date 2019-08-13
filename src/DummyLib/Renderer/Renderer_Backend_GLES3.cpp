@@ -1377,44 +1377,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glEnable(GL_MULTISAMPLE);
 
     /**************************************************************************************************/
-    /*                                         BIND RESOURCES                                         */
-    /**************************************************************************************************/
-
-    BindTexture(REN_SHAD_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
-
-    if (list.decals_atlas) {
-        BindTexture(REN_DECAL_TEX_SLOT, list.decals_atlas->tex_id(0));
-    }
-
-    if (list.render_flags & EnableSSAO) {
-        BindTexture(REN_SSAO_TEX_SLOT, combined_buf_.attachments[0].tex);
-    } else {
-        BindTexture(REN_SSAO_TEX_SLOT, dummy_white_->tex_id());
-    }
-
-    BindTexture(REN_BRDF_TEX_SLOT, brdf_lut_->tex_id());
-
-    if ((list.render_flags & EnableLightmap) && list.env.lm_direct) {
-        for (int sh_l = 0; sh_l < 4; sh_l++) {
-            BindTexture(REN_LMAP_SH_SLOT + sh_l, list.env.lm_indir_sh[sh_l]->tex_id());
-        }
-    } else {
-        for (int sh_l = 0; sh_l < 4; sh_l++) {
-            BindTexture(REN_LMAP_SH_SLOT + sh_l, dummy_black_->tex_id());
-        }
-    }
-
-    if (list.probe_storage) {
-        glActiveTexture(GL_TEXTURE0 + REN_ENV_TEX_SLOT);
-        glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, list.probe_storage->tex_id());
-    }
-
-    BindTexBuffer(REN_LIGHT_BUF_SLOT, lights_tbo_[cur_buf_chunk_]);
-    BindTexBuffer(REN_DECAL_BUF_SLOT, decals_tbo_[cur_buf_chunk_]);
-    BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
-    BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
-
-    /**************************************************************************************************/
     /*                                         DEPTH-FILL PASS                                        */
     /**************************************************************************************************/
 
@@ -1600,6 +1562,44 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 #endif
+
+    /**************************************************************************************************/
+    /*                                         BIND RESOURCES                                         */
+    /**************************************************************************************************/
+
+    BindTexture(REN_SHAD_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
+
+    if (list.decals_atlas) {
+        BindTexture(REN_DECAL_TEX_SLOT, list.decals_atlas->tex_id(0));
+    }
+
+    if (list.render_flags & EnableSSAO) {
+        BindTexture(REN_SSAO_TEX_SLOT, combined_buf_.attachments[0].tex);
+    } else {
+        BindTexture(REN_SSAO_TEX_SLOT, dummy_white_->tex_id());
+    }
+
+    BindTexture(REN_BRDF_TEX_SLOT, brdf_lut_->tex_id());
+
+    if ((list.render_flags & EnableLightmap) && list.env.lm_direct) {
+        for (int sh_l = 0; sh_l < 4; sh_l++) {
+            BindTexture(REN_LMAP_SH_SLOT + sh_l, list.env.lm_indir_sh[sh_l]->tex_id());
+        }
+    } else {
+        for (int sh_l = 0; sh_l < 4; sh_l++) {
+            BindTexture(REN_LMAP_SH_SLOT + sh_l, dummy_black_->tex_id());
+        }
+    }
+
+    if (list.probe_storage) {
+        glActiveTexture(GL_TEXTURE0 + REN_ENV_TEX_SLOT);
+        glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, list.probe_storage->tex_id());
+    }
+
+    BindTexBuffer(REN_LIGHT_BUF_SLOT, lights_tbo_[cur_buf_chunk_]);
+    BindTexBuffer(REN_DECAL_BUF_SLOT, decals_tbo_[cur_buf_chunk_]);
+    BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
+    BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
 
     /**************************************************************************************************/
     /*                                           OPAQUE PASS                                          */

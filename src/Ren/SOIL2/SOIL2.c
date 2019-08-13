@@ -2789,7 +2789,7 @@ int query_tex_rectangle_capability( void )
 
 int query_cubemap_capability( void )
 {
-#if !defined(__ANDROID__)
+#if !defined(__ANDROID__) && !defined(__linux__)
 	/*	check for the capability	*/
 	if( has_cubemap_capability == SOIL_CAPABILITY_UNKNOWN )
 	{

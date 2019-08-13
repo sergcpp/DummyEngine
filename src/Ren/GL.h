@@ -490,8 +490,9 @@ typedef void (APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
 #define glCompileShader             ren_glCompileShader
 #define glGetShaderiv               ren_glGetShaderiv
 #define glGetShaderInfoLog          ren_glGetShaderInfoLog
-
+#if !defined(__linux__)
 #define glActiveTexture             ren_glActiveTexture
+#endif
 #define glGenerateMipmap            ren_glGenerateMipmap
 
 #define glGenBuffers                ren_glGenBuffers
@@ -561,9 +562,9 @@ typedef void (APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
 #define glTexStorage2DMultisample   ren_glTexStorage2DMultisample
 #define glTexImage2DMultisample     ren_glTexImage2DMultisample
 #define glRenderbufferStorageMultisample ren_glRenderbufferStorageMultisample
-
+#if !defined(__linux__)
 #define glTexImage3D                ren_glTexImage3D
-
+#endif
 #define glDrawElementsBaseVertex    ren_glDrawElementsBaseVertex
 #define glDrawElementsInstanced     ren_glDrawElementsInstanced
 #define glDrawElementsInstancedBaseVertex ren_glDrawElementsInstancedBaseVertex
@@ -630,8 +631,9 @@ EXTERN_FUNC PFNGLSHADERSOURCEPROC               ren_glShaderSource;
 EXTERN_FUNC PFNGLCOMPILESHADERPROC              ren_glCompileShader;
 EXTERN_FUNC PFNGLGETSHADERIVPROC                ren_glGetShaderiv;
 EXTERN_FUNC PFNGLGETSHADERINFOLOGPROC           ren_glGetShaderInfoLog;
-
+#if !defined(__linux__)
 EXTERN_FUNC PFNGLACTIVETEXTUREPROC              ren_glActiveTexture;
+#endif
 EXTERN_FUNC PFNGLGENERATEMIPMAPPROC             ren_glGenerateMipmap;
 
 EXTERN_FUNC PFNGLGENBUFFERSPROC                 ren_glGenBuffers;
