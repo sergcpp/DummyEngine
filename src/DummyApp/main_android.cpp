@@ -35,6 +35,6 @@ extern "C" JNIEXPORT void JNICALL Java_com_serg_dummyapp_LibJNI_Resize(JNIEnv *,
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_serg_dummyapp_LibJNI_AddEvent(JNIEnv *, jclass, jint type, jint key, jfloat x, jfloat y, jfloat dx, jfloat dy) {
-    g_app->AddEvent((int)type, (int)key, (float)x, (float)y, (float)dx, (float)dy);
+    g_app->AddEvent((int)type, (int)key, -1, (float)x, (float)y, (float)dx, (float)dy);
 }
 
