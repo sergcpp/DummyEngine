@@ -1,13 +1,12 @@
-R"(
-#version 310 es
+R"(#version 310 es
 #ifdef GL_ES
     precision mediump float;
 #endif
         
 layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform sampler2D s_texture;
-uniform float near;
-uniform float far;
-uniform vec3 color;
+layout(location = 1) uniform float near;
+layout(location = 2) uniform float far;
+layout(location = 3) uniform vec3 color;
 
 in vec2 aVertexUVs_;
 

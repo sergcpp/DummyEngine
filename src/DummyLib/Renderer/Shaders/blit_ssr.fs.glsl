@@ -1,5 +1,4 @@
-R"(
-#version 310 es
+R"(#version 310 es
 #extension GL_ARB_texture_multisample : enable
 #extension GL_EXT_texture_buffer : enable
 

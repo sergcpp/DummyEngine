@@ -1,5 +1,4 @@
-R"(
-#version 310 es
+R"(#version 310 es
 
 /*
 UNIFORM_BLOCKS

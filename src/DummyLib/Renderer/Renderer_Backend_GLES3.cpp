@@ -2192,10 +2192,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         float k = (float(shadow_buf_.h) / shadow_buf_.w) * (float(scr_w_) / scr_h_);
 
-        const int near_loc = blit_depth_prog_->uniform("near").loc;
-        const int far_loc = blit_depth_prog_->uniform("far").loc;
-        const int col_loc = blit_depth_prog_->uniform("color").loc;
-
         {   // Clear region
             glEnable(GL_SCISSOR_TEST);
 
@@ -2223,15 +2219,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
             glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
             
-            glUniform1f(near_loc, sh_list.cam_near);
-            glUniform1f(far_loc, sh_list.cam_far);
+            glUniform1f(1, sh_list.cam_near);
+            glUniform1f(2, sh_list.cam_far);
 
             if (sh_list.shadow_batch_count) {
                 // mark updated region with red
-                glUniform3f(col_loc, 1.0f, 0.5f, 0.5f);
+                glUniform3f(3, 1.0f, 0.5f, 0.5f);
             } else {
                 // mark cached region with green
-                glUniform3f(col_loc, 0.5f, 1.0f, 0.5f);
+                glUniform3f(3, 0.5f, 1.0f, 0.5f);
             }
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
@@ -2254,11 +2250,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
             glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
 
-            glUniform1f(near_loc, r.cam_near);
-            glUniform1f(far_loc, r.cam_far);
+            glUniform1f(1, r.cam_near);
+            glUniform1f(2, r.cam_far);
 
             // mark cached region with blue
-            glUniform3f(col_loc, 0.5f, 0.5f, 1.0f);
+            glUniform3f(3, 0.5f, 0.5f, 1.0f);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
         }
@@ -2280,7 +2276,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
 
                 // draw line with black color
-                glUniform3f(col_loc, 0.0f, 0.0f, 0.0f);
+                glUniform3f(3, 0.0f, 0.0f, 0.0f);
 
                 glDrawElements(GL_LINES, 2, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
             }

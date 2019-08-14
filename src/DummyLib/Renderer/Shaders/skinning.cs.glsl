@@ -1,5 +1,4 @@
-R"(
-#version )" GLSL_VERSION_STR R"(
+R"(#version )" GLSL_VERSION_STR R"(
 
 struct InVertex {
     highp vec4 p_and_nxy;
