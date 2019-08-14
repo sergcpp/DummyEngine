@@ -13,6 +13,8 @@ in vec2 aVertexUVs_;
 out vec4 outColor;
 
 void main() {
+    outColor = vec4(0.0);
+
     if(vertical < 0.5) {
         outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(4, 0), 0) * 0.0162162162;
         outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(3, 0), 0) * 0.0540540541;

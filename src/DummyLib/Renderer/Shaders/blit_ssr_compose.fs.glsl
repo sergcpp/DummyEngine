@@ -73,6 +73,8 @@ vec3 FresnelSchlickRoughness(float cos_theta, vec3 F0, float roughness) {
 }
 
 void main() {
+    outColor = vec4(0.0);
+
     ivec2 icoord = ivec2(gl_FragCoord.xy);
     ivec2 icoord_low = ivec2(gl_FragCoord.xy) / 2;
 

@@ -212,6 +212,8 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
 
 
 void main() {
+    outColor = vec4(0.0);
+
     ivec2 pix_uvs = ivec2(aVertexUVs_ - vec2(0.5));
 
     vec4 normal_tex = texelFetch(norm_texture, pix_uvs, 0);

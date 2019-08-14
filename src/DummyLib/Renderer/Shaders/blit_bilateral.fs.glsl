@@ -18,6 +18,7 @@ void main() {
     float center_depth = texelFetch(depth_texture, icoord, 0).r;
     float closeness = 1.0 / (0.075 + 0.0);
     float weight = closeness * 0.214607;
+    outColor = vec4(0.0);
     outColor += texelFetch(source_texture, icoord, 0) * weight;
 
     float normalization = weight;
