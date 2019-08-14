@@ -105,8 +105,8 @@ void SceneManager::RebuildBVH() {
     s.node_traversal_cost = 0.0f;
 
     while (!prim_lists.empty()) {
-        auto split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices.data(), (uint32_t)prim_lists.back().indices.size(),
-                                              prim_lists.back().min, prim_lists.back().max, root_min, root_max, s);
+        split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices.data(), (uint32_t)prim_lists.back().indices.size(),
+                                                      prim_lists.back().min, prim_lists.back().max, root_min, root_max, s);
         prim_lists.pop_back();
 
         uint32_t leaf_index = (uint32_t)scene_data_.nodes.size(),

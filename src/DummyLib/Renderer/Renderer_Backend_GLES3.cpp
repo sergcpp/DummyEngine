@@ -597,7 +597,7 @@ bool Renderer::InitFramebuffersInternal() {
 
     bool result = true;
 
-    {   // Attach textures from clean framebuffer to skydome framebuffer
+    {   // Attach textures from clean framebuffer to skydome framebuffer (only color, specular and depth are drawn)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)skydome_framebuf_);
 
         GLuint col_tex = (GLuint)clean_buf_.attachments[0].tex;
@@ -628,7 +628,7 @@ bool Renderer::InitFramebuffersInternal() {
         result = (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
-    {   // Attach textures from clean framebuffer to depth-fill framebuffer
+    {   // Attach textures from clean framebuffer to depth-fill framebuffer (only depth is drawn)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
 
         GLuint depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
@@ -645,7 +645,7 @@ bool Renderer::InitFramebuffersInternal() {
         result = (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
-    {   // Attach textures from clean framebuffer to refl comb framebuffer
+    {   // Attach textures from clean framebuffer to refl comb framebuffer (only color is drawn)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)refl_comb_framebuf_);
 
         GLuint col_tex = (GLuint)clean_buf_.attachments[0].tex;
@@ -699,7 +699,7 @@ void Renderer::CheckInitVAOs() {
 
         const int buf1_stride = 16, buf2_stride = 16;
 
-        {   // VAO for shadow and depth-fill passes (solid)
+        {   // VAO for shadow and depth-fill passes (solid, uses position attribute only)
             GLuint depth_pass_solid_vao;
             glGenVertexArrays(1, &depth_pass_solid_vao);
             glBindVertexArray(depth_pass_solid_vao);
@@ -711,11 +711,10 @@ void Renderer::CheckInitVAOs() {
             glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);
 
             glBindVertexArray(0);
-
             depth_pass_solid_vao_ = (uint32_t)depth_pass_solid_vao;
         }
 
-        {   // VAO for shadow and depth-fill passes (alpha-tested)
+        {   // VAO for shadow and depth-fill passes (alpha-tested, uses position and uv attributes)
             GLuint depth_pass_transp_vao;
             glGenVertexArrays(1, &depth_pass_transp_vao);
             glBindVertexArray(depth_pass_transp_vao);
@@ -730,41 +729,42 @@ void Renderer::CheckInitVAOs() {
             glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride, (void *)(3 * sizeof(float)));
 
             glBindVertexArray(0);
-
             depth_pass_transp_vao_ = (uint32_t)depth_pass_transp_vao;
         }
 
-        GLuint draw_pass_vao;
-        glGenVertexArrays(1, &draw_pass_vao);
-        glBindVertexArray(draw_pass_vao);
+        {   // VAO for main drawing (uses all attributes)
+            GLuint draw_pass_vao;
+            glGenVertexArrays(1, &draw_pass_vao);
+            glBindVertexArray(draw_pass_vao);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
-        {   // Setup attributes from buffer 1
-            glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
+            {   // Setup attributes from buffer 1
+                glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
 
-            glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);
+                glEnableVertexAttribArray(REN_VTX_POS_LOC);
+                glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);
 
-            glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride, (void *)(3 * sizeof(float)));
+                glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+                glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride, (void *)(3 * sizeof(float)));
+            }
+
+            {   // Setup attributes from buffer 2
+                glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf2);
+
+                glEnableVertexAttribArray(REN_VTX_NOR_LOC);
+                glVertexAttribPointer(REN_VTX_NOR_LOC, 4, GL_SHORT, GL_TRUE, buf2_stride, (void *)0);
+
+                glEnableVertexAttribArray(REN_VTX_TAN_LOC);
+                glVertexAttribPointer(REN_VTX_TAN_LOC, 2, GL_SHORT, GL_TRUE, buf2_stride, (void *)(4 * sizeof(uint16_t)));
+
+                glEnableVertexAttribArray(REN_VTX_UV2_LOC);
+                glVertexAttribPointer(REN_VTX_UV2_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf2_stride, (void *)(6 * sizeof(uint16_t)));
+            }
+
+            glBindVertexArray(0);
+            draw_pass_vao_ = (uint32_t)draw_pass_vao;
         }
-
-        {   // Setup attributes from buffer 2
-            glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf2);
-
-            glEnableVertexAttribArray(REN_VTX_NOR_LOC);
-            glVertexAttribPointer(REN_VTX_NOR_LOC, 4, GL_SHORT, GL_TRUE, buf2_stride, (void *)0);
-
-            glEnableVertexAttribArray(REN_VTX_TAN_LOC);
-            glVertexAttribPointer(REN_VTX_TAN_LOC, 2, GL_SHORT, GL_TRUE, buf2_stride, (void *)(4 * sizeof(uint16_t)));
-
-            glEnableVertexAttribArray(REN_VTX_UV2_LOC);
-            glVertexAttribPointer(REN_VTX_UV2_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf2_stride, (void *)(6 * sizeof(uint16_t)));
-        }
-
-        glBindVertexArray(0);
-        draw_pass_vao_ = (uint32_t)draw_pass_vao;
 
         {   // Create vao for temporary buffer
             GLuint temp_vao;
