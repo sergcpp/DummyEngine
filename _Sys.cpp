@@ -10,7 +10,9 @@
 #if defined(WIN32)
 #include "AsyncFileReader_win32.cpp"
 #elif defined(__linux__)
-#include "AsyncFileReader_unix.cpp"
+#include "AsyncFileReader_aio.cpp"
+#elif defined(__APPLE__)
+#include "AsyncFileReader_posix_aio.cpp"
 #endif
 
 #if defined(WIN32) || defined(__linux__) || defined(__EMSCRIPTEN__)
