@@ -8,7 +8,7 @@
 
 #include <dirent.h>
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 #include <sys/stat.h>
 #endif
 
@@ -147,7 +147,7 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
 
 std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref,
                                                       const bool flip_y) {
-    const Ren::Tex2DParams &params = tex_ref->params();
+    const Ren::Tex2DParams &params = tex_ref->params;
 
     std::unique_ptr<Ray::pixel_color8_t[]> tex_data(
         new Ray::pixel_color8_t[params.w * params.h]);
@@ -583,8 +583,6 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
         InitASTCCodec();
         g_astc_initialized = true;
     }
-
-    WriteCommonShaderIncludes(in_folder);
 
     g_asset_handlers["bff"] = {"bff", HCopy};
     g_asset_handlers["mesh"] = {"mesh", HCopy};

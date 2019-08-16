@@ -643,7 +643,7 @@ void SceneManager::InitScene_PT(bool _override) {
                                     SceneManagerInternal::GetTextureData(
                                         tex_ref, true /* flip_y */);
 
-                                const Ren::Tex2DParams &params = tex_ref->params();
+                                const Ren::Tex2DParams &params = tex_ref->params;
 
                                 Ray::tex_desc_t tex_desc;
                                 tex_desc.w = params.w;

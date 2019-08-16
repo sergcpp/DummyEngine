@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.4)
+cmake_minimum_required(VERSION 3.1)
 project(SPIRV-Reflect)
 
 set(SOURCE_FILES spirv_reflect.h

@@ -1,8 +1,7 @@
 #include "ButtonBase.h"
 
 Gui::ButtonBase::ButtonBase(const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
-    : BaseElement(pos, size, parent), state_(eState::Normal) {
-}
+    : BaseElement(pos, size, parent), state_(eState::Normal) {}
 
 void Gui::ButtonBase::Hover(const Vec2i &p) {
     if (state_ != eState::Pressed) {

@@ -2,37 +2,40 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
-#extension GL_ARB_bindless_texture: enable
 //#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+    precision highp float;
     precision mediump sampler2DShadow;
 #endif
 
 #include "internal/_fs_common.glsl"
+#include "internal/_texturing.glsl"
 
 #define LIGHT_ATTEN_CUTOFF 0.004
 
-#if !defined(GL_ARB_bindless_texture)
+#if !defined(BINDLESS_TEXTURES)
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D diff_texture;
 layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D norm_texture;
 layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D spec_texture;
 layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D sss_texture;
 layout(binding = REN_MAT_TEX4_SLOT) uniform sampler2D norm_detail_texture;
-#endif // GL_ARB_bindless_texture
+#endif // BINDLESS_TEXTURES
 layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow shadow_texture;
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D decals_texture;
 layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D ao_texture;
+layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray env_texture;
 layout(binding = REN_LIGHT_BUF_SLOT) uniform mediump samplerBuffer lights_buffer;
 layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer decals_buffer;
 layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer cells_buffer;
 layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer items_buffer;
+layout(binding = REN_CONE_RT_LUT_SLOT) uniform lowp sampler2D cone_rt_lut;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = 0, std140)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 #else
 layout (std140)
 #endif
@@ -40,35 +43,19 @@ uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
-layout (location = REN_U_MAT_PARAM_LOC) uniform vec4 uMaterialParams;
-
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in highp vec3 aVertexPos_;
-layout(location = 1) in mediump vec3 aVertexUVAndCurvature_;
-layout(location = 2) in mediump vec3 aVertexNormal_;
-layout(location = 3) in mediump vec3 aVertexTangent_;
-layout(location = 4) in highp vec3 aVertexShUVs_[4];
-#if defined(GL_ARB_bindless_texture)
-layout(location = 8) in flat uvec2 diff_texture;
-layout(location = 9) in flat uvec2 norm_texture;
-layout(location = 10) in flat uvec2 spec_texture;
-layout(location = 11) in flat uvec2 sss_texture;
-layout(location = 12) in flat uvec2 norm_detail_texture;
-#endif // GL_ARB_bindless_texture
-#else
-in highp vec3 aVertexPos_;
-in mediump vec3 aVertexUVAndCurvature_;
-in mediump vec3 aVertexNormal_;
-in mediump vec3 aVertexTangent_;
-in highp vec3 aVertexShUVs_[4];
-#if defined(GL_ARB_bindless_texture)
-in flat uvec2 diff_texture;
-in flat uvec2 norm_texture;
-in flat uvec2 spec_texture;
-in flat uvec2 sss_texture;
-in flat uvec2 norm_detail_texture;
-#endif // GL_ARB_bindless_texture
-#endif
+LAYOUT(location = 0) in highp vec3 aVertexPos_;
+LAYOUT(location = 1) in mediump vec3 aVertexUVAndCurvature_;
+LAYOUT(location = 2) in mediump vec3 aVertexNormal_;
+LAYOUT(location = 3) in mediump vec3 aVertexTangent_;
+LAYOUT(location = 4) in highp vec3 aVertexShUVs_[4];
+#if defined(BINDLESS_TEXTURES)
+	LAYOUT(location = 8) in flat TEX_HANDLE diff_texture;
+	LAYOUT(location = 9) in flat TEX_HANDLE norm_texture;
+	LAYOUT(location = 10) in flat TEX_HANDLE spec_texture;
+	LAYOUT(location = 11) in flat TEX_HANDLE sss_texture;
+	LAYOUT(location = 12) in flat TEX_HANDLE norm_detail_texture;
+#endif // BINDLESS_TEXTURES
+LAYOUT(location = 13) in flat vec4 material_params;
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
 layout(location = REN_OUT_NORM_INDEX) out vec4 outNormal;
@@ -90,12 +77,12 @@ void main(void) {
     
     vec2 duv_dx = dFdx(aVertexUVAndCurvature_.xy), duv_dy = dFdy(aVertexUVAndCurvature_.xy);
     vec3 normal_color = texture(SAMPLER2D(norm_texture), aVertexUVAndCurvature_.xy).wyz;
-	vec3 normal_detail_color = texture(SAMPLER2D(norm_detail_texture), aVertexUVAndCurvature_.xy * uMaterialParams.w).wyz;
+	vec3 normal_detail_color = texture(SAMPLER2D(norm_detail_texture), aVertexUVAndCurvature_.xy * material_params.w).wyz;
 	
 	normal_color.xy += normal_detail_color.xy;
 	
 	const vec3 lod_offsets = { 3.0, 2.0, 1.0 };
-	const vec3 der_muls = uMaterialParams.xyz;//{ 8.0, 4.0, 2.0 };
+	const vec3 der_muls = material_params.xyz;//{ 8.0, 4.0, 2.0 };
 	
 	vec3 normal_color_r = textureGrad(SAMPLER2D(norm_texture), aVertexUVAndCurvature_.xy,
 									  der_muls.x * dFdx(aVertexUVAndCurvature_.xy), der_muls.x * dFdy(aVertexUVAndCurvature_.xy)).wyz;

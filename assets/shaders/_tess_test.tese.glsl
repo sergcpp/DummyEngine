@@ -1,12 +1,12 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
-#extension GL_ARB_bindless_texture: enable
 //#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
 
 #include "internal/_vs_common.glsl"
+#include "internal/_texturing.glsl"
 
 /*
 UNIFORM_BLOCKS
@@ -16,45 +16,25 @@ UNIFORM_BLOCKS
 layout(triangles, fractional_odd_spacing, ccw) in;
 //layout(triangles, equal_spacing, ccw) in;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in highp vec3 aVertexPos_ES[];
-layout(location = 1) in mediump vec2 aVertexUVs_ES[];
-layout(location = 2) in mediump vec3 aVertexNormal_ES[];
-layout(location = 3) in mediump vec3 aVertexTangent_ES[];
-layout(location = 4) in highp vec3 aVertexShUVs_ES[][4];
-#if defined(GL_ARB_bindless_texture)
-layout(location = 12) out flat uvec2 bump_texture;
-#endif // GL_ARB_bindless_texture
-#else
-in highp vec3 aVertexPos_ES[];
-in mediump vec2 aVertexUVs_ES[];
-in mediump vec3 aVertexNormal_ES[];
-in mediump vec3 aVertexTangent_ES[];
-in highp vec3 aVertexShUVs_ES[][4];
-#if defined(GL_ARB_bindless_texture)
-layout(location = 12) in flat uvec2 bump_texture;
-#endif // GL_ARB_bindless_texture
-#endif
+LAYOUT(location = 0) in highp vec3 aVertexPos_ES[];
+LAYOUT(location = 1) in mediump vec2 aVertexUVs_ES[];
+LAYOUT(location = 2) in mediump vec3 aVertexNormal_ES[];
+LAYOUT(location = 3) in mediump vec3 aVertexTangent_ES[];
+LAYOUT(location = 4) in highp vec3 aVertexShUVs_ES[][4];
+#if defined(BINDLESS_TEXTURES)
+	LAYOUT(location = 12) out flat TEX_HANDLE bump_texture;
+#endif // BINDLESS_TEXTURES
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) out highp vec3 aVertexPos_;
-layout(location = 1) out mediump vec2 aVertexUVs_;
-layout(location = 2) out mediump vec3 aVertexNormal_;
-layout(location = 3) out mediump vec3 aVertexTangent_;
-layout(location = 4) out highp vec3 aVertexShUVs_[4];
-layout(location = 8) out lowp float tex_height;
-#else
-out highp vec3 aVertexPos_;
-out mediump vec2 aVertexUVs_;
-out mediump vec3 aVertexNormal_;
-out mediump vec3 aVertexTangent_;
-out highp vec3 aVertexShUVs_[4];
-out lowp float tex_height;
-#endif
+LAYOUT(location = 0) out highp vec3 aVertexPos_;
+LAYOUT(location = 1) out mediump vec2 aVertexUVs_;
+LAYOUT(location = 2) out mediump vec3 aVertexNormal_;
+LAYOUT(location = 3) out mediump vec3 aVertexTangent_;
+LAYOUT(location = 4) out highp vec3 aVertexShUVs_[4];
+LAYOUT(location = 8) out lowp float tex_height;
 
-#if !defined(GL_ARB_bindless_texture)
+#if !defined(BINDLESS_TEXTURES)
 layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D bump_texture;
-#endif // GL_ARB_bindless_texture
+#endif // BINDLESS_TEXTURES
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = 0, std140)

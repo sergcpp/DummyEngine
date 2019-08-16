@@ -14,7 +14,6 @@ class RpFXAA : public RenderPassBase {
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
-    int orphan_index_ = -1;
 
     RpResource shared_data_buf_;
     RpResource color_tex_;
@@ -28,8 +27,7 @@ class RpFXAA : public RenderPassBase {
   public:
     RpFXAA(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state, int orphan_index,
-               const char shared_data_buf[], const char color_tex[],
+    void Setup(RpBuilder &builder, const ViewState *view_state, const char shared_data_buf[], const char color_tex[],
                const char output_tex_name[]);
     void Execute(RpBuilder &builder) override;
 

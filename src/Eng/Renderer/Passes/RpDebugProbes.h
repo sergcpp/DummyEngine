@@ -3,10 +3,6 @@
 #include "../Graph/GraphBuilder.h"
 #include "../Renderer_DrawList.h"
 
-#if defined(USE_GL_RENDER)
-#include <Ren/VaoGL.h>
-#endif
-
 class PrimDraw;
 
 class RpDebugProbes : public RenderPassBase {
@@ -18,7 +14,6 @@ class RpDebugProbes : public RenderPassBase {
     const ProbeStorage *probe_storage_ = nullptr;
     DynArrayConstRef<ProbeItem> probes_;
     const ViewState *view_state_ = nullptr;
-    int orphan_index_ = -1;
 
     RpResource shared_data_buf_;
 
@@ -36,8 +31,7 @@ class RpDebugProbes : public RenderPassBase {
     RpDebugProbes(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
     void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
-               int orphan_index, const char shared_data_buf_name[],
-               const char output_tex_name[]);
+               const char shared_data_buf_name[], const char output_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
     // TODO: remove this

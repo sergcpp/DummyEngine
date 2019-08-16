@@ -1,6 +1,7 @@
 #include "SceneManager.h"
 
 #include <Ren/Context.h>
+#include <Ren/GL.h>
 #include <Ren/Utils.h>
 
 #include "../Renderer/Renderer_Structs.h"
@@ -12,113 +13,67 @@ namespace SceneManagerConstants {} // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {} // namespace SceneManagerInternal
 
-PersistentBuffers SceneManager::persistent_bufs() const {
-    PersistentBuffers ret;
-    ret.materials_buf = scene_data_.materials_buf->handle();
-    ret.materials_buf_range.first = scene_data_.mat_buf_index *
-                                    scene_data_.materials.capacity() *
-                                    sizeof(MaterialData);
-    ret.materials_buf_range.second =
-        scene_data_.materials.capacity() * sizeof(MaterialData);
-    ret.textures_buf = scene_data_.textures_buf->handle();
-    ret.textures_buf_range.first = scene_data_.mat_buf_index * REN_MAX_TEX_PER_MATERIAL *
-                                   scene_data_.materials.capacity() * sizeof(uint64_t);
-    ret.textures_buf_range.second =
-        REN_MAX_TEX_PER_MATERIAL * scene_data_.materials.capacity() * sizeof(uint64_t);
-    return ret;
-}
-
-void SceneManager::InsertPersistentBuffersFence() {
-    if (!scene_data_.mat_buf_sync[scene_data_.mat_buf_index]) {
-        scene_data_.mat_buf_sync[scene_data_.mat_buf_index] =
-            glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    }
-}
-
 void SceneManager::UpdateMaterialsBuffer() {
     const uint32_t max_mat_count = scene_data_.materials.capacity();
-    const uint32_t req_mat_buf_size = max_mat_count * sizeof(MaterialData);
+    const uint32_t req_mat_buf_size = std::max(1u, max_mat_count) * sizeof(MaterialData);
 
-    if (!scene_data_.materials_buf) {
-        scene_data_.materials_buf = ren_ctx_.CreateBuffer(
-            "Materials Buffer", Ren::eBufferType::Storage, Ren::eBufferAccessType::Draw,
-            Ren::eBufferAccessFreq::Dynamic, FrameSyncWindow * req_mat_buf_size);
+    if (!scene_data_.persistant_data.materials_buf) {
+        scene_data_.persistant_data.materials_buf =
+            ren_ctx_.LoadBuffer("Materials Buffer", Ren::eBufType::Storage, req_mat_buf_size);
     }
 
-    if (scene_data_.materials_buf->size() < FrameSyncWindow * req_mat_buf_size) {
-        scene_data_.materials_buf->Resize(FrameSyncWindow * req_mat_buf_size);
+    if (scene_data_.persistant_data.materials_buf->size() < req_mat_buf_size) {
+        scene_data_.persistant_data.materials_buf->Resize(req_mat_buf_size);
     }
 
-    const uint32_t max_tex_count = REN_MAX_TEX_PER_MATERIAL * max_mat_count;
+    const uint32_t max_tex_count = std::max(1u, REN_MAX_TEX_PER_MATERIAL * max_mat_count);
     const uint32_t req_tex_buf_size = max_tex_count * sizeof(GLuint64);
 
-    if (!scene_data_.textures_buf) {
-        scene_data_.textures_buf = ren_ctx_.CreateBuffer(
-            "Textures Buffer", Ren::eBufferType::Storage, Ren::eBufferAccessType::Draw,
-            Ren::eBufferAccessFreq::Dynamic, FrameSyncWindow * req_tex_buf_size);
+    if (!scene_data_.persistant_data.textures_buf) {
+        scene_data_.persistant_data.textures_buf =
+            ren_ctx_.LoadBuffer("Textures Buffer", Ren::eBufType::Storage, req_tex_buf_size);
     }
 
-    if (scene_data_.textures_buf->size() < FrameSyncWindow * req_tex_buf_size) {
-        scene_data_.textures_buf->Resize(FrameSyncWindow * req_tex_buf_size);
+    if (scene_data_.persistant_data.textures_buf->size() < req_tex_buf_size) {
+        scene_data_.persistant_data.textures_buf->Resize(req_tex_buf_size);
     }
 
-    // propagate material changes
+    auto &update_range = scene_data_.mat_update_ranges[0];
     for (const uint32_t i : scene_data_.material_changes) {
-        for (int j = 0; j < FrameSyncWindow; ++j) {
-            scene_data_.mat_update_ranges[j].first =
-                std::min(scene_data_.mat_update_ranges[j].first, i);
-            scene_data_.mat_update_ranges[j].second =
-                std::max(scene_data_.mat_update_ranges[j].second, i);
-        }
+        update_range.first = std::min(update_range.first, i);
+        update_range.second = std::max(update_range.second, i + 1);
     }
     scene_data_.material_changes.clear();
 
-    const uint32_t next_buf_index = (scene_data_.mat_buf_index + 1) % FrameSyncWindow;
-    auto &cur_update_range = scene_data_.mat_update_ranges[next_buf_index];
-
-    if (cur_update_range.second < cur_update_range.first) {
+    if (update_range.second <= update_range.first) {
         return;
     }
 
-    scene_data_.mat_buf_index = next_buf_index;
-    if (scene_data_.mat_buf_sync[scene_data_.mat_buf_index]) {
-        auto sync =
-            reinterpret_cast<GLsync>(scene_data_.mat_buf_sync[scene_data_.mat_buf_index]);
-        const GLenum res = glClientWaitSync(sync, 0, 1000000000);
-        if (res != GL_ALREADY_SIGNALED && res != GL_CONDITION_SATISFIED) {
-            ren_ctx_.log()->Error("RpUpdateBuffers: Wait failed!");
-        }
-        glDeleteSync(sync);
-        scene_data_.mat_buf_sync[scene_data_.mat_buf_index] = nullptr;
+    const size_t TexSizePerMaterial = REN_MAX_TEX_PER_MATERIAL * sizeof(GLuint64);
+
+    Ren::Buffer materials_stage_buf("Materials Stage Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Stage,
+                                    (update_range.second - update_range.first) * sizeof(MaterialData));
+    Ren::Buffer textures_stage_buf;
+    if (ren_ctx_.capabilities.bindless_texture) {
+        textures_stage_buf = Ren::Buffer("Textures Stage Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Stage,
+                                         (update_range.second - update_range.first) * TexSizePerMaterial);
     }
 
-    const uint32_t mat_buf_offset = scene_data_.mat_buf_index * req_mat_buf_size;
-    const uint32_t tex_buf_offset = scene_data_.mat_buf_index * req_tex_buf_size;
-
-    MaterialData *material_data =
-        reinterpret_cast<MaterialData *>(scene_data_.materials_buf->MapRange(
-            mat_buf_offset + cur_update_range.first * sizeof(MaterialData),
-            (cur_update_range.second - cur_update_range.first + 1) *
-                sizeof(MaterialData)));
+    MaterialData *material_data = reinterpret_cast<MaterialData *>(materials_stage_buf.Map(Ren::BufMapWrite));
     GLuint64 *texture_data = nullptr;
     if (ren_ctx_.capabilities.bindless_texture) {
-        texture_data = reinterpret_cast<GLuint64 *>(scene_data_.textures_buf->MapRange(
-            tex_buf_offset +
-                cur_update_range.first * REN_MAX_TEX_PER_MATERIAL * sizeof(GLuint64),
-            (cur_update_range.second - cur_update_range.first + 1) *
-                REN_MAX_TEX_PER_MATERIAL * sizeof(GLuint64)));
+        texture_data = reinterpret_cast<GLuint64 *>(textures_stage_buf.Map(Ren::BufMapWrite));
     }
 
-    for (uint32_t i = cur_update_range.first; i <= cur_update_range.second; ++i) {
-        const uint32_t rel_i = i - cur_update_range.first;
+    for (uint32_t i = update_range.first; i < update_range.second; ++i) {
+        const uint32_t rel_i = i - update_range.first;
         const Ren::Material *mat = scene_data_.materials.GetOrNull(i);
         if (mat) {
             for (int j = 0; j < int(mat->textures.size()); ++j) {
-                material_data[rel_i].texture_indices[j] =
-                    i * REN_MAX_TEX_PER_MATERIAL + j;
+                material_data[rel_i].texture_indices[j] = i * REN_MAX_TEX_PER_MATERIAL + j;
                 if (texture_data) {
-                    const GLuint64 handle = glGetTextureSamplerHandleARB(
-                        mat->textures[j]->id(), mat->samplers[j]->id());
+                    const GLuint64 handle =
+                        glGetTextureSamplerHandleARB(mat->textures[j]->id(), mat->samplers[j]->id());
                     if (!glIsTextureHandleResidentARB(handle)) {
                         glMakeTextureHandleResidentARB(handle);
                     }
@@ -132,16 +87,39 @@ void SceneManager::UpdateMaterialsBuffer() {
     }
 
     if (texture_data) {
-        scene_data_.textures_buf->FlushRange(
-            0, (cur_update_range.second - cur_update_range.first + 1) *
-                   REN_MAX_TEX_PER_MATERIAL * sizeof(GLuint64));
-        scene_data_.textures_buf->Unmap();
+        textures_stage_buf.FlushMappedRange(0, (update_range.second - update_range.first) * TexSizePerMaterial);
+        textures_stage_buf.Unmap();
+        scene_data_.persistant_data.textures_buf->UpdateSubRegion(
+            update_range.first * TexSizePerMaterial, (update_range.second - update_range.first) * TexSizePerMaterial,
+            textures_stage_buf);
     }
-    scene_data_.materials_buf->FlushRange(
-        0, (cur_update_range.second - cur_update_range.first + 1) * sizeof(MaterialData));
-    scene_data_.materials_buf->Unmap();
 
-    // reset just updated range
-    cur_update_range.first = max_mat_count - 1;
-    cur_update_range.second = 0;
+    materials_stage_buf.FlushMappedRange(0, (update_range.second - update_range.first) * sizeof(MaterialData));
+    materials_stage_buf.Unmap();
+    scene_data_.persistant_data.materials_buf->UpdateSubRegion(
+        update_range.first * sizeof(MaterialData), (update_range.second - update_range.first) * sizeof(MaterialData),
+        materials_stage_buf);
+
+    update_range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
+}
+
+void SceneManager::InitPipelinesForProgram(const Ren::ProgramRef &prog, const uint32_t mat_flags,
+                                           Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
+    Ren::RastState rast_state;
+    rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+    rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
+
+    rast_state.depth.test_enabled = true;
+    rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Equal);
+
+    const uint32_t new_index = scene_data_.persistant_data.pipelines.emplace();
+    Ren::Pipeline &new_pipeline = scene_data_.persistant_data.pipelines.at(new_index);
+
+    const bool res =
+        new_pipeline.Init(ren_ctx_.api_ctx(), rast_state, prog, &draw_pass_vi_, &rp_main_draw_, ren_ctx_.log());
+    if (!res) {
+        ren_ctx_.log()->Error("Failed to initialize pipeline!");
+    }
+
+    out_pipelines.emplace_back(&scene_data_.persistant_data.pipelines, new_index);
 }

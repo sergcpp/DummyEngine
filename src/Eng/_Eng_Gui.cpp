@@ -16,6 +16,8 @@
 
 #if defined(USE_GL_RENDER)
 #include "Gui/RendererGL.cpp"
+#elif defined(USE_VK_RENDER)
+#include "Gui/RendererVK.cpp"
 #elif defined(USE_SW_RENDER)
 #include "Gui/RendererSW.cpp"
 #endif

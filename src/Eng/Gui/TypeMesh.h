@@ -14,18 +14,13 @@ class TypeMesh : public BaseElement {
     Vec2f center_;
 
     BitmapFont *font_;
-public:
+
+  public:
     TypeMesh(const std::string &text, BitmapFont *font, const Vec2f &pos, const BaseElement *parent);
 
-    const std::string &text() const {
-        return text_;
-    }
-    const std::vector<float> &positions() const {
-        return pos_;
-    }
-    const std::vector<float> &uvs() const {
-        return uvs_;
-    }
+    const std::string &text() const { return text_; }
+    const std::vector<float> &positions() const { return pos_; }
+    const std::vector<float> &uvs() const { return uvs_; }
 
     void Centrate();
 
@@ -35,5 +30,4 @@ public:
 
     void Draw(Renderer *r) override;
 };
-}
-
+} // namespace Gui

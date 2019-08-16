@@ -91,7 +91,7 @@ DummyApp::DummyApp() { g_app = this; }
 
 DummyApp::~DummyApp() = default;
 
-int DummyApp::Init(int w, int h) {
+int DummyApp::Init(int w, int h, const char *) {
 #if !defined(__ANDROID__)
     dpy_ = XOpenDisplay(nullptr);
     if (!dpy_) {
@@ -202,7 +202,7 @@ int DummyApp::Init(int w, int h) {
 #if !defined(__ANDROID__)
         aux_gfx_thread = std::make_shared<AuxGfxThread>(dpy_, gl_ctx_aux_);
 #endif
-        viewer_.reset(new Viewer(w, h, nullptr, std::move(aux_gfx_thread)));
+        viewer_.reset(new Viewer(w, h, nullptr, nullptr, std::move(aux_gfx_thread)));
 
         auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
         input_manager_ = input_manager;
@@ -270,7 +270,7 @@ int DummyApp::Run(int argc, char *argv[]) {
         }
     }
 
-    if (Init(w, h) < 0) {
+    if (Init(w, h, nullptr) < 0) {
         return -1;
     }
 

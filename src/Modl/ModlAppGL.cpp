@@ -39,7 +39,7 @@ void ModlApp::DrawMeshSimple(const Ren::MeshRef &ref) {
 
     const Mesh *m = ref.get();
     const Material *mat = m->groups()[0].mat.get();
-    ProgramRef p = mat->programs[0];
+    ProgramRef p = mat->pipelines[0]->prog();
 
     glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
@@ -92,7 +92,7 @@ void ModlApp::DrawMeshColored(const Ren::MeshRef &ref) {
 
     const Mesh *m = ref.get();
     const Material *mat = m->groups()[0].mat.get();
-    ProgramRef p = mat->programs[0];
+    ProgramRef p = mat->pipelines[0]->prog();
 
     glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());

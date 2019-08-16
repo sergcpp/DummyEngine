@@ -1,64 +1,164 @@
 #version 310 es
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+    precision mediump int;
+    precision highp float;
 #endif
 
-layout(binding = 0) uniform mediump sampler2D s_color_curr;
-layout(binding = 1) uniform mediump sampler2D s_color_hist;
+#include "_fs_common.glsl"
+#include "blit_taa_interface.glsl"
 
-layout(binding = 2) uniform mediump sampler2D s_depth;
-layout(binding = 3) uniform mediump sampler2D s_velocity;
+/*
+UNIFORM_BLOCKS
+    UniformParams : $ubUnifParamLoc
+PERM @USE_CLIPPING
+PERM @USE_ROUNDED_NEIBOURHOOD
+PERM @USE_TONEMAP
+PERM @USE_YCoCg
+PERM @USE_CLIPPING;USE_TONEMAP
+PERM @USE_CLIPPING;USE_TONEMAP;USE_YCoCg
+PERM @USE_CLIPPING;USE_ROUNDED_NEIBOURHOOD
+PERM @USE_CLIPPING;USE_ROUNDED_NEIBOURHOOD;USE_TONEMAP;USE_YCoCg
+*/
 
-layout(location = 13) uniform vec2 uTexSize;
-layout(location = 14) uniform float uExposure;
+layout(binding = CURR_TEX_SLOT) uniform mediump sampler2D s_color_curr;
+layout(binding = HIST_TEX_SLOT) uniform mediump sampler2D s_color_hist;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs_;
-#else
-in vec2 aVertexUVs_;
-#endif
+layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D s_depth;
+layout(binding = VELOCITY_TEX_SLOT) uniform mediump sampler2D s_velocity;
+
+LAYOUT_PARAMS uniform UniformParams {
+	Params params;
+};
+
+LAYOUT(location = 0) in highp vec2 aVertexUVs_;
 
 layout(location = 0) out vec3 outColor;
-layout(location = 1) out vec3 outHistory;
+
+// https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
+//float max3(mediump float x, mediump float y, mediump float z) { return max(x, max(y, z)); }
+#define min3(x, y, z) min((x), min((y), (z)))
+#define max3(x, y, z) max((x), max((y), (z)))
+float rcp(float x) { return 1.0 / x; }
+
+vec3 Tonemap(in vec3 c) {
+#if defined(USE_TONEMAP)
+    c *= params.exposure;
+    return c * rcp(max3(c.r, c.g, c.b) + 1.0);
+#else
+    return c;
+#endif
+}
+
+vec3 TonemapInvert(in vec3 c) {
+#if defined(USE_TONEMAP)
+    return (c / max(params.exposure, 0.001)) * rcp(1.0 - max3(c.r, c.g, c.b));
+#else
+    return c;
+#endif
+}
 
 // http://twvideo01.ubm-us.net/o1/vault/gdc2016/Presentations/Pedersen_LasseJonFuglsang_TemporalReprojectionAntiAliasing.pdf
 vec3 clip_aabb(vec3 aabb_min, vec3 aabb_max, vec3 p, vec3 q) {
     vec3 p_clip = 0.5 * (aabb_max + aabb_min);
-    vec3 e_clip = 0.5 * (aabb_max - aabb_min);
+    vec3 e_clip = 0.5 * (aabb_max - aabb_min) + 0.0001;
+
     vec3 v_clip = q - p_clip;
-    vec3 v_unit = v_clip / e_clip;
+    vec3 v_unit = v_clip.xyz / e_clip;
     vec3 a_unit = abs(v_unit);
-    float ma_unit = max(a_unit.x, max(a_unit.y, a_unit.z));
+    float ma_unit = max3(a_unit.x, a_unit.y, a_unit.z);
+
     if (ma_unit > 1.0) {
         return p_clip + v_clip / ma_unit;
     } else {
-        return q;
+        return q; // point inside aabb
     }
 }
 
-// https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
-float max3(float x, float y, float z) { return max(x, max(y, z)); }
-float rcp(float x) { return 1.0 / x; }
-
-vec3 Tonemap(in vec3 c) {
-    c *= uExposure;
-    return c * rcp(max3(c.r, c.g, c.b) + 1.0);
+// https://software.intel.com/en-us/node/503873
+vec3 RGB_to_YCoCg(vec3 c) {
+    // Y = R/4 + G/2 + B/4
+    // Co = R/2 - B/2
+    // Cg = -R/4 + G/2 - B/4
+    return vec3(
+         c.x/4.0 + c.y/2.0 + c.z/4.0,
+         c.x/2.0 - c.z/2.0,
+        -c.x/4.0 + c.y/2.0 - c.z/4.0
+    );
 }
 
-vec3 TonemapInvert(in vec3 c) {
-    return (1.0 / uExposure) * c * rcp(1.0 - max3(c.r, c.g, c.b));
+vec3 YCoCg_to_RGB(vec3 c) {
+    // R = Y + Co - Cg
+    // G = Y + Cg
+    // B = Y - Co - Cg
+    return clamp(vec3(
+        c.x + c.y - c.z,
+        c.x + c.z,
+        c.x - c.y - c.z
+    ), vec3(0.0), vec3(1.0));
 }
 
-float luma(vec3 col) {
+vec3 FetchColor(sampler2D s, ivec2 icoord) {
+#if defined(USE_YCoCg)
+    return RGB_to_YCoCg(Tonemap(texelFetch(s, icoord, 0).rgb));
+#else
+    return Tonemap(texelFetch(s, icoord, 0).rgb);
+#endif
+}
+
+vec3 SampleColor(sampler2D s, vec2 uvs) {
+#if defined(USE_YCoCg)
+    return RGB_to_YCoCg(Tonemap(textureLod(s, uvs, 0.0).rgb));
+#else
+    return Tonemap(textureLod(s, uvs, 0.0).rgb);
+#endif
+}
+
+float Luma(vec3 col) {
+#if defined(USE_YCoCg)
+    return col.r;
+#else
     return dot(col, vec3(0.2125, 0.7154, 0.0721));
+#endif
+}
+
+vec3 find_closest_fragment_3x3(sampler2D dtex, vec2 uv, vec2 texel_size) {
+    vec2 du = vec2(texel_size.x, 0.0);
+    vec2 dv = vec2(0.0, texel_size.y);
+
+    vec3 dtl = vec3(-1, -1, textureLod(dtex, uv - dv - du, 0.0).x);
+    vec3 dtc = vec3( 0, -1, textureLod(dtex, uv - dv, 0.0).x);
+    vec3 dtr = vec3( 1, -1, textureLod(dtex, uv - dv + du, 0.0).x);
+
+    vec3 dml = vec3(-1, 0, textureLod(dtex, uv - du, 0.0).x);
+    vec3 dmc = vec3( 0, 0, textureLod(dtex, uv, 0.0).x);
+    vec3 dmr = vec3( 1, 0, textureLod(dtex, uv + du, 0.0).x);
+
+    vec3 dbl = vec3(-1, 1, textureLod(dtex, uv + dv - du, 0.0).x);
+    vec3 dbc = vec3( 0, 1, textureLod(dtex, uv + dv, 0.0).x);
+    vec3 dbr = vec3( 1, 1, textureLod(dtex, uv + dv + du, 0.0).x);
+
+    vec3 dmin = dtl;
+    if (dmin.z > dtc.z) dmin = dtc;
+    if (dmin.z > dtr.z) dmin = dtr;
+
+    if (dmin.z > dml.z) dmin = dml;
+    if (dmin.z > dmc.z) dmin = dmc;
+    if (dmin.z > dmr.z) dmin = dmr;
+
+    if (dmin.z > dbl.z) dmin = dbl;
+    if (dmin.z > dbc.z) dmin = dbc;
+    if (dmin.z > dbr.z) dmin = dbr;
+
+    return vec3(uv + texel_size * dmin.xy, dmin.z);
 }
 
 void main() {
     ivec2 uvs_px = ivec2(aVertexUVs_);
-    vec2 norm_uvs = aVertexUVs_ / uTexSize;
+    vec2 texel_size = vec2(1.0) / params.tex_size;
+    vec2 norm_uvs = aVertexUVs_ / params.tex_size;
 
-    vec3 col_curr = Tonemap(texelFetch(s_color_curr, uvs_px, 0).rgb);
+    vec3 col_curr = FetchColor(s_color_curr, uvs_px);
 
     float min_depth = texelFetch(s_depth, uvs_px, 0).r;
 
@@ -68,6 +168,7 @@ void main() {
         ivec2(-1, -1),  ivec2(1, -1),   ivec2(1, -1)
     );
 
+#if !defined(USE_YCoCg) && !defined(USE_ROUNDED_NEIBOURHOOD)
     vec3 col_avg = col_curr, col_var = col_curr * col_curr;
     ivec2 closest_frag = ivec2(0, 0);
 
@@ -78,27 +179,82 @@ void main() {
             min_depth = depth;
         }
 
-        vec3 col = Tonemap(texelFetch(s_color_curr, uvs_px + offsets[i], 0).rgb);
+        vec3 col = FetchColor(s_color_curr, uvs_px + offsets[i]);
         col_avg += col;
         col_var += col * col;
     }
-
+    
     col_avg /= 9.0;
     col_var /= 9.0;
-
+    
     vec3 sigma = sqrt(max(col_var - col_avg * col_avg, vec3(0.0)));
     vec3 col_min = col_avg - 1.25 * sigma;
     vec3 col_max = col_avg + 1.25 * sigma;
+    
+    vec2 closest_vel = texelFetch(s_velocity, clamp(uvs_px + closest_frag, ivec2(0), ivec2(params.tex_size - vec2(1))), 0).rg;
+#else
+    vec3 col_tl = SampleColor(s_color_curr, norm_uvs + vec2(-texel_size.x, -texel_size.y));
+    vec3 col_tc = SampleColor(s_color_curr, norm_uvs + vec2(0, -texel_size.y));
+    vec3 col_tr = SampleColor(s_color_curr, norm_uvs + vec2(texel_size.x, -texel_size.y));
+    vec3 col_ml = SampleColor(s_color_curr, norm_uvs + vec2(-texel_size.x, 0));
+    vec3 col_mc = col_curr;
+    vec3 col_mr = SampleColor(s_color_curr, norm_uvs + vec2(texel_size.x, 0));
+    vec3 col_bl = SampleColor(s_color_curr, norm_uvs + vec2(-texel_size.x, texel_size.y));
+    vec3 col_bc = SampleColor(s_color_curr, norm_uvs + vec2(0, texel_size.y));
+    vec3 col_br = SampleColor(s_color_curr, norm_uvs + vec2(texel_size.x, texel_size.y));
+    
+    vec3 col_min = min3(min3(col_tl, col_tc, col_tr),
+                        min3(col_ml, col_mc, col_mr),
+                        min3(col_bl, col_bc, col_br));
+    vec3 col_max = max3(max3(col_tl, col_tc, col_tr),
+                        max3(col_ml, col_mc, col_mr),
+                        max3(col_bl, col_bc, col_br));
+    
+    vec3 col_avg = (col_tl + col_tc + col_tr + col_ml + col_mc + col_mr + col_bl + col_bc + col_br) / 9.0;
+    
+    #if defined(USE_ROUNDED_NEIBOURHOOD)
+        vec3 col_min5 = min(col_tc, min(col_ml, min(col_mc, min(col_mr, col_bc))));
+        vec3 col_max5 = max(col_tc, max(col_ml, max(col_mc, max(col_mr, col_bc))));
+        vec3 col_avg5 = (col_tc + col_ml + col_mc + col_mr + col_bc) / 5.0;
+        col_min = 0.5 * (col_min + col_min5);
+        col_max = 0.5 * (col_max + col_max5);
+        col_avg = 0.5 * (col_avg + col_avg5);
+    #endif
+    
+    #if defined(USE_YCoCg)
+        vec2 chroma_extent = vec2(0.25 * 0.5 * (col_max.r - col_min.r));
+        vec2 chroma_center = col_curr.gb;
+        col_min.yz = chroma_center - chroma_extent;
+        col_max.yz = chroma_center + chroma_extent;
+        col_avg.yz = chroma_center;
+    #endif
+    
+    vec3 closest_frag = find_closest_fragment_3x3(s_depth, norm_uvs, texel_size);
+    vec2 closest_vel = textureLod(s_velocity, closest_frag.xy, 0.0).rg;
+#endif
 
-    vec2 vel = texelFetch(s_velocity, uvs_px + closest_frag, 0).rg;
-    vec3 col_hist = Tonemap(textureLod(s_color_hist, norm_uvs - vel, 0.0).rgb);
+    vec3 col_hist = SampleColor(s_color_hist, norm_uvs - closest_vel);
 
-    //col_hist = clip_aabb(col_min, col_max, col_curr, col_hist);
+#if defined(USE_CLIPPING)
+    col_hist = clip_aabb(col_min, col_max, clamp(col_avg, col_min, col_max), col_hist);
+#else
     col_hist = clamp(col_hist, col_min, col_max);
+#endif
 
-    float weight = 0.1;//0.04;
-    //float weight = 1.0 - 1.0 / (1.0 + luma(col_curr));
-    vec3 col = mix(col_hist, col_curr, weight);
+    const float HistoryWeightMin = 0.88;
+    const float HistoryWeightMax = 0.97;
+    
+    float lum_curr = Luma(col_curr);
+    float lum_hist = Luma(col_hist);
+    
+    float unbiased_diff = abs(lum_curr - lum_hist) / max3(lum_curr, lum_hist, 0.2);
+    float unbiased_weight = 1.0 - unbiased_diff;
+    float unbiased_weight_sqr = unbiased_weight * unbiased_weight;
+    float history_weight = mix(HistoryWeightMin, HistoryWeightMax, unbiased_weight_sqr);
+    
+    vec3 col = mix(col_curr, col_hist, history_weight);
+#if defined(USE_YCoCg)
+    col = YCoCg_to_RGB(col);
+#endif
     outColor = TonemapInvert(col);
-    outHistory = outColor;
 }

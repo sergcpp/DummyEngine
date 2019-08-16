@@ -7,9 +7,10 @@
 
 namespace Gui {
 class ButtonText : public ButtonBase {
-protected:
+  protected:
     TypeMesh type_mesh_;
-public:
+
+  public:
     ButtonText(const std::string &text, BitmapFont *font, const Vec2f &pos, const BaseElement *parent);
 
     bool Check(const Vec2f &p) const override;
@@ -19,5 +20,4 @@ public:
 
     void Draw(Renderer *r) override;
 };
-}
-
+} // namespace Gui

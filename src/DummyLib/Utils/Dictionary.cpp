@@ -3,8 +3,7 @@
 bool Dictionary::Lookup(const char *key, dict_entry_res_t &result) {
     const dict_link_nokey_t *link = hashmap_.Find(key);
     if (link) {
-        for (uint32_t i = link->entry_index; i < link->entry_index + link->entry_count;
-             i++) {
+        for (uint32_t i = link->entry_index; i < link->entry_index + link->entry_count; i++) {
             const dict_entry_compact_t &entry = entries_[i];
 
             result.pos = eGramGrpPos(entry.pos);
@@ -12,13 +11,10 @@ bool Dictionary::Lookup(const char *key, dict_entry_res_t &result) {
             result.gen = eGramGrpGen(entry.gen);
 
             result.orth = &comb_str_buf_[entry.orth_str_off];
-            result.pron = entry.pron_str_off != 0xffffffff
-                              ? &comb_str_buf_[entry.pron_str_off]
-                              : nullptr;
+            result.pron = entry.pron_str_off != 0xffffffff ? &comb_str_buf_[entry.pron_str_off] : nullptr;
 
             uint32_t j = 0, str_off = entry.trans_str_off;
-            while (j < entry.trans_count &&
-                   j < (sizeof(result.trans) / sizeof(const char *))) {
+            while (j < entry.trans_count && j < (sizeof(result.trans) / sizeof(const char *))) {
                 result.trans[j++] = &comb_str_buf_[str_off];
 
                 // skip to next string
@@ -37,8 +33,7 @@ bool Dictionary::Load(std::istream &in_data, Ren::ILog *log) {
     char signature[4];
     in_data.read(signature, 4);
 
-    if (signature[0] != 'D' || signature[1] != 'I' || signature[2] != 'C' ||
-        signature[3] != 'T') {
+    if (signature[0] != 'D' || signature[1] != 'I' || signature[2] != 'C' || signature[3] != 'T') {
         log->Error("Wrong file signature!");
         return false;
     }
@@ -46,8 +41,7 @@ bool Dictionary::Load(std::istream &in_data, Ren::ILog *log) {
     uint32_t header_size;
     in_data.read((char *)&header_size, sizeof(uint32_t));
 
-    const int chunks_count =
-        int(header_size - sizeof(uint32_t) - 4) / int(3 * sizeof(uint32_t));
+    const int chunks_count = int(header_size - sizeof(uint32_t) - 4) / int(3 * sizeof(uint32_t));
 
     std::unique_ptr<dict_link_compact_t[]> temp_links;
 

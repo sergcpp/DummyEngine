@@ -12,8 +12,7 @@
 
 #include "CPUFeatures.h"
 
-void Ren::CopyYChannel_32px(const uint8_t *y_src, const int y_stride, const int w,
-                            const int h, uint8_t *y_dst) {
+void Ren::CopyYChannel_32px(const uint8_t *y_src, const int y_stride, const int w, const int h, uint8_t *y_dst) {
     assert(g_CpuFeatures.avx_supported);
     auto *py_dst = reinterpret_cast<__m256i *>(y_dst);
 

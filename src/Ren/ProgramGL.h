@@ -34,8 +34,8 @@ class Program : public RefCounter {
 
   public:
     Program() = default;
-    Program(const char *name, const uint32_t id, const Attribute *attrs, int attrs_count,
-            const Uniform *unifs, int unifs_count, const UniformBlock *unif_blocks, int unif_blocks_count)
+    Program(const char *name, const uint32_t id, const Attribute *attrs, int attrs_count, const Uniform *unifs,
+            int unifs_count, const UniformBlock *unif_blocks, int unif_blocks_count)
         : id_(id) {
         for (int i = 0; i < attrs_count; i++) {
             attributes_.emplace_back(attrs[i]);
@@ -48,9 +48,9 @@ class Program : public RefCounter {
         }
         name_ = String{name};
     }
-    Program(const char *name, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
+    Program(const char *name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
             ShaderRef tes_ref, eProgLoadStatus *status, ILog *log);
-    Program(const char *name, ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
+    Program(const char *name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
 
     Program(const Program &rhs) = delete;
     Program(Program &&rhs) noexcept { (*this) = std::move(rhs); }
@@ -62,9 +62,7 @@ class Program : public RefCounter {
     uint32_t id() const { return id_; }
     uint32_t flags() const { return flags_; }
     bool ready() const { return id_ != 0; }
-    bool has_tessellation() const {
-        return shaders_[int(eShaderType::Tesc)] && shaders_[int(eShaderType::Tese)];
-    }
+    bool has_tessellation() const { return shaders_[int(eShaderType::Tesc)] && shaders_[int(eShaderType::Tese)]; }
     const String &name() const { return name_; }
 
     const Attribute &attribute(const int i) const { return attributes_[i]; }
@@ -100,8 +98,8 @@ class Program : public RefCounter {
         return uniform_blocks_[0];
     }
 
-    void Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref,
-              eProgLoadStatus *status, ILog *log);
+    void Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, eProgLoadStatus *status,
+              ILog *log);
     void Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
 };
 

@@ -2,6 +2,7 @@
 
 #include <Ren/Context.h>
 #include <Ren/Utils.h>
+#include <Sys/Time_.h>
 
 #include "TexUpdateFileBuf.h"
 
@@ -43,15 +44,13 @@ void ParseDDSHeader(const Ren::DDSHeader &hdr, Ren::Tex2DParams &params, Ren::IL
     }
 }
 
-void CaptureMaterialTextureChange(Ren::Context &ctx, SceneData &scene_data,
-                                  const Ren::Tex2DRef &ref) {
+void CaptureMaterialTextureChange(Ren::Context &ctx, SceneData &scene_data, const Ren::Tex2DRef &ref) {
     uint32_t tex_user = ref->first_user;
     while (tex_user != 0xffffffff) {
         Ren::Material &mat = scene_data.materials[tex_user];
         scene_data.material_changes.push_back(tex_user);
         const size_t ndx =
-            std::distance(mat.textures.begin(),
-                          std::find(mat.textures.begin(), mat.textures.end(), ref));
+            std::distance(mat.textures.begin(), std::find(mat.textures.begin(), mat.textures.end(), ref));
         Ren::eSamplerLoadStatus status;
         mat.samplers[ndx] = ctx.LoadSampler(ref->sampling(), &status);
         tex_user = mat.next_texture_user[ndx];
@@ -77,8 +76,7 @@ void SceneManager::TextureLoaderProc() {
             std::unique_lock<std::mutex> lock(tex_requests_lock_);
             tex_loader_cnd_.wait(lock, [this, &req] {
                 return tex_loader_stop_ ||
-                       (!requested_textures_.empty() &&
-                        scene_data_.estimated_texture_mem.load() < TextureMemoryLimit);
+                       (!requested_textures_.empty() && scene_data_.estimated_texture_mem.load() < TextureMemoryLimit);
             });
             if (tex_loader_stop_) {
                 break;
@@ -98,21 +96,16 @@ void SceneManager::TextureLoaderProc() {
             /**/
 
             if (iteration++ % SortInterval == 0) {
-                __itt_task_begin(__g_itt_domain, __itt_null, __itt_null,
-                                 itt_sort_tex_str);
+                __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_sort_tex_str);
                 if (SortPortion != -1) {
-                    const size_t sort_portion =
-                        std::min(SortPortion, requested_textures_.size());
-                    std::partial_sort(
-                        std::begin(requested_textures_),
-                        std::begin(requested_textures_) + sort_portion,
-                        std::end(requested_textures_),
-                        [](const TextureRequest &lhs, const TextureRequest &rhs) {
-                            return lhs.sort_key < rhs.sort_key;
-                        });
+                    const size_t sort_portion = std::min(SortPortion, requested_textures_.size());
+                    std::partial_sort(std::begin(requested_textures_), std::begin(requested_textures_) + sort_portion,
+                                      std::end(requested_textures_),
+                                      [](const TextureRequest &lhs, const TextureRequest &rhs) {
+                                          return lhs.sort_key < rhs.sort_key;
+                                      });
                 } else {
-                    std::sort(std::begin(requested_textures_),
-                              std::end(requested_textures_),
+                    std::sort(std::begin(requested_textures_), std::end(requested_textures_),
                               [](const TextureRequest &lhs, const TextureRequest &rhs) {
                                   return lhs.sort_key < rhs.sort_key;
                               });
@@ -142,8 +135,7 @@ void SceneManager::TextureLoaderProc() {
                 Ren::DDSHeader header;
 
                 size_t data_size = sizeof(Ren::DDSHeader);
-                read_success = tex_reader_.ReadFileBlocking(path_buf, 0 /* file_offset */,
-                                                            sizeof(Ren::DDSHeader),
+                read_success = tex_reader_.ReadFileBlocking(path_buf, 0 /* file_offset */, sizeof(Ren::DDSHeader),
                                                             &header, data_size);
                 read_success &= (data_size == sizeof(Ren::DDSHeader));
 
@@ -158,8 +150,7 @@ void SceneManager::TextureLoaderProc() {
                 }
             }
             read_offset += sizeof(Ren::DDSHeader);
-        } else if (req->ref->name().EndsWith(".ktx") ||
-                   req->ref->name().EndsWith(".KTX")) {
+        } else if (req->ref->name().EndsWith(".ktx") || req->ref->name().EndsWith(".KTX")) {
             assert(false && "Not implemented!");
             read_offset += sizeof(Ren::KTXHeader);
         } else {
@@ -167,24 +158,21 @@ void SceneManager::TextureLoaderProc() {
         }
 
         if (read_success) {
-            const Ren::Tex2DParams &cur_p = req->ref->params();
+            const Ren::Tex2DParams &cur_p = req->ref->params;
 
             const int max_load_w = std::max(cur_p.w * 2, 64);
             const int max_load_h = std::max(cur_p.h * 2, 64);
 
             int w = int(req->orig_w), h = int(req->orig_h);
             for (int i = 0; i < req->orig_mip_count; i++) {
-                const int data_len =
-                    Ren::GetMipDataLenBytes(w, h, req->orig_format, req->orig_block);
+                const int data_len = Ren::GetMipDataLenBytes(w, h, req->orig_format, req->orig_block);
 
-                if ((w <= max_load_w && h <= max_load_h) ||
-                    i == req->orig_mip_count - 1) {
+                if ((w <= max_load_w && h <= max_load_h) || i == req->orig_mip_count - 1) {
                     if (req->mip_offset_to_init == 0xff) {
                         req->mip_offset_to_init = uint8_t(i);
                         req->mip_count_to_init = 0;
                     }
-                    if (w > cur_p.w || h > cur_p.h ||
-                        (cur_p.mip_count == 1 && w == cur_p.w && h == cur_p.h)) {
+                    if (w > cur_p.w || h > cur_p.h || (cur_p.mip_count == 1 && w == cur_p.w && h == cur_p.h)) {
                         req->mip_count_to_init++;
                         read_size += data_len;
                     }
@@ -197,12 +185,10 @@ void SceneManager::TextureLoaderProc() {
             }
 
             // load next mip levels
-            assert(req->ref->params().w == req->orig_w ||
-                   req->ref->params().h != req->orig_h);
+            assert(req->ref->params.w == req->orig_w || req->ref->params.h != req->orig_h);
 
             if (read_size) {
-                read_success = tex_reader_.ReadFileNonBlocking(
-                    path_buf, read_offset, read_size, *req->buf, req->ev);
+                read_success = tex_reader_.ReadFileNonBlocking(path_buf, read_offset, read_size, *req->buf, req->ev);
                 assert(req->buf->data_len() == read_size);
             }
         }
@@ -222,28 +208,25 @@ void SceneManager::EstimateTextureMemory(const int portion_size) {
     }
 
     const int BucketSize = 16;
-    scene_data_.texture_mem_buckets.resize(
-        (scene_data_.textures.capacity() + BucketSize - 1) / BucketSize);
+    scene_data_.texture_mem_buckets.resize((scene_data_.textures.capacity() + BucketSize - 1) / BucketSize);
 
     uint64_t mem_after_estimation = scene_data_.estimated_texture_mem.load();
 
     for (int i = 0; i < portion_size; i++) {
-        scene_data_.tex_mem_bucket_index = (scene_data_.tex_mem_bucket_index + 1) %
-                                           scene_data_.texture_mem_buckets.size();
-        uint32_t &bucket =
-            scene_data_.texture_mem_buckets[scene_data_.tex_mem_bucket_index];
+        scene_data_.tex_mem_bucket_index =
+            (scene_data_.tex_mem_bucket_index + 1) % scene_data_.texture_mem_buckets.size();
+        uint32_t &bucket = scene_data_.texture_mem_buckets[scene_data_.tex_mem_bucket_index];
         mem_after_estimation -= bucket;
         bucket = 0;
 
         const uint32_t start = scene_data_.tex_mem_bucket_index * BucketSize;
-        const uint32_t end =
-            std::min(start + BucketSize, uint32_t(scene_data_.textures.capacity()));
+        const uint32_t end = std::min(start + BucketSize, uint32_t(scene_data_.textures.capacity()));
 
         uint32_t index = scene_data_.textures.FindOccupiedInRange(start, end);
         while (index != end) {
             const auto &tex = scene_data_.textures.at(index);
 
-            bucket += Ren::EstimateMemory(tex.params());
+            bucket += Ren::EstimateMemory(tex.params);
 
             index = scene_data_.textures.FindOccupiedInRange(index + 1, end);
         }
@@ -251,10 +234,8 @@ void SceneManager::EstimateTextureMemory(const int portion_size) {
         mem_after_estimation += bucket;
     }
 
-    if (scene_data_.estimated_texture_mem.exchange(mem_after_estimation) !=
-        mem_after_estimation) {
-        ren_ctx_.log()->Info("Estimated tex memory is %.3f MB",
-                             double(mem_after_estimation) / (1024.0f * 1024.0f));
+    if (scene_data_.estimated_texture_mem.exchange(mem_after_estimation) != mem_after_estimation) {
+        ren_ctx_.log()->Info("Estimated tex memory is %.3f MB", double(mem_after_estimation) / (1024.0f * 1024.0f));
 
         std::lock_guard<std::mutex> _(tex_requests_lock_);
         tex_loader_cnd_.notify_one();
@@ -284,31 +265,27 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                     TextureRequestPending *req = &io_pending_tex_[i];
                     auto *stage_buf = static_cast<TextureUpdateFileBuf *>(req->buf.get());
                     const auto res = stage_buf->fence.ClientWaitSync(0 /* timeout_us */);
-                    if (res == Ren::SyncFence::WaitResult::WaitFailed) {
+                    if (res == Ren::WaitResult::Fail) {
                         ren_ctx_.log()->Error("Waiting on fence failed!");
 
                         static_cast<TextureRequest &>(*req) = {};
                         req->state = eRequestState::Idle;
                         tex_loader_cnd_.notify_one();
-                    } else if (res != Ren::SyncFence::WaitResult::TimeoutExpired) {
-                        if (req->ref->params().sampling.min_lod.value() > 0) {
-                            const auto it = std::lower_bound(
-                                std::begin(lod_transit_textures_),
-                                std::end(lod_transit_textures_), req->ref,
-                                [](const Ren::Tex2DRef &lhs, const Ren::Tex2DRef &rhs) {
-                                    return lhs.index() < rhs.index();
-                                });
-                            if (it == std::end(lod_transit_textures_) ||
-                                it->index() != req->ref.index()) {
+                    } else if (res != Ren::WaitResult::Timeout) {
+                        if (req->ref->params.sampling.min_lod.value() > 0) {
+                            const auto it =
+                                std::lower_bound(std::begin(lod_transit_textures_), std::end(lod_transit_textures_),
+                                                 req->ref, [](const Ren::Tex2DRef &lhs, const Ren::Tex2DRef &rhs) {
+                                                     return lhs.index() < rhs.index();
+                                                 });
+                            if (it == std::end(lod_transit_textures_) || it->index() != req->ref.index()) {
                                 lod_transit_textures_.insert(it, {req->ref});
                             }
                         }
 
-                        if (req->ref->params().w != req->orig_w ||
-                            req->ref->params().h != req->orig_h) {
+                        if (req->ref->params.w != req->orig_w || req->ref->params.h != req->orig_h) {
                             // process texture further (for next mip levels)
-                            req->sort_key =
-                                req->ref->name().StartsWith("lightmap") ? 0 : 0xffffffff;
+                            req->sort_key = req->ref->name().StartsWith("lightmap") ? 0 : 0xffffffff;
                             requested_textures_.push_back(std::move(*req));
                         } else {
                             std::lock_guard<std::mutex> _lock(gc_textures_mtx_);
@@ -330,7 +307,7 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                 assert(dynamic_cast<TextureUpdateFileBuf *>(req->buf.get()));
                 auto *stage_buf = static_cast<TextureUpdateFileBuf *>(req->buf.get());
 
-                stage_buf->stage_buf().FlushMapped(0, uint32_t(bytes_read));
+                stage_buf->stage_buf().FlushMappedRange(0, stage_buf->stage_buf().AlignMapOffset(uint32_t(bytes_read)));
 
                 const uint64_t t1_us = Sys::GetTimeUs();
 
@@ -343,46 +320,45 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                     ++last_initialized_mip;
                 }
 
-                const Ren::Tex2DParams &p = req->ref->params();
+                const Ren::Tex2DParams &p = req->ref->params;
 
-                req->ref->Realloc(w, h, last_initialized_mip + 1 + req->mip_count_to_init,
-                                  1 /* samples */, req->orig_format, req->orig_block,
-                                  (p.flags & Ren::TexSRGB) != 0, ren_ctx_.log());
+                // stage_buf->fence.ClientWaitSync();
+                ren_ctx_.BegSingleTimeCommands(stage_buf->cmd_buf);
+
+                req->ref->Realloc(w, h, last_initialized_mip + 1 + req->mip_count_to_init, 1 /* samples */,
+                                  req->orig_format, req->orig_block, (p.flags & Ren::TexSRGB) != 0, stage_buf->cmd_buf,
+                                  ren_ctx_.default_mem_allocs(), ren_ctx_.log());
 
                 int data_off = int(req->buf->data_off());
-                for (int i = int(req->mip_offset_to_init);
-                     i < int(req->mip_offset_to_init) + req->mip_count_to_init; i++) {
+                for (int i = int(req->mip_offset_to_init); i < int(req->mip_offset_to_init) + req->mip_count_to_init;
+                     i++) {
                     if (data_off >= bytes_read) {
-                        ren_ctx_.log()->Error("File %s has not enough data!",
-                                              tex_name.c_str());
+                        ren_ctx_.log()->Error("File %s has not enough data!", tex_name.c_str());
                         break;
                     }
-                    const int data_len =
-                        Ren::GetMipDataLenBytes(w, h, req->orig_format, req->orig_block);
+                    const int data_len = Ren::GetMipDataLenBytes(w, h, req->orig_format, req->orig_block);
 
-                    stage_buf->fence = req->ref->SetSubImage(
-                        i - req->mip_offset_to_init, 0, 0, w, h, req->orig_format,
-                        stage_buf->stage_buf(), data_off, data_len);
+                    req->ref->SetSubImage(i - req->mip_offset_to_init, 0, 0, w, h, req->orig_format,
+                                          stage_buf->stage_buf(), stage_buf->cmd_buf, data_off, data_len);
 
                     data_off += data_len;
                     w = std::max(w / 2, 1);
                     h = std::max(h / 2, 1);
                 }
 
+                stage_buf->fence = ren_ctx_.EndSingleTimeCommands(stage_buf->cmd_buf);
+
                 { // offset min lod to account for newly allocated mip levels
-                    Ren::SamplingParams cur_sampling = req->ref->params().sampling;
+                    Ren::SamplingParams cur_sampling = req->ref->params.sampling;
                     cur_sampling.min_lod.set_value(cur_sampling.min_lod.value() +
-                                                   cur_sampling.min_lod.One *
-                                                       req->mip_count_to_init);
+                                                   cur_sampling.min_lod.One * req->mip_count_to_init);
                     req->ref->SetSampling(cur_sampling);
-                    SceneManagerInternal::CaptureMaterialTextureChange(
-                        ren_ctx_, scene_data_, req->ref);
+                    SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req->ref);
                 }
 
                 const uint64_t t2_us = Sys::GetTimeUs();
 
-                ren_ctx_.log()->Info("Texture %s loaded (%.3f ms)", tex_name.c_str(),
-                                     double(t2_us - t1_us) * 0.001);
+                ren_ctx_.log()->Info("Texture %s loaded (%.3f ms)", tex_name.c_str(), double(t2_us - t1_us) * 0.001);
             } else if (res == Sys::eFileReadResult::Failed) {
                 ren_ctx_.log()->Error("Error loading %s", tex_name.c_str());
             }
@@ -406,9 +382,8 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
     //
     // Animate lod transition to avoid sudden popping
     //
-    for (auto it = std::begin(lod_transit_textures_);
-         it != std::end(lod_transit_textures_);) {
-        Ren::SamplingParams cur_sampling = (*it)->params().sampling;
+    for (auto it = std::begin(lod_transit_textures_); it != std::end(lod_transit_textures_);) {
+        Ren::SamplingParams cur_sampling = (*it)->params.sampling;
         cur_sampling.min_lod.set_value(std::max(cur_sampling.min_lod.value() - 1, 0));
         (*it)->SetSampling(cur_sampling);
 
@@ -427,23 +402,21 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
         for (int i = 0; i < portion_size && !gc_textures_.empty(); i++) {
             auto &req = gc_textures_.front();
 
-            ren_ctx_.log()->Warning("Texture %s is being garbage collected",
-                                    req.ref->name().c_str());
+            ren_ctx_.log()->Warning("Texture %s is being garbage collected", req.ref->name().c_str());
 
-            Ren::Tex2DParams p = req.ref->params();
+            Ren::Tex2DParams p = req.ref->params;
 
             // drop to lowest lod
             const int w = std::max(p.w >> p.mip_count, 1);
             const int h = std::max(p.h >> p.mip_count, 1);
 
-            req.ref->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, p.block,
-                             p.flags & Ren::TexSRGB, ren_ctx_.log());
+            req.ref->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, p.block, p.flags & Ren::TexSRGB,
+                             ren_ctx_.current_cmd_buf(), ren_ctx_.default_mem_allocs(), ren_ctx_.log());
 
             p.sampling.min_lod.from_float(-1.0f);
             req.ref->SetSampling(p.sampling);
 
-            SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_,
-                                                               req.ref);
+            SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req.ref);
 
             { // send texture for processing
                 std::lock_guard<std::mutex> _lock(tex_requests_lock_);
@@ -461,8 +434,7 @@ void SceneManager::RebuildMaterialTextureGraph() {
         texture.first_user = 0xffffffff;
     }
     // assign material index as the first user
-    for (auto it = scene_data_.materials.begin(); it != scene_data_.materials.end();
-         ++it) {
+    for (auto it = scene_data_.materials.begin(); it != scene_data_.materials.end(); ++it) {
         it->next_texture_user = {};
         it->next_texture_user.resize(it->textures.size(), 0xffffffff);
         for (auto &texture : it->textures) {
@@ -473,18 +445,16 @@ void SceneManager::RebuildMaterialTextureGraph() {
                 uint32_t next_user = texture->first_user;
                 do {
                     const auto &mat = scene_data_.materials.at(next_user);
-                    const size_t ndx = std::distance(
-                        mat.textures.begin(),
-                        std::find(mat.textures.begin(), mat.textures.end(), texture));
+                    const size_t ndx = std::distance(mat.textures.begin(),
+                                                     std::find(mat.textures.begin(), mat.textures.end(), texture));
                     last_user = next_user;
                     next_user = mat.next_texture_user[ndx];
                 } while (next_user != 0xffffffff);
 
                 { // set next user
                     auto &mat = scene_data_.materials.at(last_user);
-                    const size_t ndx = std::distance(
-                        mat.textures.begin(),
-                        std::find(mat.textures.begin(), mat.textures.end(), texture));
+                    const size_t ndx = std::distance(mat.textures.begin(),
+                                                     std::find(mat.textures.begin(), mat.textures.end(), texture));
                     assert(mat.next_texture_user[ndx] == 0xffffffff);
                     mat.next_texture_user[ndx] = it.index();
                 }
@@ -493,18 +463,15 @@ void SceneManager::RebuildMaterialTextureGraph() {
     }
 }
 
-void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[],
-                                           const int visible_count,
-                                           const TexEntry desired_textures[],
-                                           const int desired_count) {
+void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[], const int visible_count,
+                                           const TexEntry desired_textures[], const int desired_count) {
     TexturesGCIteration(visible_textures, visible_count, desired_textures, desired_count);
 
     { // Update requested textures
         std::unique_lock<std::mutex> lock(tex_requests_lock_);
 
         bool kick_loader_thread = false;
-        for (auto it = requested_textures_.begin(); it != requested_textures_.end();
-             ++it) {
+        for (auto it = requested_textures_.begin(); it != requested_textures_.end(); ++it) {
             const TexEntry *found_entry = nullptr;
 
             { // search among visible textures first
@@ -512,8 +479,7 @@ void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[],
                 const TexEntry *end = visible_textures + visible_count;
 
                 const TexEntry *entry = std::lower_bound(
-                    beg, end, it->ref.index(),
-                    [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
+                    beg, end, it->ref.index(), [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
 
                 if (entry != end && entry->index == it->ref.index()) {
                     found_entry = entry;
@@ -525,8 +491,7 @@ void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[],
                 const TexEntry *end = desired_textures + desired_count;
 
                 const TexEntry *entry = std::lower_bound(
-                    beg, end, it->ref.index(),
-                    [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
+                    beg, end, it->ref.index(), [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
 
                 if (entry != end && entry->index == it->ref.index()) {
                     found_entry = entry;
@@ -545,24 +510,19 @@ void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[],
     }
 }
 
-void SceneManager::TexturesGCIteration(const TexEntry visible_textures[],
-                                       const int visible_count,
-                                       const TexEntry desired_textures[],
-                                       const int desired_count) {
+void SceneManager::TexturesGCIteration(const TexEntry visible_textures[], const int visible_count,
+                                       const TexEntry desired_textures[], const int desired_count) {
     using namespace SceneManagerConstants;
 
     const int FinishedPortion = 16;
 
-    const bool enable_gc =
-        (scene_data_.estimated_texture_mem.load() >= 9 * TextureMemoryLimit / 10);
+    const bool enable_gc = (scene_data_.estimated_texture_mem.load() >= 9 * TextureMemoryLimit / 10);
 
     std::lock_guard<std::mutex> _lock(gc_textures_mtx_);
 
-    auto start_it = finished_textures_.begin() +
-                    std::min(finished_index_, uint32_t(finished_textures_.size()));
+    auto start_it = finished_textures_.begin() + std::min(finished_index_, uint32_t(finished_textures_.size()));
     finished_index_ += FinishedPortion;
-    auto end_it = finished_textures_.begin() +
-                  std::min(finished_index_, uint32_t(finished_textures_.size()));
+    auto end_it = finished_textures_.begin() + std::min(finished_index_, uint32_t(finished_textures_.size()));
 
     if (finished_index_ >= finished_textures_.size()) {
         finished_index_ = 0;
@@ -576,8 +536,7 @@ void SceneManager::TexturesGCIteration(const TexEntry visible_textures[],
             const TexEntry *end = visible_textures + visible_count;
 
             const TexEntry *entry = std::lower_bound(
-                beg, end, it->ref.index(),
-                [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
+                beg, end, it->ref.index(), [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
 
             if (entry != end && entry->index == it->ref.index()) {
                 found_entry = entry;
@@ -589,8 +548,7 @@ void SceneManager::TexturesGCIteration(const TexEntry visible_textures[],
             const TexEntry *end = desired_textures + desired_count;
 
             const TexEntry *entry = std::lower_bound(
-                beg, end, it->ref.index(),
-                [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
+                beg, end, it->ref.index(), [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
 
             if (entry != end && entry->index == it->ref.index()) {
                 found_entry = entry;
@@ -602,9 +560,8 @@ void SceneManager::TexturesGCIteration(const TexEntry visible_textures[],
             it->frame_dist = 0;
 
             ++it;
-        } else if (++it->frame_dist > 1000 && enable_gc && it->ref->params().w > 16 &&
-                   it->ref->params().w == it->orig_w && it->ref->params().h > 16 &&
-                   it->ref->params().h == it->orig_h &&
+        } else if (++it->frame_dist > 1000 && enable_gc && it->ref->params.w > 16 && it->ref->params.w == it->orig_w &&
+                   it->ref->params.h > 16 && it->ref->params.h == it->orig_h &&
                    !it->ref->name().StartsWith("lightmap")) {
             // Reduce texture's mips
             it->frame_dist = 0;
@@ -617,6 +574,10 @@ void SceneManager::TexturesGCIteration(const TexEntry visible_textures[],
             ++it;
         }
     }
+}
+
+void SceneManager::InvalidateTexture(const Ren::Tex2DRef &ref) {
+    SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, ref);
 }
 
 void SceneManager::StartTextureLoader() {
@@ -652,16 +613,15 @@ void SceneManager::ForceTextureReload() {
     StopTextureLoader();
 
     // Reset textures to 1x1 mip and send to processing
-    for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures);
-         ++it) {
-        Ren::Tex2DParams p = it->params();
+    for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures); ++it) {
+        Ren::Tex2DParams p = it->params;
 
         // drop to lowest lod
         const int w = std::max(p.w >> p.mip_count, 1);
         const int h = std::max(p.h >> p.mip_count, 1);
 
-        it->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, p.block,
-                    p.flags & Ren::TexSRGB, ren_ctx_.log());
+        it->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, p.block, p.flags & Ren::TexSRGB,
+                    ren_ctx_.current_cmd_buf(), ren_ctx_.default_mem_allocs(), ren_ctx_.log());
 
         p.sampling.min_lod.from_float(-1.0f);
         it->ApplySampling(p.sampling, ren_ctx_.log());
@@ -674,8 +634,7 @@ void SceneManager::ForceTextureReload() {
         requested_textures_.push_back(std::move(req));
     }
 
-    std::fill(std::begin(scene_data_.texture_mem_buckets),
-              std::end(scene_data_.texture_mem_buckets), 0);
+    std::fill(std::begin(scene_data_.texture_mem_buckets), std::end(scene_data_.texture_mem_buckets), 0);
     scene_data_.tex_mem_bucket_index = 0;
     scene_data_.estimated_texture_mem = 0;
 

@@ -3,45 +3,47 @@
 #include "../Graph/GraphBuilder.h"
 #include "../Renderer_DrawList.h"
 
+#include <Ren/Pipeline.h>
 #include <Ren/RastState.h>
-#if defined(USE_GL_RENDER)
-#include <Ren/VaoGL.h>
-#endif
+#include <Ren/RenderPass.h>
+#include <Ren/VertexInput.h>
 
 class RpSkydome : public RenderPassBase {
+    PrimDraw &prim_draw_;
     bool initialized = false;
-    Ren::ProgramRef skydome_prog_;
-
-    int orphan_index_ = 0;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
-    const EnvironmentWeak *env_ = nullptr;
 
     Ren::Vec3f draw_cam_pos_;
 
     // lazily initialized data
-    Ren::MeshRef skydome_mesh_;
-#if defined(USE_GL_RENDER)
-    Ren::Vao skydome_vao_;
-    Ren::Framebuffer cached_fb_;
-#endif
+    Ren::RenderPass render_pass_;
+    Ren::VertexInput vtx_input_;
+    Ren::Pipeline pipeline_;
+    Ren::Framebuffer framebuf_[Ren::MaxFramesInFlight];
 
     RpResource shared_data_buf_;
+    RpResource env_tex_;
+    RpResource vtx_buf1_;
+    RpResource vtx_buf2_;
+    RpResource ndx_buf_;
 
     RpResource color_tex_;
     RpResource spec_tex_;
     RpResource depth_tex_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &color_tex,
-                  RpAllocTex &spec_tex, RpAllocTex &depth_tex);
-    void DrawSkydome(RpBuilder &builder);
+    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
+                  RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
+    void DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
+                     RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
 
   public:
+    RpSkydome(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
     ~RpSkydome();
 
-    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
-               int orphan_index, const char shared_data_buf[], const char color_tex[],
+    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, Ren::BufferRef vtx_buf1,
+               Ren::BufferRef vtx_buf2, Ren::BufferRef ndx_buf, const char shared_data_buf[], const char color_tex[],
                const char spec_tex[], const char depth_tex[]);
     void Execute(RpBuilder &builder) override;
 

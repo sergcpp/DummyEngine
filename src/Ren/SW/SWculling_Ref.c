@@ -177,7 +177,7 @@ void _swUpdateTileAccurate(SWztile *tile, const uint32_t coverage_mask,
             d0min[j] = 1;
         }
 
-        if ((d0min[j] >= 0) && (c12 < 0 || (lm1 & (0xff << j * 8)))) {
+        if ((d0min[j] >= 0) && (c12[j] < 0 || (lm1 & (0xff << j * 8)))) {
             d1min[j] = -1;
         } else {
             d1min[j] = 1;

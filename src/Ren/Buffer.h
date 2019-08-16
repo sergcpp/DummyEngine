@@ -2,75 +2,92 @@
 
 #include <vector>
 
+#include "Fence.h"
+#include "LinearAlloc.h"
+#include "Resource.h"
+#include "SmallVector.h"
 #include "Storage.h"
 #include "String.h"
 
+#if defined(USE_VK_RENDER)
+#include "VK.h"
+#endif
+
 namespace Ren {
 class ILog;
+struct ApiContext;
 
-enum class eBufferType : uint8_t {
+enum class eType : uint8_t {
     Undefined,
-    VertexAttribs,
-    VertexIndices,
-    Texture,
-    Uniform,
-    Storage,
+    Float16,
+    Float32,
+    Uint32,
+    Uint16,
+    Uint16UNorm,
+    Int16SNorm,
+    Uint8UNorm,
+    Int32,
     _Count
 };
-enum class eBufferAccessType : uint8_t { Draw, Read, Copy };
-enum class eBufferAccessFreq : uint8_t {
-    Stream, // modified once, used a few times
-    Static, // modified once, used many times
-    Dynamic // modified often, used many times
-};
+enum class eBufType : uint8_t { Undefined, VertexAttribs, VertexIndices, Texture, Uniform, Storage, Stage, _Count };
+
+const uint8_t BufMapRead = (1u << 0u);
+const uint8_t BufMapWrite = (1u << 1u);
 
 struct BufHandle {
-#if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
+#if defined(USE_VK_RENDER)
+    VkBuffer buf = VK_NULL_HANDLE;
+#elif defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
     uint32_t id = 0;
 #endif
     uint32_t generation = 0;
+
+    operator bool() const {
+#if defined(USE_VK_RENDER)
+        return buf != VK_NULL_HANDLE;
+#elif defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
+        return id != 0;
+#endif
+    }
 };
-inline bool operator==(BufHandle lhs, BufHandle rhs) {
+inline bool operator==(const BufHandle lhs, const BufHandle rhs) {
     return
-#if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
+#if defined(USE_VK_RENDER)
+        lhs.buf == rhs.buf &&
+#elif defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
         lhs.id == rhs.id &&
 #endif
         lhs.generation == rhs.generation;
 }
 
-class Buffer : public RefCounter {
-    struct Node {
-        bool is_free = true;
-        int parent = -1;
-        int child[2] = {-1, -1};
-        uint32_t offset = 0, size = 0;
-#ifndef NDEBUG
-        char tag[32] = {};
-#endif
+struct RangeFence {
+    std::pair<uint32_t, uint32_t> range;
+    SyncFence fence;
 
-        bool has_children() const { return child[0] != -1 || child[1] != -1; }
-    };
+    RangeFence(const std::pair<uint32_t, uint32_t> _range, SyncFence &&_fence)
+        : range(_range), fence(std::move(_fence)) {}
+};
 
+class Buffer : public RefCounter, public LinearAlloc {
+    ApiContext *api_ctx_ = nullptr;
     BufHandle handle_;
     String name_;
-    eBufferType type_ = eBufferType::Undefined;
-    eBufferAccessType access_;
-    eBufferAccessFreq freq_;
+#if defined(USE_VK_RENDER)
+    VkDeviceMemory mem_ = VK_NULL_HANDLE;
+#endif
+    eBufType type_ = eBufType::Undefined;
     uint32_t size_ = 0;
-    SparseArray<Node> nodes_;
-
-    int Alloc_Recursive(int i, uint32_t req_size, const char *tag);
-    int Find_Recursive(int i, uint32_t offset) const;
-    bool Free_Node(int i);
-
-    void PrintNode(int i, std::string prefix, bool is_tail, ILog *log);
+    uint8_t *mapped_ptr_ = nullptr;
+    uint32_t mapped_offset_ = 0xffffffff;
+#ifndef NDEBUG
+    SmallVector<RangeFence, 4> flushed_ranges_;
+#endif
 
     static int g_GenCounter;
 
   public:
     Buffer() = default;
-    explicit Buffer(const char *name, eBufferType type, eBufferAccessType access,
-                    eBufferAccessFreq freq, uint32_t initial_size);
+    explicit Buffer(const char *name, ApiContext *api_ctx, eBufType type, uint32_t initial_size);
     Buffer(const Buffer &rhs) = delete;
     Buffer(Buffer &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Buffer();
@@ -79,29 +96,45 @@ class Buffer : public RefCounter {
     Buffer &operator=(Buffer &&rhs) noexcept;
 
     const String &name() const { return name_; }
-    eBufferType type() const { return type_; }
-    eBufferAccessType access() const { return access_; }
-    eBufferAccessFreq freq() const { return freq_; }
-    uint32_t size() const { return size_; }
+    eBufType type() const { return type_; }
+    //uint32_t size() const { return size_; }
 
     BufHandle handle() const { return handle_; }
-#if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
+#if defined(USE_VK_RENDER)
+    ApiContext *api_ctx() const { return api_ctx_; }
+    VkBuffer vk_handle() const { return handle_.buf; }
+    VkDeviceMemory mem() const { return mem_; }
+#elif defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
     uint32_t id() const { return handle_.id; }
 #endif
     uint32_t generation() const { return handle_.generation; }
 
-    uint32_t AllocRegion(uint32_t size, const char *tag, const void *init_data = nullptr);
-    bool FreeRegion(uint32_t offset);
+    bool is_mapped() const { return mapped_ptr_ != nullptr; }
+    uint8_t *mapped_ptr() const { return mapped_ptr_; }
+
+    uint32_t AllocSubRegion(uint32_t size, const char *tag, const Buffer *init_buf = nullptr, void *cmd_buf = nullptr,
+                            uint32_t init_off = 0);
+    void UpdateSubRegion(uint32_t offset, uint32_t size, const Buffer &init_buf, uint32_t init_off = 0,
+                         void *cmd_buf = nullptr);
+    bool FreeSubRegion(uint32_t offset);
 
     void Resize(uint32_t new_size);
+    void Free();
 
-    uint8_t *Map() { return MapRange(0, size_); }
-    uint8_t *MapRange(uint32_t offset, uint32_t size);
-    void FlushRange(uint32_t offset, uint32_t size);
+    uint32_t AlignMapOffset(uint32_t offset);
+
+    uint8_t *Map(const uint8_t dir, const bool persistent = false) { return MapRange(dir, 0, size_, persistent); }
+    uint8_t *MapRange(uint8_t dir, uint32_t offset, uint32_t size, bool persistent = false);
+    void FlushMappedRange(uint32_t offset, uint32_t size);
     void Unmap();
 
     void Print(ILog *log);
+
+    mutable eResState resource_state = eResState::Undefined;
 };
+
+void CopyBufferToBuffer(Buffer &src, uint32_t src_offset, Buffer &dst, uint32_t dst_offset, uint32_t size,
+                        void *_cmd_buf);
 
 #if defined(USE_GL_RENDER)
 void GLUnbindBufferUnits(int start, int count);

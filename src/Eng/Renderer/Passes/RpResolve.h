@@ -28,8 +28,7 @@ class RpResolve : public RenderPassBase {
   public:
     RpResolve(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state, const char color_tex[],
-               const char output_tex_name[]);
+    void Setup(RpBuilder &builder, const ViewState *view_state, const char color_tex[], const char output_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "REFLECTIONS PASS"; }

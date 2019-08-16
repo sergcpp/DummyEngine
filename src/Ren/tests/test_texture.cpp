@@ -22,7 +22,8 @@ class TextureTest : public Ren::Context {
     void *gl_ctx_main_;
 #endif
     Ren::LogNull log_;
-public:
+
+  public:
     TextureTest() {
 #if defined(_WIN32)
         hInstance = GetModuleHandle(NULL);
@@ -42,9 +43,8 @@ public:
             throw std::runtime_error("Cannot register window class!");
         }
 
-        hWnd = CreateWindow("TextureTest", "!!", WS_OVERLAPPEDWINDOW |
-                            WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-                            0, 0, 100, 100, NULL, NULL, hInstance, NULL);
+        hWnd = CreateWindow("TextureTest", "!!", WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 100,
+                            100, NULL, NULL, hInstance, NULL);
 
         if (hWnd == NULL) {
             throw std::runtime_error("Cannot create window!");
@@ -76,10 +76,11 @@ public:
 #else
         SDL_Init(SDL_INIT_VIDEO);
 
-        window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 256, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+        window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 256,
+                                   SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
         gl_ctx_main_ = SDL_GL_CreateContext(window_);
 #endif
-        Context::Init(256, 256, &log_);
+        Context::Init(256, 256, &log_, nullptr);
     }
 
     ~TextureTest() {
@@ -103,16 +104,14 @@ public:
 #include "../SW/SW.h"
 
 class TextureTest : public Ren::Context {
-public:
-    TextureTest() {
-        Ren::Context::Init(1, 1);
-    }
+  public:
+    TextureTest() { Ren::Context::Init(1, 1); }
 };
 #endif
 
-static unsigned char test_tga_img[] = "\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x02\x00" \
-                                      "\x18\x00\x00\x00\x00\xFF\xFF\xFF\xFF\xFF\xFF\x00\x00\x00\x00\x00" \
-                                      "\x00\x00\x00\x00\x00\x00\x54\x52\x55\x45\x56\x49\x53\x49\x4F\x4E" \
+static unsigned char test_tga_img[] = "\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x02\x00"
+                                      "\x18\x00\x00\x00\x00\xFF\xFF\xFF\xFF\xFF\xFF\x00\x00\x00\x00\x00"
+                                      "\x00\x00\x00\x00\x00\x00\x54\x52\x55\x45\x56\x49\x53\x49\x4F\x4E"
                                       "\x2D\x58\x46\x49\x4C\x45\x2E\x00";
 
 void test_texture() {
@@ -122,26 +121,29 @@ void test_texture() {
 
         Ren::eTexLoadStatus status;
         Ren::Tex2DParams p;
-        Ren::Tex2DRef t_ref = test.LoadTexture2D("checker.tga", nullptr, 0, p, &status);
+        Ren::Tex2DRef t_ref = test.LoadTexture2D("checker.tga", nullptr, 0, p, test.default_stage_bufs(),
+                                                 test.default_mem_allocs(), &status);
         require(status == Ren::eTexLoadStatus::CreatedDefault);
 
         require(t_ref->name() == "checker.tga");
-        const Ren::Tex2DParams &tp = t_ref->params();
+        const Ren::Tex2DParams &tp = t_ref->params;
         require(tp.w == 1);
         require(tp.h == 1);
         require(tp.format == Ren::eTexFormat::RawRGBA8888);
         require(!t_ref->ready());
 
         {
-            Ren::Tex2DRef t_ref2 = test.LoadTexture2D("checker.tga", nullptr, 0, p, &status);
+            Ren::Tex2DRef t_ref2 = test.LoadTexture2D("checker.tga", nullptr, 0, p, test.default_stage_bufs(),
+                                                      test.default_mem_allocs(), &status);
             require(status == Ren::eTexLoadStatus::Found);
             require(!t_ref2->ready());
         }
 
         {
-            Ren::Tex2DRef t_ref3 = test.LoadTexture2D("checker.tga", test_tga_img, (int)sizeof(test_tga_img), p, &status);
+            Ren::Tex2DRef t_ref3 = test.LoadTexture2D("checker.tga", test_tga_img, sizeof(test_tga_img), p,
+                                                      test.default_stage_bufs(), test.default_mem_allocs(), &status);
             require(status == Ren::eTexLoadStatus::CreatedFromData);
-            const Ren::Tex2DParams& tp = t_ref3->params();
+            const Ren::Tex2DParams &tp = t_ref3->params;
             require(tp.w == 2);
             require(tp.h == 2);
             require(tp.format == Ren::eTexFormat::RawRGB888);

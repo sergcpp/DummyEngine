@@ -1,8 +1,9 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
 
-#ifdef GL_ES
-    precision highp float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision highp float;
 #endif
 
 #include "_fs_common.glsl"
@@ -28,7 +29,14 @@ layout(binding = 0) uniform mediump sampler2DMS depth_texture;
 layout(binding = 0) uniform mediump sampler2D depth_texture;
 #endif
 layout(binding = 1) uniform highp samplerBuffer nodes_buffer;
+
+#if defined(VULKAN)
+layout(push_constant) uniform PushConstants {
+    layout(offset = 16) int uRootIndex;
+};
+#else
 layout(location = 12) uniform int uRootIndex;
+#endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 aVertexUVs_;

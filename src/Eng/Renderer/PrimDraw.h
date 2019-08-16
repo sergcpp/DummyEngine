@@ -2,35 +2,58 @@
 
 #include <Ren/Fwd.h>
 #include <Ren/MMat.h>
+#include <Ren/Pipeline.h>
+#include <Ren/RenderPass.h>
 #include <Ren/Texture.h>
+#include <Ren/VertexInput.h>
 
-#if defined(USE_GL_RENDER)
-#include <Ren/VaoGL.h>
+#if defined(USE_VK_RENDER)
+#include <Ren/DescriptorPool.h>
 #endif
 
+class ProbeStorage;
 class ShaderLoader;
 
+namespace Ren {
+class Framebuffer;
+}
+
 class PrimDraw {
+  public:
+    struct Binding;
+    struct RenderTarget;
+
+  private:
     bool initialized_ = false;
 
-    uint32_t quad_vtx1_offset_ = 0xffffffff, quad_vtx2_offset_ = 0xffffffff,
-             quad_ndx_offset_ = 0xffffffff;
+    uint32_t quad_vtx1_offset_ = 0xffffffff, quad_vtx2_offset_ = 0xffffffff, quad_ndx_offset_ = 0xffffffff;
 
-    uint32_t sphere_vtx1_offset_ = 0xffffffff, sphere_vtx2_offset_ = 0xffffffff,
-             sphere_ndx_offset_ = 0xffffffff;
+    uint32_t sphere_vtx1_offset_ = 0xffffffff, sphere_vtx2_offset_ = 0xffffffff, sphere_ndx_offset_ = 0xffffffff;
 
-    uint32_t temp_buf1_vtx_offset_ = 0xffffffff, temp_buf2_vtx_offset_ = 0xffffffff,
-             temp_buf_ndx_offset_ = 0xffffffff;
+    uint32_t temp_buf1_vtx_offset_ = 0xffffffff, temp_buf2_vtx_offset_ = 0xffffffff, temp_buf_ndx_offset_ = 0xffffffff;
 
-#if defined(USE_GL_RENDER)
-    Ren::Vao fs_quad_vao_, sphere_vao_;
+    Ren::MeshRef skydome_mesh_;
+
+    Ren::VertexInput fs_quad_vtx_input_, sphere_vtx_input_;
+
+    Ren::Context *ctx_ = nullptr;
+    Ren::ILog *log_ = nullptr;
+#if defined(USE_VK_RENDER)
+    Ren::SmallVector<Ren::Pipeline, 16> pipelines_;
+
+    const Ren::Pipeline *FindOrCreatePipeline(Ren::ProgramRef p, const Ren::RenderPass *rp, const Ren::RastState *rs,
+                                              const Binding bindings[], const int bindings_count);
 #endif
   public:
+    ~PrimDraw();
+
     bool LazyInit(Ren::Context &ctx);
-    void CleanUp(Ren::Context &ctx);
+    void CleanUp();
+
+    void Reset();
 
 #if defined(USE_GL_RENDER)
-    uint32_t fs_quad_vao() const { return fs_quad_vao_.id(); }
+    uint32_t fs_quad_vao() const { return fs_quad_vtx_input_.gl_vao(); }
 
     // TODO: refactor this
     uint32_t temp_buf1_vtx_offset() const { return temp_buf1_vtx_offset_; }
@@ -38,13 +61,20 @@ class PrimDraw {
     uint32_t temp_buf_ndx_offset() const { return temp_buf_ndx_offset_; }
 #endif
 
+    const Ren::Mesh *skydome_mesh() const { return skydome_mesh_.get(); }
+
     struct Handle {
-#if defined(USE_GL_RENDER)
-        uint32_t id = 0;
-#endif
+        union {
+            const Ren::Texture2D *tex;
+            const Ren::Buffer *buf;
+            const Ren::Texture1D *tex_buf;
+            const ProbeStorage *cube_arr;
+        };
         Handle() = default;
-        Handle(Ren::TexHandle h) : id(h.id) {}
-        Handle(Ren::BufHandle h) : id(h.id) {}
+        Handle(const Ren::Texture2D &_tex) : tex(&_tex) {}
+        Handle(const Ren::Buffer &_buf) : buf(&_buf) {}
+        Handle(const Ren::Texture1D &_tex) : tex_buf(&_tex) {}
+        Handle(const ProbeStorage &_probes) : cube_arr(&_probes) {}
     };
 
     struct Binding {
@@ -55,14 +85,11 @@ class PrimDraw {
         Handle handle;
 
         Binding() = default;
-        Binding(Ren::eBindTarget _trg, uint16_t _loc, Handle _handle)
-            : trg(_trg), loc(_loc), handle(_handle) {}
-        Binding(Ren::eBindTarget _trg, uint16_t _loc, size_t _offset, size_t _size,
-                Handle _handle)
-            : trg(_trg), loc(_loc), offset(uint16_t(_offset)), size(uint16_t(_size)),
-              handle(_handle) {}
+        Binding(Ren::eBindTarget _trg, uint16_t _loc, Handle _handle) : trg(_trg), loc(_loc), handle(_handle) {}
+        Binding(Ren::eBindTarget _trg, uint16_t _loc, size_t _offset, size_t _size, Handle _handle)
+            : trg(_trg), loc(_loc), offset(uint16_t(_offset)), size(uint16_t(_size)), handle(_handle) {}
     };
-    static_assert(sizeof(Binding) == 12, "!");
+    static_assert(sizeof(Binding) == 16, "!");
 
     struct Uniform {
         Ren::eType type;
@@ -76,43 +103,35 @@ class PrimDraw {
         };
 
         Uniform(uint16_t _loc, const Ren::Mat4f *_pfdata)
-            : type(Ren::eType::Float32), size(16), loc(_loc),
-              pfdata(Ren::ValuePtr(_pfdata)) {}
+            : type(Ren::eType::Float32), size(16), loc(_loc), pfdata(Ren::ValuePtr(_pfdata)) {}
         Uniform(uint16_t _loc, const Ren::Vec4f &_fdata)
             : type(Ren::eType::Float32), size(4), loc(_loc), fdata(_fdata) {}
         Uniform(uint16_t _loc, const Ren::Vec3f &_fdata)
-            : type(Ren::eType::Float32), size(3), loc(_loc),
-              fdata(_fdata[0], _fdata[1], _fdata[2], 0.0f) {}
+            : type(Ren::eType::Float32), size(3), loc(_loc), fdata(_fdata[0], _fdata[1], _fdata[2], 0.0f) {}
         Uniform(uint16_t _loc, const Ren::Vec2f _fdata)
-            : type(Ren::eType::Float32), size(2), loc(_loc),
-              fdata(_fdata[0], _fdata[1], 0.0f, 0.0f) {}
-        Uniform(uint16_t _loc, const float _fdata)
-            : type(Ren::eType::Float32), size(1), loc(_loc), fdata(_fdata) {}
+            : type(Ren::eType::Float32), size(2), loc(_loc), fdata(_fdata[0], _fdata[1], 0.0f, 0.0f) {}
+        Uniform(uint16_t _loc, const float _fdata) : type(Ren::eType::Float32), size(1), loc(_loc), fdata(_fdata) {}
         Uniform(uint16_t _loc, const Ren::Mat4i *_pidata)
-            : type(Ren::eType::Int32), size(16), loc(_loc),
-              pidata(Ren::ValuePtr(_pidata)) {}
-        Uniform(uint16_t _loc, const Ren::Vec4i &_idata)
-            : type(Ren::eType::Int32), size(4), loc(_loc), idata(_idata) {}
+            : type(Ren::eType::Int32), size(16), loc(_loc), pidata(Ren::ValuePtr(_pidata)) {}
+        Uniform(uint16_t _loc, const Ren::Vec4i &_idata) : type(Ren::eType::Int32), size(4), loc(_loc), idata(_idata) {}
         Uniform(uint16_t _loc, const Ren::Vec3i &_idata)
-            : type(Ren::eType::Int32), size(3), loc(_loc),
-              idata(_idata[0], _idata[1], _idata[2], 0) {}
+            : type(Ren::eType::Int32), size(3), loc(_loc), idata(_idata[0], _idata[1], _idata[2], 0) {}
         Uniform(uint16_t _loc, const Ren::Vec2i _idata)
-            : type(Ren::eType::Int32), size(2), loc(_loc),
-              idata(_idata[0], _idata[1], 0, 0) {}
-        Uniform(uint16_t _loc, const int _idata)
-            : type(Ren::eType::Int32), size(1), loc(_loc), idata(_idata) {}
+            : type(Ren::eType::Int32), size(2), loc(_loc), idata(_idata[0], _idata[1], 0, 0) {}
+        Uniform(uint16_t _loc, const int _idata) : type(Ren::eType::Int32), size(1), loc(_loc), idata(_idata) {}
     };
     static_assert(sizeof(Uniform) == 24, "!");
 
     struct RenderTarget {
-#if defined(USE_GL_RENDER)
-        uint32_t fb;
+        Ren::Framebuffer *fb;
         uint32_t clear_bits;
-#endif
     };
 
     enum class ePrim { Quad, Sphere };
-    void DrawPrim(ePrim prim, const RenderTarget &rt, Ren::Program *p,
-                  const Binding bindings[], int bindings_count, const Uniform uniforms[],
-                  int uniforms_count);
+    void DrawPrim(ePrim prim, const RenderTarget &rt, Ren::Program *p, const Binding bindings[], int bindings_count,
+                  const Uniform uniforms[], int uniforms_count);
+    void DrawPrim(ePrim prim, const Ren::ProgramRef &p, const Ren::Framebuffer &fb, const Ren::RenderPass &rp,
+                  const Ren::RastState &new_rast_state, Ren::RastState &applied_rast_state,
+                  const Binding bindings[], int bindings_count, const void *uniform_data, int uniform_data_len,
+                  int uniform_data_offset);
 };

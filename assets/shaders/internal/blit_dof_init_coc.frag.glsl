@@ -1,7 +1,8 @@
 #version 310 es
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision mediump float;
 #endif
 
 #include "_fs_common.glsl"
@@ -20,7 +21,13 @@ uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
+#if defined(VULKAN)
+layout(push_constant) uniform PushConstants {
+    layout(offset = 16) vec4 uDofEquation;
+};
+#else
 layout(location = 1) uniform vec4 uDofEquation;
+#endif
 
 layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D s_depth;
 

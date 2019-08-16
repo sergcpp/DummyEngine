@@ -49,13 +49,7 @@ class Dictionary {
     };
     static_assert(sizeof(dict_entry_compact_t) == 16, "!");
 
-    enum class eDictChunks {
-        DictChInfo,
-        DictChLinks,
-        DictChEntries,
-        DictChStrings,
-        DictChCount
-    };
+    enum class eDictChunks { DictChInfo, DictChLinks, DictChEntries, DictChStrings, DictChCount };
 
     struct dict_info_t {
         char src_lang[2], dst_lang[2];

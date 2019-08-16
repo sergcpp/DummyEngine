@@ -93,6 +93,16 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
         }
     }
 
+    StrongRef(const WeakRef<T, StorageType> &rhs) {
+        storage_ = rhs.storage_;
+        index_ = rhs.index_;
+
+        if (storage_) {
+            T &p = storage_->at(index_);
+            p.add_ref();
+        }
+    }
+
     StrongRef(StrongRef &&rhs) noexcept {
         storage_ = exchange(rhs.storage_, nullptr);
         index_ = exchange(rhs.index_, 0);
@@ -159,9 +169,7 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
 
     uint32_t index() const { return index_; }
 
-    bool operator==(const StrongRef &rhs) const {
-        return storage_ == rhs.storage_ && index_ == rhs.index_;
-    }
+    bool operator==(const StrongRef &rhs) const { return storage_ == rhs.storage_ && index_ == rhs.index_; }
 
     void Release() {
         if (storage_) {
@@ -237,11 +245,7 @@ template <typename T, typename StorageType = Storage<T>> class WeakRef {
 
     uint32_t index() const { return index_; }
 
-    bool operator==(const WeakRef &rhs) {
-        return storage_ == rhs.storage_ && index_ == rhs.index_;
-    }
-    bool operator==(const StrongRef<T> &rhs) {
-        return storage_ == rhs.storage_ && index_ == rhs.index_;
-    }
+    bool operator==(const WeakRef &rhs) const { return storage_ == rhs.storage_ && index_ == rhs.index_; }
+    bool operator==(const StrongRef<T> &rhs) const { return storage_ == rhs.storage_ && index_ == rhs.index_; }
 };
 } // namespace Ren

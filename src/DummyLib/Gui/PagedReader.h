@@ -10,8 +10,7 @@ class BitmapFont;
 }
 
 namespace Sys {
-template <typename T, typename FallBackAllocator>
-class MultiPoolAllocator;
+template <typename T, typename FallBackAllocator> class MultiPoolAllocator;
 }
 template <typename Alloc> struct JsObjectT;
 using JsObject = JsObjectT<std::allocator<char>>;
@@ -58,9 +57,8 @@ class PagedReader : public Gui::BaseElement {
     void DrawCurrentPage(Gui::Renderer *r) const;
 
   public:
-    PagedReader(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size,
-                const BaseElement *parent, std::shared_ptr<Gui::BitmapFont> main_font,
-                std::shared_ptr<Gui::BitmapFont> emph_font,
+    PagedReader(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
+                std::shared_ptr<Gui::BitmapFont> main_font, std::shared_ptr<Gui::BitmapFont> emph_font,
                 std::shared_ptr<Gui::BitmapFont> caption_font);
 
     int cur_page() const { return cur_page_; }
@@ -76,8 +74,7 @@ class PagedReader : public Gui::BaseElement {
     void Resize(const BaseElement *parent) override;
 
     void Draw(Gui::Renderer *r) override;
-    void DrawHint(Gui::Renderer *r, const Ren::Vec2f &pos,
-                  const Gui::BaseElement *parent);
+    void DrawHint(Gui::Renderer *r, const Ren::Vec2f &pos, const Gui::BaseElement *parent);
 
     void Press(const Gui::Vec2f &p, bool push) override;
 };

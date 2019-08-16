@@ -7,12 +7,12 @@
 
 void test_udp_connection() {
 
-    {   // UDPConnection join
-        const int server_port   = 30000;
-        const int client_port   = 30001;
-        const int protocol_id   = 0x11112222;
-        const float dt_s        = 0.001f;
-        const float timeout_s   = 0.1f;
+    { // UDPConnection join
+        const int server_port = 30000;
+        const int client_port = 30001;
+        const int protocol_id = 0x11112222;
+        const float dt_s = 0.001f;
+        const float timeout_s = 0.1f;
 
         Net::UDPConnection client(protocol_id, timeout_s);
         Net::UDPConnection server(protocol_id, timeout_s);
@@ -62,12 +62,12 @@ void test_udp_connection() {
         assert(server.connected());
     }
 
-    {   // UDPConnection join timeout
-        const int server_port   = 30000;
-        const int client_port   = 30001;
-        const int protocol_id   = 0x11112222;
-        const float dt_s        = 0.001f;
-        const float timeout_s   = 0.1f;
+    { // UDPConnection join timeout
+        const int server_port = 30000;
+        const int client_port = 30001;
+        const int protocol_id = 0x11112222;
+        const float dt_s = 0.001f;
+        const float timeout_s = 0.1f;
 
         Net::UDPConnection client(protocol_id, timeout_s);
 
@@ -99,7 +99,7 @@ void test_udp_connection() {
         assert(client.connect_failed());
     }
 
-    {   // UDPConnection join busy
+    { // UDPConnection join busy
         const int server_port = 30000;
         const int client_port = 30001;
         const int protocol_id = 0x11112222;
@@ -211,7 +211,7 @@ void test_udp_connection() {
         assert(busy.connect_failed());
     }
 
-    {   // UDPConnection rejoin
+    { // UDPConnection rejoin
         const int server_port = 30000;
         const int client_port = 30001;
         const int crotocol_id = 0x11112222;
@@ -336,7 +336,7 @@ void test_udp_connection() {
         assert(server.connected());
     }
 
-    {   // UDPConnection payload
+    { // UDPConnection payload
         const int server_port = 30000;
         const int client_port = 30001;
         const int protocol_id = 0x11112222;
@@ -370,7 +370,7 @@ void test_udp_connection() {
                 int bytes_read = client.ReceivePacket(packet, sizeof(packet));
                 if (bytes_read == 0)
                     break;
-                assert(strcmp((const char*)packet, "server to client") == 0);
+                assert(strcmp((const char *)packet, "server to client") == 0);
             }
 
             while (true) {
@@ -378,7 +378,7 @@ void test_udp_connection() {
                 int bytes_read = server.ReceivePacket(packet, sizeof(packet));
                 if (bytes_read == 0)
                     break;
-                assert(strcmp((const char*)packet, "client to server") == 0);
+                assert(strcmp((const char *)packet, "client to server") == 0);
             }
 
             client.Update(dt_s);

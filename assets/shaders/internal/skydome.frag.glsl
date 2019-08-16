@@ -1,10 +1,12 @@
 #version 310 es
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision mediump float;
 #endif
 
 #include "_fs_common.glsl"
+#include "skydome_interface.glsl"
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = REN_UB_SHARED_DATA_LOC, std140)
@@ -15,13 +17,9 @@ uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform samplerCube env_texture;
+layout(binding = ENV_TEX_SLOT) uniform samplerCube env_texture;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec3 aVertexPos_;
-#else
-in vec3 aVertexPos_;
-#endif
+LAYOUT(location = 0) in highp vec3 aVertexPos_;
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
 layout(location = REN_OUT_SPEC_INDEX) out vec4 outSpecular;

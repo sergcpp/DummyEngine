@@ -31,24 +31,21 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
                           "book.json";
 
-const Ren::Vec2f page_corners_uvs[] = {
-    Ren::Vec2f{0.093528f, 0.507586f}, Ren::Vec2f{0.3968f, 0.97749f},
-    Ren::Vec2f{0.611766f, 0.507587f}, Ren::Vec2f{0.915037f, 0.977491f},
-    Ren::Vec2f{0.093529f, 0.022512f}, Ren::Vec2f{0.3968f, 0.492416f},
-    Ren::Vec2f{0.611766f, 0.022511f}, Ren::Vec2f{0.915037f, 0.492415f}};
+const Ren::Vec2f page_corners_uvs[] = {Ren::Vec2f{0.093528f, 0.507586f}, Ren::Vec2f{0.3968f, 0.97749f},
+                                       Ren::Vec2f{0.611766f, 0.507587f}, Ren::Vec2f{0.915037f, 0.977491f},
+                                       Ren::Vec2f{0.093529f, 0.022512f}, Ren::Vec2f{0.3968f, 0.492416f},
+                                       Ren::Vec2f{0.611766f, 0.022511f}, Ren::Vec2f{0.915037f, 0.492415f}};
 
 const Ren::Vec3f page_corners_pos[] = {
     Ren::Vec3f{0.378295f, 0.065051f, 0.525073f},
     Ren::Vec3f{-0.369601f, 0.059627f, 0.04203f},
 };
 
-const int page_order_indices[][4] = {
-    {}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, -2, -1}};
+const int page_order_indices[][4] = {{}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, -2, -1}};
 } // namespace GSUITest3Internal
 
 GSUITest3::GSUITest3(GameBase *game) : GSBaseState(game) {
-    const std::shared_ptr<FontStorage> fonts =
-        game->GetComponent<FontStorage>(UI_FONTS_KEY);
+    const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     book_main_font_ = fonts->FindFont("book_main_font");
     book_emph_font_ = fonts->FindFont("book_emph_font");
     book_caption_font_ = fonts->FindFont("book_caption_font");
@@ -105,28 +102,22 @@ void GSUITest3::Enter() {
 
         {
             const auto page_root = Gui::RootElement{Ren::Vec2i{page_buf_.w, page_buf_.h}};
-            paged_reader_.reset(new PagedReader{
-                *ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{2.0f, 2.0f},
-                &page_root, book_main_font_, book_emph_font_, book_caption_font_});
+            paged_reader_.reset(new PagedReader{*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{2.0f, 2.0f},
+                                                &page_root, book_main_font_, book_emph_font_, book_caption_font_});
 
             paged_reader_->LoadBook(js_book, "en", "de");
         }
     }
 
-    {
-        JsObject config;
-        config[Gui::GL_DEFINES_KEY] = JsString{""};
-        page_renderer_.reset(new Gui::Renderer{*ren_ctx_, config});
-    }
+    page_renderer_.reset(new Gui::Renderer{*ren_ctx_});
 
     { // init page framebuffer
         FrameBuf::ColorAttachmentDesc attachment;
         attachment.format = Ren::eTexFormat::RawRGB888;
         attachment.filter = Ren::eTexFilter::BilinearNoMipmap;
-        attachment.repeat = Ren::eTexRepeat::ClampToEdge;
+        attachment.wrap = Ren::eTexWrap::ClampToEdge;
 
-        page_buf_ = FrameBuf{"Page buf", *ren_ctx_, 3072, 3072,      &attachment,
-                             1,          {},        1,    log_.get()};
+        page_buf_ = FrameBuf{"Page buf", *ren_ctx_, 3072, 3072, &attachment, 1, {}, 1, log_.get()};
     }
 
     InitBookMaterials();
@@ -216,13 +207,10 @@ void GSUITest3::UpdateAnim(const uint64_t dt_us) {
 
         uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((book->comp_mask & mask) == mask) {
-            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(
-                book->components[CompDrawable]);
-            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(
-                book->components[CompAnimState]);
+            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(book->components[CompDrawable]);
+            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(book->components[CompAnimState]);
 
-            const int cur_page = paged_reader_->cur_page(),
-                      page_count = paged_reader_->page_count();
+            const int cur_page = paged_reader_->cur_page(), page_count = paged_reader_->page_count();
 
             if (book_state_ == eBookState::BkClosed) {
                 view_offset_ = 0.5f;
@@ -271,8 +259,7 @@ void GSUITest3::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     using namespace GSUITest3Internal;
 
     if (hit_point_screen_.initialized()) {
-        paged_reader_->DrawHint(r, hit_point_screen_.GetValue() + Ren::Vec2f{0.0f, 0.05f},
-                                root);
+        paged_reader_->DrawHint(r, hit_point_screen_.GetValue() + Ren::Vec2f{0.0f, 0.05f}, root);
     }
 
     GSBaseState::DrawUI(r, root);
@@ -288,20 +275,16 @@ void GSUITest3::Draw() {
 
                 const int page_base = paged_reader_->cur_page();
                 for (int i = 0; i < 2; i++) {
-                    paged_reader_->set_cur_page(
-                        page_base + page_order_indices[size_t(book_state_)][i]);
+                    paged_reader_->set_cur_page(page_base + page_order_indices[size_t(book_state_)][i]);
 
-                    paged_reader_->Resize(
-                        2.0f * page_corners_uvs[i * 2] - Ren::Vec2f{1.0f},
-                        2.0f * (page_corners_uvs[i * 2 + 1] - page_corners_uvs[i * 2]),
-                        &page_root);
+                    paged_reader_->Resize(2.0f * page_corners_uvs[i * 2] - Ren::Vec2f{1.0f},
+                                          2.0f * (page_corners_uvs[i * 2 + 1] - page_corners_uvs[i * 2]), &page_root);
                     paged_reader_->Press(hit_point_ndc_.GetValue(), true);
                     if (paged_reader_->selected_sentence() != -1) {
                         break;
                     }
                 }
-                paged_reader_->set_cur_page(page_base +
-                                            page_order_indices[size_t(book_state_)][0]);
+                paged_reader_->set_cur_page(page_base + page_order_indices[size_t(book_state_)][0]);
 
                 hit_point_ndc_.destroy();
             }
@@ -316,8 +299,7 @@ void GSUITest3::Draw() {
 
     const Ren::Vec3f view_origin = view_origin_ + Ren::Vec3f{0.0f, view_offset_, 0.0f};
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir_), up_vector,
-                              view_fov_, max_exposure_);
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir_), up_vector, view_fov_, max_exposure_);
 
     GSBaseState::Draw();
 }
@@ -328,8 +310,7 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
-        if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
-            evt.point.y < float(ren_ctx_->h()) * 0.1f) {
+        if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -349,9 +330,8 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
 
     switch (evt.type) {
     case RawInputEv::P1Down: {
-        const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (book_state_ == eBookState::BkOpened) {
         }
     } break;
@@ -359,15 +339,13 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
 
     } break;
     case RawInputEv::P1Up: {
-        const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
 
         bool blocked = false;
 
         if (book_state_ == eBookState::BkOpened) {
-            const int cur_page = paged_reader_->cur_page(),
-                      page_count = paged_reader_->page_count();
+            const int cur_page = paged_reader_->cur_page(), page_count = paged_reader_->page_count();
 
             if (p[0] < 0.0f) {
                 if (cur_page - 2 >= 0) {
@@ -410,8 +388,7 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
 
                 const uint32_t mask = CompDrawableBit | CompAnimStateBit;
                 if ((book->comp_mask & mask) == mask) {
-                    auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(
-                        book->components[CompAnimState]);
+                    auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(book->components[CompAnimState]);
                     as->anim_time_s = 0.0f;
                 }
             }
@@ -420,9 +397,8 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
     case RawInputEv::P2Up: {
     } break;
     case RawInputEv::P1Move: {
-        const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         paged_reader_->Hover(p);
 
         hit_point_screen_.destroy();
@@ -463,19 +439,15 @@ Sys::Optional<Ren::Vec2f> GSUITest3::MapPointToPageFramebuf(const Ren::Vec2f &p)
 
     const Mat4f &clip_from_view = cam.proj_matrix(), &view_from_world = cam.view_matrix();
 
-    const Mat4f clip_from_world = clip_from_view * view_from_world,
-                world_from_clip = Inverse(clip_from_world);
+    const Mat4f clip_from_world = clip_from_view * view_from_world, world_from_clip = Inverse(clip_from_world);
 
-    auto ray_beg_cs = Vec4f{p[0], p[1], -1.0f, 1.0f},
-         ray_end_cs = Vec4f{p[0], p[1], 1.0f, 1.0f};
+    auto ray_beg_cs = Vec4f{p[0], p[1], -1.0f, 1.0f}, ray_end_cs = Vec4f{p[0], p[1], 1.0f, 1.0f};
 
-    Vec4f ray_beg_ws = world_from_clip * ray_beg_cs,
-          ray_end_ws = world_from_clip * ray_end_cs;
+    Vec4f ray_beg_ws = world_from_clip * ray_beg_cs, ray_end_ws = world_from_clip * ray_end_cs;
     ray_beg_ws /= ray_beg_ws[3];
     ray_end_ws /= ray_end_ws[3];
 
-    const auto ray_origin_ws = Vec3f{ray_beg_ws},
-               ray_dir_ws = Normalize(Vec3f{ray_end_ws - ray_beg_ws});
+    const auto ray_origin_ws = Vec3f{ray_beg_ws}, ray_dir_ws = Normalize(Vec3f{ray_end_ws - ray_beg_ws});
 
     auto page_plane = Vec4f{0.0f, 1.0f, 0.0f, -page_corners_pos[0][1]};
 
@@ -484,22 +456,18 @@ Sys::Optional<Ren::Vec2f> GSUITest3::MapPointToPageFramebuf(const Ren::Vec2f &p)
 
     Sys::Optional<Ren::Vec2f> ret;
 
-    if (inter_point[0] < page_corners_pos[0][0] &&
-        inter_point[0] > page_corners_pos[1][0] &&
-        inter_point[2] < page_corners_pos[0][2] &&
-        inter_point[2] > page_corners_pos[1][2]) {
+    if (inter_point[0] < page_corners_pos[0][0] && inter_point[0] > page_corners_pos[1][0] &&
+        inter_point[2] < page_corners_pos[0][2] && inter_point[2] > page_corners_pos[1][2]) {
 
-        Vec2f inter_point_norm = Vec2f{inter_point[0] - page_corners_pos[1][0],
-                                       inter_point[2] - page_corners_pos[1][2]};
-        inter_point_norm /= Vec2f{page_corners_pos[0][0] - page_corners_pos[1][0],
-                                  page_corners_pos[0][2] - page_corners_pos[1][2]};
+        Vec2f inter_point_norm =
+            Vec2f{inter_point[0] - page_corners_pos[1][0], inter_point[2] - page_corners_pos[1][2]};
+        inter_point_norm /=
+            Vec2f{page_corners_pos[0][0] - page_corners_pos[1][0], page_corners_pos[0][2] - page_corners_pos[1][2]};
 
         inter_point_norm = Vec2f{1.0f} - inter_point_norm;
         std::swap(inter_point_norm[0], inter_point_norm[1]);
 
-        Vec2f inter_point_ndc =
-            page_corners_uvs[0] +
-            inter_point_norm * (page_corners_uvs[1] - page_corners_uvs[0]);
+        Vec2f inter_point_ndc = page_corners_uvs[0] + inter_point_norm * (page_corners_uvs[1] - page_corners_uvs[0]);
         inter_point_ndc = inter_point_ndc * 2.0f - Vec2f{1.0f};
 
         // inter_point_ndc = -inter_point_ndc;

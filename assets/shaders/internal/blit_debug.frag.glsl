@@ -2,8 +2,9 @@
 #extension GL_EXT_texture_buffer : require
 #extension GL_ARB_texture_multisample : enable
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision mediump float;
 #endif
 
 #include "_fs_common.glsl"
@@ -20,9 +21,17 @@ layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2D s_texture;
 layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer cells_buffer;
 layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer items_buffer;
 
+#if defined(VULKAN)
+layout(push_constant) uniform PushConstants {
+    layout(offset = 16) vec4 uClipInfo;
+						ivec2 res;
+						float mode;
+};
+#else
+layout(location = 17) uniform vec4 uClipInfo;
 layout(location = 15) uniform ivec2 res;
 layout(location = 16) uniform float mode;
-layout(location = 17) uniform vec4 uClipInfo;
+#endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 aVertexUVs_;

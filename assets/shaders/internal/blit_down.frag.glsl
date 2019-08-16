@@ -1,38 +1,31 @@
 #version 310 es
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision highp float;
 #endif
 
 #include "_fs_common.glsl"
+#include "blit_down_interface.glsl"
 
 /*
 UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
+    UniformParams : $ubUnifParamLoc
 */
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
-    SharedData shrd_data;
+LAYOUT_PARAMS uniform UniformParams {
+    Params params;
 };
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D s_texture;
+layout(binding = SRC_TEX_SLOT) uniform sampler2D s_texture;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs_;
-#else
-in vec2 aVertexUVs_;
-#endif
+LAYOUT(location = 0) in vec2 aVertexUVs_;
 
 layout(location = 0) out vec4 outColor;
 
 void main() {
     vec2 norm_uvs = aVertexUVs_;
-    vec2 px_offset = 1.0 / shrd_data.uResAndFRes.xy;
+    vec2 px_offset = 1.0 / params.resolution.xy;
 
     vec2 sample_positions[4];
     sample_positions[0] = norm_uvs - px_offset;
@@ -40,7 +33,7 @@ void main() {
     sample_positions[2] = norm_uvs + px_offset;
     sample_positions[3] = norm_uvs + vec2(-px_offset.x, px_offset.y);
 
-    mediump vec3 color = vec3(0.0);
+    vec3 color = vec3(0.0);
     color += textureLod(s_texture, sample_positions[0], 0.0).rgb;
     color += textureLod(s_texture, sample_positions[1], 0.0).rgb;
     color += textureLod(s_texture, sample_positions[2], 0.0).rgb;

@@ -51,7 +51,7 @@ out highp vec3 aVertexShUVs_[4];
 layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D bump_texture;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = 0, std140)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 #else
 layout (std140)
 #endif

@@ -3,15 +3,16 @@
 #include <cstring>
 
 #include <functional>
-#include <vector>
 #include <list>
+#include <string>
+#include <vector>
 
 #include "../BinaryTree.h"
 #include "../MonoAlloc.h"
 #include "../PoolAlloc.h"
 
 void test_alloc() {
-    {   // Basic usage
+    { // Basic usage
         char buf[256];
         for (int i = 0; i < 256; i++) {
             buf[i] = (char)i;
@@ -33,7 +34,7 @@ void test_alloc() {
         require_throws(my_alloc.allocate(512 - 64 - 32 - 16 + 1));
     }
 
-    {   // Usage with stl
+    { // Usage with stl
 
         char buf[512];
         Sys::MonoAlloc<char> my_alloc(buf, sizeof(buf));
@@ -83,7 +84,7 @@ void test_alloc() {
         require(str == "teststringmoredatatogoaroundsmallstringoptimization");
     }
 
-    {   // Usage with binary tree
+    { // Usage with binary tree
         char buf[16 * 1024];
         Sys::MonoAlloc<char> my_alloc(buf, sizeof(buf));
 
@@ -111,7 +112,7 @@ void test_alloc() {
         require(tree.empty());
     }
 
-    {   // Pool alloc usage
+    { // Pool alloc usage
         Sys::PoolAllocator allocator(4, 255);
 
         int *pointers[512];
@@ -138,7 +139,7 @@ void test_alloc() {
         }
     }
 
-    {   // Multi-pool alloc
+    { // Multi-pool alloc
         Sys::MultiPoolAllocator<uint8_t> allocator(32, 512);
 
         uint8_t *pointers[16][256];
@@ -199,8 +200,7 @@ void test_alloc() {
         list.push_back(3);
         list.push_back(4);
 
-        std::basic_string<char, std::char_traits<char>, Sys::MultiPoolAllocator<char>> str(
-            my_alloc);
+        std::basic_string<char, std::char_traits<char>, Sys::MultiPoolAllocator<char>> str(my_alloc);
 
         str.append("test");
         str.append("string");

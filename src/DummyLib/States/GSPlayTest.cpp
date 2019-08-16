@@ -41,32 +41,28 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
                           "seq_test.json";
 
 const char SEQ_NAME[] = "test/test_seq.json";
-} // namespace GSUITest4Internal
+} // namespace GSPlayTestInternal
 
 GSPlayTest::GSPlayTest(GameBase *game) : GSBaseState(game) {
-    const std::shared_ptr<FontStorage> fonts =
-        game->GetComponent<FontStorage>(UI_FONTS_KEY);
+    const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     dialog_font_ = fonts->FindFont("book_main_font");
 
     cam_ctrl_.reset(new FreeCamController(ren_ctx_->w(), ren_ctx_->h(), 0.3f));
 
     test_dialog_.reset(new ScriptedDialog{*ren_ctx_, *snd_ctx_, *scene_manager_});
 
-    dialog_ui_.reset(
-        new DialogUI{Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_.get(), *dialog_font_});
+    dialog_ui_.reset(new DialogUI{Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_.get(), *dialog_font_});
 
-    seq_edit_ui_.reset(new SeqEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f},
-                                     Gui::Vec2f{2.0f, 1.0f}, ui_root_.get()});
+    seq_edit_ui_.reset(
+        new SeqEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_.get()});
 
-    dialog_edit_ui_.reset(new DialogEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f},
-                                           Gui::Vec2f{2.0f, 1.0f}, ui_root_.get()});
+    dialog_edit_ui_.reset(
+        new DialogEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_.get()});
     dialog_edit_ui_->set_dialog(test_dialog_.get());
 
-    dialog_edit_ui_->set_cur_sequence_signal
-        .Connect<GSPlayTest, &GSPlayTest::OnSetCurSequence>(this);
+    dialog_edit_ui_->set_cur_sequence_signal.Connect<GSPlayTest, &GSPlayTest::OnSetCurSequence>(this);
 
-    seq_cap_ui_.reset(new CaptionsUI{Ren::Vec2f{-1.0f, 0.0f}, Ren::Vec2f{2.0f, 1.0f},
-                                     ui_root_.get(), *dialog_font_});
+    seq_cap_ui_.reset(new CaptionsUI{Ren::Vec2f{-1.0f, 0.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_.get(), *dialog_font_});
     // test_seq_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(
     //    seq_cap_ui_.get());
 
@@ -143,10 +139,8 @@ void GSPlayTest::LoadSequence(const char *seq_name) {
 bool GSPlayTest::SaveSequence(const char *seq_name) {
     // rotate backup files
     for (int i = 7; i > 0; i--) {
-        const std::string name1 = std::string("assets/scenes/") + seq_name +
-                                  std::to_string(i),
-                          name2 = std::string("assets/scenes/") + seq_name +
-                                  std::to_string(i + 1);
+        const std::string name1 = std::string("assets/scenes/") + seq_name + std::to_string(i),
+                          name2 = std::string("assets/scenes/") + seq_name + std::to_string(i + 1);
         if (!std::ifstream(name1).good()) {
             continue;
         }
@@ -234,9 +228,8 @@ void GSPlayTest::UpdateAnim(const uint64_t dt_us) {
 
     GSBaseState::UpdateAnim(dt_us);
 
-    scene_manager_->SetupView(
-        cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
-        Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam_ctrl_->view_fov, cam_ctrl_->max_exposure);
+    scene_manager_->SetupView(cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
+                              Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam_ctrl_->view_fov, cam_ctrl_->max_exposure);
 
     const SceneData &scene = scene_manager_->scene_data();
 
@@ -251,8 +244,7 @@ void GSPlayTest::OnSetCurSequence(const int id) {
         test_seq_->push_caption_signal.clear();
     }
     test_seq_ = test_dialog_->GetSequence(id);
-    test_seq_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(
-        seq_cap_ui_.get());
+    test_seq_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(seq_cap_ui_.get());
     seq_edit_ui_->set_sequence(test_seq_);
 }
 
@@ -301,8 +293,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
-        if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
-            evt.point.y < float(ren_ctx_->h()) * 0.1f) {
+        if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ms_ < 400) {
                 use_pt_ = !use_pt_;
@@ -321,9 +312,8 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
 
     switch (evt.type) {
     case RawInputEv::P1Down: {
-        const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && seq_edit_ui_->Check(p)) {
             seq_edit_ui_->Press(p, true);
             input_processed = true;
@@ -333,9 +323,8 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
         }
     } break;
     case RawInputEv::P2Down: {
-        const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && seq_edit_ui_->Check(p)) {
             seq_edit_ui_->PressRMB(p, true);
             input_processed = true;
@@ -345,9 +334,8 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
         }
     } break;
     case RawInputEv::P1Up: {
-        const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             seq_edit_ui_->Press(p, false);
             input_processed = seq_edit_ui_->Check(p);
@@ -357,9 +345,8 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
         }
     } break;
     case RawInputEv::P2Up: {
-        const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             seq_edit_ui_->PressRMB(p, false);
             input_processed = seq_edit_ui_->Check(p);
@@ -369,9 +356,8 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
         }
     } break;
     case RawInputEv::P1Move: {
-        const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             seq_edit_ui_->Hover(p);
         } else if (dial_edit_mode_ == 1) {

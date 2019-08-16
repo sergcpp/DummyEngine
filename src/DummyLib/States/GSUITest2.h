@@ -4,11 +4,11 @@
 #include <Eng/GameState.h>
 #include <Eng/Gui/BaseElement.h>
 #include <Ren/Camera.h>
-#include <Ren/Mesh.h>
 #include <Ren/MVec.h>
+#include <Ren/Mesh.h>
 #include <Ren/Program.h>
-#include <Ren/Texture.h>
 #include <Ren/SW/SW.h>
+#include <Ren/Texture.h>
 
 #include "GSBaseState.h"
 
@@ -28,16 +28,16 @@ class GSUITest2 : public GSBaseState {
 
     std::shared_ptr<Gui::BitmapFont> dialog_font_;
     float test_time_counter_s = 0.0f;
-    bool                                is_visible_ = false;
+    bool is_visible_ = false;
 
-    std::shared_ptr<Dictionary>         dict_;
+    std::shared_ptr<Dictionary> dict_;
 
-    std::unique_ptr<Gui::EditBox>       edit_box_;
-    std::unique_ptr<Gui::Image9Patch>   results_frame_;
+    std::unique_ptr<Gui::EditBox> edit_box_;
+    std::unique_ptr<Gui::Image9Patch> results_frame_;
 
-    std::vector<std::string>            results_lines_;
+    std::vector<std::string> results_lines_;
 
-    uint32_t zenith_index_          = 0xffffffff;
+    uint32_t zenith_index_ = 0xffffffff;
 
     void OnPostloadScene(JsObjectP &js_scene) override;
 
@@ -45,7 +45,8 @@ class GSUITest2 : public GSBaseState {
 
     void UpdateHint();
     static void MutateWord(const char *in_word, const std::function<void(const char *, int)> &callback);
-public:
+
+  public:
     explicit GSUITest2(GameBase *game);
     ~GSUITest2() final;
 

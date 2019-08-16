@@ -2,8 +2,8 @@
 
 #include <stdexcept>
 
-#include <Ren/Fwd.h>
 #include <Ren/Context.h>
+#include <Ren/Fwd.h>
 #include <Ren/GL.h>
 
 FrameBuf::FrameBuf(const char *name, Ren::Context &ctx, const int _w, const int _h,
@@ -38,26 +38,23 @@ FrameBuf::FrameBuf(const char *name, Ren::Context &ctx, const int _w, const int 
         params.h = h;
         params.format = att.format;
         params.sampling.filter = att.filter;
-        params.sampling.repeat = att.repeat;
+        params.sampling.wrap = att.wrap;
         params.samples = sample_count;
 
         Ren::eTexLoadStatus status;
-        Ren::Tex2DRef tex = ctx.LoadTexture2D(name_buf, params, &status);
+        Ren::Tex2DRef tex = ctx.LoadTexture2D(name_buf, params, ctx.default_mem_allocs(), &status);
 
         if (att.attached) {
             ++enabled_attachements_count;
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i,
-                                   sample_count > 1 ? GL_TEXTURE_2D_MULTISAMPLE
-                                                    : GL_TEXTURE_2D,
-                                   tex->id(), 0);
+                                   sample_count > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, tex->id(), 0);
         }
 
         attachments[attachments_count++] = {att, std::move(tex)};
     }
 
     if (enabled_attachements_count) {
-        GLenum bufs[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
-                         GL_COLOR_ATTACHMENT2};
+        GLenum bufs[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
         glDrawBuffers(enabled_attachements_count, bufs);
 
         glClear(GL_COLOR_BUFFER_BIT);
@@ -79,20 +76,16 @@ FrameBuf::FrameBuf(const char *name, Ren::Context &ctx, const int _w, const int 
         params.samples = sample_count;
 
         Ren::eTexLoadStatus status;
-        Ren::Tex2DRef dtex = ctx.LoadTexture2D(name_buf, params, &status);
+        Ren::Tex2DRef dtex = ctx.LoadTexture2D(name_buf, params, ctx.default_mem_allocs(), &status);
 
         Ren::CheckError("[Renderer]: create framebuffer 3", log);
 
         if (depth_att.format == Ren::eTexFormat::Depth24Stencil8) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-                                   sample_count > 1 ? GL_TEXTURE_2D_MULTISAMPLE
-                                                    : GL_TEXTURE_2D,
-                                   dtex->id(), 0);
+                                   sample_count > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, dtex->id(), 0);
         } else {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                   sample_count > 1 ? GL_TEXTURE_2D_MULTISAMPLE
-                                                    : GL_TEXTURE_2D,
-                                   dtex->id(), 0);
+                                   sample_count > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, dtex->id(), 0);
         }
 
         depth_tex = std::move(dtex);
@@ -113,8 +106,7 @@ FrameBuf::FrameBuf(const char *name, Ren::Context &ctx, const int _w, const int 
 #endif
 
     glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
-    glViewport(viewport_before[0], viewport_before[1], viewport_before[2],
-               viewport_before[3]);
+    glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 
     Ren::CheckError("[Renderer]: create framebuffer 3", log);
     log->Info("Framebuffer created (%ix%i)", w, h);

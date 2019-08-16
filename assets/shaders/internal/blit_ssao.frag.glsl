@@ -1,31 +1,24 @@
 #version 310 es
-#extension GL_EXT_texture_buffer : enable
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision highp float;
 #endif
+
+#include "_fs_common.glsl"
+#include "blit_ssao_interface.glsl"
 
 /*
 UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
+    UniformParams : $ubUnifParamLoc
 */
 
-#include "_fs_common.glsl"
+layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D depth_texture;
+layout(binding = RAND_TEX_SLOT) uniform mediump sampler2D rand_texture;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
-    SharedData shrd_data;
+LAYOUT_PARAMS uniform UniformParams {
+	Params params;
 };
-
-layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2D depth_texture;
-layout(binding = REN_BASE1_TEX_SLOT) uniform mediump sampler2D rand_texture;
-
-layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer cells_buffer;
-layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer items_buffer;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 aVertexUVs_;
@@ -76,7 +69,7 @@ void main() {
 
         vec2 sample_point = transform * sample_points[i];
 
-        vec2 coord_offset = 0.5 * ss_radius * sample_point * shrd_data.uResAndFRes.xy;
+        vec2 coord_offset = 0.5 * ss_radius * sample_point * params.resolution;
 
         vec2 depth_values = vec2(SampleDepthTexel(aVertexUVs_ + coord_offset),
                                  SampleDepthTexel(aVertexUVs_ - coord_offset));

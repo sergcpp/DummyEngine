@@ -7,7 +7,7 @@
 
 void test_tcp_socket() {
 
-    {   // TCPSocket open/close
+    { // TCPSocket open/close
         Net::TCPSocket socket;
         assert(!socket.IsOpen());
         assert_nothrow(socket.Open(30000));
@@ -18,7 +18,7 @@ void test_tcp_socket() {
         assert(socket.IsOpen());
     }
 
-    {   // TCPSocket same port fail
+    { // TCPSocket same port fail
         Net::TCPSocket a, b;
         assert_nothrow(a.Open(30000, false));
         assert_throws(b.Open(30000, false));
@@ -26,7 +26,7 @@ void test_tcp_socket() {
         assert(!b.IsOpen());
     }
 
-    {   // TCPSocket send and receive packets
+    { // TCPSocket send and receive packets
         Net::TCPSocket a, b;
         assert_nothrow(a.Open(30000));
         assert_nothrow(b.Open(30001));

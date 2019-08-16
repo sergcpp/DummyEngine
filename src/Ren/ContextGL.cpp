@@ -1,21 +1,46 @@
 #include "Context.h"
 
 #include "GL.h"
+#include "GLCtx.h"
 
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4996)
 #endif
 
-Ren::Context::~Context() { ReleaseAll(); }
+namespace Ren {
+void DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
+                   const void *userParam) {
+    auto *self = reinterpret_cast<const Context *>(userParam);
+    if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
+        if (id != 131154 /* pixel-path performance warning */) {
+            self->log()->Error("%s", message);
+        }
+    } else if (type != GL_DEBUG_TYPE_PUSH_GROUP && type != GL_DEBUG_TYPE_POP_GROUP && type != GL_DEBUG_TYPE_OTHER) {
+        self->log()->Warning("%s", message);
+    }
+}
+} // namespace Ren
 
-void Ren::Context::Init(int w, int h, ILog *log) {
+Ren::Context::Context() = default;
+
+Ren::Context::~Context() {
+    api_ctx_->present_image_refs.clear();
+    ReleaseAll();
+}
+
+bool Ren::Context::Init(int w, int h, ILog *log, const char *) {
     InitGLExtentions();
     RegisterAsMainThread();
 
     w_ = w;
     h_ = h;
     log_ = log;
+
+    api_ctx_.reset(new ApiContext);
+    for (int i = 0; i < MaxFramesInFlight; i++) {
+        api_ctx_->in_flight_fences.emplace_back(MakeFence());
+    }
 
     log_->Info("===========================================");
     log_->Info("Device info:");
@@ -43,27 +68,16 @@ void Ren::Context::Init(int w, int h, ILog *log) {
         log_->Info("\tAnisotropy\t: %f", capabilities.max_anisotropy);
     }
 
-    { // how many uniform vec4 vectors can be used
-        GLint i = 0;
-        glGetIntegerv(/*GL_MAX_VERTEX_UNIFORM_VECTORS*/ GL_MAX_VERTEX_UNIFORM_COMPONENTS,
-                      &i);
-        i /= 4;
-        if (i == 0)
-            i = 256;
-        capabilities.max_uniform_vec4 = i;
-        log_->Info("\tMax uniforms\t: %i", capabilities.max_uniform_vec4);
-    }
-
     {
         GLint i = 0;
         glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &i);
         capabilities.max_vertex_input = i;
-        log_->Info("\tMax vertex attribs\t: %i", capabilities.max_vertex_input);
+        log_->Info("\tMax vtx attribs\t: %i", capabilities.max_vertex_input);
 
         glGetIntegerv(GL_MAX_VERTEX_OUTPUT_COMPONENTS, &i);
         i /= 4;
         capabilities.max_vertex_output = i;
-        log_->Info("\tMax vertex output\t: %i", capabilities.max_vertex_output);
+        log_->Info("\tMax vtx output\t: %i", capabilities.max_vertex_output);
     }
 
     // determine compute work group sizes
@@ -73,34 +87,15 @@ void Ren::Context::Init(int w, int h, ILog *log) {
         capabilities.max_compute_work_group_size[i] = val;
     }
 
-    // how many bones(mat4) can be used at time
-    /*Mesh::max_gpu_bones = capabilities.max_uniform_vec4 / 8;
-    log_->Info("\tBones per pass\t: %i", Mesh::max_gpu_bones);
-    char buff[16];
-    sprintf(buff, "%i", Mesh::max_gpu_bones);*/
-    /*glsl_defines_ += "#define MAX_GPU_BONES ";
-    glsl_defines_ += buff;
-    glsl_defines_ += "\r\n";*/
-
     log_->Info("===========================================");
 
 #if !defined(NDEBUG) && !defined(__APPLE__)
-    if (IsExtensionSupported("GL_KHR_debug") ||
-        IsExtensionSupported("ARB_debug_output") ||
+    if (IsExtensionSupported("GL_KHR_debug") || IsExtensionSupported("ARB_debug_output") ||
         IsExtensionSupported("AMD_debug_output")) {
-
-        auto gl_debug_proc = [](GLenum source, GLenum type, GLuint id, GLenum severity,
-                                GLsizei length, const GLchar *message,
-                                const void *userParam) {
-            if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
-                auto *self = reinterpret_cast<const Context *>(userParam);
-                self->log_->Error("%s", message);
-            }
-        };
 
         glEnable(GL_DEBUG_OUTPUT);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageCallback(gl_debug_proc, this);
+        glDebugMessageCallback(DebugCallback, this);
     }
 #endif
 
@@ -108,7 +103,7 @@ void Ren::Context::Init(int w, int h, ILog *log) {
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 #endif
 
-    capabilities.gl_spirv = IsExtensionSupported("GL_ARB_gl_spirv");
+    capabilities.spirv = IsExtensionSupported("GL_ARB_gl_spirv");
     capabilities.persistent_buf_mapping = IsExtensionSupported("GL_ARB_buffer_storage");
 
     const bool bindless_texture_arb = IsExtensionSupported("GL_ARB_bindless_texture");
@@ -127,114 +122,28 @@ void Ren::Context::Init(int w, int h, ILog *log) {
         capabilities.unif_buf_offset_alignment = unif_buf_offset_alignment;
     }
 
-    default_vertex_buf1_ = buffers_.Add("default_vtx_buf1", eBufferType::VertexAttribs,
-                                        eBufferAccessType::Draw,
-                                        eBufferAccessFreq::Static, 64 * 1024 * 1024);
-    default_vertex_buf2_ = buffers_.Add("default_vtx_buf2", eBufferType::VertexAttribs,
-                                        eBufferAccessType::Draw,
-                                        eBufferAccessFreq::Static, 64 * 1024 * 1024);
-    default_skin_vertex_buf_ = buffers_.Add(
-        "default_skin_vtx_buf", eBufferType::VertexAttribs, eBufferAccessType::Draw,
-        eBufferAccessFreq::Static, 64 * 1024 * 1024);
-    default_delta_buf_ = buffers_.Add("default_delta_buf", eBufferType::VertexAttribs,
-                                      eBufferAccessType::Draw, eBufferAccessFreq::Static,
-                                      64 * 1024 * 1024);
-    default_indices_buf_ = buffers_.Add("default_ndx_buf2", eBufferType::VertexIndices,
-                                        eBufferAccessType::Draw,
-                                        eBufferAccessFreq::Static, 64 * 1024 * 1024);
+    InitDefaultBuffers();
 
-    texture_atlas_ =
-        TextureAtlasArray{TextureAtlasWidth, TextureAtlasHeight, TextureAtlasLayers,
-                          eTexFormat::RawRGBA8888, eTexFilter::BilinearNoMipmap};
+    { // create dummy texture
+        char name_buf[] = "Present Image [0]";
+
+        Tex2DParams params;
+        params.format = eTexFormat::RawRGBA8888;
+        params.flags = eTexFlags::TexNoOwnership;
+
+        api_ctx_->present_image_refs.emplace_back(textures_.Add(name_buf, api_ctx_.get(), 0, nullptr, params, log_));
+    }
+
+    texture_atlas_ = TextureAtlasArray{api_ctx_.get(),     TextureAtlasWidth,       TextureAtlasHeight,
+                                       TextureAtlasLayers, eTexFormat::RawRGBA8888, eTexFilter::BilinearNoMipmap};
+
+    return true;
 }
 
 void Ren::Context::Resize(int w, int h) {
     w_ = w;
     h_ = h;
     glViewport(0, 0, w_, h_);
-}
-
-Ren::ShaderRef Ren::Context::LoadShaderGLSL(const char *name, const char *shader_src,
-                                            eShaderType type,
-                                            eShaderLoadStatus *load_status) {
-    ShaderRef ref = shaders_.FindByName(name);
-
-    if (!ref) {
-        ref = shaders_.Add(name, shader_src, type, load_status, log_);
-    } else {
-        if (ref->ready()) {
-            if (load_status) {
-                (*load_status) = eShaderLoadStatus::Found;
-            }
-        } else if (shader_src) {
-            ref->Init(shader_src, type, load_status, log_);
-        }
-    }
-
-    return ref;
-}
-
-#ifndef __ANDROID__
-Ren::ShaderRef Ren::Context::LoadShaderSPIRV(const char *name, const uint8_t *shader_data,
-                                             int data_size, eShaderType type,
-                                             eShaderLoadStatus *load_status) {
-    ShaderRef ref = shaders_.FindByName(name);
-
-    if (!ref) {
-        ref = shaders_.Add(name, shader_data, data_size, type, load_status, log_);
-    } else {
-        if (ref->ready()) {
-            if (load_status) {
-                (*load_status) = eShaderLoadStatus::Found;
-            }
-        } else if (shader_data) {
-            ref->Init(shader_data, data_size, type, load_status, log_);
-        }
-    }
-
-    return ref;
-}
-#endif
-
-Ren::ProgramRef Ren::Context::LoadProgram(const char *name, ShaderRef vs_ref,
-                                          ShaderRef fs_ref, ShaderRef tcs_ref,
-                                          ShaderRef tes_ref,
-                                          eProgLoadStatus *load_status) {
-    ProgramRef ref = programs_.FindByName(name);
-
-    if (!ref) {
-        ref = programs_.Add(name, std::move(vs_ref), std::move(fs_ref),
-                            std::move(tcs_ref), std::move(tes_ref), load_status, log_);
-    } else {
-        if (ref->ready()) {
-            if (load_status) {
-                (*load_status) = eProgLoadStatus::Found;
-            }
-        } else if (!ref->ready() && vs_ref && fs_ref) {
-            ref->Init(std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref),
-                      std::move(tes_ref), load_status, log_);
-        }
-    }
-
-    return ref;
-}
-
-Ren::ProgramRef Ren::Context::LoadProgram(const char *name, ShaderRef cs_ref,
-                                          eProgLoadStatus *load_status) {
-    ProgramRef ref = programs_.FindByName(name);
-
-    if (!ref) {
-        ref = programs_.Add(name, std::move(cs_ref), load_status, log_);
-    } else {
-        if (ref->ready()) {
-            if (load_status)
-                *load_status = eProgLoadStatus::Found;
-        } else if (!ref->ready() && cs_ref) {
-            ref->Init(std::move(cs_ref), load_status, log_);
-        }
-    }
-
-    return ref;
 }
 
 bool Ren::Context::IsExtensionSupported(const char *ext) {
@@ -266,6 +175,10 @@ void Ren::CheckError(const char *op, ILog *log) {
         log->Error("after %s glError (0x%x)", op, error);
     }
 }
+
+void Ren::Context::BegSingleTimeCommands(void *cmd_buf) {}
+Ren::SyncFence Ren::Context::EndSingleTimeCommands(void *cmd_buf) { return MakeFence(); }
+void *Ren::Context::current_cmd_buf() { return nullptr; }
 
 #ifdef _MSC_VER
 #pragma warning(pop)

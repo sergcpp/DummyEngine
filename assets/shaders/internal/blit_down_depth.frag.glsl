@@ -1,40 +1,31 @@
 #version 310 es
 #extension GL_ARB_texture_multisample : enable
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision mediump float;
 #endif
 
 #include "_fs_common.glsl"
+#include "blit_down_depth_interface.glsl"
 
 /*
 UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
+    UniformParams : $ubUnifParamLoc
 PERM @MSAA_4
 */
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
+#if defined(MSAA_4)
+layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2DMS depth_texture;
 #else
-layout (std140)
+layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D depth_texture;
 #endif
-uniform SharedDataBlock {
-    SharedData shrd_data;
+
+LAYOUT_PARAMS uniform UniformParams {
+	Params params;
 };
 
-layout(location = 1) uniform float uLinearize;
-
-#if defined(MSAA_4)
-layout(binding = REN_BASE0_TEX_SLOT) uniform highp sampler2DMS depth_texture;
-#else
-layout(binding = REN_BASE0_TEX_SLOT) uniform highp sampler2D depth_texture;
-#endif
-
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs_;
-#else
-in vec2 aVertexUVs_;
-#endif
+LAYOUT(location = 0) in highp vec2 aVertexUVs_;
 
 layout(location = 0) out float outColor;
 
@@ -48,8 +39,8 @@ void main() {
 
     //highp float res_depth = max(max(d1, d2), max(d3, d4));
     highp float res_depth = min(min(d1, d2), min(d3, d4));
-    if (uLinearize > 0.5) {
-        outColor = LinearizeDepth(res_depth, shrd_data.uClipInfo);
+    if (params.linearize > 0.5) {
+        outColor = LinearizeDepth(res_depth, params.clip_info);
     } else {
         outColor = res_depth;
     }

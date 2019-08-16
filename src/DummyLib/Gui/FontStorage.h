@@ -9,8 +9,8 @@
 
 class FontStorage {
     std::vector<std::pair<std::string, std::shared_ptr<Gui::BitmapFont>>> fonts_;
-public:
 
+  public:
     std::shared_ptr<Gui::BitmapFont> FindFont(const std::string &name) const {
         for (auto &f : fonts_) {
             if (f.first == name) {
@@ -20,7 +20,8 @@ public:
         return nullptr;
     }
 
-    std::shared_ptr<Gui::BitmapFont> LoadFont(const std::string &name, const std::string &file_name, Ren::Context *ctx) {
+    std::shared_ptr<Gui::BitmapFont> LoadFont(const std::string &name, const std::string &file_name,
+                                              Ren::Context *ctx) {
         std::shared_ptr<Gui::BitmapFont> font = FindFont(name);
         if (!font) {
             font = std::make_shared<Gui::BitmapFont>(file_name.c_str(), ctx);
@@ -38,7 +39,5 @@ public:
         }
     }
 
-    void Clear() {
-        fonts_.clear();
-    }
+    void Clear() { fonts_.clear(); }
 };

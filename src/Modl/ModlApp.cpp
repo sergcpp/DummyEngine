@@ -150,8 +150,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
     if (out_file_name == "$") {
         size_t p = in_file_name.find_last_of('.');
         if (p != string::npos) {
-            out_file_name = in_file_name.substr(0, p) +
-                            ((in_file_type == eInputFileType::Mesh) ? ".mesh" : ".anim");
+            out_file_name = in_file_name.substr(0, p) + ((in_file_type == eInputFileType::Mesh) ? ".mesh" : ".anim");
         }
     }
 
@@ -174,8 +173,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
             return -1;
         }
     } else if (in_file_type == eInputFileType::Mesh) {
-        const eCompileResult comp_res =
-            CompileModel(in_file_name, out_file_name, optimize_mesh, generate_occlusion);
+        const eCompileResult comp_res = CompileModel(in_file_name, out_file_name, optimize_mesh, generate_occlusion);
         if (comp_res != eCompileResult::RES_SUCCESS) {
             return -1;
         }
@@ -188,12 +186,10 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         if (mesh_file) {
             Ren::eMeshLoadStatus load_status;
             view_mesh_ = ctx_.LoadMesh(out_file_name.c_str(), &mesh_file,
-                                       std::bind(&ModlApp::OnMaterialNeeded, this, _1),
-                                       &load_status);
+                                       std::bind(&ModlApp::OnMaterialNeeded, this, _1), &load_status);
             assert(load_status == Ren::eMeshLoadStatus::CreatedFromData);
 
-            Ren::Vec3f bbox_min = view_mesh_->bbox_min(),
-                       bbox_max = view_mesh_->bbox_max();
+            Ren::Vec3f bbox_min = view_mesh_->bbox_min(), bbox_max = view_mesh_->bbox_max();
             Ren::Vec3f dims = bbox_max - bbox_min;
             float max_dim = std::max(dims[0], std::max(dims[1], dims[2]));
             view_dist_ = 2.0f * max_dim;
@@ -201,8 +197,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
             if (!anim_file_name.empty()) {
                 ifstream anim_file(anim_file_name, ios::binary);
                 if (anim_file) {
-                    Ren::AnimSeqRef anim_ref =
-                        ctx_.LoadAnimSequence(anim_file_name.c_str(), anim_file);
+                    Ren::AnimSeqRef anim_ref = ctx_.LoadAnimSequence(anim_file_name.c_str(), anim_file);
 
                     Ren::Mesh *m = view_mesh_.get();
                     m->skel()->AddAnimSequence(anim_ref);
@@ -250,15 +245,14 @@ int ModlApp::Init(const int w, const int h) {
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 #endif
 
-    window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                               w, h, SDL_WINDOW_OPENGL);
+    window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_OPENGL);
 
 #if defined(USE_GL_RENDER)
     gl_ctx_main_ = SDL_GL_CreateContext(window_);
     SDL_GL_SetSwapInterval(1);
 #endif
 
-    ctx_.Init(w, h, &log_);
+    ctx_.Init(w, h, &log_, nullptr);
     InitInternal();
 
     Sys::InitWorker();
@@ -295,8 +289,10 @@ int ModlApp::Init(const int w, const int h) {
         p.w = p.h = checker_res;
         p.format = Ren::eTexFormat::RawRGB888;
 
-        checker_tex_ = ctx_.LoadTexture2D("__diag_checker", &checker_data[0],
-                                          (int)checker_data.size(), p, nullptr);
+        Ren::eTexLoadStatus status;
+        checker_tex_ = ctx_.LoadTexture2D("__diag_checker", &checker_data[0], int(checker_data.size()), p,
+                                          ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
     return 0;
@@ -311,8 +307,7 @@ void ModlApp::Frame() {
     ClearColorAndDepth(0.1f, 0.75f, 0.75f, 1);
 
     { // Update camera position
-        const Ren::Vec3f center =
-            0.5f * (view_mesh_->bbox_min() + view_mesh_->bbox_max());
+        const Ren::Vec3f center = 0.5f * (view_mesh_->bbox_min() + view_mesh_->bbox_max());
         cam_.SetupView(center - Ren::Vec3f{0.0f, 0.0f, 1.0f} * view_dist_, center, up);
     }
 
@@ -403,19 +398,12 @@ void ModlApp::Destroy() {
     SDL_Quit();
 }
 
-ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
-                                              const std::string &out_file_name,
+ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, const std::string &out_file_name,
                                               bool optimize, bool generate_occlusion) {
     using namespace std;
     using namespace std::placeholders;
 
-    enum class eModelType {
-        M_UNKNOWN,
-        M_STATIC,
-        M_COLORED,
-        M_SKEL,
-        M_SKEL_COLORED
-    } mesh_type = eModelType::M_UNKNOWN;
+    enum class eModelType { M_UNKNOWN, M_STATIC, M_COLORED, M_SKEL, M_SKEL_COLORED } mesh_type = eModelType::M_UNKNOWN;
     struct MeshInfo {
         char name[32];
         float bbox_min[3], bbox_max[3];
@@ -557,16 +545,14 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
                 for (int j : {8, 9}) {
                     uvs2.push_back(stof(toks[j]));
                 }
-            } else if (mesh_type == eModelType::M_COLORED ||
-                       mesh_type == eModelType::M_SKEL_COLORED) {
+            } else if (mesh_type == eModelType::M_COLORED || mesh_type == eModelType::M_SKEL_COLORED) {
                 // parse vertex color
                 for (int j : {8, 9, 10, 11}) {
                     vtx_colors.push_back((uint8_t)(stof(toks[j]) * 255.0f));
                 }
             }
 
-            if (mesh_type == eModelType::M_SKEL ||
-                mesh_type == eModelType::M_SKEL_COLORED) {
+            if (mesh_type == eModelType::M_SKEL || mesh_type == eModelType::M_SKEL_COLORED) {
                 const int tok_off = (mesh_type == eModelType::M_SKEL_COLORED) ? 12 : 10;
 
                 // parse joint indices and weights (limited to four bones)
@@ -576,23 +562,19 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
                 std::pair<int32_t, float> parsed_bones[16];
                 int parsed_bones_count = 0;
                 for (int j = 0; j < bones_count; j++) {
-                    parsed_bones[parsed_bones_count].first =
-                        stoi(toks[tok_off + j * 2 + 0]);
-                    parsed_bones[parsed_bones_count++].second =
-                        stof(toks[tok_off + j * 2 + 1]);
+                    parsed_bones[parsed_bones_count].first = stoi(toks[tok_off + j * 2 + 0]);
+                    parsed_bones[parsed_bones_count++].second = stof(toks[tok_off + j * 2 + 1]);
                 }
 
-                sort(
-                    begin(parsed_bones), begin(parsed_bones) + parsed_bones_count,
-                    [](const std::pair<int, float> &b1, const std::pair<int, float> &b2) {
-                        return b1.second > b2.second;
-                    });
+                sort(begin(parsed_bones), begin(parsed_bones) + parsed_bones_count,
+                     [](const std::pair<int, float> &b1, const std::pair<int, float> &b2) {
+                         return b1.second > b2.second;
+                     });
 
                 float sum = 0.0f;
                 for (int j = 0; j < 4; j++) {
                     if (j < parsed_bones_count) {
-                        weights.push_back(
-                            reinterpret_cast<const float &>(parsed_bones[j].first));
+                        weights.push_back(reinterpret_cast<const float &>(parsed_bones[j].first));
                         sum += parsed_bones[j].second;
                     } else {
                         const int32_t zero = 0;
@@ -648,8 +630,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
 
     std::cout << "Done" << std::endl;
 
-    if (mesh_type == eModelType::M_SKEL ||
-        mesh_type == eModelType::M_SKEL_COLORED) { // parse skeletal information
+    if (mesh_type == eModelType::M_SKEL || mesh_type == eModelType::M_SKEL_COLORED) { // parse skeletal information
         string str;
         while (getline(in_file, str)) {
             if (str.find("skeleton") != string::npos) {
@@ -756,8 +737,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
             memcpy(&vertices[i].t[0][0], &uvs[i * 2ull], sizeof(float) * 2);
             if (mesh_type == eModelType::M_STATIC || mesh_type == eModelType::M_SKEL) {
                 memcpy(&vertices[i].t[1][0], &uvs2[i * 2ull], sizeof(float) * 2);
-            } else if (mesh_type == eModelType::M_COLORED ||
-                       mesh_type == eModelType::M_SKEL_COLORED) {
+            } else if (mesh_type == eModelType::M_COLORED || mesh_type == eModelType::M_SKEL_COLORED) {
                 memcpy(&vertices[i].t[1][0], &vtx_colors[i * 4ull], sizeof(uint8_t) * 4);
             }
             vertices[i].index = i;
@@ -781,19 +761,16 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
             uvs.push_back(vertices[i].t[0][0]);
             uvs.push_back(vertices[i].t[0][1]);
 
-            if (mesh_type == eModelType::M_COLORED ||
-                mesh_type == eModelType::M_SKEL_COLORED) {
+            if (mesh_type == eModelType::M_COLORED || mesh_type == eModelType::M_SKEL_COLORED) {
                 const size_t colors_start = vtx_colors.size();
                 vtx_colors.resize(vtx_colors.size() + 4);
-                memcpy(&vtx_colors[colors_start], &vertices[i].t[1][0],
-                       sizeof(uint8_t) * 4);
+                memcpy(&vtx_colors[colors_start], &vertices[i].t[1][0], sizeof(uint8_t) * 4);
             } else {
                 uvs2.push_back(vertices[i].t[1][0]);
                 uvs2.push_back(vertices[i].t[1][1]);
             }
 
-            if (mesh_type == eModelType::M_SKEL ||
-                mesh_type == eModelType::M_SKEL_COLORED) {
+            if (mesh_type == eModelType::M_SKEL || mesh_type == eModelType::M_SKEL_COLORED) {
                 for (int j = 0; j < 8; j++) {
                     weights.push_back(weights[(size_t)vertices[i].index * 8 + j]);
                 }
@@ -828,12 +805,10 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
                 shape_keyed_vertices.insert(key.index);
 
                 const Ren::Vec3f orig_normal = Ren::MakeVec3(&normals[key.index * 3ull]);
-                const Ren::Vec3f orig_tangent =
-                    Ren::MakeVec3(&tangents[key.index * 3ull]);
+                const Ren::Vec3f orig_tangent = Ren::MakeVec3(&tangents[key.index * 3ull]);
                 const Ren::Vec3f tran_normal = orig_normal + Ren::MakeVec3(key.delta.dn);
                 const Ren::Vec3f tran_binormal = Ren::Cross(tran_normal, orig_tangent);
-                const Ren::Vec3f tran_tangent =
-                    Ren::Normalize(Ren::Cross(tran_binormal, tran_normal));
+                const Ren::Vec3f tran_tangent = Ren::Normalize(Ren::Cross(tran_binormal, tran_normal));
 
                 key.delta.db[0] = tran_tangent[0] - orig_tangent[0];
                 key.delta.db[1] = tran_tangent[1] - orig_tangent[1];
@@ -865,31 +840,23 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
         int vertices_processed = 0;
         for (const int i : shape_keyed_vertices) {
             const uint32_t old_index = uint32_t(i);
-            const uint32_t new_index =
-                uint32_t(keyed_vertices_start + vertices_processed);
+            const uint32_t new_index = uint32_t(keyed_vertices_start + vertices_processed);
 
             { // copy vertex to the end of container
-                positions.insert(positions.end(), positions.begin() + i * 3ull,
-                                 positions.begin() + i * 3ull + 3);
-                normals.insert(normals.end(), normals.begin() + i * 3ull,
-                               normals.begin() + i * 3ull + 3);
-                tangents.insert(tangents.end(), tangents.begin() + i * 3ull,
-                                tangents.begin() + i * 3ull + 3);
+                positions.insert(positions.end(), positions.begin() + i * 3ull, positions.begin() + i * 3ull + 3);
+                normals.insert(normals.end(), normals.begin() + i * 3ull, normals.begin() + i * 3ull + 3);
+                tangents.insert(tangents.end(), tangents.begin() + i * 3ull, tangents.begin() + i * 3ull + 3);
                 uvs.insert(uvs.end(), uvs.begin() + i * 2ull, uvs.begin() + i * 2ull + 2);
 
-                if (mesh_type == eModelType::M_COLORED ||
-                    mesh_type == eModelType::M_SKEL_COLORED) {
+                if (mesh_type == eModelType::M_COLORED || mesh_type == eModelType::M_SKEL_COLORED) {
                     vtx_colors.insert(vtx_colors.end(), vtx_colors.begin() + i * 4ull,
                                       vtx_colors.begin() + i * 4ull + 4);
                 } else {
-                    uvs2.insert(uvs2.end(), uvs2.begin() + i * 2ull,
-                                uvs2.begin() + i * 2ull + 2);
+                    uvs2.insert(uvs2.end(), uvs2.begin() + i * 2ull, uvs2.begin() + i * 2ull + 2);
                 }
 
-                if (mesh_type == eModelType::M_SKEL ||
-                    mesh_type == eModelType::M_SKEL_COLORED) {
-                    weights.insert(weights.end(), weights.begin() + i * 8ull,
-                                   weights.begin() + i * 8ull + 8);
+                if (mesh_type == eModelType::M_SKEL || mesh_type == eModelType::M_SKEL_COLORED) {
+                    weights.insert(weights.end(), weights.begin() + i * 8ull, weights.begin() + i * 8ull + 8);
                 }
             }
 
@@ -904,30 +871,23 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
             ++vertices_processed;
         }
 
-        for (auto it = shape_keyed_vertices.rbegin(); it != shape_keyed_vertices.rend();
-             ++it) {
+        for (auto it = shape_keyed_vertices.rbegin(); it != shape_keyed_vertices.rend(); ++it) {
             const int i = *it;
 
             { // delete vertex from it's old position
-                positions.erase(positions.begin() + i * 3ull,
-                                positions.begin() + i * 3ull + 3);
+                positions.erase(positions.begin() + i * 3ull, positions.begin() + i * 3ull + 3);
                 normals.erase(normals.begin() + i * 3ull, normals.begin() + i * 3ull + 3);
-                tangents.erase(tangents.begin() + i * 3ull,
-                               tangents.begin() + i * 3ull + 3);
+                tangents.erase(tangents.begin() + i * 3ull, tangents.begin() + i * 3ull + 3);
                 uvs.erase(uvs.begin() + i * 2ull, uvs.begin() + i * 2ull + 2);
 
-                if (mesh_type == eModelType::M_COLORED ||
-                    mesh_type == eModelType::M_SKEL_COLORED) {
-                    vtx_colors.erase(vtx_colors.begin() + i * 4ull,
-                                     vtx_colors.begin() + i * 4ull + 4);
+                if (mesh_type == eModelType::M_COLORED || mesh_type == eModelType::M_SKEL_COLORED) {
+                    vtx_colors.erase(vtx_colors.begin() + i * 4ull, vtx_colors.begin() + i * 4ull + 4);
                 } else {
                     uvs2.erase(uvs2.begin() + i * 2ull, uvs2.begin() + i * 2ull + 2);
                 }
 
-                if (mesh_type == eModelType::M_SKEL ||
-                    mesh_type == eModelType::M_SKEL_COLORED) {
-                    weights.erase(weights.begin() + i * 8ull,
-                                  weights.begin() + i * 8ull + 8);
+                if (mesh_type == eModelType::M_SKEL || mesh_type == eModelType::M_SKEL_COLORED) {
+                    weights.erase(weights.begin() + i * 8ull, weights.begin() + i * 8ull + 8);
                 }
             }
 
@@ -953,8 +913,8 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
             std::vector<uint32_t> &cur_strip = reordered_indices.back();
 
             cur_strip.resize(index_group.size());
-            Ren::ReorderTriangleIndices(&index_group[0], (uint32_t)index_group.size(),
-                                        (uint32_t)num_vertices, &cur_strip[0]);
+            Ren::ReorderTriangleIndices(&index_group[0], (uint32_t)index_group.size(), (uint32_t)num_vertices,
+                                        &cur_strip[0]);
         }
 
         std::cout << "Done" << std::endl;
@@ -965,8 +925,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
     if (generate_occlusion) {
         std::cout << "Generating occlusion... ";
 
-        vector<Ren::Vec4f> occlusion =
-            GenerateOcclusion(positions, normals, tangents, reordered_indices);
+        vector<Ren::Vec4f> occlusion = GenerateOcclusion(positions, normals, tangents, reordered_indices);
         assert(occlusion.size() == positions.size() / 3);
 
         vtx_colors.resize(4 * occlusion.size());
@@ -987,8 +946,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
         uint32_t index, num_indices;
         uint32_t alpha;
 
-        MeshChunk(uint32_t ndx, uint32_t num, uint32_t has_alpha)
-            : index(ndx), num_indices(num), alpha(has_alpha) {}
+        MeshChunk(uint32_t ndx, uint32_t num, uint32_t has_alpha) : index(ndx), num_indices(num), alpha(has_alpha) {}
     };
     vector<uint32_t> total_indices;
     vector<MeshChunk> total_chunks, alpha_chunks;
@@ -1007,11 +965,10 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
                 unique_ptr<char[]> mat_data(new char[(size_t)file_size]);
                 mat_file.read(mat_data.get(), file_size);
 
-                Ren::MaterialRef mat_ref = ctx_.LoadMaterial(
-                    materials[i].c_str(), mat_data.get(), nullptr,
-                    std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
-                    std::bind(&ModlApp::OnTextureNeeded, this, _1),
-                    std::bind(&ModlApp::OnSamplerNeeded, this, _1));
+                Ren::MaterialRef mat_ref = ctx_.LoadMaterial(materials[i].c_str(), mat_data.get(), nullptr,
+                                                             std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
+                                                             std::bind(&ModlApp::OnTextureNeeded, this, _1),
+                                                             std::bind(&ModlApp::OnSamplerNeeded, this, _1));
                 Ren::Material *mat = mat_ref.get();
                 alpha_test = (bool)(mat->flags() & uint32_t(Ren::eMatFlags::AlphaTest));
             } else {
@@ -1020,20 +977,16 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
         }
 
         if (alpha_test) {
-            alpha_chunks.emplace_back((uint32_t)total_indices.size(),
-                                      (uint32_t)reordered_indices[i].size(), 1);
+            alpha_chunks.emplace_back((uint32_t)total_indices.size(), (uint32_t)reordered_indices[i].size(), 1);
             alpha_mats.push_back(i);
         } else {
-            total_chunks.emplace_back((uint32_t)total_indices.size(),
-                                      (uint32_t)reordered_indices[i].size(), 0);
+            total_chunks.emplace_back((uint32_t)total_indices.size(), (uint32_t)reordered_indices[i].size(), 0);
         }
 
-        total_indices.insert(total_indices.end(), reordered_indices[i].begin(),
-                             reordered_indices[i].end());
+        total_indices.insert(total_indices.end(), reordered_indices[i].begin(), reordered_indices[i].end());
     }
 
-    total_chunks.insert(std::end(total_chunks), std::begin(alpha_chunks),
-                        std::end(alpha_chunks));
+    total_chunks.insert(std::end(total_chunks), std::begin(alpha_chunks), std::end(alpha_chunks));
 
     for (int mat_ndx : alpha_mats) {
         materials.push_back(materials[mat_ndx]);
@@ -1056,15 +1009,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
         out_file.write("SKECOL_MESH\0", 12);
     }
 
-    enum eFileChunk {
-        CH_MESH_INFO = 0,
-        CH_VTX_ATTR,
-        CH_VTX_NDX,
-        CH_MATERIALS,
-        CH_STRIPS,
-        CH_BONES,
-        CH_SHAPE_KEYS
-    };
+    enum eFileChunk { CH_MESH_INFO = 0, CH_VTX_ATTR, CH_VTX_NDX, CH_MATERIALS, CH_STRIPS, CH_BONES, CH_SHAPE_KEYS };
 
     struct ChunkPos {
         int32_t offset, length;
@@ -1092,12 +1037,12 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
 
     file_header.p[CH_VTX_ATTR].offset = (int32_t)file_offset;
     if (mesh_type == eModelType::M_COLORED || mesh_type == eModelType::M_SKEL_COLORED) {
-        file_header.p[CH_VTX_ATTR].length = (int32_t)(
-            sizeof(float) * (positions.size() / 3) * 11 +
-            sizeof(uint8_t) * vtx_colors.size() + sizeof(float) * weights.size());
+        file_header.p[CH_VTX_ATTR].length =
+            (int32_t)(sizeof(float) * (positions.size() / 3) * 11 + sizeof(uint8_t) * vtx_colors.size() +
+                      sizeof(float) * weights.size());
     } else {
-        file_header.p[CH_VTX_ATTR].length = (int32_t)(
-            sizeof(float) * (positions.size() / 3) * 13 + sizeof(float) * weights.size());
+        file_header.p[CH_VTX_ATTR].length =
+            (int32_t)(sizeof(float) * (positions.size() / 3) * 13 + sizeof(float) * weights.size());
     }
     file_offset += file_header.p[CH_VTX_ATTR].length;
 
@@ -1120,11 +1065,10 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
 
         if (!shape_keys.empty()) {
             file_header.p[CH_SHAPE_KEYS].offset = (int32_t)file_offset;
-            file_header.p[CH_SHAPE_KEYS].length = int32_t(
-                2 * sizeof(uint32_t) +
-                shape_keys.size() * (64 + shape_keys[0].data.size() *
-                                              (3 * sizeof(float) + 3 * sizeof(float) +
-                                               3 * sizeof(float))));
+            file_header.p[CH_SHAPE_KEYS].length =
+                int32_t(2 * sizeof(uint32_t) +
+                        shape_keys.size() * (64 + shape_keys[0].data.size() *
+                                                      (3 * sizeof(float) + 3 * sizeof(float) + 3 * sizeof(float))));
             file_offset += file_header.p[CH_SHAPE_KEYS].length;
         }
     }
@@ -1139,8 +1083,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
         out_file.write((char *)&uvs[i * 2ull], sizeof(float) * 2);
         if (mesh_type == eModelType::M_STATIC || mesh_type == eModelType::M_SKEL) {
             out_file.write((char *)&uvs2[i * 2ull], sizeof(float) * 2);
-        } else if (mesh_type == eModelType::M_COLORED ||
-                   mesh_type == eModelType::M_SKEL_COLORED) {
+        } else if (mesh_type == eModelType::M_COLORED || mesh_type == eModelType::M_SKEL_COLORED) {
             out_file.write((char *)&vtx_colors[i * 4ull], sizeof(uint8_t) * 4);
         }
         if (mesh_type == eModelType::M_SKEL || mesh_type == eModelType::M_SKEL_COLORED) {
@@ -1169,10 +1112,8 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
         }
 
         if (!shape_keys.empty()) {
-            const uint32_t shape_keyed_vertices_start =
-                uint32_t(num_vertices - shape_keys[0].data.size());
-            const uint32_t shape_keyed_vertices_count =
-                uint32_t(shape_keys[0].data.size());
+            const uint32_t shape_keyed_vertices_start = uint32_t(num_vertices - shape_keys[0].data.size());
+            const uint32_t shape_keyed_vertices_count = uint32_t(shape_keys[0].data.size());
 
             out_file.write((char *)&shape_keyed_vertices_start, sizeof(uint32_t));
             out_file.write((char *)&shape_keyed_vertices_count, sizeof(uint32_t));
@@ -1191,8 +1132,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
     return eCompileResult::RES_SUCCESS;
 }
 
-ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name,
-                                             const std::string &out_file_name) {
+ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out_file_name) {
     using namespace std;
 
     ifstream in_file(in_file_name);
@@ -1320,10 +1260,8 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name,
             for (int j = 0; j < (int)out_bones.size(); j++) {
                 getline(in_file, str);
                 const int toks_count = Tokenize(str, " ", toks);
-                if ((out_bones[j].anim_type == int32_t(eAnimType::RotationTranslation) &&
-                     toks_count != 8) ||
-                    (out_bones[j].anim_type == int32_t(eAnimType::Rotation) &&
-                     toks_count != 5)) {
+                if ((out_bones[j].anim_type == int32_t(eAnimType::RotationTranslation) && toks_count != 8) ||
+                    (out_bones[j].anim_type == int32_t(eAnimType::Rotation) && toks_count != 5)) {
                     return eCompileResult::RES_PARSE_ERROR;
                 }
                 for (int k = 1; k < toks_count; k++) {
@@ -1400,11 +1338,10 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name,
     return eCompileResult::RES_SUCCESS;
 }
 
-std::vector<Ren::Vec4f>
-ModlApp::GenerateOcclusion(const std::vector<float> &positions,
-                           const std::vector<float> &normals,
-                           const std::vector<float> &tangents,
-                           const std::vector<std::vector<uint32_t>> &indices) const {
+std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &positions,
+                                                   const std::vector<float> &normals,
+                                                   const std::vector<float> &tangents,
+                                                   const std::vector<std::vector<uint32_t>> &indices) const {
     using Ren::Vec2f;
     using Ren::Vec3f;
 
@@ -1458,8 +1395,7 @@ ModlApp::GenerateOcclusion(const std::vector<float> &positions,
         Ren::Vec3f min = Ren::Vec3f{std::numeric_limits<float>::max()};
         Ren::Vec3f max = Ren::Vec3f{std::numeric_limits<float>::lowest()};
         prims_coll_t() = default;
-        prims_coll_t(std::vector<uint32_t> &&_indices, const Ren::Vec3f &_min,
-                     const Ren::Vec3f &_max)
+        prims_coll_t(std::vector<uint32_t> &&_indices, const Ren::Vec3f &_min, const Ren::Vec3f &_max)
             : indices(std::move(_indices)), min(_min), max(_max) {}
     };
 
@@ -1480,10 +1416,9 @@ ModlApp::GenerateOcclusion(const std::vector<float> &positions,
     s.node_traversal_cost = 0.025f;
 
     while (!prim_lists.empty()) {
-        split_data_t split_data = SplitPrimitives_SAH(
-            &primitives[0], prim_lists.back().indices.data(),
-            (uint32_t)prim_lists.back().indices.size(), prim_lists.back().min,
-            prim_lists.back().max, root_min, root_max, s);
+        split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices.data(),
+                                                      (uint32_t)prim_lists.back().indices.size(), prim_lists.back().min,
+                                                      prim_lists.back().max, root_min, root_max, s);
         prim_lists.pop_back();
 
         const auto leaf_index = (uint32_t)nodes.size();
@@ -1493,8 +1428,7 @@ ModlApp::GenerateOcclusion(const std::vector<float> &positions,
             // skip bound checks in debug mode
             const bvh_node_t *_out_nodes = &nodes[0];
             for (uint32_t i = leaf_index - 1; i >= root_node; i--) {
-                if (_out_nodes[i].left_child == leaf_index ||
-                    _out_nodes[i].right_child == leaf_index) {
+                if (_out_nodes[i].left_child == leaf_index || _out_nodes[i].right_child == leaf_index) {
                     parent_index = (uint32_t)i;
                     break;
                 }
@@ -1502,31 +1436,22 @@ ModlApp::GenerateOcclusion(const std::vector<float> &positions,
         }
 
         if (split_data.right_indices.empty()) {
-            nodes.push_back({(uint32_t)prim_indices.size(),
-                             (uint32_t)split_data.left_indices.size(), 0, 0,
-                             split_data.left_bounds[0], parent_index,
-                             split_data.left_bounds[1], 0});
-            prim_indices.insert(prim_indices.end(), split_data.left_indices.begin(),
-                                split_data.left_indices.end());
+            nodes.push_back({(uint32_t)prim_indices.size(), (uint32_t)split_data.left_indices.size(), 0, 0,
+                             split_data.left_bounds[0], parent_index, split_data.left_bounds[1], 0});
+            prim_indices.insert(prim_indices.end(), split_data.left_indices.begin(), split_data.left_indices.end());
         } else {
             auto index = (uint32_t)nodes_count;
 
-            const Ren::Vec3f c_left =
-                (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f;
-            const Ren::Vec3f c_right =
-                (split_data.right_bounds[0] + split_data.right_bounds[1]) / 2.0f;
+            const Ren::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f;
+            const Ren::Vec3f c_right = (split_data.right_bounds[0] + split_data.right_bounds[1]) / 2.0f;
 
             const Ren::Vec3f dist = Abs(c_left - c_right);
 
             const uint32_t space_axis =
-                (dist[0] > dist[1] && dist[0] > dist[2])
-                    ? 0
-                    : ((dist[1] > dist[0] && dist[1] > dist[2]) ? 1 : 2);
+                (dist[0] > dist[1] && dist[0] > dist[2]) ? 0 : ((dist[1] > dist[0] && dist[1] > dist[2]) ? 1 : 2);
 
-            const Ren::Vec3f bbox_min = Min(split_data.left_bounds[0],
-                                            split_data.right_bounds[0]),
-                             bbox_max = Max(split_data.left_bounds[1],
-                                            split_data.right_bounds[1]);
+            const Ren::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
+                             bbox_max = Max(split_data.left_bounds[1], split_data.right_bounds[1]);
 
             nodes.push_back({
                 0,
@@ -1539,19 +1464,17 @@ ModlApp::GenerateOcclusion(const std::vector<float> &positions,
                 space_axis,
             });
 
-            prim_lists.emplace_front(std::move(split_data.left_indices),
-                                     split_data.left_bounds[0],
+            prim_lists.emplace_front(std::move(split_data.left_indices), split_data.left_bounds[0],
                                      split_data.left_bounds[1]);
-            prim_lists.emplace_front(std::move(split_data.right_indices),
-                                     split_data.right_bounds[0],
+            prim_lists.emplace_front(std::move(split_data.right_indices), split_data.right_bounds[0],
                                      split_data.right_bounds[1]);
 
             nodes_count += 2;
         }
     }
 
-    auto intersect_triangle = [](const Vec3f &orig, const Vec3f &dir, const Vec3f &v0,
-                                 const Vec3f &v1, const Vec3f &v2, Vec3f &inter) {
+    auto intersect_triangle = [](const Vec3f &orig, const Vec3f &dir, const Vec3f &v0, const Vec3f &v1, const Vec3f &v2,
+                                 Vec3f &inter) {
         const float eps = 0.000001f;
 
         const Vec3f edge1 = v1 - v0;
@@ -1586,8 +1509,8 @@ ModlApp::GenerateOcclusion(const std::vector<float> &positions,
         return true;
     };
 
-    auto bbox_test = [](const Vec3f &o, const Vec3f &inv_d, const float t,
-                        const Vec3f &bbox_min, const Vec3f bbox_max) {
+    auto bbox_test = [](const Vec3f &o, const Vec3f &inv_d, const float t, const Vec3f &bbox_min,
+                        const Vec3f bbox_max) {
         float lo_x = inv_d[0] * (bbox_min[0] - o[0]);
         float hi_x = inv_d[0] * (bbox_max[0] - o[0]);
         if (lo_x > hi_x) {
@@ -1648,16 +1571,12 @@ ModlApp::GenerateOcclusion(const std::vector<float> &positions,
                 for (uint32_t i = n.prim_index; i < n.prim_index + n.prim_count; ++i) {
                     const int pi = prim_indices[i];
 
-                    const Vec3f v0 =
-                        Ren::MakeVec3(&positions[3 * tri_indices[3 * pi + 0]]);
-                    const Vec3f v1 =
-                        Ren::MakeVec3(&positions[3 * tri_indices[3 * pi + 1]]);
-                    const Vec3f v2 =
-                        Ren::MakeVec3(&positions[3 * tri_indices[3 * pi + 2]]);
+                    const Vec3f v0 = Ren::MakeVec3(&positions[3 * tri_indices[3 * pi + 0]]);
+                    const Vec3f v1 = Ren::MakeVec3(&positions[3 * tri_indices[3 * pi + 1]]);
+                    const Vec3f v2 = Ren::MakeVec3(&positions[3 * tri_indices[3 * pi + 2]]);
 
                     Vec3f inter;
-                    if (intersect_triangle(orig, dir, v0, v1, v2, inter) &&
-                        inter[0] > 0.0f && inter[0] < max_dist) {
+                    if (intersect_triangle(orig, dir, v0, v1, v2, inter) && inter[0] > 0.0f && inter[0] < max_dist) {
                         return true;
                     }
                 }
@@ -1705,8 +1624,7 @@ ModlApp::GenerateOcclusion(const std::vector<float> &positions,
         const float y = Dot(unoccluded_dir, B);
         const float z = Dot(unoccluded_dir, N);
 
-        occlusion.emplace_back(x, y, z,
-                               float(SampleCount - occ_count) / float(SampleCount));
+        occlusion.emplace_back(x, y, z, float(SampleCount - occ_count) / float(SampleCount));
     }
 
     return occlusion;
@@ -1714,20 +1632,23 @@ ModlApp::GenerateOcclusion(const std::vector<float> &positions,
 
 Ren::Tex2DRef ModlApp::OnTextureNeeded(const char *name) {
     Ren::eTexLoadStatus status;
-    Ren::Tex2DRef ret = ctx_.LoadTexture2D(name, nullptr, 0, {}, &status);
+    Ren::Tex2DRef ret =
+        ctx_.LoadTexture2D(name, nullptr, 0, {}, ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
     if (!ret->ready()) {
         std::string tex_name = name;
-        Sys::LoadAssetComplete(
-            (std::string("assets_pc/textures/") + tex_name).c_str(),
-            [this, tex_name](void *data, int size) {
-                ctx_.ProcessSingleTask([this, tex_name, data, size]() {
-                    Ren::Tex2DParams p;
-                    p.sampling.filter = Ren::eTexFilter::Trilinear;
-                    ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, nullptr);
-                    LOGI("Texture %s loaded", tex_name.c_str());
-                });
-            },
-            [tex_name]() { LOGE("Error loading %s", tex_name.c_str()); });
+        Sys::LoadAssetComplete((std::string("assets_pc/textures/") + tex_name).c_str(),
+                               [this, tex_name](void *data, int size) {
+                                   ctx_.ProcessSingleTask([this, tex_name, data, size]() {
+                                       Ren::Tex2DParams p;
+                                       p.sampling.filter = Ren::eTexFilter::Trilinear;
+
+                                       Ren::eTexLoadStatus status;
+                                       ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, ctx_.default_stage_bufs(),
+                                                          ctx_.default_mem_allocs(), &status);
+                                       LOGI("Texture %s loaded", tex_name.c_str());
+                                   });
+                               },
+                               [tex_name]() { LOGE("Error loading %s", tex_name.c_str()); });
     }
 
     return ret;
@@ -1738,8 +1659,7 @@ Ren::SamplerRef ModlApp::OnSamplerNeeded(Ren::SamplingParams params) {
     return ctx_.LoadSampler(params, &status);
 }
 
-Ren::ProgramRef ModlApp::OnProgramNeeded(const char *name, const char *vs_shader,
-                                         const char *fs_shader) {
+Ren::ProgramRef ModlApp::OnProgramNeeded(const char *name, const char *vs_shader, const char *fs_shader) {
 #if defined(USE_GL_RENDER)
     Ren::eProgLoadStatus status;
     Ren::ProgramRef ret = ctx_.LoadProgram(name, {}, {}, {}, {}, &status);
@@ -1762,12 +1682,10 @@ Ren::ProgramRef ModlApp::OnProgramNeeded(const char *name, const char *vs_shader
         fs_file.Read((char *)fs_src.data(), fs_size);
 
         Ren::eShaderLoadStatus sh_status;
-        Ren::ShaderRef vs_ref = ctx_.LoadShaderGLSL(vs_shader, vs_src.c_str(),
-                                                    Ren::eShaderType::Vert, &sh_status);
-        assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
-        Ren::ShaderRef fs_ref = ctx_.LoadShaderGLSL(fs_shader, fs_src.c_str(),
-                                                    Ren::eShaderType::Frag, &sh_status);
-        assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+        Ren::ShaderRef vs_ref = ctx_.LoadShaderGLSL(vs_shader, vs_src.c_str(), Ren::eShaderType::Vert, &sh_status);
+        assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData || sh_status == Ren::eShaderLoadStatus::Found);
+        Ren::ShaderRef fs_ref = ctx_.LoadShaderGLSL(fs_shader, fs_src.c_str(), Ren::eShaderType::Frag, &sh_status);
+        assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData || sh_status == Ren::eShaderLoadStatus::Found);
 
         ret = ctx_.LoadProgram(name, vs_ref, fs_ref, {}, {}, &status);
         assert(status == Ren::eProgLoadStatus::CreatedFromData);
@@ -1783,8 +1701,7 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(const char *name) {
     using namespace std;
 
     Ren::eMatLoadStatus status;
-    Ren::MaterialRef ret =
-        ctx_.LoadMaterial(name, nullptr, &status, nullptr, nullptr, nullptr);
+    Ren::MaterialRef ret = ctx_.LoadMaterial(name, nullptr, &status, nullptr, nullptr, nullptr);
     if (!ret->ready()) {
         Sys::AssetFile in_file(string("assets_pc/materials/") + name);
         if (!in_file) {
@@ -1800,8 +1717,7 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(const char *name) {
 
         using namespace std::placeholders;
 
-        ret = ctx_.LoadMaterial(name, mat_src.data(), &status,
-                                std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
+        ret = ctx_.LoadMaterial(name, mat_src.data(), &status, std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
                                 std::bind(&ModlApp::OnTextureNeeded, this, _1),
                                 std::bind(&ModlApp::OnSamplerNeeded, this, _1));
         assert(status == Ren::eMatLoadStatus::CreatedFromData);

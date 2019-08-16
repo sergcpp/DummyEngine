@@ -3,7 +3,7 @@
 void Gui::LinearLayout::Resize(const BaseElement *parent) {
     BaseElement::Resize(parent);
 
-    auto _start = Vec2f{ -1, -1 }, _size = Vec2f{ 2, 2 };
+    auto _start = Vec2f{-1, -1}, _size = Vec2f{2, 2};
 
     float spacing;
     float filled_space = 0.0f;
@@ -40,14 +40,14 @@ void Gui::LinearLayout::Resize(const BaseElement *parent) {
         pad = _start[1] + _size[1] - spacing;
 
         for (BaseElement *el : elements_) {
-            el->Resize(Vec2f{ _start[0], 1 }, Vec2f{ _size[0], el->rel_size()[1] * mult }, this);
+            el->Resize(Vec2f{_start[0], 1}, Vec2f{_size[0], el->rel_size()[1] * mult}, this);
             pad -= (el->rel_size()[1] + spacing);
-            el->Resize(Vec2f{ _start[0], pad }, Vec2f{ _size[0], el->rel_size()[1] }, this);
+            el->Resize(Vec2f{_start[0], pad}, Vec2f{_size[0], el->rel_size()[1]}, this);
         }
     } else {
         pad = _start[0] + spacing;
         for (BaseElement *el : elements_) {
-            el->Resize(Vec2f{ pad, _start[1] }, Vec2f{ el->rel_size()[0] * mult, _size[1] }, this);
+            el->Resize(Vec2f{pad, _start[1]}, Vec2f{el->rel_size()[0] * mult, _size[1]}, this);
             pad += el->rel_size()[0] + spacing;
         }
     }

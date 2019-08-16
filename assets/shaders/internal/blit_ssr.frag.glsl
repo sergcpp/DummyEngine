@@ -2,15 +2,18 @@
 #extension GL_ARB_texture_multisample : enable
 #extension GL_EXT_texture_buffer : enable
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision highp float;
 #endif
 
 #include "_fs_common.glsl"
+#include "blit_ssr_interface.glsl"
 
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
+	UniformParams : $ubUnifParamLoc
 PERM @MSAA_4
 */
 
@@ -18,6 +21,7 @@ PERM @MSAA_4
 #define STRIDE 0.0125
 #define MAX_STEPS 48.0
 #define BSEARCH_STEPS 4
+//4
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = REN_UB_SHARED_DATA_LOC, std140)
@@ -28,13 +32,13 @@ uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
-layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform mediump sampler2D depth_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D depth_texture;
 #if defined(MSAA_4)
-layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2DMS norm_texture;
-layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2DMS spec_texture;
+layout(binding = NORM_TEX_SLOT) uniform mediump sampler2DMS norm_texture;
+layout(binding = SPEC_TEX_SLOT) uniform mediump sampler2DMS spec_texture;
 #else
-layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2D norm_texture;
-layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2D spec_texture;
+layout(binding = NORM_TEX_SLOT) uniform mediump sampler2D norm_texture;
+layout(binding = SPEC_TEX_SLOT) uniform mediump sampler2D spec_texture;
 #endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -71,8 +75,12 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
          H1 = shrd_data.uProjMatrix * vec4(ray_end_vs, 1.0);
     float k0 = 1.0 / H0.w, k1 = 1.0 / H1.w;
 
-    vec3 Q0 = ray_origin_vs * k0,
-         Q1 = ray_end_vs * k1;
+#if defined(VULKAN)
+	H0.y = -H0.y;
+	H1.y = -H1.y;
+#endif // VULKAN
+
+    vec3 Q0 = ray_origin_vs * k0, Q1 = ray_end_vs * k1;
 
     // Screen-space endpoints
     vec2 P0 = H0.xy * k0, P1 = H1.xy * k1;
@@ -202,7 +210,12 @@ void main() {
     vec3 normal_vs = (shrd_data.uViewMatrix * vec4(normal_ws, 0.0)).xyz;
 
     vec4 ray_origin_cs = vec4(norm_uvs, depth, 1.0);
+#if defined(VULKAN)
+	ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - vec2(1.0);
+	ray_origin_cs.y = -ray_origin_cs.y;
+#else // VULKAN
     ray_origin_cs.xyz = 2.0 * ray_origin_cs.xyz - vec3(1.0);
+#endif // VULKAN
 
     vec4 ray_origin_vs = shrd_data.uInvProjMatrix * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
@@ -221,6 +234,9 @@ void main() {
 
         // reproject hitpoint into a clip space of previous frame
         vec4 hit_prev = shrd_data.uDeltaMatrix * vec4(hit_point, 1.0);
+#if defined(VULKAN)
+		hit_prev.y = -hit_prev.y;
+#endif // VULKAN
         hit_prev /= hit_prev.w;
         hit_prev.xy = 0.5 * hit_prev.xy + 0.5;
 

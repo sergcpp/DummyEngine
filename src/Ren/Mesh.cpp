@@ -14,7 +14,7 @@
 #endif
 
 namespace Ren {
-uint16_t f32_to_f16(float value);
+uint16_t f32_to_f16(float value); // NOLINT
 int16_t f32_to_s16(float value);
 uint16_t f32_to_u16(float value);
 
@@ -171,8 +171,7 @@ void pack_vertex(const orig_vertex_skinned_t &in_v, packed_vertex_skinned_t &out
     out_v.bone_weights[3] = f32_to_u16(in_v.bone_weights[3]);
 }
 
-void pack_vertex(const orig_vertex_skinned_colored_t &in_v,
-                 packed_vertex_skinned_t &out_v) {
+void pack_vertex(const orig_vertex_skinned_colored_t &in_v, packed_vertex_skinned_t &out_v) {
     pack_vertex(in_v.v, out_v.v);
 
     out_v.bone_indices[0] = uint16_t(in_v.bone_indices[0]);
@@ -219,27 +218,24 @@ void pack_vertex_delta(const VtxDelta &in_v, packed_vertex_delta_t &out_v) {
 
 } // namespace Ren
 
-Ren::Mesh::Mesh(const char *name, const float *positions, const int vtx_count,
-                const uint32_t *indices, const int ndx_count, BufferRef vertex_buf1,
-                BufferRef vertex_buf2, BufferRef index_buf, eMeshLoadStatus *load_status,
-                ILog *log) {
+Ren::Mesh::Mesh(const char *name, const float *positions, const int vtx_count, const uint32_t *indices,
+                const int ndx_count, Buffer &stage_buf, void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2,
+                BufferRef index_buf, eMeshLoadStatus *load_status, ILog *log) {
     name_ = String{name};
-    Init(positions, vtx_count, indices, ndx_count, std::move(vertex_buf1),
-         std::move(vertex_buf2), std::move(index_buf), load_status, log);
+    Init(positions, vtx_count, indices, ndx_count, stage_buf, cmd_buf, std::move(vertex_buf1), std::move(vertex_buf2),
+         std::move(index_buf), load_status, log);
 }
 
-Ren::Mesh::Mesh(const char *name, std::istream *data,
-                const material_load_callback &on_mat_load, BufferRef vertex_buf1,
-                BufferRef vertex_buf2, BufferRef index_buf, BufferRef skin_vertex_buf,
-                BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log) {
+Ren::Mesh::Mesh(const char *name, std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf,
+                void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+                BufferRef skin_vertex_buf, BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log) {
     name_ = String{name};
-    Init(data, on_mat_load, std::move(vertex_buf1), std::move(vertex_buf2),
-         std::move(index_buf), std::move(skin_vertex_buf), std::move(delta_buf),
-         load_status, log);
+    Init(data, on_mat_load, stage_buf, cmd_buf, std::move(vertex_buf1), std::move(vertex_buf2), std::move(index_buf),
+         std::move(skin_vertex_buf), std::move(delta_buf), load_status, log);
 }
 
-void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t *indices,
-                     const int ndx_count, BufferRef vertex_buf1, BufferRef vertex_buf2,
+void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t *indices, const int ndx_count,
+                     Buffer &stage_buf, void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2,
                      BufferRef index_buf, eMeshLoadStatus *load_status, ILog *log) {
 
     if (!positions) {
@@ -249,16 +245,19 @@ void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t
         return;
     }
 
-    std::unique_ptr<packed_vertex_data1_t[]> vtx_data1(
-        new packed_vertex_data1_t[vtx_count]);
-    packed_vertex_data1_t *_vtx_data1 = vtx_data1.get();
+    attribs_buf1_.size = vtx_count * sizeof(packed_vertex_data1_t);
+    attribs_buf2_.size = vtx_count * sizeof(packed_vertex_data2_t);
+    indices_buf_.size = ndx_count * sizeof(uint32_t);
+
+    const uint32_t total_mem_required = attribs_buf1_.size + indices_buf_.size;
+    assert(stage_buf.size() >= total_mem_required);
+
+    auto *_vtx_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map(BufMapWrite));
 
     bbox_min_ =
-        Vec3f{std::numeric_limits<float>::max(), std::numeric_limits<float>::max(),
-              std::numeric_limits<float>::max()};
-    bbox_max_ =
-        Vec3f{std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(),
-              std::numeric_limits<float>::lowest()};
+        Vec3f{std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()};
+    bbox_max_ = Vec3f{std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(),
+                      std::numeric_limits<float>::lowest()};
 
     for (int i = 0; i < vtx_count; i++) {
         bbox_min_[0] = std::min(bbox_min_[0], positions[i * 3 + 0]);
@@ -274,34 +273,36 @@ void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t
         _vtx_data1[i].t0[1] = 0;
     }
 
+    auto *_ndx_data = reinterpret_cast<uint32_t *>(_vtx_data1 + vtx_count);
+    assert(uintptr_t(_ndx_data) % alignof(uint32_t) == 0);
+    memcpy(_ndx_data, indices, indices_buf_.size);
+
+    stage_buf.FlushMappedRange(0, stage_buf.AlignMapOffset(total_mem_required));
+    stage_buf.Unmap();
+
     type_ = eMeshType::Simple;
     flags_ = 0;
     ready_ = true;
 
-    attribs_buf1_.size = vtx_count * sizeof(packed_vertex_data1_t);
-    attribs_buf1_.offset =
-        vertex_buf1->AllocRegion(attribs_buf1_.size, name_.c_str(), _vtx_data1);
+    attribs_buf1_.offset = vertex_buf1->AllocSubRegion(attribs_buf1_.size, name_.c_str(), &stage_buf, cmd_buf);
     attribs_buf1_.buf = std::move(vertex_buf1);
 
-    attribs_buf2_.size = vtx_count * sizeof(packed_vertex_data2_t);
-    attribs_buf2_.offset =
-        vertex_buf2->AllocRegion(attribs_buf2_.size, name_.c_str(), nullptr);
+    // allocate empty data in buffer 2 (for index matching)
+    attribs_buf2_.offset = vertex_buf2->AllocSubRegion(attribs_buf2_.size, name_.c_str(), nullptr);
     attribs_buf2_.buf = std::move(vertex_buf2);
 
     assert(attribs_buf1_.offset == attribs_buf2_.offset && "Offsets do not match!");
 
-    indices_buf_.size = ndx_count * sizeof(uint32_t);
     indices_buf_.offset =
-        index_buf->AllocRegion(indices_buf_.size, name_.c_str(), indices);
+        index_buf->AllocSubRegion(indices_buf_.size, name_.c_str(), &stage_buf, cmd_buf, attribs_buf1_.size);
     indices_buf_.buf = std::move(index_buf);
 
     (*load_status) = Ren::eMeshLoadStatus::CreatedFromData;
 }
 
-void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_load,
-                     BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
-                     BufferRef skin_vertex_buf, BufferRef delta_buf,
-                     eMeshLoadStatus *load_status, ILog *log) {
+void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf, void *cmd_buf,
+                     BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, BufferRef skin_vertex_buf,
+                     BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log) {
 
     if (data) {
         char mesh_type_str[12];
@@ -310,15 +311,14 @@ void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_lo
         data->seekg(pos, std::ios::beg);
 
         if (strcmp(mesh_type_str, "STATIC_MESH\0") == 0) {
-            InitMeshSimple(*data, on_mat_load, std::move(vertex_buf1),
-                           std::move(vertex_buf2), std::move(index_buf), log);
+            InitMeshSimple(*data, on_mat_load, stage_buf, cmd_buf, std::move(vertex_buf1), std::move(vertex_buf2),
+                           std::move(index_buf), log);
         } else if (strcmp(mesh_type_str, "COLORE_MESH\0") == 0) {
-            InitMeshColored(*data, on_mat_load, std::move(vertex_buf1),
-                            std::move(vertex_buf2), std::move(index_buf), log);
-        } else if (strcmp(mesh_type_str, "SKELET_MESH\0") == 0 ||
-                   strcmp(mesh_type_str, "SKECOL_MESH\0") == 0) {
-            InitMeshSkeletal(*data, on_mat_load, std::move(skin_vertex_buf),
-                             std::move(delta_buf), std::move(index_buf), log);
+            InitMeshColored(*data, on_mat_load, stage_buf, cmd_buf, std::move(vertex_buf1), std::move(vertex_buf2),
+                            std::move(index_buf), log);
+        } else if (strcmp(mesh_type_str, "SKELET_MESH\0") == 0 || strcmp(mesh_type_str, "SKECOL_MESH\0") == 0) {
+            InitMeshSkeletal(*data, on_mat_load, stage_buf, cmd_buf, std::move(skin_vertex_buf), std::move(delta_buf),
+                             std::move(index_buf), log);
         }
 
         (*load_status) = eMeshLoadStatus::CreatedFromData;
@@ -329,23 +329,16 @@ void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_lo
     }
 }
 
-void Ren::Mesh::InitMeshSimple(std::istream &data,
-                               const material_load_callback &on_mat_load,
-                               BufferRef vertex_buf1, BufferRef vertex_buf2,
-                               BufferRef index_buf, ILog *log) {
+void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf,
+                               void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+                               ILog *log) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "STATIC_MESH\0") == 0);
 
     type_ = eMeshType::Simple;
 
-    enum {
-        MESH_INFO_CHUNK = 0,
-        VTX_ATTR_CHUNK,
-        VTX_NDX_CHUNK,
-        MATERIALS_CHUNK,
-        TRI_GROUPS_CHUNK
-    };
+    enum { MESH_INFO_CHUNK = 0, VTX_ATTR_CHUNK, VTX_NDX_CHUNK, MATERIALS_CHUNK, TRI_GROUPS_CHUNK };
 
     struct ChunkPos {
         int offset;
@@ -368,14 +361,14 @@ void Ren::Mesh::InitMeshSimple(std::istream &data,
     data.read((char *)&temp_f[0], sizeof(float) * 3);
     bbox_max_ = MakeVec3(temp_f);
 
-    const auto attribs_size = (uint32_t)file_header.p[VTX_ATTR_CHUNK].length;
+    const auto attribs_size = uint32_t(file_header.p[VTX_ATTR_CHUNK].length);
 
     attribs_.reset(new char[attribs_size]);
     data.read((char *)attribs_.get(), attribs_size);
 
-    indices_buf_.size = (uint32_t)file_header.p[VTX_NDX_CHUNK].length;
-    indices_.reset(new char[indices_buf_.size]);
-    data.read((char *)indices_.get(), indices_buf_.size);
+    const auto index_data_size = uint32_t(file_header.p[VTX_NDX_CHUNK].length);
+    indices_.reset(new char[index_data_size]);
+    data.read((char *)indices_.get(), index_data_size);
 
     const int materials_count = file_header.p[MATERIALS_CHUNK].length / 64;
     SmallVector<std::array<char, 64>, 8> material_names;
@@ -408,54 +401,57 @@ void Ren::Mesh::InitMeshSimple(std::istream &data,
     }
 
     const uint32_t vertex_count = attribs_size / sizeof(orig_vertex_t);
-    std::unique_ptr<packed_vertex_data1_t[]> vertices_data1(
-        new packed_vertex_data1_t[vertex_count]);
-    std::unique_ptr<packed_vertex_data2_t[]> vertices_data2(
-        new packed_vertex_data2_t[vertex_count]);
 
-    const auto *orig_vertices = (const orig_vertex_t *)attribs_.get();
+    attribs_buf1_.size = vertex_count * sizeof(packed_vertex_data1_t);
+    attribs_buf2_.size = vertex_count * sizeof(packed_vertex_data2_t);
+    indices_buf_.size = index_data_size;
+
+    const uint32_t total_mem_required = attribs_buf1_.size + attribs_buf2_.size + indices_buf_.size;
+    assert(stage_buf.size() >= total_mem_required);
+
+    auto *vertices_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map(BufMapWrite));
+    auto *vertices_data2 = reinterpret_cast<packed_vertex_data2_t *>(vertices_data1 + vertex_count);
+    assert(uintptr_t(vertices_data2) % alignof(packed_vertex_data2_t) == 0);
+    auto *index_data = reinterpret_cast<uint32_t *>(vertices_data2 + vertex_count);
+    assert(uintptr_t(index_data) % alignof(uint32_t) == 0);
+
+    const auto *orig_vertices = reinterpret_cast<const orig_vertex_t *>(attribs_.get());
 
     for (uint32_t i = 0; i < vertex_count; i++) {
         pack_vertex_data1(orig_vertices[i], vertices_data1[i]);
         pack_vertex_data2(orig_vertices[i], vertices_data2[i]);
     }
+    memcpy(index_data, indices_.get(), indices_buf_.size);
 
-    attribs_buf1_.size = vertex_count * sizeof(packed_vertex_data1_t);
+    stage_buf.FlushMappedRange(0, stage_buf.AlignMapOffset(total_mem_required));
+    stage_buf.Unmap();
+
     attribs_buf1_.offset =
-        vertex_buf1->AllocRegion(attribs_buf1_.size, name_.c_str(), vertices_data1.get());
+        vertex_buf1->AllocSubRegion(attribs_buf1_.size, name_.c_str(), &stage_buf, cmd_buf, 0 /* offset */);
     attribs_buf1_.buf = std::move(vertex_buf1);
 
-    attribs_buf2_.size = vertex_count * sizeof(packed_vertex_data2_t);
     attribs_buf2_.offset =
-        vertex_buf2->AllocRegion(attribs_buf2_.size, name_.c_str(), vertices_data2.get());
+        vertex_buf2->AllocSubRegion(attribs_buf2_.size, name_.c_str(), &stage_buf, cmd_buf, attribs_buf1_.size);
     attribs_buf2_.buf = std::move(vertex_buf2);
 
-    assert(attribs_buf1_.offset == attribs_buf2_.offset && "Offsets do not match!");
-
-    indices_buf_.offset =
-        index_buf->AllocRegion(indices_buf_.size, name_.c_str(), indices_.get());
+    indices_buf_.offset = index_buf->AllocSubRegion(indices_buf_.size, name_.c_str(), &stage_buf, cmd_buf,
+                                                    attribs_buf1_.size + attribs_buf2_.size);
     indices_buf_.buf = std::move(index_buf);
 
+    assert(attribs_buf1_.offset == attribs_buf2_.offset && "Offsets do not match!");
     ready_ = true;
 }
 
-void Ren::Mesh::InitMeshColored(std::istream &data,
-                                const material_load_callback &on_mat_load,
-                                BufferRef vertex_buf1, BufferRef vertex_buf2,
-                                BufferRef index_buf, ILog *log) {
+void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf,
+                                void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+                                ILog *log) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "COLORE_MESH\0") == 0);
 
     type_ = eMeshType::Colored;
 
-    enum {
-        MESH_INFO_CHUNK = 0,
-        VTX_ATTR_CHUNK,
-        VTX_NDX_CHUNK,
-        MATERIALS_CHUNK,
-        TRI_GROUPS_CHUNK
-    };
+    enum { MESH_INFO_CHUNK = 0, VTX_ATTR_CHUNK, VTX_NDX_CHUNK, MATERIALS_CHUNK, TRI_GROUPS_CHUNK };
 
     struct ChunkPos {
         int offset;
@@ -478,14 +474,14 @@ void Ren::Mesh::InitMeshColored(std::istream &data,
     data.read((char *)&temp_f[0], sizeof(float) * 3);
     bbox_max_ = MakeVec3(temp_f);
 
-    const auto attribs_size = (uint32_t)file_header.p[VTX_ATTR_CHUNK].length;
+    const auto attribs_size = uint32_t(file_header.p[VTX_ATTR_CHUNK].length);
 
     attribs_.reset(new char[attribs_size]);
     data.read((char *)attribs_.get(), attribs_size);
 
-    indices_buf_.size = (uint32_t)file_header.p[VTX_NDX_CHUNK].length;
-    indices_.reset(new char[indices_buf_.size]);
-    data.read((char *)indices_.get(), indices_buf_.size);
+    const auto index_data_size = uint32_t(file_header.p[VTX_NDX_CHUNK].length);
+    indices_.reset(new char[index_data_size]);
+    data.read((char *)indices_.get(), index_data_size);
 
     const int materials_count = file_header.p[MATERIALS_CHUNK].length / 64;
     SmallVector<std::array<char, 64>, 8> material_names;
@@ -519,45 +515,53 @@ void Ren::Mesh::InitMeshColored(std::istream &data,
 
     assert(attribs_size % sizeof(orig_vertex_colored_t) == 0);
     const uint32_t vertex_count = attribs_size / sizeof(orig_vertex_colored_t);
-    std::unique_ptr<packed_vertex_data1_t[]> vertices_data1(
-        new packed_vertex_data1_t[vertex_count]);
-    std::unique_ptr<packed_vertex_data2_t[]> vertices_data2(
-        new packed_vertex_data2_t[vertex_count]);
 
-    const auto *orig_vertices = (const orig_vertex_colored_t *)attribs_.get();
+    attribs_buf1_.size = vertex_count * sizeof(packed_vertex_data1_t);
+    attribs_buf2_.size = vertex_count * sizeof(packed_vertex_data2_t);
+    indices_buf_.size = index_data_size;
+
+    const uint32_t total_mem_required = attribs_buf1_.size + attribs_buf2_.size + indices_buf_.size;
+    assert(stage_buf.size() >= total_mem_required);
+
+    auto *vertices_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map(BufMapWrite));
+    auto *vertices_data2 = reinterpret_cast<packed_vertex_data2_t *>(vertices_data1 + vertex_count);
+    assert(uintptr_t(vertices_data2) % alignof(packed_vertex_data2_t) == 0);
+    auto *index_data = reinterpret_cast<uint32_t *>(vertices_data2 + vertex_count);
+    assert(uintptr_t(index_data) % alignof(uint32_t) == 0);
+
+    const auto *orig_vertices = reinterpret_cast<const orig_vertex_colored_t *>(attribs_.get());
 
     for (uint32_t i = 0; i < vertex_count; i++) {
         pack_vertex_data1(orig_vertices[i], vertices_data1[i]);
         pack_vertex_data2(orig_vertices[i], vertices_data2[i]);
     }
+    memcpy(index_data, indices_.get(), indices_buf_.size);
 
-    attribs_buf1_.size = vertex_count * sizeof(packed_vertex_data1_t);
+    stage_buf.FlushMappedRange(0, stage_buf.AlignMapOffset(total_mem_required));
+    stage_buf.Unmap();
+
     attribs_buf1_.offset =
-        vertex_buf1->AllocRegion(attribs_buf1_.size, name_.c_str(), vertices_data1.get());
+        vertex_buf1->AllocSubRegion(attribs_buf1_.size, name_.c_str(), &stage_buf, cmd_buf, 0 /* offset */);
     attribs_buf1_.buf = std::move(vertex_buf1);
 
-    attribs_buf2_.size = vertex_count * sizeof(packed_vertex_data2_t);
     attribs_buf2_.offset =
-        vertex_buf2->AllocRegion(attribs_buf2_.size, name_.c_str(), vertices_data2.get());
+        vertex_buf2->AllocSubRegion(attribs_buf2_.size, name_.c_str(), &stage_buf, cmd_buf, attribs_buf1_.size);
     attribs_buf2_.buf = std::move(vertex_buf2);
 
-    assert(attribs_buf1_.offset == attribs_buf2_.offset && "Offsets do not match!");
-
-    indices_buf_.offset =
-        index_buf->AllocRegion(indices_buf_.size, name_.c_str(), indices_.get());
+    indices_buf_.offset = index_buf->AllocSubRegion(indices_buf_.size, name_.c_str(), &stage_buf, cmd_buf,
+                                                    attribs_buf1_.size + attribs_buf2_.size);
     indices_buf_.buf = std::move(index_buf);
 
+    assert(attribs_buf1_.offset == attribs_buf2_.offset && "Offsets do not match!");
     ready_ = true;
 }
 
-void Ren::Mesh::InitMeshSkeletal(std::istream &data,
-                                 const material_load_callback &on_mat_load,
-                                 BufferRef skin_vertex_buf, BufferRef delta_buf,
-                                 BufferRef index_buf, ILog *log) {
+void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf,
+                                 void *cmd_buf, BufferRef skin_vertex_buf, BufferRef delta_buf, BufferRef index_buf,
+                                 ILog *log) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
-    assert(strcmp(mesh_type_str, "SKELET_MESH\0") == 0 ||
-           strcmp(mesh_type_str, "SKECOL_MESH\0") == 0);
+    assert(strcmp(mesh_type_str, "SKELET_MESH\0") == 0 || strcmp(mesh_type_str, "SKECOL_MESH\0") == 0);
 
     const bool vtx_color_present = strcmp(mesh_type_str, "SKECOL_MESH\0") == 0;
 
@@ -584,7 +588,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
     } file_header = {};
 
     data.read((char *)&file_header.num_chunks, sizeof(int));
-    data.read((char *)&file_header.p[0], file_header.num_chunks * sizeof(ChunkPos));
+    data.read((char *)&file_header.p[0], std::streamsize(file_header.num_chunks * sizeof(ChunkPos)));
 
     // Skip name, cant remember why i put it there
     data.seekg(32, std::ios::cur);
@@ -597,11 +601,11 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
         bbox_max_ = MakeVec3(temp_f);
     }
 
-    sk_attribs_buf_.size = (uint32_t)file_header.p[VTX_ATTR_CHUNK].length;
-    attribs_.reset(new char[sk_attribs_buf_.size]);
-    data.read((char *)attribs_.get(), sk_attribs_buf_.size);
+    const uint32_t sk_attribs_size = uint32_t(file_header.p[VTX_ATTR_CHUNK].length);
+    attribs_.reset(new char[sk_attribs_size]);
+    data.read((char *)attribs_.get(), sk_attribs_size);
 
-    indices_buf_.size = (uint32_t)file_header.p[VTX_NDX_CHUNK].length;
+    indices_buf_.size = uint32_t(file_header.p[VTX_NDX_CHUNK].length);
     indices_.reset(new char[indices_buf_.size]);
     data.read((char *)indices_.get(), indices_buf_.size);
 
@@ -656,10 +660,8 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
 
         if (skel_.bones[i].parent_id != -1) {
             skel_.bones[i].cur_matrix =
-                skel_.bones[skel_.bones[i].parent_id].inv_bind_matrix *
-                skel_.bones[i].bind_matrix;
-            const Vec4f pos = skel_.bones[skel_.bones[i].parent_id].inv_bind_matrix *
-                              skel_.bones[i].bind_matrix[3];
+                skel_.bones[skel_.bones[i].parent_id].inv_bind_matrix * skel_.bones[i].bind_matrix;
+            const Vec4f pos = skel_.bones[skel_.bones[i].parent_id].inv_bind_matrix * skel_.bones[i].bind_matrix[3];
             skel_.bones[i].head_pos = MakeVec3(&pos[0]);
         } else {
             skel_.bones[i].cur_matrix = skel_.bones[i].bind_matrix;
@@ -669,18 +671,22 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
         skel_.bones[i].dirty = true;
     }
 
-    if (file_header.num_chunks > 6) {
+    uint8_t *stage_buf_ptr = stage_buf.Map(BufMapWrite);
+    uint32_t stage_buf_off = 0;
+
+    uint32_t delta_buf_off = 0;
+
+    const bool shape_data_present = (file_header.num_chunks > 6);
+    if (shape_data_present) {
         uint32_t shape_keyed_vertices_start, shape_keyed_vertices_count;
         data.read((char *)&shape_keyed_vertices_start, sizeof(uint32_t));
         data.read((char *)&shape_keyed_vertices_count, sizeof(uint32_t));
 
         skel_.shapes_count =
-            (file_header.p[SHAPE_KEYS_CHUNK].length - 2 * sizeof(uint32_t)) /
-            (64 + shape_keyed_vertices_count *
-                      (3 * sizeof(float) + 3 * sizeof(float) + 3 * sizeof(float)));
+            int(file_header.p[SHAPE_KEYS_CHUNK].length - 2 * sizeof(uint32_t)) /
+            (64 + shape_keyed_vertices_count * (3 * sizeof(float) + 3 * sizeof(float) + 3 * sizeof(float)));
 
-        deltas_.reset(
-            new VtxDelta[(size_t)skel_.shapes_count * shape_keyed_vertices_count]);
+        deltas_.reset(new VtxDelta[(size_t)skel_.shapes_count * shape_keyed_vertices_count]);
         skel_.shapes.reset(new ShapeKey[skel_.shapes_count]);
 
         for (int i = 0; i < skel_.shapes_count; i++) {
@@ -691,23 +697,19 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
             sh_key.delta_count = shape_keyed_vertices_count;
             sh_key.cur_weight_packed = 0;
 
-            data.read((char *)&deltas_[sh_key.delta_offset],
-                      sh_key.delta_count * sizeof(VtxDelta));
+            data.read((char *)&deltas_[sh_key.delta_offset], std::streamsize(sh_key.delta_count * sizeof(VtxDelta)));
         }
 
-        std::unique_ptr<packed_vertex_delta_t[]> packed_deltas(
-            new packed_vertex_delta_t[(size_t)skel_.shapes_count *
-                                      shape_keyed_vertices_count]);
+        sk_deltas_buf_.size = uint32_t(skel_.shapes_count * shape_keyed_vertices_count * sizeof(packed_vertex_delta_t));
+
+        assert(stage_buf.size() - stage_buf_off >= sk_deltas_buf_.size);
+        auto *packed_deltas = reinterpret_cast<packed_vertex_delta_t *>(stage_buf_ptr + stage_buf_off);
+        delta_buf_off = stage_buf_off;
+        stage_buf_off += sk_deltas_buf_.size;
 
         for (uint32_t i = 0; i < skel_.shapes_count * shape_keyed_vertices_count; i++) {
             pack_vertex_delta(deltas_[i], packed_deltas[i]);
         }
-
-        sk_deltas_buf_.size = uint32_t(skel_.shapes_count * shape_keyed_vertices_count *
-                                       sizeof(packed_vertex_delta_t));
-        sk_deltas_buf_.offset = delta_buf->AllocRegion(sk_deltas_buf_.size, name_.c_str(),
-                                                       packed_deltas.get());
-        sk_deltas_buf_.buf = std::move(delta_buf);
     }
 
     // assert(max_gpu_bones);
@@ -730,31 +732,48 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
     }*/
 
     const uint32_t vertex_count =
-        sk_attribs_buf_.size / (vtx_color_present ? sizeof(orig_vertex_skinned_colored_t)
-                                                  : sizeof(orig_vertex_skinned_t));
-    std::unique_ptr<packed_vertex_skinned_t[]> vertices(
-        new packed_vertex_skinned_t[vertex_count]);
+        sk_attribs_size / (vtx_color_present ? sizeof(orig_vertex_skinned_colored_t) : sizeof(orig_vertex_skinned_t));
+    sk_attribs_buf_.size = vertex_count * sizeof(packed_vertex_skinned_t);
+
+    assert(stage_buf.size() - stage_buf_off >= sk_attribs_buf_.size);
+    auto *vertices = reinterpret_cast<packed_vertex_skinned_t *>(stage_buf_ptr + stage_buf_off);
+    const uint32_t vertices_off = stage_buf_off;
+    stage_buf_off += sk_attribs_buf_.size;
 
     if (vtx_color_present) {
-        const auto *orig_vertices = (const orig_vertex_skinned_colored_t *)attribs_.get();
+        const auto *orig_vertices = reinterpret_cast<const orig_vertex_skinned_colored_t *>(attribs_.get());
         for (uint32_t i = 0; i < vertex_count; i++) {
             pack_vertex(orig_vertices[i], vertices[i]);
         }
     } else {
-        const auto *orig_vertices = (const orig_vertex_skinned_t *)attribs_.get();
+        const auto *orig_vertices = reinterpret_cast<const orig_vertex_skinned_t *>(attribs_.get());
         for (uint32_t i = 0; i < vertex_count; i++) {
             pack_vertex(orig_vertices[i], vertices[i]);
         }
     }
 
-    // allocate space for untransformed vertices
-    sk_attribs_buf_.size = vertex_count * sizeof(packed_vertex_skinned_t);
+    assert(stage_buf.size() - stage_buf_off >= indices_buf_.size);
+    auto *index_data = reinterpret_cast<uint32_t *>(stage_buf_ptr + stage_buf_off);
+    const uint32_t indices_off = stage_buf_off;
+    stage_buf_off += indices_buf_.size;
+    memcpy(index_data, indices_.get(), indices_buf_.size);
+
+    stage_buf.FlushMappedRange(0, stage_buf.AlignMapOffset(stage_buf_off));
+    stage_buf.Unmap();
+
+    if (shape_data_present) {
+        sk_deltas_buf_.offset =
+            delta_buf->AllocSubRegion(sk_deltas_buf_.size, name_.c_str(), &stage_buf, cmd_buf, delta_buf_off);
+        sk_deltas_buf_.buf = std::move(delta_buf);
+    }
+
+    // allocate untransformed vertices
     sk_attribs_buf_.offset =
-        skin_vertex_buf->AllocRegion(sk_attribs_buf_.size, name_.c_str(), vertices.get());
+        skin_vertex_buf->AllocSubRegion(sk_attribs_buf_.size, name_.c_str(), &stage_buf, cmd_buf, vertices_off);
     sk_attribs_buf_.buf = std::move(skin_vertex_buf);
 
-    indices_buf_.offset =
-        index_buf->AllocRegion(indices_buf_.size, name_.c_str(), indices_.get());
+    indices_buf_.offset = index_buf->AllocSubRegion(indices_buf_.size, name_.c_str(), &stage_buf, cmd_buf, indices_off);
+    indices_buf_.buf = std::move(index_buf);
 
     ready_ = true;
 }

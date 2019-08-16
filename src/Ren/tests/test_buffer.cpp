@@ -46,9 +46,8 @@ class BufferTest : public Ren::Context {
             throw std::runtime_error("Cannot register window class!");
         }
 
-        hWnd = CreateWindow("BufferTest", "!!",
-                            WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0,
-                            100, 100, NULL, NULL, hInstance, NULL);
+        hWnd = CreateWindow("BufferTest", "!!", WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 100, 100,
+                            NULL, NULL, hInstance, NULL);
 
         if (hWnd == NULL) {
             throw std::runtime_error("Cannot create window!");
@@ -80,12 +79,11 @@ class BufferTest : public Ren::Context {
 #else
         SDL_Init(SDL_INIT_VIDEO);
 
-        window_ =
-            SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                             256, 256, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+        window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 256,
+                                   SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
         gl_ctx_main_ = SDL_GL_CreateContext(window_);
 #endif
-        Context::Init(256, 256, &log_);
+        Context::Init(256, 256, &log_, nullptr);
     }
 
     ~BufferTest() {
@@ -117,17 +115,15 @@ void test_buffer() {
     {
         BufferTest test;
 
-        auto buf =
-            Ren::Buffer{"buf", Ren::eBufferType::Uniform, Ren::eBufferAccessType::Draw,
-                        Ren::eBufferAccessFreq::Static, 256};
+        auto buf = Ren::Buffer{"buf", test.api_ctx(), Ren::eBufType::Uniform, 256};
 
-        require(buf.AllocRegion(16, "temp") == 0);
-        require(buf.AllocRegion(32, "temp") == 16);
-        require(buf.AllocRegion(64, "temp") == 16 + 32);
-        require(buf.AllocRegion(16, "temp") == 16 + 32 + 64);
+        require(buf.AllocSubRegion(16, "temp") == 0);
+        require(buf.AllocSubRegion(32, "temp") == 16);
+        require(buf.AllocSubRegion(64, "temp") == 16 + 32);
+        require(buf.AllocSubRegion(16, "temp") == 16 + 32 + 64);
 
-        buf.FreeRegion(0);
+        buf.FreeSubRegion(0);
 
-        require(buf.AllocRegion(16, "temp") == 0);
+        require(buf.AllocSubRegion(16, "temp") == 0);
     }
 }

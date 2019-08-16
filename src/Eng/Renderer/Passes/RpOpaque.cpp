@@ -5,22 +5,17 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpOpaque::Setup(RpBuilder &builder, const DrawList &list,
-                     const ViewState *view_state, const PersistentBuffers *bufs,
-                     const int orphan_index, Ren::Tex2DRef brdf_lut,
-                     Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut,
-                     const char instances_buf[], const char shared_data_buf[],
-                     const char cells_buf[], const char items_buf[],
-                     const char lights_buf[], const char decals_buf[],
-                     const char shadowmap_tex[], const char ssao_tex[],
-                     const char out_color[], const char out_normals[],
-                     const char out_spec[], const char out_depth[]) {
-    orphan_index_ = orphan_index;
+void RpOpaque::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, Ren::BufferRef vtx_buf1,
+                     Ren::BufferRef vtx_buf2, Ren::BufferRef ndx_buf, Ren::BufferRef materials_buf,
+                     const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, Ren::Tex2DRef brdf_lut,
+                     Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut, Ren::Tex2DRef dummy_black,
+                     Ren::Tex2DRef dummy_white, const char instances_buf[], const char shared_data_buf[],
+                     const char cells_buf[], const char items_buf[], const char lights_buf[], const char decals_buf[],
+                     const char shadowmap_tex[], const char ssao_tex[], const char out_color[],
+                     const char out_normals[], const char out_spec[], const char out_depth[]) {
     view_state_ = view_state;
-
-    brdf_lut_ = std::move(brdf_lut);
-    noise_tex_ = std::move(noise_tex);
-    cone_rt_lut_ = std::move(cone_rt_lut);
+    pipelines_ = pipelines;
+    bindless_tex_ = bindless_tex;
 
     env_ = &list.env;
     materials_ = list.materials;
@@ -30,125 +25,158 @@ void RpOpaque::Setup(RpBuilder &builder, const DrawList &list,
     render_flags_ = list.render_flags;
     main_batches_ = list.main_batches;
     main_batch_indices_ = list.main_batch_indices;
-    bufs_ = bufs;
 
-    instances_buf_ = builder.ReadBuffer(instances_buf, *this);
-    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);
-    cells_buf_ = builder.ReadBuffer(cells_buf, *this);
-    items_buf_ = builder.ReadBuffer(items_buf, *this);
-    lights_buf_ = builder.ReadBuffer(lights_buf, *this);
-    decals_buf_ = builder.ReadBuffer(decals_buf, *this);
+    vtx_buf1_ =
+        builder.ReadBuffer(std::move(vtx_buf1), Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
+    vtx_buf2_ =
+        builder.ReadBuffer(std::move(vtx_buf2), Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
+    ndx_buf_ = builder.ReadBuffer(std::move(ndx_buf), Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
+    instances_buf_ =
+        builder.ReadBuffer(instances_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
+                                          Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
+    cells_buf_ = builder.ReadBuffer(cells_buf, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    items_buf_ = builder.ReadBuffer(items_buf, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    lights_buf_ =
+        builder.ReadBuffer(lights_buf, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    decals_buf_ =
+        builder.ReadBuffer(decals_buf, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    shad_tex_ =
+        builder.ReadTexture(shadowmap_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    ssao_tex_ = builder.ReadTexture(ssao_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    materials_buf_ = builder.ReadBuffer(std::move(materials_buf), Ren::eResState::ShaderResource,
+                                        Ren::eStageBits::VertexShader, *this);
 
-    shadowmap_tex_ = builder.ReadTexture(shadowmap_tex, *this);
-    ssao_tex_ = builder.ReadTexture(ssao_tex, *this);
+    for (int i = 0; i < 4; ++i) {
+        if (env_->lm_indir_sh[i]) {
+            lm_tex_[i] = builder.ReadTexture(env_->lm_indir_sh[i], Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+        } else {
+            lm_tex_[i] = {};
+        }
+    }
+
+    brdf_lut_ = builder.ReadTexture(std::move(brdf_lut), Ren::eResState::ShaderResource,
+                                    Ren::eStageBits::FragmentShader, *this);
+    noise_tex_ = builder.ReadTexture(std::move(noise_tex), Ren::eResState::ShaderResource,
+                                     Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
+    cone_rt_lut_ = builder.ReadTexture(std::move(cone_rt_lut), Ren::eResState::ShaderResource,
+                                       Ren::eStageBits::FragmentShader, *this);
+
+    dummy_black_ = builder.ReadTexture(std::move(dummy_black), Ren::eResState::ShaderResource,
+                                       Ren::eStageBits::FragmentShader, *this);
+    dummy_white_ = builder.ReadTexture(std::move(dummy_white), Ren::eResState::ShaderResource,
+                                       Ren::eStageBits::FragmentShader, *this);
+
+#if defined(USE_GL_RENDER)
+    textures_buf_ = builder.ReadBuffer(bindless_tex->textures_buf, Ren::eResState::ShaderResource,
+                                       Ren::eStageBits::VertexShader, *this);
+#endif
 
     { // Main color
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
-#if (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED) ||                                        \
-    (REN_OIT_MODE == REN_OIT_MOMENT_BASED && REN_OIT_MOMENT_RENORMALIZE)
+#if (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED) || (REN_OIT_MODE == REN_OIT_MOMENT_BASED && REN_OIT_MOMENT_RENORMALIZE)
         // renormalization requires buffer with alpha channel
         params.format = Ren::eTexFormat::RawRGBA16F;
 #else
         params.format = Ren::eTexFormat::RawRG11F_B10F;
 #endif
-        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
-        color_tex_ = builder.WriteTexture(out_color, params, *this);
+        color_tex_ = builder.WriteTexture(out_color, params, Ren::eResState::RenderTarget,
+                                          Ren::eStageBits::ColorAttachment, *this);
     }
     { // 4-component world-space normal (alpha is 'ssr' flag)
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRGB10_A2;
-        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
-        normal_tex_ = builder.WriteTexture(out_normals, params, *this);
+        normal_tex_ = builder.WriteTexture(out_normals, params, Ren::eResState::RenderTarget,
+                                           Ren::eStageBits::ColorAttachment, *this);
     }
     { // 4-component specular (alpha is roughness)
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRGBA8888;
-        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
-        spec_tex_ = builder.WriteTexture(out_spec, params, *this);
+        spec_tex_ = builder.WriteTexture(out_spec, params, Ren::eResState::RenderTarget,
+                                         Ren::eStageBits::ColorAttachment, *this);
     }
-    { // 24-bit depth
+    { // 24/32-bit depth
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
-        params.format = Ren::eTexFormat::Depth24Stencil8;
-        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.format = builder.ctx().capabilities.depth24_stencil8_format ? Ren::eTexFormat::Depth24Stencil8
+                                                                           : Ren::eTexFormat::Depth32Stencil8;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
-        depth_tex_ = builder.WriteTexture(out_depth, params, *this);
+        depth_tex_ = builder.WriteTexture(out_depth, params, Ren::eResState::DepthWrite,
+                                          Ren::eStageBits::DepthAttachment, *this);
     }
 }
 
 void RpOpaque::Execute(RpBuilder &builder) {
+    RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
+    RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
+    RpAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
+
     RpAllocTex &color_tex = builder.GetWriteTexture(color_tex_);
     RpAllocTex &normal_tex = builder.GetWriteTexture(normal_tex_);
     RpAllocTex &spec_tex = builder.GetWriteTexture(spec_tex_);
     RpAllocTex &depth_tex = builder.GetWriteTexture(depth_tex_);
 
-    LazyInit(builder.ctx(), builder.sh(), color_tex, normal_tex, spec_tex, depth_tex);
+    LazyInit(builder.ctx(), builder.sh(), vtx_buf1, vtx_buf2, ndx_buf, color_tex, normal_tex, spec_tex, depth_tex);
     DrawOpaque(builder);
 }
 
-void RpOpaque::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &color_tex,
-                        RpAllocTex &normal_tex, RpAllocTex &spec_tex,
+void RpOpaque::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+                        RpAllocBuf &ndx_buf, RpAllocTex &color_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex,
                         RpAllocTex &depth_tex) {
+    const Ren::RenderTarget color_targets[] = {{color_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
+                                               {normal_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
+                                               {spec_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+    const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
+                                            Ren::eStoreOp::Store};
+
     if (!initialized) {
-        static const uint8_t black[] = {0, 0, 0, 0}, white[] = {255, 255, 255, 255};
+        if (!rp_opaque_.Setup(ctx.api_ctx(), color_targets, 3, depth_target, ctx.log())) {
+            ctx.log()->Error("[RpOpaque::LazyInit]: Failed to init render pass!");
+        }
 
-        Ren::Tex2DParams p;
-        p.w = p.h = 1;
-        p.format = Ren::eTexFormat::RawRGBA8888;
-        p.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
-
-        Ren::eTexLoadStatus status;
-        dummy_black_ = ctx.LoadTexture2D("dummy_black", black, sizeof(black), p, &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData ||
-               status == Ren::eTexLoadStatus::Found);
-
-        dummy_white_ = ctx.LoadTexture2D("dummy_white", white, sizeof(white), p, &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData ||
-               status == Ren::eTexLoadStatus::Found);
+        api_ctx_ = ctx.api_ctx();
+#if defined(USE_VK_RENDER)
+        InitDescrSetLayout();
+#endif
 
         initialized = true;
     }
 
-    Ren::BufHandle vtx_buf1 = ctx.default_vertex_buf1()->handle(),
-                   vtx_buf2 = ctx.default_vertex_buf2()->handle(),
-                   ndx_buf = ctx.default_indices_buf()->handle();
-
     const int buf1_stride = 16, buf2_stride = 16;
 
-    { // VAO for main drawing (uses all attributes)
+    { // VertexInput for main drawing (uses all attributes)
         const Ren::VtxAttribDesc attribs[] = {
             // Attributes from buffer 1
-            {vtx_buf1, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-            {vtx_buf1, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride,
-             uintptr_t(3 * sizeof(float))},
+            {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+            {vtx_buf1.ref, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
             // Attributes from buffer 2
-            {vtx_buf2, REN_VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf1_stride, 0},
-            {vtx_buf2, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf1_stride,
-             uintptr_t(4 * sizeof(uint16_t))},
-            {vtx_buf2, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride,
-             uintptr_t(6 * sizeof(uint16_t))}};
+            {vtx_buf2.ref, REN_VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf1_stride, 0},
+            {vtx_buf2.ref, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf1_stride, 4 * sizeof(uint16_t)},
+            {vtx_buf2.ref, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride, 6 * sizeof(uint16_t)}};
 
-        draw_pass_vao_.Setup(attribs, 5, ndx_buf);
+        draw_pass_vi_.Setup(attribs, 5, ndx_buf.ref);
     }
 
-    const Ren::TexHandle attachments[] = {
-        color_tex.ref->handle(), normal_tex.ref->handle(), spec_tex.ref->handle()};
-    if (!opaque_draw_fb_.Setup(attachments, 3, depth_tex.ref->handle(),
-                               depth_tex.ref->handle(), view_state_->is_multisampled)) {
+    if (!opaque_draw_fb_[ctx.backend_frame()].Setup(ctx.api_ctx(), rp_opaque_, depth_tex.desc.w, depth_tex.desc.h,
+                                                    color_targets, 3, depth_target, depth_target)) {
         ctx.log()->Error("RpOpaque: opaque_draw_fb_ init failed!");
     }
 }

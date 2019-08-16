@@ -19,8 +19,7 @@ template <typename T> class Quat {
     explicit Quat(eUninitialized) {}
     force_inline Quat() : x(0), y(0), z(0), w(0) {}
 
-    force_inline Quat(const T _x, const T _y, const T _z, const T _w)
-        : x(_x), y(_y), z(_z), w(_w) {}
+    force_inline Quat(const T _x, const T _y, const T _z, const T _w) : x(_x), y(_y), z(_z), w(_w) {}
 
     force_inline T &operator[](const int i) {
         T *data = &x;
@@ -153,13 +152,11 @@ template <typename T> force_inline T Dot(const Quat<T> &lhs, const Quat<T> &rhs)
 }
 
 template <typename T> force_inline T Roll(const Quat<T> &q) {
-    return std::atan2(T(2) * (q.x * q.y + q.w * q.z),
-                      q.w * q.w + q.x * q.x - q.y * q.y - q.z * q.z);
+    return std::atan2(T(2) * (q.x * q.y + q.w * q.z), q.w * q.w + q.x * q.x - q.y * q.y - q.z * q.z);
 }
 
 template <typename T> force_inline T Pitch(const Quat<T> &q) {
-    return std::atan2(T(2) * (q.y * q.z + q.w * q.x),
-                      q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
+    return std::atan2(T(2) * (q.y * q.z + q.w * q.x), q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
 }
 
 template <typename T> force_inline T Yaw(const Quat<T> &q) {
@@ -181,12 +178,10 @@ template <typename T> Quat<T> Slerp(const Quat<T> &q0, const Quat<T> &q1, const 
     }
 
     if (cos_theta > 1 - std::numeric_limits<T>::epsilon()) {
-        return Quat<T>{Mix(q0.x, q1.x, a), Mix(q0.y, q1.y, a), Mix(q0.z, q1.z, a),
-                       Mix(q0.w, q1.w, a)};
+        return Quat<T>{Mix(q0.x, q1.x, a), Mix(q0.y, q1.y, a), Mix(q0.z, q1.z, a), Mix(q0.w, q1.w, a)};
     } else {
         const T angle = std::acos(cos_theta);
-        return (std::sin((T(1) - a) * angle) * q0 + std::sin(a * angle) * q2) /
-               std::sin(angle);
+        return (std::sin((T(1) - a) * angle) * q0 + std::sin(a * angle) * q2) / std::sin(angle);
     }
 }
 
@@ -218,13 +213,9 @@ template <typename T> force_inline Mat<T, 3, 3> ToMat3(const Quat<T> &vec) {
     return ret;
 }
 
-template <typename T> force_inline Mat<T, 4, 4> ToMat4(const Quat<T> &vec) {
-    return Mat<T, 4, 4>{ToMat3(vec)};
-}
+template <typename T> force_inline Mat<T, 4, 4> ToMat4(const Quat<T> &vec) { return Mat<T, 4, 4>{ToMat3(vec)}; }
 
-template <typename T> force_inline Quat<T> MakeQuat(const T *v) {
-    return Quat<T>{v[0], v[1], v[2], v[3]};
-}
+template <typename T> force_inline Quat<T> MakeQuat(const T *v) { return Quat<T>{v[0], v[1], v[2], v[3]}; }
 
 using Quatf = Quat<float>;
 using Quatd = Quat<double>;

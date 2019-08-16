@@ -5,12 +5,7 @@
 void test_svol() {
     using namespace Phy;
 
-    static const Vec3 org_pts[] = {
-        Vec3(0, 0, 0),
-        Vec3(1, 0, 0),
-        Vec3(0, 1, 0),
-        Vec3(0, 0, 1)
-    };
+    static const Vec3 org_pts[] = {Vec3(0, 0, 0), Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0, 0, 1)};
 
     { // origin is outside
         Vec3 pts[4];
@@ -41,7 +36,7 @@ void test_svol() {
         }
 
         const Vec4 lambdas = SignedVolume3D(pts[0], pts[1], pts[2], pts[3]);
-        auto v = Vec3{ 0 };
+        auto v = Vec3{0};
         for (int i = 0; i < 4; i++) {
             v += pts[i] * lambdas[i];
         }
@@ -63,7 +58,7 @@ void test_svol() {
         }
 
         const Vec4 lambdas = SignedVolume3D(pts[0], pts[1], pts[2], pts[3]);
-        auto v = Vec3{ 0 };
+        auto v = Vec3{0};
         for (int i = 0; i < 4; i++) {
             v += pts[i] * lambdas[i];
         }
@@ -85,7 +80,7 @@ void test_svol() {
         }
 
         const Vec4 lambdas = SignedVolume3D(pts[0], pts[1], pts[2], pts[3]);
-        auto v = Vec3{ 0 };
+        auto v = Vec3{0};
         for (int i = 0; i < 4; i++) {
             v += pts[i] * lambdas[i];
         }
@@ -101,15 +96,13 @@ void test_svol() {
     }
 
     { // origin is at (0, 0, 0)
-        static const Vec3 pts[] = {
-            Vec3(real(+51.1996613), real(+26.1989613), real(1.91339576)),
-            Vec3(real(-51.0567360), real(-26.0565681), real(-0.436143428)),
-            Vec3(real(+50.8978920), real(-24.1035538), real(-1.04042661)),
-            Vec3(real(-49.1021080), real(+25.8964462), real(-1.04042661))
-        };
+        static const Vec3 pts[] = {Vec3(real(+51.1996613), real(+26.1989613), real(1.91339576)),
+                                   Vec3(real(-51.0567360), real(-26.0565681), real(-0.436143428)),
+                                   Vec3(real(+50.8978920), real(-24.1035538), real(-1.04042661)),
+                                   Vec3(real(-49.1021080), real(+25.8964462), real(-1.04042661))};
 
         const Vec4 lambdas = SignedVolume3D(pts[0], pts[1], pts[2], pts[3]);
-        auto v = Vec3{ 0 };
+        auto v = Vec3{0};
         for (int i = 0; i < 4; i++) {
             v += pts[i] * lambdas[i];
         }

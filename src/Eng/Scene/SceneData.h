@@ -7,6 +7,7 @@
 #include <Ren/HashMap32.h>
 #include <Ren/Mesh.h>
 #include <Ren/MMat.h>
+#include <Ren/Pipeline.h>
 #include <Ren/Storage.h>
 #include <Ren/TextureAtlas.h>
 
@@ -137,11 +138,22 @@ public:
     virtual void *SequentialData() { return nullptr; }
 };
 
-struct PersistentBuffers {
-    Ren::BufHandle                  materials_buf;
-    std::pair<uint32_t, uint32_t>   materials_buf_range;
-    Ren::BufHandle                  textures_buf;
-    std::pair<uint32_t, uint32_t>   textures_buf_range;
+struct PersistentGpuData {
+    Ren::BufferRef                          materials_buf;
+#if defined(USE_VK_RENDER)
+    std::unique_ptr<Ren::DescrPool>         textures_descr_pool;
+    VkDescriptorSetLayout                   textures_descr_layout = VK_NULL_HANDLE;
+    Ren::SmallVector<VkDescriptorSet, 1024> textures_descr_sets[4];
+#elif defined(USE_GL_RENDER)
+    Ren::BufferRef                          textures_buf;
+#endif
+    Ren::PipelineStorage                    pipelines;
+
+    PersistentGpuData();
+    ~PersistentGpuData();
+
+    PersistentGpuData(PersistentGpuData &&rhs) noexcept = default;
+    PersistentGpuData &operator=(PersistentGpuData &&rhs) noexcept = default;
 };
 
 struct SceneData {
@@ -150,10 +162,8 @@ struct SceneData {
     Ren::Texture2DStorage                   textures;
     Ren::MaterialStorage                    materials;
     std::vector<uint32_t>                   material_changes;
-    Ren::BufferRef                          materials_buf, textures_buf;
-    void                                    *mat_buf_sync[4] = {};
+    PersistentGpuData                       persistant_data = {};
     std::pair<uint32_t, uint32_t>           mat_update_ranges[4];
-    uint32_t                                mat_buf_index = 0;
     Ren::MeshStorage                        meshes;
 
     std::vector<uint32_t>                   texture_mem_buckets;

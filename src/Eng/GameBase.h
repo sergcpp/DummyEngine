@@ -20,7 +20,7 @@ protected:
     std::map<std::string, std::shared_ptr<void>> components_;
     FrameInfo fr_info_;
 public:
-    GameBase(int w, int h, const char *local_dir);
+    GameBase(int w, int h, const char *device_name);
     virtual ~GameBase();
 
     virtual void Resize(int w, int h);

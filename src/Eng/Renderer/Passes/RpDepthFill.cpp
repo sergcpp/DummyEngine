@@ -5,227 +5,475 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list,
-                        const ViewState *view_state, const PersistentBuffers *bufs, int orphan_index,
-                        const char instances_buf[], const char shared_data_buf[],
-                        const char main_depth_tex[], const char main_velocity_tex[],
-                        Ren::TexHandle noise_tex) {
-    orphan_index_ = orphan_index;
+void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, Ren::BufferRef vtx_buf1,
+                        Ren::BufferRef vtx_buf2, Ren::BufferRef ndx_buf, Ren::BufferRef materials_buf,
+                        const BindlessTextureData *bindless_tex, const char instances_buf[],
+                        const char shared_data_buf[], Ren::Tex2DRef noise_tex, const char main_depth_tex[],
+                        const char main_velocity_tex[]) {
     view_state_ = view_state;
+    bindless_tex_ = bindless_tex;
 
     render_flags_ = list.render_flags;
     materials_ = list.materials;
     zfill_batch_indices = list.zfill_batch_indices;
     zfill_batches = list.zfill_batches;
 
-    noise_tex_ = noise_tex;
-    bufs_ = bufs;
+    vtx_buf1_ =
+        builder.ReadBuffer(std::move(vtx_buf1), Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
+    vtx_buf2_ =
+        builder.ReadBuffer(std::move(vtx_buf2), Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
+    ndx_buf_ = builder.ReadBuffer(std::move(ndx_buf), Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
+    instances_buf_ =
+        builder.ReadBuffer(instances_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
+                                          Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
+    materials_buf_ = builder.ReadBuffer(std::move(materials_buf), Ren::eResState::ShaderResource,
+                                        Ren::eStageBits::VertexShader, *this);
+#if defined(USE_GL_RENDER)
+    if (bindless_tex->textures_buf) {
+        textures_buf_ = builder.ReadBuffer(bindless_tex->textures_buf, Ren::eResState::ShaderResource,
+                                           Ren::eStageBits::VertexShader, *this);
+    }
+#endif
 
-    instances_buf_ = builder.ReadBuffer(instances_buf, *this);
-    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);
+    noise_tex_ =
+        builder.ReadTexture(std::move(noise_tex), Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
 
     { // 24-bit depth
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
-        params.format = Ren::eTexFormat::Depth24Stencil8;
-        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.format = builder.ctx().capabilities.depth24_stencil8_format ? Ren::eTexFormat::Depth24Stencil8
+                                                                           : Ren::eTexFormat::Depth32Stencil8;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
-        depth_tex_ = builder.WriteTexture(main_depth_tex, params, *this);
+        depth_tex_ = builder.WriteTexture(main_depth_tex, params, Ren::eResState::DepthWrite,
+                                          Ren::eStageBits::DepthAttachment, *this);
     }
     { // Texture that holds 2D velocity
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
-        params.format = Ren::eTexFormat::RawRG16;
-        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.format = Ren::eTexFormat::RawRG16Snorm;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
-        velocity_tex_ = builder.WriteTexture(main_velocity_tex, params, *this);
+        velocity_tex_ = builder.WriteTexture(main_velocity_tex, params, Ren::eResState::RenderTarget,
+                                             Ren::eStageBits::ColorAttachment, *this);
     }
 }
 
 void RpDepthFill::Execute(RpBuilder &builder) {
+    RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
+    RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
+    RpAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
+
     RpAllocTex &depth_tex = builder.GetWriteTexture(depth_tex_);
     RpAllocTex &velocity_tex = builder.GetWriteTexture(velocity_tex_);
 
-    LazyInit(builder.ctx(), builder.sh(), depth_tex, velocity_tex);
-    DrawDepth(builder);
+    LazyInit(builder.ctx(), builder.sh(), vtx_buf1, vtx_buf2, ndx_buf, depth_tex, velocity_tex);
+    DrawDepth(builder, vtx_buf1, vtx_buf2, ndx_buf);
 }
 
-void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &depth_tex,
-                           RpAllocTex &velocity_tex) {
+void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+                           RpAllocBuf &ndx_buf, RpAllocTex &depth_tex, RpAllocTex &velocity_tex) {
+
+    const Ren::RenderTarget velocity_target = {velocity_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
+    const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
+                                            Ren::eStoreOp::Store};
+
     if (!initialized) {
-        fillz_solid_prog_ = sh.LoadProgram(ctx, "fillz_solid", "internal/fillz.vert.glsl",
-                                           "internal/fillz.frag.glsl");
-        assert(fillz_solid_prog_->ready());
-        fillz_solid_mov_prog_ =
-            sh.LoadProgram(ctx, "fillz_solid_mov", "internal/fillz.vert.glsl@MOVING_PERM",
+        Ren::ProgramRef fillz_solid_prog =
+            sh.LoadProgram(ctx, "fillz_solid", "internal/fillz.vert.glsl", "internal/fillz.frag.glsl");
+        assert(fillz_solid_prog->ready());
+        Ren::ProgramRef fillz_solid_mov_prog = sh.LoadProgram(
+            ctx, "fillz_solid_mov", "internal/fillz.vert.glsl@MOVING_PERM", "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
+        assert(fillz_solid_mov_prog->ready());
+        Ren::ProgramRef fillz_vege_solid_prog =
+            sh.LoadProgram(ctx, "fillz_vege_solid", "internal/fillz_vege.vert.glsl", "internal/fillz.frag.glsl");
+        assert(fillz_vege_solid_prog->ready());
+        Ren::ProgramRef fillz_vege_solid_vel_prog =
+            sh.LoadProgram(ctx, "fillz_vege_solid_vel", "internal/fillz_vege.vert.glsl@OUTPUT_VELOCITY",
                            "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
-        assert(fillz_solid_mov_prog_->ready());
-        fillz_vege_solid_prog_ =
-            sh.LoadProgram(ctx, "fillz_vege_solid", "internal/fillz_vege.vert.glsl",
-                           "internal/fillz.frag.glsl");
-        assert(fillz_vege_solid_prog_->ready());
-        fillz_vege_solid_vel_prog_ = sh.LoadProgram(
-            ctx, "fillz_vege_solid_vel", "internal/fillz_vege.vert.glsl@OUTPUT_VELOCITY",
-            "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
-        assert(fillz_vege_solid_vel_prog_->ready());
-        fillz_vege_solid_vel_mov_prog_ =
-            sh.LoadProgram(ctx, "fillz_vege_solid_vel_mov",
-                           "internal/fillz_vege.vert.glsl@OUTPUT_VELOCITY;MOVING_PERM",
+        assert(fillz_vege_solid_vel_prog->ready());
+        Ren::ProgramRef fillz_vege_solid_vel_mov_prog =
+            sh.LoadProgram(ctx, "fillz_vege_solid_vel_mov", "internal/fillz_vege.vert.glsl@MOVING_PERM;OUTPUT_VELOCITY",
                            "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
-        assert(fillz_vege_solid_vel_mov_prog_->ready());
-        fillz_transp_prog_ = sh.LoadProgram(ctx, "fillz_transp",
-                                            "internal/fillz.vert.glsl@TRANSPARENT_PERM",
-                                            "internal/fillz.frag.glsl@TRANSPARENT_PERM");
-        assert(fillz_transp_prog_->ready());
-        fillz_transp_mov_prog_ =
-            sh.LoadProgram(ctx, "fillz_transp_mov",
-                           "internal/fillz.vert.glsl@TRANSPARENT_PERM;MOVING_PERM",
-                           "internal/fillz.frag.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY");
-        assert(fillz_transp_mov_prog_->ready());
-        fillz_vege_transp_prog_ = sh.LoadProgram(
-            ctx, "fillz_vege_transp", "internal/fillz_vege.vert.glsl@TRANSPARENT_PERM",
-            "internal/fillz.frag.glsl@TRANSPARENT_PERM");
-        assert(fillz_vege_transp_prog_->ready());
-        fillz_vege_transp_vel_prog_ = sh.LoadProgram(
-            ctx, "fillz_vege_transp_vel",
-            "internal/fillz_vege.vert.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY",
-            "internal/fillz.frag.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY");
-        assert(fillz_vege_transp_vel_prog_->ready());
-        fillz_vege_transp_vel_mov_prog_ = sh.LoadProgram(
-            ctx, "fillz_vege_transp_vel_mov",
-            "internal/fillz_vege.vert.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY;MOVING_PERM",
-            "internal/fillz.frag.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY");
-        assert(fillz_vege_transp_vel_mov_prog_->ready());
-        fillz_skin_solid_prog_ =
-            sh.LoadProgram(ctx, "fillz_skin_solid", "internal/fillz_skin.vert.glsl",
-                           "internal/fillz.frag.glsl");
-        assert(fillz_skin_solid_prog_->ready());
-        fillz_skin_solid_vel_prog_ = sh.LoadProgram(
-            ctx, "fillz_skin_solid_vel", "internal/fillz_skin.vert.glsl@OUTPUT_VELOCITY",
-            "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
-        assert(fillz_skin_solid_vel_prog_->ready());
-        fillz_skin_solid_vel_mov_prog_ =
-            sh.LoadProgram(ctx, "fillz_skin_solid_vel_mov",
-                           "internal/fillz_skin.vert.glsl@OUTPUT_VELOCITY;MOVING_PERM",
+        assert(fillz_vege_solid_vel_mov_prog->ready());
+        Ren::ProgramRef fillz_transp_prog =
+            sh.LoadProgram(ctx, "fillz_transp", "internal/fillz.vert.glsl@TRANSPARENT_PERM",
+                           "internal/fillz.frag.glsl@TRANSPARENT_PERM");
+        assert(fillz_transp_prog->ready());
+        Ren::ProgramRef fillz_transp_mov_prog =
+            sh.LoadProgram(ctx, "fillz_transp_mov", "internal/fillz.vert.glsl@MOVING_PERM;TRANSPARENT_PERM",
+                           "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM");
+        assert(fillz_transp_mov_prog->ready());
+        Ren::ProgramRef fillz_vege_transp_prog =
+            sh.LoadProgram(ctx, "fillz_vege_transp", "internal/fillz_vege.vert.glsl@TRANSPARENT_PERM",
+                           "internal/fillz.frag.glsl@TRANSPARENT_PERM");
+        assert(fillz_vege_transp_prog->ready());
+        Ren::ProgramRef fillz_vege_transp_vel_prog = sh.LoadProgram(
+            ctx, "fillz_vege_transp_vel", "internal/fillz_vege.vert.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM",
+            "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM");
+        assert(fillz_vege_transp_vel_prog->ready());
+        Ren::ProgramRef fillz_vege_transp_vel_mov_prog =
+            sh.LoadProgram(ctx, "fillz_vege_transp_vel_mov",
+                           "internal/fillz_vege.vert.glsl@MOVING_PERM;OUTPUT_VELOCITY;TRANSPARENT_PERM",
+                           "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM");
+        assert(fillz_vege_transp_vel_mov_prog->ready());
+        Ren::ProgramRef fillz_skin_solid_prog =
+            sh.LoadProgram(ctx, "fillz_skin_solid", "internal/fillz_skin.vert.glsl", "internal/fillz.frag.glsl");
+        assert(fillz_skin_solid_prog->ready());
+        Ren::ProgramRef fillz_skin_solid_vel_prog =
+            sh.LoadProgram(ctx, "fillz_skin_solid_vel", "internal/fillz_skin.vert.glsl@OUTPUT_VELOCITY",
                            "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
-        assert(fillz_skin_solid_vel_mov_prog_->ready());
-        fillz_skin_transp_prog_ = sh.LoadProgram(
-            ctx, "fillz_skin_transp", "internal/fillz_skin.vert.glsl@TRANSPARENT_PERM",
-            "internal/fillz.frag.glsl@TRANSPARENT_PERM");
-        assert(fillz_skin_transp_prog_->ready());
-        fillz_skin_transp_vel_prog_ = sh.LoadProgram(
-            ctx, "fillz_skin_transp_vel",
-            "internal/fillz_skin.vert.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY",
-            "internal/fillz.frag.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY");
-        assert(fillz_skin_transp_vel_prog_->ready());
-        fillz_skin_transp_vel_mov_prog_ = sh.LoadProgram(
-            ctx, "fillz_skin_transp_vel_mov",
-            "internal/fillz_skin.vert.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY;MOVING_PERM",
-            "internal/fillz.frag.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY");
-        assert(fillz_skin_transp_vel_mov_prog_->ready());
+        assert(fillz_skin_solid_vel_prog->ready());
+        Ren::ProgramRef fillz_skin_solid_vel_mov_prog =
+            sh.LoadProgram(ctx, "fillz_skin_solid_vel_mov", "internal/fillz_skin.vert.glsl@MOVING_PERM;OUTPUT_VELOCITY",
+                           "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
+        assert(fillz_skin_solid_vel_mov_prog->ready());
+        Ren::ProgramRef fillz_skin_transp_prog =
+            sh.LoadProgram(ctx, "fillz_skin_transp", "internal/fillz_skin.vert.glsl@TRANSPARENT_PERM",
+                           "internal/fillz.frag.glsl@TRANSPARENT_PERM");
+        assert(fillz_skin_transp_prog->ready());
+        Ren::ProgramRef fillz_skin_transp_vel_prog = sh.LoadProgram(
+            ctx, "fillz_skin_transp_vel", "internal/fillz_skin.vert.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM",
+            "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM");
+        assert(fillz_skin_transp_vel_prog->ready());
+        Ren::ProgramRef fillz_skin_transp_vel_mov_prog =
+            sh.LoadProgram(ctx, "fillz_skin_transp_vel_mov",
+                           "internal/fillz_skin.vert.glsl@MOVING_PERM;OUTPUT_VELOCITY;TRANSPARENT_PERM",
+                           "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM");
+        assert(fillz_skin_transp_vel_mov_prog->ready());
 
-        { // dummy 1px texture
-            Ren::Tex2DParams p;
-            p.w = p.h = 1;
-            p.format = Ren::eTexFormat::RawRGBA8888;
-            p.sampling.filter = Ren::eTexFilter::Bilinear;
-            p.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
+        if (!rp_depth_only_.Setup(ctx.api_ctx(), nullptr, 0, depth_target, ctx.log())) {
+            ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to init depth only pass!");
+        }
 
-            static const uint8_t white[] = {255, 255, 255, 255};
+        if (!rp_depth_velocity_.Setup(ctx.api_ctx(), &velocity_target, 1, depth_target, ctx.log())) {
+            ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to init depth-velocity pass!");
+        }
 
-            Ren::eTexLoadStatus status;
-            dummy_white_ =
-                ctx.LoadTexture2D("dummy_white", white, sizeof(white), p, &status);
-            assert(status == Ren::eTexLoadStatus::CreatedFromData ||
-                   status == Ren::eTexLoadStatus::Found);
+        const int buf1_stride = 16, buf2_stride = 16;
+
+        { // VAO for solid depth-fill pass (uses position attribute only)
+            const Ren::VtxAttribDesc attribs[] = {
+                {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
+            if (!vi_depth_pass_solid_.Setup(attribs, 1, ndx_buf.ref)) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: vi_depth_pass_solid_ init failed!");
+            }
+        }
+
+        { // VAO for solid depth-fill pass of vegetation (uses position and color attributes only)
+            const Ren::VtxAttribDesc attribs[] = {
+                {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf2.ref, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
+            if (!vi_depth_pass_vege_solid_.Setup(attribs, 2, ndx_buf.ref)) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: vi_depth_pass_vege_solid_ init failed!");
+            }
+        }
+
+        { // VAO for alpha-tested depth-fill pass (uses position and uv attributes)
+            const Ren::VtxAttribDesc attribs[] = {
+                {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1.ref, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
+            if (!vi_depth_pass_transp_.Setup(attribs, 2, ndx_buf.ref)) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: vi_depth_pass_transp_ init failed!");
+            }
+        }
+
+        { // VAO for alpha-tested depth-fill pass of vegetation (uses position, uvs and color attributes)
+            const Ren::VtxAttribDesc attribs[] = {
+                {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1.ref, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+                {vtx_buf2.ref, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
+            if (!vi_depth_pass_vege_transp_.Setup(attribs, 3, ndx_buf.ref)) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: depth_pass_vege_transp_vao_ init failed!");
+            }
+        }
+
+        { // VAO for depth-fill pass of skinned solid meshes (with velocity output)
+            const Ren::VtxAttribDesc attribs[] = {
+                {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1.ref, REN_VTX_PRE_LOC, 3, Ren::eType::Float32, buf1_stride, REN_MAX_SKIN_VERTICES_TOTAL * 16}};
+            if (!vi_depth_pass_skin_solid_.Setup(attribs, 2, ndx_buf.ref)) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: depth_pass_skin_solid_vao_ init failed!");
+            }
+        }
+
+        { // VAO for depth-fill pass of skinned transparent meshes (with velocity output)
+            const Ren::VtxAttribDesc attribs[] = {
+                {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1.ref, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+                {vtx_buf1.ref, REN_VTX_PRE_LOC, 3, Ren::eType::Float32, buf1_stride, REN_MAX_SKIN_VERTICES_TOTAL * 16}};
+            if (!vi_depth_pass_skin_transp_.Setup(attribs, 3, ndx_buf.ref)) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: depth_pass_skin_transp_vao_ init failed!");
+            }
+        }
+
+        { // static solid/transp
+            Ren::RastState rast_state;
+            rast_state.depth.test_enabled = true;
+            rast_state.depth.compare_op = uint8_t(Ren::eCompareOp::Less);
+
+            rast_state.stencil.enabled = true;
+            rast_state.stencil.write_mask = 0xff;
+            rast_state.stencil.pass = uint8_t(Ren::eStencilOp::Replace);
+
+            // default value
+            rast_state.stencil.reference = 0;
+
+            if (!pi_static_solid_[1].Init(ctx.api_ctx(), rast_state, fillz_solid_prog, &vi_depth_pass_solid_,
+                                          &rp_depth_only_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_static_transp_[1].Init(ctx.api_ctx(), rast_state, fillz_transp_prog, &vi_depth_pass_transp_,
+                                           &rp_depth_only_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            if (!pi_static_solid_[0].Init(ctx.api_ctx(), rast_state, fillz_solid_prog, &vi_depth_pass_solid_,
+                                          &rp_depth_only_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_static_transp_[0].Init(ctx.api_ctx(), rast_state, fillz_transp_prog, &vi_depth_pass_transp_,
+                                           &rp_depth_only_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+        }
+
+        { // moving solid/transp
+            Ren::RastState rast_state;
+            rast_state.depth.test_enabled = true;
+            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+
+            rast_state.stencil.enabled = true;
+            rast_state.stencil.write_mask = 0xff;
+            rast_state.stencil.pass = unsigned(Ren::eStencilOp::Replace);
+
+            // mark dynamic objects
+            rast_state.stencil.reference = 1;
+
+            if (!pi_moving_solid_[1].Init(ctx.api_ctx(), rast_state, fillz_solid_mov_prog, &vi_depth_pass_solid_,
+                                          &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_moving_transp_[1].Init(ctx.api_ctx(), rast_state, fillz_transp_mov_prog, &vi_depth_pass_transp_,
+                                           &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            if (!pi_moving_solid_[0].Init(ctx.api_ctx(), rast_state, fillz_solid_mov_prog, &vi_depth_pass_solid_,
+                                          &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_moving_transp_[0].Init(ctx.api_ctx(), rast_state, fillz_transp_mov_prog, &vi_depth_pass_transp_,
+                                           &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+        }
+
+        { // vege solid/transp
+            Ren::RastState rast_state;
+            rast_state.depth.test_enabled = true;
+            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+
+            rast_state.stencil.enabled = true;
+            rast_state.stencil.write_mask = 0xff;
+            rast_state.stencil.pass = unsigned(Ren::eStencilOp::Replace);
+
+            // mark dynamic objects
+            rast_state.stencil.reference = 1;
+
+            if (!pi_vege_static_solid_[1].Init(ctx.api_ctx(), rast_state, fillz_vege_solid_prog,
+                                               &vi_depth_pass_vege_solid_, &rp_depth_only_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_vege_static_solid_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_vege_solid_vel_prog,
+                                                   &vi_depth_pass_vege_solid_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_vege_static_transp_[1].Init(ctx.api_ctx(), rast_state, fillz_vege_transp_prog,
+                                                &vi_depth_pass_vege_transp_, &rp_depth_only_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_vege_static_transp_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_vege_transp_vel_prog,
+                                                    &vi_depth_pass_vege_transp_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            if (!pi_vege_static_solid_[0].Init(ctx.api_ctx(), rast_state, fillz_vege_solid_prog,
+                                               &vi_depth_pass_vege_solid_, &rp_depth_only_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_vege_static_solid_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_vege_solid_vel_prog,
+                                                   &vi_depth_pass_vege_solid_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_vege_static_transp_[0].Init(ctx.api_ctx(), rast_state, fillz_vege_transp_prog,
+                                                &vi_depth_pass_vege_transp_, &rp_depth_only_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_vege_static_transp_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_vege_transp_vel_prog,
+                                                    &vi_depth_pass_vege_transp_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+        }
+
+        { // vege moving solid/transp
+            Ren::RastState rast_state;
+            rast_state.depth.test_enabled = true;
+            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+
+            rast_state.stencil.enabled = true;
+            rast_state.stencil.write_mask = 0xff;
+            rast_state.stencil.pass = unsigned(Ren::eStencilOp::Replace);
+
+            // mark dynamic objects
+            rast_state.stencil.reference = 1;
+
+            if (!pi_vege_moving_solid_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_vege_solid_vel_mov_prog,
+                                                   &vi_depth_pass_vege_solid_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_vege_moving_transp_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_vege_transp_vel_mov_prog,
+                                                    &vi_depth_pass_vege_transp_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            if (!pi_vege_moving_solid_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_vege_solid_vel_mov_prog,
+                                                   &vi_depth_pass_vege_solid_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_vege_moving_transp_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_vege_transp_vel_mov_prog,
+                                                    &vi_depth_pass_vege_transp_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+        }
+
+        { // skin solid/transp
+            Ren::RastState rast_state;
+            rast_state.depth.test_enabled = true;
+            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+
+            rast_state.stencil.enabled = true;
+            rast_state.stencil.write_mask = 0xff;
+            rast_state.stencil.pass = unsigned(Ren::eStencilOp::Replace);
+
+            // mark dynamic objects
+            rast_state.stencil.reference = 1;
+
+            if (!pi_skin_static_solid_[1].Init(ctx.api_ctx(), rast_state, fillz_skin_solid_prog, &vi_depth_pass_solid_,
+                                               &rp_depth_only_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_skin_static_solid_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_skin_solid_vel_prog,
+                                                   &vi_depth_pass_skin_solid_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_skin_static_transp_[1].Init(ctx.api_ctx(), rast_state, fillz_skin_transp_prog,
+                                                &vi_depth_pass_transp_, &rp_depth_only_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_skin_static_transp_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_skin_transp_vel_prog,
+                                                    &vi_depth_pass_skin_transp_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            if (!pi_skin_static_solid_[0].Init(ctx.api_ctx(), rast_state, fillz_skin_solid_prog, &vi_depth_pass_solid_,
+                                               &rp_depth_only_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_skin_static_solid_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_skin_solid_vel_prog,
+                                                   &vi_depth_pass_skin_solid_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_skin_static_transp_[0].Init(ctx.api_ctx(), rast_state, fillz_skin_transp_prog,
+                                                &vi_depth_pass_transp_, &rp_depth_only_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_skin_static_transp_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_skin_transp_vel_prog,
+                                                    &vi_depth_pass_skin_transp_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+        }
+
+        { // skin moving solid/transp
+            Ren::RastState rast_state;
+            rast_state.depth.test_enabled = true;
+            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+
+            rast_state.stencil.enabled = true;
+            rast_state.stencil.write_mask = 0xff;
+            rast_state.stencil.pass = unsigned(Ren::eStencilOp::Replace);
+
+            // mark dynamic objects
+            rast_state.stencil.reference = 1;
+
+            if (!pi_skin_moving_solid_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_skin_solid_vel_mov_prog,
+                                                   &vi_depth_pass_skin_solid_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_skin_moving_transp_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_skin_transp_vel_mov_prog,
+                                                    &vi_depth_pass_skin_transp_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            if (!pi_skin_moving_solid_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_skin_solid_vel_mov_prog,
+                                                   &vi_depth_pass_skin_solid_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_skin_moving_transp_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_skin_transp_vel_mov_prog,
+                                                    &vi_depth_pass_skin_transp_, &rp_depth_velocity_, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
         }
 
         initialized = true;
     }
 
-    Ren::BufHandle vtx_buf1 = ctx.default_vertex_buf1()->handle(),
-                   vtx_buf2 = ctx.default_vertex_buf2()->handle(),
-                   ndx_buf = ctx.default_indices_buf()->handle();
-
-    const int buf1_stride = 16, buf2_stride = 16;
-
-    { // VAO for solid depth-fill pass (uses position attribute only)
-        const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
-        if (!depth_pass_solid_vao_.Setup(attribs, 1, ndx_buf)) {
-            ctx.log()->Error("RpDepthFill: depth_pass_solid_vao_ init failed!");
-        }
+    if (!depth_fill_fb_[ctx.backend_frame()].Setup(ctx.api_ctx(), rp_depth_only_, depth_tex.desc.w, depth_tex.desc.h,
+                                                   nullptr, 0, depth_tex.ref, depth_tex.ref,
+                                                   view_state_->is_multisampled)) {
+        ctx.log()->Error("[RpDepthFill::LazyInit]: depth_fill_fb_ init failed!");
     }
 
-    { // VAO for solid depth-fill pass of vegetation (uses position and color attributes
-      // only)
-        const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-            {vtx_buf2, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride,
-             uintptr_t(6 * sizeof(uint16_t))}};
-        if (!depth_pass_vege_solid_vao_.Setup(attribs, 2, ndx_buf)) {
-            ctx.log()->Error("RpDepthFill: depth_pass_vege_solid_vao_ init failed!");
-        }
-    }
-
-    { // VAO for alpha-tested depth-fill pass (uses position and uv
-      // attributes)
-        const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-            {vtx_buf1, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride,
-             uintptr_t(3 * sizeof(float))}};
-        if (!depth_pass_transp_vao_.Setup(attribs, 2, ndx_buf)) {
-            ctx.log()->Error("RpDepthFill: depth_pass_transp_vao_ init failed!");
-        }
-    }
-
-    { // VAO for alpha-tested depth-fill pass of vegetation (uses position, uvs and
-      // color attributes)
-        const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-            {vtx_buf1, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride,
-             uintptr_t(3 * sizeof(float))},
-            {vtx_buf2, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride,
-             uintptr_t(6 * sizeof(uint16_t))}};
-        if (!depth_pass_vege_transp_vao_.Setup(attribs, 3, ndx_buf)) {
-            ctx.log()->Error("RpDepthFill: depth_pass_vege_transp_vao_ init failed!");
-        }
-    }
-
-    { // VAO for depth-fill pass of skinned solid meshes (with velocity output)
-        const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-            {vtx_buf1, REN_VTX_PRE_LOC, 3, Ren::eType::Float32, buf1_stride,
-             uintptr_t(REN_MAX_SKIN_VERTICES_TOTAL * 16)}};
-        if (!depth_pass_skin_solid_vao_.Setup(attribs, 2, ndx_buf)) {
-            ctx.log()->Error("RpDepthFill: depth_pass_skin_solid_vao_ init failed!");
-        }
-    }
-
-    { // VAO for depth-fill pass of skinned transparent meshes (with velocity output)
-        const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-            {vtx_buf1, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride,
-             uintptr_t(3 * sizeof(float))},
-            {vtx_buf1, REN_VTX_PRE_LOC, 3, Ren::eType::Float32, buf1_stride,
-             uintptr_t(REN_MAX_SKIN_VERTICES_TOTAL * 16)}};
-        if (!depth_pass_skin_transp_vao_.Setup(attribs, 3, ndx_buf)) {
-            ctx.log()->Error("RpDepthFill: depth_pass_skin_transp_vao_ init failed!");
-        }
-    }
-
-    if (!depth_fill_fb_.Setup(nullptr, 0, depth_tex.ref->handle(),
-                              depth_tex.ref->handle(), view_state_->is_multisampled)) {
-        ctx.log()->Error("RpDepthFill: depth_fill_fb_ init failed!");
-    }
-
-    if (!depth_fill_vel_fb_.Setup(velocity_tex.ref->handle(), depth_tex.ref->handle(),
-                                  depth_tex.ref->handle(),
-                                  view_state_->is_multisampled)) {
-        ctx.log()->Error("RpDepthFill: depth_fill_vel_fb_ init failed!");
+    if (!depth_fill_vel_fb_[ctx.backend_frame()].Setup(ctx.api_ctx(), rp_depth_velocity_, depth_tex.desc.w,
+                                                       depth_tex.desc.h, velocity_tex.ref, depth_tex.ref, depth_tex.ref,
+                                                       view_state_->is_multisampled)) {
+        ctx.log()->Error("[RpDepthFill::LazyInit]: depth_fill_vel_load_fb_ init failed!");
     }
 }

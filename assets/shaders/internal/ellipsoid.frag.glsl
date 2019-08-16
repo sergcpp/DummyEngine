@@ -1,20 +1,12 @@
 #version 310 es
 #extension GL_EXT_texture_cube_map_array : enable
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision mediump float;
 #endif
 
 #include "_fs_common.glsl"
-
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
-    SharedData shrd_data;
-};
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec3 aVertexPos_;

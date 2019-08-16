@@ -1,14 +1,24 @@
 #version 310 es
 #extension GL_EXT_texture_cube_map_array : enable
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision mediump float;
 #endif
         
 layout(binding = 0) uniform mediump samplerCubeArray s_texture;
+
+#if defined(VULKAN)
+layout(push_constant) uniform PushConstants {
+    layout(offset = 16) float src_layer;
+						int src_face;
+						float src_level;
+};
+#else
 layout(location = 1) uniform float src_layer;
 layout(location = 2) uniform int src_face;
 layout(location = 3) uniform float src_level;
+#endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 aVertexUVs_;

@@ -18,22 +18,13 @@ struct Plane {
     int ClassifyPoint(const float point[3]) const;
 };
 
-enum class eCamPlane {
-    Left,
-    Right,
-    Top,
-    Bottom,
-    Near,
-    Far,
-    _Count
-};
+enum class eCamPlane { Left, Right, Top, Bottom, Near, Far, _Count };
 
 enum class eVisResult { Invisible, FullyVisible, PartiallyVisible };
 
 struct Frustum {
-    Plane planes[8] = {Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize},
-                       Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize},
-                       Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize},
+    Plane planes[8] = {Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize},
+                       Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize},
                        Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize}};
     int planes_count = 6;
 
@@ -73,24 +64,16 @@ class Camera {
     const Vec3f &world_position() const { return world_position_; }
     Vec2f px_offset() const { return px_offset_; }
 
-    Vec3f fwd() const {
-        return Vec3f{-view_matrix_[0][2], -view_matrix_[1][2], -view_matrix_[2][2]};
-    }
+    Vec3f fwd() const { return Vec3f{-view_matrix_[0][2], -view_matrix_[1][2], -view_matrix_[2][2]}; }
 
-    Vec3f up() const {
-        return Vec3f{view_matrix_[0][1], view_matrix_[1][1], view_matrix_[2][1]};
-    }
+    Vec3f up() const { return Vec3f{view_matrix_[0][1], view_matrix_[1][1], view_matrix_[2][1]}; }
 
     uint32_t render_mask() const { return render_mask_; }
     void set_render_mask(const uint32_t mask) { render_mask_ = mask; }
 
-    Vec3f view_dir() const {
-        return Vec3f{view_matrix_[0][2], view_matrix_[1][2], view_matrix_[2][2]};
-    }
+    Vec3f view_dir() const { return Vec3f{view_matrix_[0][2], view_matrix_[1][2], view_matrix_[2][2]}; }
 
-    Vec4f clip_info() const {
-        return Ren::Vec4f{ near_ * far_, near_, far_, std::log2(1.0f + far_ / near_) };
-    }
+    Vec4f clip_info() const { return Ren::Vec4f{near_ * far_, near_, far_, std::log2(1.0f + far_ / near_)}; }
 
     float angle() const { return angle_; }
     float aspect() const { return aspect_; }
@@ -103,8 +86,7 @@ class Camera {
     bool is_orthographic() const { return is_orthographic_; }
 
     void Perspective(float angle, float aspect, float near, float far);
-    void Orthographic(float left, float right, float top, float down, float near,
-                      float far);
+    void Orthographic(float left, float right, float top, float down, float near, float far);
 
     void SetupView(const Vec3f &center, const Vec3f &target, const Vec3f &up);
     void SetPxOffset(Vec2f px_offset) const;

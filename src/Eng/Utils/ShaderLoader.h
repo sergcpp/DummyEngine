@@ -7,7 +7,8 @@
 class ShaderLoader {
     std::string temp_param_str_, temp_param_def_;
 
-    static std::string ReadGLSLContent(const char *name, int name_len, const char *prelude, Ren::ILog* log);
+    static std::string ReadGLSLContent(const char *name, int name_len,
+                                       const char *prelude, Ren::ILog *log);
 
   public:
     ShaderLoader();
@@ -21,15 +22,13 @@ class ShaderLoader {
                               std::string &out_def);
     static int ParamsStringToDef(const char *params, std::string &out_def);
 
-#ifdef USE_GL_RENDER
-    Ren::ShaderRef LoadGLSL(Ren::Context &ctx, const char *name);
+#if defined(USE_GL_RENDER) || defined(USE_VK_RENDER)
     Ren::ShaderRef LoadGLSL(Ren::Context &ctx, const char *name, const Param *params);
-    Ren::ShaderRef LoadGLSL(Ren::Context &ctx, const char *name,
-                            const Param *const *params, int params_count);
 
     Ren::ProgramRef LoadProgram(Ren::Context &ctx, const char *name, const char *vs_name,
                                 const char *fs_name, const char *tcs_name = nullptr,
                                 const char *tes_name = nullptr);
     Ren::ProgramRef LoadProgram(Ren::Context &ctx, const char *name, const char *cs_name);
 #endif
+    Ren::ShaderRef LoadShader(Ren::Context &ctx, const char *name);
 };

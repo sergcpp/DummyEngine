@@ -1,6 +1,8 @@
 #pragma once
 
 #include <limits>
+#undef min
+#undef max
 
 namespace Ren {
 template <typename T, int FpBits> class Fixed {

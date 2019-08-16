@@ -7,9 +7,7 @@ struct InputManagerImp {
     std::queue<InputManager::Event> input_buffer;
 };
 
-InputManager::InputManager() {
-    imp_.reset(new InputManagerImp());
-}
+InputManager::InputManager() { imp_.reset(new InputManagerImp()); }
 
 InputManager::~InputManager() = default;
 

@@ -18,7 +18,7 @@
 #include "Random.h"
 #include "Utils/ShaderLoader.h"
 
-GameBase::GameBase(const int w, const int h, const char * /*local_dir*/)
+GameBase::GameBase(const int w, const int h, const char *device_name)
     : width(w), height(h) {
     terminated = false;
 
@@ -33,7 +33,9 @@ GameBase::GameBase(const int w, const int h, const char * /*local_dir*/)
     AddComponent(LOG_KEY, log);
 
     auto ren_ctx = std::make_shared<Ren::Context>();
-    ren_ctx->Init(w, h, log.get());
+    if (!ren_ctx->Init(w, h, log.get(), device_name)) {
+        throw std::runtime_error("Initialization failed!");
+    }
     AddComponent(REN_CONTEXT_KEY, ren_ctx);
 
     auto snd_ctx = std::make_shared<Snd::Context>();
@@ -62,9 +64,10 @@ GameBase::GameBase(const int w, const int h, const char * /*local_dir*/)
     auto random_engine = std::make_shared<Random>(std::random_device{}());
     AddComponent(RANDOM_KEY, random_engine);
 
-    JsObject config;
-    config[Gui::GL_DEFINES_KEY] = JsString{""};
-    auto ui_renderer = std::make_shared<Gui::Renderer>(*ren_ctx, config);
+    auto ui_renderer = std::make_shared<Gui::Renderer>(*ren_ctx);
+    if (!ui_renderer->Init()) {
+        throw std::runtime_error("Couldn't initialize UI renderer!");
+    }
     AddComponent(UI_RENDERER_KEY, ui_renderer);
 
     auto ui_root = std::make_shared<Gui::RootElement>(Gui::Vec2i(w, h));

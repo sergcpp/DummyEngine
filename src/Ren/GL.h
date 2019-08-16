@@ -228,7 +228,10 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_DEBUG_SEVERITY_NOTIFICATION      0x826B
 
 #define GL_DEBUG_SOURCE_APPLICATION         0x824A
+#define GL_DEBUG_TYPE_OTHER                 0x8251
 #define GL_DEBUG_TYPE_MARKER	            0x8268
+#define GL_DEBUG_TYPE_PUSH_GROUP            0x8269
+#define GL_DEBUG_TYPE_POP_GROUP             0x826A
 
 #define GL_TEXTURE_MAX_ANISOTROPY_EXT       0x84FE
 #define GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT   0x84FF
@@ -300,6 +303,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_DEPTH_COMPONENT24                0x81A6
 #define GL_DEPTH_COMPONENT32                0x81A7
 #define GL_DEPTH24_STENCIL8                 0x88F0
+#define GL_DEPTH32F_STENCIL8                0x8CAD
 
 #define GL_COLOR_ATTACHMENT0                0x8CE0
 #define GL_COLOR_ATTACHMENT1                0x8CE1
@@ -325,6 +329,8 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_MAP_FLUSH_EXPLICIT_BIT           0x0010
 #define GL_MAP_UNSYNCHRONIZED_BIT           0x0020
 #define GL_MAP_PERSISTENT_BIT               0x0040
+#define GL_DYNAMIC_STORAGE_BIT              0x0100
+#define GL_CLIENT_STORAGE_BIT               0x0200
 
 #define GL_COMPRESSED_RED       0x8225
 #define GL_COMPRESSED_RG        0x8226

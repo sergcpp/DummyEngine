@@ -4,10 +4,11 @@
 assets_pc
 assets_android
 build-*
+check*
+DummyApp*.exe
 libDummyApp*.so
 ModlApp.exe
 DummyApp.apk
-DummyApp.exe
 test.txt
 test.mesh
 *.blend1

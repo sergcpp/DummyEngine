@@ -9,7 +9,8 @@
 
 struct LightSourceItem {
     float pos[3], radius;
-    float col[3]; int shadowreg_index;
+    float col[3];
+    int shadowreg_index;
     float dir[3], spot;
 };
 static_assert(sizeof(LightSourceItem) == 48, "!");
@@ -29,7 +30,8 @@ static_assert(sizeof(ProbeItem) == 20 * sizeof(float), "!");
 
 struct EllipsItem {
     float position[3], radius;
-    float axis[3]; uint32_t perp;
+    float axis[3];
+    uint32_t perp;
 };
 static_assert(sizeof(EllipsItem) == 8 * sizeof(float), "!");
 
@@ -67,70 +69,74 @@ struct InstanceData {
             uint16_t wind_turb;
         };
     };
+    float normal_matrix[3][4];
+    float _vec[4];
 };
-static_assert(sizeof(InstanceData) == 64, "!");
+static_assert(sizeof(InstanceData) == 128, "!");
 
-struct DepthDrawBatch { // NOLINT
-    static const uint32_t TypeSimple    = 0b00u;    // simple
-    static const uint32_t TypeVege      = 0b01u;    // vegetation
-    static const uint32_t TypeSkinned   = 0b10u;    // skeletal
+struct DepthDrawBatch {                        // NOLINT
+    static const uint32_t TypeSimple = 0b00u;  // simple
+    static const uint32_t TypeVege = 0b01u;    // vegetation
+    static const uint32_t TypeSkinned = 0b10u; // skeletal
     // TODO: this probably should not be a type
-    static const uint32_t TypeTaaResp   = 0b11u;    // video-textured etc.
+    static const uint32_t TypeTaaResp = 0b11u; // video-textured etc.
 
-    static const uint32_t BitsSimple    = (TypeSimple   << 30u);
-    static const uint32_t BitsVege      = (TypeVege     << 30u);
-    static const uint32_t BitsSkinned   = (TypeSkinned  << 30u);
-    static const uint32_t BitsTaaResp   = (TypeTaaResp  << 30u);
-    static const uint32_t BitAlphaTest  = (1u << 29u);
-    static const uint32_t BitMoving     = (1u << 28u);
-    static const uint32_t BitTwoSided   = (1u << 27u);
-    static const uint32_t FlagBits      = (0b11111u << 27u);
+    static const uint32_t BitsSimple = (TypeSimple << 30u);
+    static const uint32_t BitsVege = (TypeVege << 30u);
+    static const uint32_t BitsSkinned = (TypeSkinned << 30u);
+    static const uint32_t BitsTaaResp = (TypeTaaResp << 30u);
+    static const uint32_t BitAlphaTest = (1u << 29u);
+    static const uint32_t BitMoving = (1u << 28u);
+    static const uint32_t BitTwoSided = (1u << 27u);
+    static const uint32_t FlagBits = (0b11111u << 27u);
 
     union {
         struct {
             uint32_t indices_offset : 27;
-            uint32_t two_sided_bit  : 1;
-            uint32_t moving_bit     : 1;    // object uses two transforms
+            uint32_t two_sided_bit : 1;
+            uint32_t moving_bit : 1; // object uses two transforms
             uint32_t alpha_test_bit : 1;
-            uint32_t type_bits      : 2;
+            uint32_t type_bits : 2;
         };
         uint32_t sort_key = 0;
     };
 
-    uint32_t indices_count, mat_id;
+    uint32_t indices_count;
     int32_t base_vertex;
-    int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
+    int32_t instance_indices[REN_MAX_BATCH_SIZE][2];
+    uint32_t instance_count;
 };
 static_assert(offsetof(DepthDrawBatch, indices_count) == 4, "!");
 
-struct MainDrawBatch {  // NOLINT
+struct MainDrawBatch { // NOLINT
     static const uint64_t BitAlphaBlend = (1ull << 63u);
-    static const uint64_t BitAlphaTest  = (1ull << 62u);
+    static const uint64_t BitAlphaTest = (1ull << 62u);
     static const uint64_t BitDepthWrite = (1ull << 61u);
-    static const uint64_t BitTwoSided   = (1ull << 60u);
-    static const uint64_t BitsProgId    = (0b11111111ull << 54u);
-    static const uint64_t BitsMatId     = (0b11111111111111ull << 40u);
-    static const uint64_t BitsCamDist   = (0b11111111ull << 32u);
-    static const uint64_t FlagBits      = (0b1111ull << 60u);
+    static const uint64_t BitTwoSided = (1ull << 60u);
+    static const uint64_t BitsProgId = (0b11111111ull << 54u);
+    static const uint64_t BitsMatId = (0b11111111111111ull << 40u);
+    static const uint64_t BitsCamDist = (0b11111111ull << 32u);
+    static const uint64_t FlagBits = (0b1111ull << 60u);
 
     union {
         struct {
-            uint64_t _pad1              : 3;
-            uint64_t indices_offset     : 27;
-            uint64_t cam_dist           : 8;
-            uint64_t mat_id             : 14;
-            uint64_t prog_id            : 8;
-            uint64_t two_sided_bit      : 1;
-            uint64_t depth_write_bit    : 1;
-            uint64_t alpha_test_bit     : 1;
-            uint64_t alpha_blend_bit    : 1;
+            uint64_t _pad1 : 3;
+            uint64_t indices_offset : 27;
+            uint64_t cam_dist : 8;
+            uint64_t mat_id : 14;
+            uint64_t pipe_id : 8;
+            uint64_t two_sided_bit : 1;
+            uint64_t depth_write_bit : 1;
+            uint64_t alpha_test_bit : 1;
+            uint64_t alpha_blend_bit : 1;
         };
         uint64_t sort_key = 0;
     };
 
     uint32_t indices_count;
     int32_t base_vertex;
-    int instance_indices[REN_MAX_BATCH_SIZE], instance_count;
+    int32_t instance_indices[REN_MAX_BATCH_SIZE][2];
+    uint32_t instance_count;
 };
 static_assert(offsetof(MainDrawBatch, indices_count) == 8, "!");
 
@@ -185,83 +191,66 @@ struct ShapeKeyData {
 };
 
 enum eRenderFlags : uint32_t {
-    EnableZFill     = (1u << 0u),
-    EnableCulling   = (1u << 1u),
-    EnableSSR       = (1u << 2u),
-    EnableSSAO      = (1u << 3u),
-    EnableLightmap  = (1u << 4u),
-    EnableLights    = (1u << 5u),
-    EnableDecals    = (1u << 6u),
-    EnableProbes    = (1u << 7u),
-    EnableDOF       = (1u << 8u),
-    EnableShadows   = (1u << 9u),
-    EnableOIT       = (1u << 10u),
-    EnableTonemap   = (1u << 11u),
-    EnableBloom     = (1u << 12u),
-    EnableMsaa      = (1u << 13u),
-    EnableTaa       = (1u << 14u),
-    EnableFxaa      = (1u << 15u),
-    EnableTimers    = (1u << 16u),
-    DebugWireframe  = (1u << 17u),
-    DebugCulling    = (1u << 18u),
-    DebugShadow     = (1u << 19u),
-    DebugReduce     = (1u << 20u),
-    DebugLights     = (1u << 21u),
-    DebugDeferred   = (1u << 22u),
-    DebugBlur       = (1u << 23u),
-    DebugDecals     = (1u << 24u),
-    DebugSSAO       = (1u << 25u),
-    DebugTimings    = (1u << 26u),
-    DebugBVH        = (1u << 27u),
-    DebugProbes     = (1u << 28u),
+    EnableZFill = (1u << 0u),
+    EnableCulling = (1u << 1u),
+    EnableSSR = (1u << 2u),
+    EnableSSAO = (1u << 3u),
+    EnableLightmap = (1u << 4u),
+    EnableLights = (1u << 5u),
+    EnableDecals = (1u << 6u),
+    EnableProbes = (1u << 7u),
+    EnableDOF = (1u << 8u),
+    EnableShadows = (1u << 9u),
+    EnableOIT = (1u << 10u),
+    EnableTonemap = (1u << 11u),
+    EnableBloom = (1u << 12u),
+    EnableMsaa = (1u << 13u),
+    EnableTaa = (1u << 14u),
+    EnableFxaa = (1u << 15u),
+    EnableTimers = (1u << 16u),
+    DebugWireframe = (1u << 17u),
+    DebugCulling = (1u << 18u),
+    DebugShadow = (1u << 19u),
+    DebugReduce = (1u << 20u),
+    DebugLights = (1u << 21u),
+    DebugDeferred = (1u << 22u),
+    DebugBlur = (1u << 23u),
+    DebugDecals = (1u << 24u),
+    DebugSSAO = (1u << 25u),
+    DebugTimings = (1u << 26u),
+    DebugBVH = (1u << 27u),
+    DebugProbes = (1u << 28u),
     DebugEllipsoids = (1u << 29u)
 };
 
 struct FrontendInfo {
-    uint64_t start_timepoint_us = 0,
-             end_timepoint_us = 0;
-    uint32_t occluders_time_us = 0,
-             main_gather_time_us = 0,
-             shadow_gather_time_us = 0,
-             drawables_sort_time_us = 0,
+    uint64_t start_timepoint_us = 0, end_timepoint_us = 0;
+    uint32_t occluders_time_us = 0, main_gather_time_us = 0, shadow_gather_time_us = 0, drawables_sort_time_us = 0,
              items_assignment_time_us = 0;
 };
 
 struct BackendInfo {
-    uint64_t cpu_start_timepoint_us = 0,
-             cpu_end_timepoint_us = 0;
-    uint64_t gpu_start_timepoint_us = 0,
-             gpu_end_timepoint_us = 0;
-    uint32_t skinning_time_us = 0,
-             shadow_time_us = 0,
-             depth_opaque_pass_time_us = 0,
-             ao_pass_time_us = 0,
-             opaque_pass_time_us = 0,
-             transp_pass_time_us = 0,
-             refl_pass_time_us = 0,
-             taa_pass_time_us = 0,
-             blur_pass_time_us = 0,
-             blit_pass_time_us = 0;
+    uint64_t cpu_start_timepoint_us = 0, cpu_end_timepoint_us = 0;
+    uint64_t gpu_start_timepoint_us = 0, gpu_end_timepoint_us = 0;
+    uint32_t skinning_time_us = 0, shadow_time_us = 0, depth_opaque_pass_time_us = 0, ao_pass_time_us = 0,
+             opaque_pass_time_us = 0, transp_pass_time_us = 0, refl_pass_time_us = 0, taa_pass_time_us = 0,
+             blur_pass_time_us = 0, blit_pass_time_us = 0;
     int64_t gpu_cpu_time_diff_us = 0;
 
-    uint32_t shadow_draw_calls_count = 0,
-             depth_fill_draw_calls_count = 0,
-             opaque_draw_calls_count = 0;
+    uint32_t shadow_draw_calls_count = 0, depth_fill_draw_calls_count = 0, opaque_draw_calls_count = 0;
 
     uint32_t tris_rendered = 0;
 };
 
 struct ItemsInfo {
-    uint32_t light_sources_count = 0,
-             decals_count = 0,
-             probes_count = 0;
+    uint32_t light_sources_count = 0, decals_count = 0, probes_count = 0;
     uint32_t items_total = 0;
 };
 
 struct ViewState {
     Ren::Vec2i act_res, scr_res;
     Ren::Mat4f prev_clip_from_world, down_buf_view_from_world, prev_clip_from_view;
-    Ren::Vec4f clip_info;
+    mutable Ren::Vec4f clip_info;
     bool is_multisampled = false;
 };
 
@@ -285,8 +274,15 @@ struct MaterialData {
 };
 static_assert(sizeof(MaterialData) == 48, "!");
 
+struct BindlessTextureData {
+#if defined(USE_VK_RENDER)
+    const Ren::SmallVectorImpl<VkDescriptorSet> *textures_descr_sets;
+#elif defined(USE_GL_RENDER)
+    Ren::WeakBufferRef textures_buf;
+#endif
+};
+
 // Constant that controls buffers orphaning
-const int FrameSyncWindow = 2;
 const size_t SkinTransformsBufChunkSize = sizeof(SkinTransform) * REN_MAX_SKIN_XFORMS_TOTAL;
 const size_t ShapeKeysBufChunkSize = sizeof(ShapeKeyData) * REN_MAX_SHAPE_KEYS_TOTAL;
 const size_t SkinRegionsBufChunkSize = sizeof(SkinRegion) * REN_MAX_SKIN_REGIONS_TOTAL;

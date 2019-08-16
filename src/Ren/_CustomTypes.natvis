@@ -9,6 +9,15 @@
       <Item Name="[ptr]" ExcludeView="simple">&amp;storage_->data_[index_]</Item>
     </Expand>
   </Type>
+  <Type Name="Ren::WeakRef&lt;*&gt;">
+    <DisplayString Condition="storage_ != nullptr">{{ [{storage_->data_[index_].counter_} strong ref] }}</DisplayString>
+	<DisplayString Condition="storage_ == nullptr">empty</DisplayString>
+    <Expand>
+      <Item Name="[storage]" ExcludeView="simple">storage_</Item>
+      <Item Name="[index]" ExcludeView="simple">index_</Item>
+      <Item Name="[ptr]" ExcludeView="simple">&amp;storage_->data_[index_]</Item>
+    </Expand>
+  </Type>
   <Type Name="Ren::BasicString&lt;*&gt;" Priority="MediumLow">
     <DisplayString>{{ str={str_,na}, len={len_} }}</DisplayString>
   </Type>

@@ -76,8 +76,7 @@ void DialogController::Update(const double cur_time_s) {
         const double end_time_s = cur_seq_->duration();
         play_time_s_ = cur_time_s - play_started_time_s_;
 
-        const eState next_state =
-            (state_ == eState::ChoicePlaying) ? eState::Sequence : eState::Paused;
+        const eState next_state = (state_ == eState::ChoicePlaying) ? eState::Sequence : eState::Paused;
 
         if (play_time_s_ < end_time_s) {
             // go back to playing
@@ -86,7 +85,7 @@ void DialogController::Update(const double cur_time_s) {
             play_time_s_ = end_time_s;
 
             if (next_seq_id_ != -1) {
-                //state_ = next_state;
+                // state_ = next_state;
                 state_ = eState::ChoicePuzzle;
                 /*SetCurSequence(next_seq_id_);
                 switch_sequence_signal.FireN(next_seq_id_);
@@ -113,8 +112,7 @@ void DialogController::SetCurSequence(const int id) {
         cur_seq_->push_caption_signal.clear();
     }
     cur_seq_ = dialog_->GetSequence(id);
-    cur_seq_->push_caption_signal
-        .Connect<DialogController, &DialogController::OnPushCaption>(this);
+    cur_seq_->push_caption_signal.Connect<DialogController, &DialogController::OnPushCaption>(this);
 }
 
 void DialogController::MakeChoice(const char *key) {

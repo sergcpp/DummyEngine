@@ -5,7 +5,13 @@
 layout(location = REN_VTX_POS_LOC) in vec2 aVertexPosition;
 layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs;
 
+#if defined(VULKAN)
+layout(push_constant) uniform PushConstants {
+    vec4 uTransform;
+};
+#else
 layout(location = 0) uniform vec4 uTransform;
+#endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0)

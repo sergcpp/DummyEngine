@@ -1,12 +1,19 @@
 #version 310 es
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision highp float;
 #endif
 
 #include "_fs_common.glsl"
+#include "blit_ssr_dilate_interface.glsl"
         
-layout(binding = REN_BASE0_TEX_SLOT) uniform lowp sampler2D source_texture;
+/*
+UNIFORM_BLOCKS
+	UniformParams : $ubUnifParamLoc
+*/
+
+layout(binding = SSR_TEX_SLOT) uniform lowp sampler2D source_texture;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 aVertexUVs_;

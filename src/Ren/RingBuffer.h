@@ -2,7 +2,9 @@
 
 #include <cassert>
 
+#if !defined(__APPLE__)
 #include <malloc.h>
+#endif
 
 #include <atomic>
 
@@ -166,8 +168,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
         RingBuffer<T> *container_;
         size_t index_;
 
-        iterator(RingBuffer<T> *container, const size_t index)
-            : container_(container), index_(index) {}
+        iterator(RingBuffer<T> *container, const size_t index) : container_(container), index_(index) {}
 
       public:
         using difference_type = std::ptrdiff_t;
@@ -224,9 +225,9 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
             return index_ > rhs.index_;
         }
 
-        template <typename IntType> iterator &operator[](IntType i) {
-            return (*this) + i;
-        }
+        template <typename IntType> T &operator[](IntType i) { return *((*this) + i); }
+
+        template <typename IntType> const T &operator[](IntType i) const { return *((*this) + i); }
 
         template <typename IntType> iterator &operator+=(IntType n) {
             index_ += n;
@@ -238,20 +239,17 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
             return (*this);
         }
 
-        template <typename IntType>
-        friend iterator operator+(const iterator &lhs, IntType n) {
+        template <typename IntType> friend iterator operator+(const iterator &lhs, IntType n) {
             iterator it = lhs;
             return it += n;
         }
 
-        template <typename IntType>
-        friend iterator operator+(IntType n, const iterator &rhs) {
+        template <typename IntType> friend iterator operator+(IntType n, const iterator &rhs) {
             iterator it = rhs;
             return it += n;
         }
 
-        template <typename IntType>
-        friend iterator operator-(const iterator &lhs, IntType n) {
+        template <typename IntType> friend iterator operator-(const iterator &lhs, IntType n) {
             iterator it = lhs;
             return it -= n;
         }

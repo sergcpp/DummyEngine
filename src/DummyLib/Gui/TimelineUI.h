@@ -24,8 +24,8 @@ class TimelineUI : public Gui::BaseElement {
     Ren::Vec2f SnapToPixels(const Ren::Vec2f &p);
 
   public:
-    TimelineUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Ren::Vec2f &pos,
-               const Ren::Vec2f &size, const Gui::BaseElement *parent);
+    TimelineUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Ren::Vec2f &pos, const Ren::Vec2f &size,
+               const Gui::BaseElement *parent);
 
     bool grabbed() const { return grabbed_; }
 

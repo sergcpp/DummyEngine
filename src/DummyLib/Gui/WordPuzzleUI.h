@@ -55,15 +55,13 @@ class WordPuzzleUI : public Gui::BaseElement {
     void UpdateTextBuffer();
     void UpdateState(double cur_time_s);
 
-    Ren::Vec2f DrawTextBuffer(Gui::Renderer *r, const char *text_data, int len,
-                              Ren::Vec2f draw_offset,
-                              std::vector<rect_t> &out_options_rects,
-                              int option_start,
+    Ren::Vec2f DrawTextBuffer(Gui::Renderer *r, const char *text_data, int len, Ren::Vec2f draw_offset,
+                              std::vector<rect_t> &out_options_rects, int option_start,
                               std::vector<rect_t> &out_hint_rects, int hint_start);
 
   public:
-    WordPuzzleUI(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size,
-                 const BaseElement *parent, const Gui::BitmapFont &font);
+    WordPuzzleUI(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
+                 const Gui::BitmapFont &font);
 
     bool active() const { return state_ != eState::Solved; }
 

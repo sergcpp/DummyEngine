@@ -12,13 +12,13 @@
 #include <cassert>
 
 namespace Ren {
-#ifndef EXCHANGE_DEFINED
+#ifndef REN_EXCHANGE_DEFINED
 template <class T, class U = T> T exchange(T &obj, U &&new_value) {
     T old_value = std::move(obj);
     obj = std::forward<U>(new_value);
     return old_value;
 }
-#define EXCHANGE_DEFINED
+#define REN_EXCHANGE_DEFINED
 #endif
 
 #ifndef REN_ALIGNED_MALLOC_DEFINED
@@ -63,8 +63,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
     static const size_t CapacityMask = ~OwnerBit;
 
   protected:
-    SmallVectorImpl(T *begin, T *end, const size_t capacity)
-        : begin_(begin), end_(end), capacity_(capacity) {}
+    SmallVectorImpl(T *begin, T *end, const size_t capacity) : begin_(begin), end_(end), capacity_(capacity) {}
 
     ~SmallVectorImpl() {
         while (end_ != begin_) {
@@ -75,6 +74,26 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
             aligned_free(begin_);
         }
     }
+
+    void ensure_reserved(const size_t req_capacity) {
+        const size_t cur_capacity = (capacity_ & CapacityMask);
+        if (req_capacity <= cur_capacity) {
+            return;
+        }
+
+        size_t new_capacity = cur_capacity;
+        while (new_capacity < req_capacity) {
+            new_capacity *= 2;
+        }
+        reserve(new_capacity);
+    }
+
+  public:
+    using iterator = T *;
+    using const_iterator = const T *;
+
+    SmallVectorImpl(const SmallVectorImpl &rhs) = delete;
+    SmallVectorImpl(SmallVectorImpl &&rhs) = delete;
 
     SmallVectorImpl &operator=(const SmallVectorImpl &rhs) {
         if (&rhs == this) {
@@ -87,6 +106,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
 
         if (capacity_ & OwnerBit) {
             aligned_free(begin_);
+            capacity_ = 0;
         }
 
         reserve(rhs.capacity_ & CapacityMask);
@@ -115,6 +135,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
 
         if (capacity_ & OwnerBit) {
             aligned_free(begin_);
+            capacity_ = 0;
         }
 
         if (rhs.capacity_ & OwnerBit) {
@@ -136,18 +157,14 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         return (*this);
     }
 
-  public:
-    SmallVectorImpl(const SmallVectorImpl &rhs) = delete;
-    SmallVectorImpl(SmallVectorImpl &&rhs) = delete;
-
     const T *cdata() const noexcept { return begin_; }
     const T *data() const noexcept { return begin_; }
     const T *begin() const noexcept { return begin_; }
     const T *end() const noexcept { return end_; }
 
     T *data() noexcept { return begin_; }
-    T *begin() noexcept { return begin_; }
-    T *end() noexcept { return end_; }
+    iterator begin() noexcept { return begin_; }
+    iterator end() noexcept { return end_; }
 
     const T &front() const {
         assert(begin_ != end_);
@@ -182,17 +199,17 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
     }
 
     void push_back(const T &el) {
-        reserve(size_t(end_ - begin_) + 1);
+        ensure_reserved(size_t(end_ - begin_) + 1);
         new (end_++) T(el);
     }
 
     void push_back(T &&el) {
-        reserve(size_t(end_ - begin_) + 1);
+        ensure_reserved(size_t(end_ - begin_) + 1);
         new (end_++) T(std::move(el));
     }
 
     template <class... Args> T &emplace_back(Args &&...args) {
-        reserve(size_t(end_ - begin_) + 1);
+        ensure_reserved(size_t(end_ - begin_) + 1);
         new (end_++) T(std::forward<Args>(args)...);
         return *(end_ - 1);
     }
@@ -208,12 +225,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
             return;
         }
 
-        size_t new_capacity = cur_capacity;
-        while (new_capacity < req_capacity) {
-            new_capacity *= 2;
-        }
-
-        T *new_begin = (T *)aligned_malloc(new_capacity * sizeof(T), AlignmentOfT);
+        T *new_begin = (T *)aligned_malloc(req_capacity * sizeof(T), AlignmentOfT);
         T *new_end = new_begin + (end_ - begin_);
 
         if (end_ != begin_) {
@@ -231,7 +243,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
 
         begin_ = new_begin;
         end_ = new_end;
-        capacity_ = (new_capacity | OwnerBit);
+        capacity_ = (req_capacity | OwnerBit);
     }
 
     void resize(const size_t req_size) {
@@ -264,6 +276,29 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         }
         end_ = begin_;
     }
+
+    iterator erase(iterator pos) {
+        assert(pos >= begin_ && pos < end_);
+
+        iterator move_dst = pos;
+        iterator move_src = pos + 1;
+        while (move_src != end_) {
+            (*move_dst) = std::move(*move_src);
+
+            ++move_dst;
+            ++move_src;
+        }
+        (--end_)->~T();
+
+        return pos;
+    }
+
+    template <class InputIt> void assign(const InputIt first, const InputIt last) {
+        clear();
+        for (InputIt it = first; it != last; ++it) {
+            push_back(*it);
+        }
+    }
 };
 
 template <typename T, int N, int AlignmentOfT = alignof(T)>
@@ -271,16 +306,31 @@ class SmallVector : public SmallVectorImpl<T, AlignmentOfT> {
     alignas(AlignmentOfT) char buffer_[sizeof(T) * N];
 
   public:
-    SmallVector() : SmallVectorImpl<T, AlignmentOfT>((T *)buffer_, (T *)buffer_, N) {} // NOLINT
-    SmallVector(const SmallVector &rhs) // NOLINT
+    SmallVector() // NOLINT
+        : SmallVectorImpl<T, AlignmentOfT>((T *)buffer_, (T *)buffer_, N) {}
+    SmallVector(size_t initial_size, const T &val = T()) // NOLINT
+        : SmallVectorImpl<T, AlignmentOfT>((T *)buffer_, (T *)buffer_, N) {
+        SmallVectorImpl<T, AlignmentOfT>::resize(initial_size, val);
+    }
+    SmallVector(const SmallVector<T, N, AlignmentOfT> &rhs) // NOLINT
         : SmallVectorImpl<T, AlignmentOfT>((T *)buffer_, (T *)buffer_, N) {
         SmallVectorImpl<T, AlignmentOfT>::operator=(rhs);
     }
-    SmallVector(SmallVector &&rhs) noexcept : SmallVectorImpl<T>((T *)buffer_, (T *)buffer_, N) { // NOLINT
+    SmallVector(const SmallVectorImpl<T, AlignmentOfT> &rhs) // NOLINT
+        : SmallVectorImpl<T, AlignmentOfT>((T *)buffer_, (T *)buffer_, N) {
+        SmallVectorImpl<T, AlignmentOfT>::operator=(rhs);
+    }
+    SmallVector(SmallVector<T, N, AlignmentOfT> &&rhs) noexcept // NOLINT
+        : SmallVectorImpl<T>((T *)buffer_, (T *)buffer_, N) {
+        SmallVectorImpl<T, AlignmentOfT>::operator=(std::move(rhs));
+    }
+    SmallVector(SmallVectorImpl<T, AlignmentOfT> &&rhs) noexcept // NOLINT
+        : SmallVectorImpl<T>((T *)buffer_, (T *)buffer_, N) {
         SmallVectorImpl<T, AlignmentOfT>::operator=(std::move(rhs));
     }
 
-    SmallVector &operator=(const SmallVector &rhs) = delete;
+    SmallVector &operator=(const SmallVectorImpl<T, AlignmentOfT> &rhs) { SmallVectorImpl<T, AlignmentOfT>::operator=(rhs); }
+    SmallVector &operator=(const SmallVector<T, N, AlignmentOfT> &rhs) { SmallVectorImpl<T, AlignmentOfT>::operator=(rhs); }
     SmallVector &operator=(SmallVector &&rhs) noexcept {
         SmallVectorImpl<T, AlignmentOfT>::operator=(std::move(rhs));
         return (*this);

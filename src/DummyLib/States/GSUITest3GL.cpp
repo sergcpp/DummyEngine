@@ -10,8 +10,7 @@ extern const int page_order_indices[][4];
 } // namespace GSUITest3Internal
 
 void GSUITest3::InitBookMaterials() {
-    assert(page_buf_.w != -1 && page_buf_.h != -1 &&
-           "Page framebuffer is not initialized!");
+    assert(page_buf_.w != -1 && page_buf_.h != -1 && "Page framebuffer is not initialized!");
 
     { // register framebuffer texture
         Ren::Tex2DParams params;
@@ -19,14 +18,14 @@ void GSUITest3::InitBookMaterials() {
         params.h = page_buf_.h;
         params.format = page_buf_.attachments[0].desc.format;
         params.sampling.filter = page_buf_.attachments[0].desc.filter;
-        params.sampling.repeat = page_buf_.attachments[0].desc.repeat;
+        params.sampling.wrap = page_buf_.attachments[0].desc.wrap;
 
         // prevent texture deletion
         params.flags = Ren::TexNoOwnership;
 
-        page_tex_ = ren_ctx_->textures().Add("__book_page_texture__",
-                                             page_buf_.attachments[0].tex->id(), params,
-                                             log_.get());
+        page_tex_ =
+            ren_ctx_->textures().Add("__book_page_texture__", ren_ctx_->api_ctx(), page_buf_.attachments[0].tex->id(),
+                                     ren_ctx_->default_mem_allocs(), params, log_.get());
     }
 
     { // replace texture
@@ -61,8 +60,6 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    r->SwapBuffers();
-
     book_main_font_->set_scale(/*std::max((float)ctx_->w() / 4096.0f, 1.0f)*/ 1.0f);
     assert(book_main_font_->draw_mode() == Gui::eDrawMode::DistanceField &&
            book_emph_font_->draw_mode() == Gui::eDrawMode::DistanceField &&
@@ -75,12 +72,10 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
 
     const int page_base = paged_reader_->cur_page();
     for (int i = 0; i < (book_state_ == eBookState::BkOpened ? 2 : 4); i++) {
-        paged_reader_->set_cur_page(page_base +
-                                    page_order_indices[(size_t)book_state_][i]);
+        paged_reader_->set_cur_page(page_base + page_order_indices[(size_t)book_state_][i]);
 
-        paged_reader_->Resize(
-            2.0f * page_corners_uvs[i * 2] - Vec2f{1.0f},
-            2.0f * (page_corners_uvs[i * 2 + 1] - page_corners_uvs[i * 2]), &page_root);
+        paged_reader_->Resize(2.0f * page_corners_uvs[i * 2] - Vec2f{1.0f},
+                              2.0f * (page_corners_uvs[i * 2 + 1] - page_corners_uvs[i * 2]), &page_root);
         paged_reader_->Draw(r);
     }
 
