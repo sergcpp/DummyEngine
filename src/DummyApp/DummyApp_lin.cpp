@@ -60,8 +60,8 @@ int DummyApp::Init(int w, int h) {
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 #endif
 
-    window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h,
-                               SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    uint32_t flags = fullscreen_ ? (SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_FULLSCREEN) : (SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE); 
+    window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flags);
 
 #if defined(__EMSCRIPTEN__)
     emscripten_set_resize_callback(nullptr, nullptr, true,
@@ -162,31 +162,25 @@ void DummyApp::AddEvent(int type, int key, int raw_key, float x, float y, float 
 
 #if !defined(__ANDROID__)
 int DummyApp::Run(const std::vector<std::string> &args) {
+    int w = 1024, h = 576;
+    fullscreen_ = false;
 
-    for (int i = 0; i < (int)args.size(); i++) {
+    int args_count = (int)args.size();
+    for (int i = 0; i < args_count; i++) {
         const std::string &arg = args[i];
         if (arg == "--prepare_assets") {
             Viewer::PrepareAssets(args[i + 1].c_str());
             i++;
         } else if (arg == "--norun") {
             return 0;
+        } else if ((arg == "--width" || arg == "-w") && i < args_count) {
+            w = std::atoi(args[++i].c_str());   
+        } else if ((arg == "--height" || arg == "-h") && i < args_count) {
+            h = std::atoi(args[++i].c_str());
+        } else if ((arg == "--fullscreen") || (arg == "-fs")) {
+            fullscreen_ = true;
         }
     }
-
-#if defined(__EMSCRIPTEN__)
-    const int w = 1024;
-    const int h = 576;
-    //const int w = 640;  const int h = 360;
-#else
-    //const int w = 1920; const int h = 1080;
-    //const int w = 1280; const int h = 720;
-    const int w = 1024; const int h = 576;
-    //const int w = 1280; const int h = 720;
-    //const int w = 768; const int h = 512;
-    //const int w = 640; const int h = 360;
-
-    //const int w = 1024; const int h = 1024;
-#endif
 
     if (Init(w, h) < 0) {
         return -1;

@@ -219,7 +219,7 @@ int DummyApp::Init(int w, int h) {
 
     window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View",
                                       WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-                                      100, 100,
+                                      CW_USEDEFAULT, CW_USEDEFAULT,
                                       rect.right - rect.left,
                                       rect.bottom - rect.top,
                                       NULL,
@@ -337,17 +337,25 @@ void DummyApp::AddEvent(int type, int key, int raw_key, float x, float y, float 
 }
 
 int DummyApp::Run(const std::vector<std::string> &args) {
-    for (int i = 0; i < (int)args.size(); i++) {
+    int w = 1024, h = 576;
+    fullscreen_ = false;
+
+    int args_count = (int)args.size();
+    for (int i = 0; i < args_count; i++) {
         const std::string &arg = args[i];
         if (arg == "--prepare_assets") {
             Viewer::PrepareAssets(args[i + 1].c_str());
             i++;
         } else if (arg == "--norun") {
             return 0;
+        } else if ((arg == "--width" || arg == "-w") && i < args_count) {
+            w = std::atoi(args[++i].c_str());   
+        } else if ((arg == "--height" || arg == "-h") && i < args_count) {
+            h = std::atoi(args[++i].c_str());
+        } else if ((arg == "--fullscreen") || (arg == "-fs")) {
+            fullscreen_ = true;
         }
     }
-
-    const int w = 1024, h = 576;
 
     if (Init(w, h) < 0) {
         return -1;
