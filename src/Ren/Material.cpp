@@ -2,6 +2,8 @@
 
 #include <cstdlib>
 
+#include "SamplingParams.h"
+
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4996)
@@ -10,47 +12,40 @@
 namespace Ren {
 bool IsMainThread();
 
-uint8_t from_hex_char(const char c) {
-    return (c >= 'A') ? (c >= 'a') ? (c - 'a' + 10) : (c - 'A' + 10) : (c - '0');
-}
+uint8_t from_hex_char(const char c) { return (c >= 'A') ? (c >= 'a') ? (c - 'a' + 10) : (c - 'A' + 10) : (c - '0'); }
 
-const SamplingParams g_default_mat_sampler = {eTexFilter::Trilinear, eTexRepeat::Repeat,
-                                              eTexCompare::None,     Fixed8{},
+const SamplingParams g_default_mat_sampler = {eTexFilter::Trilinear, eTexWrap::Repeat, eTexCompare::None, Fixed8{},
                                               Fixed8::lowest(),      Fixed8::max()};
 } // namespace Ren
 
 Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *status,
-                        const program_load_callback &on_prog_load,
-                        const texture_load_callback &on_tex_load,
+                        const pipelines_load_callback &on_pipes_load, const texture_load_callback &on_tex_load,
                         const sampler_load_callback &on_sampler_load, ILog *log) {
     name_ = String{name};
-    Init(mat_src, status, on_prog_load, on_tex_load, on_sampler_load, log);
+    Init(mat_src, status, on_pipes_load, on_tex_load, on_sampler_load, log);
 }
 
-Ren::Material::Material(const char *name, uint32_t flags, const ProgramRef _programs[],
-                        int programs_count, const Tex2DRef _textures[],
-                        const SamplerRef _samplers[], int textures_count,
+Ren::Material::Material(const char *name, uint32_t flags, const PipelineRef _pipelines[], int pipelines_count,
+                        const Tex2DRef _textures[], const SamplerRef _samplers[], int textures_count,
                         const Vec4f _params[], int params_count, ILog *log) {
     name_ = String{name};
-    Init(flags, _programs, programs_count, _textures, _samplers, textures_count, _params,
-         params_count, log);
+    Init(flags, _pipelines, pipelines_count, _textures, _samplers, textures_count, _params, params_count, log);
 }
 
-void Ren::Material::Init(uint32_t flags, const ProgramRef _programs[],
-                         const int programs_count, const Tex2DRef _textures[],
-                         const SamplerRef _samplers[], const int textures_count,
+void Ren::Material::Init(uint32_t flags, const PipelineRef _pipelines[], const int pipelines_count,
+                         const Tex2DRef _textures[], const SamplerRef _samplers[], const int textures_count,
                          const Vec4f _params[], int params_count, ILog *log) {
     assert(IsMainThread());
     flags_ = flags;
     ready_ = true;
 
-    programs.clear();
+    pipelines.clear();
     textures.clear();
     samplers.clear();
     params.clear();
 
-    for (int i = 0; i < programs_count; i++) {
-        programs.emplace_back(_programs[i]);
+    for (int i = 0; i < pipelines_count; i++) {
+        pipelines.emplace_back(_pipelines[i]);
     }
     for (int i = 0; i < textures_count; i++) {
         textures.emplace_back(_textures[i]);
@@ -61,16 +56,14 @@ void Ren::Material::Init(uint32_t flags, const ProgramRef _programs[],
     }
 }
 
-void Ren::Material::Init(const char *mat_src, eMatLoadStatus *status,
-                         const program_load_callback &on_prog_load,
-                         const texture_load_callback &on_tex_load,
-                         const sampler_load_callback &on_sampler_load, ILog *log) {
-    InitFromTXT(mat_src, status, on_prog_load, on_tex_load, on_sampler_load, log);
+void Ren::Material::Init(const char *mat_src, eMatLoadStatus *status, const pipelines_load_callback &on_pipes_load,
+                         const texture_load_callback &on_tex_load, const sampler_load_callback &on_sampler_load,
+                         ILog *log) {
+    InitFromTXT(mat_src, status, on_pipes_load, on_tex_load, on_sampler_load, log);
 }
 
 void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
-                                const program_load_callback &on_prog_load,
-                                const texture_load_callback &on_tex_load,
+                                const pipelines_load_callback &on_pipes_load, const texture_load_callback &on_tex_load,
                                 const sampler_load_callback &on_sampler_load, ILog *log) {
     if (!mat_src) {
         (*status) = eMatLoadStatus::SetToDefault;
@@ -82,10 +75,13 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
     const char *p = mat_src;
     const char *q = std::strpbrk(p + 1, delims);
 
-    programs.clear();
+    pipelines.clear();
     textures.clear();
     samplers.clear();
     params.clear();
+
+    SmallVector<std::string, 4> program_names;
+    SmallVector<std::string, 4> v_shader_names, f_shader_names, tc_shader_names, te_shader_names;
 
     for (; p != nullptr && q != nullptr; q = std::strpbrk(p, delims)) {
         if (p == q) {
@@ -95,31 +91,28 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
         const std::string item(p, q);
 
         if (item == "gl_program:") {
-#ifdef USE_GL_RENDER
+#if defined(USE_GL_RENDER) || defined(USE_VK_RENDER)
             p = q + 1;
             q = std::strpbrk(p, delims);
-            const std::string program_name = std::string(p, q);
+            program_names.emplace_back(p, q);
             p = q + 1;
             q = std::strpbrk(p, delims);
-            const std::string v_shader_name = std::string(p, q);
+            v_shader_names.emplace_back(p, q);
             p = q + 1;
             q = std::strpbrk(p, delims);
-            const std::string f_shader_name = std::string(p, q);
+            f_shader_names.emplace_back(p, q);
 
-            std::string tc_shader_name, te_shader_name;
             if (q && q[0] == '\r' && q[0] == '\n') {
                 p = q + 1;
                 q = std::strpbrk(p, delims);
-                tc_shader_name = std::string(p, q);
+                tc_shader_names.emplace_back(p, q);
                 p = q + 1;
                 q = std::strpbrk(p, delims);
-                te_shader_name = std::string(p, q);
+                te_shader_names.emplace_back(p, q);
+            } else {
+                tc_shader_names.emplace_back();
+                te_shader_names.emplace_back();
             }
-
-            programs.emplace_back(on_prog_load(
-                program_name.c_str(), v_shader_name.c_str(), f_shader_name.c_str(),
-                tc_shader_name.empty() ? nullptr : tc_shader_name.c_str(),
-                te_shader_name.empty() ? nullptr : te_shader_name.c_str()));
 #endif
         } else if (item == "sw_program:") {
 #ifdef USE_SW_RENDER
@@ -169,21 +162,17 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                 const int flag_len = int(_q - _p);
 
                 if (flag[0] == '#') {
-                    texture_color[0] =
-                        from_hex_char(flag[1]) * 16 + from_hex_char(flag[2]);
-                    texture_color[1] =
-                        from_hex_char(flag[3]) * 16 + from_hex_char(flag[4]);
-                    texture_color[2] =
-                        from_hex_char(flag[5]) * 16 + from_hex_char(flag[6]);
-                    texture_color[3] =
-                        from_hex_char(flag[7]) * 16 + from_hex_char(flag[8]);
+                    texture_color[0] = from_hex_char(flag[1]) * 16 + from_hex_char(flag[2]);
+                    texture_color[1] = from_hex_char(flag[3]) * 16 + from_hex_char(flag[4]);
+                    texture_color[2] = from_hex_char(flag[5]) * 16 + from_hex_char(flag[6]);
+                    texture_color[3] = from_hex_char(flag[7]) * 16 + from_hex_char(flag[8]);
                 } else if (strncmp(flag, "signed", flag_len) == 0) {
                     texture_flags |= TexSigned;
                 } else if (strncmp(flag, "srgb", flag_len) == 0) {
                     texture_flags |= TexSRGB;
                 } else if (strncmp(flag, "norepeat", flag_len) == 0) {
                     texture_flags |= TexNoRepeat;
-                    sampler_params.repeat = eTexRepeat::ClampToEdge;
+                    sampler_params.wrap = eTexWrap::ClampToEdge;
                 } else if (strncmp(flag, "mip_min", flag_len) == 0) {
                     texture_flags |= TexMIPMin;
                 } else if (strncmp(flag, "mip_max", flag_len) == 0) {
@@ -200,8 +189,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                 _p = _q + 1;
             }
 
-            textures.emplace_back(
-                on_tex_load(texture_name.c_str(), texture_color, texture_flags));
+            textures.emplace_back(on_tex_load(texture_name.c_str(), texture_color, texture_flags));
             samplers.emplace_back(on_sampler_load(sampler_params));
         } else if (item == "param:") {
             Vec4f &par = params.emplace_back();
@@ -226,6 +214,12 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
     }
 
     assert(textures.size() == samplers.size());
+
+    for (size_t i = 0; i < program_names.size(); ++i) {
+        on_pipes_load(program_names[i].c_str(), flags_, v_shader_names[i].c_str(), f_shader_names[i].c_str(),
+                      tc_shader_names[i].empty() ? nullptr : tc_shader_names[i].c_str(),
+                      te_shader_names[i].empty() ? nullptr : te_shader_names[i].c_str(), pipelines);
+    }
 
     ready_ = true;
     (*status) = eMatLoadStatus::CreatedFromData;

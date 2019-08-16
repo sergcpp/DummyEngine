@@ -8,16 +8,13 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-void RpDebugTextures::Setup(
-    RpBuilder &builder, const ViewState *view_state, const DrawList &list,
-    const int orphan_index, const Ren::Tex2DRef &down_tex_4x,
-    const char shared_data_buf_name[], const char cells_buf_name[],
-    const char items_buf_name[], const char shadow_map_name[],
-    const char main_color_tex_name[], const char main_normal_tex_name[],
-    const char main_spec_tex_name[], const char main_depth_tex_name[],
-    const char ssao_tex_name[], const char blur_res_name[], const char reduced_tex_name[],
-    Ren::TexHandle output_tex) {
-    orphan_index_ = orphan_index;
+void RpDebugTextures::Setup(RpBuilder &builder, const ViewState *view_state, const DrawList &list,
+                            const Ren::Tex2DRef &down_tex_4x, const char shared_data_buf_name[],
+                            const char cells_buf_name[], const char items_buf_name[], const char shadow_map_name[],
+                            const char main_color_tex_name[], const char main_normal_tex_name[],
+                            const char main_spec_tex_name[], const char main_depth_tex_name[],
+                            const char ssao_tex_name[], const char blur_res_name[], const char reduced_tex_name[],
+                            Ren::WeakTex2DRef output_tex) {
     render_flags_ = list.render_flags;
     view_state_ = view_state;
     draw_cam_ = &list.draw_cam;
@@ -42,18 +39,29 @@ void RpDebugTextures::Setup(
     nodes_count_ = uint32_t(list.temp_nodes.size());
     root_node_ = list.root_index;
 
-    shared_data_buf_ = builder.ReadBuffer(shared_data_buf_name, *this);
-    cells_buf_ = builder.ReadBuffer(cells_buf_name, *this);
-    items_buf_ = builder.ReadBuffer(items_buf_name, *this);
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf_name, Ren::eResState::UniformBuffer,
+                                          Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
+    cells_buf_ =
+        builder.ReadBuffer(cells_buf_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    items_buf_ =
+        builder.ReadBuffer(items_buf_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
 
-    shadowmap_tex_ = builder.ReadTexture(shadow_map_name, *this);
-    color_tex_ = builder.ReadTexture(main_color_tex_name, *this);
-    normal_tex_ = builder.ReadTexture(main_normal_tex_name, *this);
-    spec_tex_ = builder.ReadTexture(main_spec_tex_name, *this);
-    depth_tex_ = builder.ReadTexture(main_depth_tex_name, *this);
-    ssao_tex_ = builder.ReadTexture(ssao_tex_name, *this);
-    blur_tex_ = builder.ReadTexture(blur_res_name, *this);
-    reduced_tex_ = builder.ReadTexture(reduced_tex_name, *this);
+    shadowmap_tex_ =
+        builder.ReadTexture(shadow_map_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    color_tex_ = builder.ReadTexture(main_color_tex_name, Ren::eResState::ShaderResource,
+                                     Ren::eStageBits::FragmentShader, *this);
+    normal_tex_ = builder.ReadTexture(main_normal_tex_name, Ren::eResState::ShaderResource,
+                                      Ren::eStageBits::FragmentShader, *this);
+    spec_tex_ =
+        builder.ReadTexture(main_spec_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    depth_tex_ = builder.ReadTexture(main_depth_tex_name, Ren::eResState::ShaderResource,
+                                     Ren::eStageBits::FragmentShader | Ren::eStageBits::DepthAttachment, *this);
+    ssao_tex_ =
+        builder.ReadTexture(ssao_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    blur_tex_ =
+        builder.ReadTexture(blur_res_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    reduced_tex_ =
+        builder.ReadTexture(reduced_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
 }
 
 void RpDebugTextures::Execute(RpBuilder &builder) {
@@ -72,31 +80,29 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
     RpAllocTex &reduced_tex = builder.GetReadTexture(reduced_tex_);
 
     Ren::RastState rast_state;
-    rast_state.cull_face.enabled = true;
+    rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
     rast_state.viewport[2] = view_state_->scr_res[0];
     rast_state.viewport[3] = view_state_->scr_res[1];
 
-    rast_state.Apply();
-    Ren::RastState applied_state = rast_state;
+    rast_state.ApplyChanged(builder.rast_state());
+    builder.rast_state() = rast_state;
 
     if (render_flags_ & (DebugLights | DebugDecals)) {
         rast_state.blend.enabled = true;
-        rast_state.blend.src = Ren::eBlendFactor::SrcAlpha;
-        rast_state.blend.dst = Ren::eBlendFactor::OneMinusSrcAlpha;
+        rast_state.blend.src = uint8_t(Ren::eBlendFactor::SrcAlpha);
+        rast_state.blend.dst = uint8_t(Ren::eBlendFactor::OneMinusSrcAlpha);
 
-        rast_state.ApplyChanged(applied_state);
-        applied_state = rast_state;
+        rast_state.ApplyChanged(builder.rast_state());
+        builder.rast_state() = rast_state;
 
         ////
 
-        Ren::Program *blit_prog = view_state_->is_multisampled
-                                      ? blit_prog = blit_debug_ms_prog_.get()
-                                      : blit_prog = blit_debug_prog_.get();
+        Ren::Program *blit_prog =
+            view_state_->is_multisampled ? blit_prog = blit_debug_ms_prog_.get() : blit_prog = blit_debug_prog_.get();
 
         PrimDraw::Uniform uniforms[] = {
-            {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]),
-                           float(view_state_->act_res[1])}},
+            {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1])}},
             {15, Ren::Vec2i{view_state_->scr_res[0], view_state_->scr_res[1]}},
             {16, 0.0f},
             {17, draw_cam_->clip_info()}};
@@ -110,20 +116,15 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
         PrimDraw::Binding bindings[3];
 
         if (view_state_->is_multisampled) {
-            bindings[0] = {Ren::eBindTarget::Tex2DMs, REN_BASE0_TEX_SLOT,
-                           depth_tex.ref->handle()};
+            bindings[0] = {Ren::eBindTarget::Tex2DMs, REN_BASE0_TEX_SLOT, *depth_tex.ref};
         } else {
-            bindings[0] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT,
-                           depth_tex.ref->handle()};
+            bindings[0] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *depth_tex.ref};
         }
 
-        bindings[1] = {Ren::eBindTarget::TexBuf, REN_CELLS_BUF_SLOT,
-                       cells_buf.tbos[orphan_index_]->handle()};
-        bindings[2] = {Ren::eBindTarget::TexBuf, REN_ITEMS_BUF_SLOT,
-                       items_buf.tbos[orphan_index_]->handle()};
+        bindings[1] = {Ren::eBindTarget::TexBuf, REN_CELLS_BUF_SLOT, *cells_buf.tbos[0]};
+        bindings[2] = {Ren::eBindTarget::TexBuf, REN_ITEMS_BUF_SLOT, *items_buf.tbos[0]};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {output_fb_.id(), 0}, blit_prog,
-                            bindings, 3, uniforms, 4);
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&output_fb_, 0}, blit_prog, bindings, 3, uniforms, 4);
     }
 
     int x_offset = 0;
@@ -134,83 +135,78 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
         // Depth values
         //
 
-        temp_tex_->SetSubImage(0, 0, 0, depth_w_, depth_h_, Ren::eTexFormat::RawRGBA8888,
-                               depth_pixels_, -1 /* data_len */);
+        temp_tex_->SetSubImage(0, 0, 0, depth_w_, depth_h_, Ren::eTexFormat::RawRGBA8888, depth_pixels_,
+                               -1 /* data_len */);
 
-        x_offset +=
-            BlitTex(applied_state, x_offset, 0, depth_w_ / 2, depth_h_ / 2, temp_tex_, 1.0f);
+        x_offset += BlitTex(builder.rast_state(), x_offset, 0, depth_w_ / 2, depth_h_ / 2, temp_tex_, 1.0f);
     }
 
     if (render_flags_ & DebugDeferred) {
-        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, color_tex.ref, 1.0f);
-        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, spec_tex.ref, 1.0f);
-        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, normal_tex.ref, 1.0f);
-        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, down_tex_4x_, 1.0f);
+        x_offset += BlitTex(builder.rast_state(), x_offset, 0, 384, -1, color_tex.ref, 1.0f);
+        x_offset += BlitTex(builder.rast_state(), x_offset, 0, 384, -1, spec_tex.ref, 1.0f);
+        x_offset += BlitTex(builder.rast_state(), x_offset, 0, 384, -1, normal_tex.ref, 1.0f);
+        x_offset += BlitTex(builder.rast_state(), x_offset, 0, 384, -1, down_tex_4x_, 1.0f);
     }
 
     if (render_flags_ & DebugReduce) {
-        x_offset += BlitTex(applied_state, x_offset, 0, 256, 128, reduced_tex.ref, 10.0f);
+        x_offset += BlitTex(builder.rast_state(), x_offset, 0, 256, 128, reduced_tex.ref, 10.0f);
     }
 
     if (render_flags_ & DebugBlur) {
-        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, blur_tex.ref, 1.0f);
+        x_offset += BlitTex(builder.rast_state(), x_offset, 0, 384, -1, blur_tex.ref, 1.0f);
     }
 
     if (render_flags_ & DebugSSAO) {
-        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, ssao_tex.ref, 1.0f);
+        x_offset += BlitTex(builder.rast_state(), x_offset, 0, 384, -1, ssao_tex.ref, 1.0f);
     }
 
     if (render_flags_ & DebugBVH) {
         const uint32_t buf_size = nodes_count_ * sizeof(bvh_node_t);
 
+        Ren::BufferRef temp_stage_buf = builder.ctx().LoadBuffer("Nodes stage buf", Ren::eBufType::Stage, buf_size);
+
+        auto *stage_nodes = reinterpret_cast<bvh_node_t *>(temp_stage_buf->Map(Ren::BufMapWrite));
+        memcpy(stage_nodes, nodes_, buf_size);
+        temp_stage_buf->FlushMappedRange(0, buf_size);
+        temp_stage_buf->Unmap();
+
         if (!nodes_buf_ || buf_size > nodes_buf_->size()) {
-            nodes_buf_ = builder.ctx().CreateBuffer(
-                "Nodes buf", Ren::eBufferType::Texture, Ren::eBufferAccessType::Draw,
-                Ren::eBufferAccessFreq::Dynamic, buf_size);
-            const uint32_t off = nodes_buf_->AllocRegion(buf_size, "nodes debug", nodes_);
-            assert(off == 0);
-
-            nodes_tbo_ = builder.ctx().CreateTexture1D(
-                "Nodes TBO", nodes_buf_, Ren::eTexFormat::RawRGBA32F, 0, buf_size);
-        } else {
-            const bool res = nodes_buf_->FreeRegion(0);
-            assert(res);
-
-            const uint32_t off = nodes_buf_->AllocRegion(buf_size, "nodes debug", nodes_);
-            assert(off == 0);
+            nodes_buf_ = {};
+            nodes_tbo_ = {};
+            nodes_buf_ = builder.ctx().LoadBuffer("Nodes buf", Ren::eBufType::Texture, buf_size);
+            nodes_tbo_ =
+                builder.ctx().CreateTexture1D("Nodes TBO", nodes_buf_, Ren::eTexFormat::RawRGBA32F, 0, buf_size);
         }
+
+        nodes_buf_->FreeSubRegion(0);
+        const uint32_t off = nodes_buf_->AllocSubRegion(buf_size, "nodes debug", temp_stage_buf.get());
+        assert(off == 0);
 
         ///
 
         rast_state.blend.enabled = true;
-        rast_state.blend.src = Ren::eBlendFactor::SrcAlpha;
-        rast_state.blend.dst = Ren::eBlendFactor::OneMinusSrcAlpha;
+        rast_state.blend.src = uint8_t(Ren::eBlendFactor::SrcAlpha);
+        rast_state.blend.dst = uint8_t(Ren::eBlendFactor::OneMinusSrcAlpha);
 
-        rast_state.viewport =
-            Ren::Vec4i{0, 0, view_state_->scr_res[0], view_state_->scr_res[1]};
-        rast_state.Apply();
-        applied_state = rast_state;
+        rast_state.viewport = Ren::Vec4i{0, 0, view_state_->scr_res[0], view_state_->scr_res[1]};
+        rast_state.ApplyChanged(builder.rast_state());
+        builder.rast_state() = rast_state;
 
-        Ren::Program *debug_bvh_prog = view_state_->is_multisampled
-                                           ? blit_debug_bvh_ms_prog_.get()
-                                           : blit_debug_bvh_prog_.get();
+        Ren::Program *debug_bvh_prog =
+            view_state_->is_multisampled ? blit_debug_bvh_ms_prog_.get() : blit_debug_bvh_prog_.get();
 
         PrimDraw::Binding bindings[3];
-        bindings[0] = {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
-                       orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
-                       unif_shared_data_buf.ref->handle()};
-        bindings[1] = {view_state_->is_multisampled ? Ren::eBindTarget::Tex2DMs
-                                                    : Ren::eBindTarget::Tex2D,
-                       0, depth_tex.ref->handle()};
-        bindings[2] = {Ren::eBindTarget::TexBuf, 1, nodes_tbo_->handle()};
+        bindings[0] = {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock),
+                       *unif_shared_data_buf.ref};
+        bindings[1] = {view_state_->is_multisampled ? Ren::eBindTarget::Tex2DMs : Ren::eBindTarget::Tex2D, 0,
+                       *depth_tex.ref};
+        bindings[2] = {Ren::eBindTarget::TexBuf, 1, *nodes_tbo_};
 
         const PrimDraw::Uniform uniforms[] = {
-            {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]),
-                           float(view_state_->act_res[1])}},
+            {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1])}},
             {12, int(root_node_)}};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {output_fb_.id(), 0}, debug_bvh_prog,
-                            bindings, 3, uniforms, 2);
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&output_fb_, 0}, debug_bvh_prog, bindings, 3, uniforms, 2);
     }
 
     if (render_flags_ & DebugShadow) {
@@ -219,31 +215,26 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
 }
 
 void RpDebugTextures::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
-    Ren::BufferRef vtx_buf1 = ctx.default_vertex_buf1(),
-                   vtx_buf2 = ctx.default_vertex_buf2(),
+    Ren::BufferRef vtx_buf1 = ctx.default_vertex_buf1(), vtx_buf2 = ctx.default_vertex_buf2(),
                    ndx_buf = ctx.default_indices_buf();
 
     if (!initialized) {
-        blit_prog_ = sh.LoadProgram(ctx, "blit", "internal/blit.vert.glsl",
-                                    "internal/blit.frag.glsl");
+        blit_prog_ = sh.LoadProgram(ctx, "blit", "internal/blit.vert.glsl", "internal/blit.frag.glsl");
         assert(blit_prog_->ready());
-        blit_debug_prog_ = sh.LoadProgram(ctx, "blit_debug", "internal/blit.vert.glsl",
-                                          "internal/blit_debug.frag.glsl");
+        blit_debug_prog_ =
+            sh.LoadProgram(ctx, "blit_debug", "internal/blit.vert.glsl", "internal/blit_debug.frag.glsl");
         assert(blit_debug_prog_->ready());
         blit_debug_ms_prog_ =
-            sh.LoadProgram(ctx, "blit_debug_ms", "internal/blit.vert.glsl",
-                           "internal/blit_debug.frag.glsl@MSAA_4");
+            sh.LoadProgram(ctx, "blit_debug_ms", "internal/blit.vert.glsl", "internal/blit_debug.frag.glsl@MSAA_4");
         assert(blit_debug_ms_prog_->ready());
         blit_debug_bvh_prog_ =
-            sh.LoadProgram(ctx, "blit_debug_bvh", "internal/blit.vert.glsl",
-                           "internal/blit_debug_bvh.frag.glsl");
+            sh.LoadProgram(ctx, "blit_debug_bvh", "internal/blit.vert.glsl", "internal/blit_debug_bvh.frag.glsl");
         assert(blit_debug_bvh_prog_->ready());
-        blit_debug_bvh_ms_prog_ =
-            sh.LoadProgram(ctx, "blit_debug_bvh_ms", "internal/blit.vert.glsl",
-                           "internal/blit_debug_bvh.frag.glsl@MSAA_4");
+        blit_debug_bvh_ms_prog_ = sh.LoadProgram(ctx, "blit_debug_bvh_ms", "internal/blit.vert.glsl",
+                                                 "internal/blit_debug_bvh.frag.glsl@MSAA_4");
         assert(blit_debug_bvh_ms_prog_->ready());
-        blit_depth_prog_ = sh.LoadProgram(ctx, "blit_depth", "internal/blit.vert.glsl",
-                                          "internal/blit_depth.frag.glsl");
+        blit_depth_prog_ =
+            sh.LoadProgram(ctx, "blit_depth", "internal/blit.vert.glsl", "internal/blit_depth.frag.glsl");
         assert(blit_depth_prog_->ready());
 
         initialized = true;
@@ -254,35 +245,33 @@ void RpDebugTextures::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         params.w = depth_w_;
         params.h = depth_h_;
         params.format = Ren::eTexFormat::RawRGBA8888;
-        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        temp_tex_ = ctx.LoadTexture2D("__DEBUG_TEMP_TEXTURE__", params, &status);
-        assert(status == Ren::eTexLoadStatus::CreatedDefault ||
-               status == Ren::eTexLoadStatus::Found ||
+        temp_tex_ = ctx.LoadTexture2D("__DEBUG_TEMP_TEXTURE__", params, ctx.default_mem_allocs(), &status);
+        assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
                status == Ren::eTexLoadStatus::Reinitialized);
     }
 
     { // setup temp vao
         const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1->handle(), REN_VTX_POS_LOC, 2, Ren::eType::Float32, 0,
-             uintptr_t(prim_draw_.temp_buf1_vtx_offset())},
+            {vtx_buf1->handle(), REN_VTX_POS_LOC, 2, Ren::eType::Float32, 0, prim_draw_.temp_buf1_vtx_offset()},
             {vtx_buf1->handle(), REN_VTX_UV1_LOC, 2, Ren::eType::Float32, 0,
-             uintptr_t(prim_draw_.temp_buf1_vtx_offset() + 8 * sizeof(float))}};
+             uint32_t(prim_draw_.temp_buf1_vtx_offset() + 8 * sizeof(float))}};
 
-        if (!temp_vao_.Setup(attribs, 2, ndx_buf->handle())) {
+        if (!temp_vtx_input_.Setup(attribs, 2, ndx_buf->handle())) {
             ctx.log()->Error("RpDebugTextures: temp_vao_ init failed!");
         }
     }
 
-    if (!output_fb_.Setup(&output_tex_, 1, {}, {}, false)) {
+    if (!output_fb_.Setup(ctx.api_ctx(), {}, ctx.w(), ctx.h(), &output_tex_, 1, {}, {}, false)) {
         ctx.log()->Error("RpDebugTextures: output_fb_ init failed!");
     }
 }
 
-int RpDebugTextures::BlitTex(Ren::RastState &applied_state, const int x, const int y,
-                             const int w, int h, Ren::WeakTex2DRef tex, const float mul) {
-    const auto &p = tex->params();
+int RpDebugTextures::BlitTex(Ren::RastState &applied_state, const int x, const int y, const int w, int h,
+                             Ren::WeakTex2DRef tex, const float mul) {
+    const auto &p = tex->params;
     if (h == -1) {
         h = w * p.h / p.w;
     }
@@ -292,14 +281,11 @@ int RpDebugTextures::BlitTex(Ren::RastState &applied_state, const int x, const i
     rast_state.ApplyChanged(applied_state);
     applied_state = rast_state;
 
-    const PrimDraw::Binding bindings[] = {
-        {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, tex->handle()}};
+    const PrimDraw::Binding bindings[] = {{Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *tex}};
 
-    const PrimDraw::Uniform uniforms[] = {
-        {0, Ren::Vec4f{0.0f, 0.0f, float(p.w), float(p.h)}}, {4, mul}};
+    const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, float(p.w), float(p.h)}}, {4, mul}};
 
-    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {output_fb_.id(), 0}, blit_prog_.get(),
-                        bindings, 1, uniforms, 2);
+    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&output_fb_, 0}, blit_prog_.get(), bindings, 1, uniforms, 2);
 
     return w;
 }

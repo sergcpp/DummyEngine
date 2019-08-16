@@ -106,6 +106,7 @@ struct DrawList {
     EnvironmentWeak             env;
     FrontendInfo                frontend_info;
     DynArray<InstanceData>      instances;
+    Ren::BufferRef              instatnces_stage_buf;
     DynArray<DepthDrawBatch>    shadow_batches;
     DynArray<uint32_t>          shadow_batch_indices;
     DynArray<ShadowList>        shadow_lists;
@@ -115,15 +116,23 @@ struct DrawList {
     DynArray<MainDrawBatch>     main_batches;
     DynArray<uint32_t>          main_batch_indices;
     DynArray<SkinTransform>     skin_transforms;
+    Ren::BufferRef              skin_transforms_stage_buf;
     DynArray<SkinRegion>        skin_regions;
     DynArray<ShapeKeyData>      shape_keys_data;
+    Ren::BufferRef              shape_keys_stage_buf;
     uint32_t                    skin_vertices_count = 0;
     DynArray<LightSourceItem>   light_sources;
+    Ren::BufferRef              lights_stage_buf;
     DynArray<DecalItem>         decals;
+    Ren::BufferRef              decals_stage_buf;
     DynArray<ProbeItem>         probes;
     DynArray<EllipsItem>        ellipsoids;
     DynArray<CellData>          cells;
+    Ren::BufferRef              cells_stage_buf;
     DynArray<ItemData>          items;
+    Ren::BufferRef              items_stage_buf;
+
+    Ren::BufferRef              shared_data_stage_buf;
 
     DynArray<TexEntry>          visible_textures;
     DynArray<TexEntry>          desired_textures;
@@ -141,6 +150,9 @@ struct DrawList {
     int depth_w, depth_h;
     std::vector<uint8_t> depth_pixels;
 
-    DrawList();
+    void Init(Ren::BufferRef shared_data_stage_buf, Ren::BufferRef instatnces_stage_buf,
+              Ren::BufferRef skin_transforms_stage_buf, Ren::BufferRef shape_keys_stage_buf,
+              Ren::BufferRef cells_stage_buf, Ren::BufferRef items_stage_buf, Ren::BufferRef lights_stage_buf,
+              Ren::BufferRef decals_stage_buf);
     void Clear();
 };

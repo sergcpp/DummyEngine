@@ -12,32 +12,25 @@ GLuint LoadShader(GLenum shader_type, const uint8_t *data, int data_size, ILog *
 #endif
 
 void ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr_bindings,
-                       SmallVectorImpl<Descr> &unif_bindings,
-                       SmallVectorImpl<Descr> &blck_bindings, ILog *log);
+                       SmallVectorImpl<Descr> &unif_bindings, SmallVectorImpl<Descr> &blck_bindings, ILog *log);
 bool IsMainThread();
 
-const GLenum GLShaderTypes[] = {0xffffffff,
-                                GL_VERTEX_SHADER,
-                                GL_FRAGMENT_SHADER,
-                                GL_TESS_CONTROL_SHADER,
-                                GL_TESS_EVALUATION_SHADER,
+const GLenum GLShaderTypes[] = {GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, GL_TESS_CONTROL_SHADER, GL_TESS_EVALUATION_SHADER,
                                 GL_COMPUTE_SHADER};
-static_assert(sizeof(GLShaderTypes) / sizeof(GLShaderTypes[0]) ==
-                  int(Ren::eShaderType::_Count),
-              "!");
+static_assert(COUNT_OF(GLShaderTypes) == int(Ren::eShaderType::_Count), "!");
 } // namespace Ren
 
-Ren::Shader::Shader(const char *name, const char *shader_src, const eShaderType type,
+Ren::Shader::Shader(const char *name, ApiContext *api_ctx, const char *shader_src, const eShaderType type,
                     eShaderLoadStatus *status, ILog *log) {
     name_ = String{name};
     Init(shader_src, type, status, log);
 }
 
 #ifndef __ANDROID__
-Ren::Shader::Shader(const char *name, const uint8_t *shader_data, int data_size,
-                    eShaderType type, eShaderLoadStatus *status, ILog *log) {
+Ren::Shader::Shader(const char *name, ApiContext *api_ctx, const uint8_t *shader_code, const int code_size,
+                    const eShaderType type, eShaderLoadStatus *status, ILog *log) {
     name_ = String{name};
-    Init(shader_data, data_size, type, status, log);
+    Init(shader_code, code_size, type, status, log);
 }
 #endif
 
@@ -50,6 +43,12 @@ Ren::Shader::~Shader() {
 }
 
 Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
+    if (this == &rhs) {
+        return (*this);
+    }
+
+    RefCounter::operator=(static_cast<RefCounter &&>(rhs));
+
     if (id_) {
         assert(IsMainThread());
         auto id = GLuint(id_);
@@ -64,27 +63,23 @@ Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
     unif_bindings = std::move(rhs.unif_bindings);
     blck_bindings = std::move(rhs.blck_bindings);
 
-    RefCounter::operator=(std::move(rhs));
-
     return (*this);
 }
 
-void Ren::Shader::Init(const char *shader_src, const eShaderType type,
-                       eShaderLoadStatus *status, ILog *log) {
+void Ren::Shader::Init(const char *shader_src, const eShaderType type, eShaderLoadStatus *status, ILog *log) {
     assert(IsMainThread());
     InitFromGLSL(shader_src, type, status, log);
 }
 
 #ifndef __ANDROID__
-void Ren::Shader::Init(const uint8_t *shader_data, const int data_size,
-                       const eShaderType type, eShaderLoadStatus *status, ILog *log) {
+void Ren::Shader::Init(const uint8_t *shader_code, const int code_size, const eShaderType type,
+                       eShaderLoadStatus *status, ILog *log) {
     assert(IsMainThread());
-    InitFromSPIRV(shader_data, data_size, type, status, log);
+    InitFromSPIRV(shader_code, code_size, type, status, log);
 }
 #endif
 
-void Ren::Shader::InitFromGLSL(const char *shader_src, const eShaderType type,
-                               eShaderLoadStatus *status, ILog *log) {
+void Ren::Shader::InitFromGLSL(const char *shader_src, const eShaderType type, eShaderLoadStatus *status, ILog *log) {
     if (!shader_src) {
         (*status) = eShaderLoadStatus::SetToDefault;
         return;
@@ -107,9 +102,8 @@ void Ren::Shader::InitFromGLSL(const char *shader_src, const eShaderType type,
 }
 
 #ifndef __ANDROID__
-void Ren::Shader::InitFromSPIRV(const uint8_t *shader_data, const int data_size,
-                                const eShaderType type, eShaderLoadStatus *status,
-                                ILog *log) {
+void Ren::Shader::InitFromSPIRV(const uint8_t *shader_data, const int data_size, const eShaderType type,
+                                eShaderLoadStatus *status, ILog *log) {
     if (!shader_data) {
         (*status) = eShaderLoadStatus::SetToDefault;
         return;
@@ -127,8 +121,7 @@ void Ren::Shader::InitFromSPIRV(const uint8_t *shader_data, const int data_size,
 #endif
 
     SpvReflectShaderModule module = {};
-    const SpvReflectResult res =
-        spvReflectCreateShaderModule(data_size, shader_data, &module);
+    const SpvReflectResult res = spvReflectCreateShaderModule(data_size, shader_data, &module);
     assert(res == SPV_REFLECT_RESULT_SUCCESS);
 
     attr_bindings.clear();
@@ -197,12 +190,10 @@ GLuint Ren::LoadShader(GLenum shader_type, const char *source, ILog *log) {
 }
 
 #if !defined(__ANDROID__) && !defined(__APPLE__)
-GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_size,
-                       ILog *log) {
+GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_size, ILog *log) {
     GLuint shader = glCreateShader(shader_type);
     if (shader) {
-        glShaderBinary(1, &shader, GL_SHADER_BINARY_FORMAT_SPIR_V_ARB, data,
-                       static_cast<GLsizei>(data_size));
+        glShaderBinary(1, &shader, GL_SHADER_BINARY_FORMAT_SPIR_V_ARB, data, static_cast<GLsizei>(data_size));
         glSpecializeShader(shader, "main", 0, nullptr, nullptr);
 
         GLint compiled = 0;
@@ -235,8 +226,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_s
 #endif
 
 void Ren::ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr_bindings,
-                            SmallVectorImpl<Descr> &unif_bindings,
-                            SmallVectorImpl<Descr> &blck_bindings, ILog *log) {
+                            SmallVectorImpl<Descr> &unif_bindings, SmallVectorImpl<Descr> &blck_bindings, ILog *log) {
     const char *delims = " \r\n\t";
     const char *p = strstr(shader_str, "/*");
     const char *q = p ? strpbrk(p + 2, delims) : nullptr;

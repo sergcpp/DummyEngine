@@ -7,6 +7,7 @@
 #include <Ren/Fwd.h>
 
 #include <Ren/Buffer.h>
+#include <Ren/Framebuffer.h>
 #include <Ren/HashMap32.h>
 #include <Ren/Log.h>
 #include <Ren/SmallVector.h>
@@ -26,18 +27,22 @@ struct RpResource {
         };
         uint16_t _generation = 0;
     };
+    Ren::eResState desired_state = Ren::eResState::Undefined;
+    Ren::eStageBits stages = Ren::eStageBits::None;
     uint32_t index = 0xffffffff;
 
+    Ren::eStageBits src_stages = Ren::eStageBits::None;
+    Ren::eStageBits dst_stages = Ren::eStageBits::None;
+
+    RpResource *next_use = nullptr;
+
     RpResource() = default;
-    RpResource(eRpResType _type, uint16_t __generation, uint32_t _index)
-        : type(_type), _generation(__generation), index(_index) {}
+    RpResource(eRpResType _type, uint16_t __generation, Ren::eResState _desired_state, Ren::eStageBits _stages,
+               uint32_t _index)
+        : type(_type), _generation(__generation), desired_state(_desired_state), stages(_stages), index(_index) {}
 
-    operator bool() {
-        return type != eRpResType::Undefined;
-    }
+    operator bool() { return type != eRpResType::Undefined; }
 };
-
-const int MaxInOutCountPerPass = 16;
 
 class RpBuilder;
 
@@ -45,11 +50,8 @@ class RenderPassBase {
   private:
     friend class RpBuilder;
 
-    RpResource input_[MaxInOutCountPerPass];
-    int input_count_ = 0;
-    RpResource output_[MaxInOutCountPerPass];
-    int output_count_ = 0;
-
+    Ren::SmallVector<RpResource, 16> input_;
+    Ren::SmallVector<RpResource, 16> output_;
     uint32_t ref_count_ = 0;
 
   public:
@@ -64,14 +66,11 @@ class RenderPassBase {
 
 struct RpBufDesc {
     uint32_t size;
-    Ren::eBufferType type;
-    Ren::eBufferAccessType access;
-    Ren::eBufferAccessFreq freq;
+    Ren::eBufType type;
 };
 
 inline bool operator==(const RpBufDesc &lhs, const RpBufDesc &rhs) {
-    return lhs.size == rhs.size && lhs.type == rhs.type && lhs.access == rhs.access &&
-           lhs.freq == rhs.freq;
+    return lhs.size == rhs.size && lhs.type == rhs.type;
 }
 
 struct RpAllocBuf {
@@ -82,9 +81,13 @@ struct RpAllocBuf {
         };
         uint16_t _generation;
     };
+
+    Ren::eStageBits used_in_stages;
+
     std::string name;
     RpBufDesc desc;
-    Ren::BufferRef ref;
+    Ren::WeakBufferRef ref;
+    Ren::BufferRef strong_ref;
     Ren::Tex1DRef tbos[4];
 };
 
@@ -96,20 +99,31 @@ struct RpAllocTex {
         };
         uint16_t _generation;
     };
+
+    Ren::eStageBits used_in_stages;
+
     std::string name;
     Ren::Tex2DParams desc;
-    Ren::Tex2DRef ref;
+    Ren::WeakTex2DRef ref;
+    Ren::Tex2DRef strong_ref;
 };
 
 class RpBuilder {
     Ren::Context &ctx_;
     ShaderLoader &sh_;
 
+    Ren::RastState rast_state_;
+
     Ren::SparseArray<RpAllocBuf> buffers_;
     Ren::HashMap32<std::string, uint32_t> name_to_buffer_;
 
     Ren::SparseArray<RpAllocTex> textures_;
     Ren::HashMap32<std::string, uint32_t> name_to_texture_;
+
+    void AllocateNeededResources(RenderPassBase *pass);
+    void InsertResourceTransitions(RenderPassBase *pass);
+    void HandleResourceTransition(const RpResource &res, Ren::SmallVectorImpl<Ren::TransitionInfo> &res_transitions,
+                                  Ren::eStageBits &src_stages, Ren::eStageBits &dst_stages);
 
   public:
     RpBuilder(Ren::Context &ctx, ShaderLoader &sh) : ctx_(ctx), sh_(sh) {}
@@ -118,19 +132,37 @@ class RpBuilder {
     Ren::ILog *log();
     ShaderLoader &sh() { return sh_; }
 
-    RpResource ReadBuffer(RpResource handle, RenderPassBase &pass);
-    RpResource ReadBuffer(const char *name, RenderPassBase &pass);
+    Ren::RastState &rast_state() { return rast_state_; }
 
-    RpResource ReadTexture(RpResource handle, RenderPassBase &pass);
-    RpResource ReadTexture(const char *name, RenderPassBase &pass);
+    RpResource ReadBuffer(RpResource handle, Ren::eResState desired_state, Ren::eStageBits stages,
+                          RenderPassBase &pass);
+    RpResource ReadBuffer(const char *name, Ren::eResState desired_state, Ren::eStageBits stages, RenderPassBase &pass);
+    RpResource ReadBuffer(const Ren::WeakBufferRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
+                          RenderPassBase &pass);
 
-    RpResource WriteBuffer(RpResource handle, RenderPassBase &pass);
-    RpResource WriteBuffer(const char *name, RenderPassBase &pass);
-    RpResource WriteBuffer(const char *name, const RpBufDesc &desc, RenderPassBase &pass);
+    RpResource ReadTexture(RpResource handle, Ren::eResState desired_state, Ren::eStageBits stages,
+                           RenderPassBase &pass);
+    RpResource ReadTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages,
+                           RenderPassBase &pass);
+    RpResource ReadTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
+                           RenderPassBase &pass);
 
-    RpResource WriteTexture(RpResource handle, RenderPassBase &pass);
-    RpResource WriteTexture(const char *name, RenderPassBase &pass);
-    RpResource WriteTexture(const char *name, const Ren::Tex2DParams &p,
+    RpResource WriteBuffer(RpResource handle, Ren::eResState desired_state, Ren::eStageBits stages,
+                           RenderPassBase &pass);
+    RpResource WriteBuffer(const char *name, Ren::eResState desired_state, Ren::eStageBits stages,
+                           RenderPassBase &pass);
+    RpResource WriteBuffer(const char *name, const RpBufDesc &desc, Ren::eResState desired_state,
+                           Ren::eStageBits stages, RenderPassBase &pass);
+    RpResource WriteBuffer(const Ren::WeakBufferRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
+                           RenderPassBase &pass);
+
+    RpResource WriteTexture(RpResource handle, Ren::eResState desired_state, Ren::eStageBits stages,
+                            RenderPassBase &pass);
+    RpResource WriteTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages,
+                            RenderPassBase &pass);
+    RpResource WriteTexture(const char *name, const Ren::Tex2DParams &p, Ren::eResState desired_state,
+                            Ren::eStageBits stages, RenderPassBase &pass);
+    RpResource WriteTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                             RenderPassBase &pass);
 
     RpAllocBuf &GetReadBuffer(RpResource handle);

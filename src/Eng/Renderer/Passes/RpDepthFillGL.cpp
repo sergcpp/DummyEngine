@@ -1,9 +1,9 @@
 #include "RpDepthFill.h"
 
-#include "../DebugMarker.h"
 #include "../Renderer_Structs.h"
 
 #include <Ren/Context.h>
+#include <Ren/DebugMarker.h>
 #include <Ren/RastState.h>
 
 namespace RpSharedInternal {
@@ -14,8 +14,8 @@ void _bind_texture0_and_sampler0(Ren::Context &ctx, const Ren::Material &mat,
     glBindSampler(REN_MAT_TEX0_SLOT, mat.samplers[0]->id());
 }
 uint32_t _depth_draw_range(const DynArrayConstRef<uint32_t> &zfill_batch_indices,
-                           const DynArrayConstRef<DepthDrawBatch> &zfill_batches,
-                           uint32_t i, uint32_t mask, BackendInfo &backend_info) {
+                           const DynArrayConstRef<DepthDrawBatch> &zfill_batches, uint32_t i, uint32_t mask,
+                           BackendInfo &backend_info) {
     for (; i < zfill_batch_indices.count; i++) {
         const DepthDrawBatch &batch = zfill_batches.data[zfill_batch_indices.data[i]];
         if ((batch.sort_key & DepthDrawBatch::FlagBits) != mask) {
@@ -26,13 +26,11 @@ uint32_t _depth_draw_range(const DynArrayConstRef<uint32_t> &zfill_batch_indices
             continue;
         }
 
-        glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
-                     &batch.instance_indices[0]);
+        glUniform2iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0][0]);
 
-        glDrawElementsInstancedBaseVertex(
-            GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-            (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
-            GLsizei(batch.instance_count), GLint(batch.base_vertex));
+        glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                                          (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
+                                          GLsizei(batch.instance_count), GLint(batch.base_vertex));
         backend_info.depth_fill_draw_calls_count++;
     }
     return i;
@@ -40,9 +38,8 @@ uint32_t _depth_draw_range(const DynArrayConstRef<uint32_t> &zfill_batch_indices
 
 uint32_t _depth_draw_range_ext(RpBuilder &builder, const Ren::MaterialStorage *materials,
                                const DynArrayConstRef<uint32_t> &zfill_batch_indices,
-                               const DynArrayConstRef<DepthDrawBatch> &zfill_batches,
-                               uint32_t i, uint32_t mask, uint32_t &cur_mat_id,
-                               BackendInfo &backend_info) {
+                               const DynArrayConstRef<DepthDrawBatch> &zfill_batches, uint32_t i, uint32_t mask,
+                               uint32_t &cur_mat_id, BackendInfo &backend_info) {
     auto &ctx = builder.ctx();
 
     for (; i < zfill_batch_indices.count; i++) {
@@ -55,154 +52,121 @@ uint32_t _depth_draw_range_ext(RpBuilder &builder, const Ren::MaterialStorage *m
             continue;
         }
 
-        if (batch.mat_id != cur_mat_id) {
-            const Ren::Material &mat = materials->at(batch.mat_id);
-            if (ctx.capabilities.bindless_texture) {
-                glUniform1ui(REN_U_MAT_INDEX_LOC, batch.mat_id);
-            } else {
-                _bind_texture0_and_sampler0(builder.ctx(), mat, builder.temp_samplers);
-            }
-            cur_mat_id = batch.mat_id;
+        if (!ctx.capabilities.bindless_texture && batch.instance_indices[0][1] != cur_mat_id) {
+            const Ren::Material &mat = materials->at(batch.instance_indices[0][1]);
+            _bind_texture0_and_sampler0(builder.ctx(), mat, builder.temp_samplers);
+            cur_mat_id = batch.instance_indices[0][1];
         }
 
-        glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
-                     &batch.instance_indices[0]);
+        glUniform2iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0][0]);
 
-        glDrawElementsInstancedBaseVertex(
-            GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-            (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
-            (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+        glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                                          (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
+                                          GLsizei(batch.instance_count), GLint(batch.base_vertex));
         backend_info.depth_fill_draw_calls_count++;
     }
     return i;
 }
 } // namespace RpSharedInternal
 
-void RpDepthFill::DrawDepth(RpBuilder &builder) {
+void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf) {
     using namespace RpSharedInternal;
-
-    Ren::RastState rast_state;
-    rast_state.depth_test.enabled = true;
-    rast_state.depth_test.func = Ren::eTestFunc::Less;
-
-    rast_state.stencil.enabled = true;
-    rast_state.stencil.mask = 0xff;
-    rast_state.stencil.pass = Ren::eStencilOp::Replace;
-
-    rast_state.cull_face.enabled = true;
-
-    rast_state.viewport[2] = view_state_->act_res[0];
-    rast_state.viewport[3] = view_state_->act_res[1];
-
-    rast_state.Apply();
-    Ren::RastState applied_state = rast_state;
-
-    uint32_t i = 0;
 
     auto &ctx = builder.ctx();
 
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
-    glBindBufferRange(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
-                      GLuint(unif_shared_data_buf.ref->id()),
-                      orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock));
-    assert(orphan_index_ * SharedDataBlockSize %
-               builder.ctx().capabilities.unif_buf_offset_alignment ==
-           0);
-
     RpAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
-    assert(instances_buf.tbos[orphan_index_]);
+    RpAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
+    RpAllocBuf &textures_buf = builder.GetReadBuffer(textures_buf_);
+    RpAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT,
-                               GLuint(instances_buf.tbos[orphan_index_]->id()));
+    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC, GLuint(unif_shared_data_buf.ref->id()));
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_NOISE_TEX_SLOT, noise_tex_.id);
+    assert(instances_buf.tbos[0]);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT, GLuint(instances_buf.tbos[0]->id()));
 
-    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, REN_MATERIALS_SLOT,
-                      GLuint(bufs_->materials_buf.id),
-                      GLintptr(bufs_->materials_buf_range.first),
-                      GLsizeiptr(bufs_->materials_buf_range.second));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_NOISE_TEX_SLOT, noise_tex.ref->id());
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_MATERIALS_SLOT, GLuint(materials_buf.ref->id()));
     if (ctx.capabilities.bindless_texture) {
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, REN_BINDLESS_TEX_SLOT,
-                          GLuint(bufs_->textures_buf.id),
-                          GLintptr(bufs_->textures_buf_range.first),
-                          GLsizeiptr(bufs_->textures_buf_range.second));
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_BINDLESS_TEX_SLOT, GLuint(textures_buf.ref->id()));
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, GLuint(depth_fill_fb_.id()));
+    glBindFramebuffer(GL_FRAMEBUFFER, GLuint(depth_fill_fb_[ctx.backend_frame()].id()));
     glClear(GL_STENCIL_BUFFER_BIT);
 
     BackendInfo _dummy = {};
+    uint32_t i = 0;
 
     using DDB = DepthDrawBatch;
 
     { // solid meshes
-        DebugMarker _m("STATIC-SOLID-SIMPLE");
+        Ren::DebugMarker _m(ctx.current_cmd_buf(), "STATIC-SOLID-SIMPLE");
 
-        glBindVertexArray(depth_pass_solid_vao_.id());
-        glUseProgram(fillz_solid_prog_->id());
-
-        // default value
-        rast_state.stencil.test_ref = 0;
+        glBindVertexArray(vi_depth_pass_solid_.gl_vao());
+        glUseProgram(pi_static_solid_[0].prog()->id());
 
         { // one-sided
-            DebugMarker _mm("ONE-SIDED");
+            Ren::DebugMarker _mm(ctx.current_cmd_buf(), "ONE-SIDED");
 
-            rast_state.cull_face.enabled = true;
-            rast_state.ApplyChanged(applied_state);
-            applied_state = rast_state;
+            Ren::RastState rast_state = pi_static_solid_[0].rast_state();
+            rast_state.viewport[2] = view_state_->act_res[0];
+            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = rast_state;
 
             i = _depth_draw_range(zfill_batch_indices, zfill_batches, i, 0u, _dummy);
         }
 
         { // two-sided
-            DebugMarker _mm("TWO-SIDED");
+            Ren::DebugMarker _mm(ctx.current_cmd_buf(), "TWO-SIDED");
 
-            rast_state.cull_face.enabled = false;
-            rast_state.ApplyChanged(applied_state);
-            applied_state = rast_state;
+            Ren::RastState rast_state = pi_static_solid_[1].rast_state();
+            rast_state.viewport[2] = view_state_->act_res[0];
+            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = rast_state;
 
-            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i, DDB::BitTwoSided,
-                                  _dummy);
+            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i, DDB::BitTwoSided, _dummy);
         }
     }
 
     // TODO: we can skip many things if TAA is disabled
 
     { // moving solid meshes (depth and velocity)
-        DebugMarker _m("STATIC-SOLID-MOVING");
+        Ren::DebugMarker _m(ctx.current_cmd_buf(), "STATIC-SOLID-MOVING");
 
         if ((render_flags_ & EnableTaa) != 0) {
             // Write depth and velocity
-            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_.id());
-            glUseProgram(fillz_solid_mov_prog_->id());
+            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()].id());
+            glUseProgram(pi_moving_solid_[0].prog()->id());
         } else {
             // Write depth only
-            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_.id());
+            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()].id());
         }
 
-        // mark dynamic objects
-        rast_state.stencil.test_ref = 1;
-
         { // one-sided
-            DebugMarker _mm("ONE-SIDED");
+            Ren::DebugMarker _mm(ctx.current_cmd_buf(), "ONE-SIDED");
 
-            rast_state.cull_face.enabled = true;
-            rast_state.ApplyChanged(applied_state);
-            applied_state = rast_state;
+            Ren::RastState rast_state = pi_moving_solid_[0].rast_state();
+            rast_state.viewport[2] = view_state_->act_res[0];
+            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = rast_state;
 
-            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i, DDB::BitMoving,
-                                  _dummy);
+            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i, DDB::BitMoving, _dummy);
         }
 
         { // two-sided
-            DebugMarker _mm("TWO-SIDED");
+            Ren::DebugMarker _mm(ctx.current_cmd_buf(), "TWO-SIDED");
 
-            rast_state.cull_face.enabled = false;
-            rast_state.ApplyChanged(applied_state);
-            applied_state = rast_state;
+            Ren::RastState rast_state = pi_moving_solid_[1].rast_state();
+            rast_state.viewport[2] = view_state_->act_res[0];
+            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = rast_state;
 
-            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i,
-                                  DDB::BitMoving | DDB::BitTwoSided, _dummy);
+            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i, DDB::BitMoving | DDB::BitTwoSided, _dummy);
         }
     }
 
@@ -210,394 +174,367 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
         uint32_t cur_mat_id = 0xffffffff;
 
         { // simple meshes (depth only)
-            DebugMarker _m("STATIC-ALPHA-SIMPLE");
+            Ren::DebugMarker _m(ctx.current_cmd_buf(), "STATIC-ALPHA-SIMPLE");
 
-            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_.id());
-            glBindVertexArray(depth_pass_transp_vao_.id());
-            glUseProgram(fillz_transp_prog_->id());
-
-            // default value
-            rast_state.stencil.test_ref = 0;
-
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                       dummy_white_->id());
-            glBindSampler(REN_MAT_TEX0_SLOT, 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()].id());
+            glBindVertexArray(vi_depth_pass_transp_.gl_vao());
+            glUseProgram(pi_static_transp_[0].prog()->id());
 
             { // one-sided
-                DebugMarker _mm("ONE-SIDED");
+                Ren::DebugMarker _mm(ctx.current_cmd_buf(), "ONE-SIDED");
 
-                rast_state.cull_face.enabled = true;
-                rast_state.ApplyChanged(applied_state);
-                applied_state = rast_state;
+                Ren::RastState rast_state = pi_static_transp_[0].rast_state();
+                rast_state.viewport[2] = view_state_->act_res[0];
+                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.ApplyChanged(builder.rast_state());
+                builder.rast_state() = rast_state;
 
-                i = _depth_draw_range_ext(builder, materials_, zfill_batch_indices,
-                                          zfill_batches, i, DDB::BitAlphaTest, cur_mat_id,
-                                          _dummy);
+                i = _depth_draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i, DDB::BitAlphaTest,
+                                          cur_mat_id, _dummy);
             }
 
             { // two-sided
-                DebugMarker _mm("TWO-SIDED");
+                Ren::DebugMarker _mm(ctx.current_cmd_buf(), "TWO-SIDED");
 
-                rast_state.cull_face.enabled = false;
-                rast_state.ApplyChanged(applied_state);
-                applied_state = rast_state;
+                Ren::RastState rast_state = pi_static_transp_[1].rast_state();
+                rast_state.viewport[2] = view_state_->act_res[0];
+                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.ApplyChanged(builder.rast_state());
+                builder.rast_state() = rast_state;
 
-                i = _depth_draw_range_ext(
-                    builder, materials_, zfill_batch_indices, zfill_batches, i,
-                    DDB::BitAlphaTest | DDB::BitTwoSided, cur_mat_id, _dummy);
+                i = _depth_draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                                          DDB::BitAlphaTest | DDB::BitTwoSided, cur_mat_id, _dummy);
             }
         }
 
         { // moving meshes (depth and velocity)
-            DebugMarker _m("STATIC-ALPHA-MOVING");
+            Ren::DebugMarker _m(ctx.current_cmd_buf(), "STATIC-ALPHA-MOVING");
 
             if ((render_flags_ & EnableTaa) != 0) {
                 // Write depth and velocity
-                glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_.id());
-                glUseProgram(fillz_transp_mov_prog_->id());
+                glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()].id());
+                glUseProgram(pi_moving_transp_[0].prog()->id());
             } else {
                 // Write depth only
-                glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_.id());
+                glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()].id());
             }
 
-            // mark dynamic objects
-            rast_state.stencil.test_ref = 1;
-
             { // one-sided
-                DebugMarker _mm("ONE-SIDED");
+                Ren::DebugMarker _mm(ctx.current_cmd_buf(), "ONE-SIDED");
 
-                rast_state.cull_face.enabled = true;
-                rast_state.ApplyChanged(applied_state);
-                applied_state = rast_state;
+                Ren::RastState rast_state = pi_moving_transp_[0].rast_state();
+                rast_state.viewport[2] = view_state_->act_res[0];
+                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.ApplyChanged(builder.rast_state());
+                builder.rast_state() = rast_state;
 
-                i = _depth_draw_range_ext(
-                    builder, materials_, zfill_batch_indices, zfill_batches, i,
-                    DDB::BitAlphaTest | DDB::BitMoving, cur_mat_id, _dummy);
+                i = _depth_draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                                          DDB::BitAlphaTest | DDB::BitMoving, cur_mat_id, _dummy);
             }
 
             { // two-sided
-                DebugMarker _mm("TWO-SIDED");
+                Ren::DebugMarker _mm(ctx.current_cmd_buf(), "TWO-SIDED");
 
-                rast_state.cull_face.enabled = false;
-                rast_state.ApplyChanged(applied_state);
-                applied_state = rast_state;
+                Ren::RastState rast_state = pi_moving_transp_[1].rast_state();
+                rast_state.viewport[2] = view_state_->act_res[0];
+                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.ApplyChanged(builder.rast_state());
+                builder.rast_state() = rast_state;
 
-                i = _depth_draw_range_ext(
-                    builder, materials_, zfill_batch_indices, zfill_batches, i,
-                    DDB::BitAlphaTest | DDB::BitMoving | DDB::BitTwoSided, cur_mat_id,
-                    _dummy);
+                i = _depth_draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                                          DDB::BitAlphaTest | DDB::BitMoving | DDB::BitTwoSided, cur_mat_id, _dummy);
             }
         }
     }
 
-    { // solid vegetation
-        DebugMarker _m("VEGE-SOLID-SIMPLE");
-        glBindVertexArray(depth_pass_vege_solid_vao_.id());
+    { // static solid vegetation
+        Ren::DebugMarker _m(ctx.current_cmd_buf(), "VEGE-SOLID-SIMPLE");
+        glBindVertexArray(vi_depth_pass_vege_solid_.gl_vao());
         if ((render_flags_ & EnableTaa) != 0) {
             // Write depth and velocity
-            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_.id());
-            glUseProgram(fillz_vege_solid_vel_prog_->id());
+            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()].id());
+            glUseProgram(pi_vege_static_solid_vel_[0].prog()->id());
         } else {
             // Write depth only
-            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_.id());
-            glUseProgram(fillz_vege_solid_prog_->id());
+            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()].id());
+            glUseProgram(pi_vege_static_solid_[0].prog()->id());
         }
 
-        // mark dynamic objects
-        rast_state.stencil.test_ref = 1;
-
         { // one-sided
-            DebugMarker _mm("ONE-SIDED");
+            Ren::DebugMarker _mm(ctx.current_cmd_buf(), "ONE-SIDED");
 
-            rast_state.cull_face.enabled = true;
-            rast_state.ApplyChanged(applied_state);
-            applied_state = rast_state;
+            Ren::RastState rast_state = pi_vege_static_solid_vel_[0].rast_state();
+            rast_state.viewport[2] = view_state_->act_res[0];
+            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = rast_state;
 
-            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i, DDB::BitsVege,
-                                  _dummy);
+            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i, DDB::BitsVege, _dummy);
         }
 
         { // two-sided
-            DebugMarker _mm("TWO-SIDED");
+            Ren::DebugMarker _mm(ctx.current_cmd_buf(), "TWO-SIDED");
 
-            rast_state.cull_face.enabled = false;
-            rast_state.ApplyChanged(applied_state);
-            applied_state = rast_state;
+            Ren::RastState rast_state = pi_vege_static_solid_vel_[1].rast_state();
+            rast_state.viewport[2] = view_state_->act_res[0];
+            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = rast_state;
 
-            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i,
-                                  DDB::BitsVege | DDB::BitTwoSided, _dummy);
+            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i, DDB::BitsVege | DDB::BitTwoSided, _dummy);
         }
     }
 
     { // moving solid vegetation (depth and velocity)
-        DebugMarker _m("VEGE-SOLID-MOVING");
+        Ren::DebugMarker _m(ctx.current_cmd_buf(), "VEGE-SOLID-MOVING");
         if ((render_flags_ & EnableTaa) != 0) {
-            glUseProgram(fillz_vege_solid_vel_mov_prog_->id());
+            glUseProgram(pi_vege_moving_solid_vel_[0].prog()->id());
         } else {
-            glUseProgram(fillz_vege_solid_prog_->id());
+            glUseProgram(pi_vege_static_solid_[0].prog()->id());
         }
 
-        // mark dynamic objects
-        rast_state.stencil.test_ref = 1;
-
         { // one-sided
-            DebugMarker _mm("ONE-SIDED");
+            Ren::DebugMarker _mm(ctx.current_cmd_buf(), "ONE-SIDED");
 
-            rast_state.cull_face.enabled = true;
-            rast_state.ApplyChanged(applied_state);
-            applied_state = rast_state;
+            Ren::RastState rast_state = pi_vege_moving_solid_vel_[0].rast_state();
+            rast_state.viewport[2] = view_state_->act_res[0];
+            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = rast_state;
 
-            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i,
-                                  DDB::BitsVege | DDB::BitMoving, _dummy);
+            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i, DDB::BitsVege | DDB::BitMoving, _dummy);
         }
 
         { // two-sided
-            DebugMarker _mm("TWO-SIDED");
+            Ren::DebugMarker _mm(ctx.current_cmd_buf(), "TWO-SIDED");
 
-            rast_state.cull_face.enabled = false;
-            rast_state.ApplyChanged(applied_state);
-            applied_state = rast_state;
+            Ren::RastState rast_state = pi_vege_moving_solid_vel_[1].rast_state();
+            rast_state.viewport[2] = view_state_->act_res[0];
+            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = rast_state;
 
             i = _depth_draw_range(zfill_batch_indices, zfill_batches, i,
-                                  DDB::BitsVege | DDB::BitMoving | DDB::BitTwoSided,
-                                  _dummy);
+                                  DDB::BitsVege | DDB::BitMoving | DDB::BitTwoSided, _dummy);
         }
     }
 
-    { // alpha-tested vegetation
+    { // static alpha-tested vegetation
         uint32_t cur_mat_id = 0xffffffff;
 
-        { // moving alpha-tested vegetation (depth and velocity)
-            DebugMarker _m("VEGE-ALPHA-SIMPLE");
-            glBindVertexArray(depth_pass_vege_transp_vao_.id());
+        { // static alpha-tested vegetation (depth and velocity)
+            Ren::DebugMarker _m(ctx.current_cmd_buf(), "VEGE-ALPHA-SIMPLE");
+            glBindVertexArray(vi_depth_pass_vege_transp_.gl_vao());
             if ((render_flags_ & EnableTaa) != 0) {
-                glUseProgram(fillz_vege_transp_vel_prog_->id());
+                glUseProgram(pi_vege_static_transp_vel_[0].prog()->id());
             } else {
-                glUseProgram(fillz_vege_transp_prog_->id());
+                glUseProgram(pi_vege_static_transp_[0].prog()->id());
             }
 
-            // mark dynamic objects
-            rast_state.stencil.test_ref = 1;
-
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                       dummy_white_->id());
-            glBindSampler(REN_MAT_TEX0_SLOT, 0);
-
             { // one-sided
-                DebugMarker _mm("ONE-SIDED");
+                Ren::DebugMarker _mm(ctx.current_cmd_buf(), "ONE-SIDED");
 
-                rast_state.cull_face.enabled = true;
-                rast_state.ApplyChanged(applied_state);
-                applied_state = rast_state;
+                Ren::RastState rast_state = pi_vege_static_transp_vel_[0].rast_state();
+                rast_state.viewport[2] = view_state_->act_res[0];
+                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.ApplyChanged(builder.rast_state());
+                builder.rast_state() = rast_state;
 
-                i = _depth_draw_range_ext(
-                    builder, materials_, zfill_batch_indices, zfill_batches, i,
-                    DDB::BitsVege | DDB::BitAlphaTest, cur_mat_id, _dummy);
+                i = _depth_draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                                          DDB::BitsVege | DDB::BitAlphaTest, cur_mat_id, _dummy);
             }
 
             { // two-sided
-                DebugMarker _mm("TWO-SIDED");
+                Ren::DebugMarker _mm(ctx.current_cmd_buf(), "TWO-SIDED");
 
-                rast_state.cull_face.enabled = false;
-                rast_state.ApplyChanged(applied_state);
-                applied_state = rast_state;
+                Ren::RastState rast_state = pi_vege_static_transp_vel_[1].rast_state();
+                rast_state.viewport[2] = view_state_->act_res[0];
+                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.ApplyChanged(builder.rast_state());
+                builder.rast_state() = rast_state;
 
-                i = _depth_draw_range_ext(
-                    builder, materials_, zfill_batch_indices, zfill_batches, i,
-                    DDB::BitsVege | DDB::BitAlphaTest | DDB::BitTwoSided, cur_mat_id,
-                    _dummy);
+                i = _depth_draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                                          DDB::BitsVege | DDB::BitAlphaTest | DDB::BitTwoSided, cur_mat_id, _dummy);
             }
         }
 
         { // moving alpha-tested vegetation (depth and velocity)
-            DebugMarker _m("VEGE-ALPHA-MOVING");
+            Ren::DebugMarker _m(ctx.current_cmd_buf(), "VEGE-ALPHA-MOVING");
             if ((render_flags_ & EnableTaa) != 0) {
-                glUseProgram(fillz_vege_transp_vel_mov_prog_->id());
+                glUseProgram(pi_vege_moving_transp_vel_[0].prog()->id());
             } else {
-                glUseProgram(fillz_vege_transp_prog_->id());
+                glUseProgram(pi_vege_static_transp_[0].prog()->id());
             }
 
-            // mark dynamic objects
-            rast_state.stencil.test_ref = 1;
-
             { // one-sided
-                DebugMarker _mm("ONE-SIDED");
+                Ren::DebugMarker _mm(ctx.current_cmd_buf(), "ONE-SIDED");
 
-                rast_state.cull_face.enabled = true;
-                rast_state.ApplyChanged(applied_state);
-                applied_state = rast_state;
+                Ren::RastState rast_state = pi_vege_moving_transp_vel_[0].rast_state();
+                rast_state.viewport[2] = view_state_->act_res[0];
+                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.ApplyChanged(builder.rast_state());
+                builder.rast_state() = rast_state;
 
-                i = _depth_draw_range_ext(
-                    builder, materials_, zfill_batch_indices, zfill_batches, i,
-                    DDB::BitsVege | DDB::BitAlphaTest | DDB::BitMoving, cur_mat_id,
-                    _dummy);
+                i = _depth_draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                                          DDB::BitsVege | DDB::BitAlphaTest | DDB::BitMoving, cur_mat_id, _dummy);
             }
 
             { // two-sided
-                DebugMarker _mm("TWO-SIDED");
+                Ren::DebugMarker _mm(ctx.current_cmd_buf(), "TWO-SIDED");
 
-                rast_state.cull_face.enabled = false;
-                rast_state.ApplyChanged(applied_state);
-                applied_state = rast_state;
+                Ren::RastState rast_state = pi_vege_moving_transp_vel_[1].rast_state();
+                rast_state.viewport[2] = view_state_->act_res[0];
+                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.ApplyChanged(builder.rast_state());
+                builder.rast_state() = rast_state;
 
-                i = _depth_draw_range_ext(
-                    builder, materials_, zfill_batch_indices, zfill_batches, i,
-                    DDB::BitsVege | DDB::BitAlphaTest | DDB::BitMoving | DDB::BitTwoSided,
-                    cur_mat_id, _dummy);
+                i = _depth_draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                                          DDB::BitsVege | DDB::BitAlphaTest | DDB::BitMoving | DDB::BitTwoSided,
+                                          cur_mat_id, _dummy);
             }
         }
     }
 
     { // solid skinned meshes (depth and velocity)
-        DebugMarker _m("SKIN-SOLID-SIMPLE");
+        Ren::DebugMarker _m(ctx.current_cmd_buf(), "SKIN-SOLID-SIMPLE");
         if ((render_flags_ & EnableTaa) != 0) {
-            glBindVertexArray(depth_pass_skin_solid_vao_.id());
-            glUseProgram(fillz_skin_solid_vel_prog_->id());
+            glBindVertexArray(vi_depth_pass_skin_solid_.gl_vao());
+            glUseProgram(pi_skin_static_solid_vel_[0].prog()->id());
         } else {
-            glBindVertexArray(depth_pass_solid_vao_.id());
-            glUseProgram(fillz_solid_prog_->id());
+            glBindVertexArray(vi_depth_pass_solid_.gl_vao());
+            glUseProgram(pi_static_solid_[0].prog()->id());
         }
 
-        // mark dynamic objects
-        rast_state.stencil.test_ref = 1;
-
         { // one-sided
-            DebugMarker _mm("ONE-SIDED");
+            Ren::DebugMarker _mm(ctx.current_cmd_buf(), "ONE-SIDED");
 
-            rast_state.cull_face.enabled = true;
-            rast_state.ApplyChanged(applied_state);
-            applied_state = rast_state;
+            Ren::RastState rast_state = pi_skin_static_solid_vel_[0].rast_state();
+            rast_state.viewport[2] = view_state_->act_res[0];
+            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = rast_state;
 
-            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i, DDB::BitsSkinned,
-                                  _dummy);
+            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i, DDB::BitsSkinned, _dummy);
         }
 
         { // two-sided
-            DebugMarker _mm("TWO-SIDED");
-            glDisable(GL_CULL_FACE);
+            Ren::DebugMarker _mm(ctx.current_cmd_buf(), "TWO-SIDED");
 
-            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i,
-                                  DDB::BitsSkinned | DDB::BitTwoSided, _dummy);
+            Ren::RastState rast_state = pi_skin_static_solid_vel_[1].rast_state();
+            rast_state.viewport[2] = view_state_->act_res[0];
+            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = rast_state;
 
-            glEnable(GL_CULL_FACE);
+            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i, DDB::BitsSkinned | DDB::BitTwoSided, _dummy);
         }
     }
 
     { // moving solid skinned (depth and velocity)
-        DebugMarker _m("SKIN-SOLID-MOVING");
+        Ren::DebugMarker _m(ctx.current_cmd_buf(), "SKIN-SOLID-MOVING");
         if ((render_flags_ & EnableTaa) != 0) {
-            glUseProgram(fillz_skin_solid_vel_mov_prog_->id());
+            glUseProgram(pi_skin_moving_solid_vel_[0].prog()->id());
         } else {
-            glUseProgram(fillz_skin_solid_prog_->id());
+            glUseProgram(pi_skin_static_solid_[0].prog()->id());
         }
 
-        // mark dynamic objects
-        rast_state.stencil.test_ref = 1;
-
         { // one-sided
-            DebugMarker _mm("ONE-SIDED");
+            Ren::DebugMarker _mm(ctx.current_cmd_buf(), "ONE-SIDED");
 
-            rast_state.cull_face.enabled = true;
-            rast_state.ApplyChanged(applied_state);
-            applied_state = rast_state;
+            Ren::RastState rast_state = pi_skin_moving_solid_vel_[0].rast_state();
+            rast_state.viewport[2] = view_state_->act_res[0];
+            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = rast_state;
 
-            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i,
-                                  DDB::BitsSkinned | DDB::BitMoving, _dummy);
+            i = _depth_draw_range(zfill_batch_indices, zfill_batches, i, DDB::BitsSkinned | DDB::BitMoving, _dummy);
         }
 
         { // two-sided
-            DebugMarker _mm("TWO-SIDED");
+            Ren::DebugMarker _mm(ctx.current_cmd_buf(), "TWO-SIDED");
 
-            rast_state.cull_face.enabled = false;
-            rast_state.ApplyChanged(applied_state);
-            applied_state = rast_state;
+            Ren::RastState rast_state = pi_skin_moving_solid_vel_[1].rast_state();
+            rast_state.viewport[2] = view_state_->act_res[0];
+            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = rast_state;
 
             i = _depth_draw_range(zfill_batch_indices, zfill_batches, i,
-                                  DDB::BitsSkinned | DDB::BitMoving | DDB::BitTwoSided,
-                                  _dummy);
+                                  DDB::BitsSkinned | DDB::BitMoving | DDB::BitTwoSided, _dummy);
         }
     }
 
-    { // alpha-tested skinned
+    { // static alpha-tested skinned
         uint32_t cur_mat_id = 0xffffffff;
 
         { // simple alpha-tested skinned (depth and velocity)
-            DebugMarker _m("SKIN-ALPHA-SIMPLE");
-            glBindVertexArray(depth_pass_skin_transp_vao_.id());
+            Ren::DebugMarker _m(ctx.current_cmd_buf(), "SKIN-ALPHA-SIMPLE");
+            glBindVertexArray(vi_depth_pass_skin_transp_.gl_vao());
             if ((render_flags_ & EnableTaa) != 0) {
-                glUseProgram(fillz_skin_transp_vel_prog_->id());
+                glUseProgram(pi_skin_static_transp_vel_[0].prog()->id());
             } else {
-                glUseProgram(fillz_skin_transp_prog_->id());
+                glUseProgram(pi_skin_static_transp_[0].prog()->id());
             }
 
-            // mark dynamic objects
-            rast_state.stencil.test_ref = 1;
-
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                       dummy_white_->id());
-            glBindSampler(REN_MAT_TEX0_SLOT, 0);
-
             { // one-sided
-                DebugMarker _mm("ONE-SIDED");
+                Ren::DebugMarker _mm(ctx.current_cmd_buf(), "ONE-SIDED");
 
-                rast_state.cull_face.enabled = true;
-                rast_state.ApplyChanged(applied_state);
-                applied_state = rast_state;
+                Ren::RastState rast_state = pi_skin_static_transp_vel_[0].rast_state();
+                rast_state.viewport[2] = view_state_->act_res[0];
+                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.ApplyChanged(builder.rast_state());
+                builder.rast_state() = rast_state;
 
-                i = _depth_draw_range_ext(
-                    builder, materials_, zfill_batch_indices, zfill_batches, i,
-                    DDB::BitsSkinned | DDB::BitAlphaTest, cur_mat_id, _dummy);
+                i = _depth_draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                                          DDB::BitsSkinned | DDB::BitAlphaTest, cur_mat_id, _dummy);
             }
 
             { // two-sided
-                DebugMarker _mm("TWO-SIDED");
+                Ren::DebugMarker _mm(ctx.current_cmd_buf(), "TWO-SIDED");
 
-                rast_state.cull_face.enabled = false;
-                rast_state.ApplyChanged(applied_state);
-                applied_state = rast_state;
+                Ren::RastState rast_state = pi_skin_static_transp_vel_[1].rast_state();
+                rast_state.viewport[2] = view_state_->act_res[0];
+                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.ApplyChanged(builder.rast_state());
+                builder.rast_state() = rast_state;
 
-                i = _depth_draw_range_ext(
-                    builder, materials_, zfill_batch_indices, zfill_batches, i,
-                    DDB::BitsSkinned | DDB::BitAlphaTest | DDB::BitTwoSided, cur_mat_id,
-                    _dummy);
+                i = _depth_draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                                          DDB::BitsSkinned | DDB::BitAlphaTest | DDB::BitTwoSided, cur_mat_id, _dummy);
             }
         }
 
         { // moving alpha-tested skinned (depth and velocity)
-            DebugMarker _m("SKIN-ALPHA-MOVING");
+            Ren::DebugMarker _m(ctx.current_cmd_buf(), "SKIN-ALPHA-MOVING");
             if ((render_flags_ & EnableTaa) != 0) {
-                glUseProgram(fillz_skin_transp_vel_mov_prog_->id());
+                glUseProgram(pi_skin_moving_transp_vel_[0].prog()->id());
             } else {
-                glUseProgram(fillz_skin_transp_prog_->id());
+                glUseProgram(pi_skin_static_transp_[0].prog()->id());
             }
 
-            // mark dynamic objects
-            rast_state.stencil.test_ref = 1;
-
             { // one-sided
-                DebugMarker _mm("ONE-SIDED");
+                Ren::DebugMarker _mm(ctx.current_cmd_buf(), "ONE-SIDED");
 
-                rast_state.cull_face.enabled = true;
-                rast_state.ApplyChanged(applied_state);
-                applied_state = rast_state;
+                Ren::RastState rast_state = pi_skin_moving_transp_vel_[0].rast_state();
+                rast_state.viewport[2] = view_state_->act_res[0];
+                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.ApplyChanged(builder.rast_state());
+                builder.rast_state() = rast_state;
 
-                i = _depth_draw_range_ext(
-                    builder, materials_, zfill_batch_indices, zfill_batches, i,
-                    DDB::BitsSkinned | DDB::BitAlphaTest | DDB::BitMoving, cur_mat_id,
-                    _dummy);
+                i = _depth_draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                                          DDB::BitsSkinned | DDB::BitAlphaTest | DDB::BitMoving, cur_mat_id, _dummy);
             }
 
             { // two-sided
-                DebugMarker _mm("TWO-SIDED");
+                Ren::DebugMarker _mm(ctx.current_cmd_buf(), "TWO-SIDED");
 
-                rast_state.cull_face.enabled = false;
-                rast_state.ApplyChanged(applied_state);
-                applied_state = rast_state;
+                Ren::RastState rast_state = pi_skin_moving_transp_vel_[1].rast_state();
+                rast_state.viewport[2] = view_state_->act_res[0];
+                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.ApplyChanged(builder.rast_state());
+                builder.rast_state() = rast_state;
 
-                i = _depth_draw_range_ext(builder, materials_, zfill_batch_indices,
-                                          zfill_batches, i,
-                                          DDB::BitsSkinned | DDB::BitAlphaTest |
-                                              DDB::BitMoving | DDB::BitTwoSided,
+                i = _depth_draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                                          DDB::BitsSkinned | DDB::BitAlphaTest | DDB::BitMoving | DDB::BitTwoSided,
                                           cur_mat_id, _dummy);
             }
         }

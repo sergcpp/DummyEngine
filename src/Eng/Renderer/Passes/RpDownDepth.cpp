@@ -4,27 +4,29 @@
 #include <Ren/Program.h>
 #include <Ren/RastState.h>
 
+#include "../../Utils/ShaderLoader.h"
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
-#include "../../Utils/ShaderLoader.h"
 
-void RpDownDepth::Setup(RpBuilder &builder, const ViewState *view_state,
-                        const int orphan_index, const char shared_data_buf[],
+#include "../assets/shaders/internal/blit_down_depth_interface.glsl"
+
+void RpDownDepth::Setup(RpBuilder &builder, const ViewState *view_state, const char shared_data_buf[],
                         const char depth_tex[], const char output_tex[]) {
     view_state_ = view_state;
-    orphan_index_ = orphan_index;
 
-    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
+                                          Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
 
-    depth_tex_ = builder.ReadTexture(depth_tex, *this);
+    depth_tex_ = builder.ReadTexture(depth_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
     { // Texture that holds 2x downsampled linear depth
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0] / 2;
         params.h = view_state->scr_res[1] / 2;
         params.format = Ren::eTexFormat::RawR32F;
-        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-        depth_down_2x_tex_ = builder.WriteTexture(output_tex, params, *this);
+        depth_down_2x_tex_ = builder.WriteTexture(output_tex, params, Ren::eResState::RenderTarget,
+                                                  Ren::eStageBits::ColorAttachment, *this);
     }
 }
 
@@ -40,46 +42,42 @@ void RpDownDepth::Execute(RpBuilder &builder) {
     rast_state.viewport[2] = view_state_->act_res[0] / 2;
     rast_state.viewport[3] = view_state_->act_res[1] / 2;
 
-    rast_state.Apply();
-    Ren::RastState applied_state = rast_state;
-
-    Ren::Program *down_depth_prog = view_state_->is_multisampled
-                                        ? blit_down_depth_ms_prog_.get()
-                                        : blit_down_depth_prog_.get();
+    const Ren::ProgramRef &down_depth_prog =
+        view_state_->is_multisampled ? blit_down_depth_ms_prog_ : blit_down_depth_prog_;
 
     const PrimDraw::Binding bindings[] = {
-        {view_state_->is_multisampled ? Ren::eBindTarget::Tex2DMs
-                                      : Ren::eBindTarget::Tex2D,
-         REN_BASE0_TEX_SLOT, depth_tex.ref->handle()},
-        {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
-         orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
-         unif_shared_data_buf.ref->handle()}};
+        {view_state_->is_multisampled ? Ren::eBindTarget::Tex2DMs : Ren::eBindTarget::Tex2D, DownDepth::DEPTH_TEX_SLOT,
+         *depth_tex.ref}};
 
-    const PrimDraw::Uniform uniforms[] = {
-        {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]),
-                       float(view_state_->act_res[1])}},
-        {1, 1.0f}};
+    DownDepth::Params uniform_params;
+    uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1])};
+    uniform_params.clip_info = view_state_->clip_info;
+    uniform_params.linearize = 1.0f;
 
-    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {depth_down_fb_.id(), 0}, down_depth_prog,
-                        bindings, 2, uniforms, 2);
+    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, down_depth_prog, depth_down_fb_, render_pass_, rast_state,
+                        builder.rast_state(), bindings, 1, &uniform_params, sizeof(DownDepth::Params), 0);
 }
 
-void RpDownDepth::LazyInit(Ren::Context &ctx, ShaderLoader &sh,
-                           RpAllocTex &down_depth_2x_tex) {
+void RpDownDepth::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &down_depth_2x_tex) {
     if (!initialized) {
-        blit_down_depth_prog_ =
-            sh.LoadProgram(ctx, "blit_down_depth", "internal/blit.vert.glsl",
-                           "internal/blit_down_depth.frag.glsl");
+        blit_down_depth_prog_ = sh.LoadProgram(ctx, "blit_down_depth", "internal/blit_down_depth.vert.glsl",
+                                               "internal/blit_down_depth.frag.glsl");
         assert(blit_down_depth_prog_->ready());
-        blit_down_depth_ms_prog_ =
-            sh.LoadProgram(ctx, "blit_down_depth_ms", "internal/blit.vert.glsl",
-                           "internal/blit_down_depth.frag.glsl@MSAA_4");
+        blit_down_depth_ms_prog_ = sh.LoadProgram(ctx, "blit_down_depth_ms", "internal/blit.vert.glsl",
+                                                  "internal/blit_down_depth.frag.glsl@MSAA_4");
         assert(blit_down_depth_ms_prog_->ready());
 
         initialized = true;
     }
 
-    if (!depth_down_fb_.Setup(down_depth_2x_tex.ref->handle(), {}, {}, false)) {
+    const Ren::RenderTarget render_targets[] = {{down_depth_2x_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, 1, {}, ctx.log())) {
+        ctx.log()->Error("RpDownDepth: render_pass_ init failed!");
+    }
+
+    if (!depth_down_fb_.Setup(ctx.api_ctx(), render_pass_, down_depth_2x_tex.desc.w, down_depth_2x_tex.desc.h,
+                              render_targets, 1, {}, {})) {
         ctx.log()->Error("RpDownDepth: depth_down_fb_ init failed!");
     }
 }

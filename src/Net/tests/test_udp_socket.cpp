@@ -6,7 +6,7 @@
 
 void test_udp_socket() {
 
-    {   // UDPSocket open/close
+    { // UDPSocket open/close
         Net::UDPSocket socket;
         assert(!socket.IsOpen());
         assert_nothrow(socket.Open(30000));
@@ -17,7 +17,7 @@ void test_udp_socket() {
         assert(socket.IsOpen());
     }
 
-    {   // UDPSocket same port fail
+    { // UDPSocket same port fail
         Net::UDPSocket a, b;
         assert_nothrow(a.Open(30000, false));
         assert_throws(b.Open(30000, false));
@@ -25,7 +25,7 @@ void test_udp_socket() {
         assert(!b.IsOpen());
     }
 
-    {   // UDPSocket send and receive packets
+    { // UDPSocket send and receive packets
         Net::UDPSocket a, b;
         assert_nothrow(a.Open(30000));
         assert_nothrow(b.Open(30001));
@@ -63,5 +63,4 @@ void test_udp_socket() {
         assert(a_received_packet);
         assert(b_received_packet);
     }
-
 }

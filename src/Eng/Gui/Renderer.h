@@ -2,13 +2,15 @@
 
 #include <vector>
 
+#include <Ren/Context.h>
+#include <Ren/Framebuffer.h>
 #include <Ren/MVec.h>
+#include <Ren/Pipeline.h>
 #include <Ren/Program.h>
+#include <Ren/RenderPass.h>
 #include <Ren/Texture.h>
 #include <Ren/TextureAtlas.h>
-#if defined(USE_GL_RENDER)
-#include <Ren/VaoGL.h>
-#endif
+#include <Ren/VertexInput.h>
 
 #ifdef __GNUC__
 #define force_inline __attribute__((always_inline)) inline
@@ -18,20 +20,13 @@
 #endif
 
 namespace Sys {
-template <typename T, typename FallBackAllocator>
-class MultiPoolAllocator;
+template <typename T, typename FallBackAllocator> class MultiPoolAllocator;
 }
 template <typename Alloc> struct JsObjectT;
 using JsObject = JsObjectT<std::allocator<char>>;
 using JsObjectP = JsObjectT<Sys::MultiPoolAllocator<char, std::allocator<char>>>;
 
-namespace Ren {
-class Context;
-}
-
 namespace Gui {
-const char GL_DEFINES_KEY[] = "gl_defines";
-
 enum class eBlendMode { Alpha, Color };
 enum class eDrawMode { Passthrough, DistanceField, BlitDistanceField };
 
@@ -62,15 +57,13 @@ extern const uint8_t ColorYellow[4];
 
 class Renderer {
   public:
-    Renderer(Ren::Context &ctx, const JsObject &config);
+    Renderer(Ren::Context &ctx);
     ~Renderer();
 
     Renderer(const Renderer &rhs) = delete;
     Renderer &operator=(const Renderer &rhs) = delete;
 
-    Ren::ProgramRef program() const { return ui_program_; }
-
-    void SwapBuffers();
+    bool Init();
     void Draw(int w, int h);
 
     void PushClipArea(const Ren::Vec2f dims[2]);
@@ -79,43 +72,48 @@ class Renderer {
 
     // Returns pointers to mapped vertex buffer. Do NOT read from it, it is write-combined
     // memory and will result in terrible latency!
-    int AcquireVertexData(vertex_t **vertex_data, int *vertex_avail,
-                          uint16_t **index_data, int *index_avail);
+    int AcquireVertexData(vertex_t **vertex_data, int *vertex_avail, uint16_t **index_data, int *index_avail);
     void SubmitVertexData(int vertex_count, int index_count);
 
     // Simple drawing functions
-    void PushImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2f pos[2],
-                       const Vec2f uvs_px[2]);
-    void PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
-                  const Vec4f &p0, const Vec4f &p1, const Vec2f &d0, const Vec2f &d1,
-                  const Vec4f &thickness);
-    void PushCurve(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
-                   const Vec4f &p0, const Vec4f &p1, const Vec4f &p2, const Vec4f &p3,
-                   const Vec4f &thickness);
+    void PushImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2f pos[2], const Vec2f uvs_px[2]);
+    void PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t color[4], const Vec4f &p0, const Vec4f &p1,
+                  const Vec2f &d0, const Vec2f &d1, const Vec4f &thickness);
+    void PushCurve(eDrawMode draw_mode, int tex_layer, const uint8_t color[4], const Vec4f &p0, const Vec4f &p1,
+                   const Vec4f &p2, const Vec4f &p3, const Vec4f &thickness);
 
   private:
-    static const int FrameSyncWindow = 2;
-    static const int MaxClipStackSize = 8;
+    static const int MaxVerticesPerRange = 64 * 1024;
+    static const int MaxIndicesPerRange = 128 * 1024;
 
-    static_assert(FrameSyncWindow > 1, "!");
+    static const int MaxClipStackSize = 8;
     static int g_instance_count;
 
     Ren::Context &ctx_;
+    int instance_index_ = -1;
+    char name_[32];
 
-    int vertex_count_[FrameSyncWindow];
-    int index_count_[FrameSyncWindow];
-    int fill_range_index_, draw_range_index_;
+    int vtx_count_[Ren::MaxFramesInFlight];
+    int ndx_count_[Ren::MaxFramesInFlight];
 
-    Ren::ProgramRef ui_program_;
-#if defined(USE_GL_RENDER)
-    Ren::Vao vao_;
+    Ren::RenderPass render_pass_;
+    Ren::VertexInput vtx_input_;
+    Ren::Pipeline pipeline_;
+    Ren::Framebuffer framebuffers_[Ren::MaxFramesInFlight];
+
+    // buffers for the case if persistent mapping is not available
+    std::unique_ptr<vertex_t> stage_vtx_data_;
+    std::unique_ptr<uint16_t> stage_ndx_data_;
+
+    Ren::BufferRef vertex_stage_buf_, index_stage_buf_;
     Ren::BufferRef vertex_buf_, index_buf_;
-#endif
-    // TODO: Replace with buffer mapping
-    std::unique_ptr<vertex_t> vtx_data_;
-    std::unique_ptr<uint16_t> ndx_data_;
 
-    void *buf_range_fences_[FrameSyncWindow] = {};
+    vertex_t *vtx_stage_data_;
+    uint16_t *ndx_stage_data_;
+
+#ifndef NDEBUG
+    Ren::SyncFence buf_range_fences_[Ren::MaxFramesInFlight];
+#endif
 
     Ren::Vec2f clip_area_stack_[MaxClipStackSize][2];
     int clip_area_stack_size_ = 0;

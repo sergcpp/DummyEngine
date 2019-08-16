@@ -10,6 +10,7 @@
 #include <Windows.h>
 #elif defined(__linux__)
 #include <GL/glx.h>
+#undef Success
 #elif defined(__APPLE__)
 //#include <OpenGL/OpenGL.h>
 #endif

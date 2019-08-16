@@ -74,10 +74,10 @@ class FileReadEvent {
     void *h_file_ = nullptr;
     void *ev_ = nullptr;
     char ov_[32] = {};
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
     unsigned long ctx_ = 0;
     int fd_ = 0;
-    char cb_buf_[64] = {};
+    char cb_buf_[128] = {};
 #endif
 
   public:

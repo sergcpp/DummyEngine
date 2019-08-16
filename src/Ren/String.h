@@ -8,16 +8,16 @@
 
 namespace Ren {
 struct StringPart {
-    const char  *str;
-    size_t      len;
+    const char *str;
+    size_t len;
 };
 
-template <typename Alloc = std::allocator<char>>
-class BasicString {
-    char    *str_;
-    size_t  len_;
-    Alloc   alloc_;
-public:
+template <typename Alloc = std::allocator<char>> class BasicString {
+    char *str_;
+    size_t len_;
+    Alloc alloc_;
+
+  public:
     BasicString() : str_(nullptr), len_(0) {}
     explicit BasicString(const char *str) {
         len_ = strlen(str);
@@ -66,9 +66,7 @@ public:
         alloc_ = std::move(rhs.alloc_);
     }
 
-    ~BasicString() {
-        Release();
-    }
+    ~BasicString() { Release(); }
 
     BasicString &operator=(const BasicString &rhs) {
         Release();
@@ -100,15 +98,9 @@ public:
     size_t length() const { return len_; }
     bool empty() const { return len_ == 0; }
 
-    template <typename IntType>
-    const char &operator[](IntType i) const {
-        return str_[i];
-    }
+    template <typename IntType> const char &operator[](IntType i) const { return str_[i]; }
 
-    template <typename IntType>
-    char &operator[](IntType i) {
-        return str_[i];
-    }
+    template <typename IntType> char &operator[](IntType i) { return str_[i]; }
 
     void Release() {
         if (str_) {
@@ -151,13 +143,9 @@ public:
         return s1.str_ != s2.str_ && (s1.len_ != s2.len_ || memcmp(s1.str_, s2.str_, s1.len_) != 0);
     }
 
-    friend bool operator==(const BasicString &s1, const char *s2) {
-        return s1.str_ && strcmp(s1.str_, s2) == 0;
-    }
+    friend bool operator==(const BasicString &s1, const char *s2) { return s1.str_ && strcmp(s1.str_, s2) == 0; }
 
-    friend bool operator!=(const BasicString &s1, const char *s2) {
-        return strcmp(s1.str_, s2) != 0;
-    }
+    friend bool operator!=(const BasicString &s1, const char *s2) { return strcmp(s1.str_, s2) != 0; }
 
     friend bool operator==(const BasicString &s1, const StringPart &s2) {
         return strncmp(s1.str_, s2.str, s2.len) == 0;
@@ -167,13 +155,9 @@ public:
         return strncmp(s1.str_, s2.str, s2.len) != 0;
     }
 
-    friend bool operator==(const char *s1, const BasicString &s2) {
-        return strcmp(s1, s2.str_) == 0;
-    }
+    friend bool operator==(const char *s1, const BasicString &s2) { return strcmp(s1, s2.str_) == 0; }
 
-    friend bool operator!=(const char *s1, const BasicString &s2) {
-        return strcmp(s1, s2.str_) != 0;
-    }
+    friend bool operator!=(const char *s1, const BasicString &s2) { return strcmp(s1, s2.str_) != 0; }
 
     friend bool operator==(const StringPart &s1, const BasicString &s2) {
         return strncmp(s1.str, s2.str_, s1.len) == 0;
@@ -185,4 +169,4 @@ public:
 };
 
 using String = BasicString<>;
-}
+} // namespace Ren

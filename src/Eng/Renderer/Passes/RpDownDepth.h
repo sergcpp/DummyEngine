@@ -11,10 +11,11 @@ class RpDownDepth : public RenderPassBase {
 
     // lazily initialized data
     Ren::ProgramRef blit_down_depth_prog_, blit_down_depth_ms_prog_;
+    Ren::RenderPass render_pass_;
+    Ren::Framebuffer depth_down_fb_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
-    int orphan_index_ = -1;
 
     RpResource shared_data_buf_;
 
@@ -23,16 +24,12 @@ class RpDownDepth : public RenderPassBase {
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &down_depth_2x_tex);
 
-#if defined(USE_GL_RENDER)
-    Ren::Framebuffer depth_down_fb_;
-#endif
   public:
     RpDownDepth(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state, int orphan_index,
-               const char shared_data_buf[], const char depth_tex[],
+    void Setup(RpBuilder &builder, const ViewState *view_state, const char shared_data_buf[], const char depth_tex[],
                const char output_tex[]);
     void Execute(RpBuilder &builder) override;
 
-    const char *name() const override { return "DOWNSAMPLE DEPTH"; }
+    const char *name() const override { return "DOWN DEPTH"; }
 };

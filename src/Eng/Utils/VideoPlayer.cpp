@@ -54,8 +54,8 @@ struct VpxCtx {
         cfg.w = w;
         cfg.h = h;
 
-        initialized = vpx_codec_dec_init_ver(&codec, vpx_codec_vp9_dx(), &cfg, 0,
-                                             VPX_DECODER_ABI_VERSION) == VPX_CODEC_OK;
+        initialized =
+            vpx_codec_dec_init_ver(&codec, vpx_codec_vp9_dx(), &cfg, 0, VPX_DECODER_ABI_VERSION) == VPX_CODEC_OK;
         return initialized;
     }
 
@@ -89,8 +89,8 @@ bool VideoPlayer::OpenAndPreload(const char *name, Ren::ILog *log) {
         return false;
     }
 
-    if (header.signature[0] != 'D' || header.signature[1] != 'K' ||
-        header.signature[2] != 'I' || header.signature[3] != 'F') {
+    if (header.signature[0] != 'D' || header.signature[1] != 'K' || header.signature[2] != 'I' ||
+        header.signature[3] != 'F') {
         log->Error("VideoPlayer: Invalid file signature in file %s!", name);
         return false;
     }
@@ -124,16 +124,15 @@ bool VideoPlayer::OpenAndPreload(const char *name, Ren::ILog *log) {
         }
 
         // Read frame just enough to parse its info
-        if (in_file_.Read((char *)&temp_buf[0], BytesNeededToPeekInfo) !=
-            BytesNeededToPeekInfo) {
+        if (in_file_.Read((char *)&temp_buf[0], BytesNeededToPeekInfo) != BytesNeededToPeekInfo) {
             log->Error("VideoPlayer: Failed to read frame data from file %s!", name);
             return false;
         }
         // Skip rest of the frame
         in_file_.SeekRelative(frame_len - BytesNeededToPeekInfo);
 
-        if (vpx_codec_peek_stream_info(&vpx_codec_vp9_dx_algo, &temp_buf[0],
-                                       BytesNeededToPeekInfo, &si) == VPX_CODEC_OK) {
+        if (vpx_codec_peek_stream_info(&vpx_codec_vp9_dx_algo, &temp_buf[0], BytesNeededToPeekInfo, &si) ==
+            VPX_CODEC_OK) {
             Frame &fr = frames_[i];
 
             fr.offset = uint64_t(frame_pos);
@@ -201,8 +200,7 @@ VideoPlayer::eFrUpdateResult VideoPlayer::UpdateFrame(const uint64_t time_ms) {
         return eFrUpdateResult::Failed;
     }
 
-    const int decode_beg =
-        (nearest_keyframe == last_keyframe_) ? next_frame_ : nearest_keyframe;
+    const int decode_beg = (nearest_keyframe == last_keyframe_) ? next_frame_ : nearest_keyframe;
     const int decode_end = frame_index + 1;
 
     for (int i = decode_beg; i < decode_end; i++) {
@@ -212,8 +210,7 @@ VideoPlayer::eFrUpdateResult VideoPlayer::UpdateFrame(const uint64_t time_ms) {
         in_file_.SeekAbsolute(fr.offset + sizeof(uint32_t) + sizeof(uint64_t));
         in_file_.Read((char *)&temp_buf_[0], fr.size);
 
-        const int res =
-            vpx_codec_decode(&ctx_->codec, &temp_buf_[0], fr.size, nullptr, 0);
+        const int res = vpx_codec_decode(&ctx_->codec, &temp_buf_[0], fr.size, nullptr, 0);
         if (res != VPX_CODEC_OK) {
             return eFrUpdateResult::Failed;
         }
@@ -235,8 +232,7 @@ VideoPlayer::eFrUpdateResult VideoPlayer::UpdateFrame(const uint64_t time_ms) {
     return eFrUpdateResult::Updated;
 }
 
-const uint8_t *VideoPlayer::GetImagePtr(const eYUVComp plane, int &w, int &h,
-                                        int &stride) {
+const uint8_t *VideoPlayer::GetImagePtr(const eYUVComp plane, int &w, int &h, int &stride) {
     using namespace VideoPlayerInternal;
 
     if (cur_image_) {

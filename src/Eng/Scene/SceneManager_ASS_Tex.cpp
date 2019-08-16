@@ -5,13 +5,12 @@
 
 #include <Eng/Utils/Load.h>
 #include <Net/Compress.h>
-extern "C" {
-#include <Ren/SOIL2/image_DXT.h>
-}
-#include <Ren/SOIL2/SOIL2.h>
 #include <Ren/Utils.h>
 #include <Sys/Json.h>
 #include <Sys/ThreadPool.h>
+
+#include <Ren/stb/stb_image.h>
+#include <Ren/stb/stb_image_write.h>
 
 // faster than std::min/max in debug
 #define _MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -53,12 +52,12 @@ bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]) {
     src_stream.read((char *)&src_buf[0], src_size);
 
     int width, height, channels;
-    unsigned char *const image_data = SOIL_load_image_from_memory(
-        &src_buf[0], int(src_size), &width, &height, &channels, 0);
+    unsigned char *const image_data =
+        stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
 
     GetTexturesAverageColor(image_data, width, height, channels, out_color);
 
-    SOIL_free_image_data(image_data);
+    free(image_data);
 
     return true;
 }
@@ -370,19 +369,21 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     //
     // Compress mip images
     //
-    uint8_t *dxt_data[16] = {};
+    std::unique_ptr<uint8_t[]> dxt_data[16];
     int dxt_size[16] = {};
     int dxt_size_total = 0;
 
     for (int i = 0; i < mip_count; i++) {
         if (channels == 3) {
-            dxt_data[i] = convert_image_to_DXT1(mipmaps[i], widths[i], heights[i],
-                                                channels, &dxt_size[i]);
+            dxt_size[i] = Ren::GetRequiredMemory_DXT1(widths[i], heights[i]);
+            dxt_data[i].reset(new uint8_t[dxt_size[i]]);
+            Ren::CompressImage_DXT1<3>(mipmaps[i], widths[i], heights[i],
+                                       dxt_data[i].get());
         } else if (channels == 4) {
-            dxt_data[i] = convert_image_to_DXT5(mipmaps[i], widths[i], heights[i],
-                                                channels, &dxt_size[i]);
-        } else {
-            return false;
+            dxt_size[i] = Ren::GetRequiredMemory_DXT5(widths[i], heights[i]);
+            dxt_data[i].reset(new uint8_t[dxt_size[i]]);
+            Ren::CompressImage_DXT5(mipmaps[i], widths[i], heights[i],
+                                    dxt_data[i].get());
         }
         dxt_size_total += dxt_size[i];
     }
@@ -418,9 +419,11 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     out_stream.write((char *)&header, sizeof(header));
 
     for (int i = 0; i < mip_count; i++) {
-        out_stream.write((char *)dxt_data[i], dxt_size[i]);
-        SOIL_free_image_data(dxt_data[i]);
-        dxt_data[i] = nullptr;
+        out_stream.write((char *)dxt_data[i].get(), dxt_size[i]);
+    }
+
+    for (int i = 0; i < mip_count; i++) {
+        dxt_data[i].reset();
     }
 
     return out_stream.good();
@@ -516,17 +519,21 @@ bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h,
     //
     // Compress mip images
     //
-    uint8_t *dxt_data[16] = {};
+    std::unique_ptr<uint8_t[]> dxt_data[16];
     int dxt_size[16] = {};
     int dxt_size_total = 0;
 
     for (int i = 0; i < mip_count; i++) {
         if (channels == 3) {
-            dxt_data[i] = convert_image_to_DXT1(mipmaps[i].get(), widths[i], heights[i],
-                                                channels, &dxt_size[i]);
+            dxt_size[i] = Ren::GetRequiredMemory_DXT1(widths[i], heights[i]);
+            dxt_data[i].reset(new uint8_t[dxt_size[i]]);
+            Ren::CompressImage_DXT1<3>(mipmaps[i].get(), widths[i], heights[i],
+                                       dxt_data[i].get());
         } else if (channels == 4) {
-            dxt_data[i] = convert_image_to_DXT5(mipmaps[i].get(), widths[i], heights[i],
-                                                channels, &dxt_size[i]);
+            dxt_size[i] = Ren::GetRequiredMemory_DXT5(widths[i], heights[i]);
+            dxt_data[i].reset(new uint8_t[dxt_size[i]]);
+            Ren::CompressImage_DXT5(mipmaps[i].get(), widths[i], heights[i],
+                                    dxt_data[i].get());
         }
         dxt_size_total += dxt_size[i];
     }
@@ -571,7 +578,7 @@ bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h,
         auto size = (uint32_t)dxt_size[i];
         out_stream.write((char *)&size, sizeof(uint32_t));
         file_offset += sizeof(uint32_t);
-        out_stream.write((char *)dxt_data[i], size);
+        out_stream.write((char *)dxt_data[i].get(), size);
         file_offset += size;
 
         uint32_t pad = (file_offset % 4) ? (4 - (file_offset % 4)) : 0;
@@ -580,9 +587,6 @@ bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h,
             out_stream.write((char *)&zero_byte, 1);
             pad--;
         }
-
-        SOIL_free_image_data(dxt_data[i]);
-        dxt_data[i] = nullptr;
     }
 
     return out_stream.good();
@@ -724,6 +728,7 @@ int WriteImage(const uint8_t *out_data, const int w, const int h, const int chan
                const bool flip_y, const bool is_rgbm, const char *name) {
     int res = 0;
     if (strstr(name, ".tga") || strstr(name, ".png")) {
+        // TODO: check if negative stride can be used instead of this
         std::unique_ptr<uint8_t[]> temp_data;
         if (flip_y) {
             temp_data.reset(new uint8_t[w * h * channels]);
@@ -734,9 +739,11 @@ int WriteImage(const uint8_t *out_data, const int w, const int h, const int chan
             out_data = &temp_data[0];
         }
 
-        const int img_type =
-            strstr(name, ".tga") ? SOIL_SAVE_TYPE_TGA : SOIL_SAVE_TYPE_PNG;
-        res = SOIL_save_image(name, img_type, w, h, channels, out_data);
+        if (strstr(name, ".tga")) {
+            res = stbi_write_tga(name, w, h, channels, out_data);
+        } else if (strstr(name, ".png")) {
+            res = stbi_write_png(name, w, h, channels, out_data, 0);
+        }
     } else if (strstr(name, ".dds")) {
         res = 1;
         Write_DDS(out_data, w, h, channels, flip_y, is_rgbm, name, nullptr);
@@ -769,8 +776,8 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
     src_stream.read((char *)&src_buf[0], src_size);
 
     int width, height, channels;
-    unsigned char *const image_data = SOIL_load_image_from_memory(
-        &src_buf[0], int(src_size), &width, &height, &channels, 0);
+    unsigned char *const image_data =
+        stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
 
     uint8_t average_color[4] = {};
 
@@ -850,7 +857,7 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
         res &= Write_DDS(image_data, width, height, channels, false /* flip_y */,
                          is_rgbm /* is_rgbm */, out_file, average_color);
     }
-    SOIL_free_image_data(image_data);
+    free(image_data);
 
     ctx.cache->WriteTextureAverage(in_file, average_color);
 
@@ -874,8 +881,8 @@ bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
     src_stream.read((char *)&src_buf[0], src_size);
 
     int width, height, channels;
-    unsigned char *image_data = SOIL_load_image_from_memory(
-        &src_buf[0], int(src_size), &width, &height, &channels, 0);
+    unsigned char *const image_data =
+        stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
 
     bool res = true;
     if (strstr(in_file, "_norm")) {
@@ -945,7 +952,7 @@ bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
                               false /* is_rgbm */, out_file);
     }
 
-    SOIL_free_image_data(image_data);
+    free(image_data);
 
     return res;
 }

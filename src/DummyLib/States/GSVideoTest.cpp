@@ -50,8 +50,7 @@ extern const bool VerboseLogging;
 GSVideoTest::GSVideoTest(GameBase *game) : GSBaseState(game) {
     threads_ = game->GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
     aux_gfx_thread_ = game_->GetComponent<Sys::ThreadWorker>(AUX_GFX_THREAD);
-    decoder_threads_ = std::make_shared<Sys::QThreadPool>(4 /* threads */, 8 /* queues */,
-                                                          "decoder_thread");
+    decoder_threads_ = std::make_shared<Sys::QThreadPool>(4 /* threads */, 8 /* queues */, "decoder_thread");
 }
 
 void GSVideoTest::Enter() {
@@ -76,8 +75,7 @@ void GSVideoTest::Enter() {
 
         const uint32_t mask = CompDrawableBit;
         if ((wall_pic->comp_mask & mask) == mask) {
-            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(
-                wall_pic->components[CompDrawable]);
+            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(wall_pic->components[CompDrawable]);
 
             Ren::Mesh *mesh = dr->mesh.get();
 
@@ -100,10 +98,9 @@ bool GSVideoTest::OpenVideoFiles() {
 #define TEXTURE_PATH "assets_pc/textures/"
 #endif
 
-    const char *file_names[] = {
-        TEXTURE_PATH "video_test/turtle.ivf", TEXTURE_PATH "/video_test/train.ivf",
-        TEXTURE_PATH "/video_test/winter.ivf", TEXTURE_PATH "/video_test/bird.ivf",
-        TEXTURE_PATH "/video_test/wood.ivf"};
+    const char *file_names[] = {TEXTURE_PATH "video_test/turtle.ivf", TEXTURE_PATH "/video_test/train.ivf",
+                                TEXTURE_PATH "/video_test/winter.ivf", TEXTURE_PATH "/video_test/bird.ivf",
+                                TEXTURE_PATH "/video_test/wood.ivf"};
 
 #undef TEXTURE_PATH
 
@@ -172,6 +169,8 @@ void GSVideoTest::Exit() {
             tex_update_done_[i].wait();
 #endif
         }
+        y_sbuf_[i].Unmap();
+        uv_sbuf_[i].Unmap();
     }
 
     DestroyVideoTextures();
@@ -201,21 +200,15 @@ void GSVideoTest::Draw() {
     GSBaseState::Draw();
 }
 
-void GSVideoTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
-    GSBaseState::DrawUI(r, root);
-}
+void GSVideoTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) { GSBaseState::DrawUI(r, root); }
 
 void GSVideoTest::UpdateFixed(const uint64_t dt_us) {
     using namespace GSVideoTestInternal;
 
     const Ren::Vec3f up = Ren::Vec3f{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
 
-    const float fwd_speed = std::max(
-                    std::min(fwd_press_speed_ + fwd_touch_speed_, max_fwd_speed_),
-                    -max_fwd_speed_),
-                side_speed = std::max(
-                    std::min(side_press_speed_ + side_touch_speed_, max_fwd_speed_),
-                    -max_fwd_speed_);
+    const float fwd_speed = std::max(std::min(fwd_press_speed_ + fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_),
+                side_speed = std::max(std::min(side_press_speed_ + side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
     view_origin_ += view_dir_ * fwd_speed;
     view_origin_ += side * side_speed;
@@ -231,8 +224,7 @@ bool GSVideoTest::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
-        if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
-            evt.point.y < float(ren_ctx_->h()) * 0.1f) {
+        if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -285,12 +277,10 @@ bool GSVideoTest::HandleInput(const InputManager::Event &evt) {
     case RawInputEv::P1Move:
         if (move_pointer_ == 1) {
             side_touch_speed_ += evt.move.dx * 0.002f;
-            side_touch_speed_ =
-                std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+            side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
             fwd_touch_speed_ -= evt.move.dy * 0.002f;
-            fwd_touch_speed_ =
-                std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+            fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 1) {
             auto up = Vec3f{0, 1, 0};
             Vec3f side = Normalize(Cross(view_dir_, up));
@@ -309,12 +299,10 @@ bool GSVideoTest::HandleInput(const InputManager::Event &evt) {
     case RawInputEv::P2Move:
         if (move_pointer_ == 2) {
             side_touch_speed_ += evt.move.dx * 0.002f;
-            side_touch_speed_ =
-                std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+            side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
             fwd_touch_speed_ -= evt.move.dy * 0.002f;
-            fwd_touch_speed_ =
-                std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+            fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 2) {
             auto up = Vec3f{0, 1, 0};
             Vec3f side = Normalize(Cross(view_dir_, up));
@@ -331,17 +319,13 @@ bool GSVideoTest::HandleInput(const InputManager::Event &evt) {
         }
         break;
     case RawInputEv::KeyDown: {
-        if (evt.key_code == KeyUp ||
-            (evt.key_code == KeyW && (!cmdline_enabled_ || view_pointer_))) {
+        if (evt.key_code == KeyUp || (evt.key_code == KeyW && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = max_fwd_speed_;
-        } else if (evt.key_code == KeyDown ||
-                   (evt.key_code == KeyS && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyDown || (evt.key_code == KeyS && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key_code == KeyLeft ||
-                   (evt.key_code == KeyA && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyLeft || (evt.key_code == KeyA && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key_code == KeyRight ||
-                   (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyRight || (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = max_fwd_speed_;
         } else if (evt.key_code == KeySpace) {
             enable_video_update_ = !enable_video_update_;
@@ -353,11 +337,10 @@ bool GSVideoTest::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEv::KeyUp: {
         if (!cmdline_enabled_ || view_pointer_) {
-            if (evt.key_code == KeyUp || evt.key_code == KeyW ||
-                evt.key_code == KeyDown || evt.key_code == KeyS) {
+            if (evt.key_code == KeyUp || evt.key_code == KeyW || evt.key_code == KeyDown || evt.key_code == KeyS) {
                 fwd_press_speed_ = 0;
-            } else if (evt.key_code == KeyLeft || evt.key_code == KeyA ||
-                       evt.key_code == KeyRight || evt.key_code == KeyD) {
+            } else if (evt.key_code == KeyLeft || evt.key_code == KeyA || evt.key_code == KeyRight ||
+                       evt.key_code == KeyD) {
                 side_press_speed_ = 0;
             } else {
                 input_processed = false;
@@ -381,8 +364,8 @@ void GSVideoTest::UpdateAnim(const uint64_t dt_us) {
     const float delta_time_s = dt_us * 0.000001f;
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_),
-                              Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_, max_exposure_);
+    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_,
+                              max_exposure_);
 
     if (enable_video_update_) {
         video_time_us_ += fr_info_.delta_time_us;
@@ -452,8 +435,7 @@ void GSVideoTest::UpdateVideoTextures() {
 #ifdef FORCE_WAIT_FOR_DECODER
             vid_update_done_[tx].wait();
 #else
-            if (vid_update_done_[tx].wait_for(std::chrono::seconds(0)) !=
-                std::future_status::ready) {
+            if (vid_update_done_[tx].wait_for(std::chrono::seconds(0)) != std::future_status::ready) {
                 // Video update iteration did not finish yet
                 continue;
             }
@@ -490,8 +472,7 @@ void GSVideoTest::UpdateVideoTextures() {
         const int tex_to_render = cur_frame_index_[tx];
         const int tex_to_update = (cur_frame_index_[tx] + 1) % TextureSyncWindow;
 
-#if !defined(UPDATE_PBO_FROM_SEPARATE_THREAD) ||                                         \
-    !defined(UPDATE_TEX_FROM_SEPARATE_CONTEXT)
+#if !defined(UPDATE_PBO_FROM_SEPARATE_THREAD) || !defined(UPDATE_TEX_FROM_SEPARATE_CONTEXT)
 
 #ifndef FORCE_UPLOAD_EVERY_FRAME
         if (decode_result == VideoPlayer::eFrUpdateResult::Updated)
@@ -506,6 +487,16 @@ void GSVideoTest::UpdateVideoTextures() {
         vid_mat_[tx]->textures[0] = y_tex_[tx][tex_to_render];
         vid_mat_[tx]->textures[1] = uv_tex_[tx][tex_to_render];
 
+        vid_mat_[tx]->textures[0]->first_user = vid_mat_[tx].index();
+        vid_mat_[tx]->textures[1]->first_user = vid_mat_[tx].index();
+
+        vid_mat_[tx]->next_texture_user.resize(2);
+        vid_mat_[tx]->next_texture_user[0] = 0xffffffff;
+        vid_mat_[tx]->next_texture_user[1] = 0xffffffff;
+
+        scene_manager_->InvalidateTexture(vid_mat_[tx]->textures[0]);
+        scene_manager_->InvalidateTexture(vid_mat_[tx]->textures[1]);
+
         // Make sure PBO -> texture transfer finished
         WaitVideoTextureUpdated(tx, tex_to_update);
 
@@ -516,26 +507,24 @@ void GSVideoTest::UpdateVideoTextures() {
         if (false) {
 #endif
             // Can update PBO from decoder thread
-            vid_update_done_[tx] =
-                decoder_threads_->Enqueue(q_index, [this, tx, tex_to_update]() {
+            vid_update_done_[tx] = decoder_threads_->Enqueue(q_index, [this, tx, tex_to_update]() {
 #ifndef FORCE_UPLOAD_EVERY_FRAME
-                    if (decode_result_[tx] != VideoPlayer::eFrUpdateResult::Updated) {
-                        return;
-                    }
+                if (decode_result_[tx] != VideoPlayer::eFrUpdateResult::Updated) {
+                    return;
+                }
 #endif
-                    UpdateStageBufWithDecodedFrame_Persistent(tx, tex_to_update);
+                UpdateStageBufWithDecodedFrame_Persistent(tx, tex_to_update);
 
 #ifdef UPDATE_TEX_FROM_SEPARATE_CONTEXT
-                    tex_update_done_[tx] =
-                        aux_gfx_thread_->AddTask([this, tx, tex_to_update]() {
-                            UpdateVideoTextureData(tx, tex_to_update);
-                            SetVideoTextureFence(tx, tex_to_update);
-                            // We have to flush command buffer here to make sure
-                            // fences will be visible in main gfx thread
-                            FlushGPUCommands();
-                        });
-#endif
+                tex_update_done_[tx] = aux_gfx_thread_->AddTask([this, tx, tex_to_update]() {
+                    UpdateVideoTextureData(tx, tex_to_update);
+                    SetVideoTextureFence(tx, tex_to_update);
+                    // We have to flush command buffer here to make sure
+                    // fences will be visible in main gfx thread
+                    FlushGPUCommands();
                 });
+#endif
+            });
         } else {
             // Have to update PBO from main thread
             UpdateStageBufWithDecodedFrame(tx, tex_to_update);
@@ -561,25 +550,22 @@ void GSVideoTest::UpdateVideoTextureData(const int tex_index, const int frame_in
     const int tex_w = vp_[tex_index].w();
     const int tex_h = vp_[tex_index].h();
 
-    const uint32_t y_buf_chunk_size = tex_w * tex_h,
-                   uv_buf_chunk_size = 2 * (tex_w / 2) * (tex_h / 2);
+    const uint32_t y_buf_chunk_size = tex_w * tex_h, uv_buf_chunk_size = 2 * (tex_w / 2) * (tex_h / 2);
 
-    y_sbuf_[tex_index].FlushMapped(frame_index * y_buf_chunk_size, y_buf_chunk_size);
-    y_tex_[tex_index][frame_index]->SetSubImage(
-        0, 0 /* offsetx */, 0 /* offsety */, tex_w, tex_h, Ren::eTexFormat::RawR8,
-        y_sbuf_[tex_index], frame_index * y_buf_chunk_size, y_buf_chunk_size);
+    //y_sbuf_[tex_index].FlushMappedRange(frame_index * y_buf_chunk_size, y_buf_chunk_size);
+    y_tex_[tex_index][frame_index]->SetSubImage(0, 0 /* offsetx */, 0 /* offsety */, tex_w, tex_h,
+                                                Ren::eTexFormat::RawR8, y_sbuf_[tex_index], ren_ctx_->current_cmd_buf(),
+                                                frame_index * y_buf_chunk_size, y_buf_chunk_size);
 
-    uv_sbuf_[tex_index].FlushMapped(frame_index * uv_buf_chunk_size, uv_buf_chunk_size);
+    //uv_sbuf_[tex_index].FlushMappedRange(frame_index * uv_buf_chunk_size, uv_buf_chunk_size);
     uv_tex_[tex_index][frame_index]->SetSubImage(
-        0, 0 /* offsetx */, 0 /* offsety */, tex_w / 2, tex_h / 2,
-        Ren::eTexFormat::RawRG88, uv_sbuf_[tex_index], frame_index * uv_buf_chunk_size,
-        uv_buf_chunk_size);
+        0, 0 /* offsetx */, 0 /* offsety */, tex_w / 2, tex_h / 2, Ren::eTexFormat::RawRG88, uv_sbuf_[tex_index],
+        ren_ctx_->current_cmd_buf(), frame_index * uv_buf_chunk_size, uv_buf_chunk_size);
 
     __itt_task_end(__g_itt_domain);
 }
 
-void GSVideoTest::UpdateStageBufWithDecodedFrame(const int tex_index,
-                                                 const int frame_index) {
+void GSVideoTest::UpdateStageBufWithDecodedFrame(const int tex_index, const int frame_index) {
     assert(vp_[tex_index].initialized());
 
     const int tex_w = vp_[tex_index].w();
@@ -592,18 +578,16 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame(const int tex_index,
             if (y_sbuf_[tex_index].mapped_ptr()) { // persistent mapping case
                 const int range_offset = frame_index * w * h;
                 for (int y = 0; y < h; y++) {
-                    memcpy(y_sbuf_[tex_index].mapped_ptr() + (range_offset + y * w),
-                           &y_img[y * stride], w);
+                    memcpy(y_sbuf_[tex_index].mapped_ptr() + (range_offset + y * w), &y_img[y * stride], w);
                 }
-                y_sbuf_[tex_index].FlushMapped(range_offset, w * h);
+                y_sbuf_[tex_index].FlushMappedRange(range_offset, w * h);
             } else { // non-persistent mapping case
-                uint8_t *pinned_mem =
-                    y_sbuf_[tex_index].MapRange(frame_index * w * h, w * h);
+                uint8_t *pinned_mem = y_sbuf_[tex_index].MapRange(Ren::BufMapWrite, frame_index * w * h, w * h);
                 if (pinned_mem) {
                     for (int y = 0; y < h; y++) {
                         memcpy(&pinned_mem[y * w], &y_img[y * stride], w);
                     }
-                    y_sbuf_[tex_index].FlushMapped(0, w * h);
+                    y_sbuf_[tex_index].FlushMappedRange(0, w * h);
                     y_sbuf_[tex_index].Unmap();
                 }
             }
@@ -612,30 +596,24 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame(const int tex_index,
 
     { // copy UV planes
         int u_w, u_h, u_stride;
-        const uint8_t *u_img =
-            vp_[tex_index].GetImagePtr(eYUVComp::U, u_w, u_h, u_stride);
+        const uint8_t *u_img = vp_[tex_index].GetImagePtr(eYUVComp::U, u_w, u_h, u_stride);
         int v_w, v_h, v_stride;
-        const uint8_t *v_img =
-            vp_[tex_index].GetImagePtr(eYUVComp::V, v_w, v_h, v_stride);
-        if (u_img && u_w == (tex_w / 2) && u_h == (tex_h / 2) && v_img &&
-            v_w == (tex_w / 2) && v_h == (tex_h / 2)) {
+        const uint8_t *v_img = vp_[tex_index].GetImagePtr(eYUVComp::V, v_w, v_h, v_stride);
+        if (u_img && u_w == (tex_w / 2) && u_h == (tex_h / 2) && v_img && v_w == (tex_w / 2) && v_h == (tex_h / 2)) {
             const int range_offset = 2 * frame_index * u_w * u_h;
 
             if (uv_sbuf_[tex_index].mapped_ptr()) { // persistent mapping case
                 uint8_t *uv_dst = uv_sbuf_[tex_index].mapped_ptr() + range_offset;
 
-                Ren::InterleaveUVChannels_16px(u_img, v_img, u_stride, v_stride, u_w, u_h,
-                                               uv_dst);
+                Ren::InterleaveUVChannels_16px(u_img, v_img, u_stride, v_stride, u_w, u_h, uv_dst);
 
-                uv_sbuf_[tex_index].FlushMapped(range_offset, u_w * u_h);
+                uv_sbuf_[tex_index].FlushMappedRange(range_offset, u_w * u_h);
             } else { // non-persistent mapping case
-                uint8_t *pinned_mem =
-                    uv_sbuf_[tex_index].MapRange(range_offset, 2 * u_w * u_h);
+                uint8_t *pinned_mem = uv_sbuf_[tex_index].MapRange(Ren::BufMapWrite, range_offset, 2 * u_w * u_h);
                 if (pinned_mem) {
-                    Ren::InterleaveUVChannels_16px(u_img, v_img, u_stride, v_stride, u_w,
-                                                   u_h, pinned_mem);
+                    Ren::InterleaveUVChannels_16px(u_img, v_img, u_stride, v_stride, u_w, u_h, pinned_mem);
 
-                    uv_sbuf_[tex_index].FlushMapped(0, 2 * u_w * u_h);
+                    uv_sbuf_[tex_index].FlushMappedRange(0, 2 * u_w * u_h);
                     uv_sbuf_[tex_index].Unmap();
                 }
             }
@@ -643,8 +621,7 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame(const int tex_index,
     }
 }
 
-void GSVideoTest::UpdateStageBufWithDecodedFrame_Persistent(const int tex_index,
-                                                            const int frame_index) {
+void GSVideoTest::UpdateStageBufWithDecodedFrame_Persistent(const int tex_index, const int frame_index) {
     using namespace GSVideoTestInternal;
 
     assert(y_sbuf_[tex_index].mapped_ptr() && uv_sbuf_[tex_index].mapped_ptr() &&
@@ -681,19 +658,15 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame_Persistent(const int tex_index,
 
     { // copy UV planes
         int u_w, u_h, u_stride;
-        const uint8_t *u_img =
-            vp_[tex_index].GetImagePtr(eYUVComp::U, u_w, u_h, u_stride);
+        const uint8_t *u_img = vp_[tex_index].GetImagePtr(eYUVComp::U, u_w, u_h, u_stride);
         int v_w, v_h, v_stride;
-        const uint8_t *v_img =
-            vp_[tex_index].GetImagePtr(eYUVComp::V, v_w, v_h, v_stride);
-        if (u_img && u_w == (tex_w / 2) && u_h == (tex_h / 2) && v_img &&
-            v_w == (tex_w / 2) && v_h == (tex_h / 2)) {
+        const uint8_t *v_img = vp_[tex_index].GetImagePtr(eYUVComp::V, v_w, v_h, v_stride);
+        if (u_img && u_w == (tex_w / 2) && u_h == (tex_h / 2) && v_img && v_w == (tex_w / 2) && v_h == (tex_h / 2)) {
             const int range_offset = 2 * frame_index * u_w * u_h;
             uint8_t *uv_out = uv_sbuf_[tex_index].mapped_ptr() + range_offset;
 
             if (u_w % 16 == 0 && Ren::g_CpuFeatures.sse2_supported) {
-                Ren::InterleaveUVChannels_16px(u_img, v_img, u_stride, v_stride, u_w, u_h,
-                                               uv_out);
+                Ren::InterleaveUVChannels_16px(u_img, v_img, u_stride, v_stride, u_w, u_h, uv_out);
             } else {
                 for (int y = 0; y < u_h; ++y) {
                     for (int x = 0; x < u_w; ++x) {

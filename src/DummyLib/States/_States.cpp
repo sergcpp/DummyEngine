@@ -3,8 +3,8 @@
 #pragma warning(disable : 4996)
 #endif
 
-#include "GSCreate.cpp"
 #include "GSBaseState.cpp"
+#include "GSCreate.cpp"
 #include "GSDrawTest.cpp"
 #include "GSPhyTest.cpp"
 #include "GSPlayTest.cpp"
@@ -17,5 +17,8 @@
 #if defined(USE_GL_RENDER)
 #include "GSUITest3GL.cpp"
 #include "GSVideoTestGL.cpp"
+#elif defined(USE_VK_RENDER)
+#include "GSUITest3VK.cpp"
+#include "GSVideoTestVK.cpp"
 #elif defined(USE_SW_RENDER)
 #endif

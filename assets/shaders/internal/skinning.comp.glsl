@@ -49,9 +49,17 @@ layout(std430, binding = 5) writeonly buffer Output1 {
     OutVertexData1 vertices[];
 } out_data1;
 
+#if defined(VULKAN)
+layout(push_constant) uniform PushConstants {
+    highp uvec4 uSkinParams;
+	highp uvec4 uShapeParamsCurr;
+	highp uvec4 uShapeParamsPrev;
+};
+#else
 layout(location = 0) uniform highp uvec4 uSkinParams;
 layout(location = 1) uniform highp uvec4 uShapeParamsCurr;
 layout(location = 2) uniform highp uvec4 uShapeParamsPrev;
+#endif
 
 layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 

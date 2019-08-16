@@ -155,8 +155,7 @@ void GSPhyTest::OnPreloadScene(JsObjectP &js_scene) {
                 { // Set material to checkerboard
                     JsArrayP js_material_override(alloc);
                     js_material_override.Push(JsStringP{"checker.txt", alloc});
-                    js_drawable.Push("material_override",
-                                     std::move(js_material_override));
+                    js_drawable.Push("material_override", std::move(js_material_override));
                 }
 
                 new_object.Push(Drawable::name(), std::move(js_drawable));
@@ -210,9 +209,7 @@ void GSPhyTest::Exit() { GSBaseState::Exit(); }
 
 void GSPhyTest::Draw() { GSBaseState::Draw(); }
 
-void GSPhyTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
-    GSBaseState::DrawUI(r, root);
-}
+void GSPhyTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) { GSBaseState::DrawUI(r, root); }
 
 void GSPhyTest::UpdateFixed(const uint64_t dt_us) {
     using namespace GSPhyTestInternal;
@@ -222,12 +219,10 @@ void GSPhyTest::UpdateFixed(const uint64_t dt_us) {
     const Ren::Vec3f up = Ren::Vec3f{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
 
     {
-        const float fwd_speed = std::max(
-                        std::min(fwd_press_speed_ + fwd_touch_speed_, max_fwd_speed_),
-                        -max_fwd_speed_),
-                    side_speed = std::max(
-                        std::min(side_press_speed_ + side_touch_speed_, max_fwd_speed_),
-                        -max_fwd_speed_);
+        const float fwd_speed =
+                        std::max(std::min(fwd_press_speed_ + fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_),
+                    side_speed =
+                        std::max(std::min(side_press_speed_ + side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
         view_origin_ += view_dir_ * fwd_speed;
         view_origin_ += side * side_speed;
@@ -244,8 +239,7 @@ bool GSPhyTest::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
-        if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
-            evt.point.y < float(ren_ctx_->h()) * 0.1f) {
+        if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -299,12 +293,10 @@ bool GSPhyTest::HandleInput(const InputManager::Event &evt) {
     case RawInputEv::P1Move:
         if (move_pointer_ == 1) {
             side_touch_speed_ += evt.move.dx * 0.002f;
-            side_touch_speed_ =
-                std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+            side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
             fwd_touch_speed_ -= evt.move.dy * 0.002f;
-            fwd_touch_speed_ =
-                std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+            fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 1) {
             auto up = Vec3f{0, 1, 0};
             Vec3f side = Normalize(Cross(view_dir_, up));
@@ -323,12 +315,10 @@ bool GSPhyTest::HandleInput(const InputManager::Event &evt) {
     case RawInputEv::P2Move:
         if (move_pointer_ == 2) {
             side_touch_speed_ += evt.move.dx * 0.002f;
-            side_touch_speed_ =
-                std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+            side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
             fwd_touch_speed_ -= evt.move.dy * 0.002f;
-            fwd_touch_speed_ =
-                std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+            fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 2) {
             auto up = Vec3f{0, 1, 0};
             Vec3f side = Normalize(Cross(view_dir_, up));
@@ -345,17 +335,13 @@ bool GSPhyTest::HandleInput(const InputManager::Event &evt) {
         }
         break;
     case RawInputEv::KeyDown: {
-        if (evt.key_code == KeyUp ||
-            (evt.key_code == KeyW && (!cmdline_enabled_ || view_pointer_))) {
+        if (evt.key_code == KeyUp || (evt.key_code == KeyW && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = max_fwd_speed_;
-        } else if (evt.key_code == KeyDown ||
-                   (evt.key_code == KeyS && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyDown || (evt.key_code == KeyS && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key_code == KeyLeft ||
-                   (evt.key_code == KeyA && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyLeft || (evt.key_code == KeyA && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key_code == KeyRight ||
-                   (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyRight || (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = max_fwd_speed_;
         } else if (evt.key_code == KeySpace) {
         } else if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
@@ -366,11 +352,10 @@ bool GSPhyTest::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEv::KeyUp: {
         if (!cmdline_enabled_ || view_pointer_) {
-            if (evt.key_code == KeyUp || evt.key_code == KeyW ||
-                evt.key_code == KeyDown || evt.key_code == KeyS) {
+            if (evt.key_code == KeyUp || evt.key_code == KeyW || evt.key_code == KeyDown || evt.key_code == KeyS) {
                 fwd_press_speed_ = 0;
-            } else if (evt.key_code == KeyLeft || evt.key_code == KeyA ||
-                       evt.key_code == KeyRight || evt.key_code == KeyD) {
+            } else if (evt.key_code == KeyLeft || evt.key_code == KeyA || evt.key_code == KeyRight ||
+                       evt.key_code == KeyD) {
                 side_press_speed_ = 0;
             } else {
                 input_processed = false;
@@ -394,8 +379,8 @@ void GSPhyTest::UpdateAnim(const uint64_t dt_us) {
     const float delta_time_s = dt_us * 0.000001f;
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_),
-                              Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_, max_exposure_);
+    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_,
+                              max_exposure_);
 
     // log_->Info("%f %f %f | %f %f %f",
     //        view_origin_[0], view_origin_[1], view_origin_[2],

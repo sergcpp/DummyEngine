@@ -1,7 +1,8 @@
 #version 310 es
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision mediump float;
 #endif
 
 /*
@@ -11,7 +12,14 @@ UNIFORMS
 */
         
 layout(binding = 0) uniform sampler2D s_texture;
+
+#if defined(VULKAN)
+layout(push_constant) uniform PushConstants {
+    layout(offset = 16) float vertical;
+};
+#else
 layout(location = 1) uniform float vertical;
+#endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 aVertexUVs_;

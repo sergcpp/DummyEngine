@@ -41,13 +41,11 @@ class GSVideoTest final : public GSBaseState {
 
     int view_pointer_ = 0, move_pointer_ = 0;
 
-    Ren::Vec3f initial_view_pos_ = Ren::Vec3f{0, 1, 0},
-               initial_view_dir_ = Ren::Vec3f{0, 0, -1};
+    Ren::Vec3f initial_view_pos_ = Ren::Vec3f{0, 1, 0}, initial_view_dir_ = Ren::Vec3f{0, 0, -1};
 
     Ren::Vec3f view_origin_, view_dir_;
 
-    float fwd_press_speed_ = 0, side_press_speed_ = 0, fwd_touch_speed_ = 0,
-          side_touch_speed_ = 0;
+    float fwd_press_speed_ = 0, side_press_speed_ = 0, fwd_touch_speed_ = 0, side_touch_speed_ = 0;
 
     float max_fwd_speed_ = 0.5f, view_fov_ = 60.0f;
     float max_exposure_ = 1000.0f;
@@ -73,7 +71,7 @@ class GSVideoTest final : public GSBaseState {
     // constant that controls maximum number of allowed in-flight frames
     static const int TextureSyncWindow = 2;
 
-    Ren::TextureStageBuf y_sbuf_[5], uv_sbuf_[5];
+    Ren::Buffer y_sbuf_[5], uv_sbuf_[5];
     int cur_frame_index_[5] = {};
     Ren::Tex2DRef y_tex_[5][TextureSyncWindow], uv_tex_[5][TextureSyncWindow];
     Ren::SyncFence after_tex_update_fences_[5][TextureSyncWindow];

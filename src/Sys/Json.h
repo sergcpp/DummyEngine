@@ -90,7 +90,8 @@ extern template struct JsStringT<std::allocator<char>>;
 extern template struct JsStringT<Sys::MultiPoolAllocator<char>>;
 
 template <typename Alloc> struct JsArrayT {
-    std::vector<JsElementT<Alloc>, Alloc> elements;
+    using AllocV = typename Alloc::template rebind<JsElementT<Alloc>>::other;
+    std::vector<JsElementT<Alloc>, AllocV> elements;
 
     JsArrayT(const Alloc &alloc = Alloc()) : elements(alloc) {}
     JsArrayT(const JsArrayT &rhs) = default;
@@ -120,7 +121,8 @@ extern template struct JsArrayT<std::allocator<char>>;
 extern template struct JsArrayT<Sys::MultiPoolAllocator<char>>;
 
 template <typename Alloc> struct JsObjectT {
-    std::vector<std::pair<StdString<Alloc>, JsElementT<Alloc>>, Alloc> elements;
+    using AllocV = typename Alloc::template rebind<std::pair<StdString<Alloc>, JsElementT<Alloc>>>::other;
+    std::vector<std::pair<StdString<Alloc>, JsElementT<Alloc>>, AllocV> elements;
 
     JsObjectT(const Alloc &alloc = Alloc()) : elements(alloc) {}
 

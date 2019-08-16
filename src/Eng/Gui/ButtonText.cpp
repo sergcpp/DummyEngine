@@ -4,20 +4,13 @@
 #include "Renderer.h"
 
 Gui::ButtonText::ButtonText(const std::string &text, BitmapFont *font, const Vec2f &pos, const BaseElement *parent)
-    : ButtonBase(pos, Vec2f{ 0, 0 }, parent), type_mesh_(text, font, pos, parent) {
-}
+    : ButtonBase(pos, Vec2f{0, 0}, parent), type_mesh_(text, font, pos, parent) {}
 
-bool Gui::ButtonText::Check(const Vec2f &p) const {
-    return type_mesh_.Check(p);
-}
+bool Gui::ButtonText::Check(const Vec2f &p) const { return type_mesh_.Check(p); }
 
-bool Gui::ButtonText::Check(const Vec2i &p) const {
-    return type_mesh_.Check(p);
-}
+bool Gui::ButtonText::Check(const Vec2i &p) const { return type_mesh_.Check(p); }
 
-void Gui::ButtonText::Move(const Vec2f &pos, const BaseElement *parent) {
-    type_mesh_.Move(pos, parent);
-}
+void Gui::ButtonText::Move(const Vec2f &pos, const BaseElement *parent) { type_mesh_.Move(pos, parent); }
 
 void Gui::ButtonText::Draw(Renderer *r) {
     /*const Renderer::DrawParams &cur = r->GetParams();
@@ -33,4 +26,3 @@ void Gui::ButtonText::Draw(Renderer *r) {
 
     r->PopParams();*/
 }
-

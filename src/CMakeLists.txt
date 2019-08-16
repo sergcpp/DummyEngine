@@ -9,7 +9,7 @@ set(SDL_STATIC ON)
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     if(WIN32)
-        if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
             # allow to inline some functions in debug mode
             set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-small-functions ")
 
@@ -20,16 +20,16 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
                 set(SDL2_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/i686-w64-mingw32/include)
                 set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/i686-w64-mingw32/lib")
             endif()
-        elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+        elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
             # allow to inline some functions in debug mode
             set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Ob1")
         
             if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-                set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x64")
+                set(SDL2_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x64)
 				set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x64)
                 set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x64)
             else(CMAKE_SIZEOF_VOID_P EQUAL 8)
-                set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x86")
+                set(SDL2_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x86)
 				set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x86)
                 set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x86)
             endif()
@@ -44,8 +44,8 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
         #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-limit=10")
 
         if(APPLE)
-            set(SDL2_INCLUDE_DIRS /usr/local/include)
-            set(SDL2_LIBRARIES /usr/local/lib)
+            set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/osx/x64)
+            set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/osx/x64)
         else(APPLE)
             set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/linux/x64)
             set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/linux/x64)
@@ -63,14 +63,17 @@ else()
     set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/arm64-v8a)
 endif()
 
-set(RENDERER GL)
+set(RENDERER "GL" CACHE STRING "Render backend")
 
 if(${RENDERER} STREQUAL "GL")
   add_definitions(-DUSE_GL_RENDER)
-elseif(${RENDERER} STREQUAL "SW")
-  add_definitions(-DUSE_SW_RENDER)
+  set(BIN_NAME "DummyAppGL")
 elseif(${RENDERER} STREQUAL "VK")
   add_definitions(-DUSE_VK_RENDER)
+  set(BIN_NAME "DummyAppVK")
+elseif(${RENDERER} STREQUAL "SW")
+  add_definitions(-DUSE_SW_RENDER)
+  set(BIN_NAME "DummyAppSW")
 endif()
 
 set(SOUND AL)
@@ -81,7 +84,7 @@ endif()
 
 include_directories(.)
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     include_directories(libs/dirent)
 endif()
 
@@ -135,7 +138,7 @@ set_target_properties(test_DummyLib
                       test_Sys PROPERTIES FOLDER Tests)
                       
 set_target_properties(astc
-                      SOIL2
+                      stb
                       SPIRV-Reflect PROPERTIES FOLDER _)
 
 add_test(DummyLibTest   DummyLib/tests/test_DummyLib)
@@ -150,7 +153,8 @@ add_test(SysTest        Sys/tests/test_Sys)
 
 add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_DummyLib
                                                                test_Eng
-															   #test_Phy
+                                                               test_Net
+                                                               test_Phy
                                                                test_Ray
                                                                test_Ren
                                                                test_SW

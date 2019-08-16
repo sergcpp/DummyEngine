@@ -23,8 +23,7 @@ const char *SOUNDS_PATH = "./assets_pc/sounds/";
 
 const char *ScriptedSequence::ActionTypeNames[] = {"play", "look"};
 
-ScriptedSequence::ScriptedSequence(Ren::Context &ren_ctx, Snd::Context &snd_ctx,
-                                   SceneManager &scene_manager)
+ScriptedSequence::ScriptedSequence(Ren::Context &ren_ctx, Snd::Context &snd_ctx, SceneManager &scene_manager)
     : ren_ctx_(ren_ctx), snd_ctx_(snd_ctx), scene_manager_(scene_manager) {
     Reset();
 }
@@ -72,8 +71,7 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
             }
 
             if (track.type == eTrackType::Invalid) {
-                ren_ctx_.log()->Error("Unknown track type %s.",
-                                      js_track_type.val.c_str());
+                ren_ctx_.log()->Error("Unknown track type %s.", js_track_type.val.c_str());
                 return false;
             }
 
@@ -99,8 +97,7 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
                 }
 
                 if (action.type == eActionType::Invalid) {
-                    ren_ctx_.log()->Error("Unknown action type %s.",
-                                          js_action_type.val.c_str());
+                    ren_ctx_.log()->Error("Unknown action type %s.", js_action_type.val.c_str());
                     return false;
                 }
 
@@ -158,8 +155,7 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
 
                 if (js_action.Has("anim")) {
                     const JsString &js_action_anim = js_action.at("anim").as_str();
-                    const std::string anim_path =
-                        std::string(MODELS_PATH) + js_action_anim.val;
+                    const std::string anim_path = std::string(MODELS_PATH) + js_action_anim.val;
 
                     Sys::AssetFile in_file(anim_path.c_str());
                     if (!in_file) {
@@ -174,8 +170,7 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
                     Sys::MemBuf mem = {&in_file_data[0], in_file_size};
                     std::istream in_file_stream(&mem);
 
-                    action.anim_ref = ren_ctx_.LoadAnimSequence(
-                        js_action_anim.val.c_str(), in_file_stream);
+                    action.anim_ref = ren_ctx_.LoadAnimSequence(js_action_anim.val.c_str(), in_file_stream);
                 }
 
                 if (js_action.Has("caption")) {
@@ -192,16 +187,14 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
                     // check if sound was alpready loaded
                     action.sound_ref = snd_ctx_.LoadBuffer(name, nullptr, 0, {}, &status);
                     if (status == Snd::eBufLoadStatus::CreatedDefault) {
-                        const std::string sound_path =
-                            std::string(SOUNDS_PATH) + js_action_sound.val;
+                        const std::string sound_path = std::string(SOUNDS_PATH) + js_action_sound.val;
 
                         // TODO: CHANGE THIS!!!
 
                         Sys::AssetFile in_file(sound_path.c_str());
                         const size_t in_file_size = in_file.size();
 
-                        std::unique_ptr<uint8_t[]> in_file_data(
-                            new uint8_t[in_file_size]);
+                        std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
                         in_file.Read((char *)&in_file_data[0], in_file_size);
 
                         Sys::MemBuf mem = {&in_file_data[0], in_file_size};
@@ -210,8 +203,7 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
                         int channels, samples_per_sec, bits_per_sample;
                         std::unique_ptr<uint8_t[]> samples;
                         const int size =
-                            Snd::LoadWAV(in_file_stream, channels, samples_per_sec,
-                                         bits_per_sample, samples);
+                            Snd::LoadWAV(in_file_stream, channels, samples_per_sec, bits_per_sample, samples);
                         assert(size);
 
                         Snd::BufParams params;
@@ -224,26 +216,21 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
                             params.format = Snd::eBufFormat::Mono16;
                             samples_count = size / 2;
                         } else {
-                            ren_ctx_.log()->Error(
-                                "Unsupported sound format in file %s (%i "
-                                "channels, %i bits per sample)",
-                                sound_path.c_str(), channels, bits_per_sample);
+                            ren_ctx_.log()->Error("Unsupported sound format in file %s (%i "
+                                                  "channels, %i bits per sample)",
+                                                  sound_path.c_str(), channels, bits_per_sample);
                             return false;
                         }
                         params.samples_per_sec = samples_per_sec;
 
-                        action.sound_ref =
-                            snd_ctx_.LoadBuffer(name, &samples[0], size, params, &status);
-                        assert(status == Snd::eBufLoadStatus::Found ||
-                               status == Snd::eBufLoadStatus::CreatedFromData);
-                        action.sound_wave_tex =
-                            RenderSoundWave(name, &samples[0], samples_count, params);
+                        action.sound_ref = snd_ctx_.LoadBuffer(name, &samples[0], size, params, &status);
+                        assert(status == Snd::eBufLoadStatus::Found || status == Snd::eBufLoadStatus::CreatedFromData);
+                        action.sound_wave_tex = RenderSoundWave(name, &samples[0], samples_count, params);
                     }
                 }
 
                 if (js_action.Has("sound_offset")) {
-                    const JsNumber &js_action_sound_off =
-                        js_action.at("sound_offset").as_num();
+                    const JsNumber &js_action_sound_off = js_action.at("sound_offset").as_num();
                     action.sound_offset = js_action_sound_off.val;
                 } else {
                     action.sound_offset = 0.0;
@@ -329,8 +316,7 @@ void ScriptedSequence::Save(JsObject &js_seq) {
             { // write actions
                 JsArray js_actions;
 
-                for (int i = track.action_start;
-                     i < track.action_start + track.action_count; i++) {
+                for (int i = track.action_start; i < track.action_start + track.action_count; i++) {
                     const SeqAction &action = actions_[i];
 
                     JsObject js_action;
@@ -344,8 +330,7 @@ void ScriptedSequence::Save(JsObject &js_seq) {
                         js_pos_beg.Push(JsNumber{(double)action.pos_beg[2]});
                         js_action.Push("pos_beg", std::move(js_pos_beg));
                     }
-                    if (action.pos_end[0] != action.pos_beg[0] ||
-                        action.pos_end[1] != action.pos_beg[1] ||
+                    if (action.pos_end[0] != action.pos_beg[0] || action.pos_end[1] != action.pos_beg[1] ||
                         action.pos_end[2] != action.pos_beg[2]) {
                         JsArray js_pos_end;
                         js_pos_end.Push(JsNumber{(double)action.pos_end[0]});
@@ -360,8 +345,7 @@ void ScriptedSequence::Save(JsObject &js_seq) {
                         js_rot_beg.Push(JsNumber{(double)action.rot_beg[2]});
                         js_action.Push("rot_beg", std::move(js_rot_beg));
                     }
-                    if (action.rot_end[0] != action.rot_beg[0] ||
-                        action.rot_end[1] != action.rot_beg[1] ||
+                    if (action.rot_end[0] != action.rot_beg[0] || action.rot_end[1] != action.rot_beg[1] ||
                         action.rot_end[2] != action.rot_beg[2]) {
                         JsArray js_rot_end;
                         js_rot_end.Push(JsNumber{(double)action.rot_end[0]});
@@ -377,8 +361,7 @@ void ScriptedSequence::Save(JsObject &js_seq) {
                     }
 
                     if (action.sound_ref) {
-                        js_action.Push("sound",
-                                       JsString{action.sound_ref->name().c_str()});
+                        js_action.Push("sound", JsString{action.sound_ref->name().c_str()});
                     }
 
                     if (std::abs(action.sound_offset) > 0.001) {
@@ -427,9 +410,7 @@ void ScriptedSequence::Save(JsObject &js_seq) {
         js_ending.Push("choices", std::move(js_choices));
 
         if (choice_align_ != eChoiceAlign::Center) {
-            js_ending.Push(
-                "choice_align",
-                JsString{choice_align_ == eChoiceAlign::Left ? "left" : "right"});
+            js_ending.Push("choice_align", JsString{choice_align_ == eChoiceAlign::Left ? "left" : "right"});
         }
 
         js_seq.Push("ending", std::move(js_ending));
@@ -449,8 +430,7 @@ void ScriptedSequence::Reset() {
         track.time_end = 0.0;
         track.target_actor = scene_manager_.FindObject(track.target.c_str());
 
-        for (int i = track.action_start; i < track.action_start + track.action_count;
-             i++) {
+        for (int i = track.action_start; i < track.action_start + track.action_count; i++) {
             SeqAction &action = actions_[i];
 
             action.is_active = false;
@@ -484,13 +464,11 @@ void ScriptedSequence::Reset() {
 
 void ScriptedSequence::Update(const double cur_time_s, bool playing) {
     for (Track &track : tracks_) {
-        if (!track.active_count &&
-            (cur_time_s < track.time_beg || cur_time_s > track.time_end)) {
+        if (!track.active_count && (cur_time_s < track.time_beg || cur_time_s > track.time_end)) {
             continue;
         }
 
-        for (int i = track.action_start; i < track.action_start + track.action_count;
-             i++) {
+        for (int i = track.action_start; i < track.action_start + track.action_count; i++) {
             SeqAction &action = actions_[i];
 
             if (cur_time_s >= action.time_beg) {
@@ -516,8 +494,7 @@ void ScriptedSequence::Update(const double cur_time_s, bool playing) {
     }
 }
 
-void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &action,
-                                    double time_cur_s, bool playing) {
+void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &action, double time_cur_s, bool playing) {
     const SceneData &scene = scene_manager_.scene_data();
 
     auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
@@ -539,27 +516,21 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
         { // update position
             Transform &tr = transforms[actor_obj->components[CompTransform]];
 
-            const Ren::Vec3f new_rot =
-                Mix(Ren::MakeVec3(action.rot_beg), Ren::MakeVec3(action.rot_end), t_norm);
+            const Ren::Vec3f new_rot = Mix(Ren::MakeVec3(action.rot_beg), Ren::MakeVec3(action.rot_end), t_norm);
 
             tr.world_from_object_prev = tr.world_from_object;
             tr.world_from_object = Ren::Mat4f{1.0f};
             tr.world_from_object =
-                Ren::Rotate(tr.world_from_object, new_rot[2] * Ren::Pi<float>() / 180.0f,
-                            Ren::Vec3f{0.0f, 0.0f, 1.0f});
+                Ren::Rotate(tr.world_from_object, new_rot[2] * Ren::Pi<float>() / 180.0f, Ren::Vec3f{0.0f, 0.0f, 1.0f});
             tr.world_from_object =
-                Ren::Rotate(tr.world_from_object, new_rot[0] * Ren::Pi<float>() / 180.0f,
-                            Ren::Vec3f{1.0f, 0.0f, 0.0f});
+                Ren::Rotate(tr.world_from_object, new_rot[0] * Ren::Pi<float>() / 180.0f, Ren::Vec3f{1.0f, 0.0f, 0.0f});
             tr.world_from_object =
-                Ren::Rotate(tr.world_from_object, new_rot[1] * Ren::Pi<float>() / 180.0f,
-                            Ren::Vec3f{0.0f, 1.0f, 0.0f});
+                Ren::Rotate(tr.world_from_object, new_rot[1] * Ren::Pi<float>() / 180.0f, Ren::Vec3f{0.0f, 1.0f, 0.0f});
 
-            const Ren::Vec3f new_pos =
-                Mix(Ren::MakeVec3(action.pos_beg), Ren::MakeVec3(action.pos_end), t_norm);
+            const Ren::Vec3f new_pos = Mix(Ren::MakeVec3(action.pos_beg), Ren::MakeVec3(action.pos_end), t_norm);
             memcpy(&tr.world_from_object[3][0], ValuePtr(new_pos), 3 * sizeof(float));
 
-            if (memcmp(ValuePtr(tr.world_from_object_prev),
-                       ValuePtr(tr.world_from_object), sizeof(Ren::Mat4f)) != 0) {
+            if (memcmp(ValuePtr(tr.world_from_object_prev), ValuePtr(tr.world_from_object), sizeof(Ren::Mat4f)) != 0) {
                 invalidate_mask |= CompTransformBit;
             }
         }
@@ -579,8 +550,7 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
             target_skel->UpdateAnim(action.anim_id, t);
             target_skel->ApplyAnim(action.anim_id);
             target_skel->UpdateBones(&as.matr_palette_curr[0]);
-            as.shape_palette_count_curr =
-                target_skel->UpdateShapes(&as.shape_palette_curr[0]);
+            as.shape_palette_count_curr = target_skel->UpdateShapes(&as.shape_palette_curr[0]);
 
             invalidate_mask |= CompDrawableBit;
         }
@@ -594,13 +564,11 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
                     ss.snd_src.SetOffset(t - float(action.sound_offset));
                 }
 
-                const Ren::Vec4f pos =
-                    tr.world_from_object * Ren::Vec4f{0.0f, 1.0f, 0.0f, 1.0f};
+                const Ren::Vec4f pos = tr.world_from_object * Ren::Vec4f{0.0f, 1.0f, 0.0f, 1.0f};
                 ss.snd_src.set_position(Ren::ValuePtr(pos));
 
                 if (play_sound) {
-                    if (t >= action.sound_offset &&
-                        t < (action.sound_offset + action.sound_ref->GetDurationS())) {
+                    if (t >= action.sound_offset && t < (action.sound_offset + action.sound_ref->GetDurationS())) {
 
                         if (ss.snd_src.GetState() != Snd::eSrcState::Playing ||
                             ss.snd_src.GetBuffer(0).index() != action.sound_ref.index()) {
@@ -625,12 +593,9 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
         scene_manager_.InvalidateObjects(&target_actor, 1, invalidate_mask);
 
         if (!action.caption.empty()) {
-            const double vis0 =
-                std::min(std::max((action.time_end - time_cur_s) / 0.5, 0.0), 1.0);
-            const double vis1 =
-                std::min(std::max((time_cur_s - action.time_beg) / 0.5, 0.0), 1.0);
-            const uint8_t caption_color[] = {255, 255, 255,
-                                             uint8_t(std::min(vis0, vis1) * 255)};
+            const double vis0 = std::min(std::max((action.time_end - time_cur_s) / 0.5, 0.0), 1.0);
+            const double vis1 = std::min(std::max((time_cur_s - action.time_beg) / 0.5, 0.0), 1.0);
+            const uint8_t caption_color[] = {255, 255, 255, uint8_t(std::min(vis0, vis1) * 255)};
             push_caption_signal.FireN(action.caption.c_str(), caption_color);
         }
     } else if (action.type == eActionType::Look) {
@@ -659,16 +624,14 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
         cam.fade = Ren::Mix(action.fade_beg, action.fade_end, t_norm);
         cam.max_exposure = 32.0f;
 
-        scene_manager_.SetupView(pos, trg, Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam.angle(),
-                                 cam.max_exposure);
+        scene_manager_.SetupView(pos, trg, Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam.angle(), cam.max_exposure);
 
         Snd::Source &amb_sound = scene_manager_.ambient_sound();
         if (action.sound_ref) {
             amb_sound.set_position(Ren::ValuePtr(cam.world_position()));
 
             if (play_sound) {
-                if (t >= action.sound_offset &&
-                    t < (action.sound_offset + action.sound_ref->GetDurationS())) {
+                if (t >= action.sound_offset && t < (action.sound_offset + action.sound_ref->GetDurationS())) {
 
                     if (amb_sound.GetState() != Snd::eSrcState::Playing ||
                         amb_sound.GetBuffer(0).index() != action.sound_ref.index()) {
@@ -691,14 +654,12 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
     }
 }
 
-Ren::TextureRegionRef ScriptedSequence::RenderSoundWave(const char *name,
-                                                        const void *samples_data,
-                                                        int samples_count,
+Ren::TextureRegionRef ScriptedSequence::RenderSoundWave(const char *name, const void *samples_data, int samples_count,
                                                         const Snd::BufParams &params) {
     { // check if sound-wave picture was already loaded
         Ren::eTexLoadStatus status;
         Ren::TextureRegionRef ret =
-            ren_ctx_.LoadTextureRegion(name, nullptr, 0, {}, &status);
+            ren_ctx_.LoadTextureRegion(name, nullptr, 0, ren_ctx_.default_stage_bufs(), {}, &status);
         if (status == Ren::eTexLoadStatus::Found) {
             return ret;
         }
@@ -717,15 +678,10 @@ Ren::TextureRegionRef ScriptedSequence::RenderSoundWave(const char *name,
     memset(&tex_data[0], 0x00, tex_data_size);
     int tex_data_pos = 0;
 
-    for (int i = 0; i < samples_count;
-         i += int(params.samples_per_sec * SeqAction::SoundWaveStepS)) {
-        int min_val = std::numeric_limits<int>::max(),
-            max_val = std::numeric_limits<int>::lowest();
+    for (int i = 0; i < samples_count; i += int(params.samples_per_sec * SeqAction::SoundWaveStepS)) {
+        int min_val = std::numeric_limits<int>::max(), max_val = std::numeric_limits<int>::lowest();
 
-        for (int j = 0;
-             j < std::min(int(params.samples_per_sec * SeqAction::SoundWaveStepS),
-                          samples_count - i);
-             j++) {
+        for (int j = 0; j < std::min(int(params.samples_per_sec * SeqAction::SoundWaveStepS), samples_count - i); j++) {
             if (params.format == Snd::eBufFormat::Mono8) {
                 min_val = std::min(int(samples_i8[i + j]), min_val);
                 max_val = std::max(int(samples_i8[i + j]), max_val);
@@ -738,15 +694,11 @@ Ren::TextureRegionRef ScriptedSequence::RenderSoundWave(const char *name,
         }
 
         if (params.format == Snd::eBufFormat::Mono8) {
-            min_val = (min_val - std::numeric_limits<int8_t>::lowest()) * tex_h /
-                      std::numeric_limits<uint8_t>::max();
-            max_val = (max_val - std::numeric_limits<int8_t>::lowest()) * tex_h /
-                      std::numeric_limits<uint8_t>::max();
+            min_val = (min_val - std::numeric_limits<int8_t>::lowest()) * tex_h / std::numeric_limits<uint8_t>::max();
+            max_val = (max_val - std::numeric_limits<int8_t>::lowest()) * tex_h / std::numeric_limits<uint8_t>::max();
         } else if (params.format == Snd::eBufFormat::Mono16) {
-            min_val = (min_val - std::numeric_limits<int16_t>::lowest()) * tex_h /
-                      std::numeric_limits<uint16_t>::max();
-            max_val = (max_val - std::numeric_limits<int16_t>::lowest()) * tex_h /
-                      std::numeric_limits<uint16_t>::max();
+            min_val = (min_val - std::numeric_limits<int16_t>::lowest()) * tex_h / std::numeric_limits<uint16_t>::max();
+            max_val = (max_val - std::numeric_limits<int16_t>::lowest()) * tex_h / std::numeric_limits<uint16_t>::max();
         } else {
             return {};
         }
@@ -769,7 +721,7 @@ Ren::TextureRegionRef ScriptedSequence::RenderSoundWave(const char *name,
 
     Ren::eTexLoadStatus status;
     Ren::TextureRegionRef ret =
-        ren_ctx_.LoadTextureRegion(name, &tex_data[0], tex_data_size, p, &status);
+        ren_ctx_.LoadTextureRegion(name, &tex_data[0], tex_data_size, ren_ctx_.default_stage_bufs(), p, &status);
     assert(status == Ren::eTexLoadStatus::CreatedFromData);
 
     return ret;

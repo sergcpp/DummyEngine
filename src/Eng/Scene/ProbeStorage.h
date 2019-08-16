@@ -6,7 +6,7 @@
 #include <Sys/SmallVector.h>
 
 class ProbeStorage {
-public:
+  public:
     ProbeStorage();
     ~ProbeStorage();
 
@@ -24,22 +24,55 @@ public:
     int max_level() const { return max_level_; }
     int reserved_temp_layer() const { return reserved_temp_layer_; }
 
-    Ren::TexHandle handle() const { return { tex_id_, 0 }; }
-#if defined(USE_GL_RENDER)
-    uint32_t tex_id() const { return tex_id_; }
-#endif
+    Ren::TexHandle handle() const { return handle_; }
 
-    void Resize(Ren::eTexFormat format, int res, int capacity, Ren::ILog *log);
+    bool Resize(Ren::ApiContext *api_ctx, Ren::MemoryAllocators *mem_allocs, Ren::eTexFormat format, int res,
+                int capacity, Ren::ILog *log);
 
-    bool SetPixelData(int level, int layer, int face, Ren::eTexFormat format,
-            const uint8_t *data, int data_len, Ren::ILog *log);
+    bool SetPixelData(int level, int layer, int face, Ren::eTexFormat format, const uint8_t *data, int data_len,
+                      Ren::ILog *log);
     bool GetPixelData(int level, int layer, int face, int buf_size, uint8_t *out_pixels, Ren::ILog *log) const;
-private:
-    Ren::eTexFormat format_;
-    int res_, size_, capacity_, max_level_;
-    int reserved_temp_layer_;
+
+    void Finalize();
+
+    mutable Ren::eResState resource_state = Ren::eResState::Undefined;
+  private:
+    Ren::ApiContext *api_ctx_ = nullptr;
+    Ren::eTexFormat format_ = Ren::eTexFormat::Undefined;
+    int res_ = 0, size_ = 0, capacity_ = 0, max_level_ = 0;
+    int reserved_temp_layer_ = -1;
     Sys::SmallVector<int, 32> free_indices_;
-#if defined(USE_GL_RENDER)
-    uint32_t tex_id_ = 0;
+    Ren::TexHandle handle_;
+#if defined(USE_VK_RENDER)
+    Ren::MemAllocation alloc_;
 #endif
+
+    void Destroy();
 };
+
+inline int ProbeStorage::Allocate() {
+    if (!free_indices_.empty()) {
+        const int ret = free_indices_.back();
+        free_indices_.pop_back();
+        return ret;
+    } else {
+        if (size_ < capacity_ - 1) {
+            return size_++;
+        } else {
+            return -1;
+        }
+    }
+}
+
+inline void ProbeStorage::Free(int i) {
+    if (i == size_ - 1) {
+        size_--;
+    } else {
+        free_indices_.push_back(i);
+    }
+}
+
+inline void ProbeStorage::Clear() {
+    size_ = 0;
+    free_indices_.clear();
+}

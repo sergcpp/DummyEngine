@@ -14,21 +14,17 @@ GLuint LoadShader(GLenum shader_type, const char *source, ILog *log);
 GLuint LoadShader(GLenum shader_type, const uint8_t *data, int data_size, ILog *log);
 #endif
 
-void ParseGLSLBindings(const char *shader_str, Descr **bindings, int *bindings_count,
-                       ILog *log);
+void ParseGLSLBindings(const char *shader_str, Descr **bindings, int *bindings_count, ILog *log);
 bool IsMainThread();
 } // namespace Ren
 
-Ren::Program::Program(const char *name, ShaderRef vs_ref, ShaderRef fs_ref,
-                      ShaderRef tcs_ref, ShaderRef tes_ref, eProgLoadStatus *status,
-                      ILog *log) {
+Ren::Program::Program(const char *name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
+                      ShaderRef tes_ref, eProgLoadStatus *status, ILog *log) {
     name_ = String{name};
-    Init(std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref), std::move(tes_ref),
-         status, log);
+    Init(std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref), std::move(tes_ref), status, log);
 }
 
-Ren::Program::Program(const char *name, ShaderRef cs_ref, eProgLoadStatus *status,
-                      ILog *log) {
+Ren::Program::Program(const char *name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
     name_ = String{name};
     Init(std::move(cs_ref), status, log);
 }
@@ -42,6 +38,12 @@ Ren::Program::~Program() {
 }
 
 Ren::Program &Ren::Program::operator=(Program &&rhs) noexcept {
+    if (this == &rhs) {
+        return (*this);
+    }
+
+    RefCounter::operator=(static_cast<RefCounter &&>(rhs));
+
     if (id_) {
         assert(IsMainThread());
         auto prog = GLuint(id_);
@@ -55,13 +57,11 @@ Ren::Program &Ren::Program::operator=(Program &&rhs) noexcept {
     uniform_blocks_ = std::move(rhs.uniform_blocks_);
     name_ = std::move(rhs.name_);
 
-    RefCounter::operator=(std::move(rhs));
-
     return *this;
 }
 
-void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
-                        ShaderRef tes_ref, eProgLoadStatus *status, ILog *log) {
+void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref,
+                        eProgLoadStatus *status, ILog *log) {
     assert(id_ == 0);
     assert(IsMainThread());
 
@@ -160,13 +160,13 @@ void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
 }
 
 void Ren::Program::InitBindings(ILog *log) {
-    for (ShaderRef &sh_ref : shaders_) {
+    for (const ShaderRef &sh_ref : shaders_) {
         if (!sh_ref) {
             continue;
         }
 
-        Shader &sh = (*sh_ref);
-        for (Descr &b : sh.blck_bindings) {
+        const Shader &sh = (*sh_ref);
+        for (const Descr &b : sh.blck_bindings) {
             uniform_blocks_.resize(b.loc + 1);
             Attribute &u = uniform_blocks_[b.loc];
             u.loc = glGetUniformBlockIndex(GLuint(id_), b.name.c_str());

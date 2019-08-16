@@ -1,13 +1,13 @@
 #include "test_common.h"
 
-#include <thread>
 #include <chrono>
+#include <thread>
 
 #include "../NAT_PCP.h"
 
 void test_pcp() {
 
-    {   // Request read/write
+    { // Request read/write
         char buf[128];
 
         Net::PCPNonce nonce;
@@ -74,7 +74,7 @@ void test_pcp() {
         }
     }
 
-    {   // Response read/write
+    { // Response read/write
         char buf[128];
 
         Net::PCPNonce nonce;
@@ -135,7 +135,7 @@ void test_pcp() {
         }
     }
 
-    {   // Retransmit
+    { // Retransmit
         char buf[128];
 
         Net::UDPSocket fake_pcp_srv;
@@ -180,7 +180,8 @@ void test_pcp() {
             Net::PCPRequest req;
             if ((size = pcp_server.Receive(sender, recv_buf, sizeof(recv_buf))) && req.Read(recv_buf, size)) {
                 Net::PCPResponse resp;
-                resp.MakeMapResponse(Net::PCP_UDP, Net::PCP_RES_SUCCESS, 30000, 30001, 7200, 100, external_address, req.nonce());
+                resp.MakeMapResponse(Net::PCP_UDP, Net::PCP_RES_SUCCESS, 30000, 30001, 7200, 100, external_address,
+                                     req.nonce());
 
                 size = resp.Write(recv_buf, sizeof(recv_buf));
                 pcp_server.Send(s1.local_addr(), &resp, size);

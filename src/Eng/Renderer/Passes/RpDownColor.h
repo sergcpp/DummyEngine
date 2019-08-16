@@ -11,27 +11,23 @@ class RpDownColor : public RenderPassBase {
 
     // lazily initialized data
     Ren::ProgramRef blit_down_prog_;
+    Ren::RenderPass render_pass_;
+    Ren::Framebuffer output_fb_;
 
     // temp data (valid only between Setup and Execute calls)
-    Ren::TexHandle output_tex_;
     const ViewState *view_state_ = nullptr;
-    int orphan_index_ = -1;
 
-    RpResource shared_data_buf_;
+    RpResource input_tex_;
 
-    RpResource color_tex_;
+    RpResource output_tex_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_tex);
 
-#if defined(USE_GL_RENDER)
-    Ren::Framebuffer draw_fb_;
-#endif
   public:
     RpDownColor(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state, int orphan_index,
-               const char shared_data_buf[], const char color_tex_name[],
-               Ren::TexHandle output_tex);
+    void Setup(RpBuilder &builder, const ViewState *view_state, const char input_tex_name[],
+               Ren::WeakTex2DRef output_tex);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "DOWNSAMPLE COLOR"; }

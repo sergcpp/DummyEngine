@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.1)
 project(Ren)
 
+find_library(METAL_LIB Metal)
+
 if(WIN32)
     add_definitions(-DVK_USE_PLATFORM_WIN32_KHR)
 else(WIN32)
@@ -13,8 +15,12 @@ else(WIN32)
 if(${RENDERER} STREQUAL "GL")
     set(LIBS GL)
 elseif(${RENDERER} STREQUAL "VK")
-    set(LIBS GL)
-    add_definitions(-DVK_PROTOTYPES -DVK_USE_PLATFORM_XCB_KHR)
+    if(APPLE)
+            set(LIBS ${METAL_LIB})
+        add_definitions(-DVK_PROTOTYPES -DVK_USE_PLATFORM_MACOS_MVK)
+    else(APPLE)
+        add_definitions(-DVK_PROTOTYPES -DVK_USE_PLATFORM_XLIB_KHR)
+    endif(APPLE)
 endif()
 ENDIF(WIN32)
 
@@ -27,13 +33,21 @@ set(SOURCE_FILES Anim.h
                  Buffer.h
                  Camera.h
                  Camera.cpp
+                 Common.h
                  Context.h
                  Context.cpp
                  CPUFeatures.h
                  CPUFeatures.cpp
+                 DebugMarker.h
+                 DescriptorPool.h
+                 MemoryAllocator.h
+                 Fence.h
                  Fixed.h
+                 Framebuffer.h
                  Fwd.h
                  HashMap32.h
+                 LinearAlloc.h
+                 LinearAlloc.cpp
                  Log.h
                  Material.h
                  Material.cpp
@@ -42,10 +56,15 @@ set(SOURCE_FILES Anim.h
                  MMat.h
                  MQuat.h
                  MVec.h
+                 Pipeline.h
                  Program.h
                  RastState.h
+                 RenderPass.h
+                 Resource.h
+                 Resource.cpp
                  RingBuffer.h
                  Sampler.h
+                 SamplingParams.h
                  Shader.h
                  SmallVector.h
                  SparseArray.h
@@ -56,6 +75,7 @@ set(SOURCE_FILES Anim.h
                  Texture.h
                  Texture.cpp
                  TextureAtlas.h
+                 TextureParams.h
                  TextureRegion.h
                  TextureRegion.cpp
                  TextureSplitter.h
@@ -63,34 +83,40 @@ set(SOURCE_FILES Anim.h
                  Utils.h
                  Utils.cpp
                  Utils_AVX.cpp
-                 Utils_SSE2.cpp)
+                 Utils_SSE2.cpp
+                 VertexInput.h)
 
 if(${RENDERER} STREQUAL "GL")
     add_definitions(-DUSE_GL_RENDER)
     set(SOURCE_FILES ${SOURCE_FILES}
                      BufferGL.cpp
                      ContextGL.cpp
+                     FramebufferGL.cpp
                      GL.h
+                     GLCtx.h
                      GLExt.cpp
                      GLExtDSAEmu.h
                      GLExtDSAEmu.cpp
+                     FenceGL.cpp
+                     MemoryAllocatorGL.cpp
                      SamplerGL.h
                      SamplerGL.cpp
                      ShaderGL.h
                      ShaderGL.cpp
+                     PipelineGL.cpp
                      ProgramGL.h
                      ProgramGL.cpp
                      RastStateGL.cpp
+                     RenderPassGL.cpp
                      TextureGL.h
                      TextureGL.cpp
                      TextureAtlasGL.cpp
-                     VaoGL.h
-                     VaoGL.cpp)
+                     VertexInputGL.cpp)
 
     if(WIN32)
-        set(LIBS ${LIBS} opengl32 SOIL2 SPIRV-Reflect)
+        set(LIBS ${LIBS} opengl32 stb SPIRV-Reflect)
     else(WIN32)
-        set(LIBS ${LIBS} SOIL2 SPIRV-Reflect)
+        set(LIBS ${LIBS} stb SPIRV-Reflect)
     ENDIF(WIN32)
 elseif(${RENDERER} STREQUAL "SW")
     add_definitions(-DUSE_SW_RENDER)
@@ -102,13 +128,46 @@ elseif(${RENDERER} STREQUAL "SW")
                      TextureSW.h
                      TextureSW.cpp)
 elseif(${RENDERER} STREQUAL "VK")
-    set(SOURCE_FILES    ${SOURCE_FILES}
-                        RenderStateVK.cpp
-                        RenderStateVK.h)
+    set(SOURCE_FILES ${SOURCE_FILES}
+                     BufferVK.cpp
+                     ContextVK.cpp
+                     DescriptorPoolVK.cpp
+                     FenceVK.cpp
+                     FramebufferVK.cpp
+                     MemoryAllocatorVK.cpp
+                     PipelineVK.cpp
+                     ProgramVK.h
+                     ProgramVK.cpp
+                     RastStateVK.cpp
+                     RenderPassVK.cpp
+                     ResourceVK.cpp
+                     SamplerVK.h
+                     SamplerVK.cpp
+                     ShaderVK.h
+                     ShaderVK.cpp
+                     TextureVK.h
+                     TextureVK.cpp
+                     TextureAtlasVK.cpp
+                     VertexInputVK.cpp
+                     VK.h
+                     VKCtx.h
+                     VKCtx.cpp
+                     VKExt.cpp)
+
+    set(VULKAN_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vk_layer.h
+                       ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vk_platform.h
+                       ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vk_sdk_platform.h
+                       ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vulkan.h
+                       ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vulkan_core.h)
+
+    list(APPEND ALL_SOURCE_FILES ${VULKAN_HEADERS})
+    source_group("src/vulkan" FILES ${VULKAN_HEADERS})
+
+    set(LIBS ${LIBS} stb SPIRV-Reflect)
 endif()
 
 add_subdirectory(SW)
-add_subdirectory(SOIL2)
+add_subdirectory(stb)
 add_subdirectory(SPIRV-Reflect)
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})

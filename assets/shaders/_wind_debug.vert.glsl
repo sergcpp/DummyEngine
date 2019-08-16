@@ -19,7 +19,7 @@ layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs1;
 layout(location = REN_VTX_AUX_LOC) in vec2 aVertexUnused;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = 0, std140)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 #else
 layout (std140)
 #endif
@@ -27,9 +27,15 @@ uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
-layout (location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
+#if defined(VULKAN)
+layout(push_constant) uniform PushConstants {
+    ivec2 uInstanceIndices[REN_MAX_BATCH_SIZE];
+};
+#else
+layout(location = REN_U_INSTANCES_LOC) uniform ivec2 uInstanceIndices[REN_MAX_BATCH_SIZE];
+#endif
 
-layout(binding = REN_INST_BUF_SLOT) uniform highp samplerBuffer instances_buffer;
+layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer instances_buffer;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) out highp vec3 aVertexPos_;
@@ -45,16 +51,12 @@ out mediump vec3 aVertexTangent_;
 out highp vec3 aVertexShUVs_[4];
 #endif
 
-#ifdef VULKAN
-    #define gl_InstanceID gl_InstanceIndex
-#endif
-
 invariant gl_Position;
 
 void main(void) {
-    int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
+    ivec2 instance = uInstanceIndices[gl_InstanceIndex];
 
-    mat4 model_matrix = FetchModelMatrix(instances_buffer, instance);
+    mat4 model_matrix = FetchModelMatrix(instances_buffer, instance.x);
 
     vec3 vtx_pos_ws = (model_matrix * vec4(aVertexPosition, 1.0)).xyz;
     vec3 vtx_nor_ws = normalize((model_matrix * vec4(aVertexNormal.xyz, 0.0)).xyz);

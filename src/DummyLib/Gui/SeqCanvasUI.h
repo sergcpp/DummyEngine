@@ -23,13 +23,12 @@ class SeqCanvasUI : public Gui::BaseElement {
 
     float GetTimeFromPoint(float px);
     float GetPointFromTime(float t);
-    SeqAction *GetActionAtPoint(const Ren::Vec2f &p, Ren::Vec2i &out_index,
-                                uint32_t &flags);
+    SeqAction *GetActionAtPoint(const Ren::Vec2f &p, Ren::Vec2i &out_index, uint32_t &flags);
     Ren::Vec2f SnapToPixels(const Ren::Vec2f &p);
 
   public:
-    SeqCanvasUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Gui::Vec2f &pos,
-                const Gui::Vec2f &size, const Gui::BaseElement *parent);
+    SeqCanvasUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Gui::Vec2f &pos, const Gui::Vec2f &size,
+                const Gui::BaseElement *parent);
 
     void set_sequence(ScriptedSequence *seq) { sequence_ = seq; }
 

@@ -30,9 +30,8 @@ const uint32_t g_unicode_greater_than = 0x3E;
 const uint32_t g_unicode_ampersand = 0x26;
 const uint32_t g_unicode_semicolon = 0x3B;
 // TODO: incomplete!
-const uint32_t g_unicode_punctuation[] = {0x0021, 0x0022, 0x0023, 0x0025, 0x0026, 0x0027,
-                                          0x002A, 0x002C, 0x002E, 0x002F, 0x003A, 0x003B,
-                                          0x003F, 0x0040, 0x005C, 0x00A1, 0x00A7};
+const uint32_t g_unicode_punctuation[] = {0x0021, 0x0022, 0x0023, 0x0025, 0x0026, 0x0027, 0x002A, 0x002C, 0x002E,
+                                          0x002F, 0x003A, 0x003B, 0x003F, 0x0040, 0x005C, 0x00A1, 0x00A7};
 
 int ConvChar_UTF8_to_Unicode(const char *utf8, uint32_t &out_unicode);
 int ConvChar_UTF8_to_UTF16(const char *utf8, uint16_t out_utf16[2]);
@@ -46,12 +45,11 @@ int CalcUTF8Length(const char *utf8);
 //
 
 // Used for debugging
-void DrawBezier1ToBitmap(const Vec2d &p0, const Vec2d &p1, int stride, int channels,
+void DrawBezier1ToBitmap(const Vec2d &p0, const Vec2d &p1, int stride, int channels, uint8_t *out_rgba);
+void DrawBezier2ToBitmap(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2, int stride, int channels,
                          uint8_t *out_rgba);
-void DrawBezier2ToBitmap(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2, int stride,
-                         int channels, uint8_t *out_rgba);
-void DrawBezier3ToBitmap(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2,
-                         const Vec2d &p3, int stride, int channels, uint8_t *out_rgba);
+void DrawBezier3ToBitmap(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2, const Vec2d &p3, int stride, int channels,
+                         uint8_t *out_rgba);
 
 struct dist_result_t {
     double sdist, pseudodist, ortho;
@@ -60,10 +58,8 @@ struct dist_result_t {
 
 // Calc distance from point to curve
 dist_result_t Bezier1Distance(const Vec2d &p0, const Vec2d &p1, const Vec2d &p);
-dist_result_t Bezier2Distance(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2,
-                              const Vec2d &p);
-dist_result_t Bezier3Distance(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2,
-                              const Vec2d &p3, const Vec2d &p);
+dist_result_t Bezier2Distance(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2, const Vec2d &p);
+dist_result_t Bezier3Distance(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2, const Vec2d &p3, const Vec2d &p);
 
 struct bezier_seg_t {
     int order;

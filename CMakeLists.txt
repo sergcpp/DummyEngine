@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.4)
+cmake_minimum_required(VERSION 3.1)
 project(Dummy)
 
 set(WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})

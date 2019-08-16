@@ -10,11 +10,11 @@
 #include <Eng/Gui/BitmapFont.h>
 #include <Eng/Renderer/FrameBuf.h>
 #include <Ren/Camera.h>
-#include <Ren/Mesh.h>
 #include <Ren/MVec.h>
+#include <Ren/Mesh.h>
 #include <Ren/Program.h>
-#include <Ren/Texture.h>
 #include <Ren/SW/SW.h>
+#include <Ren/Texture.h>
 #include <Sys/Optional.h>
 
 #include "GSBaseState.h"
@@ -35,21 +35,21 @@ class GSUITest3 : public GSBaseState {
     std::shared_ptr<Gui::BitmapFont> book_main_font_, book_emph_font_, book_caption_font_;
     float test_time_counter_s = 0.0f;
 
-    std::unique_ptr<Gui::Image>         test_image_;
-    std::unique_ptr<Gui::Image9Patch>   test_frame_;
-    std::unique_ptr<PagedReader>        paged_reader_;
+    std::unique_ptr<Gui::Image> test_image_;
+    std::unique_ptr<Gui::Image9Patch> test_frame_;
+    std::unique_ptr<PagedReader> paged_reader_;
 
-    Ren::Vec3f                          view_origin_, view_dir_;
-    float                               view_fov_ = 0.0f, view_offset_ = 0.0f;
-    float                               max_exposure_ = 1000.0f;
+    Ren::Vec3f view_origin_, view_dir_;
+    float view_fov_ = 0.0f, view_offset_ = 0.0f;
+    float max_exposure_ = 1000.0f;
 
-    std::unique_ptr<Gui::Renderer>      page_renderer_;
-    FrameBuf                            page_buf_;
-    Ren::Tex2DRef                       page_tex_;
-    Ren::MaterialRef                    orig_page_mat_, page_mat_;
+    std::unique_ptr<Gui::Renderer> page_renderer_;
+    FrameBuf page_buf_;
+    Ren::Tex2DRef page_tex_;
+    Ren::MaterialRef orig_page_mat_, page_mat_;
 
-    Sys::Optional<Ren::Vec2f>           hit_point_screen_, hit_point_ndc_;
-    Sys::Optional<Ren::Vec2f>           hint_pos_;
+    Sys::Optional<Ren::Vec2f> hit_point_screen_, hit_point_ndc_;
+    Sys::Optional<Ren::Vec2f> hint_pos_;
 
     enum class eBookState {
         BkClosed,
@@ -59,7 +59,7 @@ class GSUITest3 : public GSBaseState {
         BkTurningBck
     } book_state_ = eBookState::BkClosed;
 
-    uint32_t book_index_                = 0xffffffff;
+    uint32_t book_index_ = 0xffffffff;
 
     void OnPostloadScene(JsObjectP &js_scene) override;
 
@@ -72,7 +72,8 @@ class GSUITest3 : public GSBaseState {
 
     void InitBookMaterials();
     void RedrawPages(Gui::Renderer *r);
-public:
+
+  public:
     explicit GSUITest3(GameBase *game);
     ~GSUITest3() final;
 

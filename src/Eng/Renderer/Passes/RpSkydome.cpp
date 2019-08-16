@@ -2,105 +2,124 @@
 
 #include <Ren/Context.h>
 
-#include "../Renderer_Structs.h"
 #include "../../Utils/ShaderLoader.h"
+#include "../Renderer_Structs.h"
 
-namespace RpSkydomeInternal {
-#include "__skydome_mesh.inl"
-}
-
-void RpSkydome::Setup(RpBuilder &builder, const DrawList &list,
-                      const ViewState *view_state, const int orphan_index,
-                      const char shared_data_buf[], const char color_tex[],
-                      const char spec_tex[], const char depth_tex[]) {
-    orphan_index_ = orphan_index;
+void RpSkydome::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, Ren::BufferRef vtx_buf1,
+                      Ren::BufferRef vtx_buf2, Ren::BufferRef ndx_buf, const char shared_data_buf[],
+                      const char color_tex[], const char spec_tex[], const char depth_tex[]) {
     view_state_ = view_state;
 
-    env_ = &list.env;
     draw_cam_pos_ = list.draw_cam.world_position();
 
-    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
+                                          Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
+    env_tex_ =
+        builder.ReadTexture(list.env.env_map, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    vtx_buf1_ =
+        builder.ReadBuffer(std::move(vtx_buf1), Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
+    vtx_buf2_ =
+        builder.ReadBuffer(std::move(vtx_buf2), Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
+    ndx_buf_ = builder.ReadBuffer(std::move(ndx_buf), Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
 
     { // Main color
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
-#if (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED) ||                                        \
-    (REN_OIT_MODE == REN_OIT_MOMENT_BASED && REN_OIT_MOMENT_RENORMALIZE)
+#if (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED) || (REN_OIT_MODE == REN_OIT_MOMENT_BASED && REN_OIT_MOMENT_RENORMALIZE)
         // renormalization requires buffer with alpha channel
         params.format = Ren::eTexFormat::RawRGBA16F;
 #else
         params.format = Ren::eTexFormat::RawRG11F_B10F;
 #endif
-        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
-        color_tex_ = builder.WriteTexture(color_tex, params, *this);
+        color_tex_ = builder.WriteTexture(color_tex, params, Ren::eResState::RenderTarget,
+                                          Ren::eStageBits::ColorAttachment, *this);
     }
     { // 4-component specular (alpha is roughness)
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRGBA8888;
-        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
-        spec_tex_ = builder.WriteTexture(spec_tex, params, *this);
+        spec_tex_ = builder.WriteTexture(spec_tex, params, Ren::eResState::RenderTarget,
+                                         Ren::eStageBits::ColorAttachment, *this);
     }
-    { // 24-bit depth
+    { // 24-bit or 32-bit depth
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
-        params.format = Ren::eTexFormat::Depth24Stencil8;
-        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.format = builder.ctx().capabilities.depth24_stencil8_format ? Ren::eTexFormat::Depth24Stencil8
+                                                                           : Ren::eTexFormat::Depth32Stencil8;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
-        depth_tex_ = builder.WriteTexture(depth_tex, params, *this);
+        depth_tex_ = builder.WriteTexture(depth_tex, params, Ren::eResState::DepthWrite,
+                                          Ren::eStageBits::DepthAttachment, *this);
     }
 }
 
 void RpSkydome::Execute(RpBuilder &builder) {
+    RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
+    RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
+    RpAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
+
     RpAllocTex &color_tex = builder.GetWriteTexture(color_tex_);
     RpAllocTex &spec_tex = builder.GetWriteTexture(spec_tex_);
     RpAllocTex &depth_tex = builder.GetWriteTexture(depth_tex_);
 
-    LazyInit(builder.ctx(), builder.sh(), color_tex, spec_tex, depth_tex);
-    DrawSkydome(builder);
+    LazyInit(builder.ctx(), builder.sh(), vtx_buf1, vtx_buf2, ndx_buf, color_tex, spec_tex, depth_tex);
+    DrawSkydome(builder, vtx_buf1, vtx_buf2, ndx_buf, color_tex, spec_tex, depth_tex);
 }
 
-void RpSkydome::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &color_tex,
-                         RpAllocTex &spec_tex, RpAllocTex &depth_tex) {
-    using namespace RpSkydomeInternal;
+void RpSkydome::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+                         RpAllocBuf &ndx_buf, RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex) {
+    const Ren::RenderTarget color_targets[] = {{color_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
+                                               {} /* normals texture */,
+                                               {spec_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+    const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store,
+                                            Ren::eLoadOp::Clear, Ren::eStoreOp::DontCare};
 
     if (!initialized) {
-        skydome_prog_ = sh.LoadProgram(ctx, "skydome", "internal/skydome.vert.glsl",
-                                       "internal/skydome.frag.glsl");
-        assert(skydome_prog_->ready());
+        Ren::ProgramRef skydome_prog =
+            sh.LoadProgram(ctx, "skydome", "internal/skydome.vert.glsl", "internal/skydome.frag.glsl");
+        assert(skydome_prog->ready());
 
-        Ren::eMeshLoadStatus status;
-        skydome_mesh_ =
-            ctx.LoadMesh("__skydome", __skydome_positions, __skydome_vertices_count,
-                         __skydome_indices, __skydome_indices_count, &status);
-        assert(status == Ren::eMeshLoadStatus::CreatedFromData);
+        if (!render_pass_.Setup(ctx.api_ctx(), color_targets, 3, depth_target, ctx.log())) {
+            ctx.log()->Error("[RpSkydome::LazyInit]: Failed to create render pass!");
+        }
+
+        const int buf1_stride = 16, buf2_stride = 16;
+        const Ren::VtxAttribDesc attribs[] = {
+            {vtx_buf1.ref->handle(), REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
+
+        if (!vtx_input_.Setup(attribs, 1, ndx_buf.ref)) {
+            ctx.log()->Error("[RpSkydome::LazyInit]: Failed to initialize vertex input!");
+        }
+
+        Ren::RastState rast_state;
+        rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+        rast_state.depth.test_enabled = true;
+        rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Always);
+        rast_state.blend.enabled = false;
+
+        rast_state.stencil.enabled = true;
+        rast_state.stencil.write_mask = 0xff;
+        rast_state.stencil.pass = unsigned(Ren::eStencilOp::Replace);
+
+        if (!pipeline_.Init(ctx.api_ctx(), rast_state, std::move(skydome_prog), &vtx_input_, &render_pass_, ctx.log())) {
+            ctx.log()->Error("[RpSkydome::LazyInit]: Failed to initialize pipeline!");
+        }
 
         initialized = true;
     }
 
-    const int buf1_stride = 16, buf2_stride = 16;
-
-    const Ren::VtxAttribDesc attribs[] = {
-        {skydome_mesh_->attribs_buf1_handle(), REN_VTX_POS_LOC, 3, Ren::eType::Float32,
-         buf1_stride, uintptr_t(skydome_mesh_->attribs_buf1().offset)}};
-    if (!skydome_vao_.Setup(attribs, 1, skydome_mesh_->indices_buf_handle())) {
-        ctx.log()->Error("RpSkydome: vao init failed!");
-    }
-
-    const Ren::TexHandle color_attachments[] = {
-        color_tex.ref->handle(), {}, spec_tex.ref->handle()};
-    if (!cached_fb_.Setup(color_attachments, 3, depth_tex.ref->handle(),
-                          depth_tex.ref->handle(), view_state_->is_multisampled)) {
-        ctx.log()->Error("RpSkydome: fbo init failed!");
+    if (!framebuf_[ctx.backend_frame()].Setup(ctx.api_ctx(), render_pass_, depth_tex.desc.w, depth_tex.desc.h,
+                                              color_targets, 3, depth_target, depth_target)) {
+        ctx.log()->Error("[RpSkydome::LazyInit]: fbo init failed!");
     }
 }
-
-RpSkydome::~RpSkydome() = default;

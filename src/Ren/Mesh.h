@@ -55,7 +55,7 @@ struct BufferRange {
 
     void Release() {
         if (buf) {
-            const bool res = buf->FreeRegion(offset);
+            const bool res = buf->FreeSubRegion(offset);
             assert(res);
         }
         buf = {};
@@ -72,8 +72,7 @@ class Mesh : public RefCounter {
     eMeshType type_ = eMeshType::Undefined;
     uint32_t flags_ = 0;
     bool ready_ = false;
-    BufferRange attribs_buf1_, attribs_buf2_, sk_attribs_buf_, sk_deltas_buf_,
-        indices_buf_;
+    BufferRange attribs_buf1_, attribs_buf2_, sk_attribs_buf_, sk_deltas_buf_, indices_buf_;
     std::unique_ptr<char[]> attribs_, indices_;
     std::unique_ptr<VtxDelta[]> deltas_;
     SmallVector<TriGroup, 8> groups_;
@@ -83,30 +82,27 @@ class Mesh : public RefCounter {
     Skeleton skel_;
 
     // simple static mesh with normals
-    void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load,
-                        BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
-                        ILog *log);
+    void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf, void *cmd_buf,
+                        BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, ILog *log);
     // simple mesh with 4 per-vertex colors
-    void InitMeshColored(std::istream &data, const material_load_callback &on_mat_load,
-                         BufferRef vertex_buf1, BufferRef vertex_buf2,
-                         BufferRef index_buf, ILog *log);
+    void InitMeshColored(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf,
+                         void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, ILog *log);
     // mesh with 4 bone weights per vertex
-    void InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load,
-                          BufferRef skin_vertex_buf, BufferRef delta_buf,
-                          BufferRef index_buf, ILog *log);
+    void InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf,
+                          void *cmd_buf, BufferRef skin_vertex_buf, BufferRef delta_buf, BufferRef index_buf,
+                          ILog *log);
 
     // split skeletal mesh into chunks to fit uniforms limit in shader
     // void SplitMesh(int bones_limit, ILog *log);
 
   public:
     Mesh() = default;
-    Mesh(const char *name, const float *positions, int vtx_count, const uint32_t *indices,
-         int ndx_count, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+    Mesh(const char *name, const float *positions, int vtx_count, const uint32_t *indices, int ndx_count,
+         Buffer &stage_buf, void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
          eMeshLoadStatus *load_status, ILog *log);
-    Mesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
-         BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
-         BufferRef skin_vertex_buf, BufferRef delta_buf, eMeshLoadStatus *load_status,
-         ILog *log);
+    Mesh(const char *name, std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf,
+         void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, BufferRef skin_vertex_buf,
+         BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log);
 
     Mesh(const Mesh &rhs) = delete;
     Mesh(Mesh &&rhs) = default;
@@ -140,13 +136,12 @@ class Mesh : public RefCounter {
     const Skeleton *skel() const { return &skel_; }
     Skeleton *skel() { return &skel_; }
 
-    void Init(const float *positions, int vtx_count, const uint32_t *indices,
-              int ndx_count, BufferRef vertex_buf1, BufferRef vertex_buf2,
-              BufferRef index_buf, eMeshLoadStatus *load_status, ILog *log);
-    void Init(std::istream *data, const material_load_callback &on_mat_load,
-              BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
-              BufferRef skin_vertex_buf, BufferRef delta_buf,
+    void Init(const float *positions, int vtx_count, const uint32_t *indices, int ndx_count, Buffer &stage_buf,
+              void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
               eMeshLoadStatus *load_status, ILog *log);
+    void Init(std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf, void *cmd_buf,
+              BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, BufferRef skin_vertex_buf,
+              BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log);
 };
 
 typedef StrongRef<Mesh> MeshRef;

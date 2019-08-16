@@ -1,12 +1,12 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
-#extension GL_ARB_bindless_texture: enable
 //#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
 
 #include "internal/_vs_common.glsl"
+#include "internal/_texturing.glsl"
 
 /*
 UNIFORM_BLOCKS
@@ -20,7 +20,7 @@ layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs1;
 layout(location = REN_VTX_AUX_LOC) in uint aVertexUVs2Packed;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = 0, std140)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 #else
 layout (std140)
 #endif
@@ -28,58 +28,43 @@ uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
-layout(location = REN_U_MAT_INDEX_LOC) uniform uint uMaterialIndex;
-layout(location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
+#if defined(VULKAN)
+layout(push_constant) uniform PushConstants {
+    ivec2 uInstanceIndices[REN_MAX_BATCH_SIZE];
+};
+#else // VULKAN
+layout(location = REN_U_INSTANCES_LOC) uniform ivec2 uInstanceIndices[REN_MAX_BATCH_SIZE];
+#endif // VULKAN
 
-layout(binding = REN_INST_BUF_SLOT) uniform highp samplerBuffer instances_buffer;
+layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer instances_buffer;
+layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D noise_texture;
 
-layout(binding = REN_MATERIALS_SLOT) buffer Materials {
+layout(binding = REN_MATERIALS_SLOT) readonly buffer Materials {
 	MaterialData materials[];
 };
 
-#if defined(GL_ARB_bindless_texture)
-layout(binding = REN_BINDLESS_TEX_SLOT) buffer TextureHandles {
-	uvec2 texture_handles[];
-};
-#endif
-
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) out highp vec3 aVertexPos_;
-layout(location = 1) out mediump vec4 aVertexUVs_;
-layout(location = 2) out mediump vec3 aVertexNormal_;
-layout(location = 3) out mediump vec3 aVertexTangent_;
-layout(location = 4) out highp vec3 aVertexShUVs_[4];
-#if defined(GL_ARB_bindless_texture)
-layout(location = 8) out flat uvec2 diff_texture;
-layout(location = 9) out flat uvec2 norm_texture;
-layout(location = 10) out flat uvec2 spec_texture;
-#endif // GL_ARB_bindless_texture
-#else
-out highp vec3 aVertexPos_;
-out mediump vec4 aVertexUVs_;
-out mediump vec3 aVertexNormal_;
-out mediump vec3 aVertexTangent_;
-out highp vec3 aVertexShUVs_[4];
-#if defined(GL_ARB_bindless_texture)
-out flat uvec2 diff_texture;
-out flat uvec2 norm_texture;
-out flat uvec2 spec_texture;
-#endif // GL_ARB_bindless_texture
-#endif
-
-#ifdef VULKAN
-    #define gl_InstanceID gl_InstanceIndex
-#endif
+LAYOUT(location = 0) out highp vec3 aVertexPos_;
+LAYOUT(location = 1) out mediump vec4 aVertexUVs_;
+LAYOUT(location = 2) out mediump vec3 aVertexNormal_;
+LAYOUT(location = 3) out mediump vec3 aVertexTangent_;
+LAYOUT(location = 4) out highp vec4 aVertexShUVs_0;
+LAYOUT(location = 5) out highp vec4 aVertexShUVs_1;
+LAYOUT(location = 6) out highp vec4 aVertexShUVs_2;
+#if defined(BINDLESS_TEXTURES)
+	LAYOUT(location = 7) out flat TEX_HANDLE diff_texture;
+	LAYOUT(location = 8) out flat TEX_HANDLE norm_texture;
+	LAYOUT(location = 9) out flat TEX_HANDLE spec_texture;
+#endif // BINDLESS_TEXTURES
 
 invariant gl_Position;
 
 void main(void) {
-    int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
+    ivec2 instance = uInstanceIndices[gl_InstanceIndex];
 
-    mat4 model_matrix = FetchModelMatrix(instances_buffer, instance);
+    mat4 model_matrix = FetchModelMatrix(instances_buffer, instance.x);
 
     // load lightmap transform
-    vec4 LightmapTr = texelFetch(instances_buffer, instance * 4 + 3);
+    vec4 LightmapTr = texelFetch(instances_buffer, instance.x * INSTANCE_BUF_STRIDE + 3);
     
     vec3 vtx_pos_ws = (model_matrix * vec4(aVertexPosition, 1.0)).xyz;
     vec3 vtx_nor_ws = normalize((model_matrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
@@ -88,8 +73,7 @@ void main(void) {
     aVertexPos_ = vtx_pos_ws;
     aVertexNormal_ = vtx_nor_ws;
     aVertexTangent_ = vtx_tan_ws;
-    aVertexUVs_ = vec4(aVertexUVs1, LightmapTr.xy + LightmapTr.zw *
-                        unpackHalf2x16(aVertexUVs2Packed));
+    aVertexUVs_ = vec4(aVertexUVs1, LightmapTr.xy + LightmapTr.zw * unpackHalf2x16(aVertexUVs2Packed));
 
     const vec2 offsets[4] = vec2[4](
         vec2(0.0, 0.0),
@@ -99,19 +83,31 @@ void main(void) {
     );
     
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
-        aVertexShUVs_[i] = (shrd_data.uShadowMapRegions[i].clip_from_world *
-                                vec4(vtx_pos_ws, 1.0)).xyz;
-        aVertexShUVs_[i] = 0.5 * aVertexShUVs_[i] + 0.5;
-        aVertexShUVs_[i].xy *= vec2(0.25, 0.5);
-        aVertexShUVs_[i].xy += offsets[i];
+        vec3 shadow_uvs = (shrd_data.uShadowMapRegions[i].clip_from_world * vec4(vtx_pos_ws, 1.0)).xyz;
+#if defined(VULKAN)
+		shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
+#else // VULKAN
+		shadow_uvs = 0.5 * shadow_uvs + 0.5;
+#endif // VULKAN
+        shadow_uvs.xy *= vec2(0.25, 0.5);
+        shadow_uvs.xy += offsets[i];
+#if defined(VULKAN)
+		shadow_uvs.y = 1.0 - shadow_uvs.y;
+#endif // VULKAN
+		aVertexShUVs_0[i] = shadow_uvs[0];
+		aVertexShUVs_1[i] = shadow_uvs[1];
+		aVertexShUVs_2[i] = shadow_uvs[2];
     }
     
-#if defined(GL_ARB_bindless_texture)
-	MaterialData mat = materials[uMaterialIndex];
-	diff_texture = texture_handles[mat.texture_indices[0]];
-	norm_texture = texture_handles[mat.texture_indices[1]];
-	spec_texture = texture_handles[mat.texture_indices[2]];
-#endif // GL_ARB_bindless_texture
+	MaterialData mat = materials[instance.y];
+#if defined(BINDLESS_TEXTURES)
+	diff_texture = GET_HANDLE(mat.texture_indices[0]);
+	norm_texture = GET_HANDLE(mat.texture_indices[1]);
+	spec_texture = GET_HANDLE(mat.texture_indices[2]);
+#endif // BINDLESS_TEXTURES
 	
     gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
+#if defined(VULKAN)
+    gl_Position.y = -gl_Position.y;
+#endif
 } 

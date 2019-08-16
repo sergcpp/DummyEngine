@@ -4,7 +4,7 @@
 #include "Renderer.h"
 
 Gui::TypeMesh::TypeMesh(const std::string &text, BitmapFont *font, const Vec2f &pos, const BaseElement *parent)
-    : BaseElement(pos, Vec2f{ 0, 0 }, parent), text_(text), font_(font) {
+    : BaseElement(pos, Vec2f{0, 0}, parent), text_(text), font_(font) {
     Move(pos, parent);
 }
 
@@ -43,9 +43,7 @@ void Gui::TypeMesh::Move(const Vec2f &pos, const BaseElement *parent) {
     center_ = dims_[0] + 0.5f * dims_[1];*/
 }
 
-void Gui::TypeMesh::Resize(const BaseElement *parent) {
-    this->Move(rel_dims_[0], parent);
-}
+void Gui::TypeMesh::Resize(const BaseElement *parent) { this->Move(rel_dims_[0], parent); }
 
 void Gui::TypeMesh::Draw(Renderer *r) {
     /*const Renderer::DrawParams &cur = r->GetParams();

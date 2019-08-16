@@ -1,0 +1,468 @@
+#include "RpOpaque.h"
+
+#include "../Renderer_Structs.h"
+
+#include <Ren/Context.h>
+#include <Ren/DebugMarker.h>
+#include <Ren/RastState.h>
+
+namespace RpSharedInternal {
+uint32_t _draw_list_range_full(VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
+                               const Ren::SmallVectorImpl<VkDescriptorSet> &texture_descr_sets,
+                               const Ren::Pipeline pipelines[], const DynArrayConstRef<MainDrawBatch> &main_batches,
+                               const DynArrayConstRef<uint32_t> &main_batch_indices, uint32_t i, uint64_t mask,
+                               const uint32_t materials_per_descriptor, uint64_t &cur_pipe_id, uint32_t &bound_descr_id,
+                               BackendInfo &backend_info) {
+    for (; i < main_batch_indices.count; i++) {
+        const MainDrawBatch &batch = main_batches.data[main_batch_indices.data[i]];
+        if ((batch.sort_key & MainDrawBatch::FlagBits) != mask) {
+            break;
+        }
+
+        if (!batch.instance_count) {
+            continue;
+        }
+
+        if (cur_pipe_id != batch.pipe_id) {
+            vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[batch.pipe_id].handle());
+            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[batch.pipe_id].layout(), 0, 1,
+                                    &res_descr_set, 0, nullptr);
+            cur_pipe_id = batch.pipe_id;
+            bound_descr_id = 0xffffffff;
+        }
+
+        const uint32_t descr_id = batch.instance_indices[0][1] / materials_per_descriptor;
+        if (descr_id != bound_descr_id) {
+            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[batch.pipe_id].layout(), 1, 1,
+                                    &texture_descr_sets[descr_id], 0, nullptr);
+            bound_descr_id = descr_id;
+        }
+
+        vkCmdPushConstants(cmd_buf, pipelines[batch.pipe_id].layout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                           2 * batch.instance_count * sizeof(int), &batch.instance_indices[0][0]);
+        vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
+                         batch.instance_count,         // instance count
+                         batch.indices_offset,         // first index
+                         batch.base_vertex,            // vertex offset
+                         0);                           // first instance
+
+        backend_info.opaque_draw_calls_count++;
+        backend_info.tris_rendered += (batch.indices_count / 3) * batch.instance_count;
+    }
+
+    return i;
+}
+
+uint32_t _draw_list_range_full_rev(VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
+                                   const Ren::SmallVectorImpl<VkDescriptorSet> &texture_descr_sets,
+                                   const Ren::Pipeline pipelines[], const DynArrayConstRef<MainDrawBatch> &main_batches,
+                                   const DynArrayConstRef<uint32_t> &main_batch_indices, uint32_t ndx, uint64_t mask,
+                                   const uint32_t materials_per_descriptor, uint64_t &cur_pipe_id,
+                                   uint32_t &bound_descr_id, BackendInfo &backend_info) {
+    int i = int(ndx);
+    for (; i >= 0; i--) {
+        const MainDrawBatch &batch = main_batches.data[main_batch_indices.data[i]];
+        if ((batch.sort_key & MainDrawBatch::FlagBits) != mask) {
+            break;
+        }
+
+        if (!batch.instance_count) {
+            continue;
+        }
+
+        if (cur_pipe_id != batch.pipe_id) {
+            vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[batch.pipe_id].handle());
+            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[batch.pipe_id].layout(), 0, 1,
+                                    &res_descr_set, 0, nullptr);
+            cur_pipe_id = batch.pipe_id;
+            bound_descr_id = 0xffffffff;
+        }
+
+        const uint32_t descr_id = batch.instance_indices[0][1] / materials_per_descriptor;
+        if (descr_id != bound_descr_id) {
+            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[batch.pipe_id].layout(), 1, 1,
+                                    &texture_descr_sets[descr_id], 0, nullptr);
+            bound_descr_id = descr_id;
+        }
+
+        vkCmdPushConstants(cmd_buf, pipelines[batch.pipe_id].layout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                           2 * batch.instance_count * sizeof(int), &batch.instance_indices[0][0]);
+        vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
+                         batch.instance_count,         // instance count
+                         batch.indices_offset,         // first index
+                         batch.base_vertex,            // vertex offset
+                         0);                           // first instance
+
+        backend_info.opaque_draw_calls_count++;
+        backend_info.tris_rendered += (batch.indices_count / 3) * batch.instance_count;
+    }
+
+    return uint32_t(i);
+}
+} // namespace RpSharedInternal
+
+void RpOpaque::DrawOpaque(RpBuilder &builder) {
+    using namespace RpSharedInternal;
+
+    auto &ctx = builder.ctx();
+    auto *api_ctx = ctx.api_ctx();
+
+    //
+    // Prepare descriptor sets
+    //
+    RpAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
+    RpAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(cells_buf_);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(items_buf_);
+    RpAllocBuf &lights_buf = builder.GetReadBuffer(lights_buf_);
+    RpAllocBuf &decals_buf = builder.GetReadBuffer(decals_buf_);
+
+    RpAllocTex &shad_tex = builder.GetReadTexture(shad_tex_);
+    RpAllocTex &ssao_tex = builder.GetReadTexture(ssao_tex_);
+    RpAllocTex &brdf_lut = builder.GetReadTexture(brdf_lut_);
+    RpAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
+    RpAllocTex &cone_rt_lut = builder.GetReadTexture(cone_rt_lut_);
+
+    RpAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
+    RpAllocTex &dummy_white = builder.GetReadTexture(dummy_white_);
+
+    RpAllocTex *lm_tex[4];
+    for (int i = 0; i < 4; ++i) {
+        if (lm_tex_[i]) {
+            lm_tex[i] = &builder.GetReadTexture(lm_tex_[i]);
+        } else {
+            lm_tex[i] = &dummy_black;
+        }
+    }
+
+    if (!probe_storage_) {
+        return;
+    }
+
+    const VkDescriptorSet res_descr_set = ctx.default_descr_alloc()->Alloc(
+        10 /* img_count */, 1 /* ubuf_count */, 2 /* sbuf_count */, 4 /* tbuf_count */, descr_set_layout_);
+
+    { // update descriptor set
+        const VkDescriptorImageInfo shad_info = shad_tex.ref->vk_desc_image_info();
+        VkDescriptorImageInfo lm_infos[4];
+
+        if ((render_flags_ & EnableLightmap) && env_->lm_direct) {
+            for (int sh_l = 0; sh_l < 4; sh_l++) {
+                lm_infos[sh_l] = lm_tex[sh_l]->ref->vk_desc_image_info();
+            }
+        } else {
+            for (int sh_l = 0; sh_l < 4; sh_l++) {
+                lm_infos[sh_l] = dummy_black.ref->vk_desc_image_info();
+            }
+        }
+
+        const VkDescriptorImageInfo decal_info = dummy_black.ref->vk_desc_image_info();
+        VkDescriptorImageInfo ssao_info;
+        if ((render_flags_ & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
+            ssao_info = ssao_tex.ref->vk_desc_image_info();
+        } else {
+            ssao_info = dummy_white.ref->vk_desc_image_info();
+        }
+
+        const VkDescriptorImageInfo noise_info = noise_tex.ref->vk_desc_image_info();
+        const VkDescriptorImageInfo env_info = {probe_storage_->handle().sampler, probe_storage_->handle().views[0],
+                                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+        const VkDescriptorImageInfo cone_rt_info = cone_rt_lut.ref->vk_desc_image_info();
+        const VkDescriptorImageInfo brdf_info = brdf_lut.ref->vk_desc_image_info();
+
+        const VkBufferView lights_buf_view = lights_buf.tbos[0]->view();
+        const VkBufferView decals_buf_view = decals_buf.tbos[0]->view();
+        const VkBufferView cells_buf_view = cells_buf.tbos[0]->view();
+        const VkBufferView items_buf_view = items_buf.tbos[0]->view();
+
+        const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.ref->handle().buf, 0, VK_WHOLE_SIZE};
+
+        const VkBufferView instances_buf_view = instances_buf.tbos[0]->view();
+        const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->handle().buf, 0, VK_WHOLE_SIZE};
+
+        Ren::SmallVector<VkWriteDescriptorSet, 16> descr_writes;
+
+        { // shadow map
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_SHAD_TEX_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descr_write.descriptorCount = 1;
+            descr_write.pImageInfo = &shad_info;
+        }
+        { // lightmap
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_LMAP_SH_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descr_write.descriptorCount = 4;
+            descr_write.pImageInfo = lm_infos;
+        }
+        { // decals tex
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_DECAL_TEX_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descr_write.descriptorCount = 1;
+            descr_write.pImageInfo = &decal_info;
+        }
+        { // ssao tex
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_SSAO_TEX_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descr_write.descriptorCount = 1;
+            descr_write.pImageInfo = &ssao_info;
+        }
+        { // noise tex
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_NOISE_TEX_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descr_write.descriptorCount = 1;
+            descr_write.pImageInfo = &noise_info;
+        }
+        { // env tex
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_ENV_TEX_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descr_write.descriptorCount = 1;
+            descr_write.pImageInfo = &env_info;
+        }
+        { // cone rt lut
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_CONE_RT_LUT_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descr_write.descriptorCount = 1;
+            descr_write.pImageInfo = &cone_rt_info;
+        }
+        /*{ // brdf lut
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_BRDF_TEX_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descr_write.descriptorCount = 1;
+            descr_write.pImageInfo = &brdf_info;
+        }*/
+        { // lights tbuf
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_LIGHT_BUF_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            descr_write.descriptorCount = 1;
+            descr_write.pTexelBufferView = &lights_buf_view;
+        }
+        { // decals tbuf
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_DECAL_BUF_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            descr_write.descriptorCount = 1;
+            descr_write.pTexelBufferView = &decals_buf_view;
+        }
+        { // cells tbuf
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_CELLS_BUF_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            descr_write.descriptorCount = 1;
+            descr_write.pTexelBufferView = &cells_buf_view;
+        }
+        { // items tbuf
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_ITEMS_BUF_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            descr_write.descriptorCount = 1;
+            descr_write.pTexelBufferView = &items_buf_view;
+        }
+        { // instances tbuf
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_INST_BUF_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            descr_write.descriptorCount = 1;
+            descr_write.pTexelBufferView = &instances_buf_view;
+        }
+        { // shared data ubuf
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_UB_SHARED_DATA_LOC;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descr_write.descriptorCount = 1;
+            descr_write.pBufferInfo = &ubuf_info;
+        }
+        { // materials sbuf
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {};
+            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_MATERIALS_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            descr_write.descriptorCount = 1;
+            descr_write.pBufferInfo = &mat_buf_info;
+        }
+
+        vkUpdateDescriptorSets(api_ctx->device, uint32_t(descr_writes.size()), descr_writes.cdata(), 0, nullptr);
+    }
+
+    VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
+
+    //
+    // Setup viewport
+    //
+    const VkViewport viewport = {0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1]),
+                                 0.0f, 1.0f};
+    vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
+    const VkRect2D scissor = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
+    vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
+
+    const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / REN_MAX_TEX_PER_MATERIAL;
+
+    BackendInfo _dummy = {};
+
+    { // actual drawing
+        using MDB = MainDrawBatch;
+
+        uint64_t cur_pipe_id = 0xffffffffffffffff;
+        uint32_t bound_descr_id = 0xffffffff;
+
+        uint32_t i = 0;
+
+        VkRenderPassBeginInfo rp_begin_info = {};
+        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        rp_begin_info.renderPass = rp_opaque_.handle();
+        rp_begin_info.framebuffer = opaque_draw_fb_[ctx.backend_frame()].handle();
+        rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1])};
+        vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+
+        draw_pass_vi_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+
+        { // one-sided1
+            Ren::DebugMarker _m(cmd_buf, "ONE-SIDED-1");
+            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+                                      main_batches_, main_batch_indices_, i, 0ull, materials_per_descriptor,
+                                      cur_pipe_id, bound_descr_id, _dummy);
+        }
+
+        { // two-sided1
+            Ren::DebugMarker _m(cmd_buf, "TWO-SIDED-1");
+            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+                                      main_batches_, main_batch_indices_, i, MDB::BitTwoSided, materials_per_descriptor,
+                                      cur_pipe_id, bound_descr_id, _dummy);
+        }
+
+        { // one-sided2
+            Ren::DebugMarker _m(cmd_buf, "ONE-SIDED-2");
+            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+                                      main_batches_, main_batch_indices_, i, MDB::BitAlphaTest,
+                                      materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
+        }
+
+        { // two-sided2
+            Ren::DebugMarker _m(cmd_buf, "TWO-SIDED-2");
+            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+                                      main_batches_, main_batch_indices_, i, MDB::BitAlphaTest | MDB::BitTwoSided,
+                                      materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
+        }
+
+        alpha_blend_start_index_ = int(i);
+
+        { // two-sided-tested-blended
+            Ren::DebugMarker _m(cmd_buf, "TWO-SIDED-TESTED-BLENDED");
+            i = _draw_list_range_full_rev(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+                                          main_batches_, main_batch_indices_, main_batch_indices_.count - 1,
+                                          MDB::BitAlphaBlend | MDB::BitAlphaTest | MDB::BitTwoSided,
+                                          materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
+        }
+
+        { // one-sided-tested-blended
+            Ren::DebugMarker _m(cmd_buf, "ONE-SIDED-TESTED-BLENDED");
+            _draw_list_range_full_rev(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+                                      main_batches_, main_batch_indices_, i, MDB::BitAlphaBlend | MDB::BitAlphaTest,
+                                      materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
+        }
+
+        vkCmdEndRenderPass(cmd_buf);
+    }
+}
+
+void RpOpaque::InitDescrSetLayout() {
+    VkDescriptorSetLayoutBinding bindings[] = {
+        // textures (10)
+        {REN_SHAD_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {REN_LMAP_SH_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {REN_DECAL_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {REN_SSAO_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {REN_NOISE_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_VERTEX_BIT},
+        {REN_ENV_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {REN_CONE_RT_LUT_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        //{REN_BRDF_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        // texel buffers (4)
+        {REN_LIGHT_BUF_SLOT, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {REN_DECAL_BUF_SLOT, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {REN_CELLS_BUF_SLOT, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {REN_ITEMS_BUF_SLOT, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {REN_INST_BUF_SLOT, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT},
+        // uniform buffers (1)
+        {REN_UB_SHARED_DATA_LOC, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT},
+        // storage buffers (2)
+        {REN_MATERIALS_SLOT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}};
+
+    VkDescriptorSetLayoutCreateInfo layout_info = {};
+    layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layout_info.bindingCount = COUNT_OF(bindings);
+    layout_info.pBindings = bindings;
+
+    const VkResult res = vkCreateDescriptorSetLayout(api_ctx_->device, &layout_info, nullptr, &descr_set_layout_);
+    assert(res == VK_SUCCESS);
+}
+
+RpOpaque::~RpOpaque() { vkDestroyDescriptorSetLayout(api_ctx_->device, descr_set_layout_, nullptr); }

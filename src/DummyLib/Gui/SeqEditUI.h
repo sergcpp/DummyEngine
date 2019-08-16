@@ -12,8 +12,8 @@ class SeqEditUI : public Gui::BaseElement {
     SeqCanvasUI canvas_;
 
   public:
-    SeqEditUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Gui::Vec2f &pos,
-              const Gui::Vec2f &size, const Gui::BaseElement *parent);
+    SeqEditUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Gui::Vec2f &pos, const Gui::Vec2f &size,
+              const Gui::BaseElement *parent);
 
     void set_sequence(ScriptedSequence *seq) { canvas_.set_sequence(seq); }
 

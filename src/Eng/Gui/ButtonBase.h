@@ -6,9 +6,10 @@
 
 namespace Gui {
 class ButtonBase : public BaseElement {
-protected:
+  protected:
     enum class eState { Normal, Focused, Pressed } state_;
-public:
+
+  public:
     ButtonBase(const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
 
     void Hover(const Vec2i &p) override;
@@ -19,5 +20,4 @@ public:
 
     Sys::Signal<void()> pressed_signal;
 };
-}
-
+} // namespace Gui

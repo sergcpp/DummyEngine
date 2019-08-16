@@ -1,8 +1,9 @@
 #version 310 es
 #extension GL_EXT_texture_cube_map_array : enable
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision mediump float;
 #endif
 
 #include "_fs_common.glsl"
@@ -18,8 +19,15 @@ uniform SharedDataBlock {
 
 layout(binding = REN_BASE0_TEX_SLOT) uniform mediump samplerCubeArray env_texture;
 
+#if defined(VULKAN)
+layout(push_constant) uniform PushConstants {
+    layout(offset = 64) float mip_level;
+						int probe_index;
+};
+#else
 layout(location = 1) uniform float mip_level;
 layout(location = 2) uniform int probe_index;
+#endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec3 aVertexPos_;

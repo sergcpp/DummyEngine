@@ -9,14 +9,7 @@ class ScriptedSequence;
 
 class DialogController {
   public:
-    enum class eState {
-        Paused,
-        Sequence,
-        ChoicePlaying,
-        ChoicePaused,
-        ChoicePuzzle,
-        ChoiceTransition
-    };
+    enum class eState { Paused, Sequence, ChoicePlaying, ChoicePaused, ChoicePuzzle, ChoiceTransition };
 
     DialogController();
 

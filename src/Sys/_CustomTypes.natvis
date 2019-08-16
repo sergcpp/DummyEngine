@@ -10,4 +10,15 @@
 	<DisplayString Condition="type_ == JsType::Object &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">{(JsObjectP&amp;)data_}</DisplayString>
 	<DisplayString Condition="type_ == JsType::Object &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">{(JsObject&amp;)data_}</DisplayString>
   </Type>
+  <Type Name="Sys::SmallVectorImpl&lt;*&gt;">
+    <DisplayString>{{ size={end_ - begin_}, capacity={capacity_ &amp; CapacityMask} }}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">end_ - begin_</Item>
+      <Item Name="[capacity]" ExcludeView="simple">capacity_ &amp; CapacityMask</Item>
+      <ArrayItems>
+        <Size>end_ - begin_</Size>
+        <ValuePointer>begin_</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
 </AutoVisualizer>

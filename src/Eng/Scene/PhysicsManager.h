@@ -23,6 +23,7 @@ class PhysicsManager {
 
     void SweepAndPrune1D(const Phy::Body bodies[], int count, float dt_s,
                          std::vector<Phy::collision_pair_t> &collision_pairs);
+
   public:
     void Update(SceneData &scene, float dt_s);
 

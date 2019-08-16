@@ -51,7 +51,7 @@ void test_vector() {
         Sys::SmallVector<AAA, 16> vec;
 
         for (int i = 0; i < 8; i++) {
-            vec.push_back({ 2 * i });
+            vec.push_back({2 * i});
             vec.emplace_back(2 * i + 1);
         }
         require(vec.is_on_heap() == false);
@@ -61,7 +61,7 @@ void test_vector() {
         require(vec.size() == 16);
         require(vec.capacity() == 16);
 
-        vec.push_back({ 42 });
+        vec.push_back({42});
 
         require(vec.is_on_heap() == true);
         require(vec.back().data == 42);

@@ -48,7 +48,7 @@ struct OutputPatch {
 layout(location = 0) out patch OutputPatch oPatch;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = 0, std140)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 #else
 layout (std140)
 #endif

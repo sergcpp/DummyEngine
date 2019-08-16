@@ -6,7 +6,7 @@ void test_mat() {
     using namespace Ren;
 
     {
-        auto v1 = Mat2f{ Vec2f{ 1.0f, 2.0f }, Vec2f{ 3.0f, 4.0f } }, v2 = Mat2f{ Vec2f{ 3.0f, 4.0f }, Vec2f{ 5.0f, 6.0f } };
+        auto v1 = Mat2f{Vec2f{1.0f, 2.0f}, Vec2f{3.0f, 4.0f}}, v2 = Mat2f{Vec2f{3.0f, 4.0f}, Vec2f{5.0f, 6.0f}};
 
         require(v1[0][0] == 1.0f);
         require(v1[0][1] == 2.0f);
@@ -18,7 +18,7 @@ void test_mat() {
         require(v2[1][0] == 5.0f);
         require(v2[1][1] == 6.0f);
 
-        auto v3 = Mat2f{ Vec2f{ 0.0f }, Vec2f{ 0.0f } };
+        auto v3 = Mat2f{Vec2f{0.0f}, Vec2f{0.0f}};
 
         require(v3[0][0] == 0.0f);
         require(v3[0][1] == 0.0f);

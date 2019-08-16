@@ -33,14 +33,12 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 } // namespace GSUITestInternal
 
 GSUITest::GSUITest(GameBase *game) : GSBaseState(game) {
-    const std::shared_ptr<FontStorage> fonts =
-        game->GetComponent<FontStorage>(UI_FONTS_KEY);
+    const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     dialog_font_ = fonts->FindFont("dialog_font");
     dialog_font_->set_scale(1.5f);
 
-    word_puzzle_.reset(new WordPuzzleUI{*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f},
-                                        Ren::Vec2f{1.99f, 1.1f}, ui_root_.get(),
-                                        *dialog_font_});
+    word_puzzle_.reset(new WordPuzzleUI{*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{1.99f, 1.1f},
+                                        ui_root_.get(), *dialog_font_});
 }
 
 GSUITest::~GSUITest() = default;
@@ -51,7 +49,7 @@ void GSUITest::Enter() {
     GSBaseState::Enter();
 
     log_->Info("GSUITest: Loading scene!");
-    //GSBaseState::LoadScene(SCENE_NAME);
+    // GSBaseState::LoadScene(SCENE_NAME);
 
 #if defined(__ANDROID__)
     const char *dialog_name = "assets/scenes/test/test_puzzle.json";
@@ -123,8 +121,8 @@ void GSUITest::OnPostloadScene(JsObjectP &js_scene) {
         }
     }
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir),
-                              Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, max_exposure);
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov,
+                              max_exposure);
 
     {
         char sophia_name[] = "sophia_00";
@@ -149,7 +147,7 @@ void GSUITest::UpdateAnim(const uint64_t dt_us) {
     const float char_period_s = 0.025f;
 
     while (test_time_counter_s > char_period_s) {
-        //word_puzzle_->incr_progress();
+        // word_puzzle_->incr_progress();
         test_time_counter_s -= char_period_s;
     }
 
@@ -165,10 +163,8 @@ void GSUITest::UpdateAnim(const uint64_t dt_us) {
 
             uint32_t mask = CompDrawableBit | CompAnimStateBit;
             if ((sophia->comp_mask & mask) == mask) {
-                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(
-                    sophia->components[CompDrawable]);
-                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(
-                    sophia->components[CompAnimState]);
+                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(sophia->components[CompDrawable]);
+                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(sophia->components[CompAnimState]);
 
                 // keep previous palette for velocity calculation
                 std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -205,8 +201,7 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
-        if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
-            evt.point.y < float(ren_ctx_->h()) * 0.1f) {
+        if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -226,27 +221,24 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
 
     switch (evt.type) {
     case RawInputEv::P1Down: {
-        Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                             Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Press(p, true);
     } break;
     case RawInputEv::P2Down: {
 
     } break;
     case RawInputEv::P1Up: {
-        const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Press(p, false);
     } break;
     case RawInputEv::P2Up: {
 
     } break;
     case RawInputEv::P1Move: {
-        Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                             Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Hover(p);
     } break;
     case RawInputEv::P2Move: {
@@ -257,7 +249,7 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEv::KeyUp: {
         if (evt.key_code == KeyUp || (evt.key_code == KeyW && !cmdline_enabled_)) {
-            //word_puzzle_->restart();
+            // word_puzzle_->restart();
         } else {
             input_processed = false;
         }

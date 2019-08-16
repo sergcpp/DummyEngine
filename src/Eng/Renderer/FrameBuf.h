@@ -9,7 +9,7 @@ struct FrameBuf {
     struct ColorAttachmentDesc {
         Ren::eTexFormat format = Ren::eTexFormat::Undefined;
         Ren::eTexFilter filter = Ren::eTexFilter::NoFilter;
-        Ren::eTexRepeat repeat = Ren::eTexRepeat::Repeat;
+        Ren::eTexWrap wrap = Ren::eTexWrap::Repeat;
         bool attached = true;
     };
 
@@ -18,8 +18,7 @@ struct FrameBuf {
         Ren::eTexFilter filter = Ren::eTexFilter::NoFilter;
 
         DepthAttachmentDesc() = default;
-        DepthAttachmentDesc(Ren::eTexFormat _format, Ren::eTexFilter _filter)
-            : format(_format), filter(_filter) {}
+        DepthAttachmentDesc(Ren::eTexFormat _format, Ren::eTexFilter _filter) : format(_format), filter(_filter) {}
     };
 
 #if defined(USE_GL_RENDER)
@@ -37,11 +36,13 @@ struct FrameBuf {
     Ren::Tex2DRef depth_tex;
     ColorAttachment attachments[4];
     uint32_t attachments_count = 0;
-#endif
+
     FrameBuf() : w(-1), h(-1), fb(0xffffffff), attachments_count(0) {} // NOLINT
-    FrameBuf(const char *name, Ren::Context &ctx, int w, int h,
-             const ColorAttachmentDesc *attachments, int attachments_count,
-             const DepthAttachmentDesc &depth_att, int sample_count, Ren::ILog *log);
+#else
+    FrameBuf() : w(-1), h(-1) {} // NOLINT
+#endif
+    FrameBuf(const char *name, Ren::Context &ctx, int w, int h, const ColorAttachmentDesc *attachments,
+             int attachments_count, const DepthAttachmentDesc &depth_att, int sample_count, Ren::ILog *log);
     ~FrameBuf();
 
     FrameBuf(const FrameBuf &rhs) = delete;

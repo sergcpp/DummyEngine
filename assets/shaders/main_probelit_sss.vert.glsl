@@ -1,12 +1,12 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
-#extension GL_ARB_bindless_texture: enable
 //#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
 
 #include "internal/_vs_common.glsl"
+#include "internal/_texturing.glsl"
 
 /*
 UNIFORM_BLOCKS
@@ -20,7 +20,7 @@ layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs1;
 layout(location = REN_VTX_AUX_LOC) in uint aVertexColorPacked;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = 0, std140)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 #else
 layout (std140)
 #endif
@@ -28,59 +28,40 @@ uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
-layout(location = REN_U_MAT_INDEX_LOC) uniform uint uMaterialIndex;
-layout (location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
+#if defined(VULKAN)
+layout(push_constant) uniform PushConstants {
+    ivec2 uInstanceIndices[REN_MAX_BATCH_SIZE];
+};
+#else
+layout(location = REN_U_INSTANCES_LOC) uniform ivec2 uInstanceIndices[REN_MAX_BATCH_SIZE];
+#endif
 
-layout(binding = REN_INST_BUF_SLOT) uniform highp samplerBuffer instances_buffer;
+layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer instances_buffer;
 
-layout(binding = REN_MATERIALS_SLOT) buffer Materials {
+layout(binding = REN_MATERIALS_SLOT) readonly buffer Materials {
 	MaterialData materials[];
 };
 
-#if defined(GL_ARB_bindless_texture)
-layout(binding = REN_BINDLESS_TEX_SLOT) buffer TextureHandles {
-	uvec2 texture_handles[];
-};
-#endif
-
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) out highp vec3 aVertexPos_;
-layout(location = 1) out mediump vec3 aVertexUVAndCurvature_;
-layout(location = 2) out mediump vec3 aVertexNormal_;
-layout(location = 3) out mediump vec3 aVertexTangent_;
-layout(location = 4) out highp vec3 aVertexShUVs_[4];
-#if defined(GL_ARB_bindless_texture)
-layout(location = 8) out flat uvec2 diff_texture;
-layout(location = 9) out flat uvec2 norm_texture;
-layout(location = 10) out flat uvec2 spec_texture;
-layout(location = 11) out flat uvec2 sss_texture;
-layout(location = 12) out flat uvec2 norm_detail_texture;
-#endif // GL_ARB_bindless_texture
-#else
-out highp vec3 aVertexPos_;
-out mediump vec3 aVertexUVAndCurvature_;
-out mediump vec3 aVertexNormal_;
-out mediump vec3 aVertexTangent_;
-out highp vec3 aVertexShUVs_[4];
-#if defined(GL_ARB_bindless_texture)
-out flat uvec2 diff_texture;
-out flat uvec2 norm_texture;
-out flat uvec2 spec_texture;
-out flat uvec2 sss_texture;
-out flat uvec2 norm_detail_texture;
-#endif // GL_ARB_bindless_texture
-#endif
-
-#ifdef VULKAN
-    #define gl_InstanceID gl_InstanceIndex
-#endif
+LAYOUT(location = 0) out highp vec3 aVertexPos_;
+LAYOUT(location = 1) out mediump vec3 aVertexUVAndCurvature_;
+LAYOUT(location = 2) out mediump vec3 aVertexNormal_;
+LAYOUT(location = 3) out mediump vec3 aVertexTangent_;
+LAYOUT(location = 4) out highp vec3 aVertexShUVs_[4];
+#if defined(BINDLESS_TEXTURES)
+	LAYOUT(location = 8) out flat TEX_HANDLE diff_texture;
+	LAYOUT(location = 9) out flat TEX_HANDLE norm_texture;
+	LAYOUT(location = 10) out flat TEX_HANDLE spec_texture;
+	LAYOUT(location = 11) out flat TEX_HANDLE sss_texture;
+	LAYOUT(location = 12) out flat TEX_HANDLE norm_detail_texture;
+#endif // BINDLESS_TEXTURES
+LAYOUT(location = 13) out flat vec4 material_params;
 
 invariant gl_Position;
 
 void main(void) {
-    int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
+    ivec2 instance = uInstanceIndices[gl_InstanceIndex];
 
-    mat4 model_matrix = FetchModelMatrix(instances_buffer, instance);
+    mat4 model_matrix = FetchModelMatrix(instances_buffer, instance.x);
 
     vec3 vtx_pos_ls = aVertexPosition;
     float vtx_curvature = unpackUnorm4x8(aVertexColorPacked).r;
@@ -108,14 +89,18 @@ void main(void) {
         aVertexShUVs_[i].xy += offsets[i];
     }
     
-#if defined(GL_ARB_bindless_texture)
-	MaterialData mat = materials[uMaterialIndex];
-	diff_texture = texture_handles[mat.texture_indices[0]];
-	norm_texture = texture_handles[mat.texture_indices[1]];
-	spec_texture = texture_handles[mat.texture_indices[2]];
-	sss_texture = texture_handles[mat.texture_indices[3]];
-	norm_detail_texture = texture_handles[mat.texture_indices[4]];
-#endif // GL_ARB_bindless_texture
+	MaterialData mat = materials[instance.y];
+	material_params = mat.params;
+#if defined(BINDLESS_TEXTURES)
+	diff_texture = GET_HANDLE(mat.texture_indices[0]);
+	norm_texture = GET_HANDLE(mat.texture_indices[1]);
+	spec_texture = GET_HANDLE(mat.texture_indices[2]);
+	sss_texture = GET_HANDLE(mat.texture_indices[3]);
+	norm_detail_texture = GET_HANDLE(mat.texture_indices[4]);
+#endif // BINDLESS_TEXTURES
 	
     gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
+#if defined(VULKAN)
+    gl_Position.y = -gl_Position.y;
+#endif
 } 

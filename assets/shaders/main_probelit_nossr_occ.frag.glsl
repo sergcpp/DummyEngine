@@ -2,35 +2,38 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
-#extension GL_ARB_bindless_texture: enable
 //#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+    precision highp float;
     precision mediump sampler2DShadow;
 #endif
 
 #include "internal/_fs_common.glsl"
+#include "internal/_texturing.glsl"
 
 #define LIGHT_ATTEN_CUTOFF 0.004
 
-#if !defined(GL_ARB_bindless_texture)
+#if !defined(BINDLESS_TEXTURES)
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D diff_texture;
 layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D norm_texture;
 layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D spec_texture;
-#endif // GL_ARB_bindless_texture
+#endif // BINDLESS_TEXTURES
 layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow shadow_texture;
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D decals_texture;
 layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D ao_texture;
+layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray env_texture;
 layout(binding = REN_LIGHT_BUF_SLOT) uniform mediump samplerBuffer lights_buffer;
 layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer decals_buffer;
 layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer cells_buffer;
 layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer items_buffer;
+layout(binding = REN_CONE_RT_LUT_SLOT) uniform lowp sampler2D cone_rt_lut;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = 0, std140)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 #else
 layout (std140)
 #endif
@@ -38,31 +41,17 @@ uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in highp vec3 aVertexPos_;
-layout(location = 1) in mediump vec2 aVertexUVs_;
-layout(location = 2) in mediump vec3 aVertexNormal_;
-layout(location = 3) in mediump vec3 aVertexTangent_;
-layout(location = 4) in mediump vec4 aVertexOcclusion_;
-layout(location = 5) in highp vec3 aVertexShUVs_[4];
-#if defined(GL_ARB_bindless_texture)
-layout(location = 9) in flat uvec2 diff_texture;
-layout(location = 10) in flat uvec2 norm_texture;
-layout(location = 11) in flat uvec2 spec_texture;
-#endif // GL_ARB_bindless_texture
-#else
-in highp vec3 aVertexPos_;
-in mediump vec2 aVertexUVs_;
-in mediump vec3 aVertexNormal_;
-in mediump vec3 aVertexTangent_;
-in mediump vec4 aVertexOcclusion_;
-in highp vec3 aVertexShUVs_[4];
-#if defined(GL_ARB_bindless_texture)
-in flat uvec2 diff_texture;
-in flat uvec2 norm_texture;
-in flat uvec2 spec_texture;
-#endif // GL_ARB_bindless_texture
-#endif
+LAYOUT(location = 0) in highp vec3 aVertexPos_;
+LAYOUT(location = 1) in mediump vec2 aVertexUVs_;
+LAYOUT(location = 2) in mediump vec3 aVertexNormal_;
+LAYOUT(location = 3) in mediump vec3 aVertexTangent_;
+LAYOUT(location = 4) in mediump vec4 aVertexOcclusion_;
+LAYOUT(location = 5) in highp vec3 aVertexShUVs_[4];
+#if defined(BINDLESS_TEXTURES)
+	LAYOUT(location = 9) in flat TEX_HANDLE diff_texture;
+	LAYOUT(location = 10) in flat TEX_HANDLE norm_texture;
+	LAYOUT(location = 11) in flat TEX_HANDLE spec_texture;
+#endif // BINDLESS_TEXTURES
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
 layout(location = REN_OUT_NORM_INDEX) out vec4 outNormal;

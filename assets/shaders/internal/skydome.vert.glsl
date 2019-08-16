@@ -6,6 +6,7 @@ UNIFORM_BLOCKS
 */
 
 #include "_vs_common.glsl"
+#include "skydome_interface.glsl"
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = REN_UB_SHARED_DATA_LOC, std140)
@@ -18,17 +19,21 @@ uniform SharedDataBlock {
 
 layout(location = REN_VTX_POS_LOC) in vec3 aVertexPosition;
 
-layout(location = REN_U_M_MATRIX_LOC) uniform mat4 uMMatrix;
-
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) out vec3 aVertexPos_;
+#if defined(VULKAN)
+layout(push_constant) uniform PushConstants {
+    mat4 uMMatrix;
+};
 #else
-out vec3 aVertexPos_;
+layout(location = U_M_MATRIX_LOC) uniform mat4 uMMatrix;
 #endif
+
+LAYOUT(location = 0) out vec3 aVertexPos_;
 
 void main() {
     vec3 vertex_position_ws = (uMMatrix * vec4(aVertexPosition, 1.0)).xyz;
     aVertexPos_ = vertex_position_ws;
-
-    gl_Position = shrd_data.uViewProjMatrix * uMMatrix * vec4(aVertexPosition, 1.0);
+    gl_Position = shrd_data.uViewProjMatrix * vec4(vertex_position_ws, 1.0);
+#if defined(VULKAN)
+    gl_Position.y = -gl_Position.y;
+#endif
 }

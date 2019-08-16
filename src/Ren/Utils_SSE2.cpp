@@ -20,8 +20,7 @@
 
 #define _ABS(x) ((x) < 0 ? -(x) : (x))
 
-void Ren::CopyYChannel_16px(const uint8_t *y_src, const int y_stride, const int w,
-                            const int h, uint8_t *y_dst) {
+void Ren::CopyYChannel_16px(const uint8_t *y_src, const int y_stride, const int w, const int h, uint8_t *y_dst) {
     assert(g_CpuFeatures.sse2_supported);
     auto *py_dst = reinterpret_cast<__m128i *>(y_dst);
 
@@ -33,8 +32,7 @@ void Ren::CopyYChannel_16px(const uint8_t *y_src, const int y_stride, const int 
             for (int y = 0; y < h; ++y) {
                 const auto *py_img = reinterpret_cast<const __m128i *>(y_src);
                 for (int x = 0; x < w / 16; ++x) {
-                    const __m128i y_src_val =
-                        _mm_stream_load_si128(const_cast<__m128i *>(py_img++));
+                    const __m128i y_src_val = _mm_stream_load_si128(const_cast<__m128i *>(py_img++));
                     _mm_stream_si128(py_dst++, y_src_val);
                 }
                 y_src += y_stride;
@@ -54,8 +52,7 @@ void Ren::CopyYChannel_16px(const uint8_t *y_src, const int y_stride, const int 
             for (int y = 0; y < h; ++y) {
                 const auto *py_img = reinterpret_cast<const __m128i *>(y_src);
                 for (int x = 0; x < w / 16; ++x) {
-                    const __m128i y_src_val =
-                        _mm_stream_load_si128(const_cast<__m128i *>(py_img++));
+                    const __m128i y_src_val = _mm_stream_load_si128(const_cast<__m128i *>(py_img++));
                     _mm_storeu_si128(py_dst++, y_src_val);
                 }
                 y_src += y_stride;
@@ -91,13 +88,12 @@ void Ren::CopyYChannel_16px(const uint8_t *y_src, const int y_stride, const int 
     }
 }
 
-void Ren::InterleaveUVChannels_16px(const uint8_t *u_src, const uint8_t *v_src,
-                                    const int u_stride, const int v_stride, const int w,
-                                    const int h, uint8_t *uv_dst) {
+void Ren::InterleaveUVChannels_16px(const uint8_t *u_src, const uint8_t *v_src, const int u_stride, const int v_stride,
+                                    const int w, const int h, uint8_t *uv_dst) {
     auto *puv_dst = reinterpret_cast<__m128i *>(uv_dst);
 
-    const bool is_input_aligned = uintptr_t(u_src) % 16 == 0 && u_stride % 16 == 0 &&
-                                  uintptr_t(v_src) % 16 == 0 && v_stride % 16 == 0;
+    const bool is_input_aligned =
+        uintptr_t(u_src) % 16 == 0 && u_stride % 16 == 0 && uintptr_t(v_src) % 16 == 0 && v_stride % 16 == 0;
     const bool is_output_aligned = uintptr_t(puv_dst) % 16 == 0;
 
     if (is_input_aligned && is_output_aligned) {
@@ -106,10 +102,8 @@ void Ren::InterleaveUVChannels_16px(const uint8_t *u_src, const uint8_t *v_src,
                 const auto *pu_img = reinterpret_cast<const __m128i *>(u_src);
                 const auto *pv_img = reinterpret_cast<const __m128i *>(v_src);
                 for (int x = 0; x < w / 16; ++x) {
-                    const __m128i u_src_val =
-                        _mm_stream_load_si128(const_cast<__m128i *>(pu_img++));
-                    const __m128i v_src_val =
-                        _mm_stream_load_si128(const_cast<__m128i *>(pv_img++));
+                    const __m128i u_src_val = _mm_stream_load_si128(const_cast<__m128i *>(pu_img++));
+                    const __m128i v_src_val = _mm_stream_load_si128(const_cast<__m128i *>(pv_img++));
 
                     const __m128i res0 = _mm_unpacklo_epi8(u_src_val, v_src_val);
                     const __m128i res1 = _mm_unpackhi_epi8(u_src_val, v_src_val);
@@ -144,10 +138,8 @@ void Ren::InterleaveUVChannels_16px(const uint8_t *u_src, const uint8_t *v_src,
                 const auto *pu_img = reinterpret_cast<const __m128i *>(u_src);
                 const auto *pv_img = reinterpret_cast<const __m128i *>(v_src);
                 for (int x = 0; x < w / 16; ++x) {
-                    const __m128i u_src_val =
-                        _mm_stream_load_si128(const_cast<__m128i *>(pu_img++));
-                    const __m128i v_src_val =
-                        _mm_stream_load_si128(const_cast<__m128i *>(pv_img++));
+                    const __m128i u_src_val = _mm_stream_load_si128(const_cast<__m128i *>(pu_img++));
+                    const __m128i v_src_val = _mm_stream_load_si128(const_cast<__m128i *>(pv_img++));
 
                     const __m128i res0 = _mm_unpacklo_epi8(u_src_val, v_src_val);
                     const __m128i res1 = _mm_unpackhi_epi8(u_src_val, v_src_val);
@@ -219,6 +211,8 @@ void Ren::InterleaveUVChannels_16px(const uint8_t *u_src, const uint8_t *v_src,
 
 // https://developer.download.nvidia.com/whitepapers/2007/Real-Time-YCoCg-DXT-Compression/Real-Time%20YCoCg-DXT%20Compression.pdf
 
+// WARNING: Reads 4 bytes outside of block in 3 channels case!
+namespace Ren {
 // clang-format off
 // Copy rgb values and zero out alpha
 static const __m128i RGB_to_RGBA = _mm_set_epi8(-1 /* Insert zero */, 11, 10, 9,
@@ -227,10 +221,7 @@ static const __m128i RGB_to_RGBA = _mm_set_epi8(-1 /* Insert zero */, 11, 10, 9,
     -1 /* Insert zero */, 2, 1, 0);
 // clang-format on
 
-// WARNING: Reads 4 bytes outside of block in 3 channels case!
-namespace Ren {
-template <int Channels>
-void Extract4x4Block_SSSE3(const uint8_t src[], const int stride, uint8_t dst[64]) {
+template <int Channels> void Extract4x4Block_SSSE3(const uint8_t src[], const int stride, uint8_t dst[64]) {
     for (int j = 0; j < 4; j++) {
         __m128i rgba;
         if (Channels == 4) {
@@ -247,16 +238,13 @@ void Extract4x4Block_SSSE3(const uint8_t src[], const int stride, uint8_t dst[64
     }
 }
 
-template void Extract4x4Block_SSSE3<4 /* Channels */>(const uint8_t src[],
-                                                      const int stride, uint8_t dst[64]);
-template void Extract4x4Block_SSSE3<3 /* Channels */>(const uint8_t src[],
-                                                      const int stride, uint8_t dst[64]);
+template void Extract4x4Block_SSSE3<4 /* Channels */>(const uint8_t src[], const int stride, uint8_t dst[64]);
+template void Extract4x4Block_SSSE3<3 /* Channels */>(const uint8_t src[], const int stride, uint8_t dst[64]);
 
 static const __m128i CoCgInsetMul = _mm_set_epi16(1, 2, 2, 2, 1, 2, 2, 2);
 
 template <bool UseAlpha, bool Is_YCoCg>
-void GetMinMaxColorByBBox_SSE2(const uint8_t block[64], uint8_t min_color[4],
-                               uint8_t max_color[4]) {
+void GetMinMaxColorByBBox_SSE2(const uint8_t block[64], uint8_t min_color[4], uint8_t max_color[4]) {
     __m128i min_col = _mm_set1_epi8(-1 /* 255 */);
     __m128i max_col = _mm_set1_epi8(0);
 
@@ -294,12 +282,15 @@ void GetMinMaxColorByBBox_SSE2(const uint8_t block[64], uint8_t min_color[4],
     _mm_storeu_si32(max_color, max_col);
 }
 
-template void GetMinMaxColorByBBox_SSE2<false /* UseAlpha */, false /* Is_YCoCg */>(
-    const uint8_t block[64], uint8_t min_color[4], uint8_t max_color[4]);
-template void GetMinMaxColorByBBox_SSE2<true /* UseAlpha */, false /* Is_YCoCg */>(
-    const uint8_t block[64], uint8_t min_color[4], uint8_t max_color[4]);
-template void GetMinMaxColorByBBox_SSE2<true /* UseAlpha */, true /* Is_YCoCg */>(
-    const uint8_t block[64], uint8_t min_color[4], uint8_t max_color[4]);
+template void GetMinMaxColorByBBox_SSE2<false /* UseAlpha */, false /* Is_YCoCg */>(const uint8_t block[64],
+                                                                                    uint8_t min_color[4],
+                                                                                    uint8_t max_color[4]);
+template void GetMinMaxColorByBBox_SSE2<true /* UseAlpha */, false /* Is_YCoCg */>(const uint8_t block[64],
+                                                                                   uint8_t min_color[4],
+                                                                                   uint8_t max_color[4]);
+template void GetMinMaxColorByBBox_SSE2<true /* UseAlpha */, true /* Is_YCoCg */>(const uint8_t block[64],
+                                                                                  uint8_t min_color[4],
+                                                                                  uint8_t max_color[4]);
 
 static const __m128i YCoCgScaleBias =
     _mm_set_epi8(0, 0, -128, -128, 0, 0, -128, -128, 0, 0, -128, -128, 0, 0, -128, -128);
@@ -333,9 +324,8 @@ void ScaleYCoCg_SSE2(uint8_t block[64], uint8_t min_color[3], uint8_t max_color[
 
     const __m128i _scale = _mm_set_epi16(1, scale, 1, scale, 1, scale, 1, scale);
 
-    const __m128i _mask = _mm_set_epi8(-1, -1, ~(scale - 1), ~(scale - 1), -1, -1,
-                                       ~(scale - 1), ~(scale - 1), -1, -1, ~(scale - 1),
-                                       ~(scale - 1), -1, -1, ~(scale - 1), ~(scale - 1));
+    const __m128i _mask = _mm_set_epi8(-1, -1, ~(scale - 1), ~(scale - 1), -1, -1, ~(scale - 1), ~(scale - 1), -1, -1,
+                                       ~(scale - 1), ~(scale - 1), -1, -1, ~(scale - 1), ~(scale - 1));
 
     auto *_4px_lines = reinterpret_cast<__m128i *>(block);
 
@@ -354,23 +344,21 @@ void ScaleYCoCg_SSE2(uint8_t block[64], uint8_t min_color[3], uint8_t max_color[
 static const int InsetColorShift = 4;
 static const int InsetAlphaShift = 5;
 
-static const __m128i InsetYCoCgRound = _mm_set_epi16(
-    0, 0, 0, 0, (1 << (InsetAlphaShift - 1)) - 1, (1 << (InsetColorShift - 1)) - 1,
-    (1 << (InsetColorShift - 1)) - 1, (1 << (InsetColorShift - 1)) - 1);
+static const __m128i InsetYCoCgRound =
+    _mm_set_epi16(0, 0, 0, 0, (1 << (InsetAlphaShift - 1)) - 1, (1 << (InsetColorShift - 1)) - 1,
+                  (1 << (InsetColorShift - 1)) - 1, (1 << (InsetColorShift - 1)) - 1);
 static const __m128i InsetYCoCgMask = _mm_set_epi16(-1, 0, -1, -1, -1, 0, -1, -1);
 
 static const __m128i InsetShiftUp =
-    _mm_set_epi16(0, 0, 0, 0, 1 << InsetAlphaShift, 1 << InsetColorShift,
-                  1 << InsetColorShift, 1 << InsetColorShift);
+    _mm_set_epi16(0, 0, 0, 0, 1 << InsetAlphaShift, 1 << InsetColorShift, 1 << InsetColorShift, 1 << InsetColorShift);
 static const __m128i InsetShiftDown =
-    _mm_set_epi16(0, 0, 0, 0, 1 << (16 - InsetAlphaShift), 1 << (16 - InsetColorShift),
-                  1 << (16 - InsetColorShift), 1 << (16 - InsetColorShift));
+    _mm_set_epi16(0, 0, 0, 0, 1 << (16 - InsetAlphaShift), 1 << (16 - InsetColorShift), 1 << (16 - InsetColorShift),
+                  1 << (16 - InsetColorShift));
 
-static const __m128i Inset565Mask = _mm_set_epi16(
-    0xff, 0b11111000, 0b11111100, 0b11111000, 0xff, 0b11111000, 0b11111100, 0b11111000);
+static const __m128i Inset565Mask =
+    _mm_set_epi16(0xff, 0b11111000, 0b11111100, 0b11111000, 0xff, 0b11111000, 0b11111100, 0b11111000);
 static const __m128i Inset565Rep =
-    _mm_set_epi16(0, 1 << (16 - 5), 1 << (16 - 6), 1 << (16 - 5), 0, 1 << (16 - 5),
-                  1 << (16 - 6), 1 << (16 - 5));
+    _mm_set_epi16(0, 1 << (16 - 5), 1 << (16 - 6), 1 << (16 - 5), 0, 1 << (16 - 5), 1 << (16 - 6), 1 << (16 - 5));
 
 void InsetYCoCgBBox_SSE2(uint8_t min_color[4], uint8_t max_color[4]) {
     __m128i min_col, max_col;
@@ -414,16 +402,14 @@ void InsetYCoCgBBox_SSE2(uint8_t min_color[4], uint8_t max_color[4]) {
 }
 
 static const __m128i CoCgMask = _mm_set_epi16(0, -1, 0, -1, 0, -1, 0, -1);
-static const __m128i CoCgDiagonalMask =
-    _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0);
+static const __m128i CoCgDiagonalMask = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0);
 
 static const __m128i Zeroes_128 = _mm_setzero_si128();
 static const __m128i Ones_i16 = _mm_set1_epi16(1);
 static const __m128i Twos_i16 = _mm_set1_epi16(2);
 static const __m128i Eights_i16 = _mm_set1_epi16(8);
 
-void SelectYCoCgDiagonal_SSE2(const uint8_t block[64], uint8_t min_color[3],
-                              uint8_t max_color[3]) {
+void SelectYCoCgDiagonal_SSE2(const uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3]) {
     // load block
     __m128i line0 = _mm_load_si128(reinterpret_cast<const __m128i *>(block));
     __m128i line1 = _mm_load_si128(reinterpret_cast<const __m128i *>(block + 16));
@@ -477,19 +463,19 @@ void SelectYCoCgDiagonal_SSE2(const uint8_t block[64], uint8_t min_color[3],
     _mm_storeu_si32(max_color, max_col);
 }
 
-static const __m128i RGBMask =
-    _mm_set_epi8(0, 0, 0, 0, 0, -1, -1, -1, 0, 0, 0, 0, 0, -1, -1, -1);
+static const __m128i RGB565Mask = _mm_set_epi8(0, 0, 0, 0, 0, char(0b11111000), char(0b11111100), char(0b11111000), 0,
+                                               0, 0, 0, 0, char(0b11111000), char(0b11111100), char(0b11111000));
 // multiplier used to emulate division by 3
 static const __m128i DivBy3_i16 = _mm_set1_epi16((1 << 16) / 3 + 1);
 
-void EmitColorIndices_SSE2(const uint8_t block[64], const uint8_t min_color[4],
-                           const uint8_t max_color[4], uint8_t *&out_data) {
+void EmitColorIndices_SSE2(const uint8_t block[64], const uint8_t min_color[4], const uint8_t max_color[4],
+                           uint8_t *&out_data) {
     __m128i result = _mm_setzero_si128();
 
     // Find 4 colors on the line through min - max color
     // compute color0 (max_color)
     __m128i color0 = _mm_loadu_si32(max_color);
-    color0 = _mm_and_si128(color0, RGBMask);
+    color0 = _mm_and_si128(color0, RGB565Mask);
     color0 = _mm_unpacklo_epi8(color0, _mm_setzero_si128());
     __m128i rb = _mm_shufflelo_epi16(color0, _MM_SHUFFLE(3, 2, 3, 0));
     __m128i g = _mm_shufflelo_epi16(color0, _MM_SHUFFLE(3, 3, 1, 3));
@@ -500,7 +486,7 @@ void EmitColorIndices_SSE2(const uint8_t block[64], const uint8_t min_color[4],
 
     // compute color1 (min_color)
     __m128i color1 = _mm_loadu_si32(min_color);
-    color1 = _mm_and_si128(color1, RGBMask);
+    color1 = _mm_and_si128(color1, RGB565Mask);
     color1 = _mm_unpacklo_epi8(color1, _mm_setzero_si128());
     rb = _mm_shufflelo_epi16(color1, _MM_SHUFFLE(3, 2, 3, 0));
     g = _mm_shufflelo_epi16(color1, _MM_SHUFFLE(3, 3, 1, 3));
@@ -637,8 +623,8 @@ static const __m128i AlphaMask5 = _mm_setr_epi32(7 << 15, 0, 7 << 15, 0);
 static const __m128i AlphaMask6 = _mm_setr_epi32(7 << 18, 0, 7 << 18, 0);
 static const __m128i AlphaMask7 = _mm_setr_epi32(7 << 21, 0, 7 << 21, 0);
 
-void EmitAlphaIndices_SSE2(const uint8_t block[64], const uint8_t min_alpha,
-                           const uint8_t max_alpha, uint8_t *&out_data) {
+void EmitAlphaIndices_SSE2(const uint8_t block[64], const uint8_t min_alpha, const uint8_t max_alpha,
+                           uint8_t *&out_data) {
     __m128i line0 = _mm_load_si128(reinterpret_cast<const __m128i *>(block));
     __m128i line1 = _mm_load_si128(reinterpret_cast<const __m128i *>(block + 16));
     __m128i line2 = _mm_load_si128(reinterpret_cast<const __m128i *>(block + 32));

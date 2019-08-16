@@ -5,9 +5,9 @@
 void test_var() {
     using namespace Net;
 
-    {   // Var test1
-        Var<int> v1 = { "V1" };
-        Var<int> v2 = { "V2" };
+    { // Var test1
+        Var<int> v1 = {"V1"};
+        Var<int> v2 = {"V2"};
 
         v1 = 12;
         v2 = 12;
@@ -17,9 +17,9 @@ void test_var() {
         assert(v1.hash() != v2.hash());
     }
 
-    {   // Var test2
-        Var<int> v1 = { "VAR" };
-        Var<int> v2 = { "VAR" };
+    { // Var test2
+        Var<int> v1 = {"VAR"};
+        Var<int> v2 = {"VAR"};
 
         v1 = 13;
         v2 = 12;
@@ -28,7 +28,7 @@ void test_var() {
         assert(v1.hash() == v2.hash());
     }
 
-    {   // Var test3
+    { // Var test3
         struct S1 {
             int a, b, c;
             float f;
@@ -39,8 +39,8 @@ void test_var() {
             double dd;
         };
 
-        Var<S1> v1 = { "VAR" };
-        Var<S2> v2 = { "VAR" };
+        Var<S1> v1 = {"VAR"};
+        Var<S2> v2 = {"VAR"};
 
         v1 = {1, 2, 3, 5.13f};
         v2 = {11.1f, 12.2f, 10.0};
@@ -49,14 +49,18 @@ void test_var() {
         assert(v2.dd == 10.0);
     }
 
-    {   // VarContainer save/load test
-        struct S1 { float x; short s; double d; };
+    { // VarContainer save/load test
+        struct S1 {
+            float x;
+            short s;
+            double d;
+        };
         std::vector<unsigned char> pack;
-        Net::Var<int> v1 = { "V1", 12 };
-        Net::Var<int> v2 = { "V2", 13 };
-        Net::Var<float> v3 = { "V3", 25.251f };
-        Net::Var<S1> v4 = { "V4" };
-        v4 = { 4.5f, 11, 5.6 };
+        Net::Var<int> v1 = {"V1", 12};
+        Net::Var<int> v2 = {"V2", 13};
+        Net::Var<float> v3 = {"V3", 25.251f};
+        Net::Var<S1> v4 = {"V4"};
+        v4 = {4.5f, 11, 5.6};
 
         {
             VarContainer cnt;
@@ -68,14 +72,14 @@ void test_var() {
 
             assert(cnt.size() == 4);
             pack = cnt.Pack();
-            assert(pack.size() == sizeof(VarContainer::int_type) * 2 + 2 * 4 * sizeof(VarContainer::int_type) + 2 * sizeof(int) +
-                                          sizeof(float) + sizeof(S1));
+            assert(pack.size() == sizeof(VarContainer::int_type) * 2 + 2 * 4 * sizeof(VarContainer::int_type) +
+                                      2 * sizeof(int) + sizeof(float) + sizeof(S1));
         }
 
         v1 = 11;
         v2 = 14;
         v3 = 15.044f;
-        v4 = { -4.5f, -11, -5.6 };
+        v4 = {-4.5f, -11, -5.6};
         assert(v1 == 11);
         assert(v2 == 14);
         assert(v3 == 15.044f);
@@ -96,11 +100,11 @@ void test_var() {
         assert(v4.d == 5.6);
     }
 
-    {   // VarContainer update test
+    { // VarContainer update test
         std::vector<unsigned char> pack;
-        Var<int> v1 = { "V1", 12 };
-        Var<int> v2 = { "V2", 13 };
-        Var<float> v3 = { "V3", 25.251f };
+        Var<int> v1 = {"V1", 12};
+        Var<int> v2 = {"V2", 13};
+        Var<float> v3 = {"V3", 25.251f};
         {
             Net::VarContainer cnt;
 
@@ -139,15 +143,19 @@ void test_var() {
         assert(v3 == 15.044f);
     }
 
-    {   // VarContainer nested test
+    { // VarContainer nested test
         VarContainer cnt;
         Var<VarContainer> c1("CONT1"), c2("CONT2");
-        struct S1 { float x; short s; double d; };
-        Var<int> v1 = { "V1", 12 };
-        Var<int> v2 = { "V2", 14 };
-        Var<float> v3 = { "V3", 25.251f };
-        Var<S1> v4 = { "V4" };
-        v4 = { 4.5f, 11, 5.6 };
+        struct S1 {
+            float x;
+            short s;
+            double d;
+        };
+        Var<int> v1 = {"V1", 12};
+        Var<int> v2 = {"V2", 14};
+        Var<float> v3 = {"V3", 25.251f};
+        Var<S1> v4 = {"V4"};
+        v4 = {4.5f, 11, 5.6};
 
         c1.SaveVar(v1);
         c1.SaveVar(v2);
@@ -195,7 +203,7 @@ void test_var() {
         assert(v4.d == 5.6);
     }
 
-    {   // VarContainer large struct
+    { // VarContainer large struct
         struct SomeLargeGameState {
             char data[5000];
             int number;
@@ -204,22 +212,22 @@ void test_var() {
         state.number = 178;
 
         Net::VarContainer cnt;
-        Net::Var<SomeLargeGameState> s1 = { "Variable", state };
+        Net::Var<SomeLargeGameState> s1 = {"Variable", state};
         assert(s1.number == state.number);
         cnt.SaveVar(s1);
 
-        Net::Var<SomeLargeGameState> s2 = { "Variable", state };
+        Net::Var<SomeLargeGameState> s2 = {"Variable", state};
         cnt.LoadVar(s2);
         assert(s2.number == state.number);
     }
 
-    {   // VarContainer string
+    { // VarContainer string
         Net::VarContainer cnt;
 
-        Net::Var<std::string> s1 = { "String", "qwe" };
+        Net::Var<std::string> s1 = {"String", "qwe"};
         cnt.SaveVar(s1);
 
-        Net::Var<std::string> s2 = { "String" };
+        Net::Var<std::string> s2 = {"String"};
         cnt.LoadVar(s2);
 
         assert(s1 == s2);

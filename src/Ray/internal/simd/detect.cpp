@@ -32,7 +32,7 @@ inline unsigned long long _xgetbv(unsigned int index) {
 inline void cpuid(int info[4], int InfoType) {
     __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
 }
-#if defined(__GNUC__) && (__GNUC__ < 9)
+#if defined(__GNUC__) && (__GNUC__ < 9) && !defined(__APPLE__)
 inline unsigned long long _xgetbv(unsigned int index) {
     unsigned int eax, edx;
     __asm__ __volatile__(
@@ -73,7 +73,7 @@ Ray::CpuFeatures Ray::GetCpuFeatures() {
             os_saves_YMM = (xcr_feature_mask & 0x6) != 0;
         }
 
-        bool cpu_FMA_support = (info[3] & ((int)1 << 12)) != 0;
+        bool cpu_FMA_support = (info[2] & ((int)1 << 12)) != 0;
 
         bool cpu_AVX_support = (info[2] & (1 << 28)) != 0;
         ret.avx_supported = os_saves_YMM && cpu_AVX_support;

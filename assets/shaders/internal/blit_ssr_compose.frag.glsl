@@ -3,11 +3,13 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision highp float;
 #endif
 
 #include "_fs_common.glsl"
+#include "blit_ssr_compose_interface.glsl"
 
 /*
 UNIFORM_BLOCKS
@@ -101,7 +103,12 @@ void main() {
     vec2 brdf;
 
     {   // apply cubemap contribution
-        vec4 ray_origin_cs = vec4(2.0 * vec3(aVertexUVs_.xy, depth) - 1.0, 1.0);
+#if defined(VULKAN)
+		vec4 ray_origin_cs = vec4(2.0 * aVertexUVs_.xy - 1.0, depth, 1.0);
+		ray_origin_cs.y = -ray_origin_cs.y;
+#else // VULKAN
+		vec4 ray_origin_cs = vec4(2.0 * vec3(aVertexUVs_.xy, depth) - 1.0, 1.0);	
+#endif // VULKAN
 
         vec4 ray_origin_vs = shrd_data.uInvProjMatrix * ray_origin_cs;
         ray_origin_vs /= ray_origin_vs.w;

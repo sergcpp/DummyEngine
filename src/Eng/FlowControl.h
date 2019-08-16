@@ -19,7 +19,7 @@ public:
 
     void Update(float dt_s, float rtt, Ren::ILog *log);
 
-    inline unsigned int send_period() {
+    unsigned int send_period() {
         return mode_ == Good ? good_delta_ : bad_delta_;
     }
 };

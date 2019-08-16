@@ -35,7 +35,7 @@ inline unsigned long long _xgetbv(unsigned int index) {
 inline void cpuid(int info[4], int InfoType) {
     __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
 }
-#if defined(__GNUC__) && (__GNUC__ < 9)
+#if defined(__GNUC__) && (__GNUC__ < 9) && !defined(__APPLE__)
 inline unsigned long long _xgetbv(unsigned int index) {
     unsigned int eax, edx;
     __asm__ __volatile__(
@@ -118,6 +118,7 @@ void swCPUInfoInit(SWcpu_info *info) {
     memcpy(vendor + 8, &CPUInfo[3], 4); // copy EDX
     vendor[12] = '\0';
 #elif !defined(__ANDROID__)
+#if !defined(__APPLE__)
     struct sysinfo mem_info;
     sysinfo(&mem_info);
     long long total_virtual_mem = (long long)mem_info.totalram;
@@ -152,6 +153,9 @@ void swCPUInfoInit(SWcpu_info *info) {
     }
     free(arg);
     fclose(cpuinfo);
+#else // __APPLE__
+    info->physical_memory = 0.0f;
+#endif
 #endif
 
 #if !defined(__ANDROID__)
@@ -179,7 +183,7 @@ void swCPUInfoInit(SWcpu_info *info) {
             os_saves_YMM = (xcr_feature_mask & 0x6) != 0;
         }
 
-        int cpu_FMA_support = (cpu_info[3] & ((int)1 << 12)) != 0;
+        int cpu_FMA_support = (cpu_info[2] & ((int)1 << 12)) != 0;
 
         int cpu_AVX_support = (cpu_info[2] & (1 << 28)) != 0;
         info->avx_supported = os_saves_YMM && cpu_AVX_support;

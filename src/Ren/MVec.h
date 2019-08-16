@@ -30,13 +30,10 @@ template <typename T, int N> class Vec {
     }
 
     template <typename... Tail>
-    force_inline explicit Vec(
-        typename std::enable_if<sizeof...(Tail) + 1 == N, T>::type head,
-        Tail... tail) noexcept
+    force_inline explicit Vec(typename std::enable_if<sizeof...(Tail) + 1 == N, T>::type head, Tail... tail) noexcept
         : data_{head, T(tail)...} {}
 
-    template <typename S, int M>
-    force_inline explicit Vec(const Vec<S, M> &rhs) noexcept {
+    template <typename S, int M> force_inline explicit Vec(const Vec<S, M> &rhs) noexcept {
         const int count = N < M ? N : M;
         for (int i = 0; i < count; i++) {
             data_[i] = (T)rhs[i];
@@ -181,13 +178,11 @@ template <typename T, int N> class Vec {
     }
 };
 
-template <typename T, int N>
-force_inline bool operator!=(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
-    return !(lhs == rhs);
+template <typename T, int N> force_inline bool operator!=(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
+    return !operator==(lhs, rhs);
 }
 
-template <typename T, int N>
-force_inline T Dot(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
+template <typename T, int N> force_inline T Dot(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
     T res = lhs[0] * rhs[0];
     for (int i = 1; i < N; i++) {
         res += lhs[i] * rhs[i];
@@ -195,28 +190,21 @@ force_inline T Dot(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
     return res;
 }
 
-template <typename T>
-force_inline Vec<T, 3> Cross(const Vec<T, 3> &lhs, const Vec<T, 3> &rhs) {
+template <typename T> force_inline Vec<T, 3> Cross(const Vec<T, 3> &lhs, const Vec<T, 3> &rhs) {
     return Vec<T, 3>{lhs[1] * rhs[2] - lhs[2] * rhs[1], lhs[2] * rhs[0] - lhs[0] * rhs[2],
                      lhs[0] * rhs[1] - lhs[1] * rhs[0]};
 }
 
-template <typename T, int N> force_inline T Length(const Vec<T, N> &v) {
-    return std::sqrt(Dot(v, v));
-}
+template <typename T, int N> force_inline T Length(const Vec<T, N> &v) { return std::sqrt(Dot(v, v)); }
 
-template <typename T, int N> force_inline T Length2(const Vec<T, N> &v) {
-    return Dot(v, v);
-}
+template <typename T, int N> force_inline T Length2(const Vec<T, N> &v) { return Dot(v, v); }
 
-template <typename T, int N>
-force_inline T Distance(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
+template <typename T, int N> force_inline T Distance(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
     Vec<T, N> temp = lhs - rhs;
     return std::sqrt(Dot(temp, temp));
 }
 
-template <typename T, int N>
-force_inline T Distance2(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
+template <typename T, int N> force_inline T Distance2(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
     Vec<T, N> temp = lhs - rhs;
     return Dot(temp, temp);
 }
@@ -226,8 +214,7 @@ template <typename T, int N> force_inline Vec<T, N> Normalize(const Vec<T, N> &v
     return v / len;
 }
 
-template <typename T, int N>
-force_inline Vec<T, N> Min(const Vec<T, N> &v1, const Vec<T, N> &v2) {
+template <typename T, int N> force_inline Vec<T, N> Min(const Vec<T, N> &v1, const Vec<T, N> &v2) {
     Vec<T, N> ret(Uninitialize);
     for (int i = 0; i < N; i++) {
         ret[i] = v1[i] < v2[i] ? v1[i] : v2[i];
@@ -251,9 +238,7 @@ template <typename T, int N> force_inline Vec<T, N> Min(const T v1, const Vec<T,
     return ret;
 }
 
-template <typename T> force_inline T Min(const T v1, const T v2) {
-    return v1 < v2 ? v1 : v2;
-}
+template <typename T> force_inline T Min(const T v1, const T v2) { return v1 < v2 ? v1 : v2; }
 
 template <typename T, int N> force_inline Vec<T, N> Abs(const Vec<T, N> &v) {
     Vec<T, N> ret(Uninitialize);
@@ -263,8 +248,7 @@ template <typename T, int N> force_inline Vec<T, N> Abs(const Vec<T, N> &v) {
     return ret;
 }
 
-template <typename T, int N>
-force_inline Vec<T, N> Max(const Vec<T, N> &v1, const Vec<T, N> &v2) {
+template <typename T, int N> force_inline Vec<T, N> Max(const Vec<T, N> &v1, const Vec<T, N> &v2) {
     Vec<T, N> ret(Uninitialize);
     for (int i = 0; i < N; i++) {
         ret[i] = v1[i] < v2[i] ? v2[i] : v1[i];
@@ -288,12 +272,9 @@ template <typename T, int N> force_inline Vec<T, N> Max(const T v1, const Vec<T,
     return ret;
 }
 
-template <typename T> force_inline T Max(const T v1, const T v2) {
-    return v1 < v2 ? v2 : v1;
-}
+template <typename T> force_inline T Max(const T v1, const T v2) { return v1 < v2 ? v2 : v1; }
 
-template <typename T, typename U>
-force_inline T Clamp(const T &v1, const U min_val, const U max_val) {
+template <typename T, typename U> force_inline T Clamp(const T &v1, const U min_val, const U max_val) {
     return Min(Max(v1, min_val), max_val);
 }
 
@@ -327,13 +308,11 @@ template <typename T, int N> force_inline Vec<T, N> Fract(const Vec<T, N> &v) {
     return ret;
 }
 
-template <typename T, int N>
-force_inline Vec<T, N> Mod(const Vec<T, N> &x, const Vec<T, N> &y) {
+template <typename T, int N> force_inline Vec<T, N> Mod(const Vec<T, N> &x, const Vec<T, N> &y) {
     return x - y * Floor(x / y);
 }
 
-template <typename T, int N>
-force_inline Vec<T, N> Step(const Vec<T, N> &x, const Vec<T, N> &edge) {
+template <typename T, int N> force_inline Vec<T, N> Step(const Vec<T, N> &x, const Vec<T, N> &edge) {
     Vec<T, N> ret;
     for (int i = 0; i < N; i++) {
         ret[i] = x[i] < edge[i] ? 0.0f : 1.0f;
@@ -341,23 +320,13 @@ force_inline Vec<T, N> Step(const Vec<T, N> &x, const Vec<T, N> &edge) {
     return ret;
 }
 
-template <typename T, int N> force_inline const T *ValuePtr(const Vec<T, N> &v) {
-    return &v[0];
-}
+template <typename T, int N> force_inline const T *ValuePtr(const Vec<T, N> &v) { return &v[0]; }
 
-template <typename T, int N> force_inline const T *ValuePtr(const Vec<T, N> *v) {
-    return &(*v)[0];
-}
+template <typename T, int N> force_inline const T *ValuePtr(const Vec<T, N> *v) { return &(*v)[0]; }
 
-template <typename T> force_inline Vec<T, 2> MakeVec2(const T *v) {
-    return Vec<T, 2>(v[0], v[1]);
-}
-template <typename T> force_inline Vec<T, 3> MakeVec3(const T *v) {
-    return Vec<T, 3>(v[0], v[1], v[2]);
-}
-template <typename T> force_inline Vec<T, 4> MakeVec4(const T *v) {
-    return Vec<T, 4>(v[0], v[1], v[2], v[3]);
-}
+template <typename T> force_inline Vec<T, 2> MakeVec2(const T *v) { return Vec<T, 2>(v[0], v[1]); }
+template <typename T> force_inline Vec<T, 3> MakeVec3(const T *v) { return Vec<T, 3>(v[0], v[1], v[2]); }
+template <typename T> force_inline Vec<T, 4> MakeVec4(const T *v) { return Vec<T, 4>(v[0], v[1], v[2], v[3]); }
 
 using Vec2i = Vec<int32_t, 2>;
 using Vec3i = Vec<int32_t, 3>;

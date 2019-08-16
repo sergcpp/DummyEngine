@@ -15,8 +15,8 @@ def main():
     archs = [ "arm64-v8a" ]
     #archs = [ "x86_64" ]
     
-    cmake_bin = os.path.join(ANDROID_CMAKE, 'bin', 'cmake');
-    ninja_bin = os.path.join(ANDROID_CMAKE, 'bin', 'ninja');
+    cmake_bin = os.path.join(ANDROID_CMAKE, 'bin', 'cmake')
+    ninja_bin = os.path.join(ANDROID_CMAKE, 'bin', 'ninja')
     cmake_toolchain = os.path.join(NDK_ROOT, 'build', 'cmake', 'android.toolchain.cmake')
 
     #base_cmake_cmd = cmake_bin + ' -G"Android Gradle - Ninja" .. -DANDROID_NDK="' + NDK_ROOT + '" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MAKE_PROGRAM="' + ninja_bin + '" -DCMAKE_TOOLCHAIN_FILE="' + cmake_toolchain + '" -DANDROID_NATIVE_API_LEVEL=9 -DANDROID_PLATFORM=android-24 -DANDROID_STL=c++_static -DANDROID_CPP_FEATURES="rtti exceptions" -DANDROID_TOOLCHAIN=clang '
@@ -25,7 +25,7 @@ def main():
     # -DANDROID_ABI=armeabi-v7a
     
     # prepare assets
-    app_bin = os.path.join(os.path.curdir, 'DummyApp');
+    app_bin = os.path.join(os.path.curdir, 'DummyAppGL')
     os.system(app_bin + ' --prepare_assets android --norun')
     
     # build native part

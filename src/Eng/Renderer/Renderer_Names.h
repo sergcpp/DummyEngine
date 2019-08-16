@@ -26,7 +26,8 @@ const char RESOLVED_COLOR_TEX[] = "Resolved Color";
 const char DEPTH_DOWN_2X_TEX[] = "Depth Down 2x";
 const char DEPTH_DOWN_4X_TEX[] = "Depth Down 4x";
 
-const char SSAO_TEX[] = "SSAO RES";
+const char SSAO_RAW[] = "SSAO RAW";
+const char SSAO_RES[] = "SSAO RES";
 
 const char BLUR_RES_TEX[] = "BLUR RES";
 

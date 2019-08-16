@@ -2,27 +2,28 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
-#extension GL_ARB_bindless_texture: enable
 //#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
 
-#ifdef GL_ES
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
     precision mediump float;
     precision mediump sampler2DShadow;
 #endif
 
 #include "internal/_fs_common.glsl"
+#include "internal/_texturing.glsl"
 
 #define LIGHT_ATTEN_CUTOFF 0.004
 
-#if !defined(GL_ARB_bindless_texture)
+#if !defined(BINDLESS_TEXTURES)
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D mat0_texture;
 layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D mat1_texture;
-#endif // GL_ARB_bindless_texture
+#endif // BINDLESS_TEXTURES
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = 0, std140)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 #else
 layout (std140)
 #endif
@@ -30,19 +31,11 @@ uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 4) in vec2 aVertexUVs1_;
-#if defined(GL_ARB_bindless_texture)
-layout(location = 8) in flat uvec2 mat0_texture;
-layout(location = 9) in flat uvec2 mat1_texture;
-#endif // GL_ARB_bindless_texture
-#else
-in vec2 aVertexUVs1_;
-#if defined(GL_ARB_bindless_texture)
-in flat uvec2 mat0_texture;
-in flat uvec2 mat1_texture;
-#endif // GL_ARB_bindless_texture
-#endif
+LAYOUT(location = 4) in vec2 aVertexUVs1_;
+#if defined(BINDLESS_TEXTURES)
+	LAYOUT(location = 8) in flat TEX_HANDLE mat0_texture;
+	LAYOUT(location = 9) in flat TEX_HANDLE mat1_texture;
+#endif // BINDLESS_TEXTURES
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
 layout(location = REN_OUT_NORM_INDEX) out vec4 outNormal;

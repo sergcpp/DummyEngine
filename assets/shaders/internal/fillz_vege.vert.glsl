@@ -1,8 +1,8 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
-#extension GL_ARB_bindless_texture: enable
 
 #include "_vs_common.glsl"
+#include "_texturing.glsl"
 
 /*
 UNIFORM_BLOCKS
@@ -10,9 +10,9 @@ UNIFORM_BLOCKS
 PERM @TRANSPARENT_PERM
 PERM @MOVING_PERM
 PERM @OUTPUT_VELOCITY
-PERM @TRANSPARENT_PERM;OUTPUT_VELOCITY
-PERM @OUTPUT_VELOCITY;MOVING_PERM
-PERM @TRANSPARENT_PERM;OUTPUT_VELOCITY;MOVING_PERM
+PERM @OUTPUT_VELOCITY;TRANSPARENT_PERM
+PERM @MOVING_PERM;OUTPUT_VELOCITY
+PERM @MOVING_PERM;OUTPUT_VELOCITY;TRANSPARENT_PERM
 */
 
 layout(location = REN_VTX_POS_LOC) in vec3 aVertexPosition;
@@ -30,59 +30,47 @@ uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
-layout(binding = REN_INST_BUF_SLOT) uniform mediump samplerBuffer instances_buffer;
+layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer instances_buffer;
 layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D noise_texture;
 
-layout(location = REN_U_MAT_INDEX_LOC) uniform uint uMaterialIndex;
-layout(location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
+#if defined(VULKAN)
+layout(push_constant) uniform PushConstants {
+    ivec2 uInstanceIndices[REN_MAX_BATCH_SIZE];
+};
+#else
+layout(location = REN_U_INSTANCES_LOC) uniform ivec2 uInstanceIndices[REN_MAX_BATCH_SIZE];
+#endif
 
-layout(binding = REN_MATERIALS_SLOT) buffer Materials {
+layout(binding = REN_MATERIALS_SLOT) readonly buffer Materials {
 	MaterialData materials[];
 };
 
-#if defined(GL_ARB_bindless_texture)
-layout(binding = REN_BINDLESS_TEX_SLOT) buffer TextureHandles {
-	uvec2 texture_handles[];
-};
-#endif
-
-#if defined(VULKAN) || defined(GL_SPIRV)
-    #ifdef TRANSPARENT_PERM
-    layout(location = 0) out vec2 aVertexUVs1_;
-    #endif
-    #ifdef OUTPUT_VELOCITY
-    layout(location = 2) out vec3 aVertexCSCurr_;
-    layout(location = 3) out vec3 aVertexCSPrev_;
-    #endif
-	#if defined(GL_ARB_bindless_texture)
-	layout(location = 4) out flat uvec2 alpha_texture;
-	#endif // GL_ARB_bindless_texture
-#else
-    #ifdef TRANSPARENT_PERM
-    out vec2 aVertexUVs1_;
-    #endif
-    #ifdef OUTPUT_VELOCITY
-    out vec3 aVertexCSCurr_;
-    out vec3 aVertexCSPrev_;
-    #endif
-	#if defined(GL_ARB_bindless_texture)
-	out flat uvec2 alpha_texture;
-	#endif // GL_ARB_bindless_texture
-#endif
+#ifdef OUTPUT_VELOCITY
+	LAYOUT(location = 0) out vec3 aVertexCSCurr_;
+	LAYOUT(location = 1) out vec3 aVertexCSPrev_;
+#endif // OUTPUT_VELOCITY
+#ifdef TRANSPARENT_PERM
+	LAYOUT(location = 2) out vec2 aVertexUVs1_;
+	#ifdef HASHED_TRANSPARENCY
+		LAYOUT(location = 3) out vec3 aVertexObjCoord_;
+	#endif // HASHED_TRANSPARENCY
+	#if defined(BINDLESS_TEXTURES)
+		LAYOUT(location = 4) out flat TEX_HANDLE alpha_texture;
+	#endif // BINDLESS_TEXTURES
+#endif // TRANSPARENT_PERM
 
 invariant gl_Position;
 
 void main() {
-    int instance_curr = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
-    mat4 model_matrix_curr = FetchModelMatrix(instances_buffer, instance_curr);
+    ivec2 instance = uInstanceIndices[gl_InstanceIndex];
+    mat4 model_matrix_curr = FetchModelMatrix(instances_buffer, instance.x);
 
 #ifdef MOVING_PERM
-    int instance_prev = instance_curr + 1;
-    mat4 model_matrix_prev = FetchModelMatrix(instances_buffer, instance_prev);
+    mat4 model_matrix_prev = FetchModelMatrix(instances_buffer, instance.x + 1);
 #endif
 
     // load vegetation properties
-    vec4 veg_params = texelFetch(instances_buffer, instance_curr * 4 + 3);
+    vec4 veg_params = texelFetch(instances_buffer, instance.x * INSTANCE_BUF_STRIDE + 3);
 
     vec4 vtx_color = unpackUnorm4x8(aVertexColorPacked);
 
@@ -97,25 +85,31 @@ void main() {
 #ifdef TRANSPARENT_PERM
     aVertexUVs1_ = aVertexUVs1;
 	
-#if defined(GL_ARB_bindless_texture)
-	MaterialData mat = materials[uMaterialIndex];
-	alpha_texture = texture_handles[mat.texture_indices[0]];
-#endif // GL_ARB_bindless_texture
-#endif
+#if defined(BINDLESS_TEXTURES)
+	MaterialData mat = materials[instance.y];
+	alpha_texture = GET_HANDLE(mat.texture_indices[0]);
+#endif // BINDLESS_TEXTURES
+#endif // TRANSPARENT_PERM
 
     gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
+#if defined(VULKAN)
+    gl_Position.y = -gl_Position.y;
+#endif
     
 #ifdef OUTPUT_VELOCITY
     vec4 wind_scroll_prev = shrd_data.uWindScrollPrev + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
     vec3 vtx_pos_ls_prev = TransformVegetation(aVertexPosition, vtx_color, wind_scroll_prev, wind_params, wind_vec_ls, noise_texture);
 #ifdef MOVING_PERM
     vec3 vtx_pos_ws_prev = (model_matrix_prev * vec4(vtx_pos_ls_prev, 1.0)).xyz;
-#else
+#else // MOVING_PERM
     vec3 vtx_pos_ws_prev = (model_matrix_curr * vec4(vtx_pos_ls_prev, 1.0)).xyz;
-#endif
+#endif // MOVING_PERM
 
     aVertexCSCurr_ = gl_Position.xyw;
     aVertexCSPrev_ = (shrd_data.uViewProjPrevMatrix * vec4(vtx_pos_ws_prev, 1.0)).xyw;
-#endif
+#if defined(VULKAN)
+    aVertexCSPrev_.y = -aVertexCSPrev_.y;
+#endif // VULKAN
+#endif // OUTPUT_VELOCITY
 } 
 

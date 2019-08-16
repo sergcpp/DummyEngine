@@ -5,7 +5,7 @@
 void test_unicode() {
     const char test_str1[] = u8"z\u6c34\U0001d10b";
 
-    {   // utf8 -> unicode
+    { // utf8 -> unicode
         int pos = 0;
         uint32_t unicode[4];
 
@@ -21,7 +21,7 @@ void test_unicode() {
         require(unicode[3] == 0);
     }
 
-    {   // utf8 -> utf16
+    { // utf8 -> utf16
         int pos = 0;
         uint16_t utf16[8];
 

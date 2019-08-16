@@ -4,11 +4,11 @@
 
 namespace Ren {
 const uint32_t gl_cull_face[] = {
-    GL_FRONT, // Front
-    GL_BACK,  // Back
+    0xffffffff, // None
+    GL_FRONT,   // Front
+    GL_BACK,    // Back
 };
-static_assert(sizeof(gl_cull_face) / sizeof(gl_cull_face[0]) == size_t(eCullFace::_Count),
-              "!");
+static_assert(COUNT_OF(gl_cull_face) == size_t(eCullFace::_Count), "!");
 
 const uint32_t gl_blend_factor[] = {
     GL_ZERO,                // Zero
@@ -22,11 +22,9 @@ const uint32_t gl_blend_factor[] = {
     GL_DST_ALPHA,           // DstAlpha
     GL_ONE_MINUS_DST_ALPHA  // OneMinusDstAlpha
 };
-static_assert(sizeof(gl_blend_factor) / sizeof(gl_blend_factor[0]) ==
-                  size_t(eBlendFactor::_Count),
-              "!");
+static_assert(COUNT_OF(gl_blend_factor) == size_t(eBlendFactor::_Count), "!");
 
-const uint32_t gl_test_func[] = {
+const uint32_t gl_compare_op[] = {
     GL_ALWAYS,   // Always
     GL_NEVER,    // Never
     GL_LESS,     // Less
@@ -36,8 +34,7 @@ const uint32_t gl_test_func[] = {
     GL_NOTEQUAL, // NotEqual
     GL_GEQUAL    // GEqual
 };
-static_assert(sizeof(gl_test_func) / sizeof(gl_test_func[0]) == size_t(eTestFunc::_Count),
-              "!");
+static_assert(COUNT_OF(gl_compare_op) == size_t(eCompareOp::_Count), "!");
 
 const uint32_t gl_stencil_op[] = {
     GL_KEEP,    // Keep
@@ -47,18 +44,14 @@ const uint32_t gl_stencil_op[] = {
     GL_DECR,    // Decr
     GL_INVERT   // Invert
 };
-static_assert(sizeof(gl_stencil_op) / sizeof(gl_stencil_op[0]) ==
-                  size_t(eStencilOp::_Count),
-              "!");
+static_assert(COUNT_OF(gl_stencil_op) == size_t(eStencilOp::_Count), "!");
 
 #ifndef __ANDROID__
 const uint32_t gl_polygon_mode[] = {
     GL_FILL, // Fill
     GL_LINE, // Line
 };
-static_assert(sizeof(gl_polygon_mode) / sizeof(gl_polygon_mode[0]) ==
-                  size_t(ePolygonMode::_Count),
-              "!");
+static_assert(COUNT_OF(gl_polygon_mode) == size_t(ePolygonMode::_Count), "!");
 #endif
 
 eCullFace cull_face_from_gl_enum(GLenum face) {
@@ -95,90 +88,92 @@ eBlendFactor blend_factor_from_gl_enum(GLenum factor) {
     return eBlendFactor::Zero;
 }
 
-eTestFunc test_func_from_gl_enum(GLenum func) {
+eCompareOp test_func_from_gl_enum(GLenum func) {
     if (func == GL_ALWAYS) {
-        return eTestFunc::Always;
+        return eCompareOp::Always;
     } else if (func == GL_NEVER) {
-        return eTestFunc::Never;
+        return eCompareOp::Never;
     } else if (func == GL_LESS) {
-        return eTestFunc::Less;
+        return eCompareOp::Less;
     } else if (func == GL_GREATER) {
-        return eTestFunc::Greater;
+        return eCompareOp::Greater;
     } else if (func == GL_LEQUAL) {
-        return eTestFunc::LEqual;
+        return eCompareOp::LEqual;
     } else if (func == GL_NOTEQUAL) {
-        return eTestFunc::NotEqual;
+        return eCompareOp::NotEqual;
     } else if (func == GL_GEQUAL) {
-        return eTestFunc::GEqual;
+        return eCompareOp::GEqual;
     }
-    return eTestFunc::Always;
+    return eCompareOp::Always;
 }
 } // namespace Ren
 
-void Ren::RastState::Apply(const RastState *ref) {
-    if (!ref || std::memcmp(&ref->cull_face, &cull_face, sizeof(cull_face)) != 0) {
-        if (cull_face.enabled) {
+void Ren::RastState::Apply(const RastState *ref) const {
+    if (!ref || ref->poly.cull != poly.cull) {
+        if (eCullFace(poly.cull) != eCullFace::None) {
             glEnable(GL_CULL_FACE);
+            glCullFace(gl_cull_face[poly.cull]);
         } else {
             glDisable(GL_CULL_FACE);
         }
-        glCullFace(gl_cull_face[int(cull_face.face)]);
     }
 
-    if (!ref || std::memcmp(&ref->depth_test, &depth_test, sizeof(depth_test)) != 0) {
-        if (depth_test.enabled) {
+    if (!ref || ref->depth != depth) {
+        if (depth.test_enabled) {
             glEnable(GL_DEPTH_TEST);
         } else {
             glDisable(GL_DEPTH_TEST);
         }
-        glDepthFunc(gl_test_func[int(depth_test.func)]);
+        glDepthFunc(gl_compare_op[depth.compare_op]);
     }
 
-    if (!ref || ref->depth_mask != depth_mask) {
-        if (depth_mask) {
+    if (!ref || ref->depth.write_enabled != depth.write_enabled) {
+        if (depth.write_enabled) {
             glDepthMask(GL_TRUE);
         } else {
             glDepthMask(GL_FALSE);
         }
     }
 
-    if (!ref || std::memcmp(&ref->blend, &blend, sizeof(blend)) != 0) {
+    if (!ref || ref->blend != blend) {
         if (blend.enabled) {
             glEnable(GL_BLEND);
         } else {
             glDisable(GL_BLEND);
         }
-        glBlendFunc(gl_blend_factor[int(blend.src)], gl_blend_factor[int(blend.dst)]);
+        glBlendFunc(gl_blend_factor[blend.src], gl_blend_factor[blend.dst]);
     }
 
-    if (!ref || std::memcmp(&ref->stencil, &stencil, sizeof(stencil)) != 0) {
+    if (!ref || ref->stencil != stencil) {
         if (stencil.enabled) {
             glEnable(GL_STENCIL_TEST);
         } else {
             glDisable(GL_STENCIL_TEST);
         }
-        glStencilMask(stencil.mask);
-        glStencilOp(gl_stencil_op[int(stencil.stencil_fail)],
-                    gl_stencil_op[int(stencil.depth_fail)],
+        glStencilMask(stencil.write_mask);
+        glStencilOp(gl_stencil_op[int(stencil.stencil_fail)], gl_stencil_op[int(stencil.depth_fail)],
                     gl_stencil_op[int(stencil.pass)]);
-        glStencilFunc(gl_test_func[int(stencil.test_func)], stencil.test_ref,
-                      stencil.test_mask);
+        glStencilFunc(gl_compare_op[stencil.compare_op], stencil.reference, stencil.compare_mask);
     }
 
 #if !defined(__ANDROID__)
-    if (!ref || ref->polygon_mode != polygon_mode) {
-        glPolygonMode(GL_FRONT_AND_BACK, gl_polygon_mode[int(polygon_mode)]);
+    if (!ref || ref->poly.mode != poly.mode) {
+        glPolygonMode(GL_FRONT_AND_BACK, gl_polygon_mode[poly.mode]);
     }
 #endif
 
-    if (!ref ||
-        std::memcmp(&ref->polygon_offset, &polygon_offset, sizeof(polygon_offset)) != 0) {
-        if (polygon_offset.enabled) {
+    if (!ref || ref->poly.depth_bias_mode != poly.depth_bias_mode) {
+        if (eDepthBiasMode(poly.depth_bias_mode) != eDepthBiasMode::Disabled) {
             glEnable(GL_POLYGON_OFFSET_FILL);
+            glEnable(GL_POLYGON_OFFSET_LINE);
         } else {
             glDisable(GL_POLYGON_OFFSET_FILL);
+            glDisable(GL_POLYGON_OFFSET_LINE);
         }
-        glPolygonOffset(polygon_offset.factor, polygon_offset.units);
+    }
+
+    if (!ref || ref->depth_bias != depth_bias) {
+        glPolygonOffset(depth_bias.slope_factor, depth_bias.constant_offset);
     }
 
     if (!ref || ref->viewport != viewport) {
@@ -194,8 +189,8 @@ void Ren::RastState::Apply(const RastState *ref) {
         glScissor(scissor.rect[0], scissor.rect[1], scissor.rect[2], scissor.rect[3]);
     }
 
-    if (!ref || ref->multisample != multisample) {
-        if (multisample) {
+    if (!ref || ref->poly.multisample != poly.multisample) {
+        if (poly.multisample) {
             glEnable(GL_MULTISAMPLE);
         } else {
             glDisable(GL_MULTISAMPLE);

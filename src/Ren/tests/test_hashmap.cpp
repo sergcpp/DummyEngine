@@ -5,7 +5,7 @@
 #include "../HashMap32.h"
 
 void test_hashmap() {
-    {   // Basic test
+    { // Basic test
         Ren::HashMap32<int, double> cont;
 
         for (int i = 0; i < 100; i++) {
@@ -61,7 +61,7 @@ void test_hashmap() {
         }
     }
 
-    {   // Test with reallocation
+    { // Test with reallocation
         Ren::HashMap32<std::string, int> cont(16);
 
         for (int i = 0; i < 100000; i++) {
@@ -80,7 +80,7 @@ void test_hashmap() {
         require(cont.size() == 0);
     }
 
-    {   // Test iteration
+    { // Test iteration
         Ren::HashMap32<std::string, int> cont(16);
 
         for (int i = 0; i < 100000; i++) {
@@ -90,7 +90,7 @@ void test_hashmap() {
 
         require(cont.size() == 100000);
 
-        {   // const iterator
+        { // const iterator
             int values_count = 0;
             for (auto it = cont.cbegin(); it != cont.cend(); ++it) {
                 require(it->key == std::to_string(it->val));
@@ -100,7 +100,7 @@ void test_hashmap() {
             require(values_count == 100000);
         }
 
-        {   // normal iterator
+        { // normal iterator
             int values_count = 0;
             for (auto it = cont.begin(); it != cont.end(); ++it) {
                 require(it->key == std::to_string(it->val));

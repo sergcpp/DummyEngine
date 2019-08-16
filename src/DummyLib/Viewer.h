@@ -30,7 +30,7 @@ class ThreadWorker;
 
 class Viewer : public GameBase {
   public:
-    Viewer(int w, int h, const char *local_dir,
+    Viewer(int w, int h, const char *local_dir, const char *device_name,
            std::shared_ptr<Sys::ThreadWorker> aux_gfx_thread);
 
     void Resize(int w, int h) override;
@@ -38,6 +38,5 @@ class Viewer : public GameBase {
     void Frame() override;
 
     static void PrepareAssets(const char *platform = "all");
-    static bool HConvTEIToDict(assets_context_t &ctx, const char *in_file,
-                               const char *out_file);
+    static bool HConvTEIToDict(assets_context_t &ctx, const char *in_file, const char *out_file);
 };

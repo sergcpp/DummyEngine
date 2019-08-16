@@ -6,7 +6,7 @@
 void test_types() {
     // Check endianness conversion
 
-    {   // int16
+    { // int16
         Net::le_int16 v1 = -11345;
         int16_t v2 = -11345;
         assert(v1 == v2);
@@ -15,7 +15,7 @@ void test_types() {
         assert(v1 > v2);
         assert(v2 < v1);
     }
-    {   // uint16
+    { // uint16
         Net::le_uint16 v1 = 11345;
         uint16_t v2 = 11345;
         assert(v1 == v2);
@@ -24,7 +24,7 @@ void test_types() {
         assert(v1 > v2);
         assert(v2 < v1);
     }
-    {   // int32
+    { // int32
         Net::le_int32 v1 = -113212145;
         int32_t v2 = -113212145;
         assert(v1 == v2);
@@ -33,7 +33,7 @@ void test_types() {
         assert(v1 > v2);
         assert(v2 < v1);
     }
-    {   // uint32
+    { // uint32
         Net::le_uint32 v1 = 87815345;
         uint32_t v2 = 87815345;
         assert(v1 == v2);
@@ -42,7 +42,7 @@ void test_types() {
         assert(v1 > v2);
         assert(v2 < v1);
     }
-    {   // float32
+    { // float32
         Net::le_float32 v1 = 15345.015457f;
         float v2 = 15345.015457f;
         assert(v1 == v2);

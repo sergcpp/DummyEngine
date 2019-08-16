@@ -55,9 +55,7 @@ class BaseElement {
     const Vec2i &pos_px() const { return dims_px_[0]; }
     const Vec2i &size_px() const { return dims_px_[1]; }
 
-    Ren::Vec2f ToLocal(const Ren::Vec2f &p) const {
-        return 2.0f * (p - dims_[0]) / dims_[1] - Ren::Vec2f{1.0f, 1.0f};
-    }
+    Ren::Vec2f ToLocal(const Ren::Vec2f &p) const { return 2.0f * (p - dims_[0]) / dims_[1] - Ren::Vec2f{1.0f, 1.0f}; }
 
     virtual void Resize(const BaseElement *parent);
     virtual void Resize(const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
@@ -76,20 +74,16 @@ class BaseElement {
 
 class RootElement : public BaseElement {
   public:
-    explicit RootElement(const Vec2i &zone_size)
-        : BaseElement(Vec2f{-1, -1}, Vec2f{2, 2}, nullptr) {
+    explicit RootElement(const Vec2i &zone_size) : BaseElement(Vec2f{-1, -1}, Vec2f{2, 2}, nullptr) {
         set_zone(zone_size);
         Resize(Vec2f{-1, -1}, Vec2f{2, 2}, nullptr);
     }
 
     void set_zone(const Vec2i &zone_size) { dims_px_[1] = zone_size; }
 
-    void Resize(const BaseElement *parent) override {
-        Resize(dims_[0], dims_[1], parent);
-    }
+    void Resize(const BaseElement *parent) override { Resize(dims_[0], dims_[1], parent); }
 
-    void Resize(const Vec2f &pos, const Vec2f &size,
-                const BaseElement * /*parent*/) override {
+    void Resize(const Vec2f &pos, const Vec2f &size, const BaseElement * /*parent*/) override {
         dims_[0] = pos;
         dims_[1] = size;
     }

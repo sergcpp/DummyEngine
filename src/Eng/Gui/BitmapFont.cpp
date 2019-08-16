@@ -11,8 +11,7 @@
 
 namespace BitmapFontInternal {}
 
-Gui::BitmapFont::BitmapFont(const char *name, Ren::Context *ctx)
-    : info_{}, scale_(1.0f), tex_res_{} {
+Gui::BitmapFont::BitmapFont(const char *name, Ren::Context *ctx) : info_{}, scale_(1.0f), tex_res_{} {
     if (name && ctx) {
         this->Load(name, *ctx);
     }
@@ -29,8 +28,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
     }
 
     char sign[4];
-    if (!in_file.Read(sign, 4) || sign[0] != 'F' || sign[1] != 'O' || sign[2] != 'N' ||
-        sign[3] != 'T') {
+    if (!in_file.Read(sign, 4) || sign[0] != 'F' || sign[1] != 'O' || sign[2] != 'N' || sign[3] != 'T') {
         return false;
     }
 
@@ -39,8 +37,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
         return false;
     }
 
-    const uint32_t expected_chunks_size =
-        uint32_t(Gui::eFontFileChunk::FontChCount) * 3 * sizeof(uint32_t);
+    const uint32_t expected_chunks_size = uint32_t(Gui::eFontFileChunk::FontChCount) * 3 * sizeof(uint32_t);
     const uint32_t chunks_size = header_size - 4 - sizeof(uint32_t);
     if (chunks_size != expected_chunks_size) {
         return false;
@@ -48,8 +45,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
 
     for (uint32_t i = 0; i < chunks_size; i += 3 * sizeof(uint32_t)) {
         uint32_t chunk_id, chunk_off, chunk_size;
-        if (!in_file.Read((char *)&chunk_id, sizeof(uint32_t)) ||
-            !in_file.Read((char *)&chunk_off, sizeof(uint32_t)) ||
+        if (!in_file.Read((char *)&chunk_id, sizeof(uint32_t)) || !in_file.Read((char *)&chunk_off, sizeof(uint32_t)) ||
             !in_file.Read((char *)&chunk_size, sizeof(uint32_t))) {
             return false;
         }
@@ -77,28 +73,36 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
                 return false;
             }
 
-            draw_mode_ = (Gui::eDrawMode)draw_mode;
-            blend_mode_ = (Gui::eBlendMode)blend_mode;
+            draw_mode_ = Gui::eDrawMode(draw_mode);
+            blend_mode_ = Gui::eBlendMode(blend_mode);
+
+            auto &stage = ctx.default_stage_bufs();
+            const int ndx = stage.next_index();
+            stage.fences[ndx].ClientWaitSync();
+            ctx.BegSingleTimeCommands(stage.cmd_bufs[ndx]);
+
+            uint8_t *stage_data = stage.bufs[ndx]->Map(Ren::BufMapWrite);
 
             const int img_data_size = 4 * img_data_w * img_data_h;
-            std::unique_ptr<uint8_t[]> img_data(new uint8_t[img_data_size]);
-
-            if (!in_file.Read((char *)img_data.get(), img_data_size)) {
+            if (!in_file.Read((char *)stage_data, img_data_size)) {
                 return false;
             }
+
+            stage.bufs[ndx]->FlushMappedRange(0, img_data_size);
+            stage.bufs[ndx]->Unmap();
 
             Ren::Tex2DParams p;
             p.w = img_data_w;
             p.h = img_data_h;
             p.format = Ren::eTexFormat::RawRGBA8888;
-            p.sampling.filter = draw_mode_ == eDrawMode::Passthrough
-                           ? Ren::eTexFilter::NoFilter
-                           : Ren::eTexFilter::BilinearNoMipmap;
-            p.sampling.repeat = Ren::eTexRepeat::ClampToBorder;
+            p.sampling.filter =
+                draw_mode_ == eDrawMode::Passthrough ? Ren::eTexFilter::NoFilter : Ren::eTexFilter::BilinearNoMipmap;
+            p.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
             Ren::eTexLoadStatus status;
-            tex_ =
-                ctx.LoadTextureRegion(fname, img_data.get(), img_data_size, p, &status);
+            tex_ = ctx.LoadTextureRegion(fname, *stage.bufs[ndx], 0, img_data_size, stage.cmd_bufs[ndx], p, &status);
+
+            stage.fences[ndx] = ctx.EndSingleTimeCommands(stage.cmd_bufs[ndx]);
         } else if (chunk_id == uint32_t(Gui::eFontFileChunk::FontChGlyphData)) {
             if (!in_file.Read((char *)&glyph_range_count_, sizeof(uint32_t))) {
                 return false;
@@ -106,8 +110,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
 
             glyph_ranges_.reset(new glyph_range_t[glyph_range_count_]);
 
-            if (!in_file.Read((char *)glyph_ranges_.get(),
-                              glyph_range_count_ * sizeof(glyph_range_t))) {
+            if (!in_file.Read((char *)glyph_ranges_.get(), glyph_range_count_ * sizeof(glyph_range_t))) {
                 return false;
             }
 
@@ -118,8 +121,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
 
             glyphs_.reset(new glyph_info_t[glyphs_count_]);
 
-            if (!in_file.Read((char *)glyphs_.get(),
-                              glyphs_count_ * sizeof(glyph_info_t))) {
+            if (!in_file.Read((char *)glyphs_.get(), glyphs_count_ * sizeof(glyph_info_t))) {
                 return false;
             }
         }
@@ -130,8 +132,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
     return true;
 }
 
-float Gui::BitmapFont::GetWidth(const char *text, int text_len,
-                                const BaseElement *parent) const {
+float Gui::BitmapFont::GetWidth(const char *text, int text_len, const BaseElement *parent) const {
     int cur_x = 0;
 
     const glyph_range_t *glyph_ranges = glyph_ranges_.get();
@@ -166,8 +167,8 @@ float Gui::BitmapFont::GetWidth(const char *text, int text_len,
     return float(cur_x) * mul;
 }
 
-float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
-                                const uint8_t col[4], const BaseElement *parent) const {
+float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos, const uint8_t col[4],
+                                const BaseElement *parent) const {
     using namespace BitmapFontInternal;
 
     const glyph_range_t *glyph_ranges = glyph_ranges_.get();
@@ -197,8 +198,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
 
     int cur_x = 0;
 
-    const Vec2f uvs_scale =
-        1.0f / Vec2f{(float)Ren::TextureAtlasWidth, (float)Ren::TextureAtlasHeight};
+    const Vec2f uvs_scale = 1.0f / Vec2f{(float)Ren::TextureAtlasWidth, (float)Ren::TextureAtlasHeight};
 
     const Vec2f *clip = r->GetClipArea();
 
@@ -222,15 +222,14 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
 
         const glyph_info_t &glyph = glyphs[glyph_index];
         if (glyph.res[0]) {
-            Vec4f pos_uvs[2] = {
-                Vec4f{p[0] + float(cur_x + glyph.off[0] - 1) * m[0],
-                      p[1] + float(glyph.off[1] - 1) * m[1],
-                      uvs_scale[0] * float(uvs_offset[0] + glyph.pos[0] - 1),
-                      uvs_scale[1] * float(uvs_offset[1] + glyph.pos[1] + glyph.res[1] + 1)},
-                Vec4f{p[0] + float(cur_x + glyph.off[0] + glyph.res[0] + 1) * m[0],
-                      p[1] + float(glyph.off[1] + glyph.res[1] + 1) * m[1],
-                      uvs_scale[0] * float(uvs_offset[0] + glyph.pos[0] + glyph.res[0] + 1),
-                      uvs_scale[1] * float(uvs_offset[1] + glyph.pos[1] - 1)}};
+            Vec4f pos_uvs[2] = {Vec4f{p[0] + float(cur_x + glyph.off[0] - 1) * m[0],
+                                      p[1] + float(glyph.off[1] - 1) * m[1],
+                                      uvs_scale[0] * float(uvs_offset[0] + glyph.pos[0] - 1),
+                                      uvs_scale[1] * float(uvs_offset[1] + glyph.pos[1] + glyph.res[1] + 1)},
+                                Vec4f{p[0] + float(cur_x + glyph.off[0] + glyph.res[0] + 1) * m[0],
+                                      p[1] + float(glyph.off[1] + glyph.res[1] + 1) * m[1],
+                                      uvs_scale[0] * float(uvs_offset[0] + glyph.pos[0] + glyph.res[0] + 1),
+                                      uvs_scale[1] * float(uvs_offset[1] + glyph.pos[1] - 1)}};
             if (clip && !ClipQuadToArea(pos_uvs, clip)) {
                 cur_x += glyph.adv[0];
                 continue;
@@ -299,8 +298,8 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
     return float(cur_x) * m[0];
 }
 
-int Gui::BitmapFont::CheckText(const char *text, const Vec2f &pos, const Vec2f &press_pos,
-                               float &out_char_offset, const BaseElement *parent) const {
+int Gui::BitmapFont::CheckText(const char *text, const Vec2f &pos, const Vec2f &press_pos, float &out_char_offset,
+                               const BaseElement *parent) const {
     using namespace BitmapFontInternal;
 
     const glyph_range_t *glyph_ranges = glyph_ranges_.get();
@@ -333,8 +332,7 @@ int Gui::BitmapFont::CheckText(const char *text, const Vec2f &pos, const Vec2f &
         const glyph_info_t &glyph = glyphs[glyph_index];
         if (glyph.res[0]) {
             const float corners[2][2]{
-                {p[0] + float(cur_x + glyph.off[0] - 1) * m[0],
-                 p[1] + float(glyph.off[1] - 1) * m[1]},
+                {p[0] + float(cur_x + glyph.off[0] - 1) * m[0], p[1] + float(glyph.off[1] - 1) * m[1]},
                 {p[0] + float(cur_x + glyph.off[0] + glyph.res[0] + 1) * m[0],
                  p[1] + float(glyph.off[1] + glyph.res[1] + 1) * m[1]}};
 

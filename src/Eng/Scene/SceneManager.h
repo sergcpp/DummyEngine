@@ -71,10 +71,14 @@ struct assets_context_t {
     Sys::ThreadPool *p_threads;
 };
 
+// TODO: remove this!!!
+#include <Ren/RenderPass.h>
+#include <Ren/VertexInput.h>
+
 class SceneManager : public std::enable_shared_from_this<SceneManager> {
   public:
-    SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context &snd_ctx,
-                 Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads);
+    SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context &snd_ctx, Ray::RendererBase &ray_renderer,
+                 Sys::ThreadPool &threads);
     ~SceneManager();
 
     SceneManager(const SceneManager &rhs) = delete;
@@ -88,7 +92,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     Snd::Source &ambient_sound() { return amb_sound_; }
 
-    PersistentBuffers persistent_bufs() const;
+    const PersistentGpuData &persistent_data() const { return scene_data_.persistant_data; }
 
     SceneObject *GetObject(const uint32_t i) { return &scene_data_.objects[i]; }
 
@@ -97,13 +101,13 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
         return p_ndx ? (*p_ndx) : 0xffffffff;
     }
 
-    void InvalidateObjects(const uint32_t *indices, const uint32_t count,
-                           const uint32_t change_mask) {
+    void InvalidateObjects(const uint32_t *indices, const uint32_t count, const uint32_t change_mask) {
         for (uint32_t i = 0; i < count; i++) {
             scene_data_.objects[indices[i]].change_mask |= change_mask;
         }
         changed_objects_.insert(changed_objects_.end(), indices, indices + count);
     }
+    void InvalidateTexture(const Ren::Tex2DRef &ref);
 
     void LoadScene(const JsObjectP &js_scene);
     void SaveScene(JsObjectP &js_scene);
@@ -111,17 +115,14 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     void LoadProbeCache();
 
-    void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target,
-                   const Ren::Vec3f &up, float fov, float max_exposure);
+    void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov,
+                   float max_exposure);
 
-    using PostLoadFunc = void(const JsObjectP &js_comp_obj, void *comp,
-                              Ren::Vec3f obj_bbox[2]);
-    void RegisterComponent(uint32_t index, CompStorage *storage,
-                           const std::function<PostLoadFunc> &post_init);
+    using PostLoadFunc = void(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void RegisterComponent(uint32_t index, CompStorage *storage, const std::function<PostLoadFunc> &post_init);
 
     void InitScene_PT(bool _override = false);
-    void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target,
-                      const Ren::Vec3f &up, float fov);
+    void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov);
     const float *Draw_PT(int *w, int *h);
     void Clear_PT();
 
@@ -132,60 +133,45 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     void UpdateTexturePriorities(const TexEntry visible_textures[], int visible_count,
                                  const TexEntry desired_textures[], int desired_count);
-    void TexturesGCIteration(const TexEntry visible_textures[], int visible_count,
-                             const TexEntry desired_textures[], int desired_count);
+    void TexturesGCIteration(const TexEntry visible_textures[], int visible_count, const TexEntry desired_textures[],
+                             int desired_count);
 
     void StartTextureLoader();
     void StopTextureLoader();
     void ForceTextureReload();
 
-    void InsertPersistentBuffersFence();
-
     void Serve(int texture_budget = 1);
 
-    using ConvertAssetFunc = std::function<bool(
-        assets_context_t &ctx, const char *in_file, const char *out_file)>;
-    static void RegisterAsset(const char *in_ext, const char *out_ext,
-                              const ConvertAssetFunc &convert_func);
-    static bool PrepareAssets(const char *in_folder, const char *out_folder,
-                              const char *platform, Sys::ThreadPool *p_threads,
-                              Ren::ILog *log);
-    static bool WriteProbeCache(const char *out_folder, const char *scene_name,
-                                const ProbeStorage &probes,
+    using ConvertAssetFunc = std::function<bool(assets_context_t &ctx, const char *in_file, const char *out_file)>;
+    static void RegisterAsset(const char *in_ext, const char *out_ext, const ConvertAssetFunc &convert_func);
+    static bool PrepareAssets(const char *in_folder, const char *out_folder, const char *platform,
+                              Sys::ThreadPool *p_threads, Ren::ILog *log);
+    static bool WriteProbeCache(const char *out_folder, const char *scene_name, const ProbeStorage &probes,
                                 const CompStorage *light_probe_storage, Ren::ILog *log);
 
   private:
-    void PostloadDrawable(const JsObjectP &js_comp_obj, void *comp,
-                          Ren::Vec3f obj_bbox[2]);
-    void PostloadOccluder(const JsObjectP &js_comp_obj, void *comp,
-                          Ren::Vec3f obj_bbox[2]);
-    void PostloadLightmap(const JsObjectP &js_comp_obj, void *comp,
-                          Ren::Vec3f obj_bbox[2]);
-    void PostloadLightSource(const JsObjectP &js_comp_obj, void *comp,
-                             Ren::Vec3f obj_bbox[2]);
+    void PostloadDrawable(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadOccluder(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadLightmap(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadLightSource(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
     void PostloadDecal(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
-    void PostloadLightProbe(const JsObjectP &js_comp_obj, void *comp,
-                            Ren::Vec3f obj_bbox[2]);
-    void PostloadSoundSource(const JsObjectP &js_comp_obj, void *comp,
-                             Ren::Vec3f obj_bbox[2]);
+    void PostloadLightProbe(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadSoundSource(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
 
     Ren::MaterialRef OnLoadMaterial(const char *name);
-    Ren::ProgramRef OnLoadProgram(const char *name, const char *v_shader,
-                                  const char *f_shader, const char *tc_shader,
-                                  const char *te_shader);
+    void OnLoadPipelines(const char *name, uint32_t flags, const char *v_shader, const char *f_shader,
+                         const char *tc_shader, const char *te_shader,
+                         Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
     Ren::Tex2DRef OnLoadTexture(const char *name, const uint8_t color[4], uint32_t flags);
     Ren::SamplerRef OnLoadSampler(Ren::SamplingParams params);
 
-    Ren::MeshRef LoadMesh(const char *name, std::istream *data,
-                          const Ren::material_load_callback &on_mat_load,
+    Ren::MeshRef LoadMesh(const char *name, std::istream *data, const Ren::material_load_callback &on_mat_load,
                           Ren::eMeshLoadStatus *load_status);
-    Ren::MaterialRef LoadMaterial(const char *name, const char *mat_src,
-                                  Ren::eMatLoadStatus *status,
-                                  const Ren::program_load_callback &on_prog_load,
+    Ren::MaterialRef LoadMaterial(const char *name, const char *mat_src, Ren::eMatLoadStatus *status,
+                                  const Ren::pipelines_load_callback &on_pipes_load,
                                   const Ren::texture_load_callback &on_tex_load,
                                   const Ren::sampler_load_callback &on_sampler_load);
-    Ren::Tex2DRef LoadTexture(const char *name, const void *data, int size,
-                              const Ren::Tex2DParams &p,
+    Ren::Tex2DRef LoadTexture(const char *name, const void *data, int size, const Ren::Tex2DParams &p,
                               Ren::eTexLoadStatus *load_status);
     Ren::Vec4f LoadDecalTexture(const char *name);
 
@@ -193,7 +179,12 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     void ProcessPendingTextures(int portion_size);
 
     void RebuildMaterialTextureGraph();
+
+    // TODO: move these to renderer
+    Ren::VertexInput draw_pass_vi_;
+    Ren::RenderPass rp_main_draw_;
     void UpdateMaterialsBuffer();
+    void InitPipelinesForProgram(const Ren::ProgramRef &prog, uint32_t mat_flags, Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
 
     void RebuildBVH();
     void RemoveNode(uint32_t node_index);
@@ -204,6 +195,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     ShaderLoader &sh_;
     Snd::Context &snd_ctx_;
     Ren::MeshRef cam_rig_;
+    Ren::Tex2DRef error_tex_;
     Ray::RendererBase &ray_renderer_;
     Sys::ThreadPool &threads_;
     std::vector<Ray::RegionContext> ray_reg_ctx_;
@@ -287,36 +279,27 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     static bool HCopy(assets_context_t &ctx, const char *in_file, const char *out_file);
 
     // image textures
-    static bool HConvToASTC(assets_context_t &ctx, const char *in_file,
-                            const char *out_file);
-    static bool HConvToDDS(assets_context_t &ctx, const char *in_file,
-                           const char *out_file);
+    static bool HConvToASTC(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static bool HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file);
 
-    static bool HConvHDRToRGBM(assets_context_t &ctx, const char *in_file,
-                               const char *out_file);
-    static bool HPreprocessHeightmap(assets_context_t &ctx, const char *in_file,
-                                     const char *out_file);
+    static bool HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static bool HPreprocessHeightmap(assets_context_t &ctx, const char *in_file, const char *out_file);
 
     // probe textures
-    static bool HConvImgToDDS(assets_context_t &ctx, const char *in_file,
-                              const char *out_file);
-    static bool HConvImgToASTC(assets_context_t &ctx, const char *in_file,
-                               const char *out_file);
+    static bool HConvImgToDDS(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static bool HConvImgToASTC(assets_context_t &ctx, const char *in_file, const char *out_file);
 
     // shaders
     static void InlineShaderConstants(assets_context_t &ctx, std::string &line);
-    static bool HPreprocessShader(assets_context_t &ctx, const char *in_file,
-                                  const char *out_file);
+    static bool ResolveIncludes(assets_context_t &ctx, const char *in_file, std::ostream &dst_stream);
+    static bool HPreprocessShader(assets_context_t &ctx, const char *in_file, const char *out_file);
 
     // materials
-    static bool HPreprocessMaterial(assets_context_t &ctx, const char *in_file,
-                                    const char *out_file);
+    static bool HPreprocessMaterial(assets_context_t &ctx, const char *in_file, const char *out_file);
 
     // scenes
-    static bool HPreprocessJson(assets_context_t &ctx, const char *in_file,
-                                const char *out_file);
+    static bool HPreprocessJson(assets_context_t &ctx, const char *in_file, const char *out_file);
 
     // fonts
-    static bool HConvTTFToFont(assets_context_t &ctx, const char *in_file,
-                               const char *out_file);
+    static bool HConvTTFToFont(assets_context_t &ctx, const char *in_file, const char *out_file);
 };

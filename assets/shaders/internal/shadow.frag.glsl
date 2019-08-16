@@ -1,26 +1,29 @@
 #version 310 es
-#extension GL_ARB_bindless_texture: enable
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision mediump float;
 #endif
 
 #include "_fs_common.glsl"
+#include "_texturing.glsl"
+
+/*
+PERM @TRANSPARENT_PERM
+*/
 
 #ifdef TRANSPARENT_PERM
-#if !defined(GL_ARB_bindless_texture)
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D alpha_texture;
-#endif
+#if !defined(BINDLESS_TEXTURES)
+	layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D alpha_texture;
+#endif // BINDLESS_TEXTURES
+#endif // TRANSPARENT_PERM
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs1_;
-#else
-in vec2 aVertexUVs1_;
-#if defined(GL_ARB_bindless_texture)
-in flat uvec2 alpha_texture;
-#endif // GL_ARB_bindless_texture
-#endif
-#endif
+#ifdef TRANSPARENT_PERM
+	LAYOUT(location = 0) in highp vec2 aVertexUVs1_;
+	#if defined(BINDLESS_TEXTURES)
+		LAYOUT(location = 1) in flat TEX_HANDLE alpha_texture;
+	#endif // BINDLESS_TEXTURES
+#endif // TRANSPARENT_PERM
 
 void main() {
 #ifdef TRANSPARENT_PERM

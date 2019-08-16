@@ -1,14 +1,21 @@
 #version 310 es
 
-#ifdef GL_ES
-    precision mediump float;
+#if defined(GL_ES) || defined(VULKAN)
+	precision highp int;
+	precision mediump float;
 #endif
 
 #include "_fs_common.glsl"
 
 layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D s_texture;
 
+#if defined(VULKAN)
+layout(push_constant) uniform PushConstants {
+    layout(offset = 16) highp vec4 uTransform;
+};
+#else
 layout(location = 0) uniform highp vec4 uTransform;
+#endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 aVertexUVs_;

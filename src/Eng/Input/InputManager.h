@@ -7,11 +7,16 @@
 
 struct InputManagerImp;
 
-enum class RawInputEv {
+enum class RawInputEv : int16_t {
     None = -1,
-    P1Down, P1Up, P1Move,
-    P2Down, P2Up, P2Move,
-    KeyDown, KeyUp,
+    P1Down,
+    P1Up,
+    P1Move,
+    P2Down,
+    P2Up,
+    P2Move,
+    KeyDown,
+    KeyUp,
     Resize,
     MouseWheel,
     Count
@@ -19,7 +24,8 @@ enum class RawInputEv {
 
 class InputManager {
     std::unique_ptr<InputManagerImp> imp_;
-public:
+
+  public:
     struct Event {
         RawInputEv type = RawInputEv::None;
         uint32_t key_code;
@@ -44,4 +50,3 @@ public:
 
     static char CharFromKeycode(uint32_t key_code);
 };
-

@@ -33,8 +33,7 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 } // namespace GSUITest2Internal
 
 GSUITest2::GSUITest2(GameBase *game) : GSBaseState(game) {
-    const std::shared_ptr<FontStorage> fonts =
-        game->GetComponent<FontStorage>(UI_FONTS_KEY);
+    const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     dialog_font_ = fonts->FindFont("book_main_font");
     // dialog_font_->set_scale(1.5f);
 
@@ -49,15 +48,13 @@ GSUITest2::GSUITest2(GameBase *game) : GSBaseState(game) {
                                     Ren::Vec2f{-1.0f, -1.0f},
                                     Ren::Vec2f{2.0f, 2.0f},
                                     ui_root_.get()};
-    edit_box_.reset(
-        new Gui::EditBox{edit_box_frame, dialog_font_.get(), Ren::Vec2f{-0.5f, 0.75f},
-                         Ren::Vec2f{1.0f, 0.75f * font_height}, ui_root_.get()});
+    edit_box_.reset(new Gui::EditBox{edit_box_frame, dialog_font_.get(), Ren::Vec2f{-0.5f, 0.75f},
+                                     Ren::Vec2f{1.0f, 0.75f * font_height}, ui_root_.get()});
     edit_box_->set_flag(Gui::eEditBoxFlags::Multiline, false);
 
-    results_frame_.reset(
-        new Gui::Image9Patch{*ren_ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png",
-                             Ren::Vec2f{8.0f, 8.0f}, 1.0f, Ren::Vec2f{-0.5f, -0.75f},
-                             Ren::Vec2f{1.0f, 1.5f}, ui_root_.get()});
+    results_frame_.reset(new Gui::Image9Patch{*ren_ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png",
+                                              Ren::Vec2f{8.0f, 8.0f}, 1.0f, Ren::Vec2f{-0.5f, -0.75f},
+                                              Ren::Vec2f{1.0f, 1.5f}, ui_root_.get()});
 }
 
 GSUITest2::~GSUITest2() = default;
@@ -131,8 +128,8 @@ void GSUITest2::OnPostloadScene(JsObjectP &js_scene) {
         }
     }
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir),
-                              Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, max_exposure);
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov,
+                              max_exposure);
 }
 
 void GSUITest2::UpdateAnim(const uint64_t dt_us) {
@@ -157,10 +154,8 @@ void GSUITest2::UpdateAnim(const uint64_t dt_us) {
 
         uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((zenith->comp_mask & mask) == mask) {
-            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(
-                zenith->components[CompDrawable]);
-            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(
-                zenith->components[CompAnimState]);
+            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(zenith->components[CompDrawable]);
+            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(zenith->components[CompAnimState]);
 
             // keep previous palette for velocity calculation
             std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -195,8 +190,7 @@ void GSUITest2::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         float cur_y = 0.75f - font_height;
 
         for (const std::string &result_line : results_lines_) {
-            dialog_font_->DrawText(r, result_line.c_str(), Ren::Vec2f{-0.49f, cur_y},
-                                   color_white, root);
+            dialog_font_->DrawText(r, result_line.c_str(), Ren::Vec2f{-0.49f, cur_y}, color_white, root);
             cur_y -= font_height;
         }
     }
@@ -251,8 +245,7 @@ void GSUITest2::UpdateHint() {
     MutateWord(line.c_str(), lookup_word);
 }
 
-void GSUITest2::MutateWord(const char *in_word,
-                           const std::function<void(const char *, int)> &callback) {
+void GSUITest2::MutateWord(const char *in_word, const std::function<void(const char *, int)> &callback) {
     uint32_t unicode_word[128] = {};
     int unicode_word_len = 0;
 
@@ -268,8 +261,7 @@ void GSUITest2::MutateWord(const char *in_word,
         int mutation_index = 0;
     } ctx;
 
-    auto split_word_in_two = [](mutation_ctx_t &ctx, uint32_t *unicode_word,
-                                int mutation_cost) {
+    auto split_word_in_two = [](mutation_ctx_t &ctx, uint32_t *unicode_word, int mutation_cost) {
         const auto &next_mutation = ctx.mutation_chain[++ctx.mutation_index];
 
         int i = 0;
@@ -292,8 +284,7 @@ void GSUITest2::MutateWord(const char *in_word,
         ctx.mutation_index--;
     };
 
-    auto swap_character_pairs = [](mutation_ctx_t &ctx, uint32_t *unicode_word,
-                                   int mutation_cost) {
+    auto swap_character_pairs = [](mutation_ctx_t &ctx, uint32_t *unicode_word, int mutation_cost) {
         const auto &next_mutation = ctx.mutation_chain[++ctx.mutation_index];
 
         int i = 0;
@@ -312,15 +303,13 @@ void GSUITest2::MutateWord(const char *in_word,
         ctx.mutation_index--;
     };
 
-    auto output_utf8 = [&callback](mutation_ctx_t &ctx, uint32_t *unicode_word,
-                                   int mutation_cost) {
+    auto output_utf8 = [&callback](mutation_ctx_t &ctx, uint32_t *unicode_word, int mutation_cost) {
         char utf8_word[512];
         int utf8_word_len = 0;
 
         int j = 0;
         while (unicode_word[j]) {
-            utf8_word_len +=
-                Gui::ConvChar_Unicode_to_UTF8(unicode_word[j], &utf8_word[utf8_word_len]);
+            utf8_word_len += Gui::ConvChar_Unicode_to_UTF8(unicode_word[j], &utf8_word[utf8_word_len]);
             j++;
         }
         utf8_word[utf8_word_len] = '\0';
@@ -342,8 +331,7 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
-        if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
-            evt.point.y < float(ren_ctx_->h()) * 0.1f) {
+        if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -363,9 +351,8 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
 
     switch (evt.type) {
     case RawInputEv::P1Down: {
-        Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                             Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         // text_printer_->Press(p, true);
         edit_box_->Press(p, true);
     } break;
@@ -375,9 +362,8 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
     case RawInputEv::P1Up: {
         // text_printer_->skip();
 
-        const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         // text_printer_->Press(p, false);
         edit_box_->Press(p, false);
 

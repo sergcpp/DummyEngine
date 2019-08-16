@@ -101,9 +101,7 @@ force_inline uint16_t f32_to_u16(const float value) { return uint16_t(value * 65
     B  = [   1   -1    -1] [Cg]
 */
 
-force_inline uint8_t to_clamped_uint8(const int x) {
-    return ((x) < 0 ? (0) : ((x) > 255 ? 255 : (x)));
-}
+force_inline uint8_t to_clamped_uint8(const int x) { return ((x) < 0 ? (0) : ((x) > 255 ? 255 : (x))); }
 
 //
 // Perfectly reversible RGB <-> YCoCg conversion (relies on integer wrap around)
@@ -168,23 +166,32 @@ force_inline Ren::Vec4f fade(const Ren::Vec4f &t) {
 }
 } // namespace Ren
 
-std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h,
-                                            eTexFormat &format) {
+std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eTexFormat &format) {
+    uint32_t img_size;
+    ReadTGAFile(data, w, h, format, nullptr, img_size);
+
+    std::unique_ptr<uint8_t[]> image_ret(new uint8_t[img_size]);
+    ReadTGAFile(data, w, h, format, image_ret.get(), img_size);
+
+    return image_ret;
+}
+
+bool Ren::ReadTGAFile(const void *data, int &w, int &h, eTexFormat &format, uint8_t *out_data, uint32_t &out_size) {
     const uint8_t tga_header[12] = {0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     const auto *tga_compare = (const uint8_t *)data;
     const uint8_t *img_header = (const uint8_t *)data + sizeof(tga_header);
-    uint32_t img_size;
     bool compressed = false;
 
     if (memcmp(tga_header, tga_compare, sizeof(tga_header)) != 0) {
         if (tga_compare[2] == 1) {
             fprintf(stderr, "Image cannot be indexed color.");
+            return false;
         }
         if (tga_compare[2] == 3) {
             fprintf(stderr, "Image cannot be greyscale color.");
+            return false;
         }
         if (tga_compare[2] == 9 || tga_compare[2] == 10) {
-            // fprintf(stderr, "Image cannot be compressed.");
             compressed = true;
         }
     }
@@ -199,69 +206,70 @@ std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h,
         if (img_header[4] != 24 && img_header[4] != 32) {
             fprintf(stderr, "Image must be 24 or 32 bit");
         }
-        return nullptr;
+        return false;
     }
 
     const uint32_t bpp = img_header[4];
     const uint32_t bytes_per_pixel = bpp / 8;
-    img_size = w * h * bytes_per_pixel;
-    const uint8_t *image_data = (const uint8_t *)data + 18;
-
-    std::unique_ptr<uint8_t[]> image_ret(new uint8_t[img_size]);
-    uint8_t *_image_ret = &image_ret[0];
-
-    if (!compressed) {
-        for (unsigned i = 0; i < img_size; i += bytes_per_pixel) {
-            _image_ret[i] = image_data[i + 2];
-            _image_ret[i + 1] = image_data[i + 1];
-            _image_ret[i + 2] = image_data[i];
-            if (bytes_per_pixel == 4) {
-                _image_ret[i + 3] = image_data[i + 3];
-            }
-        }
-    } else {
-        for (unsigned num = 0; num < img_size;) {
-            uint8_t packet_header = *image_data++;
-            if (packet_header & (1u << 7u)) {
-                uint8_t color[4];
-                unsigned size = (packet_header & ~(1u << 7u)) + 1;
-                size *= bytes_per_pixel;
-                for (unsigned i = 0; i < bytes_per_pixel; i++) {
-                    color[i] = *image_data++;
-                }
-                for (unsigned i = 0; i < size;
-                     i += bytes_per_pixel, num += bytes_per_pixel) {
-                    _image_ret[num] = color[2];
-                    _image_ret[num + 1] = color[1];
-                    _image_ret[num + 2] = color[0];
-                    if (bytes_per_pixel == 4) {
-                        _image_ret[num + 3] = color[3];
-                    }
-                }
-            } else {
-                unsigned size = (packet_header & ~(1u << 7u)) + 1;
-                size *= bytes_per_pixel;
-                for (unsigned i = 0; i < size;
-                     i += bytes_per_pixel, num += bytes_per_pixel) {
-                    _image_ret[num] = image_data[i + 2];
-                    _image_ret[num + 1] = image_data[i + 1];
-                    _image_ret[num + 2] = image_data[i];
-                    if (bytes_per_pixel == 4) {
-                        _image_ret[num + 3] = image_data[i + 3];
-                    }
-                }
-                image_data += size;
-            }
-        }
-    }
-
     if (bpp == 32) {
         format = eTexFormat::RawRGBA8888;
     } else if (bpp == 24) {
         format = eTexFormat::RawRGB888;
     }
 
-    return image_ret;
+    if (out_data && out_size < w * h * bytes_per_pixel) {
+        return false;
+    }
+
+    out_size = w * h * bytes_per_pixel;
+    if (out_data) {
+        const uint8_t *image_data = (const uint8_t *)data + 18;
+
+        if (!compressed) {
+            for (size_t i = 0; i < out_size; i += bytes_per_pixel) {
+                out_data[i] = image_data[i + 2];
+                out_data[i + 1] = image_data[i + 1];
+                out_data[i + 2] = image_data[i];
+                if (bytes_per_pixel == 4) {
+                    out_data[i + 3] = image_data[i + 3];
+                }
+            }
+        } else {
+            for (size_t num = 0; num < out_size;) {
+                uint8_t packet_header = *image_data++;
+                if (packet_header & (1u << 7u)) {
+                    uint8_t color[4];
+                    unsigned size = (packet_header & ~(1u << 7u)) + 1;
+                    size *= bytes_per_pixel;
+                    for (unsigned i = 0; i < bytes_per_pixel; i++) {
+                        color[i] = *image_data++;
+                    }
+                    for (unsigned i = 0; i < size; i += bytes_per_pixel, num += bytes_per_pixel) {
+                        out_data[num] = color[2];
+                        out_data[num + 1] = color[1];
+                        out_data[num + 2] = color[0];
+                        if (bytes_per_pixel == 4) {
+                            out_data[num + 3] = color[3];
+                        }
+                    }
+                } else {
+                    unsigned size = (packet_header & ~(1u << 7u)) + 1;
+                    size *= bytes_per_pixel;
+                    for (unsigned i = 0; i < size; i += bytes_per_pixel, num += bytes_per_pixel) {
+                        out_data[num] = image_data[i + 2];
+                        out_data[num + 1] = image_data[i + 1];
+                        out_data[num + 2] = image_data[i];
+                        if (bytes_per_pixel == 4) {
+                            out_data[num + 3] = image_data[i + 3];
+                        }
+                    }
+                    image_data += size;
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 void Ren::RGBMDecode(const uint8_t rgbm[4], float out_rgb[3]) {
@@ -289,13 +297,12 @@ void Ren::RGBMEncode(const float rgb[3], uint8_t out_rgbm[4]) {
     out_rgbm[3] = (uint8_t)_CLAMP(int(fa * 255), 0, 255);
 }
 
-std::unique_ptr<float[]> Ren::ConvertRGBE_to_RGB32F(const uint8_t image_data[],
-                                                    const int w, const int h) {
+std::unique_ptr<float[]> Ren::ConvertRGBE_to_RGB32F(const uint8_t image_data[], const int w, const int h) {
     std::unique_ptr<float[]> fp_data(new float[w * h * 3]);
 
     for (int i = 0; i < w * h; i++) {
-        const uint8_t r = image_data[4 * i + 0], g = image_data[4 * i + 1],
-                      b = image_data[4 * i + 2], a = image_data[4 * i + 3];
+        const uint8_t r = image_data[4 * i + 0], g = image_data[4 * i + 1], b = image_data[4 * i + 2],
+                      a = image_data[4 * i + 3];
 
         const float f = std::exp2(float(a) - 128.0f);
         const float k = 1.0f / 255;
@@ -308,27 +315,27 @@ std::unique_ptr<float[]> Ren::ConvertRGBE_to_RGB32F(const uint8_t image_data[],
     return fp_data;
 }
 
-std::unique_ptr<uint16_t[]> Ren::ConvertRGBE_to_RGB16F(const uint8_t image_data[],
-                                                       const int w, const int h) {
+std::unique_ptr<uint16_t[]> Ren::ConvertRGBE_to_RGB16F(const uint8_t image_data[], const int w, const int h) {
     std::unique_ptr<uint16_t[]> fp16_data(new uint16_t[w * h * 3]);
+    ConvertRGBE_to_RGB16F(image_data, w, h, fp16_data.get());
+    return fp16_data;
+}
 
+void Ren::ConvertRGBE_to_RGB16F(const uint8_t image_data[], int w, int h, uint16_t *out_data) {
     for (int i = 0; i < w * h; i++) {
-        const uint8_t r = image_data[4 * i + 0], g = image_data[4 * i + 1],
-                      b = image_data[4 * i + 2], a = image_data[4 * i + 3];
+        const uint8_t r = image_data[4 * i + 0], g = image_data[4 * i + 1], b = image_data[4 * i + 2],
+                      a = image_data[4 * i + 3];
 
         const float f = std::exp2(float(a) - 128.0f);
         const float k = 1.0f / 255;
 
-        fp16_data[3 * i + 0] = f32_to_f16(k * float(r) * f);
-        fp16_data[3 * i + 1] = f32_to_f16(k * float(g) * f);
-        fp16_data[3 * i + 2] = f32_to_f16(k * float(b) * f);
+        out_data[3 * i + 0] = f32_to_f16(k * float(r) * f);
+        out_data[3 * i + 1] = f32_to_f16(k * float(g) * f);
+        out_data[3 * i + 2] = f32_to_f16(k * float(b) * f);
     }
-
-    return fp16_data;
 }
 
-std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBE(const float image_data[],
-                                                      const int w, const int h,
+std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBE(const float image_data[], const int w, const int h,
                                                       const int channels) {
     std::unique_ptr<uint8_t[]> u8_data(new uint8_t[w * h * 4]);
 
@@ -367,8 +374,7 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBE(const float image_data[],
                     mantissa[i] = 1.0f;
             }
 
-            const auto res =
-                Ren::Vec4f{mantissa[0], mantissa[1], mantissa[2], common_exp + 128.0f};
+            const auto res = Ren::Vec4f{mantissa[0], mantissa[1], mantissa[2], common_exp + 128.0f};
 
             u8_data[(y * w + x) * 4 + 0] = (uint8_t)_CLAMP(int(res[0] * 255), 0, 255);
             u8_data[(y * w + x) * 4 + 1] = (uint8_t)_CLAMP(int(res[1] * 255), 0, 255);
@@ -380,8 +386,7 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBE(const float image_data[],
     return u8_data;
 }
 
-std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBM(const float image_data[],
-                                                      const int w, const int h,
+std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBM(const float image_data[], const int w, const int h,
                                                       const int channels) {
     std::unique_ptr<uint8_t[]> u8_data(new uint8_t[w * h * 4]);
 
@@ -394,8 +399,7 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBM(const float image_data[],
     return u8_data;
 }
 
-std::unique_ptr<uint8_t[]> Ren::ConvertRGB_to_CoCgxY_rev(const uint8_t image_data[],
-                                                         const int w, const int h) {
+std::unique_ptr<uint8_t[]> Ren::ConvertRGB_to_CoCgxY_rev(const uint8_t image_data[], const int w, const int h) {
     std::unique_ptr<uint8_t[]> u8_data(new uint8_t[w * h * 4]);
 
     for (int y = 0; y < h; y++) {
@@ -413,14 +417,12 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB_to_CoCgxY_rev(const uint8_t image_dat
     return u8_data;
 }
 
-std::unique_ptr<uint8_t[]> Ren::ConvertCoCgxY_to_RGB_rev(const uint8_t image_data[],
-                                                         const int w, const int h) {
+std::unique_ptr<uint8_t[]> Ren::ConvertCoCgxY_to_RGB_rev(const uint8_t image_data[], const int w, const int h) {
     std::unique_ptr<uint8_t[]> u8_data(new uint8_t[w * h * 3]);
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
-            const uint8_t YCoCg[] = {image_data[(y * w + x) * 4 + 3],
-                                     image_data[(y * w + x) * 4 + 0],
+            const uint8_t YCoCg[] = {image_data[(y * w + x) * 4 + 3], image_data[(y * w + x) * 4 + 0],
                                      image_data[(y * w + x) * 4 + 1]};
             YCoCg_to_RGB_reversible(YCoCg, &u8_data[(y * w + x) * 3]);
         }
@@ -429,8 +431,7 @@ std::unique_ptr<uint8_t[]> Ren::ConvertCoCgxY_to_RGB_rev(const uint8_t image_dat
     return u8_data;
 }
 
-std::unique_ptr<uint8_t[]> Ren::ConvertRGB_to_CoCgxY(const uint8_t image_data[],
-                                                     const int w, const int h) {
+std::unique_ptr<uint8_t[]> Ren::ConvertRGB_to_CoCgxY(const uint8_t image_data[], const int w, const int h) {
     std::unique_ptr<uint8_t[]> u8_data(new uint8_t[w * h * 4]);
 
     for (int y = 0; y < h; y++) {
@@ -448,14 +449,12 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB_to_CoCgxY(const uint8_t image_data[],
     return u8_data;
 }
 
-std::unique_ptr<uint8_t[]> Ren::ConvertCoCgxY_to_RGB(const uint8_t image_data[],
-                                                     const int w, const int h) {
+std::unique_ptr<uint8_t[]> Ren::ConvertCoCgxY_to_RGB(const uint8_t image_data[], const int w, const int h) {
     std::unique_ptr<uint8_t[]> u8_data(new uint8_t[w * h * 3]);
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
-            const uint8_t YCoCg[] = {image_data[(y * w + x) * 4 + 3],
-                                     image_data[(y * w + x) * 4 + 0],
+            const uint8_t YCoCg[] = {image_data[(y * w + x) * 4 + 3], image_data[(y * w + x) * 4 + 0],
                                      image_data[(y * w + x) * 4 + 1]};
             YCoCg_to_RGB(YCoCg, &u8_data[(y * w + x) * 3]);
         }
@@ -464,8 +463,8 @@ std::unique_ptr<uint8_t[]> Ren::ConvertCoCgxY_to_RGB(const uint8_t image_data[],
     return u8_data;
 }
 
-int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
-                     int heights[16], const int channels, const eMipOp op[4]) {
+int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int heights[16], const int channels,
+                     const eMipOp op[4]) {
     int mip_count = 1;
 
     int _w = widths[0], _h = heights[0];
@@ -501,16 +500,12 @@ int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
                     c[2][2] = tex[((j + 1) * _prev_w + i + 1) * channels + k];
 
                     if (op[k] == eMipOp::Avg) {
-                        mipmaps[mip_count][count * channels + k] =
-                            uint8_t((c[1][1] + c[1][2] + c[2][1] + c[2][2]) / 4);
+                        mipmaps[mip_count][count * channels + k] = uint8_t((c[1][1] + c[1][2] + c[2][1] + c[2][2]) / 4);
                     } else if (op[k] == eMipOp::Min) {
-                        mipmaps[mip_count][count * channels + k] =
-                            uint8_t(_MIN4(c[1][1], c[1][2], c[2][1], c[2][2]));
+                        mipmaps[mip_count][count * channels + k] = uint8_t(_MIN4(c[1][1], c[1][2], c[2][1], c[2][2]));
                     } else if (op[k] == eMipOp::Max) {
-                        mipmaps[mip_count][count * channels + k] =
-                            uint8_t(_MAX4(c[1][1], c[1][2], c[2][1], c[2][2]));
-                    } else if (op[k] == eMipOp::MinBilinear ||
-                               op[k] == eMipOp::MaxBilinear) {
+                        mipmaps[mip_count][count * channels + k] = uint8_t(_MAX4(c[1][1], c[1][2], c[2][1], c[2][2]));
+                    } else if (op[k] == eMipOp::MinBilinear || op[k] == eMipOp::MaxBilinear) {
 
                         // fetch outer quad
                         for (int dy = -1; dy < 3; dy++) {
@@ -522,13 +517,11 @@ int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
                                 const int i0 = (i + dx + _prev_w) % _prev_w;
                                 const int j0 = (j + dy + _prev_h) % _prev_h;
 
-                                c[dy + 1][dx + 1] =
-                                    tex[(j0 * _prev_w + i0) * channels + k];
+                                c[dy + 1][dx + 1] = tex[(j0 * _prev_w + i0) * channels + k];
                             }
                         }
 
-                        static const int quadrants[2][2][2] = {{{-1, -1}, {+1, -1}},
-                                                               {{-1, +1}, {+1, +1}}};
+                        static const int quadrants[2][2][2] = {{{-1, -1}, {+1, -1}}, {{-1, +1}, {+1, +1}}};
 
                         int test_val = c[1][1];
 
@@ -538,15 +531,11 @@ int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
                                 const int j0 = dj + quadrants[dj - 1][di - 1][1];
 
                                 if (op[k] == eMipOp::MinBilinear) {
-                                    test_val =
-                                        _MIN(test_val, (c[dj][di] + c[dj][i0]) / 2);
-                                    test_val =
-                                        _MIN(test_val, (c[dj][di] + c[j0][di]) / 2);
+                                    test_val = _MIN(test_val, (c[dj][di] + c[dj][i0]) / 2);
+                                    test_val = _MIN(test_val, (c[dj][di] + c[j0][di]) / 2);
                                 } else if (op[k] == eMipOp::MaxBilinear) {
-                                    test_val =
-                                        _MAX(test_val, (c[dj][di] + c[dj][i0]) / 2);
-                                    test_val =
-                                        _MAX(test_val, (c[dj][di] + c[j0][di]) / 2);
+                                    test_val = _MAX(test_val, (c[dj][di] + c[dj][i0]) / 2);
+                                    test_val = _MAX(test_val, (c[dj][di] + c[j0][di]) / 2);
                                 }
                             }
                         }
@@ -558,17 +547,13 @@ int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
                                 }
 
                                 if (op[k] == eMipOp::MinBilinear) {
-                                    test_val =
-                                        _MIN(test_val,
-                                             (c[dj + 0][di + 0] + c[dj + 0][di + 1] +
-                                              c[dj + 1][di + 0] + c[dj + 1][di + 1]) /
-                                                 4);
+                                    test_val = _MIN(test_val, (c[dj + 0][di + 0] + c[dj + 0][di + 1] +
+                                                               c[dj + 1][di + 0] + c[dj + 1][di + 1]) /
+                                                                  4);
                                 } else if (op[k] == eMipOp::MaxBilinear) {
-                                    test_val =
-                                        _MAX(test_val,
-                                             (c[dj + 0][di + 0] + c[dj + 0][di + 1] +
-                                              c[dj + 1][di + 0] + c[dj + 1][di + 1]) /
-                                                 4);
+                                    test_val = _MAX(test_val, (c[dj + 0][di + 0] + c[dj + 0][di + 1] +
+                                                               c[dj + 1][di + 0] + c[dj + 1][di + 1]) /
+                                                                  4);
                                 }
                             }
                         }
@@ -595,8 +580,7 @@ int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
     return mip_count;
 }
 
-int Ren::InitMipMapsRGBM(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
-                         int heights[16]) {
+int Ren::InitMipMapsRGBM(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int heights[16]) {
     int mip_count = 1;
 
     int _w = widths[0], _h = heights[0];
@@ -647,8 +631,8 @@ int Ren::InitMipMapsRGBM(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
     return mip_count;
 }
 
-void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices_count,
-                                 const uint32_t vtx_count, uint32_t *out_indices) {
+void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices_count, const uint32_t vtx_count,
+                                 uint32_t *out_indices) {
     // From https://tomforsyth1000.github.io/papers/fast_vert_cache_opt.html
 
     uint32_t prim_count = indices_count / 3;
@@ -663,8 +647,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices
 
     const int MaxSizeVertexCache = 32;
 
-    auto get_vertex_score = [MaxSizeVertexCache](int32_t cache_pos,
-                                                 uint32_t active_tris_count) -> float {
+    auto get_vertex_score = [MaxSizeVertexCache](int32_t cache_pos, uint32_t active_tris_count) -> float {
         const float CacheDecayPower = 1.5f;
         const float LastTriScore = 0.75f;
         const float ValenceBoostScale = 2.0f;
@@ -697,8 +680,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices
         // Bonus points for having a low number of tris still to
         // use the vert, so we get rid of lone verts quickly.
 
-        const float valence_boost =
-            std::pow((float)active_tris_count, -ValenceBoostPower);
+        const float valence_boost = std::pow((float)active_tris_count, -ValenceBoostPower);
         score += ValenceBoostScale * valence_boost;
         return score;
     };
@@ -781,8 +763,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices
         }
     };
 
-    auto enforce_size = [&get_vertex_score](std::deque<uint32_t> &lru_cache,
-                                            vtx_data_t *vertices, uint32_t max_size,
+    auto enforce_size = [&get_vertex_score](std::deque<uint32_t> &lru_cache, vtx_data_t *vertices, uint32_t max_size,
                                             std::vector<uint32_t> &out_tris_to_update) {
         out_tris_to_update.clear();
 
@@ -799,8 +780,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices
             for (uint32_t j = 0; j < v.ref_count; j++) {
                 int tri_index = v.tris[j];
                 if (tri_index != -1) {
-                    auto it = std::find(std::begin(out_tris_to_update),
-                                        std::end(out_tris_to_update), tri_index);
+                    auto it = std::find(std::begin(out_tris_to_update), std::end(out_tris_to_update), tri_index);
                     if (it == std::end(out_tris_to_update)) {
                         out_tris_to_update.push_back(tri_index);
                     }
@@ -863,9 +843,8 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices
             tri_data_t &tri = triangles[ti];
 
             if (!tri.is_in_list) {
-                tri.score = vertices[tri.indices[0]].score +
-                            vertices[tri.indices[1]].score +
-                            vertices[tri.indices[2]].score;
+                tri.score =
+                    vertices[tri.indices[0]].score + vertices[tri.indices[1]].score + vertices[tri.indices[2]].score;
 
                 if (tri.score > next_best_score) {
                     if (next_best_score > next_next_best_score) {
@@ -895,8 +874,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices
     }
 }
 
-void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices,
-                              std::vector<uint32_t> index_groups[],
+void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint32_t> index_groups[],
                               const int groups_count) {
     const float flt_eps = 0.0000001f;
 
@@ -929,8 +907,7 @@ void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices,
             } else {
                 const Vec3f plane_N = Cross(dp1, dp2);
                 tangent = Vec3f{0.0f, 1.0f, 0.0f};
-                if (std::abs(plane_N[0]) <= std::abs(plane_N[1]) &&
-                    std::abs(plane_N[0]) <= std::abs(plane_N[2])) {
+                if (std::abs(plane_N[0]) <= std::abs(plane_N[1]) && std::abs(plane_N[0]) <= std::abs(plane_N[2])) {
                     tangent = Vec3f{1.0f, 0.0f, 0.0f};
                 } else if (std::abs(plane_N[2]) <= std::abs(plane_N[0]) &&
                            std::abs(plane_N[2]) <= std::abs(plane_N[1])) {
@@ -941,10 +918,8 @@ void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices,
                 tangent = Normalize(Cross(Vec3f(plane_N), binormal));
             }
 
-            int i1 = (v0->b[0] * tangent[0] + v0->b[1] * tangent[1] +
-                      v0->b[2] * tangent[2]) < 0;
-            int i2 =
-                2 * (b0[0] * binormal[0] + b0[1] * binormal[1] + b0[2] * binormal[2] < 0);
+            int i1 = (v0->b[0] * tangent[0] + v0->b[1] * tangent[1] + v0->b[2] * tangent[2]) < 0;
+            int i2 = 2 * (b0[0] * binormal[0] + b0[1] * binormal[1] + b0[2] * binormal[2] < 0);
 
             if (i1 || i2) {
                 uint32_t index = twin_verts[indices[i + 0]][i1 + i2 - 1];
@@ -967,10 +942,8 @@ void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices,
             v0->b[1] += tangent[1];
             v0->b[2] += tangent[2];
 
-            i1 =
-                v1->b[0] * tangent[0] + v1->b[1] * tangent[1] + v1->b[2] * tangent[2] < 0;
-            i2 =
-                2 * (b1[0] * binormal[0] + b1[1] * binormal[1] + b1[2] * binormal[2] < 0);
+            i1 = v1->b[0] * tangent[0] + v1->b[1] * tangent[1] + v1->b[2] * tangent[2] < 0;
+            i2 = 2 * (b1[0] * binormal[0] + b1[1] * binormal[1] + b1[2] * binormal[2] < 0);
 
             if (i1 || i2) {
                 uint32_t index = twin_verts[indices[i + 1]][i1 + i2 - 1];
@@ -993,10 +966,8 @@ void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices,
             v1->b[1] += tangent[1];
             v1->b[2] += tangent[2];
 
-            i1 =
-                v2->b[0] * tangent[0] + v2->b[1] * tangent[1] + v2->b[2] * tangent[2] < 0;
-            i2 =
-                2 * (b2[0] * binormal[0] + b2[1] * binormal[1] + b2[2] * binormal[2] < 0);
+            i1 = v2->b[0] * tangent[0] + v2->b[1] * tangent[1] + v2->b[2] * tangent[2] < 0;
+            i2 = 2 * (b2[0] * binormal[0] + b2[1] * binormal[1] + b2[2] * binormal[2] < 0);
 
             if (i1 || i2) {
                 uint32_t index = twin_verts[indices[i + 2]][i1 + i2 - 1];
@@ -1022,8 +993,7 @@ void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices,
     }
 
     for (vertex_t &v : vertices) {
-        if (std::abs(v.b[0]) > flt_eps || std::abs(v.b[1]) > flt_eps ||
-            std::abs(v.b[2]) > flt_eps) {
+        if (std::abs(v.b[0]) > flt_eps || std::abs(v.b[1]) > flt_eps || std::abs(v.b[2]) > flt_eps) {
             const Vec3f tangent = MakeVec3(v.b);
             Vec3f binormal = Cross(MakeVec3(v.n), tangent);
             float l = Length(binormal);
@@ -1121,29 +1091,29 @@ float Ren::PerlinNoise(const Ren::Vec4f &P) {
     auto g0111 = Vec4f{gx11[2], gy11[2], gz11[2], gw11[2]};
     auto g1111 = Vec4f{gx11[3], gy11[3], gz11[3], gw11[3]};
 
-    const Vec4f norm00 = taylor_inv_sqrt(Vec4f{Dot(g0000, g0000), Dot(g0100, g0100),
-                                               Dot(g1000, g1000), Dot(g1100, g1100)});
+    const Vec4f norm00 =
+        taylor_inv_sqrt(Vec4f{Dot(g0000, g0000), Dot(g0100, g0100), Dot(g1000, g1000), Dot(g1100, g1100)});
     g0000 *= norm00[0];
     g0100 *= norm00[1];
     g1000 *= norm00[2];
     g1100 *= norm00[3];
 
-    const Vec4f norm01 = taylor_inv_sqrt(Vec4f{Dot(g0001, g0001), Dot(g0101, g0101),
-                                               Dot(g1001, g1001), Dot(g1101, g1101)});
+    const Vec4f norm01 =
+        taylor_inv_sqrt(Vec4f{Dot(g0001, g0001), Dot(g0101, g0101), Dot(g1001, g1001), Dot(g1101, g1101)});
     g0001 *= norm01[0];
     g0101 *= norm01[1];
     g1001 *= norm01[2];
     g1101 *= norm01[3];
 
-    const Vec4f norm10 = taylor_inv_sqrt(Vec4f{Dot(g0010, g0010), Dot(g0110, g0110),
-                                               Dot(g1010, g1010), Dot(g1110, g1110)});
+    const Vec4f norm10 =
+        taylor_inv_sqrt(Vec4f{Dot(g0010, g0010), Dot(g0110, g0110), Dot(g1010, g1010), Dot(g1110, g1110)});
     g0010 *= norm10[0];
     g0110 *= norm10[1];
     g1010 *= norm10[2];
     g1110 *= norm10[3];
 
-    const Vec4f norm11 = taylor_inv_sqrt(Vec4f{Dot(g0011, g0011), Dot(g0111, g0111),
-                                               Dot(g1011, g1011), Dot(g1111, g1111)});
+    const Vec4f norm11 =
+        taylor_inv_sqrt(Vec4f{Dot(g0011, g0011), Dot(g0111, g0111), Dot(g1011, g1011), Dot(g1111, g1111)});
     g0011 *= norm11[0];
     g0111 *= norm11[1];
     g1011 *= norm11[2];
@@ -1167,13 +1137,10 @@ float Ren::PerlinNoise(const Ren::Vec4f &P) {
     const float n1111 = Dot(g1111, Pf1);
 
     const Vec4f fade_xyzw = fade(Pf0);
-    const Vec4f n_0w = Mix(Vec4f{n0000, n1000, n0100, n1100},
-                           Vec4f{n0001, n1001, n0101, n1101}, fade_xyzw[3]);
-    const Vec4f n_1w = Mix(Vec4f{n0010, n1010, n0110, n1110},
-                           Vec4f{n0011, n1011, n0111, n1111}, fade_xyzw[3]);
+    const Vec4f n_0w = Mix(Vec4f{n0000, n1000, n0100, n1100}, Vec4f{n0001, n1001, n0101, n1101}, fade_xyzw[3]);
+    const Vec4f n_1w = Mix(Vec4f{n0010, n1010, n0110, n1110}, Vec4f{n0011, n1011, n0111, n1111}, fade_xyzw[3]);
     const Vec4f n_zw = Mix(n_0w, n_1w, fade_xyzw[2]);
-    const Vec2f n_yzw =
-        Mix(Vec2f{n_zw[0], n_zw[1]}, Vec2f{n_zw[2], n_zw[3]}, fade_xyzw[1]);
+    const Vec2f n_yzw = Mix(Vec2f{n_zw[0], n_zw[1]}, Vec2f{n_zw[2], n_zw[3]}, fade_xyzw[1]);
     const float n_xyzw = Mix(n_yzw[0], n_yzw[1], fade_xyzw[0]);
     return 2.2f * n_xyzw;
 }
@@ -1260,29 +1227,29 @@ float Ren::PerlinNoise(const Ren::Vec4f &P, const Ren::Vec4f &rep) {
     auto g0111 = Vec4f(gx11[2], gy11[2], gz11[2], gw11[2]);
     auto g1111 = Vec4f(gx11[3], gy11[3], gz11[3], gw11[3]);
 
-    const Vec4f norm00 = taylor_inv_sqrt(Vec4f{Dot(g0000, g0000), Dot(g0100, g0100),
-                                               Dot(g1000, g1000), Dot(g1100, g1100)});
+    const Vec4f norm00 =
+        taylor_inv_sqrt(Vec4f{Dot(g0000, g0000), Dot(g0100, g0100), Dot(g1000, g1000), Dot(g1100, g1100)});
     g0000 *= norm00[0];
     g0100 *= norm00[1];
     g1000 *= norm00[2];
     g1100 *= norm00[3];
 
-    const Vec4f norm01 = taylor_inv_sqrt(Vec4f{Dot(g0001, g0001), Dot(g0101, g0101),
-                                               Dot(g1001, g1001), Dot(g1101, g1101)});
+    const Vec4f norm01 =
+        taylor_inv_sqrt(Vec4f{Dot(g0001, g0001), Dot(g0101, g0101), Dot(g1001, g1001), Dot(g1101, g1101)});
     g0001 *= norm01[0];
     g0101 *= norm01[1];
     g1001 *= norm01[2];
     g1101 *= norm01[3];
 
-    const Vec4f norm10 = taylor_inv_sqrt(Vec4f{Dot(g0010, g0010), Dot(g0110, g0110),
-                                               Dot(g1010, g1010), Dot(g1110, g1110)});
+    const Vec4f norm10 =
+        taylor_inv_sqrt(Vec4f{Dot(g0010, g0010), Dot(g0110, g0110), Dot(g1010, g1010), Dot(g1110, g1110)});
     g0010 *= norm10[0];
     g0110 *= norm10[1];
     g1010 *= norm10[2];
     g1110 *= norm10[3];
 
-    const Vec4f norm11 = taylor_inv_sqrt(Vec4f{Dot(g0011, g0011), Dot(g0111, g0111),
-                                               Dot(g1011, g1011), Dot(g1111, g1111)});
+    const Vec4f norm11 =
+        taylor_inv_sqrt(Vec4f{Dot(g0011, g0011), Dot(g0111, g0111), Dot(g1011, g1011), Dot(g1111, g1111)});
     g0011 *= norm11[0];
     g0111 *= norm11[1];
     g1011 *= norm11[2];
@@ -1306,13 +1273,10 @@ float Ren::PerlinNoise(const Ren::Vec4f &P, const Ren::Vec4f &rep) {
     const float n1111 = Dot(g1111, Pf1);
 
     const Vec4f fade_xyzw = fade(Pf0);
-    const Vec4f n_0w = Mix(Vec4f{n0000, n1000, n0100, n1100},
-                           Vec4f{n0001, n1001, n0101, n1101}, fade_xyzw[3]);
-    const Vec4f n_1w = Mix(Vec4f{n0010, n1010, n0110, n1110},
-                           Vec4f{n0011, n1011, n0111, n1111}, fade_xyzw[3]);
+    const Vec4f n_0w = Mix(Vec4f{n0000, n1000, n0100, n1100}, Vec4f{n0001, n1001, n0101, n1101}, fade_xyzw[3]);
+    const Vec4f n_1w = Mix(Vec4f{n0010, n1010, n0110, n1110}, Vec4f{n0011, n1011, n0111, n1111}, fade_xyzw[3]);
     const Vec4f n_zw = Mix(n_0w, n_1w, fade_xyzw[2]);
-    const Vec2f n_yzw =
-        Mix(Vec2f{n_zw[0], n_zw[1]}, Vec2f{n_zw[2], n_zw[3]}, fade_xyzw[1]);
+    const Vec2f n_yzw = Mix(Vec2f{n_zw[0], n_zw[1]}, Vec2f{n_zw[2], n_zw[3]}, fade_xyzw[1]);
     const float n_xyzw = Mix(n_yzw[0], n_yzw[1], fade_xyzw[0]);
     return 2.2f * n_xyzw;
 }
@@ -1322,8 +1286,7 @@ float Ren::PerlinNoise(const Ren::Vec4f &P, const Ren::Vec4f &rep) {
 //
 
 namespace Ren {
-template <int Channels>
-void Extract4x4Block_Ref(const uint8_t src[], const int stride, uint8_t dst[64]) {
+template <int Channels> void Extract4x4Block_Ref(const uint8_t src[], const int stride, uint8_t dst[64]) {
     if (Channels == 4) {
         for (int j = 0; j < 4; j++) {
             memcpy(&dst[j * 4 * 4], src, 4 * 4);
@@ -1341,8 +1304,8 @@ void Extract4x4Block_Ref(const uint8_t src[], const int stride, uint8_t dst[64])
 }
 
 template <int Channels>
-void ExtractIncomplete4x4Block_Ref(const uint8_t src[], const int stride,
-                                   const int blck_w, const int blck_h, uint8_t dst[64]) {
+void ExtractIncomplete4x4Block_Ref(const uint8_t src[], const int stride, const int blck_w, const int blck_h,
+                                   uint8_t dst[64]) {
     if (Channels == 4) {
         for (int j = 0; j < blck_h; j++) {
             assert(blck_w <= 4);
@@ -1373,18 +1336,14 @@ void ExtractIncomplete4x4Block_Ref(const uint8_t src[], const int stride,
 }
 
 // WARNING: Reads 4 bytes outside of block!
-template <int Channels>
-void Extract4x4Block_SSSE3(const uint8_t src[], int stride, uint8_t dst[64]);
+template <int Channels> void Extract4x4Block_SSSE3(const uint8_t src[], int stride, uint8_t dst[64]);
 
 force_inline int ColorDistance(const uint8_t c1[3], const uint8_t c2[3]) {
     // euclidean distance
-    return (c1[0] - c2[0]) * (c1[0] - c2[0]) + (c1[1] - c2[1]) * (c1[1] - c2[1]) +
-           (c1[2] - c2[2]) * (c1[2] - c2[2]);
+    return (c1[0] - c2[0]) * (c1[0] - c2[0]) + (c1[1] - c2[1]) * (c1[1] - c2[1]) + (c1[2] - c2[2]) * (c1[2] - c2[2]);
 }
 
-force_inline int ColorLumaApprox(const uint8_t color[3]) {
-    return int(color[0] + color[1] * 2 + color[2]);
-}
+force_inline int ColorLumaApprox(const uint8_t color[3]) { return int(color[0] + color[1] * 2 + color[2]); }
 
 force_inline uint16_t rgb888_to_rgb565(const uint8_t color[3]) {
     return ((color[0] >> 3) << 11) | ((color[1] >> 2) << 5) | (color[2] >> 3);
@@ -1397,8 +1356,7 @@ force_inline void swap_rgb(uint8_t c1[3], uint8_t c2[3]) {
     memcpy(c2, tm, 3);
 }
 
-void GetMinMaxColorByDistance(const uint8_t block[64], uint8_t min_color[4],
-                              uint8_t max_color[4]) {
+void GetMinMaxColorByDistance(const uint8_t block[64], uint8_t min_color[4], uint8_t max_color[4]) {
     int max_dist = -1;
 
     for (int i = 0; i < 64 - 4; i += 4) {
@@ -1417,8 +1375,7 @@ void GetMinMaxColorByDistance(const uint8_t block[64], uint8_t min_color[4],
     }
 }
 
-void GetMinMaxColorByLuma(const uint8_t block[64], uint8_t min_color[4],
-                          uint8_t max_color[4]) {
+void GetMinMaxColorByLuma(const uint8_t block[64], uint8_t min_color[4], uint8_t max_color[4]) {
     int max_luma = -1, min_luma = std::numeric_limits<int>::max();
 
     for (int i = 0; i < 16; i++) {
@@ -1439,8 +1396,7 @@ void GetMinMaxColorByLuma(const uint8_t block[64], uint8_t min_color[4],
 }
 
 template <bool UseAlpha = false, bool Is_YCoCg = false>
-void GetMinMaxColorByBBox_Ref(const uint8_t block[64], uint8_t min_color[4],
-                              uint8_t max_color[4]) {
+void GetMinMaxColorByBBox_Ref(const uint8_t block[64], uint8_t min_color[4], uint8_t max_color[4]) {
     min_color[0] = min_color[1] = min_color[2] = min_color[3] = 255;
     max_color[0] = max_color[1] = max_color[2] = max_color[3] = 0;
 
@@ -1459,17 +1415,15 @@ void GetMinMaxColorByBBox_Ref(const uint8_t block[64], uint8_t min_color[4],
 
     if (!Is_YCoCg) {
         // offset bbox inside by 1/16 of it's dimentions, this improves MSR (???)
-        const uint8_t inset[] = {uint8_t((max_color[0] - min_color[0]) / 16),
-                                 uint8_t((max_color[1] - min_color[1]) / 16),
-                                 uint8_t((max_color[2] - min_color[2]) / 16),
-                                 uint8_t((max_color[3] - min_color[3]) / 32)};
+        const uint8_t inset[] = {
+            uint8_t((max_color[0] - min_color[0]) / 16), uint8_t((max_color[1] - min_color[1]) / 16),
+            uint8_t((max_color[2] - min_color[2]) / 16), uint8_t((max_color[3] - min_color[3]) / 32)};
 
         min_color[0] = (min_color[0] + inset[0] <= 255) ? min_color[0] + inset[0] : 255;
         min_color[1] = (min_color[1] + inset[1] <= 255) ? min_color[1] + inset[1] : 255;
         min_color[2] = (min_color[2] + inset[2] <= 255) ? min_color[2] + inset[2] : 255;
         if (UseAlpha) {
-            min_color[3] =
-                (min_color[3] + inset[3] <= 255) ? min_color[3] + inset[3] : 255;
+            min_color[3] = (min_color[3] + inset[3] <= 255) ? min_color[3] + inset[3] : 255;
         }
 
         max_color[0] = (max_color[0] >= inset[0]) ? max_color[0] - inset[0] : 0;
@@ -1482,8 +1436,7 @@ void GetMinMaxColorByBBox_Ref(const uint8_t block[64], uint8_t min_color[4],
 }
 
 template <bool UseAlpha = false, bool Is_YCoCg = false>
-void GetMinMaxColorByBBox_SSE2(const uint8_t block[64], uint8_t min_color[4],
-                               uint8_t max_color[4]);
+void GetMinMaxColorByBBox_SSE2(const uint8_t block[64], uint8_t min_color[4], uint8_t max_color[4]);
 
 void InsetYCoCgBBox_Ref(uint8_t min_color[4], uint8_t max_color[4]) {
     const int inset[] = {(max_color[0] - min_color[0]) - ((1 << (4 - 1)) - 1),
@@ -1519,8 +1472,7 @@ void InsetYCoCgBBox_Ref(uint8_t min_color[4], uint8_t max_color[4]) {
 
 void InsetYCoCgBBox_SSE2(uint8_t min_color[4], uint8_t max_color[4]);
 
-void SelectYCoCgDiagonal_Ref(const uint8_t block[64], uint8_t min_color[3],
-                             uint8_t max_color[3]) {
+void SelectYCoCgDiagonal_Ref(const uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3]) {
     const uint8_t mid0 = (int(min_color[0]) + max_color[0] + 1) / 2;
     const uint8_t mid1 = (int(min_color[1]) + max_color[1] + 1) / 2;
 
@@ -1558,8 +1510,7 @@ void SelectYCoCgDiagonal_Ref(const uint8_t block[64], uint8_t min_color[3],
 #endif
 }
 
-void SelectYCoCgDiagonal_SSE2(const uint8_t block[64], uint8_t min_color[3],
-                              uint8_t max_color[3]);
+void SelectYCoCgDiagonal_SSE2(const uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3]);
 
 void ScaleYCoCg_Ref(uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3]) {
     int m0 = _ABS(min_color[0] - 128);
@@ -1610,8 +1561,8 @@ force_inline void push_u32(const uint32_t v, uint8_t *&out_data) {
     (*out_data++) = (v >> 24) & 0xFF;
 }
 
-void EmitColorIndices_Ref(const uint8_t block[64], const uint8_t min_color[3],
-                          const uint8_t max_color[3], uint8_t *&out_data) {
+void EmitColorIndices_Ref(const uint8_t block[64], const uint8_t min_color[3], const uint8_t max_color[3],
+                          uint8_t *&out_data) {
     uint8_t colors[4][4];
 
     // get two initial colors (as if they were converted to rgb565 and back
@@ -1660,14 +1611,10 @@ void EmitColorIndices_Ref(const uint8_t block[64], const uint8_t min_color[3],
         const int c1 = block[i * 4 + 1];
         const int c2 = block[i * 4 + 2];
 
-        const int d0 =
-            _ABS(colors[0][0] - c0) + _ABS(colors[0][1] - c1) + _ABS(colors[0][2] - c2);
-        const int d1 =
-            _ABS(colors[1][0] - c0) + _ABS(colors[1][1] - c1) + _ABS(colors[1][2] - c2);
-        const int d2 =
-            _ABS(colors[2][0] - c0) + _ABS(colors[2][1] - c1) + _ABS(colors[2][2] - c2);
-        const int d3 =
-            _ABS(colors[3][0] - c0) + _ABS(colors[3][1] - c1) + _ABS(colors[3][2] - c2);
+        const int d0 = _ABS(colors[0][0] - c0) + _ABS(colors[0][1] - c1) + _ABS(colors[0][2] - c2);
+        const int d1 = _ABS(colors[1][0] - c0) + _ABS(colors[1][1] - c1) + _ABS(colors[1][2] - c2);
+        const int d2 = _ABS(colors[2][0] - c0) + _ABS(colors[2][1] - c1) + _ABS(colors[2][2] - c2);
+        const int d3 = _ABS(colors[3][0] - c0) + _ABS(colors[3][1] - c1) + _ABS(colors[3][2] - c2);
 
         const int b0 = d0 > d3;
         const int b1 = d1 > d2;
@@ -1686,11 +1633,11 @@ void EmitColorIndices_Ref(const uint8_t block[64], const uint8_t min_color[3],
     push_u32(result_indices, out_data);
 }
 
-void EmitColorIndices_SSE2(const uint8_t block[64], const uint8_t min_color[4],
-                           const uint8_t max_color[4], uint8_t *&out_data);
+void EmitColorIndices_SSE2(const uint8_t block[64], const uint8_t min_color[4], const uint8_t max_color[4],
+                           uint8_t *&out_data);
 
-void EmitAlphaIndices_Ref(const uint8_t block[64], const uint8_t min_alpha,
-                          const uint8_t max_alpha, uint8_t *&out_data) {
+void EmitAlphaIndices_Ref(const uint8_t block[64], const uint8_t min_alpha, const uint8_t max_alpha,
+                          uint8_t *&out_data) {
     uint8_t ind[16];
 
 #if 0 // simple version
@@ -1761,8 +1708,7 @@ void EmitAlphaIndices_Ref(const uint8_t block[64], const uint8_t min_alpha,
     push_u8((ind[13] >> 1) | (ind[14] << 2) | (ind[15] << 5), out_data);
 }
 
-void EmitAlphaIndices_SSE2(const uint8_t block[64], uint8_t min_alpha, uint8_t max_alpha,
-                           uint8_t *&out_data);
+void EmitAlphaIndices_SSE2(const uint8_t block[64], uint8_t min_alpha, uint8_t max_alpha, uint8_t *&out_data);
 
 void EmitDXT1Block_Ref(const uint8_t block[64], uint8_t *&out_data) {
     uint8_t min_color[4], max_color[4];
@@ -1854,97 +1800,87 @@ const int BlockSize_DXT5 = 2 * sizeof(uint8_t) + 6 * sizeof(uint8_t) +
 
 } // namespace Ren
 
-int Ren::GetRequiredMemory_DXT1(const int w, const int h) {
-    return BlockSize_DXT1 * ((w + 3) / 4) * ((h + 3) / 4);
-}
+int Ren::GetRequiredMemory_DXT1(const int w, const int h) { return BlockSize_DXT1 * ((w + 3) / 4) * ((h + 3) / 4); }
 
-int Ren::GetRequiredMemory_DXT5(const int w, const int h) {
-    return BlockSize_DXT5 * ((w + 3) / 4) * ((h + 3) / 4);
-}
+int Ren::GetRequiredMemory_DXT5(const int w, const int h) { return BlockSize_DXT5 * ((w + 3) / 4) * ((h + 3) / 4); }
 
 template <int Channels>
-void Ren::CompressImage_DXT1(const uint8_t img_src[], const int w, const int h,
-                             uint8_t img_dst[]) {
+void Ren::CompressImage_DXT1(const uint8_t img_src[], const int w, const int h, uint8_t img_dst[]) {
     alignas(16) uint8_t block[64] = {};
     uint8_t *p_out = img_dst;
 
     const int w_aligned = w - (w % 4);
     const int h_aligned = h - (h % 4);
 
-    if (g_CpuFeatures.ssse3_supported && g_CpuFeatures.sse41_supported) {
+    if (g_CpuFeatures.sse2_supported && g_CpuFeatures.ssse3_supported) {
         for (int j = 0; j < h_aligned; j += 4, img_src += 4 * w * Channels) {
-            for (int i = 0; i < w_aligned; i += 4) {
-                Extract4x4Block_SSSE3<Channels>(&img_src[i * Channels], w * Channels,
-                                                block);
+            const int w_limited = (Channels == 3 && j == h_aligned - 4 && h_aligned == h) ? w_aligned - 4 : w_aligned;
+            for (int i = 0; i < w_limited; i += 4) {
+                Extract4x4Block_SSSE3<Channels>(&img_src[i * Channels], w * Channels, block);
                 EmitDXT1Block_SSE2(block, p_out);
             }
-            // process last column
+            if (w_limited != w_aligned && w_aligned >= 4) {
+                // process last block (avoid reading 4 bytes outside of range)
+                Extract4x4Block_Ref<Channels>(&img_src[(w_aligned - 4) * Channels], w * Channels, block);
+                EmitDXT1Block_SSE2(block, p_out);
+            }
+            // process last (incomplete) column
             if (w_aligned != w) {
-                ExtractIncomplete4x4Block_Ref<Channels>(&img_src[w_aligned * Channels],
-                                                        w * Channels, w % 4, 4, block);
+                ExtractIncomplete4x4Block_Ref<Channels>(&img_src[w_aligned * Channels], w * Channels, w % 4, 4, block);
                 EmitDXT1Block_SSE2(block, p_out);
             }
         }
-        // process last row
+        // process last (incomplete) row
         for (int i = 0; i < w && h_aligned != h; i += 4) {
-            ExtractIncomplete4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels,
-                                                    _MIN(4, w - i), h % 4, block);
+            ExtractIncomplete4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels, _MIN(4, w - i), h % 4, block);
             EmitDXT1Block_SSE2(block, p_out);
         }
     } else {
         for (int j = 0; j < h_aligned; j += 4, img_src += 4 * w * Channels) {
             for (int i = 0; i < w_aligned; i += 4) {
-                Extract4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels,
-                                              block);
+                Extract4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels, block);
                 EmitDXT1Block_Ref(block, p_out);
             }
             // process last column
             if (w_aligned != w) {
-                ExtractIncomplete4x4Block_Ref<Channels>(&img_src[w_aligned * Channels],
-                                                        w * Channels, w % 4, 4, block);
+                ExtractIncomplete4x4Block_Ref<Channels>(&img_src[w_aligned * Channels], w * Channels, w % 4, 4, block);
                 EmitDXT1Block_Ref(block, p_out);
             }
         }
         // process last row
         for (int i = 0; i < w && h_aligned != h; i += 4) {
-            ExtractIncomplete4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels,
-                                                    _MIN(4, w - i), h % 4, block);
+            ExtractIncomplete4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels, _MIN(4, w - i), h % 4, block);
             EmitDXT1Block_Ref(block, p_out);
         }
     }
 }
 
-template void Ren::CompressImage_DXT1<4 /* Channels */>(const uint8_t img_src[], int w,
-                                                        int h, uint8_t img_dst[]);
-template void Ren::CompressImage_DXT1<3 /* Channels */>(const uint8_t img_src[], int w,
-                                                        int h, uint8_t img_dst[]);
+template void Ren::CompressImage_DXT1<4 /* Channels */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[]);
+template void Ren::CompressImage_DXT1<3 /* Channels */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[]);
 
 template <bool Is_YCoCg>
-void Ren::CompressImage_DXT5(const uint8_t img_src[], const int w, const int h,
-                             uint8_t img_dst[]) {
+void Ren::CompressImage_DXT5(const uint8_t img_src[], const int w, const int h, uint8_t img_dst[]) {
     alignas(16) uint8_t block[64] = {};
     uint8_t *p_out = img_dst;
 
     const int w_aligned = w - (w % 4);
     const int h_aligned = h - (h % 4);
 
-    if (g_CpuFeatures.ssse3_supported && g_CpuFeatures.sse2_supported) {
+    if (g_CpuFeatures.sse2_supported && g_CpuFeatures.ssse3_supported) {
         for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * 4) {
             for (int i = 0; i < w_aligned; i += 4) {
                 Extract4x4Block_SSSE3<4 /* Channels */>(&img_src[i * 4], w * 4, block);
                 EmitDXT5Block_SSE2<Is_YCoCg>(block, p_out);
             }
-            // process last column
+            // process last (incomplete) column
             if (w_aligned != w) {
-                ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[w_aligned * 4],
-                                                                w * 4, w % 4, 4, block);
+                ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[w_aligned * 4], w * 4, w % 4, 4, block);
                 EmitDXT5Block_SSE2<Is_YCoCg>(block, p_out);
             }
         }
-        // process last row
+        // process last (incomplete) row
         for (int i = 0; i < w && h_aligned != h; i += 4) {
-            ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[i * 4], w * 4,
-                                                            _MIN(4, w - i), h % 4, block);
+            ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[i * 4], w * 4, _MIN(4, w - i), h % 4, block);
             EmitDXT5Block_SSE2<Is_YCoCg>(block, p_out);
         }
     } else {
@@ -1953,27 +1889,22 @@ void Ren::CompressImage_DXT5(const uint8_t img_src[], const int w, const int h,
                 Extract4x4Block_Ref<4 /* Channels */>(&img_src[i * 4], w * 4, block);
                 EmitDXT5Block_Ref<Is_YCoCg>(block, p_out);
             }
-            // process last column
+            // process last (incomplete) column
             if (w_aligned != w) {
-                ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[w_aligned * 4],
-                                                                w * 4, w % 4, 4, block);
+                ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[w_aligned * 4], w * 4, w % 4, 4, block);
                 EmitDXT5Block_Ref<Is_YCoCg>(block, p_out);
             }
         }
-        // process last row
+        // process last (incomplete) row
         for (int i = 0; i < w && h_aligned != h; i += 4) {
-            ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[i * 4], w * 4,
-                                                            _MIN(4, w - i), h % 4, block);
+            ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[i * 4], w * 4, _MIN(4, w - i), h % 4, block);
             EmitDXT5Block_Ref<Is_YCoCg>(block, p_out);
         }
     }
 }
 
-template void Ren::CompressImage_DXT5<false /* Is_YCoCg */>(const uint8_t img_src[],
-                                                            int w, int h,
-                                                            uint8_t img_dst[]);
-template void Ren::CompressImage_DXT5<true /* Is_YCoCg */>(const uint8_t img_src[], int w,
-                                                           int h, uint8_t img_dst[]);
+template void Ren::CompressImage_DXT5<false /* Is_YCoCg */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[]);
+template void Ren::CompressImage_DXT5<true /* Is_YCoCg */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[]);
 
 #undef _MIN
 #undef _MAX

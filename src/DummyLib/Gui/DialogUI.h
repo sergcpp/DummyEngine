@@ -16,12 +16,11 @@ class DialogUI : public Gui::BaseElement {
 
     int hovered_choice_ = -1, clicked_choice_ = -1;
 
-    void IterateChoices(const std::function<bool(int i, const Ren::Vec2f &pos,
-                                                 const Ren::Vec2f &size)> &callback);
+    void IterateChoices(const std::function<bool(int i, const Ren::Vec2f &pos, const Ren::Vec2f &size)> &callback);
 
   public:
-    DialogUI(const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
-             Gui::BitmapFont &font, bool debug = false);
+    DialogUI(const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent, Gui::BitmapFont &font,
+             bool debug = false);
 
     void Draw(Gui::Renderer *r) override;
 
