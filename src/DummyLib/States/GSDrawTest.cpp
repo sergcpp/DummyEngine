@@ -323,6 +323,10 @@ void GSDrawTest::LoadScene(const char *name) {
         LOGI("Error loading scene: %s", e.what());
     }
 
+    cam_follow_path_.clear();
+    cam_follow_point_ = 0;
+    cam_follow_param_ = 0.0f;
+
     if (js_scene.Has("camera")) {
         const JsObject &js_cam = (const JsObject &)js_scene.at("camera");
         if (js_cam.Has("view_origin")) {
@@ -347,6 +351,19 @@ void GSDrawTest::LoadScene(const char *name) {
         if (js_cam.Has("fov")) {
             const JsNumber &js_fov = (const JsNumber &)js_cam.at("fov");
             view_fov_ = (float)js_fov.val;
+        }
+
+        if (js_cam.Has("follow_path")) {
+            const JsArray &js_points = (const JsArray &)js_cam.at("follow_path");
+            for (const JsElement &el : js_points.elements) {
+                const JsArray &js_point = (const JsArray &)el;
+
+                const JsNumber &x = (const JsNumber &)js_point.at(0),
+                               &y = (const JsNumber &)js_point.at(1),
+                               &z = (const JsNumber &)js_point.at(2);
+
+                cam_follow_path_.emplace_back((float)x.val, (float)y.val, (float)z.val);
+            }
         }
     }
 
@@ -618,13 +635,39 @@ void GSDrawTest::Update(uint64_t dt_us) {
     Ren::Vec3f up = { 0, 1, 0 };
     Ren::Vec3f side = Normalize(Cross(view_dir_, up));
 
-    float fwd_speed = std::max(std::min(fwd_press_speed_ + fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
-    float side_speed = std::max(std::min(side_press_speed_ + side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+    if (cam_follow_path_.size() < 3) {
+        float fwd_speed = std::max(std::min(fwd_press_speed_ + fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+        float side_speed = std::max(std::min(side_press_speed_ + side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
-    view_origin_ += view_dir_ * fwd_speed;
-    view_origin_ += side * side_speed;
+        view_origin_ += view_dir_ * fwd_speed;
+        view_origin_ += side * side_speed;
 
-    if (std::abs(fwd_speed) > 0.0f || std::abs(side_speed) > 0.0f) {
+        if (std::abs(fwd_speed) > 0.0f || std::abs(side_speed) > 0.0f) {
+            invalidate_view_ = true;
+        }
+    } else {
+        int next_point = (cam_follow_point_ + 1) % cam_follow_path_.size();
+
+        {   // update param
+            const Ren::Vec3f &p1 = cam_follow_path_[cam_follow_point_],
+                             &p2 = cam_follow_path_[next_point];
+
+            cam_follow_param_ += 0.000005f * dt_us / Ren::Distance(p1, p2);
+            while (cam_follow_param_ > 1.0f) {
+                cam_follow_point_ = (cam_follow_point_ + 1) % cam_follow_path_.size();
+                cam_follow_param_ -= 1.0f;
+            }
+        }
+
+        next_point = (cam_follow_point_ + 1) % cam_follow_path_.size();
+
+        const Ren::Vec3f &p1 = cam_follow_path_[cam_follow_point_],
+                         &p2 = cam_follow_path_[next_point];
+
+        view_origin_ = 0.95f * view_origin_ + 0.05f * Ren::Mix(p1, p2, cam_follow_param_);
+        view_dir_ = 0.9f * view_dir_ + 0.1f * Ren::Normalize(p2 - view_origin_);
+        view_dir_ = Ren::Normalize(view_dir_);
+
         invalidate_view_ = true;
     }
 

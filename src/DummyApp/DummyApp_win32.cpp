@@ -160,7 +160,7 @@ int DummyApp::Init(int w, int h) {
 
     HWND fake_window = ::CreateWindowEx(NULL, "MainWindowClass", "View",
                                         WS_OVERLAPPEDWINDOW,
-                                        100, 100,
+                                        CW_USEDEFAULT, CW_USEDEFAULT,
                                         rect.right - rect.left,
                                         rect.bottom - rect.top,
                                         NULL,
@@ -336,7 +336,6 @@ void DummyApp::AddEvent(int type, int key, int raw_key, float x, float y, float 
     input_manager->AddRawInputEvent(evt);
 }
 
-#if !defined(__ANDROID__)
 int DummyApp::Run(const std::vector<std::string> &args) {
     for (int i = 0; i < (int)args.size(); i++) {
         const std::string &arg = args[i];
@@ -429,5 +428,3 @@ bool DummyApp::ConvertToRawButton(int &raw_key, InputManager::RawInputButton &bu
 
 void DummyApp::PollEvents() {
 }
-
-#endif

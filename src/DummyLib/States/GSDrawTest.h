@@ -95,6 +95,10 @@ class GSDrawTest : public GameState {
     uint32_t sophia_indices_[2]     = { 0xffffffff }, eric_indices_[2] = { 0xffffffff };
     float scooters_angle_ = 0.0f;
 
+    std::vector<Ren::Vec3f>             cam_follow_path_;
+    int                                 cam_follow_point_;
+    float                               cam_follow_param_;
+
     void LoadScene(const char *name);
 
     void BackgroundProc();
