@@ -14,8 +14,6 @@ void test_string();
 void test_texture();
 void test_vec();
 
-#include "../GL.h"
-
 int main() {
     test_anim();
     test_buffer();

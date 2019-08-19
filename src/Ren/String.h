@@ -28,6 +28,16 @@ public:
         memcpy(str_, str, len_ + 1);
     }
 
+    explicit BasicString(const char *start, const char *end) {
+        len_ = end - start;
+        uint32_t *storage = (uint32_t *)alloc_.allocate(sizeof(uint32_t) + len_ + 1);
+        // set number of users to 1
+        *storage = 1;
+        str_ = (char *)(storage + 1);
+        memcpy(str_, start, len_);
+        str_[len_] = '\0';
+    }
+
     explicit BasicString(const StringPart &str) {
         len_ = str.len;
         uint32_t *storage = (uint32_t *)alloc_.allocate(sizeof(uint32_t) + len_ + 1);
@@ -67,7 +77,7 @@ public:
         len_ = rhs.len_;
         if (str_) {
             // increase number of users
-            uint32_t *counter = str_ - sizeof(uint32_t);
+            uint32_t *counter = reinterpret_cast<uint32_t *>(str_ - sizeof(uint32_t));
             ++(*counter);
         }
 
@@ -88,6 +98,7 @@ public:
 
     const char *c_str() const { return str_; }
     size_t length() const { return len_; }
+    bool empty() const { return len_ == 0; }
 
     template <typename IntType>
     const char &operator[](IntType i) const {

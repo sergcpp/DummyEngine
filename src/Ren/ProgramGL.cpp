@@ -11,10 +11,12 @@ namespace Ren {
 GLuint LoadShader(GLenum shader_type, const char *source);
 
 struct Binding {
-    std::string name;
-    int loc;
+    String  name;
+    int     loc;
 };
-void ParseGLSLBindings(const std::string &shader_str, std::vector<Binding> &attr_bindings, std::vector<Binding> &uniform_bindings, std::vector<Binding> &uniform_block_bindings);
+void ParseGLSLBindings(const std::string &shader_str, Binding *attr_bindings, int &attr_bindings_count,
+                                                      Binding *uniform_bindings, int &uniform_bindings_count,
+                                                      Binding *uniform_block_bindings, int &uniform_block_bindings_count);
 }
 
 Ren::Program::Program(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status) {
@@ -70,8 +72,8 @@ void Ren::Program::InitFromGLSL(const Shaders &shaders, eProgLoadStatus *status)
 
     assert(!ready_);
 
-    std::vector<Binding> attr_bindings, uniform_bindings, uniform_block_bindings;
-    std::vector<Binding> *cur_bind_target = nullptr;
+    Binding attr_bindings[MAX_NUM_ATTRIBUTES], uniform_bindings[MAX_NUM_UNIFORMS], uniform_block_bindings[MAX_NUM_UNIFORM_BLOCKS];
+    int attr_bindings_count = 0, uniform_bindings_count = 0, uniform_block_bindings_count = 0;
 
     GLuint program = 0;
 
@@ -115,8 +117,10 @@ void Ren::Program::InitFromGLSL(const Shaders &shaders, eProgLoadStatus *status)
             throw std::runtime_error("Program creation error!");
         }
 
-        ParseGLSLBindings(vs_source_str, attr_bindings, uniform_bindings, uniform_block_bindings);
-        ParseGLSLBindings(fs_source_str, attr_bindings, uniform_bindings, uniform_block_bindings);
+        ParseGLSLBindings(vs_source_str, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
+                          uniform_block_bindings, uniform_block_bindings_count);
+        ParseGLSLBindings(fs_source_str, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
+                          uniform_block_bindings, uniform_block_bindings_count);
     } else if (shaders.cs_source) {
         std::string cs_source_str = shaders.cs_source;
 
@@ -151,30 +155,34 @@ void Ren::Program::InitFromGLSL(const Shaders &shaders, eProgLoadStatus *status)
             throw std::runtime_error("Program creation error!");
         }
 
-        ParseGLSLBindings(cs_source_str, attr_bindings, uniform_bindings, uniform_block_bindings);
+        ParseGLSLBindings(cs_source_str, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
+                          uniform_block_bindings, uniform_block_bindings_count);
     }
 
-    for (Binding &b : attr_bindings) {
+    for (int i = 0; i < attr_bindings_count; i++) {
+        Binding &b = attr_bindings[i];
         Attribute &a = attributes_[b.loc];
         a.loc = glGetAttribLocation(program, b.name.c_str());
         if (a.loc != -1) {
-            a.name = b.name;
+            a.name = std::move(b.name);
         }
     }
 
-    for (Binding &b : uniform_bindings) {
+    for (int i = 0; i < uniform_bindings_count; i++) {
+        Binding &b = uniform_bindings[i];
         Attribute &u = uniforms_[b.loc];
         u.loc = glGetUniformLocation(program, b.name.c_str());
         if (u.loc != -1) {
-            u.name = b.name;
+            u.name = std::move(b.name);
         }
     }
 
-    for (Binding &b : uniform_block_bindings) {
+    for (int i = 0; i < uniform_block_bindings_count; i++) {
+        Binding &b = uniform_block_bindings[i];
         Attribute &u = uniform_blocks_[b.loc];
         u.loc = glGetUniformBlockIndex(program, b.name.c_str());
         if (u.loc != -1) {
-            u.name = b.name;
+            u.name = std::move(b.name);
 
             glUniformBlockBinding(program, u.loc, b.loc);
         }
@@ -201,7 +209,7 @@ void Ren::Program::InitFromGLSL(const Shaders &shaders, eProgLoadStatus *status)
         }
 
         if (!skip && free_index != -1) {
-            attributes_[free_index].name = name;
+            attributes_[free_index].name = String{ name };
             attributes_[free_index].loc = glGetAttribLocation(program, name);
         }
     }
@@ -237,7 +245,7 @@ void Ren::Program::InitFromGLSL(const Shaders &shaders, eProgLoadStatus *status)
         }
 
         if (!skip && free_index != -1) {
-            uniforms_[free_index].name = name;
+            uniforms_[free_index].name = String{ name };
             uniforms_[free_index].loc = glGetUniformLocation(program, name);
         }
     }
@@ -295,13 +303,16 @@ GLuint Ren::LoadShader(GLenum shader_type, const char *source) {
     return shader;
 }
 
-void Ren::ParseGLSLBindings(const std::string &shader_str, std::vector<Binding> &attr_bindings, std::vector<Binding> &uniform_bindings, std::vector<Binding> &uniform_block_bindings) {
+void Ren::ParseGLSLBindings(const std::string &shader_str, Binding *attr_bindings, int &attr_bindings_count,
+                            Binding *uniform_bindings, int &uniform_bindings_count,
+                            Binding *uniform_block_bindings, int &uniform_block_bindings_count) {
     const char *delims = " \r\n\t";
     char const* p = shader_str.c_str() + shader_str.find("/*");
     char const* q = strpbrk(p + 2, delims);
     int pass = 0;
 
-    std::vector<Binding> *cur_bind_target = nullptr;
+    Binding *cur_bind_target = nullptr;
+    int *cur_bind_count = nullptr;
 
     for (; p != NULL && q != NULL; q = strpbrk(p, delims)) {
         if (p == q) {
@@ -309,17 +320,20 @@ void Ren::ParseGLSLBindings(const std::string &shader_str, std::vector<Binding> 
             continue;
         }
 
-        std::string item(p, q);
+        String item(p, q);
         if (item == "/*") {
             cur_bind_target = nullptr;
         } else if (item == "*/" && cur_bind_target) {
             break;
         } else if (item == "ATTRIBUTES") {
-            cur_bind_target = &attr_bindings;
+            cur_bind_target = attr_bindings;
+            cur_bind_count = &attr_bindings_count;
         } else if (item == "UNIFORMS") {
-            cur_bind_target = &uniform_bindings;
+            cur_bind_target = uniform_bindings;
+            cur_bind_count = &uniform_bindings_count;
         } else if (item == "UNIFORM_BLOCKS") {
-            cur_bind_target = &uniform_block_bindings;
+            cur_bind_target = uniform_block_bindings;
+            cur_bind_count = &uniform_block_bindings_count;
         } else if (cur_bind_target) {
             p = q + 1;
             q = strpbrk(p, delims);
@@ -329,7 +343,10 @@ void Ren::ParseGLSLBindings(const std::string &shader_str, std::vector<Binding> 
             p = q + 1;
             q = strpbrk(p, delims);
             int loc = atoi(p);
-            cur_bind_target->push_back({ item, loc });
+
+            cur_bind_target[*cur_bind_count].name = item;
+            cur_bind_target[*cur_bind_count].loc = loc;
+            (*cur_bind_count)++;
         }
 
         if (!q) break;
