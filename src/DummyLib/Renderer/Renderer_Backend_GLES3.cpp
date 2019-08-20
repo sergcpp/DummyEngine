@@ -244,7 +244,7 @@ void Renderer::InitRendererInternal() {
     GLint tex_buf_offset_alignment;
     glGetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT, &tex_buf_offset_alignment);
 
-    {
+    for (int i = 0; i < FrameSyncWindow; i++) {
         GLuint shared_data_ubo;
 
         glGenBuffers(1, &shared_data_ubo);
@@ -252,7 +252,7 @@ void Renderer::InitRendererInternal() {
         glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedDataBlock), NULL, GL_DYNAMIC_COPY);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-        unif_shared_data_block_ = (uint32_t)shared_data_ubo;
+        unif_shared_data_block_[i] = (uint32_t)shared_data_ubo;
     }
 
     Ren::CheckError("[InitRendererInternal]: UBO creation");
@@ -838,8 +838,8 @@ void Renderer::DestroyRendererInternal() {
                    vtx_buf2 = ctx_.default_vertex_buf2(),
                    ndx_buf = ctx_.default_indices_buf();
 
-    {
-        GLuint shared_data_ubo = (GLuint)unif_shared_data_block_;
+    for (int i = 0; i < FrameSyncWindow; i++) {
+        GLuint shared_data_ubo = (GLuint)unif_shared_data_block_[i];
         glDeleteBuffers(1, &shared_data_ubo);
     }
 
@@ -1196,12 +1196,12 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             memcpy(&shrd_data.uProbes[0], list.probes.data.get(), sizeof(ProbeItem) * list.probes.count);
         }
 
-        glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_shared_data_block_);
+        glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_shared_data_block_[cur_buf_chunk_]);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SharedDataBlock), &shrd_data);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC, (GLuint)unif_shared_data_block_);
+    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC, (GLuint)unif_shared_data_block_[cur_buf_chunk_]);
 
     /**************************************************************************************************/
     /*                                             SKINNING                                           */
