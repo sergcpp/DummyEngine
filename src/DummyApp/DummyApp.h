@@ -16,6 +16,13 @@ typedef HDC__* HDC;
 struct HGLRC__;
 typedef HGLRC__* HGLRC;
 #endif
+#elif defined(__linux__)
+#include <X11/Xlib.h>
+typedef struct _XDisplay Display;
+
+struct __GLXcontextRec;  // Forward declaration from GLX.h.
+typedef struct __GLXcontextRec *GLXContext;
+typedef GLXContext GLContext;
 #endif
 
 struct SDL_Renderer;
@@ -33,6 +40,10 @@ class DummyApp {
     HWND            window_handle_;
     HDC             device_context_;
     HGLRC           gl_ctx_;
+#elif defined(__linux__)
+    Display         *dpy_;
+    Window          win_;
+    GLXContext      ctx_;
 #else
 #if defined(USE_GL_RENDER)
     void            *gl_ctx_ = nullptr;
