@@ -1,5 +1,5 @@
-gl_program: main_unlit main_unlit.vs.glsl main_unlit.fs.glsl
-gl_program: main_unlit main_unlit.vs.glsl main_unlit.fs.glsl
+gl_program: main_unlit main_unlit.vert.glsl main_unlit.frag.glsl
+gl_program: main_unlit main_unlit.vert.glsl main_unlit.frag.glsl
 sw_program: main
 texture: bistro/Paris_StringLights_01_Blue_Color_Emissive_diff.png
 texture: default_normalmap.png

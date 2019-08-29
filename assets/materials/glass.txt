@@ -1,5 +1,5 @@
-gl_program: main_glass_thin main_glass_thin.vs.glsl main_glass_thin.fs.glsl
-gl_program: main_glass_thin main_glass_thin.vs.glsl main_glass_thin.fs.glsl
+gl_program: main_glass_thin main_glass_thin.vert.glsl main_glass_thin.frag.glsl
+gl_program: main_glass_thin main_glass_thin.vert.glsl main_glass_thin.frag.glsl
 sw_program: main
 flag: alpha_blend
 texture: ornament_dark.png

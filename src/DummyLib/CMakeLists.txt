@@ -69,41 +69,41 @@ elseif(${RENDERER} STREQUAL "SW")
                         Renderer/RendererSW.cpp)
 endif()
 
-set(SHADERS_SOURCES Renderer/Shaders/blit.fs.glsl
-                    Renderer/Shaders/blit.vs.glsl
-                    Renderer/Shaders/blit_bilateral.fs.glsl
-                    Renderer/Shaders/blit_combine.fs.glsl
-                    Renderer/Shaders/blit_debug.fs.glsl
-                    Renderer/Shaders/blit_debug_bvh.fs.glsl
-                    Renderer/Shaders/blit_depth.fs.glsl
-                    Renderer/Shaders/blit_down.fs.glsl
-                    Renderer/Shaders/blit_down_depth.fs.glsl
-                    Renderer/Shaders/blit_down_ms.fs.glsl
-                    Renderer/Shaders/blit_fxaa.fs.glsl
-                    Renderer/Shaders/blit_gauss.fs.glsl
-                    Renderer/Shaders/blit_gauss_sep.fs.glsl
-                    Renderer/Shaders/blit_mipmap.fs.glsl
-                    Renderer/Shaders/blit_ms.fs.glsl
-                    Renderer/Shaders/blit_ms_resolve.fs.glsl
-                    Renderer/Shaders/blit_multiply.fs.glsl
-					Renderer/Shaders/blit_prefilter.fs.glsl
-                    Renderer/Shaders/blit_project_sh.fs.glsl
-                    Renderer/Shaders/blit_reduced.fs.glsl
-                    Renderer/Shaders/blit_rgbm.fs.glsl
-                    Renderer/Shaders/blit_ssao.fs.glsl
-                    Renderer/Shaders/blit_ssr.fs.glsl
-                    Renderer/Shaders/blit_ssr_compose.fs.glsl
-                    Renderer/Shaders/blit_ssr_dilate.fs.glsl
-                    Renderer/Shaders/blit_upscale.fs.glsl
-                    Renderer/Shaders/fillz.fs.glsl
-                    Renderer/Shaders/fillz.vs.glsl
-                    Renderer/Shaders/probe.vs.glsl
-                    Renderer/Shaders/probe.fs.glsl
-                    Renderer/Shaders/shadow.vs.glsl
-                    Renderer/Shaders/shadow.fs.glsl
-                    Renderer/Shaders/skinning.cs.glsl
-                    Renderer/Shaders/skydome.fs.glsl
-                    Renderer/Shaders/skydome.vs.glsl)
+set(SHADERS_SOURCES Renderer/Shaders/blit.frag.glsl
+                    Renderer/Shaders/blit.vert.glsl
+                    Renderer/Shaders/blit_bilateral.frag.glsl
+                    Renderer/Shaders/blit_combine.frag.glsl
+                    Renderer/Shaders/blit_debug.frag.glsl
+                    Renderer/Shaders/blit_debug_bvh.frag.glsl
+                    Renderer/Shaders/blit_depth.frag.glsl
+                    Renderer/Shaders/blit_down.frag.glsl
+                    Renderer/Shaders/blit_down_depth.frag.glsl
+                    Renderer/Shaders/blit_down_ms.frag.glsl
+                    Renderer/Shaders/blit_fxaa.frag.glsl
+                    Renderer/Shaders/blit_gauss.frag.glsl
+                    Renderer/Shaders/blit_gauss_sep.frag.glsl
+                    Renderer/Shaders/blit_mipmap.frag.glsl
+                    Renderer/Shaders/blit_ms.frag.glsl
+                    Renderer/Shaders/blit_ms_resolve.frag.glsl
+                    Renderer/Shaders/blit_multiply.frag.glsl
+					Renderer/Shaders/blit_prefilter.frag.glsl
+                    Renderer/Shaders/blit_project_sh.frag.glsl
+                    Renderer/Shaders/blit_reduced.frag.glsl
+                    Renderer/Shaders/blit_rgbm.frag.glsl
+                    Renderer/Shaders/blit_ssao.frag.glsl
+                    Renderer/Shaders/blit_ssr.frag.glsl
+                    Renderer/Shaders/blit_ssr_compose.frag.glsl
+                    Renderer/Shaders/blit_ssr_dilate.frag.glsl
+                    Renderer/Shaders/blit_upscale.frag.glsl
+                    Renderer/Shaders/fillz.vert.glsl
+                    Renderer/Shaders/fillz.frag.glsl
+                    Renderer/Shaders/probe.vert.glsl
+                    Renderer/Shaders/probe.frag.glsl
+                    Renderer/Shaders/shadow.vert.glsl
+                    Renderer/Shaders/shadow.frag.glsl
+                    Renderer/Shaders/skinning.comp.glsl
+                    Renderer/Shaders/skydome.frag.glsl
+                    Renderer/Shaders/skydome.vert.glsl)
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 #set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)

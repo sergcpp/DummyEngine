@@ -1,5 +1,5 @@
-gl_program: main_translucent main_translucent.vs.glsl main_translucent.fs.glsl
-gl_program: main_translucent main_translucent.vs.glsl main_translucent.fs.glsl
+gl_program: main_translucent main_translucent.vert.glsl main_translucent.frag.glsl
+gl_program: main_translucent main_translucent.vert.glsl main_translucent.frag.glsl
 sw_program: main
 flag: alpha_blend
 texture: curtain.png

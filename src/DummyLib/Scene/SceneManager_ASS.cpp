@@ -853,51 +853,70 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     auto h_preprocess_shader = [&inline_constants](const char *in_file, const char *out_file) {
         LOGI("[PrepareAssets] Prep %s", out_file);
 
-        std::ifstream src_stream(in_file, std::ios::binary);
-        std::ofstream dst_stream(out_file, std::ios::binary);
-        std::string line;
+        {   // resolve includes, inline constants
+            std::ifstream src_stream(in_file, std::ios::binary);
+            std::ofstream dst_stream(out_file, std::ios::binary);
+            std::string line;
 
-        int line_counter = 0;
+            int line_counter = 0;
 
-        while (std::getline(src_stream, line)) {
-            if (!line.empty() && line.back() == '\r') {
-                line = line.substr(0, line.size() - 1);
-            }
+            while (std::getline(src_stream, line)) {
+                if (!line.empty() && line.back() == '\r') {
+                    line = line.substr(0, line.size() - 1);
+                }
 
-            if (line.rfind("#include ") == 0) {
-                size_t n1 = line.find_first_of('\"');
-                size_t n2 = line.find_last_of('\"');
+                if (line.rfind("#include ") == 0) {
+                    size_t n1 = line.find_first_of('\"');
+                    size_t n2 = line.find_last_of('\"');
 
-                std::string file_name = line.substr(n1 + 1, n2 - n1 - 1);
+                    std::string file_name = line.substr(n1 + 1, n2 - n1 - 1);
 
-                size_t slash_pos = (size_t)intptr_t(strrchr(in_file, '/') - in_file);
-                std::string full_path = std::string(in_file, slash_pos + 1) + file_name;
+                    size_t slash_pos = (size_t)intptr_t(strrchr(in_file, '/') - in_file);
+                    std::string full_path = std::string(in_file, slash_pos + 1) + file_name;
 
-                dst_stream << "#line 0\r\n";
-                dst_stream.flush();
+                    dst_stream << "#line 0\r\n";
 
-                std::ifstream incl_stream(full_path, std::ios::binary);
-                while (std::getline(incl_stream, line)) {
-                    if (!line.empty() && line.back() == '\r') {
-                        line = line.substr(0, line.size() - 1);
+                    std::ifstream incl_stream(full_path, std::ios::binary);
+                    while (std::getline(incl_stream, line)) {
+                        if (!line.empty() && line.back() == '\r') {
+                            line = line.substr(0, line.size() - 1);
+                        }
+
+                        inline_constants(line);
+
+                        dst_stream << line << "\r\n";
                     }
 
+                    dst_stream << "\r\n#line " << line_counter << "\r\n";
+                } else {
                     inline_constants(line);
 
                     dst_stream << line << "\r\n";
                 }
 
-                dst_stream << "\r\n#line " << line_counter << "\r\n";
-
-                volatile int ii = 0;
-            } else {
-                inline_constants(line);
-
-                dst_stream << line << "\r\n";
+                line_counter++;
             }
-
-            line_counter++;
         }
+#ifdef _WIN32
+        /*std::string spv_file = out_file;
+
+        size_t n;
+        if ((n = spv_file.find(".glsl")) != std::string::npos) {
+            spv_file.replace(n + 1, n + 4, "spv", 3);
+        }
+
+        std::string compile_cmd = "src/libs/glslangValidator -G ";
+        compile_cmd += out_file;
+        compile_cmd += " -o ";
+        compile_cmd += spv_file;
+
+        std::replace(compile_cmd.begin(), compile_cmd.end(), '/', '\\');
+
+        int res = system(compile_cmd.c_str());
+        if (res != 0) {
+            LOGI("[PrepareAssets] Faild to compile %s", spv_file.c_str());
+        }*/
+#endif
     };
 
     struct Handler {
@@ -910,8 +929,9 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     handlers["bff"]     = { "bff",  h_copy };
     handlers["mesh"]    = { "mesh", h_copy };
     handlers["anim"]    = { "anim", h_copy };
-    handlers["vs.glsl"] = { "vs.glsl", h_preprocess_shader };
-    handlers["fs.glsl"] = { "fs.glsl", h_preprocess_shader };
+    handlers["vert.glsl"] = { "vert.glsl", h_preprocess_shader };
+    handlers["frag.glsl"] = { "frag.glsl", h_preprocess_shader };
+    handlers["comp.glsl"] = { "comp.glsl", h_preprocess_shader };
 
     if (strcmp(platform, "pc") == 0) {
         handlers["json"]    = { "json", h_preprocess_scene };

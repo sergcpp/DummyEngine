@@ -1,5 +1,5 @@
-gl_program: main_probelit_nossr main_probelit.vs.glsl main_probelit_nossr.fs.glsl
-gl_program: main_probelit_nossr main_probelit.vs.glsl main_probelit_nossr.fs.glsl
+gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 sw_program: main
 texture: test/red_diff80.png
 texture: default_normalmap.png
