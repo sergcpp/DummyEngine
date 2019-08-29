@@ -29,7 +29,12 @@ struct ProbeItem {
     vec4 sh_coeffs[3];
 };
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = 0, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
@@ -39,7 +44,7 @@ layout (std140) uniform SharedDataBlock {
     ProbeItem uProbes[$MaxProbes];
 };
 
-#ifdef VULKAN
+#if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec3 aVertexPos_;
 layout(location = 1) in mat3 aVertexTBN_;
 layout(location = 4) in vec2 aVertexUVs1_;

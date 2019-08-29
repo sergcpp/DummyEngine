@@ -644,24 +644,51 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
     if (!ret->ready()) {
         using namespace std;
 
-        Sys::AssetFile vs_file(std::string(SHADERS_PATH) + vs_shader),
-                       fs_file(std::string(SHADERS_PATH) + fs_shader);
-        if (!vs_file || !fs_file) {
-            LOGE("Error loading program %s", name);
-            return ret;
+        if (ctx_.capabilities.gl_spirv && false) {
+            string vs_name = string(SHADERS_PATH) + vs_shader,
+                   fs_name = string(SHADERS_PATH) + fs_shader;
+
+            size_t n = vs_name.find(".glsl");
+            assert(n != string::npos);
+            vs_name.replace(n + 1, n + 4, "spv", 3);
+
+            n = fs_name.find(".glsl");
+            assert(n != string::npos);
+            fs_name.replace(n + 1, n + 4, "spv", 3);
+
+            Sys::AssetFile vs_file(vs_name), fs_file(fs_name);
+
+            size_t vs_size = vs_file.size(),
+                   fs_size = fs_file.size();
+
+            std::unique_ptr<uint8_t[]> vs_data(new uint8_t[vs_size]),
+                                       fs_data(new uint8_t[fs_size]);
+
+            vs_file.Read((char *)vs_data.get(), vs_size);
+            fs_file.Read((char *)fs_data.get(), fs_size);
+
+            ret = ctx_.LoadProgramSPIRV(name, vs_data.get(), (int)vs_size, fs_data.get(), (int)fs_size, &status);
+            assert(status == Ren::ProgCreatedFromData);
+        } else {
+            Sys::AssetFile vs_file(string(SHADERS_PATH) + vs_shader),
+                           fs_file(string(SHADERS_PATH) + fs_shader);
+            if (!vs_file || !fs_file) {
+                LOGE("Error loading program %s", name);
+                return ret;
+            }
+
+            size_t vs_size = vs_file.size(),
+                   fs_size = fs_file.size();
+
+            string vs_src, fs_src;
+            vs_src.resize(vs_size);
+            fs_src.resize(fs_size);
+            vs_file.Read((char *)vs_src.data(), vs_size);
+            fs_file.Read((char *)fs_src.data(), fs_size);
+
+            ret = ctx_.LoadProgramGLSL(name, vs_src.c_str(), fs_src.c_str(), &status);
+            assert(status == Ren::ProgCreatedFromData);
         }
-
-        size_t vs_size = vs_file.size(),
-               fs_size = fs_file.size();
-
-        string vs_src, fs_src;
-        vs_src.resize(vs_size);
-        fs_src.resize(fs_size);
-        vs_file.Read((char *)vs_src.data(), vs_size);
-        fs_file.Read((char *)fs_src.data(), fs_size);
-
-        ret = ctx_.LoadProgramGLSL(name, vs_src.c_str(), fs_src.c_str(), &status);
-        assert(status == Ren::ProgCreatedFromData);
     }
     return ret;
 #elif defined(USE_SW_RENDER)

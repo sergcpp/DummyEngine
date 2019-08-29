@@ -6,6 +6,10 @@ $ModifyWarning
 #ifdef GL_ES
     precision mediump float;
     precision mediump sampler2DShadow;
+#else
+    #define lowp
+    #define mediump
+    #define highp
 #endif
 
 #define LIGHT_ATTEN_CUTOFF 0.004
@@ -33,7 +37,12 @@ struct ProbeItem {
     vec4 sh_coeffs[3];
 };
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = 0, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
@@ -43,7 +52,7 @@ layout (std140) uniform SharedDataBlock {
     ProbeItem uProbes[$MaxProbes];
 };
 
-#ifdef VULKAN
+#if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec3 aVertexPos_;
 layout(location = 1) in mediump mat3 aVertexTBN_;
 layout(location = 4) in mediump vec2 aVertexUVs1_;
@@ -147,7 +156,7 @@ void main(void) {
     normal = normalize(aVertexTBN_ * normal);
     
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
-    
+
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
         highp uint item_data = texelFetch(items_buffer, int(i)).x;
         int li = int(bitfieldExtract(item_data, 0, 12));
@@ -184,13 +193,13 @@ void main(void) {
                 pp.xyz = pp.xyz * 0.5 + vec3(0.5);
                 pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
                 
-                atten *= SampleShadowPCF5x5(shadow_texture, pp.xyz);
+                atten *= 0.5;//SampleShadowPCF5x5(shadow_texture, pp.xyz);
             }
             
             additional_light += col_and_index.xyz * atten * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
         }
     }
-    
+
     vec3 sh_l_00 = RGBMDecode(texture(lm_indirect_sh_texture[0], aVertexUVs2_));
     vec3 sh_l_10 = texture(lm_indirect_sh_texture[1], aVertexUVs2_).rgb;
     vec3 sh_l_11 = texture(lm_indirect_sh_texture[2], aVertexUVs2_).rgb;
@@ -207,14 +216,14 @@ void main(void) {
     if (lambert > 0.00001) {
         visibility = GetSunVisibility(lin_depth, shadow_texture, aVertexShUVs_);
     }
-    
+
     vec2 ao_uvs = vec2(ix, iy) / uResAndFRes.zw;
     float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;
     vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
     
     vec3 view_ray_ws = normalize(uCamPosAndGamma.xyz - aVertexPos_);
     float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);
-    
+
     vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, specular_color.xyz, specular_color.a);
     
     outColor = vec4(diffuse_color * kD, 1.0);

@@ -6,7 +6,6 @@ $ModifyWarning
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
-    BatchDataBlock : $ubBatchDataLoc
 */
 
 layout(location = $VtxPosLoc) in vec3 aVertexPosition;
@@ -26,7 +25,12 @@ struct ProbeItem {
     vec4 sh_coeffs[3];
 };
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = 0, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
@@ -40,7 +44,7 @@ layout (location = $uInstancesLoc) uniform ivec4 uInstanceIndices[$MaxBatchSize 
 
 layout(binding = $InstanceBufSlot) uniform highp samplerBuffer instances_buffer;
 
-#ifdef VULKAN
+#if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) out vec3 aVertexPos_;
 layout(location = 1) out mediump mat3 aVertexTBN_;
 layout(location = 4) out mediump vec2 aVertexUVs1_;
@@ -59,7 +63,7 @@ out vec3 aVertexShUVs_[4];
 #endif
 
 void main(void) {
-    int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
+    int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID - 4 * (gl_InstanceID / 4)];
 
     // load model matrix
     mat4 MMatrix;
@@ -81,7 +85,7 @@ void main(void) {
     aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);
     aVertexUVs1_ = aVertexUVs1;
     aVertexUVs2_ = LightmapTr.xy + LightmapTr.zw * aVertexUVs2;
-    
+
     const vec2 offsets[4] = vec2[4](
         vec2(0.0, 0.0),
         vec2(0.25, 0.0),

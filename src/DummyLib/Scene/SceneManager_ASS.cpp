@@ -503,6 +503,10 @@ void ReadAllFiles_MT_r(const char *in_folder, const std::function<void(const cha
 }
 
 bool CheckCanSkipAsset(const char *in_file, const char *out_file) {
+#ifndef NDEBUG
+    if (strstr(in_file, ".glsl")) return false;
+#endif
+
 #ifdef _WIN32
     HANDLE in_h = CreateFile(in_file, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL);
     if (in_h == INVALID_HANDLE_VALUE) {
@@ -850,7 +854,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         js_scene.Write(dst_stream);
     };
 
-    auto h_preprocess_shader = [&inline_constants](const char *in_file, const char *out_file) {
+    auto h_preprocess_shader = [&inline_constants, platform](const char *in_file, const char *out_file) {
         LOGI("[PrepareAssets] Prep %s", out_file);
 
         {   // resolve includes, inline constants
@@ -865,7 +869,12 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
                     line = line.substr(0, line.size() - 1);
                 }
 
-                if (line.rfind("#include ") == 0) {
+                if (line.rfind("#version ") == 0) {
+                    if (strcmp(platform, "pc") == 0) {
+                        line = "#version 430";
+                    }
+                    dst_stream << line << "\r\n";
+                } else if (line.rfind("#include ") == 0) {
                     size_t n1 = line.find_first_of('\"');
                     size_t n2 = line.find_last_of('\"');
 
@@ -898,7 +907,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             }
         }
 #ifdef _WIN32
-        /*std::string spv_file = out_file;
+        std::string spv_file = out_file;
 
         size_t n;
         if ((n = spv_file.find(".glsl")) != std::string::npos) {
@@ -911,11 +920,32 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         compile_cmd += spv_file;
 
         std::replace(compile_cmd.begin(), compile_cmd.end(), '/', '\\');
-
         int res = system(compile_cmd.c_str());
         if (res != 0) {
             LOGI("[PrepareAssets] Faild to compile %s", spv_file.c_str());
-        }*/
+        }
+
+        std::string optimize_cmd = "src/libs/spirv-opt --loop-unswitch -O ";
+        optimize_cmd += spv_file;
+        optimize_cmd += " -o ";
+        optimize_cmd += spv_file;
+
+        std::replace(optimize_cmd.begin(), optimize_cmd.end(), '/', '\\');
+        res = system(optimize_cmd.c_str());
+        if (res != 0) {
+            LOGI("[PrepareAssets] Faild to optimize %s", spv_file.c_str());
+        }
+
+        std::string cross_cmd = "src/libs/spirv-cross ";
+        cross_cmd += spv_file;
+        cross_cmd += " --output ";
+        cross_cmd += out_file;
+
+        std::replace(cross_cmd.begin(), cross_cmd.end(), '/', '\\');
+        res = system(cross_cmd.c_str());
+        if (res != 0) {
+            LOGI("[PrepareAssets] Faild to cross-compile %s", spv_file.c_str());
+        }
 #endif
     };
 

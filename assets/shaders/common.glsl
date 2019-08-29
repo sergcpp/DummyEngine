@@ -55,7 +55,7 @@ float SampleShadowPCF5x5(sampler2DShadow shadow_texture, highp vec3 shadow_coord
     base_uv *= shadow_size_inv;
 
     float uw0 = (4.0 - 3.0 * s);
-    float uw1 = 7.0;
+    const float uw1 = 7.0;
     float uw2 = (1.0 + 3.0 * s);
 
     float u0 = (3.0 - 2.0 * s) / uw0 - 2.0;
@@ -63,7 +63,7 @@ float SampleShadowPCF5x5(sampler2DShadow shadow_texture, highp vec3 shadow_coord
     float u2 = s / uw2 + 2.0;
 
     float vw0 = (4.0 - 3.0 * t);
-    float vw1 = 7.0;
+    const float vw1 = 7.0;
     float vw2 = (1.0 + 3.0 * t);
 
     float v0 = (3.0 - 2.0 * t) / vw0 - 2.0;

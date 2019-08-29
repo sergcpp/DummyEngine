@@ -33,7 +33,12 @@ struct ProbeItem {
     vec4 sh_coeffs[3];
 };
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = 0, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
@@ -43,7 +48,7 @@ layout (std140) uniform SharedDataBlock {
     ProbeItem uProbes[$MaxProbes];
 };
 
-#ifdef VULKAN
+#if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec3 aVertexPos_;
 layout(location = 1) in mat3 aVertexTBN_;
 layout(location = 4) in vec2 aVertexUVs1_;
@@ -81,7 +86,7 @@ void main(void) {
     
     vec3 dp_dx = dFdx(aVertexPos_);
     vec3 dp_dy = dFdy(aVertexPos_);
-    
+
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.x; i++) {
         highp uint item_data = texelFetch(items_buffer, int(i)).x;
         int di = int(bitfieldExtract(item_data, 12, 12));
@@ -142,7 +147,7 @@ void main(void) {
             }
         }
     }
-    
+
     vec3 normal = normal_color * 2.0 - 1.0;
     normal = normalize(aVertexTBN_ * normal);
     
