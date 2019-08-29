@@ -9,6 +9,7 @@
 
 namespace Ren {
 GLuint LoadShader(GLenum shader_type, const char *source);
+GLuint LoadShader(GLenum shader_type, const uint8_t *data, const int data_size);
 
 struct Binding {
     String  name;
@@ -27,6 +28,16 @@ Ren::Program::Program(const char *name, const char *vs_source, const char *fs_so
 Ren::Program::Program(const char *name, const char *cs_source, eProgLoadStatus *status) {
     name_ = String{ name };
     Init(cs_source, status);
+}
+
+Ren::Program::Program(const char *name, const uint8_t *vs_data, const int vs_data_size, const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status) {
+    name_ = String{ name };
+    Init(vs_data, vs_data_size, fs_data, fs_data_size, status);
+}
+
+Ren::Program::Program(const char *name, const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *status) {
+    name_ = String{ name };
+    Init(cs_data, cs_data_size, status);
 }
 
 Ren::Program::~Program() {
@@ -64,7 +75,15 @@ void Ren::Program::Init(const char *cs_source, eProgLoadStatus *status) {
     InitFromGLSL({ nullptr, nullptr, cs_source }, status);
 }
 
-void Ren::Program::InitFromGLSL(const Shaders &shaders, eProgLoadStatus *status) {
+void Ren::Program::Init(const uint8_t *vs_data, const int vs_data_size, const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status) {
+    InitFromSPIRV({ vs_data, vs_data_size, fs_data, fs_data_size, nullptr, 0 }, status);
+}
+
+void Ren::Program::Init(const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *status) {
+    InitFromSPIRV({ nullptr, 0, nullptr, 0, cs_data, cs_data_size }, status);
+}
+
+void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *status) {
     if ((!shaders.vs_source || !shaders.fs_source) && !shaders.cs_source) {
         if (status) *status = ProgSetToDefault;
         return;
@@ -264,6 +283,96 @@ void Ren::Program::InitFromGLSL(const Shaders &shaders, eProgLoadStatus *status)
     if (status) *status = ProgCreatedFromData;
 }
 
+void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *status) {
+    if ((!shaders.vs_data || !shaders.fs_data) && !shaders.cs_data) {
+        if (status) *status = ProgSetToDefault;
+        return;
+    }
+
+    assert(!ready_);
+
+    GLuint program;
+    if (shaders.vs_data && shaders.fs_data) {
+        GLuint v_shader = LoadShader(GL_VERTEX_SHADER, shaders.vs_data, shaders.vs_data_size);
+        if (!v_shader) {
+            fprintf(stderr, "VertexShader %s error", name_.c_str());
+        }
+
+        GLuint f_shader = LoadShader(GL_FRAGMENT_SHADER, shaders.fs_data, shaders.fs_data_size);
+        if (!f_shader) {
+            fprintf(stderr, "FragmentShader %s error", name_.c_str());
+        }
+
+        program = glCreateProgram();
+        if (program) {
+            glAttachShader(program, v_shader);
+            glAttachShader(program, f_shader);
+            glLinkProgram(program);
+            GLint link_status = GL_FALSE;
+            glGetProgramiv(program, GL_LINK_STATUS, &link_status);
+            if (link_status != GL_TRUE) {
+                GLint buf_len = 0;
+                glGetProgramiv(program, GL_INFO_LOG_LENGTH, &buf_len);
+                if (buf_len) {
+                    char *buf = (char *)malloc((size_t)buf_len);
+                    if (buf) {
+                        glGetProgramInfoLog(program, buf_len, NULL, buf);
+                        fprintf(stderr, "Could not link program: %s", buf);
+                        free(buf);
+                        throw std::runtime_error("Program linking error!");
+                    }
+                }
+                glDeleteProgram(program);
+                program = 0;
+            }
+        } else {
+            fprintf(stderr, "error");
+            throw std::runtime_error("Program creation error!");
+        }
+    } else if (shaders.cs_data) {
+
+    }
+
+    // Enumerate attributes
+    int num;
+    glGetProgramiv(program, GL_ACTIVE_ATTRIBUTES, &num);
+    for (int i = 0; i < num; i++) {
+        attributes_[i].name = String{}; // TODO
+        attributes_[i].loc = i;
+    }
+
+    // Enumerate uniforms
+    glGetProgramiv(program, GL_ACTIVE_UNIFORMS, &num);
+    for (int i = 0; i < num; i++) {
+        uniforms_[i].name = String{}; // TODO
+        uniforms_[i].loc = i;
+    }
+
+    printf("PROGRAM %s\n", name_.c_str());
+
+    // Print all attributes
+    printf("\tATTRIBUTES\n");
+    for (int i = 0; i < MAX_NUM_ATTRIBUTES; i++) {
+        if (attributes_[i].loc == -1) {
+            continue;
+        }
+        printf("\t\t%s : %i\n", attributes_[i].name.c_str(), attributes_[i].loc);
+    }
+
+    // Print all uniforms
+    printf("\tUNIFORMS\n");
+    for (int i = 0; i < MAX_NUM_UNIFORMS; i++) {
+        if (uniforms_[i].loc == -1) {
+            continue;
+        }
+        printf("\t\t%s : %i\n", uniforms_[i].name.c_str(), uniforms_[i].loc);
+    }
+
+    prog_id_ = (uint32_t)program;
+    ready_ = true;
+    if (status) *status = ProgCreatedFromData;
+}
+
 GLuint Ren::LoadShader(GLenum shader_type, const char *source) {
     GLuint shader = glCreateShader(shader_type);
     if (shader) {
@@ -284,7 +393,47 @@ GLuint Ren::LoadShader(GLenum shader_type, const char *source) {
                 glDeleteShader(shader);
                 shader = 0;
             }
-            throw;
+            throw std::runtime_error("Error compiling shader!");
+        }
+    } else {
+        fprintf(stderr, "error");
+    }
+
+    GLint info_len = 0;
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &info_len);
+
+    if (info_len) {
+        char *buf = (char *)malloc((size_t)info_len);
+        glGetShaderInfoLog(shader, info_len, NULL, buf);
+        fprintf(stderr, "%s", buf);
+        free(buf);
+    }
+
+    return shader;
+}
+
+GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_size) {
+    GLuint shader = glCreateShader(shader_type);
+    if (shader) {
+        glShaderBinary(1, &shader, GL_SHADER_BINARY_FORMAT_SPIR_V, data, static_cast<GLsizei>(data_size));
+        glSpecializeShader(shader, "main", 0, nullptr, nullptr);
+
+        GLint compiled = 0;
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+        if (!compiled) {
+            GLint infoLen = 0;
+            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLen);
+            if (infoLen) {
+                char *buf = (char *)malloc((size_t)infoLen);
+                if (buf) {
+                    glGetShaderInfoLog(shader, infoLen, NULL, buf);
+                    fprintf(stderr, "Could not compile shader %d: %s", int(shader_type), buf);
+                    free(buf);
+                }
+                glDeleteShader(shader);
+                shader = 0;
+            }
+            throw std::runtime_error("Error compiling shader!");
         }
     } else {
         fprintf(stderr, "error");

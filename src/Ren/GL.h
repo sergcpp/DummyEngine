@@ -265,6 +265,8 @@ EXTERN_FUNC PFNGLGETQUERYOBJECTUI64VEXTPROC     glGetQueryObjectui64vEXT;
 #define GL_TIMEOUT_EXPIRED                0x911B
 #define GL_CONDITION_SATISFIED            0x911C
 
+#define GL_SHADER_BINARY_FORMAT_SPIR_V  0x9551
+
 #ifndef APIENTRY
 #if defined(WIN32)
 #define WINAPI      __stdcall
@@ -327,8 +329,10 @@ typedef GLuint (APIENTRY *PFNGLCREATESHADERPROC)(GLenum shaderType);
 typedef void (APIENTRY *PFNGLDELETESHADERPROC)(GLuint shader);
 #if !defined(__linux__)
 typedef void (APIENTRY *PFNGLSHADERSOURCEPROC)(GLuint shader, GLsizei count, const GLchar **string, const GLint *length);
+typedef void (APIENTRY *PFNGLSHADERBINARYPROC)(GLsizei count, const GLuint *shaders, GLenum binaryFormat, const void *binary, GLsizei length);
 #endif
 typedef void (APIENTRY *PFNGLCOMPILESHADERPROC)(GLuint shader);
+typedef void (APIENTRY *PFNGLSPECIALIZESHADERPROC)(GLuint shader, const GLchar *pEntryPoint, GLuint numSpecializationConstants, const GLuint *pConstantIndex, const GLuint *pConstantValue);
 typedef void (APIENTRY *PFNGLGETSHADERIVPROC)(GLuint shader, GLenum pname, GLint *params);
 typedef void (APIENTRY *PFNGLGETSHADERINFOLOGPROC)(GLuint shader, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 #endif
@@ -487,7 +491,9 @@ typedef void (APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
 #define glCreateShader              ren_glCreateShader
 #define glDeleteShader              ren_glDeleteShader
 #define glShaderSource              ren_glShaderSource
+#define glShaderBinary              ren_glShaderBinary
 #define glCompileShader             ren_glCompileShader
+#define glSpecializeShader          ren_glSpecializeShader
 #define glGetShaderiv               ren_glGetShaderiv
 #define glGetShaderInfoLog          ren_glGetShaderInfoLog
 #if !defined(__linux__)
@@ -628,7 +634,9 @@ EXTERN_FUNC PFNGLDISABLEVERTEXATTRIBARRAYPROC   ren_glDisableVertexAttribArray;
 EXTERN_FUNC PFNGLCREATESHADERPROC               ren_glCreateShader;
 EXTERN_FUNC PFNGLDELETESHADERPROC               ren_glDeleteShader;
 EXTERN_FUNC PFNGLSHADERSOURCEPROC               ren_glShaderSource;
+EXTERN_FUNC PFNGLSHADERBINARYPROC               ren_glShaderBinary;
 EXTERN_FUNC PFNGLCOMPILESHADERPROC              ren_glCompileShader;
+EXTERN_FUNC PFNGLSPECIALIZESHADERPROC           ren_glSpecializeShader;
 EXTERN_FUNC PFNGLGETSHADERIVPROC                ren_glGetShaderiv;
 EXTERN_FUNC PFNGLGETSHADERINFOLOGPROC           ren_glGetShaderInfoLog;
 #if !defined(__linux__)

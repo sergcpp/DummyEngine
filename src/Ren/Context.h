@@ -67,6 +67,9 @@ public:
 #if defined(USE_GL_RENDER)
     ProgramRef LoadProgramGLSL(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *load_status);
     ProgramRef LoadProgramGLSL(const char *name, const char *cs_source, eProgLoadStatus *load_status);
+    ProgramRef LoadProgramSPIRV(const char *name, const uint8_t *vs_data, const int vs_data_size,
+                                                  const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *load_status);
+    ProgramRef LoadProgramSPIRV(const char *name, const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *load_status);
 #elif defined(USE_SW_RENDER)
     ProgramRef LoadProgramSW(const char *name, void *vs_shader, void *fs_shader, int num_fvars,
                              const Attribute *attrs, const Uniform *unifs, eProgLoadStatus *load_status);
@@ -94,8 +97,12 @@ public:
     void ReleaseAll();
 
 #if defined(USE_GL_RENDER)
-    float anisotropy = 0;
-    int max_uniform_vec4 = 0;
+    struct {
+        float max_anisotropy = 0.0f;
+        int max_uniform_vec4 = 0;
+        bool gl_spirv = false;
+    } capabilities;
+    
     static bool IsExtensionSupported(const char *ext);
 #elif defined(USE_SW_RENDER)
     int max_uniform_vec4 = 0;

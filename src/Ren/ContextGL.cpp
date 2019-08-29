@@ -39,8 +39,8 @@ void Ren::Context::Init(int w, int h) {
     if (IsExtensionSupported("GL_EXT_texture_filter_anisotropic")) {
         GLfloat f;
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &f);
-        anisotropy = f;
-        printf("\tAnisotropy\t: %f\n", anisotropy);
+        capabilities.max_anisotropy = f;
+        printf("\tAnisotropy\t: %f\n", capabilities.max_anisotropy);
     }
     
     // how many uniform vec4 vectors can be used
@@ -48,11 +48,11 @@ void Ren::Context::Init(int w, int h) {
     glGetIntegerv(/*GL_MAX_VERTEX_UNIFORM_VECTORS*/ GL_MAX_VERTEX_UNIFORM_COMPONENTS, &i);
     i /= 4;
     if (i == 0) i = 256;
-    max_uniform_vec4 = i;
-    printf("\tMax uniforms\t: %i\n", max_uniform_vec4);
+    capabilities.max_uniform_vec4 = i;
+    printf("\tMax uniforms\t: %i\n", capabilities.max_uniform_vec4);
 
     // how many bones(mat4) can be used at time
-    Mesh::max_gpu_bones = max_uniform_vec4 / 8;
+    Mesh::max_gpu_bones = capabilities.max_uniform_vec4 / 8;
     printf("\tBones per pass\t: %i\n", Mesh::max_gpu_bones);
     char buff[16];
     sprintf(buff, "%i", Mesh::max_gpu_bones);
@@ -83,6 +83,8 @@ void Ren::Context::Init(int w, int h) {
         glDebugMessageCallback(gl_debug_proc, nullptr);
     }
 #endif
+
+    capabilities.gl_spirv = IsExtensionSupported("GL_ARB_gl_spirv");
 
     default_vertex_buf1_        = buffers_.Add("default_vtx_buf1", 64 * 1024 * 1024);
     default_vertex_buf2_        = buffers_.Add("default_vtx_buf2", 64 * 1024 * 1024);
@@ -140,7 +142,44 @@ Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *cs_s
         if (ref->ready()) {
             if (load_status) *load_status = ProgFound;
         } else if (!ref->ready() && cs_source) {
-            ref->Init(name, cs_source, load_status);
+            ref->Init(cs_source, load_status);
+        }
+    }
+
+    return ref;
+}
+
+Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *vs_data, const int vs_data_size,
+                                                                 const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *load_status) {
+    ProgramRef ref = programs_.FindByName(name);
+
+    assert(capabilities.gl_spirv);
+
+    if (!ref) {
+        ref = programs_.Add(name, vs_data, vs_data_size, fs_data, fs_data_size, load_status);
+    } else {
+        if (ref->ready()) {
+            if (load_status) *load_status = ProgFound;
+        } else if (!ref->ready() && vs_data && fs_data) {
+            ref->Init(vs_data, vs_data_size, fs_data, fs_data_size, load_status);
+        }
+    }
+
+    return ref;
+}
+
+Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *load_status) {
+    ProgramRef ref = programs_.FindByName(name);
+
+    assert(capabilities.gl_spirv);
+
+    if (!ref) {
+        ref = programs_.Add(name, cs_data, cs_data_size, load_status);
+    } else {
+        if (ref->ready()) {
+            if (load_status) *load_status = ProgFound;
+        } else if (!ref->ready() && cs_data) {
+            ref->Init(cs_data, cs_data_size, load_status);
         }
     }
 

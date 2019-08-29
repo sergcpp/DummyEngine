@@ -36,12 +36,22 @@ class Program : public RefCounter {
     bool        ready_ = false;
     String      name_;
 
-    struct Shaders {
+    struct ShadersSrc {
         const char *vs_source, *fs_source;
         const char *cs_source;
     };
 
-    void InitFromGLSL(const Shaders &shaders, eProgLoadStatus *status);
+    struct ShadersBin {
+        const uint8_t *vs_data;
+        const int vs_data_size;
+        const uint8_t *fs_data;
+        const int fs_data_size;
+        const uint8_t *cs_data;
+        const int cs_data_size;
+    };
+
+    void InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *status);
+    void InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *status);
 public:
     Program() {}
     Program(const char *name, uint32_t prog_id, const Attribute *attrs, const Uniform *unifs, const UniformBlock *unif_blocks) : prog_id_(prog_id) {
@@ -62,6 +72,8 @@ public:
     }
     Program(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status = nullptr);
     Program(const char *name, const char *cs_source, eProgLoadStatus *status = nullptr);
+    Program(const char *name, const uint8_t *vs_data, const int vs_data_size, const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status = nullptr);
+    Program(const char *name, const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *status = nullptr);
     Program(const Program &rhs) = delete;
     Program(Program &&rhs) {
         *this = std::move(rhs);
@@ -122,6 +134,8 @@ public:
 
     void Init(const char *vs_source, const char *fs_source, eProgLoadStatus *status);
     void Init(const char *cs_source, eProgLoadStatus *status);
+    void Init(const uint8_t *vs_data, const int vs_data_size, const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status);
+    void Init(const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *status);
 };
 
 typedef StorageRef<Program> ProgramRef;

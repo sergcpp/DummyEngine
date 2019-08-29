@@ -59,7 +59,9 @@ bool Ren::InitGLExtentions() {
     ren_glCreateShader              = (PFNGLCREATESHADERPROC)GetProcAddress(glCreateShader);
     ren_glDeleteShader              = (PFNGLDELETESHADERPROC)GetProcAddress(glDeleteShader);
     ren_glShaderSource              = (PFNGLSHADERSOURCEPROC)GetProcAddress(glShaderSource);
+    ren_glShaderBinary              = (PFNGLSHADERBINARYPROC)GetProcAddress(glShaderBinary);
     ren_glCompileShader             = (PFNGLCOMPILESHADERPROC)GetProcAddress(glCompileShader);
+    ren_glSpecializeShader          = (PFNGLSPECIALIZESHADERPROC)GetProcAddress(glSpecializeShader);
     ren_glGetShaderiv               = (PFNGLGETSHADERIVPROC)GetProcAddress(glGetShaderiv);
     ren_glGetShaderInfoLog          = (PFNGLGETSHADERINFOLOGPROC)GetProcAddress(glGetShaderInfoLog);
 
