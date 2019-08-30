@@ -922,10 +922,46 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         std::replace(compile_cmd.begin(), compile_cmd.end(), '/', '\\');
         int res = system(compile_cmd.c_str());
         if (res != 0) {
-            LOGI("[PrepareAssets] Faild to compile %s", spv_file.c_str());
+            LOGI("[PrepareAssets] Failed to compile %s", spv_file.c_str());
         }
 
-        std::string optimize_cmd = "src/libs/spirv-opt --loop-unswitch -O ";
+        std::string optimize_cmd = "src/libs/spirv-opt "
+                                   "--eliminate-dead-branches "
+                                   "--merge-return "
+                                   "--inline-entry-points-exhaustive "
+                                   "--loop-unswitch --loop-unroll "
+                                   "--eliminate-dead-code-aggressive "
+                                   "--private-to-local "
+                                   "--eliminate-local-single-block "
+                                   "--eliminate-local-single-store "
+                                   "--eliminate-dead-code-aggressive "
+                                   "--scalar-replacement=100 "
+                                   "--convert-local-access-chains "
+                                   "--eliminate-local-single-block "
+                                   "--eliminate-local-single-store "
+                                   "--eliminate-dead-code-aggressive "
+                                   //"--eliminate-local-multi-store "
+                                   "--eliminate-dead-code-aggressive "
+                                   "--ccp "
+                                   "--eliminate-dead-code-aggressive "
+                                   "--redundancy-elimination "
+                                   "--combine-access-chains "
+                                   "--simplify-instructions "
+                                   "--vector-dce "
+                                   "--eliminate-dead-inserts "
+                                   "--eliminate-dead-branches "
+                                   "--simplify-instructions "
+                                   "--if-conversion "
+                                   "--copy-propagate-arrays "
+                                   "--reduce-load-size "
+                                   //"--eliminate-dead-code-aggressive "
+                                   //"--merge-blocks "
+                                   "--redundancy-elimination "
+                                   "--eliminate-dead-branches "
+                                   //"--merge-blocks "
+                                   "--simplify-instructions "
+                                   "--validate-after-all ";
+
         optimize_cmd += spv_file;
         optimize_cmd += " -o ";
         optimize_cmd += spv_file;
@@ -937,6 +973,11 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
 
         std::string cross_cmd = "src/libs/spirv-cross ";
+        if (strcmp(platform, "pc") == 0) {
+            cross_cmd += "--version 430 ";
+        } else if (strcmp(platform, "android")) {
+            cross_cmd += "--version 310 --es ";
+        }
         cross_cmd += spv_file;
         cross_cmd += " --output ";
         cross_cmd += out_file;

@@ -1,5 +1,6 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
+#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
 
@@ -111,7 +112,7 @@ void main(void) {
         vec2 duv_dx = 0.5 * (de_proj * vec4(dp_dx, 0.0)).xy;
         vec2 duv_dy = 0.5 * (de_proj * vec4(dp_dy, 0.0)).xy;
         
-        if (app.x < 1.0 && app.y < 1.0 && app.z < 1.0) {
+        [[branch]] if (app.x < 1.0 && app.y < 1.0 && app.z < 1.0) {
             vec4 diff_uvs_tr = texelFetch(decals_buffer, di * 6 + 3);
             float decal_influence = 0.0;
             
@@ -185,7 +186,7 @@ void main(void) {
         atten = _dot1 * atten;
         if (_dot2 > dir_and_spot.w && (brightness * atten) > $FltEps) {
             int shadowreg_index = floatBitsToInt(col_and_index.w);
-            if (shadowreg_index != -1) {
+            [[branch]] if (shadowreg_index != -1) {
                 vec4 reg_tr = uShadowMapRegions[shadowreg_index].transform;
                 
                 highp vec4 pp = uShadowMapRegions[shadowreg_index].clip_from_world * vec4(aVertexPos_, 1.0);
@@ -193,7 +194,7 @@ void main(void) {
                 pp.xyz = pp.xyz * 0.5 + vec3(0.5);
                 pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
                 
-                atten *= 0.5;//SampleShadowPCF5x5(shadow_texture, pp.xyz);
+                atten *= SampleShadowPCF5x5(shadow_texture, pp.xyz);
             }
             
             additional_light += col_and_index.xyz * atten * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
@@ -213,7 +214,7 @@ void main(void) {
     
     float lambert = max(dot(normal, uSunDir.xyz), 0.0);
     float visibility = 0.0;
-    if (lambert > 0.00001) {
+    [[branch]] if (lambert > 0.00001) {
         visibility = GetSunVisibility(lin_depth, shadow_texture, aVertexShUVs_);
     }
 
@@ -229,4 +230,6 @@ void main(void) {
     outColor = vec4(diffuse_color * kD, 1.0);
     outNormal = vec4(normal * 0.5 + 0.5, 0.0);
     outSpecular = specular_color;
+    
+    
 }
