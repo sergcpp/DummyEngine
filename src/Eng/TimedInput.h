@@ -39,7 +39,7 @@ public:
     };
 
     struct Event {
-        RawInputEvent type;
+        RawInputEvent type = RAW_INPUT_NONE;
         RawInputButton key;
         int raw_key;
         struct {

@@ -7,6 +7,10 @@
 
 #include <dirent.h>
 
+#ifdef __linux__
+#include <sys/stat.h>
+#endif
+
 extern "C" {
 #include <Ren/SOIL2/image_DXT.h>
 }
@@ -531,28 +535,47 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file) {
     CloseHandle(in_h);
     CloseHandle(out_h);
 #else
-#warning "Not Implemented!"
+    struct stat st1 = {}, st2 = {};
+    if (stat(in_file, &st1) != -1 && stat(out_file, &st2) != -1) {
+        struct tm tm1 = {}, tm2 = {};
+        localtime_r(&st1.st_ctime, &tm1);
+        localtime_r(&st2.st_ctime, &tm2);
+        
+        time_t t1 = mktime(&tm1), t2 = mktime(&tm2);
+
+        double diff_s = difftime(t1, t2);
+        if (diff_s < 0) {
+            return true;
+        }
+    }
+    
 #endif
     return false;
 }
 
 bool CreateFolders(const char *out_file) {
-#ifdef _WIN32
     const char *end = strchr(out_file, '/');
     while (end) {
         char folder[256] = {};
         strncpy(folder, out_file, end - out_file + 1);
+#ifdef _WIN32
         if (!CreateDirectory(folder, NULL)) {
             if (GetLastError() != ERROR_ALREADY_EXISTS) {
-                LOGI("[PrepareAssets] Failed to create directory!");
+                LOGE("[PrepareAssets] Failed to create directory!");
                 return false;
             }
         }
+#else
+        struct stat st = {};
+        if (stat(folder, &st) == -1) {
+            if (!mkdir(folder, 0777) != 0) {
+                LOGE("[PrepareAssets] Failed to create directory!");
+                return false;
+            }
+        }
+#endif
         end = strchr(end + 1, '/');
     }
-#else
-#warning "Not Implemented!"
-#endif
     return true;
 }
 
@@ -662,6 +685,9 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         shader_constants.emplace("$ShadRes",    AS_STR(REN_SHAD_RES_PC));
     } else if (strcmp(platform, "android") == 0) {
         shader_constants.emplace("$ShadRes",    AS_STR(REN_SHAD_RES_ANDROID));
+    } else {
+        LOGE("Unknown platform %s", platform);
+        return false;
     }
 
     shader_constants.emplace("$ShadCasc0Dist",  AS_STR(REN_SHAD_CASCADE0_DIST));
@@ -694,7 +720,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             if (it != shader_constants.end()) {
                 line.replace(n, l, it->second);
             } else {
-                throw std::runtime_error("Unknow variable!");
+                LOGE("Unknown variable %s", var.c_str());
+                throw std::runtime_error("Unknown variable!");
             }
         }
     };

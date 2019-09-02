@@ -107,8 +107,7 @@ int DummyApp::Init(int w, int h) {
     glViewport(0, 0, w, h);
 
     try {
-        // TODO: make it work on linux
-        //Viewer::PrepareAssets("pc");
+        Viewer::PrepareAssets("pc");
         viewer_.reset(new Viewer(w, h, nullptr));
 
         auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
