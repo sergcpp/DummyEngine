@@ -933,7 +933,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
                 line_counter++;
             }
         }
-#ifdef _WIN32
+
         std::string spv_file = out_file;
 
         size_t n;
@@ -941,18 +941,20 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             spv_file.replace(n + 1, n + 4, "spv", 3);
         }
 
-        std::string compile_cmd = "src/libs/glslangValidator -G ";
+        std::string compile_cmd = "src/libs/spirv/glslangValidator -G ";
         compile_cmd += out_file;
         compile_cmd += " -o ";
         compile_cmd += spv_file;
 
+#ifdef _WIN32
         std::replace(compile_cmd.begin(), compile_cmd.end(), '/', '\\');
+#endif
         int res = system(compile_cmd.c_str());
         if (res != 0) {
             LOGI("[PrepareAssets] Failed to compile %s", spv_file.c_str());
         }
 
-        std::string optimize_cmd = "src/libs/spirv-opt "
+        std::string optimize_cmd = "src/libs/spirv/spirv-opt "
                                    "--eliminate-dead-branches "
                                    "--merge-return "
                                    "--inline-entry-points-exhaustive "
@@ -993,13 +995,15 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         optimize_cmd += " -o ";
         optimize_cmd += spv_file;
 
+#ifdef _WIN32
         std::replace(optimize_cmd.begin(), optimize_cmd.end(), '/', '\\');
+#endif
         res = system(optimize_cmd.c_str());
         if (res != 0) {
             LOGI("[PrepareAssets] Faild to optimize %s", spv_file.c_str());
         }
 
-        std::string cross_cmd = "src/libs/spirv-cross ";
+        std::string cross_cmd = "src/libs/spirv/spirv-cross ";
         if (strcmp(platform, "pc") == 0) {
             cross_cmd += "--version 430 ";
         } else if (strcmp(platform, "android")) {
@@ -1009,12 +1013,13 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         cross_cmd += " --output ";
         cross_cmd += out_file;
 
+#ifdef _WIN32
         std::replace(cross_cmd.begin(), cross_cmd.end(), '/', '\\');
+#endif
         res = system(cross_cmd.c_str());
         if (res != 0) {
             LOGI("[PrepareAssets] Faild to cross-compile %s", spv_file.c_str());
         }
-#endif
     };
 
     struct Handler {
@@ -1075,6 +1080,14 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         auto &conv_func = h_it->second.convert;
         conv_func(in_file, out_file.c_str());
     };
+
+#ifdef __linux__
+    if (system("chmod +x src/libs/spirv/glslangValidator") ||
+        system("chmod +x src/libs/spirv/spirv-opt") ||
+        system("chmod +x src/libs/spirv/spirv-cross")) {
+        LOGI("[PrepareAssets] Failed to chmod executables!");
+    }
+#endif
 
     if (p_threads) {
         std::vector<std::future<void>> events;
