@@ -1,6 +1,6 @@
 gl_program: main_lightmapped main_lightmapped.vert.glsl main_lightmapped.frag.glsl
 gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 sw_program: main
-texture: paving_stone.png
+texture: paving_stone.png srgb
 texture: paving_stone_normal.png
 texture: paving_stone_spec.png

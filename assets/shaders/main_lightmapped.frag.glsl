@@ -81,7 +81,7 @@ void main(void) {
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
     
-    vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(2.2));
+    vec3 albedo_color = texture(diffuse_texture, aVertexUVs1_).rgb;
     vec3 normal_color = texture(normals_texture, aVertexUVs1_).wyz;
     vec4 specular_color = texture(specular_texture, aVertexUVs1_);
     
@@ -120,7 +120,7 @@ void main(void) {
             
                 vec4 decal_diff = textureGrad(decals_texture, diff_uvs, _duv_dx, _duv_dy);
                 decal_influence = decal_diff.a;
-                albedo_color = mix(albedo_color, pow(decal_diff.xyz, vec3(2.2)), decal_influence);
+                albedo_color = mix(albedo_color, decal_diff.rgb, decal_influence);
             }
             
             vec4 norm_uvs_tr = texelFetch(decals_buffer, di * 6 + 4);

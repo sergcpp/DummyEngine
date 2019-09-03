@@ -158,10 +158,14 @@ int query_tex_rectangle_capability( void );
 /*	for using DXT compression	*/
 static int has_DXT_capability = SOIL_CAPABILITY_UNKNOWN;
 int query_DXT_capability( void );
-#define SOIL_RGB_S3TC_DXT1		0x83F0
-#define SOIL_RGBA_S3TC_DXT1		0x83F1
-#define SOIL_RGBA_S3TC_DXT3		0x83F2
-#define SOIL_RGBA_S3TC_DXT5		0x83F3
+#define SOIL_RGB_S3TC_DXT1		    0x83F0
+#define SOIL_RGBA_S3TC_DXT1		    0x83F1
+#define SOIL_RGBA_S3TC_DXT3		    0x83F2
+#define SOIL_RGBA_S3TC_DXT5		    0x83F3
+#define SOIL_SRGB_S3TC_DXT1		    0x8C4C
+#define SOIL_SRGB_ALPHA_S3TC_DXT1   0x8C4D
+#define SOIL_SRGB_ALPHA_S3TC_DXT3   0x8C4E
+#define SOIL_SRGB_ALPHA_S3TC_DXT5   0x8C4F
 typedef void (APIENTRY * P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC) (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid * data);
 static P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC soilGlCompressedTexImage2D = NULL;
 
@@ -2032,15 +2036,15 @@ unsigned int SOIL_direct_load_DDS_from_memory(
 		switch( (header.sPixelFormat.dwFourCC >> 24) - '0' )
 		{
 		case 1:
-			S3TC_type = SOIL_RGBA_S3TC_DXT1;
+			S3TC_type = (flags & SOIL_FLAG_SRGB) ? SOIL_SRGB_ALPHA_S3TC_DXT1 : SOIL_RGBA_S3TC_DXT1;
 			block_size = 8;
 			break;
 		case 3:
-			S3TC_type = SOIL_RGBA_S3TC_DXT3;
+			S3TC_type = (flags & SOIL_FLAG_SRGB) ? SOIL_SRGB_ALPHA_S3TC_DXT3 : SOIL_RGBA_S3TC_DXT3;
 			block_size = 16;
 			break;
 		case 5:
-			S3TC_type = SOIL_RGBA_S3TC_DXT5;
+			S3TC_type = (flags & SOIL_FLAG_SRGB) ? SOIL_SRGB_ALPHA_S3TC_DXT5 : SOIL_RGBA_S3TC_DXT5;
 			block_size = 16;
 			break;
 		}

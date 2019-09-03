@@ -1,6 +1,6 @@
 gl_program: main_lightmapped main_lightmapped.vert.glsl main_lightmapped.frag.glsl
 gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 sw_program: main
-texture: sidewalk_diff.png
+texture: sidewalk_diff.png srgb
 texture: sidewalk_norm.png
 texture: sidewalk_spec.png

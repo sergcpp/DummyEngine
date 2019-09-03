@@ -1,6 +1,6 @@
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 sw_program: main
-texture: bistro/Brick_Large_Beige_diff.png
+texture: bistro/Brick_Large_Beige_diff.png srgb
 texture: bistro/Brick_Large_Beige_norm.png
 texture: default_specular.png

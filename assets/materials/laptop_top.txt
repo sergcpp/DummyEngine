@@ -1,6 +1,6 @@
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 sw_program: main
-texture: rubber_Diamond_Bump.png
+texture: rubber_Diamond_Bump.png srgb
 texture: rubber_diamond_norm.png
 texture: glossy_spec.png

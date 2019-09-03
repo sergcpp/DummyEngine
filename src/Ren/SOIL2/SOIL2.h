@@ -97,19 +97,20 @@ enum {
 	SOIL_FLAG_PVR_LOAD_DIRECT: will load PVR files directly without _ANY_ additional processing ( if supported )
 **/
 enum {
-    SOIL_FLAG_POWER_OF_TWO = 1,
-    SOIL_FLAG_MIPMAPS = 2,
-    SOIL_FLAG_TEXTURE_REPEATS = 4,
-    SOIL_FLAG_MULTIPLY_ALPHA = 8,
-    SOIL_FLAG_INVERT_Y = 16,
-    SOIL_FLAG_COMPRESS_TO_DXT = 32,
-    SOIL_FLAG_DDS_LOAD_DIRECT = 64,
-    SOIL_FLAG_NTSC_SAFE_RGB = 128,
-    SOIL_FLAG_CoCg_Y = 256,
-    SOIL_FLAG_TEXTURE_RECTANGLE = 512,
-    SOIL_FLAG_PVR_LOAD_DIRECT = 1024,
-    SOIL_FLAG_ETC1_LOAD_DIRECT = 2048,
-    SOIL_FLAG_GL_MIPMAPS = 4096
+    SOIL_FLAG_POWER_OF_TWO      = (1 << 0),
+    SOIL_FLAG_MIPMAPS           = (1 << 1),
+    SOIL_FLAG_TEXTURE_REPEATS   = (1 << 2),
+    SOIL_FLAG_MULTIPLY_ALPHA    = (1 << 3),
+    SOIL_FLAG_INVERT_Y          = (1 << 4),
+    SOIL_FLAG_COMPRESS_TO_DXT   = (1 << 5),
+    SOIL_FLAG_DDS_LOAD_DIRECT   = (1 << 6),
+    SOIL_FLAG_NTSC_SAFE_RGB     = (1 << 7),
+    SOIL_FLAG_CoCg_Y            = (1 << 8),
+    SOIL_FLAG_TEXTURE_RECTANGLE = (1 << 9),
+    SOIL_FLAG_PVR_LOAD_DIRECT   = (1 << 10),
+    SOIL_FLAG_ETC1_LOAD_DIRECT  = (1 << 11),
+    SOIL_FLAG_GL_MIPMAPS        = (1 << 12),
+    SOIL_FLAG_SRGB              = (1 << 13)
 };
 
 /**

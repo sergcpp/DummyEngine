@@ -21,6 +21,7 @@ struct Texture2DParams {
     eTexColorFormat format = Undefined;
     eTexFilter filter = NoFilter;
     eTexRepeat repeat = Repeat;
+    uint32_t flags = 0;
 };
 
 enum eTexLoadStatus { TexFound, TexCreatedDefault, TexCreatedFromData };

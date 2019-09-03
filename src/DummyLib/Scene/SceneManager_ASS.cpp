@@ -617,15 +617,15 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         size_t n;
         if ((n = tex.find(".tga")) != std::string::npos) {
             if (strcmp(platform, "pc") == 0) {
-                tex.replace(n + 1, n + 3, "dds");
+                tex.replace(n + 1, 3, "dds");
             } else if (strcmp(platform, "android") == 0) {
-                tex.replace(n + 1, n + 3, "ktx");
+                tex.replace(n + 1, 3, "ktx");
             }
         } else if ((n = tex.find(".png")) != std::string::npos) {
             if (strcmp(platform, "pc") == 0) {
-                tex.replace(n + 1, n + 3, "dds");
+                tex.replace(n + 1, 3, "dds");
             } else if (strcmp(platform, "android") == 0) {
-                tex.replace(n + 1, n + 3, "ktx");
+                tex.replace(n + 1, 3, "ktx");
             }
         }
     };
@@ -938,7 +938,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
         size_t n;
         if ((n = spv_file.find(".glsl")) != std::string::npos) {
-            spv_file.replace(n + 1, n + 4, "spv", 3);
+            spv_file.replace(n + 1, 4, "spv", 3);
         }
 
         std::string compile_cmd = "src/libs/spirv/glslangValidator -G ";
@@ -1000,7 +1000,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 #endif
         res = system(optimize_cmd.c_str());
         if (res != 0) {
-            LOGI("[PrepareAssets] Faild to optimize %s", spv_file.c_str());
+            LOGI("[PrepareAssets] Failed to optimize %s", spv_file.c_str());
         }
 
         std::string cross_cmd = "src/libs/spirv/spirv-cross ";
@@ -1018,7 +1018,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 #endif
         res = system(cross_cmd.c_str());
         if (res != 0) {
-            LOGI("[PrepareAssets] Faild to cross-compile %s", spv_file.c_str());
+            LOGI("[PrepareAssets] Failed to cross-compile %s", spv_file.c_str());
         }
     };
 

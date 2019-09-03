@@ -1,4 +1,4 @@
 gl_program: main main.vert.glsl main.frag.glsl
 sw_program: main
-texture: grey.tga
+texture: grey.tga srgb
 texture: test_normalmap.tga

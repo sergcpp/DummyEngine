@@ -1,6 +1,6 @@
 gl_program: main_unlit main_unlit.vert.glsl main_unlit.frag.glsl
 gl_program: main_unlit main_unlit.vert.glsl main_unlit.frag.glsl
 sw_program: main
-texture: laptop_screen.png
+texture: laptop_screen.png srgb
 texture: default_normalmap.png
 texture: default_specular.png

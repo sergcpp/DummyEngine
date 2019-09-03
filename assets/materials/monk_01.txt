@@ -1,6 +1,6 @@
 gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 sw_program: main
-texture: wood_02.png
+texture: wood_02.png srgb
 texture: default_normalmap.png
 texture: white.png

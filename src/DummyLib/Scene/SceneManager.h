@@ -59,7 +59,7 @@ public:
 private:
     Ren::MaterialRef OnLoadMaterial(const char *name);
     Ren::ProgramRef OnLoadProgram(const char *name, const char *arg1, const char *arg2);
-    Ren::Texture2DRef OnLoadTexture(const char *name);
+    Ren::Texture2DRef OnLoadTexture(const char *name, uint32_t flags);
 
     void RebuildBVH();
     void RemoveNode(uint32_t node_index);

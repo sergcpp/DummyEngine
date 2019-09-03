@@ -1,6 +1,6 @@
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 sw_program: main
-texture: bistro/Foliage_Ivy_branches_diff.png
+texture: bistro/Foliage_Ivy_branches_diff.png srgb
 texture: bistro/Foliage_Ivy_branches_norm.png
 texture: default_specular.png

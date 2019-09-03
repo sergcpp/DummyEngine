@@ -14,13 +14,18 @@
 
 namespace Ren {
 enum eMaterialFlags {
-    AlphaTest = (1 << 0),
-    AlphaBlend = (1 << 1),
+    AlphaTest   = (1 << 0),
+    AlphaBlend  = (1 << 1),
+};
+
+enum eTextureFlags {
+    Signed  = (1 << 0),
+    SRGB    = (1 << 1)
 };
 
 enum eMatLoadStatus { MatFound, MatSetToDefault, MatCreatedFromData };
 
-typedef std::function<Texture2DRef(const char *name)> texture_load_callback;
+typedef std::function<Texture2DRef(const char *name, uint32_t flags)> texture_load_callback;
 typedef std::function<ProgramRef(const char *name, const char *arg1, const char *arg2)> program_load_callback;
 
 class Material : public RefCounter {

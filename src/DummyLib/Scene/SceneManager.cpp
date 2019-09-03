@@ -177,10 +177,10 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             lm_indir_sh_tex_name[sh_l] += tex_ext;
         }
 
-        scene_data_.env.lm_direct = OnLoadTexture(lm_direct_tex_name.c_str());
-        //scene_data_.env.lm_indir = OnLoadTexture(lm_indir_tex_name.c_str());
+        scene_data_.env.lm_direct = OnLoadTexture(lm_direct_tex_name.c_str(), 0);
+        //scene_data_.env.lm_indir = OnLoadTexture(lm_indir_tex_name.c_str(), 0);
         for (int sh_l = 0; sh_l < 4; sh_l++) {
-            scene_data_.env.lm_indir_sh[sh_l] = OnLoadTexture(lm_indir_sh_tex_name[sh_l].c_str());
+            scene_data_.env.lm_indir_sh[sh_l] = OnLoadTexture(lm_indir_sh_tex_name[sh_l].c_str(), 0);
         }
     }
 
@@ -629,7 +629,7 @@ Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {
 
         ret = ctx_.LoadMaterial(name, mat_src.data(), &status,
                                 std::bind(&SceneManager::OnLoadProgram, this, _1, _2, _3),
-                                std::bind(&SceneManager::OnLoadTexture, this, _1));
+                                std::bind(&SceneManager::OnLoadTexture, this, _1, _2));
         assert(status == Ren::MatCreatedFromData);
     }
     return ret;
@@ -697,7 +697,7 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
 #endif
 }
 
-Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
+Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) {
     using namespace SceneManagerConstants;
 
     std::string tex_name = TEXTURES_PATH;
@@ -710,11 +710,11 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
 
         std::weak_ptr<SceneManager> _self = shared_from_this();
         Sys::LoadAssetComplete(tex_name.c_str(),
-        [_self, tex_name](void *data, int size) {
+        [_self, tex_name, flags](void *data, int size) {
             std::shared_ptr<SceneManager> self = _self.lock();
             if (!self) return;
 
-            self->ctx_.ProcessSingleTask([&self, tex_name, data, size]() {
+            self->ctx_.ProcessSingleTask([&self, tex_name, data, size, flags]() {
                 Ren::Texture2DParams p;
                 if (strstr(tex_name.c_str(), ".tga_rgbe")) {
                     p.filter = Ren::BilinearNoMipmap;
@@ -723,6 +723,7 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name) {
                     p.filter = Ren::Trilinear;
                     p.repeat = Ren::Repeat;
                 }
+                p.flags = flags;
                 self->ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, nullptr);
                 int count = --(self->scene_texture_load_counter_);
                 self.reset();

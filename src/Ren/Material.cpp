@@ -98,7 +98,31 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             q = strpbrk(p, delims);
             std::string texture_name = std::string(p, q);
 
-            textures_[num_textures] = on_tex_load(texture_name.c_str());
+            uint32_t texture_flags = 0;
+
+            const char *_p = q + 1;
+            const char *_q = strpbrk(_p, delims);
+
+            for (; _p != NULL && _q != NULL; _q = strpbrk(_p, delims)) {
+                if (_p == _q) break;
+
+                std::string flag = std::string(_p, _q);
+                if (flag == "signed") {
+                    texture_flags |= Signed;
+                    p = _p;
+                    q = _q;
+                } else if (flag == "srgb") {
+                    texture_flags |= SRGB;
+                    p = _p;
+                    q = _q;
+                } else {
+                    break;
+                }
+
+                _p = _q + 1;
+            }
+
+            textures_[num_textures] = on_tex_load(texture_name.c_str(), texture_flags);
             num_textures++;
         } else if (item == "param:") {
             Vec4f &par = params_[num_params++];

@@ -1,6 +1,6 @@
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 sw_program: main
-texture: bistro/Paris_Table_Terrace_diff.png
+texture: bistro/Paris_Table_Terrace_diff.png srgb
 texture: bistro/Paris_Table_Terrace_norm.png
 texture: default_specular.png

@@ -2,6 +2,6 @@ gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 sw_program: main
 flag: alpha_test
-texture: bistro/Foliage_Leaves_diff.png
+texture: bistro/Foliage_Leaves_diff.png srgb
 texture: bistro/Foliage_Leaves_norm.png
 texture: default_specular.png

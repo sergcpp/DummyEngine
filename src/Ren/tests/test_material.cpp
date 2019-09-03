@@ -132,7 +132,7 @@ void test_material() {
 #endif
         };
 
-        auto on_texture_needed = [&test](const char *name) {
+        auto on_texture_needed = [&test](const char *name, uint32_t flags) {
             Ren::eTexLoadStatus status;
             Ren::Texture2DParams p;
             return test.LoadTexture2D(name, nullptr, 0, p, &status);
@@ -142,7 +142,7 @@ void test_material() {
                               "sw_program: constant\n"
                               "flag: alpha_test\n"
                               "texture: checker.tga\n"
-                              "texture: checker.tga\n"
+                              "texture: checker.tga signed\n"
                               "texture: metal_01.tga\n"
                               "texture: checker.tga\n"
                               "param: 0 1 2 3\n"

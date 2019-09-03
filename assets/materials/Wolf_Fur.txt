@@ -2,6 +2,6 @@ gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 sw_program: main
 flag: alpha_test
-texture: wolf_fur.png
+texture: wolf_fur.png srgb
 texture: default_normalmap.png
 texture: default_specular.png

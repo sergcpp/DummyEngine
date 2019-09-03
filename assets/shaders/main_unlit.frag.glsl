@@ -50,7 +50,7 @@ layout(location = $OutColorIndex) out vec4 outColor;
 layout(location = $OutNormIndex) out vec4 outNormal;
 
 void main(void) {
-    vec3 albedo_color = pow(texture(diffuse_texture, aVertexUVs1_).rgb, vec3(2.2));
+    vec3 albedo_color = texture(diffuse_texture, aVertexUVs1_).rgb;
     
     outColor = vec4(albedo_color, 1.0);
     outNormal = vec4(0.0);

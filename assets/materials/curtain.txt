@@ -2,7 +2,7 @@ gl_program: main_translucent main_translucent.vert.glsl main_translucent.frag.gl
 gl_program: main_translucent main_translucent.vert.glsl main_translucent.frag.glsl
 sw_program: main
 flag: alpha_blend
-texture: curtain.png
+texture: curtain.png srgb
 texture: default_normalmap.png
 texture: default_specular.png
 

@@ -2,6 +2,6 @@ gl_program: main_glass_thin main_glass_thin.vert.glsl main_glass_thin.frag.glsl
 gl_program: main_glass_thin main_glass_thin.vert.glsl main_glass_thin.frag.glsl
 sw_program: main
 flag: alpha_blend
-texture: bistro/Vespa_Headlight_diff.png
+texture: bistro/Vespa_Headlight_diff.png srgb
 texture: bistro/Vespa_norm.png
 texture: white.png

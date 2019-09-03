@@ -296,7 +296,12 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2D
     params_ = p;
     params_.format = Compressed;
 
-    int res = SOIL_load_OGL_texture_from_memory((unsigned char *)data, size, SOIL_LOAD_AUTO, tex_id, SOIL_FLAG_DDS_LOAD_DIRECT);
+    unsigned soil_flags = SOIL_FLAG_DDS_LOAD_DIRECT;
+    if (p.flags & SRGB) {
+        soil_flags |= SOIL_FLAG_SRGB;
+    }
+
+    int res = SOIL_load_OGL_texture_from_memory((unsigned char *)data, size, SOIL_LOAD_AUTO, tex_id, soil_flags);
     assert(res == tex_id);
 
     GLint w, h;
@@ -350,6 +355,11 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2D
 
     KTXHeader header;
     memcpy(&header, data, sizeof(KTXHeader));
+
+    if ((p.flags & SRGB) &&
+        header.gl_internal_format >= GL_COMPRESSED_RGBA_ASTC_4x4_KHR && header.gl_internal_format <= GL_COMPRESSED_RGBA_ASTC_12x12_KHR) {
+        header.gl_internal_format = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR + (header.gl_internal_format - GL_COMPRESSED_RGBA_ASTC_4x4_KHR);
+    }
 
     int w = (int)header.pixel_width;
     int h = (int)header.pixel_height;
