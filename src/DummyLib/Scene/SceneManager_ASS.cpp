@@ -1006,9 +1006,10 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         std::string cross_cmd = "src/libs/spirv/spirv-cross ";
         if (strcmp(platform, "pc") == 0) {
             cross_cmd += "--version 430 ";
-        } else if (strcmp(platform, "android")) {
+        } else if (strcmp(platform, "android") == 0) {
             cross_cmd += "--version 310 --es ";
         }
+        cross_cmd += "--no-support-nonzero-baseinstance --glsl-emit-push-constant-as-ubo ";
         cross_cmd += spv_file;
         cross_cmd += " --output ";
         cross_cmd += out_file;
