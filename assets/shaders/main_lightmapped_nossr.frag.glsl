@@ -230,6 +230,4 @@ void main(void) {
     outColor = vec4(diffuse_color * kD, 1.0);
     outNormal = vec4(normal * 0.5 + 0.5, 0.0);
     outSpecular = specular_color;
-    
-    
 }
