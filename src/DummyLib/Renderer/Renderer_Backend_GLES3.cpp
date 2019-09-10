@@ -1197,7 +1197,16 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_shared_data_block_[cur_buf_chunk_]);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SharedDataBlock), &shrd_data);
+
+        const GLbitfield BufferRangeBindFlags = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_FLUSH_EXPLICIT_BIT;
+
+        void *pinned_mem = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(SharedDataBlock), BufferRangeBindFlags);
+        if (pinned_mem) {
+            memcpy(pinned_mem, &shrd_data, sizeof(SharedDataBlock));
+            glFlushMappedBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(SharedDataBlock));
+            glUnmapBuffer(GL_UNIFORM_BUFFER);
+        }
+
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
