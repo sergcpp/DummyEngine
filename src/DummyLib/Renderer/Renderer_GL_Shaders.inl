@@ -212,6 +212,10 @@ static const char blit_fxaa_fs[] =
 #include "Shaders/blit_fxaa.frag.glsl"
 ;
 
+static const char blit_transparent_compose_fs[] =
+#include "Shaders/blit_transparent_compose.frag.glsl"
+;
+
 static const char probe_vs[] =
 #include "Shaders/probe.vert.glsl"
 ;

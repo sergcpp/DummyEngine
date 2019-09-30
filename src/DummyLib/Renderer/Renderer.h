@@ -181,10 +181,11 @@ private:
         blit_ssr_dilate_prog_,
         blit_ms_resolve_prog_,
         blit_ao_prog_, blit_multiply_prog_, blit_multiply_ms_prog_, blit_debug_bvh_prog_, blit_debug_bvh_ms_prog_, blit_depth_prog_,
-        blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_, blit_project_sh_prog_, blit_fxaa_prog_, probe_prog_, skinning_prog_;
+        blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_, blit_project_sh_prog_, blit_fxaa_prog_, blit_transparent_compose_prog_, probe_prog_, skinning_prog_;
     Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_, brdf_lut_;
 
     FrameBuf clean_buf_, resolved_buf1_, ssr_buf1_, ssr_buf2_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf1_, ssao_buf2_, probe_sample_buf_, combined_buf_, down_depth_;
+    FrameBuf moments_buf_, transparent_buf_;
     int scr_w_ = 0, scr_h_ = 0, // allocated screen resolution
         act_w_ = 0, act_h_ = 0; // actual resolution
 
@@ -192,7 +193,7 @@ private:
 
     static const uint32_t default_flags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableFxaa | EnableTimers);
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableOIT | EnableTonemap | EnableBloom | EnableFxaa | EnableTimers);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap | EnableTimers);
 #endif
@@ -235,7 +236,8 @@ private:
     Ren::eTexColorFormat temp_tex_format_;
     int temp_tex_w_ = 0, temp_tex_h_ = 0;
 
-    uint32_t temp_framebuf_, skydome_framebuf_ = 0, depth_fill_framebuf_ = 0, refl_comb_framebuf_ = 0;
+    uint32_t temp_framebuf_, skydome_framebuf_ = 0, depth_fill_framebuf_ = 0, refl_comb_framebuf_ = 0,
+        transparent_comb_framebuf_ = 0;
 
     uint32_t unif_shared_data_block_[FrameSyncWindow];
     uint32_t temp_vao_, fs_quad_vao_, depth_pass_solid_vao_, depth_pass_transp_vao_, draw_pass_vao_, skydome_vao_, sphere_vao_;

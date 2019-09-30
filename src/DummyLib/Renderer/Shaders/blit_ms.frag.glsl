@@ -5,7 +5,7 @@ R"(#version 310 es
     precision mediump float;
 #endif
     
-layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform mediump sampler2DMS s_texture;
+layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform mediump sampler2DMS s_texture;
 layout(location = 4) uniform float multiplier;
 
 in vec2 aVertexUVs_;

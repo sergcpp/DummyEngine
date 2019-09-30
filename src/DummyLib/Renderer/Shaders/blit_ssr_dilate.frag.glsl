@@ -4,7 +4,7 @@ R"(#version 310 es
     precision mediump float;
 #endif
         
-layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform lowp sampler2D source_texture;
+layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform lowp sampler2D source_texture;
 
 in vec2 aVertexUVs_;
 

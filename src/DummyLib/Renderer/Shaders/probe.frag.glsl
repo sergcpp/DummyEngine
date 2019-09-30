@@ -5,7 +5,7 @@ R"(#version 310 es
     precision mediump float;
 #endif
 
-layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform mediump samplerCubeArray env_texture;
+layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform mediump samplerCubeArray env_texture;
 
 layout(location = 1) uniform float mip_level;
 layout(location = 2) uniform int probe_index;
@@ -27,7 +27,7 @@ layout (std140) uniform SharedDataBlock {
     ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes;
+    vec4 uResAndFRes, uTranspDepthRangeAndUnused;
     ProbeItem uProbes[)" AS_STR(REN_MAX_PROBES_TOTAL) R"(];
 };
 

@@ -22,7 +22,7 @@ layout (std140) uniform SharedDataBlock {
     ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes;
+    vec4 uResAndFRes, uTranspDepthRangeAndUnused;
 };
 
 #if defined(MSAA_4)

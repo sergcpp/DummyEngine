@@ -36,16 +36,36 @@ extern "C" {
 
 namespace {
 // slow, but ok for this task
-std::vector<std::string> Tokenize(const std::string &str, const char *delims) {
-    std::vector<std::string> toks;
+int Tokenize(const std::string &str, const char *delims, std::string out_toks[32]) {
+#if 0
     std::unique_ptr<char[]> _str(new char[str.size() + 1]);
     strcpy(_str.get(), str.c_str());
     char* tok = strtok(_str.get(), delims);
     while (tok != NULL) {
-        toks.push_back(tok);
+        out_toks.push_back(tok);
         tok = strtok(NULL, delims);
     }
-    return toks;
+#else
+    const char *p = str.c_str();
+    const char *q = strpbrk(p + 1, delims);
+
+    int tok_count = 0;
+
+    for (; p != NULL && q != NULL; q = strpbrk(p, delims)) {
+        if (p == q) {
+            p = q + 1;
+            continue;
+        }
+
+        out_toks[tok_count++].assign(p, q);
+
+        if (!q) break;
+        p = q + 1;
+    }
+
+    out_toks[tok_count++].assign(p);
+    return tok_count;
+#endif
 }
 
 const Ren::Vec3f center = { -2.0f, 2.0f, 4.0f };
@@ -384,10 +404,16 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
     vector<vector<uint32_t>> reordered_indices;
 
+    ios::sync_with_stdio(false);
     ifstream in_file(in_file_name);
     if (!in_file) {
         cerr << "File " << in_file_name << " not found!" << endl;
         return RES_FILE_NOT_FOUND;
+    }
+
+    string toks[64];
+    for (string &s : toks) {
+        s.reserve(64);
     }
 
     {   // get mesh type
@@ -395,8 +421,8 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         getline(in_file, str);
 
         {
-            std::vector<std::string> toks = Tokenize(str, " ");
-            if (toks.empty()) return RES_PARSE_ERROR;
+            const int toks_count = Tokenize(str, " ", toks);
+            if (!toks_count) return RES_PARSE_ERROR;
             str = toks[0];
         }
 
@@ -404,8 +430,8 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             mesh_type = M_STATIC;
         } else if (str == "TERRAIN_MESH") {
             mesh_type = M_TERR;
-            std::vector<std::string> toks = Tokenize(str, " ");
-            for (int i = 1; i < (int)toks.size(); i++) {
+            const int toks_count = Tokenize(str, " ", toks);
+            for (int i = 1; i < toks_count; i++) {
                 vertex_textures[toks[i]] = i - 1;
             }
         } else if (str == "SKELETAL_MESH") {
@@ -433,13 +459,15 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
     }
 
     {   // parse vertex information
+        string str;
+        str.reserve(512);
+
         for (int i = 0; i < num_vertices; i++) {
-            string str;
             getline(in_file, str);
-            std::vector<std::string> toks = Tokenize(str, " ");
-            if ((mesh_type == M_STATIC && toks.size() != 10) ||
-                    (mesh_type == M_TERR && toks.size() != 9) ||
-                    (mesh_type == M_SKEL && toks.size() < 10)) {
+            const int toks_count = Tokenize(str, " ", toks);
+            if ((mesh_type == M_STATIC && toks_count != 10) ||
+                    (mesh_type == M_TERR && toks_count != 9) ||
+                    (mesh_type == M_SKEL && toks_count < 10)) {
                 cerr << "Wrong number of tokens!" << endl;
                 return RES_PARSE_ERROR;
             }
@@ -475,7 +503,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             } else if (mesh_type == M_SKEL) {
                 // parse joint indices and weights (limited to four bones)
 
-                int bones_count = ((int)toks.size() - 10) / 2;
+                int bones_count = (toks_count - 10) / 2;
                 int start_index = (int)weights.size();
 
                 std::pair<int32_t, float> parsed_bones[16];
@@ -520,17 +548,19 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
     }
 
     {   // parse triangle information
+        string str;
+        str.reserve(512);
+
         for (int i = 0; i < num_indices / 3; ) {
-            string str;
             getline(in_file, str);
 
             if (str[0] > '9' || str[0] < '0') {
-                std::vector<std::string> toks = Tokenize(str, " ");
+                Tokenize(str, " ", toks);
                 materials.push_back(toks[0]);
                 indices.emplace_back();
             } else {
-                std::vector<std::string> toks = Tokenize(str, " \t");
-                if (toks.size() != 3) return RES_PARSE_ERROR;
+                const int toks_count = Tokenize(str, " \t", toks);
+                if (toks_count != 3) return RES_PARSE_ERROR;
                 for (int j : { 0, 1, 2 }) {
                     indices.back().push_back((uint32_t)stoi(toks[j]));
                 }
@@ -546,8 +576,8 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 while (str.find("{") == string::npos) getline(in_file, str);
                 getline(in_file, str);
                 while (str.find("}") == string::npos) {
-                    std::vector<std::string> toks = Tokenize(str, " \t\"");
-                    if (toks.size() != 3) return RES_PARSE_ERROR;
+                    const int toks_count = Tokenize(str, " \t\"", toks);
+                    if (toks_count != 3) return RES_PARSE_ERROR;
                     out_bones.emplace_back();
                     out_bones.back().id = stoi(toks[0]);
                     if (toks[1].length() >= sizeof(OutBone().name)) {
@@ -562,8 +592,8 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 while(str.find("{") == string::npos)getline(in_file, str);
                 getline(in_file, str);
                 while(str.find("}") == string::npos) {
-                    std::vector<std::string> toks = Tokenize(str, " \t()");
-                    if (toks.size() != 8) return RES_PARSE_ERROR;
+                    const int toks_count = Tokenize(str, " \t()", toks);
+                    if (toks_count != 8) return RES_PARSE_ERROR;
                     int bone_index = stoi(toks[0]);
                     for (int j : { 0, 1, 2 }) {
                         out_bones[bone_index].bind_pos[j] = stof(toks[1 + j]);
@@ -842,12 +872,17 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
     vector<float> frames;
     int frame_size = 0;
 
+    string toks[64];
+    for (string &s : toks) {
+        s.reserve(64);
+    }
+
     {   // parse bones info
         string str;
         getline(in_file, str);
         while (str.find("}") == string::npos) {
-            std::vector<std::string> toks = Tokenize(str, " \"");
-            if (toks.size() < 3) return -1;
+            const int toks_count = Tokenize(str, " \"", toks);
+            if (toks_count < 3) return -1;
             OutAnimBone b;
             if (toks[1] == "RT") {
                 b.anim_type = ANIM_RT;
@@ -857,7 +892,7 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
                 frame_size += 3;
             }
             strcpy(b.name, toks[2].c_str());
-            if (toks.size() > 3) {
+            if (toks_count > 3) {
                 strcpy(b.parent_name, toks[3].c_str());
             } else {
                 strcpy(b.parent_name, "None");
@@ -870,8 +905,8 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
     {   // prepare containers
         string str;
         getline(in_file, str);
-        std::vector<std::string> toks = Tokenize(str, " []/");
-        if (toks.size() != 3) return -1;
+        const int toks_count = Tokenize(str, " []/", toks);
+        if (toks_count != 3) return -1;
         strcpy(anim_info.name, toks[0].c_str());
         anim_info.len = stoi(toks[1]);
         anim_info.fps = stoi(toks[2]);
@@ -885,7 +920,7 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
             getline(in_file, str);
             for (int j = 0; j < (int)out_bones.size(); j++) {
                 getline(in_file, str);
-                std::vector<std::string> toks = Tokenize(str, " ");
+                Tokenize(str, " ", toks);
                 for (int k = 1; k < ((out_bones[j].anim_type == ANIM_RT) ? 8 : 5); k++) {
                     frames.push_back(stof(toks[k]));
                 }

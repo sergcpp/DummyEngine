@@ -666,6 +666,9 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     shader_constants.emplace("$ItemsBufSlot",   AS_STR(REN_ITEMS_BUF_SLOT));
     shader_constants.emplace("$InstanceBufSlot",AS_STR(REN_INST_BUF_SLOT));
     shader_constants.emplace("$EnvTexSlot",     AS_STR(REN_ENV_TEX_SLOT));
+    shader_constants.emplace("$Moments0TexSlot", AS_STR(REN_MOMENTS0_TEX_SLOT));
+    shader_constants.emplace("$Moments1TexSlot", AS_STR(REN_MOMENTS1_TEX_SLOT));
+    shader_constants.emplace("$Moments2TexSlot", AS_STR(REN_MOMENTS2_TEX_SLOT));
 
     // Uniform locations
     shader_constants.emplace("$uMMatrixLoc",    AS_STR(REN_U_M_MATRIX_LOC));
@@ -951,7 +954,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 #endif
         int res = system(compile_cmd.c_str());
         if (res != 0) {
-            LOGI("[PrepareAssets] Failed to compile %s", spv_file.c_str());
+            LOGE("[PrepareAssets] Failed to compile %s", spv_file.c_str());
         }
 
         std::string optimize_cmd = "src/libs/spirv/spirv-opt "
@@ -1000,7 +1003,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 #endif
         res = system(optimize_cmd.c_str());
         if (res != 0) {
-            LOGI("[PrepareAssets] Failed to optimize %s", spv_file.c_str());
+            LOGE("[PrepareAssets] Failed to optimize %s", spv_file.c_str());
         }
 
         std::string cross_cmd = "src/libs/spirv/spirv-cross ";
@@ -1019,7 +1022,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 #endif
         res = system(cross_cmd.c_str());
         if (res != 0) {
-            LOGI("[PrepareAssets] Failed to cross-compile %s", spv_file.c_str());
+            LOGE("[PrepareAssets] Failed to cross-compile %s", spv_file.c_str());
         }
     };
 

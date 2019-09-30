@@ -12,13 +12,14 @@ bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3
            p[2] > bbox_min[2] && p[2] < bbox_max[2];
 }
 
-const uint8_t bbox_indices[] = { 0, 1, 2,    2, 1, 3,
-                                 0, 4, 5,    0, 5, 1,
-                                 0, 2, 4,    4, 2, 6,
-                                 2, 3, 6,    6, 3, 7,
-                                 3, 1, 5,    3, 5, 7,
-                                 4, 6, 5,    5, 6, 7
-                               };
+const uint8_t bbox_indices[] = {
+    0, 1, 2,    2, 1, 3,
+    0, 4, 5,    0, 5, 1,
+    0, 2, 4,    4, 2, 6,
+    2, 3, 6,    6, 3, 7,
+    3, 1, 5,    3, 5, 7,
+    4, 6, 5,    5, 6, 7
+};
 
 template <typename SpanType>
 void RadixSort_LSB(SpanType *begin, SpanType *end, SpanType *begin1) {
@@ -75,6 +76,7 @@ static const uint8_t SunShadowUpdatePattern[4] = {
     (min)[0], (max)[1], (max)[2],     \
     (max)[0], (max)[1], (max)[2]
 
+// fast than std::min/max in debug
 #define _MIN(x, y) ((x) < (y) ? (x) : (y))
 #define _MAX(x, y) ((x) < (y) ? (y) : (x))
 
@@ -1072,7 +1074,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             }
 
             if (!light_sees_dynamic_objects && region->last_update != 0xffffffff && (scene.update_counter - region->last_update > 2)) {
-                // nothing was changed within last two frames, discard added batches
+                // nothing was changed within the last two frames, discard added batches
                 list.shadow_batches.count = sh_list.shadow_batch_start;
                 sh_list.shadow_batch_count = 0;
             } else {

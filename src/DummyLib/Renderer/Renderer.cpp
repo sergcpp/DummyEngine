@@ -318,7 +318,37 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
                 desc[2].filter = Ren::NoFilter;
                 desc[2].repeat = Ren::ClampToEdge;
             }
-            clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, { FrameBuf::Depth24, Ren::NoFilter }, 4);
+            clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, { FrameBuf::Depth24, Ren::NoFilter }, 1);
+        }
+
+        {
+            FrameBuf::ColorAttachmentDesc desc[3];
+            {   // b0
+                desc[0].format = Ren::RawR32F;
+                desc[0].filter = Ren::NoFilter;
+                desc[0].repeat = Ren::ClampToEdge;
+            }
+            {   // z and z^2
+                desc[1].format = Ren::RawRG16F;
+                desc[1].filter = Ren::NoFilter;
+                desc[1].repeat = Ren::ClampToEdge;
+            }
+            {   // z^3 and z^4
+                desc[2].format = Ren::RawRG16F;
+                desc[2].filter = Ren::NoFilter;
+                desc[2].repeat = Ren::ClampToEdge;
+            }
+            moments_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, { FrameBuf::DepthNone });
+        }
+
+        {
+            FrameBuf::ColorAttachmentDesc desc;
+
+            desc.format = Ren::RawRGBA16F;
+            desc.filter = Ren::NoFilter;
+            desc.repeat = Ren::ClampToEdge;
+
+            transparent_buf_ = FrameBuf(ctx_.w(), ctx_.h(), &desc, 1, { FrameBuf::DepthNone }, clean_buf_.sample_count);
         }
 
         {   // Buffer that holds resolved color

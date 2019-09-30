@@ -65,7 +65,7 @@ vec3 ImportanceSampleGGX(vec2 Xi, float roughness, vec3 N) {
 }
 
 float DistributionGGX(float NdotH, float a) {
-    float a2     = a*a;
+    float a2     = a * a;
     float NdotH2 = NdotH*NdotH;
 	
     float nom    = a2;

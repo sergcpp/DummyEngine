@@ -433,8 +433,8 @@ void GSDrawTest::LoadScene(const char *name) {
 
     probes_dirty_ = true;
 
-    //view_origin_ = { 6.7802925f, 0.8486559f, -0.4856785f };
-    //view_dir_ = { -0.6488109f, -0.3389851f, 0.6812727f };
+    view_origin_ = { 5.0337372f, 1.1156000f, -6.3602295f };
+    view_dir_ = { -0.7934315f, -0.1813142f, 0.5810235f };
 }
 
 void GSDrawTest::Exit() {
@@ -577,8 +577,8 @@ void GSDrawTest::Draw(uint64_t dt_us) {
         }
     }
 
-    //LOGI("{ %.7f, %.7f, %.7f } { %.7f, %.7f, %.7f }", view_origin_[0], view_origin_[1], view_origin_[2],
-    //                                                  view_dir_[0], view_dir_[1], view_dir_[2]);
+    LOGI("{ %.7f, %.7f, %.7f } { %.7f, %.7f, %.7f }", view_origin_[0], view_origin_[1], view_origin_[2],
+                                                      view_dir_[0], view_dir_[1], view_dir_[2]);
 
     {   // ui draw
         ui_renderer_->BeginDraw();

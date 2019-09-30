@@ -76,6 +76,9 @@
         },
         "curtains" : {
             "mesh_file" : "curtains.mesh"
+        },
+        "mv_40" : {
+            "mesh_file" : "mv_40.mesh"
         }
     },
     "decals" : {
@@ -261,6 +264,16 @@
             },
             "drawable" : {
                 "mesh" : "curtains",
+                "visible_to_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 4.0, 0.2, -4.0 ],
+                "rot" : [ 0.0, 90.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "mv_40",
                 "visible_to_shadow" : false
             }
         },

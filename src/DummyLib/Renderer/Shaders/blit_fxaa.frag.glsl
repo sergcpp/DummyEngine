@@ -21,11 +21,11 @@ layout (std140) uniform SharedDataBlock {
     ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes;
+    vec4 uResAndFRes, uTranspDepthRangeAndUnused;
     ProbeItem uProbes[)" AS_STR(REN_MAX_PROBES_TOTAL) R"(];
 };
         
-layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform sampler2D s_texture;
+layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform sampler2D s_texture;
 layout(location = 12) uniform vec2 texcoord_offset;
 
 in vec2 aVertexUVs_;

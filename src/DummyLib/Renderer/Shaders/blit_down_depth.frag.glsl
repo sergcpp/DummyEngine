@@ -23,13 +23,13 @@ layout (std140) uniform SharedDataBlock {
     ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes;
+    vec4 uResAndFRes, uTranspDepthRangeAndUnused;
 };
 
 #if defined(MSAA_4)
-layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform highp sampler2DMS depth_texture;
+layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform highp sampler2DMS depth_texture;
 #else
-layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform highp sampler2D depth_texture;
+layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform highp sampler2D depth_texture;
 #endif
 
 in vec2 aVertexUVs_;
@@ -41,7 +41,7 @@ float LinearizeDepth(float depth) {
 }
 
 void main() {
-    highp ivec2 coord = 2 * ivec2(gl_FragCoord.xy);
+    highp ivec2 coord = ivec2(aVertexUVs_);
 
     highp float d1 = texelFetch(depth_texture, coord + ivec2(0, 0), 0).r;
     highp float d2 = texelFetch(depth_texture, coord + ivec2(0, 1), 0).r;

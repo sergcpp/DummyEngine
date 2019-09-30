@@ -401,7 +401,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
         // Bonus points for having a low number of tris still to
         // use the vert, so we get rid of lone verts quickly.
 
-        float valence_boost = std::pow((float)active_tris_count, -ValenceBoostPower);
+        const float valence_boost = std::pow((float)active_tris_count, -ValenceBoostPower);
         score += ValenceBoostScale * valence_boost;
         return score;
     };
@@ -412,8 +412,12 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
         uint32_t indices[3] = {};
     };
 
-    std::unique_ptr<vtx_data_t[]> vertices(new vtx_data_t[vtx_count]);
-    std::unique_ptr<tri_data_t[]> triangles(new tri_data_t[prim_count]);
+    std::unique_ptr<vtx_data_t[]> _vertices(new vtx_data_t[vtx_count]);
+    std::unique_ptr<tri_data_t[]> _triangles(new tri_data_t[prim_count]);
+
+    // avoid operator[] call overhead in debug
+    vtx_data_t *vertices = _vertices.get();
+    tri_data_t *triangles = _triangles.get();
 
     for (uint32_t i = 0; i < indices_count; i += 3) {
         tri_data_t &tri = triangles[i/3];
@@ -511,8 +515,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
             next_best_index = next_next_best_index = -1;
 
             for (int32_t i = 0; i < (int32_t)prim_count; i++) {
-                tri_data_t &tri = triangles[i];
-
+                const tri_data_t &tri = triangles[i];
                 if (!tri.is_in_list) {
                     if (tri.score > next_best_score) {
                         if (next_best_score > next_next_best_score) {

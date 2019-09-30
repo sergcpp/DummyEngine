@@ -5,7 +5,7 @@ R"(#version 310 es
 #endif
 
    
-layout(binding = )" AS_STR(REN_BASE_TEX_SLOT) R"() uniform sampler2D s_texture;
+layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform sampler2D s_texture;
 layout(location = 4) uniform float vertical;
 
 in vec2 aVertexUVs_;
