@@ -67,9 +67,11 @@ public:
 #if defined(USE_GL_RENDER)
     ProgramRef LoadProgramGLSL(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *load_status);
     ProgramRef LoadProgramGLSL(const char *name, const char *cs_source, eProgLoadStatus *load_status);
+#ifndef __ANDROID__
     ProgramRef LoadProgramSPIRV(const char *name, const uint8_t *vs_data, const int vs_data_size,
                                                   const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *load_status);
     ProgramRef LoadProgramSPIRV(const char *name, const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *load_status);
+#endif
 #elif defined(USE_SW_RENDER)
     ProgramRef LoadProgramSW(const char *name, void *vs_shader, void *fs_shader, int num_fvars,
                              const Attribute *attrs, const Uniform *unifs, eProgLoadStatus *load_status);

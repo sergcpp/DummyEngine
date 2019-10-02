@@ -174,10 +174,9 @@ EXTERN_FUNC PFNGLGETQUERYOBJECTUI64VEXTPROC     glGetQueryObjectui64vEXT;
 #define GL_RG32I                0x823B
 #define GL_RG32UI               0x823C
 
-#define GL_RG16_SNORM           0x8F99
-
-// For compatibility with opengl es
+// _EXT prefix is added for compatibility with opengl es
 #define GL_RG16_EXT             0x822C
+#define GL_RG16_SNORM_EXT       0x8F99
 
 #define GL_RGBA32F              0x8814
 #define GL_RGB32F               0x8815

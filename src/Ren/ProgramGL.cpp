@@ -9,7 +9,9 @@
 
 namespace Ren {
 GLuint LoadShader(GLenum shader_type, const char *source);
+#ifndef __ANDROID__
 GLuint LoadShader(GLenum shader_type, const uint8_t *data, const int data_size);
+#endif
 
 struct Binding {
     String  name;
@@ -30,6 +32,7 @@ Ren::Program::Program(const char *name, const char *cs_source, eProgLoadStatus *
     Init(cs_source, status);
 }
 
+#ifndef __ANDROID__
 Ren::Program::Program(const char *name, const uint8_t *vs_data, const int vs_data_size, const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status) {
     name_ = String{ name };
     Init(vs_data, vs_data_size, fs_data, fs_data_size, status);
@@ -39,6 +42,7 @@ Ren::Program::Program(const char *name, const uint8_t *cs_data, const int cs_dat
     name_ = String{ name };
     Init(cs_data, cs_data_size, status);
 }
+#endif
 
 Ren::Program::~Program() {
     if (prog_id_) {
@@ -75,6 +79,7 @@ void Ren::Program::Init(const char *cs_source, eProgLoadStatus *status) {
     InitFromGLSL({ nullptr, nullptr, cs_source }, status);
 }
 
+#ifndef __ANDROID__
 void Ren::Program::Init(const uint8_t *vs_data, const int vs_data_size, const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status) {
     InitFromSPIRV({ vs_data, vs_data_size, fs_data, fs_data_size, nullptr, 0 }, status);
 }
@@ -82,6 +87,7 @@ void Ren::Program::Init(const uint8_t *vs_data, const int vs_data_size, const ui
 void Ren::Program::Init(const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *status) {
     InitFromSPIRV({ nullptr, 0, nullptr, 0, cs_data, cs_data_size }, status);
 }
+#endif
 
 void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *status) {
     if ((!shaders.vs_source || !shaders.fs_source) && !shaders.cs_source) {
@@ -283,6 +289,7 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
     if (status) *status = ProgCreatedFromData;
 }
 
+#ifndef __ANDROID__
 void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *status) {
     if ((!shaders.vs_data || !shaders.fs_data) && !shaders.cs_data) {
         if (status) *status = ProgSetToDefault;
@@ -372,6 +379,7 @@ void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *sta
     ready_ = true;
     if (status) *status = ProgCreatedFromData;
 }
+#endif
 
 GLuint Ren::LoadShader(GLenum shader_type, const char *source) {
     GLuint shader = glCreateShader(shader_type);
@@ -412,6 +420,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const char *source) {
     return shader;
 }
 
+#ifndef __ANDROID__
 GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_size) {
     GLuint shader = glCreateShader(shader_type);
     if (shader) {
@@ -451,6 +460,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_s
 
     return shader;
 }
+#endif
 
 void Ren::ParseGLSLBindings(const std::string &shader_str, Binding *attr_bindings, int &attr_bindings_count,
                             Binding *uniform_bindings, int &uniform_bindings_count,

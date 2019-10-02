@@ -149,6 +149,7 @@ Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *cs_s
     return ref;
 }
 
+#ifndef __ANDROID__
 Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *vs_data, const int vs_data_size,
                                                                  const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *load_status) {
     ProgramRef ref = programs_.FindByName(name);
@@ -185,32 +186,9 @@ Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *
 
     return ref;
 }
+#endif
 
 bool Ren::Context::IsExtensionSupported(const char *ext) {
-#if 0
-    const GLubyte *extensions = NULL;
-    const GLubyte *start;
-    GLubyte *where, *terminator;
-
-    where = (GLubyte *)strchr(ext, ' ');
-    if (where || *ext == '\0')
-        return 0;
-    extensions = glGetString(GL_EXTENSIONS);
-    if (!extensions) return 0;
-    assert(ext);
-
-    start = extensions;
-    for (;;) {
-        where = (GLubyte *)strstr((const char *)start, ext);
-        if (!where)
-            break;
-        terminator = where + strlen(ext);
-        if (where == start || *(where - 1) == ' ') if (*terminator == ' ' || *terminator == '\0')
-                return 1;
-        start = terminator;
-    }
-    return 0;
-#else
     GLint ext_count = 0;
     glGetIntegerv(GL_NUM_EXTENSIONS, &ext_count);
 
@@ -220,9 +198,7 @@ bool Ren::Context::IsExtensionSupported(const char *ext) {
             return true;
         }
     }
-
     return false;
-#endif
 }
 
 void Ren::CheckError(const char *op) {

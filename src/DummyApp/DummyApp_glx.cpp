@@ -11,7 +11,9 @@
 
 #endif
 
+#if !defined(__ANDROID__)
 #include <GL/glx.h>
+#endif
 
 #include <Eng/GameBase.h>
 #include <Eng/TimedInput.h>
@@ -31,7 +33,9 @@ extern "C" {
     DLL_EXPORT int AmdPowerXpressRequestHighPerformance = 1;    // AMD
 }
 
+#if !defined(__ANDROID__)
 typedef GLXContext (*GLXCREATECONTEXTATTIBSARBPROC)(Display *, GLXFBConfig, GLXContext, Bool, const int *);
+#endif
 
 DummyApp::DummyApp() : quit_(false) {
     g_app = this;
@@ -42,6 +46,7 @@ DummyApp::~DummyApp() {
 }
 
 int DummyApp::Init(int w, int h) {
+#if !defined(__ANDROID__)
     dpy_ = XOpenDisplay(0);
     if (!dpy_) {
         fprintf(stderr, "dpy is null\n");
@@ -105,6 +110,7 @@ int DummyApp::Init(int w, int h) {
 
     glXMakeCurrent(dpy_, win_, ctx_);
     glViewport(0, 0, w, h);
+#endif
 
     try {
         Viewer::PrepareAssets("pc");
@@ -122,11 +128,12 @@ int DummyApp::Init(int w, int h) {
 
 void DummyApp::Destroy() {
     viewer_.reset();
-
+#if !defined(__ANDROID__)
     glXMakeCurrent(dpy_, None, nullptr);
     glXDestroyContext(dpy_, ctx_);
     XDestroyWindow(dpy_, win_);
     XCloseDisplay(dpy_);
+#endif
 }
 
 void DummyApp::Frame() {

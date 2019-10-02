@@ -54,7 +54,7 @@ uint32_t g_gl_internal_formats[] = {
     0xffffffff,     // RawRGBE8888
     GL_RGB16F,      // RawRGB16F
     GL_RGBA16F,     // RawRGBA16F
-    GL_RG16_SNORM,  // RawRG16
+    GL_RG16_SNORM_EXT, // RawRG16
     GL_RG16_EXT,    // RawRG16U
     GL_RG16F,       // RawRG16F
     GL_RG32F,       // RawRG32F

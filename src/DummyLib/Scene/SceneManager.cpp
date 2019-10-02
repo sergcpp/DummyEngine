@@ -645,6 +645,7 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
         using namespace std;
 
         if (ctx_.capabilities.gl_spirv && false) {
+#if 0
             string vs_name = string(SHADERS_PATH) + vs_shader,
                    fs_name = string(SHADERS_PATH) + fs_shader;
 
@@ -669,6 +670,7 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
 
             ret = ctx_.LoadProgramSPIRV(name, vs_data.get(), (int)vs_size, fs_data.get(), (int)fs_size, &status);
             assert(status == Ren::ProgCreatedFromData);
+#endif
         } else {
             Sys::AssetFile vs_file(string(SHADERS_PATH) + vs_shader),
                            fs_file(string(SHADERS_PATH) + fs_shader);
