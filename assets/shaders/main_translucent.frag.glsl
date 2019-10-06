@@ -1,7 +1,8 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
+#extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
-#extension GL_EXT_control_flow_attributes : enable
+//#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
 
@@ -25,6 +26,9 @@ layout(binding = $ItemsBufSlot) uniform highp usamplerBuffer items_buffer;
 layout(binding = $Moments0TexSlot) uniform mediump sampler2D moments0_texture;
 layout(binding = $Moments1TexSlot) uniform mediump sampler2D moments1_texture;
 layout(binding = $Moments2TexSlot) uniform mediump sampler2D moments2_texture;
+layout(binding = $Moments0MsTexSlot) uniform mediump sampler2DMS moments0_texture_ms;
+layout(binding = $Moments1MsTexSlot) uniform mediump sampler2DMS moments1_texture_ms;
+layout(binding = $Moments2MsTexSlot) uniform mediump sampler2DMS moments2_texture_ms;
 
 struct ShadowMapRegion {
     vec4 transform;
@@ -48,11 +52,9 @@ uniform SharedDataBlock {
     ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspDepthRangeAndUnused;
+    vec4 uResAndFRes, uTranspDepthRangeAndMode;
     ProbeItem uProbes[$MaxProbes];
 };
-
-layout (location = 3) uniform float uOITStage;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec3 aVertexPos_;
@@ -77,19 +79,11 @@ void main(void) {
     
     // remapped depth in [-1; 1] range used for moments calculation
     highp float transp_z =
-        2.0 * (log(lin_depth) - log(uTranspDepthRangeAndUnused.x)) / (log(uTranspDepthRangeAndUnused.y) - log(uTranspDepthRangeAndUnused.x)) - 1.0;
+        2.0 * (log(lin_depth) - uTranspDepthRangeAndMode[0]) / uTranspDepthRangeAndMode[1] - 1.0;
     
     vec4 diff_tex_color = texture(diffuse_texture, aVertexUVs1_);
     
-    if (uOITStage < 0.5) {
-        float b_0;
-        vec4 b_1234;
-        GenerateMoments(transp_z, 1.0 - diff_tex_color.a, b_0, b_1234);
-        
-        outColor.x = b_0;
-        outNormal.xy = b_1234.xy;
-        outSpecular.xy = b_1234.zw;
-    } else {
+    if (uTranspDepthRangeAndMode[2] < 1.5) {
         highp float k = log2(lin_depth / uClipInfo[1]) / uClipInfo[3];
         int slice = int(floor(k * $ItemGridResZ.0));
         
@@ -248,19 +242,35 @@ void main(void) {
                                
         vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + indirect_col + additional_light);
         
-        //outColor = vec4(diffuse_color, diff_tex_color.a);
-        //outNormal = vec4(normal * 0.5 + 0.5, 0.0);
-        //outSpecular = specular_color;
+        if (uTranspDepthRangeAndMode[2] < 0.5) {
+            outColor = vec4(diffuse_color, diff_tex_color.a);
+        } else {
+            float b_0;
+            vec4 b_1234;
+                               
+            if (uTranspDepthRangeAndMode[2] < 1.2) {
+                b_0 = texelFetch(moments0_texture, ivec2(ix, iy), 0).x;
+                b_1234 = vec4(texelFetch(moments1_texture, ivec2(ix, iy), 0).xy,
+                              texelFetch(moments2_texture, ivec2(ix, iy), 0).xy);
+            } else {
+                b_0 = texelFetch(moments0_texture_ms, ivec2(ix, iy), 0).x;
+                b_1234 = vec4(texelFetch(moments1_texture_ms, ivec2(ix, iy), 0).xy,
+                              texelFetch(moments2_texture_ms, ivec2(ix, iy), 0).xy);
+            }
+            
+            float transmittance_at_depth;
+            float total_transmittance;
+            ResolveMoments(transp_z, b_0, b_1234, transmittance_at_depth, total_transmittance);
+            
+            outColor = vec4(diff_tex_color.a * transmittance_at_depth * diffuse_color, diff_tex_color.a * transmittance_at_depth);
+        }
+    } else {
+        float b_0;
+        vec4 b_1234;
+        GenerateMoments(transp_z, 1.0 - diff_tex_color.a, b_0, b_1234);
         
-        /////////////////////////////////
-        
-        float b_0 = texelFetch(moments0_texture, ivec2(ix, iy), 0).x;
-        vec4 b_1234 = vec4(texelFetch(moments1_texture, ivec2(ix, iy), 0).xy, texelFetch(moments2_texture, ivec2(ix, iy), 0).xy);
-        
-        float transmittance_at_depth;
-        float total_transmittance;
-        ResolveMoments(transp_z, b_0, b_1234, transmittance_at_depth, total_transmittance);
-        
-        outColor = vec4(diff_tex_color.a * transmittance_at_depth * diffuse_color, diff_tex_color.a * transmittance_at_depth);
+        outColor.x = b_0;
+        outNormal.xy = b_1234.xy;
+        outSpecular.xy = b_1234.zw;
     }
 }

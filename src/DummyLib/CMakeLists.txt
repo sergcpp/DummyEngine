@@ -10,9 +10,11 @@ set(GUI_SOURCES Gui/DebugInfoUI.h
 
 set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/Renderer.h
-                        Renderer/Renderer_Structs.h
                         Renderer/Renderer.cpp
+                        Renderer/Renderer_DrawList.h
+                        Renderer/Renderer_DrawList.cpp
                         Renderer/Renderer_Frontend.cpp
+                        Renderer/Renderer_Structs.h
                         Renderer/__brdf_lut.inl
                         Renderer/__skydome_mesh.inl
                         Renderer/__sphere_mesh.inl)

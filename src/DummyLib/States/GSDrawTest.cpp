@@ -189,6 +189,16 @@ void GSDrawTest::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("oit", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= EnableOIT;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+    });
+
     cmdline_->RegisterCommand("debug_cull", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
@@ -433,8 +443,8 @@ void GSDrawTest::LoadScene(const char *name) {
 
     probes_dirty_ = true;
 
-    view_origin_ = { 5.0337372f, 1.1156000f, -6.3602295f };
-    view_dir_ = { -0.7934315f, -0.1813142f, 0.5810235f };
+    //view_origin_ = { 1.6273377f, 2.3731651f, 0.9859568f };// { 5.0337372f, 1.1156000f, -6.3602295f };
+    //view_dir_ = { 0.1691239f, 0.0714032f, 0.9829926f };// { -0.7934315f, -0.1813142f, 0.5810235f };
 }
 
 void GSDrawTest::Exit() {
@@ -577,8 +587,8 @@ void GSDrawTest::Draw(uint64_t dt_us) {
         }
     }
 
-    LOGI("{ %.7f, %.7f, %.7f } { %.7f, %.7f, %.7f }", view_origin_[0], view_origin_[1], view_origin_[2],
-                                                      view_dir_[0], view_dir_[1], view_dir_[2]);
+    //LOGI("{ %.7f, %.7f, %.7f } { %.7f, %.7f, %.7f }", view_origin_[0], view_origin_[1], view_origin_[2],
+    //                                                  view_dir_[0], view_dir_[1], view_dir_[2]);
 
     {   // ui draw
         ui_renderer_->BeginDraw();

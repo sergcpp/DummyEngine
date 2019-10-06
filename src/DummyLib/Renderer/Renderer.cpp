@@ -304,7 +304,12 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         {   // Main buffer for raw frame before tonemapping
             FrameBuf::ColorAttachmentDesc desc[3];
             {   // Main color
+#if defined(REN_OIT_MOMENT_BASED) && REN_OIT_MOMENT_RENORMALIZE
+                // renormalization requires buffer with alpha channel
+                desc[0].format = Ren::RawRGBA16F;
+#else
                 desc[0].format = Ren::RawRG11F_B10F;
+#endif
                 desc[0].filter = Ren::NoFilter;
                 desc[0].repeat = Ren::ClampToEdge;
             }
@@ -318,10 +323,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
                 desc[2].filter = Ren::NoFilter;
                 desc[2].repeat = Ren::ClampToEdge;
             }
-            clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, { FrameBuf::Depth24, Ren::NoFilter }, 1);
+            clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, { FrameBuf::Depth24, Ren::NoFilter }, 4);
         }
 
-        {
+#if defined(REN_OIT_MOMENT_BASED)
+        {   // Buffer that holds moments (used for transparency)
             FrameBuf::ColorAttachmentDesc desc[3];
             {   // b0
                 desc[0].format = Ren::RawR32F;
@@ -338,25 +344,16 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
                 desc[2].filter = Ren::NoFilter;
                 desc[2].repeat = Ren::ClampToEdge;
             }
-            moments_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, { FrameBuf::DepthNone });
+            moments_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, { FrameBuf::DepthNone }, clean_buf_.sample_count);
         }
-
-        {
-            FrameBuf::ColorAttachmentDesc desc;
-
-            desc.format = Ren::RawRGBA16F;
-            desc.filter = Ren::NoFilter;
-            desc.repeat = Ren::ClampToEdge;
-
-            transparent_buf_ = FrameBuf(ctx_.w(), ctx_.h(), &desc, 1, { FrameBuf::DepthNone }, clean_buf_.sample_count);
-        }
+#endif
 
         {   // Buffer that holds resolved color
             FrameBuf::ColorAttachmentDesc desc;
             desc.format = Ren::RawRG11F_B10F;
             desc.filter = Ren::NoFilter;
             desc.repeat = Ren::ClampToEdge;
-            resolved_buf1_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::DepthNone });
+            resolved_or_transparent_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::DepthNone });
         }
 
         {   // Buffer that holds downsampled linear depth

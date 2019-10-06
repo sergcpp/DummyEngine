@@ -1,6 +1,7 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
-#extension GL_EXT_control_flow_attributes : enable
+#extension GL_OES_texture_buffer : enable
+//#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
 
@@ -38,7 +39,7 @@ uniform SharedDataBlock {
     ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspDepthRangeAndUnused;
+    vec4 uResAndFRes, uTranspDepthRangeAndMode;
     ProbeItem uProbes[$MaxProbes];
 };
 
@@ -89,7 +90,7 @@ void main(void) {
         vec2(0.25, 0.5)
     );
     
-    [[unroll]] for (int i = 0; i < 4; i++) {
+    /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
         aVertexShUVs_[i] = (uShadowMapRegions[i].clip_from_world * MMatrix * vec4(aVertexPosition, 1.0)).xyz;
         aVertexShUVs_[i] = 0.5 * aVertexShUVs_[i] + 0.5;
         aVertexShUVs_[i].xy *= vec2(0.25, 0.5);

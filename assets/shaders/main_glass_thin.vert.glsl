@@ -1,6 +1,6 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
-#extension GL_EXT_control_flow_attributes : enable
+#extension GL_OES_texture_buffer : enable
 
 $ModifyWarning
 
@@ -38,7 +38,7 @@ uniform SharedDataBlock {
     ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspDepthRangeAndUnused;
+    vec4 uResAndFRes, uTranspDepthRangeAndMode;
     ProbeItem uProbes[$MaxProbes];
 };
 

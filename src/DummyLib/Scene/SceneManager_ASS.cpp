@@ -507,7 +507,7 @@ void ReadAllFiles_MT_r(const char *in_folder, const std::function<void(const cha
 }
 
 bool CheckCanSkipAsset(const char *in_file, const char *out_file) {
-#ifndef NDEBUG
+#if !defined(NDEBUG) && 0
     if (strstr(in_file, ".glsl")) return false;
 #endif
 
@@ -568,7 +568,7 @@ bool CreateFolders(const char *out_file) {
 #else
         struct stat st = {};
         if (stat(folder, &st) == -1) {
-            if (!mkdir(folder, 0777) != 0) {
+            if (mkdir(folder, 0777) != 0) {
                 LOGE("[PrepareAssets] Failed to create directory!");
                 return false;
             }
@@ -669,6 +669,9 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     shader_constants.emplace("$Moments0TexSlot", AS_STR(REN_MOMENTS0_TEX_SLOT));
     shader_constants.emplace("$Moments1TexSlot", AS_STR(REN_MOMENTS1_TEX_SLOT));
     shader_constants.emplace("$Moments2TexSlot", AS_STR(REN_MOMENTS2_TEX_SLOT));
+    shader_constants.emplace("$Moments0MsTexSlot", AS_STR(REN_MOMENTS0_MS_TEX_SLOT));
+    shader_constants.emplace("$Moments1MsTexSlot", AS_STR(REN_MOMENTS1_MS_TEX_SLOT));
+    shader_constants.emplace("$Moments2MsTexSlot", AS_STR(REN_MOMENTS2_MS_TEX_SLOT));
 
     // Uniform locations
     shader_constants.emplace("$uMMatrixLoc",    AS_STR(REN_U_M_MATRIX_LOC));
@@ -937,92 +940,95 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             }
         }
 
-        std::string spv_file = out_file;
-
-        size_t n;
-        if ((n = spv_file.find(".glsl")) != std::string::npos) {
-            spv_file.replace(n + 1, 4, "spv", 3);
-        }
-
-        std::string compile_cmd = "src/libs/spirv/glslangValidator -G ";
-        compile_cmd += out_file;
-        compile_cmd += " -o ";
-        compile_cmd += spv_file;
-
-#ifdef _WIN32
-        std::replace(compile_cmd.begin(), compile_cmd.end(), '/', '\\');
-#endif
-        int res = system(compile_cmd.c_str());
-        if (res != 0) {
-            LOGE("[PrepareAssets] Failed to compile %s", spv_file.c_str());
-        }
-
-        std::string optimize_cmd = "src/libs/spirv/spirv-opt "
-                                   "--eliminate-dead-branches "
-                                   "--merge-return "
-                                   "--inline-entry-points-exhaustive "
-                                   "--loop-unswitch --loop-unroll "
-                                   "--eliminate-dead-code-aggressive "
-                                   "--private-to-local "
-                                   "--eliminate-local-single-block "
-                                   "--eliminate-local-single-store "
-                                   "--eliminate-dead-code-aggressive "
-                                   "--scalar-replacement=100 "
-                                   "--convert-local-access-chains "
-                                   "--eliminate-local-single-block "
-                                   "--eliminate-local-single-store "
-                                   "--eliminate-dead-code-aggressive "
-                                   //"--eliminate-local-multi-store "
-                                   "--eliminate-dead-code-aggressive "
-                                   "--ccp "
-                                   "--eliminate-dead-code-aggressive "
-                                   "--redundancy-elimination "
-                                   "--combine-access-chains "
-                                   "--simplify-instructions "
-                                   "--vector-dce "
-                                   "--eliminate-dead-inserts "
-                                   "--eliminate-dead-branches "
-                                   "--simplify-instructions "
-                                   "--if-conversion "
-                                   "--copy-propagate-arrays "
-                                   "--reduce-load-size "
-                                   //"--eliminate-dead-code-aggressive "
-                                   //"--merge-blocks "
-                                   "--redundancy-elimination "
-                                   "--eliminate-dead-branches "
-                                   //"--merge-blocks "
-                                   "--simplify-instructions "
-                                   "--validate-after-all ";
-
-        optimize_cmd += spv_file;
-        optimize_cmd += " -o ";
-        optimize_cmd += spv_file;
-
-#ifdef _WIN32
-        std::replace(optimize_cmd.begin(), optimize_cmd.end(), '/', '\\');
-#endif
-        res = system(optimize_cmd.c_str());
-        if (res != 0) {
-            LOGE("[PrepareAssets] Failed to optimize %s", spv_file.c_str());
-        }
-
-        std::string cross_cmd = "src/libs/spirv/spirv-cross ";
         if (strcmp(platform, "pc") == 0) {
-            cross_cmd += "--version 430 ";
-        } else if (strcmp(platform, "android") == 0) {
-            cross_cmd += "--version 310 --es ";
-        }
-        cross_cmd += "--no-support-nonzero-baseinstance --glsl-emit-push-constant-as-ubo ";
-        cross_cmd += spv_file;
-        cross_cmd += " --output ";
-        cross_cmd += out_file;
+            std::string spv_file = out_file;
+
+            size_t n;
+            if ((n = spv_file.find(".glsl")) != std::string::npos) {
+                spv_file.replace(n + 1, 4, "spv", 3);
+            }
+
+            std::string compile_cmd = "src/libs/spirv/glslangValidator -G ";
+            compile_cmd += out_file;
+            compile_cmd += " -o ";
+            compile_cmd += spv_file;
 
 #ifdef _WIN32
-        std::replace(cross_cmd.begin(), cross_cmd.end(), '/', '\\');
+            std::replace(compile_cmd.begin(), compile_cmd.end(), '/', '\\');
 #endif
-        res = system(cross_cmd.c_str());
-        if (res != 0) {
-            LOGE("[PrepareAssets] Failed to cross-compile %s", spv_file.c_str());
+            int res = system(compile_cmd.c_str());
+            if (res != 0) {
+                LOGE("[PrepareAssets] Failed to compile %s", spv_file.c_str());
+            }
+
+            std::string optimize_cmd = "src/libs/spirv/spirv-opt "
+                "--eliminate-dead-branches "
+                "--merge-return "
+                "--inline-entry-points-exhaustive "
+                "--loop-unswitch --loop-unroll "
+                "--eliminate-dead-code-aggressive "
+                "--private-to-local "
+                "--eliminate-local-single-block "
+                "--eliminate-local-single-store "
+                "--eliminate-dead-code-aggressive "
+                "--scalar-replacement=100 "
+                "--convert-local-access-chains "
+                "--eliminate-local-single-block "
+                "--eliminate-local-single-store "
+                "--eliminate-dead-code-aggressive "
+                //"--eliminate-local-multi-store "
+                "--eliminate-dead-code-aggressive "
+                "--ccp "
+                "--eliminate-dead-code-aggressive "
+                "--redundancy-elimination "
+                "--combine-access-chains "
+                "--simplify-instructions "
+                "--vector-dce "
+                "--eliminate-dead-inserts "
+                "--eliminate-dead-branches "
+                "--simplify-instructions "
+                "--if-conversion "
+                "--copy-propagate-arrays "
+                "--reduce-load-size "
+                //"--eliminate-dead-code-aggressive "
+                //"--merge-blocks "
+                "--redundancy-elimination "
+                "--eliminate-dead-branches "
+                //"--merge-blocks "
+                "--simplify-instructions "
+                "--validate-after-all ";
+
+            optimize_cmd += spv_file;
+            optimize_cmd += " -o ";
+            optimize_cmd += spv_file;
+
+#ifdef _WIN32
+            std::replace(optimize_cmd.begin(), optimize_cmd.end(), '/', '\\');
+#endif
+            res = system(optimize_cmd.c_str());
+            if (res != 0) {
+                LOGE("[PrepareAssets] Failed to optimize %s", spv_file.c_str());
+            }
+
+            std::string cross_cmd = "src/libs/spirv/spirv-cross ";
+            if (strcmp(platform, "pc") == 0) {
+                cross_cmd += "--version 430 ";
+            } else if (strcmp(platform, "android") == 0) {
+                cross_cmd += "--version 310 --es ";
+                cross_cmd += "--extension GL_EXT_texture_buffer ";
+            }
+            cross_cmd += "--no-support-nonzero-baseinstance --glsl-emit-push-constant-as-ubo ";
+            cross_cmd += spv_file;
+            cross_cmd += " --output ";
+            cross_cmd += out_file;
+
+#ifdef _WIN32
+            std::replace(cross_cmd.begin(), cross_cmd.end(), '/', '\\');
+#endif
+            res = system(cross_cmd.c_str());
+            if (res != 0) {
+                LOGE("[PrepareAssets] Failed to cross-compile %s", spv_file.c_str());
+            }
         }
     };
 

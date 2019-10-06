@@ -212,9 +212,17 @@ static const char blit_fxaa_fs[] =
 #include "Shaders/blit_fxaa.frag.glsl"
 ;
 
+#define __ADDITIONAL_DEFINES_STR__ ""
 static const char blit_transparent_compose_fs[] =
 #include "Shaders/blit_transparent_compose.frag.glsl"
 ;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ "#define MSAA_4"
+static const char blit_transparent_compose_ms_fs[] =
+#include "Shaders/blit_transparent_compose.frag.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
 
 static const char probe_vs[] =
 #include "Shaders/probe.vert.glsl"

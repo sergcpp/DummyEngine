@@ -16,7 +16,7 @@ namespace RendererInternal {
         ShadowMapRegion uShadowMapRegions[REN_MAX_SHADOWMAPS_TOTAL];
         Ren::Vec4f uSunDir, uSunCol;
         Ren::Vec4f uClipInfo, uCamPosAndGamma;
-        Ren::Vec4f uResAndFRes, uTranspDepthRangeAndUnused;
+        Ren::Vec4f uResAndFRes, uTranspDepthRangeAndMode;
         ProbeItem uProbes[REN_MAX_PROBES_TOTAL];
     };
     static_assert(sizeof(SharedDataBlock) == 5664, "!");
@@ -236,6 +236,9 @@ void Renderer::InitRendererInternal() {
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling blit_transparent_compose_prog");
     blit_transparent_compose_prog_ = ctx_.LoadProgramGLSL("blit_transparent_compose_prog", blit_vs, blit_transparent_compose_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    LOGI("Compiling blit_transparent_compose_ms_prog");
+    blit_transparent_compose_ms_prog_ = ctx_.LoadProgramGLSL("blit_transparent_compose_ms_prog", blit_vs, blit_transparent_compose_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     LOGI("Compiling probe_prog");
     probe_prog_ = ctx_.LoadProgramGLSL("probe_prog", probe_vs, probe_fs, &status);
@@ -601,6 +604,12 @@ bool Renderer::InitFramebuffersInternal() {
         transparent_comb_framebuf_ = (uint32_t)new_framebuf;
     }
 
+    if (!clean_buf_color_only_) {
+        GLuint new_framebuf;
+        glGenFramebuffers(1, &new_framebuf);
+        clean_buf_color_only_ = (uint32_t)new_framebuf;
+    }
+
     GLint framebuf_before;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuf_before);
 
@@ -671,11 +680,13 @@ bool Renderer::InitFramebuffersInternal() {
         result = (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
+#if defined(REN_OIT_MOMENT_BASED)
     {   // Attach depth from clean buffer to moments buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)moments_buf_.fb);
 
         GLuint depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
         if (clean_buf_.sample_count > 1) {
+            assert(moments_buf_.sample_count == clean_buf_.sample_count);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
@@ -684,29 +695,46 @@ bool Renderer::InitFramebuffersInternal() {
         GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result = (s == GL_FRAMEBUFFER_COMPLETE);
     }
-
-    {   // Attach depth from clean buffer to transparent buffer
-        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)transparent_buf_.fb);
+    if (clean_buf_.sample_count == 1) {
+        // Attach depth from clean buffer to transparent buffer
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)resolved_or_transparent_buf_.fb);
 
         GLuint depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
-        if (clean_buf_.sample_count > 1) {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
-        } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
-        }
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
 
         GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result = (s == GL_FRAMEBUFFER_COMPLETE);
     }
+#endif
 
     {   // Attach color from clean buffer to transparent comb buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)transparent_comb_framebuf_);
 
-        GLuint col_tex = (GLuint)clean_buf_.attachments[0].tex;
+        GLuint col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex;
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
         } else {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
+        }
+
+        GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
+        glDrawBuffers(1, bufs);
+
+        GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        result = (s == GL_FRAMEBUFFER_COMPLETE);
+    }
+
+    {   // Attach color and depth from clean buffer
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)clean_buf_color_only_);
+
+        GLuint col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex,
+               depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        if (clean_buf_.sample_count > 1) {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+        } else {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
         }
 
         GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
@@ -993,6 +1021,16 @@ void Renderer::DestroyRendererInternal() {
         glDeleteFramebuffers(1, &framebuf);
     }
 
+    if (transparent_comb_framebuf_) {
+        GLuint framebuf = (GLuint)transparent_comb_framebuf_;
+        glDeleteFramebuffers(1, &framebuf);
+    }
+
+    if (clean_buf_color_only_) {
+        GLuint framebuf = (GLuint)clean_buf_color_only_;
+        glDeleteFramebuffers(1, &framebuf);
+    }
+
     {
         assert(vtx_buf1->Free(sphere_vtx1_offset_));
         assert(vtx_buf2->Free(sphere_vtx2_offset_));
@@ -1239,10 +1277,21 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         // actual resolution and full resolution
         shrd_data.uResAndFRes = Ren::Vec4f{ float(act_w_), float(act_h_), float(clean_buf_.w), float(clean_buf_.h) };
 
-        const float time = 0.001f * Sys::GetTimeMs();
-
         const float near = list.draw_cam.near(), far = list.draw_cam.far();
-        shrd_data.uTranspDepthRangeAndUnused = Ren::Vec4f{ near, 100.0f, time, 0.0f };
+        const float time = 0.001f * Sys::GetTimeMs();
+        const float transparent_near = near;
+        const float transparent_far = 16.0f;
+        const float transparent_mode =
+#if defined(REN_OIT_MOMENT_BASED)
+            (list.render_flags & EnableOIT) ? 2.0f : 0.0f;
+#else
+            0.0f;
+#endif
+        
+        shrd_data.uTranspDepthRangeAndMode = Ren::Vec4f{
+                std::log(transparent_near),
+                std::log(transparent_far) - std::log(transparent_near),
+                transparent_mode, time };
         shrd_data.uClipInfo = { near * far, near, far, std::log2(1.0f + far / near) };
 
         const Ren::Vec3f &pos = list.draw_cam.world_position();
@@ -1716,6 +1765,20 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
     }
 
+    if ((list.render_flags & EnableOIT) && clean_buf_.sample_count > 1) {
+        DebugMarker _("RESOLVE MS BUFFER");
+
+        glBindVertexArray((GLuint)fs_quad_vao_);
+        glBindFramebuffer(GL_FRAMEBUFFER, resolved_or_transparent_buf_.fb);
+
+        glUseProgram(blit_ms_resolve_prog_->prog_id());
+        glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
+
+        BindTextureMs(REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+    }
+
     /**************************************************************************************************/
     /*                                      TRANSPARENT PASS                                          */
     /**************************************************************************************************/
@@ -1727,6 +1790,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glBindVertexArray((GLuint)draw_pass_vao_);
 
     if (list.render_flags & EnableOIT) {
+#if defined(REN_OIT_MOMENT_BASED)
         glBindFramebuffer(GL_FRAMEBUFFER, moments_buf_.fb);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1737,7 +1801,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glDepthMask(GL_FALSE);
 
         {   // Draw alpha-blended surfaces
-            DebugMarker _("MOMENTS PASS");
+            DebugMarker _("MOMENTS GENERATION PASS");
 
             const Ren::Program *cur_program = nullptr;
             const Ren::Material *cur_mat = nullptr;
@@ -1762,8 +1826,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
                 glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
 
-                glUniform1f(3, 0.0f);
-
                 glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
                     (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
@@ -1772,15 +1834,29 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             }
         }
 
-        glBindFramebuffer(GL_FRAMEBUFFER, transparent_buf_.fb);
+        {   // Change transparency draw mode
+            glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_shared_data_block_[cur_buf_chunk_]);
+            const float transp_mode = clean_buf_.sample_count > 1 ? 1.25f : 1.0f;
+            glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SharedDataBlock, uTranspDepthRangeAndMode) + 2 * sizeof(float), sizeof(float), &transp_mode);
+        }
+
+        uint32_t target_framebuf =
+            (clean_buf_.sample_count > 1) ? clean_buf_color_only_ : resolved_or_transparent_buf_.fb;
+
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)target_framebuf);
+        
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        //glDisable(GL_DEPTH_TEST);
-        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        BindTexture(REN_MOMENTS0_TEX_SLOT, moments_buf_.attachments[0].tex);
-        BindTexture(REN_MOMENTS1_TEX_SLOT, moments_buf_.attachments[1].tex);
-        BindTexture(REN_MOMENTS2_TEX_SLOT, moments_buf_.attachments[2].tex);
+        if (moments_buf_.sample_count > 1) {
+            BindTextureMs(REN_MOMENTS0_MS_TEX_SLOT, moments_buf_.attachments[0].tex);
+            BindTextureMs(REN_MOMENTS1_MS_TEX_SLOT, moments_buf_.attachments[1].tex);
+            BindTextureMs(REN_MOMENTS2_MS_TEX_SLOT, moments_buf_.attachments[2].tex);
+        } else {
+            BindTexture(REN_MOMENTS0_TEX_SLOT, moments_buf_.attachments[0].tex);
+            BindTexture(REN_MOMENTS1_TEX_SLOT, moments_buf_.attachments[1].tex);
+            BindTexture(REN_MOMENTS2_TEX_SLOT, moments_buf_.attachments[2].tex);
+        }
 
         {   // Draw alpha-blended surfaces
             DebugMarker _("TRANSPARENT PASS");
@@ -1810,8 +1886,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
                 glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
 
-                glUniform1f(3, 1.0f);
-
                 glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
                     (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
@@ -1821,7 +1895,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
+#else
+        // TODO: ...
+#endif
     } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         DebugMarker _("TRANSPARENT PASS");
 
         const Ren::Program *cur_program = nullptr;
@@ -1864,6 +1946,22 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             backend_info_.opaque_draw_calls_count += 2;
             backend_info_.triangles_rendered += (batch.indices_count / 3) * batch.instance_count;
         }
+
+        if (clean_buf_.sample_count > 1) {
+            DebugMarker _("RESOLVE MS BUFFER");
+
+            glBindVertexArray((GLuint)fs_quad_vao_);
+            glBindFramebuffer(GL_FRAMEBUFFER, resolved_or_transparent_buf_.fb);
+
+            glUseProgram(blit_ms_resolve_prog_->prog_id());
+            glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
+
+            BindTextureMs(REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
     }
 
 #if !defined(__ANDROID__)
@@ -1881,22 +1979,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeReflStart], GL_TIMESTAMP);
     }
 
-    glBindVertexArray(fs_quad_vao_);
-
-    if (clean_buf_.sample_count > 1) {
-        glBindFramebuffer(GL_FRAMEBUFFER, resolved_buf1_.fb);
-        glViewport(0, 0, act_w_, act_h_);
-
-        {   DebugMarker _("RESOLVE MS BUFFER");
-            glUseProgram(blit_ms_resolve_prog_->prog_id());
-
-            glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
-
-            BindTextureMs(REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
-
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
-        }
-    }
+    glBindVertexArray((GLuint)fs_quad_vao_);
 
     const uint32_t use_ssr_mask = (EnableSSR | DebugWireframe);
     const uint32_t use_ssr = EnableSSR;
@@ -1942,10 +2025,14 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         // Compose reflections on top of clean buffer
+        const Ren::Program *blit_ssr_compose_prog = nullptr;
+
         if (clean_buf_.sample_count > 1) {
-            glBindFramebuffer(GL_FRAMEBUFFER, resolved_buf1_.fb);
+            glBindFramebuffer(GL_FRAMEBUFFER, resolved_or_transparent_buf_.fb);
+            blit_ssr_compose_prog = blit_ssr_compose_ms_prog_.get();
         } else {
             glBindFramebuffer(GL_FRAMEBUFFER, refl_comb_framebuf_);
+            blit_ssr_compose_prog = blit_ssr_compose_prog_.get();
         }
         glViewport(0, 0, act_w_, act_h_);
 
@@ -1954,15 +2041,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glDisable(GL_DEPTH_TEST);
         glDepthMask(GL_FALSE);
 
-        const Ren::Program *blit_ssr_compose_prog = nullptr;
-
-        if (clean_buf_.sample_count > 1) {
-            blit_ssr_compose_prog = blit_ssr_compose_ms_prog_.get();
-        } else {
-            blit_ssr_compose_prog = blit_ssr_compose_prog_.get();
-        }
         glUseProgram(blit_ssr_compose_prog->prog_id());
-
         glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
         if (clean_buf_.sample_count > 1) {
@@ -1996,43 +2075,42 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     }
 
     if (list.render_flags & EnableOIT) {
+#if defined(REN_OIT_MOMENT_BASED)
         DebugMarker _("COMPOSE TRANSPARENT");
 
+        glEnable(GL_BLEND);
+#if REN_OIT_MOMENT_RENORMALIZE
+        glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+#else
+        glBlendFunc(GL_ONE, GL_SRC_ALPHA);
+#endif
+
+        const Ren::Program *blit_transparent_compose = 
+            (clean_buf_.sample_count > 1) ? blit_transparent_compose_ms_prog_.get()
+                                          : blit_transparent_compose_prog_.get();
+
+        const uint32_t target_framebuffer =
+            (clean_buf_.sample_count > 1) ? resolved_or_transparent_buf_.fb
+                                          : transparent_comb_framebuf_;
+
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)target_framebuffer);
+        glViewport(0, 0, act_w_, act_h_);
+
+        glUseProgram(blit_transparent_compose->prog_id());
+        glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
+
         if (clean_buf_.sample_count > 1) {
-            glBindFramebuffer(GL_FRAMEBUFFER, resolved_buf1_.fb);
-            glViewport(0, 0, act_w_, act_h_);
-
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-            glUseProgram(blit_transparent_compose_prog_->prog_id());
-
-            glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
-
-            BindTexture(REN_BASE0_TEX_SLOT, transparent_buf_.attachments[0].tex);
-            BindTexture(REN_BASE1_TEX_SLOT, moments_buf_.attachments[0].tex);
-
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
-
-            glDisable(GL_BLEND);
+            BindTextureMs(REN_BASE0_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
+            BindTextureMs(REN_BASE1_TEX_SLOT, moments_buf_.attachments[0].tex);
         } else {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-            glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)transparent_comb_framebuf_);
-            glViewport(0, 0, act_w_, act_h_);
-
-            glUseProgram(blit_transparent_compose_prog_->prog_id());
-
-            glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
-
-            BindTexture(REN_BASE0_TEX_SLOT, transparent_buf_.attachments[0].tex);
+            BindTexture(REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
             BindTexture(REN_BASE1_TEX_SLOT, moments_buf_.attachments[0].tex);
-
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
-
-            glDisable(GL_BLEND);
         }
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+
+        glDisable(GL_BLEND);
+#endif
     }
     
     if (list.render_flags & DebugProbes) {
@@ -2042,7 +2120,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         // Write to color
         if (clean_buf_.sample_count > 1) {
-            glBindFramebuffer(GL_FRAMEBUFFER, resolved_buf1_.fb);
+            glBindFramebuffer(GL_FRAMEBUFFER, resolved_or_transparent_buf_.fb);
         } else {
             glBindFramebuffer(GL_FRAMEBUFFER, refl_comb_framebuf_);
         }
@@ -2103,7 +2181,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
         if (clean_buf_.sample_count > 1) {
-            BindTexture(REN_BASE0_TEX_SLOT, resolved_buf1_.attachments[0].tex);
+            BindTexture(REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
         } else {
             BindTexture(REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
         }
@@ -2233,7 +2311,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform1f(U_EXPOSURE, exposure);
 
         if (clean_buf_.sample_count > 1) {
-            BindTexture(REN_BASE0_TEX_SLOT, resolved_buf1_.attachments[0].tex);
+            BindTexture(REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
         } else {
             BindTexture(REN_BASE0_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
         }

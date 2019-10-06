@@ -29,9 +29,12 @@
 #define REN_ITEMS_BUF_SLOT  14
 #define REN_INST_BUF_SLOT   15
 #define REN_ENV_TEX_SLOT    16
-#define REN_MOMENTS0_TEX_SLOT 17
-#define REN_MOMENTS1_TEX_SLOT 18
-#define REN_MOMENTS2_TEX_SLOT 19
+#define REN_MOMENTS0_TEX_SLOT 4 // replaces lightmap slot 0
+#define REN_MOMENTS1_TEX_SLOT 5 // replaces lightmap slot 1
+#define REN_MOMENTS2_TEX_SLOT 6 // replaces lightmap slot 2
+#define REN_MOMENTS0_MS_TEX_SLOT 7 // replaces lightmap slot 3
+#define REN_MOMENTS1_MS_TEX_SLOT 9 // replaces ssao slot
+#define REN_MOMENTS2_MS_TEX_SLOT 17
 
 #define REN_ALPHATEST_TEX_SLOT 0
 
@@ -95,3 +98,6 @@
 #define REN_MAX_LIGHTS_TOTAL 4096
 #define REN_MAX_DECALS_TOTAL 4096
 #define REN_MAX_ITEMS_TOTAL (1 << 16)
+
+//#define REN_OIT_MOMENT_BASED
+#define REN_OIT_MOMENT_RENORMALIZE 0

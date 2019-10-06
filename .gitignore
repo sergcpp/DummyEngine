@@ -5,7 +5,7 @@ assets_android
 build-*
 check*
 DummyApp.exe
-libDummyApp.so
+libDummyApp*.so
 ModlApp.exe
 DummyApp.apk
 test.txt

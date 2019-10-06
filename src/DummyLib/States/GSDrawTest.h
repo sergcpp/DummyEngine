@@ -51,7 +51,7 @@ class GSDrawTest : public GameState {
 
     Ren::Camera temp_probe_cam_;
     FrameBuf temp_probe_buf_;
-    Renderer::DrawList temp_probe_lists_[6];
+    DrawList temp_probe_lists_[6];
     LightProbe *probe_to_render_ = nullptr,
                *probe_to_update_sh_ = nullptr;
     bool probes_dirty_ = true;
@@ -72,7 +72,7 @@ class GSDrawTest : public GameState {
     bool use_pt_ = false, use_lm_ = false;
     bool invalidate_view_ = true;
 
-    Renderer::DrawList main_view_lists_[2];
+    DrawList main_view_lists_[2];
     int front_list_ = 0;
 
     FrontendInfo prev_front_info_;
