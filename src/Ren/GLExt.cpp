@@ -186,6 +186,8 @@ bool Ren::InitGLExtentions() {
     ren_glFenceSync                 = (PFNGLFENCESYNCPROC)GetProcAddress(glFenceSync);
     ren_glClientWaitSync            = (PFNGLCLIENTWAITSYNCPROC)GetProcAddress(glClientWaitSync);
     ren_glDeleteSync                = (PFNGLDELETESYNCPROC)GetProcAddress(glDeleteSync);
+
+    ren_glBlendFunci                = (PFNGLBLENDFUNCI)GetProcAddress(glBlendFunci);
 #endif
 
     return true;

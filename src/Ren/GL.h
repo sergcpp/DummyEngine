@@ -471,6 +471,8 @@ typedef GLsync (APIENTRY *PFNGLFENCESYNCPROC)(GLenum condition, GLbitfield flags
 typedef GLenum (APIENTRY *PFNGLCLIENTWAITSYNCPROC)(GLsync sync, GLbitfield flags, GLuint64 timeout);
 typedef void (APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
 
+typedef void (APIENTRY *PFNGLBLENDFUNCI)(GLuint buf, GLenum sfactor, GLenum dfactor);
+
 #endif
 
 #define glCreateProgram             ren_glCreateProgram
@@ -615,6 +617,8 @@ typedef void (APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
 #define glClientWaitSync            ren_glClientWaitSync
 #define glDeleteSync                ren_glDeleteSync
 
+#define glBlendFunci                ren_glBlendFunci
+
 EXTERN_FUNC PFNGLCREATEPROGRAMPROC              ren_glCreateProgram;
 EXTERN_FUNC PFNGLDELETEPROGRAMPROC              ren_glDeleteProgram;
 EXTERN_FUNC PFNGLUSEPROGRAMPROC                 ren_glUseProgram;
@@ -757,6 +761,8 @@ EXTERN_FUNC PFNGLOBJECTLABELPROC                ren_glObjectLabel;
 EXTERN_FUNC PFNGLFENCESYNCPROC                  ren_glFenceSync;
 EXTERN_FUNC PFNGLCLIENTWAITSYNCPROC             ren_glClientWaitSync;
 EXTERN_FUNC PFNGLDELETESYNCPROC                 ren_glDeleteSync;
+
+EXTERN_FUNC PFNGLBLENDFUNCI                     ren_glBlendFunci;
 }
 
 #undef EXTERN_FUNC
