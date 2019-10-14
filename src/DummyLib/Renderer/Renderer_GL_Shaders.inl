@@ -224,6 +224,10 @@ static const char blit_transparent_compose_ms_fs[] =
 ;
 #undef __ADDITIONAL_DEFINES_STR__
 
+static const char blit_transparent_init_fs[] =
+#include "Shaders/blit_transparent_init.frag.glsl"
+;
+
 static const char probe_vs[] =
 #include "Shaders/probe.vert.glsl"
 ;

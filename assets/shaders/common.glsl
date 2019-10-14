@@ -12,12 +12,24 @@ float mad(float a, float b, float c) {
     return a * b + c;
 }
 
+float pow3(float x) {
+    return (x * x) * x;
+}
+
+float pow5(float x) {
+    return (x * x) * (x * x) * x;
+}
+
+float pow6(float x) {
+    return (x * x) * (x * x) * (x * x);
+}
+
 vec3 RGBMDecode(vec4 rgbm) {
     return 4.0 * rgbm.rgb * rgbm.a;
 }
 
 vec3 FresnelSchlickRoughness(float cos_theta, vec3 F0, float roughness) {
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cos_theta, 5.0);
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - cos_theta);
 }
 
 const vec2 poisson_disk[16] = vec2[16](
@@ -230,4 +242,9 @@ void ResolveMoments(float depth, float b0, vec4 b_1234, out float transmittance_
 
     const vec4 bias_vector = vec4(0.0, 0.628, 0.0, 0.628);
     transmittance_at_depth = ComputeTransmittanceAtDepthFrom4PowerMoments(b0, b_1234, depth, 0.0035 /* moment_bias */, 0.1 /* overestimation */, bias_vector);
+}
+
+float TransparentDepthWeight(float z, float alpha) {
+    //return alpha * clamp(0.1 * (1e-5 + 0.04 * z * z + pow6(0.005 * z)), 1e-2, 3e3);
+    return alpha * max(3e3 * pow3(1.0 - z), 1e-2);
 }

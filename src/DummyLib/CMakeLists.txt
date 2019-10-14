@@ -97,6 +97,7 @@ set(SHADERS_SOURCES Renderer/Shaders/blit.frag.glsl
                     Renderer/Shaders/blit_ssr_compose.frag.glsl
                     Renderer/Shaders/blit_ssr_dilate.frag.glsl
                     Renderer/Shaders/blit_transparent_compose.frag.glsl
+                    Renderer/Shaders/blit_transparent_init.frag.glsl
                     Renderer/Shaders/blit_upscale.frag.glsl
                     Renderer/Shaders/fillz.vert.glsl
                     Renderer/Shaders/fillz.frag.glsl

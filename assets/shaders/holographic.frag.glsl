@@ -82,7 +82,7 @@ void main(void) {
     
     float tr = 0.75 * clamp(1.2 - dot(normal, -view_ray_ws), 0.0, 1.0);
     
-    if (uTranspDepthRangeAndMode[2] < 1.5) {
+    if (floatBitsToInt(uTranspDepthRangeAndMode[2]) != 2) {
         highp float k = log2(lin_depth / uClipInfo[1]) / uClipInfo[3];
         int slice = int(floor(k * $ItemGridResZ.0));
         
@@ -118,13 +118,16 @@ void main(void) {
         
         float alpha = tr * kk;
         
-        if (uTranspDepthRangeAndMode[2] < 0.5) {
+        if (floatBitsToInt(uTranspDepthRangeAndMode[2]) == 0) {
             outColor = vec4(diffuse_color, alpha);
+        } else if (floatBitsToInt(uTranspDepthRangeAndMode[2]) == 1) {
+            outColor = vec4(diffuse_color, alpha) * TransparentDepthWeight(gl_FragCoord.z, alpha);
+            outNormal = vec4(alpha);
         } else {
             float b_0;
             vec4 b_1234;
                                
-            if (uTranspDepthRangeAndMode[2] < 1.2) {
+            if (floatBitsToInt(uTranspDepthRangeAndMode[2]) == 3) {
                 b_0 = texelFetch(moments0_texture, ivec2(ix, iy), 0).x;
                 b_1234 = vec4(texelFetch(moments1_texture, ivec2(ix, iy), 0).xy,
                               texelFetch(moments2_texture, ivec2(ix, iy), 0).xy);

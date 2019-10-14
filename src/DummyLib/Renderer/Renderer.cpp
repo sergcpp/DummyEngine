@@ -304,7 +304,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         {   // Main buffer for raw frame before tonemapping
             FrameBuf::ColorAttachmentDesc desc[3];
             {   // Main color
-#if defined(REN_OIT_MOMENT_BASED) && REN_OIT_MOMENT_RENORMALIZE
+#if (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED) || (REN_OIT_MODE == REN_OIT_MOMENT_BASED && REN_OIT_MOMENT_RENORMALIZE)
                 // renormalization requires buffer with alpha channel
                 desc[0].format = Ren::RawRGBA16F;
 #else
@@ -326,7 +326,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, { FrameBuf::Depth24, Ren::NoFilter }, 4);
         }
 
-#if defined(REN_OIT_MOMENT_BASED)
+#if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
         {   // Buffer that holds moments (used for transparency)
             FrameBuf::ColorAttachmentDesc desc[3];
             {   // b0
