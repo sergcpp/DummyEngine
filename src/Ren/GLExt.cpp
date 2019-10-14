@@ -188,6 +188,7 @@ bool Ren::InitGLExtentions() {
     ren_glDeleteSync                = (PFNGLDELETESYNCPROC)GetProcAddress(glDeleteSync);
 
     ren_glBlendFunci                = (PFNGLBLENDFUNCI)GetProcAddress(glBlendFunci);
+    ren_glClearBufferfv             = (PFNGLCLEARBUFFERFV)GetProcAddress(glClearBufferfv);
 #endif
 
     return true;

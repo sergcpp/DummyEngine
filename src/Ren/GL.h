@@ -472,6 +472,7 @@ typedef GLenum (APIENTRY *PFNGLCLIENTWAITSYNCPROC)(GLsync sync, GLbitfield flags
 typedef void (APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
 
 typedef void (APIENTRY *PFNGLBLENDFUNCI)(GLuint buf, GLenum sfactor, GLenum dfactor);
+typedef void (APIENTRY *PFNGLCLEARBUFFERFV)(GLenum buffer, GLint drawbuffer, const GLfloat * value);
 
 #endif
 
@@ -618,6 +619,7 @@ typedef void (APIENTRY *PFNGLBLENDFUNCI)(GLuint buf, GLenum sfactor, GLenum dfac
 #define glDeleteSync                ren_glDeleteSync
 
 #define glBlendFunci                ren_glBlendFunci
+#define glClearBufferfv             ren_glClearBufferfv
 
 EXTERN_FUNC PFNGLCREATEPROGRAMPROC              ren_glCreateProgram;
 EXTERN_FUNC PFNGLDELETEPROGRAMPROC              ren_glDeleteProgram;
@@ -763,6 +765,7 @@ EXTERN_FUNC PFNGLCLIENTWAITSYNCPROC             ren_glClientWaitSync;
 EXTERN_FUNC PFNGLDELETESYNCPROC                 ren_glDeleteSync;
 
 EXTERN_FUNC PFNGLBLENDFUNCI                     ren_glBlendFunci;
+EXTERN_FUNC PFNGLCLEARBUFFERFV                  ren_glClearBufferfv;
 }
 
 #undef EXTERN_FUNC
