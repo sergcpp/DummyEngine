@@ -94,7 +94,8 @@ std::vector<uint8_t> LoadHDR(const char *name, int &out_w, int &out_h) {
                 data[2] = rgbe[2];
                 data[3] = rgbe[3];
 
-                if (!in_stream.read((char *)&data[4], (res_x * scanlines_left - 1) * 4)) {
+                size_t read_size = (res_x * scanlines_left - 1) * 4;
+                if (read_size && !in_stream.read((char *)&data[4], read_size)) {
                     throw std::runtime_error("Cannot read file!");
                 }
                 return data;

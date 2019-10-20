@@ -37,19 +37,14 @@ extern "C" {
 namespace {
 // slow, but ok for this task
 int Tokenize(const std::string &str, const char *delims, std::string out_toks[32]) {
-#if 0
-    std::unique_ptr<char[]> _str(new char[str.size() + 1]);
-    strcpy(_str.get(), str.c_str());
-    char* tok = strtok(_str.get(), delims);
-    while (tok != NULL) {
-        out_toks.push_back(tok);
-        tok = strtok(NULL, delims);
-    }
-#else
     const char *p = str.c_str();
     const char *q = strpbrk(p + 1, delims);
 
     int tok_count = 0;
+
+    while (strchr(delims, (int)*p)) {
+        p++;
+    }
 
     for (; p != NULL && q != NULL; q = strpbrk(p, delims)) {
         if (p == q) {
@@ -63,9 +58,10 @@ int Tokenize(const std::string &str, const char *delims, std::string out_toks[32
         p = q + 1;
     }
 
-    out_toks[tok_count++].assign(p);
+    if (p[0]) {
+        out_toks[tok_count++].assign(p);
+    }
     return tok_count;
-#endif
 }
 
 const Ren::Vec3f center = { -2.0f, 2.0f, 4.0f };
@@ -542,7 +538,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
         // fix for flat objects
         for (int j : { 0, 1, 2 }) {
-            if (fabs(mesh_info.bbox_min[j] - mesh_info.bbox_max[j]) < 0.001f) {
+            if (std::abs(mesh_info.bbox_min[j] - mesh_info.bbox_max[j]) < 0.001f) {
                 mesh_info.bbox_max[j] += 0.001f;
             }
         }

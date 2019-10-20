@@ -1499,7 +1499,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     //
 
     if ((list.render_flags & DebugWireframe) == 0 && list.env.env_map) {
+#if defined(REN_DIRECT_DRAWING)
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+#else
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)skydome_framebuf_);
+#endif
 
         // Draw skydome (and clear depth with it)
         glDepthFunc(GL_ALWAYS);
@@ -1761,8 +1765,13 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     //
 
     // Bind main buffer for drawing
+#if defined(REN_DIRECT_DRAWING)
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, scr_w_, scr_h_);
+#else
     glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
     glViewport(0, 0, act_w_, act_h_);
+#endif
 
     if (list.render_flags & EnableTimers) {
         glQueryCounter(queries_[cur_query_][TimeOpaqueStart], GL_TIMESTAMP);
@@ -1805,6 +1814,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
     }
 
+#if !defined(REN_DIRECT_DRAWING)
     if ((list.render_flags & EnableOIT) && clean_buf_.sample_count > 1) {
         DebugMarker _("RESOLVE MS BUFFER");
 
@@ -1818,6 +1828,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
     }
+#endif
 
     //
     // Transparent pass
@@ -1998,7 +2009,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
 #endif
     } else {
+#if defined(REN_DIRECT_DRAWING)
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+#else
         glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
+#endif
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -2030,6 +2045,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
 
+#if 0
             glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
             glDepthFunc(GL_LEQUAL);
 
@@ -2038,6 +2054,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
             glDepthFunc(GL_EQUAL);
+#endif
 
             glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
                                               (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
@@ -2046,6 +2063,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             backend_info_.triangles_rendered += (batch.indices_count / 3) * batch.instance_count;
         }
 
+#if !defined(REN_DIRECT_DRAWING)
         if (clean_buf_.sample_count > 1) {
             DebugMarker _("RESOLVE MS BUFFER");
 
@@ -2059,6 +2077,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
+#endif
 
         glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
     }
@@ -2401,6 +2420,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
     }
 
+#if !defined(REN_DIRECT_DRAWING)
     {   // Blit main framebuffer
         const Ren::Program *blit_prog = blit_combine_prog_.get();
         glUseProgram(blit_prog->prog_id());
@@ -2462,6 +2482,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 #ifndef DISABLE_MARKERS
     glPopDebugGroup();
 #endif
+#endif // !defined(REN_DIRECT_DRAWING)
     
     if (list.render_flags & EnableTonemap) {
         // Start asynchronous memory read from framebuffer

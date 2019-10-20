@@ -93,6 +93,8 @@ class GSDrawTest : public GameState {
     uint32_t wolf_indices_[32]      = { 0xffffffff };
     uint32_t scooter_indices_[16]   = { 0xffffffff };
     uint32_t sophia_indices_[2]     = { 0xffffffff }, eric_indices_[2] = { 0xffffffff };
+    uint32_t font_meshes_[4]        = { 0xffffffff };
+    int cur_font_test_              = 1;
     float scooters_angle_ = 0.0f;
 
     std::vector<Ren::Vec3f>             cam_follow_path_;

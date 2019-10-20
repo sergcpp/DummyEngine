@@ -29,9 +29,9 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-    //"jap_house2.json";
+    "font_test.json";
     //"skin_test.json";
-    "living_room_gumroad.json";
+    //"living_room_gumroad.json";
     //"bistro.json";
     //"pbr_test.json";
 
@@ -406,6 +406,13 @@ void GSDrawTest::LoadScene(const char *name) {
     }
 
     {
+        font_meshes_[0] = scene_manager_->FindObject("font_mesh0");
+        font_meshes_[1] = scene_manager_->FindObject("font_mesh1");
+        font_meshes_[2] = scene_manager_->FindObject("font_mesh2");
+        font_meshes_[3] = scene_manager_->FindObject("font_mesh3");
+    }
+
+    {
         char scooter_name[] = "scooter_00";
 
         for (int j = 0; j < 2; j++) {
@@ -593,6 +600,8 @@ void GSDrawTest::Draw(uint64_t dt_us) {
     {   // ui draw
         ui_renderer_->BeginDraw();
 
+        const float font_height = font_->height(ui_root_.get());
+
         if (cmdline_enabled_) {
             int font_height = (int)(0.5f * font_->height(ui_root_.get()) * game_->height);
 #if defined(USE_GL_RENDER)
@@ -607,8 +616,14 @@ void GSDrawTest::Draw(uint64_t dt_us) {
 
             for (const std::string &cmd : cmdline_history_) {
                 font_->DrawText(ui_renderer_.get(), cmd.c_str(), { -1, cur_y }, ui_root_.get());
-                cur_y -= font_->height(ui_root_.get());
+                cur_y -= font_height;
             }
+        }
+
+        {
+            char buf[128];
+            sprintf(buf, " Shader (current is %i): 0 - passthrough (baseline); 1 - MSDF; 2 - mixed (passthrough); 3 - mixed (MSDF)", cur_font_test_);
+            font_->DrawText(ui_renderer_.get(), buf, { -1.0f, 0.98f - font_height }, ui_root_.get());
         }
 
         if (!use_pt_ && !use_lm_) {
@@ -621,7 +636,10 @@ void GSDrawTest::Draw(uint64_t dt_us) {
             uint64_t front_dur = front_info.end_timepoint_us - front_info.start_timepoint_us,
                      back_dur = back_info.cpu_end_timepoint_us - back_info.cpu_start_timepoint_us;
 
-            LOGI("Frontend: %04lld\tBackend(cpu): %04lld", (long long)front_dur, (long long)back_dur);
+            //LOGI("Frontend: %04lld\tBackend(cpu): %04lld", (long long)front_dur, (long long)back_dur);
+
+            uint64_t transp_dur = back_info.gpu_end_timepoint_us - back_info.gpu_start_timepoint_us;// back_info.opaque_pass_time_us + back_info.transp_pass_time_us;
+            LOGI("Transparent draw: %04lu us", transp_dur);
 
             ItemsInfo items_info;
             items_info.light_sources_count  = main_view_lists_[back_list].light_sources.count;
@@ -630,7 +648,7 @@ void GSDrawTest::Draw(uint64_t dt_us) {
             items_info.items_total          = main_view_lists_[back_list].items.count;
 
             debug_ui_->UpdateInfo(front_info, back_info, items_info, *swap_interval_, render_flags);
-            debug_ui_->Draw(ui_renderer_.get());
+            //debug_ui_->Draw(ui_renderer_.get());
         }
 
         ui_renderer_->EndDraw();
@@ -790,18 +808,18 @@ void GSDrawTest::HandleInput(const InputManager::Event &evt) {
 
     switch (evt.type) {
     case InputManager::RAW_INPUT_P1_DOWN:
-        if (evt.point.x < ctx_->w() / 3 && move_pointer_ == 0) {
+        /*if (evt.point.x < ctx_->w() / 3 && move_pointer_ == 0) {
             move_pointer_ = 1;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 1;
-        }
+        }*/
         break;
     case InputManager::RAW_INPUT_P2_DOWN:
-        if (evt.point.x < ctx_->w() / 3 && move_pointer_ == 0) {
+        /*if (evt.point.x < ctx_->w() / 3 && move_pointer_ == 0) {
             move_pointer_ = 2;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 2;
-        }
+        }*/
         break;
     case InputManager::RAW_INPUT_P1_UP:
         if (move_pointer_ == 1) {
@@ -917,6 +935,10 @@ void GSDrawTest::HandleInput(const InputManager::Event &evt) {
             }
         } else if (cmdline_enabled_) {
             cmdline_input_.push_back(evt);
+        } else if (evt.raw_key >= 48 && evt.raw_key < 52) {
+            cur_font_test_ = (int)evt.raw_key - 48;
+            view_origin_ = { (evt.raw_key - 48) * 10.0f, 0.0f, 10.0f };
+            view_dir_ = { 0.0f, 0.0f, -1.0f };
         }
     }
     case InputManager::RAW_INPUT_RESIZE:
@@ -1063,6 +1085,27 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
             if ((wolf->comp_mask & mask) == mask) {
                 auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(wolf->components[CompDrawable]);
                 auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
+
+                as->anim_time_s += delta_time_s;
+
+                Ren::Mesh *mesh = dr->mesh.get();
+                Ren::Skeleton *skel = mesh->skel();
+
+                skel->UpdateAnim(0, as->anim_time_s);
+                skel->ApplyAnim(0);
+                skel->UpdateBones(as->matr_palette);
+            }
+        }
+    }
+
+    if (font_meshes_[0] != 0xffffffff) {
+        for (uint32_t font_mesh : font_meshes_) {
+            SceneObject *font = scene_manager_->GetObject(font_mesh);
+
+            uint32_t mask = CompDrawableBit | CompAnimStateBit;
+            if ((font->comp_mask & mask) == mask) {
+                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(font->components[CompDrawable]);
+                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(font->components[CompAnimState]);
 
                 as->anim_time_s += delta_time_s;
 

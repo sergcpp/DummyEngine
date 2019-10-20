@@ -15,7 +15,7 @@ using Ren::Vec2f;
 
 class BitmapFont {
 public:
-    BitmapFont(const char *name = nullptr, Ren::Context *ctx = nullptr);
+    explicit BitmapFont(const char *name = nullptr, Ren::Context *ctx = nullptr);
 
     float height(const BaseElement *parent) const;
 

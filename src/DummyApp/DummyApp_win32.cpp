@@ -334,7 +334,7 @@ void DummyApp::AddEvent(int type, int key, int raw_key, float x, float y, float 
 }
 
 int DummyApp::Run(const std::vector<std::string> &args) {
-    int w = 1024, h = 576;
+    int w = 1280, h = 720;
     fullscreen_ = false;
 
     int args_count = (int)args.size();

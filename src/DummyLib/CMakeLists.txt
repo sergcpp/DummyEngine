@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 project(DummyLib)
 
+if(WIN32)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Ob1")
+endif(WIN32)
+
 set(SOURCE_FILES    Viewer.h
                     Viewer.cpp)
 

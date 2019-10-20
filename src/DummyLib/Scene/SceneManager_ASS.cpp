@@ -3,7 +3,6 @@
 #include <fstream>
 #include <functional>
 #include <iterator>
-#include <map>
 
 #include <dirent.h>
 
@@ -19,9 +18,14 @@ extern "C" {
 #undef max
 #undef min
 
+#include <Gui/Utils.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/ThreadPool.h>
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#define STBTT_STATIC
+#include <stb/stb_truetype.h>
 
 #include "../Renderer/Renderer_GL_Defines.inl"
 
@@ -82,47 +86,51 @@ void Write_DDS(const uint8_t *image_data, int w, int h, int channels, const char
         mip_count = 1;
     }
 
-    {
-        uint8_t *dxt_data[16] = {};
-        int dxt_size[16] = {};
-        int dxt_size_total = 0;
+    //
+    // Compress mip images
+    //
+    uint8_t *dxt_data[16] = {};
+    int dxt_size[16] = {};
+    int dxt_size_total = 0;
 
-        for (int i = 0; i < mip_count; i++) {
-            if (channels == 3) {
-                dxt_data[i] = convert_image_to_DXT1(mipmaps[i].get(), widths[i], heights[i], channels, &dxt_size[i]);
-            } else if (channels == 4) {
-                dxt_data[i] = convert_image_to_DXT5(mipmaps[i].get(), widths[i], heights[i], channels, &dxt_size[i]);
-            }
-            dxt_size_total += dxt_size[i];
-        }
-
-        DDS_header header = {};
-        header.dwMagic = ('D' << 0) | ('D' << 8) | ('S' << 16) | (' ' << 24);
-        header.dwSize = 124;
-        header.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT | DDSD_LINEARSIZE | DDSD_MIPMAPCOUNT;
-        header.dwWidth = w;
-        header.dwHeight = h;
-        header.dwPitchOrLinearSize = dxt_size_total;
-        header.dwMipMapCount = mip_count;
-        header.sPixelFormat.dwSize = 32;
-        header.sPixelFormat.dwFlags = DDPF_FOURCC;
-
+    for (int i = 0; i < mip_count; i++) {
         if (channels == 3) {
-            header.sPixelFormat.dwFourCC = ('D' << 0) | ('X' << 8) | ('T' << 16) | ('1' << 24);
-        } else {
-            header.sPixelFormat.dwFourCC = ('D' << 0) | ('X' << 8) | ('T' << 16) | ('5' << 24);
+            dxt_data[i] = convert_image_to_DXT1(mipmaps[i].get(), widths[i], heights[i], channels, &dxt_size[i]);
+        } else if (channels == 4) {
+            dxt_data[i] = convert_image_to_DXT5(mipmaps[i].get(), widths[i], heights[i], channels, &dxt_size[i]);
         }
+        dxt_size_total += dxt_size[i];
+    }
 
-        header.sCaps.dwCaps1 = DDSCAPS_TEXTURE | DDSCAPS_MIPMAP;
+    //
+    // Write out file
+    //
+    DDS_header header = {};
+    header.dwMagic = ('D' << 0) | ('D' << 8) | ('S' << 16) | (' ' << 24);
+    header.dwSize = 124;
+    header.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT | DDSD_LINEARSIZE | DDSD_MIPMAPCOUNT;
+    header.dwWidth = w;
+    header.dwHeight = h;
+    header.dwPitchOrLinearSize = dxt_size_total;
+    header.dwMipMapCount = mip_count;
+    header.sPixelFormat.dwSize = 32;
+    header.sPixelFormat.dwFlags = DDPF_FOURCC;
 
-        std::ofstream out_stream(out_file, std::ios::binary);
-        out_stream.write((char *)&header, sizeof(header));
+    if (channels == 3) {
+        header.sPixelFormat.dwFourCC = ('D' << 0) | ('X' << 8) | ('T' << 16) | ('1' << 24);
+    } else {
+        header.sPixelFormat.dwFourCC = ('D' << 0) | ('X' << 8) | ('T' << 16) | ('5' << 24);
+    }
 
-        for (int i = 0; i < mip_count; i++) {
-            out_stream.write((char *)dxt_data[i], dxt_size[i]);
-            SOIL_free_image_data(dxt_data[i]);
-            dxt_data[i] = nullptr;
-        }
+    header.sCaps.dwCaps1 = DDSCAPS_TEXTURE | DDSCAPS_MIPMAP;
+
+    std::ofstream out_stream(out_file, std::ios::binary);
+    out_stream.write((char *)&header, sizeof(header));
+
+    for (int i = 0; i < mip_count; i++) {
+        out_stream.write((char *)dxt_data[i], dxt_size[i]);
+        SOIL_free_image_data(dxt_data[i]);
+        dxt_data[i] = nullptr;
     }
 }
 
@@ -149,70 +157,74 @@ void Write_KTX_DXT(const uint8_t *image_data, int w, int h, int channels, const 
         mip_count = 1;
     }
 
-    {   // Write file
-        uint8_t *dxt_data[16] = {};
-        int dxt_size[16] = {};
-        int dxt_size_total = 0;
+    //
+    // Compress mip images
+    //
+    uint8_t *dxt_data[16] = {};
+    int dxt_size[16] = {};
+    int dxt_size_total = 0;
 
-        for (int i = 0; i < mip_count; i++) {
-            if (channels == 3) {
-                dxt_data[i] = convert_image_to_DXT1(mipmaps[i].get(), widths[i], heights[i], channels, &dxt_size[i]);
-            } else if (channels == 4) {
-                dxt_data[i] = convert_image_to_DXT5(mipmaps[i].get(), widths[i], heights[i], channels, &dxt_size[i]);
-            }
-            dxt_size_total += dxt_size[i];
+    for (int i = 0; i < mip_count; i++) {
+        if (channels == 3) {
+            dxt_data[i] = convert_image_to_DXT1(mipmaps[i].get(), widths[i], heights[i], channels, &dxt_size[i]);
+        } else if (channels == 4) {
+            dxt_data[i] = convert_image_to_DXT5(mipmaps[i].get(), widths[i], heights[i], channels, &dxt_size[i]);
         }
+        dxt_size_total += dxt_size[i];
+    }
 
-        const uint32_t gl_rgb = 0x1907;
-        const uint32_t gl_rgba = 0x1908;
+    //
+    // Write out file
+    //
+    const uint32_t gl_rgb = 0x1907;
+    const uint32_t gl_rgba = 0x1908;
 
-        const uint32_t RGB_S3TC_DXT1 = 0x83F0;
-        const uint32_t RGBA_S3TC_DXT5 = 0x83F3;
+    const uint32_t RGB_S3TC_DXT1 = 0x83F0;
+    const uint32_t RGBA_S3TC_DXT5 = 0x83F3;
 
-        Ren::KTXHeader header = {};
-        header.gl_type = 0;
-        header.gl_type_size = 1;
-        header.gl_format = 0; // should be zero for compressed texture
-        if (channels == 4) {
-            header.gl_internal_format = RGBA_S3TC_DXT5;
-            header.gl_base_internal_format = gl_rgba;
-        } else {
-            header.gl_internal_format = RGB_S3TC_DXT1;
-            header.gl_base_internal_format = gl_rgb;
-        }
-        header.pixel_width = w;
-        header.pixel_height = h;
-        header.pixel_depth = 0;
+    Ren::KTXHeader header = {};
+    header.gl_type = 0;
+    header.gl_type_size = 1;
+    header.gl_format = 0; // should be zero for compressed texture
+    if (channels == 4) {
+        header.gl_internal_format = RGBA_S3TC_DXT5;
+        header.gl_base_internal_format = gl_rgba;
+    } else {
+        header.gl_internal_format = RGB_S3TC_DXT1;
+        header.gl_base_internal_format = gl_rgb;
+    }
+    header.pixel_width = w;
+    header.pixel_height = h;
+    header.pixel_depth = 0;
 
-        header.array_elements_count = 0;
-        header.faces_count = 1;
-        header.mipmap_levels_count = mip_count;
+    header.array_elements_count = 0;
+    header.faces_count = 1;
+    header.mipmap_levels_count = mip_count;
         
-        header.key_value_data_size = 0;
+    header.key_value_data_size = 0;
 
-        uint32_t file_offset = 0;
-        std::ofstream out_stream(out_file, std::ios::binary);
-        out_stream.write((char *)&header, sizeof(header));
-        file_offset += sizeof(header);
+    uint32_t file_offset = 0;
+    std::ofstream out_stream(out_file, std::ios::binary);
+    out_stream.write((char *)&header, sizeof(header));
+    file_offset += sizeof(header);
 
-        for (int i = 0; i < mip_count; i++) {
-            assert((file_offset % 4) == 0);
-            uint32_t size = (uint32_t)dxt_size[i];
-            out_stream.write((char *)&size, sizeof(uint32_t));
-            file_offset += sizeof(uint32_t);
-            out_stream.write((char *)dxt_data[i], size);
-            file_offset += size;
+    for (int i = 0; i < mip_count; i++) {
+        assert((file_offset % 4) == 0);
+        uint32_t size = (uint32_t)dxt_size[i];
+        out_stream.write((char *)&size, sizeof(uint32_t));
+        file_offset += sizeof(uint32_t);
+        out_stream.write((char *)dxt_data[i], size);
+        file_offset += size;
 
-            uint32_t pad = (file_offset % 4) ? (4 - (file_offset % 4)) : 0;
-            while (pad) {
-                const uint8_t zero_byte = 0;
-                out_stream.write((char *)&zero_byte, 1);
-                pad--;
-            }
-
-            SOIL_free_image_data(dxt_data[i]);
-            dxt_data[i] = nullptr;
+        uint32_t pad = (file_offset % 4) ? (4 - (file_offset % 4)) : 0;
+        while (pad) {
+            const uint8_t zero_byte = 0;
+            out_stream.write((char *)&zero_byte, 1);
+            pad--;
         }
+
+        SOIL_free_image_data(dxt_data[i]);
+        dxt_data[i] = nullptr;
     }
 }
 
@@ -598,7 +610,7 @@ void encode_astc_image(const astc_codec_image *input_image,
                        int xdim,
                        int ydim,
                        int zdim,
-                       const error_weighting_params *ewp, astc_decode_mode decode_mode, swizzlepattern swz_encode, swizzlepattern swz_decode, uint8_t * buffer, int pack_and_unpack, int threadcount);
+                       const error_weighting_params *ewp, astc_decode_mode decode_mode, swizzlepattern swz_encode, swizzlepattern swz_decode, uint8_t *buffer, int pack_and_unpack, int threadcount);
 
 bool g_astc_initialized = false;
 
@@ -615,101 +627,103 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
     auto replace_texture_extension = [platform](std::string &tex) {
         size_t n;
-        if ((n = tex.find(".tga")) != std::string::npos) {
-            if (strcmp(platform, "pc") == 0) {
-                tex.replace(n + 1, 3, "dds");
-            } else if (strcmp(platform, "android") == 0) {
-                tex.replace(n + 1, 3, "ktx");
-            }
-        } else if ((n = tex.find(".png")) != std::string::npos) {
-            if (strcmp(platform, "pc") == 0) {
-                tex.replace(n + 1, 3, "dds");
-            } else if (strcmp(platform, "android") == 0) {
-                tex.replace(n + 1, 3, "ktx");
+        if ((n = tex.find(".uncompressed")) == std::string::npos) {
+            if ((n = tex.find(".tga")) != std::string::npos) {
+                if (strcmp(platform, "pc") == 0) {
+                    tex.replace(n + 1, 3, "dds");
+                } else if (strcmp(platform, "android") == 0) {
+                    tex.replace(n + 1, 3, "ktx");
+                }
+            } else if ((n = tex.find(".png")) != std::string::npos) {
+                if (strcmp(platform, "pc") == 0) {
+                    tex.replace(n + 1, 3, "dds");
+                } else if (strcmp(platform, "android") == 0) {
+                    tex.replace(n + 1, 3, "ktx");
+                }
             }
         }
     };
 
-    std::map<std::string, std::string> shader_constants;
+    Ren::HashMap32<std::string, std::string> shader_constants;
 
-    shader_constants.emplace("$ModifyWarning", "/***********************************************/\r\n"
-                                               "/* This file was autogenerated, do not modify! */\r\n"
-                                               "/***********************************************/");
+    shader_constants.Insert("$ModifyWarning",   "/***********************************************/\r\n"
+                                                "/* This file was autogenerated, do not modify! */\r\n"
+                                                "/***********************************************/");
 
-    shader_constants.emplace("$FltEps",         "0.0000001");
+    shader_constants.Insert("$FltEps",          "0.0000001");
 
-    shader_constants.emplace("$ItemGridResX",   AS_STR(REN_GRID_RES_X));
-    shader_constants.emplace("$ItemGridResY",   AS_STR(REN_GRID_RES_Y));
-    shader_constants.emplace("$ItemGridResZ",   AS_STR(REN_GRID_RES_Z));
+    shader_constants.Insert("$ItemGridResX",    AS_STR(REN_GRID_RES_X));
+    shader_constants.Insert("$ItemGridResY",    AS_STR(REN_GRID_RES_Y));
+    shader_constants.Insert("$ItemGridResZ",    AS_STR(REN_GRID_RES_Z));
 
     // Vertex attributes
-    shader_constants.emplace("$VtxPosLoc",      AS_STR(REN_VTX_POS_LOC));
-    shader_constants.emplace("$VtxNorLoc",      AS_STR(REN_VTX_NOR_LOC));
-    shader_constants.emplace("$VtxTanLoc",      AS_STR(REN_VTX_TAN_LOC));
-    shader_constants.emplace("$VtxUV1Loc",      AS_STR(REN_VTX_UV1_LOC));
-    shader_constants.emplace("$VtxUV2Loc",      AS_STR(REN_VTX_UV2_LOC));
+    shader_constants.Insert("$VtxPosLoc",       AS_STR(REN_VTX_POS_LOC));
+    shader_constants.Insert("$VtxNorLoc",       AS_STR(REN_VTX_NOR_LOC));
+    shader_constants.Insert("$VtxTanLoc",       AS_STR(REN_VTX_TAN_LOC));
+    shader_constants.Insert("$VtxUV1Loc",       AS_STR(REN_VTX_UV1_LOC));
+    shader_constants.Insert("$VtxUV2Loc",       AS_STR(REN_VTX_UV2_LOC));
 
     // Texture slots
-    shader_constants.emplace("$MatTex0Slot",    AS_STR(REN_MAT_TEX0_SLOT));
-    shader_constants.emplace("$MatTex1Slot",    AS_STR(REN_MAT_TEX1_SLOT));
-    shader_constants.emplace("$MatTex2Slot",    AS_STR(REN_MAT_TEX2_SLOT));
-    shader_constants.emplace("$ShadTexSlot",    AS_STR(REN_SHAD_TEX_SLOT));
-    //shader_constants.emplace("$LmapDirSlot",    AS_STR(REN_LMAP_DIR_SLOT));
-    //shader_constants.emplace("$LmapIndirSlot",  AS_STR(REN_LMAP_INDIR_SLOT));
-    shader_constants.emplace("$LmapSHSlot",     AS_STR(REN_LMAP_SH_SLOT));
-    shader_constants.emplace("$DecalTexSlot",   AS_STR(REN_DECAL_TEX_SLOT));
-    shader_constants.emplace("$SSAOTexSlot",    AS_STR(REN_SSAO_TEX_SLOT));
-    shader_constants.emplace("$BRDFLutTexSlot", AS_STR(REN_BRDF_TEX_SLOT));
-    shader_constants.emplace("$LightBufSlot",   AS_STR(REN_LIGHT_BUF_SLOT));
-    shader_constants.emplace("$DecalBufSlot",   AS_STR(REN_DECAL_BUF_SLOT));
-    shader_constants.emplace("$CellsBufSlot",   AS_STR(REN_CELLS_BUF_SLOT));
-    shader_constants.emplace("$ItemsBufSlot",   AS_STR(REN_ITEMS_BUF_SLOT));
-    shader_constants.emplace("$InstanceBufSlot",AS_STR(REN_INST_BUF_SLOT));
-    shader_constants.emplace("$EnvTexSlot",     AS_STR(REN_ENV_TEX_SLOT));
-    shader_constants.emplace("$Moments0TexSlot", AS_STR(REN_MOMENTS0_TEX_SLOT));
-    shader_constants.emplace("$Moments1TexSlot", AS_STR(REN_MOMENTS1_TEX_SLOT));
-    shader_constants.emplace("$Moments2TexSlot", AS_STR(REN_MOMENTS2_TEX_SLOT));
-    shader_constants.emplace("$Moments0MsTexSlot", AS_STR(REN_MOMENTS0_MS_TEX_SLOT));
-    shader_constants.emplace("$Moments1MsTexSlot", AS_STR(REN_MOMENTS1_MS_TEX_SLOT));
-    shader_constants.emplace("$Moments2MsTexSlot", AS_STR(REN_MOMENTS2_MS_TEX_SLOT));
+    shader_constants.Insert("$MatTex0Slot",     AS_STR(REN_MAT_TEX0_SLOT));
+    shader_constants.Insert("$MatTex1Slot",     AS_STR(REN_MAT_TEX1_SLOT));
+    shader_constants.Insert("$MatTex2Slot",     AS_STR(REN_MAT_TEX2_SLOT));
+    shader_constants.Insert("$ShadTexSlot",     AS_STR(REN_SHAD_TEX_SLOT));
+    //shader_constants.Insert("$LmapDirSlot",    AS_STR(REN_LMAP_DIR_SLOT));
+    //shader_constants.Insert("$LmapIndirSlot",  AS_STR(REN_LMAP_INDIR_SLOT));
+    shader_constants.Insert("$LmapSHSlot",      AS_STR(REN_LMAP_SH_SLOT));
+    shader_constants.Insert("$DecalTexSlot",    AS_STR(REN_DECAL_TEX_SLOT));
+    shader_constants.Insert("$SSAOTexSlot",     AS_STR(REN_SSAO_TEX_SLOT));
+    shader_constants.Insert("$BRDFLutTexSlot",  AS_STR(REN_BRDF_TEX_SLOT));
+    shader_constants.Insert("$LightBufSlot",    AS_STR(REN_LIGHT_BUF_SLOT));
+    shader_constants.Insert("$DecalBufSlot",    AS_STR(REN_DECAL_BUF_SLOT));
+    shader_constants.Insert("$CellsBufSlot",    AS_STR(REN_CELLS_BUF_SLOT));
+    shader_constants.Insert("$ItemsBufSlot",    AS_STR(REN_ITEMS_BUF_SLOT));
+    shader_constants.Insert("$InstanceBufSlot", AS_STR(REN_INST_BUF_SLOT));
+    shader_constants.Insert("$EnvTexSlot",      AS_STR(REN_ENV_TEX_SLOT));
+    shader_constants.Insert("$Moments0TexSlot", AS_STR(REN_MOMENTS0_TEX_SLOT));
+    shader_constants.Insert("$Moments1TexSlot", AS_STR(REN_MOMENTS1_TEX_SLOT));
+    shader_constants.Insert("$Moments2TexSlot", AS_STR(REN_MOMENTS2_TEX_SLOT));
+    shader_constants.Insert("$Moments0MsTexSlot", AS_STR(REN_MOMENTS0_MS_TEX_SLOT));
+    shader_constants.Insert("$Moments1MsTexSlot", AS_STR(REN_MOMENTS1_MS_TEX_SLOT));
+    shader_constants.Insert("$Moments2MsTexSlot", AS_STR(REN_MOMENTS2_MS_TEX_SLOT));
 
     // Uniform locations
-    shader_constants.emplace("$uMMatrixLoc",    AS_STR(REN_U_M_MATRIX_LOC));
-    shader_constants.emplace("$uInstancesLoc",  AS_STR(REN_U_INSTANCES_LOC));
+    shader_constants.Insert("$uMMatrixLoc",     AS_STR(REN_U_M_MATRIX_LOC));
+    shader_constants.Insert("$uInstancesLoc",   AS_STR(REN_U_INSTANCES_LOC));
 
     // Uniform block locations
-    shader_constants.emplace("$ubSharedDataLoc", AS_STR(REN_UB_SHARED_DATA_LOC));
-    shader_constants.emplace("$ubBatchDataLoc", AS_STR(REN_UB_BATCH_DATA_LOC));
+    shader_constants.Insert("$ubSharedDataLoc", AS_STR(REN_UB_SHARED_DATA_LOC));
+    shader_constants.Insert("$ubBatchDataLoc",  AS_STR(REN_UB_BATCH_DATA_LOC));
 
     // Shader output channels
-    shader_constants.emplace("$OutColorIndex",  AS_STR(REN_OUT_COLOR_INDEX));
-    shader_constants.emplace("$OutNormIndex",   AS_STR(REN_OUT_NORM_INDEX));
-    shader_constants.emplace("$OutSpecIndex",   AS_STR(REN_OUT_SPEC_INDEX));
+    shader_constants.Insert("$OutColorIndex",   AS_STR(REN_OUT_COLOR_INDEX));
+    shader_constants.Insert("$OutNormIndex",    AS_STR(REN_OUT_NORM_INDEX));
+    shader_constants.Insert("$OutSpecIndex",    AS_STR(REN_OUT_SPEC_INDEX));
 
     // Shadow properties
     if (strcmp(platform, "pc") == 0) {
-        shader_constants.emplace("$ShadRes",    AS_STR(REN_SHAD_RES_PC));
+        shader_constants.Insert("$ShadRes",     AS_STR(REN_SHAD_RES_PC));
     } else if (strcmp(platform, "android") == 0) {
-        shader_constants.emplace("$ShadRes",    AS_STR(REN_SHAD_RES_ANDROID));
+        shader_constants.Insert("$ShadRes",     AS_STR(REN_SHAD_RES_ANDROID));
     } else {
         LOGE("Unknown platform %s", platform);
         return false;
     }
 
-    shader_constants.emplace("$ShadCasc0Dist",  AS_STR(REN_SHAD_CASCADE0_DIST));
-    shader_constants.emplace("$ShadCasc0Samp",  AS_STR(REN_SHAD_CASCADE0_SAMPLES));
-    shader_constants.emplace("$ShadCasc1Dist",  AS_STR(REN_SHAD_CASCADE1_DIST));
-    shader_constants.emplace("$ShadCasc1Samp",  AS_STR(REN_SHAD_CASCADE1_SAMPLES));
-    shader_constants.emplace("$ShadCasc2Dist",  AS_STR(REN_SHAD_CASCADE2_DIST));
-    shader_constants.emplace("$ShadCasc2Samp",  AS_STR(REN_SHAD_CASCADE2_SAMPLES));
-    shader_constants.emplace("$ShadCasc3Dist",  AS_STR(REN_SHAD_CASCADE3_DIST));
-    shader_constants.emplace("$ShadCasc3Samp",  AS_STR(REN_SHAD_CASCADE3_SAMPLES));
-    shader_constants.emplace("$ShadCascSoft",   AS_STR(REN_SHAD_CASCADE_SOFT));
+    shader_constants.Insert("$ShadCasc0Dist",   AS_STR(REN_SHAD_CASCADE0_DIST));
+    shader_constants.Insert("$ShadCasc0Samp",   AS_STR(REN_SHAD_CASCADE0_SAMPLES));
+    shader_constants.Insert("$ShadCasc1Dist",   AS_STR(REN_SHAD_CASCADE1_DIST));
+    shader_constants.Insert("$ShadCasc1Samp",   AS_STR(REN_SHAD_CASCADE1_SAMPLES));
+    shader_constants.Insert("$ShadCasc2Dist",   AS_STR(REN_SHAD_CASCADE2_DIST));
+    shader_constants.Insert("$ShadCasc2Samp",   AS_STR(REN_SHAD_CASCADE2_SAMPLES));
+    shader_constants.Insert("$ShadCasc3Dist",   AS_STR(REN_SHAD_CASCADE3_DIST));
+    shader_constants.Insert("$ShadCasc3Samp",   AS_STR(REN_SHAD_CASCADE3_SAMPLES));
+    shader_constants.Insert("$ShadCascSoft",    AS_STR(REN_SHAD_CASCADE_SOFT));
 
-    shader_constants.emplace("$MaxShadowMaps",  AS_STR(REN_MAX_SHADOWMAPS_TOTAL));
-    shader_constants.emplace("$MaxProbes",      AS_STR(REN_MAX_PROBES_TOTAL));
+    shader_constants.Insert("$MaxShadowMaps",   AS_STR(REN_MAX_SHADOWMAPS_TOTAL));
+    shader_constants.Insert("$MaxProbes",       AS_STR(REN_MAX_PROBES_TOTAL));
 
-    shader_constants.emplace("$MaxBatchSize", AS_STR(REN_MAX_BATCH_SIZE));
+    shader_constants.Insert("$MaxBatchSize",    AS_STR(REN_MAX_BATCH_SIZE));
 
     auto inline_constants = [&shader_constants](std::string &line) {
         size_t n = 0;
@@ -723,9 +737,9 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
             const std::string var = line.substr(n, l);
 
-            const auto it = shader_constants.find(var);
-            if (it != shader_constants.end()) {
-                line.replace(n, l, it->second);
+            const std::string *it = shader_constants.Find(var);
+            if (it) {
+                line.replace(n, l, *it);
             } else {
                 LOGE("Unknown variable %s", var.c_str());
                 throw std::runtime_error("Unknown variable!");
@@ -824,7 +838,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         LOGI("[PrepareAssets] Conv %s", out_file);
 
         int width, height;
-        std::vector<uint8_t> image_rgbe = LoadHDR(in_file, width, height);
+        const std::vector<uint8_t> image_rgbe = LoadHDR(in_file, width, height);
         std::unique_ptr<float[]> image_f32 = Ren::ConvertRGBE_to_RGB32F(&image_rgbe[0], width, height);
         
         std::unique_ptr<float[]> temp(new float[width * 3]);
@@ -838,13 +852,24 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         Write_RGBM(&image_f32[0], width, height, 3, out_file);
     };
 
+    auto h_conv_ttf_to_sdf = [](const char *in_file, const char *out_file) {
+        LOGI("[PrepareAssets] Conv %s", out_file);
+
+        std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
+        auto src_size = (size_t)src_stream.tellg();
+        src_stream.seekg(0, std::ios::beg);
+
+        std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
+        src_stream.read((char *)&src_buf[0], src_size);
+    };
+
     auto h_preprocess_material = [&replace_texture_extension](const char *in_file, const char *out_file) {
         LOGI("[PrepareAssets] Prep %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary);
         std::ofstream dst_stream(out_file, std::ios::binary);
-        std::string line;
 
+        std::string line;
         while (std::getline(src_stream, line)) {
             replace_texture_extension(line);
             dst_stream << line << "\r\n";
@@ -1033,19 +1058,471 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
     };
 
+    auto h_conv_to_sdf = [](const char *in_file, const char *out_file) {
+        using namespace Ren;
+
+        LOGI("[PrepareAssets] Conv %s", out_file);
+
+        std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
+        auto src_size = (size_t)src_stream.tellg();
+        src_stream.seekg(0, std::ios::beg);
+
+        std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
+        src_stream.read((char *)&src_buf[0], src_size);
+
+        stbtt_fontinfo font;
+        int res = stbtt_InitFont(&font, &src_buf[0], 0);
+        if (!res) {
+            LOGE("stbtt_InitFont failed (%s)", in_file);
+            return;
+        }
+
+        const float line_height = 64.0f;
+        const float scale = stbtt_ScaleForPixelHeight(&font, line_height);
+
+        const int sdf_diameter_px = 0;
+        const int padding = 1;
+
+        /*int ascent, descent, line_gap;
+        stbtt_GetFontVMetrics(&font, &ascent, &descent, &line_gap);
+
+        ascent *= scale;
+        descent *= scale;*/
+
+        const int glyph_index = stbtt_FindGlyphIndex(&font, 71 /*48 + 9*/);
+
+        int x0, y0, x1, y1;
+        assert(stbtt_GetGlyphBox(&font, glyph_index, &x0, &y0, &x1, &y1));
+
+        const int glyph_w = x1 - x0 + 1, glyph_h = 1497;// y1 - y0 + 1;
+
+        const int img_w = 26, img_h = 26;
+        //const int img_w = 32, img_h = 32;
+        //const int img_w = 128, img_h = 128;
+        std::vector<uint8_t> test_image(img_w * img_h * 4);
+
+        for (int j = 0; j < img_h; j++) {
+            for (int i = 0; i < img_w; i++) {
+                test_image[4 * (j * img_w + i) + 0] = 0;
+                test_image[4 * (j * img_w + i) + 1] = 0;
+                test_image[4 * (j * img_w + i) + 2] = 0;
+                test_image[4 * (j * img_w + i) + 3] = 0xff;
+            }
+        }
+
+        {
+            stbtt_vertex *vertices = nullptr;
+            const int vertex_count = stbtt_GetGlyphShape(&font, glyph_index, &vertices);
+
+            using bezier_shape = std::vector<Gui::bezier_seg_t>;
+            std::vector<bezier_shape> shapes;
+
+            {   // transform input data
+                const double aspect = double(glyph_w) / glyph_h;
+                const int extent = sdf_diameter_px / 2;
+
+                const Vec2d norm_constant =
+                    Vec2d{ (double)glyph_w, (double)glyph_h } / Vec2d{ aspect * (double)(img_h - 2 * (extent + padding)), (double)(img_h - 2 * (extent + padding)) };
+                const Vec2d norm_offset = { (double)(extent + padding), (double)(extent + padding) };
+
+                Vec2i cur_p;
+
+                for (int i = 0; i < vertex_count; i++) {
+                    const stbtt_vertex &v = vertices[i];
+
+                    const Vec2d
+                        p0 = norm_offset + Vec2d{ cur_p - Vec2i{ x0, y0 } } / norm_constant,
+                        c0 = norm_offset + Vec2d{ double(v.cx - x0), double(v.cy - y0) } / norm_constant,
+                        c1 = norm_offset + Vec2d{ double(v.cx1 - x0), double(v.cy1 - y0) } / norm_constant,
+                        p1 = norm_offset + Vec2d{ double(v.x - x0), double(v.y - y0) } / norm_constant;
+
+                    if (v.type == STBTT_vmove) {
+                        if (shapes.empty() || !shapes.back().empty()) {
+                            // start new shape
+                            shapes.emplace_back();
+                        }
+                    } else {
+                        // 1 - line; 2,3 - bezier with 1 and 2 control points
+                        const int order = (v.type == STBTT_vline) ? 1 : ((v.type == STBTT_vcurve) ? 2 : 3);
+
+                        shapes.back().push_back({
+                            order, false /* is_closed */, false /* is_hard */,
+                            p0, p1,
+                            c0, c1
+                        });
+                    }
+
+                    cur_p = { v.x, v.y };
+                }
+            }
+
+#if 1
+#if 0
+            // outline drawing
+            for (const bezier_shape &sh : shapes) {
+                for (const Gui::bezier_seg_t &seg : sh) {
+                    if (seg.order == 1) {
+                        Gui::DrawBezier1ToBitmap(seg.p0, seg.p1, img_w, 4, test_image.data());
+                    } else if (seg.order == 2) {
+                        Gui::DrawBezier2ToBitmap(seg.p0, seg.c0, seg.p1, img_w, 4, test_image.data());
+                    } else /* if (seg.order == 3) */ {
+                        Gui::DrawBezier3ToBitmap(seg.p0, seg.c0, seg.c1, seg.p1, img_w, 4, test_image.data());
+                    }
+                }
+            }
+#endif
+
+            {   // simple rasterization
+                const int samples = 16;
+
+                // Loop through image pixels
+                for (int y = 0; y < img_h; y++) {
+                    for (int x = 0; x < img_w; x++) {
+                        uint32_t out_val = 0;
+
+                        for (int dy = 0; dy < samples; dy++) {
+                            for (int dx = 0; dx < samples; dx++) {
+                                const Vec2d p = {
+                                    double(x) + (0.5 + double(dx)) / samples,
+                                    double(y) + (0.5 + double(dy)) / samples
+                                };
+
+                                double
+                                    min_sdist = std::numeric_limits<double>::max(),
+                                    min_dot = std::numeric_limits<double>::lowest();
+
+                                for (int g = 0; g < (int)shapes.size(); g++) {
+                                    const bezier_shape &sh = shapes[g];
+
+                                    for (int i = 0; i < (int)sh.size(); i++) {
+                                        const Gui::bezier_seg_t &seg = sh[i];
+                                        const Gui::dist_result_t result = Gui::BezierSegmentDistance(seg, p);
+
+                                        if (std::abs(result.sdist) < std::abs(min_sdist) ||
+                                            (std::abs(result.sdist) == std::abs(min_sdist) && result.dot < min_dot)) {
+                                            min_sdist = result.sdist;
+                                            min_dot = result.dot;
+                                        }
+                                    }
+                                }
+
+                                out_val += min_sdist > 0.0 ? 255 : 0;
+                            }
+                        }
+
+                        // Write output value
+                        uint8_t *out_pixel = &test_image[4 * ((img_h - y - 1) * img_w + x)];
+
+                        out_pixel[0] = out_pixel[1] = out_pixel[2] = 255;
+                        out_pixel[3] = (out_val / (samples * samples));
+                    }
+                }
+            }
+#else
+
+            //shapes.erase(shapes.begin(), shapes.begin() + 2);
+            //shapes.resize(1);
+            //shapes[0].resize(4);
+            //shapes[0].erase(shapes[0].begin(), shapes[0].begin() + 1);
+
+            // find hard edges, mark if closed etc.
+            for (bezier_shape &sh : shapes) {
+                Gui::PreprocessBezierShape(sh.data(), (int)sh.size(), 30.0 * Ren::Pi<double>() / 180.0);
+            }
+
+#if 0
+            {
+                //
+                // Loop through image pixels
+                //
+                for (int y = 0; y < img_h; y++) {
+                    for (int x = 0; x < img_w; x++) {
+                        const Vec2i p = { x, y };
+
+                        double
+                            min_dist = std::numeric_limits<double>::max(),
+                            max_ortho = std::numeric_limits<double>::lowest();
+                        int min_index = -1;
+                        double min_t;
+                        Vec2i min_endpoints[2], min_endpoint_derivatives[2];
+                        bool min_A_convex, min_B_convex;
+                        Vec3i min_color_I, min_color_O;
+
+                        Vec2i prev_p, cur_p;
+
+                        Vec3i color_I = { 255, 255, 0 }, color_O = { 255, 0, 0 };
+
+                        for (int i = 0; i < /*vertex_count*/ 4; i++) {
+                            const stbtt_vertex &v = vertices[i];
+
+                            const Vec2i
+                                p0 = cur_p - offset,
+                                c0 = Vec2i{ v.cx, v.cy } - offset,
+                                c1 = Vec2i{ v.cx1, v.cy1 } - offset,
+                                p1 = Vec2i{ v.x, v.y } - offset;
+
+                            if (v.type == STBTT_vmove) {
+                                // Reset colors
+                                color_I = { 255, 255, 0 };
+                                color_O = { 255, 0, 0 };
+                            } else {
+                                Gui::dist_result_t result;
+
+                                if (v.type == STBTT_vline) {
+                                    result = Gui::Bezier1Distance(Vec2d{ p0 }, Vec2d{ p1 }, Vec2d{ p });
+                                } else if (v.type == STBTT_vcurve) {
+                                    result = Gui::Bezier2Distance(Vec2d{ p0 }, Vec2d{ c0 }, Vec2d{ p1 }, Vec2d{ p });
+                                } else if (v.type == STBTT_vcubic) {
+                                    // TODO: use some numerical method
+                                    assert(false);
+                                }
+
+                                Vec2i edge_derivatives[2];
+                                if (v.type == STBTT_vline) {
+                                    edge_derivatives[0] = edge_derivatives[1] = p1 - p0;
+                                } else if (v.type == STBTT_vcurve) {
+                                    edge_derivatives[0] = c0 - p0;
+                                    edge_derivatives[1] = p0 - c1;
+                                } else if (v.type == STBTT_vcubic) {
+                                    edge_derivatives[0] = c0 - p0;
+                                    edge_derivatives[1] = p1 - c1;
+                                }
+
+                                Vec2i endpoint_derivatives[2];
+
+                                if (i > 0) {
+                                    const stbtt_vertex &prev_v = vertices[i - 1];
+                                    const Vec2i
+                                        prev_c0 = Vec2i{ prev_v.cx, prev_v.cy } -offset,
+                                        prev_p1 = Vec2i{ prev_v.x, prev_v.y } -offset;
+
+                                    if (prev_v.type == STBTT_vmove) {
+                                        endpoint_derivatives[0] = {};
+                                    } else if (prev_v.type == STBTT_vline) {
+                                        endpoint_derivatives[0] = p0 - prev_p1;
+                                    } else if (prev_v.type == STBTT_vcurve) {
+                                        endpoint_derivatives[0] = p0 - prev_c0;
+                                    }
+                                } else {
+                                    // TODO: find closing point
+                                }
+
+                                if (i < vertex_count - 1) {
+                                    const stbtt_vertex &next_v = vertices[i + 1];
+                                    const Vec2i
+                                        next_c0 = Vec2i{ next_v.cx, next_v.cy } -offset,
+                                        next_p1 = Vec2i{ next_v.x, next_v.y } -offset;
+
+                                    if (next_v.type == STBTT_vmove) {
+                                        endpoint_derivatives[1] = {};
+                                    } else if (next_v.type == STBTT_vline) {
+                                        endpoint_derivatives[1] = next_p1 - p1;
+                                    } else if (next_v.type == STBTT_vcurve) {
+                                        endpoint_derivatives[1] = next_c0 - p1;
+                                    }
+                                } else {
+                                    // TODO: find closing point
+                                }
+
+                                bool is_A_convex = false;// cross2i(edge_derivatives[0], endpoint_derivatives[0]) <= 0;
+                                bool is_B_convex = false;// cross2i(edge_derivatives[1], endpoint_derivatives[1]) <= 0;
+
+                                if (std::abs(result.sdist) < std::abs(min_dist) ||
+                                    (std::abs(result.sdist) - std::abs(min_dist) < std::numeric_limits<double>::epsilon() && result.ortho > max_ortho)) {
+                                    min_index = i;
+                                    min_dist = result.sdist;
+                                    max_ortho = result.ortho;
+                                    min_t = result.t;
+                                    min_endpoints[0] = p0;
+                                    min_endpoints[1] = p1;
+                                    min_endpoint_derivatives[0] = endpoint_derivatives[0];
+                                    min_endpoint_derivatives[1] = endpoint_derivatives[1];
+
+                                    min_A_convex = false;// is_A_convex;
+                                    min_B_convex = false;// is_B_convex;
+                                    min_color_I = color_I;
+                                    min_color_O = color_O;
+                                }
+
+                                // Update colors
+                                if (i > 0) {
+                                    if (is_A_convex) {
+                                        color_O = color_I - color_O;
+                                    } else {
+                                        color_I = Vec3i{ 255, 255, 255 } - (color_I - color_O);
+                                    }
+                                }
+                            }
+
+                            prev_p = cur_p;
+                            cur_p = { v.x, v.y };
+                        }
+
+                        //
+                        // Write distance to closest shape
+                        //
+                        if (min_index != -1) {
+                            const bool is_core = (min_t < 0.5) ?
+                                    ((cross2i(p - min_endpoints[0], min_endpoint_derivatives[0]) > 0.0) != min_A_convex) :
+                                    ((cross2i(p - min_endpoints[0], min_endpoint_derivatives[0]) > 0.0) != min_B_convex);
+
+                            enum eQuadrant {
+                                InnerCore,
+                                InnerBorder,
+                                OuterOpposite,
+                                OuterBorder
+                            };
+
+                            eQuadrant quad;
+                            if (min_dist >= 0) {
+                                quad = is_core ? InnerCore : InnerBorder;
+                            } else {
+                                quad = is_core ? OuterOpposite : OuterBorder;
+                            }
+
+                            Vec3i color;
+
+                            if (min_A_convex /*(min_t < 0.5 && min_A_convex) || (min_t >= 0.5 && min_B_convex)*/) {
+                                if (quad == InnerCore || quad == InnerBorder) {
+                                    color = min_color_I;
+                                } else if (quad == OuterOpposite) {
+                                    color = { 0, 0, 0 };
+                                } else if (quad == OuterBorder) {
+                                    //if (min_t < 0.5) {
+                                        color = min_color_O;
+                                    //} else {
+                                    //    color = min_color_I - min_color_O;
+                                    //}
+                                }
+                            } else {
+                                if (quad == OuterBorder || quad == OuterOpposite) {
+                                    color = min_color_O;
+                                } else if (quad == InnerCore) {
+                                    color = { 255, 255, 255 };
+                                } else if (quad == InnerBorder) {
+                                    //if (min_t < 0.5) {
+                                        color = min_color_I;
+                                    //} else {
+                                    //    color = Vec3i{ 255, 255, 255 } - (min_color_I - min_color_O);
+                                    //}
+                                }
+                            }
+
+                            min_dist = Clamp(0.5 + 0.5 * (min_dist / sdf_radius), 0.0, 1.0);
+
+                            test_image[4 * ((img_h - y - 1) * img_w + x) + 0] = 0;// (uint8_t)std::max(std::min(int(color[0] * min_dist), 255), 0);
+                            test_image[4 * ((img_h - y - 1) * img_w + x) + 1] = 0;// (uint8_t)std::max(std::min(int(color[1] * min_dist), 255), 0);
+                            test_image[4 * ((img_h - y - 1) * img_w + x) + 2] = 0;// (uint8_t)std::max(std::min(int(color[2] * min_dist), 255), 0);
+                            test_image[4 * ((img_h - y - 1) * img_w + x) + 3] = (uint8_t)std::max(std::min(int(255 * min_dist), 255), 0);
+                        }
+                    }
+                }
+            }
+#else
+
+            //
+            // Loop through image pixels
+            //
+            for (int y = 0; y < img_h; y++) {
+                for (int x = 0; x < img_w; x++) {
+                    const Vec2d p = { double(x) + 0.5, double(y) + 0.5 };
+
+                    // Per channel distances (used for multi-channel sdf)
+                    Gui::dist_result_t min_result[3];
+                    for (int i = 0; i < 3; i++) {
+                        min_result[i].sdist = std::numeric_limits<double>::max();
+                        min_result[i].ortho = min_result[i].dot = std::numeric_limits<double>::lowest();
+                    }
+
+                    // Used for normal sdf
+                    double
+                        min_sdf_sdist = std::numeric_limits<double>::max(),
+                        min_sdf_dot = std::numeric_limits<double>::lowest();
+
+                    for (int g = 0; g < (int)shapes.size(); g++) {
+                        const bezier_shape &sh = shapes[g];
+
+                        int edge_color_index = 0;
+                        static const Vec3i edge_colors[] = { { 255, 0, 255 }, { 255, 255, 0 }, { 0, 255, 255 } };
+
+                        for (int i = 0; i < (int)sh.size(); i++) {
+                            const Gui::bezier_seg_t &seg = sh[i];
+                            const Gui::dist_result_t result = Gui::BezierSegmentDistance(seg, p);
+
+                            if (i != 0 && seg.is_hard) {
+                                if ((i == sh.size() - 1) && sh[0].is_closed && !sh[0].is_hard) {
+                                    edge_color_index = 0;
+                                } else {
+                                    if (edge_color_index == 1) {
+                                        edge_color_index = 2;
+                                    } else {
+                                        edge_color_index = 1;
+                                    }
+                                }
+                            }
+                            const Vec3i &edge_color = edge_colors[edge_color_index];
+
+                            for (int j = 0; j < 3; j++) {
+                                if (edge_color[j]) {
+                                    if (std::abs(result.sdist) < std::abs(min_result[j].sdist) ||
+                                        (std::abs(result.sdist) == std::abs(min_result[j].sdist) && result.dot < min_result[j].dot)) {
+                                        min_result[j] = result;
+                                    }
+                                }
+                            }
+
+                            if (std::abs(result.sdist) < std::abs(min_sdf_sdist) ||
+                                (std::abs(result.sdist) == std::abs(min_sdf_sdist) && result.dot < min_sdf_dot)) {
+                                min_sdf_sdist = result.sdist;
+                                min_sdf_dot = result.dot;
+                            }
+                        }
+                    }
+
+                    //
+                    // Write distance to closest shape
+                    //
+                    uint8_t *out_pixel = &test_image[4 * ((img_h - y - 1) * img_w + x)];
+
+                    for (int j = 0; j < 3; j++) {
+                        uint8_t out_val = 0;
+                        if (min_result[j].sdist != std::numeric_limits<double>::max()) {
+                            min_result[j].pseudodist = Clamp(0.5 + (min_result[j].pseudodist / sdf_diameter_px), 0.0, 1.0);
+                            out_val = (uint8_t)std::max(std::min(int(255 * min_result[j].pseudodist), 255), 0);
+                        }
+                        out_pixel[j] = out_val;
+                    }
+
+                    min_sdf_sdist = Clamp(0.5 + (min_sdf_sdist / sdf_diameter_px), 0.0, 1.0);
+                    out_pixel[3] = (uint8_t)std::max(std::min(int(255 * min_sdf_sdist), 255), 0);
+                }
+            }
+
+            // Fix collisions of uncorrelated areas
+            Gui::FixSDFCollisions(test_image.data(), img_w, img_h, 4, 200 /* threshold */);
+#endif
+
+#endif
+            stbtt_FreeShape(&font, vertices);
+        }
+
+        WriteImage(test_image.data(), img_w, img_h, 4, "assets/textures/font_test.uncompressed.png");
+    };
+
     struct Handler {
         const char *ext;
         std::function<void(const char *in_file, const char *out_file)> convert;
     };
 
-    std::map<std::string, Handler> handlers;
+    Ren::HashMap32<std::string, Handler> handlers;
 
-    handlers["bff"]     = { "bff",  h_copy };
-    handlers["mesh"]    = { "mesh", h_copy };
-    handlers["anim"]    = { "anim", h_copy };
-    handlers["vert.glsl"] = { "vert.glsl", h_preprocess_shader };
-    handlers["frag.glsl"] = { "frag.glsl", h_preprocess_shader };
-    handlers["comp.glsl"] = { "comp.glsl", h_preprocess_shader };
+    handlers["bff"]         = { "bff",  h_copy };
+    handlers["mesh"]        = { "mesh", h_copy };
+    handlers["anim"]        = { "anim", h_copy };
+    handlers["vert.glsl"]   = { "vert.glsl", h_preprocess_shader };
+    handlers["frag.glsl"]   = { "frag.glsl", h_preprocess_shader };
+    handlers["comp.glsl"]   = { "comp.glsl", h_preprocess_shader };
+    //handlers["ttf"]         = { "sdf", h_conv_to_sdf };
 
     if (strcmp(platform, "pc") == 0) {
         handlers["json"]    = { "json", h_preprocess_scene };
@@ -1061,6 +1538,9 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         handlers["png"]     = { "ktx", h_conv_to_astc };
     }
 
+    handlers["uncompressed.tga"] = { "uncompressed.tga",  h_copy };
+    handlers["uncompressed.png"] = { "uncompressed.png",  h_copy };
+
     auto convert_file = [out_folder, &handlers](const char *in_file) {
         const char *base_path = strchr(in_file, '/');
         if (!base_path) return;
@@ -1069,15 +1549,16 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
         ext++;
 
-        auto h_it = handlers.find(ext);
-        if (h_it == handlers.end()) {
+        Handler *handler = handlers.Find(ext);
+        if (!handler) {
             LOGI("[PrepareAssets] No handler found for %s", in_file);
             return;
         }
 
-        std::string out_file = out_folder;
-        out_file += std::string(base_path, strlen(base_path) - strlen(ext));
-        out_file += h_it->second.ext;
+        const std::string out_file =
+            out_folder +
+            std::string(base_path, strlen(base_path) - strlen(ext)) +
+            handler->ext;
 
         if (CheckCanSkipAsset(in_file, out_file.c_str())) {
             return;
@@ -1088,7 +1569,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             return;
         }
 
-        auto &conv_func = h_it->second.convert;
+        const auto &conv_func = handler->convert;
         conv_func(in_file, out_file.c_str());
     };
 

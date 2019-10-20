@@ -2,6 +2,8 @@
 #define _AS_STR(x) #x
 #define AS_STR(x) _AS_STR(x)
 
+#define REN_DIRECT_DRAWING
+
 // Resolution of frustum item grid
 #define REN_GRID_RES_X 16
 #define REN_GRID_RES_Y 8
@@ -94,7 +96,7 @@
 #define REN_MAX_LIGHTS_PER_CELL 255
 #define REN_MAX_DECALS_PER_CELL 255
 #define REN_MAX_PROBES_PER_CELL 8
-#define REN_MAX_ITEMS_PER_CELL 255
+#define REN_MAX_ITEMS_PER_CELL  255
 
 #define REN_MAX_LIGHTS_TOTAL 4096
 #define REN_MAX_DECALS_TOTAL 4096
