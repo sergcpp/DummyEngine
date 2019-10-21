@@ -18,13 +18,21 @@ struct DynArray {
 
     DynArray(const DynArray &rhs) = delete;
 
-    void alloc(uint32_t _capacity) {
-        delete[] data;
+    void realloc(uint32_t _capacity) {
+        const T *old_data = data;
 
         data = new T[_capacity];
-        count = 0;
         capacity = _capacity;
+        count = std::min(count, capacity);
+
+        if (old_data && count) {
+            memcpy(data, old_data, count * sizeof(T));
+            delete[] old_data;
+        }
     }
+
+    static_assert(std::is_default_constructible<T>::value &&
+                  std::is_trivially_copyable<T>::value, "DynArray is intended to be used with simple data types!");
 };
 
 struct ShadReg {

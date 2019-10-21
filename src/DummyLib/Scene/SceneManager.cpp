@@ -52,16 +52,20 @@ namespace SceneManagerInternal {
 
     template <typename T>
     class DefaultCompStorage : public CompStorage {
-        Ren::SparseArray<T> data_;
+        //Ren::SparseArray<T> data_;
+        std::vector<T> data_;
     public:
         const char *name() const override { return T::name(); }
 
         uint32_t Create() override {
-            return (uint32_t)data_.Add();
+            //return (uint32_t)data_.Add();
+            data_.emplace_back();
+            return uint32_t(data_.size() - 1);
         }
 
         void *Get(uint32_t i) override {
-            return (void *)data_.Get(i);
+            //return (void *)data_.Get(i);
+            return (i < data_.size()) ? &data_[i] : nullptr;
         }
 
         void ReadFromJs(const JsObject &js_obj, void *comp) override {
@@ -71,6 +75,8 @@ namespace SceneManagerInternal {
         void WriteToJs(const void *comp, JsObject &js_obj) override {
             T::Write(*(T *)comp, js_obj);
         }
+
+        bool IsSequential() const override { return true; }
     };
 }
 

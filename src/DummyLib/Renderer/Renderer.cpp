@@ -252,17 +252,17 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     // Compile built-in shaders etc.
     InitRendererInternal();
 
-    temp_sub_frustums_.alloc(REN_CELLS_COUNT);
+    temp_sub_frustums_.realloc(REN_CELLS_COUNT);
     temp_sub_frustums_.count = REN_CELLS_COUNT;
 
-    decals_boxes_.alloc(REN_MAX_DECALS_TOTAL);
-    litem_to_lsource_.alloc(REN_MAX_LIGHTS_TOTAL);
-    ditem_to_decal_.alloc(REN_MAX_DECALS_TOTAL);
-    allocated_shadow_regions_.alloc(REN_MAX_SHADOWMAPS_TOTAL);
+    decals_boxes_.realloc(REN_MAX_DECALS_TOTAL);
+    litem_to_lsource_.realloc(REN_MAX_LIGHTS_TOTAL);
+    ditem_to_decal_.realloc(REN_MAX_DECALS_TOTAL);
+    allocated_shadow_regions_.realloc(REN_MAX_SHADOWMAPS_TOTAL);
 
     for (int i = 0; i < 2; i++) {
-        temp_sort_spans_32_[i].alloc(REN_MAX_SHADOW_BATCHES);
-        temp_sort_spans_64_[i].alloc(REN_MAX_MAIN_BATCHES);
+        temp_sort_spans_32_[i].realloc(REN_MAX_SHADOW_BATCHES);
+        temp_sort_spans_64_[i].realloc(REN_MAX_MAIN_BATCHES);
     }
 }
 

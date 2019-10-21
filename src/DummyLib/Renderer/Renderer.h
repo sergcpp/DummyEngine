@@ -155,7 +155,7 @@ private:
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
 
-    void __push_skeletal_mesh(uint32_t obj_index, const AnimState *as, const Ren::Mesh *mesh, DrawList &list);
+    void __push_skeletal_mesh(uint32_t obj_index, const AnimState &as, const Ren::Mesh *mesh, DrawList &list);
 
     void InitRendererInternal();
     bool InitFramebuffersInternal();

@@ -140,6 +140,25 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     proc_objects_.clear();
     proc_objects_.resize(scene.objects.size(), { 0xffffffff, 0xffffffff });
 
+    // retrieve pointers to components for fast access
+    const auto *transforms = (Transform *)scene.comp_store[CompTransform]->Get(0);
+    const auto *drawables  = (Drawable *)scene.comp_store[CompDrawable]->Get(0);
+    const auto *occluders  = (Occluder *)scene.comp_store[CompOccluder]->Get(0);
+    const auto *lightmaps  = (Lightmap *)scene.comp_store[CompLightmap]->Get(0);
+    const auto *lights_src = (LightSource *)scene.comp_store[CompLightSource]->Get(0);
+    const auto *decals     = (Decal *)scene.comp_store[CompDecal]->Get(0);
+    const auto *probes     = (LightProbe *)scene.comp_store[CompProbe]->Get(0);
+    const auto *anims      = (AnimState *)scene.comp_store[CompAnimState]->Get(0);
+
+    assert(scene.comp_store[CompTransform]->IsSequential());
+    assert(scene.comp_store[CompDrawable]->IsSequential());
+    assert(scene.comp_store[CompOccluder]->IsSequential());
+    assert(scene.comp_store[CompLightmap]->IsSequential());
+    assert(scene.comp_store[CompLightSource]->IsSequential());
+    assert(scene.comp_store[CompDecal]->IsSequential());
+    assert(scene.comp_store[CompProbe]->IsSequential());
+    assert(scene.comp_store[CompAnimState]->IsSequential());
+
     Ren::Mat4f view_from_world = list.draw_cam.view_matrix(),
                clip_from_view = list.draw_cam.proj_matrix();
 
@@ -182,19 +201,19 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                 const uint32_t occluder_flags = CompTransformBit | CompOccluderBit;
                 if ((obj.comp_mask & occluder_flags) == occluder_flags) {
-                    const auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(obj.components[CompTransform]);
+                    const Transform &tr = transforms[obj.components[CompTransform]];
 
                     // Node has slightly enlarged bounds, so we need to check object's bounding box here
                     if (!skip_check &&
-                        list.draw_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
+                        list.draw_cam.CheckFrustumVisibility(tr.bbox_min_ws, tr.bbox_max_ws) == Ren::Invisible) continue;
 
-                    const Ren::Mat4f &world_from_object = tr->mat;
+                    const Ren::Mat4f &world_from_object = tr.mat;
 
                     const Ren::Mat4f view_from_object = view_from_world * world_from_object,
                                      clip_from_object = clip_from_view * view_from_object;
 
-                    const auto *occ = (Occluder *)scene.comp_store[CompOccluder]->Get(obj.components[CompOccluder]);
-                    const Ren::Mesh *mesh = occ->mesh.get();
+                    const Occluder &occ = occluders[obj.components[CompOccluder]];
+                    const Ren::Mesh *mesh = occ.mesh.get();
 
                     SWcull_surf surf[16];
                     int surf_count = 0;
@@ -277,10 +296,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 const SceneObject &obj = scene.objects[n->prim_index];
 
                 if ((obj.comp_mask & CompTransformBit) && (obj.comp_mask & (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit))) {
-                    const auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(obj.components[CompTransform]);
+                    const Transform &tr = transforms[obj.components[CompTransform]];
 
                     if (!skip_check) {
-                        const float bbox_points[8][3] = { BBOX_POINTS(tr->bbox_min_ws, tr->bbox_max_ws) };
+                        const float bbox_points[8][3] = { BBOX_POINTS(tr.bbox_min_ws, tr.bbox_max_ws) };
 
                         // Node has slightly enlarged bounds, so we need to check object's bounding box here
                         if (list.draw_cam.CheckFrustumVisibility(bbox_points) == Ren::Invisible) continue;
@@ -289,8 +308,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             const Ren::Vec3f &cam_pos = list.draw_cam.world_position();
 
                             // do not question visibility of the object in which we are inside
-                            if (cam_pos[0] < tr->bbox_min_ws[0] - 0.5f || cam_pos[1] < tr->bbox_min_ws[1] - 0.5f || cam_pos[2] < tr->bbox_min_ws[2] - 0.5f ||
-                                cam_pos[0] > tr->bbox_max_ws[0] + 0.5f || cam_pos[1] > tr->bbox_max_ws[1] + 0.5f || cam_pos[2] > tr->bbox_max_ws[2] + 0.5f) {
+                            if (cam_pos[0] < tr.bbox_min_ws[0] - 0.5f || cam_pos[1] < tr.bbox_min_ws[1] - 0.5f || cam_pos[2] < tr.bbox_min_ws[2] - 0.5f ||
+                                cam_pos[0] > tr.bbox_max_ws[0] + 0.5f || cam_pos[1] > tr.bbox_max_ws[1] + 0.5f || cam_pos[2] > tr.bbox_max_ws[2] + 0.5f) {
                                 SWcull_surf surf;
 
                                 surf.type = SW_OCCLUDEE;
@@ -311,7 +330,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         }
                     }
 
-                    const Ren::Mat4f &world_from_object = tr->mat;
+                    const Ren::Mat4f &world_from_object = tr.mat;
                     const Ren::Mat4f world_from_object_trans = Ren::Transpose(world_from_object);
 
                     proc_objects_[n->prim_index].instance_index = list.instances.count;
@@ -320,24 +339,24 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
 
                     if (obj.comp_mask & CompLightmapBit) {
-                        const auto *lm = (Lightmap *)scene.comp_store[CompLightmap]->Get(obj.components[CompLightmap]);
-                        memcpy(&instance.lmap_transform[0], Ren::ValuePtr(lm->xform), 4 * sizeof(float));
+                        const Lightmap &lm = lightmaps[obj.components[CompLightmap]];
+                        memcpy(&instance.lmap_transform[0], Ren::ValuePtr(lm.xform), 4 * sizeof(float));
                     }
 
                     const Ren::Mat4f view_from_object = view_from_world * world_from_object,
                                      clip_from_object = clip_from_view * view_from_object;
 
                     if (obj.comp_mask & CompDrawableBit) {
-                        const auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
-                        const Ren::Mesh *mesh = dr->mesh.get();
+                        const Drawable &dr = drawables[obj.components[CompDrawable]];
+                        const Ren::Mesh *mesh = dr.mesh.get();
 
                         const float max_sort_dist = 100.0f;
-                        const uint8_t dist = (uint8_t)_MIN(255 * Ren::Distance(tr->bbox_min_ws, cam.world_position()) / max_sort_dist, 255);
+                        const uint8_t dist = (uint8_t)_MIN(255 * Ren::Distance(tr.bbox_min_ws, cam.world_position()) / max_sort_dist, 255);
 
                         uint32_t base_vertex = mesh->attribs_buf1().offset / 16;
 
                         if (obj.comp_mask & CompAnimStateBit) {
-                            const auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(obj.components[CompAnimState]);
+                            const AnimState &as = anims[obj.components[CompAnimState]];
                             __push_skeletal_mesh(n->prim_index, as, mesh, list);
                             base_vertex = proc_objects_[n->prim_index].base_vertex;
                         } else {
@@ -379,13 +398,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     }
 
                     if (lighting_enabled && (obj.comp_mask & CompLightSourceBit)) {
-                        const auto *light = (LightSource *)scene.comp_store[CompLightSource]->Get(obj.components[CompLightSource]);
+                        const LightSource &light = lights_src[obj.components[CompLightSource]];
 
-                        Ren::Vec4f pos = { light->offset[0], light->offset[1], light->offset[2], 1.0f };
+                        Ren::Vec4f pos = { light.offset[0], light.offset[1], light.offset[2], 1.0f };
                         pos = world_from_object * pos;
                         pos /= pos[3];
 
-                        Ren::Vec4f dir = { -light->dir[0], -light->dir[1], -light->dir[2], 0.0f };
+                        Ren::Vec4f dir = { -light.dir[0], -light.dir[1], -light.dir[2], 0.0f };
                         dir = world_from_object * dir;
 
                         Ren::eVisibilityResult res = Ren::FullyVisible;
@@ -398,35 +417,35 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                              plane.n[1] * pos[1] +
                                              plane.n[2] * pos[2] + plane.d;
 
-                                if (dist < -light->influence) {
+                                if (dist < -light.influence) {
                                     res = Ren::Invisible;
                                     break;
-                                } else if (std::abs(dist) < light->influence) {
+                                } else if (std::abs(dist) < light.influence) {
                                     res = Ren::PartiallyVisible;
                                 }
                             }
                         }
 
                         if (res != Ren::Invisible) {
-                            litem_to_lsource_.data[litem_to_lsource_.count++] = light;
+                            litem_to_lsource_.data[litem_to_lsource_.count++] = &light;
                             LightSourceItem &ls = list.light_sources.data[list.light_sources.count++];
 
                             memcpy(&ls.pos[0], &pos[0], 3 * sizeof(float));
-                            ls.radius = light->radius;
-                            memcpy(&ls.col[0], &light->col[0], 3 * sizeof(float));
+                            ls.radius = light.radius;
+                            memcpy(&ls.col[0], &light.col[0], 3 * sizeof(float));
                             ls.shadowreg_index = 0xffffffff;
                             memcpy(&ls.dir[0], &dir[0], 3 * sizeof(float));
-                            ls.spot = light->spot;
+                            ls.spot = light.spot;
                         }
                     }
 
                     if (decals_enabled && (obj.comp_mask & CompDecalBit)) {
                         Ren::Mat4f object_from_world = Ren::Inverse(world_from_object);
 
-                        const auto *decal = (Decal *)scene.comp_store[CompDecal]->Get(obj.components[CompDecal]);
+                        const Decal &decal = decals[obj.components[CompDecal]];
 
-                        const Ren::Mat4f &view_from_object = decal->view,
-                                         &clip_from_view = decal->proj;
+                        const Ren::Mat4f &view_from_object = decal.view,
+                                         &clip_from_view = decal.proj;
 
                         Ren::Mat4f view_from_world = view_from_object * object_from_world,
                                    clip_from_world = clip_from_view * view_from_world;
@@ -473,34 +492,34 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         }
 
                         if (res != Ren::Invisible) {
-                            ditem_to_decal_.data[ditem_to_decal_.count++] = decal;
+                            ditem_to_decal_.data[ditem_to_decal_.count++] = &decal;
                             decals_boxes_.data[decals_boxes_.count++] = { bbox_min, bbox_max };
 
                             Ren::Mat4f clip_from_world_transposed = Ren::Transpose(clip_from_world);
 
                             DecalItem &de = list.decals.data[list.decals.count++];
                             memcpy(&de.mat[0][0], &clip_from_world_transposed[0][0], 12 * sizeof(float));
-                            memcpy(&de.diff[0], &decal->diff[0], 4 * sizeof(float));
-                            memcpy(&de.norm[0], &decal->norm[0], 4 * sizeof(float));
-                            memcpy(&de.spec[0], &decal->spec[0], 4 * sizeof(float));
+                            memcpy(&de.diff[0], &decal.diff[0], 4 * sizeof(float));
+                            memcpy(&de.norm[0], &decal.norm[0], 4 * sizeof(float));
+                            memcpy(&de.spec[0], &decal.spec[0], 4 * sizeof(float));
                         }
                     }
 
                     if (obj.comp_mask & CompProbeBit) {
-                        const auto *probe = (LightProbe *)scene.comp_store[CompProbe]->Get(obj.components[CompProbe]);
+                        const LightProbe &probe = probes[obj.components[CompProbe]];
                         
-                        Ren::Vec4f pos = { probe->offset[0], probe->offset[1], probe->offset[2], 1.0f };
+                        Ren::Vec4f pos = { probe.offset[0], probe.offset[1], probe.offset[2], 1.0f };
                         pos = world_from_object * pos;
                         pos /= pos[3];
 
                         ProbeItem &pr = list.probes.data[list.probes.count++];
-                        pr.layer = float(probe->layer_index);
-                        pr.radius = probe->radius;
+                        pr.layer = float(probe.layer_index);
+                        pr.radius = probe.radius;
                         memcpy(&pr.position[0], &pos[0], 3 * sizeof(float));
                         for (int k = 0; k < 4; k++) {
-                            pr.sh_coeffs[0][k] = probe->sh_coeffs[k][0];
-                            pr.sh_coeffs[1][k] = probe->sh_coeffs[k][1];
-                            pr.sh_coeffs[2][k] = probe->sh_coeffs[k][2];
+                            pr.sh_coeffs[0][k] = probe.sh_coeffs[k][0];
+                            pr.sh_coeffs[1][k] = probe.sh_coeffs[k][1];
+                            pr.sh_coeffs[2][k] = probe.sh_coeffs[k][2];
                         }
                     }
                 }
@@ -835,19 +854,19 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                     const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
                     if ((obj.comp_mask & drawable_flags) == drawable_flags) {
-                        const auto* tr = (Transform *)scene.comp_store[CompTransform]->Get(obj.components[CompTransform]);
-                        const auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
-                        if ((dr->flags & Drawable::DrVisibleToShadow) == 0) continue;
+                        const Transform &tr = transforms[obj.components[CompTransform]];
+                        const Drawable &dr = drawables[obj.components[CompDrawable]];
+                        if ((dr.flags & Drawable::DrVisibleToShadow) == 0) continue;
 
                         if (!skip_check &&
-                            sh_clip_frustum.CheckVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
+                            sh_clip_frustum.CheckVisibility(tr.bbox_min_ws, tr.bbox_max_ws) == Ren::Invisible) continue;
 
-                        if ((tr->bbox_max_ws[0] - tr->bbox_min_ws[0]) < object_dim_thres &&
-                            (tr->bbox_max_ws[1] - tr->bbox_min_ws[1]) < object_dim_thres &&
-                            (tr->bbox_max_ws[2] - tr->bbox_min_ws[2]) < object_dim_thres) continue;
+                        if ((tr.bbox_max_ws[0] - tr.bbox_min_ws[0]) < object_dim_thres &&
+                            (tr.bbox_max_ws[1] - tr.bbox_min_ws[1]) < object_dim_thres &&
+                            (tr.bbox_max_ws[2] - tr.bbox_min_ws[2]) < object_dim_thres) continue;
 
-                        const Ren::Mat4f &world_from_object = tr->mat;
-                        const Ren::Mesh *mesh = dr->mesh.get();
+                        const Ren::Mat4f &world_from_object = tr.mat;
+                        const Ren::Mesh *mesh = dr.mesh.get();
 
                         if (proc_objects_[n->prim_index].instance_index == 0xffffffff) {
                             proc_objects_[n->prim_index].instance_index = list.instances.count;
@@ -862,7 +881,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf1().offset / 16;
 
                             if (obj.comp_mask & CompAnimStateBit) {
-                                const auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(obj.components[CompAnimState]);
+                                const AnimState &as = anims[obj.components[CompAnimState]];
                                 __push_skeletal_mesh(n->prim_index, as, mesh, list);
                             }
                         }
@@ -1020,16 +1039,16 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                     const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
                     if ((obj.comp_mask & drawable_flags) == drawable_flags) {
-                        const auto* tr = (Transform *)scene.comp_store[CompTransform]->Get(obj.components[CompTransform]);
+                        const Transform &tr = transforms[obj.components[CompTransform]];
 
                         if (!skip_check &&
-                            shadow_cam.CheckFrustumVisibility(tr->bbox_min_ws, tr->bbox_max_ws) == Ren::Invisible) continue;
+                            shadow_cam.CheckFrustumVisibility(tr.bbox_min_ws, tr.bbox_max_ws) == Ren::Invisible) continue;
 
-                        const Ren::Mat4f &world_from_object = tr->mat;
-                        const auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
-                        if ((dr->flags & Drawable::DrVisibleToShadow) == 0) continue;
+                        const Ren::Mat4f &world_from_object = tr.mat;
+                        const Drawable &dr = drawables[obj.components[CompDrawable]];
+                        if ((dr.flags & Drawable::DrVisibleToShadow) == 0) continue;
 
-                        const Ren::Mesh *mesh = dr->mesh.get();
+                        const Ren::Mesh *mesh = dr.mesh.get();
 
                         Ren::Mat4f world_from_object_trans = Ren::Transpose(world_from_object);
 
@@ -1044,7 +1063,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf1().offset / 16;
 
                             if (obj.comp_mask & CompAnimStateBit) {
-                                const auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(obj.components[CompAnimState]);
+                                const AnimState &as = anims[obj.components[CompAnimState]];
                                 __push_skeletal_mesh(n->prim_index, as, mesh, list);
                             }
                         }
@@ -1336,7 +1355,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     }
 }
 
-void Renderer::__push_skeletal_mesh(uint32_t obj_index, const AnimState *as, const Ren::Mesh *mesh, DrawList &list) {
+void Renderer::__push_skeletal_mesh(uint32_t obj_index, const AnimState &as, const Ren::Mesh *mesh, DrawList &list) {
     const Ren::Skeleton *skel = mesh->skel();
 
     uint16_t palette_start = (uint16_t)list.skin_transforms.count;
@@ -1344,7 +1363,7 @@ void Renderer::__push_skeletal_mesh(uint32_t obj_index, const AnimState *as, con
     list.skin_transforms.count += (uint32_t)skel->bones.size();
 
     for (int i = 0; i < (int)skel->bones.size(); i++) {
-        Ren::Mat4f matr_trans = Ren::Transpose(as->matr_palette[i]);
+        Ren::Mat4f matr_trans = Ren::Transpose(as.matr_palette[i]);
         memcpy(&matr_palette[i].matr[0][0], Ren::ValuePtr(matr_trans), 12 * sizeof(float));
     }
 
