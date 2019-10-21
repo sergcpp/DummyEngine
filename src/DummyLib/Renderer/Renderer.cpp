@@ -252,33 +252,17 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     // Compile built-in shaders etc.
     InitRendererInternal();
 
-    temp_sub_frustums_.data.reset(new Ren::Frustum[REN_CELLS_COUNT]);
-    temp_sub_frustums_.count = temp_sub_frustums_.capacity = REN_CELLS_COUNT;
+    temp_sub_frustums_.alloc(REN_CELLS_COUNT);
+    temp_sub_frustums_.count = REN_CELLS_COUNT;
 
-    decals_boxes_.data.reset(new BBox[REN_MAX_DECALS_TOTAL]);
-    decals_boxes_.capacity = REN_MAX_DECALS_TOTAL;
-    decals_boxes_.count = 0;
-
-    litem_to_lsource_.data.reset(new const LightSource *[REN_MAX_LIGHTS_TOTAL]);
-    litem_to_lsource_.capacity = REN_MAX_LIGHTS_TOTAL;
-    litem_to_lsource_.count = 0;
-
-    ditem_to_decal_.data.reset(new const Decal *[REN_MAX_DECALS_TOTAL]);
-    ditem_to_decal_.capacity = REN_MAX_DECALS_TOTAL;
-    ditem_to_decal_.count = 0;
-
-    allocated_shadow_regions_.data.reset(new ShadReg[REN_MAX_SHADOWMAPS_TOTAL]);
-    allocated_shadow_regions_.capacity = REN_MAX_SHADOWMAPS_TOTAL;
-    allocated_shadow_regions_.count = 0;
+    decals_boxes_.alloc(REN_MAX_DECALS_TOTAL);
+    litem_to_lsource_.alloc(REN_MAX_LIGHTS_TOTAL);
+    ditem_to_decal_.alloc(REN_MAX_DECALS_TOTAL);
+    allocated_shadow_regions_.alloc(REN_MAX_SHADOWMAPS_TOTAL);
 
     for (int i = 0; i < 2; i++) {
-        temp_sort_spans_32_[i].data.reset(new SortSpan32[REN_MAX_SHADOW_BATCHES]);
-        temp_sort_spans_32_[i].capacity = REN_MAX_SHADOW_BATCHES;
-        temp_sort_spans_32_[i].count = 0;
-
-        temp_sort_spans_64_[i].data.reset(new SortSpan64[REN_MAX_MAIN_BATCHES]);
-        temp_sort_spans_64_[i].capacity = REN_MAX_MAIN_BATCHES;
-        temp_sort_spans_64_[i].count = 0;
+        temp_sort_spans_32_[i].alloc(REN_MAX_SHADOW_BATCHES);
+        temp_sort_spans_64_[i].alloc(REN_MAX_MAIN_BATCHES);
     }
 }
 

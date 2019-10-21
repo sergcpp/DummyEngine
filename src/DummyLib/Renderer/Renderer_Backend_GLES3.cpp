@@ -1171,7 +1171,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, cur_buf_chunk_ * SkinTransformsBufChunkSize, SkinTransformsBufChunkSize, BufferRangeBindFlags);
             if (pinned_mem) {
                 size_t skin_transforms_mem_size = list.skin_transforms.count * sizeof(SkinTransform);
-                memcpy(pinned_mem, list.skin_transforms.data.get(), skin_transforms_mem_size);
+                memcpy(pinned_mem, list.skin_transforms.data, skin_transforms_mem_size);
                 glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0, skin_transforms_mem_size);
                 glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
             } else {
@@ -1187,7 +1187,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, cur_buf_chunk_ * SkinRegionsBufChunkSize, SkinRegionsBufChunkSize, BufferRangeBindFlags);
             if (pinned_mem) {
                 size_t skin_regions_mem_size = list.skin_regions.count * sizeof(SkinRegion);
-                memcpy(pinned_mem, list.skin_regions.data.get(), skin_regions_mem_size);
+                memcpy(pinned_mem, list.skin_regions.data, skin_regions_mem_size);
                 glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0, skin_regions_mem_size);
                 glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
             } else {
@@ -1204,7 +1204,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * InstanceDataBufChunkSize, InstanceDataBufChunkSize, BufferRangeBindFlags);
             if (pinned_mem) {
                 size_t instance_mem_size = list.instances.count * sizeof(InstanceData);
-                memcpy(pinned_mem, list.instances.data.get(), instance_mem_size);
+                memcpy(pinned_mem, list.instances.data, instance_mem_size);
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, instance_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
@@ -1221,7 +1221,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * CellsBufChunkSize, CellsBufChunkSize, BufferRangeBindFlags);
             if (pinned_mem) {
                 size_t cells_mem_size = list.cells.count * sizeof(CellData);
-                memcpy(pinned_mem, list.cells.data.get(), cells_mem_size);
+                memcpy(pinned_mem, list.cells.data, cells_mem_size);
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, cells_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
@@ -1238,7 +1238,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * LightsBufChunkSize, LightsBufChunkSize, BufferRangeBindFlags);
             if (pinned_mem) {
                 size_t lights_mem_size = list.light_sources.count * sizeof(LightSourceItem);
-                memcpy(pinned_mem, list.light_sources.data.get(), lights_mem_size);
+                memcpy(pinned_mem, list.light_sources.data, lights_mem_size);
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, lights_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
@@ -1255,7 +1255,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * DecalsBufChunkSize, DecalsBufChunkSize, BufferRangeBindFlags);
             if (pinned_mem) {
                 size_t decals_mem_size = list.decals.count * sizeof(DecalItem);
-                memcpy(pinned_mem, list.decals.data.get(), decals_mem_size);
+                memcpy(pinned_mem, list.decals.data, decals_mem_size);
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, decals_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
@@ -1272,7 +1272,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * ItemsBufChunkSize, ItemsBufChunkSize, BufferRangeBindFlags);
             if (pinned_mem) {
                 size_t items_mem_size = list.items.count * sizeof(ItemData);
-                memcpy(pinned_mem, list.items.data.get(), items_mem_size);
+                memcpy(pinned_mem, list.items.data, items_mem_size);
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, items_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
@@ -1339,7 +1339,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         if (list.probes.count) {
             assert(list.probes.count <= REN_MAX_PROBES_TOTAL);
-            memcpy(&shrd_data.uProbes[0], list.probes.data.get(), sizeof(ProbeItem) * list.probes.count);
+            memcpy(&shrd_data.uProbes[0], list.probes.data, sizeof(ProbeItem) * list.probes.count);
         }
 
         glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_shared_data_block_[cur_buf_chunk_]);

@@ -1122,7 +1122,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             }
         }
 
-        RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data.get(), temp_sort_spans_32_[0].data.get() + spans_count, temp_sort_spans_32_[1].data.get());
+        RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data, temp_sort_spans_32_[0].data + spans_count, temp_sort_spans_32_[1].data);
 
         // decompress sorted spans
         size_t counter = 0;
@@ -1168,7 +1168,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
     }
 
-    RadixSort_LSB<SortSpan64>(temp_sort_spans_64_[0].data.get(), temp_sort_spans_64_[0].data.get() + spans_count, temp_sort_spans_64_[1].data.get());
+    RadixSort_LSB<SortSpan64>(temp_sort_spans_64_[0].data, temp_sort_spans_64_[0].data + spans_count, temp_sort_spans_64_[1].data);
 
     // decompress sorted spans
     size_t counter = 0;
@@ -1222,7 +1222,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             }
         }
 
-        RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data.get(), temp_sort_spans_32_[0].data.get() + spans_count, temp_sort_spans_32_[1].data.get());
+        RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data, temp_sort_spans_32_[0].data + spans_count, temp_sort_spans_32_[1].data);
 
         // decompress sorted spans
         for (uint32_t i = 0; i < spans_count; i++) {
@@ -1270,14 +1270,14 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     uint64_t items_assignment_start = Sys::GetTimeUs();
 
     if (list.light_sources.count || list.decals.count || list.probes.count) {
-        list.draw_cam.ExtractSubFrustums(REN_GRID_RES_X, REN_GRID_RES_Y, REN_GRID_RES_Z, temp_sub_frustums_.data.get());
+        list.draw_cam.ExtractSubFrustums(REN_GRID_RES_X, REN_GRID_RES_Y, REN_GRID_RES_Z, temp_sub_frustums_.data);
 
         std::future<void> futures[REN_GRID_RES_Z];
         std::atomic_int a_items_count = {};
 
         for (int i = 0; i < REN_GRID_RES_Z; i++) {
-            futures[i] = threads_->enqueue(GatherItemsForZSlice_Job, i, temp_sub_frustums_.data.get(), list.light_sources.data.get(), list.light_sources.count, list.decals.data.get(), list.decals.count, decals_boxes_.data.get(),
-                                           list.probes.data.get(), list.probes.count, litem_to_lsource_.data.get(), list.cells.data.get(), list.items.data.get(), std::ref(a_items_count));
+            futures[i] = threads_->enqueue(GatherItemsForZSlice_Job, i, temp_sub_frustums_.data, list.light_sources.data, list.light_sources.count, list.decals.data, list.decals.count, decals_boxes_.data,
+                                           list.probes.data, list.probes.count, litem_to_lsource_.data, list.cells.data, list.items.data, std::ref(a_items_count));
         }
 
         for (int i = 0; i < REN_GRID_RES_Z; i++) {
@@ -1287,7 +1287,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         list.items.count = std::min(a_items_count.load(), REN_MAX_ITEMS_TOTAL);
     } else {
         CellData _dummy = {};
-        std::fill(list.cells.data.get(), list.cells.data.get() + REN_CELLS_COUNT, _dummy);
+        std::fill(list.cells.data, list.cells.data + REN_CELLS_COUNT, _dummy);
         list.items.count = 0;
     }
 

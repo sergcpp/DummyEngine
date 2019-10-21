@@ -10,8 +10,21 @@ class TextureAtlas;
 
 template <typename T>
 struct DynArray {
-    std::unique_ptr<T[]> data;
+    T *data;
     uint32_t count, capacity;
+
+    DynArray() : data(nullptr), count(0), capacity(0) {}
+    ~DynArray() { delete[] data; }
+
+    DynArray(const DynArray &rhs) = delete;
+
+    void alloc(uint32_t _capacity) {
+        delete[] data;
+
+        data = new T[_capacity];
+        count = 0;
+        capacity = _capacity;
+    }
 };
 
 struct ShadReg {
@@ -46,10 +59,11 @@ struct DrawList {
     const Ren::TextureAtlas     *decals_atlas = nullptr;
     const ProbeStorage          *probe_storage = nullptr;
 
+    DynArray<ShadReg>           cached_shadow_regions;
+
     // for debugging only, backend does not require nodes for drawing
     std::vector<bvh_node_t>     temp_nodes;
     uint32_t                    root_index;
-    DynArray<ShadReg>           cached_shadow_regions;
 
     DrawList();
 };
