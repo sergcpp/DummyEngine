@@ -4,34 +4,34 @@
 #include "SparseArray.h"
 
 namespace Ren {
-template<typename T, template<typename val_t> class container = default_container>
+template<typename T>
 class StorageRef;
 
-template<typename T, template<typename val_t> class container = default_container>
-class Storage : public SparseArray<T, container> {
-    HashMap32<String, size_t> items_by_name_;
+template<typename T>
+class Storage : public SparseArray<T> {
+    HashMap32<String, uint32_t> items_by_name_;
 public:
     template<class... Args>
-    StorageRef<T, container> Add(Args &&... args) {
-        size_t index = SparseArray<T, container>::Add(args...);
+    StorageRef<T> Add(Args &&... args) {
+        uint32_t index = SparseArray<T>::emplace(args...);
 
-        bool res = items_by_name_.Insert(this->Get(index)->name(), index);
+        bool res = items_by_name_.Insert(SparseArray<T>::at(index).name(), index);
         assert(res);
 
         return { this, index };
     }
 
-    void Remove(size_t i) {
-        const String &name = this->Get(i)->name();
+    void erase(uint32_t i) {
+        const String &name = SparseArray<T>::at(i).name();
 
         bool res = items_by_name_.Erase(name);
         assert(res);
 
-        SparseArray<T, container>::Remove(i);
+        SparseArray<T>::erase(i);
     }
 
-    StorageRef<T, container> FindByName(const char *name) {
-        size_t *p_index = items_by_name_.Find(name);
+    StorageRef<T> FindByName(const char *name) {
+        uint32_t *p_index = items_by_name_.Find(name);
         if (p_index) {
             return { this, *p_index };
         } else {
@@ -42,7 +42,7 @@ public:
 
 class RefCounter {
 protected:
-    template<class T, template<typename val_t> class container> friend class StorageRef;
+    template<class T> friend class StorageRef;
 
     void add_ref() {
         ++counter_;
@@ -72,16 +72,16 @@ private:
     mutable unsigned counter_;
 };
 
-template <class T, template<typename val_t> class container>
+template <class T>
 class StorageRef {
-    Storage<T, container> *storage_;
-    size_t index_;
+    Storage<T>  *storage_;
+    uint32_t    index_;
 public:
     StorageRef() : storage_(nullptr), index_(0) {}
-    StorageRef(Storage<T, container> *storage, size_t index) : storage_(storage), index_(index) {
+    StorageRef(Storage<T> *storage, uint32_t index) : storage_(storage), index_(index) {
         if (storage_) {
-            T *p = storage_->Get(index_);
-            p->add_ref();
+            T &p = storage_->at(index_);
+            p.add_ref();
         }
     }
     ~StorageRef() {
@@ -93,8 +93,8 @@ public:
         index_ = rhs.index_;
 
         if (storage_) {
-            T *p = storage_->Get(index_);
-            p->add_ref();
+            T &p = storage_->at(index_);
+            p.add_ref();
         }
     }
 
@@ -112,8 +112,8 @@ public:
         index_ = rhs.index_;
 
         if (storage_) {
-            T *p = storage_->Get(index_);
-            p->add_ref();
+            T &p = storage_->at(index_);
+            p.add_ref();
         }
 
         return *this;
@@ -132,47 +132,47 @@ public:
 
     T *operator->() {
         assert(storage_);
-        return storage_->Get(index_);
+        return &storage_->at(index_);
     }
 
     const T *operator->() const {
         assert(storage_);
-        return storage_->Get(index_);
+        return &storage_->at(index_);
     }
 
     T &operator*() {
         assert(storage_);
-        return *storage_->Get(index_);
+        return storage_->at(index_);
     }
 
     const T &operator*() const {
         assert(storage_);
-        return *storage_->Get(index_);
+        return storage_->at(index_);
     }
 
     T *get() {
         assert(storage_);
-        return storage_->Get(index_);
+        return &storage_->at(index_);
     }
 
     const T *get() const {
         assert(storage_);
-        return storage_->Get(index_);
+        return &storage_->at(index_);
     }
 
     operator bool() const {
         return storage_ != nullptr;
     }
 
-    size_t index() const {
+    uint32_t index() const {
         return index_;
     }
 
     void Release() {
         if (storage_) {
-            T *p = storage_->Get(index_);
+            T *p = &storage_->at(index_);
             if (p->release()) {
-                storage_->Remove(index_);
+                storage_->erase(index_);
             }
             storage_ = nullptr;
             index_ = 0;

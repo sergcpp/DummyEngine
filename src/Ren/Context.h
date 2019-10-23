@@ -59,7 +59,7 @@ public:
     /*** Material ***/
     MaterialRef LoadMaterial(const char *name, const char *mat_src, eMatLoadStatus *status, const program_load_callback &on_prog_load,
                              const texture_load_callback &on_tex_load);
-    MaterialRef GetMaterial(size_t index);
+    MaterialRef GetMaterial(uint32_t index);
     int NumMaterialsNotReady();
     void ReleaseMaterials();
 
@@ -76,7 +76,7 @@ public:
     ProgramRef LoadProgramSW(const char *name, void *vs_shader, void *fs_shader, int num_fvars,
                              const Attribute *attrs, const Uniform *unifs, eProgLoadStatus *load_status);
 #endif
-    ProgramRef GetProgram(size_t index);
+    ProgramRef GetProgram(uint32_t index);
     int NumProgramsNotReady();
     void ReleasePrograms();
 

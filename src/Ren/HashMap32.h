@@ -124,13 +124,16 @@ public:
         assert((capacity & (capacity - 1)) == 0);
 
         size_t mem_size = capacity;
-        mem_size += (mem_size % alignof(Node));
+        if (mem_size % alignof(Node)) {
+            mem_size += alignof(Node) - (mem_size % alignof(Node));
+        }
 
         size_t node_begin = mem_size;
         mem_size += sizeof(Node) * capacity;
 
         ctrl_ = new uint8_t[mem_size];
         nodes_ = (Node *)&ctrl_[node_begin];
+        assert(uintptr_t(nodes_) % alignof(Node) == 0);
 
         memset(ctrl_, 0, capacity);
 

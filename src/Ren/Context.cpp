@@ -33,7 +33,7 @@ Ren::MaterialRef Ren::Context::LoadMaterial(const char *name, const char *mat_sr
     return ref;
 }
 
-Ren::MaterialRef Ren::Context::GetMaterial(size_t index) {
+Ren::MaterialRef Ren::Context::GetMaterial(uint32_t index) {
     return { &materials_, index };
 }
 
@@ -44,16 +44,16 @@ int Ren::Context::NumMaterialsNotReady() {
 }
 
 void Ren::Context::ReleaseMaterials() {
-    if (!materials_.Size()) return;
+    if (!materials_.size()) return;
     fprintf(stderr, "---------REMAINING MATERIALS--------\n");
     for (const Material &m : materials_) {
         fprintf(stderr, "%s\n", m.name().c_str());
     }
     fprintf(stderr, "-----------------------------------\n");
-    materials_.Clear();
+    materials_.clear();
 }
 
-Ren::ProgramRef Ren::Context::GetProgram(size_t index) {
+Ren::ProgramRef Ren::Context::GetProgram(uint32_t index) {
     return { &programs_, index };
 }
 
@@ -64,7 +64,7 @@ int Ren::Context::NumProgramsNotReady() {
 }
 
 void Ren::Context::ReleasePrograms() {
-    if (!programs_.Size()) return;
+    if (!programs_.size()) return;
     fprintf(stderr, "---------REMAINING PROGRAMS--------\n");
     for (const Program &p : programs_) {
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
@@ -72,7 +72,7 @@ void Ren::Context::ReleasePrograms() {
 #endif
     }
     fprintf(stderr, "-----------------------------------\n");
-    programs_.Clear();
+    programs_.clear();
 }
 
 Ren::Texture2DRef Ren::Context::LoadTexture2D(const char *name, const void *data, int size,
@@ -113,13 +113,13 @@ int Ren::Context::NumTexturesNotReady() {
 }
 
 void Ren::Context::ReleaseTextures() {
-    if (!textures_.Size()) return;
+    if (!textures_.size()) return;
     fprintf(stderr, "---------REMAINING TEXTURES--------\n");
     for (const Texture2D &t : textures_) {
         fprintf(stderr, "%s\n", t.name().c_str());
     }
     fprintf(stderr, "-----------------------------------\n");
-    textures_.Clear();
+    textures_.clear();
 }
 
 Ren::AnimSeqRef Ren::Context::LoadAnimSequence(const char *name, std::istream &data) {
@@ -143,13 +143,13 @@ int Ren::Context::NumAnimsNotReady() {
 }
 
 void Ren::Context::ReleaseAnims() {
-    if (!anims_.Size()) return;
+    if (!anims_.size()) return;
     fprintf(stderr, "---------REMAINING ANIMS--------\n");
     for (const AnimSequence &a : anims_) {
         fprintf(stderr, "%s\n", a.name().c_str());
     }
     fprintf(stderr, "-----------------------------------\n");
-    anims_.Clear();
+    anims_.clear();
 }
 
 Ren::BufferRef Ren::Context::CreateBuffer(const char *name, uint32_t initial_size) {
@@ -157,17 +157,17 @@ Ren::BufferRef Ren::Context::CreateBuffer(const char *name, uint32_t initial_siz
 }
 
 void Ren::Context::ReleaseBuffers() {
-    if (!buffers_.Size()) return;
+    if (!buffers_.size()) return;
     fprintf(stderr, "---------REMAINING BUFFERS--------\n");
     for (const Buffer &b : buffers_) {
         fprintf(stderr, "%u\n", b.size());
     }
     fprintf(stderr, "-----------------------------------\n");
-    buffers_.Clear();
+    buffers_.clear();
 }
 
 void Ren::Context::ReleaseAll() {
-    meshes_.Clear();
+    meshes_.clear();
     default_vertex_buf1_ = {};
     default_vertex_buf2_ = {};
     default_skin_vertex_buf_ = {};

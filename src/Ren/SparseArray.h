@@ -2,120 +2,204 @@
 
 #include <cassert>
 #include <iterator>
-#include <vector>
 
 namespace Ren {
-template <typename val_t>
-using default_container = std::vector<val_t>;
-
-template <class T, template<typename val_t> class container = default_container>
+template <typename T>
 class SparseArray {
 protected:
-    struct Item {
-        unsigned    used : 1;
-        unsigned    next_free : 31;
-        T           val;
+    uint8_t     *ctrl_;
+    T           *data_;
+    uint32_t    capacity_, size_;
+    uint32_t    first_free_;
 
-        Item() : used(0), next_free(0), val{} {}
-        Item(const Item &) = delete;
-        Item(Item &&rhs) : used(rhs.used), next_free(rhs.next_free), val(std::move(rhs.val)) {}
-        Item &operator=(const Item &) = delete;
-        Item &operator=(Item &&rhs) {
-            used = rhs.used;
-            next_free = rhs.next_free;
-            val = std::move(rhs.val);
-            return *this;
-        }
-    };
-
-    container<Item> array_;
-    size_t first_free_;
-    size_t size_;
+    static_assert(sizeof(T) >= sizeof(uint32_t), "!");
 public:
-    SparseArray() : SparseArray(8) {}
-    explicit SparseArray(size_t size) : first_free_(0), size_(0) {
-        Resize(size);
+    SparseArray(uint32_t initial_capacity = 0)
+        : ctrl_(nullptr), data_(nullptr), capacity_(0), size_(0), first_free_(0) {
+        if (initial_capacity) {
+            reserve(initial_capacity);
+        }
     }
-    size_t Size() const {
-        return size_;
+
+    ~SparseArray() {
+        clear();
+        delete[] ctrl_;
     }
-    size_t Capacity() const {
-        return array_.size();
-    }
-    void Clear() {
-        array_.clear();
-        Resize(8);
-    }
-    void Resize(size_t new_size) {
-        size_t prev_size = array_.size();
-        array_.resize(new_size);
-        if (new_size > prev_size) {
-            for (size_t i = prev_size; i < new_size; i++) {
-                array_[i].next_free = (unsigned)(i + 1);
+
+    SparseArray(const SparseArray &rhs)
+        : ctrl_(nullptr), data_(nullptr), capacity_(0), size_(0), first_free_(0) {
+        reserve(rhs.capacity_);
+
+        memcpy(ctrl_, rhs.ctrl_, (capacity_ + 7) / 8);
+        
+        for (uint32_t i = 0; i < capacity_; i++) {
+            if (ctrl_[i / 8] & (1 << (i % 8))) {
+                data_[i] = rhs.data_[i];
             }
         }
     }
-    template<class... Args>
-    size_t Add(Args &&... args) {
-        if (size_ >= array_.size() - 1) {
-            Resize(array_.empty() ? 8 : array_.size() * 2);
+
+    SparseArray &operator=(const SparseArray &rhs) {
+        clear();
+        delete[] ctrl_;
+
+        ctrl_ = nullptr;
+        data_ = nullptr;
+
+        reserve(rhs.capacity_);
+
+        memcpy(ctrl_, rhs.ctrl_, capacity_);
+
+        for (uint32_t i = 0; i < capacity_; i++) {
+            if (ctrl_[i / 8] & (1 << (i % 8))) {
+                data_[i] = rhs.data_[i];
+            }
         }
-        size_t index = first_free_;
-        Item &i = array_[index];
-        i.used = 1;
-        i.val = T(args...);
-        first_free_ = i.next_free;
+    }
+
+    uint32_t size() const { return size_; }
+    uint32_t capacity() const { return capacity_; }
+
+    T *data() { return data_; }
+    const T *data() const { return data_; }
+
+    void clear() {
+        for (uint32_t i = 0; i < capacity_ && size_; i++) {
+            if (ctrl_[i / 8] & (1 << (i % 8))) {
+                size_--;
+                data_[i].~T();
+            }
+        }
+    }
+
+    void reserve(uint32_t new_capacity) {
+        if (new_capacity <= capacity_) return;
+
+        uint8_t *old_ctrl = ctrl_;
+        T *old_data = data_;
+
+        size_t __aaa = alignof(T);
+
+        size_t mem_size = (new_capacity + 7) / 8;
+        if (mem_size % alignof(T)) {
+            mem_size += alignof(T)-(mem_size % alignof(T));
+        }
+
+        size_t data_start = mem_size;
+        mem_size += sizeof(T) * new_capacity;
+
+        ctrl_ = new uint8_t[mem_size];
+        data_ = reinterpret_cast<T *>(ctrl_ + data_start);
+        assert(uintptr_t(data_) % alignof(T) == 0);
+
+        // copy old control bits
+        if (old_ctrl) {
+            memcpy(ctrl_, old_ctrl, (capacity_ + 7) / 8);
+        }
+        // fill rest with zeroes
+        memset(ctrl_ + (capacity_ + 7) / 8, 0, new_capacity - (capacity_ + 7) / 8);
+
+        // move old data
+        for (uint32_t i = 0; i < capacity_; i++) {
+            if (ctrl_[i / 8] & (1 << (i % 8))) {
+                T *el = data_ + i;
+                new(el) T(std::move(old_data[i]));
+                old_data[i].~T();
+            }
+        }
+
+        delete[] old_ctrl;
+
+        for (uint32_t i = capacity_; i < new_capacity - 1; i++) {
+            uint32_t next_free = i + 1;
+            memcpy(data_ + i, &next_free, sizeof(uint32_t));
+        }
+
+        memcpy(data_ + new_capacity - 1, &first_free_, sizeof(uint32_t));
+        first_free_ = capacity_;
+
+        capacity_ = new_capacity;
+        if (size_ > capacity_) size_ = capacity_;
+    }
+
+    template<class... Args>
+    uint32_t emplace(Args &&... args) {
+        if (size_ + 1 > capacity_) {
+            reserve(capacity_ ? (capacity_ * 2) : 8);
+        }
+        uint32_t index = first_free_;
+        memcpy(&first_free_, data_ + index, sizeof(uint32_t));
+
+        T *el = data_ + index;
+        new(el) T(args...);
+
+        ctrl_[index / 8] |= (1 << (index % 8));
+
         size_++;
         return index;
     }
-    void Remove(size_t i) {
-        Item &it = array_[i];
-        it.used = 0;
-        it.val = T();
-        it.next_free = (unsigned)first_free_;
-        first_free_ = i;
+
+    uint32_t push(const T &el) {
+        if (size_ + 1 > capacity_) {
+            reserve(capacity_ ? (capacity_ * 2) : 8);
+        }
+        uint32_t index = first_free_;
+        memcpy(&first_free_, data_ + index, sizeof(uint32_t));
+
+        data_[index] = el;
+        ctrl_[index / 8] |= (1 << (index % 8));
+
+        size_++;
+        return index;
+    }
+
+    void erase(uint32_t index) {
+        assert((ctrl_[index / 8] & (1 << (index % 8))) && "Invalid index!");
+
+        data_[index].~T();
+        ctrl_[index / 8] &= ~(1 << (index % 8));
+
+        memcpy(data_ + index, &first_free_, sizeof(uint32_t));
+        first_free_ = index;
         size_--;
     }
-    T *Get(size_t i) {
-        return &array_[i].val;
-    }
-    const T *Get(size_t i) const {
-        return &array_[i].val;
+
+    T &at(uint32_t index) {
+        assert((ctrl_[index / 8] & (1 << (index % 8))) && "Invalid index!");
+        return data_[index];
     }
 
-    T *data() {
-        return array_.data();
+    const T &at(uint32_t index) const {
+        assert((ctrl_[index / 8] & (1 << (index % 8))) && "Invalid index!");
+        return data_[index];
     }
 
-    size_t NextIndex(size_t i) {
-        while (++i < array_.size()) {
-            if (array_[i].used) {
-                break;
-            }
-        }
-        return i;
+    T &operator[](uint32_t index) {
+        assert((ctrl_[index / 8] & (1 << (index % 8))) && "Invalid index!");
+        return data_[index];
     }
-    T *Next(size_t i) {
-        i = NextIndex(i);
-        return i < array_.size() ? &array_[i].val : nullptr;
+
+    const T &operator[](uint32_t index) const {
+        assert((ctrl_[index / 8] & (1 << (index % 8))) && "Invalid index!");
+        return data_[index];
     }
 
     class SparseArrayIterator : public std::iterator<std::bidirectional_iterator_tag, T> {
-        friend class SparseArray<T, container>;
+        friend class SparseArray<T>;
 
-        SparseArray<T, container> *container_;
-        size_t index_;
+        SparseArray<T> *container_;
+        uint32_t        index_;
 
-        SparseArrayIterator(SparseArray<T, container> *c, size_t index) : container_(c), index_(index) {}
+        SparseArrayIterator(SparseArray<T> *container, uint32_t index) : container_(container), index_(index) {}
     public:
         T &operator*() {
-            return *container_->Get(index_);
+            return container_->at(index_);
         }
-        T *operator->() {
-            return container_->Get(index_);
+        T &operator->() {
+            return &container_->at(index_);
         }
         SparseArrayIterator &operator++() {
-            index_ = container_->NextIndex(index_);
+            index_ = container_->NextOccupied(index_);
             return *this;
         }
         SparseArrayIterator operator++(int) {
@@ -124,7 +208,7 @@ public:
             return tmp;
         }
 
-        size_t index() const {
+        uint32_t index() const {
             return index_;
         }
 
@@ -148,25 +232,34 @@ public:
         }
     };
 
-    typedef SparseArrayIterator iterator;
+    using iterator = SparseArrayIterator;
 
     iterator begin() {
-        size_t i = 0;
-        while (i < array_.size()) {
-            if (array_[i].used) {
+        for (uint32_t i = 0; i < capacity_; i++) {
+            if (ctrl_[i / 8] & (1 << (i % 8))) {
                 return iterator(this, i);
             }
-            ++i;
         }
         return end();
     }
 
     iterator end() {
-        return iterator(this, array_.size());
+        return iterator(this, capacity_);
     }
-
-    iterator it_at(size_t index) {
-        return iterator(this, index);
+private:
+    uint32_t NextOccupied(uint32_t index) const {
+        assert((ctrl_[index / 8] & (1 << (index % 8))) && "Invalid index!");
+        for (uint32_t i = index + 1; i < capacity_; i++) {
+            if (ctrl_[i / 8] & (1 << (i % 8))) {
+                return i;
+            }
+        }
+        for (uint32_t i = 0; i < index; i++) {
+            if (ctrl_[i / 8] & (1 << (i % 8))) {
+                return i;
+            }
+        }
+        return capacity_;
     }
 };
 }

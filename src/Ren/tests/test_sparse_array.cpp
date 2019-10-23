@@ -1,5 +1,7 @@
 #include "test_common.h"
 
+#include <vector>
+
 #include "../SparseArray.h"
 
 namespace {
@@ -13,49 +15,42 @@ std::vector<int> GenTestData(int size) {
 }
 
 void test_sparse_array() {
-
-    {
-        // Resize method
+    {   // reserve method
         Ren::SparseArray<int> s1;
-        require(s1.Size() == 0);
-        s1.Resize(128);
-        require(s1.Size() == 0);
-        require(s1.Capacity() == 128);
+        require(s1.size() == 0);
+        s1.reserve(128);
+        require(s1.size() == 0);
+        require(s1.capacity() == 128);
     }
 
-    {
-        // Adding elements to array
+    {   // pushing elements into array
         Ren::SparseArray<int> s1;
-        size_t i1 = s1.Add(1);
-        size_t i2 = s1.Add(12);
-        size_t i3 = s1.Add(45);
+        uint32_t i1 = s1.emplace(1);
+        uint32_t i2 = s1.push(12);
+        uint32_t i3 = s1.push(45);
 
         require(i1 == 0);
         require(i2 == 1);
         require(i3 == 2);
 
-        require(*s1.Get(0) == 1);
-        require(*s1.Get(1) == 12);
-        require(*s1.Get(2) == 45);
+        require(s1.at(0) == 1);
+        require(s1.at(1) == 12);
+        require(s1[2] == 45);
 
-        s1.Remove(1);
+        s1.erase(1);
 
-        require(*s1.Get(0) == 1);
-        require(*s1.Get(2) == 45);
+        require(s1.at(0) == 1);
+        require(s1[2] == 45);
 
-        size_t i4 = s1.Add(32);
-        size_t i5 = s1.Add(78);
+        uint32_t i4 = s1.push(32);
+        uint32_t i5 = s1.push(78);
 
         require(i4 == 1);
         require(i5 == 3);
 
-        require(*s1.Get(1) == 32);
-        require(*s1.Get(3) == 78);
-
-        s1.Resize(2);
-
-        require(*s1.Get(0) == 1);
-        require(*s1.Get(1) == 32);
+        require(s1.at(0) == 1);
+        require(s1.at(1) == 32);
+        require(s1[3] == 78);
 
         auto it = s1.begin();
         require(*it == 1);
@@ -63,13 +58,12 @@ void test_sparse_array() {
         require(*it == 32);
     }
 
-    {
-        // Iteration test
-        auto data = GenTestData(100);
+    {   // iteration test
+        std::vector<int> data = GenTestData(100);
         Ren::SparseArray<int> s1;
-        s1.Resize(100);
+        s1.reserve(100);
         for (int v : data) {
-            s1.Add(v);
+            s1.push(v);
         }
 
         auto it = s1.begin();
@@ -78,8 +72,8 @@ void test_sparse_array() {
             ++it;
         }
 
-        for (size_t i = 0; i < 100; i += 2) {
-            s1.Remove(i);
+        for (uint32_t i = 0; i < 100; i += 2) {
+            s1.erase(i);
         }
 
         it = s1.begin();
