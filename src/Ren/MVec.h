@@ -28,7 +28,15 @@ public:
 
     template<typename S, int M>
     explicit Vec(const Vec<S, M> &rhs) {
-        for (int i = 0; i < std::min(N, M); i++) {
+        const int count = N < M ? N : M;
+        for (int i = 0; i < count; i++) {
+            data_[i] = (T)rhs[i];
+        }
+    }
+
+    template<typename S>
+    explicit Vec(const Vec<S, N> &rhs) {
+        for (int i = 0; i < N; i++) {
             data_[i] = (T)rhs[i];
         }
     }
@@ -206,7 +214,7 @@ template <typename T, int N>
 Vec<T, N> Min(const Vec<T, N> &v1, const Vec<T, N> &v2) {
     Vec<T, N> ret(Uninitialize);
     for (int i = 0; i < N; i++) {
-        ret[i] = std::min(v1[i], v2[i]);
+        ret[i] = v1[i] < v2[i] ? v1[i] : v2[i];
     }
     return ret;
 }
@@ -215,7 +223,7 @@ template <typename T, int N>
 Vec<T, N> Min(const Vec<T, N> &v1, const T v2) {
     Vec<T, N> ret(Uninitialize);
     for (int i = 0; i < N; i++) {
-        ret[i] = std::min(v1[i], v2);
+        ret[i] = v1[i] < v2 ? v1[i] : v2;
     }
     return ret;
 }
@@ -224,14 +232,14 @@ template <typename T, int N>
 Vec<T, N> Min(const T v1, const Vec<T, N> &v2) {
     Vec<T, N> ret(Uninitialize);
     for (int i = 0; i < N; i++) {
-        ret[i] = std::min(v1, v2[i]);
+        ret[i] = v1 < v2[i] ? v1 : v2[i];
     }
     return ret;
 }
 
 template <typename T>
 T Min(const T v1, const T v2) {
-    return std::min(v1, v2);
+    return v1 < v2 ? v1 : v2;
 }
 
 template <typename T, int N>
@@ -247,7 +255,7 @@ template <typename T, int N>
 Vec<T, N> Max(const Vec<T, N> &v1, const Vec<T, N> &v2) {
     Vec<T, N> ret(Uninitialize);
     for (int i = 0; i < N; i++) {
-        ret[i] = std::max(v1[i], v2[i]);
+        ret[i] = v1[i] < v2[i] ? v2[i] : v1[i];
     }
     return ret;
 }
@@ -256,7 +264,7 @@ template <typename T, int N>
 Vec<T, N> Max(const Vec<T, N> &v1, const T v2) {
     Vec<T, N> ret(Uninitialize);
     for (int i = 0; i < N; i++) {
-        ret[i] = std::max(v1[i], v2);
+        ret[i] = v1[i] < v2 ? v2 : v1[i];
     }
     return ret;
 }
@@ -265,14 +273,14 @@ template <typename T, int N>
 Vec<T, N> Max(const T v1, const Vec<T, N> &v2) {
     Vec<T, N> ret(Uninitialize);
     for (int i = 0; i < N; i++) {
-        ret[i] = std::max(v1, v2[i]);
+        ret[i] = v1 < v2[i] ? v2[i] : v1;
     }
     return ret;
 }
 
 template <typename T>
 T Max(const T v1, const T v2) {
-    return std::max(v1, v2);
+    return v1 < v2 ? v2 : v1;
 }
 
 template <typename T, typename U>
