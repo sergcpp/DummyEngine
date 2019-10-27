@@ -353,6 +353,7 @@ void ModlApp::Destroy() {
     DestroyInternal();
 
     view_mesh_.Release();
+    checker_tex_.Release();
     ctx_.ReleaseAll();
 
     Sys::StopWorker();
