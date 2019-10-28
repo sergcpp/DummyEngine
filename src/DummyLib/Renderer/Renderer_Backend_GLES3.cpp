@@ -1283,9 +1283,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
     }
 
-    /**************************************************************************************************/
-    /*                                            UBO setup                                           */
-    /**************************************************************************************************/
+    //
+    // Update UBO with data that is shared between passes
+    //
 
     SharedDataBlock shrd_data;
 
@@ -1358,9 +1358,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC, (GLuint)unif_shared_data_block_[cur_buf_chunk_]);
 
-    /**************************************************************************************************/
-    /*                                             SKINNING                                           */
-    /**************************************************************************************************/
+    //
+    // Update vertex buffer for skinned meshes
+    //
 
     if (list.render_flags & EnableTimers) {
         glQueryCounter(queries_[cur_query_][TimeSkinningStart], GL_TIMESTAMP);
@@ -1382,9 +1382,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
     }
 
-    /**************************************************************************************************/
-    /*                                           SHADOW MAPS                                          */
-    /**************************************************************************************************/
+    // 
+    // Update shadow maps
+    //
 
     if (list.render_flags & EnableTimers) {
         glQueryCounter(queries_[cur_query_][TimeShadowMapStart], GL_TIMESTAMP);
@@ -1435,7 +1435,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             }
         }
 
-        // draw transparent objects
+        // draw transparent (alpha-tested) objects
         glBindVertexArray(depth_pass_transp_vao_);
         glUseProgram(shadow_transp_prog_->prog_id());
 
@@ -1494,9 +1494,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     // Can draw skydome without multisampling (not sure if it helps)
     glDisable(GL_MULTISAMPLE);
 
-    /**************************************************************************************************/
-    /*                                   SKYDOME DRAW / DEPTH CLEAR                                   */
-    /**************************************************************************************************/
+    //
+    // Skydome drawing + depth/specular clear
+    //
 
     if ((list.render_flags & DebugWireframe) == 0 && list.env.env_map) {
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)skydome_framebuf_);
@@ -1531,9 +1531,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     glEnable(GL_MULTISAMPLE);
 
-    /**************************************************************************************************/
-    /*                                         BIND RESOURCES                                         */
-    /**************************************************************************************************/
+    //
+    // Bind persistent resources (shadow atlas, lightmap, cells item data)
+    //
 
     BindTexture(REN_SHAD_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
 
@@ -1569,9 +1569,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
     BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
 
-    /**************************************************************************************************/
-    /*                                         DEPTH-FILL PASS                                        */
-    /**************************************************************************************************/
+    //
+    // Depth-fill pass (draw opaque surfaces -> draw alpha-tested surfaces)
+    //
 
     if (list.render_flags & EnableTimers) {
         glQueryCounter(queries_[cur_query_][TimeDepthOpaqueStart], GL_TIMESTAMP);
@@ -1630,9 +1630,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glDepthFunc(GL_EQUAL);
     }
 
-    /**************************************************************************************************/
-    /*                                            SSAO PASS                                           */
-    /**************************************************************************************************/
+    //
+    // SSAO pass (downsample depth -> calc line integrals ao -> upscale)
+    //
 
     if (list.render_flags & EnableTimers) {
         glQueryCounter(queries_[cur_query_][TimeAOPassStart], GL_TIMESTAMP);
@@ -1756,9 +1756,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     }
 #endif
 
-    /**************************************************************************************************/
-    /*                                           OPAQUE PASS                                          */
-    /**************************************************************************************************/
+    //
+    // Opaque pass (draw opaque surfaces -> resolve multisampled color buffer if enabled)
+    //
 
     // Bind main buffer for drawing
     glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_.fb);
@@ -1819,9 +1819,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
     }
 
-    /**************************************************************************************************/
-    /*                                      TRANSPARENT PASS                                          */
-    /**************************************************************************************************/
+    //
+    // Transparent pass
+    //
 
     if (list.render_flags & EnableTimers) {
         glQueryCounter(queries_[cur_query_][TimeTranspStart], GL_TIMESTAMP);
@@ -2070,9 +2070,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glDisable(GL_BLEND);
     glDepthFunc(GL_LESS);
 
-    /**************************************************************************************************/
-    /*                                             SSR PASS                                           */
-    /**************************************************************************************************/
+    //
+    // Reflections pass (calc ssr buffer -> dilate -> combine with cubemap reflections -> blend on top of color buffer)
+    //
 
     if (list.render_flags & EnableTimers) {
         glQueryCounter(queries_[cur_query_][TimeReflStart], GL_TIMESTAMP);
@@ -2260,9 +2260,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     glDisable(GL_DEPTH_TEST);
 
-    /**************************************************************************************************/
-    /*                                            BLUR PASS                                           */
-    /**************************************************************************************************/
+    //
+    // Blur pass (apply gauss blur to color buffer -> blend on top)
+    //
 
     if (list.render_flags & EnableTimers) {
         glQueryCounter(queries_[cur_query_][TimeBlurStart], GL_TIMESTAMP);
@@ -2380,9 +2380,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         reduced_average_ = alpha * cur_average + (1.0f - alpha) * reduced_average_;
     }
 
-    /**************************************************************************************************/
-    /*                                            BLIT PASS                                           */
-    /**************************************************************************************************/
+    //
+    // Blit pass (tonemap buffer / apply fxaa / blit to backbuffer)
+    //
 
     if (list.render_flags & EnableTimers) {
         glQueryCounter(queries_[cur_query_][TimeBlitStart], GL_TIMESTAMP);
@@ -2478,9 +2478,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         cur_reduce_pbo_ = (cur_reduce_pbo_ + 1) % FrameSyncWindow;
     }
 
-    /**************************************************************************************************/
-    /*                                            DEBUGGING                                           */
-    /**************************************************************************************************/
+    //
+    // Debugging (draw auxiliary surfaces)
+    //
 
     if (list.render_flags & (DebugLights | DebugDecals)) {
         glEnable(GL_BLEND);
@@ -2782,9 +2782,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, scr_w_, scr_h_);
 
-    /**************************************************************************************************/
-    /*                                              TIMERS                                            */
-    /**************************************************************************************************/
+    //
+    // Retrieve debug timers result
+    //
 
     if (list.render_flags & EnableTimers) {
         // Get timer queries result (for previous frame)
