@@ -184,7 +184,7 @@ Quat<T> Slerp(const Quat<T> &q0, const Quat<T> &q1, T a) {
                          Mix(q0.w, q1.w, a)
                        };
     } else {
-        float angle = std::acos(cos_theta);
+        const float angle = std::acos(cos_theta);
         return (std::sin((T(1) - a) * angle) * q0 + std::sin(a * angle) * q2) / std::sin(angle);
     }
 }
@@ -193,15 +193,15 @@ template <typename T>
 Mat<T, 3, 3> ToMat3(const Quat<T> &vec) {
     Mat<T, 3, 3> ret;
 
-    float qxx = vec[0] * vec[0];
-    float qyy = vec[1] * vec[1];
-    float qzz = vec[2] * vec[2];
-    float qxz = vec[0] * vec[2];
-    float qxy = vec[0] * vec[1];
-    float qyz = vec[1] * vec[2];
-    float qwx = vec[3] * vec[0];
-    float qwy = vec[3] * vec[1];
-    float qwz = vec[3] * vec[2];
+    const float qxx = vec[0] * vec[0];
+    const float qyy = vec[1] * vec[1];
+    const float qzz = vec[2] * vec[2];
+    const float qxz = vec[0] * vec[2];
+    const float qxy = vec[0] * vec[1];
+    const float qyz = vec[1] * vec[2];
+    const float qwx = vec[3] * vec[0];
+    const float qwy = vec[3] * vec[1];
+    const float qwz = vec[3] * vec[2];
 
     ret[0][0] = 1 - 2 * (qyy + qzz);
     ret[0][1] = 2 * (qxy + qwz);
