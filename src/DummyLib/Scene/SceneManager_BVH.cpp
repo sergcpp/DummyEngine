@@ -63,14 +63,17 @@ namespace SceneManagerInternal {
 void SceneManager::RebuildBVH() {
     using namespace SceneManagerInternal;
 
+    auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->Get(0);
+    assert(scene_data_.comp_store[CompTransform]->IsSequential());
+
     std::vector<prim_t> primitives;
     primitives.reserve(scene_data_.objects.size());
 
     for (const SceneObject &obj : scene_data_.objects) {
         if (obj.comp_mask & CompTransformBit) {
-            const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
-            const Ren::Vec3f d = tr->bbox_max_ws - tr->bbox_min_ws;
-            primitives.push_back({ tr->bbox_min_ws - BoundsMargin * d, tr->bbox_max_ws + BoundsMargin * d });
+            const Transform &tr = transforms[obj.components[CompTransform]];
+            const Ren::Vec3f d = tr.bbox_max_ws - tr.bbox_min_ws;
+            primitives.push_back({ tr.bbox_min_ws - BoundsMargin * d, tr.bbox_max_ws + BoundsMargin * d });
         }
     }
 
@@ -130,8 +133,8 @@ void SceneManager::RebuildBVH() {
             uint32_t new_node_index = (uint32_t)scene_data_.nodes.size();
 
             for (const uint32_t i : split_data.left_indices) {
-                auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(scene_data_.objects[i].components[CompTransform]);
-                tr->node_index = new_node_index;
+                Transform &tr = transforms[scene_data_.objects[i].components[CompTransform]];
+                tr.node_index = new_node_index;
             }
 
             assert(split_data.left_indices.size() == 1 && "Wrong split!");
@@ -143,19 +146,15 @@ void SceneManager::RebuildBVH() {
         } else {
             auto index = (uint32_t)num_nodes;
 
-            uint32_t space_axis = 0;
-            Ren::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2,
-                       c_right = (split_data.right_bounds[0] + split_data.right_bounds[1]) / 2;
+            const Ren::Vec3f
+                c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f,
+                c_right = (split_data.right_bounds[0] + split_data.right_bounds[1]) / 2.0f;
 
-            Ren::Vec3f dist = Abs(c_left - c_right);
+            const Ren::Vec3f dist = Abs(c_left - c_right);
 
-            if (dist[0] > dist[1] && dist[0] > dist[2]) {
-                space_axis = 0;
-            } else if (dist[1] > dist[0] && dist[1] > dist[2]) {
-                space_axis = 1;
-            } else {
-                space_axis = 2;
-            }
+            const uint32_t space_axis =
+                (dist[0] > dist[1] && dist[0] > dist[2]) ? 0 :
+                ((dist[1] > dist[0] && dist[1] > dist[2]) ? 1 : 2);
 
             Ren::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
                        bbox_max = Max(split_data.left_bounds[1], split_data.right_bounds[1]);
@@ -231,6 +230,9 @@ void SceneManager::RemoveNode(uint32_t node_index) {
 void SceneManager::UpdateObjects() {
     using namespace SceneManagerInternal;
 
+    auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->Get(0);
+    assert(scene_data_.comp_store[CompTransform]->IsSequential());
+
     scene_data_.update_counter++;
 
     bvh_node_t *nodes = scene_data_.nodes.data();
@@ -246,25 +248,25 @@ void SceneManager::UpdateObjects() {
         obj.last_change_mask = obj.change_mask;
 
         if (obj.change_mask & CompTransformBit) {
-            auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
-            tr->UpdateBBox();
-            if (tr->node_index != 0xffffffff) {
-                const bvh_node_t &node = nodes[tr->node_index];
+            Transform &tr = transforms[obj.components[CompTransform]];
+            tr.UpdateBBox();
+            if (tr.node_index != 0xffffffff) {
+                const bvh_node_t &node = nodes[tr.node_index];
 
-                bool is_fully_inside = tr->bbox_min_ws[0] >= node.bbox_min[0] &&
-                                       tr->bbox_min_ws[1] >= node.bbox_min[1] &&
-                                       tr->bbox_min_ws[2] >= node.bbox_min[2] &&
-                                       tr->bbox_max_ws[0] <= node.bbox_max[0] &&
-                                       tr->bbox_max_ws[1] <= node.bbox_max[1] &&
-                                       tr->bbox_max_ws[2] <= node.bbox_max[2];
+                bool is_fully_inside = tr.bbox_min_ws[0] >= node.bbox_min[0] &&
+                                       tr.bbox_min_ws[1] >= node.bbox_min[1] &&
+                                       tr.bbox_min_ws[2] >= node.bbox_min[2] &&
+                                       tr.bbox_max_ws[0] <= node.bbox_max[0] &&
+                                       tr.bbox_max_ws[1] <= node.bbox_max[1] &&
+                                       tr.bbox_max_ws[2] <= node.bbox_max[2];
 
                 if (is_fully_inside) {
                     // Update is not needed (object is inside of node bounds)
                     obj.change_mask ^= CompTransformBit;
                 } else {
                     // Object is out of node bounds, remove node and re-insert it later
-                    RemoveNode(tr->node_index);
-                    tr->node_index = 0xffffffff;
+                    RemoveNode(tr.node_index);
+                    tr.node_index = 0xffffffff;
                 }
             }
         }
@@ -280,14 +282,14 @@ void SceneManager::UpdateObjects() {
         SceneObject &obj = scene_data_.objects[obj_index];
 
         if (obj.change_mask & CompTransformBit) {
-            auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
-            tr->node_index = free_nodes[free_nodes_pos++];
+            Transform &tr = transforms[obj.components[CompTransform]];
+            tr.node_index = free_nodes[free_nodes_pos++];
 
-            bvh_node_t &new_node = nodes[tr->node_index];
+            bvh_node_t &new_node = nodes[tr.node_index];
 
-            const Ren::Vec3f d = tr->bbox_max_ws - tr->bbox_min_ws;
-            new_node.bbox_min = tr->bbox_min_ws - BoundsMargin * d;
-            new_node.bbox_max = tr->bbox_max_ws + BoundsMargin * d;
+            const Ren::Vec3f d = tr.bbox_max_ws - tr.bbox_min_ws;
+            new_node.bbox_min = tr.bbox_min_ws - BoundsMargin * d;
+            new_node.bbox_max = tr.bbox_max_ws + BoundsMargin * d;
             new_node.prim_index = obj_index;
             new_node.prim_count = 1;
 
@@ -347,16 +349,16 @@ void SceneManager::UpdateObjects() {
                 }
 
                 nodes[new_parent].left_child = best_candidate;
-                nodes[new_parent].right_child = tr->node_index;
+                nodes[new_parent].right_child = tr.node_index;
                 nodes[best_candidate].parent = new_parent;
-                nodes[tr->node_index].parent = new_parent;
+                nodes[tr.node_index].parent = new_parent;
             } else {
                 // sibling candidate is root
                 nodes[new_parent].left_child = best_candidate;
-                nodes[new_parent].right_child = tr->node_index;
+                nodes[new_parent].right_child = tr.node_index;
                 nodes[new_parent].parent = 0xffffffff;
                 nodes[best_candidate].parent = new_parent;
-                nodes[tr->node_index].parent = new_parent;
+                nodes[tr.node_index].parent = new_parent;
                 scene_data_.root_node = new_parent;
             }
 
