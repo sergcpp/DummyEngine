@@ -120,30 +120,36 @@ float GetSunVisibility(float frag_depth, sampler2DShadow shadow_texture, in high
     /*[[branch]]*/ if (frag_depth < $ShadCasc0Dist) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[0]);
         
+#if $ShadCascSoft
         /*[[branch]]*/ if (frag_depth > 0.9 * $ShadCasc0Dist) {
             float v2 = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[1]);
             
             float k = 10.0 * (frag_depth / $ShadCasc0Dist - 0.9);
             visibility = mix(visibility, v2, k);
         }
+#endif
     } else /*[[branch]]*/ if (frag_depth < $ShadCasc1Dist) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[1]);
         
+#if $ShadCascSoft
         /*[[branch]]*/ if (frag_depth > 0.9 * $ShadCasc1Dist) {
             float v2 = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[2]);
             
             float k = 10.0 * (frag_depth / $ShadCasc1Dist - 0.9);
             visibility = mix(visibility, v2, k);
         }
+#endif
     } else /*[[branch]]*/ if (frag_depth < $ShadCasc2Dist) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[2]);
         
+#if $ShadCascSoft
         /*[[branch]]*/ if (frag_depth > 0.9 * $ShadCasc2Dist) {
             float v2 = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[3]);
             
             float k = 10.0 * (frag_depth / $ShadCasc2Dist - 0.9);
             visibility = mix(visibility, v2, k);
         }
+#endif
     } else /*[[branch]]*/ if (frag_depth < $ShadCasc3Dist) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[3]);
         

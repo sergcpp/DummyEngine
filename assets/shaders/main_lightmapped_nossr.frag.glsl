@@ -213,7 +213,7 @@ void main(void) {
                                (sh_l_12 - vec3(0.5)) * normal.x) * sh_l_00 * 2.0;
     indirect_col = max(indirect_col, vec3(0.0));
     
-    float lambert = max(dot(normal, uSunDir.xyz), 0.0);
+    float lambert = clamp(dot(normal, uSunDir.xyz), 0.0, 1.0);
     float visibility = 0.0;
     /*[[branch]]*/ if (lambert > 0.00001) {
         visibility = GetSunVisibility(lin_depth, shadow_texture, aVertexShUVs_);
