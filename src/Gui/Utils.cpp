@@ -1,5 +1,7 @@
 #include "Utils.h"
 
+#define _abs(x) (((x) < 0.0) ? -(x) : (x))
+
 namespace GuiInternal {
 static double _root3(double x) {
     double s = 1.0;
@@ -33,6 +35,46 @@ static double root3(double x) {
     }
 }
 
+// Solve cubic equation (x ^ 3) + a * (x ^ 2) + b * x + c = 0
+static int solve_cubic(double a, double b, double c, double x[3]) {
+    using namespace GuiInternal;
+
+    const double eps = std::numeric_limits<double>::epsilon();
+    const double TwoPi = 2.0 * Ren::Pi<double>();
+
+    const double a2 = a * a;
+    double q = (a2 - 3.0 * b) / 9.0;
+    const double r = (a * (2.0 * a2 - 9.0 * b) + 27.0 * c) / 54.0;
+    // equation x^3 + q*x + r = 0
+    const double r2 = r * r;
+    const double q3 = q * q * q;
+    double A, B;
+    if (r2 <= (q3 + eps)) {
+        double t = r / std::sqrt(q3);
+        if (t < -1.0) t = -1.0;
+        if (t > 1.0) t = 1.0;
+        t = std::acos(t);
+        a /= 3.0; q = -2.0 * std::sqrt(q);
+        x[0] = q * std::cos(t / 3.0) - a;
+        x[1] = q * std::cos((t + TwoPi) / 3.0) - a;
+        x[2] = q * std::cos((t - TwoPi) / 3.0) - a;
+        return 3;
+    } else {
+        A = -root3(_abs(r) + std::sqrt(r2 - q3));
+        if (r < 0) {
+            A = -A;
+        }
+        B = (A == 0.0 ? 0.0 : B = q / A);
+
+        a /= 3.0;
+        x[0] = (A + B) - a;
+        x[1] = -0.5 * (A + B) - a;
+        x[2] = 0.5 * std::sqrt(3.0) * (A - B);
+        if (_abs(x[2]) < eps) { x[2] = x[1]; return 2; }
+        return 1;
+    }
+}
+
 static double cross2(const Ren::Vec2d &v1, const Ren::Vec2d &v2) {
     return v1[0] * v2[1] - v1[1] * v2[0];
 }
@@ -43,10 +85,64 @@ static uint8_t median(uint8_t r, uint8_t g, uint8_t b) {
 
 }
 
-#define _abs(x) (((x) < 0.0) ? -(x) : (x))
-
 Ren::Vec2f Gui::MapPointToScreen(const Vec2i &p, const Vec2i &res) {
     return (2.0f * Vec2f((float)p[0], (float)res[1] - p[1])) / (Vec2f)res + Vec2f(-1, -1);
+}
+
+int Gui::ConvChar_UTF8_to_Unicode(const char *utf8, uint32_t &out_unicode) {
+    int i = 0;
+    int todo;
+
+    const auto ch0 = (uint8_t)utf8[i++];
+    if (ch0 <= 0x7F) {
+        out_unicode = ch0;
+        todo = 0;
+    } else if (ch0 <= 0xBF) {
+        return 0;
+    } else if (ch0 <= 0xDF) {
+        out_unicode = ch0 & 0x1Fu;
+        todo = 1;
+    } else if (ch0 <= 0xEF) {
+        out_unicode = ch0 & 0x0Fu;
+        todo = 2;
+    } else if (ch0 <= 0xF7) {
+        out_unicode = ch0 & 0x07u;
+        todo = 3;
+    } else {
+        return 0;
+    }
+
+    for (size_t j = 0; j < todo; ++j) {
+        const auto ch1 = (uint8_t)utf8[i++];
+        if (ch1 < 0x80 || ch1 > 0xBF) {
+            return 0;
+        }
+        out_unicode <<= 6u;
+        out_unicode += ch1 & 0x3Fu;
+    }
+
+    if ((out_unicode >= 0xD800 && out_unicode <= 0xDFFF) || out_unicode > 0x10FFFF) {
+        return 0;
+    }
+
+    return 1 + todo;
+}
+
+int Gui::ConvChar_UTF8_to_UTF16(const char *utf8, uint16_t out_utf16[2]) {
+    uint32_t uni;
+    int consumed_bytes = ConvChar_UTF8_to_Unicode(utf8, uni);
+
+    if (uni <= 0xFFFF) {
+        out_utf16[0] = (uint16_t)uni;
+        out_utf16[1] = 0;
+    } else {
+        // not a single-char utf16
+        uni -= 0x10000;
+        out_utf16[0] = (uint16_t)((uni >> 10u) + 0xD800);
+        out_utf16[1] = (uint16_t)((uni & 0x3FFu) + 0xDC00);
+    }
+
+    return consumed_bytes;
 }
 
 void Gui::DrawBezier1ToBitmap(const Ren::Vec2d &p0, const Ren::Vec2d &p1, int stride, int channels, uint8_t *out_rgba) {
@@ -117,45 +213,6 @@ void Gui::DrawBezier3ToBitmap(const Ren::Vec2d &p0, const Ren::Vec2d &p1, const 
     }
 }
 
-int Gui::SolveCubic(double a, double b, double c, double x[3]) {
-    using namespace GuiInternal;
-
-    const double eps = std::numeric_limits<double>::epsilon();
-    const double TwoPi = 2.0 * Ren::Pi<double>();
-
-    const double a2 = a * a;
-    double q = (a2 - 3.0 * b) / 9.0;
-    const double r = (a * (2.0 * a2 - 9.0 * b) + 27.0 * c) / 54.0;
-    // equation x^3 + q*x + r = 0
-    const double r2 = r * r;
-    const double q3 = q * q * q;
-    double A, B;
-    if (r2 <= (q3 + eps)) {
-        double t = r / std::sqrt(q3);
-        if (t < -1.0) t = -1.0;
-        if (t > 1.0) t = 1.0;
-        t = std::acos(t);
-        a /= 3.0; q = -2.0 * std::sqrt(q);
-        x[0] = q * std::cos(t / 3.0) - a;
-        x[1] = q * std::cos((t + TwoPi) / 3.0) - a;
-        x[2] = q * std::cos((t - TwoPi) / 3.0) - a;
-        return 3;
-    } else {
-        A = -root3(_abs(r) + std::sqrt(r2 - q3));
-        if (r < 0) {
-            A = -A;
-        }
-        B = (A == 0.0 ? 0.0 : B = q / A);
-
-        a /= 3.0;
-        x[0] = (A + B) - a;
-        x[1] = -0.5 * (A + B) - a;
-        x[2] = 0.5 * std::sqrt(3.0) * (A - B);
-        if (_abs(x[2]) < eps) { x[2] = x[1]; return 2; }
-        return 1;
-    }
-}
-
 Gui::dist_result_t Gui::Bezier1Distance(const Ren::Vec2d &p0, const Ren::Vec2d &p1, const Ren::Vec2d &p) {
     using namespace GuiInternal;
     using namespace Ren;
@@ -210,7 +267,7 @@ Gui::dist_result_t Gui::Bezier2Distance(const Ren::Vec2d &p0, const Ren::Vec2d &
         d = -Dot(_p, _p1) / a;
 
     double roots[5] = { 0.0, 1.0 };
-    const int count = SolveCubic(b, c, d, &roots[2]);
+    const int count = solve_cubic(b, c, d, &roots[2]);
     assert(count);
 
     double min_sdist = std::numeric_limits<double>::max();

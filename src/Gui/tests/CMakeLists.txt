@@ -56,5 +56,6 @@ endif()
 add_executable(test_Gui main.cpp
                         test_common.h
                         test_renderer.cpp
+                        test_unicode.cpp
                         test_widgets.cpp)
 target_link_libraries(test_Gui ${LIBS} Gui)

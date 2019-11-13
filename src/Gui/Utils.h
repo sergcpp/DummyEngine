@@ -1,9 +1,17 @@
 #pragma once
 
+#include <cstdint>
+
 #include <Ren/MVec.h>
 
 namespace Gui {
 Ren::Vec2f MapPointToScreen(const Ren::Vec2i &p, const Ren::Vec2i &res);
+
+//
+// Unicode conversion
+//
+int ConvChar_UTF8_to_Unicode(const char *utf8, uint32_t &out_unicode);
+int ConvChar_UTF8_to_UTF16(const char *utf8, uint16_t out_utf16[2]);
 
 //
 // SDF font generation
@@ -13,9 +21,6 @@ Ren::Vec2f MapPointToScreen(const Ren::Vec2i &p, const Ren::Vec2i &res);
 void DrawBezier1ToBitmap(const Ren::Vec2d &p0, const Ren::Vec2d &p1, int stride, int channels, uint8_t *out_rgba);
 void DrawBezier2ToBitmap(const Ren::Vec2d &p0, const Ren::Vec2d &p1, const Ren::Vec2d &p2, int stride, int channels, uint8_t *out_rgba);
 void DrawBezier3ToBitmap(const Ren::Vec2d &p0, const Ren::Vec2d &p1, const Ren::Vec2d &p2, const Ren::Vec2d &p3, int stride, int channels, uint8_t *out_rgba);
-
-// Solve cubic equation (x ^ 3) + a * (x ^ 2) + b * x + c = 0
-int SolveCubic(double a, double b, double c, double x[3]);
 
 struct dist_result_t {
     double sdist, pseudodist, ortho;
@@ -36,7 +41,7 @@ struct bezier_seg_t {
 };
 static_assert(sizeof(bezier_seg_t) == 104, "!");
 
-void PreprocessBezierShape(bezier_seg_t *segs, int count, const double max_soft_angle_rad);
+void PreprocessBezierShape(bezier_seg_t *segs, int count, double max_soft_angle_rad);
 dist_result_t BezierSegmentDistance(const bezier_seg_t &seg, const Ren::Vec2d &p);
 
 int FixSDFCollisions(uint8_t *img_data, int w, int h, int channels, int threshold);
