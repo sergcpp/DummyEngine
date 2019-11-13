@@ -13,49 +13,53 @@ enum {
 };
 
 const char vs_source[] =
-    "/*\n"
-    "ATTRIBUTES\n"
-    "	aVertexPosition : 0\n"
-    "	aVertexUVs : 1\n"
-    "UNIFORMS\n"
-    "	z_offset : 2\n"
-    "*/\n"
-    "\n"
-    "uniform float z_offset;\n"
-    "\n"
-    "attribute vec3 aVertexPosition;\n"
-    "attribute vec2 aVertexUVs;\n"
-    "\n"
-    "varying vec2 aVertexUVs_;\n"
-    "\n"
-    "void main(void) {\n"
-    "    gl_Position = vec4(aVertexPosition + vec3(0.0, 0.0, z_offset), 1.0);\n"
-    "    aVertexUVs_ = aVertexUVs;\n"
-    "}";
+R"(#version 100
+/*
+ATTRIBUTES
+	aVertexPosition : 0
+	aVertexUVs : 1
+UNIFORMS
+	z_offset : 2
+*/
+
+uniform float z_offset;
+
+attribute vec3 aVertexPosition;
+attribute vec2 aVertexUVs;
+
+varying vec2 aVertexUVs_;
+
+void main(void) {
+    gl_Position = vec4(aVertexPosition + vec3(0.0, 0.0, z_offset), 1.0);
+    aVertexUVs_ = aVertexUVs;
+}
+)";
 
 const char fs_source[] =
-    "#ifdef GL_ES\n"
-    "	precision mediump float;\n"
-    "#else\n"
-    "	#define lowp\n"
-    "	#define mediump\n"
-    "	#define highp\n"
-    "#endif\n"
-    "\n"
-    "/*\n"
-    "UNIFORMS\n"
-    "	col : 0\n"
-    "	s_texture : 1\n"
-    "*/\n"
-    "\n"
-    "uniform vec3 col;\n"
-    "uniform sampler2D s_texture;\n"
-    "\n"
-    "varying vec2 aVertexUVs_;\n"
-    "\n"
-    "void main(void) {\n"
-    "	gl_FragColor = vec4(col, 1.0) * texture2D(s_texture, aVertexUVs_);\n"
-    "}";
+R"(#version 100
+#ifdef GL_ES
+	precision mediump float;
+#else
+	#define lowp
+	#define mediump
+	#define highp
+#endif
+
+/*
+UNIFORMS
+	col : 0
+	s_texture : 1
+*/
+
+uniform vec3 col;
+uniform sampler2D s_texture;
+
+varying vec2 aVertexUVs_;
+
+void main(void) {
+	gl_FragColor = vec4(col, 1.0) * texture2D(s_texture, aVertexUVs_);
+}
+)";
 
 inline void BindTexture(int slot, uint32_t tex) {
     glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
