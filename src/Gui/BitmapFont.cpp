@@ -26,8 +26,8 @@ size_t _strnlen(const char *str, size_t maxlen) {
 }
 }
 
-std::vector<float> Gui::BitmapFont::std_positions, Gui::BitmapFont::std_uvs;
-std::vector<uint16_t> Gui::BitmapFont::std_indices;
+std::vector<float> Gui::BitmapFont::default_pos_buf, Gui::BitmapFont::default_uvs_buf;
+std::vector<uint16_t> Gui::BitmapFont::default_indices_buf;
 
 Gui::BitmapFont::BitmapFont(const char *name, Ren::Context *ctx) {
     cur_x_ = cur_y_ = 0;
@@ -232,7 +232,7 @@ float Gui::BitmapFont::GetTriangles(const char *text, std::vector<float> &_posit
 }
 
 float Gui::BitmapFont::GetWidth(const char *text, const BaseElement *parent) {
-    return GetTriangles(text, std_positions, std_uvs, std_indices, { 0, 0 }, parent);
+    return GetTriangles(text, default_pos_buf, default_uvs_buf, default_indices_buf, { 0, 0 }, parent);
 }
 
 float Gui::BitmapFont::height(const BaseElement *parent) const {
@@ -244,14 +244,14 @@ int Gui::BitmapFont::blend_mode() const {
 }
 
 void Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos, const BaseElement *parent) {
-    GetTriangles(text, std_positions, std_uvs, std_indices, pos, parent);
-    if (std_positions.empty()) {
+    GetTriangles(text, default_pos_buf, default_uvs_buf, default_indices_buf, pos, parent);
+    if (default_pos_buf.empty()) {
         return;
     }
 
     const Renderer::DrawParams &cur = r->GetParams();
 
     r->EmplaceParams(cur.col(), cur.z_val(), (eBlendMode)blend_mode(), cur.scissor_test());
-    r->DrawUIElement(tex_, Gui::PRIM_TRIANGLE, std_positions, std_uvs, std_indices);
+    r->DrawUIElement(tex_, Gui::PRIM_TRIANGLE, default_pos_buf, default_uvs_buf, default_indices_buf);
     r->PopParams();
 }

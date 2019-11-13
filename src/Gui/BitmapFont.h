@@ -56,7 +56,7 @@ private:
     bool invert_y_;
     float scale_;
 
-    static std::vector<float> std_positions, std_uvs;
-    static std::vector<uint16_t> std_indices;
+    static std::vector<float> default_pos_buf, default_uvs_buf;
+    static std::vector<uint16_t> default_indices_buf;
 };
 }
