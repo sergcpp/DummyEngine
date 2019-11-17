@@ -1,13 +1,15 @@
 .dumps
 .vs
+.idea
 assets_pc
 assets_android
 build-*
 check*
-DummyApp.exe
+DummyApp*
 libDummyApp*.so
 ModlApp.exe
 DummyApp.apk
 test.txt
 test.mesh
 *.blend1
+cmake-build*

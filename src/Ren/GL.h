@@ -224,7 +224,8 @@ EXTERN_FUNC PFNGLGETQUERYOBJECTUI64VEXTPROC     glGetQueryObjectui64vEXT;
 
 #define GL_TIMESTAMP 0x8E28
 
-#define GL_QUERY_RESULT	0x8866
+#define GL_QUERY_RESULT	                            0x8866
+#define GL_QUERY_RESULT_NO_WAIT                     0x9194
 
 #define GL_COMPRESSED_RGBA_ASTC_4x4_KHR            0x93B0
 #define GL_COMPRESSED_RGBA_ASTC_5x4_KHR            0x93B1

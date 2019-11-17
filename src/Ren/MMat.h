@@ -11,15 +11,15 @@ T Pi() {
 template <typename T, int M, int N>
 class Mat : public Vec<Vec<T, N>, M> {
 public:
-    Mat(eUninitialized) {}
-    Mat() : Mat(T(1)) {}
-    explicit Mat(T v) {
+    Mat(eUninitialized) noexcept {}
+    Mat() noexcept : Mat(T(1)) {}
+    explicit Mat(T v) noexcept {
         for (int i = 0; i < M; i++) {
             this->data_[i][i] = v;
         }
     }
 
-    explicit Mat(const Mat<T, M - 1, N - 1> &v) {
+    explicit Mat(const Mat<T, M - 1, N - 1> &v) noexcept {
         for (int i = 0; i < M - 1; i++) {
             for (int j = 0; j < N - 1; j++) {
                 this->data_[i][j] = v[i][j];
@@ -28,7 +28,7 @@ public:
         this->data_[M - 1][N - 1] = T(1);
     }
 
-    explicit Mat(const Mat<T, M + 1, N + 1> &v) {
+    explicit Mat(const Mat<T, M + 1, N + 1> &v) noexcept {
         for (int i = 0; i < M; i++) {
             for (int j = 0; j < N; j++) {
                 this->data_[i][j] = v[i][j];
@@ -37,7 +37,7 @@ public:
     }
 
     template <typename... Tail>
-    Mat(typename std::enable_if<sizeof...(Tail)+1 == M, Vec<T, N>>::type head, Tail... tail)
+    Mat(typename std::enable_if<sizeof...(Tail)+1 == M, Vec<T, N>>::type head, Tail... tail) noexcept
         : Vec<Vec<T, N>, M> {
         head, tail...
     } {

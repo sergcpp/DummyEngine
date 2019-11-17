@@ -128,7 +128,7 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
                 if (buf_len) {
                     char *buf = (char *)malloc((size_t)buf_len);
                     if (buf) {
-                        glGetProgramInfoLog(program, buf_len, NULL, buf);
+                        glGetProgramInfoLog(program, buf_len, nullptr, buf);
                         fprintf(stderr, "Could not link program: %s", buf);
                         free(buf);
                         throw;

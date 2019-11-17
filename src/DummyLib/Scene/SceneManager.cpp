@@ -694,6 +694,7 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
             vs_file.Read((char *)vs_src.data(), vs_size);
             fs_file.Read((char *)fs_src.data(), fs_size);
 
+            LOGI("Compiling program %s", name);
             ret = ctx_.LoadProgramGLSL(name, vs_src.c_str(), fs_src.c_str(), &status);
             assert(status == Ren::ProgCreatedFromData);
         }

@@ -33,7 +33,7 @@ struct SDL_Window;
 class GameBase;
 
 class DummyApp {
-    bool fullscreen_, quit_;
+    bool fullscreen_ = false, quit_ = false;
 
 #if !defined(__ANDROID__)
 #if defined(_WIN32)
@@ -41,9 +41,9 @@ class DummyApp {
     HDC             device_context_;
     HGLRC           gl_ctx_;
 #elif defined(__linux__)
-    Display         *dpy_;
-    Window          win_;
-    GLXContext      ctx_;
+    Display         *dpy_ = nullptr;
+    Window          win_ = {};
+    GLXContext      ctx_ = {};
 #else
 #if defined(USE_GL_RENDER)
     void            *gl_ctx_ = nullptr;

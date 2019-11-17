@@ -211,6 +211,7 @@ bool Ren::Context::IsExtensionSupported(const char *ext) {
             return true;
         }
     }
+
     return false;
 }
 

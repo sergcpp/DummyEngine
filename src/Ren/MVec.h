@@ -13,21 +13,21 @@ class Vec {
 protected:
     T data_[N];
 public:
-    Vec(eUninitialized) {}
-    Vec() : data_{ (T)0 } {}
-    explicit Vec(T v) {
+    Vec(eUninitialized) noexcept {}
+    Vec() noexcept : data_{ (T)0 } {}
+    explicit Vec(T v) noexcept {
         for (int i = 0; i < N; i++) {
             data_[i] = v;
         }
     }
 
     template <typename... Tail>
-    Vec(typename std::enable_if<sizeof...(Tail)+1 == N, T>::type head, Tail... tail)
+    Vec(typename std::enable_if<sizeof...(Tail)+1 == N, T>::type head, Tail... tail) noexcept
         : data_{ head, T(tail)... } {
     }
 
     template<typename S, int M>
-    explicit Vec(const Vec<S, M> &rhs) {
+    explicit Vec(const Vec<S, M> &rhs) noexcept {
         const int count = N < M ? N : M;
         for (int i = 0; i < count; i++) {
             data_[i] = (T)rhs[i];
@@ -35,7 +35,7 @@ public:
     }
 
     template<typename S>
-    explicit Vec(const Vec<S, N> &rhs) {
+    explicit Vec(const Vec<S, N> &rhs) noexcept {
         for (int i = 0; i < N; i++) {
             data_[i] = (T)rhs[i];
         }

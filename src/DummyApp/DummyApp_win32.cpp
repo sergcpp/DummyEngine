@@ -58,7 +58,7 @@ typedef HGLRC (WINAPI * PFNWGLCREATECONTEXTATTRIBSARBPROC) (HDC hDC, HGLRC hShar
 #define WGL_CONTEXT_PROFILE_MASK_ARB      0x9126
 #define WGL_CONTEXT_CORE_PROFILE_BIT_ARB  0x00000001
 
-DummyApp::DummyApp() : quit_(false) {
+DummyApp::DummyApp() {
     g_app = this;
 }
 

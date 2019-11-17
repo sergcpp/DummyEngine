@@ -161,7 +161,7 @@ private:
     bool InitFramebuffersInternal();
     void DestroyRendererInternal();
     void DrawObjectsInternal(const DrawList &list, const FrameBuf *target);
-    uint64_t GetGpuTimeBlockingUs();
+    static uint64_t GetGpuTimeBlockingUs();
 
     // Parallel Jobs
     static void GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,

@@ -258,7 +258,7 @@ void Renderer::InitRendererInternal() {
 
         glGenBuffers(1, &shared_data_ubo);
         glBindBuffer(GL_UNIFORM_BUFFER, shared_data_ubo);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedDataBlock), NULL, GL_DYNAMIC_COPY);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedDataBlock), nullptr, GL_DYNAMIC_COPY);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
         unif_shared_data_block_[i] = (uint32_t)shared_data_ubo;
@@ -2392,7 +2392,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         }
 
-        float k = 1.0f / (reduced_buf_.w * reduced_buf_.h);
+        float k = 1.0f / float(reduced_buf_.w * reduced_buf_.h);
         cur_average *= k;
 
         const float alpha = 1.0f / 64;
@@ -2547,7 +2547,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUniform4f(0, 0.0f, 0.0f, 256.0f, 128.0f);
 
-        float sx = 2 * 256.0f / scr_w_, sy = 2 * 128.0f / scr_h_;
+        float sx = 2 * 256.0f / float(scr_w_), sy = 2 * 128.0f / float(scr_h_);
 
         const float positions[] = { -1.0f, -1.0f,               -1.0f + sx, -1.0f,
                                     -1.0f + sx, -1.0f + sy,     -1.0f, -1.0f + sy };

@@ -45,5 +45,6 @@ void PreprocessBezierShape(bezier_seg_t *segs, int count, double max_soft_angle_
 dist_result_t BezierSegmentDistance(const bezier_seg_t &seg, const Ren::Vec2d &p);
 
 int FixSDFCollisions(uint8_t *img_data, int w, int h, int channels, int threshold);
+
 }
 

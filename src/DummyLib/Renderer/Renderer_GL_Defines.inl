@@ -2,7 +2,7 @@
 #define _AS_STR(x) #x
 #define AS_STR(x) _AS_STR(x)
 
-#define REN_DIRECT_DRAWING
+//#define REN_DIRECT_DRAWING
 
 // Resolution of frustum item grid
 #define REN_GRID_RES_X 16

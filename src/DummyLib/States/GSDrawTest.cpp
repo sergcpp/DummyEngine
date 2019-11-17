@@ -616,14 +616,8 @@ void GSDrawTest::Draw(uint64_t dt_us) {
 
             for (const std::string &cmd : cmdline_history_) {
                 font_->DrawText(ui_renderer_.get(), cmd.c_str(), { -1, cur_y }, ui_root_.get());
-                cur_y -= font_height;
+                cur_y -= (float)font_height;
             }
-        }
-
-        {
-            char buf[128];
-            sprintf(buf, " Shader (current is %i): 0 - passthrough (baseline); 1 - MSDF; 2 - mixed (passthrough); 3 - mixed (MSDF)", cur_font_test_);
-            font_->DrawText(ui_renderer_.get(), buf, { -1.0f, 0.98f - font_height }, ui_root_.get());
         }
 
         if (!use_pt_ && !use_lm_) {
@@ -636,10 +630,10 @@ void GSDrawTest::Draw(uint64_t dt_us) {
             uint64_t front_dur = front_info.end_timepoint_us - front_info.start_timepoint_us,
                      back_dur = back_info.cpu_end_timepoint_us - back_info.cpu_start_timepoint_us;
 
-            //LOGI("Frontend: %04lld\tBackend(cpu): %04lld", (long long)front_dur, (long long)back_dur);
+            LOGI("Frontend: %04lld\tBackend(cpu): %04lld", (long long)front_dur, (long long)back_dur);
 
-            uint64_t transp_dur = back_info.gpu_end_timepoint_us - back_info.gpu_start_timepoint_us;// back_info.opaque_pass_time_us + back_info.transp_pass_time_us;
-            LOGI("Transparent draw: %04lu us", transp_dur);
+            //uint64_t transp_dur = back_info.gpu_end_timepoint_us - back_info.gpu_start_timepoint_us;// back_info.opaque_pass_time_us + back_info.transp_pass_time_us;
+            //LOGI("Transparent draw: %04i us", (int)transp_dur);
 
             ItemsInfo items_info;
             items_info.light_sources_count  = main_view_lists_[back_list].light_sources.count;
@@ -648,7 +642,7 @@ void GSDrawTest::Draw(uint64_t dt_us) {
             items_info.items_total          = main_view_lists_[back_list].items.count;
 
             debug_ui_->UpdateInfo(front_info, back_info, items_info, *swap_interval_, render_flags);
-            //debug_ui_->Draw(ui_renderer_.get());
+            debug_ui_->Draw(ui_renderer_.get());
         }
 
         ui_renderer_->EndDraw();
@@ -674,7 +668,7 @@ void GSDrawTest::Update(uint64_t dt_us) {
             invalidate_view_ = true;
         }
     } else {
-        int next_point = (cam_follow_point_ + 1) % cam_follow_path_.size();
+        int next_point = (cam_follow_point_ + 1) % (int)cam_follow_path_.size();
 
         {   // update param
             const Ren::Vec3f &p1 = cam_follow_path_[cam_follow_point_],
@@ -682,12 +676,12 @@ void GSDrawTest::Update(uint64_t dt_us) {
 
             cam_follow_param_ += 0.000005f * dt_us / Ren::Distance(p1, p2);
             while (cam_follow_param_ > 1.0f) {
-                cam_follow_point_ = (cam_follow_point_ + 1) % cam_follow_path_.size();
+                cam_follow_point_ = (cam_follow_point_ + 1) % (int)cam_follow_path_.size();
                 cam_follow_param_ -= 1.0f;
             }
         }
 
-        next_point = (cam_follow_point_ + 1) % cam_follow_path_.size();
+        next_point = (cam_follow_point_ + 1) % (int)cam_follow_path_.size();
 
         const Ren::Vec3f &p1 = cam_follow_path_[cam_follow_point_],
                          &p2 = cam_follow_path_[next_point];
@@ -808,18 +802,18 @@ void GSDrawTest::HandleInput(const InputManager::Event &evt) {
 
     switch (evt.type) {
     case InputManager::RAW_INPUT_P1_DOWN:
-        /*if (evt.point.x < ctx_->w() / 3 && move_pointer_ == 0) {
+        if (evt.point.x < ctx_->w() / 3 && move_pointer_ == 0) {
             move_pointer_ = 1;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 1;
-        }*/
+        }
         break;
     case InputManager::RAW_INPUT_P2_DOWN:
-        /*if (evt.point.x < ctx_->w() / 3 && move_pointer_ == 0) {
+        if (evt.point.x < ctx_->w() / 3 && move_pointer_ == 0) {
             move_pointer_ = 2;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 2;
-        }*/
+        }
         break;
     case InputManager::RAW_INPUT_P1_UP:
         if (move_pointer_ == 1) {
@@ -935,10 +929,6 @@ void GSDrawTest::HandleInput(const InputManager::Event &evt) {
             }
         } else if (cmdline_enabled_) {
             cmdline_input_.push_back(evt);
-        } else if (evt.raw_key >= 48 && evt.raw_key < 52) {
-            cur_font_test_ = (int)evt.raw_key - 48;
-            view_origin_ = { (evt.raw_key - 48) * 10.0f, 0.0f, 10.0f };
-            view_dir_ = { 0.0f, 0.0f, -1.0f };
         }
     }
     case InputManager::RAW_INPUT_RESIZE:
@@ -1064,7 +1054,6 @@ void GSDrawTest::UpdateFrame(int list_index) {
             probe_to_render_ = probe;
             probes_to_update_.pop_back();
         }
-
         // Enable all flags, Renderer will mask out what is not enabled
         main_view_lists_[list_index].render_flags = 0xffffffff;
 
@@ -1076,10 +1065,10 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
     const SceneData &scene = scene_manager_->scene_data();
 
     if (wolf_indices_[0] != 0xffffffff) {
-        for (int i = 0; i < 32; i++) {
-            if (wolf_indices_[i] == 0xffffffff) break;
+        for (uint32_t wolf_index : wolf_indices_) {
+            if (wolf_index == 0xffffffff) break;
 
-            SceneObject *wolf = scene_manager_->GetObject(wolf_indices_[i]);
+            SceneObject *wolf = scene_manager_->GetObject(wolf_index);
 
             uint32_t mask = CompDrawableBit | CompAnimStateBit;
             if ((wolf->comp_mask & mask) == mask) {

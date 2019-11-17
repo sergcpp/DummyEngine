@@ -37,7 +37,7 @@ extern "C" {
 typedef GLXContext (*GLXCREATECONTEXTATTIBSARBPROC)(Display *, GLXFBConfig, GLXContext, Bool, const int *);
 #endif
 
-DummyApp::DummyApp() : quit_(false) {
+DummyApp::DummyApp() {
     g_app = this;
 }
 
@@ -47,30 +47,38 @@ DummyApp::~DummyApp() {
 
 int DummyApp::Init(int w, int h) {
 #if !defined(__ANDROID__)
-    dpy_ = XOpenDisplay(0);
+    dpy_ = XOpenDisplay(nullptr);
     if (!dpy_) {
         fprintf(stderr, "dpy is null\n");
         return -1;
     }
 
+    static int attribute_list[] = {
+            GLX_X_RENDERABLE    , True,
+            GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
+            GLX_RENDER_TYPE     , GLX_RGBA_BIT,
+            GLX_X_VISUAL_TYPE   , GLX_TRUE_COLOR,
+            GLX_RED_SIZE        , 8,
+            GLX_GREEN_SIZE      , 8,
+            GLX_BLUE_SIZE       , 8,
+            GLX_ALPHA_SIZE      , 8,
+            GLX_DEPTH_SIZE      , 0,
+            GLX_STENCIL_SIZE    , 0,
+            GLX_DOUBLEBUFFER    , True,
+            //GLX_SAMPLE_BUFFERS  , 1,
+            //GLX_SAMPLES         , 4,
+            None
+    };
+
     int element_count = 0;
-    GLXFBConfig *fbc = glXChooseFBConfig(dpy_, DefaultScreen(dpy_), 0, &element_count);
+    GLXFBConfig *fbc = glXChooseFBConfig(dpy_, DefaultScreen(dpy_), attribute_list, &element_count);
 
     if (!fbc) {
         fprintf(stderr, "fbc is null\n");
         return -1;
     }
 
-    static int attribute_list[] = {
-        GLX_RGBA, GLX_DOUBLEBUFFER,
-        GLX_RED_SIZE, 8,
-        GLX_GREEN_SIZE, 8,
-        GLX_BLUE_SIZE, 8,
-        GLX_DEPTH_SIZE, 0,
-        None    
-    };
-
-    XVisualInfo *vi = glXChooseVisual(dpy_, DefaultScreen(dpy_), attribute_list);
+    XVisualInfo *vi = glXGetVisualFromFBConfig(dpy_, *fbc);
     if (!vi) {
         fprintf(stderr, "vi is null\n");
         return -1;
@@ -84,11 +92,12 @@ int DummyApp::Init(int w, int h) {
     win_ = XCreateWindow(dpy_, RootWindow(dpy_, vi->screen), 0, 0, w, h, 0, vi->depth, InputOutput, vi->visual, CWBorderPixel | CWColormap | CWEventMask, &swa);
     
     XMapWindow(dpy_, win_);
+    XStoreName(dpy_, win_, "View");
 
     Atom wmDelete = XInternAtom(dpy_, "WM_DELETE_WINDOW", False);
     XSetWMProtocols(dpy_, win_, &wmDelete, 1);
 
-    GLXCREATECONTEXTATTIBSARBPROC glXCreateContextAttribsARB = (GLXCREATECONTEXTATTIBSARBPROC)glXGetProcAddress((const GLubyte *)"glXCreateContextAttribsARB");
+    auto glXCreateContextAttribsARB = (GLXCREATECONTEXTATTIBSARBPROC)glXGetProcAddress((const GLubyte *)"glXCreateContextAttribsARB");
     if (!glXCreateContextAttribsARB) {
         fprintf(stderr, "glXCreateContextAttribsARB was not loaded\n");
         return -1;
@@ -102,7 +111,7 @@ int DummyApp::Init(int w, int h) {
         0
     };
 
-    ctx_ = glXCreateContextAttribsARB(dpy_, *fbc, 0, true, attribs);
+    ctx_ = glXCreateContextAttribsARB(dpy_, *fbc, nullptr, true, attribs);
     if (!ctx_) {
         fprintf(stderr, "ctx is null\n");
         return -1;
@@ -255,7 +264,7 @@ void DummyApp::PollEvents() {
         InputManager::Event evt;
 
         if (xev.type == KeyPress) {
-            int raw_key = xev.xkey.keycode;
+            int raw_key = (int)xev.xkey.keycode;
 
             char buf[2] = {};
             KeySym keysym_return;
@@ -273,7 +282,7 @@ void DummyApp::PollEvents() {
                 evt.raw_key = raw_key;
             }
         } else if (xev.type == KeyRelease) {
-            int raw_key = xev.xkey.keycode;
+            int raw_key = (int)xev.xkey.keycode;
 
             char buf[2] = {};
             KeySym keysym_return;
@@ -290,12 +299,12 @@ void DummyApp::PollEvents() {
             }
         } else if (xev.type == ButtonPress) {
             evt.type = InputManager::RAW_INPUT_P1_DOWN;
-            evt.point.x = xev.xbutton.x;
-            evt.point.y = xev.xbutton.y;
+            evt.point.x = (float)xev.xbutton.x;
+            evt.point.y = (float)xev.xbutton.y;
         } else if (xev.type == ButtonRelease) {
             evt.type = InputManager::RAW_INPUT_P1_UP;
-            evt.point.x = xev.xbutton.x;
-            evt.point.y = xev.xbutton.y;
+            evt.point.x = (float)xev.xbutton.x;
+            evt.point.y = (float)xev.xbutton.y;
         } else if (xev.type == MotionNotify) {
             evt.type = InputManager::RAW_INPUT_P1_MOVE;
             evt.point.x = (float)xev.xmotion.x;
