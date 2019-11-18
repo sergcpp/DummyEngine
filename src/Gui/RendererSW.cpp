@@ -92,7 +92,7 @@ void Gui::Renderer::BeginDraw() {
     swEnable(SW_BLEND);
 
     Ren::Vec2i scissor_test[2] = { { 0, 0 }, { ctx_.w(), ctx_.h() } };
-    this->EmplaceParams(Ren::Vec3f(1, 1, 1), 0.0f, BL_ALPHA, scissor_test);
+    this->EmplaceParams(Ren::Vec3f(1, 1, 1), 0.0f, BlAlpha, scissor_test);
 }
 
 void Gui::Renderer::EndDraw() {
@@ -147,7 +147,7 @@ void Gui::Renderer::DrawUIElement(const Ren::Texture2DRef &tex, ePrimitiveType p
     swVertexAttribPointer(A_POS, sizeof(float) * 3, 0, (void *)&pos[0]);
     swVertexAttribPointer(A_UV, sizeof(float) * 2, 0, (void *)&uvs[0]);
 
-    if (prim_type == PRIM_TRIANGLE) {
+    if (prim_type == PrimTriangle) {
         swDrawElements(SW_TRIANGLES, (SWuint)indices.size(), SW_UNSIGNED_BYTE, &indices[0]);
     }
 }

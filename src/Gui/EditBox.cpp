@@ -73,12 +73,12 @@ void Gui::EditBox::Press(const Vec2f &p, bool push) {
 
 void Gui::EditBox::Draw(Renderer *r) {
     const Renderer::DrawParams &cur = r->GetParams();
-    r->EmplaceParams(cur.col(), cur.z_val(), cur.blend_mode(), dims_px_);
+    r->EmplaceParams(cur.col_and_mode(), cur.z_val(), cur.blend_mode(), dims_px_);
 
     frame_.Draw(r);
     lay_.Draw(r);
 
-    r->EmplaceParams(Vec3f(0.75f, 0.75f, 0.75f), cur.z_val(), cur.blend_mode(), dims_px_);
+    r->EmplaceParams(Vec4f(0.75f, 0.75f, 0.75f, 0.0f), cur.z_val(), cur.blend_mode(), dims_px_);
     if (focused_) {
         cursor_.Draw(r);
     }

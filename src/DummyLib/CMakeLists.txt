@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(DummyLib)
 
-if(WIN32)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Ob1")
-endif(WIN32)
-
 set(SOURCE_FILES    Viewer.h
                     Viewer.cpp)
 
@@ -52,8 +48,12 @@ set(SCENE_COMP_SOURCES   Scene/Comp/Common.h
 
 set(STATES_SOURCES  States/GSCreate.h
                     States/GSCreate.cpp
+                    States/GSBaseState.h
+                    States/GSBaseState.cpp
                     States/GSDrawTest.h
-                    States/GSDrawTest.cpp)
+                    States/GSDrawTest.cpp
+                    States/GSUITest.h
+                    States/GSUITest.cpp)
 
 set(UTILS_SOURCES Utils/BVHSplit.h
                   Utils/BVHSplit.cpp

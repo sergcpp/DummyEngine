@@ -13,7 +13,7 @@ enum {
 };
 
 const char vs_source[] =
-R"(#version 100
+R"(#version 310 es
 /*
 ATTRIBUTES
 	aVertexPosition : 0
@@ -24,10 +24,10 @@ UNIFORMS
 
 uniform float z_offset;
 
-attribute vec3 aVertexPosition;
-attribute vec2 aVertexUVs;
+in vec3 aVertexPosition;
+in vec2 aVertexUVs;
 
-varying vec2 aVertexUVs_;
+out vec2 aVertexUVs_;
 
 void main(void) {
     gl_Position = vec4(aVertexPosition + vec3(0.0, 0.0, z_offset), 1.0);
@@ -36,7 +36,7 @@ void main(void) {
 )";
 
 const char fs_source[] =
-R"(#version 100
+R"(#version 310 es
 #ifdef GL_ES
 	precision mediump float;
 #else
@@ -47,17 +47,40 @@ R"(#version 100
 
 /*
 UNIFORMS
-	col : 0
+	col_and_mode : 0
 	s_texture : 1
 */
 
-uniform vec3 col;
+uniform vec4 col_and_mode;
 uniform sampler2D s_texture;
 
-varying vec2 aVertexUVs_;
+in vec2 aVertexUVs_;
+
+out vec4	outColor;
+
+float median(float r, float g, float b) {
+    return max(min(r, g), min(max(r, g), b));
+}
 
 void main(void) {
-	gl_FragColor = vec4(col, 1.0) * texture2D(s_texture, aVertexUVs_);
+    vec4 tex_color = texture(s_texture, aVertexUVs_);
+
+    if (col_and_mode.w < 0.5) {
+        // Simple texture drawing
+	    outColor = vec4(col_and_mode.rgb, 1.0) * tex_color;
+    } else {
+        // SDF drawing
+        float sig_dist = median(tex_color.r, tex_color.g, tex_color.b);
+        
+        float s = sig_dist - 0.5;
+        float v = s / fwidth(s);
+        
+        vec4 base_color;
+        base_color.rgb = vec3(1.0);
+        base_color.a = clamp(v + 0.5, 0.0, 1.0);
+        
+        outColor = vec4(col_and_mode.rgb, 1.0) * base_color;
+    }
 }
 )";
 
@@ -115,7 +138,7 @@ void Gui::Renderer::BeginDraw() {
 #endif
 
     Vec2i scissor_test[2] = { { 0, 0 }, { ctx_.w(), ctx_.h() } };
-    this->EmplaceParams(Vec3f(1, 1, 1), 0.0f, BL_ALPHA, scissor_test);
+    this->EmplaceParams(Vec4f(1.0f, 1.0f, 1.0f, 0.0f), 0.0f, BlAlpha, scissor_test);
 
     glBindVertexArray(main_vao_);
     glBindBuffer(GL_ARRAY_BUFFER, attribs_buf_id_);
@@ -199,7 +222,7 @@ void Gui::Renderer::DrawUIElement(const Ren::Texture2DRef &tex, ePrimitiveType p
     glVertexAttribPointer((GLuint)ui_program_->attribute(0).loc, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
     glVertexAttribPointer((GLuint)ui_program_->attribute(1).loc, 2, GL_FLOAT, GL_FALSE, 0, (void *)((uintptr_t)pos.size() * sizeof(GLfloat)));
 
-    if (prim_type == PRIM_TRIANGLE) {
+    if (prim_type == PrimTriangle) {
         glDrawElements(GL_TRIANGLES, (GLsizei)indices.size(), GL_UNSIGNED_SHORT, 0);
     }
 }
@@ -207,12 +230,12 @@ void Gui::Renderer::DrawUIElement(const Ren::Texture2DRef &tex, ePrimitiveType p
 void Gui::Renderer::ApplyParams(Ren::ProgramRef &p, const DrawParams &params) {
     using namespace UIRendererConstants;
     //int val = p->uniform(U_COL).loc;
-    glUniform3f(p->uniform(U_COL).loc, params.col_[0], params.col_[1], params.col_[2]);
+    glUniform4fv(p->uniform(U_COL).loc, 1, ValuePtr(params.col_and_mode_));
     glUniform1f(p->uniform(U_Z_OFFSET).loc, params.z_val_);
 
-    if (params.blend_mode_ == BL_ALPHA) {
+    if (params.blend_mode_ == BlAlpha) {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    } else if (params.blend_mode_ == BL_COLOR) {
+    } else if (params.blend_mode_ == BlColor) {
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
     }
 

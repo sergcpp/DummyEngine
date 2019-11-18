@@ -6,6 +6,7 @@
 #include <Ren/Texture.h>
 
 #include <Ren/MVec.h>
+#include "Renderer.h"
 
 namespace Gui {
 class BaseElement;
@@ -13,50 +14,64 @@ class Renderer;
 
 using Ren::Vec2f;
 
+struct typgraph_info_t {
+    uint32_t    line_height;
+};
+static_assert(sizeof(typgraph_info_t) == 4, "!");
+
+struct glyph_info_t {
+    int16_t     pos[2];
+    int8_t      res[2];
+    int8_t      off[2];
+    int8_t      adv[2];
+};
+static_assert(sizeof(glyph_info_t) == 10, "!");
+
+struct glyph_range_t {
+    uint32_t beg, end;
+};
+static_assert(sizeof(glyph_range_t) == 8, "!");
+
+enum eFontFileChunk {
+    FontChTypoData,
+    FontChImageData,
+    FontChGlyphData,
+    FontChCount
+};
+
 class BitmapFont {
 public:
     explicit BitmapFont(const char *name = nullptr, Ren::Context *ctx = nullptr);
 
+    float scale() const { return scale_; }
     float height(const BaseElement *parent) const;
+    eDrawMode draw_mode() const { return draw_mode_; }
+    eBlendMode blend_mode() const { return blend_mode_; }
+    Ren::Texture2DRef tex() const { return tex_; }
 
-    Ren::Texture2DRef tex() {
-        return tex_;
-    }
-
-    int blend_mode() const;
-
-    void set_scale(float s) {
-        scale_ = s;
-    }
-
-    void set_sharp(bool b);
+    void set_scale(float scale) { scale_ = scale; }
 
     bool Load(const char *name, Ren::Context &ctx);
 
-    void SetCursor(int x, int y);
-
-    void ReverseYAxis(bool state);
-
+    float GetWidth(const char *text, const BaseElement *parent) const;
     float GetTriangles(const char *text, std::vector<float> &positions, std::vector<float> &uvs,
-                       std::vector<uint16_t> &indices, const Vec2f &pos, const BaseElement *parent);
-
-    float GetWidth(const char *text, const BaseElement *parent);
+                       std::vector<uint16_t> &indices, const Vec2f &pos, const BaseElement *parent) const;
 
     void DrawText(Renderer *r, const char *text, const Vec2f &pos, const BaseElement *parent);
-
 private:
-    int cell_x_, cell_y_, y_offset_, row_pitch_;
-    char base_;
-    char width_[256];
-    Ren::Texture2DRef tex_;
-    int cur_x_, cur_y_;
-    float row_factor_, col_factor_;
-    int render_style_;
-    float r_, g_, b_;
-    bool invert_y_;
-    float scale_;
+    typgraph_info_t                     info_;
+    float                               scale_;
+    Ren::Texture2DRef                   tex_;
+    uint32_t                            tex_res_[2];
+    eDrawMode                           draw_mode_ = DrPassthrough;
+    eBlendMode                          blend_mode_ = BlAlpha;
+    std::unique_ptr<glyph_range_t[]>    glyph_ranges_;
+    uint32_t                            glyph_range_count_ = 0;
+    uint32_t                            glyphs_count_ = 0;
+    std::unique_ptr<glyph_info_t[]>     glyphs_;
 
     static std::vector<float> default_pos_buf, default_uvs_buf;
     static std::vector<uint16_t> default_indices_buf;
 };
+
 }

@@ -18,5 +18,5 @@ public:
     // Called UPDATE_RATE times per second (usually 60)
     virtual void Update(uint64_t /*dt_us*/) {};
 
-    virtual void HandleInput(const InputManager::Event &) {};
+    virtual bool HandleInput(const InputManager::Event &) { return false; };
 };

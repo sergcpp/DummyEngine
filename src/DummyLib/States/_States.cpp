@@ -4,4 +4,6 @@
 #endif
 
 #include "GSCreate.cpp"
+#include "GSBaseState.cpp"
 #include "GSDrawTest.cpp"
+#include "GSUITest.cpp"

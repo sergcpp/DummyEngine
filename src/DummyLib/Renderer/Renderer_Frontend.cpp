@@ -179,7 +179,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     uint64_t occluders_start = Sys::GetTimeUs();
 
-    {   // Rasterize occluder meshes into a small framebuffer
+    if (scene.root_node != 0xffffffff) {
+        // Rasterize occluder meshes into a small framebuffer
         stack[stack_size++] = scene.root_node;
 
         while (stack_size && culling_enabled) {
@@ -248,7 +249,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     const uint64_t main_gather_start = Sys::GetTimeUs();
 
-    {   // Gather meshes and lights, skip occluded and frustum culled
+    if (scene.root_node != 0xffffffff) {
+        // Gather meshes and lights, skip occluded and frustum culled
         stack_size = 0;
         stack[stack_size++] = scene.root_node;
 
@@ -533,7 +535,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     const uint64_t shadow_gather_start = Sys::GetTimeUs();
 
-    if (lighting_enabled && shadows_enabled && Ren::Length2(list.env.sun_dir) > 0.9f && Ren::Length2(list.env.sun_col) > std::numeric_limits<float>::epsilon()) {
+    if (lighting_enabled && scene.root_node != 0xffffffff && shadows_enabled && Ren::Length2(list.env.sun_dir) > 0.9f && Ren::Length2(list.env.sun_col) > std::numeric_limits<float>::epsilon()) {
         // Reserve space for sun shadow
         int sun_shadow_pos[2] = { 0, 0 };
         int sun_shadow_res[2];

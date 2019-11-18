@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
 
 #include <Ren/MVec.h>
 
@@ -8,8 +9,16 @@ namespace Gui {
 Ren::Vec2f MapPointToScreen(const Ren::Vec2i &p, const Ren::Vec2i &res);
 
 //
-// Unicode conversion
+// Unicode stuff
 //
+const std::pair<uint32_t, uint32_t>
+    g_unicode_latin_range           = { 0x0020, 0x007F },
+    g_unicode_cyrilic_range_full    = { 0x0400, 0x04FF },
+    g_unicode_cyrilic_range_min     = { 1040,   1104   };
+
+const uint32_t g_unicode_umlauts[] = { 223, 228, 246, 252 };
+const uint32_t g_unicode_spacebar = 0x20;
+
 int ConvChar_UTF8_to_Unicode(const char *utf8, uint32_t &out_unicode);
 int ConvChar_UTF8_to_UTF16(const char *utf8, uint16_t out_utf16[2]);
 
@@ -45,6 +54,5 @@ void PreprocessBezierShape(bezier_seg_t *segs, int count, double max_soft_angle_
 dist_result_t BezierSegmentDistance(const bezier_seg_t &seg, const Ren::Vec2d &p);
 
 int FixSDFCollisions(uint8_t *img_data, int w, int h, int channels, int threshold);
-
 }
 

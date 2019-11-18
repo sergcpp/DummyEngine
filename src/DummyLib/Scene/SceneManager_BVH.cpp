@@ -80,6 +80,9 @@ void SceneManager::RebuildBVH() {
     }
 
     scene_data_.nodes.clear();
+    scene_data_.root_node = 0xffffffff;
+
+    if (primitives.empty()) return;
 
     struct prims_coll_t {
         std::vector<uint32_t> indices;
@@ -94,7 +97,7 @@ void SceneManager::RebuildBVH() {
     prim_lists.emplace_back();
 
     size_t nodes_count = scene_data_.nodes.size();
-    auto root_node_index = (uint32_t)nodes_count;
+    scene_data_.root_node = (uint32_t)nodes_count;
 
     for (size_t i = 0; i < primitives.size(); i++) {
         prim_lists.back().indices.push_back((uint32_t)i);
@@ -121,7 +124,7 @@ void SceneManager::RebuildBVH() {
         if (leaf_index) {
             // skip bound checks in debug mode
             const bvh_node_t *_out_nodes = &scene_data_.nodes[0];
-            for (uint32_t i = leaf_index - 1; i >= root_node_index; i--) {
+            for (uint32_t i = leaf_index - 1; i >= scene_data_.root_node; i--) {
                 if (_out_nodes[i].left_child == leaf_index || _out_nodes[i].right_child == leaf_index) {
                     parent_index = (uint32_t)i;
                     break;

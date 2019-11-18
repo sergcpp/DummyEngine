@@ -8,6 +8,9 @@ set(SDL_STATIC ON)
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     if(WIN32)
         if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+            # allow to inline some functions in debug mode
+            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-small-functions ")
+
             if(CMAKE_SIZEOF_VOID_P EQUAL 8)
                 set(SDL2_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/x86_64-w64-mingw32/include)
                 set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/x86_64-w64-mingw32/lib")
@@ -16,6 +19,9 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
                 set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/i686-w64-mingw32/lib")
             endif()
         elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+            # allow to inline some functions in debug mode
+            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Ob1")
+        
             if(CMAKE_SIZEOF_VOID_P EQUAL 8)
                 set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x64")
             else(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -26,6 +32,10 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     else(WIN32)
         include(FindPkgConfig)
         pkg_search_module (SDL2 REQUIRED sdl2)
+
+        # allow to inline some functions in debug mode
+        #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-functions-called-once -finline-functions")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-limit=10")
 
         if(APPLE)
             set(SDL2_INCLUDE_DIRS /usr/local/include)

@@ -5,7 +5,6 @@ assets_pc
 assets_android
 build-*
 check*
-DummyApp*
 libDummyApp*.so
 ModlApp.exe
 DummyApp.apk

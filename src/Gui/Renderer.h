@@ -17,12 +17,14 @@ namespace Gui {
 const char GL_DEFINES_KEY[] = "gl_defines";
 const char UI_PROGRAM_NAME[] = "ui_program";
 
-enum ePrimitiveType { PRIM_TRIANGLE };
-enum eBlendMode { BL_ALPHA, BL_COLOR };
+enum ePrimitiveType { PrimTriangle };
+enum eBlendMode { BlAlpha, BlColor };
+enum eDrawMode { DrPassthrough, DrDistanceField };
 
 using Ren::Vec2f;
 using Ren::Vec2i;
 using Ren::Vec3f;
+using Ren::Vec4f;
 
 class Renderer {
 public:
@@ -33,13 +35,14 @@ public:
     void EndDraw();
 
     struct DrawParams {
-        DrawParams(const Vec3f &col, float z_val, eBlendMode blend_mode, const Vec2i scissor_test[2]) : col_(col), z_val_(z_val), blend_mode_(blend_mode) {
+        DrawParams(const Vec4f &col_and_mode, float z_val, eBlendMode blend_mode, const Vec2i scissor_test[2])
+            : col_and_mode_(col_and_mode), z_val_(z_val), blend_mode_(blend_mode) {
             scissor_test_[0] = scissor_test[0];
             scissor_test_[1] = scissor_test[1];
         }
 
-        const Vec3f &col() const {
-            return col_;
+        const Vec4f &col_and_mode() const {
+            return col_and_mode_;
         }
         float z_val() const {
             return z_val_;
@@ -55,7 +58,7 @@ public:
         }
 
         bool operator==(const DrawParams &rhs) const {
-            return col_ == rhs.col_ &&
+            return col_and_mode_ == rhs.col_and_mode_ &&
                    z_val_ == rhs.z_val_ &&
                    blend_mode_ == rhs.blend_mode_ &&
                    scissor_test_[0] == rhs.scissor_test_[0] &&
@@ -66,7 +69,7 @@ public:
         }
     private:
         friend class Renderer;
-        Vec3f       col_;
+        Vec4f       col_and_mode_;
         float		z_val_;
         eBlendMode  blend_mode_;
         Vec2i	    scissor_test_[2];

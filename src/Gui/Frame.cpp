@@ -119,5 +119,5 @@ void Gui::Frame::Resize(const Gui::BaseElement *parent) {
 }
 
 void Gui::Frame::Draw(Gui::Renderer *r) {
-    r->DrawUIElement(tex_, PRIM_TRIANGLE, positions_, uvs_, indices_);
+    r->DrawUIElement(tex_, PrimTriangle, positions_, uvs_, indices_);
 }

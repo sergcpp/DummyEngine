@@ -3,6 +3,7 @@
 #include <fstream>
 #include <functional>
 #include <iterator>
+#include <numeric>
 
 #include <dirent.h>
 
@@ -18,7 +19,9 @@ extern "C" {
 #undef max
 #undef min
 
+#include <Gui/Renderer.h>
 #include <Gui/Utils.h>
+#include <Ray/internal/TextureSplitter.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/ThreadPool.h>
@@ -596,6 +599,8 @@ bool CreateFolders(const char *out_file) {
 // these are from astc codec
 #undef IGNORE
 #include <astc/astc_codec_internals.h>
+#include <Gui/BitmapFont.h>
+
 #undef MAX
 
 int astc_main(int argc, char **argv);
@@ -1058,7 +1063,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
     };
 
-    auto h_conv_to_sdf = [](const char *in_file, const char *out_file) {
+    auto h_conv_to_font = [](const char *in_file, const char *out_file) {
         using namespace Ren;
 
         LOGI("[PrepareAssets] Conv %s", out_file);
@@ -1077,436 +1082,381 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             return;
         }
 
-        const float line_height = 64.0f;
+        const bool
+            is_sdf_font = strstr(in_file, "_sdf") != nullptr,
+            is_inv_wind = strstr(in_file, "_inv") != nullptr;
+        float line_height = 48.0f;
+
+        int temp_bitmap_res[2] = { 512, 256 };
+
+        if (strstr(in_file, "_9px")) {
+            line_height = 9.0f;
+        } else if (strstr(in_file, "_12px")) {
+            line_height = 12.0f;
+            //temp_bitmap_res[0] = 256;
+            //temp_bitmap_res[1] = 128;
+        } else if (strstr(in_file, "_16px")) {
+            line_height = 16.0f;
+            //temp_bitmap_res[0] = 256;
+            //temp_bitmap_res[1] = 128;
+        } else if (strstr(in_file, "_24px")) {
+            line_height = 24.0f;
+        } else if (strstr(in_file, "_32px")) {
+            line_height = 32.0f;
+        } else if (strstr(in_file, "_48px")) {
+            line_height = 48.0f;
+        }
+
         const float scale = stbtt_ScaleForPixelHeight(&font, line_height);
 
-        const int sdf_diameter_px = 0;
+        const int sdf_radius_px = is_sdf_font ? 1 : 0;
         const int padding = 1;
 
-        /*int ascent, descent, line_gap;
-        stbtt_GetFontVMetrics(&font, &ascent, &descent, &line_gap);
+        const Gui::glyph_range_t glyph_ranges[] = {
+            { Gui::g_unicode_latin_range.first, Gui::g_unicode_latin_range.second },
+            { Gui::g_unicode_cyrilic_range_min.first, Gui::g_unicode_cyrilic_range_min.second },
+            { Gui::g_unicode_umlauts[0], Gui::g_unicode_umlauts[0] + 1 },
+            { Gui::g_unicode_umlauts[1], Gui::g_unicode_umlauts[1] + 1 },
+            { Gui::g_unicode_umlauts[2], Gui::g_unicode_umlauts[2] + 1 },
+            { Gui::g_unicode_umlauts[3], Gui::g_unicode_umlauts[3] + 1 }
+        };
+        const int glyph_range_count = sizeof(glyph_ranges) / sizeof(glyph_ranges[0]);
 
-        ascent *= scale;
-        descent *= scale;*/
+        const int total_glyph_count = std::accumulate(std::begin(glyph_ranges), std::end(glyph_ranges), 0,
+            [](int sum, const Gui::glyph_range_t val) -> int {
+                return sum + int(val.end - val.beg);
+            });
 
-        const int glyph_index = stbtt_FindGlyphIndex(&font, 71 /*48 + 9*/);
+        std::unique_ptr<Gui::glyph_info_t[]> out_glyphs(new Gui::glyph_info_t[total_glyph_count]);
+        int out_glyph_count = 0;
 
-        int x0, y0, x1, y1;
-        assert(stbtt_GetGlyphBox(&font, glyph_index, &x0, &y0, &x1, &y1));
+        std::unique_ptr<uint8_t[]> temp_bitmap(new uint8_t[temp_bitmap_res[0] * temp_bitmap_res[1] * 4]);
+        Ray::TextureSplitter temp_bitmap_splitter(temp_bitmap_res);
 
-        const int glyph_w = x1 - x0 + 1, glyph_h = 1497;// y1 - y0 + 1;
+        std::fill(&temp_bitmap[0], &temp_bitmap[0] + 4 * temp_bitmap_res[0] * temp_bitmap_res[1], 0);
 
-        const int img_w = 26, img_h = 26;
-        //const int img_w = 32, img_h = 32;
-        //const int img_w = 128, img_h = 128;
-        std::vector<uint8_t> test_image(img_w * img_h * 4);
+        for (const Gui::glyph_range_t &range : glyph_ranges) {
+            LOGI("Processing glyph range (%i - %i)", range.beg, range.end);
+            for (uint32_t i = range.beg; i < range.end; i++) {
+                const int glyph_index = stbtt_FindGlyphIndex(&font, i);
 
-        for (int j = 0; j < img_h; j++) {
-            for (int i = 0; i < img_w; i++) {
-                test_image[4 * (j * img_w + i) + 0] = 0;
-                test_image[4 * (j * img_w + i) + 1] = 0;
-                test_image[4 * (j * img_w + i) + 2] = 0;
-                test_image[4 * (j * img_w + i) + 3] = 0xff;
-            }
-        }
+                int x0, y0, x1, y1;
+                bool is_drawable = stbtt_GetGlyphBox(&font, glyph_index, &x0, &y0, &x1, &y1) != 0;
 
-        {
-            stbtt_vertex *vertices = nullptr;
-            const int vertex_count = stbtt_GetGlyphShape(&font, glyph_index, &vertices);
+                int advance_width, left_side_bearing;
+                stbtt_GetGlyphHMetrics(&font, glyph_index, &advance_width, &left_side_bearing);
 
-            using bezier_shape = std::vector<Gui::bezier_seg_t>;
-            std::vector<bezier_shape> shapes;
+                int glyph_pos[2] = {}, glyph_res[2] = {}, glyph_res_act[2] = {};
+                if (is_drawable) {
+                    glyph_res_act[0] = (int)std::round(scale * float(x1 - x0 + 1)) + 2 * sdf_radius_px;
+                    glyph_res_act[1] = (int)std::round(scale * float(y1 - y0 + 1)) + 2 * sdf_radius_px;
 
-            {   // transform input data
-                const double aspect = double(glyph_w) / glyph_h;
-                const int extent = sdf_diameter_px / 2;
+                    glyph_res[0] = glyph_res_act[0] + 2 * padding;
+                    glyph_res[1] = glyph_res_act[1] + 2 * padding;
 
-                const Vec2d norm_constant =
-                    Vec2d{ (double)glyph_w, (double)glyph_h } / Vec2d{ aspect * (double)(img_h - 2 * (extent + padding)), (double)(img_h - 2 * (extent + padding)) };
-                const Vec2d norm_offset = { (double)(extent + padding), (double)(extent + padding) };
-
-                Vec2i cur_p;
-
-                for (int i = 0; i < vertex_count; i++) {
-                    const stbtt_vertex &v = vertices[i];
-
-                    const Vec2d
-                        p0 = norm_offset + Vec2d{ cur_p - Vec2i{ x0, y0 } } / norm_constant,
-                        c0 = norm_offset + Vec2d{ double(v.cx - x0), double(v.cy - y0) } / norm_constant,
-                        c1 = norm_offset + Vec2d{ double(v.cx1 - x0), double(v.cy1 - y0) } / norm_constant,
-                        p1 = norm_offset + Vec2d{ double(v.x - x0), double(v.y - y0) } / norm_constant;
-
-                    if (v.type == STBTT_vmove) {
-                        if (shapes.empty() || !shapes.back().empty()) {
-                            // start new shape
-                            shapes.emplace_back();
-                        }
-                    } else {
-                        // 1 - line; 2,3 - bezier with 1 and 2 control points
-                        const int order = (v.type == STBTT_vline) ? 1 : ((v.type == STBTT_vcurve) ? 2 : 3);
-
-                        shapes.back().push_back({
-                            order, false /* is_closed */, false /* is_hard */,
-                            p0, p1,
-                            c0, c1
-                        });
-                    }
-
-                    cur_p = { v.x, v.y };
+                    assert(temp_bitmap_splitter.Allocate(glyph_res, glyph_pos) != -1);
                 }
-            }
 
-#if 1
-#if 0
-            // outline drawing
-            for (const bezier_shape &sh : shapes) {
-                for (const Gui::bezier_seg_t &seg : sh) {
-                    if (seg.order == 1) {
-                        Gui::DrawBezier1ToBitmap(seg.p0, seg.p1, img_w, 4, test_image.data());
-                    } else if (seg.order == 2) {
-                        Gui::DrawBezier2ToBitmap(seg.p0, seg.c0, seg.p1, img_w, 4, test_image.data());
-                    } else /* if (seg.order == 3) */ {
-                        Gui::DrawBezier3ToBitmap(seg.p0, seg.c0, seg.c1, seg.p1, img_w, 4, test_image.data());
-                    }
-                }
-            }
-#endif
+                Gui::glyph_info_t &out_glyph = out_glyphs[out_glyph_count++];
 
-            {   // simple rasterization
-                const int samples = 16;
+                out_glyph.pos[0] = glyph_pos[0] + padding;
+                out_glyph.pos[1] = glyph_pos[1] + padding;
+                out_glyph.res[0] = glyph_res_act[0];
+                out_glyph.res[1] = glyph_res_act[1];
+                out_glyph.off[0] = (int)std::round(scale * float(x0));
+                out_glyph.off[1] = (int)std::round(scale * float(y0));
+                out_glyph.adv[0] = (int)std::round(scale * float(advance_width));
+                out_glyph.adv[1] = 0;
 
-                // Loop through image pixels
-                for (int y = 0; y < img_h; y++) {
-                    for (int x = 0; x < img_w; x++) {
-                        uint32_t out_val = 0;
+                if (!is_drawable) continue;
 
-                        for (int dy = 0; dy < samples; dy++) {
-                            for (int dx = 0; dx < samples; dx++) {
-                                const Vec2d p = {
-                                    double(x) + (0.5 + double(dx)) / samples,
-                                    double(y) + (0.5 + double(dy)) / samples
-                                };
+                using bezier_shape = std::vector<Gui::bezier_seg_t>;
+                std::vector<bezier_shape> shapes;
 
-                                double
-                                    min_sdist = std::numeric_limits<double>::max(),
-                                    min_dot = std::numeric_limits<double>::lowest();
+                {   // Get glyph shapes
+                    stbtt_vertex *vertices = nullptr;
+                    const int vertex_count = stbtt_GetGlyphShape(&font, glyph_index, &vertices);
 
-                                for (int g = 0; g < (int)shapes.size(); g++) {
-                                    const bezier_shape &sh = shapes[g];
+                    {   // transform input data
+                        const Vec2d pos_offset = { (double)(padding + sdf_radius_px), (double)(padding + sdf_radius_px) };
 
-                                    for (int i = 0; i < (int)sh.size(); i++) {
-                                        const Gui::bezier_seg_t &seg = sh[i];
-                                        const Gui::dist_result_t result = Gui::BezierSegmentDistance(seg, p);
+                        Vec2i cur_p;
 
-                                        if (std::abs(result.sdist) < std::abs(min_sdist) ||
-                                            (std::abs(result.sdist) == std::abs(min_sdist) && result.dot < min_dot)) {
-                                            min_sdist = result.sdist;
-                                            min_dot = result.dot;
-                                        }
-                                    }
-                                }
+                        for (int j = 0; j < vertex_count; j++) {
+                            const stbtt_vertex &v = vertices[j];
 
-                                out_val += min_sdist > 0.0 ? 255 : 0;
-                            }
-                        }
-
-                        // Write output value
-                        uint8_t *out_pixel = &test_image[4 * ((img_h - y - 1) * img_w + x)];
-
-                        out_pixel[0] = out_pixel[1] = out_pixel[2] = 255;
-                        out_pixel[3] = (out_val / (samples * samples));
-                    }
-                }
-            }
-#else
-
-            //shapes.erase(shapes.begin(), shapes.begin() + 2);
-            //shapes.resize(1);
-            //shapes[0].resize(4);
-            //shapes[0].erase(shapes[0].begin(), shapes[0].begin() + 1);
-
-            // find hard edges, mark if closed etc.
-            for (bezier_shape &sh : shapes) {
-                Gui::PreprocessBezierShape(sh.data(), (int)sh.size(), 30.0 * Ren::Pi<double>() / 180.0);
-            }
-
-#if 0
-            {
-                //
-                // Loop through image pixels
-                //
-                for (int y = 0; y < img_h; y++) {
-                    for (int x = 0; x < img_w; x++) {
-                        const Vec2i p = { x, y };
-
-                        double
-                            min_dist = std::numeric_limits<double>::max(),
-                            max_ortho = std::numeric_limits<double>::lowest();
-                        int min_index = -1;
-                        double min_t;
-                        Vec2i min_endpoints[2], min_endpoint_derivatives[2];
-                        bool min_A_convex, min_B_convex;
-                        Vec3i min_color_I, min_color_O;
-
-                        Vec2i prev_p, cur_p;
-
-                        Vec3i color_I = { 255, 255, 0 }, color_O = { 255, 0, 0 };
-
-                        for (int i = 0; i < /*vertex_count*/ 4; i++) {
-                            const stbtt_vertex &v = vertices[i];
-
-                            const Vec2i
-                                p0 = cur_p - offset,
-                                c0 = Vec2i{ v.cx, v.cy } - offset,
-                                c1 = Vec2i{ v.cx1, v.cy1 } - offset,
-                                p1 = Vec2i{ v.x, v.y } - offset;
+                            const Vec2d
+                                p0 = pos_offset + Vec2d{ cur_p - Vec2i{x0, y0} } * scale,
+                                c0 = pos_offset + Vec2d{ double(v.cx - x0), double(v.cy - y0) } * scale,
+                                c1 = pos_offset + Vec2d{ double(v.cx1 - x0), double(v.cy1 - y0) } * scale,
+                                p1 = pos_offset + Vec2d{ double(v.x - x0), double(v.y - y0) } * scale;
 
                             if (v.type == STBTT_vmove) {
-                                // Reset colors
-                                color_I = { 255, 255, 0 };
-                                color_O = { 255, 0, 0 };
+                                if (shapes.empty() || !shapes.back().empty()) {
+                                    // start new shape
+                                    shapes.emplace_back();
+                                }
                             } else {
-                                Gui::dist_result_t result;
+                                // 1 - line; 2,3 - bezier with 1 and 2 control points
+                                const int order = (v.type == STBTT_vline) ? 1 : ((v.type == STBTT_vcurve) ? 2 : 3);
 
-                                if (v.type == STBTT_vline) {
-                                    result = Gui::Bezier1Distance(Vec2d{ p0 }, Vec2d{ p1 }, Vec2d{ p });
-                                } else if (v.type == STBTT_vcurve) {
-                                    result = Gui::Bezier2Distance(Vec2d{ p0 }, Vec2d{ c0 }, Vec2d{ p1 }, Vec2d{ p });
-                                } else if (v.type == STBTT_vcubic) {
-                                    // TODO: use some numerical method
-                                    assert(false);
-                                }
-
-                                Vec2i edge_derivatives[2];
-                                if (v.type == STBTT_vline) {
-                                    edge_derivatives[0] = edge_derivatives[1] = p1 - p0;
-                                } else if (v.type == STBTT_vcurve) {
-                                    edge_derivatives[0] = c0 - p0;
-                                    edge_derivatives[1] = p0 - c1;
-                                } else if (v.type == STBTT_vcubic) {
-                                    edge_derivatives[0] = c0 - p0;
-                                    edge_derivatives[1] = p1 - c1;
-                                }
-
-                                Vec2i endpoint_derivatives[2];
-
-                                if (i > 0) {
-                                    const stbtt_vertex &prev_v = vertices[i - 1];
-                                    const Vec2i
-                                        prev_c0 = Vec2i{ prev_v.cx, prev_v.cy } -offset,
-                                        prev_p1 = Vec2i{ prev_v.x, prev_v.y } -offset;
-
-                                    if (prev_v.type == STBTT_vmove) {
-                                        endpoint_derivatives[0] = {};
-                                    } else if (prev_v.type == STBTT_vline) {
-                                        endpoint_derivatives[0] = p0 - prev_p1;
-                                    } else if (prev_v.type == STBTT_vcurve) {
-                                        endpoint_derivatives[0] = p0 - prev_c0;
-                                    }
-                                } else {
-                                    // TODO: find closing point
-                                }
-
-                                if (i < vertex_count - 1) {
-                                    const stbtt_vertex &next_v = vertices[i + 1];
-                                    const Vec2i
-                                        next_c0 = Vec2i{ next_v.cx, next_v.cy } -offset,
-                                        next_p1 = Vec2i{ next_v.x, next_v.y } -offset;
-
-                                    if (next_v.type == STBTT_vmove) {
-                                        endpoint_derivatives[1] = {};
-                                    } else if (next_v.type == STBTT_vline) {
-                                        endpoint_derivatives[1] = next_p1 - p1;
-                                    } else if (next_v.type == STBTT_vcurve) {
-                                        endpoint_derivatives[1] = next_c0 - p1;
-                                    }
-                                } else {
-                                    // TODO: find closing point
-                                }
-
-                                bool is_A_convex = false;// cross2i(edge_derivatives[0], endpoint_derivatives[0]) <= 0;
-                                bool is_B_convex = false;// cross2i(edge_derivatives[1], endpoint_derivatives[1]) <= 0;
-
-                                if (std::abs(result.sdist) < std::abs(min_dist) ||
-                                    (std::abs(result.sdist) - std::abs(min_dist) < std::numeric_limits<double>::epsilon() && result.ortho > max_ortho)) {
-                                    min_index = i;
-                                    min_dist = result.sdist;
-                                    max_ortho = result.ortho;
-                                    min_t = result.t;
-                                    min_endpoints[0] = p0;
-                                    min_endpoints[1] = p1;
-                                    min_endpoint_derivatives[0] = endpoint_derivatives[0];
-                                    min_endpoint_derivatives[1] = endpoint_derivatives[1];
-
-                                    min_A_convex = false;// is_A_convex;
-                                    min_B_convex = false;// is_B_convex;
-                                    min_color_I = color_I;
-                                    min_color_O = color_O;
-                                }
-
-                                // Update colors
-                                if (i > 0) {
-                                    if (is_A_convex) {
-                                        color_O = color_I - color_O;
-                                    } else {
-                                        color_I = Vec3i{ 255, 255, 255 } - (color_I - color_O);
-                                    }
-                                }
+                                shapes.back().push_back({
+                                    order, false /* is_closed */, false /* is_hard */,
+                                    p0, p1,
+                                    c0, c1
+                                });
                             }
 
-                            prev_p = cur_p;
                             cur_p = { v.x, v.y };
                         }
+                    }
 
-                        //
-                        // Write distance to closest shape
-                        //
-                        if (min_index != -1) {
-                            const bool is_core = (min_t < 0.5) ?
-                                    ((cross2i(p - min_endpoints[0], min_endpoint_derivatives[0]) > 0.0) != min_A_convex) :
-                                    ((cross2i(p - min_endpoints[0], min_endpoint_derivatives[0]) > 0.0) != min_B_convex);
+                    stbtt_FreeShape(&font, vertices);
+                }
 
-                            enum eQuadrant {
-                                InnerCore,
-                                InnerBorder,
-                                OuterOpposite,
-                                OuterBorder
-                            };
+                if (!is_sdf_font) {
+                    //
+                    // Simple rasterization
+                    //
+                    const int samples = 4;
 
-                            eQuadrant quad;
-                            if (min_dist >= 0) {
-                                quad = is_core ? InnerCore : InnerBorder;
-                            } else {
-                                quad = is_core ? OuterOpposite : OuterBorder;
-                            }
+                    // Loop through image pixels
+                    for (int y = 0; y < glyph_res[1]; y++) {
+                        for (int x = 0; x < glyph_res[0]; x++) {
+                            uint32_t out_val = 0;
 
-                            Vec3i color;
+                            for (int dy = 0; dy < samples; dy++) {
+                                for (int dx = 0; dx < samples; dx++) {
+                                    const Vec2d p = {
+                                        double(x) + (0.5 + double(dx)) / samples,
+                                        double(y) + (0.5 + double(dy)) / samples
+                                    };
 
-                            if (min_A_convex /*(min_t < 0.5 && min_A_convex) || (min_t >= 0.5 && min_B_convex)*/) {
-                                if (quad == InnerCore || quad == InnerBorder) {
-                                    color = min_color_I;
-                                } else if (quad == OuterOpposite) {
-                                    color = { 0, 0, 0 };
-                                } else if (quad == OuterBorder) {
-                                    //if (min_t < 0.5) {
-                                        color = min_color_O;
-                                    //} else {
-                                    //    color = min_color_I - min_color_O;
-                                    //}
-                                }
-                            } else {
-                                if (quad == OuterBorder || quad == OuterOpposite) {
-                                    color = min_color_O;
-                                } else if (quad == InnerCore) {
-                                    color = { 255, 255, 255 };
-                                } else if (quad == InnerBorder) {
-                                    //if (min_t < 0.5) {
-                                        color = min_color_I;
-                                    //} else {
-                                    //    color = Vec3i{ 255, 255, 255 } - (min_color_I - min_color_O);
-                                    //}
+                                    double
+                                        min_sdist = std::numeric_limits<double>::max(),
+                                        min_dot = std::numeric_limits<double>::lowest();
+
+                                    for (const bezier_shape &sh : shapes) {
+                                        for (const Gui::bezier_seg_t & seg : sh) {
+                                            const Gui::dist_result_t result = Gui::BezierSegmentDistance(seg, p);
+
+                                            if (std::abs(result.sdist) < std::abs(min_sdist) ||
+                                                (std::abs(result.sdist) == std::abs(min_sdist) && result.dot < min_dot)) {
+                                                min_sdist = result.sdist;
+                                                min_dot = result.dot;
+                                            }
+                                        }
+                                    }
+
+                                    out_val += (min_sdist > 0.0) ? 255 : 0;
                                 }
                             }
 
-                            min_dist = Clamp(0.5 + 0.5 * (min_dist / sdf_radius), 0.0, 1.0);
+                            // Write output value
+                            const int
+                                out_x = glyph_pos[0] + x,
+                                out_y = glyph_pos[1] + (glyph_res[1] - y - 1);
+                            uint8_t *out_pixel = &temp_bitmap[4 * (out_y * temp_bitmap_res[0] + out_x)];
 
-                            test_image[4 * ((img_h - y - 1) * img_w + x) + 0] = 0;// (uint8_t)std::max(std::min(int(color[0] * min_dist), 255), 0);
-                            test_image[4 * ((img_h - y - 1) * img_w + x) + 1] = 0;// (uint8_t)std::max(std::min(int(color[1] * min_dist), 255), 0);
-                            test_image[4 * ((img_h - y - 1) * img_w + x) + 2] = 0;// (uint8_t)std::max(std::min(int(color[2] * min_dist), 255), 0);
-                            test_image[4 * ((img_h - y - 1) * img_w + x) + 3] = (uint8_t)std::max(std::min(int(255 * min_dist), 255), 0);
+                            out_pixel[0] = out_pixel[1] = out_pixel[2] = 255;
+                            out_pixel[3] = (out_val / (samples * samples));
                         }
                     }
-                }
-            }
-#else
+                } else {
+                    //
+                    // Multi-channel SDF font
+                    //
 
-            //
-            // Loop through image pixels
-            //
-            for (int y = 0; y < img_h; y++) {
-                for (int x = 0; x < img_w; x++) {
-                    const Vec2d p = { double(x) + 0.5, double(y) + 0.5 };
-
-                    // Per channel distances (used for multi-channel sdf)
-                    Gui::dist_result_t min_result[3];
-                    for (int i = 0; i < 3; i++) {
-                        min_result[i].sdist = std::numeric_limits<double>::max();
-                        min_result[i].ortho = min_result[i].dot = std::numeric_limits<double>::lowest();
+                    // find hard edges, mark if closed etc.
+                    for (bezier_shape &sh : shapes) {
+                        Gui::PreprocessBezierShape(sh.data(), (int)sh.size(), 30.0 * Ren::Pi<double>() / 180.0 /* angle threshold */);
                     }
 
-                    // Used for normal sdf
-                    double
-                        min_sdf_sdist = std::numeric_limits<double>::max(),
-                        min_sdf_dot = std::numeric_limits<double>::lowest();
+                    // Loop through image pixels
+                    for (int y = 0; y < glyph_res[1]; y++) {
+                        for (int x = 0; x < glyph_res[0]; x++) {
+                            const Vec2d p = { double(x) + 0.5, double(y) + 0.5 };
 
-                    for (int g = 0; g < (int)shapes.size(); g++) {
-                        const bezier_shape &sh = shapes[g];
+                            // Per channel distances (used for multi-channel sdf)
+                            Gui::dist_result_t min_result[3];
+                            for (Gui::dist_result_t &r : min_result) {
+                                r.sdist = std::numeric_limits<double>::max();
+                                r.ortho = r.dot = std::numeric_limits<double>::lowest();
+                            }
 
-                        int edge_color_index = 0;
-                        static const Vec3i edge_colors[] = { { 255, 0, 255 }, { 255, 255, 0 }, { 0, 255, 255 } };
+                            // Simple distances (used for normal sdf)
+                            double
+                                min_sdf_sdist = std::numeric_limits<double>::max(),
+                                min_sdf_dot = std::numeric_limits<double>::lowest();
 
-                        for (int i = 0; i < (int)sh.size(); i++) {
-                            const Gui::bezier_seg_t &seg = sh[i];
-                            const Gui::dist_result_t result = Gui::BezierSegmentDistance(seg, p);
+                            for (const bezier_shape &sh : shapes) {
+                                int edge_color_index = 0;
+                                static const Vec3i edge_colors[] = { { 255, 0, 255 },{ 255, 255, 0 },{ 0, 255, 255 } };
 
-                            if (i != 0 && seg.is_hard) {
-                                if ((i == sh.size() - 1) && sh[0].is_closed && !sh[0].is_hard) {
-                                    edge_color_index = 0;
-                                } else {
-                                    if (edge_color_index == 1) {
-                                        edge_color_index = 2;
-                                    } else {
-                                        edge_color_index = 1;
+                                for (int i = 0; i < (int)sh.size(); i++) {
+                                    const Gui::bezier_seg_t &seg = sh[i];
+                                    const Gui::dist_result_t result = Gui::BezierSegmentDistance(seg, p);
+
+                                    if (i != 0 && seg.is_hard) {
+                                        if ((i == sh.size() - 1) && sh[0].is_closed && !sh[0].is_hard) {
+                                            edge_color_index = 0;
+                                        } else {
+                                            if (edge_color_index == 1) {
+                                                edge_color_index = 2;
+                                            } else {
+                                                edge_color_index = 1;
+                                            }
+                                        }
+                                    }
+                                    const Vec3i &edge_color = edge_colors[edge_color_index];
+
+                                    for (int j = 0; j < 3; j++) {
+                                        if (edge_color[j]) {
+                                            if (std::abs(result.sdist) < std::abs(min_result[j].sdist) ||
+                                                (std::abs(result.sdist) == std::abs(min_result[j].sdist) && result.dot < min_result[j].dot)) {
+                                                min_result[j] = result;
+                                            }
+                                        }
+                                    }
+
+                                    if (std::abs(result.sdist) < std::abs(min_sdf_sdist) ||
+                                        (std::abs(result.sdist) == std::abs(min_sdf_sdist) && result.dot < min_sdf_dot)) {
+                                        min_sdf_sdist = result.sdist;
+                                        min_sdf_dot = result.dot;
                                     }
                                 }
                             }
-                            const Vec3i &edge_color = edge_colors[edge_color_index];
+
+                            // Write distance to closest shape
+                            const int
+                                out_x = glyph_pos[0] + x,
+                                out_y = glyph_pos[1] + (glyph_res[1] - y - 1);
+                            uint8_t *out_pixel = &temp_bitmap[4 * (out_y * temp_bitmap_res[0] + out_x)];
 
                             for (int j = 0; j < 3; j++) {
-                                if (edge_color[j]) {
-                                    if (std::abs(result.sdist) < std::abs(min_result[j].sdist) ||
-                                        (std::abs(result.sdist) == std::abs(min_result[j].sdist) && result.dot < min_result[j].dot)) {
-                                        min_result[j] = result;
-                                    }
+                                uint8_t out_val = 0;
+                                if (min_result[j].sdist != std::numeric_limits<double>::max()) {
+                                    min_result[j].pseudodist = Clamp(0.5 + (min_result[j].pseudodist / (2 * sdf_radius_px)), 0.0, 1.0);
+                                    out_val = (uint8_t)std::max(std::min(int(255 * min_result[j].pseudodist), 255), 0);
                                 }
+                                out_pixel[j] = out_val;
                             }
 
-                            if (std::abs(result.sdist) < std::abs(min_sdf_sdist) ||
-                                (std::abs(result.sdist) == std::abs(min_sdf_sdist) && result.dot < min_sdf_dot)) {
-                                min_sdf_sdist = result.sdist;
-                                min_sdf_dot = result.dot;
-                            }
+                            min_sdf_sdist = Clamp(0.5 + (min_sdf_sdist / (2 * sdf_radius_px)), 0.0, 1.0);
+                            out_pixel[3] = (uint8_t)std::max(std::min(int(255 * min_sdf_sdist), 255), 0);
                         }
                     }
-
-                    //
-                    // Write distance to closest shape
-                    //
-                    uint8_t *out_pixel = &test_image[4 * ((img_h - y - 1) * img_w + x)];
-
-                    for (int j = 0; j < 3; j++) {
-                        uint8_t out_val = 0;
-                        if (min_result[j].sdist != std::numeric_limits<double>::max()) {
-                            min_result[j].pseudodist = Clamp(0.5 + (min_result[j].pseudodist / sdf_diameter_px), 0.0, 1.0);
-                            out_val = (uint8_t)std::max(std::min(int(255 * min_result[j].pseudodist), 255), 0);
-                        }
-                        out_pixel[j] = out_val;
-                    }
-
-                    min_sdf_sdist = Clamp(0.5 + (min_sdf_sdist / sdf_diameter_px), 0.0, 1.0);
-                    out_pixel[3] = (uint8_t)std::max(std::min(int(255 * min_sdf_sdist), 255), 0);
                 }
             }
-
-            // Fix collisions of uncorrelated areas
-            Gui::FixSDFCollisions(test_image.data(), img_w, img_h, 4, 200 /* threshold */);
-#endif
-
-#endif
-            stbtt_FreeShape(&font, vertices);
         }
 
-        WriteImage(test_image.data(), img_w, img_h, 4, "assets/textures/font_test.uncompressed.png");
+        if (is_sdf_font) {
+            // Fix collisions of uncorrelated areas
+            Gui::FixSDFCollisions(temp_bitmap.get(), temp_bitmap_res[0], temp_bitmap_res[1], 4, 200 /* threshold */);
+        }
+
+        if (is_inv_wind) {
+            // Flip colors (font has inversed winding order)
+            for (int y = 0; y < temp_bitmap_res[1]; y++) {
+                for (int x = 0; x < temp_bitmap_res[0]; x++) {
+                    uint8_t *out_pixel = &temp_bitmap[4 * (y * temp_bitmap_res[0] + x)];
+
+                    if (is_sdf_font) {
+                        out_pixel[0] = 255 - out_pixel[0];
+                        out_pixel[1] = 255 - out_pixel[1];
+                        out_pixel[2] = 255 - out_pixel[2];
+                    }
+                    out_pixel[3] = 255 - out_pixel[3];
+                }
+            }
+        }
+
+        assert(out_glyph_count == total_glyph_count);
+
+        /*if (strstr(in_file, "Roboto-Regular_12px")) {
+            WriteImage(temp_bitmap.get(), temp_bitmap_res[0], temp_bitmap_res[1], 4, "test.png");
+        }*/
+
+        std::ofstream out_stream(out_file, std::ios::binary);
+        const uint32_t header_size = 4 + sizeof(uint32_t) + int(Gui::FontChCount) * 3 * sizeof(uint32_t);
+        uint32_t hdr_offset = 0, data_offset = header_size;
+
+        {   // File format string
+            const char signature[] = { 'F', 'O', 'N', 'T' };
+            out_stream.write(signature, 4);
+            hdr_offset += 4;
+        }
+
+        {   // Header size
+            out_stream.write((const char *)&header_size, sizeof(uint32_t));
+            hdr_offset += sizeof(uint32_t);
+        }
+
+        {   // Typograph data offsets
+            const uint32_t
+                typo_data_chunk_id = (uint32_t)Gui::FontChTypoData,
+                typo_data_offset = data_offset,
+                typo_data_size = sizeof(Gui::typgraph_info_t);
+            out_stream.write((const char *)&typo_data_chunk_id, sizeof(uint32_t));
+            out_stream.write((const char *)&typo_data_offset, sizeof(uint32_t));
+            out_stream.write((const char *)&typo_data_size, sizeof(uint32_t));
+            hdr_offset += 3 * sizeof(uint32_t);
+            data_offset += typo_data_size;
+        }
+
+        {   // Image data offsets
+            const uint32_t
+                img_data_chunk_id = (uint32_t)Gui::FontChImageData,
+                img_data_offset = data_offset,
+                img_data_size = 2 * sizeof(uint16_t) + 2 * sizeof(uint16_t) + 4 * temp_bitmap_res[0] * temp_bitmap_res[1];
+            out_stream.write((const char *)&img_data_chunk_id, sizeof(uint32_t));
+            out_stream.write((const char *)&img_data_offset, sizeof(uint32_t));
+            out_stream.write((const char *)&img_data_size, sizeof(uint32_t));
+            hdr_offset += 3 * sizeof(uint32_t);
+            data_offset += img_data_size;
+        }
+
+        {   // Glyph data offsets
+            const uint32_t
+                glyph_data_chunk_id = (uint32_t)Gui::FontChGlyphData,
+                glyph_data_offset = data_offset,
+                glyph_data_size = sizeof(uint32_t) + sizeof(glyph_ranges) + total_glyph_count * sizeof(Gui::glyph_info_t);
+            out_stream.write((const char *)&glyph_data_chunk_id, sizeof(uint32_t));
+            out_stream.write((const char *)&glyph_data_offset, sizeof(uint32_t));
+            out_stream.write((const char *)&glyph_data_size, sizeof(uint32_t));
+            hdr_offset += 3 * sizeof(uint32_t);
+            data_offset += glyph_data_size;
+        }
+
+        assert(hdr_offset == header_size);
+
+        {   // Typograph data
+            Gui::typgraph_info_t info = {};
+            info.line_height = (uint32_t)line_height;
+
+            out_stream.write((const char *)&info, sizeof(Gui::typgraph_info_t));
+        }
+
+        {   // Image data
+            const auto img_data_w = (uint16_t)temp_bitmap_res[0], img_data_h = (uint16_t)temp_bitmap_res[1];
+            out_stream.write((const char *)&img_data_w, sizeof(uint16_t));
+            out_stream.write((const char *)&img_data_h, sizeof(uint16_t));
+
+            const uint16_t
+                draw_mode = is_sdf_font ? Gui::DrDistanceField : Gui::DrPassthrough,
+                blend_mode = Gui::BlAlpha;
+            out_stream.write((const char *)&draw_mode, sizeof(uint16_t));
+            out_stream.write((const char *)&blend_mode, sizeof(uint16_t));
+
+            out_stream.write((const char *)temp_bitmap.get(), 4 * temp_bitmap_res[0] * temp_bitmap_res[1]);
+        }
+
+        {   // Glyph data
+            uint32_t u32_glyph_range_count = glyph_range_count;
+            out_stream.write((const char *)&u32_glyph_range_count, sizeof(uint32_t));
+            out_stream.write((const char *)&glyph_ranges[0].beg, sizeof(glyph_ranges));
+            out_stream.write((const char *)out_glyphs.get(), total_glyph_count * sizeof(Gui::glyph_info_t));
+        }
     };
 
     struct Handler {
@@ -1515,26 +1465,27 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     };
 
     Ren::HashMap32<std::string, Handler> handlers;
-    
+
     handlers["bff"]         = { "bff",          h_copy              };
     handlers["mesh"]        = { "mesh",         h_copy              };
     handlers["anim"]        = { "anim",         h_copy              };
     handlers["vert.glsl"]   = { "vert.glsl",    h_preprocess_shader };
     handlers["frag.glsl"]   = { "frag.glsl",    h_preprocess_shader };
     handlers["comp.glsl"]   = { "comp.glsl",    h_preprocess_shader };
+    handlers["ttf"]         = { "font",         h_conv_to_font      };
 
     if (strcmp(platform, "pc") == 0) {
-        handlers["json"]    = { "json", h_preprocess_scene };
-        handlers["txt"]     = { "txt", h_preprocess_material };
-        handlers["tga"]     = { "dds", h_conv_to_dds };
-        handlers["hdr"]     = { "dds", h_conv_hdr_to_rgbm };
-        handlers["png"]     = { "dds", h_conv_to_dds };
+        handlers["json"]    = { "json",         h_preprocess_scene  };
+        handlers["txt"]     = { "txt",          h_preprocess_material };
+        handlers["tga"]     = { "dds",          h_conv_to_dds       };
+        handlers["hdr"]     = { "dds",          h_conv_hdr_to_rgbm  };
+        handlers["png"]     = { "dds",          h_conv_to_dds       };
     } else if (strcmp(platform, "android") == 0) {
-        handlers["json"]    = { "json", h_preprocess_scene };
-        handlers["txt"]     = { "txt", h_preprocess_material };
-        handlers["tga"]     = { "ktx", h_conv_to_astc };
-        handlers["hdr"]     = { "ktx", h_conv_hdr_to_rgbm };
-        handlers["png"]     = { "ktx", h_conv_to_astc };
+        handlers["json"]    = { "json",         h_preprocess_scene  };
+        handlers["txt"]     = { "txt",          h_preprocess_material };
+        handlers["tga"]     = { "ktx",          h_conv_to_astc      };
+        handlers["hdr"]     = { "ktx",          h_conv_hdr_to_rgbm  };
+        handlers["png"]     = { "ktx",          h_conv_to_astc      };
     }
 
     handlers["uncompressed.tga"] = { "uncompressed.tga",  h_copy };

@@ -86,7 +86,7 @@ static uint8_t median(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 Ren::Vec2f Gui::MapPointToScreen(const Vec2i &p, const Vec2i &res) {
-    return (2.0f * Vec2f((float)p[0], (float)res[1] - p[1])) / (Vec2f)res + Vec2f(-1, -1);
+    return (2.0f * Vec2f((float)p[0], (float)res[1] - p[1])) / Vec2f{ res } + Vec2f(-1, -1);
 }
 
 int Gui::ConvChar_UTF8_to_Unicode(const char *utf8, uint32_t &out_unicode) {

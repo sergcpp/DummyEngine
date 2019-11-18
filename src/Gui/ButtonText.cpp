@@ -26,11 +26,11 @@ void Gui::ButtonText::Draw(Renderer *r) {
     const Renderer::DrawParams &cur = r->GetParams();
 
     if (state_ == ST_NORMAL) {
-        r->EmplaceParams(Vec3f(0.9f, 0.9f, 0.9f), cur.z_val(), cur.blend_mode(), cur.scissor_test());
+        r->EmplaceParams(Vec4f(0.9f, 0.9f, 0.9f, 0.0f), cur.z_val(), cur.blend_mode(), cur.scissor_test());
     } else if (state_ == ST_FOCUSED) {
-        r->EmplaceParams(Vec3f(1, 1, 1), cur.z_val(), cur.blend_mode(), cur.scissor_test());
+        r->EmplaceParams(Vec4f(1.0f, 1.0f, 1.0f, 0.0f), cur.z_val(), cur.blend_mode(), cur.scissor_test());
     } else { // state_ == ST_PRESSED
-        r->EmplaceParams(Vec3f(0.5f, 0.5f, 0.5f), cur.z_val(), cur.blend_mode(), cur.scissor_test());
+        r->EmplaceParams(Vec4f(0.5f, 0.5f, 0.5f, 0.0f), cur.z_val(), cur.blend_mode(), cur.scissor_test());
     }
     type_mesh_.Draw(r);
 

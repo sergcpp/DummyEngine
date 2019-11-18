@@ -24,7 +24,7 @@ void Gui::Cursor::SetPos(const Vec2f &pos, const BaseElement *parent) {
 void Gui::Cursor::Draw(Renderer *r) {
     const Renderer::DrawParams &cur = r->GetParams();
 
-    r->EmplaceParams(clicked_ ? Vec3f(0.8f, 0.8f, 0.8f) : Vec3f(1, 1, 1),
+    r->EmplaceParams(clicked_ ? Vec4f(0.8f, 0.8f, 0.8f, 0.0f) : Vec4f(1.0f, 1.0f, 1.0f, 0.0f),
                      cur.z_val(), cur.blend_mode(), cur.scissor_test());
     img_.Draw(r);
     r->PopParams();
