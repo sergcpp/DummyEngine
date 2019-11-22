@@ -47,17 +47,17 @@ layout (location = $uInstancesLoc) uniform ivec4 uInstanceIndices[$MaxBatchSize 
 layout(binding = $InstanceBufSlot) uniform highp samplerBuffer instances_buffer;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) out vec3 aVertexPos_;
-layout(location = 1) out mediump mat3 aVertexTBN_;
-layout(location = 4) out mediump vec2 aVertexUVs1_;
-layout(location = 5) out mediump vec2 aVertexUVs2_;
-layout(location = 6) out mediump vec3 aVertexShUVs_[4];
+layout(location = 0) out highp vec3 aVertexPos_;
+layout(location = 1) out mediump vec4 aVertexUVs_;
+layout(location = 2) out mediump vec3 aVertexNormal_;
+layout(location = 3) out mediump vec3 aVertexTangent_;
+layout(location = 4) out highp vec3 aVertexShUVs_[4];
 #else
-out vec3 aVertexPos_;
-out mediump mat3 aVertexTBN_;
-out mediump vec2 aVertexUVs1_;
-out mediump vec2 aVertexUVs2_;
-out vec3 aVertexShUVs_[4];
+out highp vec3 aVertexPos_;
+out mediump vec4 aVertexUVs_;
+out mediump vec3 aVertexNormal_;
+out mediump vec3 aVertexTangent_;
+out highp vec3 aVertexShUVs_[4];
 #endif
 
 #ifdef VULKAN
@@ -84,9 +84,9 @@ void main(void) {
     vec3 vertex_tangent_ws = normalize((MMatrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
 
     aVertexPos_ = vertex_position_ws;
-    aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);
-    aVertexUVs1_ = aVertexUVs1;
-    aVertexUVs2_ = LightmapTr.xy + LightmapTr.zw * aVertexUVs2;
+    aVertexNormal_ = vertex_normal_ws;
+    aVertexTangent_ = vertex_tangent_ws;
+    aVertexUVs_ = vec4(aVertexUVs1, LightmapTr.xy + LightmapTr.zw * aVertexUVs2);
 
     const vec2 offsets[4] = vec2[4](
         vec2(0.0, 0.0),

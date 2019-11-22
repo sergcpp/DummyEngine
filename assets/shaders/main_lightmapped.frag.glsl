@@ -51,16 +51,16 @@ uniform SharedDataBlock {
 };
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec3 aVertexPos_;
-layout(location = 1) in mediump mat3 aVertexTBN_;
-layout(location = 4) in mediump vec2 aVertexUVs1_;
-layout(location = 5) in mediump vec2 aVertexUVs2_;
-layout(location = 6) in highp vec3 aVertexShUVs_[4];
+layout(location = 0) in highp vec3 aVertexPos_;
+layout(location = 1) in mediump vec4 aVertexUVs_;
+layout(location = 2) in mediump vec3 aVertexNormal_;
+layout(location = 3) in mediump vec3 aVertexTangent_;
+layout(location = 4) in highp vec3 aVertexShUVs_[4];
 #else
-in vec3 aVertexPos_;
-in mediump mat3 aVertexTBN_;
-in mediump vec2 aVertexUVs1_;
-in mediump vec2 aVertexUVs2_;
+in highp vec3 aVertexPos_;
+in mediump vec4 aVertexUVs_;
+in mediump vec3 aVertexNormal_;
+in mediump vec3 aVertexTangent_;
 in highp vec3 aVertexShUVs_[4];
 #endif
 
@@ -82,9 +82,9 @@ void main(void) {
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
     
-    vec3 albedo_color = texture(diffuse_texture, aVertexUVs1_).rgb;
-    vec3 normal_color = texture(normals_texture, aVertexUVs1_).wyz;
-    vec4 specular_color = texture(specular_texture, aVertexUVs1_);
+    vec3 albedo_color = texture(diffuse_texture, aVertexUVs_.xy).rgb;
+    vec3 normal_color = texture(normals_texture, aVertexUVs_.xy).wyz;
+    vec4 specular_color = texture(specular_texture, aVertexUVs_.xy);
     
     vec3 dp_dx = dFdx(aVertexPos_);
     vec3 dp_dy = dFdy(aVertexPos_);
@@ -151,7 +151,7 @@ void main(void) {
     }
     
     vec3 normal = normal_color * 2.0 - 1.0;
-    normal = normalize(aVertexTBN_ * normal);
+    normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_), aVertexNormal_) * normal);
     
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
     
@@ -198,10 +198,10 @@ void main(void) {
         }
     }
     
-    vec3 sh_l_00 = RGBMDecode(texture(lm_indirect_sh_texture[0], aVertexUVs2_));
-    vec3 sh_l_10 = texture(lm_indirect_sh_texture[1], aVertexUVs2_).rgb;
-    vec3 sh_l_11 = texture(lm_indirect_sh_texture[2], aVertexUVs2_).rgb;
-    vec3 sh_l_12 = texture(lm_indirect_sh_texture[3], aVertexUVs2_).rgb;
+    vec3 sh_l_00 = RGBMDecode(texture(lm_indirect_sh_texture[0], aVertexUVs_.zw));
+    vec3 sh_l_10 = texture(lm_indirect_sh_texture[1], aVertexUVs_.zw).rgb;
+    vec3 sh_l_11 = texture(lm_indirect_sh_texture[2], aVertexUVs_.zw).rgb;
+    vec3 sh_l_12 = texture(lm_indirect_sh_texture[3], aVertexUVs_.zw).rgb;
     
     //indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
     vec3 indirect_col = (0.5 + (sh_l_10 - vec3(0.5)) * normal.y +

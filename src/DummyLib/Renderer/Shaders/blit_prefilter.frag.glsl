@@ -8,7 +8,7 @@ R"(#version 310 es
 layout(binding = 0) uniform mediump samplerCubeArray s_texture;
 layout(location = 1) uniform float src_layer;
 layout(location = 2) uniform int src_face;
-layout(location = 3) uniform float roughness;
+layout(location = 3) uniform highp float roughness;
 
 in vec2 aVertexUVs_;
 
@@ -107,11 +107,11 @@ vec3 PrefilterEnvMap(float roughness, vec3 r) {
 			float n_dot_h = dot(n, h);
 
 			float D   = DistributionGGX(n_dot_h, roughness);
-			float pdf = (D * n_dot_h / (4.0 * dot(h, v))) + 0.0001; 
+			highp float pdf = (D * n_dot_h / (4.0 * dot(h, v))) + 0.0001;
 
-			const float resolution = 512.0; // resolution of source cubemap (per face)
-			const float sa_texel  = 4.0 * M_PI / (6.0 * resolution * resolution);
-			float sa_sample = 1.0 / (float(SampleCount) * pdf + 0.0001);
+			const highp float resolution = 512.0; // resolution of source cubemap (per face)
+			const highp float sa_texel = 10.0 * 4.0 * M_PI / (6.0 * resolution * resolution); // multiplied by 10 to avoid precision problems
+			highp float sa_sample = 0.1 / (float(SampleCount) * pdf + 0.0001);
 
 			float mip_level = roughness == 0.0 ? 0.0 : 0.5 * log2(sa_sample / sa_texel);
 

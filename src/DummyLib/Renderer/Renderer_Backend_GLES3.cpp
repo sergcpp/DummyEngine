@@ -1331,7 +1331,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         shrd_data.uTranspDepthRangeAndMode = Ren::Vec4f{
                 std::log(transparent_near),
                 std::log(transparent_far) - std::log(transparent_near),
-                reinterpret_cast<const float &>(transparent_mode), time };
+                float(transparent_mode), time };
         shrd_data.uClipInfo = { near * far, near, far, std::log2(1.0f + far / near) };
 
         const Ren::Vec3f &pos = list.draw_cam.world_position();
@@ -1876,7 +1876,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         {   // Change transparency draw mode
             glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_shared_data_block_[cur_buf_chunk_]);
-            const int transp_mode = clean_buf_.sample_count > 1 ? 4 : 3;
+            const float transp_mode = clean_buf_.sample_count > 1 ? 4.0f : 3.0f;
             glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SharedDataBlock, uTranspDepthRangeAndMode) + 2 * sizeof(float), sizeof(float), &transp_mode);
         }
 

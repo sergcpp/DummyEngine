@@ -48,13 +48,15 @@ layout (std140) uniform SharedDataBlock {
 };
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec3 aVertexPos_;
-layout(location = 1) in mat3 aVertexTBN_;
-layout(location = 4) in vec2 aVertexUVs1_;
+layout(location = 0) in highp vec3 aVertexPos_;
+layout(location = 1) in mediump vec2 aVertexUVs_;
+layout(location = 2) in mediump vec3 aVertexNormal_;
+layout(location = 3) in mediump vec3 aVertexTangent_;
 #else
-in vec3 aVertexPos_;
-in mat3 aVertexTBN_;
-in vec2 aVertexUVs1_;
+in highp vec3 aVertexPos_;
+in mediump vec2 aVertexUVs_;
+in mediump vec3 aVertexNormal_;
+in mediump vec3 aVertexTangent_;
 #endif
 
 layout(location = $OutColorIndex) out vec4 outColor;
@@ -70,10 +72,10 @@ void main(void) {
     highp float transp_z =
         2.0 * (log(lin_depth) - uTranspDepthRangeAndMode[0]) / uTranspDepthRangeAndMode[1] - 1.0;
     
-    vec3 normal_color = texture(normals_texture, aVertexUVs1_).wyz;
+    vec3 normal_color = texture(normals_texture, aVertexUVs_).wyz;
         
     vec3 normal = normal_color * 2.0 - 1.0;
-    normal = normalize(aVertexTBN_ * normal);
+    normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_), aVertexNormal_) * normal);
     
     vec3 view_ray_ws = normalize(aVertexPos_ - uCamPosAndGamma.xyz);
     
@@ -82,7 +84,7 @@ void main(void) {
     
     float tr = 0.75 * clamp(1.2 - dot(normal, -view_ray_ws), 0.0, 1.0);
     
-    if (floatBitsToInt(uTranspDepthRangeAndMode[2]) != 2) {
+    if (uTranspDepthRangeAndMode[2] < 1.5 || uTranspDepthRangeAndMode[2] > 2.5) {
         highp float k = log2(lin_depth / uClipInfo[1]) / uClipInfo[3];
         int slice = int(floor(k * $ItemGridResZ.0));
         
@@ -93,8 +95,8 @@ void main(void) {
         highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
         highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);
         
-        vec3 diffuse_color = texture(diffuse_texture, aVertexUVs1_).xyz;
-        vec4 specular_color = texture(specular_texture, aVertexUVs1_);
+        vec3 diffuse_color = texture(diffuse_texture, aVertexUVs_).xyz;
+        vec4 specular_color = texture(specular_texture, aVertexUVs_);
         
         vec3 refl_ray_ws = reflect(view_ray_ws, normal);
         
@@ -118,16 +120,16 @@ void main(void) {
         
         float alpha = tr * kk;
         
-        if (floatBitsToInt(uTranspDepthRangeAndMode[2]) == 0) {
+        if (uTranspDepthRangeAndMode[2] < 0.5) {
             outColor = vec4(diffuse_color, alpha);
-        } else if (floatBitsToInt(uTranspDepthRangeAndMode[2]) == 1) {
+        } else if (uTranspDepthRangeAndMode[2] < 1.5) {
             outColor = vec4(diffuse_color, alpha) * TransparentDepthWeight(gl_FragCoord.z, alpha);
             outNormal = vec4(alpha);
         } else {
             float b_0;
             vec4 b_1234;
                                
-            if (floatBitsToInt(uTranspDepthRangeAndMode[2]) == 3) {
+            if (uTranspDepthRangeAndMode[2] < 3.5) {
                 b_0 = texelFetch(moments0_texture, ivec2(ix, iy), 0).x;
                 b_1234 = vec4(texelFetch(moments1_texture, ivec2(ix, iy), 0).xy,
                               texelFetch(moments2_texture, ivec2(ix, iy), 0).xy);

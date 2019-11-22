@@ -68,8 +68,12 @@ vec3 RGBMDecode(vec4 rgbm) {
     return 4.0 * rgbm.rgb * rgbm.a;
 }
 
+float pow5(float x) {
+    return (x * x) * (x * x) * x;
+}
+
 vec3 FresnelSchlickRoughness(float cos_theta, vec3 F0, float roughness) {
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cos_theta, 5.0);
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - cos_theta);
 }
 
 void main() {
@@ -123,8 +127,7 @@ void main() {
     vec2 brdf;
 
     {   // apply cubemap contribution
-        vec4 ray_origin_cs = vec4(aVertexUVs_.xy, 2.0 * depth - 1.0, 1.0);
-        ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
+        vec4 ray_origin_cs = vec4(2.0 * vec3(aVertexUVs_.xy, depth) - 1.0, 1.0);
 
         vec4 ray_origin_vs = uInvProjMatrix * ray_origin_cs;
         ray_origin_vs /= ray_origin_vs.w;
