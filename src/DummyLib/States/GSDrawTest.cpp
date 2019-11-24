@@ -63,10 +63,6 @@ GSDrawTest::GSDrawTest(GameBase *game) : game_(game) {
     temp_probe_cam_.Perspective(90.0f, 1.0f, 0.1f, 10000.0f);
 }
 
-GSDrawTest::~GSDrawTest() {
-
-}
-
 void GSDrawTest::Enter() {
     using namespace GSDrawTestInternal;
 
@@ -366,11 +362,11 @@ void GSDrawTest::LoadScene(const char *name) {
         if (js_cam.Has("follow_path")) {
             const JsArray &js_points = (const JsArray &)js_cam.at("follow_path");
             for (const JsElement &el : js_points.elements) {
-                const JsArray &js_point = (const JsArray &)el;
+                const auto &js_point = static_cast<const JsArray &>(el);
 
-                const JsNumber &x = (const JsNumber &)js_point.at(0),
-                               &y = (const JsNumber &)js_point.at(1),
-                               &z = (const JsNumber &)js_point.at(2);
+                const auto &x = (const JsNumber &)js_point.at(0),
+                           &y = (const JsNumber &)js_point.at(1),
+                           &z = (const JsNumber &)js_point.at(2);
 
                 cam_follow_path_.emplace_back((float)x.val, (float)y.val, (float)z.val);
             }
@@ -386,8 +382,8 @@ void GSDrawTest::LoadScene(const char *name) {
             for (int i = 0; i < 8; i++) {
                 int index = j * 8 + i;
 
-                wolf_name[4] = '0' + j;
-                wolf_name[5] = '0' + i;
+                wolf_name[4] = char('0' + j);
+                wolf_name[5] = char('0' + i);
 
                 uint32_t wolf_index = scene_manager_->FindObject(wolf_name);
                 wolf_indices_[index] = wolf_index;
@@ -417,8 +413,8 @@ void GSDrawTest::LoadScene(const char *name) {
 
         for (int j = 0; j < 2; j++) {
             for (int i = 0; i < 8; i++) {
-                scooter_name[8] = '0' + j;
-                scooter_name[9] = '0' + i;
+                scooter_name[8] = char('0' + j);
+                scooter_name[9] = char('0' + i);
 
                 uint32_t scooter_index = scene_manager_->FindObject(scooter_name);
                 scooter_indices_[j * 8 + i] = scooter_index;
@@ -430,7 +426,7 @@ void GSDrawTest::LoadScene(const char *name) {
         char sophia_name[] = "sophia_00";
 
         for (int i = 0; i < 2; i++) {
-            sophia_name[8] = '0' + i;
+            sophia_name[8] = char('0' + i);
 
             uint32_t sophia_index = scene_manager_->FindObject(sophia_name);
             sophia_indices_[i] = sophia_index;
@@ -441,7 +437,7 @@ void GSDrawTest::LoadScene(const char *name) {
         char eric_name[] = "eric_00";
 
         for (int i = 0; i < 2; i++) {
-            eric_name[6] = '0' + i;
+            eric_name[6] = char('0' + i);
 
             uint32_t eric_index = scene_manager_->FindObject(eric_name);
             eric_indices_[i] = eric_index;
@@ -603,7 +599,7 @@ void GSDrawTest::Draw(uint64_t dt_us) {
         const float font_height = font_->height(ui_root_.get());
 
         if (cmdline_enabled_) {
-            int font_height = (int)(0.5f * font_->height(ui_root_.get()) * game_->height);
+            int font_height = (int)(0.5f * font_->height(ui_root_.get()) * (float)game_->height);
 #if defined(USE_GL_RENDER)
             glEnable(GL_SCISSOR_TEST);
             glScissor(0, game_->height - MAX_CMD_LINES * font_height, game_->width, MAX_CMD_LINES * font_height);
@@ -774,7 +770,7 @@ void GSDrawTest::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == InputManager::RAW_INPUT_P1_DOWN || evt.type == InputManager::RAW_INPUT_P2_DOWN) {
-        if (evt.point.x > ctx_->w() * 0.9f && evt.point.y < ctx_->h() * 0.1f) {
+        if (evt.point.x > (float)ctx_->w() * 0.9f && evt.point.y < (float)ctx_->h() * 0.1f) {
             uint32_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 /*use_pt_ = !use_pt_;
@@ -802,14 +798,14 @@ void GSDrawTest::HandleInput(const InputManager::Event &evt) {
 
     switch (evt.type) {
     case InputManager::RAW_INPUT_P1_DOWN:
-        if (evt.point.x < ctx_->w() / 3 && move_pointer_ == 0) {
+        if (evt.point.x < ((float)ctx_->w() / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 1;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 1;
         }
         break;
     case InputManager::RAW_INPUT_P2_DOWN:
-        if (evt.point.x < ctx_->w() / 3 && move_pointer_ == 0) {
+        if (evt.point.x < ((float)ctx_->w() / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 2;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 2;

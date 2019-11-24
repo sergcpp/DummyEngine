@@ -8,7 +8,7 @@ namespace Sys {
     class AsyncFileReader {
         std::unique_ptr<AsyncFileReaderImpl> impl_;
     public:
-        AsyncFileReader();
+        AsyncFileReader() noexcept;
         ~AsyncFileReader();
 
         bool ReadFile(const char *file_path, size_t max_size, void *out_data, size_t &out_size);

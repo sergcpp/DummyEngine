@@ -42,14 +42,14 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         }
     }
 
-    const JsObject &ui_settings = main_config.at("ui_settings");
+    const auto &ui_settings = (const JsObject &)main_config.at("ui_settings");
 
     {   // load fonts
         auto font_storage = std::make_shared<FontStorage>();
         AddComponent(UI_FONTS_KEY, font_storage);
 
-        const JsObject &fonts = ui_settings.at("fonts");
-        for (auto &el : fonts.elements) {
+        const auto &fonts = (const JsObject &)ui_settings.at("fonts");
+        for (const auto &el : fonts.elements) {
             const std::string &name = el.first;
             
 

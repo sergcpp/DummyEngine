@@ -512,7 +512,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             scene_data_.env.sun_col = Ren::Vec3f{ float(r), float(g), float(b) };
         }
         if (js_env.Has("sun_softness")) {
-            const JsNumber &js_sun_softness = js_env.at("sun_softness");
+            const auto &js_sun_softness = (const JsNumber &)js_env.at("sun_softness");
             scene_data_.env.sun_softness = (float)js_sun_softness.val;
         }
         if (js_env.Has("env_map")) {

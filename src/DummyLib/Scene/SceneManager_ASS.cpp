@@ -1515,14 +1515,13 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     };
 
     Ren::HashMap32<std::string, Handler> handlers;
-
-    handlers["bff"]         = { "bff",  h_copy };
-    handlers["mesh"]        = { "mesh", h_copy };
-    handlers["anim"]        = { "anim", h_copy };
-    handlers["vert.glsl"]   = { "vert.glsl", h_preprocess_shader };
-    handlers["frag.glsl"]   = { "frag.glsl", h_preprocess_shader };
-    handlers["comp.glsl"]   = { "comp.glsl", h_preprocess_shader };
-    //handlers["ttf"]         = { "sdf", h_conv_to_sdf };
+    
+    handlers["bff"]         = { "bff",          h_copy              };
+    handlers["mesh"]        = { "mesh",         h_copy              };
+    handlers["anim"]        = { "anim",         h_copy              };
+    handlers["vert.glsl"]   = { "vert.glsl",    h_preprocess_shader };
+    handlers["frag.glsl"]   = { "frag.glsl",    h_preprocess_shader };
+    handlers["comp.glsl"]   = { "comp.glsl",    h_preprocess_shader };
 
     if (strcmp(platform, "pc") == 0) {
         handlers["json"]    = { "json", h_preprocess_scene };

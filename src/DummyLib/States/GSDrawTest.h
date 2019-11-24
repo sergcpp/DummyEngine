@@ -108,7 +108,7 @@ class GSDrawTest : public GameState {
     void TestUpdateAnims(float delta_time_s);
 public:
     explicit GSDrawTest(GameBase *game);
-    ~GSDrawTest();
+    ~GSDrawTest() final = default;
 
     void Enter() override;
     void Exit() override;
