@@ -62,7 +62,7 @@ JsArray::JsArray(const std::initializer_list<JsElement> &l) {
 }
 
 JsArray::JsArray(std::initializer_list<JsElement> &&l) {
-    elements.assign(std::move(l));
+    elements.assign(l);
 }
 
 const JsElement &JsArray::at(size_t i) const {
@@ -429,7 +429,7 @@ JsElement::operator const JsLiteral &() const {
     return *lit_;
 }
 
-JsElement &JsElement::operator=(JsElement &&rhs) {
+JsElement &JsElement::operator=(JsElement &&rhs) noexcept {
     DestroyValue();
     type_ = rhs.type_;
     p_ = rhs.p_;

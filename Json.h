@@ -174,19 +174,19 @@ public:
         return type_;
     }
 
-    operator JsNumber &();
-    operator JsString &();
-    operator JsArray &();
-    operator JsObject &();
-    operator JsLiteral &();
+    explicit operator JsNumber &();
+    explicit operator JsString &();
+    explicit operator JsArray &();
+    explicit operator JsObject &();
+    explicit operator JsLiteral &();
 
-    operator const JsNumber &() const;
-    operator const JsString &() const;
-    operator const JsArray &() const;
-    operator const JsObject &() const;
-    operator const JsLiteral &() const;
+    explicit operator const JsNumber &() const;
+    explicit operator const JsString &() const;
+    explicit operator const JsArray &() const;
+    explicit operator const JsObject &() const;
+    explicit operator const JsLiteral &() const;
 
-    JsElement &operator=(JsElement &&rhs);
+    JsElement &operator=(JsElement &&rhs) noexcept;
     JsElement &operator=(const JsElement &rhs);
 
     bool operator==(const JsElement &rhs) const;
