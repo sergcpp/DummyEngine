@@ -102,6 +102,8 @@ public:
     struct {
         float max_anisotropy = 0.0f;
         int max_uniform_vec4 = 0;
+        int max_vertex_input = 0,
+            max_vertex_output = 0;
         bool gl_spirv = false;
     } capabilities;
     

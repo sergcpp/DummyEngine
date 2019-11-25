@@ -43,13 +43,26 @@ void Ren::Context::Init(int w, int h) {
         printf("\tAnisotropy\t: %f\n", capabilities.max_anisotropy);
     }
     
-    // how many uniform vec4 vectors can be used
-    GLint i = 0;
-    glGetIntegerv(/*GL_MAX_VERTEX_UNIFORM_VECTORS*/ GL_MAX_VERTEX_UNIFORM_COMPONENTS, &i);
-    i /= 4;
-    if (i == 0) i = 256;
-    capabilities.max_uniform_vec4 = i;
-    printf("\tMax uniforms\t: %i\n", capabilities.max_uniform_vec4);
+    {   // how many uniform vec4 vectors can be used
+        GLint i = 0;
+        glGetIntegerv(/*GL_MAX_VERTEX_UNIFORM_VECTORS*/ GL_MAX_VERTEX_UNIFORM_COMPONENTS, &i);
+        i /= 4;
+        if (i == 0) i = 256;
+        capabilities.max_uniform_vec4 = i;
+        printf("\tMax uniforms\t: %i\n", capabilities.max_uniform_vec4);
+    }
+
+    {
+        GLint i = 0;
+        glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &i);
+        capabilities.max_vertex_input = i;
+        printf("\tMax vertex attribs\t: %i\n", capabilities.max_vertex_input);
+
+        glGetIntegerv(GL_MAX_VERTEX_OUTPUT_COMPONENTS, &i);
+        i /= 4;
+        capabilities.max_vertex_output = i;
+        printf("\tMax vertex output\t: %i\n", capabilities.max_vertex_output);
+    }
 
     // how many bones(mat4) can be used at time
     Mesh::max_gpu_bones = capabilities.max_uniform_vec4 / 8;
