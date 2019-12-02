@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include <cstring>
-#include <sstream>
 #include <stdexcept>
 
 #ifdef __ANDROID__
@@ -16,21 +15,6 @@
 #include "Pack.h"
 
 namespace Sys {
-class CannotOpenFileException : public std::runtime_error {
-    std::string file_name_;
-
-    static std::ostringstream cnvt;
-public:
-    explicit CannotOpenFileException(const char *file_name) : std::runtime_error("Cannot open file!"), file_name_(file_name) {}
-    ~CannotOpenFileException() throw() {}
-
-    const char *what() const throw() {
-        cnvt.str("");
-        cnvt << std::runtime_error::what() << " : \"" << file_name_ << "\"" << std::endl;
-        return cnvt.str().c_str();
-    }
-};
-
 struct Package {
     std::string name;
     std::vector<Sys::FileDesc> file_list;
@@ -38,9 +22,6 @@ struct Package {
 
 std::vector<Package> added_packages;
 }
-
-
-std::ostringstream Sys::CannotOpenFileException::cnvt;
 
 #ifdef __ANDROID__
 AAssetManager* Sys::AssetFile::asset_manager_ = nullptr;
@@ -85,37 +66,38 @@ Sys::AssetFile::AssetFile(const char *file_name, int mode) : mode_(mode), name_(
         }
 
         asset_file_ = AAssetManager_open(asset_manager_, file_name, AASSET_MODE_BUFFER);
-        if (!asset_file_) {
-            throw CannotOpenFileException(file_name);
+        if (asset_file_) {
+            size_ = AAsset_getLength(asset_file_);
+        } else {
+            size_ = 0;
         }
-
-        size_ = AAsset_getLength(asset_file_);
 #else
         file_stream_ = new std::fstream();
+
+        bool found_in_package = false;
 
         string fname = file_name;
         for (Package &p : added_packages) {
             for (FileDesc &f : p.file_list) {
                 if (fname == f.name) {
                     file_stream_->open(p.name, std::ios::in | std::ios::binary);
-                    if (!file_stream_->good()) {
-                        throw Sys::CannotOpenFileException(file_name);
+                    if (file_stream_->good()) {
+                        file_stream_->seekg(f.off, ios::beg);
+                        pos_override_ = f.off;
+                        size_ = f.size;
+                        found_in_package = true;
+                        break;
                     }
-                    file_stream_->seekg(f.off, ios::beg);
-                    pos_override_ = f.off;
-                    size_ = f.size;
-                    goto OPENED;
                 }
             }
+            if (found_in_package) break;
         }
 
-        file_stream_->open(file_name, std::ios::in | std::ios::binary);
-        file_stream_->seekg(0, std::ios::end);
-        size_ = (size_t)file_stream_->tellg();
-        file_stream_->seekg(0, std::ios::beg);
-OPENED:
-        if (!file_stream_->good()) {
-            throw Sys::CannotOpenFileException(file_name);
+        if (!found_in_package) {
+            file_stream_->open(file_name, std::ios::in | std::ios::binary);
+            file_stream_->seekg(0, std::ios::end);
+            size_ = (size_t)file_stream_->tellg();
+            file_stream_->seekg(0, std::ios::beg);
         }
 #endif
     } else if (mode == FileOut) {
@@ -124,10 +106,6 @@ OPENED:
 #else
         file_stream_ = new std::fstream();
         file_stream_->open(file_name, std::ios::out | std::ios::binary);
-        if (!file_stream_->good()) {
-            cout << "Can`t open file " << file_name << endl;
-            throw CannotOpenFileException(file_name);
-        }
 #endif
     }
 }
