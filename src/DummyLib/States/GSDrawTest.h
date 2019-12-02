@@ -100,7 +100,7 @@ class GSDrawTest : public GameState {
     int                                 cam_follow_point_;
     float                               cam_follow_param_;
 
-    void LoadScene(const char *name);
+    bool LoadScene(const char *name);
 
     void BackgroundProc();
     void UpdateFrame(int list_index);

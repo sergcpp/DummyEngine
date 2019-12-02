@@ -1007,8 +1007,9 @@ Ren::ProgramRef ModlApp::OnProgramNeeded(const char *name, const char *vs_shader
     if (!ret->ready()) {
         using namespace std;
 
-        Sys::AssetFile vs_file(string("assets_pc/shaders/") + vs_shader),
-                       fs_file(string("assets_pc/shaders/") + fs_shader);
+        Sys::AssetFile
+            vs_file(string("assets_pc/shaders/") + vs_shader),
+            fs_file(string("assets_pc/shaders/") + fs_shader);
         if (!vs_file || !fs_file) {
             LOGE("Error loading program %s", name);
             return ret;

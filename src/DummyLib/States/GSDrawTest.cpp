@@ -306,8 +306,13 @@ void GSDrawTest::Enter() {
     });
 }
 
-void GSDrawTest::LoadScene(const char *name) {
+bool GSDrawTest::LoadScene(const char *name) {
     Sys::AssetFile in_scene(name);
+    if (!in_scene) {
+        LOGE("Can not open scene file %s", name);
+        return false;
+    }
+
     size_t scene_size = in_scene.size();
 
     std::unique_ptr<uint8_t[]> scene_data(new uint8_t[scene_size]);
@@ -448,6 +453,8 @@ void GSDrawTest::LoadScene(const char *name) {
 
     //view_origin_ = { 1.6273377f, 2.3731651f, 0.9859568f };// { 5.0337372f, 1.1156000f, -6.3602295f };
     //view_dir_ = { 0.1691239f, 0.0714032f, 0.9829926f };// { -0.7934315f, -0.1813142f, 0.5810235f };
+
+    return true;
 }
 
 void GSDrawTest::Exit() {
