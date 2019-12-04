@@ -249,6 +249,9 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Texture2DParams &p)
     } else if (p.repeat == ClampToEdge) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    } else if (p.repeat == ClampToBorder) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     }
 
     if (p.filter == Trilinear || p.filter == Bilinear) {
@@ -644,6 +647,12 @@ void Ren::Texture2D::ChangeFilter(eTexFilter f, eTexRepeat r) {
         glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         if (params_.cube) {
             glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        }
+    } else if (r == ClampToBorder) {
+        glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        if (params_.cube) {
+            glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
         }
     }
 
