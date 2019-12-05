@@ -115,7 +115,7 @@ namespace Sys {
     };
 #else
     class AsyncFileReaderImpl {
-        static const int RequestsCount = 16;
+        static const int RequestsCount = 4;
 
         uint32_t chunk_size_;
         aio_context_t ctx_ = 0;
@@ -144,7 +144,7 @@ namespace Sys {
             long ret = io_setup(RequestsCount, &ctx_);
             assert(ret >= 0 && "io_setup failed!");
 
-            chunk_size_ = getpagesize() * 128;
+            chunk_size_ = getpagesize() * 16;
 
             for (int i = 0; i < RequestsCount; i++) {
                 req_cbs_[i] = {};
@@ -159,7 +159,7 @@ namespace Sys {
         }
 
         bool ReadFile(const char *file_path, size_t max_size, void *out_data, size_t &out_size) {
-            int fd = open(file_path, O_RDONLY);
+            const int fd = open(file_path, O_RDONLY);
             if (fd < 0) {
                 out_size = 0;
                 return false;
