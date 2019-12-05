@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <cstring>
 #include <iterator>
 
 namespace Ren {
