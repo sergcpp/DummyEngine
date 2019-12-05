@@ -1118,7 +1118,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             { Gui::g_unicode_umlauts[0], Gui::g_unicode_umlauts[0] + 1 },
             { Gui::g_unicode_umlauts[1], Gui::g_unicode_umlauts[1] + 1 },
             { Gui::g_unicode_umlauts[2], Gui::g_unicode_umlauts[2] + 1 },
-            { Gui::g_unicode_umlauts[3], Gui::g_unicode_umlauts[3] + 1 }
+            { Gui::g_unicode_umlauts[3], Gui::g_unicode_umlauts[3] + 1 },
+            { Gui::g_unicode_heart,      Gui::g_unicode_heart + 1 }
         };
         const int glyph_range_count = sizeof(glyph_ranges) / sizeof(glyph_ranges[0]);
 

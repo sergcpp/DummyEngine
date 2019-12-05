@@ -1,0 +1,40 @@
+{
+	"texts" : [
+		{
+			"data" : "Als Caroline <option>______</option> ich eine <option>_____</option> <hint>Lektion</hint>. Ich <red>♥</red>dachte<red>♥</red>, du wärst mein <option>______</option> <hint>Feind</hint> und warst doch die ganze Zeit mein bester Freund. Die Emotionen, die ich verspürte, als ich dein Leben rettete, erteilten mir eine noch viel wichtigere Lektion: Ich weiß jetzt, wo Caroline in <option>______</option> <hint>Gehirn</hint> lebt. Leb wohl, Caroline.",
+            "options" : [
+                {
+                    "variants" : [
+                        "lernte", "gelernt", "lerne"
+                    ]
+                },
+                {
+                    "variants" : [
+                        "wichtige", "wichtiges", "wichtiger"
+                    ]
+                },
+                {
+                    "variants" : [
+                        "größter", "größte", "größtes"
+                    ]
+                },
+                {
+                    "variants" : [
+                        "meinem", "meiner", "meinen"
+                    ]
+                }
+            ],
+            "hints" : [
+                {
+                    "en" : "lesson"
+                },
+                {
+                    "en" : "enemy"
+                },
+                {
+                    "en" : "brain"
+                }
+            ]
+        }
+	]
+}

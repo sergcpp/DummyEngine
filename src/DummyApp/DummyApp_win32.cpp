@@ -130,6 +130,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     case WM_SIZE: {
         int w = LOWORD(lParam), h = HIWORD(lParam);
         g_app->Resize(w, h);
+        g_app->AddEvent(InputManager::RAW_INPUT_RESIZE, 0, 0, (float)w, (float)h, 0.0f, 0.0f);
     }
     default: {
         break;

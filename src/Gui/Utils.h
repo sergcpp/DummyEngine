@@ -18,6 +18,9 @@ const std::pair<uint32_t, uint32_t>
 
 const uint32_t g_unicode_umlauts[] = { 223, 228, 246, 252 };
 const uint32_t g_unicode_spacebar = 0x20;
+const uint32_t g_unicode_heart = 0x2665;
+const uint32_t g_unicode_less_than = 0x3C;
+const uint32_t g_unicode_greater_than = 0x3E;
 
 int ConvChar_UTF8_to_Unicode(const char *utf8, uint32_t &out_unicode);
 int ConvChar_UTF8_to_UTF16(const char *utf8, uint16_t out_utf16[2]);

@@ -1132,6 +1132,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glDepthFunc(GL_LESS);
 
     glDisable(GL_CULL_FACE);
+    glDisable(GL_BLEND);
 
     assert(list.instances.count < REN_MAX_INSTANCES_TOTAL);
     assert(list.skin_transforms.count < REN_MAX_SKIN_XFORMS_TOTAL);
@@ -3214,6 +3215,8 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &
 
     glViewport(0, 0, (GLint)dst_store.res(), (GLint)dst_store.res());
 
+    glDisable(GL_BLEND);
+
     glBindVertexArray((GLuint)temp_vao_);
 
     glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
@@ -3308,6 +3311,8 @@ void Renderer::BlitPrefilterFromTemp(const ProbeStorage &dst_store, int probe_in
 
     GLuint cube_array = (GLuint)dst_store.tex_id();
 
+    glDisable(GL_BLEND);
+
     glBindVertexArray((GLuint)temp_vao_);
 
     glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
@@ -3382,6 +3387,8 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
 
     glViewport(0, 0, probe_sample_buf_.w, probe_sample_buf_.h);
 
+    glDisable(GL_BLEND);
+
     glBindVertexArray((GLuint)temp_vao_);
 
     glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
@@ -3433,7 +3440,7 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
 
         const float k = 1.0f / iteration;
         for (int i = 0; i < 4; i++) {
-            Ren::Vec3f diff = sh_coeffs[i] - probe.sh_coeffs[i];
+            const Ren::Vec3f diff = sh_coeffs[i] - probe.sh_coeffs[i];
             probe.sh_coeffs[i] += diff * k;
         }
     }

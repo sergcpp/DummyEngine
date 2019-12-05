@@ -13,10 +13,10 @@ public:
     ~TextureAtlas();
 
     TextureAtlas(const TextureAtlas &rhs) = delete;
-    TextureAtlas(TextureAtlas &&rhs);
+    TextureAtlas(TextureAtlas &&rhs) noexcept;
 
     TextureAtlas &operator=(const TextureAtlas &rhs) = delete;
-    TextureAtlas &operator=(TextureAtlas &&rhs);
+    TextureAtlas &operator=(TextureAtlas &&rhs) noexcept;
 
     int resx() const { return splitter_.resx(); }
     int resy() const { return splitter_.resy(); }
@@ -33,7 +33,7 @@ private:
         Undefined, Undefined, Undefined, Undefined,
         Undefined, Undefined, Undefined, Undefined
     };
-    eTexFilter filter_;
+    eTexFilter filter_ = NoFilter;
 #if defined(USE_GL_RENDER)
     uint32_t tex_ids_[MaxTextureCount] = {
         0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
@@ -48,27 +48,27 @@ class TextureAtlasArray {
 public:
     static const int MaxTextureCount = 8;
 
-    TextureAtlasArray() {}
-    TextureAtlasArray(int w, int h, int layer_count, const eTexColorFormat format, eTexFilter filter);
+    TextureAtlasArray() = default;
+    TextureAtlasArray(int w, int h, int layer_count, eTexColorFormat format, eTexFilter filter);
     ~TextureAtlasArray();
 
     TextureAtlasArray(const TextureAtlasArray &rhs) = delete;
-    TextureAtlasArray(TextureAtlasArray &&rhs);
+    TextureAtlasArray(TextureAtlasArray &&rhs) noexcept;
 
     TextureAtlasArray &operator=(const TextureAtlasArray &rhs) = delete;
-    TextureAtlasArray &operator=(TextureAtlasArray &&rhs);
+    TextureAtlasArray &operator=(TextureAtlasArray &&rhs) noexcept;
 
     int resx() const { return splitters_[0].resx(); }
     int resy() const { return splitters_[0].resy(); }
     uint32_t tex_id() const { return tex_id_; }
 
-    int Allocate(const void *data, const eTexColorFormat format, const int res[2], int out_pos[3], int border);
+    int Allocate(const void *data, eTexColorFormat format, const int res[2], int out_pos[3], int border);
     bool Free(const int pos[3]);
 
 private:
-    int layer_count_        = 0;
+    int             layer_count_ = 0;
     eTexColorFormat format_ = Undefined;
-    eTexFilter filter_;
+    eTexFilter      filter_ = NoFilter;
 #if defined(USE_GL_RENDER)
     uint32_t tex_id_        = 0xffffffff;
 #endif

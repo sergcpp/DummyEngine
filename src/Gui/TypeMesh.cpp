@@ -27,7 +27,7 @@ void Gui::TypeMesh::Centrate() {
 }
 
 void Gui::TypeMesh::Move(const Vec2f &pos, const BaseElement *parent) {
-    float w = font_->GetTriangles(text_.c_str(), pos_, uvs_, indices_, pos, parent);
+    /*float w = font_->GetTriangles(text_.c_str(), pos_, uvs_, indices_, pos, parent);
     Vec2f size = { w, font_->height(parent) };
 
 
@@ -43,7 +43,7 @@ void Gui::TypeMesh::Move(const Vec2f &pos, const BaseElement *parent) {
     //dims_[0] = parent->pos() + 0.5f * (pos + vec2(1, 1)) * parent->size();
     //dims_[1] = size;
 
-    center_ = dims_[0] + 0.5f * dims_[1];
+    center_ = dims_[0] + 0.5f * dims_[1];*/
 }
 
 void Gui::TypeMesh::Resize(const BaseElement *parent) {
@@ -51,9 +51,9 @@ void Gui::TypeMesh::Resize(const BaseElement *parent) {
 }
 
 void Gui::TypeMesh::Draw(Renderer *r) {
-    const Renderer::DrawParams &cur = r->GetParams();
+    /*const Renderer::DrawParams &cur = r->GetParams();
 
     r->EmplaceParams(cur.col_and_mode(), cur.z_val(), (eBlendMode)font_->blend_mode(), cur.scissor_test());
     r->DrawUIElement(font_->tex(), Gui::PrimTriangle, pos_, uvs_, indices_);
-    r->PopParams();
+    r->PopParams();*/
 }

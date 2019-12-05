@@ -6,6 +6,7 @@
 
 #include <Eng/GameBase.h>
 #include <Eng/GameState.h>
+#include <Gui/BaseElement.h>
 #include <Gui/BitmapFont.h>
 #include <Ren/Camera.h>
 #include <Ren/Mesh.h>
@@ -21,32 +22,20 @@ class DebugInfoUI;
 class GameStateManager;
 class FontStorage;
 class SceneManager;
-
-namespace Gui {
-class BaseElement;
-class BitmapFont;
-class Renderer;
-}
+class TextPrinter;
 
 class GSUITest : public GSBaseState {
-    int view_pointer_ = 0, move_pointer_ = 0;
-    Ren::Vec3f view_origin_ = { 0, 1, 0 },
-               view_dir_ = { 0, 0, -1 };
-
-    float fwd_press_speed_ = 0, side_press_speed_ = 0,
-          fwd_touch_speed_ = 0, side_touch_speed_ = 0;
-
-    float max_fwd_speed_ = 0.5f, view_fov_ = 60.0f;
-
     uint64_t last_frame_time_ = 0;
     double cur_fps_ = 0.0;
 
     uint32_t click_time_ = 0;
 
-    Gui::BitmapFont test_font_;
-    int test_string_length_ = 0;
-    int test_progress_ = 0;
+    std::shared_ptr<Gui::BitmapFont> dialog_font_;
     float test_time_counter_s = 0.0f;
+
+    std::unique_ptr<Gui::Image>          test_image_;
+    std::unique_ptr<Gui::ImageNinePatch> test_frame_;
+    std::unique_ptr<TextPrinter>         text_printer_;
 
     void OnPostloadScene(JsObject &js_scene) override;
 

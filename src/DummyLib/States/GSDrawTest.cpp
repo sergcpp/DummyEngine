@@ -14,7 +14,6 @@
 #include <Sys/MemBuf.h>
 #include <Sys/Time_.h>
 
-#include "../Gui/DebugInfoUI.h"
 #include "../Gui/FontStorage.h"
 #include "../Viewer.h"
 #include "../Renderer/Renderer.h"

@@ -6,35 +6,43 @@
 
 #include "Renderer.h"
 
-Gui::Image::Image(const Ren::Texture2DRef &tex, const Vec2f uvs[2],
-                  const Vec2f &pos, const Vec2f &size, const BaseElement *parent) :
-    BaseElement(pos, size, parent), tex_(tex) {
-    uvs_[0] = uvs[0];
-    uvs_[1] = uvs[1];
+Gui::Image::Image(const Ren::TextureRegionRef &tex, const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
+        : BaseElement(pos, size, parent), tex_(tex) {
+    const Ren::Texture2DParams &p = tex->params();
+    uvs_px_[0] = { (float)(tex_->pos(0)),        (float)(tex_->pos(1)) };
+    uvs_px_[1] = { (float)(tex_->pos(0) + p.w),  (float)(tex_->pos(1) + p.h) };
 }
 
-Gui::Image::Image(Ren::Context &ctx, const char *tex_name, const Vec2f uvs[2],
-                  const Vec2f &pos, const Vec2f &size, const BaseElement *parent) :
+Gui::Image::Image(Ren::Context &ctx, const char *tex_name, const Vec2f &pos, const Vec2f &size, const BaseElement *parent) :
     BaseElement(pos, size, parent) {
-    uvs_[0] = uvs[0];
-    uvs_[1] = uvs[1];
+    uvs_px_[0] = { 0.0f, 0.0f };
+    uvs_px_[1] = { 0.0f, 0.0f };
 
     Ren::eTexLoadStatus status;
-    tex_ = ctx.LoadTexture2D(tex_name, nullptr, 0, {}, &status);
+    tex_ = ctx.LoadTextureRegion(tex_name, nullptr, 0, {}, &status);
     if (status == Ren::TexCreatedDefault) {
         Sys::AssetFile in_file(tex_name, Sys::AssetFile::FileIn);
         size_t in_file_size = in_file.size();
         std::unique_ptr<char[]> data(new char[in_file_size]);
         in_file.Read(data.get(), in_file_size);
 
-        Ren::Texture2DParams p;
-        p.filter = Ren::Trilinear;
-        p.repeat = Ren::Repeat;
-        tex_ = ctx.LoadTexture2D(tex_name, data.get(), (int)in_file_size, p, &status);
+        tex_ = ctx.LoadTextureRegion(tex_name, data.get(), (int)in_file_size, {}, &status);
         assert(status == Ren::TexCreatedFromData);
+
+        const Ren::Texture2DParams &p = tex_->params();
+        uvs_px_[0] = { (float)(tex_->pos(0)),        (float)(tex_->pos(1)) };
+        uvs_px_[1] = { (float)(tex_->pos(0) + p.w),  (float)(tex_->pos(1) + p.h) };
     }
 }
 
 void Gui::Image::Draw(Renderer *r) {
-    r->DrawImageQuad(tex_, dims_, uvs_);
+    const Vec2f pos[2] = {
+        dims_[0],
+        dims_[0] + dims_[1]
+    };
+
+    const Ren::Texture2DParams &p = tex_->params();
+    const int tex_layer = tex_->pos(2);
+
+    r->DrawImageQuad(DrPassthrough, tex_layer, pos, uvs_px_);
 }

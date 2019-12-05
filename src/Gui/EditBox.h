@@ -2,7 +2,7 @@
 
 #include <bitset>
 
-#include "Frame.h"
+#include "ImageNinePatch.h"
 #include "LinearLayout.h"
 #include "TypeMesh.h"
 
@@ -18,7 +18,7 @@ enum eEditBoxFlags {
 class EditBox : public BaseElement {
     TypeMesh cursor_;
     LinearLayout lay_;
-    Frame frame_;
+    ImageNinePatch frame_;
     std::vector<TypeMesh> lines_;
     BitmapFont *font_;
     std::bitset<32> edit_flags_;
@@ -31,10 +31,10 @@ public:
     EditBox(Ren::Context &ctx, const char *frame_tex_name, const Vec2f &frame_offsets,
             BitmapFont *font,
             const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
-    EditBox(const Frame &frame, BitmapFont *font,
+    EditBox(const ImageNinePatch &frame, BitmapFont *font,
             const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
 
-    Frame &frame() {
+    ImageNinePatch &frame() {
         return frame_;
     }
 

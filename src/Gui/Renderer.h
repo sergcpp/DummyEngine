@@ -4,8 +4,16 @@
 
 #include <Ren/Program.h>
 #include <Ren/Texture.h>
+#include <Ren/TextureAtlas.h>
 
 #include <Ren/MVec.h>
+
+#ifdef __GNUC__
+#define force_inline __attribute__((always_inline)) inline
+#endif
+#ifdef _MSC_VER
+#define force_inline __forceinline
+#endif
 
 struct JsObject;
 
@@ -16,6 +24,7 @@ class Context;
 namespace Gui {
 const char GL_DEFINES_KEY[] = "gl_defines";
 const char UI_PROGRAM_NAME[] = "ui_program";
+const char UI_PROGRAM2_NAME[] = "ui_program2";
 
 enum ePrimitiveType { PrimTriangle };
 enum eBlendMode { BlAlpha, BlColor };
@@ -26,89 +35,59 @@ using Ren::Vec2i;
 using Ren::Vec3f;
 using Ren::Vec4f;
 
+struct vertex_t {
+    float pos[3];
+    uint8_t col[4];
+    uint16_t uvs[4];
+};
+static_assert(sizeof(vertex_t) == 24, "!");
+
+force_inline uint8_t f32_to_u8(float value) {
+    return uint8_t(value * 255);
+}
+
+force_inline uint16_t f32_to_u16(float value) {
+    return uint16_t(value * 65535);
+}
+
 class Renderer {
 public:
     Renderer(Ren::Context &ctx, const JsObject &config);
     ~Renderer();
 
+    Renderer(const Renderer &rhs) = delete;
+    Renderer &operator=(const Renderer &rhs) = delete;
+
     void BeginDraw();
     void EndDraw();
 
-    struct DrawParams {
-        DrawParams(const Vec4f &col_and_mode, float z_val, eBlendMode blend_mode, const Vec2i scissor_test[2])
-            : col_and_mode_(col_and_mode), z_val_(z_val), blend_mode_(blend_mode) {
-            scissor_test_[0] = scissor_test[0];
-            scissor_test_[1] = scissor_test[1];
-        }
+    // Returns pointers to mapped vertex buffer. Do NOT read from it, it is write-combined memory and will result in terrible latencies!
+    int AcquireVertexData(vertex_t **vertex_data, int *vertex_avail, uint16_t **index_data, int *index_avail);
+    void SubmitVertexData(int vertex_count, int index_count, bool force_new_buffer);
 
-        const Vec4f &col_and_mode() const {
-            return col_and_mode_;
-        }
-        float z_val() const {
-            return z_val_;
-        }
-        eBlendMode blend_mode() const {
-            return blend_mode_;
-        }
-        const Vec2i *scissor_test() const {
-            return scissor_test_;
-        }
-        const Vec2i &scissor_test(int i) const {
-            return scissor_test_[i];
-        }
-
-        bool operator==(const DrawParams &rhs) const {
-            return col_and_mode_ == rhs.col_and_mode_ &&
-                   z_val_ == rhs.z_val_ &&
-                   blend_mode_ == rhs.blend_mode_ &&
-                   scissor_test_[0] == rhs.scissor_test_[0] &&
-                   scissor_test_[1] == rhs.scissor_test_[1];
-        }
-        bool operator!=(const DrawParams &rhs) const {
-            return !(*this == rhs);
-        }
-    private:
-        friend class Renderer;
-        Vec4f       col_and_mode_;
-        float		z_val_;
-        eBlendMode  blend_mode_;
-        Vec2i	    scissor_test_[2];
-    };
-
-    const DrawParams &GetParams() const {
-        return params_.back();
-    }
-
-    void PushParams(const DrawParams &params) {
-        params_.push_back(params);
-    }
-
-    template<class... Args>
-    void EmplaceParams(Args &&... args) {
-        params_.emplace_back(args...);
-    }
-
-    void PopParams() {
-        params_.pop_back();
-    }
-
-    void DrawImageQuad(const Ren::Texture2DRef &tex,
-                       const Vec2f dims[2],
-                       const Vec2f uvs[2]);
-
-    void DrawUIElement(const Ren::Texture2DRef &tex, ePrimitiveType prim_type,
-                       const std::vector<float> &pos, const std::vector<float> &uvs,
-                       const std::vector<uint16_t> &indices);
+    void DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2f pos[2], const Vec2f uvs_px[2]);
 private:
-    Ren::Context &ctx_;
-    Ren::ProgramRef ui_program_;
-#if defined(USE_GL_RENDER)
-    uint32_t main_vao_;
-    uint32_t attribs_buf_id_, indices_buf_id_;
-#endif
-    std::vector<DrawParams> params_;
+    static const int FrameSyncWindow = 2;
+    static const int BuffersCount = 4;
 
-    void ApplyParams(Ren::ProgramRef &p, const DrawParams &params);
+    Ren::Context &ctx_;
+
+    int vertex_count_[BuffersCount];
+    int index_count_[BuffersCount];
+    int cur_buffer_index_, cur_range_index_;
+    int cur_vertex_count_, cur_index_count_;
+
+    Ren::ProgramRef ui_program2_;
+#if defined(USE_GL_RENDER)
+    uint32_t vao_[BuffersCount];
+    uint32_t vertex_buf_id_[BuffersCount], index_buf_id_[BuffersCount];
+#endif
+    vertex_t *cur_mapped_vtx_data_ = nullptr;
+    uint16_t *cur_mapped_ndx_data_ = nullptr;
+
+    void *buf_range_fences_[FrameSyncWindow] = {};
+
+    void DrawCurrentBuffer();
 };
 }
 

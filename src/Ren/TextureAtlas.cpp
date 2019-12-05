@@ -59,7 +59,8 @@ Ren::TextureAtlas::~TextureAtlas() {
     }
 }
 
-Ren::TextureAtlas::TextureAtlas(TextureAtlas &&rhs) : splitter_(std::move(rhs.splitter_)), filter_(rhs.filter_) {
+Ren::TextureAtlas::TextureAtlas(TextureAtlas &&rhs) noexcept
+        : splitter_(std::move(rhs.splitter_)), filter_(rhs.filter_) {
     for (int i = 0; i < MaxTextureCount; i++) {
         formats_[i] = rhs.formats_[i];
         rhs.formats_[i] = Undefined;
@@ -71,7 +72,7 @@ Ren::TextureAtlas::TextureAtlas(TextureAtlas &&rhs) : splitter_(std::move(rhs.sp
     }
 }
 
-Ren::TextureAtlas &Ren::TextureAtlas::operator=(TextureAtlas &&rhs) {
+Ren::TextureAtlas &Ren::TextureAtlas::operator=(TextureAtlas &&rhs) noexcept {
     filter_ = rhs.filter_;
 
     for (int i = 0; i < MaxTextureCount; i++) {
@@ -80,7 +81,7 @@ Ren::TextureAtlas &Ren::TextureAtlas::operator=(TextureAtlas &&rhs) {
 
 #if defined(USE_GL_RENDER)
         if (tex_ids_[i] != 0xffffffff) {
-            GLuint tex_id = (GLuint)tex_ids_[i];
+            auto tex_id = (GLuint)tex_ids_[i];
             glDeleteTextures(1, &tex_id);
         }
         tex_ids_[i] = rhs.tex_ids_[i];
@@ -164,18 +165,22 @@ Ren::TextureAtlasArray::TextureAtlasArray(int w, int h, int layer_count, const e
 
     tex_id_ = (uint32_t)tex_id;
 #endif
+
+    for (int i = 0; i < layer_count; i++) {
+        splitters_[i] = TextureSplitter{ w, h };
+    }
 }
 
 Ren::TextureAtlasArray::~TextureAtlasArray() {
 #if defined(USE_GL_RENDER)
     if (tex_id_ != 0xffffffff) {
-        GLuint tex_id = (GLuint)tex_id_;
+        auto tex_id = (GLuint)tex_id_;
         glDeleteTextures(1, &tex_id);
     }
 #endif
 }
 
-Ren::TextureAtlasArray::TextureAtlasArray(TextureAtlasArray &&rhs) {
+Ren::TextureAtlasArray::TextureAtlasArray(TextureAtlasArray &&rhs) noexcept {
     layer_count_ = rhs.layer_count_;
     rhs.layer_count_ = 0;
 
@@ -194,7 +199,7 @@ Ren::TextureAtlasArray::TextureAtlasArray(TextureAtlasArray &&rhs) {
     }
 }
 
-Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rhs) {
+Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rhs) noexcept {
     layer_count_ = rhs.layer_count_;
     rhs.layer_count_ = 0;
 
@@ -205,7 +210,7 @@ Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rh
 
 #if defined(USE_GL_RENDER)
     if (tex_id_ != 0xffffffff) {
-        GLuint tex_id = (GLuint)tex_id_;
+        auto tex_id = (GLuint)tex_id_;
         glDeleteTextures(1, &tex_id);
     }
 

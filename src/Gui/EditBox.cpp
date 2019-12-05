@@ -17,12 +17,10 @@ const int cursor_offset = 12;
 Gui::EditBox::EditBox(Ren::Context &ctx, const char *frame_tex_name, const Vec2f &frame_offsets,
                       BitmapFont *font,
                       const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
-    : EditBox( {
-    ctx, frame_tex_name, frame_offsets, Vec2f{ -1, -1 }, Vec2f{ 2, 2 }, this
-}, font, pos, size, parent) {
+    : EditBox( { ctx, frame_tex_name, frame_offsets, 1.0f, Vec2f{ -1, -1 }, Vec2f{ 2, 2 }, this }, font, pos, size, parent) {
 }
 
-Gui::EditBox::EditBox(const Frame &frame, BitmapFont *font,
+Gui::EditBox::EditBox(const ImageNinePatch &frame, BitmapFont *font,
                       const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
     : BaseElement(pos, size, parent),
       cursor_("|", font, {
@@ -72,7 +70,7 @@ void Gui::EditBox::Press(const Vec2f &p, bool push) {
 }
 
 void Gui::EditBox::Draw(Renderer *r) {
-    const Renderer::DrawParams &cur = r->GetParams();
+    /*const Renderer::DrawParams &cur = r->GetParams();
     r->EmplaceParams(cur.col_and_mode(), cur.z_val(), cur.blend_mode(), dims_px_);
 
     frame_.Draw(r);
@@ -84,7 +82,7 @@ void Gui::EditBox::Draw(Renderer *r) {
     }
     r->PopParams();
 
-    r->PopParams();
+    r->PopParams();*/
 }
 
 int Gui::EditBox::AddLine(const std::string &text) {

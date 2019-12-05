@@ -6,7 +6,9 @@ set(SOURCE_FILES    Viewer.h
 
 set(GUI_SOURCES Gui/DebugInfoUI.h
                 Gui/DebugInfoUI.cpp 
-                Gui/FontStorage.h)
+                Gui/FontStorage.h
+                Gui/TextPrinter.h
+                Gui/TextPrinter.cpp)
 
 set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/Renderer.h

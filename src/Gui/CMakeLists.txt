@@ -23,13 +23,14 @@ set(SOURCE_FILES    BaseElement.h
                     Cursor.cpp
                     EditBox.h
                     EditBox.cpp
-                    Frame.h
-                    Frame.cpp
                     Image.h
                     Image.cpp
+                    ImageNinePatch.h
+                    ImageNinePatch.cpp
                     LinearLayout.h
                     LinearLayout.cpp
                     Renderer.h
+                    Renderer.cpp
                     TypeMesh.h
                     TypeMesh.cpp
                     Utils.h

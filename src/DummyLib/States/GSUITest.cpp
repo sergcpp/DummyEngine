@@ -4,6 +4,8 @@
 #include <memory>
 
 #include <Eng/GameStateManager.h>
+#include <Gui/Image.h>
+#include <Gui/ImageNinePatch.h>
 #include <Gui/Renderer.h>
 #include <Gui/Utils.h>
 #include <Ren/Context.h>
@@ -15,8 +17,8 @@
 #include <Sys/MemBuf.h>
 #include <Sys/Time_.h>
 
-#include "../Gui/DebugInfoUI.h"
 #include "../Gui/FontStorage.h"
+#include "../Gui/TextPrinter.h"
 #include "../Viewer.h"
 #include "../Renderer/Renderer.h"
 #include "../Scene/SceneManager.h"
@@ -31,20 +33,26 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
     "empty.json";
 
 static const char test_string_en[] =
-    u8"You know, being Caroline taught me a valueable lesson."
-    u8"I thought you were my greatest enemy, when all along you "
-    u8"were my best friend. The surge of emotion that shout through "
-    u8"me when I saved your life taught me an even more valuable lesson - "
-    u8"where caroline lives in my brain.";
+    u8"<violet>You know, being Caroline taught me a</violet> <cyan>valueable</cyan> <violet>lesson. "
+    u8"I</violet> <red>♥</red> <white>thought</white> <red>♥</red> <violet>you were my greatest enemy, when all along you "
+    u8"were my best friend.</violet> <yellow>The surge of emotion that shout through "
+    u8"me when I saved your life taught me an even more valuable lesson</yellow> <white>-</white> "
+    u8"<cyan>where caroline lives in my brain.</cyan>";
 
 static const char test_string_de[] =
-    u8"Als Caroline lernte ich eine wichtige Lektion. Ich DACHTE, du wärst mein größter Feind und warst doch die ganze Zeit mein bester Freund."
-    u8" Als Caroline lernte ich eine weitere wichtige Lektion: Wo Caroline in meinem Hirn lebt."
-    u8" Die Emotionen, die ich verspürte, als ich dein Leben rettete, erteilten mir eine noch viel wichtigere Lektion: Ich weiß jetzt, wo Caroline in meinem Gehirn lebt."
-    u8" Leb wohl, Caroline.";
+    u8"<violet>Als Caroline lernte ich eine</violet> <cyan>wichtige</cyan> <violet>Lektion. Ich</violet> <red>♥</red><white>dachte</white><red>♥</red>, "
+    u8"<violet>du wärst mein größter Feind und warst doch die ganze Zeit mein bester Freund.</violet>"
+    //u8" Als Caroline lernte ich eine weitere wichtige Lektion: Wo Caroline in meinem Hirn lebt."
+    u8" <yellow>Die Emotionen, die ich verspürte, als ich dein Leben rettete, erteilten mir eine noch viel wichtigere Lektion:</yellow> <cyan>Ich weiß jetzt, wo Caroline in meinem Gehirn lebt."
+    u8" Leb wohl, Caroline.</cyan>";
+
+static const char *test_string = test_string_de;
 }
 
 GSUITest::GSUITest(GameBase *game) : GSBaseState(game) {
+    const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
+    dialog_font_ = fonts->FindFont("dialog_font");
+    dialog_font_->set_scale(1.5f);
 }
 
 void GSUITest::Enter() {
@@ -54,6 +62,42 @@ void GSUITest::Enter() {
 
     LOGI("GSUITest: Loading scene!");
     GSBaseState::LoadScene(SCENE_NAME);
+
+    test_image_.reset(new Gui::Image{
+        *ctx_, "assets_pc/textures/test_image.uncompressed.png", Ren::Vec2f{ -0.5f, -0.5f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
+    });
+
+    test_frame_.reset(new Gui::ImageNinePatch{
+        *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Ren::Vec2f{ 2.0f, 2.0f }, 1.0f, Ren::Vec2f{ 0.0f, 0.1f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
+    });
+
+    text_printer_.reset(new TextPrinter{
+        *ctx_, Ren::Vec2f{ -0.995f, -0.995f }, Ren::Vec2f{ 1.99f, 1.1f }, ui_root_.get(), dialog_font_
+    });
+
+    const char *dialog_name = "assets/scenes/test/test_dialog.json";
+    JsObject js_script;
+
+    {   // Load dialog data from file
+        Sys::AssetFile in_scene(dialog_name);
+        if (!in_scene) {
+            LOGE("Can not open dialog file %s", dialog_name);
+        }
+
+        size_t scene_size = in_scene.size();
+
+        std::unique_ptr<uint8_t[]> scene_data(new uint8_t[scene_size]);
+        in_scene.Read((char *)&scene_data[0], scene_size);
+
+        Sys::MemBuf mem(&scene_data[0], scene_size);
+        std::istream in_stream(&mem);
+
+        if (!js_script.Read(in_stream)) {
+            throw std::runtime_error("Cannot load dialog!");
+        }
+    }
+
+    text_printer_->LoadScript(js_script);
 }
 
 void GSUITest::OnPostloadScene(JsObject &js_scene) {
@@ -61,7 +105,7 @@ void GSUITest::OnPostloadScene(JsObject &js_scene) {
 
     GSBaseState::OnPostloadScene(js_scene);
 
-    if (js_scene.Has("camera")) {
+    /*if (js_scene.Has("camera")) {
         const JsObject &js_cam = (const JsObject &)js_scene.at("camera");
         if (js_cam.Has("view_origin")) {
             const JsArray &js_orig = (const JsArray &)js_cam.at("view_origin");
@@ -86,20 +130,9 @@ void GSUITest::OnPostloadScene(JsObject &js_scene) {
             const JsNumber &js_fov = (const JsNumber &)js_cam.at("fov");
             view_fov_ = (float)js_fov.val;
         }
-    }
+    }*/
 
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
-
-    test_font_.Load("assets_pc/fonts/Roboto-Regular_48px_sdf.font", *ctx_);
-    test_font_.set_scale(1.5f);
-
-    int char_pos = 0;
-    while (test_string_de[char_pos]) {
-        uint32_t unicode;
-        char_pos += Gui::ConvChar_UTF8_to_Unicode(&test_string_de[char_pos], unicode);
-
-        ++test_string_length_;
-    }
+    //scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
 }
 
 void GSUITest::OnUpdateScene() {
@@ -113,7 +146,7 @@ void GSUITest::OnUpdateScene() {
     const float char_period_s = 0.025f;
 
     while (test_time_counter_s > char_period_s) {
-        test_progress_ = std::min(test_progress_ + 1, test_string_length_);
+        text_printer_->incr_progress();
         test_time_counter_s -= char_period_s;
     }
 }
@@ -127,77 +160,12 @@ void GSUITest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
 
     GSBaseState::DrawUI(r, root);
 
-    const float font_height = test_font_.height(root);
+    dialog_font_->set_scale(std::max(root->size_px()[0] / 1024.0f, 1.0f));
 
-    
+    text_printer_->Draw(r);
 
-    float y_offset = 1.0f - font_height;
-
-    std::string line_string;
-
-    int char_pos = 0, split_pos = 0, split_prog = 0;
-    for (int i = 0; i < test_progress_; i++) {
-        if (!test_string_de[char_pos]) break;
-        const int char_start = char_pos;
-
-        uint32_t unicode;
-        char_pos += Gui::ConvChar_UTF8_to_Unicode(&test_string_de[char_pos], unicode);
-
-        for (int j = char_start; j < char_pos; j++) {
-            line_string += test_string_de[j];
-        }
-
-        bool draw = false;
-
-        if (unicode == Gui::g_unicode_spacebar) {
-            split_pos = char_start;
-            split_prog = i;
-
-            int next_pos = char_pos;
-            while (test_string_de[next_pos]) {
-                const int next_start = next_pos;
-
-                uint32_t unicode;
-                next_pos += Gui::ConvChar_UTF8_to_Unicode(&test_string_de[next_pos], unicode);
-
-                for (int j = next_start; j < next_pos; j++) {
-                    line_string += test_string_de[j];
-                }
-
-                if (unicode == Gui::g_unicode_spacebar) break;
-            }
-
-            const float width = test_font_.GetWidth(line_string.c_str(), root);
-            if (width > 2.0f) {
-                char_pos = split_pos + 1;
-                i = split_prog;
-
-                draw = true;
-            }
-
-            const int n = next_pos - char_pos;
-            line_string.erase(line_string.size() - n, n);
-        }
-
-        const float width = test_font_.GetWidth(line_string.c_str(), root);
-        if (width > 2.0f) {
-            const int n = char_pos - split_pos;
-            line_string.erase(line_string.size() - n, n);
-            char_pos = split_pos + 1;
-            i = split_prog;
-
-            draw = true;
-        }
-
-        if (draw) {
-            test_font_.DrawText(r, line_string.c_str(), { -1.0f, y_offset }, root);
-            line_string.clear();
-            y_offset -= font_height;
-        }
-    }
-
-    // draw the last line
-    test_font_.DrawText(r, line_string.c_str(), { -1.0f, y_offset }, root);
+    //test_image_->Draw(r);
+    //test_frame_->Draw(r);
 }
 
 bool GSUITest::HandleInput(const InputManager::Event &evt) {
@@ -225,115 +193,41 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
     bool input_processed = true;
 
     switch (evt.type) {
-    case InputManager::RAW_INPUT_P1_DOWN:
-        if (evt.point.x < ((float)ctx_->w() / 3.0f) && move_pointer_ == 0) {
-            move_pointer_ = 1;
-        } else if (view_pointer_ == 0) {
-            view_pointer_ = 1;
-        }
-        break;
-    case InputManager::RAW_INPUT_P2_DOWN:
-        if (evt.point.x < ((float)ctx_->w() / 3.0f) && move_pointer_ == 0) {
-            move_pointer_ = 2;
-        } else if (view_pointer_ == 0) {
-            view_pointer_ = 2;
-        }
-        break;
-    case InputManager::RAW_INPUT_P1_UP:
-        if (move_pointer_ == 1) {
-            move_pointer_ = 0;
-            fwd_touch_speed_ = 0;
-            side_touch_speed_ = 0;
-        } else if (view_pointer_ == 1) {
-            view_pointer_ = 0;
-        }
-        break;
-    case InputManager::RAW_INPUT_P2_UP:
-        if (move_pointer_ == 2) {
-            move_pointer_ = 0;
-            fwd_touch_speed_ = 0;
-            side_touch_speed_ = 0;
-        } else if (view_pointer_ == 2) {
-            view_pointer_ = 0;
-        }
-        break;
-    case InputManager::RAW_INPUT_P1_MOVE:
-        if (move_pointer_ == 1) {
-            side_touch_speed_ += evt.move.dx * 0.002f;
-            side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+    case InputManager::RAW_INPUT_P1_DOWN: {
+        Ren::Vec2f p = Gui::MapPointToScreen({ (int)evt.point.x, (int)evt.point.y }, { ctx_->w(), ctx_->h() });
+        text_printer_->Press(p, true);
+    } break;
+    case InputManager::RAW_INPUT_P2_DOWN: {
+        
+    } break;
+    case InputManager::RAW_INPUT_P1_UP: {
+        text_printer_->skip();
 
-            fwd_touch_speed_ -= evt.move.dy * 0.002f;
-            fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
-        } else if (view_pointer_ == 1) {
-            Vec3f up = { 0, 1, 0 };
-            Vec3f side = Normalize(Cross(view_dir_, up));
-            up = Cross(side, view_dir_);
+        Ren::Vec2f p = Gui::MapPointToScreen({ (int)evt.point.x, (int)evt.point.y }, { ctx_->w(), ctx_->h() });
+        text_printer_->Press(p, false);
+    } break;
+    case InputManager::RAW_INPUT_P2_UP: {
 
-            Mat4f rot;
-            rot = Rotate(rot, -0.005f * evt.move.dx, up);
-            rot = Rotate(rot, -0.005f * evt.move.dy, side);
+    } break;
+    case InputManager::RAW_INPUT_P1_MOVE: {
+        Ren::Vec2f p = Gui::MapPointToScreen({ (int)evt.point.x, (int)evt.point.y }, { ctx_->w(), ctx_->h() });
+        text_printer_->Focus(p);
+    } break;
+    case InputManager::RAW_INPUT_P2_MOVE: {
 
-            auto rot_m3 = Mat3f(rot);
-            view_dir_ = rot_m3 * view_dir_;
-
-            invalidate_view_ = true;
-        }
-        break;
-    case InputManager::RAW_INPUT_P2_MOVE:
-        if (move_pointer_ == 2) {
-            side_touch_speed_ += evt.move.dx * 0.002f;
-            side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
-
-            fwd_touch_speed_ -= evt.move.dy * 0.002f;
-            fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
-        } else if (view_pointer_ == 2) {
-            Vec3f up = { 0, 1, 0 };
-            Vec3f side = Normalize(Cross(view_dir_, up));
-            up = Cross(side, view_dir_);
-
-            Mat4f rot;
-            rot = Rotate(rot, 0.01f * evt.move.dx, up);
-            rot = Rotate(rot, 0.01f * evt.move.dy, side);
-
-            auto rot_m3 = Mat3f(rot);
-            view_dir_ = rot_m3 * view_dir_;
-
-            invalidate_view_ = true;
-        }
-        break;
+    } break;
     case InputManager::RAW_INPUT_KEY_DOWN: {
-        if (evt.key == InputManager::RAW_INPUT_BUTTON_UP || (evt.raw_key == 'w' && (!cmdline_enabled_ || view_pointer_))) {
-            fwd_press_speed_ = max_fwd_speed_;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN || (evt.raw_key == 's' && (!cmdline_enabled_ || view_pointer_))) {
-            fwd_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT || (evt.raw_key == 'a' && (!cmdline_enabled_ || view_pointer_))) {
-            side_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT || (evt.raw_key == 'd' && (!cmdline_enabled_ || view_pointer_))) {
-            side_press_speed_ = max_fwd_speed_;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SPACE) {
-            
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
-            shift_down_ = true;
-        } else {
-            input_processed = false;
-        }
-    }
-    break;
+        input_processed = false;
+    } break;
     case InputManager::RAW_INPUT_KEY_UP: {
-        if (evt.key == InputManager::RAW_INPUT_BUTTON_UP || (evt.raw_key == 'w' && (!cmdline_enabled_ || view_pointer_))) {
-            fwd_press_speed_ = 0;
-            test_progress_ = 0;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN || (evt.raw_key == 's' && (!cmdline_enabled_ || view_pointer_))) {
-            fwd_press_speed_ = 0;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT || (evt.raw_key == 'a' && (!cmdline_enabled_ || view_pointer_))) {
-            side_press_speed_ = 0;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT || (evt.raw_key == 'd' && (!cmdline_enabled_ || view_pointer_))) {
-            side_press_speed_ = 0;
+        if (evt.key == InputManager::RAW_INPUT_BUTTON_UP || (evt.raw_key == 'w' && !cmdline_enabled_)) {
+            text_printer_->restart();
         } else {
             input_processed = false;
         }
-    }
+    } break;
     case InputManager::RAW_INPUT_RESIZE:
+        text_printer_->Resize(ui_root_.get());
         break;
     default:
         break;

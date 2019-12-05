@@ -4,7 +4,8 @@
     },
 	"ui_settings" : {
 		"fonts" : {
-			"main_font" : "fonts/Coder's Crux_9px.font"
+			"main_font" : "fonts/Coder's Crux_9px.font",
+            "dialog_font" : "fonts/Roboto-Regular_48px_sdf.font"
 		}
 	}
 }

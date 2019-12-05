@@ -4,3 +4,4 @@
 #endif
 
 #include "DebugInfoUI.cpp"
+#include "TextPrinter.cpp"

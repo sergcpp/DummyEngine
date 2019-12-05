@@ -54,14 +54,14 @@ public:
     bool Load(const char *name, Ren::Context &ctx);
 
     float GetWidth(const char *text, const BaseElement *parent) const;
-    float GetTriangles(const char *text, std::vector<float> &positions, std::vector<float> &uvs,
-                       std::vector<uint16_t> &indices, const Vec2f &pos, const BaseElement *parent) const;
-
-    void DrawText(Renderer *r, const char *text, const Vec2f &pos, const BaseElement *parent);
+    float PrepareVertexData(const char *text, const Vec2f &pos, const uint8_t col[4], const BaseElement *parent,
+                            std::vector<vertex_t> &vtx_data, std::vector<uint16_t> &ndx_data) const;
+    float DrawText(Renderer *r, const char *text, const Vec2f &pos, const uint8_t col[4], const BaseElement *parent) const;
 private:
     typgraph_info_t                     info_;
     float                               scale_;
     Ren::Texture2DRef                   tex_;
+    Ren::TextureRegionRef               tex2_;
     uint32_t                            tex_res_[2];
     eDrawMode                           draw_mode_ = DrPassthrough;
     eBlendMode                          blend_mode_ = BlAlpha;
@@ -69,9 +69,6 @@ private:
     uint32_t                            glyph_range_count_ = 0;
     uint32_t                            glyphs_count_ = 0;
     std::unique_ptr<glyph_info_t[]>     glyphs_;
-
-    static std::vector<float> default_pos_buf, default_uvs_buf;
-    static std::vector<uint16_t> default_indices_buf;
 };
 
 }

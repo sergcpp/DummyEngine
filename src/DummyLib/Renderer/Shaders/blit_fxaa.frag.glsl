@@ -220,5 +220,6 @@ vec4 FxaaPixelShader(vec2 pos,
 
 void main() {
     outColor = FxaaPixelShader(aVertexUVs_ * uResAndFRes.xy / uResAndFRes.zw, s_texture, texcoord_offset, 0.75, 0.125, 0.0625);
+    outColor.a = 1.0;
 }
 )"

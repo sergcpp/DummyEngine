@@ -489,10 +489,7 @@ void GSBaseState::Draw(uint64_t dt_us) {
         }
     }
 
-    //LOGI("{ %.7f, %.7f, %.7f } { %.7f, %.7f, %.7f }", view_origin_[0], view_origin_[1], view_origin_[2],
-    //                                                  view_dir_[0], view_dir_[1], view_dir_[2]);
-
-    {   // ui draw
+    {
         ui_renderer_->BeginDraw();
 
         DrawUI(ui_renderer_.get(), ui_root_.get());
@@ -507,6 +504,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     using namespace GSBaseStateInternal;
 
     const float font_height = font_->height(root);
+    const uint8_t text_color[4] = { 255, 255, 255, 255 };
 
     if (cmdline_enabled_) {
         int ifont_height = (int)(0.5f * font_->height(root) * (float)game_->height);
@@ -521,7 +519,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         float cur_y = 1.0f - font_->height(root);
 
         for (const std::string &cmd : cmdline_history_) {
-            font_->DrawText(r, cmd.c_str(), { -1, cur_y }, root);
+            font_->DrawText(r, cmd.c_str(), { -1, cur_y }, text_color, root);
             cur_y -= font_height;
         }
     }
@@ -533,13 +531,11 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         FrontendInfo front_info = main_view_lists_[back_list].frontend_info;
         BackendInfo back_info = renderer_->backend_info();
 
-        uint64_t front_dur = front_info.end_timepoint_us - front_info.start_timepoint_us,
+        /*const uint64_t
+            front_dur = front_info.end_timepoint_us - front_info.start_timepoint_us,
             back_dur = back_info.cpu_end_timepoint_us - back_info.cpu_start_timepoint_us;
 
-        LOGI("Frontend: %04lld\tBackend(cpu): %04lld", (long long)front_dur, (long long)back_dur);
-
-        //uint64_t transp_dur = back_info.gpu_end_timepoint_us - back_info.gpu_start_timepoint_us;// back_info.opaque_pass_time_us + back_info.transp_pass_time_us;
-        //LOGI("Transparent draw: %04i us", (int)transp_dur);
+        LOGI("Frontend: %04lld\tBackend(cpu): %04lld", (long long)front_dur, (long long)back_dur);*/
 
         ItemsInfo items_info;
         items_info.light_sources_count = main_view_lists_[back_list].light_sources.count;

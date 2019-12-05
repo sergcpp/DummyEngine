@@ -13,6 +13,11 @@
 struct SWcontext;
 
 namespace Ren {
+const int
+    TextureAtlasWidth = 1024,
+    TextureAtlasHeight = 512,
+    TextureAtlasLayers = 4;
+
 class Context : public RenderThread {
 protected:
     int                     w_ = 0, h_ = 0;
