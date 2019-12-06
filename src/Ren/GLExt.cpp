@@ -140,6 +140,8 @@ bool Ren::InitGLExtentions() {
     ren_glTexImage2DMultisample     = (PFNGLTEXIMAGE2DMULTISAMPLEPROC)GetProcAddress(glTexImage2DMultisample);
     ren_glRenderbufferStorageMultisample = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)GetProcAddress(glRenderbufferStorageMultisample);
 
+    ren_glTexSubImage3D             = (PFNGLTEXSUBIMAGE3DPROC)GetProcAddress(glTexSubImage3D);
+
 #if !defined(__linux__)
     ren_glTexImage3D                = (PFNGLTEXIMAGE3DPROC)GetProcAddress(glTexImage3D);
 #endif

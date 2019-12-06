@@ -194,6 +194,7 @@ EXTERN_FUNC PFNGLGETQUERYOBJECTUI64VEXTPROC     glGetQueryObjectui64vEXT;
 
 #define GL_MULTISAMPLE  0x809D
 
+#define GL_TEXTURE_2D_ARRAY       0x8C1A
 #define GL_TEXTURE_2D_MULTISAMPLE 0x9100
 
 #define GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT  0x00000001
@@ -421,11 +422,15 @@ typedef void (APIENTRY *PFNGLTEXIMAGE2DMULTISAMPLEPROC)(GLenum target, GLsizei s
 typedef void (APIENTRY *PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)(GLenum target, GLsizei samples, GLenum internalformat,
                                                                  GLsizei width, GLsizei height);
 
+typedef void (APIENTRY *PFNGLTEXSUBIMAGE3DPROC)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+                                                GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void * pixels);
+
 #if !defined(__linux__)
 typedef void (APIENTRY *PFNGLTEXIMAGE3DPROC)(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                                              GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid * data);
-typedef void (APIENTRY *PFNGLDRAWELEMENTSBASEVERTEXPROC)(GLenum mode, GLsizei count, GLenum type, GLvoid *indices, GLint basevertex);
+typedef void (APIENTRY *PFNGLDRAWELEMENTSBASEVERTEXPROC)(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices, GLint basevertex);
 #endif
+
 typedef void (APIENTRY *PFNGLDRAWELEMENTSINSTANCEDPROC)(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
 typedef void (APIENTRY *PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC)(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices, GLsizei instancecount, GLint basevertex);
 
@@ -576,6 +581,8 @@ typedef void (APIENTRY *PFNGLCLEARBUFFERFV)(GLenum buffer, GLint drawbuffer, con
 #define glTexStorage2DMultisample   ren_glTexStorage2DMultisample
 #define glTexImage2DMultisample     ren_glTexImage2DMultisample
 #define glRenderbufferStorageMultisample ren_glRenderbufferStorageMultisample
+
+#define glTexSubImage3D             ren_glTexSubImage3D
 #if !defined(__linux__)
 #define glTexImage3D                ren_glTexImage3D
 #endif
@@ -722,6 +729,8 @@ EXTERN_FUNC PFNGLTEXSTORAGE2DPROC               ren_glTexStorage2D;
 EXTERN_FUNC PFNGLTEXSTORAGE2DMULTISAMPLEPROC    ren_glTexStorage2DMultisample;
 EXTERN_FUNC PFNGLTEXIMAGE2DMULTISAMPLEPROC      ren_glTexImage2DMultisample;
 EXTERN_FUNC PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC ren_glRenderbufferStorageMultisample;
+
+EXTERN_FUNC PFNGLTEXSUBIMAGE3DPROC              ren_glTexSubImage3D;
 
 EXTERN_FUNC PFNGLTEXIMAGE3DPROC                 ren_glTexImage3D;
 

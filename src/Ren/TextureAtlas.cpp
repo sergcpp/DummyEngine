@@ -21,7 +21,7 @@ Ren::TextureAtlas::TextureAtlas(int w, int h, const eTexColorFormat *formats, eT
         glBindTexture(GL_TEXTURE_2D, tex_id);
 
         glTexImage2D(GL_TEXTURE_2D, 0, GLInternalFormatFromTexFormat(formats_[i]), w, h, 0,
-                     GLFormatFromTexFormat(formats_[i]), GLTypeFromTexFormat(formats_[i]), nullptr);
+                        GLFormatFromTexFormat(formats_[i]), GLTypeFromTexFormat(formats_[i]), nullptr);
 
         const float anisotropy = 4.0f;
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
@@ -92,17 +92,17 @@ Ren::TextureAtlas &Ren::TextureAtlas::operator=(TextureAtlas &&rhs) {
     return (*this);
 }
 
-int Ren::TextureAtlas::Allocate(const void **data, const eTexColorFormat *format, const int res[2], int pos[2], int border) {
+int Ren::TextureAtlas::Allocate(const void **data, const eTexColorFormat *format, const int res[2], int out_pos[2], int border) {
     const int alloc_res[] = { res[0] + border, res[1] + border };
 
-    int index = splitter_.Allocate(alloc_res, pos);
+    int index = splitter_.Allocate(alloc_res, out_pos);
     if (index != -1) {
 #if defined(USE_GL_RENDER)
         for (int i = 0; i < MaxTextureCount; i++) {
             if (!data[i]) break;
 
             glBindTexture(GL_TEXTURE_2D, (GLuint)tex_ids_[i]);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, pos[0], pos[1], res[0], res[1],
+            glTexSubImage2D(GL_TEXTURE_2D, 0, out_pos[0], out_pos[1], res[0], res[1],
                             GLFormatFromTexFormat(format[i]), GLTypeFromTexFormat(format[i]), data[i]);
         }
 #endif
@@ -129,4 +129,119 @@ void Ren::TextureAtlas::Finalize() {
 #endif
         }
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Ren::TextureAtlasArray::TextureAtlasArray(int w, int h, int layer_count, const eTexColorFormat format, eTexFilter filter)
+        : layer_count_(layer_count), format_(format), filter_(filter) {
+#if defined(USE_GL_RENDER)
+    GLuint tex_id;
+    glGenTextures(1, &tex_id);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, tex_id);
+
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GLInternalFormatFromTexFormat(format), w, h, layer_count,
+                 0, GLFormatFromTexFormat(format), GLTypeFromTexFormat(format), nullptr);
+
+    if (filter_ == NoFilter) {
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    } else if (filter_ == Bilinear) {
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    } else if (filter_ == Trilinear) {
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    } else if (filter_ == BilinearNoMipmap) {
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    tex_id_ = (uint32_t)tex_id;
+#endif
+}
+
+Ren::TextureAtlasArray::~TextureAtlasArray() {
+#if defined(USE_GL_RENDER)
+    if (tex_id_ != 0xffffffff) {
+        GLuint tex_id = (GLuint)tex_id_;
+        glDeleteTextures(1, &tex_id);
+    }
+#endif
+}
+
+Ren::TextureAtlasArray::TextureAtlasArray(TextureAtlasArray &&rhs) {
+    layer_count_ = rhs.layer_count_;
+    rhs.layer_count_ = 0;
+
+    format_ = rhs.format_;
+    rhs.format_ = Undefined;
+
+    filter_ = rhs.filter_;
+
+#if defined(USE_GL_RENDER)
+    tex_id_ = rhs.tex_id_;
+    rhs.tex_id_ = 0xffffffff;
+#endif
+
+    for (int i = 0; i < layer_count_; i++) {
+        splitters_[i] = std::move(rhs.splitters_[i]);
+    }
+}
+
+Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rhs) {
+    layer_count_ = rhs.layer_count_;
+    rhs.layer_count_ = 0;
+
+    format_ = rhs.format_;
+    rhs.format_ = Undefined;
+
+    filter_ = rhs.filter_;
+
+#if defined(USE_GL_RENDER)
+    if (tex_id_ != 0xffffffff) {
+        GLuint tex_id = (GLuint)tex_id_;
+        glDeleteTextures(1, &tex_id);
+    }
+
+    tex_id_ = rhs.tex_id_;
+    rhs.tex_id_ = 0xffffffff;
+#endif
+
+    for (int i = 0; i < layer_count_; i++) {
+        splitters_[i] = std::move(rhs.splitters_[i]);
+    }
+
+    return (*this);
+}
+
+int Ren::TextureAtlasArray::Allocate(const void *data, const eTexColorFormat format, const int res[2], int out_pos[3], int border) {
+    const int alloc_res[] = { res[0] + border, res[1] + border };
+
+    for (int i = 0; i < layer_count_; i++) {
+        int index = splitters_[i].Allocate(alloc_res, out_pos);
+        if (index != -1) {
+            out_pos[2] = i;
+
+#if defined(USE_GL_RENDER)
+            glBindTexture(GL_TEXTURE_2D_ARRAY, (GLuint)tex_id_);
+            glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, out_pos[0], out_pos[1], out_pos[2], res[0], res[1], 1,
+                            GLFormatFromTexFormat(format), GLTypeFromTexFormat(format), data);
+
+#endif
+            return index;
+        }
+    }
+
+    return -1;
+}
+
+bool Ren::TextureAtlasArray::Free(const int pos[3]) {
+    // TODO: fill with black in debug
+    return splitters_[pos[2]].Free(pos);
 }
