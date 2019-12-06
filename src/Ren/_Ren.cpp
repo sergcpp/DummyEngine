@@ -22,5 +22,6 @@ extern "C" {
 #include "Mesh.cpp"
 #include "RenderThread.cpp"
 #include "TextureAtlas.cpp"
+#include "TextureRegion.cpp"
 #include "TextureSplitter.cpp"
 #include "Utils.cpp"

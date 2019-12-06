@@ -45,6 +45,8 @@ set(SOURCE_FILES Anim.h
                  Texture.h
                  TextureAtlas.h
                  TextureAtlas.cpp
+                 TextureRegion.h
+                 TextureRegion.cpp
                  TextureSplitter.h
                  TextureSplitter.cpp
                  Utils.h

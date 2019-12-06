@@ -110,7 +110,7 @@ Ren::Texture2D::~Texture2D() {
     }
 }
 
-Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) {
+Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
     if (this == &rhs) return *this;
 
     if (params_.format != Undefined) {

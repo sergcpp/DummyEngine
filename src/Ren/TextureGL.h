@@ -17,11 +17,11 @@ enum eTexFilter { NoFilter, Bilinear, Trilinear, BilinearNoMipmap };
 enum eTexRepeat { Repeat, ClampToEdge, ClampToBorder };
 
 struct Texture2DParams {
-    int w = 0, h = 0, cube = 0;
-    eTexColorFormat format = Undefined;
-    eTexFilter filter = NoFilter;
-    eTexRepeat repeat = Repeat;
-    uint32_t flags = 0;
+    int                 w = 0, h = 0, cube = 0;
+    eTexColorFormat     format = Undefined;
+    eTexFilter          filter = NoFilter;
+    eTexRepeat          repeat = Repeat;
+    uint32_t            flags = 0;
 };
 
 enum eTexLoadStatus { TexFound, TexCreatedDefault, TexCreatedFromData };
@@ -48,20 +48,20 @@ class Texture2D : public RefCounter {
     void InitFromKTXFile(const void *data[6], const int size[6], const Texture2DParams &p);
 
 public:
-    Texture2D() {}
+    Texture2D() = default;
     Texture2D(const char *name, uint32_t tex_id, const Texture2DParams &params)
-        : tex_id_(tex_id), params_(params), ready_(0), name_(name) {        
+        : tex_id_(tex_id), params_(params), ready_(false), name_(name) {
     }
     Texture2D(const char *name, const void *data, int size, const Texture2DParams &params, eTexLoadStatus *load_status);
     Texture2D(const char *name, const void *data[6], const int size[6], const Texture2DParams &params, eTexLoadStatus *load_status);
     Texture2D(const Texture2D &rhs) = delete;
-    Texture2D(Texture2D &&rhs) {
+    Texture2D(Texture2D &&rhs) noexcept {
         *this = std::move(rhs);
     }
     ~Texture2D();
 
     Texture2D &operator=(const Texture2D &rhs) = delete;
-    Texture2D &operator=(Texture2D &&rhs);
+    Texture2D &operator=(Texture2D &&rhs) noexcept ;
 
     void Init(const void *data, int size, const Texture2DParams &params, eTexLoadStatus *load_status);
     void Init(const void *data[6], const int size[6], const Texture2DParams &params, eTexLoadStatus *load_status);

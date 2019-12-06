@@ -7,23 +7,28 @@
 #include "Program.h"
 #include "RenderThread.h"
 #include "Texture.h"
+#include "TextureAtlas.h"
+#include "TextureRegion.h"
 
 struct SWcontext;
 
 namespace Ren {
 class Context : public RenderThread {
 protected:
-    int w_ = 0, h_ = 0;
+    int                     w_ = 0, h_ = 0;
 
-    MeshStorage      meshes_;
-    MaterialStorage  materials_;
-    ProgramStorage   programs_;
-    Texture2DStorage textures_;
-    AnimSeqStorage   anims_;
-    BufferStorage    buffers_;
+    MeshStorage             meshes_;
+    MaterialStorage         materials_;
+    ProgramStorage          programs_;
+    Texture2DStorage        textures_;
+    TextureRegionStorage    texture_regions_;
+    AnimSeqStorage          anims_;
+    BufferStorage           buffers_;
 
-    BufferRef       default_vertex_buf1_, default_vertex_buf2_, default_skin_vertex_buf_,
-                    default_indices_buf_;
+    BufferRef               default_vertex_buf1_, default_vertex_buf2_, default_skin_vertex_buf_,
+                            default_indices_buf_;
+
+    TextureAtlasArray       texture_atlas_;
 
 #if defined(USE_SW_RENDER)
     SWcontext       *sw_ctx_;
@@ -49,6 +54,8 @@ public:
     BufferRef default_skin_vertex_buf() const { return default_skin_vertex_buf_; }
     BufferRef default_indices_buf() const { return default_indices_buf_; }
 
+    TextureAtlasArray &texture_atlas() { return texture_atlas_; }
+
     void Resize(int w, int h);
 
     /*** Mesh ***/
@@ -68,9 +75,9 @@ public:
     ProgramRef LoadProgramGLSL(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *load_status);
     ProgramRef LoadProgramGLSL(const char *name, const char *cs_source, eProgLoadStatus *load_status);
 #ifndef __ANDROID__
-    ProgramRef LoadProgramSPIRV(const char *name, const uint8_t *vs_data, const int vs_data_size,
-                                                  const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *load_status);
-    ProgramRef LoadProgramSPIRV(const char *name, const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *load_status);
+    ProgramRef LoadProgramSPIRV(const char *name, const uint8_t *vs_data, int vs_data_size,
+                                                  const uint8_t *fs_data, int fs_data_size, eProgLoadStatus *load_status);
+    ProgramRef LoadProgramSPIRV(const char *name, const uint8_t *cs_data, int cs_data_size, eProgLoadStatus *load_status);
 #endif
 #elif defined(USE_SW_RENDER)
     ProgramRef LoadProgramSW(const char *name, void *vs_shader, void *fs_shader, int num_fvars,
@@ -86,6 +93,11 @@ public:
 
     int NumTexturesNotReady();
     void ReleaseTextures();
+
+    /** Texture regions **/
+    TextureRegionRef LoadTextureRegion(const char *name, const void *data, int size, const Texture2DParams &p);
+
+    void ReleaseTextureRegions();
 
     /*** Anims ***/
     AnimSeqRef LoadAnimSequence(const char *name, std::istream &data);

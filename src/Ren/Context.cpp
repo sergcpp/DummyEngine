@@ -122,6 +122,24 @@ void Ren::Context::ReleaseTextures() {
     textures_.clear();
 }
 
+Ren::TextureRegionRef Ren::Context::LoadTextureRegion(const char *name, const void *data, int size, const Texture2DParams &p) {
+    TextureRegionRef ref = texture_regions_.FindByName(name);
+    if (!ref) {
+        ref = texture_regions_.Add(name, data, size, p, &texture_atlas_);
+    }
+    return ref;
+}
+
+void Ren::Context::ReleaseTextureRegions() {
+    if (!texture_regions_.size()) return;
+    fprintf(stderr, "-------REMAINING TEX REGIONS-------\n");
+    for (const TextureRegion &t : texture_regions_) {
+        fprintf(stderr, "%s\n", t.name().c_str());
+    }
+    fprintf(stderr, "-----------------------------------\n");
+    texture_regions_.clear();
+}
+
 Ren::AnimSeqRef Ren::Context::LoadAnimSequence(const char *name, std::istream &data) {
     AnimSeqRef ref = anims_.FindByName(name);
     if (!ref) {
@@ -176,5 +194,8 @@ void Ren::Context::ReleaseAll() {
     ReleaseAnims();
     ReleaseMaterials();
     ReleaseTextures();
+    ReleaseTextureRegions();
     ReleaseBuffers();
+
+    texture_atlas_ = {};
 }
