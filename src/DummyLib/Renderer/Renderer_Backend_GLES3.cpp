@@ -2045,7 +2045,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
 
-#if 0
             glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
             glDepthFunc(GL_LEQUAL);
 
@@ -2054,7 +2053,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
             glDepthFunc(GL_EQUAL);
-#endif
 
             glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
                                               (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
