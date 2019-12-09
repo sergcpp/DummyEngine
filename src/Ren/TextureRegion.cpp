@@ -7,9 +7,11 @@ Ren::TextureRegion::TextureRegion(const char *name, Ren::TextureAtlasArray *atla
     memcpy(texture_pos_, texture_pos, 3 * sizeof(int));
 }
 
-Ren::TextureRegion::TextureRegion(const char *name, const void *data, int size, const Texture2DParams &p, Ren::TextureAtlasArray *atlas)
-        : name_(name) {
-    Init(data, size, p, atlas);
+Ren::TextureRegion::TextureRegion(
+        const char *name, const void *data, int size, const Texture2DParams &p,
+        Ren::TextureAtlasArray *atlas, eTexLoadStatus *load_status)
+            : name_(name) {
+    Init(data, size, p, atlas, load_status);
 }
 
 Ren::TextureRegion::~TextureRegion() {
@@ -28,13 +30,28 @@ Ren::TextureRegion &Ren::TextureRegion::operator=(TextureRegion &&rhs) noexcept 
     return (*this);
 }
 
-void Ren::TextureRegion::Init(const void *data, int size, const Texture2DParams &p, Ren::TextureAtlasArray *atlas) {
-    if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
-        InitFromTGAFile(data, size, p, atlas);
-    } else if (name_.EndsWith(".png") != 0 || name_.EndsWith(".PNG") != 0) {
-        InitFromPNGFile(data, size, p, atlas);
+void Ren::TextureRegion::Init(const void *data, int size, const Texture2DParams &p, Ren::TextureAtlasArray *atlas, eTexLoadStatus *load_status) {
+    if (!data) {
+        unsigned char cyan[4] = { 0, 255, 255, 255 };
+        Texture2DParams _p;
+        _p.w = _p.h = 1;
+        _p.format = RawRGBA8888;
+        _p.filter = NoFilter;
+        _p.repeat = Repeat;
+        InitFromRAWData(cyan, 4, _p, atlas);
+        // mark it as not ready
+        ready_ = false;
+        if (load_status) *load_status = TexCreatedDefault;
     } else {
-        InitFromRAWData(data, size, p, atlas);
+        if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
+            InitFromTGAFile(data, size, p, atlas);
+        } else if (name_.EndsWith(".png") != 0 || name_.EndsWith(".PNG") != 0) {
+            InitFromPNGFile(data, size, p, atlas);
+        } else {
+            InitFromRAWData(data, size, p, atlas);
+        }
+        ready_ = true;
+        if (load_status) *load_status = TexCreatedFromData;
     }
 }
 

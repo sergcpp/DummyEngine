@@ -95,7 +95,7 @@ public:
     void ReleaseTextures();
 
     /** Texture regions **/
-    TextureRegionRef LoadTextureRegion(const char *name, const void *data, int size, const Texture2DParams &p);
+    TextureRegionRef LoadTextureRegion(const char *name, const void *data, int size, const Texture2DParams &p, eTexLoadStatus *load_status);
 
     void ReleaseTextureRegions();
 
