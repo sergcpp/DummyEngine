@@ -73,6 +73,20 @@ public:
         return *this;
     }
 
+    Vec<T, N> &operator*=(const Vec<T, N> &rhs) {
+        for (int i = 0; i < N; i++) {
+            data_[i] *= rhs.data_[i];
+        }
+        return *this;
+    }
+
+    Vec<T, N> &operator/=(const Vec<T, N> &rhs) {
+        for (int i = 0; i < N; i++) {
+            data_[i] /= rhs.data_[i];
+        }
+        return *this;
+    }
+
     Vec<T, N> &operator*=(T rhs) {
         for (int i = 0; i < N; i++) {
             data_[i] *= rhs;
