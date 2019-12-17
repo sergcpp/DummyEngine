@@ -224,8 +224,8 @@ int DummyApp::Run(const std::vector<std::string> &args) {
 bool DummyApp::ConvertToRawButton(int &raw_key, RawInputButton &button) {
     //printf("%x\n", raw_key);
 
-    /*switch (raw_key) {
-        case 0x6f:
+    switch (raw_key) {
+        /*7case 0x6f:
             button = BtnUp;
             break;
         case 0x74:
@@ -236,18 +236,24 @@ bool DummyApp::ConvertToRawButton(int &raw_key, RawInputButton &button) {
             break;
         case 0x72:
             button = BtnRight;
-            break;
+            break;*/
         case 0x08:
             button = BtnBackspace;
             break;
         case 0x09:
             button = BtnTab;
             break;
+        case 0x32:
+            button = BtnShift;
+            break;
+        case 0x0d:
+            button = BtnReturn;
+            break;
         default: {
             button = BtnOther;
             raw_key = std::tolower(raw_key);
         } break;
-    }*/
+    }
     return true;
 }
 

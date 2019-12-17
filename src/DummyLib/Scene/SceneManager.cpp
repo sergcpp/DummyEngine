@@ -52,20 +52,34 @@ namespace SceneManagerInternal {
 
     template <typename T>
     class DefaultCompStorage : public CompStorage {
-        //Ren::SparseArray<T> data_;
-        std::vector<T> data_;
+        Ren::SparseArray<T> data_;
     public:
         const char *name() const override { return T::name(); }
 
         uint32_t Create() override {
-            //return (uint32_t)data_.Add();
-            data_.emplace_back();
-            return uint32_t(data_.size() - 1);
+            return data_.emplace();
         }
 
         void *Get(uint32_t i) override {
-            //return (void *)data_.Get(i);
-            return (i < data_.size()) ? &data_[i] : nullptr;
+            return data_.GetOrNull(i);
+        }
+
+        const void *Get(uint32_t i) const override {
+            return data_.GetOrNull(i);
+        }
+
+        uint32_t First() const override {
+            return data_.cbegin().index();
+        }
+
+        uint32_t Next(uint32_t i) const override {
+            auto it = data_.citer_at(i);
+            ++it;
+            return (it == data_.cend()) ? 0xffffffff : it.index();
+        }
+
+        int Count() const override {
+            return (int)data_.size();
         }
 
         void ReadFromJs(const JsObject &js_obj, void *comp) override {
@@ -101,7 +115,7 @@ SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, S
     }
 
     {   // Allocate cubemap array
-        scene_data_.probe_storage.Resize(PROBE_RES, PROBE_COUNT);
+        scene_data_.probe_storage.Resize(Ren::RawRGBA8888, PROBE_RES, PROBE_COUNT);
     }
 
     {   // Register default components
@@ -150,7 +164,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
     if (js_scene.Has("name")) {
         const JsString &js_name = (const JsString &)js_scene.at("name");
-        scene_name_ = js_name.val;
+        scene_data_.name = Ren::String{ js_name.val.c_str() };
     } else {
         throw std::runtime_error("Level has no name!");
     }
@@ -159,7 +173,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
     {
         std::string lm_base_tex_name = "lightmaps/";
-        lm_base_tex_name += scene_name_;
+        lm_base_tex_name += scene_data_.name.c_str();
 
         const char tex_ext[] =
 #if !defined(__ANDROID__)
@@ -194,8 +208,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     for (const auto &js_elem : js_meshes.elements) {
         const std::string &name = js_elem.first;
 
-        const JsObject &js_mesh = (const JsObject &)js_elem.second;
-        const JsString &js_mesh_file = (const JsString &)js_mesh.at("mesh_file");
+        const auto &js_mesh = (const JsObject &)js_elem.second;
+        const auto &js_mesh_file = (const JsString &)js_mesh.at("mesh_file");
 
         Ren::MeshRef mesh_ref;
 
@@ -292,19 +306,20 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
     const JsArray &js_objects = (const JsArray &)js_scene.at("objects");
     for (const auto &js_elem : js_objects.elements) {
-        const JsObject &js_obj = (const JsObject &)js_elem;
+        const auto &js_obj = (const JsObject &)js_elem;
 
         SceneObject obj;
 
-        Ren::Vec3f obj_bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
-                   obj_bbox_max = Ren::Vec3f{ -std::numeric_limits<float>::max() };
+        Ren::Vec3f
+            obj_bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
+            obj_bbox_max = Ren::Vec3f{ -std::numeric_limits<float>::max() };
 
         for (const auto &js_comp : js_obj.elements) {
             if (js_comp.second.type() != JS_OBJECT) continue;
             const auto &js_comp_obj = (const JsObject &)js_comp.second;
             const std::string &js_comp_name = js_comp.first;
 
-            for (int i = 0; i < MAX_COMPONENT_TYPES; i++) {
+            for (unsigned i = 0; i < MAX_COMPONENT_TYPES; i++) {
                 CompStorage *store = scene_data_.comp_store[i];
                 if (!store) continue;
 
@@ -315,7 +330,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                     store->ReadFromJs(js_comp_obj, new_component);
 
                     obj.components[i] = index;
-                    obj.comp_mask |= (1 << i);
+                    obj.comp_mask |= (1u << i);
 
                     // TODO: refactor this into something generic
                     if (i == CompDrawable) {
@@ -356,20 +371,21 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                         auto *ls = (LightSource *)scene_data_.comp_store[CompLightSource]->Get(obj.components[CompLightSource]);
 
                         // Compute bounding box of light source
-                        Ren::Vec4f pos = { ls->offset[0], ls->offset[1], ls->offset[2], 1.0f },
-                                   dir = { ls->dir[0], ls->dir[1], ls->dir[2], 0.0f };
+                        const Ren::Vec4f
+                            pos = { ls->offset[0], ls->offset[1], ls->offset[2], 1.0f },
+                            dir = { ls->dir[0], ls->dir[1], ls->dir[2], 0.0f };
 
                         Ren::Vec3f bbox_min, bbox_max;
 
-                        Ren::Vec3f _dir = { dir[0], dir[1], dir[2] };
-                        Ren::Vec3f p1 = _dir * ls->influence;
+                        const Ren::Vec3f _dir = { dir[0], dir[1], dir[2] };
+                        const Ren::Vec3f p1 = _dir * ls->influence;
 
                         bbox_min = Ren::Min(bbox_min, p1);
                         bbox_max = Ren::Max(bbox_max, p1);
 
-                        Ren::Vec3f p2 = _dir * ls->spot * ls->influence;
+                        const Ren::Vec3f p2 = _dir * ls->spot * ls->influence;
 
-                        float d = std::sqrt(1.0f - ls->spot * ls->spot) * ls->influence;
+                        const float d = std::sqrt(1.0f - ls->spot * ls->spot) * ls->influence;
 
                         bbox_min = Ren::Min(bbox_min, p2 - Ren::Vec3f{ d, 0.0f, d });
                         bbox_max = Ren::Max(bbox_max, p2 + Ren::Vec3f{ d, 0.0f, d });
@@ -386,7 +402,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                             up = { 0.0f, 0.0f, 1.0f };
                         }
 
-                        Ren::Vec3f side = Ren::Cross(_dir, up);
+                        const Ren::Vec3f side = Ren::Cross(_dir, up);
 
                         Transform ls_transform;
                         ls_transform.mat = { Ren::Vec4f{ side[0],  -_dir[0], up[0],    0.0f },
@@ -453,13 +469,13 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
                         Ren::Mat4f world_from_clip = Ren::Inverse(de->proj * de->view);
 
-                        for (int i = 0; i < 8; i++) {
-                            points[i] = world_from_clip * points[i];
-                            points[i] /= points[i][3];
+                        for (Ren::Vec4f &point : points) {
+                            point = world_from_clip * point;
+                            point /= point[3];
 
                             // Combine decals's bounding box with object's
-                            obj_bbox_min = Ren::Min(obj_bbox_min, Ren::Vec3f{ points[i] });
-                            obj_bbox_max = Ren::Max(obj_bbox_max, Ren::Vec3f{ points[i] });
+                            obj_bbox_min = Ren::Min(obj_bbox_min, Ren::Vec3f{ point });
+                            obj_bbox_max = Ren::Max(obj_bbox_max, Ren::Vec3f{ point });
                         }
                     } else if (i == CompProbe) {
                         auto *pr = (LightProbe *)new_component;
@@ -573,7 +589,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             p.w = res;
             p.h = res;
 
-            std::string tex_name = js_env_map.val +
+            const std::string tex_name = js_env_map.val +
 #if !defined(__ANDROID__)
                 "_*.dds";
 #else
@@ -598,11 +614,138 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 }
 
 void SceneManager::ClearScene() {
-    scene_name_.clear();
+    scene_data_.name = {};
     scene_data_.objects.clear();
     scene_data_.name_to_object.clear();
 
-    ray_scene_ = nullptr;
+    ray_scene_ = {};
+}
+
+void SceneManager::LoadProbeCache(const JsObject &js_probe_cache) {
+    int res = 512;
+
+    if (js_probe_cache.Has("info")) {
+        const auto &js_cache_info = (const JsObject &)js_probe_cache.at("info");
+        if (js_cache_info.Has("resolution")) {
+            const auto &js_resolution = (const JsNumber &)js_cache_info.at("resolution");
+            res = (int)js_resolution.val;
+        }
+        if (js_cache_info.Has("format")) {
+
+        }
+    }
+
+    const int capacity = scene_data_.probe_storage.capacity();
+    scene_data_.probe_storage.Resize(Ren::Compressed, res, capacity);
+
+    CompStorage *probe_storage = scene_data_.comp_store[CompProbe];
+
+    if (js_probe_cache.Has("probes")) {
+        int probe_index = 0;
+
+        const auto &js_probes = (const JsArray &)js_probe_cache.at("probes");
+        for (const JsElement &js_probe_el : js_probes.elements) {
+            auto *lprobe = (LightProbe *) probe_storage->Get(probe_index);
+            if (lprobe) {
+                const auto &js_probe = (const JsObject &) js_probe_el;
+                if (js_probe.Has("faces")) {
+                    const auto &js_faces = (const JsArray &) js_probe.at("faces");
+
+                    int face_index = 0;
+                    for (const JsElement &js_face_el : js_faces.elements) {
+                        const auto &js_face = (const JsString &) js_face_el;
+
+                        std::string file_path =
+#if !defined(__ANDROID__)
+                                "assets_pc/textures/probes_cache/";
+#else
+                                "assets/textures/probes_cache/";
+#endif
+                        file_path += js_face.val;
+
+                        Sys::AssetFile in_file(file_path, Sys::AssetFile::FileIn);
+                        const size_t in_file_size = in_file.size();
+
+                        std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+                        in_file.Read((char *) &in_file_data[0], in_file_size);
+
+                        if (lprobe->layer_index != -1) {
+#if !defined(__ANDROID__)
+                            const uint8_t *p_data = &in_file_data[0] + sizeof(Ren::DDSHeader);
+                            int data_len = (int)in_file_size - sizeof(Ren::DDSHeader);
+
+                            int _res = res;
+                            int level = 0;
+
+                            while (_res >= 16) {
+                                const int len = ((_res + 3) / 4) * ((_res + 3) / 4) * 16;
+
+                                if (len > data_len ||
+                                    !scene_data_.probe_storage.SetPixelData(level, lprobe->layer_index, face_index,
+                                                                            Ren::Compressed, p_data, len)) {
+                                    LOGE("Failed to load probe texture!");
+                                }
+
+                                p_data += len;
+                                data_len -= len;
+
+                                _res = _res / 2;
+                                level++;
+                            }
+#else
+                            uint8_t *p_data = &in_file_data[0];
+                            int data_offset = sizeof(Ren::KTXHeader);
+                            int data_len = (int)in_file_size - sizeof(Ren::KTXHeader);
+
+                            int _res = res;
+                            int level = 0;
+
+                            while (_res >= 16) {
+                                uint32_t len;
+                                memcpy(&len, &p_data[data_offset], sizeof(uint32_t));
+                                data_offset += sizeof(uint32_t);
+                                data_len -= sizeof(uint32_t);
+
+                                if (len > data_len ||
+                                    !scene_data_.probe_storage.SetPixelData(level, lprobe->layer_index, face_index,
+                                                                            Ren::Compressed, &p_data[data_offset], len)) {
+                                    LOGE("Failed to load probe texture!");
+                                }
+
+                                data_offset += len;
+                                data_len -= len;
+
+                                int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
+                                data_offset += pad;
+
+                                _res = _res / 2;
+                                level++;
+                            }
+#endif
+                        }
+
+                        face_index++;
+                    }
+                }
+
+                if (js_probe.Has("sh_coeffs")) {
+                    const auto &js_sh_coeffs = (const JsArray &) js_probe.at("sh_coeffs");
+
+                    for (int i = 0; i < 4; i++) {
+                        const auto &js_sh_coeff = (const JsArray &) js_sh_coeffs.at(i);
+
+                        lprobe->sh_coeffs[i] = Ren::Vec3f{
+                            (float)((const JsNumber &)js_sh_coeff.at(0)).val,
+                            (float)((const JsNumber &)js_sh_coeff.at(1)).val,
+                            (float)((const JsNumber &)js_sh_coeff.at(2)).val
+                        };
+                    }
+                }
+            }
+
+            probe_index++;
+        }
+    }
 }
 
 void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov, float max_exposure) {

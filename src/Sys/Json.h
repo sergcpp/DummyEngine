@@ -9,12 +9,14 @@ enum JsType { JS_OBJECT, JS_ARRAY, JS_NUMBER, JS_LITERAL, JS_STRING };
 enum JsLiteralType { JS_TRUE, JS_FALSE, JS_NULL };
 
 struct JsFlags {
-    int ident_levels : 1;
-    int use_new_lines : 1;
-    int level : 30;
+    int ident_levels    : 1;
+    int use_new_lines   : 1;
+    int use_spaces      : 1;
+    int level           : 29;
 
-    JsFlags() : ident_levels(1), use_new_lines(1), level(0) {}
+    JsFlags() : ident_levels(1), use_new_lines(1), use_spaces(0), level(0) {}
 };
+static_assert(sizeof(JsFlags) == 4, "!");
 
 struct JsElement;
 

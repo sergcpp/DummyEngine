@@ -30,7 +30,7 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-    "zenith.json";
+    "corridor.json";
 }
 
 GSUITest::GSUITest(GameBase *game) : GSBaseState(game) {
@@ -47,19 +47,23 @@ void GSUITest::Enter() {
     LOGI("GSUITest: Loading scene!");
     GSBaseState::LoadScene(SCENE_NAME);
 
-    test_image_.reset(new Gui::Image{
+    /*test_image_.reset(new Gui::Image{
         *ctx_, "assets_pc/textures/test_image.uncompressed.png", Ren::Vec2f{ -0.5f, -0.5f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
     });
 
     test_frame_.reset(new Gui::Image9Patch{
         *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Ren::Vec2f{ 2.0f, 2.0f }, 1.0f, Ren::Vec2f{ 0.0f, 0.1f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
-    });
+    });*/
 
     text_printer_.reset(new TextPrinter{
         *ctx_, Ren::Vec2f{ -0.995f, -0.995f }, Ren::Vec2f{ 1.99f, 1.1f }, ui_root_.get(), dialog_font_
     });
 
+#if defined(__ANDROID__)
     const char *dialog_name = "assets/scenes/test/test_dialog.json";
+#else
+    const char *dialog_name = "assets_pc/scenes/test/test_dialog.json";
+#endif
     JsObject js_script;
 
     {   // Load dialog data from file

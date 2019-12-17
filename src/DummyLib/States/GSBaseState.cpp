@@ -23,18 +23,6 @@
 
 namespace GSBaseStateInternal {
 const int MAX_CMD_LINES = 8;
-
-#if defined(__ANDROID__)
-const char SCENE_NAME[] = "assets/scenes/"
-#else
-const char SCENE_NAME[] = "assets_pc/scenes/"
-#endif
-    //"font_test.json";
-    //"skin_test.json";
-    //"living_room_gumroad.json";
-    //"bistro.json";
-    "pbr_test.json";
-
 const bool USE_TWO_THREADS = true;
 }
 
@@ -191,6 +179,35 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("update_probes", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            SceneData &scene_data = shrd_this->scene_manager_->scene_data();
+
+            const int
+                    res = scene_data.probe_storage.res(),
+                    capacity = scene_data.probe_storage.capacity();
+            scene_data.probe_storage.Resize(Ren::RawRGBA8888, res, capacity);
+
+            shrd_this->update_all_probes_ = true;
+        }
+        return true;
+    });
+
+    cmdline_->RegisterCommand("cache_probes", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            const SceneData &scene_data = shrd_this->scene_manager_->scene_data();
+            
+            const CompStorage *lprobes = scene_data.comp_store[CompProbe];
+            SceneManager::WriteProbeCache("assets/textures/probes_cache", scene_data.name.c_str(), scene_data.probe_storage, lprobes);
+
+            // probe textures were written, convert them
+            Viewer::PrepareAssets("pc");
+        }
+        return true;
+    });
+
     cmdline_->RegisterCommand("debug_cull", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
@@ -303,7 +320,7 @@ void GSBaseState::Enter() {
 }
 
 bool GSBaseState::LoadScene(const char *name) {
-    JsObject js_scene;
+    JsObject js_scene, js_probe_cache;
 
     {   // Load scene data from file
         Sys::AssetFile in_scene(name);
@@ -325,10 +342,41 @@ bool GSBaseState::LoadScene(const char *name) {
         }
     }
 
+    {   // Load probe cache data from file
+        std::string cache_file =
+#if defined(__ANDROID__)
+            "assets/textures/probes_cache/";
+#else
+            "assets_pc/textures/probes_cache/";
+#endif
+        const char *_name = strrchr(name, '/');
+        if (_name) {
+            ++_name;
+            cache_file += _name;
+        }
+
+        Sys::AssetFile in_cache(cache_file.c_str());
+
+        if (in_cache) {
+            size_t cache_size = in_cache.size();
+
+            std::unique_ptr<uint8_t[]> cache_data(new uint8_t[cache_size]);
+            in_cache.Read((char *)&cache_data[0], cache_size);
+
+            Sys::MemBuf mem(&cache_data[0], cache_size);
+            std::istream in_stream(&mem);
+
+            if (!js_probe_cache.Read(in_stream)) {
+                js_probe_cache.elements.clear();
+            }
+        }
+    }
+
     OnPreloadScene(js_scene);
 
     try {
         scene_manager_->LoadScene(js_scene);
+        scene_manager_->LoadProbeCache(js_probe_cache);
     } catch (std::exception &e) {
         LOGI("Error loading scene: %s", e.what());
     }
@@ -344,7 +392,7 @@ void GSBaseState::OnPreloadScene(JsObject &js_scene) {
 
 void GSBaseState::OnPostloadScene(JsObject &js_scene) {
     // trigger probes update
-    probes_dirty_ = true;
+    probes_dirty_ = false;
 }
 
 void GSBaseState::Exit() {
@@ -416,7 +464,7 @@ void GSBaseState::Draw(uint64_t dt_us) {
                     // Lightmap creation finished, convert textures
                     Viewer::PrepareAssets("pc");
                     // Reload scene
-                    LoadScene(SCENE_NAME);
+                    //LoadScene(SCENE_NAME);
                     // Switch back to normal mode
                     use_lm_ = false;
                 }
@@ -655,7 +703,7 @@ void GSBaseState::UpdateFrame(int list_index) {
     if (!use_pt_ && !use_lm_) {
         if (update_all_probes_) {
             if (probes_to_update_.empty()) {
-                int obj_count = (int)scene_manager_->scene_data().objects.size();
+                const int obj_count = (int)scene_manager_->scene_data().objects.size();
                 for (int i = 0; i < obj_count; i++) {
                     SceneObject *obj = scene_manager_->GetObject(i);
                     if (obj->comp_mask & CompProbeBit) {

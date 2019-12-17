@@ -291,7 +291,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                     std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_direct_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
 
                     std::string out_file_name = "./assets/textures/lightmaps/";
-                    out_file_name += scene_name_;
+                    out_file_name += scene_data_.name.c_str();
                     out_file_name += "_lm_direct.png";
 
                     SceneManagerInternal::Write_RGBM(&out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4, out_file_name.c_str());
@@ -301,7 +301,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                     std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_indir_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
 
                     std::string out_file_name = "./assets/textures/lightmaps/";
-                    out_file_name += scene_name_;
+                    out_file_name += scene_data_.name.c_str();
                     out_file_name += "_lm_indirect.png";
 
                     SceneManagerInternal::Write_RGBM(&out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4, out_file_name.c_str());
@@ -312,7 +312,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                         std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_indir_sh_[sh_l][0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
 
                         std::string out_file_name = "./assets/textures/lightmaps/";
-                        out_file_name += scene_name_;
+                        out_file_name += scene_data_.name.c_str();
                         out_file_name += "_lm_sh_";
                         out_file_name += std::to_string(sh_l);
                         out_file_name += ".png";

@@ -41,6 +41,8 @@ public:
     void LoadScene(const JsObject &js_scene);
     void ClearScene();
 
+    void LoadProbeCache(const JsObject &js_probe_cache);
+
     void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov, float max_exposure);
 
     void RegisterComponent(uint32_t index, CompStorage *storage);
@@ -56,6 +58,7 @@ public:
     void UpdateObjects();
 
     static bool PrepareAssets(const char *in_folder, const char *out_folder, const char *platform, Sys::ThreadPool *p_threads);
+    static bool WriteProbeCache(const char *out_folder, const char *scene_name, const ProbeStorage &probes, const CompStorage *light_probe_storage);
 private:
     Ren::MaterialRef OnLoadMaterial(const char *name);
     Ren::ProgramRef OnLoadProgram(const char *name, const char *arg1, const char *arg2);
@@ -64,7 +67,6 @@ private:
     void RebuildBVH();
     void RemoveNode(uint32_t node_index);
 
-    std::string scene_name_;
     int scene_texture_load_counter_ = 0;
 
     Ren::Context &ctx_;

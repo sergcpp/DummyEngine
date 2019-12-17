@@ -1,13 +1,9 @@
 #include "Json.h"
 
-//#include <cctype>
-//#include <cassert>
 #include <cstring>
 
 #include <iostream>
 #include <stdexcept>
-
-//#pragma warning(disable : 4996)
 
 bool JsNumber::Read(std::istream &in) {
     char c;
@@ -112,7 +108,7 @@ void JsArray::Write(std::ostream &out, JsFlags flags) const {
     }
     if (flags.ident_levels) {
         for (int i = 0; i < flags.level; i++) {
-            ident_str += '\t';
+            ident_str += flags.use_spaces ? "    " : "\t";
         }
     }
     out << '[';
@@ -124,7 +120,7 @@ void JsArray::Write(std::ostream &out, JsFlags flags) const {
         }
     }
     if (!ident_str.empty()) {
-        ident_str = ident_str.substr(0, ident_str.length() - 1);
+        ident_str = ident_str.substr(0, ident_str.length() - (flags.use_spaces ? 4 : 1));
     }
     out << ident_str << ']';
 }
@@ -242,7 +238,7 @@ void JsObject::Write(std::ostream &out, JsFlags flags) const {
     }
     if (flags.ident_levels) {
         for (int i = 0; i < flags.level; i++) {
-            ident_str += '\t';
+            ident_str += flags.use_spaces ? "    " : "\t";
         }
     }
     out << '{';
@@ -255,7 +251,7 @@ void JsObject::Write(std::ostream &out, JsFlags flags) const {
         }
     }
     if (!ident_str.empty()) {
-        ident_str = ident_str.substr(0, ident_str.length() - 1);
+        ident_str = ident_str.substr(0, ident_str.length() - (flags.use_spaces ? 4 : 1));
     }
     out << ident_str << '}';
 }

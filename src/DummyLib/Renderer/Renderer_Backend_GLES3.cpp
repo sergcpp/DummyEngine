@@ -2282,6 +2282,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
     }
 
+    glActiveTexture(GL_TEXTURE0 + REN_ENV_TEX_SLOT);
+    glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, 0);
+
     glDisable(GL_DEPTH_TEST);
 
     //

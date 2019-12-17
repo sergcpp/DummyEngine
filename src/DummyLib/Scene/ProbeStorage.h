@@ -23,9 +23,12 @@ public:
     uint32_t tex_id() const { return tex_id_; }
 #endif
 
-    void Resize(int res, int capacity);
+    void Resize(Ren::eTexColorFormat format, int res, int capacity);
 
+    bool SetPixelData(int level, int layer, int face, Ren::eTexColorFormat format, const uint8_t *data, int data_len);
+    bool GetPixelData(int level, int layer, int face, int buf_size, uint8_t *out_pixels) const;
 private:
+    Ren::eTexColorFormat format_;
     int res_, size_, capacity_, max_level_;
     int reserved_temp_layer_;
     std::vector<int> free_indices_;

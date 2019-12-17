@@ -89,6 +89,12 @@ public:
 
     virtual uint32_t Create() = 0;
     virtual void *Get(uint32_t i) = 0;
+    virtual const void *Get(uint32_t i) const = 0;
+
+    virtual uint32_t First() const = 0;
+    virtual uint32_t Next(uint32_t i) const = 0;
+
+    virtual int Count() const = 0;
 
     virtual void ReadFromJs(const JsObject &js_obj, void *comp) = 0;
     virtual void WriteToJs(const void *comp, JsObject &js_obj) = 0;
@@ -98,6 +104,7 @@ public:
 };
 
 struct SceneData {
+    Ren::String             name;
     Environment             env;
     Ren::TextureAtlas       decals_atlas;
     Ren::TextureSplitter    lm_splitter;

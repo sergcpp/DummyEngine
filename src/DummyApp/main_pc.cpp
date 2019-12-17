@@ -6,6 +6,11 @@ int main(int argc, char *argv[]) {
 }
 
 // TODO:
+// scene saving (+ refactor probe caching)
+// use direct access extension
+// add logstream
+// add assetstream
 // make full screen quad passes differently
 // refactor repetitive things in shaders
 // use one big array for instance indices
+// get rid of SOIL in Ren (??? png loading left)
