@@ -112,7 +112,7 @@ int Gui::ConvChar_UTF8_to_Unicode(const char *utf8, uint32_t &out_unicode) {
         return 0;
     }
 
-    for (size_t j = 0; j < todo; ++j) {
+    for (int j = 0; j < todo; ++j) {
         const auto ch1 = (uint8_t)utf8[i++];
         if (ch1 < 0x80 || ch1 > 0xBF) {
             return 0;
