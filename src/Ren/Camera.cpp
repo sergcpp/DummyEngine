@@ -88,7 +88,7 @@ Ren::eVisibilityResult Ren::Frustum::CheckVisibility(const Vec3f &bbox_min, cons
 }
 
 Ren::Camera::Camera(const Vec3f &center, const Vec3f &target, const Vec3f &up)
-    : is_orthographic_(false), angle_(0.0f), aspect_(0.0f), near_(0.0f), far_(0.0f) {
+    : is_orthographic_(false), angle_(0.0f), aspect_(0.0f), near_(0.0f), far_(0.0f), max_exposure_(1000.0f) {
     SetupView(center, target, up);
 }
 
