@@ -189,6 +189,16 @@ void JsObject::Push(const std::string &s, const JsElement &el) {
     elements.emplace_back(s, el);
 }
 
+void JsObject::Push(const std::string &s, JsElement &&el) {
+    for (auto &e : elements) {
+        if (e.first == s) {
+            e.second = std::move(el);
+            return;
+        }
+    }
+    elements.emplace_back(s, std::move(el));
+}
+
 bool JsObject::Read(std::istream &in) {
     char c;
     if (!in.read(&c, 1) || c != '{') {
