@@ -101,7 +101,7 @@ void Ren::Context::Init(int w, int h) {
 
     default_vertex_buf1_        = buffers_.Add("default_vtx_buf1", 64 * 1024 * 1024);
     default_vertex_buf2_        = buffers_.Add("default_vtx_buf2", 64 * 1024 * 1024);
-    default_skin_vertex_buf_    = buffers_.Add("default_skin_buf", 16 * 1024 * 1024);
+    default_skin_vertex_buf_    = buffers_.Add("default_skin_buf", 64 * 1024 * 1024);
     default_indices_buf_        = buffers_.Add("default_ndx_buf2", 64 * 1024 * 1024);
 
     texture_atlas_ = TextureAtlasArray{ TextureAtlasWidth, TextureAtlasHeight, TextureAtlasLayers, RawRGBA8888, BilinearNoMipmap };
