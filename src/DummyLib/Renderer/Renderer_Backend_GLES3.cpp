@@ -1646,7 +1646,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glBindVertexArray((GLuint)fs_quad_vao_);
 
     const uint32_t use_down_depth_mask = (EnableZFill | EnableSSAO | EnableSSR);
-    if ((list.render_flags & EnableZFill) && (list.render_flags & (EnableSSAO | EnableSSR))) {
+    if ((list.render_flags & EnableZFill) && (list.render_flags & (EnableSSAO | EnableSSR)) && ((list.render_flags & DebugWireframe) == 0)) {
         DebugMarker _("DOWNSAMPLE DEPTH");
 
         // Setup viewport once for all ssao passes
@@ -1816,6 +1816,12 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     }
 
 #if !defined(REN_DIRECT_DRAWING)
+#if !defined(__ANDROID__)
+    if (list.render_flags & DebugWireframe) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+#endif
+
     if ((list.render_flags & EnableOIT) && clean_buf_.sample_count > 1) {
         DebugMarker _("RESOLVE MS BUFFER");
 
@@ -2191,10 +2197,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
 
+#if (REN_OIT_MODE != REN_OIT_DISABLED)
     if (list.render_flags & EnableOIT) {
         DebugMarker _("COMPOSE TRANSPARENT");
 
-#if (REN_OIT_MODE != REN_OIT_DISABLED)
         glEnable(GL_BLEND);
 #if (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED) || (REN_OIT_MODE == REN_OIT_MOMENT_BASED && REN_OIT_MOMENT_RENORMALIZE)
         glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
@@ -2235,8 +2241,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
         glDisable(GL_BLEND);
-#endif
     }
+#endif
     
     if (list.render_flags & DebugProbes) {
         glBindVertexArray(sphere_vao_);
