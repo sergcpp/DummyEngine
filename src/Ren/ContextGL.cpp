@@ -97,6 +97,10 @@ void Ren::Context::Init(int w, int h) {
     }
 #endif
 
+#if !defined(__ANDROID__)
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+#endif
+
     capabilities.gl_spirv = IsExtensionSupported("GL_ARB_gl_spirv");
 
     default_vertex_buf1_        = buffers_.Add("default_vtx_buf1", 64 * 1024 * 1024);

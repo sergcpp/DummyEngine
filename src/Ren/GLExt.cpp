@@ -131,14 +131,17 @@ bool Ren::InitGLExtentions() {
 
     ren_glUniformMatrix4fv          = (PFNGLUNIFORMMATRIX4FVPROC)GetProcAddress(glUniformMatrix4fv);
 
-#if !defined(__linux__)
     ren_glCompressedTexImage2D      = (PFNGLCOMPRESSEDTEXIMAGE2DPROC)GetProcAddress(glCompressedTexImage2D);
-#endif
+    ren_glCompressedTexImage3D      = (PFNGLCOMPRESSEDTEXIMAGE3DPROC)GetProcAddress(glCompressedTexImage3D);
+
+    ren_glCompressedTexSubImage3D   = (PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC)GetProcAddress(glCompressedTexSubImage3D);
 
     ren_glTexStorage2D              = (PFNGLTEXSTORAGE2DPROC)GetProcAddress(glTexStorage2D);
     ren_glTexStorage2DMultisample   = (PFNGLTEXSTORAGE2DMULTISAMPLEPROC)GetProcAddress(glTexStorage2DMultisample);
     ren_glTexImage2DMultisample     = (PFNGLTEXIMAGE2DMULTISAMPLEPROC)GetProcAddress(glTexImage2DMultisample);
     ren_glRenderbufferStorageMultisample = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)GetProcAddress(glRenderbufferStorageMultisample);
+
+    ren_glTexStorage3D              = (PFNGLTEXSTORAGE3DPROC)GetProcAddress(glTexStorage3D);
 
     ren_glTexSubImage3D             = (PFNGLTEXSUBIMAGE3DPROC)GetProcAddress(glTexSubImage3D);
 
@@ -177,6 +180,11 @@ bool Ren::InitGLExtentions() {
 
     ren_glGetTextureLevelParameterfv = (PFNGLGETTEXTURELEVELPARAMETERFVPROC)GetProcAddress(glGetTextureLevelParameterfv);
     ren_glGetTextureLevelParameteriv = (PFNGLGETTEXTURELEVELPARAMETERIVPROC)GetProcAddress(glGetTextureLevelParameteriv);
+
+    ren_glGetTextureImage           = (PFNGLGETTEXTUREIMAGEPROC)GetProcAddress(glGetTextureImage);
+    ren_glGetTextureSubImage        = (PFNGLGETTEXTURESUBIMAGEPROC)GetProcAddress(glGetTextureSubImage);
+
+    ren_glGetCompressedTextureSubImage = (PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC)GetProcAddress(glGetCompressedTextureSubImage);
 
     ren_glDebugMessageCallback      = (PFNGLDEBUGMESSAGECALLBACKPROC)GetProcAddress(glDebugMessageCallback);
     ren_glDebugMessageInsert        = (PFNGLDEBUGMESSAGEINSERTPROC)GetProcAddress(glDebugMessageInsert);

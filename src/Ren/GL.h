@@ -216,6 +216,7 @@ EXTERN_FUNC PFNGLGETQUERYOBJECTUI64VEXTPROC     glGetQueryObjectui64vEXT;
 #define GL_TEXTURE_COMPARE_FUNC     0x884D
 #define GL_COMPARE_REF_TO_TEXTURE   0x884E
 
+#define GL_TEXTURE_BASE_LEVEL 0x813C
 #define GL_TEXTURE_MAX_LEVEL 0x813D
 
 #define GL_TEXTURE_BUFFER                 0x8C2A
@@ -259,6 +260,8 @@ EXTERN_FUNC PFNGLGETQUERYOBJECTUI64VEXTPROC     glGetQueryObjectui64vEXT;
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR  0x93DD
 
 #define GL_TEXTURE_CUBE_MAP_SEAMLESS        0x884F
+
+#define GL_TEXTURE_COMPRESSED_IMAGE_SIZE    0x86A0
 
 #define GL_TEXTURE_BUFFER_OFFSET            0x919D
 #define GL_TEXTURE_BUFFER_SIZE              0x919E
@@ -413,6 +416,11 @@ typedef void (APIENTRY *PFNGLUNIFORMMATRIX4FVPROC)(GLint location, GLsizei count
 #if !defined(__linux__)
 typedef void (APIENTRY *PFNGLCOMPRESSEDTEXIMAGE2DPROC)(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid * data);
 #endif
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXIMAGE3DPROC)(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void * data);
+
+
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+                                                          GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
 
 typedef void (APIENTRY *PFNGLTEXSTORAGE2DPROC)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
 typedef void (APIENTRY *PFNGLTEXSTORAGE2DMULTISAMPLEPROC)(GLenum target, GLsizei samples, GLenum internalformat,
@@ -421,6 +429,9 @@ typedef void (APIENTRY *PFNGLTEXIMAGE2DMULTISAMPLEPROC)(GLenum target, GLsizei s
                                                         GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 typedef void (APIENTRY *PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)(GLenum target, GLsizei samples, GLenum internalformat,
                                                                  GLsizei width, GLsizei height);
+
+
+typedef void (APIENTRY *PFNGLTEXSTORAGE3DPROC)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
 
 typedef void (APIENTRY *PFNGLTEXSUBIMAGE3DPROC)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
                                                 GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void * pixels);
@@ -461,6 +472,13 @@ typedef void (APIENTRY *PFNGLGETINTEGER64I_VPROC)(GLenum target, GLuint index, G
 
 typedef void (APIENTRY *PFNGLGETTEXTURELEVELPARAMETERFVPROC)(GLuint texture, GLint level, GLenum pname, GLfloat *params);
 typedef void (APIENTRY *PFNGLGETTEXTURELEVELPARAMETERIVPROC)(GLuint texture, GLint level, GLenum pname, GLint *params);
+
+typedef void (APIENTRY *PFNGLGETTEXTUREIMAGEPROC)(GLuint texture, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels);
+typedef void (APIENTRY *PFNGLGETTEXTURESUBIMAGEPROC)(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+                                                     GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, GLsizei bufSize, void *pixels);
+
+typedef void (APIENTRY *PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC)(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+                                                               GLsizei width, GLsizei height, GLsizei depth, GLsizei bufSize, void *pixels);
 
 typedef void (APIENTRY *DEBUGPROC)(GLenum source,
                                    GLenum type,
@@ -576,11 +594,16 @@ typedef void (APIENTRY *PFNGLCLEARBUFFERFV)(GLenum buffer, GLint drawbuffer, con
 #define glUniformMatrix4fv          ren_glUniformMatrix4fv
 
 #define glCompressedTexImage2D      ren_glCompressedTexImage2D
+#define glCompressedTexImage3D      ren_glCompressedTexImage3D
+
+#define glCompressedTexSubImage3D   ren_glCompressedTexSubImage3D
 
 #define glTexStorage2D              ren_glTexStorage2D
 #define glTexStorage2DMultisample   ren_glTexStorage2DMultisample
 #define glTexImage2DMultisample     ren_glTexImage2DMultisample
 #define glRenderbufferStorageMultisample ren_glRenderbufferStorageMultisample
+
+#define glTexStorage3D              ren_glTexStorage3D
 
 #define glTexSubImage3D             ren_glTexSubImage3D
 #if !defined(__linux__)
@@ -617,6 +640,11 @@ typedef void (APIENTRY *PFNGLCLEARBUFFERFV)(GLenum buffer, GLint drawbuffer, con
 
 #define glGetTextureLevelParameterfv ren_glGetTextureLevelParameterfv
 #define glGetTextureLevelParameteriv ren_glGetTextureLevelParameteriv
+
+#define glGetTextureImage           ren_glGetTextureImage
+#define glGetTextureSubImage        ren_glGetTextureSubImage
+
+#define glGetCompressedTextureSubImage ren_glGetCompressedTextureSubImage
 
 #define glDebugMessageCallback      ren_glDebugMessageCallback
 #define glDebugMessageInsert        ren_glDebugMessageInsert
@@ -724,11 +752,16 @@ EXTERN_FUNC PFNGLUNIFORM4FVPROC                 ren_glUniform4fv;
 EXTERN_FUNC PFNGLUNIFORMMATRIX4FVPROC           ren_glUniformMatrix4fv;
 
 EXTERN_FUNC PFNGLCOMPRESSEDTEXIMAGE2DPROC       ren_glCompressedTexImage2D;
+EXTERN_FUNC PFNGLCOMPRESSEDTEXIMAGE3DPROC       ren_glCompressedTexImage3D;
+
+EXTERN_FUNC PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC    ren_glCompressedTexSubImage3D;
 
 EXTERN_FUNC PFNGLTEXSTORAGE2DPROC               ren_glTexStorage2D;
 EXTERN_FUNC PFNGLTEXSTORAGE2DMULTISAMPLEPROC    ren_glTexStorage2DMultisample;
 EXTERN_FUNC PFNGLTEXIMAGE2DMULTISAMPLEPROC      ren_glTexImage2DMultisample;
 EXTERN_FUNC PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC ren_glRenderbufferStorageMultisample;
+
+EXTERN_FUNC PFNGLTEXSTORAGE3DPROC               ren_glTexStorage3D;
 
 EXTERN_FUNC PFNGLTEXSUBIMAGE3DPROC              ren_glTexSubImage3D;
 
@@ -765,6 +798,11 @@ EXTERN_FUNC PFNGLGETINTEGER64I_VPROC            ren_glGetInteger64i_v;
 
 EXTERN_FUNC PFNGLGETTEXTURELEVELPARAMETERFVPROC ren_glGetTextureLevelParameterfv;
 EXTERN_FUNC PFNGLGETTEXTURELEVELPARAMETERIVPROC ren_glGetTextureLevelParameteriv;
+
+EXTERN_FUNC PFNGLGETTEXTUREIMAGEPROC            ren_glGetTextureImage;
+EXTERN_FUNC PFNGLGETTEXTURESUBIMAGEPROC         ren_glGetTextureSubImage;
+
+EXTERN_FUNC PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC ren_glGetCompressedTextureSubImage;
 
 EXTERN_FUNC PFNGLDEBUGMESSAGECALLBACKPROC       ren_glDebugMessageCallback;
 EXTERN_FUNC PFNGLDEBUGMESSAGEINSERTPROC         ren_glDebugMessageInsert;
