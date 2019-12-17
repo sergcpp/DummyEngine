@@ -7,3 +7,4 @@
 #include "GSBaseState.cpp"
 #include "GSDrawTest.cpp"
 #include "GSUITest.cpp"
+#include "GSUITest2.cpp"

@@ -55,7 +55,9 @@ set(STATES_SOURCES  States/GSCreate.h
                     States/GSDrawTest.h
                     States/GSDrawTest.cpp
                     States/GSUITest.h
-                    States/GSUITest.cpp)
+                    States/GSUITest.cpp
+                    States/GSUITest2.h
+                    States/GSUITest2.cpp)
 
 set(UTILS_SOURCES Utils/BVHSplit.h
                   Utils/BVHSplit.cpp

@@ -36,6 +36,7 @@ class GSDrawTest : public GSBaseState {
           fwd_touch_speed_ = 0, side_touch_speed_ = 0;
 
     float max_fwd_speed_ = 0.5f, view_fov_ = 60.0f;
+    float max_exposure_ = 1000.0f;
 
     uint64_t last_frame_time_ = 0;
     double cur_fps_ = 0.0;
@@ -47,6 +48,7 @@ class GSDrawTest : public GSBaseState {
     uint32_t scooter_indices_[16]   = { 0xffffffff };
     uint32_t sophia_indices_[2]     = { 0xffffffff }, eric_indices_[2] = { 0xffffffff };
     uint32_t font_meshes_[4]        = { 0xffffffff };
+    uint32_t zenith_index_          = 0xffffffff;
     float scooters_angle_ = 0.0f;
 
     std::vector<Ren::Vec3f>             cam_follow_path_;

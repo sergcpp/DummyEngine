@@ -2432,7 +2432,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform1f(U_GAMMA, (list.render_flags & DebugLights) ? 1.0f : 2.2f);
 
         float exposure = reduced_average_ > std::numeric_limits<float>::epsilon() ? (0.95f / reduced_average_) : 1.0f;
-        exposure = std::min(exposure, 1000.0f);
+        exposure = std::min(exposure, list.draw_cam.max_exposure());
 
         glUniform1f(U_EXPOSURE, exposure);
 
@@ -2703,7 +2703,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, clean_buf_, 1, 2);
 
         float exposure = reduced_average_ > std::numeric_limits<float>::epsilon() ? (0.95f / reduced_average_) : 1.0f;
-        exposure = std::min(exposure, 1000.0f);
+        exposure = std::min(exposure, list.draw_cam.max_exposure());
         BlitBuffer(0.0f, -1.0f, 0.5f, 0.5f, down_buf_, 0, 1, exposure);
     }
 

@@ -31,6 +31,8 @@ const char SCENE_NAME[] = "assets/scenes/"
         "living_room_gumroad.json";
         //"bistro.json";
         //"pbr_test.json";
+        //"zenith.json";
+        //"corridor.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {
@@ -76,6 +78,11 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
         if (js_cam.Has("fov")) {
             const JsNumber &js_fov = (const JsNumber &)js_cam.at("fov");
             view_fov_ = (float)js_fov.val;
+        }
+
+        if (js_cam.Has("max_exposure")) {
+            const JsNumber &js_max_exposure = (const JsNumber &)js_cam.at("max_exposure");
+            max_exposure_ = (float)js_max_exposure.val;
         }
 
         if (js_cam.Has("follow_path")) {
@@ -161,6 +168,10 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
             uint32_t eric_index = scene_manager_->FindObject(eric_name);
             eric_indices_[i] = eric_index;
         }
+    }
+
+    {
+        zenith_index_ = scene_manager_->FindObject("zenith");
     }
 }
 
@@ -448,7 +459,13 @@ void GSDrawTest::OnUpdateScene() {
     TestUpdateAnims(delta_time_s);
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
+    scene_manager_->SetupView(
+            view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f },
+            view_fov_, max_exposure_);
+
+    //LOGI("%f %f %f | %f %f %f",
+    //        view_origin_[0], view_origin_[1], view_origin_[2],
+    //        view_dir_[0], view_dir_[1], view_dir_[2]);
 }
 
 void GSDrawTest::TestUpdateAnims(float delta_time_s) {
@@ -570,6 +587,27 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
                 skel->ApplyAnim(anim_index);
                 skel->UpdateBones(as->matr_palette);
             }
+        }
+    }
+
+    if (zenith_index_ != 0xffffffff) {
+        SceneObject *zenith = scene_manager_->GetObject(zenith_index_);
+
+        uint32_t mask = CompDrawableBit | CompAnimStateBit;
+        if ((zenith->comp_mask & mask) == mask) {
+            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(zenith->components[CompDrawable]);
+            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(zenith->components[CompAnimState]);
+
+            as->anim_time_s += delta_time_s;
+
+            Ren::Mesh *mesh = dr->mesh.get();
+            Ren::Skeleton *skel = mesh->skel();
+
+            const int anim_index = 0;
+
+            skel->UpdateAnim(anim_index, as->anim_time_s);
+            skel->ApplyAnim(anim_index);
+            skel->UpdateBones(as->matr_palette);
         }
     }
 }

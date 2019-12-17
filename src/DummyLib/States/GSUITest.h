@@ -33,9 +33,11 @@ class GSUITest : public GSBaseState {
     std::shared_ptr<Gui::BitmapFont> dialog_font_;
     float test_time_counter_s = 0.0f;
 
-    std::unique_ptr<Gui::Image>          test_image_;
-    std::unique_ptr<Gui::ImageNinePatch> test_frame_;
-    std::unique_ptr<TextPrinter>         text_printer_;
+    std::unique_ptr<Gui::Image>         test_image_;
+    std::unique_ptr<Gui::Image9Patch>   test_frame_;
+    std::unique_ptr<TextPrinter>        text_printer_;
+
+    uint32_t sophia_indices_[2]     = { 0xffffffff };
 
     void OnPostloadScene(JsObject &js_scene) override;
 

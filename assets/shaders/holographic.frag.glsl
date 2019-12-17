@@ -79,7 +79,7 @@ void main(void) {
     
     vec3 view_ray_ws = normalize(aVertexPos_ - uCamPosAndGamma.xyz);
     
-    float val = uTranspDepthRangeAndMode[3] + aVertexPos_.y * 100.0;
+    float val = uTranspDepthRangeAndMode[3] + aVertexPos_.y * 10.0;
     float kk = 0.75 + 0.25 * step(val - floor(val), 0.5);
     
     float tr = 0.75 * clamp(1.2 - dot(normal, -view_ray_ws), 0.0, 1.0);

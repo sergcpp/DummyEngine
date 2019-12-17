@@ -8,6 +8,7 @@ check*
 libDummyApp*.so
 ModlApp.exe
 DummyApp.apk
+DummyApp.exe
 test.txt
 test.mesh
 *.blend1

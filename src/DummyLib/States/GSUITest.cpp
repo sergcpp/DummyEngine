@@ -5,7 +5,7 @@
 
 #include <Eng/GameStateManager.h>
 #include <Gui/Image.h>
-#include <Gui/ImageNinePatch.h>
+#include <Gui/Image9Patch.h>
 #include <Gui/Renderer.h>
 #include <Gui/Utils.h>
 #include <Ren/Context.h>
@@ -30,23 +30,7 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-    "empty.json";
-
-static const char test_string_en[] =
-    u8"<violet>You know, being Caroline taught me a</violet> <cyan>valueable</cyan> <violet>lesson. "
-    u8"I</violet> <red>♥</red> <white>thought</white> <red>♥</red> <violet>you were my greatest enemy, when all along you "
-    u8"were my best friend.</violet> <yellow>The surge of emotion that shout through "
-    u8"me when I saved your life taught me an even more valuable lesson</yellow> <white>-</white> "
-    u8"<cyan>where caroline lives in my brain.</cyan>";
-
-static const char test_string_de[] =
-    u8"<violet>Als Caroline lernte ich eine</violet> <cyan>wichtige</cyan> <violet>Lektion. Ich</violet> <red>♥</red><white>dachte</white><red>♥</red>, "
-    u8"<violet>du wärst mein größter Feind und warst doch die ganze Zeit mein bester Freund.</violet>"
-    //u8" Als Caroline lernte ich eine weitere wichtige Lektion: Wo Caroline in meinem Hirn lebt."
-    u8" <yellow>Die Emotionen, die ich verspürte, als ich dein Leben rettete, erteilten mir eine noch viel wichtigere Lektion:</yellow> <cyan>Ich weiß jetzt, wo Caroline in meinem Gehirn lebt."
-    u8" Leb wohl, Caroline.</cyan>";
-
-static const char *test_string = test_string_de;
+    "zenith.json";
 }
 
 GSUITest::GSUITest(GameBase *game) : GSBaseState(game) {
@@ -67,7 +51,7 @@ void GSUITest::Enter() {
         *ctx_, "assets_pc/textures/test_image.uncompressed.png", Ren::Vec2f{ -0.5f, -0.5f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
     });
 
-    test_frame_.reset(new Gui::ImageNinePatch{
+    test_frame_.reset(new Gui::Image9Patch{
         *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Ren::Vec2f{ 2.0f, 2.0f }, 1.0f, Ren::Vec2f{ 0.0f, 0.1f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
     });
 
@@ -105,34 +89,55 @@ void GSUITest::OnPostloadScene(JsObject &js_scene) {
 
     GSBaseState::OnPostloadScene(js_scene);
 
-    /*if (js_scene.Has("camera")) {
+    Ren::Vec3f view_origin, view_dir = { 0.0f, 0.0f, 1.0f };
+    float view_fov = 45.0f, max_exposure = 1000.0f;
+
+    if (js_scene.Has("camera")) {
         const JsObject &js_cam = (const JsObject &)js_scene.at("camera");
         if (js_cam.Has("view_origin")) {
             const JsArray &js_orig = (const JsArray &)js_cam.at("view_origin");
-            view_origin_[0] = (float)((const JsNumber &)js_orig.at(0)).val;
-            view_origin_[1] = (float)((const JsNumber &)js_orig.at(1)).val;
-            view_origin_[2] = (float)((const JsNumber &)js_orig.at(2)).val;
+            view_origin[0] = (float)((const JsNumber &)js_orig.at(0)).val;
+            view_origin[1] = (float)((const JsNumber &)js_orig.at(1)).val;
+            view_origin[2] = (float)((const JsNumber &)js_orig.at(2)).val;
         }
 
         if (js_cam.Has("view_dir")) {
             const JsArray &js_dir = (const JsArray &)js_cam.at("view_dir");
-            view_dir_[0] = (float)((const JsNumber &)js_dir.at(0)).val;
-            view_dir_[1] = (float)((const JsNumber &)js_dir.at(1)).val;
-            view_dir_[2] = (float)((const JsNumber &)js_dir.at(2)).val;
+            view_dir[0] = (float)((const JsNumber &)js_dir.at(0)).val;
+            view_dir[1] = (float)((const JsNumber &)js_dir.at(1)).val;
+            view_dir[2] = (float)((const JsNumber &)js_dir.at(2)).val;
         }
 
-        if (js_cam.Has("fwd_speed")) {
+        /*if (js_cam.Has("fwd_speed")) {
             const JsNumber &js_fwd_speed = (const JsNumber &)js_cam.at("fwd_speed");
             max_fwd_speed_ = (float)js_fwd_speed.val;
-        }
+        }*/
 
         if (js_cam.Has("fov")) {
             const JsNumber &js_fov = (const JsNumber &)js_cam.at("fov");
-            view_fov_ = (float)js_fov.val;
+            view_fov = (float)js_fov.val;
         }
-    }*/
 
-    //scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
+        if (js_cam.Has("max_exposure")) {
+            const JsNumber &js_max_exposure = (const JsNumber &)js_cam.at("max_exposure");
+            max_exposure = (float)js_max_exposure.val;
+        }
+    }
+
+    scene_manager_->SetupView(
+            view_origin, (view_origin + view_dir), Ren::Vec3f{ 0.0f, 1.0f, 0.0f },
+            view_fov, max_exposure);
+
+    {
+        char sophia_name[] = "sophia_00";
+
+        for (int i = 0; i < 2; i++) {
+            sophia_name[8] = char('0' + i);
+
+            uint32_t sophia_index = scene_manager_->FindObject(sophia_name);
+            sophia_indices_[i] = sophia_index;
+        }
+    }
 }
 
 void GSUITest::OnUpdateScene() {
@@ -148,6 +153,33 @@ void GSUITest::OnUpdateScene() {
     while (test_time_counter_s > char_period_s) {
         text_printer_->incr_progress();
         test_time_counter_s -= char_period_s;
+    }
+
+    const SceneData &scene = scene_manager_->scene_data();
+
+    if (sophia_indices_[0] != 0xffffffff) {
+        for (int i = 0; i < 2; i++) {
+            if (sophia_indices_[i] == 0xffffffff) break;
+
+            SceneObject *sophia = scene_manager_->GetObject(sophia_indices_[i]);
+
+            uint32_t mask = CompDrawableBit | CompAnimStateBit;
+            if ((sophia->comp_mask & mask) == mask) {
+                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(sophia->components[CompDrawable]);
+                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(sophia->components[CompAnimState]);
+
+                as->anim_time_s += delta_time_s;
+
+                Ren::Mesh *mesh = dr->mesh.get();
+                Ren::Skeleton *skel = mesh->skel();
+
+                const int anim_index = 0;
+
+                skel->UpdateAnim(anim_index, as->anim_time_s);
+                skel->ApplyAnim(anim_index);
+                skel->UpdateBones(as->matr_palette);
+            }
+        }
     }
 }
 

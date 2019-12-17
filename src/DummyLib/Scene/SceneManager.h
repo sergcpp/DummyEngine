@@ -41,7 +41,7 @@ public:
     void LoadScene(const JsObject &js_scene);
     void ClearScene();
 
-    void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov);
+    void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov, float max_exposure);
 
     void RegisterComponent(uint32_t index, CompStorage *storage);
 

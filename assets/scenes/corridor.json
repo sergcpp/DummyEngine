@@ -1,0 +1,609 @@
+{
+    "name" : "corridor",
+    "environment" : {
+        "sun_dir" : [ 0.54, -0.54, -0.54 ],
+        "sun_col" : [ 0.0, 0.0, 0.0 ],
+        "sun_softness" : 0.1,
+        "env_col1" : [ 0.05, 0.075, 0.1 ],
+        "env_map" : "env/stars",
+        "env_map_pt" : "env/studio_small_03_2k.hdr"
+    },
+    "camera" : {
+        "view_origin" : [ -38.557217, 1.061477, -1.375769 ],
+        "view_dir" : [ 0.971333, -0.165525, 0.170606 ],
+        "fwd_speed" : 0.5,
+        "fov" : 75.0,
+        "max_exposure" : 10.0
+    },
+    "meshes" : {
+        "corridor" : {
+            "mesh_file" : "new_test/corridor.mesh"
+        },
+        "holo_woman" : {
+            "mesh_file" : "new_test/holo_woman.mesh"
+        },
+    },
+    "decals" : {
+    },
+    "objects" : [
+        {
+            "name" : "corridor",
+            "transform" : {
+                "pos" : [ -4.192, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "corridor"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -37.0786, -1.0, -1.0 ],
+                "rot" : [ 0.0, -139.146, 0.0 ]
+            },
+            "drawable" : {
+                "mesh" : "holo_woman"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -44.1072, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -42.1566, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -39.7983, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -37.8477, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -35.4599, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -33.5093, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -31.1285, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -29.1779, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -26.8048, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -24.8542, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -22.4514, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -20.5008, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -18.1424, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -16.1918, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -13.8041, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -11.8535, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -9.47268, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -7.52208, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -5.14898, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -3.19838, 3.20003, 3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+
+        {
+            "transform" : {
+                "pos" : [ -44.1072, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -42.1566, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -39.7983, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -37.8477, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -35.4599, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -33.5093, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -31.1285, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -29.1779, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -26.8048, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -24.8542, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -22.4514, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -20.5008, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -18.1424, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -16.1918, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -13.8041, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -11.8535, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -9.47268, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -7.52208, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -5.14898, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -3.19838, 3.20003, -3.13675 ],
+                "rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "light" : {
+                "offset" : [ 0.0, 0.0, 0.0 ],
+                "color" : [ 50.0, 50.0, 50.0 ],
+                "direction" : [ 0.0, -1.0, 0.0 ],
+                "angle" : 180,
+                "radius" : 0.1,
+                "cast_shadow" : false
+            }
+        },
+    ]
+}

@@ -1,0 +1,40 @@
+{
+	"texts" : [
+		{
+			"data" : " Das nächste ist in der Livingstone Straße.                                                                                                                                                     <option>1. Kennen Sie den einfachsten Weg, um dort hinzugehen?</option>          <option>2. Und nach dem Kreisverkehr?.</option>",
+            "options" : [
+                {
+                    "variants" : [
+                        " "
+                    ]
+                },
+                {
+                    "variants" : [
+                        " "
+                    ]
+                },
+                {
+                    "variants" : [
+                        "größter", "größte", "größtes"
+                    ]
+                },
+                {
+                    "variants" : [
+                        "meinem", "meiner", "meinen"
+                    ]
+                }
+            ],
+            "hints" : [
+                {
+                    "en" : "lesson"
+                },
+                {
+                    "en" : "enemy"
+                },
+                {
+                    "en" : "brain"
+                }
+            ]
+        }
+	]
+}

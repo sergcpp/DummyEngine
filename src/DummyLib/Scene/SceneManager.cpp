@@ -605,12 +605,14 @@ void SceneManager::ClearScene() {
     ray_scene_ = nullptr;
 }
 
-void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov) {
+void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov, float max_exposure) {
     using namespace SceneManagerConstants;
 
     cam_.SetupView(origin, target, up);
     cam_.Perspective(fov, float(ctx_.w()) / ctx_.h(), NEAR_CLIP, FAR_CLIP);
     cam_.UpdatePlanes();
+
+    cam_.set_max_exposure(max_exposure);
 }
 
 Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {

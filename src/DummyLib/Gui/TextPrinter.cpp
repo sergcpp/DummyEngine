@@ -2,7 +2,7 @@
 
 #include <random>
 
-#include <Gui/ImageNinePatch.h>
+#include <Gui/Image9Patch.h>
 #include <Gui/Utils.h>
 #include <Sys/Json.h>
 #include <Sys/Log.h>
@@ -28,8 +28,8 @@ TextPrinter::TextPrinter(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Ve
     : Gui::BaseElement(pos, size, parent), parent_(parent), font_(font), data_pos_(0), progress_(0), expanded_option_(-1) {
     using namespace TextPrinterInternal;
 
-    background_small_.reset(new Gui::ImageNinePatch{ ctx, Frame01, { 3.0f, 3.0f }, 1.0f, { 0.0f, 0.0f }, { 1.0f, 1.0f }, parent });
-    background_large_.reset(new Gui::ImageNinePatch{ ctx, Frame02, { 20.0f, 20.0f }, 1.0f, { -1.0f, -1.0f }, { 2.0f, 2.0f }, this });
+    background_small_.reset(new Gui::Image9Patch{ ctx, Frame01, { 3.0f, 3.0f }, 1.0f, { 0.0f, 0.0f }, { 1.0f, 1.0f }, parent });
+    background_large_.reset(new Gui::Image9Patch{ ctx, Frame02, { 20.0f, 20.0f }, 1.0f, { -1.0f, -1.0f }, { 2.0f, 2.0f }, this });
 }
 
 bool TextPrinter::LoadScript(const JsObject &js_script) {
