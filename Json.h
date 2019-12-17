@@ -93,8 +93,12 @@ struct JsArray {
         return elements.size();
     }
 
-    void Push(const JsElement &e) {
-        elements.push_back(e);
+    void Push(const JsElement &el) {
+        elements.push_back(el);
+    }
+
+    void Push(JsElement &&el) {
+        elements.emplace_back(el);
     }
 
     bool Read(std::istream &in);
@@ -121,7 +125,8 @@ struct JsObject {
         return elements.size();
     }
 
-    void Push(const std::string &s, const JsElement &e);
+    void Push(const std::string &s, const JsElement &el);
+    void Push(const std::string &s, JsElement &&el);
 
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
