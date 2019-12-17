@@ -84,15 +84,20 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         return 0;
     }
 
-    for (unsigned i = 1; i < args.size() - 1; i++) {
+    // enable vertex cache optimization (reordering of triangles)
+    bool optimize_mesh = true;
+
+    for (unsigned i = 1; i < args.size(); i++) {
         if (args[i] == "-i") {
-            in_file_name = args[i + 1];
+            in_file_name = args[++i];
         } else if (args[i] == "-o") {
-            out_file_name = args[i + 1];
+            out_file_name = args[++i];
         } else if (args[i] == "-v") {
-            view_file_name = args[i + 1];
+            view_file_name = args[++i];
         } else if (args[i] == "-a") {
-            anim_file_name = args[i + 1];
+            anim_file_name = args[++i];
+        } else if (args[i] == "-noopt") {
+            optimize_mesh = false;
         }
     }
 
@@ -129,7 +134,11 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         view_file_name = out_file_name;
     }
 
+#ifdef WIN32
     int res = system("DummyApp.exe --prepare_assets pc --norun");
+#else
+    int res = system("./DummyApp --prepare_assets pc --norun");
+#endif
     if (res == -1) {
         std::cerr << "Failed to update assets" << std::endl;
     }
@@ -138,7 +147,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         int res = CompileAnim(in_file_name, out_file_name);
         return (res == RES_SUCCESS) ? 0 : -1;
     } else if (in_file_type == IN_MESH) {
-        int res = CompileModel(in_file_name, out_file_name);
+        int res = CompileModel(in_file_name, out_file_name, optimize_mesh);
         if (res != RES_SUCCESS) {
             return -1;
         }
@@ -361,7 +370,7 @@ void ModlApp::Destroy() {
     SDL_Quit();
 }
 
-int ModlApp::CompileModel(const std::string &in_file_name, const std::string &out_file_name) {
+int ModlApp::CompileModel(const std::string &in_file_name, const std::string &out_file_name, bool optimize) {
     using namespace std;
     using namespace std::placeholders;
 
@@ -455,6 +464,9 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         num_indices = stoi(str);
     }
 
+    std::cout << "Reading vertex data... ";
+    std::cout.flush();
+
     {   // parse vertex information
         string str;
         str.reserve(512);
@@ -544,6 +556,10 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         }
     }
 
+    std::cout << "Done" << std::endl;
+    std::cout << "Reading triangle data... ";
+    std::cout.flush();
+
     {   // parse triangle information
         string str;
         str.reserve(512);
@@ -565,6 +581,8 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             }
         }
     }
+
+    std::cout << "Done" << std::endl;
 
     if (mesh_type == M_SKEL) {   // parse skeletal information
         string str;
@@ -603,6 +621,9 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             }
         }
     }
+
+    std::cout << "Generating tangents... ";
+    std::cout.flush();
 
     {   // generate tangents
         std::vector<Ren::vertex_t> vertices(num_vertices);
@@ -648,14 +669,24 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         num_vertices = (int)vertices.size();
     }
 
-    {   // optimize mesh
+    std::cout << "Done" << std::endl;
+
+    if (optimize) {
+        std::cout << "Optimizing mesh... ";
+        std::cout.flush();
+
         for (std::vector<uint32_t> &index_group : indices) {
             reordered_indices.emplace_back();
             std::vector<uint32_t> &cur_strip = reordered_indices.back();
 
             cur_strip.resize(index_group.size());
-            Ren::ReorderTriangleIndices(&index_group[0], (uint32_t)index_group.size(), (uint32_t)num_vertices, &cur_strip[0]);
+            Ren::ReorderTriangleIndices(&index_group[0], (uint32_t) index_group.size(), (uint32_t) num_vertices,
+                                        &cur_strip[0]);
         }
+
+        std::cout << "Done" << std::endl;
+    } else {
+        reordered_indices = indices;
     }
 
     struct MeshChunk {

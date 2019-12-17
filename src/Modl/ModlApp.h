@@ -25,7 +25,7 @@ public:
     }
 private:
     enum eCompileResult { RES_SUCCESS = 0, RES_PARSE_ERROR, RES_FILE_NOT_FOUND };
-    int CompileModel(const std::string &in_file_name, const std::string &out_file_name);
+    int CompileModel(const std::string &in_file_name, const std::string &out_file_name, bool optimize);
     int CompileAnim(const std::string &in_file_name, const std::string &out_file_name);
 
     bool quit_;
