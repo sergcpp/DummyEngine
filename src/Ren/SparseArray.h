@@ -185,6 +185,22 @@ public:
         return data_[index];
     }
 
+    T *GetOrNull(uint32_t index) {
+        if (index < size_ && (ctrl_[index / 8] & (1 << (index % 8)))) {
+            return &data_[index];
+        } else {
+            return nullptr;
+        }
+    }
+
+    const T *GetOrNull(uint32_t index) const {
+        if (index < size_ && (ctrl_[index / 8] & (1 << (index % 8)))) {
+            return &data_[index];
+        } else {
+            return nullptr;
+        }
+    }
+
     class SparseArrayIterator : public std::iterator<std::bidirectional_iterator_tag, T> {
         friend class SparseArray<T>;
 
@@ -233,7 +249,56 @@ public:
         }
     };
 
+    class SparseArrayConstIterator : public std::iterator<std::bidirectional_iterator_tag, T> {
+        friend class SparseArray<T>;
+
+        const SparseArray<T>    *container_;
+        uint32_t                index_;
+
+        SparseArrayConstIterator(const SparseArray<T> *container, uint32_t index) : container_(container), index_(index) {}
+    public:
+        const T &operator*() {
+            return container_->at(index_);
+        }
+        const T &operator->() {
+            return &container_->at(index_);
+        }
+        SparseArrayConstIterator &operator++() {
+            index_ = container_->NextOccupied(index_);
+            return *this;
+        }
+        SparseArrayConstIterator operator++(int) {
+            SparseArrayConstIterator tmp(*this);
+            ++(*this);
+            return tmp;
+        }
+
+        uint32_t index() const {
+            return index_;
+        }
+
+        bool operator< (const SparseArrayConstIterator &rhs) {
+            return index_ < rhs.index_;
+        }
+        bool operator<=(const SparseArrayConstIterator &rhs) {
+            return index_ <= rhs.index_;
+        }
+        bool operator> (const SparseArrayConstIterator &rhs) {
+            return index_ > rhs.index_;
+        }
+        bool operator>=(const SparseArrayConstIterator &rhs) {
+            return index_ >= rhs.index_;
+        }
+        bool operator==(const SparseArrayConstIterator &rhs) {
+            return index_ == rhs.index_;
+        }
+        bool operator!=(const SparseArrayConstIterator &rhs) {
+            return index_ != rhs.index_;
+        }
+    };
+
     using iterator = SparseArrayIterator;
+    using const_iterator = SparseArrayConstIterator;
 
     iterator begin() {
         for (uint32_t i = 0; i < capacity_; i++) {
@@ -244,9 +309,31 @@ public:
         return end();
     }
 
+    const_iterator cbegin() const {
+        for (uint32_t i = 0; i < capacity_; i++) {
+            if (ctrl_[i / 8] & (1 << (i % 8))) {
+                return const_iterator(this, i);
+            }
+        }
+        return cend();
+    }
+
     iterator end() {
         return iterator(this, capacity_);
     }
+
+    const_iterator cend() const {
+        return const_iterator(this, capacity_);
+    }
+
+    iterator iter_at(uint32_t i) {
+        return iterator(this, i);
+    }
+
+    const_iterator citer_at(uint32_t i) const {
+        return const_iterator(this, i);
+    }
+
 private:
     uint32_t NextOccupied(uint32_t index) const {
         assert((ctrl_[index / 8] & (1 << (index % 8))) && "Invalid index!");
@@ -255,11 +342,11 @@ private:
                 return i;
             }
         }
-        for (uint32_t i = 0; i < index; i++) {
+        /*for (uint32_t i = 0; i < index; i++) {
             if (ctrl_[i / 8] & (1 << (i % 8))) {
                 return i;
             }
-        }
+        }*/
         return capacity_;
     }
 };
