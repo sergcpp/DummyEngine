@@ -1155,7 +1155,10 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
                     glyph_res[0] = glyph_res_act[0] + 2 * padding;
                     glyph_res[1] = glyph_res_act[1] + 2 * padding;
 
-                    assert(temp_bitmap_splitter.Allocate(glyph_res, glyph_pos) != -1);
+                    int node_index = temp_bitmap_splitter.Allocate(glyph_res, glyph_pos);
+                    if (node_index == -1) {
+                        throw std::runtime_error("Region allocation failed!");
+                    }
                 }
 
                 Gui::glyph_info_t &out_glyph = out_glyphs[out_glyph_count++];
