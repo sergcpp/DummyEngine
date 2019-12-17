@@ -25,8 +25,8 @@ set(SOURCE_FILES    BaseElement.h
                     EditBox.cpp
                     Image.h
                     Image.cpp
-                    ImageNinePatch.h
-                    ImageNinePatch.cpp
+                    Image9Patch.h
+                    Image9Patch.cpp
                     LinearLayout.h
                     LinearLayout.cpp
                     Renderer.h

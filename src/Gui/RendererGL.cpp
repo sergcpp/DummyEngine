@@ -323,7 +323,7 @@ void Gui::Renderer::DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2
     cur_vtx->pos[2] = 0.0f;
     cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
     cur_vtx->uvs[0] = f32_to_u16(uvs[0][0]);
-    cur_vtx->uvs[1] = f32_to_u16(uvs[0][1]);
+    cur_vtx->uvs[1] = f32_to_u16(uvs[1][1]);
     cur_vtx->uvs[2] = u16_tex_layer;
     cur_vtx->uvs[3] = draw_mode == DrDistanceField ? 65535 : 0;
     ++cur_vtx;
@@ -333,7 +333,7 @@ void Gui::Renderer::DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2
     cur_vtx->pos[2] = 0.0f;
     cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
     cur_vtx->uvs[0] = f32_to_u16(uvs[1][0]);
-    cur_vtx->uvs[1] = f32_to_u16(uvs[0][1]);
+    cur_vtx->uvs[1] = f32_to_u16(uvs[1][1]);
     cur_vtx->uvs[2] = u16_tex_layer;
     cur_vtx->uvs[3] = draw_mode == DrDistanceField ? 65535 : 0;
     ++cur_vtx;
@@ -343,7 +343,7 @@ void Gui::Renderer::DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2
     cur_vtx->pos[2] = 0.0f;
     cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
     cur_vtx->uvs[0] = f32_to_u16(uvs[1][0]);
-    cur_vtx->uvs[1] = f32_to_u16(uvs[1][1]);
+    cur_vtx->uvs[1] = f32_to_u16(uvs[0][1]);
     cur_vtx->uvs[2] = u16_tex_layer;
     cur_vtx->uvs[3] = draw_mode == DrDistanceField ? 65535 : 0;
     ++cur_vtx;
@@ -353,7 +353,7 @@ void Gui::Renderer::DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2
     cur_vtx->pos[2] = 0.0f;
     cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
     cur_vtx->uvs[0] = f32_to_u16(uvs[0][0]);
-    cur_vtx->uvs[1] = f32_to_u16(uvs[1][1]);
+    cur_vtx->uvs[1] = f32_to_u16(uvs[0][1]);
     cur_vtx->uvs[2] = u16_tex_layer;
     cur_vtx->uvs[3] = draw_mode == DrDistanceField ? 65535 : 0;
     ++cur_vtx;

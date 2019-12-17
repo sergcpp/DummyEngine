@@ -13,7 +13,7 @@ class ButtonText;
 class Cursor;
 class EditBox;
 class Image;
-class ImageNinePatch;
+class Image9Patch;
 class LinearLayout;
 class Renderer;
 class TypeMesh;

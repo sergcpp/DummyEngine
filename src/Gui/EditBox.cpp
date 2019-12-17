@@ -20,7 +20,7 @@ Gui::EditBox::EditBox(Ren::Context &ctx, const char *frame_tex_name, const Vec2f
     : EditBox( { ctx, frame_tex_name, frame_offsets, 1.0f, Vec2f{ -1, -1 }, Vec2f{ 2, 2 }, this }, font, pos, size, parent) {
 }
 
-Gui::EditBox::EditBox(const ImageNinePatch &frame, BitmapFont *font,
+Gui::EditBox::EditBox(const Image9Patch &frame, BitmapFont *font,
                       const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
     : BaseElement(pos, size, parent),
       cursor_("|", font, {

@@ -8,7 +8,7 @@
 //#include "Cursor.cpp"
 #include "EditBox.cpp"
 #include "Image.cpp"
-#include "ImageNinePatch.cpp"
+#include "Image9Patch.cpp"
 #include "LinearLayout.cpp"
 #include "TypeMesh.cpp"
 #include "Utils.cpp"
