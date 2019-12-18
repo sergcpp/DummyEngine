@@ -205,7 +205,7 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
     using namespace GSUITestInternal;
 
     // pt switch for touch controls
-    if (evt.type == InputManager::RAW_INPUT_P1_DOWN || evt.type == InputManager::RAW_INPUT_P2_DOWN) {
+    if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
         if (evt.point.x > (float)ctx_->w() * 0.9f && evt.point.y < (float)ctx_->h() * 0.1f) {
             uint32_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
@@ -225,40 +225,40 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
     bool input_processed = true;
 
     switch (evt.type) {
-    case InputManager::RAW_INPUT_P1_DOWN: {
+    case RawInputEvent::EvP1Down: {
         Ren::Vec2f p = Gui::MapPointToScreen({ (int)evt.point.x, (int)evt.point.y }, { ctx_->w(), ctx_->h() });
         text_printer_->Press(p, true);
     } break;
-    case InputManager::RAW_INPUT_P2_DOWN: {
+    case RawInputEvent::EvP2Down: {
         
     } break;
-    case InputManager::RAW_INPUT_P1_UP: {
+    case RawInputEvent::EvP1Up: {
         text_printer_->skip();
 
         Ren::Vec2f p = Gui::MapPointToScreen({ (int)evt.point.x, (int)evt.point.y }, { ctx_->w(), ctx_->h() });
         text_printer_->Press(p, false);
     } break;
-    case InputManager::RAW_INPUT_P2_UP: {
+    case RawInputEvent::EvP2Up: {
 
     } break;
-    case InputManager::RAW_INPUT_P1_MOVE: {
+    case RawInputEvent::EvP1Move: {
         Ren::Vec2f p = Gui::MapPointToScreen({ (int)evt.point.x, (int)evt.point.y }, { ctx_->w(), ctx_->h() });
         text_printer_->Focus(p);
     } break;
-    case InputManager::RAW_INPUT_P2_MOVE: {
+    case RawInputEvent::EvP2Move: {
 
     } break;
-    case InputManager::RAW_INPUT_KEY_DOWN: {
+    case RawInputEvent::EvKeyDown: {
         input_processed = false;
     } break;
-    case InputManager::RAW_INPUT_KEY_UP: {
-        if (evt.key == InputManager::RAW_INPUT_BUTTON_UP || (evt.raw_key == 'w' && !cmdline_enabled_)) {
+    case RawInputEvent::EvKeyUp: {
+        if (evt.key == BtnUp || (evt.raw_key == 'w' && !cmdline_enabled_)) {
             text_printer_->restart();
         } else {
             input_processed = false;
         }
     } break;
-    case InputManager::RAW_INPUT_RESIZE:
+    case RawInputEvent::EvResize:
         text_printer_->Resize(ui_root_.get());
         break;
     default:

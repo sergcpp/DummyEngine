@@ -312,7 +312,7 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
     using namespace GSDrawTestInternal;
 
     // pt switch for touch controls
-    if (evt.type == InputManager::RAW_INPUT_P1_DOWN || evt.type == InputManager::RAW_INPUT_P2_DOWN) {
+    if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
         if (evt.point.x > (float)ctx_->w() * 0.9f && evt.point.y < (float)ctx_->h() * 0.1f) {
             uint32_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
@@ -332,21 +332,21 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
     bool input_processed = true;
 
     switch (evt.type) {
-    case InputManager::RAW_INPUT_P1_DOWN:
+    case RawInputEvent::EvP1Down:
         if (evt.point.x < ((float)ctx_->w() / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 1;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 1;
         }
         break;
-    case InputManager::RAW_INPUT_P2_DOWN:
+    case RawInputEvent::EvP2Down:
         if (evt.point.x < ((float)ctx_->w() / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 2;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 2;
         }
         break;
-    case InputManager::RAW_INPUT_P1_UP:
+    case RawInputEvent::EvP1Up:
         if (move_pointer_ == 1) {
             move_pointer_ = 0;
             fwd_touch_speed_ = 0;
@@ -355,7 +355,7 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
             view_pointer_ = 0;
         }
         break;
-    case InputManager::RAW_INPUT_P2_UP:
+    case RawInputEvent::EvP2Up:
         if (move_pointer_ == 2) {
             move_pointer_ = 0;
             fwd_touch_speed_ = 0;
@@ -364,7 +364,7 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
             view_pointer_ = 0;
         }
         break;
-    case InputManager::RAW_INPUT_P1_MOVE:
+    case RawInputEvent::EvP1Move:
         if (move_pointer_ == 1) {
             side_touch_speed_ += evt.move.dx * 0.002f;
             side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
@@ -386,7 +386,7 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
             invalidate_view_ = true;
         }
         break;
-    case InputManager::RAW_INPUT_P2_MOVE:
+    case RawInputEvent::EvP2Move:
         if (move_pointer_ == 2) {
             side_touch_speed_ += evt.move.dx * 0.002f;
             side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
@@ -408,38 +408,38 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
             invalidate_view_ = true;
         }
         break;
-    case InputManager::RAW_INPUT_KEY_DOWN: {
-        if (evt.key == InputManager::RAW_INPUT_BUTTON_UP || (evt.raw_key == 'w' && (!cmdline_enabled_ || view_pointer_))) {
+    case RawInputEvent::EvKeyDown: {
+        if (evt.key == BtnUp || (evt.raw_key == 'w' && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = max_fwd_speed_;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN || (evt.raw_key == 's' && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key == BtnDown || (evt.raw_key == 's' && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT || (evt.raw_key == 'a' && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key == BtnLeft || (evt.raw_key == 'a' && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT || (evt.raw_key == 'd' && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key == BtnRight || (evt.raw_key == 'd' && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = max_fwd_speed_;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SPACE) {
+        } else if (evt.key == BtnSpace) {
             
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
+        } else if (evt.key == BtnShift) {
             shift_down_ = true;
         } else {
             input_processed = false;
         }
     }
     break;
-    case InputManager::RAW_INPUT_KEY_UP: {
-        if (evt.key == InputManager::RAW_INPUT_BUTTON_UP || (evt.raw_key == 'w' && (!cmdline_enabled_ || view_pointer_))) {
+    case RawInputEvent::EvKeyUp: {
+        if (evt.key == BtnUp || (evt.raw_key == 'w' && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = 0;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_DOWN || (evt.raw_key == 's' && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key == BtnDown || (evt.raw_key == 's' && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = 0;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_LEFT || (evt.raw_key == 'a' && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key == BtnLeft || (evt.raw_key == 'a' && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = 0;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RIGHT || (evt.raw_key == 'd' && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key == BtnRight || (evt.raw_key == 'd' && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = 0;
         } else {
             input_processed = false;
         }
     }
-    case InputManager::RAW_INPUT_RESIZE:
+    case RawInputEvent::EvResize:
         break;
     default:
         break;

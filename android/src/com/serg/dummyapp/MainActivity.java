@@ -117,23 +117,23 @@ class MainView extends GLSurfaceView {
     
     @Override
     public boolean onTouchEvent(MotionEvent e) {
-        final int RAW_INPUT_P1_DOWN     = 1;
-        final int RAW_INPUT_P1_UP       = 2;
-        final int RAW_INPUT_P1_MOVE     = 3;
-        final int RAW_INPUT_P2_DOWN     = 4;
-        final int RAW_INPUT_P2_UP       = 5;
-        final int RAW_INPUT_P2_MOVE     = 6;
-        final int RAW_INPUT_KEY_DOWN    = 7;
-        final int RAW_INPUT_KEY_UP      = 8;
-        final int RAW_INPUT_RESIZE      = 9;
-        final int RAW_INPUT_MOUSE_WHEEL = 10;
+        final int EvP1Down     = 1;
+        final int EvP1Up       = 2;
+        final int EvP1Move     = 3;
+        final int EvP2Down     = 4;
+        final int EvP2Up       = 5;
+        final int EvP2Move     = 6;
+        final int EvKeyDown    = 7;
+        final int EvKeyUp      = 8;
+        final int EvResize      = 9;
+        final int EvMouseWheel = 10;
 
         final int action = e.getAction();
         switch (action & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN: {
                 float x = e.getX(0);
                 float y = e.getY(0);
-                LibJNI.AddEvent(RAW_INPUT_P1_DOWN, 0, x, y, 0.0f, 0.0f);
+                LibJNI.AddEvent(EvP1Down, 0, x, y, 0.0f, 0.0f);
                 prev_prim_x_ = x;
                 prev_prim_y_ = y;
                 primary_id_ = e.getPointerId(0);
@@ -142,7 +142,7 @@ class MainView extends GLSurfaceView {
                 if (secondary_id_ == INVALID_POINTER_ID && e.getActionIndex() == 1) {
                     float x = e.getX(1);
                     float y = e.getY(1);
-                    LibJNI.AddEvent(RAW_INPUT_P2_DOWN, 0, x, y, 0.0f, 0.0f);
+                    LibJNI.AddEvent(EvP2Down, 0, x, y, 0.0f, 0.0f);
                     prev_sec_x_ = x;
                     prev_sec_y_ = y;
                     secondary_id_ = e.getPointerId(1);
@@ -153,10 +153,10 @@ class MainView extends GLSurfaceView {
                 final float x = e.getX(pointer_index);
                 final float y = e.getY(pointer_index);
                 if (primary_id_ == e.getPointerId(pointer_index)) {
-                    LibJNI.AddEvent(RAW_INPUT_P1_UP, 0, x, y, 0.0f, 0.0f);
+                    LibJNI.AddEvent(EvP1Up, 0, x, y, 0.0f, 0.0f);
                     primary_id_ = INVALID_POINTER_ID;
                 } else if (secondary_id_ == e.getPointerId(pointer_index)) {
-                    LibJNI.AddEvent(RAW_INPUT_P2_UP, 0, x, y, 0.0f, 0.0f);
+                    LibJNI.AddEvent(EvP2Up, 0, x, y, 0.0f, 0.0f);
                     secondary_id_ = INVALID_POINTER_ID;
                 }
             } break;
@@ -165,10 +165,10 @@ class MainView extends GLSurfaceView {
                 final float x = e.getX(pointer_index);
                 final float y = e.getY(pointer_index);
                 if (primary_id_ == e.getPointerId(pointer_index)) {
-                    LibJNI.AddEvent(RAW_INPUT_P1_UP, 0, x, y, 0.0f, 0.0f);
+                    LibJNI.AddEvent(EvP1Up, 0, x, y, 0.0f, 0.0f);
                     primary_id_ = INVALID_POINTER_ID;
                 } else if (secondary_id_ == e.getPointerId(pointer_index)) {
-                    LibJNI.AddEvent(RAW_INPUT_P2_UP, 0, x, y, 0.0f, 0.0f);
+                    LibJNI.AddEvent(EvP2Up, 0, x, y, 0.0f, 0.0f);
                     secondary_id_ = INVALID_POINTER_ID;
                 }
             } break;
@@ -179,7 +179,7 @@ class MainView extends GLSurfaceView {
                         float x = e.getX(pointer_index);
                         float y = e.getY(pointer_index);
                         
-                        LibJNI.AddEvent(RAW_INPUT_P1_MOVE, 0, x, y, x - prev_prim_x_, y - prev_prim_y_);
+                        LibJNI.AddEvent(EvP1Move, 0, x, y, x - prev_prim_x_, y - prev_prim_y_);
                         prev_prim_x_ = x;
                         prev_prim_y_ = y;
                     }
@@ -191,7 +191,7 @@ class MainView extends GLSurfaceView {
                         float x = e.getX(pointer_index);
                         float y = e.getY(pointer_index);
                         
-                        LibJNI.AddEvent(RAW_INPUT_P2_MOVE, 0, x, y, x - prev_sec_x_, y - prev_sec_y_);
+                        LibJNI.AddEvent(EvP2Move, 0, x, y, x - prev_sec_x_, y - prev_sec_y_);
                         prev_sec_x_ = x;
                         prev_sec_y_ = y;
                     }

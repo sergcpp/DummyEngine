@@ -95,11 +95,11 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
 #if defined(__ANDROID__)
     auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);
     const Ren::Context *p_ctx = ctx.get();
-    input_manager->SetConverter(InputManager::RAW_INPUT_P1_MOVE, [p_ctx](InputManager::Event &evt) {
+    input_manager->SetConverter(InputManager::EvP1Move, [p_ctx](InputManager::Event &evt) {
         evt.move.dx *= 300.0f / p_ctx->w();
         evt.move.dy *= 300.0f / p_ctx->w();
     });
-    input_manager->SetConverter(InputManager::RAW_INPUT_P2_MOVE, [p_ctx](InputManager::Event &evt) {
+    input_manager->SetConverter(InputManager::EvP2Move, [p_ctx](InputManager::Event &evt) {
         evt.move.dx *= 300.0f / p_ctx->w();
         evt.move.dy *= 300.0f / p_ctx->w();
     });

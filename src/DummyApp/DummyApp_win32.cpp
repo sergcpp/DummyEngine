@@ -77,31 +77,31 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     case WM_LBUTTONDOWN: {
         float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(InputManager::RAW_INPUT_P1_DOWN, -1, -1, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(EvP1Down, -1, -1, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_RBUTTONDOWN: {
         float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(InputManager::RAW_INPUT_P2_DOWN, -1, -1, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(EvP2Down, -1, -1, px, py, 0.0f, 0.0f);
         break;
     }
      case WM_LBUTTONUP: {
         float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(InputManager::RAW_INPUT_P1_UP, -1, -1, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(EvP1Up, -1, -1, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_RBUTTONUP: {
         float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(InputManager::RAW_INPUT_P2_UP, -1, -1, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(EvP2Up, -1, -1, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_MOUSEMOVE: {
         float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(InputManager::RAW_INPUT_P1_MOVE, -1, -1, px, py, px - last_p1_pos[0], py - last_p1_pos[1]);
+        g_app->AddEvent(EvP1Move, -1, -1, px, py, px - last_p1_pos[0], py - last_p1_pos[1]);
 
         last_p1_pos[0] = px;
         last_p1_pos[1] = py;
@@ -111,26 +111,26 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         if (wParam == VK_ESCAPE) {
             PostQuitMessage(0);
         } else {
-            InputManager::RawInputButton key;
+            RawInputButton key;
             int raw_key = int(wParam);
             if (DummyApp::ConvertToRawButton(raw_key, key)) {
-                g_app->AddEvent(InputManager::RAW_INPUT_KEY_DOWN, key, raw_key, 0.0f, 0.0f, 0.0f, 0.0f);
+                g_app->AddEvent(EvKeyDown, key, raw_key, 0.0f, 0.0f, 0.0f, 0.0f);
             }
         }
         break;
     }
     case WM_KEYUP: {
-        InputManager::RawInputButton key;
+        RawInputButton key;
         int raw_key = int(wParam);
         if (DummyApp::ConvertToRawButton(raw_key, key)) {
-            g_app->AddEvent(InputManager::RAW_INPUT_KEY_UP, key, raw_key, 0.0f, 0.0f, 0.0f, 0.0f);
+            g_app->AddEvent(EvKeyUp, key, raw_key, 0.0f, 0.0f, 0.0f, 0.0f);
         }
         break;
     }
     case WM_SIZE: {
         int w = LOWORD(lParam), h = HIWORD(lParam);
         g_app->Resize(w, h);
-        g_app->AddEvent(InputManager::RAW_INPUT_RESIZE, 0, 0, (float)w, (float)h, 0.0f, 0.0f);
+        g_app->AddEvent(EvResize, 0, 0, (float)w, (float)h, 0.0f, 0.0f);
     }
     default: {
         break;
@@ -322,8 +322,8 @@ void DummyApp::AddEvent(int type, int key, int raw_key, float x, float y, float 
     if (!input_manager) return;
 
     InputManager::Event evt;
-    evt.type = (InputManager::RawInputEvent)type;
-    evt.key = (InputManager::RawInputButton)key;
+    evt.type = (RawInputEvent)type;
+    evt.key = (RawInputButton)key;
     evt.raw_key = raw_key;
     evt.point.x = x;
     evt.point.y = y;
@@ -380,51 +380,51 @@ int DummyApp::Run(const std::vector<std::string> &args) {
     return 0;
 }
 
-bool DummyApp::ConvertToRawButton(int &raw_key, InputManager::RawInputButton &button) {
+bool DummyApp::ConvertToRawButton(int &raw_key, RawInputButton &button) {
     switch (raw_key) {
     case VK_UP:
-        button = InputManager::RAW_INPUT_BUTTON_UP;
+        button = BtnUp;
         break;
     case VK_DOWN:
-        button = InputManager::RAW_INPUT_BUTTON_DOWN;
+        button = BtnDown;
         break;
     case VK_LEFT:
-        button = InputManager::RAW_INPUT_BUTTON_LEFT;
+        button = BtnLeft;
         break;
     case VK_RIGHT:
-        button = InputManager::RAW_INPUT_BUTTON_RIGHT;
+        button = BtnRight;
         break;
     case VK_ESCAPE:
-        button = InputManager::RAW_INPUT_BUTTON_EXIT;
+        button = BtnExit;
         break;
     case VK_TAB:
-        button = InputManager::RAW_INPUT_BUTTON_TAB;
+        button = BtnTab;
         break;
     case VK_BACK:
-        button = InputManager::RAW_INPUT_BUTTON_BACKSPACE;
+        button = BtnBackspace;
         break;
     case VK_SHIFT:
-        button = InputManager::RAW_INPUT_BUTTON_SHIFT;
+        button = BtnShift;
         break;
     case VK_DELETE:
-        button = InputManager::RAW_INPUT_BUTTON_DELETE;
+        button = BtnDelete;
         break;
     case VK_SPACE:
-        button = InputManager::RAW_INPUT_BUTTON_SPACE;
+        button = BtnSpace;
         break;
     case VK_RETURN:
-        button = InputManager::RAW_INPUT_BUTTON_RETURN;
+        button = BtnReturn;
         break;
     case VK_OEM_3:
-        button = InputManager::RAW_INPUT_BUTTON_OTHER;
+        button = BtnOther;
         raw_key = (int)'`';
         break;
     case VK_OEM_MINUS:
-        button = InputManager::RAW_INPUT_BUTTON_OTHER;
+        button = BtnOther;
         raw_key = (int)'-';
         break;
     default:
-        button = InputManager::RAW_INPUT_BUTTON_OTHER;
+        button = BtnOther;
         raw_key = std::tolower(raw_key);
         break;
     }

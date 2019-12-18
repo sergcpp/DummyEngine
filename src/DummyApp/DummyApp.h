@@ -72,7 +72,7 @@ public:
     void Resize(int w, int h);
 
     void AddEvent(int type, int key, int raw_key, float x, float y, float dx, float dy);
-    static bool ConvertToRawButton(int &raw_key, InputManager::RawInputButton &button);
+    static bool ConvertToRawButton(int &raw_key, RawInputButton &button);
 
 #if !defined(__ANDROID__)
     int Run(const std::vector<std::string> &args);

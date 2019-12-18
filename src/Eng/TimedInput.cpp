@@ -3,7 +3,7 @@
 #include <queue>
 
 struct InputManagerImp {
-    std::function<void(InputManager::Event &)> input_converters[InputManager::NUM_EVENTS];
+    std::function<void(InputManager::Event &)> input_converters[(int)RawInputEvent::EvCount];
     std::queue<InputManager::Event> input_buffer;
 };
 
@@ -16,14 +16,14 @@ InputManager::~InputManager() {
 }
 
 void InputManager::SetConverter(RawInputEvent evt_type, const std::function<void(Event &)> &conv) {
-    imp_->input_converters[evt_type] = conv;
+    imp_->input_converters[(int)evt_type] = conv;
 }
 
 void InputManager::AddRawInputEvent(Event &evt) {
     if (imp_->input_buffer.size() > 100) {
         return;
     }
-    auto conv = imp_->input_converters[evt.type];
+    auto conv = imp_->input_converters[(int)evt.type];
     if (conv) {
         conv(evt);
     }

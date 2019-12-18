@@ -5,41 +5,36 @@
 
 struct InputManagerImp;
 
+enum RawInputEvent {
+    EvNone,
+    EvP1Down, EvP1Up, EvP1Move,
+    EvP2Down, EvP2Up, EvP2Move,
+    EvKeyDown, EvKeyUp,
+    EvResize,
+    EvMouseWheel,
+    EvCount
+};
+
+enum RawInputButton {
+    BtnUp,
+    BtnDown,
+    BtnLeft,
+    BtnRight,
+    BtnExit,
+    BtnReturn,
+    BtnBackspace,
+    BtnShift,
+    BtnDelete,
+    BtnTab,
+    BtnSpace,
+    BtnOther,
+};
+
 class InputManager {
     InputManagerImp *imp_;
 public:
-    enum RawInputButton {
-        RAW_INPUT_BUTTON_UP,
-        RAW_INPUT_BUTTON_DOWN,
-        RAW_INPUT_BUTTON_LEFT,
-        RAW_INPUT_BUTTON_RIGHT,
-        RAW_INPUT_BUTTON_EXIT,
-        RAW_INPUT_BUTTON_RETURN,
-        RAW_INPUT_BUTTON_BACKSPACE,
-        RAW_INPUT_BUTTON_SHIFT,
-        RAW_INPUT_BUTTON_DELETE,
-        RAW_INPUT_BUTTON_TAB,
-        RAW_INPUT_BUTTON_SPACE,
-        RAW_INPUT_BUTTON_OTHER,
-    };
-
-    enum RawInputEvent {
-        RAW_INPUT_NONE,
-        RAW_INPUT_P1_DOWN,
-        RAW_INPUT_P1_UP,
-        RAW_INPUT_P1_MOVE,
-        RAW_INPUT_P2_DOWN,
-        RAW_INPUT_P2_UP,
-        RAW_INPUT_P2_MOVE,
-        RAW_INPUT_KEY_DOWN,
-        RAW_INPUT_KEY_UP,
-        RAW_INPUT_RESIZE,
-        RAW_INPUT_MOUSE_WHEEL,
-        NUM_EVENTS
-    };
-
     struct Event {
-        RawInputEvent type = RAW_INPUT_NONE;
+        RawInputEvent type = RawInputEvent::EvNone;
         RawInputButton key;
         int raw_key;
         struct {

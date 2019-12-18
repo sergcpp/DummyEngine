@@ -365,12 +365,12 @@ void GSBaseState::Draw(uint64_t dt_us) {
     if (cmdline_enabled_) {
         // Process comandline input
         for (const InputManager::Event &evt : cmdline_input_) {
-            if (evt.key == InputManager::RAW_INPUT_BUTTON_BACKSPACE) {
+            if (evt.key == BtnBackspace) {
                 if (!cmdline_history_.back().empty()) {
                     cmdline_history_.back().pop_back();
                 }
 
-            } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RETURN) {
+            } else if (evt.key == BtnReturn) {
                 cmdline_->Execute(cmdline_history_.back().c_str());
 
                 cmdline_history_.emplace_back();
@@ -557,28 +557,28 @@ bool GSBaseState::HandleInput(const InputManager::Event &evt) {
     using namespace GSBaseStateInternal;
 
     switch (evt.type) {
-    case InputManager::RAW_INPUT_P1_DOWN: {
+    case RawInputEvent::EvP1Down: {
     } break;
-    case InputManager::RAW_INPUT_P2_DOWN: {
+    case RawInputEvent::EvP2Down: {
     } break;
-    case InputManager::RAW_INPUT_P1_UP: {
+    case RawInputEvent::EvP1Up: {
     } break;
-    case InputManager::RAW_INPUT_P2_UP: {
+    case RawInputEvent::EvP2Up: {
     } break;
-    case InputManager::RAW_INPUT_P1_MOVE: {
+    case RawInputEvent::EvP1Move: {
     } break;
-    case InputManager::RAW_INPUT_P2_MOVE: {
+    case RawInputEvent::EvP2Move: {
     } break;
-    case InputManager::RAW_INPUT_KEY_DOWN: {
+    case RawInputEvent::EvKeyDown: {
     } break;
-    case InputManager::RAW_INPUT_KEY_UP: {
-        if (evt.key == InputManager::RAW_INPUT_BUTTON_SHIFT) {
+    case RawInputEvent::EvKeyUp: {
+        if (evt.key == BtnShift) {
             shift_down_ = false;
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_BACKSPACE) {
+        } else if (evt.key == BtnBackspace) {
             if (cmdline_enabled_) {
                 cmdline_input_.push_back(evt);
             }
-        } else if (evt.key == InputManager::RAW_INPUT_BUTTON_RETURN) {
+        } else if (evt.key == BtnReturn) {
             if (cmdline_enabled_) {
                 cmdline_input_.push_back(evt);
             }
@@ -591,7 +591,7 @@ bool GSBaseState::HandleInput(const InputManager::Event &evt) {
             cmdline_input_.push_back(evt);
         }
     }
-    case InputManager::RAW_INPUT_RESIZE:
+    case RawInputEvent::EvResize:
         break;
     default:
         break;

@@ -158,8 +158,8 @@ void DummyApp::AddEvent(int type, int key, int raw_key, float x, float y, float 
     if (!input_manager) return;
 
     InputManager::Event evt;
-    evt.type = (InputManager::RawInputEvent)type;
-    evt.key = (InputManager::RawInputButton)key;
+    evt.type = (RawInputEvent)type;
+    evt.key = (RawInputButton)key;
     evt.raw_key = raw_key;
     evt.point.x = x;
     evt.point.y = y;
@@ -221,33 +221,33 @@ int DummyApp::Run(const std::vector<std::string> &args) {
     return 0;
 }
 
-bool DummyApp::ConvertToRawButton(int &raw_key, InputManager::RawInputButton &button) {
+bool DummyApp::ConvertToRawButton(int &raw_key, RawInputButton &button) {
     //printf("%x\n", raw_key);
 
-    switch (raw_key) {
+    /*switch (raw_key) {
         case 0x6f:
-            button = InputManager::RAW_INPUT_BUTTON_UP;
+            button = BtnUp;
             break;
         case 0x74:
-            button = InputManager::RAW_INPUT_BUTTON_DOWN;
+            button = BtnDown;
             break;
         case 0x71:
-            button = InputManager::RAW_INPUT_BUTTON_LEFT;
+            button = BtnLeft;
             break;
         case 0x72:
-            button = InputManager::RAW_INPUT_BUTTON_RIGHT;
+            button = BtnRight;
             break;
         case 0x08:
-            button = InputManager::RAW_INPUT_BUTTON_BACKSPACE;
+            button = BtnBackspace;
             break;
         case 0x09:
-            button = InputManager::RAW_INPUT_BUTTON_TAB;
+            button = BtnTab;
             break;
         default: {
-            button = InputManager::RAW_INPUT_BUTTON_OTHER;
+            button = BtnOther;
             raw_key = std::tolower(raw_key);
         } break;
-    }
+    }*/
     return true;
 }
 
@@ -260,7 +260,7 @@ void DummyApp::PollEvents() {
 
     XEvent xev;
     while (XCheckWindowEvent(dpy_, win_, (ExposureMask | StructureNotifyMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask), &xev)) {
-        InputManager::RawInputButton button;
+        RawInputButton button;
         InputManager::Event evt;
 
         if (xev.type == KeyPress) {
@@ -277,7 +277,7 @@ void DummyApp::PollEvents() {
             if (raw_key == 0x1b) {
                 quit_ = true;
             } else if (ConvertToRawButton(raw_key, button)) {
-                evt.type = InputManager::RAW_INPUT_KEY_DOWN;
+                evt.type = RawInputEvent::EvKeyDown;
                 evt.key = button;
                 evt.raw_key = raw_key;
             }
@@ -293,20 +293,20 @@ void DummyApp::PollEvents() {
             }
 
             if (ConvertToRawButton(raw_key, button)) {
-                evt.type = InputManager::RAW_INPUT_KEY_UP;
+                evt.type = RawInputEvent::EvKeyUp;
                 evt.key = button;
                 evt.raw_key = raw_key;
             }
         } else if (xev.type == ButtonPress) {
-            evt.type = InputManager::RAW_INPUT_P1_DOWN;
+            evt.type = RawInputEvent::EvP1Down;
             evt.point.x = (float)xev.xbutton.x;
             evt.point.y = (float)xev.xbutton.y;
         } else if (xev.type == ButtonRelease) {
-            evt.type = InputManager::RAW_INPUT_P1_UP;
+            evt.type = RawInputEvent::EvP1Up;
             evt.point.x = (float)xev.xbutton.x;
             evt.point.y = (float)xev.xbutton.y;
         } else if (xev.type == MotionNotify) {
-            evt.type = InputManager::RAW_INPUT_P1_MOVE;
+            evt.type = RawInputEvent::EvP1Move;
             evt.point.x = (float)xev.xmotion.x;
             evt.point.y = (float)xev.xmotion.y;
             evt.move.dx = evt.point.x - last_p1_pos[0];
@@ -319,7 +319,7 @@ void DummyApp::PollEvents() {
 
                 Resize(xev.xconfigure.width, xev.xconfigure.height);
 
-                evt.type = InputManager::RAW_INPUT_RESIZE;
+                evt.type = RawInputEvent::EvResize;
                 evt.point.x = xev.xconfigure.width;
                 evt.point.y = xev.xconfigure.height;
 
@@ -332,7 +332,7 @@ void DummyApp::PollEvents() {
 
         }
 
-        if (evt.type != InputManager::RAW_INPUT_NONE) {
+        if (evt.type != RawInputEvent::EvNone) {
             evt.time_stamp = Sys::GetTimeUs();
             input_manager->AddRawInputEvent(evt);
         }
