@@ -41,4 +41,38 @@ struct KTXHeader {
     uint32_t key_value_data_size;
 };
 static_assert(sizeof(KTXHeader) == 64, "!");
+
+struct DDSHeader {
+    uint32_t    dwMagic;
+    uint32_t    dwSize;
+    uint32_t    dwFlags;
+    uint32_t    dwHeight;
+    uint32_t    dwWidth;
+    uint32_t    dwPitchOrLinearSize;
+    uint32_t    dwDepth;
+    uint32_t    dwMipMapCount;
+    uint32_t    dwReserved1[11];
+
+    /*  DDPIXELFORMAT	*/
+    struct {
+        uint32_t    dwSize;
+        uint32_t    dwFlags;
+        uint32_t    dwFourCC;
+        uint32_t    dwRGBBitCount;
+        uint32_t    dwRBitMask;
+        uint32_t    dwGBitMask;
+        uint32_t    dwBBitMask;
+        uint32_t    dwAlphaBitMask;
+    } sPixelFormat;
+
+    /*  DDCAPS2	*/
+    struct {
+        uint32_t    dwCaps1;
+        uint32_t    dwCaps2;
+        uint32_t    dwDDSX;
+        uint32_t    dwReserved;
+    } sCaps;
+    uint32_t    dwReserved2;
+};
+static_assert(sizeof(DDSHeader) == 128, "!");
 }

@@ -543,14 +543,46 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], con
 
     params_ = p;
 
-    unsigned int handle =
-    SOIL_load_OGL_cubemap_from_memory((const unsigned char *)data[0], size[0],
-                                      (const unsigned char *)data[1], size[1],
-                                      (const unsigned char *)data[2], size[2],
-                                      (const unsigned char *)data[3], size[3],
-                                      (const unsigned char *)data[4], size[4],
-                                      (const unsigned char *)data[5], size[5], 0, tex_id, SOIL_FLAG_DDS_LOAD_DIRECT);
-    assert(handle == tex_id);
+    for (int i = 0; i < 6; i++) {
+        DDSHeader header;
+        memcpy(&header, data[i], sizeof(DDSHeader));
+
+        const uint8_t *pdata = (uint8_t *)data[i] + sizeof(DDSHeader);
+        int data_len = size[i] - sizeof(DDSHeader);
+
+        for (int j = 0; j < int(header.dwMipMapCount); j++) {
+            int width = std::max(int(header.dwWidth >> j), 1), height = std::max(int(header.dwHeight >> j), 1);
+
+            GLenum format;
+            int block_size;
+
+            switch ((header.sPixelFormat.dwFourCC >> 24) - '0') {
+            case 1:
+                format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+                block_size = 8;
+                break;
+            case 3:
+                format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+                block_size = 16;
+                break;
+            case 5:
+                format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+                block_size = 16;
+                break;
+            }
+
+            const int image_len = ((width + 3) / 4) * ((height + 3) / 4) * block_size;
+            if (image_len > data_len) {
+                // TODO: report error in log
+                break;
+            }
+
+            glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, j, format, width, height, 0, image_len, pdata);
+
+            pdata += image_len;
+            data_len -= image_len;
+        }
+    }
 
     params_.cube = 1;
 
