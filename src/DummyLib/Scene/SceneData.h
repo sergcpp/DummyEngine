@@ -110,7 +110,7 @@ struct SceneData {
 
     std::vector<bvh_node_t>         nodes;
     std::vector<uint32_t>           free_nodes;
-    uint32_t                        root_node = 0;
+    uint32_t                        root_node = 0xffffffff;
 
     uint32_t                        update_counter = 0;
 };
