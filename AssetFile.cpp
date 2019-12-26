@@ -112,7 +112,9 @@ Sys::AssetFile::AssetFile(const char *file_name, int mode) : mode_(mode), name_(
 
 Sys::AssetFile::~AssetFile() {
 #ifdef __ANDROID__
-    AAsset_close(asset_file_);
+    if (asset_file_) {
+        AAsset_close(asset_file_);
+    }
 #else
     delete file_stream_;
 #endif
@@ -139,7 +141,7 @@ void Sys::AssetFile::Seek(size_t pos) {
 
 Sys::AssetFile::operator bool() {
 #ifdef __ANDROID__
-    return bool(AAsset_getLength(asset_file_));
+    return asset_file_ && bool(AAsset_getLength(asset_file_));
 #else
     return file_stream_ != nullptr && bool(*file_stream_);
 #endif

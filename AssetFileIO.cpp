@@ -31,14 +31,29 @@ void Sys::LoadAssetComplete(const char *url, void *arg, onload_func onload, oner
 #endif
 
         size_t file_size = 0;
-        bool success = g_file_reader.ReadFile(url_str.c_str(), g_file_read_buffer_size, &g_file_read_buffer[0], file_size);
+        bool success = false;
+#if !defined(__ANDROID__)
+        success = g_file_reader.ReadFile(url_str.c_str(), g_file_read_buffer_size, &g_file_read_buffer[0], file_size);
+#else
+        AssetFile in_file(url_str.c_str(), AssetFile::FileIn);
+        file_size = in_file.size();
+        if (file_size <= g_file_read_buffer_size)  {
+            success = in_file.Read(&g_file_read_buffer[0], file_size);
+        } else {
+            success = false;
+        }
+#endif
 
         if (!success && file_size) {
             while (file_size > g_file_read_buffer_size) {
                 g_file_read_buffer_size *= 2;
             }
             g_file_read_buffer.reset(new char[g_file_read_buffer_size]);
+#if !defined(__ANDROID__)
             success = g_file_reader.ReadFile(url_str.c_str(), g_file_read_buffer_size, &g_file_read_buffer[0], file_size);
+#else
+            success = in_file.Read(&g_file_read_buffer[0], file_size);
+#endif
         }
 
         if (success) {
