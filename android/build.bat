@@ -16,7 +16,7 @@ SET ANDROID_AAPT_ADD="%ANDROID-SDK%\build-tools\%ANDROID_BUILD_TOOLS_VERS%\aapt.
 SET ANDROID_AAPT_PACK="%ANDROID-SDK%\build-tools\%ANDROID_BUILD_TOOLS_VERS%\aapt.exe" package -v -f -I "%ANDROID-SDK%\platforms\%ANDROID_REV%\android.jar"
 SET ANDROID_DX="%ANDROID-SDK%\build-tools\%ANDROID_BUILD_TOOLS_VERS%\dx.bat" --dex --verbose
 SET ANDROID_ZIPALIGN="%ANDROID-SDK%\build-tools\%ANDROID_BUILD_TOOLS_VERS%\zipalign.exe"
-SET JAVAC="%JAVA_HOME%\bin\javac.exe" -classpath "%ANDROID-SDK%\platforms\%ANDROID_REV%\android.jar";"D:\repos\raymark\android\libs\classes.jar";classes
+SET JAVAC="%JAVA_HOME%\bin\javac.exe" -classpath "%ANDROID-SDK%\platforms\%ANDROID_REV%\android.jar";classes
 
 SET APP_NAME=DummyApp
 SET JAVAC_BUILD=%JAVAC% -source 1.7 -target 1.7 -bootclasspath "%JAVA_HOME%\jre\lib\rt.jar" -sourcepath "src;gen;libs" -d "bin"
