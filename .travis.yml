@@ -1,0 +1,31 @@
+language: cpp
+compiler: gcc
+dist: xenial
+env:
+- PACKAGE_VERSION="0.1.*"
+matrix:
+  include:
+  - compiler: gcc
+    addons:
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        packages:
+        - g++-6
+        - libsdl2-dev
+        - p7zip-full
+    env: COMPILER=g++-6
+script:
+- mkdir build
+- "(cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENCL=OFF && make -j4)"
+- ./build/src/Eng/tests/test_Eng
+- ./build/src/Ray/tests/test_Ray
+#- ./build/src/Ren/tests/test_Ren
+- ./build/src/Ren/SW/tests/test_SW
+- ./build/src/Sys/tests/test_Sys
+#- ./build/src/Gui/tests/test_Gui
+- ./build/src/DummyLib/tests/test_DummyLib
+- ./DummyApp --prepare_assets pc --norun
+- 7z a -mx9 dummy_app_%APPVEYOR_BUILD_VERSION%.zip ./DummyApp
+- 7z a -mx9 dummy_app_%APPVEYOR_BUILD_VERSION%.zip ./assets_pc
+
