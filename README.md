@@ -1,4 +1,4 @@
-# DummyEngine [![Build status](https://ci.appveyor.com/api/projects/status/92u5cycd5kjrshja?svg=true)](https://ci.appveyor.com/project/SerhiiY/occdemo) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/173a16a5e4f9498ebc76c6bf3270105e)](https://www.codacy.com/app/SerhiiY-94/occdemo?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=SerhiiY-94/occdemo&amp;utm_campaign=Badge_Grade)
+# DummyEngine [![Build status](https://ci.appveyor.com/api/projects/status/92u5cycd5kjrshja?svg=true)](https://ci.appveyor.com/project/SerhiiY/occdemo) [![Build Status](https://travis-ci.org/sergcpp/DummyEngine.svg?branch=master)](https://travis-ci.org/sergcpp/DummyEngine) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/3495357939b0467f959b0f4e3f43a027)](https://www.codacy.com/manual/SerhiiY-94/DummyEngine?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=sergcpp/DummyEngine&amp;utm_campaign=Badge_Grade)
 Small 3d engine with focus on running on high end mobile devices.
 
 - Video: <https://youtu.be/ujMV9O58uqc>
