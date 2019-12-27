@@ -48,35 +48,83 @@ void GSUITest2::Enter() {
     GSBaseState::LoadScene(SCENE_NAME);
 
     test_image_.reset(new Gui::Image{
-        *ctx_, "assets_pc/textures/ui/flag_ua.uncompressed.png", Ren::Vec2f{ -0.5f, -0.5f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
+        *ctx_,
+#if defined(__ANDROID__)
+        "assets/textures/ui/flag_ua.uncompressed.png",
+#else
+        "assets_pc/textures/ui/flag_ua.uncompressed.png",
+#endif
+        Ren::Vec2f{ -0.5f, -0.5f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
     });
 
     test_image2_.reset(new Gui::Image{
-            *ctx_, "assets_pc/textures/ui/flag_gb.uncompressed.png", Ren::Vec2f{ -0.5f, -0.5f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
+            *ctx_,
+#if defined(__ANDROID__)
+            "assets/textures/ui/flag_gb.uncompressed.png",
+#else
+            "assets_pc/textures/ui/flag_gb.uncompressed.png",
+#endif
+            Ren::Vec2f{ -0.5f, -0.5f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
     });
 
     test_image3_.reset(new Gui::Image{
-            *ctx_, "assets_pc/textures/ui/flag_ru.uncompressed.png", Ren::Vec2f{ -0.5f, -0.5f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
+            *ctx_,
+#if defined(__ANDROID__)
+            "assets/textures/ui/flag_ru.uncompressed.png",
+#else
+            "assets_pc/textures/ui/flag_ru.uncompressed.png",
+#endif
+            Ren::Vec2f{ -0.5f, -0.5f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
     });
 
     test_image4_.reset(new Gui::Image{
-            *ctx_, "assets_pc/textures/ui/flag_us.uncompressed.png", Ren::Vec2f{ -0.5f, -0.5f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
+            *ctx_,
+#if defined(__ANDROID__)
+            "assets/textures/ui/flag_us.uncompressed.png",
+#else
+            "assets_pc/textures/ui/flag_us.uncompressed.png",
+#endif
+            Ren::Vec2f{ -0.5f, -0.5f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
     });
 
     test_frame_.reset(new Gui::Image9Patch{
-        *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Ren::Vec2f{ 3.0f, 3.0f }, 1.0f, Ren::Vec2f{ 0.0f, -0.1f }, Ren::Vec2f{ 0.48f, 0.46f }, ui_root_.get()
+        *ctx_,
+#if defined(__ANDROID__)
+        "assets/textures/ui/frame_01.uncompressed.png",
+#else
+        "assets_pc/textures/ui/frame_01.uncompressed.png",
+#endif
+        Ren::Vec2f{ 3.0f, 3.0f }, 1.0f, Ren::Vec2f{ 0.0f, -0.1f }, Ren::Vec2f{ 0.48f, 0.46f }, ui_root_.get()
     });
 
     test_frame3_.reset(new Gui::Image9Patch{
-            *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Ren::Vec2f{ 3.0f, 3.0f }, 1.0f, Ren::Vec2f{ 0.48f, -0.1f }, Ren::Vec2f{ 0.3f, 0.46f }, ui_root_.get()
+            *ctx_,
+#if defined(__ANDROID__)
+            "assets/textures/ui/frame_01.uncompressed.png",
+#else
+            "assets_pc/textures/ui/frame_01.uncompressed.png",
+#endif
+            Ren::Vec2f{ 3.0f, 3.0f }, 1.0f, Ren::Vec2f{ 0.48f, -0.1f }, Ren::Vec2f{ 0.3f, 0.46f }, ui_root_.get()
     });
 
     test_frame4_.reset(new Gui::Image9Patch{
-            *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Ren::Vec2f{ 3.0f, 3.0f }, 1.0f, Ren::Vec2f{ 0.78f, -0.1f }, Ren::Vec2f{ 0.22f, 0.46f }, ui_root_.get()
+            *ctx_,
+#if defined(__ANDROID__)
+            "assets/textures/ui/frame_01.uncompressed.png",
+#else
+            "assets_pc/textures/ui/frame_01.uncompressed.png",
+#endif
+            Ren::Vec2f{ 3.0f, 3.0f }, 1.0f, Ren::Vec2f{ 0.78f, -0.1f }, Ren::Vec2f{ 0.22f, 0.46f }, ui_root_.get()
     });
 
     test_frame2_.reset(new Gui::Image9Patch{
-            *ctx_, "assets_pc/textures/ui/frame_02.uncompressed.png", Ren::Vec2f{ 20.0f, 20.0f }, 1.0f, Ren::Vec2f{ 0.0f, -0.5f }, Ren::Vec2f{ 1.0f, 1.0f }, ui_root_.get()
+            *ctx_,
+#if defined(__ANDROID__)
+            "assets/textures/ui/frame_02.uncompressed.png",
+#else
+            "assets_pc/textures/ui/frame_02.uncompressed.png",
+#endif
+            Ren::Vec2f{ 20.0f, 20.0f }, 1.0f, Ren::Vec2f{ 0.0f, -0.5f }, Ren::Vec2f{ 1.0f, 1.0f }, ui_root_.get()
     });
 
     zenith_index_ = scene_manager_->FindObject("zenith");

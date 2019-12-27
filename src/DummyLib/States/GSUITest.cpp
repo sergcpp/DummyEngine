@@ -30,7 +30,7 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-    "corridor.json";
+    "zenith.json";
 }
 
 GSUITest::GSUITest(GameBase *game) : GSBaseState(game) {
