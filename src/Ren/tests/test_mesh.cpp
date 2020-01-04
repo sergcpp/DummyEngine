@@ -252,7 +252,9 @@ void test_mesh() {
             return test.LoadMaterial(name, nullptr, &status, on_program_needed, on_texture_needed);
         };
 
-        Ren::MeshRef m_ref = test.LoadMesh("ivy", in, on_material_needed);
+        Ren::eMeshLoadStatus load_status;
+        Ren::MeshRef m_ref = test.LoadMesh("ivy", &in, on_material_needed, &load_status);
+        require(load_status == Ren::MeshCreatedFromData);
         require(m_ref->type() == Ren::MeshSimple);
         require(m_ref->name() == "ivy");
 
@@ -273,7 +275,9 @@ void test_mesh() {
         require(m_ref->group(0).flags == Ren::MeshHasAlpha);
 
         {
-            Ren::MeshRef m_ref2 = test.LoadMesh("ivy", in, on_material_needed);
+            Ren::eMeshLoadStatus load_status;
+            Ren::MeshRef m_ref2 = test.LoadMesh("ivy", &in, on_material_needed, &load_status);
+            require(load_status == Ren::MeshFound);
             require(m_ref2);
         }
 
@@ -310,7 +314,9 @@ void test_mesh() {
             return test.LoadMaterial(name, nullptr, &status, on_program_needed, on_texture_needed);
         };
 
-        Ren::MeshRef m_ref = test.LoadMesh("test", in, on_material_needed);
+        Ren::eMeshLoadStatus load_status;
+        Ren::MeshRef m_ref = test.LoadMesh("test", &in, on_material_needed, &load_status);
+        require(load_status == Ren::MeshCreatedFromData);
         require(m_ref);
         require(m_ref->type() == Ren::MeshSkeletal);
         require(m_ref->name() == "test");
@@ -346,7 +352,9 @@ void test_mesh() {
         require(m_ref->skel()->bones[1].dirty == 1);
 
         {
-            Ren::MeshRef m_ref2 = test.LoadMesh("test", in, on_material_needed);
+            Ren::eMeshLoadStatus load_status;
+            Ren::MeshRef m_ref2 = test.LoadMesh("test", &in, on_material_needed, &load_status);
+            require(load_status == Ren::MeshFound);
             require(m_ref2);
         }
 
