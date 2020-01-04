@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "GameState.h"
-#include "TimedInput.h"
+#include "Input/InputManager.h"
 
 class GameState;
 

@@ -16,7 +16,7 @@
 #endif
 
 #include <Eng/GameBase.h>
-#include <Eng/TimedInput.h>
+#include <Eng/Input/InputManager.h>
 #include <Sys/DynLib.h>
 #include <Sys/Log.h>
 #include <Sys/Time_.h>
@@ -25,6 +25,27 @@
 
 namespace {
     DummyApp *g_app = nullptr;
+
+    const int KeycodeOffset = 8;
+
+    static const unsigned char ScancodeToHID_table[256] = {
+            0,41,30,31,32,33,34,35,36,37,38,39,45,46,42,43,20,26,8,21,23,28,24,12,18,19,
+            47,48,158,224,4,22,7,9,10,11,13,14,15,51,52,53,225,49,29,27,6,25,5,17,16,54,
+            55,56,229,85,226,44,57,58,59,60,61,62,63,64,65,66,67,83,71,95,96,97,86,92,
+            93,94,87,89,90,91,98,99,0,0,100,68,69,0,0,0,0,0,0,0,88,228,84,154,230,0,74,
+            82,75,80,79,77,81,78,73,76,0,0,0,0,0,103,0,72,0,0,0,0,0,227,231,0,0,0,0,0,0,
+            0,0,0,0,0,0,118,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,0,0,0,0,0,0,0,0,0,0,0,0,104,105,106,107,108,109,110,111,112,113,114,115,0,
+            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    };
+
+    uint32_t ScancodeToHID(uint32_t scancode) {
+        if (scancode >= 256) {
+            return 0;
+        }
+        return ScancodeToHID_table[scancode];
+    }
 }
 
 extern "C" {
@@ -153,14 +174,13 @@ void DummyApp::Resize(int w, int h) {
     viewer_->Resize(w, h);
 }
 
-void DummyApp::AddEvent(int type, int key, int raw_key, float x, float y, float dx, float dy) {
+void DummyApp::AddEvent(int type, uint32_t key_code, float x, float y, float dx, float dy) {
     auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
     if (!input_manager) return;
 
     InputManager::Event evt;
     evt.type = (RawInputEvent)type;
-    evt.key = (RawInputButton)key;
-    evt.raw_key = raw_key;
+    evt.key_code = key_code;
     evt.point.x = x;
     evt.point.y = y;
     evt.move.dx = dx;
@@ -221,42 +241,6 @@ int DummyApp::Run(const std::vector<std::string> &args) {
     return 0;
 }
 
-bool DummyApp::ConvertToRawButton(int &raw_key, RawInputButton &button) {
-    //printf("%x\n", raw_key);
-
-    switch (raw_key) {
-        /*7case 0x6f:
-            button = BtnUp;
-            break;
-        case 0x74:
-            button = BtnDown;
-            break;
-        case 0x71:
-            button = BtnLeft;
-            break;
-        case 0x72:
-            button = BtnRight;
-            break;*/
-        case 0x08:
-            button = BtnBackspace;
-            break;
-        case 0x09:
-            button = BtnTab;
-            break;
-        case 0x32:
-            button = BtnShift;
-            break;
-        case 0x0d:
-            button = BtnReturn;
-            break;
-        default: {
-            button = BtnOther;
-            raw_key = std::tolower(raw_key);
-        } break;
-    }
-    return true;
-}
-
 void DummyApp::PollEvents() {
     std::shared_ptr<InputManager> input_manager = input_manager_.lock();
     if (!input_manager) return;
@@ -266,43 +250,28 @@ void DummyApp::PollEvents() {
 
     XEvent xev;
     while (XCheckWindowEvent(dpy_, win_, (ExposureMask | StructureNotifyMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask), &xev)) {
-        RawInputButton button;
         InputManager::Event evt;
 
         if (xev.type == KeyPress) {
-            int raw_key = (int)xev.xkey.keycode;
+            const uint32_t
+                scan_code = uint32_t(xev.xkey.keycode - KeycodeOffset),
+                key_code = ScancodeToHID(scan_code);
 
-            char buf[2] = {};
-            KeySym keysym_return;
-            int len = XLookupString(&xev.xkey, buf, 1, &keysym_return, nullptr);
-            
-            if (len == 1) {
-                raw_key = int(buf[0]);
-            }
-
-            if (raw_key == 0x1b) {
+            if (key_code == KeyEscape) {
                 quit_ = true;
-            } else if (ConvertToRawButton(raw_key, button)) {
+            } else {
+                const uint32_t key_code = ScancodeToHID(scan_code);
+
                 evt.type = RawInputEvent::EvKeyDown;
-                evt.key = button;
-                evt.raw_key = raw_key;
+                evt.key_code = key_code;
             }
         } else if (xev.type == KeyRelease) {
-            int raw_key = (int)xev.xkey.keycode;
+            const uint32_t
+                    scan_code = uint32_t(xev.xkey.keycode - KeycodeOffset),
+                    key_code = ScancodeToHID(scan_code);
 
-            char buf[2] = {};
-            KeySym keysym_return;
-            int len = XLookupString(&xev.xkey, buf, 1, &keysym_return, nullptr);
-            
-            if (len == 1) {
-                raw_key = int(buf[0]);
-            }
-
-            if (ConvertToRawButton(raw_key, button)) {
-                evt.type = RawInputEvent::EvKeyUp;
-                evt.key = button;
-                evt.raw_key = raw_key;
-            }
+            evt.type = RawInputEvent::EvKeyUp;
+            evt.key_code = key_code;
         } else if (xev.type == ButtonPress) {
             evt.type = RawInputEvent::EvP1Down;
             evt.point.x = (float)xev.xbutton.x;

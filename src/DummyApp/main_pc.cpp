@@ -7,6 +7,7 @@ int main(int argc, char *argv[]) {
 
 // TODO:
 // scene saving (+ refactor probe caching)
+// fix crash when minimizing window
 // use direct access extension
 // add logstream
 // add assetstream

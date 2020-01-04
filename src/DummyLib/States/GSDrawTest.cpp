@@ -58,16 +58,16 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
         const JsObject &js_cam = (const JsObject &)js_scene.at("camera");
         if (js_cam.Has("view_origin")) {
             const JsArray &js_orig = (const JsArray &)js_cam.at("view_origin");
-            view_origin_[0] = (float)((const JsNumber &)js_orig.at(0)).val;
-            view_origin_[1] = (float)((const JsNumber &)js_orig.at(1)).val;
-            view_origin_[2] = (float)((const JsNumber &)js_orig.at(2)).val;
+            initial_view_origin_[0] = (float)((const JsNumber &)js_orig.at(0)).val;
+            initial_view_origin_[1] = (float)((const JsNumber &)js_orig.at(1)).val;
+            initial_view_origin_[2] = (float)((const JsNumber &)js_orig.at(2)).val;
         }
 
         if (js_cam.Has("view_dir")) {
             const JsArray &js_dir = (const JsArray &)js_cam.at("view_dir");
-            view_dir_[0] = (float)((const JsNumber &)js_dir.at(0)).val;
-            view_dir_[1] = (float)((const JsNumber &)js_dir.at(1)).val;
-            view_dir_[2] = (float)((const JsNumber &)js_dir.at(2)).val;
+            initial_view_dir_[0] = (float)((const JsNumber &)js_dir.at(0)).val;
+            initial_view_dir_[1] = (float)((const JsNumber &)js_dir.at(1)).val;
+            initial_view_dir_[2] = (float)((const JsNumber &)js_dir.at(2)).val;
         }
 
         if (js_cam.Has("fwd_speed")) {
@@ -98,6 +98,9 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
             }
         }
     }
+
+    view_origin_ = initial_view_origin_;
+    view_dir_ = initial_view_dir_;
 
     SceneData &scene = scene_manager_->scene_data();
 
@@ -409,17 +412,17 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
         }
         break;
     case RawInputEvent::EvKeyDown: {
-        if (evt.key == BtnUp || (evt.raw_key == 'w' && (!cmdline_enabled_ || view_pointer_))) {
+        if (evt.key_code == KeyUp || (evt.key_code == KeyW && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = max_fwd_speed_;
-        } else if (evt.key == BtnDown || (evt.raw_key == 's' && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyDown || (evt.key_code == KeyS && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key == BtnLeft || (evt.raw_key == 'a' && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyLeft || (evt.key_code == KeyA && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key == BtnRight || (evt.raw_key == 'd' && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyRight || (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = max_fwd_speed_;
-        } else if (evt.key == BtnSpace) {
+        } else if (evt.key_code == KeySpace) {
             
-        } else if (evt.key == BtnShift) {
+        } else if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
             shift_down_ = true;
         } else {
             input_processed = false;
@@ -427,13 +430,13 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
     }
     break;
     case RawInputEvent::EvKeyUp: {
-        if (evt.key == BtnUp || (evt.raw_key == 'w' && (!cmdline_enabled_ || view_pointer_))) {
+        if (evt.key_code == KeyUp || (evt.key_code == KeyW && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = 0;
-        } else if (evt.key == BtnDown || (evt.raw_key == 's' && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyDown || (evt.key_code == KeyS && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = 0;
-        } else if (evt.key == BtnLeft || (evt.raw_key == 'a' && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyLeft || (evt.key_code == KeyA && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = 0;
-        } else if (evt.key == BtnRight || (evt.raw_key == 'd' && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyRight || (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = 0;
         } else {
             input_processed = false;
@@ -466,6 +469,38 @@ void GSDrawTest::OnUpdateScene() {
     //LOGI("%f %f %f | %f %f %f",
     //        view_origin_[0], view_origin_[1], view_origin_[2],
     //        view_dir_[0], view_dir_[1], view_dir_[2]);
+}
+
+void GSDrawTest::SaveScene(JsObject &js_scene) {
+    GSBaseState::SaveScene(js_scene);
+
+    {   // write camera
+        JsObject js_camera;
+
+        {   // write view origin
+            JsArray js_view_origin;
+            js_view_origin.Push(JsNumber{ (double)initial_view_origin_[0] });
+            js_view_origin.Push(JsNumber{ (double)initial_view_origin_[1] });
+            js_view_origin.Push(JsNumber{ (double)initial_view_origin_[2] });
+
+            js_camera.Push("view_origin", std::move(js_view_origin));
+        }
+
+        {   // write view direction
+            JsArray js_view_dir;
+            js_view_dir.Push(JsNumber{ (double)initial_view_dir_[0] });
+            js_view_dir.Push(JsNumber{ (double)initial_view_dir_[1] });
+            js_view_dir.Push(JsNumber{ (double)initial_view_dir_[2] });
+
+            js_camera.Push("view_dir", std::move(js_view_dir));
+        }
+
+        {   // write forward speed
+            js_camera.Push("fwd_speed", JsNumber{ (double)max_fwd_speed_ });
+        }
+
+        js_scene.Push("camera", std::move(js_camera));
+    }
 }
 
 void GSDrawTest::TestUpdateAnims(float delta_time_s) {

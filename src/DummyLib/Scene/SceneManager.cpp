@@ -511,9 +511,10 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         if (js_env.Has("sun_dir")) {
             const JsArray &js_dir = (const JsArray &)js_env.at("sun_dir");
 
-            double x = ((const JsNumber &)js_dir.at(0)).val;
-            double y = ((const JsNumber &)js_dir.at(1)).val;
-            double z = ((const JsNumber &)js_dir.at(2)).val;
+            const double
+                x = ((const JsNumber &)js_dir.at(0)).val,
+                y = ((const JsNumber &)js_dir.at(1)).val,
+                z = ((const JsNumber &)js_dir.at(2)).val;
 
             scene_data_.env.sun_dir = Ren::Vec3f{ float(x), float(y), float(z) };
             scene_data_.env.sun_dir = -Ren::Normalize(scene_data_.env.sun_dir);
@@ -521,9 +522,10 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         if (js_env.Has("sun_col")) {
             const JsArray &js_col = (const JsArray &)js_env.at("sun_col");
 
-            double r = ((const JsNumber &)js_col.at(0)).val;
-            double g = ((const JsNumber &)js_col.at(1)).val;
-            double b = ((const JsNumber &)js_col.at(2)).val;
+            const double
+                r = ((const JsNumber &)js_col.at(0)).val,
+                g = ((const JsNumber &)js_col.at(1)).val,
+                b = ((const JsNumber &)js_col.at(2)).val;
 
             scene_data_.env.sun_col = Ren::Vec3f{ float(r), float(g), float(b) };
         }
@@ -568,8 +570,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 DDS_header header;
                 memcpy(&header, &tex_data[i][0], sizeof(DDS_header));
 
-                int w = (int)header.dwWidth;
-                int h = (int)header.dwHeight;
+                const int w = (int)header.dwWidth, h = (int)header.dwHeight;
 
                 assert(w == h);
                 res = w;
@@ -823,15 +824,17 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
             assert(status == Ren::ProgCreatedFromData);
 #endif
         } else {
-            Sys::AssetFile vs_file(string(SHADERS_PATH) + vs_shader),
-                           fs_file(string(SHADERS_PATH) + fs_shader);
+            Sys::AssetFile
+                vs_file(string(SHADERS_PATH) + vs_shader),
+                fs_file(string(SHADERS_PATH) + fs_shader);
             if (!vs_file || !fs_file) {
                 LOGE("Error loading program %s", name);
                 return ret;
             }
 
-            size_t vs_size = vs_file.size(),
-                   fs_size = fs_file.size();
+            const size_t
+                vs_size = vs_file.size(),
+                fs_size = fs_file.size();
 
             string vs_src, fs_src;
             vs_src.resize(vs_size);

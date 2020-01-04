@@ -3,6 +3,8 @@
 #include <functional>
 #include <memory>
 
+#include "Keycode.h"
+
 struct InputManagerImp;
 
 enum RawInputEvent {
@@ -15,28 +17,12 @@ enum RawInputEvent {
     EvCount
 };
 
-enum RawInputButton {
-    BtnUp,
-    BtnDown,
-    BtnLeft,
-    BtnRight,
-    BtnExit,
-    BtnReturn,
-    BtnBackspace,
-    BtnShift,
-    BtnDelete,
-    BtnTab,
-    BtnSpace,
-    BtnOther,
-};
-
 class InputManager {
     InputManagerImp *imp_;
 public:
     struct Event {
         RawInputEvent type = RawInputEvent::EvNone;
-        RawInputButton key;
-        int raw_key;
+        uint32_t key_code;
         struct {
             float x, y;
         } point;
@@ -55,5 +41,7 @@ public:
     void AddRawInputEvent(Event &evt);
     bool PollEvent(uint64_t time_us, Event &evt);
     void ClearBuffer();
+
+    static char CharFromKeycode(uint32_t key_code);
 };
 

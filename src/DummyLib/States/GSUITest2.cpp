@@ -340,7 +340,7 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
         input_processed = false;
     } break;
     case RawInputEvent::EvKeyUp: {
-        if (evt.key == BtnUp || (evt.raw_key == 'w' && !cmdline_enabled_)) {
+        if (evt.key_code == KeyUp || (evt.key_code == KeyW && !cmdline_enabled_)) {
             //text_printer_->restart();
         } else {
             input_processed = false;

@@ -1,5 +1,7 @@
 ﻿#include "GSBaseState.h"
 
+#include <cctype>
+
 #include <fstream>
 #include <memory>
 
@@ -208,6 +210,34 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("load", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
+        if (argc != 2 || argv[1].type != Cmdline::ArgString) return false;
+
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            char buf[1024];
+#if defined(__ANDROID__)
+            sprintf(buf, "assets/scenes/%.*s", (int)argv[1].str.len, argv[1].str.str);
+#else
+            sprintf(buf, "assets_pc/scenes/%.*s", (int)argv[1].str.len, argv[1].str.str);
+#endif
+            shrd_this->LoadScene(buf);
+        }
+        return true;
+    });
+
+    cmdline_->RegisterCommand("save", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            JsObject out_scene;
+            shrd_this->SaveScene(out_scene);
+
+            std::ofstream out_file("assets/scenes/test_save.json", std::ios::binary);
+            out_scene.Write(out_file);
+        }
+        return true;
+    });
+
     cmdline_->RegisterCommand("debug_cull", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
@@ -395,6 +425,10 @@ void GSBaseState::OnPostloadScene(JsObject &js_scene) {
     probes_dirty_ = false;
 }
 
+void GSBaseState::SaveScene(JsObject &js_scene) {
+    //scene_manager_->SaveScene(js_scene);
+}
+
 void GSBaseState::Exit() {
     using namespace GSBaseStateInternal;
 
@@ -413,19 +447,19 @@ void GSBaseState::Draw(uint64_t dt_us) {
     if (cmdline_enabled_) {
         // Process comandline input
         for (const InputManager::Event &evt : cmdline_input_) {
-            if (evt.key == BtnBackspace) {
+            if (evt.key_code == KeyDelete) {
                 if (!cmdline_history_.back().empty()) {
                     cmdline_history_.back().pop_back();
                 }
 
-            } else if (evt.key == BtnReturn) {
+            } else if (evt.key_code == KeyReturn) {
                 cmdline_->Execute(cmdline_history_.back().c_str());
 
                 cmdline_history_.emplace_back();
                 if (cmdline_history_.size() > MAX_CMD_LINES) {
                     cmdline_history_.erase(cmdline_history_.begin());
                 }
-            } else if (evt.raw_key == (int)'`') {
+            } else if (evt.key_code == KeyGrave) {
                 if (!cmdline_history_.back().empty()) {
                     cmdline_history_.emplace_back();
                     if (cmdline_history_.size() > MAX_CMD_LINES) {
@@ -433,9 +467,10 @@ void GSBaseState::Draw(uint64_t dt_us) {
                     }
                 }
             } else {
-                char ch = (char)evt.raw_key;
+                char ch = InputManager::CharFromKeycode(evt.key_code);
                 if (shift_down_) {
                     if (ch == '-') ch = '_';
+                    else ch = std::toupper(ch);
                 }
                 cmdline_history_.back() += ch;
             }
@@ -620,17 +655,17 @@ bool GSBaseState::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvKeyDown: {
     } break;
     case RawInputEvent::EvKeyUp: {
-        if (evt.key == BtnShift) {
+        if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
             shift_down_ = false;
-        } else if (evt.key == BtnBackspace) {
+        } else if (evt.key_code == KeyDelete) {
             if (cmdline_enabled_) {
                 cmdline_input_.push_back(evt);
             }
-        } else if (evt.key == BtnReturn) {
+        } else if (evt.key_code == KeyReturn) {
             if (cmdline_enabled_) {
                 cmdline_input_.push_back(evt);
             }
-        } else if (evt.raw_key == (int)'`') {
+        } else if (evt.key_code == KeyGrave) {
             cmdline_enabled_ = !cmdline_enabled_;
             if (cmdline_enabled_) {
                 cmdline_input_.push_back(evt);

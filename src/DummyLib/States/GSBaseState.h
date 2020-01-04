@@ -84,6 +84,8 @@ protected:
     virtual void OnPreloadScene(JsObject &js_scene);
     virtual void OnPostloadScene(JsObject &js_scene);
 
+    virtual void SaveScene(JsObject &js_scene);
+
     virtual void OnUpdateScene() {}
 
     void BackgroundProc();

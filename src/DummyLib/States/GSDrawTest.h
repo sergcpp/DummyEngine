@@ -29,8 +29,12 @@ class Renderer;
 
 class GSDrawTest : public GSBaseState {
     int view_pointer_ = 0, move_pointer_ = 0;
-    Ren::Vec3f view_origin_ = { 0, 1, 0 },
-               view_dir_ = { 0, 0, -1 };
+
+    Ren::Vec3f
+        initial_view_origin_ = { 0, 1, 0 },
+        initial_view_dir_ = { 0, 0, -1 };
+
+    Ren::Vec3f view_origin_, view_dir_;
 
     float fwd_press_speed_ = 0, side_press_speed_ = 0,
           fwd_touch_speed_ = 0, side_touch_speed_ = 0;
@@ -58,6 +62,8 @@ class GSDrawTest : public GSBaseState {
     void OnPostloadScene(JsObject &js_scene) override;
 
     void OnUpdateScene() override;
+
+    void SaveScene(JsObject &js_scene) override;
 
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TimedInput.h"
+#include "Input/InputManager.h"
 
 class GameState {
 public:

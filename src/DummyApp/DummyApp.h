@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <Eng/TimedInput.h>
+#include <Eng/Input/InputManager.h>
 
 #if !defined(__ANDROID__)
 #if defined(_WIN32)
@@ -71,8 +71,7 @@ public:
     void Frame();
     void Resize(int w, int h);
 
-    void AddEvent(int type, int key, int raw_key, float x, float y, float dx, float dy);
-    static bool ConvertToRawButton(int &raw_key, RawInputButton &button);
+    void AddEvent(int type, uint32_t key_code, float x, float y, float dx, float dy);
 
 #if !defined(__ANDROID__)
     int Run(const std::vector<std::string> &args);

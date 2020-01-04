@@ -21,9 +21,11 @@ set(SOURCE_FILES Config.h
                  GameStateManager.cpp
                  ObjectPool.h
                  Random.h
-                 Random.cpp
-                 TimedInput.h
-                 TimedInput.cpp)
+                 Random.cpp)
+
+set(INPUT_SOURCE_FILES Input/InputManager.h
+                       Input/InputManager.cpp
+                       Input/Keycode.h)
 
 set(GO_SOURCE_FILES go/Go.h
                     go/Go.cpp
@@ -38,6 +40,10 @@ source_group("src" FILES ${SOURCE_FILES})
 list(APPEND ALL_SOURCE_FILES ${GO_SOURCE_FILES})
 set_source_files_properties(${GO_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\go" FILES ${GO_SOURCE_FILES})
+
+list(APPEND ALL_SOURCE_FILES ${INPUT_SOURCE_FILES})
+set_source_files_properties(${INPUT_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+source_group("src\\Input" FILES ${INPUT_SOURCE_FILES})
 
 list(APPEND ALL_SOURCE_FILES _Eng.cpp)
 source_group("src" FILES _Eng.cpp)

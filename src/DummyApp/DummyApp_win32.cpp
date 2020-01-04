@@ -20,7 +20,7 @@
 #include <Windows.h>
 
 #include <Eng/GameBase.h>
-#include <Eng/TimedInput.h>
+#include <Eng/Input/InputManager.h>
 #include <Sys/DynLib.h>
 #include <Sys/Log.h>
 #include <Sys/Time_.h>
@@ -29,6 +29,28 @@
 
 namespace {
     DummyApp *g_app = nullptr;
+
+    uint32_t ScancodeFromLparam(LPARAM lparam) {
+        return ((lparam >> 16) & 0x7f) | ((lparam & (1 << 24)) != 0 ? 0x80 : 0);
+    }
+
+    static const unsigned char ScancodeToHID_table[256] = {
+        0,41,30,31,32,33,34,35,36,37,38,39,45,46,42,43,20,26,8,21,23,28,24,12,18,19,
+        47,48,158,224,4,22,7,9,10,11,13,14,15,51,52,53,225,49,29,27,6,25,5,17,16,54,
+        55,56,229,0,226,0,57,58,59,60,61,62,63,64,65,66,67,72,71,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,68,69,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,228,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,70,230,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,74,82,75,0,80,0,79,0,77,81,78,73,76,0,0,0,0,0,0,0,227,231,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    };
+
+    uint32_t ScancodeToHID(uint32_t scancode) {
+        if (scancode >= 256) {
+            return 0;
+        }
+        return (uint32_t)ScancodeToHID_table[scancode];
+    }
 }
 
 extern "C" {
@@ -77,31 +99,31 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     case WM_LBUTTONDOWN: {
         float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(EvP1Down, -1, -1, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(EvP1Down, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_RBUTTONDOWN: {
         float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(EvP2Down, -1, -1, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(EvP2Down, 0, px, py, 0.0f, 0.0f);
         break;
     }
      case WM_LBUTTONUP: {
         float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(EvP1Up, -1, -1, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(EvP1Up, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_RBUTTONUP: {
         float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(EvP2Up, -1, -1, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(EvP2Up, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_MOUSEMOVE: {
         float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(EvP1Move, -1, -1, px, py, px - last_p1_pos[0], py - last_p1_pos[1]);
+        g_app->AddEvent(EvP1Move, 0, px, py, px - last_p1_pos[0], py - last_p1_pos[1]);
 
         last_p1_pos[0] = px;
         last_p1_pos[1] = py;
@@ -111,26 +133,26 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         if (wParam == VK_ESCAPE) {
             PostQuitMessage(0);
         } else {
-            RawInputButton key;
-            int raw_key = int(wParam);
-            if (DummyApp::ConvertToRawButton(raw_key, key)) {
-                g_app->AddEvent(EvKeyDown, key, raw_key, 0.0f, 0.0f, 0.0f, 0.0f);
-            }
+            const uint32_t
+                scan_code = ScancodeFromLparam(lParam),
+                key_code = ScancodeToHID(scan_code);
+
+            g_app->AddEvent(EvKeyDown, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
         }
         break;
     }
     case WM_KEYUP: {
-        RawInputButton key;
-        int raw_key = int(wParam);
-        if (DummyApp::ConvertToRawButton(raw_key, key)) {
-            g_app->AddEvent(EvKeyUp, key, raw_key, 0.0f, 0.0f, 0.0f, 0.0f);
-        }
+        const uint32_t
+            scan_code = ScancodeFromLparam(lParam),
+            key_code = ScancodeToHID(scan_code);
+
+        g_app->AddEvent(EvKeyUp, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
         break;
     }
     case WM_SIZE: {
-        int w = LOWORD(lParam), h = HIWORD(lParam);
+        const int w = LOWORD(lParam), h = HIWORD(lParam);
         g_app->Resize(w, h);
-        g_app->AddEvent(EvResize, 0, 0, (float)w, (float)h, 0.0f, 0.0f);
+        g_app->AddEvent(EvResize, 0, (float)w, (float)h, 0.0f, 0.0f);
     }
     default: {
         break;
@@ -317,14 +339,13 @@ void DummyApp::Resize(int w, int h) {
     }
 }
 
-void DummyApp::AddEvent(int type, int key, int raw_key, float x, float y, float dx, float dy) {
+void DummyApp::AddEvent(int type, uint32_t key_code, float x, float y, float dx, float dy) {
     std::shared_ptr<InputManager> input_manager = input_manager_.lock();
     if (!input_manager) return;
 
     InputManager::Event evt;
     evt.type = (RawInputEvent)type;
-    evt.key = (RawInputButton)key;
-    evt.raw_key = raw_key;
+    evt.key_code = key_code;
     evt.point.x = x;
     evt.point.y = y;
     evt.move.dx = dx;
@@ -378,58 +399,6 @@ int DummyApp::Run(const std::vector<std::string> &args) {
     this->Destroy();
 
     return 0;
-}
-
-bool DummyApp::ConvertToRawButton(int &raw_key, RawInputButton &button) {
-    switch (raw_key) {
-    case VK_UP:
-        button = BtnUp;
-        break;
-    case VK_DOWN:
-        button = BtnDown;
-        break;
-    case VK_LEFT:
-        button = BtnLeft;
-        break;
-    case VK_RIGHT:
-        button = BtnRight;
-        break;
-    case VK_ESCAPE:
-        button = BtnExit;
-        break;
-    case VK_TAB:
-        button = BtnTab;
-        break;
-    case VK_BACK:
-        button = BtnBackspace;
-        break;
-    case VK_SHIFT:
-        button = BtnShift;
-        break;
-    case VK_DELETE:
-        button = BtnDelete;
-        break;
-    case VK_SPACE:
-        button = BtnSpace;
-        break;
-    case VK_RETURN:
-        button = BtnReturn;
-        break;
-    case VK_OEM_3:
-        button = BtnOther;
-        raw_key = (int)'`';
-        break;
-    case VK_OEM_MINUS:
-        button = BtnOther;
-        raw_key = (int)'-';
-        break;
-    default:
-        button = BtnOther;
-        raw_key = std::tolower(raw_key);
-        break;
-    }
-
-    return true;
 }
 
 void DummyApp::PollEvents() {
