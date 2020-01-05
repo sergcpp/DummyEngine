@@ -1680,16 +1680,6 @@ bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_nam
     const int temp_buf_size = 4 * res * res;
     std::unique_ptr<uint8_t[]> temp_buf(new uint8_t[temp_buf_size]);
 
-    JsObject js_probe_cache;
-
-    {   // add info
-        JsObject js_probes_info;
-        js_probes_info["resolution"] = JsNumber{ (double)res };
-        js_probes_info["format"] = JsString{ "RGBM" };
-
-        js_probe_cache["info"] = std::move(js_probes_info);
-    }
-
     std::string out_file_name_base;
     out_file_name_base += out_folder;
     if (out_file_name_base.back() != '/') {
@@ -1703,85 +1693,48 @@ bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_nam
         return false;
     }
 
-    {   // add probe list
-        JsArray js_probe_list;
+    // write probes
+    uint32_t cur_index = light_probe_storage->First();
+    while(cur_index != 0xffffffff) {
+        const auto *lprobe = (const LightProbe *)light_probe_storage->Get(cur_index);
+        assert(lprobe);
 
-        uint32_t cur_index = light_probe_storage->First();
-        while(cur_index != 0xffffffff) {
-            const auto *lprobe = (const LightProbe *)light_probe_storage->Get(cur_index);
-            assert(lprobe);
+        if (lprobe->layer_index != -1) {
+            JsArray js_probe_faces;
 
-            JsObject js_probe;
+            std::string out_file_name;
 
-            {   // add sh-coeffs
-                JsArray js_sh_coeffs;
+            for (int j = 0; j < 6; j++) {
+                const int mipmap_count = probes.max_level() + 1;
 
-                for (int j = 0; j < 4; j++) {
-                    JsArray js_sh_coeffs_rgb;
+                out_file_name.clear();
+                out_file_name += out_file_name_base;
+                out_file_name += std::to_string(lprobe->layer_index);
+                out_file_name += "_";
+                out_file_name += std::to_string(j);
+                out_file_name += ".img";
 
-                    js_sh_coeffs_rgb.Push(JsNumber{ (double)lprobe->sh_coeffs[j][0] });
-                    js_sh_coeffs_rgb.Push(JsNumber{ (double)lprobe->sh_coeffs[j][1] });
-                    js_sh_coeffs_rgb.Push(JsNumber{ (double)lprobe->sh_coeffs[j][2] });
+                std::ofstream out_file(out_file_name, std::ios::binary);
 
-                    js_sh_coeffs.Push(std::move(js_sh_coeffs_rgb));
-                }
+                out_file.write((char *)&res, 4);
+                out_file.write((char *)&mipmap_count, 4);
 
-                js_probe["sh_coeffs"] = std::move(js_sh_coeffs);
-            }
+                for (int k = 0; k < mipmap_count; k++) {
+                    const int mip_res = (res >> k);
+                    const int buf_size = mip_res * mip_res * 4;
 
-            if (lprobe->layer_index != -1) {
-                JsArray js_probe_faces;
-
-                for (int j = 0; j < 6; j++) {
-                    const int mipmap_count = probes.max_level() + 1;
-
-                    std::string out_file_name = out_file_name_base;
-                    out_file_name += std::to_string(lprobe->layer_index);
-                    out_file_name += "_";
-                    out_file_name += std::to_string(j);
-                    out_file_name += ".img";
-
-                    std::ofstream out_file(out_file_name, std::ios::binary);
-
-                    out_file.write((char *)&res, 4);
-                    out_file.write((char *)&mipmap_count, 4);
-
-                    for (int k = 0; k < mipmap_count; k++) {
-                        const int mip_res = (res >> k);
-                        const int buf_size = mip_res * mip_res * 4;
-
-                        if (!probes.GetPixelData(k, lprobe->layer_index, j, buf_size, &temp_buf[0])) {
-                            LOGE("Failed to read cubemap level %i layer %i face %i", k, lprobe->layer_index, j);
-                            return false;
-                        }
-
-                        out_file.write((char *)&temp_buf[0], buf_size);
+                    if (!probes.GetPixelData(k, lprobe->layer_index, j, buf_size, &temp_buf[0])) {
+                        LOGE("Failed to read cubemap level %i layer %i face %i", k, lprobe->layer_index, j);
+                        return false;
                     }
 
-                    out_file_name.erase(0, prelude_length);
-                    js_probe_faces.Push(JsString{ out_file_name });
+                    out_file.write((char *)&temp_buf[0], buf_size);
                 }
-
-                js_probe["faces"] = std::move(js_probe_faces);
             }
-
-            js_probe_list.Push(std::move(js_probe));
-
-            cur_index = light_probe_storage->Next(cur_index);
         }
 
-        js_probe_cache["probes"] = std::move(js_probe_list);
+        cur_index = light_probe_storage->Next(cur_index);
     }
-
-    std::string out_js_file = out_file_name_base;
-    out_js_file += ".json";
-
-    std::ofstream out_stream(out_js_file, std::ios::binary);
-
-    JsFlags flags;
-    flags.use_spaces = 1;
-
-    js_probe_cache.Write(out_stream, flags);
 
     return true;
 }

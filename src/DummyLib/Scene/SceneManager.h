@@ -39,9 +39,10 @@ public:
     }
 
     void LoadScene(const JsObject &js_scene);
+    void SaveScene(JsObject &js_scene);
     void ClearScene();
 
-    void LoadProbeCache(const JsObject &js_probe_cache);
+    void LoadProbeCache();
 
     void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov, float max_exposure);
 
@@ -76,7 +77,6 @@ private:
     std::shared_ptr<Ray::SceneBase> ray_scene_;
 
     Ren::Camera cam_;
-    std::string env_map_pt_name_;
 
     SceneData scene_data_;
     std::vector<uint32_t> changed_objects_, last_changed_objects_;

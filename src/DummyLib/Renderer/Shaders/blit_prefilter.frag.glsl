@@ -95,7 +95,7 @@ vec3 PrefilterEnvMap(float roughness, vec3 r) {
 	vec3 res_col = vec3(0.0);
 	float res_weight = 0.0;
 
-    const uint SampleCount = 4096u;
+    const uint SampleCount = 1024u;
 
 	for (uint i = 0u; i < SampleCount; i++) {
 		vec2 rand2d = Hammersley2D(i, SampleCount);

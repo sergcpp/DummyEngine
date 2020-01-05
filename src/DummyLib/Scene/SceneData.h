@@ -71,11 +71,13 @@ static_assert(sizeof(bvh_node_t) == 48, "!");
 #define MAX_STACK_SIZE 64
 
 struct Environment {
-    Ren::Vec3f  sun_dir, sun_col;
-    float       sun_softness = 0.0f;
-    Ren::Texture2DRef env_map;
-    Ren::Texture2DRef lm_direct, lm_indir,
-                      lm_indir_sh[4];
+    Ren::Vec3f          sun_dir, sun_col;
+    float               sun_softness = 0.0f;
+    Ren::Texture2DRef   env_map;
+    Ren::Texture2DRef   lm_direct, lm_indir,
+                        lm_indir_sh[4];
+
+    Ren::String         env_map_name, env_map_name_pt;
 };
 
 struct BBox {
@@ -97,7 +99,7 @@ public:
     virtual int Count() const = 0;
 
     virtual void ReadFromJs(const JsObject &js_obj, void *comp) = 0;
-    virtual void WriteToJs(const void *comp, JsObject &js_obj) = 0;
+    virtual void WriteToJs(const void *comp, JsObject &js_obj) const = 0;
 
     // tells whether it is possible to access storage as if it is contiguous array
     virtual bool IsSequential() const { return false; }

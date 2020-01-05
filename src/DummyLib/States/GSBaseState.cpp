@@ -216,11 +216,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             char buf[1024];
-#if defined(__ANDROID__)
-            sprintf(buf, "assets/scenes/%.*s", (int)argv[1].str.len, argv[1].str.str);
-#else
-            sprintf(buf, "assets_pc/scenes/%.*s", (int)argv[1].str.len, argv[1].str.str);
-#endif
+            sprintf(buf, "%s/scenes/%.*s", ASSETS_BASE_PATH, (int)argv[1].str.len, argv[1].str.str);
             shrd_this->LoadScene(buf);
         }
         return true;
@@ -230,10 +226,40 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             JsObject out_scene;
+
             shrd_this->SaveScene(out_scene);
 
-            std::ofstream out_file("assets/scenes/test_save.json", std::ios::binary);
-            out_scene.Write(out_file);
+            {   // Write output file
+                std::string name_str;
+
+                {   // get scene file name
+                    const SceneData &scene_data = shrd_this->scene_manager_->scene_data();
+                    name_str = scene_data.name.c_str();
+                }
+
+                {   // rotate backup files
+                    for (int i = 7; i > 0; i--) {
+                        const std::string
+                            name1 = "assets/scenes/" + name_str + ".json" + std::to_string(i),
+                            name2 = "assets/scenes/" + name_str + ".json" + std::to_string(i + 1);
+
+                        ::rename(name1.c_str(), name2.c_str());
+                    }
+                }
+
+                {   // write scene file
+                    const std::string
+                        name1 = "assets/scenes/" + name_str + ".json",
+                        name2 = "assets/scenes/" + name_str + ".json1";
+                    ::rename(name1.c_str(), name2.c_str());
+
+                    std::ofstream out_file(name1, std::ios::binary);
+                    out_scene.Write(out_file);
+                }
+            }
+
+            // scene file was written, copy it to assets_pc folder
+            Viewer::PrepareAssets("pc");
         }
         return true;
     });
@@ -406,7 +432,6 @@ bool GSBaseState::LoadScene(const char *name) {
 
     try {
         scene_manager_->LoadScene(js_scene);
-        scene_manager_->LoadProbeCache(js_probe_cache);
     } catch (std::exception &e) {
         LOGI("Error loading scene: %s", e.what());
     }
@@ -426,7 +451,7 @@ void GSBaseState::OnPostloadScene(JsObject &js_scene) {
 }
 
 void GSBaseState::SaveScene(JsObject &js_scene) {
-    //scene_manager_->SaveScene(js_scene);
+    scene_manager_->SaveScene(js_scene);
 }
 
 void GSBaseState::Exit() {
@@ -451,7 +476,6 @@ void GSBaseState::Draw(uint64_t dt_us) {
                 if (!cmdline_history_.back().empty()) {
                     cmdline_history_.back().pop_back();
                 }
-
             } else if (evt.key_code == KeyReturn) {
                 cmdline_->Execute(cmdline_history_.back().c_str());
 

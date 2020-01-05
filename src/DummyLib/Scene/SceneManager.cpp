@@ -86,7 +86,7 @@ namespace SceneManagerInternal {
             T::Read(js_obj, *(T *)comp);
         }
 
-        void WriteToJs(const void *comp, JsObject &js_obj) override {
+        void WriteToJs(const void *comp, JsObject &js_obj) const override {
             T::Write(*(T *)comp, js_obj);
         }
 
@@ -204,66 +204,71 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         }
     }
 
-    const JsObject &js_meshes = (const JsObject &)js_scene.at("meshes");
-    for (const auto &js_elem : js_meshes.elements) {
-        const std::string &name = js_elem.first;
+    if (js_scene.Has("meshes")) {
+        const JsObject &js_meshes = (const JsObject &) js_scene.at("meshes");
+        for (const auto &js_elem : js_meshes.elements) {
+            const std::string &name = js_elem.first;
 
-        const auto &js_mesh = (const JsObject &)js_elem.second;
-        const auto &js_mesh_file = (const JsString &)js_mesh.at("mesh_file");
+            const auto &js_mesh = (const JsObject &) js_elem.second;
+            const auto &js_mesh_file = (const JsString &) js_mesh.at("mesh_file");
 
-        Ren::MeshRef mesh_ref;
+            Ren::MeshRef mesh_ref;
 
-        {   // load mesh file
-            std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file.val;
+            {   // load mesh file
+                std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file.val;
 
-            Sys::AssetFile in_file(mesh_path.c_str());
-            size_t in_file_size = in_file.size();
-
-            std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
-            in_file.Read((char *)&in_file_data[0], in_file_size);
-
-            Sys::MemBuf mem = { &in_file_data[0], in_file_size };
-            std::istream in_file_stream(&mem);
-
-            using namespace std::placeholders;
-            mesh_ref = ctx_.LoadMesh(name.c_str(), in_file_stream, std::bind(&SceneManager::OnLoadMaterial, this, _1));
-        }
-
-        all_meshes[name] = mesh_ref;
-
-        if (js_mesh.Has("material_override")) {
-            const auto &js_materials = (const JsArray &)js_mesh.at("material_override");
-
-            int index = 0;
-            for (const auto &js_mat : js_materials.elements) {
-                if (js_mat.type() == JS_STRING) {
-                    mesh_ref->group(index).mat = OnLoadMaterial(((const JsString &)js_mat).val.c_str());
-                }
-                index++;
-            }
-        }
-
-        if (js_mesh.Has("anims")) {
-            const JsArray &js_anims = (const JsArray &)js_mesh.at("anims");
-
-            assert(mesh_ref->type() == Ren::MeshSkeletal);
-            Ren::Skeleton *skel = mesh_ref->skel();
-
-            for (const auto &js_anim : js_anims.elements) {
-                const auto &js_anim_name = (const JsString &)js_anim;
-                std::string anim_path = std::string(MODELS_PATH) + js_anim_name.val;
-
-                Sys::AssetFile in_file(anim_path.c_str());
-                size_t in_file_size = in_file.size();
+                Sys::AssetFile in_file(mesh_path.c_str());
+                const size_t in_file_size = in_file.size();
 
                 std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
-                in_file.Read((char *)&in_file_data[0], in_file_size);
+                in_file.Read((char *) &in_file_data[0], in_file_size);
 
-                Sys::MemBuf mem = { &in_file_data[0], in_file_size };
+                Sys::MemBuf mem = {&in_file_data[0], in_file_size};
                 std::istream in_file_stream(&mem);
 
-                Ren::AnimSeqRef anim_ref = ctx_.LoadAnimSequence(js_anim_name.val.c_str(), in_file_stream);
-                skel->AddAnimSequence(anim_ref);
+                using namespace std::placeholders;
+
+                Ren::eMeshLoadStatus status;
+                mesh_ref = ctx_.LoadMesh(name.c_str(), &in_file_stream,
+                                         std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
+            }
+
+            all_meshes[name] = mesh_ref;
+
+            if (js_mesh.Has("material_override")) {
+                const auto &js_materials = (const JsArray &) js_mesh.at("material_override");
+
+                int index = 0;
+                for (const auto &js_mat : js_materials.elements) {
+                    if (js_mat.type() == JS_STRING) {
+                        mesh_ref->group(index).mat = OnLoadMaterial(((const JsString &) js_mat).val.c_str());
+                    }
+                    index++;
+                }
+            }
+
+            if (js_mesh.Has("anims")) {
+                const JsArray &js_anims = (const JsArray &) js_mesh.at("anims");
+
+                assert(mesh_ref->type() == Ren::MeshSkeletal);
+                Ren::Skeleton *skel = mesh_ref->skel();
+
+                for (const auto &js_anim : js_anims.elements) {
+                    const auto &js_anim_name = (const JsString &) js_anim;
+                    std::string anim_path = std::string(MODELS_PATH) + js_anim_name.val;
+
+                    Sys::AssetFile in_file(anim_path.c_str());
+                    size_t in_file_size = in_file.size();
+
+                    std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+                    in_file.Read((char *) &in_file_data[0], in_file_size);
+
+                    Sys::MemBuf mem = {&in_file_data[0], in_file_size};
+                    std::istream in_file_stream(&mem);
+
+                    Ren::AnimSeqRef anim_ref = ctx_.LoadAnimSequence(js_anim_name.val.c_str(), in_file_stream);
+                    skel->AddAnimSequence(anim_ref);
+                }
             }
         }
     }
@@ -334,13 +339,56 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
                     // TODO: refactor this into something generic
                     if (i == CompDrawable) {
-                        const JsString &js_mesh_name = (const JsString &)js_comp_obj.at("mesh");
-
-                        const auto it = all_meshes.find(js_mesh_name.val);
-                        if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
-
                         auto *dr = (Drawable *)new_component;
-                        dr->mesh = it->second;
+
+                        if (js_comp_obj.Has("mesh_file")) {
+                            const JsString &js_mesh_file_name = (const JsString &)js_comp_obj.at("mesh_file");
+
+                            const char *js_mesh_lookup_name = js_mesh_file_name.val.c_str();
+                            if (js_comp_obj.Has("mesh_name")) {
+                                js_mesh_lookup_name = ((const JsString &)js_comp_obj.at("mesh_name")).val.c_str();
+                            }
+
+                            Ren::eMeshLoadStatus status;
+                            dr->mesh = ctx_.LoadMesh(js_mesh_lookup_name, nullptr, nullptr, &status);
+
+                            if (status != Ren::MeshFound) {
+                                const std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file_name.val;
+
+                                Sys::AssetFile in_file(mesh_path.c_str());
+                                size_t in_file_size = in_file.size();
+
+                                std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+                                in_file.Read((char *)&in_file_data[0], in_file_size);
+
+                                Sys::MemBuf mem = { &in_file_data[0], in_file_size };
+                                std::istream in_file_stream(&mem);
+
+                                using namespace std::placeholders;
+                                dr->mesh = ctx_.LoadMesh(js_mesh_lookup_name, &in_file_stream,
+                                        std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
+                                assert(status == Ren::MeshCreatedFromData);
+                            }
+                        } else {
+                            const JsString &js_mesh_name = (const JsString &) js_comp_obj.at("mesh");
+
+                            const auto it = all_meshes.find(js_mesh_name.val);
+                            if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
+
+                            dr->mesh = it->second;
+                        }
+
+                        if (js_comp_obj.Has("material_override")) {
+                            const auto &js_materials = (const JsArray &)js_comp_obj.at("material_override");
+
+                            int index = 0;
+                            for (const JsElement &js_mat_el : js_materials.elements) {
+                                if (js_mat_el.type() == JS_STRING) {
+                                    dr->mesh->group(index).mat = OnLoadMaterial(((const JsString &)js_mat_el).val.c_str());
+                                }
+                                index++;
+                            }
+                        }
 
                         obj_bbox_min = Ren::Min(obj_bbox_min, dr->mesh->bbox_min());
                         obj_bbox_max = Ren::Max(obj_bbox_max, dr->mesh->bbox_max());
@@ -536,6 +584,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         if (js_env.Has("env_map")) {
             const JsString &js_env_map = (const JsString &)js_env.at("env_map");
 
+            scene_data_.env.env_map_name = Ren::String{ js_env_map.val.c_str() };
+
             const std::string tex_names[6] = {
 #if !defined(__ANDROID__)
                 TEXTURES_PATH + js_env_map.val + "_PX.dds",
@@ -601,17 +651,84 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             scene_data_.env.env_map = ctx_.LoadTextureCube(tex_name.c_str(), data, size, p, &load_status);
         }
         if (js_env.Has("env_map_pt")) {
-            env_map_pt_name_ = ((const JsString &)js_env.at("env_map_pt")).val;
+            scene_data_.env.env_map_name_pt = Ren::String{ ((const JsString &)js_env.at("env_map_pt")).val.c_str() };
         }
     } else {
         scene_data_.env = {};
     }
+
+    LoadProbeCache();
 
     scene_data_.decals_atlas.Finalize();
 
     LOGI("SceneManager: RebuildBVH!");
 
     RebuildBVH();
+}
+
+void SceneManager::SaveScene(JsObject &js_scene) {
+    {   // write name
+        js_scene.Push("name", JsString(scene_data_.name.c_str()));
+    }
+
+    {   // write environment
+        JsObject js_env;
+
+        {   // write sun direction
+            JsArray js_sun_dir;
+            js_sun_dir.Push(JsNumber((double) -scene_data_.env.sun_dir[0]));
+            js_sun_dir.Push(JsNumber((double) -scene_data_.env.sun_dir[1]));
+            js_sun_dir.Push(JsNumber((double) -scene_data_.env.sun_dir[2]));
+
+            js_env.Push("sun_dir", std::move(js_sun_dir));
+        }
+
+        {   // write sun color
+            JsArray js_sun_col;
+            js_sun_col.Push(JsNumber((double) scene_data_.env.sun_col[0]));
+            js_sun_col.Push(JsNumber((double) scene_data_.env.sun_col[1]));
+            js_sun_col.Push(JsNumber((double) scene_data_.env.sun_col[2]));
+
+            js_env.Push("sun_col", std::move(js_sun_col));
+        }
+
+        {   // write sun softness
+            js_env.Push("sun_softness", JsNumber((double)scene_data_.env.sun_softness));
+        }
+
+        {   // write env map names
+            js_env.Push("env_map", JsString{ scene_data_.env.env_map_name.c_str() });
+            js_env.Push("env_map_pt", JsString{ scene_data_.env.env_map_name_pt.c_str() });
+        }
+
+        js_scene.Push("environment", std::move(js_env));
+    }
+
+    {   // write objects
+        JsArray js_objects;
+
+        const CompStorage * const *comp_storage = scene_data_.comp_store;
+
+        for (const SceneObject &obj : scene_data_.objects) {
+            JsObject js_obj;
+
+            for (unsigned i = 0; i < MAX_COMPONENT_TYPES; i++) {
+                if (obj.comp_mask & (1u << i)) {
+                    const uint32_t comp_id = obj.components[i];
+                    const void *p_comp = comp_storage[i]->Get(comp_id);
+
+                    JsObject js_comp;
+                    comp_storage[i]->WriteToJs(p_comp, js_comp);
+
+                    js_obj.Push(comp_storage[i]->name(), js_comp);
+                }
+            }
+
+            js_objects.Push(std::move(js_obj));
+        }
+
+        js_scene.Push("objects", std::move(js_objects));
+    }
 }
 
 void SceneManager::ClearScene() {
@@ -622,130 +739,103 @@ void SceneManager::ClearScene() {
     ray_scene_ = {};
 }
 
-void SceneManager::LoadProbeCache(const JsObject &js_probe_cache) {
-    int res = 512;
-
-    if (js_probe_cache.Has("info")) {
-        const auto &js_cache_info = (const JsObject &)js_probe_cache.at("info");
-        if (js_cache_info.Has("resolution")) {
-            const auto &js_resolution = (const JsNumber &)js_cache_info.at("resolution");
-            res = (int)js_resolution.val;
-        }
-        if (js_cache_info.Has("format")) {
-
-        }
-    }
-
+void SceneManager::LoadProbeCache() {
+    const int res = scene_data_.probe_storage.res();
     const int capacity = scene_data_.probe_storage.capacity();
     scene_data_.probe_storage.Resize(Ren::Compressed, res, capacity);
 
     CompStorage *probe_storage = scene_data_.comp_store[CompProbe];
 
-    if (js_probe_cache.Has("probes")) {
-        int probe_index = 0;
+    uint32_t probe_id = probe_storage->First();
+    while (probe_id != 0xffffffff) {
+        auto *lprobe = (LightProbe *) probe_storage->Get(probe_id);
+        assert(lprobe);
 
-        const auto &js_probes = (const JsArray &)js_probe_cache.at("probes");
-        for (const JsElement &js_probe_el : js_probes.elements) {
-            auto *lprobe = (LightProbe *) probe_storage->Get(probe_index);
-            if (lprobe) {
-                const auto &js_probe = (const JsObject &) js_probe_el;
-                if (js_probe.Has("faces")) {
-                    const auto &js_faces = (const JsArray &) js_probe.at("faces");
+        std::string file_path;
 
-                    int face_index = 0;
-                    for (const JsElement &js_face_el : js_faces.elements) {
-                        const auto &js_face = (const JsString &) js_face_el;
+        for (int face_index = 0; face_index < 6; face_index++) {
+            file_path.clear();
 
-                        std::string file_path =
 #if !defined(__ANDROID__)
-                                "assets_pc/textures/probes_cache/";
+            file_path += "assets_pc/textures/probes_cache/";
 #else
-                                "assets/textures/probes_cache/";
+            file_path += "assets/textures/probes_cache/";
 #endif
-                        file_path += js_face.val;
-
-                        Sys::AssetFile in_file(file_path, Sys::AssetFile::FileIn);
-                        const size_t in_file_size = in_file.size();
-
-                        std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
-                        in_file.Read((char *) &in_file_data[0], in_file_size);
-
-                        if (lprobe->layer_index != -1) {
+            file_path += scene_data_.name.c_str();
+            file_path += std::to_string(lprobe->layer_index);
+            file_path += "_";
+            file_path += std::to_string(face_index);
 #if !defined(__ANDROID__)
-                            const uint8_t *p_data = &in_file_data[0] + sizeof(Ren::DDSHeader);
-                            int data_len = (int)in_file_size - sizeof(Ren::DDSHeader);
-
-                            int _res = res;
-                            int level = 0;
-
-                            while (_res >= 16) {
-                                const int len = ((_res + 3) / 4) * ((_res + 3) / 4) * 16;
-
-                                if (len > data_len ||
-                                    !scene_data_.probe_storage.SetPixelData(level, lprobe->layer_index, face_index,
-                                                                            Ren::Compressed, p_data, len)) {
-                                    LOGE("Failed to load probe texture!");
-                                }
-
-                                p_data += len;
-                                data_len -= len;
-
-                                _res = _res / 2;
-                                level++;
-                            }
+            file_path += ".dds";
 #else
-                            uint8_t *p_data = &in_file_data[0];
-                            int data_offset = sizeof(Ren::KTXHeader);
-                            int data_len = (int)in_file_size - sizeof(Ren::KTXHeader);
-
-                            int _res = res;
-                            int level = 0;
-
-                            while (_res >= 16) {
-                                uint32_t len;
-                                memcpy(&len, &p_data[data_offset], sizeof(uint32_t));
-                                data_offset += sizeof(uint32_t);
-                                data_len -= sizeof(uint32_t);
-
-                                if (len > data_len ||
-                                    !scene_data_.probe_storage.SetPixelData(level, lprobe->layer_index, face_index,
-                                                                            Ren::Compressed, &p_data[data_offset], len)) {
-                                    LOGE("Failed to load probe texture!");
-                                }
-
-                                data_offset += len;
-                                data_len -= len;
-
-                                int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
-                                data_offset += pad;
-
-                                _res = _res / 2;
-                                level++;
-                            }
+            file_path += ".ktx";
 #endif
-                        }
 
-                        face_index++;
+            Sys::AssetFile in_file(file_path, Sys::AssetFile::FileIn);
+            if (!in_file) continue;
+
+            const size_t in_file_size = in_file.size();
+
+            std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+            in_file.Read((char *) &in_file_data[0], in_file_size);
+
+            if (lprobe->layer_index != -1) {
+#if !defined(__ANDROID__)
+                const uint8_t *p_data = &in_file_data[0] + sizeof(Ren::DDSHeader);
+                int data_len = (int)in_file_size - sizeof(Ren::DDSHeader);
+
+                int _res = res;
+                int level = 0;
+
+                while (_res >= 16) {
+                    const int len = ((_res + 3) / 4) * ((_res + 3) / 4) * 16;
+
+                    if (len > data_len ||
+                        !scene_data_.probe_storage.SetPixelData(level, lprobe->layer_index, face_index,
+                                                                Ren::Compressed, p_data, len)) {
+                        LOGE("Failed to load probe texture!");
                     }
+
+                    p_data += len;
+                    data_len -= len;
+
+                    _res = _res / 2;
+                    level++;
                 }
+#else
+                uint8_t *p_data = &in_file_data[0];
+                int data_offset = sizeof(Ren::KTXHeader);
+                int data_len = (int)in_file_size - sizeof(Ren::KTXHeader);
 
-                if (js_probe.Has("sh_coeffs")) {
-                    const auto &js_sh_coeffs = (const JsArray &) js_probe.at("sh_coeffs");
+                int _res = res;
+                int level = 0;
 
-                    for (int i = 0; i < 4; i++) {
-                        const auto &js_sh_coeff = (const JsArray &) js_sh_coeffs.at(i);
+                while (_res >= 16) {
+                    uint32_t len;
+                    memcpy(&len, &p_data[data_offset], sizeof(uint32_t));
+                    data_offset += sizeof(uint32_t);
+                    data_len -= sizeof(uint32_t);
 
-                        lprobe->sh_coeffs[i] = Ren::Vec3f{
-                            (float)((const JsNumber &)js_sh_coeff.at(0)).val,
-                            (float)((const JsNumber &)js_sh_coeff.at(1)).val,
-                            (float)((const JsNumber &)js_sh_coeff.at(2)).val
-                        };
+                    if (len > data_len ||
+                        !scene_data_.probe_storage.SetPixelData(level, lprobe->layer_index, face_index,
+                                                                Ren::Compressed, &p_data[data_offset], len)) {
+                        LOGE("Failed to load probe texture!");
                     }
+
+                    data_offset += len;
+                    data_len -= len;
+
+                    int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
+                    data_offset += pad;
+
+                    _res = _res / 2;
+                    level++;
                 }
+#endif
             }
-
-            probe_index++;
         }
+
+        probe_id = probe_storage->Next(probe_id);
     }
 }
 

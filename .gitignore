@@ -12,4 +12,12 @@ DummyApp.exe
 test.txt
 test.mesh
 *.blend1
+*.json1
+*.json2
+*.json3
+*.json4
+*.json5
+*.json6
+*.json7
+*.json8
 cmake-build*

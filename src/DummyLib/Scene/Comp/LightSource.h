@@ -14,7 +14,9 @@ struct LightSource {
     float       influence;
     bool        cast_shadow, cache_shadow;
 
-    Ren::Vec3f bbox_min, bbox_max;
+    Ren::Vec3f  bbox_min;
+    float       angle_deg;
+    Ren::Vec3f  bbox_max;
 
     static void Read(const JsObject &js_in, LightSource &ls);
     static void Write(const LightSource &ls, JsObject &js_out);

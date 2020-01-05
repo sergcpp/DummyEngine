@@ -12,6 +12,12 @@ const char CMDLINE_KEY[]                = "cmdline";
 
 const char SWAP_TIMER_KEY[]             = "swap_timer";
 
+#if defined(__ANDROID__)
+const char ASSETS_BASE_PATH[]           = "assets";
+#else
+const char ASSETS_BASE_PATH[]           = "assets_pc";
+#endif
+
 class Viewer : public GameBase {
 public:
     Viewer(int w, int h, const char *local_dir);

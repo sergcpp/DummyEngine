@@ -2879,7 +2879,7 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
 
     if (temp_tex_w_ != w || temp_tex_h_ != h || temp_tex_format_ != format) {
         if (temp_tex_w_ != 0 && temp_tex_h_ != 0) {
-            GLuint gl_tex = (GLuint)temp_tex_;
+            auto gl_tex = (GLuint)temp_tex_;
             glDeleteTextures(1, &gl_tex);
         }
 
@@ -2928,7 +2928,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
 
     if (temp_tex_w_ != w || temp_tex_h_ != h || temp_tex_format_ != format) {
         if (temp_tex_w_ != 0 && temp_tex_h_ != 0) {
-            GLuint gl_tex = (GLuint)temp_tex_;
+            auto gl_tex = (GLuint)temp_tex_;
             glDeleteTextures(1, &gl_tex);
         }
 
@@ -2963,7 +2963,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
 
     float avarage_color[3] = {};
     int sample_count = 0;
-    const float *_data = (const float *)data;
+    const auto *_data = (const float *)data;
     
     for (int y = 0; y < h; y += 100) {
         for (int x = 0; x < w; x += 100) {
@@ -2975,9 +2975,9 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         }
     }
 
-    avarage_color[0] /= sample_count;
-    avarage_color[1] /= sample_count;
-    avarage_color[2] /= sample_count;
+    avarage_color[0] /= (float)sample_count;
+    avarage_color[1] /= (float)sample_count;
+    avarage_color[2] /= (float)sample_count;
 
     float lum = 0.299f * avarage_color[0] + 0.587f * avarage_color[1] + 0.114f * avarage_color[2];
 
@@ -3106,8 +3106,8 @@ void Renderer::BlitBuffer(float px, float py, float sx, float sy, const FrameBuf
     glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
     for (int i = first_att; i < first_att + att_count; i++) {
-        const float positions[] = { px + (i - first_att) * sx, py,              px + (i - first_att + 1) * sx, py,
-                                    px + (i - first_att + 1) * sx, py + sy,     px + (i - first_att) * sx, py + sy };
+        const float positions[] = { px + float(i - first_att) * sx, py,              px + float(i - first_att + 1) * sx, py,
+                                    px + float(i - first_att + 1) * sx, py + sy,     px + float(i - first_att) * sx, py + sy };
 
         if (i == first_att) {
             const float uvs[] = {
@@ -3213,12 +3213,12 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &
     GLint viewport_before[4];
     glGetIntegerv(GL_VIEWPORT, viewport_before);
 
-    GLuint framebuf = (GLuint)temp_framebuf_;
+    auto framebuf = (GLuint)temp_framebuf_;
     glBindFramebuffer(GL_FRAMEBUFFER, framebuf);
 
     int temp_probe_index = dst_store.reserved_temp_layer();
 
-    GLuint cube_array = (GLuint)dst_store.tex_id();
+    auto cube_array = (GLuint)dst_store.tex_id();
     glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cube_array, 0, (GLint)(temp_probe_index * 6 + face));
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
@@ -3313,12 +3313,12 @@ void Renderer::BlitPrefilterFromTemp(const ProbeStorage &dst_store, int probe_in
     GLint viewport_before[4];
     glGetIntegerv(GL_VIEWPORT, viewport_before);
 
-    GLuint framebuf = (GLuint)temp_framebuf_;
+    auto framebuf = (GLuint)temp_framebuf_;
     glBindFramebuffer(GL_FRAMEBUFFER, framebuf);
 
     int temp_probe_index = dst_store.reserved_temp_layer();
 
-    GLuint cube_array = (GLuint)dst_store.tex_id();
+    auto cube_array = (GLuint)dst_store.tex_id();
 
     glDisable(GL_BLEND);
 
@@ -3358,7 +3358,7 @@ void Renderer::BlitPrefilterFromTemp(const ProbeStorage &dst_store, int probe_in
     while (level <= dst_store.max_level()) {
         glViewport(0, 0, res, res);
 
-        float roughness = (1.0f / 6.0f) * level;
+        float roughness = (1.0f / 6.0f) * float(level);
         glUniform1f(3, roughness);
 
         for (int face = 0; face < 6; face++) {
@@ -3424,7 +3424,7 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
         
         Ren::Vec3f sh_coeffs[4];
         
-        float *pixels = (float *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, 4 * probe_sample_buf_.w * probe_sample_buf_.h * sizeof(float), GL_MAP_READ_BIT);
+        auto *pixels = (float *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, 4 * probe_sample_buf_.w * probe_sample_buf_.h * sizeof(float), GL_MAP_READ_BIT);
         if (pixels) {
             for (int y = 0; y < probe_sample_buf_.h; y++) {
                 for (int x = 0; x < probe_sample_buf_.w; x++) {
@@ -3440,14 +3440,14 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
         }
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
-        const float inv_weight = 4.0f * Ren::Pi<float>() / (probe_sample_buf_.w * probe_sample_buf_.w);
+        const float inv_weight = 4.0f * Ren::Pi<float>() / float(probe_sample_buf_.w * probe_sample_buf_.w);
         for (int i = 0; i < 4; i++) {
             sh_coeffs[i][0] *= inv_weight;
             sh_coeffs[i][1] *= inv_weight;
             sh_coeffs[i][2] *= inv_weight;
         }
 
-        const float k = 1.0f / iteration;
+        const float k = 1.0f / float(iteration);
         for (int i = 0; i < 4; i++) {
             const Ren::Vec3f diff = sh_coeffs[i] - probe.sh_coeffs[i];
             probe.sh_coeffs[i] += diff * k;

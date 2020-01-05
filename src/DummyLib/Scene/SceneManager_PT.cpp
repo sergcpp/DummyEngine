@@ -396,9 +396,12 @@ void SceneManager::InitScene_PT(bool _override) {
         Ray::environment_desc_t env_desc;
         env_desc.env_col[0] = env_desc.env_col[1] = env_desc.env_col[2] = 1.0f;
 
-        if (!env_map_pt_name_.empty()) {
+        if (!scene_data_.env.env_map_name_pt.empty()) {
+            std::string env_map_path = "./assets/textures/";
+            env_map_path += scene_data_.env.env_map_name_pt.c_str();
+
             int w, h;
-            std::vector<uint8_t> tex_data = LoadHDR(("./assets/textures/" + env_map_pt_name_).c_str(), w, h);
+            std::vector<uint8_t> tex_data = LoadHDR(env_map_path.c_str(), w, h);
 
             Ray::tex_desc_t tex_desc;
             tex_desc.data = (const Ray::pixel_color8_t *)&tex_data[0];

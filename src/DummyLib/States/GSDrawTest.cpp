@@ -499,6 +499,14 @@ void GSDrawTest::SaveScene(JsObject &js_scene) {
             js_camera.Push("fwd_speed", JsNumber{ (double)max_fwd_speed_ });
         }
 
+        {   // write fov
+            js_camera.Push("fov", JsNumber{ (double)view_fov_ });
+        }
+
+        {   // write max exposure
+            js_camera.Push("max_exposure", JsNumber{ (double)max_exposure_ });
+        }
+
         js_scene.Push("camera", std::move(js_camera));
     }
 }
