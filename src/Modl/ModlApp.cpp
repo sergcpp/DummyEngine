@@ -158,7 +158,9 @@ int ModlApp::Run(const std::vector<std::string> &args) {
 
         ifstream mesh_file(view_file_name, ios::binary);
         if (mesh_file) {
-            view_mesh_ = ctx_.LoadMesh(out_file_name.c_str(), mesh_file, std::bind(&ModlApp::OnMaterialNeeded, this, _1));
+            Ren::eMeshLoadStatus load_status;
+            view_mesh_ = ctx_.LoadMesh(out_file_name.c_str(), &mesh_file, std::bind(&ModlApp::OnMaterialNeeded, this, _1), &load_status);
+            assert(load_status == Ren::MeshCreatedFromData);
 
             Ren::Vec3f bbox_min = view_mesh_->bbox_min(), bbox_max = view_mesh_->bbox_max();
             Ren::Vec3f dims = bbox_max - bbox_min;
