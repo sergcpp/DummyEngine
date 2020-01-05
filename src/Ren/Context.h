@@ -64,9 +64,10 @@ public:
     void Resize(int w, int h);
 
     /*** Mesh ***/
-    MeshRef LoadMesh(const char *name, std::istream &data, material_load_callback on_mat_load);
-    MeshRef LoadMesh(const char *name, std::istream &data, material_load_callback on_mat_load,
-                     BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf);
+    MeshRef LoadMesh(const char *name, std::istream *data, material_load_callback on_mat_load, eMeshLoadStatus *load_status);
+    MeshRef LoadMesh(const char *name, std::istream *data, material_load_callback on_mat_load,
+                     BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
+                     eMeshLoadStatus *load_status);
 
     /*** Material ***/
     MaterialRef LoadMaterial(const char *name, const char *mat_src, eMatLoadStatus *status, const program_load_callback &on_prog_load,

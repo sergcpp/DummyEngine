@@ -80,6 +80,8 @@ struct BufferRange {
     }
 };
 
+enum eMeshLoadStatus { MeshFound, MeshSetToDefault, MeshCreatedFromData };
+
 enum eMeshType { MeshUndefined, MeshSimple, MeshTerrain, MeshSkeletal };
 
 typedef std::function<MaterialRef(const char *name)> material_load_callback;
@@ -87,6 +89,7 @@ typedef std::function<MaterialRef(const char *name)> material_load_callback;
 class Mesh : public RefCounter {
     int             type_ = MeshUndefined;
     uint32_t        flags_ = 0;
+    bool            ready_ = false;
     BufferRange     attribs_buf1_, attribs_buf2_, sk_attribs_buf_, indices_buf_;
     std::unique_ptr <char[]> attribs_, indices_;
     std::array<TriGroup, MaxMeshTriGroupsCount>    groups_;
@@ -106,8 +109,9 @@ class Mesh : public RefCounter {
     void SplitMesh(int bones_limit);
 public:
     Mesh() {}
-    Mesh(const char *name, std::istream &data, const material_load_callback &on_mat_load,
-         BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf);
+    Mesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
+         BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
+         eMeshLoadStatus *load_status);
 
     Mesh(const Mesh &rhs) = delete;
     Mesh(Mesh &&rhs) = default;
@@ -120,6 +124,9 @@ public:
     }
     uint32_t flags() const {
         return flags_;
+    }
+    bool ready() const {
+        return ready_;
     }
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
     uint32_t attribs_buf1_id() const {
@@ -174,8 +181,9 @@ public:
         return &skel_;
     }
 
-    void Init(std::istream &data, const material_load_callback &on_mat_load,
-              BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf);
+    void Init(std::istream *data, const material_load_callback &on_mat_load,
+              BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
+              eMeshLoadStatus *load_status);
 
     static int max_gpu_bones;
 };

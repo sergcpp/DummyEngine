@@ -2,16 +2,24 @@
 
 #include <algorithm>
 
-Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream &data, material_load_callback on_mat_load) {
-    return LoadMesh(name, data, on_mat_load, default_vertex_buf1_, default_vertex_buf2_, default_indices_buf_, default_skin_vertex_buf_);
+Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data, material_load_callback on_mat_load,
+                                    eMeshLoadStatus *load_status) {
+    return LoadMesh(name, data, on_mat_load, default_vertex_buf1_, default_vertex_buf2_,
+            default_indices_buf_, default_skin_vertex_buf_, load_status);
 }
 
-Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream &data, material_load_callback on_mat_load,
-                                    BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf) {
+Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data, material_load_callback on_mat_load,
+                                    BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
+                                    eMeshLoadStatus *load_status) {
     MeshRef ref = meshes_.FindByName(name);
-
     if (!ref) {
-        ref = meshes_.Add(name, data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf);
+        ref = meshes_.Add(name, data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf, load_status);
+    } else {
+        if (ref->ready()) {
+            if (load_status) *load_status = MeshFound;
+        } else if (data) {
+            ref->Init(data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf, load_status);
+        }
     }
 
     return ref;

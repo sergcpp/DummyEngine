@@ -136,25 +136,35 @@ namespace Ren {
     }
 }
 
-Ren::Mesh::Mesh(const char *name, std::istream &data, const material_load_callback &on_mat_load,
-                BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf) {
+Ren::Mesh::Mesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
+                BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
+                eMeshLoadStatus *load_status) {
     name_ = String{ name };
-    Init(data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf);
+    Init(data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf, load_status);
 }
 
-void Ren::Mesh::Init(std::istream &data, const material_load_callback &on_mat_load,
-                     BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf) {
-    char mesh_type_str[12];
-    std::streampos pos = data.tellg();
-    data.read(mesh_type_str, 12);
-    data.seekg(pos, std::ios::beg);
+void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_load,
+                     BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
+                     eMeshLoadStatus *load_status) {
 
-    if (strcmp(mesh_type_str, "STATIC_MESH\0") == 0) {
-        InitMeshSimple(data, on_mat_load, vertex_buf1, vertex_buf2, index_buf);
-    } else if (strcmp(mesh_type_str, "TERRAI_MESH\0") == 0) {
-        InitMeshTerrain(data, on_mat_load, vertex_buf1, index_buf);
-    } else if (strcmp(mesh_type_str, "SKELET_MESH\0") == 0) {
-        InitMeshSkeletal(data, on_mat_load, skin_vertex_buf, index_buf);
+    if (data) {
+        char mesh_type_str[12];
+        std::streampos pos = data->tellg();
+        data->read(mesh_type_str, 12);
+        data->seekg(pos, std::ios::beg);
+
+        if (strcmp(mesh_type_str, "STATIC_MESH\0") == 0) {
+            InitMeshSimple(*data, on_mat_load, vertex_buf1, vertex_buf2, index_buf);
+        } else if (strcmp(mesh_type_str, "TERRAI_MESH\0") == 0) {
+            InitMeshTerrain(*data, on_mat_load, vertex_buf1, index_buf);
+        } else if (strcmp(mesh_type_str, "SKELET_MESH\0") == 0) {
+            InitMeshSkeletal(*data, on_mat_load, skin_vertex_buf, index_buf);
+        }
+
+        if (load_status) *load_status = MeshCreatedFromData;
+    } else {
+        // TODO: actually set to default mesh ('error' label like in source engine for example)
+        if (load_status) *load_status = MeshSetToDefault;
     }
 }
 
@@ -266,6 +276,8 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
 
     indices_buf_.buf = index_buf;
     indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices_.get());
+
+    ready_ = true;
 }
 
 void Ren::Mesh::InitMeshTerrain(std::istream &data, const material_load_callback &on_mat_load, BufferRef &vertex_buf, BufferRef &index_buf) {
@@ -533,6 +545,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     }*/
 
     indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices_.get());
+    ready_ = true;
 }
 
 void Ren::Mesh::SplitMesh(int bones_limit) {
