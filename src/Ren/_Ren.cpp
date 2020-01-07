@@ -5,6 +5,7 @@ extern "C" {
 
 #if defined(USE_GL_RENDER)
 #include "GLExt.cpp"
+#include "GLExtDSAEmu.cpp"
 #include "ContextGL.cpp"
 #include "ProgramGL.cpp"
 #include "TextureGL.cpp"

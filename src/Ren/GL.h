@@ -26,15 +26,95 @@
 #define glGetQueryObjecti64v glGetQueryObjecti64vEXT
 #define glGetQueryObjectui64v glGetQueryObjectui64vEXT
 
+//
+// direct state access
+//
+
+#define glCreateTextures            ren_glCreateTextures
+
+#define glTextureStorage2D          ren_glTextureStorage2D
+#define glTextureStorage2DCube      ren_glTextureStorage2DCube
+
+#define glTextureSubImage2D         ren_glTextureSubImage2D
+#define glTextureSubImage2DCube     ren_glTextureSubImage2DCube
+
+#define glTextureParameterf         ren_glTextureParameterf
+#define glTextureParameterfCube     ren_glTextureParameterfCube
+#define glTextureParameteri         ren_glTextureParameteri
+#define glTextureParameteriCube     ren_glTextureParameteriCube
+
+#define glTextureParameterfv        ren_glTextureParameterfv
+#define glTextureParameterfvCube    ren_glTextureParameterfvCube
+#define glTextureParameteriv        ren_glTextureParameteriv
+#define glTextureParameterivCube    ren_glTextureParameterivCube
+
+#define glGenerateTextureMipmap     ren_glGenerateTextureMipmap
+#define glGenerateTextureMipmapCube ren_glGenerateTextureMipmapCube
+
+#define glBindTextureUnit           ren_glBindTextureUnit
+#define glBindTextureUnitMs         ren_glBindTextureUnitMs
+
 #define APIENTRY
 
 typedef void (APIENTRY *PFNGLQUERYCOUNTEREXTPROC)(GLuint id, GLenum target);
 typedef void (APIENTRY *PFNGLGETQUERYOBJECTI64VEXTPROC)(GLuint id, GLenum pname, GLint64 *params);
 typedef void (APIENTRY *PFNGLGETQUERYOBJECTUI64VEXTPROC)(GLuint id, GLenum pname, GLuint64 *params);
 
+//
+// direct state access
+//
+
+typedef void (APIENTRY *PFNGLCREATETEXTURESPROC)(GLenum target, GLsizei n, GLuint *textures);
+
+typedef void (APIENTRY *PFNGLTEXTURESTORAGE2DPROC)(
+        GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
+
+
+typedef void (APIENTRY *PFNGLTEXTURESUBIMAGE2DPROC)(
+        GLuint texture, GLint level, GLint xoffset, GLint yoffset,
+        GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels);
+
+typedef void (APIENTRY *PFNGLTEXTUREPARAMETERFPROC)(GLuint texture, GLenum pname, GLfloat param);
+typedef void (APIENTRY *PFNGLTEXTUREPARAMETERIPROC)(GLuint texture, GLenum pname, GLint param);
+
+typedef void (APIENTRY *PFNGLTEXTUREPARAMETERFVPROC)(GLuint texture, GLenum pname, const GLfloat *params);
+typedef void (APIENTRY *PFNGLTEXTUREPARAMETERIVPROC)(GLuint texture, GLenum pname, const GLint *params);
+
+typedef void (APIENTRY *PFNGLGENERATETEXTUREMIPMAPPROC)(GLuint texture);
+
+typedef void (APIENTRY *PFNGLBINDTEXTUREUNITPROC)(GLuint unit, GLuint texture);
+
 EXTERN_FUNC PFNGLQUERYCOUNTEREXTPROC            glQueryCounterEXT;
 EXTERN_FUNC PFNGLGETQUERYOBJECTI64VEXTPROC      glGetQueryObjecti64vEXT;
 EXTERN_FUNC PFNGLGETQUERYOBJECTUI64VEXTPROC     glGetQueryObjectui64vEXT;
+
+//
+// direct state access
+//
+
+EXTERN_FUNC PFNGLCREATETEXTURESPROC             ren_glCreateTextures;
+
+EXTERN_FUNC PFNGLTEXTURESTORAGE2DPROC           ren_glTextureStorage2D;
+EXTERN_FUNC PFNGLTEXTURESTORAGE2DPROC           ren_glTextureStorage2DCube;
+
+EXTERN_FUNC PFNGLTEXTURESUBIMAGE2DPROC          ren_glTextureSubImage2D;
+EXTERN_FUNC PFNGLTEXTURESUBIMAGE2DPROC          ren_glTextureSubImage2DCube;
+
+EXTERN_FUNC PFNGLTEXTUREPARAMETERFPROC          ren_glTextureParameterf;
+EXTERN_FUNC PFNGLTEXTUREPARAMETERFPROC          ren_glTextureParameterfCube;
+EXTERN_FUNC PFNGLTEXTUREPARAMETERIPROC          ren_glTextureParameteri;
+EXTERN_FUNC PFNGLTEXTUREPARAMETERIPROC          ren_glTextureParameteriCube;
+
+EXTERN_FUNC PFNGLTEXTUREPARAMETERFVPROC         ren_glTextureParameterfv;
+EXTERN_FUNC PFNGLTEXTUREPARAMETERFVPROC         ren_glTextureParameterfvCube;
+EXTERN_FUNC PFNGLTEXTUREPARAMETERIVPROC         ren_glTextureParameteriv;
+EXTERN_FUNC PFNGLTEXTUREPARAMETERIVPROC         ren_glTextureParameterivCube;
+
+EXTERN_FUNC PFNGLGENERATETEXTUREMIPMAPPROC      ren_glGenerateTextureMipmap;
+EXTERN_FUNC PFNGLGENERATETEXTUREMIPMAPPROC      ren_glGenerateTextureMipmapCube;
+
+EXTERN_FUNC PFNGLBINDTEXTUREUNITPROC            ren_glBindTextureUnit;
+EXTERN_FUNC PFNGLBINDTEXTUREUNITPROC            ren_glBindTextureUnitMs;
 #else
 //#include <GL/glew.h>
 
@@ -197,6 +277,8 @@ EXTERN_FUNC PFNGLGETQUERYOBJECTUI64VEXTPROC     glGetQueryObjectui64vEXT;
 #define GL_TEXTURE_2D_ARRAY       0x8C1A
 #define GL_TEXTURE_2D_MULTISAMPLE 0x9100
 
+#define GL_TEXTURE_3D           0x806F
+
 #define GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT  0x00000001
 #define GL_ELEMENT_ARRAY_BARRIER_BIT        0x00000002
 #define GL_UNIFORM_BARRIER_BIT              0x00000004
@@ -233,6 +315,10 @@ EXTERN_FUNC PFNGLGETQUERYOBJECTUI64VEXTPROC     glGetQueryObjectui64vEXT;
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT            33777
 #define	GL_COMPRESSED_RGBA_S3TC_DXT3_EXT            33778
 #define	GL_COMPRESSED_RGBA_S3TC_DXT5_EXT            33779
+
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT      35917
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT      35918
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT      35919
 
 #define GL_COMPRESSED_RGBA_ASTC_4x4_KHR            0x93B0
 #define GL_COMPRESSED_RGBA_ASTC_5x4_KHR            0x93B1
@@ -419,13 +505,20 @@ typedef void (APIENTRY *PFNGLUNIFORM4FVPROC)(GLint location, GLsizei count, cons
 typedef void (APIENTRY *PFNGLUNIFORMMATRIX4FVPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 
 #if !defined(__linux__)
-typedef void (APIENTRY *PFNGLCOMPRESSEDTEXIMAGE2DPROC)(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid * data);
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXIMAGE2DPROC)(
+    GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid * data);
 #endif
-typedef void (APIENTRY *PFNGLCOMPRESSEDTEXIMAGE3DPROC)(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void * data);
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXIMAGE3DPROC)(
+    GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void * data);
 
 
-typedef void (APIENTRY *PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
-                                                          GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC)(
+    GLenum target, GLint level, GLint xoffset, GLint yoffset,
+    GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void * data);
+
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC)(
+    GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+    GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
 
 typedef void (APIENTRY *PFNGLTEXSTORAGE2DPROC)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
 typedef void (APIENTRY *PFNGLTEXSTORAGE2DMULTISAMPLEPROC)(GLenum target, GLsizei samples, GLenum internalformat,
@@ -505,6 +598,40 @@ typedef void (APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
 
 typedef void (APIENTRY *PFNGLBLENDFUNCI)(GLuint buf, GLenum sfactor, GLenum dfactor);
 typedef void (APIENTRY *PFNGLCLEARBUFFERFV)(GLenum buffer, GLint drawbuffer, const GLfloat * value);
+
+//
+// direct state access
+//
+
+typedef void (APIENTRY *PFNGLCREATETEXTURESPROC)(GLenum target, GLsizei n, GLuint *textures);
+
+typedef void (APIENTRY *PFNGLTEXTURESTORAGE2DPROC)(
+    GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
+
+typedef void (APIENTRY *PFNGLTEXTURESTORAGE3DPROC)(
+    GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
+
+typedef void (APIENTRY *PFNGLTEXTURESUBIMAGE2DPROC)(
+    GLuint texture, GLint level, GLint xoffset, GLint yoffset,
+    GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels);
+
+typedef void (APIENTRY *PFNGLTEXTURESUBIMAGE3DPROC)(
+    GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+    GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels);
+
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXTURESUBIMAGE2DPROC)(
+    GLuint texture, GLint level, GLint xoffset, GLint yoffset,
+    GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data);
+
+typedef void (APIENTRY *PFNGLTEXTUREPARAMETERFPROC)(GLuint texture, GLenum pname, GLfloat param);
+typedef void (APIENTRY *PFNGLTEXTUREPARAMETERIPROC)(GLuint texture, GLenum pname, GLint param);
+
+typedef void (APIENTRY *PFNGLTEXTUREPARAMETERFVPROC)(GLuint texture, GLenum pname, const GLfloat *params);
+typedef void (APIENTRY *PFNGLTEXTUREPARAMETERIVPROC)(GLuint texture, GLenum pname, const GLint *params);
+
+typedef void (APIENTRY *PFNGLGENERATETEXTUREMIPMAPPROC)(GLuint texture);
+
+typedef void (APIENTRY *PFNGLBINDTEXTUREUNITPROC)(GLuint unit, GLuint texture);
 
 #endif
 
@@ -601,6 +728,7 @@ typedef void (APIENTRY *PFNGLCLEARBUFFERFV)(GLenum buffer, GLint drawbuffer, con
 #define glCompressedTexImage2D      ren_glCompressedTexImage2D
 #define glCompressedTexImage3D      ren_glCompressedTexImage3D
 
+#define glCompressedTexSubImage2D   ren_glCompressedTexSubImage2D
 #define glCompressedTexSubImage3D   ren_glCompressedTexSubImage3D
 
 #define glTexStorage2D              ren_glTexStorage2D
@@ -664,6 +792,42 @@ typedef void (APIENTRY *PFNGLCLEARBUFFERFV)(GLenum buffer, GLint drawbuffer, con
 
 #define glBlendFunci                ren_glBlendFunci
 #define glClearBufferfv             ren_glClearBufferfv
+
+//
+// direct state access
+//
+
+#define glCreateTextures            ren_glCreateTextures
+
+#define glTextureStorage2D          ren_glTextureStorage2D
+#define glTextureStorage2DCube      ren_glTextureStorage2DCube
+
+#define glTextureStorage3D          ren_glTextureStorage3D
+#define glTextureStorage3DCube      ren_glTextureStorage3DCube
+
+#define glTextureSubImage2D         ren_glTextureSubImage2D
+#define glTextureSubImage2DCube     ren_glTextureSubImage2DCube
+
+#define glTextureSubImage3D         ren_glTextureSubImage3D
+#define glTextureSubImage3DCube     ren_glTextureSubImage3DCube
+
+#define glCompressedTextureSubImage2D ren_glCompressedTextureSubImage2D
+
+#define glTextureParameterf         ren_glTextureParameterf
+#define glTextureParameterfCube     ren_glTextureParameterfCube
+#define glTextureParameteri         ren_glTextureParameteri
+#define glTextureParameteriCube     ren_glTextureParameteriCube
+
+#define glTextureParameterfv        ren_glTextureParameterfv
+#define glTextureParameterfvCube    ren_glTextureParameterfvCube
+#define glTextureParameteriv        ren_glTextureParameteriv
+#define glTextureParameterivCube    ren_glTextureParameterivCube
+
+#define glGenerateTextureMipmap     ren_glGenerateTextureMipmap
+#define glGenerateTextureMipmapCube ren_glGenerateTextureMipmapCube
+
+#define glBindTextureUnit           ren_glBindTextureUnit
+#define glBindTextureUnitMs         ren_glBindTextureUnitMs
 
 EXTERN_FUNC PFNGLCREATEPROGRAMPROC              ren_glCreateProgram;
 EXTERN_FUNC PFNGLDELETEPROGRAMPROC              ren_glDeleteProgram;
@@ -759,6 +923,7 @@ EXTERN_FUNC PFNGLUNIFORMMATRIX4FVPROC           ren_glUniformMatrix4fv;
 EXTERN_FUNC PFNGLCOMPRESSEDTEXIMAGE2DPROC       ren_glCompressedTexImage2D;
 EXTERN_FUNC PFNGLCOMPRESSEDTEXIMAGE3DPROC       ren_glCompressedTexImage3D;
 
+EXTERN_FUNC PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC    ren_glCompressedTexSubImage2D;
 EXTERN_FUNC PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC    ren_glCompressedTexSubImage3D;
 
 EXTERN_FUNC PFNGLTEXSTORAGE2DPROC               ren_glTexStorage2D;
@@ -822,6 +987,42 @@ EXTERN_FUNC PFNGLDELETESYNCPROC                 ren_glDeleteSync;
 
 EXTERN_FUNC PFNGLBLENDFUNCI                     ren_glBlendFunci;
 EXTERN_FUNC PFNGLCLEARBUFFERFV                  ren_glClearBufferfv;
+
+//
+// direct state access
+//
+
+EXTERN_FUNC PFNGLCREATETEXTURESPROC             ren_glCreateTextures;
+
+EXTERN_FUNC PFNGLTEXTURESTORAGE2DPROC           ren_glTextureStorage2D;
+EXTERN_FUNC PFNGLTEXTURESTORAGE2DPROC           ren_glTextureStorage2DCube;
+
+EXTERN_FUNC PFNGLTEXTURESTORAGE3DPROC           ren_glTextureStorage3D;
+EXTERN_FUNC PFNGLTEXTURESTORAGE3DPROC           ren_glTextureStorage3DCube;
+
+EXTERN_FUNC PFNGLTEXTURESUBIMAGE2DPROC          ren_glTextureSubImage2D;
+EXTERN_FUNC PFNGLTEXTURESUBIMAGE2DPROC          ren_glTextureSubImage2DCube;
+
+EXTERN_FUNC PFNGLTEXTURESUBIMAGE3DPROC          ren_glTextureSubImage3D;
+EXTERN_FUNC PFNGLTEXTURESUBIMAGE3DPROC          ren_glTextureSubImage3DCube;
+
+EXTERN_FUNC PFNGLCOMPRESSEDTEXTURESUBIMAGE2DPROC ren_glCompressedTextureSubImage2D;
+
+EXTERN_FUNC PFNGLTEXTUREPARAMETERFPROC          ren_glTextureParameterf;
+EXTERN_FUNC PFNGLTEXTUREPARAMETERFPROC          ren_glTextureParameterfCube;
+EXTERN_FUNC PFNGLTEXTUREPARAMETERIPROC          ren_glTextureParameteri;
+EXTERN_FUNC PFNGLTEXTUREPARAMETERIPROC          ren_glTextureParameteriCube;
+
+EXTERN_FUNC PFNGLTEXTUREPARAMETERFVPROC         ren_glTextureParameterfv;
+EXTERN_FUNC PFNGLTEXTUREPARAMETERFVPROC         ren_glTextureParameterfvCube;
+EXTERN_FUNC PFNGLTEXTUREPARAMETERIVPROC         ren_glTextureParameteriv;
+EXTERN_FUNC PFNGLTEXTUREPARAMETERIVPROC         ren_glTextureParameterivCube;
+
+EXTERN_FUNC PFNGLGENERATETEXTUREMIPMAPPROC      ren_glGenerateTextureMipmap;
+EXTERN_FUNC PFNGLGENERATETEXTUREMIPMAPPROC      ren_glGenerateTextureMipmapCube;
+
+EXTERN_FUNC PFNGLBINDTEXTUREUNITPROC            ren_glBindTextureUnit;
+EXTERN_FUNC PFNGLBINDTEXTUREUNITPROC            ren_glBindTextureUnitMs;
 }
 
 #undef EXTERN_FUNC

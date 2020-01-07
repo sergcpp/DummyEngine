@@ -13,6 +13,10 @@
 #endif
 #endif
 
+#include "GLExtDSAEmu.h"
+
+//#define GL_DISABLE_DSA
+
 #undef None // defined in X.h
 #undef near // defined in minwindef.h
 #undef far
@@ -27,6 +31,38 @@ bool Ren::InitGLExtentions() {
     glGetQueryObjecti64vEXT         = (PFNGLGETQUERYOBJECTI64VEXTPROC)GetProcAddress(glGetQueryObjecti64vEXT);
     glGetQueryObjectui64vEXT        = (PFNGLGETQUERYOBJECTUI64VEXTPROC)GetProcAddress(glGetQueryObjectui64vEXT);
 
+    //
+    // direct state access emulation
+    //
+
+    ren_glCreateTextures            = ren_glCreateTextures_emu;
+
+    ren_glTextureStorage2D          = ren_glTextureStorage2D_emu;
+    ren_glTextureStorage2DCube      = ren_glTextureStorage2DCube_emu;
+
+    ren_glTextureSubImage2D         = ren_glTextureSubImage2D_emu;
+    ren_glTextureSubImage2DCube     = ren_glTextureSubImage2DCube_emu;
+
+    ren_glTextureSubImage3D         = ren_glTextureSubImage3D_emu;
+    ren_glTextureSubImage3DCube     = ren_glTextureSubImage3DCube_emu;
+
+    ren_glCompressedTextureSubImage2D = ren_glCompressedTextureSubImage2D_emu;
+
+    ren_glTextureParameterf         = ren_glTextureParameterf_emu;
+    ren_glTextureParameterfCube     = ren_glTextureParameterfCube_emu;
+    ren_glTextureParameteri         = ren_glTextureParameteri_emu;
+    ren_glTextureParameteriCube     = ren_glTextureParameteriCube_emu;
+
+    ren_glTextureParameterfv        = ren_glTextureParameterfv_emu;
+    ren_glTextureParameterfvCube    = ren_glTextureParameterfvCube_emu;
+    ren_glTextureParameteriv        = ren_glTextureParameteriv_emu;
+    ren_glTextureParameterivCube    = ren_glTextureParameterivCube_emu;
+
+    ren_glGenerateTextureMipmap     = ren_glGenerateTextureMipmap_emu;
+    ren_glGenerateTextureMipmapCube = ren_glGenerateTextureMipmapCube_emu;
+
+    ren_glBindTextureUnit           = ren_glBindTextureUnit_emu;
+    ren_glBindTextureUnitMs         = ren_glBindTextureUnitMs_emu;
 #else
 
 #if defined(WIN32)
@@ -134,6 +170,7 @@ bool Ren::InitGLExtentions() {
     ren_glCompressedTexImage2D      = (PFNGLCOMPRESSEDTEXIMAGE2DPROC)GetProcAddress(glCompressedTexImage2D);
     ren_glCompressedTexImage3D      = (PFNGLCOMPRESSEDTEXIMAGE3DPROC)GetProcAddress(glCompressedTexImage3D);
 
+    ren_glCompressedTexSubImage2D   = (PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC)GetProcAddress(glCompressedTexSubImage2D);
     ren_glCompressedTexSubImage3D   = (PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC)GetProcAddress(glCompressedTexSubImage3D);
 
     ren_glTexStorage2D              = (PFNGLTEXSTORAGE2DPROC)GetProcAddress(glTexStorage2D);
@@ -199,6 +236,117 @@ bool Ren::InitGLExtentions() {
 
     ren_glBlendFunci                = (PFNGLBLENDFUNCI)GetProcAddress(glBlendFunci);
     ren_glClearBufferfv             = (PFNGLCLEARBUFFERFV)GetProcAddress(glClearBufferfv);
+
+    //
+    // direct state access
+    //
+
+#ifndef GL_DISABLE_DSA
+    ren_glCreateTextures            = (PFNGLCREATETEXTURESPROC)GetProcAddress(glCreateTextures);
+    if (!ren_glCreateTextures) ren_glCreateTextures = ren_glCreateTextures_emu;
+
+    ren_glTextureStorage2D          = (PFNGLTEXTURESTORAGE2DPROC)GetProcAddress(glTextureStorage2D);
+    ren_glTextureStorage2DCube      = ren_glTextureStorage2D;
+    if (!ren_glTexStorage2D) {
+        ren_glTextureStorage2D      = ren_glTextureStorage2D_emu;
+        ren_glTextureStorage2DCube  = ren_glTextureStorage2DCube_emu;
+    }
+
+    ren_glTextureStorage3D = (PFNGLTEXTURESTORAGE3DPROC)GetProcAddress(glTextureStorage3D);
+    ren_glTextureStorage3DCube = ren_glTextureStorage3D;
+    if (!ren_glTexStorage3D) {
+        ren_glTextureStorage3D = ren_glTextureStorage3D_emu;
+        ren_glTextureStorage3DCube = ren_glTextureStorage3DCube_emu;
+    }
+
+    ren_glTextureSubImage2D         = (PFNGLTEXTURESUBIMAGE2DPROC)GetProcAddress(glTextureSubImage2D);
+    ren_glTextureSubImage2DCube     = ren_glTextureSubImage2D;
+    if (!ren_glTextureSubImage2D) {
+        ren_glTextureSubImage2D     = ren_glTextureSubImage2D_emu;
+        ren_glTextureSubImage2DCube = ren_glTextureSubImage2DCube_emu;
+    }
+
+    ren_glTextureSubImage3D = (PFNGLTEXTURESUBIMAGE3DPROC)GetProcAddress(glTextureSubImage3D);
+    ren_glTextureSubImage3DCube = ren_glTextureSubImage3D;
+    if (!ren_glTextureSubImage3D) {
+        ren_glTextureSubImage3D = ren_glTextureSubImage3D_emu;
+        ren_glTextureSubImage3DCube = ren_glTextureSubImage3DCube_emu;
+    }
+
+    ren_glCompressedTextureSubImage2D = (PFNGLCOMPRESSEDTEXTURESUBIMAGE2DPROC)GetProcAddress(glCompressedTextureSubImage2D);
+    if (!ren_glCompressedTextureSubImage2D) {
+        ren_glCompressedTextureSubImage2D = ren_glCompressedTextureSubImage2D_emu;
+    }
+
+    ren_glTextureParameterf         = (PFNGLTEXTUREPARAMETERFPROC)GetProcAddress(glTextureParameterf);
+    ren_glTextureParameterfCube     = ren_glTextureParameterf;
+    if (!ren_glTextureParameterf) {
+        ren_glTextureParameterf     = ren_glTextureParameterf_emu;
+        ren_glTextureParameterfCube = ren_glTextureParameterfCube_emu;
+    }
+    ren_glTextureParameteri         = (PFNGLTEXTUREPARAMETERIPROC)GetProcAddress(glTextureParameteri);
+    ren_glTextureParameteriCube     = ren_glTextureParameteri;
+    if (!ren_glTextureParameteri) {
+        ren_glTextureParameteri     = ren_glTextureParameteri_emu;
+        ren_glTextureParameteriCube = ren_glTextureParameteriCube_emu;
+    }
+
+    ren_glTextureParameterfv        = (PFNGLTEXTUREPARAMETERFVPROC)GetProcAddress(glTextureParameterfv);
+    ren_glTextureParameterfvCube    = ren_glTextureParameterfv;
+    if (!ren_glTextureParameterfv) {
+        ren_glTextureParameterfv    = ren_glTextureParameterfv_emu;
+        ren_glTextureParameterfvCube = ren_glTextureParameterfvCube_emu;
+    }
+    ren_glTextureParameteriv        = (PFNGLTEXTUREPARAMETERIVPROC)GetProcAddress(glTextureParameteriv);
+    ren_glTextureParameterivCube    = ren_glTextureParameteriv;
+    if (!ren_glTextureParameteriv) {
+        ren_glTextureParameteriv    = ren_glTextureParameteriv_emu;
+        ren_glTextureParameterivCube = ren_glTextureParameterivCube_emu;
+    }
+
+    ren_glGenerateTextureMipmap     = (PFNGLGENERATETEXTUREMIPMAPPROC)GetProcAddress(glGenerateTextureMipmap);
+    ren_glGenerateTextureMipmapCube = ren_glGenerateTextureMipmap;
+    if (!ren_glGenerateTextureMipmap) {
+        ren_glGenerateTextureMipmap = ren_glGenerateTextureMipmap_emu;
+        ren_glGenerateTextureMipmapCube = ren_glGenerateTextureMipmapCube_emu;
+    }
+
+    ren_glBindTextureUnit           = (PFNGLBINDTEXTUREUNITPROC)GetProcAddress(glBindTextureUnit);
+    ren_glBindTextureUnitMs         = ren_glBindTextureUnit;
+    if (!ren_glBindTextureUnit) {
+        ren_glBindTextureUnit       = ren_glBindTextureUnit_emu;
+        ren_glBindTextureUnitMs     = ren_glBindTextureUnitMs_emu;
+    }
+#else
+    ren_glCreateTextures            = ren_glCreateTextures_emu;
+
+    ren_glTextureStorage2D          = ren_glTextureStorage2D_emu;
+    ren_glTextureStorage2DCube      = ren_glTextureStorage2DCube_emu;
+
+    ren_glTextureSubImage2D         = ren_glTextureSubImage2D_emu;
+    ren_glTextureSubImage2DCube     = ren_glTextureSubImage2DCube_emu;
+
+    ren_glTextureSubImage3D         = ren_glTextureSubImage3D_emu;
+    ren_glTextureSubImage3DCube     = ren_glTextureSubImage3DCube_emu;
+
+    ren_glCompressedTextureSubImage2D = ren_glCompressedTextureSubImage2D_emu;
+
+    ren_glTextureParameterf         = ren_glTextureParameterf_emu;
+    ren_glTextureParameterfCube     = ren_glTextureParameterfCube_emu;
+    ren_glTextureParameteri         = ren_glTextureParameteri_emu;
+    ren_glTextureParameteriCube     = ren_glTextureParameteriCube_emu;
+
+    ren_glTextureParameterfv        = ren_glTextureParameterfv_emu;
+    ren_glTextureParameterfvCube    = ren_glTextureParameterfvCube_emu;
+    ren_glTextureParameteriv        = ren_glTextureParameteriv_emu;
+    ren_glTextureParameterivCube    = ren_glTextureParameterivCube_emu;
+
+    ren_glGenerateTextureMipmap     = ren_glGenerateTextureMipmap_emu;
+    ren_glGenerateTextureMipmapCube = ren_glGenerateTextureMipmapCube_emu;
+
+    ren_glBindTextureUnit           = ren_glBindTextureUnit_emu;
+    ren_glBindTextureUnitMs         = ren_glBindTextureUnitMs_emu;
+#endif
 #endif
 
     return true;

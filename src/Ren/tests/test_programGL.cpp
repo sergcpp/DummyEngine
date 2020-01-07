@@ -233,7 +233,7 @@ void main() {
 
         std::vector<AttribData> _data;
         for (int i = 0; i < 128; i++) {
-            _data.push_back({ { 0.0f, float(i), 0.0f, 0.0f }, Ren::Vec4f{ 0.0f } });
+            _data.push_back({ Ren::Vec4f{ 0.0f, float(i), 0.0f, 0.0f }, Ren::Vec4f{ 0.0f } });
         }
 
         uint32_t offset = buf.Alloc(128 * sizeof(AttribData), _data.data());

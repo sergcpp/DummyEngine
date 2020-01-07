@@ -13,8 +13,8 @@
 
 namespace Ren {
 enum eTexColorFormat { Undefined, RawRGB888, RawRGBA8888, RawLUM8, RawR32F, RawR16F, RawR8, RawRG88, RawRGB32F, RawRGBA32F, RawRGBE8888, RawRGB16F, RawRGBA16F, RawRG16, RawRG16U, RawRG16F, RawRG32F, RawRGB10_A2, RawRG11F_B10F, Compressed, None, FormatCount };
-enum eTexFilter { NoFilter, Bilinear, Trilinear, BilinearNoMipmap };
-enum eTexRepeat { Repeat, ClampToEdge, ClampToBorder };
+enum eTexFilter { NoFilter, Bilinear, Trilinear, BilinearNoMipmap, FilterCount };
+enum eTexRepeat { Repeat, ClampToEdge, ClampToBorder, WrapModesCount };
 
 struct Texture2DParams {
     int                 w = 0, h = 0, cube = 0;
@@ -32,6 +32,8 @@ class Texture2D : public RefCounter {
     bool            ready_ = false;
     uint32_t        cubemap_ready_ = 0;
     String          name_;
+
+    void Free();
 
     void InitFromRAWData(const void *data, const Texture2DParams &p);
     void InitFromTGAFile(const void *data, const Texture2DParams &p);

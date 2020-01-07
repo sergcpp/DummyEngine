@@ -132,10 +132,10 @@ void Ren::Camera::Rotate(float rx, float ry, float delta_time) {
     front[1] = -view_matrix_[1][2];
     front[2] = -view_matrix_[2][2];
 
-    Mat4f rot_matrix(1.0f);
+    //Mat4f rot_matrix(1.0f);
 
-    rot_matrix = Ren::Rotate(rot_matrix, rx * delta_time, Vec3f{ view_matrix_[0][0], view_matrix_[1][0], view_matrix_[2][0] });
-    rot_matrix = Ren::Rotate(rot_matrix, ry * delta_time, Vec3f{ view_matrix_[0][1], view_matrix_[1][1], view_matrix_[2][1] });
+    //rot_matrix = Ren::Rotate(rot_matrix, rx * delta_time, Vec3f{ view_matrix_[0][0], view_matrix_[1][0], view_matrix_[2][0] });
+    //rot_matrix = Ren::Rotate(rot_matrix, ry * delta_time, Vec3f{ view_matrix_[0][1], view_matrix_[1][1], view_matrix_[2][1] });
 
     Vec3f tr_front;
 
@@ -229,23 +229,23 @@ float Ren::Camera::GetBoundingSphere(Vec3f &out_center) const {
 
 void Ren::Camera::ExtractSubFrustums(int resx, int resy, int resz, Frustum *sub_frustums) const {
     // grid size by x and y in clip space
-    const float grid_size_cs[2] = { 2.0f / resx, 2.0f / resy };
+    const float grid_size_cs[2] = { 2.0f / (float)resx, 2.0f / (float)resy };
 
     const Mat4f world_from_clip = Ren::Inverse(proj_matrix_ * view_matrix_);
 
     {   // Construct cells for the first depth slice
         const float znear = near_,
-                    zfar = near_ * std::pow(far_ / near_, 1.0f / resz);
+                    zfar = near_ * std::pow(far_ / near_, 1.0f / (float)resz);
 
         for (int y = 0; y < resy; y++) {
-            float ybot = -1.0f + y * grid_size_cs[1],
-                  ytop = -1.0f + (y + 1) * grid_size_cs[1];
+            float ybot = -1.0f + (float)y * grid_size_cs[1],
+                  ytop = -1.0f + float(y + 1) * grid_size_cs[1];
 
             for (int x = 0; x < resx; x++) {
-                Ren::Vec4f p0 = { -1.0f + x * grid_size_cs[0],        ybot, 0.0f, 1.0f },
-                           p1 = { -1.0f + x * grid_size_cs[0],        ytop, 0.0f, 1.0f },
-                           p2 = { -1.0f + (x + 1) * grid_size_cs[0],  ytop, 0.0f, 1.0f },
-                           p3 = { -1.0f + (x + 1) * grid_size_cs[0],  ybot, 0.0f, 1.0f };
+                auto p0 = Ren::Vec4f{ -1.0f + (float)x * grid_size_cs[0],       ybot, 0.0f, 1.0f },
+                     p1 = Ren::Vec4f{ -1.0f + (float)x * grid_size_cs[0],       ytop, 0.0f, 1.0f },
+                     p2 = Ren::Vec4f{ -1.0f + float(x + 1) * grid_size_cs[0],   ytop, 0.0f, 1.0f },
+                     p3 = Ren::Vec4f{ -1.0f + float(x + 1) * grid_size_cs[0],   ybot, 0.0f, 1.0f };
 
                 p0 = world_from_clip * p0;
                 p1 = world_from_clip * p1;
@@ -272,8 +272,8 @@ void Ren::Camera::ExtractSubFrustums(int resx, int resy, int resz, Frustum *sub_
 
     // Construct cells for the rest slices
     for (int z = 1; z < resz; z++) {
-        const float znear = near_ * std::pow(far_ / near_, float(z) / resz),
-                    zfar = near_ * std::pow(far_ / near_, float(z + 1) / resz);
+        const float znear = near_ * std::pow(far_ / near_, float(z) / float(resz)),
+                    zfar = near_ * std::pow(far_ / near_, float(z + 1) / float(resz));
 
         memcpy(&sub_frustums[z * resy * resx], &sub_frustums[0], resy * resx * sizeof(Frustum));
 

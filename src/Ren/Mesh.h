@@ -108,7 +108,7 @@ class Mesh : public RefCounter {
     // split skeletal mesh into chunks to fit uniforms limit in shader
     void SplitMesh(int bones_limit);
 public:
-    Mesh() {}
+    Mesh() = default;
     Mesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
          BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
          eMeshLoadStatus *load_status);

@@ -38,9 +38,7 @@ public:
 
     template <typename... Tail>
     Mat(typename std::enable_if<sizeof...(Tail)+1 == M, Vec<T, N>>::type head, Tail... tail) noexcept
-        : Vec<Vec<T, N>, M> {
-        head, tail...
-    } {
+        : Vec<Vec<T, N>, M> { head, tail... } {
     }
 
     Vec<T, N> &operator[](int i) {
@@ -179,7 +177,7 @@ using Mat3x4d = Mat<double, 3, 4>;
 
 template <typename T, int M, int N>
 Vec<T, M> operator*(const Vec<T, M> &lhs, const Mat<T, M, N> &rhs) {
-    Vec<T, M> res = { Uninitialize };
+    auto res = Vec<T, M>{ Uninitialize };
     for (int m = 0; m < M; m++) {
         res[m] = Dot(lhs, rhs[m]);
     }
@@ -188,7 +186,7 @@ Vec<T, M> operator*(const Vec<T, M> &lhs, const Mat<T, M, N> &rhs) {
 
 template <typename T, int M, int N>
 Vec<T, M> operator*(const Mat<T, M, N> &lhs, const Vec<T, M> &rhs) {
-    Vec<T, M> res = { Uninitialize };
+    auto res = Vec<T, M>{ Uninitialize };
     for (int n = 0; n < N; n++) {
         T sum = (T)0;
         for (int m = 0; m < M; m++) {
@@ -249,9 +247,9 @@ T Minor(const Mat<T, N, N> &mat, int row, int col) {
 template <typename T, int N>
 T Det(const Mat<T, N, N> &mat) {
     T sum = (T)0;
-    for (int n = 0; n < N; n++) {
+    for (unsigned n = 0; n < N; n++) {
         T minor = Minor(mat, n, 0);
-        T cofactor = (n & 1) ? -minor : minor;
+        T cofactor = (n & 1u) ? -minor : minor;
         sum += mat[n][0] * cofactor;
     }
     return sum;
@@ -294,11 +292,11 @@ T Det(const Mat<T, 4, 4> &mat) {
 template <typename T, int N>
 Mat<T, N, N> Adj(const Mat<T, N, N> &mat) {
     Mat<T, N, N> res = { Uninitialize };
-    for (int row = 0; row < N; row++) {
-        for (int col = 0; col < N; col++) {
+    for (unsigned row = 0; row < N; row++) {
+        for (unsigned col = 0; col < N; col++) {
             T minor = Minor(mat, row, col);
-            T cofactor = ((row + col) & 1) ? -minor : minor;
-            return res[col][row] = cofactor;
+            T cofactor = ((row + col) & 1u) ? -minor : minor;
+            res[col][row] = cofactor;
         }
     }
     return res;

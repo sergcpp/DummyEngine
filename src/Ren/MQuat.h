@@ -10,7 +10,7 @@ class Quat {
 public:
     T x, y, z, w;
 
-    Quat(eUninitialized) {}
+    explicit Quat(eUninitialized) {}
     Quat() : x(0), y(0), z(0), w(0) {}
 
     Quat(T _x, T _y, T _z, T _w) : x(_x), y(_y), z(_z), w(_w) {}
@@ -57,7 +57,7 @@ public:
     }
 
     friend Quat<T> operator-(const Quat<T> &v) {
-        Quat<T> res = { Uninitialize };
+        auto res = Quat<T>{ Uninitialize };
 
         res.x = -v.x;
         res.y = -v.y;
@@ -68,7 +68,7 @@ public:
     }
 
     friend Quat<T> operator*(T lhs, const Quat<T> &rhs) {
-        Quat<T> res = { Uninitialize };
+        auto res = Quat<T>{ Uninitialize };
 
         res.x = lhs * rhs.x;
         res.y = lhs * rhs.y;
@@ -79,7 +79,7 @@ public:
     }
 
     friend Quat<T> operator/(T lhs, const Quat<T> &rhs) {
-        Quat<T> res = { Uninitialize };
+        auto res = Quat<T>{ Uninitialize };
 
         res.x = lhs / rhs.x;
         res.y = lhs / rhs.y;
@@ -90,7 +90,7 @@ public:
     }
 
     friend Quat<T> operator*(const Quat<T> &lhs, T rhs) {
-        Quat<T> res = { Uninitialize };
+        auto res = Quat<T>{ Uninitialize };
 
         res.x = lhs.x * rhs;
         res.y = lhs.y * rhs;
@@ -101,7 +101,7 @@ public:
     }
 
     friend Quat<T> operator/(const Quat<T> &lhs, T rhs) {
-        Quat<T> res = { Uninitialize };
+        auto res = Quat<T>{ Uninitialize };
 
         res.x = lhs.x / rhs;
         res.y = lhs.y / rhs;
@@ -112,7 +112,7 @@ public:
     }
 
     friend Quat<T> operator+(const Quat<T> &lhs, const Quat<T> &rhs) {
-        Quat<T> res = { Uninitialize };
+        auto res = Quat<T>{ Uninitialize };
         res.x = lhs.x + rhs.x;
         res.y = lhs.y + rhs.y;
         res.z = lhs.z + rhs.z;
@@ -121,7 +121,7 @@ public:
     }
 
     friend Quat<T> operator-(const Quat<T> &lhs, const Quat<T> &rhs) {
-        Quat<T> res = { Uninitialize };
+        auto res = Quat<T>{ Uninitialize };
         res.x = lhs.x - rhs.x;
         res.y = lhs.y - rhs.y;
         res.z = lhs.z - rhs.z;
@@ -130,7 +130,7 @@ public:
     }
 
     friend Quat<T> operator*(const Quat<T> &lhs, const Quat<T> &rhs) {
-        Quat<T> res = { Uninitialize };
+        auto res = Quat<T>{ Uninitialize };
 
         res.w = lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z;
         res.x = lhs.w * rhs.x + lhs.x * rhs.w + lhs.y * rhs.z - lhs.z * rhs.y;

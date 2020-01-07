@@ -13,8 +13,7 @@ Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *s
     Init(mat_src, status, on_prog_load, on_tex_load);
 }
 
-Ren::Material &Ren::Material::operator=(Material &&rhs) {
-    RefCounter::operator=(std::move(rhs));
+Ren::Material &Ren::Material::operator=(Material &&rhs) noexcept {
     flags_ = rhs.flags_;
     ready_ = rhs.ready_;
     name_ = std::move(rhs.name_);
@@ -27,6 +26,7 @@ Ren::Material &Ren::Material::operator=(Material &&rhs) {
     for (int i = 0; i < 8; i++) {
         params_[i] = rhs.params_[i];
     }
+    RefCounter::operator=(std::move(rhs));
     return *this;
 }
 
@@ -51,7 +51,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
     int num_textures = 0;
     int num_params = 0;
 
-    for (; p != NULL && q != NULL; q = strpbrk(p, delims)) {
+    for (; p != nullptr && q != nullptr; q = strpbrk(p, delims)) {
         if (p == q) {
             p = q + 1;
             continue;
@@ -103,7 +103,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             const char *_p = q + 1;
             const char *_q = strpbrk(_p, delims);
 
-            for (; _p != NULL && _q != NULL; _q = strpbrk(_p, delims)) {
+            for (; _p != nullptr && _q != nullptr; _q = strpbrk(_p, delims)) {
                 if (_p == _q) break;
 
                 std::string flag = std::string(_p, _q);

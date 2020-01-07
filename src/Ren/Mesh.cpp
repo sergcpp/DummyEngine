@@ -432,7 +432,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         data.read((char *)&num_indices, 4);
         data.read((char *)&alpha, 4);
 
-        groups_[i].offset = (int)index * sizeof(uint32_t);
+        groups_[i].offset = int(index * sizeof(uint32_t));
         groups_[i].num_indices = (int)num_indices;
         groups_[i].flags = 0;
 
@@ -554,9 +554,9 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
     std::vector<int> bone_ids;
     bone_ids.reserve(12);
 
-    float *vtx_attribs = (float *)attribs_.get();
+    auto *vtx_attribs = (float *)attribs_.get();
     size_t num_vtx_attribs = attribs_buf1_.size / sizeof(float);
-    unsigned short *vtx_indices = (unsigned short *)indices_.get();
+    auto *vtx_indices = (unsigned short *)indices_.get();
     size_t num_vtx_indices = indices_buf_.size / sizeof(unsigned short);
 
     clock_t t1 = clock();
@@ -583,8 +583,8 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
             for (BoneGroup &g : skel_.bone_groups) {
                 bool b = true;
                 int k = 0;
-                for (size_t j = 0; j < bone_ids.size(); j++) {
-                    if (std::find(g.bone_ids.begin(), g.bone_ids.end(), bone_ids[j]) == g.bone_ids.end()) {
+                for (int bone_id : bone_ids) {
+                    if (std::find(g.bone_ids.begin(), g.bone_ids.end(), bone_id) == g.bone_ids.end()) {
                         k++;
                         if (g.bone_ids.size() + k > (size_t) bones_limit) {
                             b = false;
@@ -602,10 +602,9 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
                 skel_.bone_groups.emplace_back();
                 best_fit = &skel_.bone_groups[skel_.bone_groups.size() - 1];
             }
-            for (size_t j = 0; j < bone_ids.size(); j++) {
-                if (std::find(best_fit->bone_ids.begin(), best_fit->bone_ids.end(), bone_ids[j]) ==
-                        best_fit->bone_ids.end()) {
-                    best_fit->bone_ids.push_back(bone_ids[j]);
+            for (int bone_id : bone_ids) {
+                if (std::find(best_fit->bone_ids.begin(), best_fit->bone_ids.end(), bone_id) == best_fit->bone_ids.end()) {
+                    best_fit->bone_ids.push_back(bone_id);
                 }
             }
             if (!best_fit->strip_ids.empty() && s == best_fit->strip_ids[best_fit->strip_ids.size() - 3] &&

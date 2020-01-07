@@ -58,6 +58,8 @@ if(${RENDERER} STREQUAL "GL")
                      ContextGL.cpp
                      GL.h
                      GLExt.cpp
+                     GLExtDSAEmu.h
+                     GLExtDSAEmu.cpp
                      ProgramGL.h
                      ProgramGL.cpp
                      TextureGL.h

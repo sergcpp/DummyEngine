@@ -14,13 +14,13 @@
 
 namespace Ren {
 enum eMaterialFlags {
-    AlphaTest   = (1 << 0),
-    AlphaBlend  = (1 << 1),
+    AlphaTest   = (1u << 0u),
+    AlphaBlend  = (1u << 1u),
 };
 
 enum eTextureFlags {
-    Signed  = (1 << 0),
-    SRGB    = (1 << 1)
+    Signed  = (1u << 0u),
+    SRGB    = (1u << 1u)
 };
 
 enum eMatLoadStatus { MatFound, MatSetToDefault, MatCreatedFromData };
@@ -40,18 +40,17 @@ class Material : public RefCounter {
     void InitFromTXT(const char *mat_src, eMatLoadStatus *status, const program_load_callback &on_prog_load,
                      const texture_load_callback &on_tex_load);
 public:
-    Material() {}
+    Material() = default;
     Material(const char *name, const char *mat_src, eMatLoadStatus *status,
-             const program_load_callback &on_prog_load,
-             const texture_load_callback &on_tex_load);
+             const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load);
 
     Material(const Mesh &rhs) = delete;
-    Material(Material &&rhs) {
+    Material(Material &&rhs) noexcept {
         *this = std::move(rhs);
     }
 
     Material &operator=(const Material &rhs) = delete;
-    Material &operator=(Material &&rhs);
+    Material &operator=(Material &&rhs) noexcept;
 
     uint32_t flags() const {
         return flags_;
@@ -73,8 +72,7 @@ public:
     }
 
     void Init(const char *mat_src, eMatLoadStatus *status,
-              const program_load_callback &on_prog_load,
-              const texture_load_callback &on_tex_load);
+              const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load);
 };
 
 //typedef StorageRef<Material> MaterialRef;

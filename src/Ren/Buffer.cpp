@@ -220,7 +220,7 @@ void Ren::Buffer::Resize(uint32_t new_size) {
 
         glCopyBufferSubData(GL_ARRAY_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, old_size);
 
-        GLuint old_buffer = (GLuint)buf_id_;
+        auto old_buffer = (GLuint)buf_id_;
         glDeleteBuffers(1, &old_buffer);
 
         glBindBuffer(GL_COPY_WRITE_BUFFER, 0);

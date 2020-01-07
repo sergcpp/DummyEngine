@@ -77,7 +77,7 @@ namespace Ren {
 
 std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eTexColorFormat &format) {
     uint8_t tga_header[12] = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    const uint8_t *tga_compare = (const uint8_t *)data;
+    const auto *tga_compare = (const uint8_t *)data;
     const uint8_t *img_header = (const uint8_t *)data + sizeof(tga_header);
     uint32_t img_size;
     bool compressed = false;
@@ -95,8 +95,8 @@ std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eT
         }
     }
 
-    w = img_header[1] * 256u + img_header[0];
-    h = img_header[3] * 256u + img_header[2];
+    w = int(img_header[1] * 256u + img_header[0]);
+    h = int(img_header[3] * 256u + img_header[2]);
 
     if (w <= 0 || h <= 0 ||
             (img_header[4] != 24 && img_header[4] != 32)) {
@@ -129,9 +129,9 @@ std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eT
     } else {
         for (unsigned num = 0; num < img_size;) {
             uint8_t packet_header = *image_data++;
-            if (packet_header & (1 << 7)) {
+            if (packet_header & (1u << 7u)) {
                 uint8_t color[4];
-                unsigned size = (packet_header & ~(1 << 7)) + 1;
+                unsigned size = (packet_header & ~(1u << 7u)) + 1;
                 size *= bytes_per_pixel;
                 for (unsigned i = 0; i < bytes_per_pixel; i++) {
                     color[i] = *image_data++;
@@ -145,7 +145,7 @@ std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eT
                     }
                 }
             } else {
-                unsigned size = (packet_header & ~(1 << 7)) + 1;
+                unsigned size = (packet_header & ~(1u << 7u)) + 1;
                 size *= bytes_per_pixel;
                 for (unsigned i = 0; i < size; i += bytes_per_pixel, num += bytes_per_pixel) {
                     _image_ret[num] = image_data[i + 2];
@@ -173,17 +173,18 @@ std::unique_ptr<float[]> Ren::ConvertRGBE_to_RGB32F(const uint8_t *image_data, i
     std::unique_ptr<float[]> fp_data(new float[w * h * 3]);
 
     for (int i = 0; i < w * h; i++) {
-        uint8_t r = image_data[4 * i + 0];
-        uint8_t g = image_data[4 * i + 1];
-        uint8_t b = image_data[4 * i + 2];
-        uint8_t a = image_data[4 * i + 3];
+        const uint8_t
+            r = image_data[4 * i + 0],
+            g = image_data[4 * i + 1],
+            b = image_data[4 * i + 2],
+            a = image_data[4 * i + 3];
 
-        float f = std::exp2(float(a) - 128.0f);
-        float k = 1.0f / 255;
+        const float f = std::exp2(float(a) - 128.0f);
+        const float k = 1.0f / 255;
 
-        fp_data[3 * i + 0] = k * r * f;
-        fp_data[3 * i + 1] = k * g * f;
-        fp_data[3 * i + 2] = k * b * f;
+        fp_data[3 * i + 0] = k * float(r) * f;
+        fp_data[3 * i + 1] = k * float(g) * f;
+        fp_data[3 * i + 2] = k * float(b) * f;
     }
 
     return fp_data;
@@ -193,17 +194,18 @@ std::unique_ptr<uint16_t[]> Ren::ConvertRGBE_to_RGB16F(const uint8_t *image_data
     std::unique_ptr<uint16_t[]> fp16_data(new uint16_t[w * h * 3]);
 
     for (int i = 0; i < w * h; i++) {
-        uint8_t r = image_data[4 * i + 0];
-        uint8_t g = image_data[4 * i + 1];
-        uint8_t b = image_data[4 * i + 2];
-        uint8_t a = image_data[4 * i + 3];
+        const uint8_t
+            r = image_data[4 * i + 0],
+            g = image_data[4 * i + 1],
+            b = image_data[4 * i + 2],
+            a = image_data[4 * i + 3];
 
-        float f = std::exp2(float(a) - 128.0f);
-        float k = 1.0f / 255;
+        const float f = std::exp2(float(a) - 128.0f);
+        const float k = 1.0f / 255;
 
-        fp16_data[3 * i + 0] = f32_to_f16(k * r * f);
-        fp16_data[3 * i + 1] = f32_to_f16(k * g * f);
-        fp16_data[3 * i + 2] = f32_to_f16(k * b * f);
+        fp16_data[3 * i + 0] = f32_to_f16(k * float(r) * f);
+        fp16_data[3 * i + 1] = f32_to_f16(k * float(g) * f);
+        fp16_data[3 * i + 2] = f32_to_f16(k * float(b) * f);
     }
 
     return fp16_data;
@@ -214,7 +216,7 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBE(const float *image_data, i
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
-            Vec3f val = { Uninitialize };
+            auto val = Vec3f{ Uninitialize };
 
             if (channels == 3) {
                 val[0] = image_data[3 * (y * w + x) + 0];
@@ -226,15 +228,15 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBE(const float *image_data, i
                 val[2] = image_data[4 * (y * w + x) + 2];
             }
 
-            Ren::Vec3f exp = { std::log2(val[0]), std::log2(val[1]), std::log2(val[2]) };
+            auto exp = Vec3f{ std::log2(val[0]), std::log2(val[1]), std::log2(val[2]) };
             for (int i = 0; i < 3; i++) {
                 exp[i] = std::ceil(exp[i]);
                 if (exp[i] < -128.0f) exp[i] = -128.0f;
                 else if (exp[i] > 127.0f) exp[i] = 127.0f;
             }
 
-            float common_exp = std::max(exp[0], std::max(exp[1], exp[2]));
-            float range = std::exp2(common_exp);
+            const float common_exp = std::max(exp[0], std::max(exp[1], exp[2]));
+            const float range = std::exp2(common_exp);
 
             Ren::Vec3f mantissa = val / range;
             for (int i = 0; i < 3; i++) {
@@ -242,12 +244,13 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBE(const float *image_data, i
                 else if (mantissa[i] > 1.0f) mantissa[i] = 1.0f;
             }
 
-            Ren::Vec4f res = { mantissa[0], mantissa[1], mantissa[2], common_exp + 128.0f };
+            auto res = Ren::Vec4f{ mantissa[0], mantissa[1], mantissa[2], common_exp + 128.0f };
 
-            uint8_t r = (uint8_t)std::max(std::min(int(res[0] * 255), 255), 0);
-            uint8_t g = (uint8_t)std::max(std::min(int(res[1] * 255), 255), 0);
-            uint8_t b = (uint8_t)std::max(std::min(int(res[2] * 255), 255), 0);
-            uint8_t a = (uint8_t)std::max(std::min(int(res[3]), 255), 0);
+            const auto
+                r = (uint8_t)std::max(std::min(int(res[0] * 255), 255), 0),
+                g = (uint8_t)std::max(std::min(int(res[1] * 255), 255), 0),
+                b = (uint8_t)std::max(std::min(int(res[2] * 255), 255), 0),
+                a = (uint8_t)std::max(std::min(int(res[3]), 255), 0);
 
             u8_data[(y * w + x) * 4 + 0] = r;
             u8_data[(y * w + x) * 4 + 1] = g;
@@ -394,7 +397,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
             assert(cache_pos < MaxSizeVertexCache);
             // Points for being high in the cache.
             const float scaler = 1.0f / (MaxSizeVertexCache - 3);
-            score = 1.0f - (cache_pos - 3) * scaler;
+            score = 1.0f - float(cache_pos - 3) * scaler;
             score = std::pow(score, CacheDecayPower);
         }
 
@@ -536,10 +539,10 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
 
         tri_data_t &next_best_tri = triangles[next_best_index];
 
-        for (int32_t j = 0; j < 3; j++) {
-            out_indices[out_index++] = next_best_tri.indices[j];
+        for (unsigned int indice : next_best_tri.indices) {
+            out_indices[out_index++] = indice;
 
-            vtx_data_t &v = vertices[next_best_tri.indices[j]];
+            vtx_data_t &v = vertices[indice];
             v.active_tris_count--;
             for (uint32_t k = 0; k < v.ref_count; k++) {
                 if (v.tris[k] == next_best_index) {
@@ -548,7 +551,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
                 }
             }
 
-            use_vertex(lru_cache, next_best_tri.indices[j]);
+            use_vertex(lru_cache, indice);
         }
 
         next_best_tri.is_in_list = true;

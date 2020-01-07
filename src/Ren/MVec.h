@@ -13,7 +13,7 @@ class Vec {
 protected:
     T data_[N];
 public:
-    Vec(eUninitialized) noexcept {}
+    explicit Vec(eUninitialized) noexcept {}
     Vec() noexcept : data_{ (T)0 } {}
     explicit Vec(T v) noexcept {
         for (int i = 0; i < N; i++) {
@@ -22,7 +22,7 @@ public:
     }
 
     template <typename... Tail>
-    Vec(typename std::enable_if<sizeof...(Tail)+1 == N, T>::type head, Tail... tail) noexcept
+    explicit Vec(typename std::enable_if<sizeof...(Tail)+1 == N, T>::type head, Tail... tail) noexcept
         : data_{ head, T(tail)... } {
     }
 
@@ -102,7 +102,7 @@ public:
     }
 
     friend Vec<T, N> operator-(const Vec<T, N> &v) {
-        Vec<T, N> res = { Uninitialize };
+        auto res = Vec<T, N>{ Uninitialize };
         for (int i = 0; i < N; i++) {
             res.data_[i] = -v.data_[i];
         }
@@ -110,7 +110,7 @@ public:
     }
 
     friend Vec<T, N> operator+(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
-        Vec<T, N> res = { Uninitialize };
+        auto res = Vec<T, N>{ Uninitialize };
         for (int i = 0; i < N; i++) {
             res.data_[i] = lhs.data_[i] + rhs.data_[i];
         }
@@ -118,7 +118,7 @@ public:
     }
 
     friend Vec<T, N> operator-(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
-        Vec<T, N> res = { Uninitialize };
+        auto res = Vec<T, N>{ Uninitialize };
         for (int i = 0; i < N; i++) {
             res.data_[i] = lhs.data_[i] - rhs.data_[i];
         }
@@ -126,7 +126,7 @@ public:
     }
 
     friend Vec<T, N> operator*(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
-        Vec<T, N> res = { Uninitialize };
+        auto res = Vec<T, N>{ Uninitialize };
         for (int i = 0; i < N; i++) {
             res.data_[i] = lhs.data_[i] * rhs.data_[i];
         }
@@ -134,7 +134,7 @@ public:
     }
 
     friend Vec<T, N> operator/(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
-        Vec<T, N> res = { Uninitialize };
+        auto res = Vec<T, N>{ Uninitialize };
         for (int i = 0; i < N; i++) {
             res.data_[i] = lhs.data_[i] / rhs.data_[i];
         }
@@ -142,7 +142,7 @@ public:
     }
 
     friend Vec<T, N> operator*(T lhs, const Vec<T, N> &rhs) {
-        Vec<T, N> res = { Uninitialize };
+        auto res = Vec<T, N>{ Uninitialize };
         for (int i = 0; i < N; i++) {
             res.data_[i] = lhs * rhs.data_[i];
         }
@@ -150,7 +150,7 @@ public:
     }
 
     friend Vec<T, N> operator/(T lhs, const Vec<T, N> &rhs) {
-        Vec<T, N> res = { Uninitialize };
+        auto res = Vec<T, N>{ Uninitialize };
         for (int i = 0; i < N; i++) {
             res.data_[i] = lhs / rhs.data_[i];
         }
@@ -158,7 +158,7 @@ public:
     }
 
     friend Vec<T, N> operator*(const Vec<T, N> &lhs, const T &rhs) {
-        Vec<T, N> res = { Uninitialize };
+        auto res = Vec<T, N>{ Uninitialize };
         for (int i = 0; i < N; i++) {
             res.data_[i] = lhs.data_[i] * rhs;
         }
@@ -166,7 +166,7 @@ public:
     }
 
     friend Vec<T, N> operator/(const Vec<T, N> &lhs, const T &rhs) {
-        Vec<T, N> res = { Uninitialize };
+        auto res = Vec<T, N>{ Uninitialize };
         for (int i = 0; i < N; i++) {
             res.data_[i] = lhs.data_[i] / rhs;
         }

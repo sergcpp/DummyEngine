@@ -11,7 +11,7 @@ struct Plane {
 
     Plane() : d(0.0f) {}
     Plane(const Ren::Vec3f &v0, const Ren::Vec3f &v1, const Ren::Vec3f &v2);
-    Plane(eUninitialized) : n(Uninitialize) {}
+    explicit Plane(eUninitialized) : n(Uninitialize) {}
 
     int ClassifyPoint(const float point[3]) const;
 };
@@ -23,8 +23,10 @@ enum eCamPlane {
 enum eVisibilityResult { Invisible, FullyVisible, PartiallyVisible };
 
 struct Frustum {
-    Ren::Plane planes[8] = { { Ren::Uninitialize }, { Ren::Uninitialize }, { Ren::Uninitialize }, { Ren::Uninitialize },
-                             { Ren::Uninitialize }, { Ren::Uninitialize }, { Ren::Uninitialize }, { Ren::Uninitialize } };
+    Ren::Plane planes[8] = { Ren::Plane{ Ren::Uninitialize }, Ren::Plane{ Ren::Uninitialize },
+                             Ren::Plane{ Ren::Uninitialize }, Ren::Plane{ Ren::Uninitialize },
+                             Ren::Plane{ Ren::Uninitialize }, Ren::Plane{ Ren::Uninitialize },
+                             Ren::Plane{ Ren::Uninitialize }, Ren::Plane{ Ren::Uninitialize } };
     int planes_count = 6;
 
     eVisibilityResult CheckVisibility(const Vec3f &point) const;
@@ -45,7 +47,7 @@ protected:
     float angle_, aspect_, near_, far_;
     float max_exposure_;
 public:
-    Camera() {}
+    Camera() = default;
     Camera(const Vec3f &center, const Vec3f &target, const Vec3f &up);
 
     const Mat4f &view_matrix() const {
@@ -88,7 +90,7 @@ public:
         return frustum_.planes[i];
     }
 
-    const bool is_orthographic() const {
+    bool is_orthographic() const {
         return is_orthographic_;
     }
 

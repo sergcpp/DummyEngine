@@ -43,7 +43,7 @@ class AnimSequence : public RefCounter {
     bool        ready_ = false;
 
 public:
-    AnimSequence() {}
+    AnimSequence() = default;
     AnimSequence(const char *name, std::istream &data);
 
     const String &name() const {

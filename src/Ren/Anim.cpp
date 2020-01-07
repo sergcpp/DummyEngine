@@ -68,8 +68,8 @@ void Ren::AnimSequence::Init(std::istream &data) {
     frames_.resize(file_header.p[FRAMES_CHUNK].length / 4);
     data.read((char *)&frames_[0], (size_t)file_header.p[FRAMES_CHUNK].length);
 
-    frame_dur_ = 1.0f / fps_;
-    anim_dur_ = len_ * frame_dur_;
+    frame_dur_ = 1.0f / (float)fps_;
+    anim_dur_ = (float)len_ * frame_dur_;
 
     ready_ = true;
 }
@@ -79,12 +79,12 @@ std::vector<Ren::AnimBone *> Ren::AnimSequence::LinkBones(std::vector<Bone> &_bo
     anim_bones.reserve(_bones.size());
     for (size_t i = 0; i < _bones.size(); i++) {
         bool added = false;
-        for (size_t j = 0; j < this->bones_.size(); j++) {
-            if (strcmp(_bones[i].name, this->bones_[j].name) == 0) {
+        for (AnimBone &bone : this->bones_) {
+            if (strcmp(_bones[i].name, bone.name) == 0) {
                 if (_bones[i].parent_id != -1) {
-                    assert(strcmp(_bones[_bones[i].parent_id].name, this->bones_[j].parent_name) == 0);
+                    assert(strcmp(_bones[_bones[i].parent_id].name, bone.parent_name) == 0);
                 }
-                anim_bones.push_back(&this->bones_[j]);
+                anim_bones.push_back(&bone);
                 added = true;
                 break;
             }
@@ -102,7 +102,7 @@ void Ren::AnimSequence::Update(float time) {
     while (time > anim_dur_) time -= anim_dur_;
     while (time < 0.0f) time += anim_dur_;
 
-    float frame = time * fps_;
+    float frame = time * (float)fps_;
     float frame_fl = std::floor(frame);
     int fr_0 = (int)frame;
     int fr_1 = (int)std::ceil(frame);
@@ -114,17 +114,17 @@ void Ren::AnimSequence::Update(float time) {
 }
 
 void Ren::AnimSequence::InterpolateFrames(int fr_0, int fr_1, float t) {
-    for (size_t i = 0; i < bones_.size(); i++) {
-        int offset = bones_[i].offset;
-        if (bones_[i].flags & AnimHasTranslate) {
+    for (AnimBone &bone : bones_) {
+        int offset = bone.offset;
+        if (bone.flags & AnimHasTranslate) {
             Vec3f p1 = MakeVec3(&frames_[fr_0 * frame_size_ + offset]);
             Vec3f p2 = MakeVec3(&frames_[fr_1 * frame_size_ + offset]);
-            bones_[i].cur_pos = Mix(p1, p2, t);
+            bone.cur_pos = Mix(p1, p2, t);
             offset += 3;
         }
         Quatf q1 = MakeQuat(&frames_[fr_0 * frame_size_ + offset]);
         Quatf q2 = MakeQuat(&frames_[fr_1 * frame_size_ + offset]);
-        bones_[i].cur_rot = Mix(q1, q2, t);
+        bone.cur_rot = Mix(q1, q2, t);
     }
 }
 
@@ -193,9 +193,9 @@ int Ren::Skeleton::AddAnimSequence(const AnimSeqRef &ref) {
 }
 
 void Ren::Skeleton::MarkChildren() {
-    for (size_t i = 0; i < bones.size(); i++) {
-        if (bones[i].parent_id != -1 && bones[bones[i].parent_id].dirty) {
-            bones[i].dirty = true;
+    for (Bone &bone : bones) {
+        if (bone.parent_id != -1 && bones[bone.parent_id].dirty) {
+            bone.dirty = true;
         }
     }
 }
