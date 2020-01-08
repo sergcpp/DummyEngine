@@ -233,6 +233,7 @@ void Ren::Texture2D::Free() {
     if (params_.format != Undefined) {
         auto tex_id = (GLuint)tex_id_;
         glDeleteTextures(1, &tex_id);
+        tex_id_ = 0;
     }
 }
 
@@ -344,7 +345,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2D
     glTextureStorage2D(tex_id, (GLsizei)header.dwMipMapCount, internal_format, (GLsizei)params_.w, (GLsizei)params_.h);
 
     int w = params_.w, h = params_.h;
-    int bytes_left = size - sizeof(DDSHeader);
+    int bytes_left = size - (int)sizeof(DDSHeader);
     const uint8_t *p_data = (uint8_t *)data + sizeof(DDSHeader);
 
     for (uint32_t i = 0; i < header.dwMipMapCount; i++) {
@@ -394,8 +395,8 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2D
 
     GLuint tex_id;
     glCreateTextures(GL_TEXTURE_2D, 1, &tex_id);
-    tex_id_ = tex_id;
 
+    tex_id_ = tex_id;
     params_ = p;
     params_.format = Compressed;
 
@@ -416,7 +417,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2D
     params_.h = h;
 
     // allocate all mip levels
-    glTextureStorage2D(tex_id, (GLsizei)header.mipmap_levels_count, internal_format, (GLsizei)params_.w, (GLsizei)params_.h);
+    glTextureStorage2D(tex_id, (GLsizei)header.mipmap_levels_count, internal_format, (GLsizei)w, (GLsizei)h);
 
     const auto *_data = (const uint8_t *)data;
     int data_offset = sizeof(KTXHeader);
@@ -656,8 +657,9 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], con
     KTXHeader first_header;
     memcpy(&first_header, data[0], sizeof(KTXHeader));
 
-    int w = (int)first_header.pixel_width;
-    int h = (int)first_header.pixel_height;
+    const int
+        w = (int)first_header.pixel_width,
+        h = (int)first_header.pixel_height;
 
     params_.w = w;
     params_.h = h;
@@ -691,7 +693,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], con
             _w = std::max(_w / 2, 1);
             _h = std::max(_h / 2, 1);
 
-            int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
+            const int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
             data_offset += pad;
         }
     }

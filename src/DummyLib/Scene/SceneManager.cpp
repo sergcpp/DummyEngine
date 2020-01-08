@@ -789,7 +789,7 @@ void SceneManager::LoadProbeCache() {
 
 #if !defined(__ANDROID__)
                     const uint8_t *p_data = (uint8_t *)data + sizeof(Ren::DDSHeader);
-                    int data_len = size - sizeof(Ren::DDSHeader);
+                    int data_len = size - (int)sizeof(Ren::DDSHeader);
 
                     int _res = res;
                     int level = 0;
@@ -812,7 +812,7 @@ void SceneManager::LoadProbeCache() {
 #else
                     const uint8_t *p_data = (uint8_t *)data;
                     int data_offset = sizeof(Ren::KTXHeader);
-                    int data_len = size - sizeof(Ren::KTXHeader);
+                    int data_len = size - (int)sizeof(Ren::KTXHeader);
 
                     int _res = res;
                     int level = 0;
@@ -832,7 +832,7 @@ void SceneManager::LoadProbeCache() {
                         data_offset += len;
                         data_len -= len;
 
-                        int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
+                        const int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
                         data_offset += pad;
 
                         _res = _res / 2;

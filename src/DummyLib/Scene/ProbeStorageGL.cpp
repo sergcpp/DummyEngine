@@ -103,14 +103,16 @@ bool ProbeStorage::SetPixelData(const int level, const int layer, const int face
 
     glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id_);
 
-    const int _res = (res_ >> level);
+    const int _res = int((unsigned)res_ >> (unsigned)level);
 
     if (format == Ren::Compressed) {
         glCompressedTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, level, 0, 0, (layer * 6 + face), _res, _res, 1, tex_format, data_len, data);
 
+#ifndef NDEBUG
         for (GLint error = glGetError(); error; error = glGetError()) {
             LOGE("after glCompressedTexSubImage3D glError (0x%x)\n", error);
         }
+#endif
 
 #if !defined(NDEBUG) && !defined(__ANDROID__) && 0
         std::unique_ptr<uint8_t[]> temp_buf(new uint8_t[data_len]);
