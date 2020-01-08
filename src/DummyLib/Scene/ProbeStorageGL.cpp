@@ -55,7 +55,6 @@ void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity) {
         } else {
             const int len = ((_res + 3) / 4) * ((_res + 3) / 4) * 16;
 #if !defined(__ANDROID__)
-
             glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, _res, _res,
                                    capacity * 6, 0, capacity * 6 * len, nullptr);
 #else
@@ -113,7 +112,7 @@ bool ProbeStorage::SetPixelData(const int level, const int layer, const int face
             LOGE("after glCompressedTexSubImage3D glError (0x%x)\n", error);
         }
 
-#if !defined(NDEBUG) && !defined(__ANDROID__)
+#if !defined(NDEBUG) && !defined(__ANDROID__) && 0
         std::unique_ptr<uint8_t[]> temp_buf(new uint8_t[data_len]);
         glGetCompressedTextureSubImage((GLuint)tex_id_, level, 0, 0, (layer * 6 + face), _res, _res, 1, data_len, &temp_buf[0]);
         assert(memcmp(data, &temp_buf[0], data_len) == 0);

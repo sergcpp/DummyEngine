@@ -376,6 +376,16 @@ void GSBaseState::Enter() {
 }
 
 bool GSBaseState::LoadScene(const char *name) {
+    using namespace GSBaseStateInternal;
+
+    // wait for backgroud thread iteration
+    if (USE_TWO_THREADS) {
+        std::unique_lock<std::mutex> lock(mtx_);
+        while (notified_) {
+            thr_done_.wait(lock);
+        }
+    }
+
     JsObject js_scene, js_probe_cache;
 
     {   // Load scene data from file

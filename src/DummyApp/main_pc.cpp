@@ -6,6 +6,7 @@ int main(int argc, char *argv[]) {
 }
 
 // TODO:
+// make probe storage's texture immutable
 // fix crash when minimizing window
 // scene editing
 // use direct access extension

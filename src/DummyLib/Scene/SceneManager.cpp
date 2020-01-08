@@ -736,13 +736,15 @@ void SceneManager::ClearScene() {
     scene_data_.name = {};
     scene_data_.objects.clear();
     scene_data_.name_to_object.clear();
+    scene_data_.lm_splitter.Clear();
 
     ray_scene_ = {};
 }
 
 void SceneManager::LoadProbeCache() {
-    const int res = scene_data_.probe_storage.res();
-    const int capacity = scene_data_.probe_storage.capacity();
+    const int
+        res = scene_data_.probe_storage.res(),
+        capacity = scene_data_.probe_storage.capacity();
     scene_data_.probe_storage.Resize(Ren::Compressed, res, capacity);
 
     CompStorage *probe_storage = scene_data_.comp_store[CompProbe];
@@ -772,68 +774,75 @@ void SceneManager::LoadProbeCache() {
             file_path += ".ktx";
 #endif
 
-            Sys::AssetFile in_file(file_path, Sys::AssetFile::FileIn);
-            if (!in_file) continue;
+            std::weak_ptr<SceneManager> _self = shared_from_this();
+            Sys::LoadAssetComplete(file_path.c_str(),
+                                   [_self, probe_id, face_index](void *data, int size) {
+                std::shared_ptr<SceneManager> self = _self.lock();
+                if (!self) return;
 
-            const size_t in_file_size = in_file.size();
+                self->ctx_.ProcessSingleTask([&self, probe_id, face_index, data, size]() {
+                    const int res = self->scene_data_.probe_storage.res();
+                    CompStorage *probe_storage = self->scene_data_.comp_store[CompProbe];
 
-            std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
-            in_file.Read((char *) &in_file_data[0], in_file_size);
+                    auto *lprobe = (LightProbe *)probe_storage->Get(probe_id);
+                    assert(lprobe);
 
-            if (lprobe->layer_index != -1) {
 #if !defined(__ANDROID__)
-                const uint8_t *p_data = &in_file_data[0] + sizeof(Ren::DDSHeader);
-                int data_len = (int)in_file_size - sizeof(Ren::DDSHeader);
+                    const uint8_t *p_data = (uint8_t *)data + sizeof(Ren::DDSHeader);
+                    int data_len = size - sizeof(Ren::DDSHeader);
 
-                int _res = res;
-                int level = 0;
+                    int _res = res;
+                    int level = 0;
 
-                while (_res >= 16) {
-                    const int len = ((_res + 3) / 4) * ((_res + 3) / 4) * 16;
+                    while (_res >= 16) {
+                        const int len = ((_res + 3) / 4) * ((_res + 3) / 4) * 16;
 
-                    if (len > data_len ||
-                        !scene_data_.probe_storage.SetPixelData(level, lprobe->layer_index, face_index,
-                                                                Ren::Compressed, p_data, len)) {
-                        LOGE("Failed to load probe texture!");
+                        if (len > data_len ||
+                            !self->scene_data_.probe_storage.SetPixelData(level, lprobe->layer_index, face_index,
+                            Ren::Compressed, p_data, len)) {
+                            LOGE("Failed to load probe texture!");
+                        }
+
+                        p_data += len;
+                        data_len -= len;
+
+                        _res = _res / 2;
+                        level++;
                     }
-
-                    p_data += len;
-                    data_len -= len;
-
-                    _res = _res / 2;
-                    level++;
-                }
 #else
-                uint8_t *p_data = &in_file_data[0];
-                int data_offset = sizeof(Ren::KTXHeader);
-                int data_len = (int)in_file_size - sizeof(Ren::KTXHeader);
+                    const uint8_t *p_data = (uint8_t *)data;
+                    int data_offset = sizeof(Ren::KTXHeader);
+                    int data_len = size - sizeof(Ren::KTXHeader);
 
-                int _res = res;
-                int level = 0;
+                    int _res = res;
+                    int level = 0;
 
-                while (_res >= 16) {
-                    uint32_t len;
-                    memcpy(&len, &p_data[data_offset], sizeof(uint32_t));
-                    data_offset += sizeof(uint32_t);
-                    data_len -= sizeof(uint32_t);
+                    while (_res >= 16) {
+                        uint32_t len;
+                        memcpy(&len, &p_data[data_offset], sizeof(uint32_t));
+                        data_offset += sizeof(uint32_t);
+                        data_len -= sizeof(uint32_t);
 
-                    if (len > data_len ||
-                        !scene_data_.probe_storage.SetPixelData(level, lprobe->layer_index, face_index,
-                                                                Ren::Compressed, &p_data[data_offset], len)) {
-                        LOGE("Failed to load probe texture!");
+                        if ((int)len > data_len ||
+                            !self->scene_data_.probe_storage.SetPixelData(level, lprobe->layer_index, face_index,
+                            Ren::Compressed, &p_data[data_offset], len)) {
+                            LOGE("Failed to load probe texture!");
+                        }
+
+                        data_offset += len;
+                        data_len -= len;
+
+                        int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
+                        data_offset += pad;
+
+                        _res = _res / 2;
+                        level++;
                     }
-
-                    data_offset += len;
-                    data_len -= len;
-
-                    int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
-                    data_offset += pad;
-
-                    _res = _res / 2;
-                    level++;
-                }
 #endif
-            }
+                });
+            }, [probe_id, face_index]() {
+                LOGE("Failed to load probe %i face %i", probe_id, face_index);
+            });
         }
 
         probe_id = probe_storage->Next(probe_id);
