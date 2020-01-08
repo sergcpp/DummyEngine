@@ -22,22 +22,22 @@ namespace RendererInternal {
     static_assert(sizeof(SharedDataBlock) == 5664, "!");
 
     const Ren::Vec2f poisson_disk[] = {
-        { -0.705374f, -0.668203f }, { -0.780145f, 0.486251f  }, { 0.566637f, 0.605213f   }, { 0.488876f, -0.783441f  },
-        { -0.613392f, 0.617481f  }, { 0.170019f, -0.040254f  }, { -0.299417f, 0.791925f  }, { 0.645680f, 0.493210f   },
-        { -0.651784f, 0.717887f  }, { 0.421003f, 0.027070f   }, { -0.817194f, -0.271096f }, { 0.977050f, -0.108615f  },
-        { 0.063326f, 0.142369f   }, { 0.203528f, 0.214331f   }, { -0.667531f, 0.326090f  }, { -0.098422f, -0.295755f },
-        { -0.885922f, 0.215369f  }, { 0.039766f, -0.396100f  }, { 0.751946f, 0.453352f   }, { 0.078707f, -0.715323f  },
-        { -0.075838f, -0.529344f }, { 0.724479f, -0.580798f  }, { 0.222999f, -0.215125f  }, { -0.467574f, -0.405438f },
-        { -0.248268f, -0.814753f }, { 0.354411f, -0.887570f  }, { 0.175817f, 0.382366f   }, { 0.487472f, -0.063082f  },
-        { -0.084078f, 0.898312f  }, { 0.470016f, 0.217933f   }, { -0.696890f, -0.549791f }, { -0.149693f, 0.605762f  },
-        { 0.034211f, 0.979980f   }, { 0.503098f, -0.308878f  }, { -0.016205f, -0.872921f }, { 0.385784f, -0.393902f  },
-        { -0.146886f, -0.859249f }, { 0.643361f, 0.164098f   }, { 0.634388f, -0.049471f  }, { -0.688894f, 0.007843f  },
-        { 0.464034f, -0.188818f  }, { -0.440840f, 0.137486f  }, { 0.364483f, 0.511704f   }, { 0.034028f, 0.325968f   },
-        { 0.099094f, -0.308023f  }, { 0.693960f, -0.366253f  }, { 0.678884f, -0.204688f  }, { 0.001801f, 0.780328f   },
-        { 0.145177f, -0.898984f  }, { 0.062655f, -0.611866f  }, { 0.315226f, -0.604297f  }, { -0.371868f, 0.882138f  },
-        { 0.200476f, 0.494430f   }, { -0.494552f, -0.711051f }, { 0.612476f, 0.705252f   }, { -0.578845f, -0.768792f },
-        { -0.772454f, -0.090976f }, { 0.504440f, 0.372295f   }, { 0.155736f, 0.065157f   }, { 0.391522f, 0.849605f   },
-        { -0.620106f, -0.328104f }, { 0.789239f, -0.419965f  }, { -0.545396f, 0.538133f  }, { -0.178564f, -0.596057f }
+        Ren::Vec2f{ -0.705374f, -0.668203f }, Ren::Vec2f{ -0.780145f, 0.486251f  }, Ren::Vec2f{ 0.566637f, 0.605213f   }, Ren::Vec2f{ 0.488876f, -0.783441f  },
+        Ren::Vec2f{ -0.613392f, 0.617481f  }, Ren::Vec2f{ 0.170019f, -0.040254f  }, Ren::Vec2f{ -0.299417f, 0.791925f  }, Ren::Vec2f{ 0.645680f, 0.493210f   },
+        Ren::Vec2f{ -0.651784f, 0.717887f  }, Ren::Vec2f{ 0.421003f, 0.027070f   }, Ren::Vec2f{ -0.817194f, -0.271096f }, Ren::Vec2f{ 0.977050f, -0.108615f  },
+        Ren::Vec2f{ 0.063326f, 0.142369f   }, Ren::Vec2f{ 0.203528f, 0.214331f   }, Ren::Vec2f{ -0.667531f, 0.326090f  }, Ren::Vec2f{ -0.098422f, -0.295755f },
+        Ren::Vec2f{ -0.885922f, 0.215369f  }, Ren::Vec2f{ 0.039766f, -0.396100f  }, Ren::Vec2f{ 0.751946f, 0.453352f   }, Ren::Vec2f{ 0.078707f, -0.715323f  },
+        Ren::Vec2f{ -0.075838f, -0.529344f }, Ren::Vec2f{ 0.724479f, -0.580798f  }, Ren::Vec2f{ 0.222999f, -0.215125f  }, Ren::Vec2f{ -0.467574f, -0.405438f },
+        Ren::Vec2f{ -0.248268f, -0.814753f }, Ren::Vec2f{ 0.354411f, -0.887570f  }, Ren::Vec2f{ 0.175817f, 0.382366f   }, Ren::Vec2f{ 0.487472f, -0.063082f  },
+        Ren::Vec2f{ -0.084078f, 0.898312f  }, Ren::Vec2f{ 0.470016f, 0.217933f   }, Ren::Vec2f{ -0.696890f, -0.549791f }, Ren::Vec2f{ -0.149693f, 0.605762f  },
+        Ren::Vec2f{ 0.034211f, 0.979980f   }, Ren::Vec2f{ 0.503098f, -0.308878f  }, Ren::Vec2f{ -0.016205f, -0.872921f }, Ren::Vec2f{ 0.385784f, -0.393902f  },
+        Ren::Vec2f{ -0.146886f, -0.859249f }, Ren::Vec2f{ 0.643361f, 0.164098f   }, Ren::Vec2f{ 0.634388f, -0.049471f  }, Ren::Vec2f{ -0.688894f, 0.007843f  },
+        Ren::Vec2f{ 0.464034f, -0.188818f  }, Ren::Vec2f{ -0.440840f, 0.137486f  }, Ren::Vec2f{ 0.364483f, 0.511704f   }, Ren::Vec2f{ 0.034028f, 0.325968f   },
+        Ren::Vec2f{ 0.099094f, -0.308023f  }, Ren::Vec2f{ 0.693960f, -0.366253f  }, Ren::Vec2f{ 0.678884f, -0.204688f  }, Ren::Vec2f{ 0.001801f, 0.780328f   },
+        Ren::Vec2f{ 0.145177f, -0.898984f  }, Ren::Vec2f{ 0.062655f, -0.611866f  }, Ren::Vec2f{ 0.315226f, -0.604297f  }, Ren::Vec2f{ -0.371868f, 0.882138f  },
+        Ren::Vec2f{ 0.200476f, 0.494430f   }, Ren::Vec2f{ -0.494552f, -0.711051f }, Ren::Vec2f{ 0.612476f, 0.705252f   }, Ren::Vec2f{ -0.578845f, -0.768792f },
+        Ren::Vec2f{ -0.772454f, -0.090976f }, Ren::Vec2f{ 0.504440f, 0.372295f   }, Ren::Vec2f{ 0.155736f, 0.065157f   }, Ren::Vec2f{ 0.391522f, 0.849605f   },
+        Ren::Vec2f{ -0.620106f, -0.328104f }, Ren::Vec2f{ 0.789239f, -0.419965f  }, Ren::Vec2f{ -0.545396f, 0.538133f  }, Ren::Vec2f{ -0.178564f, -0.596057f }
     };
 
     const GLuint A_INDICES = 3;
@@ -60,16 +60,6 @@ namespace RendererInternal {
 
     const int LIGHTS_BUFFER_BINDING = 0;
 
-    inline void BindTexture(int slot, uint32_t tex) {
-        glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
-        glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
-    }
-
-    inline void BindTextureMs(int slot, uint32_t tex) {
-        glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, (GLuint)tex);
-    }
-
     inline void BindCubemap(int slot, uint32_t tex) {
         glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
         glBindTexture(GL_TEXTURE_CUBE_MAP, (GLuint)tex);
@@ -82,11 +72,15 @@ namespace RendererInternal {
 
     const int TEMP_BUF_SIZE = 256;
 
-    const float fs_quad_positions[] = { -1.0f, -1.0f,   1.0f, -1.0f,
-                                         1.0f, 1.0f,    -1.0f, 1.0f };
+    const float fs_quad_positions[] = {
+        -1.0f, -1.0f,   1.0f, -1.0f,
+        1.0f, 1.0f,    -1.0f, 1.0f
+    };
 
-    const float fs_quad_norm_uvs[] = { 0.0f, 0.0f,     1.0f, 0.0f,
-                                       1.0f, 1.0f,     0.0f, 1.0f };
+    const float fs_quad_norm_uvs[] = {
+        0.0f, 0.0f,     1.0f, 0.0f,
+        1.0f, 1.0f,     0.0f, 1.0f
+    };
 
     const uint16_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
 
@@ -99,7 +93,7 @@ namespace RendererInternal {
     const size_t ItemsBufChunkSize          = sizeof(ItemData) * REN_MAX_ITEMS_TOTAL;
 
     struct DebugMarker {
-        DebugMarker(const char *name) {
+        explicit DebugMarker(const char *name) {
 #ifndef DISABLE_MARKERS
             glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name);
 #endif
@@ -574,9 +568,9 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: additional data allocation");
 
     {   // Set shadowmap compare mode
-        BindTexture(REN_SHAD_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+        const uint32_t shad_tex = shadow_buf_.depth_tex.GetValue();
+        glTextureParameteri(shad_tex, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+        glTextureParameteri(shad_tex, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
     }
 
     Ren::CheckError("[InitRendererInternal]: shadowmap compare mode setup");
@@ -627,21 +621,21 @@ bool Renderer::InitFramebuffersInternal() {
     {   // Attach textures from clean framebuffer to skydome framebuffer (only color, specular and depth are drawn)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)skydome_framebuf_);
 
-        GLuint col_tex = (GLuint)clean_buf_.attachments[0].tex;
+        auto col_tex = (GLuint)clean_buf_.attachments[0].tex;
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
         } else {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
         }
 
-        GLuint spec_tex = (GLuint)clean_buf_.attachments[2].tex;
+        auto spec_tex = (GLuint)clean_buf_.attachments[2].tex;
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D_MULTISAMPLE, spec_tex, 0);
         } else {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, spec_tex, 0);
         }
 
-        GLuint depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
@@ -658,7 +652,7 @@ bool Renderer::InitFramebuffersInternal() {
     {   // Attach textures from clean framebuffer to depth-fill framebuffer (only depth is drawn)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
 
-        GLuint depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
@@ -675,7 +669,7 @@ bool Renderer::InitFramebuffersInternal() {
     {   // Attach textures from clean framebuffer to refl comb framebuffer (only color is drawn)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)refl_comb_framebuf_);
 
-        GLuint col_tex = (GLuint)clean_buf_.attachments[0].tex;
+        auto col_tex = (GLuint)clean_buf_.attachments[0].tex;
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
         } else {
@@ -719,7 +713,7 @@ bool Renderer::InitFramebuffersInternal() {
     {   // Attach color from clean buffer to transparent comb buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)transparent_comb_framebuf_);
 
-        GLuint col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex;
+        auto col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex;
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
         } else {
@@ -736,8 +730,8 @@ bool Renderer::InitFramebuffersInternal() {
     {   // Attach color and depth from clean buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)clean_buf_color_only_);
 
-        GLuint col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex,
-               depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        auto col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex,
+             depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
@@ -756,9 +750,9 @@ bool Renderer::InitFramebuffersInternal() {
     {   // Attach accum and revealage textures from clean buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)clean_buf_transparent_);
 
-        GLuint col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex,
-               norm_tex = (GLuint)clean_buf_.attachments[REN_OUT_NORM_INDEX].tex,
-               depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        auto col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex,
+             norm_tex = (GLuint)clean_buf_.attachments[REN_OUT_NORM_INDEX].tex,
+             depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
 
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
@@ -788,27 +782,27 @@ void Renderer::CheckInitVAOs() {
                    vtx_buf2 = ctx_.default_vertex_buf2(),
                    ndx_buf = ctx_.default_indices_buf();
 
-    GLuint gl_vertex_buf1 = (GLuint)vtx_buf1->buf_id(),
-           gl_vertex_buf2 = (GLuint)vtx_buf2->buf_id(),
-           gl_indices_buf = (GLuint)ndx_buf->buf_id();
+    auto gl_vertex_buf1 = (GLuint)vtx_buf1->buf_id(),
+         gl_vertex_buf2 = (GLuint)vtx_buf2->buf_id(),
+         gl_indices_buf = (GLuint)ndx_buf->buf_id();
 
     if (gl_vertex_buf1 != last_vertex_buf1_ || gl_vertex_buf2 != last_vertex_buf2_ || gl_indices_buf != last_index_buffer_) {
         // buffers were reallocated, recreate vertex arrays
 
         if (last_vertex_buf1_) {
-            GLuint sphere_vao = (GLuint)sphere_vao_;
+            auto sphere_vao = (GLuint)sphere_vao_;
             glDeleteVertexArrays(1, &sphere_vao);
 
-            GLuint skydome_vao = (GLuint)skydome_vao_;
+            auto skydome_vao = (GLuint)skydome_vao_;
             glDeleteVertexArrays(1, &skydome_vao);
 
-            GLuint temp_vao = (GLuint)temp_vao_;
+            auto temp_vao = (GLuint)temp_vao_;
             glDeleteVertexArrays(1, &temp_vao);
 
-            GLuint depth_pass_solid_vao = (GLuint)depth_pass_solid_vao_;
+            auto depth_pass_solid_vao = (GLuint)depth_pass_solid_vao_;
             glDeleteVertexArrays(1, &depth_pass_solid_vao);
 
-            GLuint depth_pass_transp_vao = (GLuint)depth_pass_transp_vao_;
+            auto depth_pass_transp_vao = (GLuint)depth_pass_transp_vao_;
             glDeleteVertexArrays(1, &depth_pass_transp_vao);
         }
 
@@ -954,7 +948,7 @@ void Renderer::DestroyRendererInternal() {
                    ndx_buf = ctx_.default_indices_buf();
 
     for (int i = 0; i < FrameSyncWindow; i++) {
-        GLuint shared_data_ubo = (GLuint)unif_shared_data_block_[i];
+        auto shared_data_ubo = (GLuint)unif_shared_data_block_[i];
         glDeleteBuffers(1, &shared_data_ubo);
     }
 
@@ -963,109 +957,109 @@ void Renderer::DestroyRendererInternal() {
     {
         glDeleteTextures(FrameSyncWindow, instances_tbo_);
 
-        GLuint instances_buf = (GLuint)instances_buf_;
+        auto instances_buf = (GLuint)instances_buf_;
         glDeleteBuffers(1, &instances_buf);
     }
 
     {
-        GLuint skin_transforms_tbo = (GLuint)skin_transforms_tbo_;
+        auto skin_transforms_tbo = (GLuint)skin_transforms_tbo_;
         glDeleteTextures(1, &skin_transforms_tbo);
 
-        GLuint skin_transforms_buf = (GLuint)skin_transforms_buf_;
+        auto skin_transforms_buf = (GLuint)skin_transforms_buf_;
         glDeleteBuffers(1, &skin_transforms_buf);
     }
 
     {
-        GLuint skin_regions_tbo = (GLuint)skin_regions_tbo_;
+        auto skin_regions_tbo = (GLuint)skin_regions_tbo_;
         glDeleteTextures(1, &skin_regions_tbo);
 
-        GLuint skin_regions_buf = (GLuint)skin_regions_buf_;
+        auto skin_regions_buf = (GLuint)skin_regions_buf_;
         glDeleteBuffers(1, &skin_regions_buf);
     }
 
     {
         glDeleteTextures(FrameSyncWindow, lights_tbo_);
 
-        GLuint lights_buf = (GLuint)lights_buf_;
+        auto lights_buf = (GLuint)lights_buf_;
         glDeleteBuffers(1, &lights_buf);
     }
 
     {
         glDeleteTextures(FrameSyncWindow, decals_tbo_);
 
-        GLuint lights_buf = (GLuint)lights_buf_;
+        auto lights_buf = (GLuint)lights_buf_;
         glDeleteBuffers(1, &lights_buf);
     }
 
     {
         glDeleteTextures(FrameSyncWindow, cells_tbo_);
 
-        GLuint cells_buf = (GLuint)cells_buf_;
+        auto cells_buf = (GLuint)cells_buf_;
         glDeleteBuffers(1, &cells_buf);
     }
 
     {
         glDeleteTextures(FrameSyncWindow, items_tbo_);
 
-        GLuint items_buf = (GLuint)items_buf_;
+        auto items_buf = (GLuint)items_buf_;
         glDeleteBuffers(1, &items_buf);
     }
 
     {
-        GLuint temp_tex = (GLuint)temp_tex_;
+        auto temp_tex = (GLuint)temp_tex_;
         glDeleteTextures(1, &temp_tex);
     }
 
     {
-        GLuint temp_framebuf = (GLuint)temp_framebuf_;
+        auto temp_framebuf = (GLuint)temp_framebuf_;
         glDeleteFramebuffers(1, &temp_framebuf);
     }
 
     if (nodes_buf_) {
-        GLuint nodes_tbo = (GLuint)nodes_tbo_;
+        auto nodes_tbo = (GLuint)nodes_tbo_;
         glDeleteTextures(1, &nodes_tbo);
 
-        GLuint nodes_buf = (GLuint)nodes_buf_;
+        auto nodes_buf = (GLuint)nodes_buf_;
         glDeleteBuffers(1, &nodes_buf);
     }
 
     for (int i = 0; i < FrameSyncWindow; i++) {
-        GLuint reduce_pbo = (GLuint)reduce_pbo_[i];
+        auto reduce_pbo = (GLuint)reduce_pbo_[i];
         glDeleteBuffers(1, &reduce_pbo);
     }
 
     {
-        GLuint probe_sample_pbo = (GLuint)probe_sample_pbo_;
+        auto probe_sample_pbo = (GLuint)probe_sample_pbo_;
         glDeleteBuffers(1, &probe_sample_pbo);
     }
 
     if (skydome_framebuf_) {
-        GLuint framebuf = (GLuint)skydome_framebuf_;
+        auto framebuf = (GLuint)skydome_framebuf_;
         glDeleteFramebuffers(1, &framebuf);
     }
 
     if (depth_fill_framebuf_) {
-        GLuint framebuf = (GLuint)depth_fill_framebuf_;
+        auto framebuf = (GLuint)depth_fill_framebuf_;
         glDeleteFramebuffers(1, &framebuf);
     }
 
     if (refl_comb_framebuf_) {
-        GLuint framebuf = (GLuint)refl_comb_framebuf_;
+        auto framebuf = (GLuint)refl_comb_framebuf_;
         glDeleteFramebuffers(1, &framebuf);
     }
 
     if (transparent_comb_framebuf_) {
-        GLuint framebuf = (GLuint)transparent_comb_framebuf_;
+        auto framebuf = (GLuint)transparent_comb_framebuf_;
         glDeleteFramebuffers(1, &framebuf);
     }
 
     if (clean_buf_color_only_) {
-        GLuint framebuf = (GLuint)clean_buf_color_only_;
+        auto framebuf = (GLuint)clean_buf_color_only_;
         glDeleteFramebuffers(1, &framebuf);
     }
 
     if (clean_buf_transparent_) {
-        GLuint framebuf = (GLuint)clean_buf_transparent_;
+        auto framebuf = (GLuint)clean_buf_transparent_;
         glDeleteFramebuffers(1, &framebuf);
     }
 
@@ -1086,22 +1080,22 @@ void Renderer::DestroyRendererInternal() {
         assert(vtx_buf2->Free(temp_buf2_vtx_offset_));
         assert(ndx_buf->Free(temp_buf_ndx_offset_));
 
-        GLuint sphere_vao = (GLuint)sphere_vao_;
+        auto sphere_vao = (GLuint)sphere_vao_;
         glDeleteVertexArrays(1, &sphere_vao);
 
-        GLuint skydome_vao = (GLuint)skydome_vao_;
+        auto skydome_vao = (GLuint)skydome_vao_;
         glDeleteVertexArrays(1, &skydome_vao);
 
-        GLuint temp_vao = (GLuint)temp_vao_;
+        auto temp_vao = (GLuint)temp_vao_;
         glDeleteVertexArrays(1, &temp_vao);
 
-        GLuint fs_quad_vao = (GLuint)fs_quad_vao_;
+        auto fs_quad_vao = (GLuint)fs_quad_vao_;
         glDeleteVertexArrays(1, &fs_quad_vao);
 
-        GLuint depth_pass_solid_vao = (GLuint)depth_pass_solid_vao_;
+        auto depth_pass_solid_vao = (GLuint)depth_pass_solid_vao_;
         glDeleteVertexArrays(1, &depth_pass_solid_vao);
 
-        GLuint depth_pass_transp_vao = (GLuint)depth_pass_transp_vao_;
+        auto depth_pass_transp_vao = (GLuint)depth_pass_transp_vao_;
         glDeleteVertexArrays(1, &depth_pass_transp_vao);
     }
 
@@ -1110,7 +1104,7 @@ void Renderer::DestroyRendererInternal() {
         glDeleteQueries(TimersCount, queries_[i]);
 
         if (buf_range_fences_[i]) {
-            GLsync sync = reinterpret_cast<GLsync>(buf_range_fences_[i]);
+            auto sync = reinterpret_cast<GLsync>(buf_range_fences_[i]);
             glDeleteSync(sync);
             buf_range_fences_[i] = nullptr;
         }
@@ -1154,7 +1148,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         cur_buf_chunk_ = (cur_buf_chunk_ + 1) % FrameSyncWindow;
         if (buf_range_fences_[cur_buf_chunk_]) {
-            GLsync sync = reinterpret_cast<GLsync>(buf_range_fences_[cur_buf_chunk_]);
+            auto sync = reinterpret_cast<GLsync>(buf_range_fences_[cur_buf_chunk_]);
             GLenum res = glClientWaitSync(sync, 0, 1000000000);
             if (res != GL_ALREADY_SIGNALED && res != GL_CONDITION_SATISFIED) {
                 LOGE("[Renderer::DrawObjectsInternal]: Wait failed!");
@@ -1333,7 +1327,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 std::log(transparent_near),
                 std::log(transparent_far) - std::log(transparent_near),
                 float(transparent_mode), time };
-        shrd_data.uClipInfo = { near * far, near, far, std::log2(1.0f + far / near) };
+        shrd_data.uClipInfo = Ren::Vec4f{ near * far, near, far, std::log2(1.0f + far / near) };
 
         const Ren::Vec3f &pos = list.draw_cam.world_position();
         shrd_data.uCamPosAndGamma = Ren::Vec4f{ pos[0], pos[1], pos[2], 2.2f };
@@ -1465,7 +1459,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
                 if (batch.mat_id != cur_mat_id) {
                     const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                    BindTexture(0, mat->texture(0)->tex_id());
+                    glBindTextureUnit(0, mat->texture(0)->tex_id());
                     cur_mat_id = batch.mat_id;
                 }
 
@@ -1540,27 +1534,27 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     // Bind persistent resources (shadow atlas, lightmap, cells item data)
     //
 
-    BindTexture(REN_SHAD_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
+    glBindTextureUnit(REN_SHAD_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
 
     if (list.decals_atlas) {
-        BindTexture(REN_DECAL_TEX_SLOT, list.decals_atlas->tex_id(0));
+        glBindTextureUnit(REN_DECAL_TEX_SLOT, list.decals_atlas->tex_id(0));
     }
 
     if (list.render_flags & EnableSSAO) {
-        BindTexture(REN_SSAO_TEX_SLOT, combined_buf_.attachments[0].tex);
+        glBindTextureUnit(REN_SSAO_TEX_SLOT, combined_buf_.attachments[0].tex);
     } else {
-        BindTexture(REN_SSAO_TEX_SLOT, dummy_white_->tex_id());
+        glBindTextureUnit(REN_SSAO_TEX_SLOT, dummy_white_->tex_id());
     }
 
-    BindTexture(REN_BRDF_TEX_SLOT, brdf_lut_->tex_id());
+    glBindTextureUnit(REN_BRDF_TEX_SLOT, brdf_lut_->tex_id());
 
     if ((list.render_flags & EnableLightmap) && list.env.lm_direct) {
         for (int sh_l = 0; sh_l < 4; sh_l++) {
-            BindTexture(REN_LMAP_SH_SLOT + sh_l, list.env.lm_indir_sh[sh_l]->tex_id());
+            glBindTextureUnit(REN_LMAP_SH_SLOT + sh_l, list.env.lm_indir_sh[sh_l]->tex_id());
         }
     } else {
         for (int sh_l = 0; sh_l < 4; sh_l++) {
-            BindTexture(REN_LMAP_SH_SLOT + sh_l, dummy_black_->tex_id());
+            glBindTextureUnit(REN_LMAP_SH_SLOT + sh_l, dummy_black_->tex_id());
         }
     }
 
@@ -1609,7 +1603,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindVertexArray(depth_pass_transp_vao_);
         glUseProgram(fillz_transp_prog_->prog_id());
 
-        BindTexture(REN_ALPHATEST_TEX_SLOT, dummy_white_->tex_id());
+        glBindTextureUnit(REN_ALPHATEST_TEX_SLOT, dummy_white_->tex_id());
 
         uint32_t cur_mat_id = 0xffffffff;
 
@@ -1619,7 +1613,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             if (batch.mat_id != cur_mat_id) {
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                BindTexture(REN_ALPHATEST_TEX_SLOT, mat->texture(0)->tex_id());
+                glBindTextureUnit(REN_ALPHATEST_TEX_SLOT, mat->texture(0)->tex_id());
                 cur_mat_id = batch.mat_id;
             }
 
@@ -1668,9 +1662,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
         if (clean_buf_.sample_count > 1) {
-            BindTextureMs(REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            glBindTextureUnitMs(REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
         } else {
-            BindTexture(REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            glBindTextureUnit(REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
@@ -1696,7 +1690,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUniform4f(0, 0.0f, 0.0f, float(ssao_res[0]), float(ssao_res[1]));
 
-            BindTexture(REN_BASE0_TEX_SLOT, down_depth_.attachments[0].tex);
+            glBindTextureUnit(REN_BASE0_TEX_SLOT, down_depth_.attachments[0].tex);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
@@ -1706,8 +1700,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUseProgram(blit_bilateral_prog_->prog_id());
 
-            BindTexture(0, down_depth_.attachments[0].tex);
-            BindTexture(1, ssao_buf1_.attachments[0].tex);
+            glBindTextureUnit(0, down_depth_.attachments[0].tex);
+            glBindTextureUnit(1, ssao_buf1_.attachments[0].tex);
 
             glUniform4f(0, 0.0f, 0.0f, float(ssao_res[0]), float(ssao_res[1]));
             glUniform1f(3, 0.0f);
@@ -1718,7 +1712,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUseProgram(blit_bilateral_prog_->prog_id());
 
-            BindTexture(1, ssao_buf2_.attachments[0].tex);
+            glBindTextureUnit(1, ssao_buf2_.attachments[0].tex);
 
             glUniform4f(0, 0.0f, 0.0f, float(ssao_res[0]), float(ssao_res[1]));
             glUniform1f(3, 1.0f);
@@ -1734,18 +1728,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             if (clean_buf_.sample_count > 1) {
                 blit_upscale_prog = blit_upscale_ms_prog_.get();
-                BindTextureMs(0, clean_buf_.depth_tex.GetValue());
+                glBindTextureUnitMs(0, clean_buf_.depth_tex.GetValue());
             } else {
                 blit_upscale_prog = blit_upscale_prog_.get();
-                BindTexture(0, clean_buf_.depth_tex.GetValue());
+                glBindTextureUnit(0, clean_buf_.depth_tex.GetValue());
             }
             
             glUseProgram(blit_upscale_prog->prog_id());
 
             glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
-            BindTexture(1, down_depth_.attachments[0].tex);
-            BindTexture(2, ssao_buf1_.attachments[0].tex);
+            glBindTextureUnit(1, down_depth_.attachments[0].tex);
+            glBindTextureUnit(2, ssao_buf1_.attachments[0].tex);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
@@ -1800,9 +1794,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             }
 
             if (cur_mat != mat) {
-                BindTexture(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
-                BindTexture(REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
-                BindTexture(REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
+                glBindTextureUnit(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
+                glBindTextureUnit(REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
+                glBindTextureUnit(REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
                 cur_mat = mat;
             }
 
@@ -1831,7 +1825,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUseProgram(blit_ms_resolve_prog_->prog_id());
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
-        BindTextureMs(REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
+        glBindTextureUnitMs(REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
     }
@@ -1878,7 +1872,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 }
 
                 if (cur_mat != mat) {
-                    BindTexture(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
+                    glBindTextureUnit(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
                     cur_mat = mat;
                 }
 
@@ -1907,13 +1901,13 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glClear(GL_COLOR_BUFFER_BIT);
 
         if (moments_buf_.sample_count > 1) {
-            BindTextureMs(REN_MOMENTS0_MS_TEX_SLOT, moments_buf_.attachments[0].tex);
-            BindTextureMs(REN_MOMENTS1_MS_TEX_SLOT, moments_buf_.attachments[1].tex);
-            BindTextureMs(REN_MOMENTS2_MS_TEX_SLOT, moments_buf_.attachments[2].tex);
+            glBindTextureUnitMs(REN_MOMENTS0_MS_TEX_SLOT, moments_buf_.attachments[0].tex);
+            glBindTextureUnitMs(REN_MOMENTS1_MS_TEX_SLOT, moments_buf_.attachments[1].tex);
+            glBindTextureUnitMs(REN_MOMENTS2_MS_TEX_SLOT, moments_buf_.attachments[2].tex);
         } else {
-            BindTexture(REN_MOMENTS0_TEX_SLOT, moments_buf_.attachments[0].tex);
-            BindTexture(REN_MOMENTS1_TEX_SLOT, moments_buf_.attachments[1].tex);
-            BindTexture(REN_MOMENTS2_TEX_SLOT, moments_buf_.attachments[2].tex);
+            glBindTextureUnit(REN_MOMENTS0_TEX_SLOT, moments_buf_.attachments[0].tex);
+            glBindTextureUnit(REN_MOMENTS1_TEX_SLOT, moments_buf_.attachments[1].tex);
+            glBindTextureUnit(REN_MOMENTS2_TEX_SLOT, moments_buf_.attachments[2].tex);
         }
 
         {   // Draw alpha-blended surfaces
@@ -1936,9 +1930,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 }
 
                 if (cur_mat != mat) {
-                    BindTexture(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
-                    BindTexture(REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
-                    BindTexture(REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
+                    glBindTextureUnit(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
+                    glBindTextureUnit(REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
+                    glBindTextureUnit(REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
                     cur_mat = mat;
                 }
 
@@ -1997,9 +1991,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 }
 
                 if (cur_mat != mat) {
-                    BindTexture(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
-                    BindTexture(REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
-                    BindTexture(REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
+                    glBindTextureUnit(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
+                    glBindTextureUnit(REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
+                    glBindTextureUnit(REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
                     cur_mat = mat;
                 }
 
@@ -2044,9 +2038,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             }
 
             if (cur_mat != mat) {
-                BindTexture(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
-                BindTexture(REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
-                BindTexture(REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
+                glBindTextureUnit(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
+                glBindTextureUnit(REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
+                glBindTextureUnit(REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
                 cur_mat = mat;
             }
 
@@ -2078,7 +2072,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUseProgram(blit_ms_resolve_prog_->prog_id());
             glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
-            BindTextureMs(REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
+            glBindTextureUnitMs(REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
@@ -2122,14 +2116,14 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
-        BindTexture(REN_REFL_DEPTH_TEX_SLOT, down_depth_.attachments[0].tex);
+        glBindTextureUnit(REN_REFL_DEPTH_TEX_SLOT, down_depth_.attachments[0].tex);
 
         if (clean_buf_.sample_count > 1) {
-            BindTextureMs(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
-            BindTextureMs(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+            glBindTextureUnitMs(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            glBindTextureUnitMs(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         } else {
-            BindTexture(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
-            BindTexture(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+            glBindTextureUnit(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            glBindTextureUnit(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
@@ -2138,11 +2132,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             const Ren::Program *dilate_prog = blit_ssr_dilate_prog_.get();
             glUseProgram(dilate_prog->prog_id());
 
-            glUniform4f(0, 0.0f, 0.0f, float(act_w_ / 2), float(act_h_ / 2));
+            glUniform4f(0, 0.0f, 0.0f, float(act_w_) / 2.0f, float(act_h_) / 2.0f);
 
             glBindFramebuffer(GL_FRAMEBUFFER, ssr_buf2_.fb);
 
-            BindTexture(REN_BASE0_TEX_SLOT, ssr_buf1_.attachments[0].tex);
+            glBindTextureUnit(REN_BASE0_TEX_SLOT, ssr_buf1_.attachments[0].tex);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
@@ -2168,20 +2162,20 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
         if (clean_buf_.sample_count > 1) {
-            BindTextureMs(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
-            BindTextureMs(REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
-            BindTextureMs(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            glBindTextureUnitMs(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+            glBindTextureUnitMs(REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            glBindTextureUnitMs(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
         } else {
-            BindTexture(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
-            BindTexture(REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
-            BindTexture(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            glBindTextureUnit(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+            glBindTextureUnit(REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            glBindTextureUnit(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
         }
 
-        BindTexture(REN_REFL_DEPTH_LOW_TEX_SLOT, down_depth_.attachments[0].tex);
-        BindTexture(REN_REFL_SSR_TEX_SLOT, ssr_buf2_.attachments[0].tex);
+        glBindTextureUnit(REN_REFL_DEPTH_LOW_TEX_SLOT, down_depth_.attachments[0].tex);
+        glBindTextureUnit(REN_REFL_SSR_TEX_SLOT, ssr_buf2_.attachments[0].tex);
 
-        BindTexture(REN_REFL_PREV_TEX_SLOT, down_buf_.attachments[0].tex);
-        BindTexture(REN_REFL_BRDF_TEX_SLOT, brdf_lut_->tex_id());
+        glBindTextureUnit(REN_REFL_PREV_TEX_SLOT, down_buf_.attachments[0].tex);
+        glBindTextureUnit(REN_REFL_BRDF_TEX_SLOT, brdf_lut_->tex_id());
 
         if (list.probe_storage) {
             glActiveTexture(GL_TEXTURE0 + REN_ENV_TEX_SLOT);
@@ -2230,11 +2224,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             BindTextureMs(REN_BASE1_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
 #endif
         } else {
-            BindTexture(REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
+            glBindTextureUnit(REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
 #if REN_OIT_MODE == REN_OIT_MOMENT_BASED
-            BindTexture(REN_BASE1_TEX_SLOT, moments_buf_.attachments[0].tex);
+            glBindTextureUnit(REN_BASE1_TEX_SLOT, moments_buf_.attachments[0].tex);
 #elif REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED
-            BindTexture(REN_BASE1_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            glBindTextureUnit(REN_BASE1_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
 #endif
         }
 
@@ -2315,9 +2309,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
         if (clean_buf_.sample_count > 1) {
-            BindTexture(REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
+            glBindTextureUnit(REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
         } else {
-            BindTexture(REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
+            glBindTextureUnit(REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
@@ -2332,7 +2326,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniform4f(0, 0.0f, 0.0f, float(down_buf_.w), float(down_buf_.h));
             glUniform1f(4, 0.0f);
 
-            BindTexture(REN_BASE0_TEX_SLOT, down_buf_.attachments[0].tex);
+            glBindTextureUnit(REN_BASE0_TEX_SLOT, down_buf_.attachments[0].tex);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
@@ -2342,7 +2336,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniform4f(0, 0.0f, 0.0f, float(blur_buf2_.w), float(blur_buf2_.h));
             glUniform1f(4, 1.0f);
 
-            BindTexture(REN_BASE0_TEX_SLOT, blur_buf2_.attachments[0].tex);
+            glBindTextureUnit(REN_BASE0_TEX_SLOT, blur_buf2_.attachments[0].tex);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
@@ -2370,14 +2364,14 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
-        const Ren::Vec2f offset_step = { 1.0f / reduced_buf_.w, 1.0f / reduced_buf_.h };
+        const auto offset_step = Ren::Vec2f{ 1.0f / float(reduced_buf_.w), 1.0f / float(reduced_buf_.h) };
 
         static int cur_offset = 0;
         glUniform2f(4, 0.5f * poisson_disk[cur_offset][0] * offset_step[0],
                        0.5f * poisson_disk[cur_offset][1] * offset_step[1]);
         cur_offset = cur_offset >= 63 ? 0 : (cur_offset + 1);
 
-        BindTexture(REN_BASE0_TEX_SLOT, buf_to_sample->attachments[0].tex);
+        glBindTextureUnit(REN_BASE0_TEX_SLOT, buf_to_sample->attachments[0].tex);
 
         DebugMarker _("SAMPLE FRAME BRIGHTNESS");
 
@@ -2388,7 +2382,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         {   // Retrieve result of glReadPixels call from previous frame
             glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)reduce_pbo_[cur_reduce_pbo_]);
-            float *reduced_pixels = (float *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, 4 * reduced_buf_.w * reduced_buf_.h * sizeof(float), GL_MAP_READ_BIT);
+            auto *reduced_pixels = (float *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, 4 * reduced_buf_.w * reduced_buf_.h * sizeof(float), GL_MAP_READ_BIT);
             if (reduced_pixels) {
                 for (int i = 0; i < 4 * reduced_buf_.w * reduced_buf_.h; i += 4) {
                     if (!std::isnan(reduced_pixels[i])) {
@@ -2446,15 +2440,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform1f(U_EXPOSURE, exposure);
 
         if (clean_buf_.sample_count > 1) {
-            BindTexture(REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
+            glBindTextureUnit(REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
         } else {
-            BindTexture(REN_BASE0_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
+            glBindTextureUnit(REN_BASE0_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
         }
 
         if ((list.render_flags & EnableBloom) && !(list.render_flags & DebugWireframe)) {
-            BindTexture(REN_BASE1_TEX_SLOT, blur_buf1_.attachments[0].tex);
+            glBindTextureUnit(REN_BASE1_TEX_SLOT, blur_buf1_.attachments[0].tex);
         } else {
-            BindTexture(REN_BASE1_TEX_SLOT, dummy_black_->tex_id());
+            glBindTextureUnit(REN_BASE1_TEX_SLOT, dummy_black_->tex_id());
         }
 
 #ifndef DISABLE_MARKERS
@@ -2479,9 +2473,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
-            BindTexture(REN_BASE0_TEX_SLOT, combined_buf_.attachments[0].tex);
+            glBindTextureUnit(REN_BASE0_TEX_SLOT, combined_buf_.attachments[0].tex);
 
-            glUniform2f(12, 1.0f / scr_w_, 1.0f / scr_h_);
+            glUniform2f(12, 1.0f / float(scr_w_), 1.0f / float(scr_h_));
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
@@ -2537,9 +2531,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4fv(17, 1, Ren::ValuePtr(shrd_data.uClipInfo));
 
         if (clean_buf_.sample_count > 1) {
-            BindTextureMs(REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            glBindTextureUnitMs(REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
         } else {
-            BindTexture(REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            glBindTextureUnit(REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
         }
 
         BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
@@ -2562,7 +2556,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUniform1f(4, 1.0f);
 
-        BindTexture(REN_BASE0_TEX_SLOT, temp_tex_);
+        glBindTextureUnit(REN_BASE0_TEX_SLOT, temp_tex_);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, &depth_pixels_[0][0]);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
@@ -2600,15 +2594,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
-        BindTexture(REN_BASE0_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
+        glBindTextureUnit(REN_BASE0_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
-        float k = (float(shadow_buf_.h) / shadow_buf_.w) * (float(scr_w_) / scr_h_);
+        const float k = (float(shadow_buf_.h) / float(shadow_buf_.w)) * (float(scr_w_) / scr_h_);
 
         {   // Clear region
             glEnable(GL_SCISSOR_TEST);
 
-            glScissor(0, 0, scr_w_ / 2, int(k * scr_h_ / 2));
+            glScissor(0, 0, scr_w_ / 2, int(k * float(scr_h_) / 2));
             glClear(GL_COLOR_BUFFER_BIT);
 
             glDisable(GL_SCISSOR_TEST);
@@ -2785,7 +2779,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glEnableVertexAttribArray(REN_VTX_UV1_LOC);
             glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
-            BindTextureMs(0, clean_buf_.depth_tex.GetValue());
+            glBindTextureUnitMs(0, clean_buf_.depth_tex.GetValue());
 
             BindTexBuffer(1, nodes_tbo_);
 
@@ -3021,7 +3015,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
 
         glUniform1f(4, 0.0f);
 
-        BindTexture(REN_BASE0_TEX_SLOT, temp_tex_);
+        glBindTextureUnit(REN_BASE0_TEX_SLOT, temp_tex_);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
@@ -3035,7 +3029,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
 
         glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs2), fs_quad_uvs2);
 
-        BindTexture(REN_BASE0_TEX_SLOT, blur_buf2_.attachments[0].tex);
+        glBindTextureUnit(REN_BASE0_TEX_SLOT, blur_buf2_.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
@@ -3077,8 +3071,8 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
 
         glUniform1f(U_EXPOSURE, exposure);
 
-        BindTexture(REN_BASE0_TEX_SLOT, temp_tex_);
-        BindTexture(REN_BASE1_TEX_SLOT, blur_buf2_.attachments[0].tex);
+        glBindTextureUnit(REN_BASE0_TEX_SLOT, temp_tex_);
+        glBindTextureUnit(REN_BASE1_TEX_SLOT, blur_buf2_.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
@@ -3133,9 +3127,9 @@ void Renderer::BlitBuffer(float px, float py, float sx, float sy, const FrameBuf
         glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
 
         if (buf.sample_count > 1) {
-            BindTextureMs(REN_BASE0_TEX_SLOT, buf.attachments[i].tex);
+            glBindTextureUnitMs(REN_BASE0_TEX_SLOT, buf.attachments[i].tex);
         } else {
-            BindTexture(REN_BASE0_TEX_SLOT, buf.attachments[i].tex);
+            glBindTextureUnit(REN_BASE0_TEX_SLOT, buf.attachments[i].tex);
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
@@ -3192,9 +3186,9 @@ void Renderer::BlitTexture(float px, float py, float sx, float sy, uint32_t tex_
         glUniform1f(4, 1.0f);
 
         if (is_ms) {
-            BindTextureMs(REN_BASE0_TEX_SLOT, tex_id);
+            glBindTextureUnitMs(REN_BASE0_TEX_SLOT, tex_id);
         } else {
-            BindTexture(REN_BASE0_TEX_SLOT, tex_id);
+            glBindTextureUnit(REN_BASE0_TEX_SLOT, tex_id);
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
@@ -3253,7 +3247,7 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &
 
         glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
 
-        BindTexture(0, src_buf.attachments[0].tex);
+        glBindTextureUnit(0, src_buf.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
     }
@@ -3464,7 +3458,7 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, store.tex_id());
 
-            BindTexture(1, rand2d_8x8_->tex_id());
+            glBindTextureUnit(1, rand2d_8x8_->tex_id());
 
             glUniform1f(1, float(probe_index));
             glUniform1i(2, iteration);

@@ -137,7 +137,7 @@ void SceneManager::RebuildBVH() {
                 bbox_min = split_data.left_bounds[0],
                 bbox_max = split_data.left_bounds[1];
 
-            const uint32_t new_node_index = (uint32_t)scene_data_.nodes.size();
+            const auto new_node_index = (uint32_t)scene_data_.nodes.size();
 
             for (const uint32_t i : split_data.left_indices) {
                 Transform &tr = transforms[scene_data_.objects[i].components[CompTransform]];
@@ -146,9 +146,10 @@ void SceneManager::RebuildBVH() {
 
             assert(split_data.left_indices.size() == 1 && "Wrong split!");
 
-            scene_data_.nodes.push_back({ split_data.left_indices[0], (uint32_t)split_data.left_indices.size(), 0, 0,
-                { bbox_min[0], bbox_min[1], bbox_min[2] }, parent_index,
-                { bbox_max[0], bbox_max[1], bbox_max[2] }, 0
+            scene_data_.nodes.push_back(
+                { split_data.left_indices[0], (uint32_t)split_data.left_indices.size(), 0, 0,
+                Ren::Vec3f{ bbox_min[0], bbox_min[1], bbox_min[2] }, parent_index,
+                Ren::Vec3f{ bbox_max[0], bbox_max[1], bbox_max[2] }, 0
             });
         } else {
             auto index = (uint32_t)nodes_count;
@@ -167,9 +168,10 @@ void SceneManager::RebuildBVH() {
                 bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
                 bbox_max = Max(split_data.left_bounds[1], split_data.right_bounds[1]);
 
-            scene_data_.nodes.push_back({ 0, 0, index + 1, index + 2,
-                { bbox_min[0], bbox_min[1], bbox_min[2] }, parent_index,
-                { bbox_max[0], bbox_max[1], bbox_max[2] }, space_axis,
+            scene_data_.nodes.push_back(
+                { 0, 0, index + 1, index + 2,
+                Ren::Vec3f{ bbox_min[0], bbox_min[1], bbox_min[2] }, parent_index,
+                Ren::Vec3f{ bbox_max[0], bbox_max[1], bbox_max[2] }, space_axis,
             });
 
             prim_lists.emplace_front(std::move(split_data.left_indices), split_data.left_bounds[0], split_data.left_bounds[1]);

@@ -194,7 +194,7 @@ void GSDrawTest::Update(uint64_t dt_us) {
     using namespace GSDrawTestInternal;
 
     const Ren::Vec3f
-        up = { 0, 1, 0 },
+        up = Ren::Vec3f{ 0, 1, 0 },
         side = Normalize(Cross(view_dir_, up));
 
     if (cam_follow_path_.size() < 3) {
@@ -278,7 +278,7 @@ void GSDrawTest::Update(uint64_t dt_us) {
     SceneData &scene = scene_manager_->scene_data();
 
     if (scooter_indices_[0] != 0xffffffff) {
-        const Ren::Vec3f rot_center = { 44.5799f, 0.15f, 24.7763f };
+        const auto rot_center = Ren::Vec3f{ 44.5799f, 0.15f, 24.7763f };
 
         scooters_angle_ += 0.0000005f * dt_us;
 
@@ -296,12 +296,12 @@ void GSDrawTest::Update(uint64_t dt_us) {
                 
                 if (i < 8) {
                     // inner circle
-                    tr->mat = Ren::Rotate(tr->mat, scooters_angle_ + i * 0.25f * Ren::Pi<float>(), { 0.0f, 1.0f, 0.0f });
-                    tr->mat = Ren::Translate(tr->mat, { 6.5f, 0.0f, 0.0f });
+                    tr->mat = Ren::Rotate(tr->mat, scooters_angle_ + i * 0.25f * Ren::Pi<float>(), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+                    tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 6.5f, 0.0f, 0.0f });
                 } else {
                     // outer circle
-                    tr->mat = Ren::Rotate(tr->mat, -scooters_angle_ + (i - 8) * 0.25f * Ren::Pi<float>(), { 0.0f, 1.0f, 0.0f });
-                    tr->mat = Ren::Translate(tr->mat, { -8.5f, 0.0f, 0.0f });
+                    tr->mat = Ren::Rotate(tr->mat, -scooters_angle_ + (i - 8) * 0.25f * Ren::Pi<float>(), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+                    tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ -8.5f, 0.0f, 0.0f });
                 }
             }
         }
@@ -375,7 +375,7 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
             fwd_touch_speed_ -= evt.move.dy * 0.002f;
             fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 1) {
-            Vec3f up = { 0, 1, 0 };
+            auto up = Vec3f{ 0, 1, 0 };
             Vec3f side = Normalize(Cross(view_dir_, up));
             up = Cross(side, view_dir_);
 
@@ -397,7 +397,7 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
             fwd_touch_speed_ -= evt.move.dy * 0.002f;
             fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 2) {
-            Vec3f up = { 0, 1, 0 };
+            auto up = Vec3f{ 0, 1, 0 };
             Vec3f side = Normalize(Cross(view_dir_, up));
             up = Cross(side, view_dir_);
 

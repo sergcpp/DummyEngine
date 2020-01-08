@@ -31,8 +31,8 @@ class GSDrawTest : public GSBaseState {
     int view_pointer_ = 0, move_pointer_ = 0;
 
     Ren::Vec3f
-        initial_view_origin_ = { 0, 1, 0 },
-        initial_view_dir_ = { 0, 0, -1 };
+        initial_view_origin_ = Ren::Vec3f{ 0, 1, 0 },
+        initial_view_dir_ = Ren::Vec3f{ 0, 0, -1 };
 
     Ren::Vec3f view_origin_, view_dir_;
 

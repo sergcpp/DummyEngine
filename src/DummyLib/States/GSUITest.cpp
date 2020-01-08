@@ -30,7 +30,7 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-    "zenith.json";
+    "corridor.json";
 }
 
 GSUITest::GSUITest(GameBase *game) : GSBaseState(game) {
@@ -72,7 +72,7 @@ void GSUITest::Enter() {
             LOGE("Can not open dialog file %s", dialog_name);
         }
 
-        size_t scene_size = in_scene.size();
+        const size_t scene_size = in_scene.size();
 
         std::unique_ptr<uint8_t[]> scene_data(new uint8_t[scene_size]);
         in_scene.Read((char *)&scene_data[0], scene_size);
@@ -93,7 +93,7 @@ void GSUITest::OnPostloadScene(JsObject &js_scene) {
 
     GSBaseState::OnPostloadScene(js_scene);
 
-    Ren::Vec3f view_origin, view_dir = { 0.0f, 0.0f, 1.0f };
+    Ren::Vec3f view_origin, view_dir = Ren::Vec3f{ 0.0f, 0.0f, 1.0f };
     float view_fov = 45.0f, max_exposure = 1000.0f;
 
     if (js_scene.Has("camera")) {
@@ -230,7 +230,7 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
 
     switch (evt.type) {
     case RawInputEvent::EvP1Down: {
-        Ren::Vec2f p = Gui::MapPointToScreen({ (int)evt.point.x, (int)evt.point.y }, { ctx_->w(), ctx_->h() });
+        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{ (int)evt.point.x, (int)evt.point.y }, Ren::Vec2i{ ctx_->w(), ctx_->h() });
         text_printer_->Press(p, true);
     } break;
     case RawInputEvent::EvP2Down: {
@@ -239,14 +239,14 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP1Up: {
         text_printer_->skip();
 
-        Ren::Vec2f p = Gui::MapPointToScreen({ (int)evt.point.x, (int)evt.point.y }, { ctx_->w(), ctx_->h() });
+        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{ (int)evt.point.x, (int)evt.point.y }, Ren::Vec2i{ ctx_->w(), ctx_->h() });
         text_printer_->Press(p, false);
     } break;
     case RawInputEvent::EvP2Up: {
 
     } break;
     case RawInputEvent::EvP1Move: {
-        Ren::Vec2f p = Gui::MapPointToScreen({ (int)evt.point.x, (int)evt.point.y }, { ctx_->w(), ctx_->h() });
+        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{ (int)evt.point.x, (int)evt.point.y }, Ren::Vec2i{ ctx_->w(), ctx_->h() });
         text_printer_->Focus(p);
     } break;
     case RawInputEvent::EvP2Move: {

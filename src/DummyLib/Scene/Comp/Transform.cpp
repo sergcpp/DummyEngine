@@ -25,7 +25,7 @@ void Transform::Read(const JsObject &js_in, Transform &tr) {
     if (js_in.Has("pos")) {
         const JsArray &js_pos = (const JsArray &)js_in.at("pos");
 
-        const Ren::Vec3f pos = {
+        const auto pos = Ren::Vec3f{
             (float)((const JsNumber &)js_pos.at(0)).val,
             (float)((const JsNumber &)js_pos.at(1)).val,
             (float)((const JsNumber &)js_pos.at(2)).val
@@ -38,7 +38,7 @@ void Transform::Read(const JsObject &js_in, Transform &tr) {
         const JsArray &js_rot = (const JsArray &)js_in.at("rot");
 
         // angles in degrees
-        tr.euler_angles_rad = {
+        tr.euler_angles_rad = Ren::Vec3f{
             (float)((const JsNumber &)js_rot.at(0)).val,
             (float)((const JsNumber &)js_rot.at(1)).val,
             (float)((const JsNumber &)js_rot.at(2)).val

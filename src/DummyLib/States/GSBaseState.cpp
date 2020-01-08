@@ -626,7 +626,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         float cur_y = 1.0f - font_->height(root);
 
         for (const std::string &cmd : cmdline_history_) {
-            font_->DrawText(r, cmd.c_str(), { -1, cur_y }, text_color, root);
+            font_->DrawText(r, cmd.c_str(), Ren::Vec2f{ -1, cur_y }, text_color, root);
             cur_y -= font_height;
         }
     }
@@ -779,29 +779,29 @@ void GSBaseState::UpdateFrame(int list_index) {
             auto *probe = (LightProbe *)scene_manager_->scene_data().comp_store[CompProbe]->Get(probe_obj->components[CompProbe]);
             auto *probe_tr = (Transform *)scene_manager_->scene_data().comp_store[CompTransform]->Get(probe_obj->components[CompTransform]);
 
-            Ren::Vec4f pos = { probe->offset[0], probe->offset[1], probe->offset[2], 1.0f };
+            auto pos = Ren::Vec4f{ probe->offset[0], probe->offset[1], probe->offset[2], 1.0f };
             pos = probe_tr->mat * pos;
             pos /= pos[3];
 
             static const Ren::Vec3f axises[] = {
-                { 1.0f,  0.0f,  0.0f },
-                { -1.0f,  0.0f,  0.0f },
-                { 0.0f,  1.0f,  0.0f },
-                { 0.0f, -1.0f,  0.0f },
-                { 0.0f,  0.0f,  1.0f },
-                { 0.0f,  0.0f, -1.0f }
+                Ren::Vec3f{ 1.0f,  0.0f,  0.0f },
+                Ren::Vec3f{ -1.0f,  0.0f,  0.0f },
+                Ren::Vec3f{ 0.0f,  1.0f,  0.0f },
+                Ren::Vec3f{ 0.0f, -1.0f,  0.0f },
+                Ren::Vec3f{ 0.0f,  0.0f,  1.0f },
+                Ren::Vec3f{ 0.0f,  0.0f, -1.0f }
             };
 
             static const Ren::Vec3f ups[] = {
-                { 0.0f, -1.0f, 0.0f },
-                { 0.0f, -1.0f, 0.0f },
-                { 0.0f,  0.0f, 1.0f },
-                { 0.0f,  0.0f, -1.0f },
-                { 0.0f, -1.0f, 0.0f },
-                { 0.0f, -1.0f, 0.0f }
+                Ren::Vec3f{ 0.0f, -1.0f, 0.0f },
+                Ren::Vec3f{ 0.0f, -1.0f, 0.0f },
+                Ren::Vec3f{ 0.0f,  0.0f, 1.0f },
+                Ren::Vec3f{ 0.0f,  0.0f, -1.0f },
+                Ren::Vec3f{ 0.0f, -1.0f, 0.0f },
+                Ren::Vec3f{ 0.0f, -1.0f, 0.0f }
             };
 
-            const Ren::Vec3f center = { pos[0], pos[1], pos[2] };
+            const auto center = Ren::Vec3f{ pos[0], pos[1], pos[2] };
 
             for (int i = 0; i < 6; i++) {
                 const Ren::Vec3f target = center + axises[i];

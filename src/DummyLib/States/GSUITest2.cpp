@@ -135,7 +135,7 @@ void GSUITest2::OnPostloadScene(JsObject &js_scene) {
 
     GSBaseState::OnPostloadScene(js_scene);
 
-    Ren::Vec3f view_origin, view_dir = { 0.0f, 0.0f, 1.0f };
+    Ren::Vec3f view_origin, view_dir = Ren::Vec3f{ 0.0f, 0.0f, 1.0f };
     float view_fov = 45.0f, max_exposure = 1000.0f;
 
     if (js_scene.Has("camera")) {
@@ -235,7 +235,7 @@ void GSUITest2::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
                 color_green[4] = {0, 255, 0, 255},
                 color_yellow[4] = {255, 255, 0, 255};
 
-        const Ren::Vec2f img_size = {2.0f * 64.0f / root->size_px()[0], 2.0f * 32.0f / root->size_px()[1]};
+        const auto img_size = Ren::Vec2f{ 2.0f * 64.0f / root->size_px()[0], 2.0f * 32.0f / root->size_px()[1] };
 
         dialog_font_->set_scale(std::max(root->size_px()[0] / 1536.0f, 1.0f));
         const float font_height1 = dialog_font_->height(root);
@@ -243,46 +243,46 @@ void GSUITest2::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         float y_offset = 0.5f;
 
         y_offset -= font_height1;
-        dialog_font_->DrawText(r, "CURRENT EMPLOYEES", {0.25f, y_offset}, color_white, root);
+        dialog_font_->DrawText(r, "CURRENT EMPLOYEES", Ren::Vec2f{ 0.25f, y_offset }, color_white, root);
 
         dialog_font_->set_scale(std::max(root->size_px()[0] / 2048.0f, 1.0f));
         const float font_height2 = dialog_font_->height(root);
 
         y_offset -= font_height2;
-        dialog_font_->DrawText(r, "NAME", {0.01f, y_offset}, color_white, root);
-        dialog_font_->DrawText(r, "SPEC.", {0.5f, y_offset}, color_white, root);
-        dialog_font_->DrawText(r, "STATUS", {0.8f, y_offset}, color_white, root);
+        dialog_font_->DrawText(r, "NAME", Ren::Vec2f{ 0.01f, y_offset }, color_white, root);
+        dialog_font_->DrawText(r, "SPEC.", Ren::Vec2f{ 0.5f, y_offset }, color_white, root);
+        dialog_font_->DrawText(r, "STATUS", Ren::Vec2f{ 0.8f, y_offset }, color_white, root);
 
         dialog_font_->set_scale(std::max(root->size_px()[0] / 4096.0f, 1.0f));
         const float font_height3 = dialog_font_->height(root);
 
         y_offset -= font_height3;
-        test_image_->Resize({ 0.01f, y_offset }, img_size, root);
+        test_image_->Resize(Ren::Vec2f{ 0.01f, y_offset }, img_size, root);
         test_image_->Draw(r);
-        dialog_font_->DrawText(r, "Alexander Kadeniuk", {img_size[0] + 0.02f, y_offset}, color_white, root);
-        dialog_font_->DrawText(r, "MED", {0.5f, y_offset}, color_white, root);
-        dialog_font_->DrawText(r, "Available", {0.8f, y_offset}, color_green, root);
+        dialog_font_->DrawText(r, "Alexander Kadeniuk", Ren::Vec2f{ img_size[0] + 0.02f, y_offset }, color_white, root);
+        dialog_font_->DrawText(r, "MED", Ren::Vec2f{ 0.5f, y_offset }, color_white, root);
+        dialog_font_->DrawText(r, "Available", Ren::Vec2f{ 0.8f, y_offset }, color_green, root);
 
         y_offset -= font_height3;
-        test_image2_->Resize({ 0.01f, y_offset }, img_size, root);
+        test_image2_->Resize(Ren::Vec2f{ 0.01f, y_offset }, img_size, root);
         test_image2_->Draw(r);
-        dialog_font_->DrawText(r, "Benedict Foale", {img_size[0] + 0.02f, y_offset}, color_white, root);
-        dialog_font_->DrawText(r, "IT", {0.5f, y_offset}, color_white, root);
-        dialog_font_->DrawText(r, "Available", {0.8f, y_offset}, color_green, root);
+        dialog_font_->DrawText(r, "Benedict Foale", Ren::Vec2f{ img_size[0] + 0.02f, y_offset }, color_white, root);
+        dialog_font_->DrawText(r, "IT", Ren::Vec2f{ 0.5f, y_offset }, color_white, root);
+        dialog_font_->DrawText(r, "Available", Ren::Vec2f{ 0.8f, y_offset }, color_green, root);
 
         y_offset -= font_height3;
-        test_image3_->Resize({ 0.01f, y_offset}, img_size, root);
+        test_image3_->Resize(Ren::Vec2f{ 0.01f, y_offset}, img_size, root);
         test_image3_->Draw(r);
-        dialog_font_->DrawText(r, "Maria Serova", {img_size[0] + 0.02f, y_offset}, color_white, root);
-        dialog_font_->DrawText(r, "ART", {0.5f, y_offset}, color_white, root);
-        dialog_font_->DrawText(r, "Tired", {0.8f, y_offset}, color_yellow, root);
+        dialog_font_->DrawText(r, "Maria Serova", Ren::Vec2f{ img_size[0] + 0.02f, y_offset }, color_white, root);
+        dialog_font_->DrawText(r, "ART", Ren::Vec2f{ 0.5f, y_offset }, color_white, root);
+        dialog_font_->DrawText(r, "Tired", Ren::Vec2f{ 0.8f, y_offset }, color_yellow, root);
 
         y_offset -= font_height3;
-        test_image4_->Resize({ 0.01f, y_offset}, img_size, root);
+        test_image4_->Resize(Ren::Vec2f{ 0.01f, y_offset}, img_size, root);
         test_image4_->Draw(r);
-        dialog_font_->DrawText(r, "Kaidan Shepard", {img_size[0] + 0.02f, y_offset}, color_white, root);
-        dialog_font_->DrawText(r, "BIO", {0.5f, y_offset}, color_white, root);
-        dialog_font_->DrawText(r, "Available", {0.8f, y_offset}, color_green, root);
+        dialog_font_->DrawText(r, "Kaidan Shepard", Ren::Vec2f{ img_size[0] + 0.02f, y_offset }, color_white, root);
+        dialog_font_->DrawText(r, "BIO", Ren::Vec2f{ 0.5f, y_offset }, color_white, root);
+        dialog_font_->DrawText(r, "Available", Ren::Vec2f{ 0.8f, y_offset }, color_green, root);
     }
 }
 
@@ -312,7 +312,7 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
 
     switch (evt.type) {
     case RawInputEvent::EvP1Down: {
-        Ren::Vec2f p = Gui::MapPointToScreen({ (int)evt.point.x, (int)evt.point.y }, { ctx_->w(), ctx_->h() });
+        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{ (int)evt.point.x, (int)evt.point.y }, Ren::Vec2i{ ctx_->w(), ctx_->h() });
         //text_printer_->Press(p, true);
     } break;
     case RawInputEvent::EvP2Down: {
@@ -321,7 +321,7 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP1Up: {
         //text_printer_->skip();
 
-        Ren::Vec2f p = Gui::MapPointToScreen({ (int)evt.point.x, (int)evt.point.y }, { ctx_->w(), ctx_->h() });
+        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{ (int)evt.point.x, (int)evt.point.y }, Ren::Vec2i{ ctx_->w(), ctx_->h() });
         //text_printer_->Press(p, false);
 
         is_visible_ = !is_visible_;
@@ -330,7 +330,7 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
 
     } break;
     case RawInputEvent::EvP1Move: {
-        Ren::Vec2f p = Gui::MapPointToScreen({ (int)evt.point.x, (int)evt.point.y }, { ctx_->w(), ctx_->h() });
+        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{ (int)evt.point.x, (int)evt.point.y }, Ren::Vec2i{ ctx_->w(), ctx_->h() });
         //text_printer_->Focus(p);
     } break;
     case RawInputEvent::EvP2Move: {

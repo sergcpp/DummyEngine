@@ -43,15 +43,15 @@ void RadixSort_LSB(SpanType *begin, SpanType *end, SpanType *begin1) {
 }
 
 static const Ren::Vec4f ClipFrustumPoints[] = {
-    { -1.0f, -1.0f, -1.0f, 1.0f },
-    { 1.0f, -1.0f, -1.0f, 1.0f },
-    { 1.0f,  1.0f, -1.0f, 1.0f },
-    { -1.0f,  1.0f, -1.0f, 1.0f },
+    Ren::Vec4f{ -1.0f, -1.0f, -1.0f, 1.0f },
+    Ren::Vec4f{ 1.0f, -1.0f, -1.0f, 1.0f },
+    Ren::Vec4f{ 1.0f,  1.0f, -1.0f, 1.0f },
+    Ren::Vec4f{ -1.0f,  1.0f, -1.0f, 1.0f },
 
-    { -1.0f, -1.0f, 1.0f, 1.0f },
-    { 1.0f, -1.0f, 1.0f, 1.0f },
-    { 1.0f,  1.0f, 1.0f, 1.0f },
-    { -1.0f,  1.0f, 1.0f, 1.0f }
+    Ren::Vec4f{ -1.0f, -1.0f, 1.0f, 1.0f },
+    Ren::Vec4f{ 1.0f, -1.0f, 1.0f, 1.0f },
+    Ren::Vec4f{ 1.0f,  1.0f, 1.0f, 1.0f },
+    Ren::Vec4f{ -1.0f,  1.0f, 1.0f, 1.0f }
 };
 
 static const uint8_t SunShadowUpdatePattern[4] = {
@@ -62,7 +62,7 @@ static const uint8_t SunShadowUpdatePattern[4] = {
 };
 }
 
-#define REN_UNINITIALIZE_X2  Ren::Uninitialize, Ren::Uninitialize
+#define REN_UNINITIALIZE_X2  Ren::Vec4f{ Ren::Uninitialize }, Ren::Vec4f{ Ren::Uninitialize }
 #define REN_UNINITIALIZE_X4  REN_UNINITIALIZE_X2, REN_UNINITIALIZE_X2
 #define REN_UNINITIALIZE_X8  REN_UNINITIALIZE_X4, REN_UNINITIALIZE_X4
 
@@ -402,11 +402,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     if (lighting_enabled && (obj.comp_mask & CompLightSourceBit)) {
                         const LightSource &light = lights_src[obj.components[CompLightSource]];
 
-                        Ren::Vec4f pos = { light.offset[0], light.offset[1], light.offset[2], 1.0f };
+                        auto pos = Ren::Vec4f{ light.offset[0], light.offset[1], light.offset[2], 1.0f };
                         pos = world_from_object * pos;
                         pos /= pos[3];
 
-                        Ren::Vec4f dir = { -light.dir[0], -light.dir[1], -light.dir[2], 0.0f };
+                        auto dir = Ren::Vec4f{ -light.dir[0], -light.dir[1], -light.dir[2], 0.0f };
                         dir = world_from_object * dir;
 
                         Ren::eVisibilityResult res = Ren::FullyVisible;
@@ -510,7 +510,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     if (obj.comp_mask & CompProbeBit) {
                         const LightProbe &probe = probes[obj.components[CompProbe]];
                         
-                        Ren::Vec4f pos = { probe.offset[0], probe.offset[1], probe.offset[2], 1.0f };
+                        auto pos = Ren::Vec4f{ probe.offset[0], probe.offset[1], probe.offset[2], 1.0f };
                         pos = world_from_object * pos;
                         pos /= pos[3];
 
@@ -651,13 +651,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     Ren::Vec4f projected_p = sh_clip_from_world * frustum_points[k];
                     projected_p /= projected_p[3];
 
-                    frustum_points_proj[k] = { projected_p[0], projected_p[1] };
+                    frustum_points_proj[k] = Ren::Vec2f{ projected_p[0], projected_p[1] };
                 }
 
                 Ren::Vec2i frustum_edges[] = {
-                    { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 },
-                    { 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 },
-                    { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 }
+                    Ren::Vec2i{ 0, 1 }, Ren::Vec2i{ 1, 2 }, Ren::Vec2i{ 2, 3 }, Ren::Vec2i{ 3, 0 },
+                    Ren::Vec2i{ 4, 5 }, Ren::Vec2i{ 5, 6 }, Ren::Vec2i{ 6, 7 }, Ren::Vec2i{ 7, 4 },
+                    Ren::Vec2i{ 0, 4 }, Ren::Vec2i{ 1, 5 }, Ren::Vec2i{ 2, 6 }, Ren::Vec2i{ 3, 7 }
                 };
 
                 int silhouette_edges[12], silhouette_edges_count = 0;
@@ -739,11 +739,15 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     sh_list.view_frustum_outline[2 * i + 1] = frustum_points_proj[edge[1]];
 
                     // Find region for scissor test
-                    const Ren::Vec2i p1i = { sh_list.shadow_map_pos[0] + int((0.5f * sh_list.view_frustum_outline[2 * i + 0][0] + 0.5f) * sh_list.shadow_map_size[0]),
-                                             sh_list.shadow_map_pos[1] + int((0.5f * sh_list.view_frustum_outline[2 * i + 0][1] + 0.5f) * sh_list.shadow_map_size[1]) };
+                    const auto p1i = Ren::Vec2i{
+                        sh_list.shadow_map_pos[0] + int((0.5f * sh_list.view_frustum_outline[2 * i + 0][0] + 0.5f) * sh_list.shadow_map_size[0]),
+                        sh_list.shadow_map_pos[1] + int((0.5f * sh_list.view_frustum_outline[2 * i + 0][1] + 0.5f) * sh_list.shadow_map_size[1])
+                    };
 
-                    const Ren::Vec2i p2i = { sh_list.shadow_map_pos[0] + int((0.5f * sh_list.view_frustum_outline[2 * i + 1][0] + 0.5f) * sh_list.shadow_map_size[0]),
-                                             sh_list.shadow_map_pos[1] + int((0.5f * sh_list.view_frustum_outline[2 * i + 1][1] + 0.5f) * sh_list.shadow_map_size[1]) };
+                    const auto p2i = Ren::Vec2i{
+                        sh_list.shadow_map_pos[0] + int((0.5f * sh_list.view_frustum_outline[2 * i + 1][0] + 0.5f) * sh_list.shadow_map_size[0]),
+                        sh_list.shadow_map_pos[1] + int((0.5f * sh_list.view_frustum_outline[2 * i + 1][1] + 0.5f) * sh_list.shadow_map_size[1])
+                    };
 
                     const auto scissor_margin = Ren::Vec2i{ 2 }; // shadow uses 5x5 filter
 

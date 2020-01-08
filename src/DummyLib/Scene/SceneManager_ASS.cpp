@@ -1304,7 +1304,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
                     const int vertex_count = stbtt_GetGlyphShape(&font, glyph_index, &vertices);
 
                     {   // transform input data
-                        const Vec2d pos_offset = { (double)(padding + sdf_radius_px), (double)(padding + sdf_radius_px) };
+                        const auto pos_offset = Vec2d{ (double)(padding + sdf_radius_px), (double)(padding + sdf_radius_px) };
 
                         Vec2i cur_p;
 
@@ -1333,7 +1333,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
                                 });
                             }
 
-                            cur_p = { v.x, v.y };
+                            cur_p = Vec2i{ v.x, v.y };
                         }
                     }
 
@@ -1353,7 +1353,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
                             for (int dy = 0; dy < samples; dy++) {
                                 for (int dx = 0; dx < samples; dx++) {
-                                    const Vec2d p = {
+                                    const auto p = Vec2d{
                                         double(x) + (0.5 + double(dx)) / samples,
                                         double(y) + (0.5 + double(dy)) / samples
                                     };
@@ -1401,7 +1401,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
                     // Loop through image pixels
                     for (int y = 0; y < glyph_res[1]; y++) {
                         for (int x = 0; x < glyph_res[0]; x++) {
-                            const Vec2d p = { double(x) + 0.5, double(y) + 0.5 };
+                            const auto p = Vec2d{ double(x) + 0.5, double(y) + 0.5 };
 
                             // Per channel distances (used for multi-channel sdf)
                             Gui::dist_result_t min_result[3];
@@ -1417,7 +1417,9 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
                             for (const bezier_shape &sh : shapes) {
                                 int edge_color_index = 0;
-                                static const Vec3i edge_colors[] = { { 255, 0, 255 },{ 255, 255, 0 },{ 0, 255, 255 } };
+                                static const Vec3i edge_colors[] = {
+                                    Vec3i{ 255, 0, 255 }, Vec3i{ 255, 255, 0 }, Vec3i{ 0, 255, 255 }
+                                };
 
                                 for (int i = 0; i < (int)sh.size(); i++) {
                                     const Gui::bezier_seg_t &seg = sh[i];

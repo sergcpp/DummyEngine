@@ -28,8 +28,10 @@ TextPrinter::TextPrinter(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Ve
     : Gui::BaseElement(pos, size, parent), parent_(parent), font_(font), data_pos_(0), progress_(0), expanded_option_(-1) {
     using namespace TextPrinterInternal;
 
-    background_small_.reset(new Gui::Image9Patch{ ctx, Frame01, { 3.0f, 3.0f }, 1.0f, { 0.0f, 0.0f }, { 1.0f, 1.0f }, parent });
-    background_large_.reset(new Gui::Image9Patch{ ctx, Frame02, { 20.0f, 20.0f }, 1.0f, { -1.0f, -1.0f }, { 2.0f, 2.0f }, this });
+    background_small_.reset(new Gui::Image9Patch{ ctx, Frame01, Ren::Vec2f{ 3.0f, 3.0f }, 1.0f,
+                                                  Ren::Vec2f{ 0.0f, 0.0f }, Ren::Vec2f{ 1.0f, 1.0f }, parent });
+    background_large_.reset(new Gui::Image9Patch{ ctx, Frame02, Ren::Vec2f{ 20.0f, 20.0f }, 1.0f,
+                                                  Ren::Vec2f{ -1.0f, -1.0f }, Ren::Vec2f{ 2.0f, 2.0f }, this });
 }
 
 bool TextPrinter::LoadScript(const JsObject &js_script) {
@@ -44,7 +46,7 @@ bool TextPrinter::LoadScript(const JsObject &js_script) {
     try {
         const JsArray &js_texts = (const JsArray &)js_script.at("texts");
         for (const JsElement &js_text_el : js_texts.elements) {
-            const JsObject &js_text = (const JsObject &)js_text_el;
+            const auto &js_text = (const JsObject &)js_text_el;
             if (!js_text.Has("data")) return false;
 
             const JsString &js_data = (const JsString &)js_text.at("data");
@@ -56,7 +58,7 @@ bool TextPrinter::LoadScript(const JsObject &js_script) {
 
                 const JsArray &js_options = (const JsArray &)js_text.at("options");
                 for (const JsElement &js_opt_el : js_options.elements) {
-                    const JsObject &js_opt = (const JsObject &)js_opt_el;
+                    const auto &js_opt = (const JsObject &)js_opt_el;
 
                     text_option.emplace_back();
 
@@ -70,7 +72,7 @@ bool TextPrinter::LoadScript(const JsObject &js_script) {
 
                     const JsArray &js_variants = (const JsArray &)js_opt.at("variants");
                     for (const JsElement &js_var_el : js_variants.elements) {
-                        const JsString &js_var = (const JsString &)js_var_el;
+                        const auto &js_var = (const JsString &)js_var_el;
 
                         option_variants_.push_back(js_var.val);
                         opt_data.var_count++;
@@ -93,7 +95,7 @@ bool TextPrinter::LoadScript(const JsObject &js_script) {
 
                 const JsArray &js_hints = (const JsArray &)js_text.at("hints");
                 for (const JsElement &js_hint_el : js_hints.elements) {
-                    const JsObject &js_hint = (const JsObject &)js_hint_el;
+                    const auto &js_hint = (const JsObject &)js_hint_el;
 
                     text_hints_.back().emplace_back();
 
@@ -383,7 +385,7 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
 
                 options_rects_.emplace_back();
                 rect_t &rect = options_rects_.back();
-                rect.dims[0] = { x_offset, y_offset };
+                rect.dims[0] = Ren::Vec2f{ x_offset, y_offset };
             } else if (strcmp(tag_str, "/option") == 0) {
                 pop_color = true;
                 draw = true;
@@ -400,7 +402,7 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
                 const float width = font_->GetWidth(portion_string.c_str(), parent_);
 
                 rect_t &rect = options_rects_.back();
-                rect.dims[1] = { width, font_height };
+                rect.dims[1] = Ren::Vec2f{ width, font_height };
             } else if (strcmp(tag_str, "hint") == 0) {
                 const int hint_index = (int)hint_rects_.size();
                 const HintData &hint = text_hints_[data_pos_][hint_index];
@@ -413,7 +415,7 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
 
                 hint_rects_.emplace_back();
                 rect_t &rect = hint_rects_.back();
-                rect.dims[0] = { x_offset, y_offset };
+                rect.dims[0] = Ren::Vec2f{ x_offset, y_offset };
             } else if (strcmp(tag_str, "/hint") == 0) {
                 pop_color = true;
                 draw = true;
@@ -430,7 +432,7 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
                 const float width = font_->GetWidth(portion_string.c_str(), parent_);
 
                 rect_t &rect = hint_rects_.back();
-                rect.dims[1] = { width, font_height };
+                rect.dims[1] = Gui::Vec2f{ width, font_height };
             } else {
                 assert(false && "Unknown tag!");
             }
@@ -483,7 +485,7 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
         }
 
         if (draw) {
-            x_offset += font_->DrawText(r, portion_string.c_str(), { x_offset, y_offset }, cur_color, parent_);
+            x_offset += font_->DrawText(r, portion_string.c_str(), Gui::Vec2f{ x_offset, y_offset }, cur_color, parent_);
 
             portion_string.clear();
             if (new_line) {
@@ -498,7 +500,7 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
 
     // draw the last line
     if (!portion_string.empty()) {
-        x_offset += font_->DrawText(r, portion_string.c_str(), { x_offset, y_offset }, text_color_stack[text_color_stack_size - 1], parent_);
+        x_offset += font_->DrawText(r, portion_string.c_str(), Gui::Vec2f{ x_offset, y_offset }, text_color_stack[text_color_stack_size - 1], parent_);
     }
 
     // draw option selector
@@ -507,9 +509,9 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
         assert(opt.is_expanded);
 
         expanded_y += font_height;
-        Gui::Vec2f
-            exp_back_pos = { expanded_x - 0.1f * font_height, expanded_y - 0.25f * font_height },
-            exp_back_size = { 0.0f, 0.25f * font_height };
+        auto
+            exp_back_pos = Gui::Vec2f{ expanded_x - 0.1f * font_height, expanded_y - 0.25f * font_height },
+            exp_back_size = Gui::Vec2f{ 0.0f, 0.25f * font_height };
 
         for (int i = 0; i < opt.var_count; i++) {
             const std::string &var = option_variants_[opt.var_start + i];
@@ -527,13 +529,13 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
         for (int i = 0; i < opt.var_count; i++) {
             const std::string &var = option_variants_[opt.var_start + i];
 
-            float width = font_->DrawText(r, var.c_str(), { expanded_x, expanded_y }, (i == hover_var_) ? color_red : color_white, parent_);
+            float width = font_->DrawText(r, var.c_str(), Gui::Vec2f{ expanded_x, expanded_y }, (i == hover_var_) ? color_red : color_white, parent_);
 
             expanded_rects_.emplace_back();
             rect_t &rect = expanded_rects_.back();
 
-            rect.dims[0] = { expanded_x,    expanded_y };
-            rect.dims[1] = { width,         font_height * 0.8f };
+            rect.dims[0] = Gui::Vec2f{ expanded_x,    expanded_y };
+            rect.dims[1] = Gui::Vec2f{ width,         font_height * 0.8f };
 
             expanded_y += font_height;
         }
@@ -548,9 +550,10 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
 
         expanded_hint_y += font_height;
 
-        background_small_->Resize({ expanded_hint_x - 0.1f * font_height, expanded_hint_y - 0.25f * font_height }, { width + 0.2f * font_height, 1.25 * font_height }, parent_);
+        background_small_->Resize(Gui::Vec2f{ expanded_hint_x - 0.1f * font_height, expanded_hint_y - 0.25f * font_height },
+                                  Gui::Vec2f{ width + 0.2f * font_height, 1.25 * font_height }, parent_);
         background_small_->Draw(r);
 
-        font_->DrawText(r, hint_strings_[opt.str_index].c_str(), { expanded_hint_x, expanded_hint_y }, color_white, parent_);
+        font_->DrawText(r, hint_strings_[opt.str_index].c_str(), Gui::Vec2f{ expanded_hint_x, expanded_hint_y }, color_white, parent_);
     }
 }

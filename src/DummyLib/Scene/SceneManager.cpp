@@ -69,7 +69,7 @@ namespace SceneManagerInternal {
         }
 
         uint32_t First() const override {
-            return data_.cbegin().index();
+            return !data_.size() ? 0xffffffff : data_.cbegin().index();
         }
 
         uint32_t Next(uint32_t i) const override {
@@ -110,8 +110,9 @@ SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, S
     }
 
     {   // Create splitter for lightmap atlas
-        scene_data_.lm_splitter = Ren::TextureSplitter(SceneManagerConstants::LIGHTMAP_ATLAS_RESX,
-                                                       SceneManagerConstants::LIGHTMAP_ATLAS_RESY);
+        scene_data_.lm_splitter = Ren::TextureSplitter(
+            SceneManagerConstants::LIGHTMAP_ATLAS_RESX,
+            SceneManagerConstants::LIGHTMAP_ATLAS_RESY);
     }
 
     {   // Allocate cubemap array
@@ -419,13 +420,13 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                         auto *ls = (LightSource *)scene_data_.comp_store[CompLightSource]->Get(obj.components[CompLightSource]);
 
                         // Compute bounding box of light source
-                        const Ren::Vec4f
-                            pos = { ls->offset[0], ls->offset[1], ls->offset[2], 1.0f },
-                            dir = { ls->dir[0], ls->dir[1], ls->dir[2], 0.0f };
+                        const auto
+                            pos = Ren::Vec4f{ ls->offset[0], ls->offset[1], ls->offset[2], 1.0f },
+                            dir = Ren::Vec4f{ ls->dir[0], ls->dir[1], ls->dir[2], 0.0f };
 
                         Ren::Vec3f bbox_min, bbox_max;
 
-                        const Ren::Vec3f _dir = { dir[0], dir[1], dir[2] };
+                        const auto _dir = Ren::Vec3f{ dir[0], dir[1], dir[2] };
                         const Ren::Vec3f p1 = _dir * ls->influence;
 
                         bbox_min = Ren::Min(bbox_min, p1);
@@ -443,11 +444,11 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                             bbox_max = Ren::Max(bbox_max, p1 + Ren::Vec3f{ ls->influence, 0.0f, ls->influence });
                         }
 
-                        Ren::Vec3f up = { 1.0f, 0.0f, 0.0f };
+                        auto up = Ren::Vec3f{ 1.0f, 0.0f, 0.0f };
                         if (std::abs(_dir[1]) < std::abs(_dir[2]) && std::abs(_dir[1]) < std::abs(_dir[0])) {
-                            up = { 0.0f, 1.0f, 0.0f };
+                            up = Ren::Vec3f{ 0.0f, 1.0f, 0.0f };
                         } else if (std::abs(_dir[2]) < std::abs(_dir[0]) && std::abs(_dir[2]) < std::abs(_dir[1])) {
-                            up = { 0.0f, 0.0f, 1.0f };
+                            up = Ren::Vec3f{ 0.0f, 0.0f, 1.0f };
                         }
 
                         const Ren::Vec3f side = Ren::Cross(_dir, up);
@@ -508,11 +509,11 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                         }
 
                         Ren::Vec4f points[] = {
-                            { -1.0f, -1.0f, -1.0f, 1.0f }, { -1.0f, 1.0f, -1.0f, 1.0f },
-                            { 1.0f, 1.0f, -1.0f, 1.0f }, { 1.0f, -1.0f, -1.0f, 1.0f },
+                            Ren::Vec4f{ -1.0f, -1.0f, -1.0f, 1.0f }, Ren::Vec4f{ -1.0f, 1.0f, -1.0f, 1.0f },
+                            Ren::Vec4f{ 1.0f, 1.0f, -1.0f, 1.0f }, Ren::Vec4f{ 1.0f, -1.0f, -1.0f, 1.0f },
 
-                            { -1.0f, -1.0f, 1.0f, 1.0f }, { -1.0f, 1.0f, 1.0f, 1.0f },
-                            { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, -1.0f, 1.0f, 1.0f }
+                            Ren::Vec4f{ -1.0f, -1.0f, 1.0f, 1.0f }, Ren::Vec4f{ -1.0f, 1.0f, 1.0f, 1.0f },
+                            Ren::Vec4f{ 1.0f, 1.0f, 1.0f, 1.0f }, Ren::Vec4f{ 1.0f, -1.0f, 1.0f, 1.0f }
                         };
 
                         Ren::Mat4f world_from_clip = Ren::Inverse(de->proj * de->view);
