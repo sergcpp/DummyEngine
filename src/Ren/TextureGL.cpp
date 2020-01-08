@@ -422,7 +422,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2D
     int data_offset = sizeof(KTXHeader);
 
     for (int i = 0; i < (int)header.mipmap_levels_count; i++) {
-        if (data_offset + sizeof(uint32_t) > size) {
+        if (data_offset + (int)sizeof(uint32_t) > size) {
             // TODO: report error in log
             break;
         }

@@ -64,9 +64,9 @@ int Tokenize(const std::string &str, const char *delims, std::string out_toks[32
     return tok_count;
 }
 
-const Ren::Vec3f center = { -2.0f, 2.0f, 4.0f };
-const Ren::Vec3f target = { 0.0f, 0.0f, 0.0f };
-const Ren::Vec3f up = { 0.0f, 1.0f, 0.0f };
+const auto center = Ren::Vec3f{ -2.0f, 2.0f, 4.0f };
+const auto target = Ren::Vec3f{ 0.0f, 0.0f, 0.0f };
+const auto up = Ren::Vec3f{ 0.0f, 1.0f, 0.0f };
 }
 
 ModlApp::ModlApp() : quit_(false),
@@ -303,7 +303,7 @@ void ModlApp::PollEvents() {
                 quit_ = true;
                 return;
             } else if (e.key.keysym.sym == SDLK_0) {
-                view_mode_ = Material;
+                view_mode_ = Diffuse;
             } else if (e.key.keysym.sym == SDLK_1) {
                 view_mode_ = DiagNormals1;
             } else if (e.key.keysym.sym == SDLK_2) {

@@ -30,9 +30,9 @@ inline void BindTexture(int slot, uint32_t tex) {
 void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     using namespace Ren;
 
-    Ren::Mesh *m		= ref.get();
-    Ren::Material *mat	= m->group(0).mat.get();
-    Ren::ProgramRef p   = mat->program(0);
+    Mesh *m		    = ref.get();
+    Material *mat   = m->group(0).mat.get();
+    ProgramRef p    = mat->program(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
@@ -48,8 +48,8 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
 
     Mat4f world_from_object = Mat4f{ 1.0f };
 
-    world_from_object = Rotate(world_from_object, angle_x_, { 1, 0, 0 });
-    world_from_object = Rotate(world_from_object, angle_y_, { 0, 1, 0 });
+    world_from_object = Rotate(world_from_object, angle_x_, Vec3f{ 1, 0, 0 });
+    world_from_object = Rotate(world_from_object, angle_y_, Vec3f{ 0, 1, 0 });
 
     Mat4f view_from_world = cam_.view_matrix(),
           proj_from_view = cam_.proj_matrix();
@@ -174,7 +174,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     Mat4f world_from_object = Mat4f{ 1.0f };
 
     //world_from_object = Rotate(world_from_object, angle_x_, { 1, 0, 0 });
-    world_from_object = Rotate(world_from_object, angle_y_, { 0, 1, 0 });
+    world_from_object = Rotate(world_from_object, angle_y_, Vec3f{ 0, 1, 0 });
 
     Mat4f view_from_world = cam_.view_matrix(),
           proj_from_view = cam_.proj_matrix();

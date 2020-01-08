@@ -53,7 +53,7 @@ private:
     float view_dist_ = 10.0f;
     bool mouse_grabbed_ = false;
 
-    enum eViewMode { Material, DiagNormals1, DiagNormals2, DiagUVs1, DiagUVs2 } view_mode_ = DiagNormals1;
+    enum eViewMode { Diffuse, DiagNormals1, DiagNormals2, DiagUVs1, DiagUVs2 } view_mode_ = DiagNormals1;
 
     void InitInternal();
     void DestroyInternal();
