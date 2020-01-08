@@ -4,10 +4,7 @@
 #include "Renderer.h"
 
 Gui::TypeMesh::TypeMesh(const std::string &text, BitmapFont *font, const Vec2f &pos, const BaseElement *parent)
-    : BaseElement(pos, {
-    0, 0
-}, parent),
-text_(text), font_(font) {
+    : BaseElement(pos, Vec2f{ 0, 0 }, parent), text_(text), font_(font) {
     Move(pos, parent);
 }
 

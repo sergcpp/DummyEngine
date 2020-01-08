@@ -22,13 +22,10 @@ Gui::EditBox::EditBox(Ren::Context &ctx, const char *frame_tex_name, const Vec2f
 
 Gui::EditBox::EditBox(const Image9Patch &frame, BitmapFont *font,
                       const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
-    : BaseElement(pos, size, parent),
-      cursor_("|", font, {
-    0, 0
-}, this),
-lay_(Vec2f{ -1 + 2.0f * EditBoxConstants::padding / parent->size_px()[0], -1 }, Vec2f{ 2, 2 }, this),
-frame_(frame), font_(font), edit_flags_(EditBoxConstants::default_flags), focused_(false),
-current_line_(0), current_char_(0) {
+    : BaseElement(pos, size, parent), cursor_("|", font, Vec2f{ 0, 0 }, this),
+      lay_(Vec2f{ -1 + 2.0f * EditBoxConstants::padding / parent->size_px()[0], -1 }, Vec2f{ 2, 2 }, this),
+      frame_(frame), font_(font), edit_flags_(EditBoxConstants::default_flags), focused_(false),
+      current_line_(0), current_char_(0) {
     lay_.set_vetical(true);
     frame_.Resize(this);
 }
@@ -125,7 +122,7 @@ void Gui::EditBox::UpdateCursor() {
     if (current_line_ >= (int)lines_.size()) return;
     const TypeMesh &cur_line = lines_[current_line_];
 
-    Vec2f cur_pos = { 0, cur_line.pos()[1] };
+    auto cur_pos = Vec2f{ 0, cur_line.pos()[1] };
     if (current_char_ < (int)line_text(current_line_).length()) {
         cur_pos[0] = cur_line.positions()[current_char_ * 12];
     } else {
@@ -166,7 +163,7 @@ void Gui::EditBox::AddChar(int c) {
     std::string text = lines_[current_line_].text();
     text.insert(text.begin() + current_char_, (char)c);
 
-    lines_[current_line_] = TypeMesh(text, font_, { 0.0f, 0.0f }, this);
+    lines_[current_line_] = TypeMesh(text, font_, Vec2f{ 0.0f, 0.0f }, this);
     current_char_++;
 
     UpdateLayout();
@@ -182,7 +179,7 @@ void Gui::EditBox::DeleteChar() {
     if (ch < 0 || ch >= (int)text.length()) return;
     text.erase(text.begin() + ch);
 
-    lines_[current_line_] = TypeMesh(text, font_, { 0.0f, 0.0f }, this);
+    lines_[current_line_] = TypeMesh(text, font_, Vec2f{ 0.0f, 0.0f }, this);
     current_char_--;
 
     UpdateLayout();

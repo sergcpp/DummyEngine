@@ -4,10 +4,7 @@
 #include "Renderer.h"
 
 Gui::ButtonText::ButtonText(const std::string &text, BitmapFont *font, const Vec2f &pos, const BaseElement *parent)
-    : ButtonBase(pos, {
-    0, 0
-}, parent),
-type_mesh_(text, font, pos, parent) {
+    : ButtonBase(pos, Vec2f{ 0, 0 }, parent), type_mesh_(text, font, pos, parent) {
 }
 
 bool Gui::ButtonText::Check(const Vec2f &p) const {
