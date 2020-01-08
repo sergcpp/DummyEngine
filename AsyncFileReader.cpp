@@ -16,16 +16,16 @@
 namespace Sys {
 #ifdef _WIN32
     class AsyncFileReaderImpl {
-        static const int RequestsCount = 16;
+        static const int SimultaniousRequestsCount = 16;
 
         uint32_t chunk_size_;
-        HANDLE ev_[RequestsCount];
-        OVERLAPPED olp_[RequestsCount];
+        HANDLE ev_[SimultaniousRequestsCount];
+        OVERLAPPED olp_[SimultaniousRequestsCount];
         void *buf_;
-        void *req_bufs_[RequestsCount];
+        void *req_bufs_[SimultaniousRequestsCount];
 
         void RequestChunk(HANDLE h_file, int chunk_num) {
-            int i = chunk_num % RequestsCount;
+            int i = chunk_num % SimultaniousRequestsCount;
 
             OVERLAPPED &ov = olp_[i];
             ov = { 0 };
@@ -47,20 +47,20 @@ namespace Sys {
             DWORD chunk_size = os_info.dwPageSize * 128;
             chunk_size_ = (uint32_t)chunk_size;
 
-            buf_ = ::VirtualAlloc(NULL, chunk_size_ * RequestsCount, MEM_COMMIT, PAGE_READWRITE);
+            buf_ = ::VirtualAlloc(NULL, chunk_size_ * SimultaniousRequestsCount, MEM_COMMIT, PAGE_READWRITE);
 
-            for (int i = 0; i < RequestsCount; i++) {
+            for (int i = 0; i < SimultaniousRequestsCount; i++) {
                 req_bufs_[i] = (char *)buf_ + i * chunk_size_;
             }
 
-            for (int i = 0; i < RequestsCount; i++) {
+            for (int i = 0; i < SimultaniousRequestsCount; i++) {
                 ev_[i] = ::CreateEvent(NULL, TRUE, FALSE, NULL);
             }
         }
 
         ~AsyncFileReaderImpl() {
             ::VirtualFree(buf_, 0, MEM_RELEASE);
-            for (int i = 0; i < RequestsCount; i++) {
+            for (int i = 0; i < SimultaniousRequestsCount; i++) {
                 ::CloseHandle(ev_[i]);
             }
         }
@@ -88,12 +88,12 @@ namespace Sys {
 
             int chunks_count = (int)(size.QuadPart + chunk_size_ - 1) / chunk_size_;
 
-            for (int i = 0; i < (int)std::min(chunks_count, RequestsCount - 1); i++) {
+            for (int i = 0; i < (int)std::min(chunks_count, SimultaniousRequestsCount - 1); i++) {
                 RequestChunk(h_file, i);
             }
 
             for (int i = 0; i < chunks_count; i++) {
-                int n = i % RequestsCount;
+                int n = i % SimultaniousRequestsCount;
 
                 OVERLAPPED &ov = olp_[n];
                 void *b = req_bufs_[n];
@@ -101,7 +101,7 @@ namespace Sys {
                 DWORD cb;
                 ::GetOverlappedResult(h_file, &ov, &cb, TRUE);
 
-                int next_request = i + RequestsCount - 1;
+                int next_request = i + SimultaniousRequestsCount - 1;
                 if (next_request < chunks_count) {
                     RequestChunk(h_file, next_request);
                 }
@@ -115,12 +115,12 @@ namespace Sys {
     };
 #else
     class AsyncFileReaderImpl {
-        static const int RequestsCount = 4;
+        static const int SimultaniousRequestsCount = 16;
 
         uint32_t chunk_size_;
         aio_context_t ctx_ = 0;
-        struct iocb req_cbs_[RequestsCount];
-        struct iocb *p_req_cbs_[RequestsCount];
+        struct iocb req_cbs_[SimultaniousRequestsCount];
+        struct iocb *p_req_cbs_[SimultaniousRequestsCount];
 
         static long io_setup(unsigned nr, aio_context_t *ctxp) {
             return syscall(__NR_io_setup, nr, ctxp);
@@ -141,12 +141,12 @@ namespace Sys {
 
     public:
         AsyncFileReaderImpl() noexcept {
-            long ret = io_setup(RequestsCount, &ctx_);
+            long ret = io_setup(SimultaniousRequestsCount, &ctx_);
             assert(ret >= 0 && "io_setup failed!");
 
             chunk_size_ = getpagesize() * 16;
 
-            for (int i = 0; i < RequestsCount; i++) {
+            for (int i = 0; i < SimultaniousRequestsCount; i++) {
                 req_cbs_[i] = {};
                 req_cbs_[i].aio_nbytes = chunk_size_;
 
@@ -179,7 +179,7 @@ namespace Sys {
             }
 
             const int chunks_count = (int)((out_size + chunk_size_ - 1) / chunk_size_);
-            int chunks_requested = std::min(chunks_count, RequestsCount);
+            int chunks_requested = std::min(chunks_count, SimultaniousRequestsCount);
 
             for (int i = 0; i < chunks_requested; i++) {
                 struct iocb &cb = req_cbs_[i];
@@ -206,7 +206,7 @@ namespace Sys {
                 auto *cb = reinterpret_cast<struct iocb*>(ev.obj);
                 const int i = std::distance(req_cbs_, cb);
 
-                int next_request = chunks_done;
+                int next_request = chunks_requested;
                 if (next_request < chunks_count) {
                     cb->aio_offset = next_request * chunk_size_;
                     cb->aio_buf = reinterpret_cast<const uint64_t&>(out_data) + cb->aio_offset;
@@ -215,6 +215,7 @@ namespace Sys {
                     assert(ret == 1 && "io_submit failed!");
 
                     ++chunks_requested;
+                    assert(chunks_requested <= chunks_count);
                 }
             }
 
@@ -222,7 +223,7 @@ namespace Sys {
         }
     };
 
-    const int AsyncFileReaderImpl::RequestsCount;
+    const int AsyncFileReaderImpl::SimultaniousRequestsCount;
 #endif
 }
 
