@@ -255,22 +255,22 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Texture2DParams &p)
         auto mip_count = (GLsizei)CalcMipCount(p.w, p.h, p.filter);
 
         // allocate all mip levels
-        glTextureStorage2D(tex_id, mip_count, internal_format, (GLsizei)p.w, (GLsizei)p.h);
+        ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format, (GLsizei)p.w, (GLsizei)p.h);
         // update first level
-        glTextureSubImage2D(tex_id, 0, 0, 0, p.w, p.h, format, type, data);
+        ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, tex_id, 0, 0, 0, p.w, p.h, format, type, data);
     }
 
     const float anisotropy = 4.0f;
-    glTextureParameterf(tex_id, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+    ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 
-    glTextureParameteri(tex_id, GL_TEXTURE_MIN_FILTER, g_gl_min_filter[p.filter]);
-    glTextureParameteri(tex_id, GL_TEXTURE_MAG_FILTER, g_gl_mag_filter[p.filter]);
+    ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_FILTER, g_gl_min_filter[p.filter]);
+    ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAG_FILTER, g_gl_mag_filter[p.filter]);
 
-    glTextureParameteri(tex_id, GL_TEXTURE_WRAP_S, g_gl_wrap_mode[p.repeat]);
-    glTextureParameteri(tex_id, GL_TEXTURE_WRAP_T, g_gl_wrap_mode[p.repeat]);
+    ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_S, g_gl_wrap_mode[p.repeat]);
+    ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_T, g_gl_wrap_mode[p.repeat]);
 
     if (p.filter == Trilinear || p.filter == Bilinear) {
-        glGenerateTextureMipmap(tex_id);
+        ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, tex_id);
     }
 
     CheckError("create texture");
@@ -342,7 +342,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2D
     }
 
     // allocate all mip levels
-    glTextureStorage2D(tex_id, (GLsizei)header.dwMipMapCount, internal_format, (GLsizei)params_.w, (GLsizei)params_.h);
+    ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, (GLsizei)header.dwMipMapCount, internal_format, (GLsizei)params_.w, (GLsizei)params_.h);
 
     int w = params_.w, h = params_.h;
     int bytes_left = size - (int)sizeof(DDSHeader);
@@ -417,7 +417,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2D
     params_.h = h;
 
     // allocate all mip levels
-    glTextureStorage2D(tex_id, (GLsizei)header.mipmap_levels_count, internal_format, (GLsizei)w, (GLsizei)h);
+    ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, (GLsizei)header.mipmap_levels_count, internal_format, (GLsizei)w, (GLsizei)h);
 
     const auto *_data = (const uint8_t *)data;
     int data_offset = sizeof(KTXHeader);
@@ -471,7 +471,7 @@ void Ren::Texture2D::InitFromRAWData(const void *data[6], const Texture2DParams 
     auto mip_count = (GLsizei)CalcMipCount(w, h, f);
 
     // allocate all mip levels
-    glTextureStorage2DCube(tex_id, mip_count, internal_format, w, h);
+    ren_glTextureStorage2D_Comp(GL_TEXTURE_CUBE_MAP, tex_id, mip_count, internal_format, w, h);
 
     for (unsigned i = 0; i < 6; i++) {
         if (!data[i]) {
@@ -481,32 +481,32 @@ void Ren::Texture2D::InitFromRAWData(const void *data[6], const Texture2DParams 
         }
 
         if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
-            glTextureSubImage3DCube(tex_id, 0, 0, 0, i, w, h, 1, format, type, data[i]);
+            ren_glTextureSubImage3D_Comp(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, tex_id, 0, 0, 0, i, w, h, 1, format, type, data[i]);
         }
     }
 
     if (f == NoFilter) {
-        glTextureParameteriCube(tex_id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTextureParameteriCube(tex_id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     } else if (f == Bilinear) {
-        glTextureParameteriCube(tex_id, GL_TEXTURE_MIN_FILTER, (cubemap_ready_ == 0x3F) ? GL_LINEAR_MIPMAP_NEAREST : GL_LINEAR);
-        glTextureParameteriCube(tex_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MIN_FILTER, (cubemap_ready_ == 0x3F) ? GL_LINEAR_MIPMAP_NEAREST : GL_LINEAR);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     } else if (f == Trilinear) {
-        glTextureParameteriCube(tex_id, GL_TEXTURE_MIN_FILTER, (cubemap_ready_ == 0x3F) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-        glTextureParameteriCube(tex_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MIN_FILTER, (cubemap_ready_ == 0x3F) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     } else if (f == BilinearNoMipmap) {
-        glTextureParameteriCube(tex_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTextureParameteriCube(tex_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
 
-    glTextureParameteriCube(tex_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameteriCube(tex_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 #if !defined(GL_ES_VERSION_2_0) && !defined(__EMSCRIPTEN__)
-    glTextureParameteriCube(tex_id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 #endif
 
     if ((f == Trilinear || f == Bilinear) && (cubemap_ready_ == 0x3F)) {
-        glGenerateTextureMipmapCube(tex_id);
+        ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_CUBE_MAP, tex_id);
     }
 }
 
@@ -705,22 +705,26 @@ void Ren::Texture2D::ChangeFilter(eTexFilter f, eTexRepeat r) {
     auto tex_id = (GLuint)tex_id_;
 
     if (!params_.cube) {
-        glTextureParameteri(tex_id, GL_TEXTURE_MIN_FILTER, g_gl_min_filter[f]);
-        glTextureParameteri(tex_id, GL_TEXTURE_MAG_FILTER, g_gl_mag_filter[f]);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_FILTER, g_gl_min_filter[f]);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAG_FILTER, g_gl_mag_filter[f]);
 
-        glTextureParameteri(tex_id, GL_TEXTURE_WRAP_S, g_gl_wrap_mode[r]);
-        glTextureParameteri(tex_id, GL_TEXTURE_WRAP_T, g_gl_wrap_mode[r]);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_S, g_gl_wrap_mode[r]);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_T, g_gl_wrap_mode[r]);
+
+        if (params_.format != Compressed && (f == Trilinear || f == Bilinear)) {
+            ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, tex_id);
+        }
     } else {
-        glTextureParameteriCube(tex_id, GL_TEXTURE_MIN_FILTER, g_gl_min_filter[f]);
-        glTextureParameteriCube(tex_id, GL_TEXTURE_MAG_FILTER, g_gl_mag_filter[f]);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MIN_FILTER, g_gl_min_filter[f]);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MAG_FILTER, g_gl_mag_filter[f]);
 
-        glTextureParameteriCube(tex_id, GL_TEXTURE_WRAP_S, g_gl_wrap_mode[r]);
-        glTextureParameteriCube(tex_id, GL_TEXTURE_WRAP_T, g_gl_wrap_mode[r]);
-        glTextureParameteriCube(tex_id, GL_TEXTURE_WRAP_R, g_gl_wrap_mode[r]);
-    }
+        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_WRAP_S, g_gl_wrap_mode[r]);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_WRAP_T, g_gl_wrap_mode[r]);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_WRAP_R, g_gl_wrap_mode[r]);
 
-    if (params_.format != Compressed && (f == Trilinear || f == Bilinear)) {
-        glGenerateTextureMipmap(tex_id);
+        if (params_.format != Compressed && (f == Trilinear || f == Bilinear)) {
+            ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_CUBE_MAP, tex_id);
+        }
     }
 }
 

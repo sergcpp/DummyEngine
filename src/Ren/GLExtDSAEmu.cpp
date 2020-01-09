@@ -7,52 +7,33 @@ void APIENTRY ren_glCreateTextures_emu(GLenum target, GLsizei n, GLuint *texture
     }
 }
 
-void APIENTRY ren_glTextureStorage2D_emu(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height) {
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexStorage2D(GL_TEXTURE_2D, levels, internalformat, width, height);
+void APIENTRY ren_glTextureStorage2D_Comp_emu(GLenum target, GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height) {
+    glBindTexture(target, texture);
+    glTexStorage2D(target, levels, internalformat, width, height);
 }
 
-void APIENTRY ren_glTextureStorage2DCube_emu(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height) {
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
-    glTexStorage2D(GL_TEXTURE_CUBE_MAP, levels, internalformat, width, height);
+void APIENTRY ren_glTextureStorage3D_Comp_emu(GLenum target, GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth) {
+    glBindTexture(target, texture);
+    glTexStorage3D(target, levels, internalformat, width, height, depth);
 }
 
-void APIENTRY ren_glTextureStorage3D_emu(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth) {
-    glBindTexture(GL_TEXTURE_3D, texture);
-    glTexStorage3D(GL_TEXTURE_3D, levels, internalformat, width, height, depth);
-}
-
-void APIENTRY ren_glTextureStorage3DCube_emu(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth) {
-    glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, texture);
-    glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, levels, internalformat, width, height, depth);
-}
-
-void APIENTRY ren_glTextureSubImage2D_emu(
-        GLuint texture, GLint level, GLint xoffset, GLint yoffset,
+void APIENTRY ren_glTextureSubImage2D_Comp_emu(
+        GLenum target, GLuint texture, GLint level, GLint xoffset, GLint yoffset,
         GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels) {
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, format, type, pixels);
+    glBindTexture(target, texture);
+    glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
 }
 
-void APIENTRY ren_glTextureSubImage2DCube_emu(
-        GLuint texture, GLint level, GLint xoffset, GLint yoffset,
-        GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels) {
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
-    glTexSubImage2D(GL_TEXTURE_CUBE_MAP, level, xoffset, yoffset, width, height, format, type, pixels);
-}
-
-void APIENTRY ren_glTextureSubImage3D_emu(
-        GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+void APIENTRY ren_glTextureSubImage3D_Comp_emu(
+        GLenum target, GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
         GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels) {
-    glBindTexture(GL_TEXTURE_3D, texture);
-    glTexSubImage3D(GL_TEXTURE_3D, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
-}
-
-void APIENTRY ren_glTextureSubImage3DCube_emu(
-        GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
-        GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels) {
-    glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, texture);
-    glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+    if (target >= GL_TEXTURE_CUBE_MAP_POSITIVE_X && target <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z) {
+        glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+        glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+    } else {
+        glBindTexture(target, texture);
+        glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+    }
 }
 
 void APIENTRY ren_glCompressedTextureSubImage2D_emu(
@@ -62,62 +43,32 @@ void APIENTRY ren_glCompressedTextureSubImage2D_emu(
     glCompressedTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, format, imageSize, data);
 }
 
-void APIENTRY ren_glTextureParameterf_emu(GLuint texture, GLenum pname, GLfloat param) {
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameterf(GL_TEXTURE_2D, pname, param);
+void APIENTRY ren_glTextureParameterf_Comp_emu(GLenum target, GLuint texture, GLenum pname, GLfloat param) {
+    glBindTexture(target, texture);
+    glTexParameterf(target, pname, param);
 }
 
-void APIENTRY ren_glTextureParameterfCube_emu(GLuint texture, GLenum pname, GLfloat param) {
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
-    glTexParameterf(GL_TEXTURE_CUBE_MAP, pname, param);
+void APIENTRY ren_glTextureParameteri_Comp_emu(GLenum target, GLuint texture, GLenum pname, GLint param) {
+    glBindTexture(target, texture);
+    glTexParameteri(target, pname, param);
 }
 
-void APIENTRY ren_glTextureParameteri_emu(GLuint texture, GLenum pname, GLint param) {
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, pname, param);
+void APIENTRY ren_glTextureParameterfv_Comp_emu(GLenum target, GLuint texture, GLenum pname, const GLfloat *params) {
+    glBindTexture(target, texture);
+    glTexParameterfv(target, pname, params);
 }
 
-void APIENTRY ren_glTextureParameteriCube_emu(GLuint texture, GLenum pname, GLint param) {
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, pname, param);
+void APIENTRY ren_glTextureParameteriv_Comp_emu(GLenum target, GLuint texture, GLenum pname, const GLint *params) {
+    glBindTexture(target, texture);
+    glTexParameteriv(target, pname, params);
 }
 
-void APIENTRY ren_glTextureParameterfv_emu(GLuint texture, GLenum pname, const GLfloat *params) {
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameterfv(GL_TEXTURE_2D, pname, params);
+void APIENTRY ren_glGenerateTextureMipmap_Comp_emu(GLenum target, GLuint texture) {
+    glBindTexture(target, texture);
+    glGenerateMipmap(target);
 }
 
-void APIENTRY ren_glTextureParameterfvCube_emu(GLuint texture, GLenum pname, const GLfloat *params) {
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
-    glTexParameterfv(GL_TEXTURE_CUBE_MAP, pname, params);
-}
-
-void APIENTRY ren_glTextureParameteriv_emu(GLuint texture, GLenum pname, const GLint *params) {
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteriv(GL_TEXTURE_2D, pname, params);
-}
-
-void APIENTRY ren_glTextureParameterivCube_emu(GLuint texture, GLenum pname, const GLint *params) {
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
-    glTexParameteriv(GL_TEXTURE_CUBE_MAP, pname, params);
-}
-
-void APIENTRY ren_glGenerateTextureMipmap_emu(GLuint texture) {
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glGenerateMipmap(GL_TEXTURE_2D);
-}
-
-void APIENTRY ren_glGenerateTextureMipmapCube_emu(GLuint texture) {
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
-    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-}
-
-void APIENTRY ren_glBindTextureUnit_emu(GLuint unit, GLuint texture) {
+void APIENTRY ren_glBindTextureUnit_Comp_emu(GLenum target, GLuint unit, GLuint texture) {
     glActiveTexture((GLenum)(GL_TEXTURE0 + unit));
-    glBindTexture(GL_TEXTURE_2D, texture);
-}
-
-void APIENTRY ren_glBindTextureUnitMs_emu(GLuint unit, GLuint texture) {
-    glActiveTexture((GLenum)(GL_TEXTURE0 + unit));
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture);
+    glBindTexture(target, texture);
 }

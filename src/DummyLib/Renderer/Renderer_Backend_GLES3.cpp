@@ -60,16 +60,6 @@ namespace RendererInternal {
 
     const int LIGHTS_BUFFER_BINDING = 0;
 
-    inline void BindCubemap(int slot, uint32_t tex) {
-        glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
-        glBindTexture(GL_TEXTURE_CUBE_MAP, (GLuint)tex);
-    }
-
-    inline void BindTexBuffer(int slot, uint32_t tex) {
-        glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
-        glBindTexture(GL_TEXTURE_BUFFER, (GLuint)tex);
-    }
-
     const int TEMP_BUF_SIZE = 256;
 
     const float fs_quad_positions[] = {
@@ -530,9 +520,10 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: timer queries");
 
     {
-        Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
-                       vtx_buf2 = ctx_.default_vertex_buf2(),
-                       ndx_buf = ctx_.default_indices_buf();
+        Ren::BufferRef
+            vtx_buf1 = ctx_.default_vertex_buf1(),
+            vtx_buf2 = ctx_.default_vertex_buf2(),
+            ndx_buf = ctx_.default_indices_buf();
 
         // Allocate temporary buffer
         temp_buf1_vtx_offset_ = vtx_buf1->Alloc(TEMP_BUF_SIZE);
@@ -569,8 +560,8 @@ void Renderer::InitRendererInternal() {
 
     {   // Set shadowmap compare mode
         const uint32_t shad_tex = shadow_buf_.depth_tex.GetValue();
-        glTextureParameteri(shad_tex, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-        glTextureParameteri(shad_tex, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, shad_tex, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, shad_tex, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
     }
 
     Ren::CheckError("[InitRendererInternal]: shadowmap compare mode setup");
@@ -1385,7 +1376,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeShadowMapStart], GL_TIMESTAMP);
     }
 
-    BindTexBuffer(REN_INST_BUF_SLOT, instances_tbo_[cur_buf_chunk_]);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT, instances_tbo_[cur_buf_chunk_]);
 
     {   // draw shadow map
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
@@ -1459,7 +1450,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
                 if (batch.mat_id != cur_mat_id) {
                     const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                    glBindTextureUnit(0, mat->texture(0)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, mat->texture(0)->tex_id());
                     cur_mat_id = batch.mat_id;
                 }
 
@@ -1516,7 +1507,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         Ren::Mat4f world_from_object = translate_matrix * scale_matrix;
         glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(world_from_object));
 
-        BindCubemap(REN_BASE0_TEX_SLOT, list.env.env_map->tex_id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP, REN_BASE0_TEX_SLOT, list.env.env_map->tex_id());
 
         DebugMarker _("DRAW SKYDOME");
 
@@ -1534,39 +1525,38 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     // Bind persistent resources (shadow atlas, lightmap, cells item data)
     //
 
-    glBindTextureUnit(REN_SHAD_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
 
     if (list.decals_atlas) {
-        glBindTextureUnit(REN_DECAL_TEX_SLOT, list.decals_atlas->tex_id(0));
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_DECAL_TEX_SLOT, list.decals_atlas->tex_id(0));
     }
 
     if (list.render_flags & EnableSSAO) {
-        glBindTextureUnit(REN_SSAO_TEX_SLOT, combined_buf_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, combined_buf_.attachments[0].tex);
     } else {
-        glBindTextureUnit(REN_SSAO_TEX_SLOT, dummy_white_->tex_id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, dummy_white_->tex_id());
     }
 
-    glBindTextureUnit(REN_BRDF_TEX_SLOT, brdf_lut_->tex_id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BRDF_TEX_SLOT, brdf_lut_->tex_id());
 
     if ((list.render_flags & EnableLightmap) && list.env.lm_direct) {
         for (int sh_l = 0; sh_l < 4; sh_l++) {
-            glBindTextureUnit(REN_LMAP_SH_SLOT + sh_l, list.env.lm_indir_sh[sh_l]->tex_id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_LMAP_SH_SLOT + sh_l, list.env.lm_indir_sh[sh_l]->tex_id());
         }
     } else {
         for (int sh_l = 0; sh_l < 4; sh_l++) {
-            glBindTextureUnit(REN_LMAP_SH_SLOT + sh_l, dummy_black_->tex_id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_LMAP_SH_SLOT + sh_l, dummy_black_->tex_id());
         }
     }
 
     if (list.probe_storage) {
-        glActiveTexture(GL_TEXTURE0 + REN_ENV_TEX_SLOT);
-        glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, list.probe_storage->tex_id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT, list.probe_storage->tex_id());
     }
 
-    BindTexBuffer(REN_LIGHT_BUF_SLOT, lights_tbo_[cur_buf_chunk_]);
-    BindTexBuffer(REN_DECAL_BUF_SLOT, decals_tbo_[cur_buf_chunk_]);
-    BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
-    BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_LIGHT_BUF_SLOT, lights_tbo_[cur_buf_chunk_]);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_DECAL_BUF_SLOT, decals_tbo_[cur_buf_chunk_]);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
 
     //
     // Depth-fill pass (draw opaque surfaces -> draw alpha-tested surfaces)
@@ -1603,7 +1593,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindVertexArray(depth_pass_transp_vao_);
         glUseProgram(fillz_transp_prog_->prog_id());
 
-        glBindTextureUnit(REN_ALPHATEST_TEX_SLOT, dummy_white_->tex_id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT, dummy_white_->tex_id());
 
         uint32_t cur_mat_id = 0xffffffff;
 
@@ -1613,7 +1603,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             if (batch.mat_id != cur_mat_id) {
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                glBindTextureUnit(REN_ALPHATEST_TEX_SLOT, mat->texture(0)->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT, mat->texture(0)->tex_id());
                 cur_mat_id = batch.mat_id;
             }
 
@@ -1662,9 +1652,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
         if (clean_buf_.sample_count > 1) {
-            glBindTextureUnitMs(REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
         } else {
-            glBindTextureUnit(REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
@@ -1690,7 +1680,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUniform4f(0, 0.0f, 0.0f, float(ssao_res[0]), float(ssao_res[1]));
 
-            glBindTextureUnit(REN_BASE0_TEX_SLOT, down_depth_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, down_depth_.attachments[0].tex);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
@@ -1700,8 +1690,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUseProgram(blit_bilateral_prog_->prog_id());
 
-            glBindTextureUnit(0, down_depth_.attachments[0].tex);
-            glBindTextureUnit(1, ssao_buf1_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, down_depth_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 1, ssao_buf1_.attachments[0].tex);
 
             glUniform4f(0, 0.0f, 0.0f, float(ssao_res[0]), float(ssao_res[1]));
             glUniform1f(3, 0.0f);
@@ -1712,7 +1702,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUseProgram(blit_bilateral_prog_->prog_id());
 
-            glBindTextureUnit(1, ssao_buf2_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 1, ssao_buf2_.attachments[0].tex);
 
             glUniform4f(0, 0.0f, 0.0f, float(ssao_res[0]), float(ssao_res[1]));
             glUniform1f(3, 1.0f);
@@ -1728,18 +1718,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             if (clean_buf_.sample_count > 1) {
                 blit_upscale_prog = blit_upscale_ms_prog_.get();
-                glBindTextureUnitMs(0, clean_buf_.depth_tex.GetValue());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, 0, clean_buf_.depth_tex.GetValue());
             } else {
                 blit_upscale_prog = blit_upscale_prog_.get();
-                glBindTextureUnit(0, clean_buf_.depth_tex.GetValue());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, clean_buf_.depth_tex.GetValue());
             }
             
             glUseProgram(blit_upscale_prog->prog_id());
 
             glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
-            glBindTextureUnit(1, down_depth_.attachments[0].tex);
-            glBindTextureUnit(2, ssao_buf1_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 1, down_depth_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 2, ssao_buf1_.attachments[0].tex);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
@@ -1794,9 +1784,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             }
 
             if (cur_mat != mat) {
-                glBindTextureUnit(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
-                glBindTextureUnit(REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
-                glBindTextureUnit(REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
                 cur_mat = mat;
             }
 
@@ -1825,7 +1815,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUseProgram(blit_ms_resolve_prog_->prog_id());
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
-        glBindTextureUnitMs(REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
     }
@@ -1872,7 +1862,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 }
 
                 if (cur_mat != mat) {
-                    glBindTextureUnit(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
                     cur_mat = mat;
                 }
 
@@ -1901,13 +1891,13 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glClear(GL_COLOR_BUFFER_BIT);
 
         if (moments_buf_.sample_count > 1) {
-            glBindTextureUnitMs(REN_MOMENTS0_MS_TEX_SLOT, moments_buf_.attachments[0].tex);
-            glBindTextureUnitMs(REN_MOMENTS1_MS_TEX_SLOT, moments_buf_.attachments[1].tex);
-            glBindTextureUnitMs(REN_MOMENTS2_MS_TEX_SLOT, moments_buf_.attachments[2].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_MOMENTS0_MS_TEX_SLOT, moments_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_MOMENTS1_MS_TEX_SLOT, moments_buf_.attachments[1].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_MOMENTS2_MS_TEX_SLOT, moments_buf_.attachments[2].tex);
         } else {
-            glBindTextureUnit(REN_MOMENTS0_TEX_SLOT, moments_buf_.attachments[0].tex);
-            glBindTextureUnit(REN_MOMENTS1_TEX_SLOT, moments_buf_.attachments[1].tex);
-            glBindTextureUnit(REN_MOMENTS2_TEX_SLOT, moments_buf_.attachments[2].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MOMENTS0_TEX_SLOT, moments_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MOMENTS1_TEX_SLOT, moments_buf_.attachments[1].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MOMENTS2_TEX_SLOT, moments_buf_.attachments[2].tex);
         }
 
         {   // Draw alpha-blended surfaces
@@ -1930,9 +1920,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 }
 
                 if (cur_mat != mat) {
-                    glBindTextureUnit(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
-                    glBindTextureUnit(REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
-                    glBindTextureUnit(REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
                     cur_mat = mat;
                 }
 
@@ -1991,9 +1981,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 }
 
                 if (cur_mat != mat) {
-                    glBindTextureUnit(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
-                    glBindTextureUnit(REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
-                    glBindTextureUnit(REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
                     cur_mat = mat;
                 }
 
@@ -2038,9 +2028,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             }
 
             if (cur_mat != mat) {
-                glBindTextureUnit(REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
-                glBindTextureUnit(REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
-                glBindTextureUnit(REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
                 cur_mat = mat;
             }
 
@@ -2072,7 +2062,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUseProgram(blit_ms_resolve_prog_->prog_id());
             glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
-            glBindTextureUnitMs(REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
@@ -2116,14 +2106,14 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
-        glBindTextureUnit(REN_REFL_DEPTH_TEX_SLOT, down_depth_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_DEPTH_TEX_SLOT, down_depth_.attachments[0].tex);
 
         if (clean_buf_.sample_count > 1) {
-            glBindTextureUnitMs(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
-            glBindTextureUnitMs(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         } else {
-            glBindTextureUnit(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
-            glBindTextureUnit(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
@@ -2136,7 +2126,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glBindFramebuffer(GL_FRAMEBUFFER, ssr_buf2_.fb);
 
-            glBindTextureUnit(REN_BASE0_TEX_SLOT, ssr_buf1_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, ssr_buf1_.attachments[0].tex);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
@@ -2162,28 +2152,27 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
         if (clean_buf_.sample_count > 1) {
-            glBindTextureUnitMs(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
-            glBindTextureUnitMs(REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
-            glBindTextureUnitMs(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
         } else {
-            glBindTextureUnit(REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
-            glBindTextureUnit(REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
-            glBindTextureUnit(REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
         }
 
-        glBindTextureUnit(REN_REFL_DEPTH_LOW_TEX_SLOT, down_depth_.attachments[0].tex);
-        glBindTextureUnit(REN_REFL_SSR_TEX_SLOT, ssr_buf2_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_DEPTH_LOW_TEX_SLOT, down_depth_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_SSR_TEX_SLOT, ssr_buf2_.attachments[0].tex);
 
-        glBindTextureUnit(REN_REFL_PREV_TEX_SLOT, down_buf_.attachments[0].tex);
-        glBindTextureUnit(REN_REFL_BRDF_TEX_SLOT, brdf_lut_->tex_id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_PREV_TEX_SLOT, down_buf_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_BRDF_TEX_SLOT, brdf_lut_->tex_id());
 
         if (list.probe_storage) {
-            glActiveTexture(GL_TEXTURE0 + REN_ENV_TEX_SLOT);
-            glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, list.probe_storage->tex_id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT, list.probe_storage->tex_id());
         }
 
-        BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
-        BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
@@ -2217,18 +2206,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
         if (clean_buf_.sample_count > 1) {
-            BindTextureMs(REN_BASE0_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
 #if REN_OIT_MODE == REN_OIT_MOMENT_BASED
-            BindTextureMs(REN_BASE1_TEX_SLOT, moments_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE1_TEX_SLOT, moments_buf_.attachments[0].tex);
 #elif REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED
-            BindTextureMs(REN_BASE1_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE1_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
 #endif
         } else {
-            glBindTextureUnit(REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
 #if REN_OIT_MODE == REN_OIT_MOMENT_BASED
-            glBindTextureUnit(REN_BASE1_TEX_SLOT, moments_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT, moments_buf_.attachments[0].tex);
 #elif REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED
-            glBindTextureUnit(REN_BASE1_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
 #endif
         }
 
@@ -2259,8 +2248,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         if (list.probe_storage) {
-            glActiveTexture(GL_TEXTURE0 + REN_BASE0_TEX_SLOT);
-            glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, list.probe_storage->tex_id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_BASE0_TEX_SLOT, list.probe_storage->tex_id());
         }
 
         for (int i = 0; i < (int)list.probes.count; i++) {
@@ -2276,8 +2264,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
     }
 
-    glActiveTexture(GL_TEXTURE0 + REN_ENV_TEX_SLOT);
-    glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, 0);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT, 0);
 
     glDisable(GL_DEPTH_TEST);
 
@@ -2309,9 +2296,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
         if (clean_buf_.sample_count > 1) {
-            glBindTextureUnit(REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
         } else {
-            glBindTextureUnit(REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
@@ -2326,7 +2313,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniform4f(0, 0.0f, 0.0f, float(down_buf_.w), float(down_buf_.h));
             glUniform1f(4, 0.0f);
 
-            glBindTextureUnit(REN_BASE0_TEX_SLOT, down_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, down_buf_.attachments[0].tex);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
@@ -2336,7 +2323,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniform4f(0, 0.0f, 0.0f, float(blur_buf2_.w), float(blur_buf2_.h));
             glUniform1f(4, 1.0f);
 
-            glBindTextureUnit(REN_BASE0_TEX_SLOT, blur_buf2_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, blur_buf2_.attachments[0].tex);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
@@ -2371,7 +2358,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                        0.5f * poisson_disk[cur_offset][1] * offset_step[1]);
         cur_offset = cur_offset >= 63 ? 0 : (cur_offset + 1);
 
-        glBindTextureUnit(REN_BASE0_TEX_SLOT, buf_to_sample->attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, buf_to_sample->attachments[0].tex);
 
         DebugMarker _("SAMPLE FRAME BRIGHTNESS");
 
@@ -2440,15 +2427,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform1f(U_EXPOSURE, exposure);
 
         if (clean_buf_.sample_count > 1) {
-            glBindTextureUnit(REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
         } else {
-            glBindTextureUnit(REN_BASE0_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
         }
 
         if ((list.render_flags & EnableBloom) && !(list.render_flags & DebugWireframe)) {
-            glBindTextureUnit(REN_BASE1_TEX_SLOT, blur_buf1_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT, blur_buf1_.attachments[0].tex);
         } else {
-            glBindTextureUnit(REN_BASE1_TEX_SLOT, dummy_black_->tex_id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT, dummy_black_->tex_id());
         }
 
 #ifndef DISABLE_MARKERS
@@ -2473,7 +2460,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
-            glBindTextureUnit(REN_BASE0_TEX_SLOT, combined_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, combined_buf_.attachments[0].tex);
 
             glUniform2f(12, 1.0f / float(scr_w_), 1.0f / float(scr_h_));
 
@@ -2531,13 +2518,13 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4fv(17, 1, Ren::ValuePtr(shrd_data.uClipInfo));
 
         if (clean_buf_.sample_count > 1) {
-            glBindTextureUnitMs(REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
         } else {
-            glBindTextureUnit(REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
         }
 
-        BindTexBuffer(REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
-        BindTexBuffer(REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
@@ -2556,7 +2543,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUniform1f(4, 1.0f);
 
-        glBindTextureUnit(REN_BASE0_TEX_SLOT, temp_tex_);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, temp_tex_);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, &depth_pixels_[0][0]);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
@@ -2594,7 +2581,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
 
-        glBindTextureUnit(REN_BASE0_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
         const float k = (float(shadow_buf_.h) / float(shadow_buf_.w)) * (float(scr_w_) / scr_h_);
@@ -2779,9 +2766,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glEnableVertexAttribArray(REN_VTX_UV1_LOC);
             glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
-            glBindTextureUnitMs(0, clean_buf_.depth_tex.GetValue());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, 0, clean_buf_.depth_tex.GetValue());
 
-            BindTexBuffer(1, nodes_tbo_);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, 1, nodes_tbo_);
 
             glUniform1i(debug_bvh_prog->uniform("uRootIndex").loc, list.root_index);
 
@@ -3015,7 +3002,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
 
         glUniform1f(4, 0.0f);
 
-        glBindTextureUnit(REN_BASE0_TEX_SLOT, temp_tex_);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, temp_tex_);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
@@ -3029,7 +3016,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
 
         glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_pos)), sizeof(fs_quad_uvs2), fs_quad_uvs2);
 
-        glBindTextureUnit(REN_BASE0_TEX_SLOT, blur_buf2_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, blur_buf2_.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
@@ -3071,8 +3058,8 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
 
         glUniform1f(U_EXPOSURE, exposure);
 
-        glBindTextureUnit(REN_BASE0_TEX_SLOT, temp_tex_);
-        glBindTextureUnit(REN_BASE1_TEX_SLOT, blur_buf2_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, temp_tex_);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT, blur_buf2_.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
@@ -3127,9 +3114,9 @@ void Renderer::BlitBuffer(float px, float py, float sx, float sy, const FrameBuf
         glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
 
         if (buf.sample_count > 1) {
-            glBindTextureUnitMs(REN_BASE0_TEX_SLOT, buf.attachments[i].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, buf.attachments[i].tex);
         } else {
-            glBindTextureUnit(REN_BASE0_TEX_SLOT, buf.attachments[i].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, buf.attachments[i].tex);
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
@@ -3186,9 +3173,9 @@ void Renderer::BlitTexture(float px, float py, float sx, float sy, uint32_t tex_
         glUniform1f(4, 1.0f);
 
         if (is_ms) {
-            glBindTextureUnitMs(REN_BASE0_TEX_SLOT, tex_id);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, tex_id);
         } else {
-            glBindTextureUnit(REN_BASE0_TEX_SLOT, tex_id);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, tex_id);
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
@@ -3247,7 +3234,7 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &
 
         glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
 
-        glBindTextureUnit(0, src_buf.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, src_buf.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
     }
@@ -3268,8 +3255,7 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &
 
         glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, cube_array);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, 0, cube_array);
 
         int res = dst_store.res() / 2;
         int level = 1;
@@ -3343,8 +3329,7 @@ void Renderer::BlitPrefilterFromTemp(const ProbeStorage &dst_store, int probe_in
     glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
     glUniform1f(1, float(temp_probe_index));
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, cube_array);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, 0, cube_array);
 
     int res = dst_store.res();
     int level = 0;
@@ -3455,10 +3440,9 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
 
             glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, store.tex_id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, 1, store.tex_id());
 
-            glBindTextureUnit(1, rand2d_8x8_->tex_id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 1, rand2d_8x8_->tex_id());
 
             glUniform1f(1, float(probe_index));
             glUniform1i(2, iteration);
