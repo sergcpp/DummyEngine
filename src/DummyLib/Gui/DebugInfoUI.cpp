@@ -1,10 +1,9 @@
 #include "DebugInfoUI.h"
 
-#include <Gui/BitmapFont.h>
+#include <Eng/Gui/BitmapFont.h>
+#include <Eng/Scene/SceneData.h>
+#include <Eng/Renderer/Renderer_Structs.h>
 #include <Sys/Time_.h>
-
-#include "../Scene/SceneData.h"
-#include "../Renderer/Renderer_Structs.h"
 
 DebugInfoUI::DebugInfoUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, const BaseElement *parent, const std::shared_ptr<Gui::BitmapFont> &font)
     : BaseElement(pos, size, parent), parent_(parent), font_(font) {

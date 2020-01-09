@@ -76,7 +76,6 @@ add_subdirectory(Modl)
 add_subdirectory(Ray)
 add_subdirectory(Ren)
 add_subdirectory(Sys)
-add_subdirectory(Gui)
 
 add_subdirectory(libs/astc)
 
@@ -90,16 +89,14 @@ set_target_properties(Eng
                       Ray
                       Ren
                       SW
-                      Sys 
-                      Gui PROPERTIES FOLDER Libs)
+                      Sys PROPERTIES FOLDER Libs)
 
 set_target_properties(test_DummyLib
                       test_Eng
                       test_Ray
                       test_Ren
                       test_SW
-                      test_Sys
-                      test_Gui PROPERTIES FOLDER Tests)
+                      test_Sys PROPERTIES FOLDER Tests)
                       
 set_target_properties(SOIL2
                       astc PROPERTIES FOLDER _)
@@ -110,13 +107,11 @@ add_test(RayTest        Ray/tests/test_Ray)
 add_test(RenTest        Ren/tests/test_Ren)
 add_test(SWTest         Ren/SW/tests/test_SW)
 add_test(SysTest        Sys/tests/test_Sys)
-add_test(GuiTest        Gui/tests/test_Gui)
 
 add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_DummyLib
                                                                test_Eng
                                                                test_Ray
                                                                test_Ren
                                                                test_SW
-                                                               test_Sys
-                                                               test_Gui)
+                                                               test_Sys)
 set_target_properties(Check PROPERTIES FOLDER Tests)

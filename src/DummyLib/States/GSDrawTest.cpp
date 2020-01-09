@@ -4,7 +4,10 @@
 #include <memory>
 
 #include <Eng/GameStateManager.h>
-#include <Gui/Renderer.h>
+#include <Eng/Renderer/Renderer.h>
+#include <Eng/Scene/SceneManager.h>
+#include <Eng/Utils/Cmdline.h>
+#include <Eng/Gui/Renderer.h>
 #include <Ren/Context.h>
 #include <Ren/GL.h>
 #include <Ren/Utils.h>
@@ -16,9 +19,6 @@
 
 #include "../Gui/FontStorage.h"
 #include "../Viewer.h"
-#include "../Renderer/Renderer.h"
-#include "../Scene/SceneManager.h"
-#include "../Utils/Cmdline.h"
 
 namespace GSDrawTestInternal {
 #if defined(__ANDROID__)

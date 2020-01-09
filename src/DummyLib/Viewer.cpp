@@ -3,6 +3,9 @@
 #include <sstream>
 
 #include <Eng/GameStateManager.h>
+#include <Eng/Renderer/Renderer.h>
+#include <Eng/Scene/SceneManager.h>
+#include <Eng/Utils/Cmdline.h>
 #include <Ray/RendererFactory.h>
 #include <Ren/Context.h>
 #include <Ren/MVec.h>
@@ -12,10 +15,7 @@
 
 #include "Gui/DebugInfoUI.h"
 #include "Gui/FontStorage.h"
-#include "Renderer/Renderer.h"
-#include "Scene/SceneManager.h"
 #include "States/GSCreate.h"
-#include "Utils/Cmdline.h"
 
 Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) {
     auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);

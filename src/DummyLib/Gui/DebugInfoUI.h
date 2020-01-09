@@ -3,7 +3,7 @@
 #include <memory>
 
 #include <Eng/GameBase.h>
-#include <Gui/BaseElement.h>
+#include <Eng/Gui/BaseElement.h>
 
 struct BackendInfo;
 struct FrontendInfo;

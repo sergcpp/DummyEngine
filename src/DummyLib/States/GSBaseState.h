@@ -6,15 +6,14 @@
 
 #include <Eng/GameBase.h>
 #include <Eng/GameState.h>
+#include <Eng/Scene/SceneData.h>
+#include <Eng/Renderer/Renderer.h>
 #include <Ren/Camera.h>
 #include <Ren/Mesh.h>
 #include <Ren/MVec.h>
 #include <Ren/Program.h>
 #include <Ren/Texture.h>
 #include <Ren/SW/SW.h>
-
-#include "../Scene/SceneData.h"
-#include "../Renderer/Renderer.h"
 
 class Cmdline;
 class DebugInfoUI;

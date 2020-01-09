@@ -12,6 +12,8 @@ int main(int argc, char *argv[]) {
 // use direct access extension
 // add logstream
 // add assetstream
+// fix Gui tests
+// get rid of SDL in test applications
 // make full screen quad passes differently
 // refactor repetitive things in shaders
 // use one big array for instance indices

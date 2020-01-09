@@ -4,10 +4,13 @@
 #include <memory>
 
 #include <Eng/GameStateManager.h>
-#include <Gui/Image.h>
-#include <Gui/Image9Patch.h>
-#include <Gui/Renderer.h>
-#include <Gui/Utils.h>
+#include <Eng/Renderer/Renderer.h>
+#include <Eng/Scene/SceneManager.h>
+#include <Eng/Utils/Cmdline.h>
+#include <Eng/Gui/Image.h>
+#include <Eng/Gui/Image9Patch.h>
+#include <Eng/Gui/Renderer.h>
+#include <Eng/Gui/Utils.h>
 #include <Ren/Context.h>
 #include <Ren/GL.h>
 #include <Ren/Utils.h>
@@ -20,9 +23,6 @@
 #include "../Gui/FontStorage.h"
 #include "../Gui/TextPrinter.h"
 #include "../Viewer.h"
-#include "../Renderer/Renderer.h"
-#include "../Scene/SceneManager.h"
-#include "../Utils/Cmdline.h"
 
 namespace GSUITest2Internal {
 #if defined(__ANDROID__)
