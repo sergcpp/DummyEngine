@@ -117,7 +117,9 @@ int CalcMipCount(int w, int h, eTexFilter filter) {
     int mip_count = 0;
     if (filter == Trilinear || filter == Bilinear) {
         int max_dim = std::max(w, h);
-        while (max_dim /= 2) mip_count++;
+        do {
+            mip_count++;
+        } while(max_dim /= 2);
     } else {
         mip_count = 1;
     }
