@@ -75,4 +75,10 @@ struct DDSHeader {
     uint32_t    dwReserved2;
 };
 static_assert(sizeof(DDSHeader) == 128, "!");
+
+extern const uint8_t _blank_DXT5_block_16x16[];
+extern const int _blank_DXT5_block_16x16_len;
+
+extern const uint8_t _blank_ASTC_block_16x16_8bb[];
+extern const int _blank_ASTC_block_16x16_8bb_len;
 }
