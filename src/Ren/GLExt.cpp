@@ -43,7 +43,8 @@ bool Ren::InitGLExtentions() {
     ren_glTextureSubImage2D_Comp    = ren_glTextureSubImage2D_Comp_emu;
     ren_glTextureSubImage3D_Comp    = ren_glTextureSubImage3D_Comp_emu;
 
-    ren_glCompressedTextureSubImage2D = ren_glCompressedTextureSubImage2D_emu;
+    ren_glCompressedTextureSubImage2D_Comp = ren_glCompressedTextureSubImage2D_Comp_emu;
+    ren_glCompressedTextureSubImage3D_Comp = ren_glCompressedTextureSubImage3D_Comp_emu;
 
     ren_glTextureParameterf_Comp    = ren_glTextureParameterf_Comp_emu;
     ren_glTextureParameteri_Comp    = ren_glTextureParameteri_Comp_emu;
@@ -277,8 +278,26 @@ bool Ren::InitGLExtentions() {
     }
 
     ren_glCompressedTextureSubImage2D = (PFNGLCOMPRESSEDTEXTURESUBIMAGE2DPROC)GetProcAddress(glCompressedTextureSubImage2D);
-    if (!ren_glCompressedTextureSubImage2D) {
-        ren_glCompressedTextureSubImage2D = ren_glCompressedTextureSubImage2D_emu;
+    if (ren_glCompressedTextureSubImage2D) {
+        ren_glCompressedTextureSubImage2D_Comp = [](GLenum /*target*/,
+                GLuint texture, GLint level, GLint xoffset, GLint yoffset,
+                GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data) {
+            ren_glCompressedTextureSubImage2D(texture, level, xoffset, yoffset, width, height, format, imageSize, data);
+        };
+    } else {
+        ren_glCompressedTextureSubImage2D_Comp = ren_glCompressedTextureSubImage2D_Comp_emu;
+    }
+
+    ren_glCompressedTextureSubImage3D = (PFNGLCOMPRESSEDTEXTURESUBIMAGE3DPROC)GetProcAddress(glCompressedTextureSubImage3D);
+    if (ren_glCompressedTextureSubImage3D) {
+        ren_glCompressedTextureSubImage3D_Comp = [](GLenum /*target*/,
+                GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+                GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data) {
+            ren_glCompressedTextureSubImage3D(
+                    texture, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
+        };
+    } else {
+        ren_glCompressedTextureSubImage3D_Comp = ren_glCompressedTextureSubImage3D_Comp_emu;
     }
 
     ren_glTextureParameterf         = (PFNGLTEXTUREPARAMETERFPROC)GetProcAddress(glTextureParameterf);
@@ -333,7 +352,8 @@ bool Ren::InitGLExtentions() {
     ren_glTextureSubImage2D_Comp    = ren_glTextureSubImage2D_Comp_emu;
     ren_glTextureSubImage3D_Comp    = ren_glTextureSubImage3D_Comp_emu;
 
-    ren_glCompressedTextureSubImage2D = ren_glCompressedTextureSubImage2D_emu;
+    ren_glCompressedTextureSubImage2D_Comp = ren_glCompressedTextureSubImage2D_Comp_emu;
+    ren_glCompressedTextureSubImage3D_Comp = ren_glCompressedTextureSubImage3D_Comp_emu;
 
     ren_glTextureParameterf_Comp    = ren_glTextureParameterf_Comp_emu;
     ren_glTextureParameteri_Comp    = ren_glTextureParameteri_Comp_emu;

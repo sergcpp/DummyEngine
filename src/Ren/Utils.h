@@ -81,4 +81,6 @@ extern const int _blank_DXT5_block_16x16_len;
 
 extern const uint8_t _blank_ASTC_block_16x16_8bb[];
 extern const int _blank_ASTC_block_16x16_8bb_len;
+
+int CalcMipCount(int w, int h, int min_res, eTexFilter filter);
 }

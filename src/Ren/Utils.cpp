@@ -762,3 +762,16 @@ void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint3
         }
     }
 }
+
+int Ren::CalcMipCount(int w, int h, int min_res, eTexFilter filter) {
+    int mip_count = 0;
+    if (filter == Trilinear || filter == Bilinear) {
+        int max_dim = std::max(w, h);
+        do {
+            mip_count++;
+        } while((max_dim /= 2) >= min_res);
+    } else {
+        mip_count = 1;
+    }
+    return mip_count;
+}

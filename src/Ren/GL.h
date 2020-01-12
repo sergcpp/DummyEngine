@@ -79,6 +79,16 @@ typedef void (APIENTRY *PFNGLTEXTURESUBIMAGE3DPROC)(
 typedef void (APIENTRY *PFNGLCOMPRESSEDTEXTURESUBIMAGE2DPROC)(
     GLuint texture, GLint level, GLint xoffset, GLint yoffset,
     GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data);
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXTURESUBIMAGE2DCOMPPROC)(
+    GLenum target, GLuint texture, GLint level, GLint xoffset, GLint yoffset,
+    GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data);
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXTURESUBIMAGE3DPROC)(
+    GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+ 	GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXTURESUBIMAGE3DCOMPPROC)(
+    GLenum target, GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+ 	GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
+
 
 typedef void (APIENTRY *PFNGLTEXTUREPARAMETERFPROC)(GLuint texture, GLenum pname, GLfloat param);
 typedef void (APIENTRY *PFNGLTEXTUREPARAMETERIPROC)(GLuint texture, GLenum pname, GLint param);
@@ -127,6 +137,15 @@ typedef void (APIENTRY *PFNGLTEXTURESUBIMAGE3DCOMPPROC)(
 typedef void (APIENTRY *PFNGLCOMPRESSEDTEXTURESUBIMAGE2DPROC)(
     GLuint texture, GLint level, GLint xoffset, GLint yoffset,
     GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data);
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXTURESUBIMAGE2DCOMPPROC)(
+    GLenum target, GLuint texture, GLint level, GLint xoffset, GLint yoffset,
+    GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data);
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXTURESUBIMAGE3DPROC)(
+    GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+ 	GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXTURESUBIMAGE3DCOMPPROC)(
+    GLenum target, GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+ 	GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
 
 typedef void (APIENTRY *PFNGLTEXTUREPARAMETERFPROC)(GLuint texture, GLenum pname, GLfloat param);
 typedef void (APIENTRY *PFNGLTEXTUREPARAMETERFCOMPPROC)(GLenum target, GLuint texture, GLenum pname, GLfloat param);
@@ -159,6 +178,9 @@ EXTERN_FUNC PFNGLTEXTURESUBIMAGE3DPROC          ren_glTextureSubImage3D;
 EXTERN_FUNC PFNGLTEXTURESUBIMAGE3DCOMPPROC      ren_glTextureSubImage3D_Comp;
 
 EXTERN_FUNC PFNGLCOMPRESSEDTEXTURESUBIMAGE2DPROC ren_glCompressedTextureSubImage2D;
+EXTERN_FUNC PFNGLCOMPRESSEDTEXTURESUBIMAGE2DCOMPPROC ren_glCompressedTextureSubImage2D_Comp;
+EXTERN_FUNC PFNGLCOMPRESSEDTEXTURESUBIMAGE3DPROC ren_glCompressedTextureSubImage3D;
+EXTERN_FUNC PFNGLCOMPRESSEDTEXTURESUBIMAGE3DCOMPPROC ren_glCompressedTextureSubImage3D_Comp;
 
 EXTERN_FUNC PFNGLTEXTUREPARAMETERFPROC          ren_glTextureParameterf;
 EXTERN_FUNC PFNGLTEXTUREPARAMETERFCOMPPROC      ren_glTextureParameterf_Comp;
@@ -690,8 +712,17 @@ typedef void (APIENTRY *PFNGLTEXTURESUBIMAGE3DCOMPPROC)(
     GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels);
 
 typedef void (APIENTRY *PFNGLCOMPRESSEDTEXTURESUBIMAGE2DPROC)(
-    GLuint texture, GLint level, GLint xoffset, GLint yoffset,
-    GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data);
+        GLuint texture, GLint level, GLint xoffset, GLint yoffset,
+        GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data);
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXTURESUBIMAGE2DCOMPPROC)(
+        GLenum target, GLuint texture, GLint level, GLint xoffset, GLint yoffset,
+        GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data);
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXTURESUBIMAGE3DPROC)(
+        GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+        GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
+typedef void (APIENTRY *PFNGLCOMPRESSEDTEXTURESUBIMAGE3DCOMPPROC)(
+        GLenum target, GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+        GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data);
 
 typedef void (APIENTRY *PFNGLTEXTUREPARAMETERFPROC)(GLuint texture, GLenum pname, GLfloat param);
 typedef void (APIENTRY *PFNGLTEXTUREPARAMETERFCOMPPROC)(GLenum target, GLuint texture, GLenum pname, GLfloat param);
@@ -882,6 +913,7 @@ typedef void (APIENTRY *PFNGLBINDTEXTUREUNITCOMPPROC)(GLenum target, GLuint unit
 #define glTextureSubImage3D         ren_glTextureSubImage3D
 
 #define glCompressedTextureSubImage2D ren_glCompressedTextureSubImage2D
+#define glCompressedTextureSubImage3D ren_glCompressedTextureSubImage3D
 
 #define glTextureParameterf         ren_glTextureParameterf
 #define glTextureParameteri         ren_glTextureParameteri
@@ -1071,6 +1103,9 @@ EXTERN_FUNC PFNGLTEXTURESUBIMAGE3DPROC          ren_glTextureSubImage3D;
 EXTERN_FUNC PFNGLTEXTURESUBIMAGE3DCOMPPROC      ren_glTextureSubImage3D_Comp;
 
 EXTERN_FUNC PFNGLCOMPRESSEDTEXTURESUBIMAGE2DPROC ren_glCompressedTextureSubImage2D;
+EXTERN_FUNC PFNGLCOMPRESSEDTEXTURESUBIMAGE2DCOMPPROC ren_glCompressedTextureSubImage2D_Comp;
+EXTERN_FUNC PFNGLCOMPRESSEDTEXTURESUBIMAGE3DPROC ren_glCompressedTextureSubImage3D;
+EXTERN_FUNC PFNGLCOMPRESSEDTEXTURESUBIMAGE3DCOMPPROC ren_glCompressedTextureSubImage3D_Comp;
 
 EXTERN_FUNC PFNGLTEXTUREPARAMETERFPROC          ren_glTextureParameterf;
 EXTERN_FUNC PFNGLTEXTUREPARAMETERFCOMPPROC      ren_glTextureParameterf_Comp;

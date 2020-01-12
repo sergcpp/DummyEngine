@@ -36,11 +36,18 @@ void APIENTRY ren_glTextureSubImage3D_Comp_emu(
     }
 }
 
-void APIENTRY ren_glCompressedTextureSubImage2D_emu(
-        GLuint texture, GLint level, GLint xoffset, GLint yoffset,
+void APIENTRY ren_glCompressedTextureSubImage2D_Comp_emu(
+        GLenum target, GLuint texture, GLint level, GLint xoffset, GLint yoffset,
         GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data) {
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glCompressedTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, format, imageSize, data);
+    glBindTexture(target, texture);
+    glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
+}
+
+void APIENTRY ren_glCompressedTextureSubImage3D_Comp_emu(
+        GLenum target, GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
+        GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data) {
+    glBindTexture(target, texture);
+    glCompressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
 }
 
 void APIENTRY ren_glTextureParameterf_Comp_emu(GLenum target, GLuint texture, GLenum pname, GLfloat param) {

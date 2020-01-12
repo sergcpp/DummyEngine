@@ -112,19 +112,6 @@ uint32_t g_gl_wrap_mode[] = {
     GL_CLAMP_TO_BORDER,         // ClampToBorder
 };
 static_assert(sizeof(g_gl_wrap_mode) / sizeof(g_gl_wrap_mode[0]) == WrapModesCount, "!");
-
-int CalcMipCount(int w, int h, eTexFilter filter) {
-    int mip_count = 0;
-    if (filter == Trilinear || filter == Bilinear) {
-        int max_dim = std::max(w, h);
-        do {
-            mip_count++;
-        } while(max_dim /= 2);
-    } else {
-        mip_count = 1;
-    }
-    return mip_count;
-}
 }
 
 Ren::Texture2D::Texture2D(const char *name, const void *data, int size,
@@ -254,7 +241,7 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Texture2DParams &p)
         type = (GLenum)GLTypeFromTexFormat(p.format);
 
     if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
-        auto mip_count = (GLsizei)CalcMipCount(p.w, p.h, p.filter);
+        auto mip_count = (GLsizei)CalcMipCount(p.w, p.h, 1, p.filter);
 
         // allocate all mip levels
         ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format, (GLsizei)p.w, (GLsizei)p.h);
@@ -357,7 +344,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2D
             return;
         }
 
-        glCompressedTextureSubImage2D(tex_id, (GLint)i, 0, 0, w, h, internal_format, len, p_data);
+        ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, tex_id, (GLint)i, 0, 0, w, h, internal_format, len, p_data);
 
         p_data += len;
         bytes_left -= len;
@@ -439,7 +426,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2D
 
         data_offset += sizeof(uint32_t);
 
-        glCompressedTextureSubImage2D(tex_id, i, 0, 0, w, h, internal_format, (GLsizei)img_size, &_data[data_offset]);
+        ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, tex_id, i, 0, 0, w, h, internal_format, (GLsizei)img_size, &_data[data_offset]);
         data_offset += img_size;
 
         w = std::max(w / 2, 1);
@@ -470,7 +457,7 @@ void Ren::Texture2D::InitFromRAWData(const void *data[6], const Texture2DParams 
     const int w = p.w, h = p.h;
     const eTexFilter f = params_.filter;
 
-    auto mip_count = (GLsizei)CalcMipCount(w, h, f);
+    auto mip_count = (GLsizei)CalcMipCount(w, h, 1, f);
 
     // allocate all mip levels
     ren_glTextureStorage2D_Comp(GL_TEXTURE_CUBE_MAP, tex_id, mip_count, internal_format, w, h);
