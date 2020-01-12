@@ -15,7 +15,7 @@
 
 #include "GLExtDSAEmu.h"
 
-#define GL_DISABLE_DSA
+//#define GL_DISABLE_DSA
 
 #undef None // defined in X.h
 #undef near // defined in minwindef.h

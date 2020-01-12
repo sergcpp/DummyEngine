@@ -21,7 +21,8 @@ JAVAC="$JAVA_HOME/bin/javac -classpath $ANDROID_HOME/platforms/$ANDROID_REV/andr
 APP_NAME=DummyApp
 JAVAC_BUILD="$JAVAC -source 1.7 -target 1.7 -bootclasspath $JAVA_HOME/jre/lib/rt.jar -sourcepath 'src;gen;libs' -d ./bin"
 
-cp -rvu ../assets_android/* ./assets/
+#cp -rvu ../assets_android/* ./assets/
+rsync -av --progress ../assets_android/* ./assets --exclude textures/bistro --exclude models/bistro --exclude models/new_test
 
 $JAVAC_BUILD ./src/com/serg/dummyapp/*.java
 

@@ -44,7 +44,14 @@ void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity) {
     }
 
     glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id);
-    
+
+    const GLenum tex_format =
+#if !defined(__ANDROID__)
+        GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+#else
+        GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
+#endif
+
     int _res = res;
     int level = 0;
     while (_res >= 16) {
@@ -53,14 +60,33 @@ void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity) {
                          capacity * 6, 0, Ren::GLFormatFromTexFormat(format), Ren::GLTypeFromTexFormat(format), nullptr);
             Ren::CheckError("glTexImage3D");
         } else {
-            const int len = ((_res + 3) / 4) * ((_res + 3) / 4) * 16;
-#if !defined(__ANDROID__)
-            glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, _res, _res,
-                                   capacity * 6, 0, capacity * 6 * len, nullptr);
+            {   // allocate memory
+                const int len = ((_res + 3) / 4) * ((_res + 3) / 4) * 16;
+                glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, level, tex_format, _res, _res,
+                                       capacity * 6, 0, capacity * 6 * len, nullptr);
+            }
+
+            // set texture color to black
+            for (int layer = 0; layer < capacity; layer++) {
+                for (int face = 0; face < 6; face++) {
+                    for (int y_off = 0; y_off < _res; y_off += 16) {
+                        // TODO: this fixes an error on android (wtf ???)
+                        const int len_override = ((16 + 3) / 4) * ((16 + y_off + 3) / 4) * 16;
+
+                        for (int x_off = 0; x_off < _res; x_off += 16) {
+                            glCompressedTexSubImage3D(
+                                    GL_TEXTURE_CUBE_MAP_ARRAY, level, x_off, y_off, (layer * 6 + face), 16, 16, 1, tex_format,
+#if defined(__ANDROID__)
+                                    /*Ren::_blank_ASTC_block_16x16_8bb_len*/ len_override, Ren::_blank_ASTC_block_16x16_8bb);
 #else
-            glCompressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, level, GL_COMPRESSED_RGBA_ASTC_4x4_KHR, _res, _res,
-                                   capacity * 6, 0, capacity * 6 * len, nullptr);
+                                    Ren::_blank_DXT5_block_16x16_len, Ren::_blank_DXT5_block_16x16);
+                            (void)len_override;
 #endif
+                        }
+                    }
+                }
+            }
+
             Ren::CheckError("glCompressedTexImage3D");
         }
         _res = _res / 2;
@@ -90,7 +116,8 @@ void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity) {
     reserved_temp_layer_ = capacity_ - 1;
 }
 
-bool ProbeStorage::SetPixelData(const int level, const int layer, const int face, const Ren::eTexColorFormat format,
+bool ProbeStorage::SetPixelData(
+        const int level, const int layer, const int face, const Ren::eTexColorFormat format,
         const uint8_t *data, const int data_len) {
     if (format_ != format) return false;
 
