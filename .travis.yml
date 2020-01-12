@@ -18,7 +18,7 @@ matrix:
 script:
 - mkdir build
 - "(cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENCL=OFF && make -j4)"
-- ./build/src/Eng/tests/test_Eng
+- ./build/src/Eng/_tests/test_Eng
 - ./build/src/Ray/tests/test_Ray
 #- ./build/src/Ren/tests/test_Ren
 - ./build/src/Ren/SW/tests/test_SW

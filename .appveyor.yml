@@ -44,7 +44,7 @@ after_build:
     - 7z a -mx9 dummy_app_%APPVEYOR_BUILD_VERSION%.zip assets_pc
     
 test_script:
-    - build\src\Eng\tests\%CONFIGURATION%\test_Eng
+    - build\src\Eng\_tests\%CONFIGURATION%\test_Eng
     - build\src\Ray\tests\%CONFIGURATION%\test_Ray
 #    - build\src\Ren\tests\%CONFIGURATION%\test_Ren
     - build\src\Ren\SW\tests\%CONFIGURATION%\test_SW
