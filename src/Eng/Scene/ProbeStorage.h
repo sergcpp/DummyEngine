@@ -33,6 +33,6 @@ private:
     int reserved_temp_layer_;
     std::vector<int> free_indices_;
 #if defined(USE_GL_RENDER)
-    uint32_t tex_id_ = 0xffffffff;
+    uint32_t tex_id_ = 0;
 #endif
 };
