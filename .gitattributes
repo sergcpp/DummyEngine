@@ -1,5 +1,13 @@
 src/libs/astc/* linguist-vendored
 src/libs/dirent/* linguist-vendored
+src/libs/stb/* linguist-vendored
 src/libs/SDL2/* linguist-vendored
 src/libs/SDL2/** linguist-vendored
 src/libs/SDL2/*** linguist-vendored
+src/Ren/tests/SDL2/* linguist-vendored
+src/Ren/tests/SDL2/** linguist-vendored
+src/Ren/tests/SDL2/*** linguist-vendored
+src/Eng/Gui/tests/SDL2/* linguist-vendored
+src/Eng/Gui/tests/SDL2/** linguist-vendored
+src/Eng/Gui/tests/SDL2/*** linguist-vendored
+src/Ren/SOIL2/* linguist-vendored
