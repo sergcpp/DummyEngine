@@ -31,11 +31,11 @@
 #define REN_ITEMS_BUF_SLOT  14
 #define REN_INST_BUF_SLOT   15
 #define REN_ENV_TEX_SLOT    16
-#define REN_MOMENTS0_TEX_SLOT 4 // replaces lightmap slot 0
-#define REN_MOMENTS1_TEX_SLOT 5 // replaces lightmap slot 1
-#define REN_MOMENTS2_TEX_SLOT 6 // replaces lightmap slot 2
-#define REN_MOMENTS0_MS_TEX_SLOT 7 // replaces lightmap slot 3
-#define REN_MOMENTS1_MS_TEX_SLOT 9 // replaces ssao slot
+#define REN_MOMENTS0_TEX_SLOT 4 // shares slot with lightmap 0
+#define REN_MOMENTS1_TEX_SLOT 5 // shares slot with lightmap 1
+#define REN_MOMENTS2_TEX_SLOT 6 // shares slot with lightmap 2
+#define REN_MOMENTS0_MS_TEX_SLOT 7 shares slot with lightmap 3
+#define REN_MOMENTS1_MS_TEX_SLOT 9 shares slot with ssao texture
 #define REN_MOMENTS2_MS_TEX_SLOT 17
 
 #define REN_ALPHATEST_TEX_SLOT 0
@@ -80,12 +80,12 @@
 
 #define REN_MAX_BATCH_SIZE 8
 
-#define REN_MAX_INSTANCES_TOTAL 262144
-#define REN_MAX_SHADOWMAPS_TOTAL 32
-#define REN_MAX_PROBES_TOTAL 32
-#define REN_SKIN_REGION_SIZE 256
-#define REN_MAX_SKIN_XFORMS_TOTAL 65536
-#define REN_MAX_SKIN_REGIONS_TOTAL 262144
+#define REN_MAX_INSTANCES_TOTAL     262144
+#define REN_MAX_SHADOWMAPS_TOTAL    32
+#define REN_MAX_PROBES_TOTAL        32
+#define REN_SKIN_REGION_SIZE        256
+#define REN_MAX_SKIN_XFORMS_TOTAL   65536
+#define REN_MAX_SKIN_REGIONS_TOTAL  262144
 #define REN_MAX_SKIN_VERTICES_TOTAL 1048576
 
 #define REN_MAX_SHADOW_BATCHES 262144

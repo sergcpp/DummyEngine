@@ -852,8 +852,14 @@ void SceneManager::LoadProbeCache() {
 void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov, float max_exposure) {
     using namespace SceneManagerConstants;
 
+    const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
+    if (!cur_scr_w || !cur_scr_h) {
+        // view is minimized?
+        return;
+    }
+
     cam_.SetupView(origin, target, up);
-    cam_.Perspective(fov, float(ctx_.w()) / float(ctx_.h()), NEAR_CLIP, FAR_CLIP);
+    cam_.Perspective(fov, float(cur_scr_w) / float(cur_scr_h), NEAR_CLIP, FAR_CLIP);
     cam_.UpdatePlanes();
 
     cam_.set_max_exposure(max_exposure);

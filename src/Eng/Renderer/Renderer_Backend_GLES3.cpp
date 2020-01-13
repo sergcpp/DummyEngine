@@ -637,7 +637,7 @@ bool Renderer::InitFramebuffersInternal() {
         glDrawBuffers(3, bufs);
 
         GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        result = (s == GL_FRAMEBUFFER_COMPLETE);
+        result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
     {   // Attach textures from clean framebuffer to depth-fill framebuffer (only depth is drawn)
@@ -654,7 +654,7 @@ bool Renderer::InitFramebuffersInternal() {
         glDrawBuffers(1, bufs);
 
         GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        result = (s == GL_FRAMEBUFFER_COMPLETE);
+        result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
     {   // Attach textures from clean framebuffer to refl comb framebuffer (only color is drawn)
@@ -671,7 +671,7 @@ bool Renderer::InitFramebuffersInternal() {
         glDrawBuffers(1, bufs);
 
         GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        result = (s == GL_FRAMEBUFFER_COMPLETE);
+        result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
 #if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
@@ -687,7 +687,7 @@ bool Renderer::InitFramebuffersInternal() {
         }
 
         GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        result = (s == GL_FRAMEBUFFER_COMPLETE);
+        result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
     if (clean_buf_.sample_count == 1) {
         // Attach depth from clean buffer to transparent buffer
@@ -697,7 +697,7 @@ bool Renderer::InitFramebuffersInternal() {
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
 
         GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        result = (s == GL_FRAMEBUFFER_COMPLETE);
+        result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 #endif
 
@@ -715,7 +715,7 @@ bool Renderer::InitFramebuffersInternal() {
         glDrawBuffers(1, bufs);
 
         GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        result = (s == GL_FRAMEBUFFER_COMPLETE);
+        result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
     {   // Attach color and depth from clean buffer
@@ -735,7 +735,7 @@ bool Renderer::InitFramebuffersInternal() {
         glDrawBuffers(1, bufs);
 
         GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        result = (s == GL_FRAMEBUFFER_COMPLETE);
+        result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
     {   // Attach accum and revealage textures from clean buffer
@@ -759,7 +759,7 @@ bool Renderer::InitFramebuffersInternal() {
         glDrawBuffers(2, bufs);
 
         GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        result = (s == GL_FRAMEBUFFER_COMPLETE);
+        result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)framebuf_before);

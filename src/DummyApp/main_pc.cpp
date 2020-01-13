@@ -6,13 +6,11 @@ int main(int argc, char *argv[]) {
 }
 
 // TODO:
-// fix crash when minimizing window
 // scene editing
 // use direct access extension
-// add logstream
 // add assetstream
 // fix Gui tests
-// get rid of SDL in test applications
+// get rid of SDL in test applications (on windows at least)
 // make full screen quad passes differently
 // refactor repetitive things in shaders
 // use frame graph approach in renderer

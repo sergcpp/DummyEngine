@@ -278,13 +278,21 @@ void Renderer::PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, D
 void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
     using namespace RendererInternal;
 
+    const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
+    Ren::ILog *log = ctx_.log();
+
+    if (!cur_scr_w || !cur_scr_h) {
+        // view is minimized?
+        return;
+    }
+
     uint64_t gpu_draw_start = 0;
     if (list.render_flags & DebugTimings) {
         gpu_draw_start = GetGpuTimeBlockingUs();
     }
     uint64_t cpu_draw_start_us = Sys::GetTimeUs();
     
-    if (ctx_.w() != scr_w_ || ctx_.h() != scr_h_) {
+    if (cur_scr_w != scr_w_ || cur_scr_h != scr_h_) {
         {   // Main buffer for raw frame before tonemapping
             FrameBuf::ColorAttachmentDesc desc[3];
             {   // Main color
@@ -307,7 +315,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
                 desc[2].filter = Ren::NoFilter;
                 desc[2].repeat = Ren::ClampToEdge;
             }
-            clean_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, { FrameBuf::Depth24, Ren::NoFilter }, 4, ctx_.log());
+            clean_buf_ = FrameBuf(cur_scr_w, cur_scr_h, desc, 3, { FrameBuf::Depth24, Ren::NoFilter }, 4, log);
         }
 
 #if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
@@ -328,7 +336,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
                 desc[2].filter = Ren::NoFilter;
                 desc[2].repeat = Ren::ClampToEdge;
             }
-            moments_buf_ = FrameBuf(ctx_.w(), ctx_.h(), desc, 3, { FrameBuf::DepthNone }, clean_buf_.sample_count);
+            moments_buf_ = FrameBuf(cur_scr_w, cur_scr_h, desc, 3, { FrameBuf::DepthNone }, clean_buf_.sample_count, log);
         }
 #endif
 
@@ -337,7 +345,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             desc.format = Ren::RawRG11F_B10F;
             desc.filter = Ren::NoFilter;
             desc.repeat = Ren::ClampToEdge;
-            resolved_or_transparent_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::DepthNone }, 1, ctx_.log());
+            resolved_or_transparent_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::DepthNone }, 1, log);
         }
 
         {   // Buffer that holds downsampled linear depth
@@ -345,7 +353,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             desc.format = Ren::RawR32F;
             desc.filter = Ren::NoFilter;
             desc.repeat = Ren::ClampToEdge;
-            down_depth_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, ctx_.log());
+            down_depth_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, log);
         }
 
         {   // Buffer that holds tonemapped ldr frame before fxaa applied
@@ -353,38 +361,38 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             desc.format = Ren::RawRGB888;
             desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;
-            combined_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::DepthNone }, 1, ctx_.log());
+            combined_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::DepthNone }, 1, log);
         }
         {   // Buffer for SSAO
             FrameBuf::ColorAttachmentDesc desc;
             desc.format = Ren::RawR8;
             desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;
-            ssao_buf1_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, ctx_.log());
-            ssao_buf2_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, ctx_.log());
+            ssao_buf1_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, log);
+            ssao_buf2_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, log);
         }
         {   // Auxilary buffer for reflections (rg - uvs, b - influence)
             FrameBuf::ColorAttachmentDesc desc;
             desc.format = Ren::RawRGB10_A2;
             desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;
-            ssr_buf1_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, ctx_.log());
-            ssr_buf2_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, ctx_.log());
+            ssr_buf1_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, log);
+            ssr_buf2_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, log);
         }
         {   // Buffer that holds previous frame (used for SSR)
             FrameBuf::ColorAttachmentDesc desc;
             desc.format = Ren::RawRG11F_B10F;
             desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;
-            down_buf_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, { FrameBuf::DepthNone }, 1, ctx_.log());
+            down_buf_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, { FrameBuf::DepthNone }, 1, log);
         }
         {   // Auxilary buffers for bloom effect
             FrameBuf::ColorAttachmentDesc desc;
             desc.format = Ren::RawRG11F_B10F;
             desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;
-            blur_buf1_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, { FrameBuf::DepthNone }, 1, ctx_.log());
-            blur_buf2_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, { FrameBuf::DepthNone }, 1, ctx_.log());
+            blur_buf1_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, { FrameBuf::DepthNone }, 1, log);
+            blur_buf2_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, { FrameBuf::DepthNone }, 1, log);
         }
 
         // Memory consumption for FullHD frame (except clean_buf_):
@@ -400,11 +408,15 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         // blur_buf2_       : ~0.49 Mb
         // Total            : ~22.2 Mb
 
-        InitFramebuffersInternal();
-
-        scr_w_ = ctx_.w();
-        scr_h_ = ctx_.h();
-        ctx_.log()->Info("CleanBuf resized to %ix%i", scr_w_, scr_h_);
+        bool init_success = InitFramebuffersInternal();
+        if (init_success) {
+            scr_w_ = cur_scr_w;
+            scr_h_ = cur_scr_h;
+            log->Info("Successfully resized to %ix%i", scr_w_, scr_h_);
+        } else {
+            log->Error("InitFramebuffersInternal failed, frame will not be drawn!\n");
+            return;
+        }
     }
 
     if (!target) {
