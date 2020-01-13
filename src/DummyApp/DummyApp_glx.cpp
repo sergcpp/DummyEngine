@@ -1,5 +1,7 @@
 #include "DummyApp.h"
 
+#include <cstring>
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #include <html5.h>
@@ -191,23 +193,22 @@ void DummyApp::AddEvent(int type, uint32_t key_code, float x, float y, float dx,
 }
 
 #if !defined(__ANDROID__)
-int DummyApp::Run(const std::vector<std::string> &args) {
+int DummyApp::Run(int argc, char *argv[]) {
     int w = 1024, h = 576;
     fullscreen_ = false;
 
-    int args_count = (int)args.size();
-    for (int i = 0; i < args_count; i++) {
-        const std::string &arg = args[i];
-        if (arg == "--prepare_assets") {
-            Viewer::PrepareAssets(args[i + 1].c_str());
+    for (int i = 1; i < argc; i++) {
+        const char *arg = argv[i];
+        if (strcmp(arg, "--prepare_assets") == 0) {
+            Viewer::PrepareAssets(argv[i + 1]);
             i++;
-        } else if (arg == "--norun") {
+        } else if (strcmp(arg, "--norun") == 0) {
             return 0;
-        } else if ((arg == "--width" || arg == "-w") && i < args_count) {
-            w = std::atoi(args[++i].c_str());   
-        } else if ((arg == "--height" || arg == "-h") && i < args_count) {
-            h = std::atoi(args[++i].c_str());
-        } else if ((arg == "--fullscreen") || (arg == "-fs")) {
+        } else if ((strcmp(arg, "--width") == 0 || strcmp(arg, "-w") == 0) && (i + 1 < argc)) {
+            w = std::atoi(argv[++i]);   
+        } else if ((strcmp(arg, "--height") == 0 || strcmp(arg, "-h") == 0) && (i + 1 < argc)) {
+            h = std::atoi(argv[++i]);
+        } else if (strcmp(arg, "--fullscreen") == 0 || strcmp(arg, "-fs") == 0) {
             fullscreen_ = true;
         }
     }

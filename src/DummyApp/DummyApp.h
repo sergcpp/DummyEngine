@@ -74,7 +74,7 @@ public:
     void AddEvent(int type, uint32_t key_code, float x, float y, float dx, float dy);
 
 #if !defined(__ANDROID__)
-    int Run(const std::vector<std::string> &args);
+    int Run(int argc, char *argv[]);
 #endif
 
     bool terminated() const {
