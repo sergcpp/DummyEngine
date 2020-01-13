@@ -19,17 +19,48 @@ set(SOURCE_FILES Config.h
                  GameState.h
                  GameStateManager.h
                  GameStateManager.cpp
+                 Log.h
+                 Log.cpp
                  ObjectPool.h
                  Random.h
                  Random.cpp)
 
 set(GUI_SOURCE_FILES    Gui/BaseElement.h
-                        Gui/BaseElement.cpp                        Gui/BitmapFont.h                        Gui/BitmapFont.cpp                        Gui/ButtonBase.h                        Gui/ButtonBase.cpp                        Gui/ButtonImage.h                        Gui/ButtonImage.cpp                        Gui/ButtonText.h                        Gui/ButtonText.cpp                        Gui/Cursor.h                        Gui/Cursor.cpp                        Gui/EditBox.h                        Gui/EditBox.cpp                        Gui/Image.h                        Gui/Image.cpp                        Gui/Image9Patch.h                        Gui/Image9Patch.cpp                        Gui/LinearLayout.h                        Gui/LinearLayout.cpp                        Gui/Renderer.h                        Gui/Renderer.cpp                        Gui/TypeMesh.h                        Gui/TypeMesh.cpp                        Gui/Utils.h                        Gui/Utils.cpp                        )
+                        Gui/BaseElement.cpp
+                        Gui/BitmapFont.h
+                        Gui/BitmapFont.cpp
+                        Gui/ButtonBase.h
+                        Gui/ButtonBase.cpp
+                        Gui/ButtonImage.h
+                        Gui/ButtonImage.cpp
+                        Gui/ButtonText.h
+                        Gui/ButtonText.cpp
+                        Gui/Cursor.h
+                        Gui/Cursor.cpp
+                        Gui/EditBox.h
+                        Gui/EditBox.cpp
+                        Gui/Image.h
+                        Gui/Image.cpp
+                        Gui/Image9Patch.h
+                        Gui/Image9Patch.cpp
+                        Gui/LinearLayout.h
+                        Gui/LinearLayout.cpp
+                        Gui/Renderer.h
+                        Gui/Renderer.cpp
+                        Gui/TypeMesh.h
+                        Gui/TypeMesh.cpp
+                        Gui/Utils.h
+                        Gui/Utils.cpp
+                        )
+
 if(${RENDERER} STREQUAL "GL")
-    set(GUI_SOURCE_FILES    ${GUI_SOURCE_FILES}                            Gui/RendererGL.cpp
+    set(GUI_SOURCE_FILES    ${GUI_SOURCE_FILES}
+                            Gui/RendererGL.cpp
                             )
 elseif(${RENDERER} STREQUAL "SW")
-    set(GUI_SOURCE_FILES    ${GUI_SOURCE_FILES}                            Gui/RendererSW.cpp                            )
+    set(GUI_SOURCE_FILES    ${GUI_SOURCE_FILES}
+                            Gui/RendererSW.cpp
+                            )
 elseif(${RENDERER} STREQUAL "VK")
     set(GUI_SOURCE_FILES    ${GUI_SOURCE_FILES}
                             )

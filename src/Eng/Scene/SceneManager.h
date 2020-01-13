@@ -59,7 +59,8 @@ public:
     void UpdateObjects();
 
     static bool PrepareAssets(const char *in_folder, const char *out_folder, const char *platform, Sys::ThreadPool *p_threads);
-    static bool WriteProbeCache(const char *out_folder, const char *scene_name, const ProbeStorage &probes, const CompStorage *light_probe_storage);
+    static bool WriteProbeCache(const char *out_folder, const char *scene_name, const ProbeStorage &probes,
+            const CompStorage *light_probe_storage, Ren::ILog *log);
 private:
     Ren::MaterialRef OnLoadMaterial(const char *name);
     Ren::ProgramRef OnLoadProgram(const char *name, const char *arg1, const char *arg2);

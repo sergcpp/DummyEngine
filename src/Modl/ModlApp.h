@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdarg>
+
 #include <string>
 #include <vector>
 
@@ -8,6 +10,22 @@
 #include <Ren/Mesh.h>
 
 struct SDL_Window;
+
+class LogStdout : public Ren::ILog {
+public:
+    void Info(const char *fmt, ...) override {
+        va_list vl;
+        va_start(vl, fmt);
+        vprintf(fmt, vl);
+        va_end(vl);
+    }
+    void Error(const char *fmt, ...) override {
+        va_list vl;
+        va_start(vl, fmt);
+        vprintf(fmt, vl);
+        va_end(vl);
+    }
+};
 
 class ModlApp {
 public:
@@ -30,6 +48,7 @@ private:
 
     bool quit_;
     SDL_Window *window_ = nullptr;
+    LogStdout log_;
 #if defined(USE_GL_RENDER)
     void *gl_ctx_ = nullptr;
     uint32_t simple_vao_ = 0, skinned_vao_ = 0;

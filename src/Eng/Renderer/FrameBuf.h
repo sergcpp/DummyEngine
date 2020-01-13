@@ -31,11 +31,12 @@ struct FrameBuf {
     uint32_t        attachments_count = 0;
 #endif
     FrameBuf() :  w(-1), h(-1), fb(0xffffffff), attachments_count(0) {}
-    FrameBuf(int w, int h, const ColorAttachmentDesc *attachments, int attachments_count, const DepthAttachmentDesc &depth_att, int sample_count = 1);
+    FrameBuf(int w, int h, const ColorAttachmentDesc *attachments, int attachments_count,
+            const DepthAttachmentDesc &depth_att, int sample_count, Ren::ILog *log);
     ~FrameBuf();
 
     FrameBuf(const FrameBuf &rhs) = delete;
     FrameBuf &operator=(const FrameBuf &rhs) = delete;
-    FrameBuf(FrameBuf &&rhs);
-    FrameBuf &operator=(FrameBuf &&rhs);
+    FrameBuf(FrameBuf &&rhs) noexcept;
+    FrameBuf &operator=(FrameBuf &&rhs) noexcept;
 };

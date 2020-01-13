@@ -1676,7 +1676,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     return true;
 }
 
-bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_name, const ProbeStorage &probes, const CompStorage *light_probe_storage) {
+bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_name, const ProbeStorage &probes,
+        const CompStorage *light_probe_storage, Ren::ILog *log) {
     using namespace SceneManagerInternal;
 
     const int res = probes.res();
@@ -1723,10 +1724,10 @@ bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_nam
                 out_file.write((char *)&mipmap_count, 4);
 
                 for (int k = 0; k < mipmap_count; k++) {
-                    const int mip_res = (res >> k);
+                    const int mip_res = int((unsigned)res >> (unsigned)k);
                     const int buf_size = mip_res * mip_res * 4;
 
-                    if (!probes.GetPixelData(k, lprobe->layer_index, j, buf_size, &temp_buf[0])) {
+                    if (!probes.GetPixelData(k, lprobe->layer_index, j, buf_size, &temp_buf[0], log)) {
                         LOGE("Failed to read cubemap level %i layer %i face %i", k, lprobe->layer_index, j);
                         return false;
                     }

@@ -35,7 +35,7 @@ void ProbeStorage::Free(int i) {
     }
 }
 
-void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity) {
+void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity, Ren::ILog *log) {
     if (tex_id_) {
         auto tex_id = (GLuint)tex_id_;
         glDeleteTextures(1, &tex_id);
@@ -75,7 +75,7 @@ void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity) {
                             ren_glTextureSubImage3D_Comp(
                                     GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, level, x_off, y_off, (layer * 6 + face), 16, 16, 1,
                                     Ren::GLFormatFromTexFormat(format), GL_UNSIGNED_BYTE, &blank_buf);
-                            Ren::CheckError("glTexSubImage2D");
+                            Ren::CheckError("glTexSubImage2D", log);
                         } else {
                             ren_glCompressedTextureSubImage3D_Comp(
                                     GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, level, x_off, y_off, (layer * 6 + face), 16, 16, 1, compressed_tex_format,
@@ -84,7 +84,7 @@ void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity) {
 #else
                                     Ren::_blank_DXT5_block_16x16_len, Ren::_blank_DXT5_block_16x16);
 #endif
-                            Ren::CheckError("glCompressedTexSubImage3D");
+                            Ren::CheckError("glCompressedTexSubImage3D", log);
                         }
                     }
                     (void)len_override;
@@ -115,7 +115,7 @@ void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity) {
 
 bool ProbeStorage::SetPixelData(
         const int level, const int layer, const int face, const Ren::eTexColorFormat format,
-        const uint8_t *data, const int data_len) {
+        const uint8_t *data, const int data_len, Ren::ILog *log) {
     if (format_ != format) return false;
 
     const GLenum tex_format =
@@ -130,12 +130,6 @@ bool ProbeStorage::SetPixelData(
     if (format == Ren::Compressed) {
         ren_glCompressedTextureSubImage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, (GLuint)tex_id_, level, 0, 0, (layer * 6 + face), _res, _res, 1, tex_format, data_len, data);
 
-#ifndef NDEBUG
-        for (GLint error = glGetError(); error; error = glGetError()) {
-            LOGE("after glCompressedTexSubImage3D glError (0x%x)\n", error);
-        }
-#endif
-
 #if !defined(NDEBUG) && !defined(__ANDROID__) && 0
         std::unique_ptr<uint8_t[]> temp_buf(new uint8_t[data_len]);
         glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id_);
@@ -147,17 +141,17 @@ bool ProbeStorage::SetPixelData(
         return false;
     }
 
-    Ren::CheckError("glCompressedTextureSubImage3D");
+    Ren::CheckError("glCompressedTextureSubImage3D", log);
     return true;
 }
 
-bool ProbeStorage::GetPixelData(const int level, const int layer, const int face, const int buf_size, uint8_t *out_pixels) const {
+bool ProbeStorage::GetPixelData(const int level, const int layer, const int face, const int buf_size, uint8_t *out_pixels, Ren::ILog *log) const {
 #if !defined(__ANDROID__)
     const int mip_res = int((unsigned)res_ >> (unsigned)level);
     if (buf_size < 4 * mip_res * mip_res) return false;
 
     glGetTextureSubImage((GLuint)tex_id_, level, 0, 0, (layer * 6 + face), mip_res, mip_res, 1, GL_RGBA, GL_UNSIGNED_BYTE, buf_size, out_pixels);
-    Ren::CheckError("glGetTextureSubImage");
+    Ren::CheckError("glGetTextureSubImage", log);
 
     return true;
 #else

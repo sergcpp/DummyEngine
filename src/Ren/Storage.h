@@ -170,6 +170,10 @@ public:
         return index_;
     }
 
+    bool operator==(const StorageRef &rhs) {
+        return storage_ == rhs.storage_ && index_ == rhs.index_;
+    }
+
     void Release() {
         if (storage_) {
             T *p = &storage_->at(index_);

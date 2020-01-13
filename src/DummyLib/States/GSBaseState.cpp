@@ -67,7 +67,7 @@ void GSBaseState::Enter() {
         desc.repeat = Ren::ClampToEdge;
 
         const int res = scene_manager_->scene_data().probe_storage.res();
-        temp_probe_buf_ = FrameBuf(res, res, &desc, 1, { FrameBuf::DepthNone });
+        temp_probe_buf_ = FrameBuf(res, res, &desc, 1, { FrameBuf::DepthNone }, 1, ctx_->log());
     }
 
     cmdline_history_.resize(MAX_CMD_LINES, "~");
@@ -189,7 +189,7 @@ void GSBaseState::Enter() {
             const int
                     res = scene_data.probe_storage.res(),
                     capacity = scene_data.probe_storage.capacity();
-            scene_data.probe_storage.Resize(Ren::RawRGBA8888, res, capacity);
+            scene_data.probe_storage.Resize(Ren::RawRGBA8888, res, capacity, shrd_this->ctx_->log());
 
             shrd_this->update_all_probes_ = true;
         }
@@ -202,7 +202,8 @@ void GSBaseState::Enter() {
             const SceneData &scene_data = shrd_this->scene_manager_->scene_data();
             
             const CompStorage *lprobes = scene_data.comp_store[CompProbe];
-            SceneManager::WriteProbeCache("assets/textures/probes_cache", scene_data.name.c_str(), scene_data.probe_storage, lprobes);
+            SceneManager::WriteProbeCache("assets/textures/probes_cache", scene_data.name.c_str(),
+                    scene_data.probe_storage, lprobes, shrd_this->ctx_->log());
 
             // probe textures were written, convert them
             Viewer::PrepareAssets("pc");

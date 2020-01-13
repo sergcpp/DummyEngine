@@ -248,7 +248,7 @@ void Renderer::InitRendererInternal() {
         unif_shared_data_block_[i] = (uint32_t)shared_data_ubo;
     }
 
-    Ren::CheckError("[InitRendererInternal]: UBO creation");
+    Ren::CheckError("[InitRendererInternal]: UBO creation", ctx_.log());
 
     {   // Create buffer that holds per-instance transform matrices
         GLuint instances_buf;
@@ -275,7 +275,7 @@ void Renderer::InitRendererInternal() {
         }
     }
 
-    Ren::CheckError("[InitRendererInternal]: instances TBO");
+    Ren::CheckError("[InitRendererInternal]: instances TBO", ctx_.log());
 
     {   // Create buffer that holds offsets for skinning shader invocation
         GLuint skin_regions_buf;
@@ -298,7 +298,7 @@ void Renderer::InitRendererInternal() {
         skin_regions_tbo_ = (uint32_t)skin_regions_tbo;
     }
 
-    Ren::CheckError("[InitRendererInternal]: skin regions TBO");
+    Ren::CheckError("[InitRendererInternal]: skin regions TBO", ctx_.log());
 
     {   // Create buffer that holds bones transformation matrices
         GLuint skin_transforms_buf;
@@ -321,7 +321,7 @@ void Renderer::InitRendererInternal() {
         skin_transforms_tbo_ = (uint32_t)skin_transforms_tbo;
     }
 
-    Ren::CheckError("[InitRendererInternal]: skin transforms TBO");
+    Ren::CheckError("[InitRendererInternal]: skin transforms TBO", ctx_.log());
 
     {   // Create buffer for lights information
         GLuint lights_buf;
@@ -348,7 +348,7 @@ void Renderer::InitRendererInternal() {
         }
     }
 
-    Ren::CheckError("[InitRendererInternal]: lights TBO");
+    Ren::CheckError("[InitRendererInternal]: lights TBO", ctx_.log());
 
     {   // Create buffer for decals
         GLuint decals_buf;
@@ -375,7 +375,7 @@ void Renderer::InitRendererInternal() {
         }
     }
 
-    Ren::CheckError("[InitRendererInternal]: decals TBO");
+    Ren::CheckError("[InitRendererInternal]: decals TBO", ctx_.log());
 
     {   // Create buffer for fructum cells
         GLuint cells_buf;
@@ -414,7 +414,7 @@ void Renderer::InitRendererInternal() {
         }
     }
 
-    Ren::CheckError("[InitRendererInternal]: cells TBO");
+    Ren::CheckError("[InitRendererInternal]: cells TBO", ctx_.log());
 
     {   // Create buffer for item offsets
         GLuint items_buf;
@@ -449,7 +449,7 @@ void Renderer::InitRendererInternal() {
         }
     }
 
-    Ren::CheckError("[InitRendererInternal]: items TBO");
+    Ren::CheckError("[InitRendererInternal]: items TBO", ctx_.log());
 
     {   // Create pbo for reading back frame brightness
         for (int i = 0; i < FrameSyncWindow; i++) {
@@ -463,7 +463,7 @@ void Renderer::InitRendererInternal() {
         }
     }
 
-    Ren::CheckError("[InitRendererInternal]: reduce PBO");
+    Ren::CheckError("[InitRendererInternal]: reduce PBO", ctx_.log());
 
     {
         GLuint probe_sample_pbo;
@@ -475,7 +475,7 @@ void Renderer::InitRendererInternal() {
         probe_sample_pbo_ = (uint32_t)probe_sample_pbo;
     }
 
-    Ren::CheckError("[InitRendererInternal]: probe sample PBO");
+    Ren::CheckError("[InitRendererInternal]: probe sample PBO", ctx_.log());
 
     {
         GLuint temp_tex;
@@ -496,7 +496,7 @@ void Renderer::InitRendererInternal() {
         temp_tex_format_ = Ren::RawRGBA8888;
     }
 
-    Ren::CheckError("[InitRendererInternal]: temp texture");
+    Ren::CheckError("[InitRendererInternal]: temp texture", ctx_.log());
 
     {
         GLuint temp_framebuf;
@@ -505,7 +505,7 @@ void Renderer::InitRendererInternal() {
         temp_framebuf_ = (uint32_t)temp_framebuf;
     }
 
-    Ren::CheckError("[InitRendererInternal]: temp framebuffer");
+    Ren::CheckError("[InitRendererInternal]: temp framebuffer", ctx_.log());
 
     {   // Create timer queries
         for (int i = 0; i < FrameSyncWindow; i++) {
@@ -517,7 +517,7 @@ void Renderer::InitRendererInternal() {
         }
     }
 
-    Ren::CheckError("[InitRendererInternal]: timer queries");
+    Ren::CheckError("[InitRendererInternal]: timer queries", ctx_.log());
 
     {
         Ren::BufferRef
@@ -556,7 +556,7 @@ void Renderer::InitRendererInternal() {
         quad_ndx_offset_ = ndx_buf->Alloc(sizeof(fs_quad_indices), fs_quad_indices);
     }
 
-    Ren::CheckError("[InitRendererInternal]: additional data allocation");
+    Ren::CheckError("[InitRendererInternal]: additional data allocation", ctx_.log());
 
     {   // Set shadowmap compare mode
         const uint32_t shad_tex = shadow_buf_.depth_tex.GetValue();
@@ -564,7 +564,7 @@ void Renderer::InitRendererInternal() {
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, shad_tex, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
     }
 
-    Ren::CheckError("[InitRendererInternal]: shadowmap compare mode setup");
+    Ren::CheckError("[InitRendererInternal]: shadowmap compare mode setup", ctx_.log());
 }
 
 bool Renderer::InitFramebuffersInternal() {

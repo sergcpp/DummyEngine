@@ -78,7 +78,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
         ++s;
     }
 
-    Ren::CheckError();
+    Ren::CheckError("", &log_);
 }
 
 void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
@@ -203,7 +203,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
         ++s;
     }
 
-    Ren::CheckError();
+    Ren::CheckError("", &log_);
 #endif
 }
 

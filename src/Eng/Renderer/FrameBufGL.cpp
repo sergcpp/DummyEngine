@@ -6,7 +6,8 @@
 #include <Ren/GL.h>
 #include <Sys/Log.h>
 
-FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int _attachments_count, const DepthAttachmentDesc &depth_att, int _msaa)
+FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int _attachments_count,
+        const DepthAttachmentDesc &depth_att, int _msaa, Ren::ILog *log)
     : w(_w), h(_h), sample_count(_msaa) {
 
     GLint framebuf_before;
@@ -28,7 +29,7 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
 
         glGenTextures(1, &_col_tex);
 
-        Ren::CheckError("[Renderer]: create framebuffer 1");
+        Ren::CheckError("[Renderer]: create framebuffer 1", log);
 
         GLenum format = Ren::GLFormatFromTexFormat(att.format),
                internal_format = Ren::GLInternalFormatFromTexFormat(att.format),
@@ -87,7 +88,7 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
         GLenum bufs[] = { GL_NONE };
         glDrawBuffers(1, bufs);
     }
-    Ren::CheckError("[Renderer]: create framebuffer 2");
+    Ren::CheckError("[Renderer]: create framebuffer 2", log);
 
     if (depth_att.format != DepthNone) {
         GLuint _depth_tex;
@@ -113,7 +114,7 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
             glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, w, h);
         }
 
-        Ren::CheckError("[Renderer]: create framebuffer 3");
+        Ren::CheckError("[Renderer]: create framebuffer 3", log);
 
         // multisample textures does not support sampler state
         if (sample_count == 1) {
@@ -148,15 +149,15 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
     glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 
-    Ren::CheckError("[Renderer]: create framebuffer 3");
+    Ren::CheckError("[Renderer]: create framebuffer 3", log);
     LOGI("Framebuffer created (%ix%i)", w, h);
 }
 
-FrameBuf::FrameBuf(FrameBuf &&rhs) {
+FrameBuf::FrameBuf(FrameBuf &&rhs) noexcept {
     *this = std::move(rhs);
 }
 
-FrameBuf &FrameBuf::operator=(FrameBuf &&rhs) {
+FrameBuf &FrameBuf::operator=(FrameBuf &&rhs) noexcept {
     for (uint32_t i = 0; i < rhs.attachments_count; i++) {
         attachments[i] = rhs.attachments[i];
         rhs.attachments[i].desc.format = Ren::Undefined;
@@ -177,12 +178,12 @@ FrameBuf &FrameBuf::operator=(FrameBuf &&rhs) {
 
 FrameBuf::~FrameBuf() {
     for (uint32_t i = 0; i < attachments_count; i++) {
-        GLuint val = (GLuint)attachments[i].tex;
+        auto val = (GLuint)attachments[i].tex;
         glDeleteTextures(1, &val);
     }
 
     if (depth_tex.initialized()) {
-        GLuint val = (GLuint)depth_tex.GetValue();
+        auto val = (GLuint)depth_tex.GetValue();
         glDeleteTextures(1, &val);
     }
 

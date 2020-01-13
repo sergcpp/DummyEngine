@@ -13,6 +13,7 @@
 
 #include "FlowControl.h"
 #include "GameStateManager.h"
+#include "Log.h"
 #include "Random.h"
 
 GameBase::GameBase(int w, int h, const char * /*local_dir*/) : width(w), height(h) {
@@ -20,8 +21,16 @@ GameBase::GameBase(int w, int h, const char * /*local_dir*/) : width(w), height(
 
     Sys::InitWorker();
 
+    auto log =
+#if !defined(__ANDROID__)
+            std::make_shared<LogStdout>();
+#else
+            std::make_shared<LogAndroid>("APP_JNI");
+#endif
+    AddComponent(LOG_KEY, log);
+
     auto ctx = std::make_shared<Ren::Context>();
-    ctx->Init(w, h);
+    ctx->Init(w, h, log.get());
     AddComponent(REN_CONTEXT_KEY, ctx);
 
 #if !defined(__EMSCRIPTEN__)
@@ -44,7 +53,7 @@ GameBase::GameBase(int w, int h, const char * /*local_dir*/) : width(w), height(
 
     JsObject config;
     config[Gui::GL_DEFINES_KEY] = JsString{ "" };
-    auto ui_renderer = std::make_shared<Gui::Renderer>(*ctx.get(), config);
+    auto ui_renderer = std::make_shared<Gui::Renderer>(*ctx, config);
     AddComponent(UI_RENDERER_KEY, ui_renderer);
 
     auto ui_root = std::make_shared<Gui::RootElement>(Gui::Vec2i(w, h));
