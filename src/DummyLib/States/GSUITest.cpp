@@ -44,7 +44,7 @@ void GSUITest::Enter() {
 
     GSBaseState::Enter();
 
-    LOGI("GSUITest: Loading scene!");
+    log_->Info("GSUITest: Loading scene!");
     GSBaseState::LoadScene(SCENE_NAME);
 
     /*test_image_.reset(new Gui::Image{
@@ -69,7 +69,7 @@ void GSUITest::Enter() {
     {   // Load dialog data from file
         Sys::AssetFile in_scene(dialog_name);
         if (!in_scene) {
-            LOGE("Can not open dialog file %s", dialog_name);
+            log_->Error("Can not open dialog file %s", dialog_name);
         }
 
         const size_t scene_size = in_scene.size();

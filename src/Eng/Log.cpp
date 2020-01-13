@@ -4,19 +4,24 @@
 #include <cstdio>
 #include <ctime>
 
+#include <chrono>
+
 #ifdef __ANDROID__
 #include <android/log.h>
 #endif
 
 namespace EngInternal {
     void TimedOutput(FILE *dst, const char *fmt, va_list args) {
-        time_t now = time(nullptr);
+        auto tp = std::chrono::system_clock::now();
+        time_t now = std::chrono::system_clock::to_time_t(tp); // time(nullptr);
 
-        char buff[27];
-        strftime(buff, sizeof(buff), "%Y-%m-%d %H:%M:%S.000 | ", localtime(&now));
+        char buff[32];
+        strftime(buff, sizeof(buff), "%Y-%m-%d %H:%M:%S", localtime(&now));
 
         fputs(buff, dst);
+        printf(".%03d | ", (int)(std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() % 1000));
         vfprintf(dst, fmt, args);
+        putc('\n', dst);
     }
 }
 

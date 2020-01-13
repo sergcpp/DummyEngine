@@ -44,7 +44,7 @@ void GSUITest2::Enter() {
 
     GSBaseState::Enter();
 
-    LOGI("GSUITest: Loading scene!");
+    log_->Info("GSUITest: Loading scene!");
     GSBaseState::LoadScene(SCENE_NAME);
 
     test_image_.reset(new Gui::Image{

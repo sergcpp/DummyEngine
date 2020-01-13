@@ -176,7 +176,7 @@ void Gui::Renderer::BeginDraw() {
         GLsync sync = reinterpret_cast<GLsync>(buf_range_fences_[cur_range_index_]);
         GLenum res = glClientWaitSync(sync, 0, 1000000000);
         if (res != GL_ALREADY_SIGNALED && res != GL_CONDITION_SATISFIED) {
-            LOGE("[Gui::Renderer::BeginDraw2]: Wait failed!");
+            ctx_.log()->Error("[Gui::Renderer::BeginDraw2]: Wait failed!");
         }
         glDeleteSync(sync);
         buf_range_fences_[cur_range_index_] = nullptr;

@@ -99,138 +99,141 @@ namespace RendererInternal {
 
 void Renderer::InitRendererInternal() {
     using namespace RendererInternal;
+
+    Ren::ILog *log = ctx_.log();
+
     Ren::eProgLoadStatus status;
-    LOGI("Compiling skydome");
+    log->Info("Compiling skydome");
     skydome_prog_ = ctx_.LoadProgramGLSL("skydome", skydome_vs, skydome_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling fillz_solid");
+    log->Info("Compiling fillz_solid");
     fillz_solid_prog_ = ctx_.LoadProgramGLSL("fillz_solid", fillz_solid_vs, fillz_solid_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling fillz_transp");
+    log->Info("Compiling fillz_transp");
     fillz_transp_prog_ = ctx_.LoadProgramGLSL("fillz_transp", fillz_transp_vs, fillz_transp_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling shadow_solid");
+    log->Info("Compiling shadow_solid");
     shadow_solid_prog_ = ctx_.LoadProgramGLSL("shadow_solid", shadow_solid_vs, shadow_solid_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling shadow_transp");
+    log->Info("Compiling shadow_transp");
     shadow_transp_prog_ = ctx_.LoadProgramGLSL("shadow_transp", shadow_transp_vs, shadow_transp_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit");
+    log->Info("Compiling blit");
     blit_prog_ = ctx_.LoadProgramGLSL("blit", blit_vs, blit_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_combine");
+    log->Info("Compiling blit_combine");
     blit_combine_prog_ = ctx_.LoadProgramGLSL("blit_combine", blit_vs, blit_combine_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_combine_ms");
+    log->Info("Compiling blit_combine_ms");
     blit_combine_ms_prog_ = ctx_.LoadProgramGLSL("blit_combine_ms", blit_vs, blit_combine_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_ms");
+    log->Info("Compiling blit_ms");
     blit_ms_prog_ = ctx_.LoadProgramGLSL("blit_ms", blit_vs, blit_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_red");
+    log->Info("Compiling blit_red");
     blit_red_prog_ = ctx_.LoadProgramGLSL("blit_red", blit_vs, blit_reduced_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_down");
+    log->Info("Compiling blit_down");
     blit_down_prog_ = ctx_.LoadProgramGLSL("blit_down", blit_vs, blit_down_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_down_ms");
+    log->Info("Compiling blit_down_ms");
     blit_down_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_ms", blit_vs, blit_down_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_down_depth");
+    log->Info("Compiling blit_down_depth");
     blit_down_depth_prog_ = ctx_.LoadProgramGLSL("blit_down_depth", blit_vs, blit_down_depth_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_down_depth_ms");
+    log->Info("Compiling blit_down_depth_ms");
     blit_down_depth_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_depth_ms", blit_vs, blit_down_depth_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_gauss");
+    log->Info("Compiling blit_gauss");
     blit_gauss_prog_ = ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_gauss_sep");
+    log->Info("Compiling blit_gauss_sep");
     blit_gauss_sep_prog_ = ctx_.LoadProgramGLSL("blit_gauss_sep", blit_vs, blit_gauss_sep_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_bilateral");
+    log->Info("Compiling blit_bilateral");
     blit_bilateral_prog_ = ctx_.LoadProgramGLSL("blit_bilateral", blit_vs, blit_bilateral_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_upscale");
+    log->Info("Compiling blit_upscale");
     blit_upscale_prog_ = ctx_.LoadProgramGLSL("blit_upscale", blit_vs, blit_upscale_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_upscale_ms");
+    log->Info("Compiling blit_upscale_ms");
     blit_upscale_ms_prog_ = ctx_.LoadProgramGLSL("blit_upscale_ms", blit_vs, blit_upscale_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_debug");
+    log->Info("Compiling blit_debug");
     blit_debug_prog_ = ctx_.LoadProgramGLSL("blit_debug", blit_vs, blit_debug_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_debug_ms");
+    log->Info("Compiling blit_debug_ms");
     blit_debug_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug_ms", blit_vs, blit_debug_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
 
     {   // ssr related
-        LOGI("Compiling blit_ssr");
+        log->Info("Compiling blit_ssr");
         blit_ssr_prog_ = ctx_.LoadProgramGLSL("blit_ssr", blit_vs, blit_ssr_fs, &status);
         assert(status == Ren::ProgCreatedFromData);
-        LOGI("Compiling blit_ssr_ms");
+        log->Info("Compiling blit_ssr_ms");
         blit_ssr_ms_prog_ = ctx_.LoadProgramGLSL("blit_ssr_ms", blit_vs, blit_ssr_ms_fs, &status);
         assert(status == Ren::ProgCreatedFromData);
-        LOGI("Compiling blit_ssr_compose");
+        log->Info("Compiling blit_ssr_compose");
         blit_ssr_compose_prog_ = ctx_.LoadProgramGLSL("blit_ssr_compose", blit_vs, blit_ssr_compose_fs, &status);
         assert(status == Ren::ProgCreatedFromData);
-        LOGI("Compiling blit_ssr_compose_ms");
+        log->Info("Compiling blit_ssr_compose_ms");
         blit_ssr_compose_ms_prog_ = ctx_.LoadProgramGLSL("blit_ssr_compose_ms", blit_vs, blit_ssr_compose_ms_fs, &status);
         assert(status == Ren::ProgCreatedFromData);
-        LOGI("Compiling blit_ssr_dilate");
+        log->Info("Compiling blit_ssr_dilate");
         blit_ssr_dilate_prog_ = ctx_.LoadProgramGLSL("blit_ssr_dilate", blit_vs, blit_ssr_dilate_fs, &status);
         assert(status == Ren::ProgCreatedFromData);
     }
 
-    LOGI("Compiling blit_ms_resolve");
+    log->Info("Compiling blit_ms_resolve");
     blit_ms_resolve_prog_ = ctx_.LoadProgramGLSL("blit_ms_resolve", blit_vs, blit_ms_resolve_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_ao");
+    log->Info("Compiling blit_ao");
     blit_ao_prog_ = ctx_.LoadProgramGLSL("blit_ao", blit_vs, blit_ssao_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_multiply");
+    log->Info("Compiling blit_multiply");
     blit_multiply_prog_ = ctx_.LoadProgramGLSL("blit_multiply", blit_vs, blit_multiply_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_multiply_ms");
+    log->Info("Compiling blit_multiply_ms");
     blit_multiply_ms_prog_ = ctx_.LoadProgramGLSL("blit_multiply_ms", blit_vs, blit_multiply_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_debug_bvh");
+    log->Info("Compiling blit_debug_bvh");
     blit_debug_bvh_prog_ = ctx_.LoadProgramGLSL("blit_debug_bvh", blit_vs, blit_debug_bvh_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_debug_bvh_ms");
+    log->Info("Compiling blit_debug_bvh_ms");
     blit_debug_bvh_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug_bvh_ms", blit_vs, blit_debug_bvh_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_depth");
+    log->Info("Compiling blit_depth");
     blit_depth_prog_ = ctx_.LoadProgramGLSL("blit_depth", blit_vs, blit_depth_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_rgbm");
+    log->Info("Compiling blit_rgbm");
     blit_rgbm_prog_ = ctx_.LoadProgramGLSL("blit_rgbm", blit_vs, blit_rgbm_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_mipmap");
+    log->Info("Compiling blit_mipmap");
     blit_mipmap_prog_ = ctx_.LoadProgramGLSL("blit_mipmap", blit_vs, blit_mipmap_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_prefilter");
+    log->Info("Compiling blit_prefilter");
     blit_prefilter_prog_ = ctx_.LoadProgramGLSL("blit_prefilter", blit_vs, blit_prefilter_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_project_sh_prog");
+    log->Info("Compiling blit_project_sh_prog");
     blit_project_sh_prog_ = ctx_.LoadProgramGLSL("blit_project_sh_prog", blit_vs, blit_project_sh_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_fxaa_prog");
+    log->Info("Compiling blit_fxaa_prog");
     blit_fxaa_prog_ = ctx_.LoadProgramGLSL("blit_fxaa_prog", blit_vs, blit_fxaa_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_transparent_compose_prog");
+    log->Info("Compiling blit_transparent_compose_prog");
     blit_transparent_compose_prog_ = ctx_.LoadProgramGLSL("blit_transparent_compose_prog", blit_vs, blit_transparent_compose_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_transparent_compose_ms_prog");
+    log->Info("Compiling blit_transparent_compose_ms_prog");
     blit_transparent_compose_ms_prog_ = ctx_.LoadProgramGLSL("blit_transparent_compose_ms_prog", blit_vs, blit_transparent_compose_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling blit_transparent_init_prog");
+    log->Info("Compiling blit_transparent_init_prog");
     blit_transparent_init_prog_ = ctx_.LoadProgramGLSL("blit_transparent_init_prog", blit_vs, blit_transparent_init_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling probe_prog");
+    log->Info("Compiling probe_prog");
     probe_prog_ = ctx_.LoadProgramGLSL("probe_prog", probe_vs, probe_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    LOGI("Compiling skinning_prog");
+    log->Info("Compiling skinning_prog");
     skinning_prog_ = ctx_.LoadProgramGLSL("skinning_prog", skinning_cs, &status);
     assert(status == Ren::ProgCreatedFromData);
 
@@ -932,7 +935,9 @@ void Renderer::CheckInitVAOs() {
 }
 
 void Renderer::DestroyRendererInternal() {
-    LOGI("DestroyRendererInternal");
+    Ren::ILog *log = ctx_.log();
+
+    log->Info("DestroyRendererInternal");
 
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
                    vtx_buf2 = ctx_.default_vertex_buf2(),
@@ -1106,6 +1111,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     using namespace Ren;
     using namespace RendererInternal;
 
+    Ren::ILog *log = ctx_.log();
+
     if (list.render_flags & EnableTimers) {
         glQueryCounter(queries_[cur_query_][TimeDrawStart], GL_TIMESTAMP);
     }
@@ -1142,7 +1149,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             auto sync = reinterpret_cast<GLsync>(buf_range_fences_[cur_buf_chunk_]);
             GLenum res = glClientWaitSync(sync, 0, 1000000000);
             if (res != GL_ALREADY_SIGNALED && res != GL_CONDITION_SATISFIED) {
-                LOGE("[Renderer::DrawObjectsInternal]: Wait failed!");
+                log->Error("[Renderer::DrawObjectsInternal]: Wait failed!");
             }
             glDeleteSync(sync);
             buf_range_fences_[cur_buf_chunk_] = nullptr;
@@ -1161,7 +1168,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0, skin_transforms_mem_size);
                 glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
             } else {
-                LOGE("[Renderer::DrawObjectsInternal]: Failed to map skin transforms buffer!");
+                log->Error("[Renderer::DrawObjectsInternal]: Failed to map skin transforms buffer!");
             }
 
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -1177,7 +1184,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0, skin_regions_mem_size);
                 glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
             } else {
-                LOGE("[Renderer::DrawObjectsInternal]: Failed to map skin regions buffer!");
+                log->Error("[Renderer::DrawObjectsInternal]: Failed to map skin regions buffer!");
             }
 
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -1194,7 +1201,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, instance_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
-                LOGE("[Renderer::DrawObjectsInternal]: Failed to map instance buffer!");
+                log->Error("[Renderer::DrawObjectsInternal]: Failed to map instance buffer!");
             }
 
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
@@ -1211,7 +1218,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, cells_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
-                LOGE("[Renderer::DrawObjectsInternal]: Failed to map cells buffer!");
+                log->Error("[Renderer::DrawObjectsInternal]: Failed to map cells buffer!");
             }
 
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
@@ -1228,7 +1235,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, lights_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
-                LOGE("[Renderer::DrawObjectsInternal]: Failed to map lights buffer!");
+                log->Error("[Renderer::DrawObjectsInternal]: Failed to map lights buffer!");
             }
 
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
@@ -1245,7 +1252,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, decals_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
-                LOGE("[Renderer::DrawObjectsInternal]: Failed to map decals buffer!");
+                log->Error("[Renderer::DrawObjectsInternal]: Failed to map decals buffer!");
             }
 
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
@@ -1262,7 +1269,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, items_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
-                LOGE("[Renderer::DrawObjectsInternal]: Failed to map items buffer!");
+                log->Error("[Renderer::DrawObjectsInternal]: Failed to map items buffer!");
             }
 
             glBindBuffer(GL_TEXTURE_BUFFER, 0);

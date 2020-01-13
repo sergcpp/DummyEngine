@@ -19,6 +19,7 @@ class TextPrinter : public Gui::BaseElement {
     };
 
     const Gui::BaseElement              *parent_;
+    Ren::ILog                           *log_;
     std::shared_ptr<Gui::BitmapFont>    font_;
     std::unique_ptr<Gui::Image9Patch>   background_small_, background_large_;
     std::vector<std::string>            text_data_;

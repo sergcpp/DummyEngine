@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Ren/Log.h>
+
 class FlowControl {
     enum Mode {
         Good, Bad
@@ -15,7 +17,7 @@ public:
 
     void Reset();
 
-    void Update(float dt_s, float rtt);
+    void Update(float dt_s, float rtt, Ren::ILog *log);
 
     inline unsigned int send_period() {
         return mode_ == Good ? good_delta_ : bad_delta_;

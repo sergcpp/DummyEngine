@@ -28,6 +28,8 @@ TextPrinter::TextPrinter(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Ve
     : Gui::BaseElement(pos, size, parent), parent_(parent), font_(font), data_pos_(0), progress_(0), expanded_option_(-1) {
     using namespace TextPrinterInternal;
 
+    log_ = ctx.log();
+
     background_small_.reset(new Gui::Image9Patch{ ctx, Frame01, Ren::Vec2f{ 3.0f, 3.0f }, 1.0f,
                                                   Ren::Vec2f{ 0.0f, 0.0f }, Ren::Vec2f{ 1.0f, 1.0f }, parent });
     background_large_.reset(new Gui::Image9Patch{ ctx, Frame02, Ren::Vec2f{ 20.0f, 20.0f }, 1.0f,
@@ -109,7 +111,7 @@ bool TextPrinter::LoadScript(const JsObject &js_script) {
             }
         }
     } catch (...) {
-        LOGE("TextPrinter::LoadScript Invalid JSON file!");
+        log_->Error("TextPrinter::LoadScript Invalid JSON file!");
     }
 
     {   // determine length, parse options

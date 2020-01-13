@@ -366,7 +366,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
         }
     }
 
-    LOGI("Lightmap: %i %i/%i", int(cur_lm_obj_), ray_reg_ctx_[0].iteration, LM_SAMPLES_TOTAL);
+    ctx_.log()->Info("Lightmap: %i %i/%i", int(cur_lm_obj_), ray_reg_ctx_[0].iteration, LM_SAMPLES_TOTAL);
 
     const Ray::pixel_color_t *pixels = ray_renderer_.get_pixels_ref();
     *preview_pixels = &pixels[0].r;

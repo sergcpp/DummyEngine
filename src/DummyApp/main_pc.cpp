@@ -6,7 +6,7 @@ int main(int argc, char *argv[]) {
 }
 
 // TODO:
-// more precise time in log
+// fix freeze on early exit
 // start with scene editing
 // use direct access extension
 // add assetstream

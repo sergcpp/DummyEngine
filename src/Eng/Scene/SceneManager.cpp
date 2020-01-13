@@ -157,7 +157,9 @@ void SceneManager::RegisterComponent(uint32_t index, CompStorage *storage) {
 void SceneManager::LoadScene(const JsObject &js_scene) {
     using namespace SceneManagerConstants;
 
-    LOGI("SceneManager: Loading scene!");
+    Ren::ILog *log = ctx_.log();
+
+    log->Info("SceneManager: Loading scene!");
     ClearScene();
 
     std::map<std::string, Ren::MeshRef> all_meshes;
@@ -662,7 +664,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
     scene_data_.decals_atlas.Finalize();
 
-    LOGI("SceneManager: RebuildBVH!");
+    log->Info("SceneManager: RebuildBVH!");
 
     RebuildBVH();
 }
@@ -785,6 +787,8 @@ void SceneManager::LoadProbeCache() {
                 if (!self) return;
 
                 self->ctx_.ProcessSingleTask([&self, probe_id, face_index, data, size]() {
+                    Ren::ILog *log = self->ctx_.log();
+
                     const int res = self->scene_data_.probe_storage.res();
                     CompStorage *probe_storage = self->scene_data_.comp_store[CompProbe];
 
@@ -804,7 +808,7 @@ void SceneManager::LoadProbeCache() {
                         if (len > data_len ||
                             !self->scene_data_.probe_storage.SetPixelData(level, lprobe->layer_index, face_index,
                             Ren::Compressed, p_data, len, self->ctx_.log())) {
-                            LOGE("Failed to load probe texture!");
+                            log->Error("Failed to load probe texture!");
                         }
 
                         p_data += len;
@@ -830,7 +834,7 @@ void SceneManager::LoadProbeCache() {
                         if ((int)len > data_len ||
                             !self->scene_data_.probe_storage.SetPixelData(level, lprobe->layer_index, face_index,
                             Ren::Compressed, &p_data[data_offset], len, self->ctx_.log())) {
-                            LOGE("Failed to load probe texture!");
+                            log->Error("Failed to load probe texture!");
                         }
 
                         data_offset += len;
@@ -844,8 +848,11 @@ void SceneManager::LoadProbeCache() {
                     }
 #endif
                 });
-            }, [probe_id, face_index]() {
-                LOGE("Failed to load probe %i face %i", probe_id, face_index);
+            }, [_self, probe_id, face_index]() {
+                std::shared_ptr<SceneManager> self = _self.lock();
+                if (!self) return;
+
+                self->ctx_.log()->Error("Failed to load probe %i face %i", probe_id, face_index);
             });
         }
 
@@ -877,7 +884,7 @@ Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {
     if (!ret->ready()) {
         Sys::AssetFile in_file(std::string(MATERIALS_PATH) + name);
         if (!in_file) {
-            LOGE("Error loading material %s", name);
+            ctx_.log()->Error("Error loading material %s", name);
             return ret;
         }
 
@@ -938,7 +945,7 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
                 vs_file(string(SHADERS_PATH) + vs_shader),
                 fs_file(string(SHADERS_PATH) + fs_shader);
             if (!vs_file || !fs_file) {
-                LOGE("Error loading program %s", name);
+                ctx_.log()->Error("Error loading program %s", name);
                 return ret;
             }
 
@@ -952,7 +959,7 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
             vs_file.Read((char *)vs_src.data(), vs_size);
             fs_file.Read((char *)fs_src.data(), fs_size);
 
-            LOGI("Compiling program %s", name);
+            ctx_.log()->Info("Compiling program %s", name);
             ret = ctx_.LoadProgramGLSL(name, vs_src.c_str(), fs_src.c_str(), &status);
             assert(status == Ren::ProgCreatedFromData);
         }
@@ -993,11 +1000,14 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
                 p.flags = flags;
                 self->ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, nullptr);
                 int count = --(self->scene_texture_load_counter_);
+                self->ctx_.log()->Info("Texture %s loaded (%i left)", tex_name.c_str(), count);
                 self.reset();
-                LOGI("Texture %s loaded (%i left)", tex_name.c_str(), count);
             });
-        }, [tex_name]() {
-            LOGE("Error loading %s", tex_name.c_str());
+        }, [_self, tex_name]() {
+            std::shared_ptr<SceneManager> self = _self.lock();
+            if (!self) return;
+
+            self->ctx_.log()->Error("Error loading %s", tex_name.c_str());
         });
     }
 

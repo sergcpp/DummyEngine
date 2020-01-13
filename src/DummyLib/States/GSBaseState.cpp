@@ -35,6 +35,7 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
 
     state_manager_  = game->GetComponent<GameStateManager>(STATE_MANAGER_KEY);
     ctx_            = game->GetComponent<Ren::Context>(REN_CONTEXT_KEY);
+    log_            = game->GetComponent<Ren::ILog>(LOG_KEY);
 
     renderer_       = game->GetComponent<Renderer>(RENDERER_KEY);
     scene_manager_  = game->GetComponent<SceneManager>(SCENE_MANAGER_KEY);
@@ -392,7 +393,7 @@ bool GSBaseState::LoadScene(const char *name) {
     {   // Load scene data from file
         Sys::AssetFile in_scene(name);
         if (!in_scene) {
-            LOGE("Can not open scene file %s", name);
+            log_->Error("Can not open scene file %s", name);
             return false;
         }
 
@@ -444,7 +445,7 @@ bool GSBaseState::LoadScene(const char *name) {
     try {
         scene_manager_->LoadScene(js_scene);
     } catch (std::exception &e) {
-        LOGI("Error loading scene: %s", e.what());
+        log_->Info("Error loading scene: %s", e.what());
     }
 
     OnPostloadScene(js_scene);
@@ -785,7 +786,7 @@ void GSBaseState::UpdateFrame(int list_index) {
         }
 
         if (!probes_to_update_.empty() && !probe_to_render_ && !probe_to_update_sh_) {
-            LOGI("Updating probe");
+            log_->Info("Updating probe");
             SceneObject *probe_obj = scene_manager_->GetObject(probes_to_update_.back());
             auto *probe = (LightProbe *)scene_manager_->scene_data().comp_store[CompProbe]->Get(probe_obj->components[CompProbe]);
             auto *probe_tr = (Transform *)scene_manager_->scene_data().comp_store[CompTransform]->Get(probe_obj->components[CompTransform]);

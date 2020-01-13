@@ -414,7 +414,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             scr_h_ = cur_scr_h;
             log->Info("Successfully resized to %ix%i", scr_w_, scr_h_);
         } else {
-            log->Error("InitFramebuffersInternal failed, frame will not be drawn!\n");
+            log->Error("InitFramebuffersInternal failed, frame will not be drawn!");
             return;
         }
     }

@@ -17,6 +17,8 @@
 
 #include <cctype>
 
+#include <iostream>
+
 #include <Windows.h>
 
 #include <Eng/GameBase.h>
@@ -205,38 +207,38 @@ int DummyApp::Init(int w, int h) {
 
     int pix_format_id = ChoosePixelFormat(fake_dc, &pixel_format);
     if (pix_format_id == 0) {
-        LOGE("ChoosePixelFormat() failed");
+        std::cerr << "ChoosePixelFormat() failed\n";
         return -1;
     }
 
     if (!SetPixelFormat(fake_dc, pix_format_id, &pixel_format)) {
-        LOGE("SetPixelFormat() failed");
+        std::cerr << "SetPixelFormat() failed\n";
         return -1;
     }
 
     HGLRC fake_rc = wglCreateContext(fake_dc);
 
     if (!fake_rc) {
-        LOGE("wglCreateContext() failed");
+        std::cerr << "wglCreateContext() failed\n";
         return -1;
     }
 
     if (!wglMakeCurrent(fake_dc, fake_rc)) {
-        LOGE("wglMakeCurrent() failed");
+        std::cerr << "wglMakeCurrent() failed\n";
         return -1;
     }
 
     PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = nullptr;
     wglChoosePixelFormatARB = reinterpret_cast<PFNWGLCHOOSEPIXELFORMATARBPROC>(wglGetProcAddress("wglChoosePixelFormatARB"));
     if (wglChoosePixelFormatARB == nullptr) {
-        LOGE("wglGetProcAddress() failed");
+        std::cerr << "wglGetProcAddress() failed\n";
         return -1;
     }
 
     PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = nullptr;
     wglCreateContextAttribsARB = reinterpret_cast<PFNWGLCREATECONTEXTATTRIBSARBPROC>(wglGetProcAddress("wglCreateContextAttribsARB"));
     if (wglCreateContextAttribsARB == nullptr) {
-        LOGE("wglGetProcAddress() failed");
+        std::cerr << "wglGetProcAddress() failed\n";
         return -1;
     }
 
@@ -266,19 +268,19 @@ int DummyApp::Init(int w, int h) {
     BOOL status = wglChoosePixelFormatARB(device_context_, pixel_attribs, NULL, 1, &pix_format_id, &format_count);
 
     if (!status || format_count == 0) {
-        LOGE("wglChoosePixelFormatARB() failed");
+        std::cerr << "wglChoosePixelFormatARB() failed\n";
         return -1;
     }
 
     PIXELFORMATDESCRIPTOR PFD;
     int res = DescribePixelFormat(device_context_, pix_format_id, sizeof(PFD), &PFD);
     if (!res) {
-        LOGE("DescribePixelFormat() failed");
+        std::cerr << "DescribePixelFormat() failed\n";
         return -1;
     }
     ret = SetPixelFormat(device_context_, pix_format_id, &PFD);
     if (!ret) {
-        LOGE("SetPixelFormat() failed");
+        std::cerr << "SetPixelFormat() failed\n";
         return -1;
     }
 
@@ -291,7 +293,7 @@ int DummyApp::Init(int w, int h) {
 
     gl_ctx_ = wglCreateContextAttribsARB(device_context_, 0, context_attribs);
     if (!gl_ctx_) {
-        LOGE("wglCreateContextAttribsARB() failed");
+        std::cerr << "wglCreateContextAttribsARB() failed\n";
         return -1;
     }
 
@@ -300,7 +302,7 @@ int DummyApp::Init(int w, int h) {
     ReleaseDC(fake_window, fake_dc);
     DestroyWindow(fake_window);
     if (!wglMakeCurrent(device_context_, gl_ctx_)) {
-        LOGE("wglMakeCurrent() failed");
+        std::cerr << "wglMakeCurrent() failed\n";
         return -1;
     }
 

@@ -134,10 +134,10 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
 
         depth_tex = _depth_tex;
 
-        LOGI("- %ix%i", w, h);
+        log->Info("- %ix%i", w, h);
         GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         if (s != GL_FRAMEBUFFER_COMPLETE) {
-            LOGI("Frambuffer error %i", int(s));
+            log->Error("Frambuffer error %i", int(s));
             glBindRenderbuffer(GL_RENDERBUFFER, 0);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             throw std::runtime_error("Framebuffer error!");
@@ -150,7 +150,7 @@ FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int 
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 
     Ren::CheckError("[Renderer]: create framebuffer 3", log);
-    LOGI("Framebuffer created (%ix%i)", w, h);
+    log->Info("Framebuffer created (%ix%i)", w, h);
 }
 
 FrameBuf::FrameBuf(FrameBuf &&rhs) noexcept {

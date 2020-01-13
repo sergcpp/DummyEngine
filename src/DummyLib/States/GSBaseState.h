@@ -33,6 +33,7 @@ protected:
     std::weak_ptr<GameStateManager> state_manager_;
     std::shared_ptr<Cmdline>        cmdline_;
     std::shared_ptr<Ren::Context>   ctx_;
+    std::shared_ptr<Ren::ILog>      log_;
     std::shared_ptr<Renderer>       renderer_;
     std::shared_ptr<SceneManager>   scene_manager_;
     std::shared_ptr<TimeInterval>   swap_interval_;

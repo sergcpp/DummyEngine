@@ -43,7 +43,7 @@ void GSDrawTest::Enter() {
 
     GSBaseState::Enter();
 
-    LOGI("GSDrawTest: Loading scene!");
+    log_->Info("GSDrawTest: Loading scene!");
     GSBaseState::LoadScene(SCENE_NAME);
 }
 
