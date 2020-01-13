@@ -12,6 +12,8 @@
 #endif
 
 namespace Ren {
+class ILog;
+
 enum eTexColorFormat { Undefined, RawRGB888, RawRGBA8888, RawLUM8, RawR32F, RawR16F, RawR8, RawRG88, RawRGB32F, RawRGBA32F, RawRGBE8888, RawRGB16F, RawRGBA16F, RawRG16, RawRG16U, RawRG16F, RawRG32F, RawRGB10_A2, RawRG11F_B10F, Compressed, None, FormatCount };
 enum eTexFilter { NoFilter, Bilinear, Trilinear, BilinearNoMipmap, FilterCount };
 enum eTexRepeat { Repeat, ClampToEdge, ClampToBorder, WrapModesCount };
@@ -35,27 +37,28 @@ class Texture2D : public RefCounter {
 
     void Free();
 
-    void InitFromRAWData(const void *data, const Texture2DParams &p);
-    void InitFromTGAFile(const void *data, const Texture2DParams &p);
-    void InitFromTGA_RGBEFile(const void *data, const Texture2DParams &p);
-    void InitFromDDSFile(const void *data, int size, const Texture2DParams &p);
-    void InitFromPNGFile(const void *data, int size, const Texture2DParams &p);
-    void InitFromKTXFile(const void *data, int size, const Texture2DParams &p);
+    void InitFromRAWData(const void *data, const Texture2DParams &p, ILog *log);
+    void InitFromTGAFile(const void *data, const Texture2DParams &p, ILog *log);
+    void InitFromTGA_RGBEFile(const void *data, const Texture2DParams &p, ILog *log);
+    void InitFromDDSFile(const void *data, int size, const Texture2DParams &p, ILog *log);
+    void InitFromPNGFile(const void *data, int size, const Texture2DParams &p, ILog *log);
+    void InitFromKTXFile(const void *data, int size, const Texture2DParams &p, ILog *log);
 
-    void InitFromRAWData(const void *data[6], const Texture2DParams &p);
-    void InitFromTGAFile(const void *data[6], const Texture2DParams &p);
-    void InitFromTGA_RGBEFile(const void *data[6], const Texture2DParams &p);
-    void InitFromPNGFile(const void *data[6], const int size[6], const Texture2DParams &p);
-    void InitFromDDSFile(const void *data[6], const int size[6], const Texture2DParams &p);
-    void InitFromKTXFile(const void *data[6], const int size[6], const Texture2DParams &p);
+    void InitFromRAWData(const void *data[6], const Texture2DParams &p, ILog *log);
+    void InitFromTGAFile(const void *data[6], const Texture2DParams &p, ILog *log);
+    void InitFromTGA_RGBEFile(const void *data[6], const Texture2DParams &p, ILog *log);
+    void InitFromPNGFile(const void *data[6], const int size[6], const Texture2DParams &p, ILog *log);
+    void InitFromDDSFile(const void *data[6], const int size[6], const Texture2DParams &p, ILog *log);
+    void InitFromKTXFile(const void *data[6], const int size[6], const Texture2DParams &p, ILog *log);
 
 public:
     Texture2D() = default;
-    Texture2D(const char *name, uint32_t tex_id, const Texture2DParams &params)
+    Texture2D(const char *name, uint32_t tex_id, const Texture2DParams &params, ILog *log)
         : tex_id_(tex_id), params_(params), ready_(false), name_(name) {
     }
-    Texture2D(const char *name, const void *data, int size, const Texture2DParams &params, eTexLoadStatus *load_status);
-    Texture2D(const char *name, const void *data[6], const int size[6], const Texture2DParams &params, eTexLoadStatus *load_status);
+    Texture2D(const char *name, const void *data, int size, const Texture2DParams &params, eTexLoadStatus *load_status, ILog *log);
+    Texture2D(const char *name, const void *data[6], const int size[6], const Texture2DParams &params,
+            eTexLoadStatus *load_status, ILog *log);
     Texture2D(const Texture2D &rhs) = delete;
     Texture2D(Texture2D &&rhs) noexcept {
         *this = std::move(rhs);
@@ -65,8 +68,8 @@ public:
     Texture2D &operator=(const Texture2D &rhs) = delete;
     Texture2D &operator=(Texture2D &&rhs) noexcept ;
 
-    void Init(const void *data, int size, const Texture2DParams &params, eTexLoadStatus *load_status);
-    void Init(const void *data[6], const int size[6], const Texture2DParams &params, eTexLoadStatus *load_status);
+    void Init(const void *data, int size, const Texture2DParams &params, eTexLoadStatus *load_status, ILog *log);
+    void Init(const void *data[6], const int size[6], const Texture2DParams &params, eTexLoadStatus *load_status, ILog *log);
 
     uint32_t tex_id() const {
         return tex_id_;

@@ -28,6 +28,7 @@ set(SOURCE_FILES Anim.h
                  Context.cpp
                  Fwd.h
                  HashMap32.h
+                 Log.h
                  Material.h
                  Material.cpp
                  Mesh.h

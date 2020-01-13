@@ -59,11 +59,11 @@ protected:
     //~RefCounter() {}
 
     //RefCounter(const RefCounter &) = delete;
-    RefCounter(RefCounter &&rhs) : counter_(rhs.counter_) {
+    RefCounter(RefCounter &&rhs) noexcept : counter_(rhs.counter_) {
         rhs.counter_ = 0;
     }
     //RefCounter &operator=(const RefCounter &) = delete;
-    RefCounter &operator=(RefCounter &&rhs) {
+    RefCounter &operator=(RefCounter &&rhs) noexcept {
         counter_ = rhs.counter_;
         rhs.counter_ = 0;
         return *this;
@@ -98,7 +98,7 @@ public:
         }
     }
 
-    StorageRef(StorageRef &&rhs) {
+    StorageRef(StorageRef &&rhs) noexcept {
         storage_ = rhs.storage_;
         rhs.storage_ = nullptr;
         index_ = rhs.index_;
@@ -106,6 +106,8 @@ public:
     }
 
     StorageRef &operator=(const StorageRef &rhs) {
+        if (this == &rhs) return *this;
+
         Release();
 
         storage_ = rhs.storage_;
@@ -119,7 +121,7 @@ public:
         return *this;
     }
 
-    StorageRef &operator=(StorageRef &&rhs) {
+    StorageRef &operator=(StorageRef &&rhs) noexcept {
         Release();
 
         storage_ = rhs.storage_;
@@ -160,7 +162,7 @@ public:
         return &storage_->at(index_);
     }
 
-    operator bool() const {
+    explicit operator bool() const {
         return storage_ != nullptr;
     }
 

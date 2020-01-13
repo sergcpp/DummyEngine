@@ -21,6 +21,7 @@ class MaterialTest : public Ren::Context {
     SDL_Window *window_;
     void *gl_ctx_;
 #endif
+    Ren::LogNull log_;
 public:
     MaterialTest() {
 #if defined(_WIN32)
@@ -78,7 +79,7 @@ public:
         window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 256, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
         gl_ctx_ = SDL_GL_CreateContext(window_);
 #endif
-        Context::Init(256, 256);
+        Context::Init(256, 256, &log_);
     }
 
     ~MaterialTest() {
@@ -153,20 +154,20 @@ void test_material() {
         require(status == Ren::MatSetToDefault);
 
         {
-            require(m_ref->ready() == false);
+            require(!m_ref->ready());
         }
 
         test.LoadMaterial("mat1", mat_src, &status, on_program_needed, on_texture_needed);
 
         require(status == Ren::MatCreatedFromData);
         require(m_ref->flags() & Ren::AlphaTest);
-        require(m_ref->ready() == true);
+        require(m_ref->ready());
         require(m_ref->name() == "mat1");
 
         Ren::ProgramRef p = m_ref->program(0);
 
         require(p->name() == "constant");
-        require(p->ready() == false);
+        require(!p->ready());
 
         Ren::Texture2DRef t0 = m_ref->texture(0);
         Ren::Texture2DRef t1 = m_ref->texture(1);

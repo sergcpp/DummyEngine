@@ -24,6 +24,7 @@ class MeshTest : public Ren::Context {
     SDL_Window *window_;
     void *gl_ctx_;
 #endif
+    Ren::LogNull log_;
 public:
     MeshTest() {
 #if defined(_WIN32)
@@ -81,7 +82,7 @@ public:
         window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 256, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
         gl_ctx_ = SDL_GL_CreateContext(window_);
 #endif
-        Context::Init(256, 256);
+        Context::Init(256, 256, &log_);
     }
 
     ~MeshTest() {
@@ -278,7 +279,7 @@ void test_mesh() {
             Ren::eMeshLoadStatus load_status;
             Ren::MeshRef m_ref2 = test.LoadMesh("ivy", &in, on_material_needed, &load_status);
             require(load_status == Ren::MeshFound);
-            require(m_ref2);
+            require((bool)m_ref2);
         }
 
         Ren::MaterialRef mat_ref = m_ref->group(0).mat;
@@ -317,7 +318,7 @@ void test_mesh() {
         Ren::eMeshLoadStatus load_status;
         Ren::MeshRef m_ref = test.LoadMesh("test", &in, on_material_needed, &load_status);
         require(load_status == Ren::MeshCreatedFromData);
-        require(m_ref);
+        require((bool)m_ref);
         require(m_ref->type() == Ren::MeshSkeletal);
         require(m_ref->name() == "test");
 
@@ -355,11 +356,11 @@ void test_mesh() {
             Ren::eMeshLoadStatus load_status;
             Ren::MeshRef m_ref2 = test.LoadMesh("test", &in, on_material_needed, &load_status);
             require(load_status == Ren::MeshFound);
-            require(m_ref2);
+            require((bool)m_ref2);
         }
 
         Ren::MaterialRef mat_ref = m_ref->group(0).mat;
-        require(mat_ref);
+        require((bool)mat_ref);
         require(!mat_ref->ready());
     }
 }

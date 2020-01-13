@@ -1,0 +1,11 @@
+#pragma once
+
+namespace Ren {
+    class ILog {
+    public:
+        virtual ~ILog() = default;
+
+        virtual void Info(const char *fmt, ...) = 0;
+        virtual void Error(const char *fmt, ...) = 0;
+    };
+}

@@ -8,9 +8,9 @@
 #endif
 
 Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *status,
-                        const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load) {
+                        const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log) {
     name_ = String{ name };
-    Init(mat_src, status, on_prog_load, on_tex_load);
+    Init(mat_src, status, on_prog_load, on_tex_load, log);
 }
 
 Ren::Material &Ren::Material::operator=(Material &&rhs) noexcept {
@@ -31,12 +31,12 @@ Ren::Material &Ren::Material::operator=(Material &&rhs) noexcept {
 }
 
 void Ren::Material::Init(const char *mat_src, eMatLoadStatus *status,
-                         const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load) {
-    InitFromTXT(mat_src, status, on_prog_load, on_tex_load);
+                         const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log) {
+    InitFromTXT(mat_src, status, on_prog_load, on_tex_load, log);
 }
 
 void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
-                                const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load) {
+                                const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log) {
     if (!mat_src) {
         if (status) *status = MatSetToDefault;
         return;
@@ -91,7 +91,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             } else if (flag == "alpha_blend") {
                 flags_ |= AlphaBlend;
             } else {
-                fprintf(stderr, "Unknown flag %s", flag.c_str());
+                log->Error("Unknown flag %s\n", flag.c_str());
             }
         } else if (item == "texture:") {
             p = q + 1;

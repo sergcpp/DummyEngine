@@ -21,6 +21,7 @@ class TextureTest : public Ren::Context {
     SDL_Window *window_;
     void *gl_ctx_;
 #endif
+    Ren::LogNull log_;
 public:
     TextureTest() {
 #if defined(_WIN32)
@@ -78,7 +79,7 @@ public:
         window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 256, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
         gl_ctx_ = SDL_GL_CreateContext(window_);
 #endif
-        Context::Init(256, 256);
+        Context::Init(256, 256, &log_);
     }
 
     ~TextureTest() {

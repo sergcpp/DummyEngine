@@ -138,14 +138,14 @@ namespace Ren {
 
 Ren::Mesh::Mesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
                 BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
-                eMeshLoadStatus *load_status) {
+                eMeshLoadStatus *load_status, ILog *log) {
     name_ = String{ name };
-    Init(data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf, load_status);
+    Init(data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf, load_status, log);
 }
 
 void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_load,
                      BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
-                     eMeshLoadStatus *load_status) {
+                     eMeshLoadStatus *load_status, ILog *log) {
 
     if (data) {
         char mesh_type_str[12];
@@ -154,11 +154,11 @@ void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_lo
         data->seekg(pos, std::ios::beg);
 
         if (strcmp(mesh_type_str, "STATIC_MESH\0") == 0) {
-            InitMeshSimple(*data, on_mat_load, vertex_buf1, vertex_buf2, index_buf);
+            InitMeshSimple(*data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, log);
         } else if (strcmp(mesh_type_str, "TERRAI_MESH\0") == 0) {
-            InitMeshTerrain(*data, on_mat_load, vertex_buf1, index_buf);
+            InitMeshTerrain(*data, on_mat_load, vertex_buf1, index_buf, log);
         } else if (strcmp(mesh_type_str, "SKELET_MESH\0") == 0) {
-            InitMeshSkeletal(*data, on_mat_load, skin_vertex_buf, index_buf);
+            InitMeshSkeletal(*data, on_mat_load, skin_vertex_buf, index_buf, log);
         }
 
         if (load_status) *load_status = MeshCreatedFromData;
@@ -169,7 +169,7 @@ void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_lo
 }
 
 void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load,
-                               BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf) {
+                               BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, ILog *log) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "STATIC_MESH\0") == 0);
@@ -205,7 +205,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
     data.read((char *)&temp_f[0], sizeof(float) * 3);
     bbox_max_ = MakeVec3(temp_f);
 
-    uint32_t attribs_size = (uint32_t)file_header.p[VTX_ATTR_CHUNK].length;
+    auto attribs_size = (uint32_t)file_header.p[VTX_ATTR_CHUNK].length;
 
     attribs_.reset(new char[attribs_size]);
     data.read((char *)attribs_.get(), attribs_size);
@@ -280,7 +280,8 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
     ready_ = true;
 }
 
-void Ren::Mesh::InitMeshTerrain(std::istream &data, const material_load_callback &on_mat_load, BufferRef &vertex_buf, BufferRef &index_buf) {
+void Ren::Mesh::InitMeshTerrain(std::istream &data, const material_load_callback &on_mat_load,
+        BufferRef &vertex_buf, BufferRef &index_buf, ILog *log) {
     /*char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "TERRAI_MESH\0") == 0);
@@ -371,7 +372,8 @@ void Ren::Mesh::InitMeshTerrain(std::istream &data, const material_load_callback
     indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices_.get());*/
 }
 
-void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load, BufferRef &skin_vertex_buf, BufferRef &index_buf) {
+void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load,
+        BufferRef &skin_vertex_buf, BufferRef &index_buf, ILog *log) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "SKELET_MESH\0") == 0);
@@ -548,7 +550,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     ready_ = true;
 }
 
-void Ren::Mesh::SplitMesh(int bones_limit) {
+void Ren::Mesh::SplitMesh(int bones_limit, ILog *log) {
     assert(type_ == MeshSkeletal);
 
     std::vector<int> bone_ids;
@@ -623,7 +625,7 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
         }
     }
 
-    printf("%li\n", clock() - t1);
+    log->Info("%li\n", clock() - t1);
     t1 = clock();
 
     std::vector<unsigned short> new_indices;
@@ -666,7 +668,7 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
 
     }
     new_indices.shrink_to_fit();
-    printf("%li\n", clock() - t1);
+    log->Info("%li\n", clock() - t1);
     t1 = clock();
 
     clock_t find_time = 0;
@@ -713,15 +715,15 @@ void Ren::Mesh::SplitMesh(int bones_limit) {
         }
     }
 
-    printf("---------------------------\n");
+    log->Info("---------------------------\n");
     for (BoneGroup &g : skel_.bone_groups) {
-        printf("%u\n", (unsigned int)g.strip_ids.size() / 3);
+        log->Info("%u\n", (unsigned int)g.strip_ids.size() / 3);
     }
-    printf("---------------------------\n");
+    log->Info("---------------------------\n");
 
-    printf("%li\n", clock() - t1);
-    printf("find_time = %li\n", find_time);
-    printf("after bone broups2\n");
+    log->Info("%li\n", clock() - t1);
+    log->Info("find_time = %li\n", find_time);
+    log->Info("after bone broups2\n");
 
     indices_buf_.size = (uint32_t)(new_indices.size() * sizeof(unsigned short));
     indices_.reset(new char[indices_buf_.size]);

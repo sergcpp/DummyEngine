@@ -115,15 +115,15 @@ static_assert(sizeof(g_gl_wrap_mode) / sizeof(g_gl_wrap_mode[0]) == WrapModesCou
 }
 
 Ren::Texture2D::Texture2D(const char *name, const void *data, int size,
-                          const Texture2DParams &p, eTexLoadStatus *load_status) {
+                          const Texture2DParams &p, eTexLoadStatus *load_status, ILog *log) {
     name_ = String{ name };
-    Init(data, size, p, load_status);
+    Init(data, size, p, load_status, log);
 }
 
 Ren::Texture2D::Texture2D(const char *name, const void *data[6], const int size[6],
-                          const Texture2DParams &p, eTexLoadStatus *load_status) {
+                          const Texture2DParams &p, eTexLoadStatus *load_status, ILog *log) {
     name_ = String{ name };
-    Init(data, size, p, load_status);
+    Init(data, size, p, load_status, log);
 }
 
 Ren::Texture2D::~Texture2D() {
@@ -150,7 +150,7 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
     return *this;
 }
 
-void Ren::Texture2D::Init(const void *data, int size, const Texture2DParams &p, eTexLoadStatus *load_status) {
+void Ren::Texture2D::Init(const void *data, int size, const Texture2DParams &p, eTexLoadStatus *load_status, ILog *log) {
     if (!data) {
         const uint8_t cyan[3] = { 0, 255, 255 };
         Texture2DParams _p;
@@ -158,30 +158,30 @@ void Ren::Texture2D::Init(const void *data, int size, const Texture2DParams &p, 
         _p.format = RawRGB888;
         _p.filter = NoFilter;
         _p.repeat = Repeat;
-        InitFromRAWData(cyan, _p);
+        InitFromRAWData(cyan, _p, log);
         // mark it as not ready
         ready_ = false;
         if (load_status) *load_status = TexCreatedDefault;
     } else {
         if (name_.EndsWith(".tga_rgbe") != 0 || name_.EndsWith(".TGA_RGBE") != 0) {
-            InitFromTGA_RGBEFile(data, p);
+            InitFromTGA_RGBEFile(data, p, log);
         } else if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
-            InitFromTGAFile(data, p);
+            InitFromTGAFile(data, p, log);
         } else if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
-            InitFromDDSFile(data, size, p);
+            InitFromDDSFile(data, size, p, log);
         } else if (name_.EndsWith(".ktx") != 0 || name_.EndsWith(".ktx") != 0) {
-            InitFromKTXFile(data, size, p);
+            InitFromKTXFile(data, size, p, log);
         } else if (name_.EndsWith(".png") != 0 || name_.EndsWith(".PNG") != 0) {
-            InitFromPNGFile(data, size, p);
+            InitFromPNGFile(data, size, p, log);
         } else {
-            InitFromRAWData(data, p);
+            InitFromRAWData(data, p, log);
         }
         ready_ = true;
         if (load_status) *load_status = TexCreatedFromData;
     }
 }
 
-void Ren::Texture2D::Init(const void *data[6], const int size[6], const Texture2DParams &p, eTexLoadStatus *load_status) {
+void Ren::Texture2D::Init(const void *data[6], const int size[6], const Texture2DParams &p, eTexLoadStatus *load_status, ILog *log) {
     if (!data) {
         const unsigned char cyan[3] = { 0, 255, 255 };
         const void *_data[6] = { cyan, cyan, cyan, cyan, cyan, cyan };
@@ -190,24 +190,24 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6], const Texture2
         _p.format = RawRGB888;
         _p.filter = NoFilter;
         _p.repeat = Repeat;
-        InitFromRAWData(_data, _p);
+        InitFromRAWData(_data, _p, log);
         // mark it as not ready
         ready_ = false;
         cubemap_ready_ = 0;
         if (load_status) *load_status = TexCreatedDefault;
     } else {
         if (name_.EndsWith(".tga_rgbe") != 0 || name_.EndsWith(".TGA_RGBE") != 0) {
-            InitFromTGA_RGBEFile(data, p);
+            InitFromTGA_RGBEFile(data, p, log);
         } else if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
-            InitFromTGAFile(data, p);
+            InitFromTGAFile(data, p, log);
         } else if (name_.EndsWith(".png") != 0 || name_.EndsWith(".PNG") != 0) {
-            InitFromPNGFile(data, size, p);
+            InitFromPNGFile(data, size, p, log);
         } else if (name_.EndsWith(".ktx") != 0 || name_.EndsWith(".KTX") != 0) {
-            InitFromKTXFile(data, size, p);
+            InitFromKTXFile(data, size, p, log);
         } else if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
-            InitFromDDSFile(data, size, p);
+            InitFromDDSFile(data, size, p, log);
         } else {
-            InitFromRAWData(data, p);
+            InitFromRAWData(data, p, log);
         }
 
         ready_ = (cubemap_ready_ & (1u << 0u)) == 1;
@@ -226,7 +226,7 @@ void Ren::Texture2D::Free() {
     }
 }
 
-void Ren::Texture2D::InitFromRAWData(const void *data, const Texture2DParams &p) {
+void Ren::Texture2D::InitFromRAWData(const void *data, const Texture2DParams &p, ILog *log) {
     Free();
 
     GLuint tex_id;
@@ -262,10 +262,10 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Texture2DParams &p)
         ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, tex_id);
     }
 
-    CheckError("create texture");
+    CheckError("create texture", log);
 }
 
-void Ren::Texture2D::InitFromTGAFile(const void *data, const Texture2DParams &p) {
+void Ren::Texture2D::InitFromTGAFile(const void *data, const Texture2DParams &p, ILog *log) {
     int w = 0, h = 0;
     eTexColorFormat format = Undefined;
     std::unique_ptr<uint8_t[]> image_data = ReadTGAFile(data, w, h, format);
@@ -275,10 +275,10 @@ void Ren::Texture2D::InitFromTGAFile(const void *data, const Texture2DParams &p)
     _p.h = h;
     _p.format = format;
 
-    InitFromRAWData(image_data.get(), _p);
+    InitFromRAWData(image_data.get(), _p, log);
 }
 
-void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data, const Texture2DParams &p) {
+void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data, const Texture2DParams &p, ILog *log) {
     int w = 0, h = 0;
     eTexColorFormat format = Undefined;
     std::unique_ptr<uint8_t[]> image_data = ReadTGAFile(data, w, h, format);
@@ -290,10 +290,10 @@ void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data, const Texture2DParam
     _p.h = h;
     _p.format = RawRGB16F;
 
-    InitFromRAWData(fp_data.get(), _p);
+    InitFromRAWData(fp_data.get(), _p, log);
 }
 
-void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2DParams &p) {
+void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2DParams &p, ILog *log) {
     Free();
 
     GLuint tex_id;
@@ -312,7 +312,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2D
     params_.w = (int)header.dwWidth;
     params_.h = (int)header.dwHeight;
 
-    switch ((header.sPixelFormat.dwFourCC >> 24) - '0') {
+    switch ((header.sPixelFormat.dwFourCC >> 24u) - '0') {
     case 1:
         internal_format = (p.flags & SRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT : GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
         block_size = 8;
@@ -340,7 +340,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2D
     for (uint32_t i = 0; i < header.dwMipMapCount; i++) {
         const int len = ((w + 3) / 4) * ((h + 3) / 4) * block_size;
         if (len > bytes_left) {
-            // TODO: report error in log
+            log->Error("Insufficient data length, bytes left %i, expected %i\n", bytes_left, len);
             return;
         }
 
@@ -355,7 +355,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2D
     ChangeFilter(p.filter, p.repeat);
 }
 
-void Ren::Texture2D::InitFromPNGFile(const void *data, int size, const Texture2DParams &p) {
+void Ren::Texture2D::InitFromPNGFile(const void *data, int size, const Texture2DParams &p, ILog *log) {
     Free();
 
     GLuint tex_id;
@@ -379,7 +379,7 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, int size, const Texture2D
     ChangeFilter(p.filter, p.repeat);
 }
 
-void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2DParams &p) {
+void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2DParams &p, ILog *log) {
     Free();
 
     GLuint tex_id;
@@ -413,14 +413,14 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2D
 
     for (int i = 0; i < (int)header.mipmap_levels_count; i++) {
         if (data_offset + (int)sizeof(uint32_t) > size) {
-            // TODO: report error in log
+            log->Error("Insufficient data length, bytes left %i, expected %i\n", size - data_offset, sizeof(uint32_t));
             break;
         }
 
         uint32_t img_size;
         memcpy(&img_size, &_data[data_offset], sizeof(uint32_t));
         if (data_offset + (int)img_size > size) {
-            // TODO: report error in log
+            log->Error("Insufficient data length, bytes left %i, expected %i\n", size - data_offset, img_size);
             break;
         }
 
@@ -439,7 +439,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2D
     ChangeFilter(p.filter, p.repeat);
 }
 
-void Ren::Texture2D::InitFromRAWData(const void *data[6], const Texture2DParams &p) {
+void Ren::Texture2D::InitFromRAWData(const void *data[6], const Texture2DParams &p, ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
 
@@ -499,7 +499,7 @@ void Ren::Texture2D::InitFromRAWData(const void *data[6], const Texture2DParams 
     }
 }
 
-void Ren::Texture2D::InitFromTGAFile(const void *data[6], const Texture2DParams &p) {
+void Ren::Texture2D::InitFromTGAFile(const void *data[6], const Texture2DParams &p, ILog *log) {
     std::unique_ptr<uint8_t[]> image_data[6];
     const void *_image_data[6] = {};
     int w = 0, h = 0;
@@ -516,10 +516,10 @@ void Ren::Texture2D::InitFromTGAFile(const void *data[6], const Texture2DParams 
     _p.h = h;
     _p.format = format;
 
-    InitFromRAWData(_image_data, _p);
+    InitFromRAWData(_image_data, _p, log);
 }
 
-void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data[6], const Texture2DParams &p) {
+void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data[6], const Texture2DParams &p, ILog *log) {
     std::unique_ptr<uint16_t[]> image_data[6];
     const void *_image_data[6] = {};
     int w = p.w, h = p.h;
@@ -535,10 +535,10 @@ void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data[6], const Texture2DPa
     _p.h = h;
     _p.format = Ren::RawRGB16F;
 
-    InitFromRAWData(_image_data, _p);
+    InitFromRAWData(_image_data, _p, log);
 }
 
-void Ren::Texture2D::InitFromPNGFile(const void *data[6], const int size[6], const Texture2DParams &p) {
+void Ren::Texture2D::InitFromPNGFile(const void *data[6], const int size[6], const Texture2DParams &p, ILog *log) {
     Free();
 
     GLuint tex_id;
@@ -569,7 +569,7 @@ void Ren::Texture2D::InitFromPNGFile(const void *data[6], const int size[6], con
     ChangeFilter(p.filter, p.repeat);
 }
 
-void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], const Texture2DParams &p) {
+void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], const Texture2DParams &p, ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
 
@@ -609,7 +609,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], con
                 block_size = 16;
                 break;
             default:
-                // TODO: report error in log
+                log->Error("Unknown DDS format %i\n", int((header.sPixelFormat.dwFourCC >> 24u) - '0'));
                 break;
             }
 
@@ -631,7 +631,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], con
     ChangeFilter(p.filter, p.repeat);
 }
 
-void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], const Texture2DParams &p) {
+void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], const Texture2DParams &p, ILog *log) {
     (void)size;
 
     Free();
@@ -664,9 +664,18 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], con
         memcpy(&this_header, data[j], sizeof(KTXHeader));
 
         // make sure all images have same properties
-        assert(this_header.pixel_width == first_header.pixel_width);
-        assert(this_header.pixel_height == first_header.pixel_height);
-        assert(this_header.gl_internal_format == first_header.gl_internal_format);
+        if (this_header.pixel_width != first_header.pixel_width) {
+            log->Error("Image width mismatch %i, expected %i\n", (int)this_header.pixel_width, (int)first_header.pixel_width);
+            continue;
+        }
+        if (this_header.pixel_height != first_header.pixel_height) {
+            log->Error("Image height mismatch %i, expected %i\n", (int)this_header.pixel_height, (int)first_header.pixel_height);
+            continue;
+        }
+        if (this_header.gl_internal_format != first_header.gl_internal_format) {
+            log->Error("Internal format mismatch %i, expected %i\n", (int)this_header.gl_internal_format, (int)first_header.gl_internal_format);
+            continue;
+        }
 #endif
         int data_offset = sizeof(KTXHeader);
 

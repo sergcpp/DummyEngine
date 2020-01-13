@@ -2,23 +2,23 @@
 
 #include <algorithm>
 
-Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data, material_load_callback on_mat_load,
+Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
                                     eMeshLoadStatus *load_status) {
     return LoadMesh(name, data, on_mat_load, default_vertex_buf1_, default_vertex_buf2_,
             default_indices_buf_, default_skin_vertex_buf_, load_status);
 }
 
-Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data, material_load_callback on_mat_load,
+Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
                                     BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
                                     eMeshLoadStatus *load_status) {
     MeshRef ref = meshes_.FindByName(name);
     if (!ref) {
-        ref = meshes_.Add(name, data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf, load_status);
+        ref = meshes_.Add(name, data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf, load_status, log_);
     } else {
         if (ref->ready()) {
             if (load_status) *load_status = MeshFound;
         } else if (data) {
-            ref->Init(data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf, load_status);
+            ref->Init(data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf, load_status, log_);
         }
     }
 
@@ -29,12 +29,12 @@ Ren::MaterialRef Ren::Context::LoadMaterial(const char *name, const char *mat_sr
         const texture_load_callback &on_tex_load) {
     MaterialRef ref = materials_.FindByName(name);
     if (!ref) {
-        ref = materials_.Add(name, mat_src, status, on_prog_load, on_tex_load);
+        ref = materials_.Add(name, mat_src, status, on_prog_load, on_tex_load, log_);
     } else {
         if (ref->ready()) {
             if (status) *status = MatFound;
         } else if (!ref->ready() && mat_src) {
-            ref->Init(mat_src, status, on_prog_load, on_tex_load);
+            ref->Init(mat_src, status, on_prog_load, on_tex_load, log_);
         }
     }
 
@@ -53,11 +53,11 @@ int Ren::Context::NumMaterialsNotReady() {
 
 void Ren::Context::ReleaseMaterials() {
     if (!materials_.size()) return;
-    fprintf(stderr, "---------REMAINING MATERIALS--------\n");
+    log_->Error("---------REMAINING MATERIALS--------\n");
     for (const Material &m : materials_) {
-        fprintf(stderr, "%s\n", m.name().c_str());
+        log_->Error("%s\n", m.name().c_str());
     }
-    fprintf(stderr, "-----------------------------------\n");
+    log_->Error("-----------------------------------\n");
     materials_.clear();
 }
 
@@ -73,13 +73,13 @@ int Ren::Context::NumProgramsNotReady() {
 
 void Ren::Context::ReleasePrograms() {
     if (!programs_.size()) return;
-    fprintf(stderr, "---------REMAINING PROGRAMS--------\n");
+    log_->Error("---------REMAINING PROGRAMS--------\n");
     for (const Program &p : programs_) {
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
-        fprintf(stderr, "%s %i\n", p.name().c_str(), (int)p.prog_id());
+        log_->Error("%s %i\n", p.name().c_str(), (int)p.prog_id());
 #endif
     }
-    fprintf(stderr, "-----------------------------------\n");
+    log_->Error("-----------------------------------\n");
     programs_.clear();
 }
 
@@ -87,11 +87,11 @@ Ren::Texture2DRef Ren::Context::LoadTexture2D(const char *name, const void *data
         const Texture2DParams &p, eTexLoadStatus *load_status) {
     Texture2DRef ref = textures_.FindByName(name);
     if (!ref) {
-        ref = textures_.Add(name, data, size, p, load_status);
+        ref = textures_.Add(name, data, size, p, load_status, log_);
     } else {
         if (load_status) *load_status = TexFound;
         if (!ref->ready() && data) {
-            ref->Init(data, size, p, load_status);
+            ref->Init(data, size, p, load_status, log_);
         }
     }
 
@@ -102,12 +102,12 @@ Ren::Texture2DRef Ren::Context::LoadTextureCube(const char *name, const void *da
         const Texture2DParams &p, eTexLoadStatus *load_status) {
     Texture2DRef ref = textures_.FindByName(name);
     if (!ref) {
-        ref = textures_.Add(name, data, size, p, load_status);
+        ref = textures_.Add(name, data, size, p, load_status, log_);
     } else {
         if (ref->ready()) {
             if (load_status) *load_status = TexFound;
         } else if (data) {
-            ref->Init(data, size, p, load_status);
+            ref->Init(data, size, p, load_status, log_);
         }
     }
 
@@ -122,11 +122,11 @@ int Ren::Context::NumTexturesNotReady() {
 
 void Ren::Context::ReleaseTextures() {
     if (!textures_.size()) return;
-    fprintf(stderr, "---------REMAINING TEXTURES--------\n");
+    log_->Error("---------REMAINING TEXTURES--------\n");
     for (const Texture2D &t : textures_) {
-        fprintf(stderr, "%s\n", t.name().c_str());
+        log_->Error("%s\n", t.name().c_str());
     }
-    fprintf(stderr, "-----------------------------------\n");
+    log_->Error("-----------------------------------\n");
     textures_.clear();
 }
 
@@ -148,11 +148,11 @@ Ren::TextureRegionRef Ren::Context::LoadTextureRegion(
 
 void Ren::Context::ReleaseTextureRegions() {
     if (!texture_regions_.size()) return;
-    fprintf(stderr, "-------REMAINING TEX REGIONS-------\n");
+    log_->Error("-------REMAINING TEX REGIONS-------\n");
     for (const TextureRegion &t : texture_regions_) {
-        fprintf(stderr, "%s\n", t.name().c_str());
+        log_->Error("%s\n", t.name().c_str());
     }
-    fprintf(stderr, "-----------------------------------\n");
+    log_->Error("-----------------------------------\n");
     texture_regions_.clear();
 }
 
@@ -178,11 +178,11 @@ int Ren::Context::NumAnimsNotReady() {
 
 void Ren::Context::ReleaseAnims() {
     if (!anims_.size()) return;
-    fprintf(stderr, "---------REMAINING ANIMS--------\n");
+    log_->Error("---------REMAINING ANIMS--------\n");
     for (const AnimSequence &a : anims_) {
-        fprintf(stderr, "%s\n", a.name().c_str());
+        log_->Error("%s\n", a.name().c_str());
     }
-    fprintf(stderr, "-----------------------------------\n");
+    log_->Error("-----------------------------------\n");
     anims_.clear();
 }
 
@@ -192,11 +192,11 @@ Ren::BufferRef Ren::Context::CreateBuffer(const char *name, uint32_t initial_siz
 
 void Ren::Context::ReleaseBuffers() {
     if (!buffers_.size()) return;
-    fprintf(stderr, "---------REMAINING BUFFERS--------\n");
+    log_->Error("---------REMAINING BUFFERS--------\n");
     for (const Buffer &b : buffers_) {
-        fprintf(stderr, "%u\n", b.size());
+        log_->Error("%u\n", b.size());
     }
-    fprintf(stderr, "-----------------------------------\n");
+    log_->Error("-----------------------------------\n");
     buffers_.clear();
 }
 

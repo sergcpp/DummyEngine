@@ -9,10 +9,10 @@
 
 namespace Ren {
 inline uint32_t _lua_hash(void const *v, uint32_t l) {
-    uint32_t i, step = (l >> 5) + 1;
+    uint32_t i, step = (l >> 5u) + 1;
     uint32_t h = l + (l >= 4 ? *(uint32_t*)v : 0);
     for (i = l; i >= step; i -= step) {
-        h = h ^ ((h << 5) + (h >> 2) + ((unsigned char *)v)[i - 1]);
+        h = h ^ ((h << 5u) + (h >> 2u) + ((unsigned char *)v)[i - 1]);
     }
     return h;
 }

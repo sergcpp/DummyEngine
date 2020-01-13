@@ -1,6 +1,7 @@
 #include "ProgramGL.h"
 
 #include "GL.h"
+#include "Log.h"
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -8,9 +9,9 @@
 #endif
 
 namespace Ren {
-GLuint LoadShader(GLenum shader_type, const char *source);
+GLuint LoadShader(GLenum shader_type, const char *source, ILog *log);
 #ifndef __ANDROID__
-GLuint LoadShader(GLenum shader_type, const uint8_t *data, const int data_size);
+GLuint LoadShader(GLenum shader_type, const uint8_t *data, int data_size, ILog *log);
 #endif
 
 struct Binding {
@@ -19,43 +20,42 @@ struct Binding {
 };
 void ParseGLSLBindings(const std::string &shader_str, Binding *attr_bindings, int &attr_bindings_count,
                                                       Binding *uniform_bindings, int &uniform_bindings_count,
-                                                      Binding *uniform_block_bindings, int &uniform_block_bindings_count);
+                                                      Binding *uniform_block_bindings, int &uniform_block_bindings_count, ILog *log);
 }
 
-Ren::Program::Program(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status) {
+Ren::Program::Program(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status, ILog *log) {
     name_ = String{ name };
-    Init(vs_source, fs_source, status);
+    Init(vs_source, fs_source, status, log);
 }
 
-Ren::Program::Program(const char *name, const char *cs_source, eProgLoadStatus *status) {
+Ren::Program::Program(const char *name, const char *cs_source, eProgLoadStatus *status, ILog *log) {
     name_ = String{ name };
-    Init(cs_source, status);
+    Init(cs_source, status, log);
 }
 
 #ifndef __ANDROID__
-Ren::Program::Program(const char *name, const uint8_t *vs_data, const int vs_data_size, const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status) {
+Ren::Program::Program(const char *name, const uint8_t *vs_data, const int vs_data_size,
+        const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status, ILog *log) {
     name_ = String{ name };
-    Init(vs_data, vs_data_size, fs_data, fs_data_size, status);
+    Init(vs_data, vs_data_size, fs_data, fs_data_size, status, log);
 }
 
-Ren::Program::Program(const char *name, const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *status) {
+Ren::Program::Program(const char *name, const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *status, ILog *log) {
     name_ = String{ name };
-    Init(cs_data, cs_data_size, status);
+    Init(cs_data, cs_data_size, status, log);
 }
 #endif
 
 Ren::Program::~Program() {
     if (prog_id_) {
-        GLuint prog = (GLuint)prog_id_;
+        auto prog = (GLuint)prog_id_;
         glDeleteProgram(prog);
     }
 }
 
-Ren::Program &Ren::Program::operator=(Program &&rhs) {
-    RefCounter::operator=(std::move(rhs));
-
+Ren::Program &Ren::Program::operator=(Program &&rhs) noexcept {
     if (prog_id_) {
-        GLuint prog = (GLuint)prog_id_;
+        auto prog = (GLuint)prog_id_;
         glDeleteProgram(prog);
     }
 
@@ -68,28 +68,31 @@ Ren::Program &Ren::Program::operator=(Program &&rhs) {
     rhs.ready_ = false;
     name_ = std::move(rhs.name_);
 
+    RefCounter::operator=(std::move(rhs));
+
     return *this;
 }
 
-void Ren::Program::Init(const char *vs_source, const char *fs_source, eProgLoadStatus *status) {
-    InitFromGLSL({ vs_source, fs_source, nullptr }, status);
+void Ren::Program::Init(const char *vs_source, const char *fs_source, eProgLoadStatus *status, ILog *log) {
+    InitFromGLSL({ vs_source, fs_source, nullptr }, status, log);
 }
 
-void Ren::Program::Init(const char *cs_source, eProgLoadStatus *status) {
-    InitFromGLSL({ nullptr, nullptr, cs_source }, status);
+void Ren::Program::Init(const char *cs_source, eProgLoadStatus *status, ILog *log) {
+    InitFromGLSL({ nullptr, nullptr, cs_source }, status, log);
 }
 
 #ifndef __ANDROID__
-void Ren::Program::Init(const uint8_t *vs_data, const int vs_data_size, const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status) {
-    InitFromSPIRV({ vs_data, vs_data_size, fs_data, fs_data_size, nullptr, 0 }, status);
+void Ren::Program::Init(const uint8_t *vs_data, const int vs_data_size,
+                        const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status, ILog *log) {
+    InitFromSPIRV({ vs_data, vs_data_size, fs_data, fs_data_size, nullptr, 0 }, status, log);
 }
 
-void Ren::Program::Init(const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *status) {
-    InitFromSPIRV({ nullptr, 0, nullptr, 0, cs_data, cs_data_size }, status);
+void Ren::Program::Init(const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *status, ILog *log) {
+    InitFromSPIRV({ nullptr, 0, nullptr, 0, cs_data, cs_data_size }, status, log);
 }
 #endif
 
-void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *status) {
+void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *status, ILog *log) {
     if ((!shaders.vs_source || !shaders.fs_source) && !shaders.cs_source) {
         if (status) *status = ProgSetToDefault;
         return;
@@ -105,14 +108,14 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
     if (shaders.vs_source && shaders.fs_source) {
         std::string vs_source_str = shaders.vs_source, fs_source_str = shaders.fs_source;
 
-        GLuint v_shader = LoadShader(GL_VERTEX_SHADER, vs_source_str.c_str());
+        GLuint v_shader = LoadShader(GL_VERTEX_SHADER, vs_source_str.c_str(), log);
         if (!v_shader) {
-            fprintf(stderr, "VertexShader %s error", name_.c_str());
+            log->Error("VertexShader %s error", name_.c_str());
         }
 
-        GLuint f_shader = LoadShader(GL_FRAGMENT_SHADER, fs_source_str.c_str());
+        GLuint f_shader = LoadShader(GL_FRAGMENT_SHADER, fs_source_str.c_str(), log);
         if (!f_shader) {
-            fprintf(stderr, "FragmentShader %s error", name_.c_str());
+            log->Error("FragmentShader %s error", name_.c_str());
         }
 
         program = glCreateProgram();
@@ -129,7 +132,7 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
                     char *buf = (char *)malloc((size_t)buf_len);
                     if (buf) {
                         glGetProgramInfoLog(program, buf_len, nullptr, buf);
-                        fprintf(stderr, "Could not link program: %s", buf);
+                        log->Error("Could not link program: %s\n", buf);
                         free(buf);
                         throw;
                     }
@@ -138,20 +141,20 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
                 program = 0;
             }
         } else {
-            fprintf(stderr, "error");
+            log->Error("glCreateProgram failed\n");
             throw std::runtime_error("Program creation error!");
         }
 
         ParseGLSLBindings(vs_source_str, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
-                          uniform_block_bindings, uniform_block_bindings_count);
+                          uniform_block_bindings, uniform_block_bindings_count, log);
         ParseGLSLBindings(fs_source_str, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
-                          uniform_block_bindings, uniform_block_bindings_count);
+                          uniform_block_bindings, uniform_block_bindings_count, log);
     } else if (shaders.cs_source) {
         std::string cs_source_str = shaders.cs_source;
 
-        GLuint c_shader = LoadShader(GL_COMPUTE_SHADER, cs_source_str.c_str());
+        GLuint c_shader = LoadShader(GL_COMPUTE_SHADER, cs_source_str.c_str(), log);
         if (!c_shader) {
-            fprintf(stderr, "ComputeShader %s error", name_.c_str());
+            log->Error("ComputeShader %s error\n", name_.c_str());
         }
 
         program = glCreateProgram();
@@ -166,8 +169,8 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
                 if (buf_len) {
                     char *buf = (char *)malloc((size_t)buf_len);
                     if (buf) {
-                        glGetProgramInfoLog(program, buf_len, NULL, buf);
-                        fprintf(stderr, "Could not link program: %s", buf);
+                        glGetProgramInfoLog(program, buf_len, nullptr, buf);
+                        log->Error( "Could not link program: %s\n", buf);
                         free(buf);
                         throw;
                     }
@@ -176,12 +179,12 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
                 program = 0;
             }
         } else {
-            fprintf(stderr, "error");
+            log->Error("glCreateProgram failed\n");
             throw std::runtime_error("Program creation error!");
         }
 
         ParseGLSLBindings(cs_source_str, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
-                          uniform_block_bindings, uniform_block_bindings_count);
+                          uniform_block_bindings, uniform_block_bindings_count, log);
     }
 
     for (int i = 0; i < attr_bindings_count; i++) {
@@ -208,7 +211,6 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
         u.loc = glGetUniformBlockIndex(program, b.name.c_str());
         if (u.loc != -1) {
             u.name = std::move(b.name);
-
             glUniformBlockBinding(program, u.loc, b.loc);
         }
     }
@@ -239,15 +241,15 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
         }
     }
 
-    printf("PROGRAM %s\n", name_.c_str());
+    log->Info("PROGRAM %s\n", name_.c_str());
 
     // Print all attributes
-    printf("\tATTRIBUTES\n");
+    log->Info("\tATTRIBUTES\n");
     for (int i = 0; i < MAX_NUM_ATTRIBUTES; i++) {
         if (attributes_[i].loc == -1) {
             continue;
         }
-        printf("\t\t%s : %i\n", attributes_[i].name.c_str(), attributes_[i].loc);
+        log->Info("\t\t%s : %i\n", attributes_[i].name.c_str(), attributes_[i].loc);
     }
 
     // Enumerate rest of uniforms
@@ -276,12 +278,12 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
     }
 
     // Print all uniforms
-    printf("\tUNIFORMS\n");
+    log->Info("\tUNIFORMS\n");
     for (int i = 0; i < MAX_NUM_UNIFORMS; i++) {
         if (uniforms_[i].loc == -1) {
             continue;
         }
-        printf("\t\t%s : %i\n", uniforms_[i].name.c_str(), uniforms_[i].loc);
+        log->Info("\t\t%s : %i\n", uniforms_[i].name.c_str(), uniforms_[i].loc);
     }
 
     prog_id_ = (uint32_t)program;
@@ -290,7 +292,7 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
 }
 
 #ifndef __ANDROID__
-void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *status) {
+void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *status, ILog *log) {
     if ((!shaders.vs_data || !shaders.fs_data) && !shaders.cs_data) {
         if (status) *status = ProgSetToDefault;
         return;
@@ -300,14 +302,14 @@ void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *sta
 
     GLuint program;
     if (shaders.vs_data && shaders.fs_data) {
-        GLuint v_shader = LoadShader(GL_VERTEX_SHADER, shaders.vs_data, shaders.vs_data_size);
+        GLuint v_shader = LoadShader(GL_VERTEX_SHADER, shaders.vs_data, shaders.vs_data_size, log);
         if (!v_shader) {
-            fprintf(stderr, "VertexShader %s error", name_.c_str());
+            log->Error("VertexShader %s error", name_.c_str());
         }
 
-        GLuint f_shader = LoadShader(GL_FRAGMENT_SHADER, shaders.fs_data, shaders.fs_data_size);
+        GLuint f_shader = LoadShader(GL_FRAGMENT_SHADER, shaders.fs_data, shaders.fs_data_size, log);
         if (!f_shader) {
-            fprintf(stderr, "FragmentShader %s error", name_.c_str());
+            log->Error("FragmentShader %s error", name_.c_str());
         }
 
         program = glCreateProgram();
@@ -323,8 +325,8 @@ void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *sta
                 if (buf_len) {
                     char *buf = (char *)malloc((size_t)buf_len);
                     if (buf) {
-                        glGetProgramInfoLog(program, buf_len, NULL, buf);
-                        fprintf(stderr, "Could not link program: %s", buf);
+                        glGetProgramInfoLog(program, buf_len, nullptr, buf);
+                        log->Error("Could not link program: %s", buf);
                         free(buf);
                         throw std::runtime_error("Program linking error!");
                     }
@@ -333,11 +335,11 @@ void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *sta
                 program = 0;
             }
         } else {
-            fprintf(stderr, "error");
+            log->Error("glCreateProgram failed\n");
             throw std::runtime_error("Program creation error!");
         }
     } else if (shaders.cs_data) {
-
+        // TODO: !!!
     }
 
     // Enumerate attributes
@@ -355,24 +357,24 @@ void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *sta
         uniforms_[i].loc = i;
     }
 
-    printf("PROGRAM %s\n", name_.c_str());
+    log->Info("PROGRAM %s\n", name_.c_str());
 
     // Print all attributes
-    printf("\tATTRIBUTES\n");
+    log->Info("\tATTRIBUTES\n");
     for (int i = 0; i < MAX_NUM_ATTRIBUTES; i++) {
         if (attributes_[i].loc == -1) {
             continue;
         }
-        printf("\t\t%s : %i\n", attributes_[i].name.c_str(), attributes_[i].loc);
+        log->Info("\t\t%s : %i\n", attributes_[i].name.c_str(), attributes_[i].loc);
     }
 
     // Print all uniforms
-    printf("\tUNIFORMS\n");
+    log->Info("\tUNIFORMS\n");
     for (int i = 0; i < MAX_NUM_UNIFORMS; i++) {
         if (uniforms_[i].loc == -1) {
             continue;
         }
-        printf("\t\t%s : %i\n", uniforms_[i].name.c_str(), uniforms_[i].loc);
+        log->Info("\t\t%s : %i\n", uniforms_[i].name.c_str(), uniforms_[i].loc);
     }
 
     prog_id_ = (uint32_t)program;
@@ -381,10 +383,10 @@ void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *sta
 }
 #endif
 
-GLuint Ren::LoadShader(GLenum shader_type, const char *source) {
+GLuint Ren::LoadShader(GLenum shader_type, const char *source, ILog *log) {
     GLuint shader = glCreateShader(shader_type);
     if (shader) {
-        glShaderSource(shader, 1, &source, NULL);
+        glShaderSource(shader, 1, &source, nullptr);
         glCompileShader(shader);
         GLint compiled = 0;
         glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
@@ -394,8 +396,8 @@ GLuint Ren::LoadShader(GLenum shader_type, const char *source) {
             if (infoLen) {
                 char *buf = (char *)malloc((size_t)infoLen);
                 if (buf) {
-                    glGetShaderInfoLog(shader, infoLen, NULL, buf);
-                    fprintf(stderr, "Could not compile shader %d: %s", int(shader_type), buf);
+                    glGetShaderInfoLog(shader, infoLen, nullptr, buf);
+                    log->Error("Could not compile shader %d: %s\n", int(shader_type), buf);
                     free(buf);
                 }
                 glDeleteShader(shader);
@@ -404,7 +406,8 @@ GLuint Ren::LoadShader(GLenum shader_type, const char *source) {
             throw std::runtime_error("Error compiling shader!");
         }
     } else {
-        fprintf(stderr, "error");
+        log->Error("glCreateShader failed\n");
+        throw std::runtime_error("Error creating shader!");
     }
 
     GLint info_len = 0;
@@ -413,7 +416,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const char *source) {
     if (info_len) {
         char *buf = (char *)malloc((size_t)info_len);
         glGetShaderInfoLog(shader, info_len, NULL, buf);
-        fprintf(stderr, "%s", buf);
+        log->Error("%s\n", buf);
         free(buf);
     }
 
@@ -421,7 +424,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const char *source) {
 }
 
 #ifndef __ANDROID__
-GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_size) {
+GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_size, ILog *log) {
     GLuint shader = glCreateShader(shader_type);
     if (shader) {
         glShaderBinary(1, &shader, GL_SHADER_BINARY_FORMAT_SPIR_V, data, static_cast<GLsizei>(data_size));
@@ -435,8 +438,8 @@ GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_s
             if (infoLen) {
                 char *buf = (char *)malloc((size_t)infoLen);
                 if (buf) {
-                    glGetShaderInfoLog(shader, infoLen, NULL, buf);
-                    fprintf(stderr, "Could not compile shader %d: %s", int(shader_type), buf);
+                    glGetShaderInfoLog(shader, infoLen, nullptr, buf);
+                    log->Error("Could not compile shader %d: %s\n", int(shader_type), buf);
                     free(buf);
                 }
                 glDeleteShader(shader);
@@ -445,7 +448,8 @@ GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_s
             throw std::runtime_error("Error compiling shader!");
         }
     } else {
-        fprintf(stderr, "error");
+        log->Error("glCreateShader failed\n");
+        throw std::runtime_error("Error creating shader!");
     }
 
     GLint info_len = 0;
@@ -453,8 +457,8 @@ GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_s
 
     if (info_len) {
         char *buf = (char *)malloc((size_t)info_len);
-        glGetShaderInfoLog(shader, info_len, NULL, buf);
-        fprintf(stderr, "%s", buf);
+        glGetShaderInfoLog(shader, info_len, nullptr, buf);
+        log->Error("%s\n", buf);
         free(buf);
     }
 
@@ -464,7 +468,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_s
 
 void Ren::ParseGLSLBindings(const std::string &shader_str, Binding *attr_bindings, int &attr_bindings_count,
                             Binding *uniform_bindings, int &uniform_bindings_count,
-                            Binding *uniform_block_bindings, int &uniform_block_bindings_count) {
+                            Binding *uniform_block_bindings, int &uniform_block_bindings_count, ILog *log) {
     const char *delims = " \r\n\t";
     char const* p = shader_str.c_str() + shader_str.find("/*");
     char const* q = strpbrk(p + 2, delims);
@@ -473,7 +477,7 @@ void Ren::ParseGLSLBindings(const std::string &shader_str, Binding *attr_binding
     Binding *cur_bind_target = nullptr;
     int *cur_bind_count = nullptr;
 
-    for (; p != NULL && q != NULL; q = strpbrk(p, delims)) {
+    for (; p != nullptr && q != nullptr; q = strpbrk(p, delims)) {
         if (p == q) {
             p = q + 1;
             continue;
@@ -497,7 +501,7 @@ void Ren::ParseGLSLBindings(const std::string &shader_str, Binding *attr_binding
             p = q + 1;
             q = strpbrk(p, delims);
             if (*p != ':') {
-                fprintf(stderr, "Error parsing shader!");
+                log->Error("Error parsing shader!");
             }
             p = q + 1;
             q = strpbrk(p, delims);

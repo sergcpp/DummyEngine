@@ -15,7 +15,7 @@ protected:
 
     static_assert(sizeof(T) >= sizeof(uint32_t), "!");
 public:
-    SparseArray(uint32_t initial_capacity = 0)
+    explicit SparseArray(uint32_t initial_capacity = 0)
         : ctrl_(nullptr), data_(nullptr), capacity_(0), size_(0), first_free_(0) {
         if (initial_capacity) {
             reserve(initial_capacity);
@@ -34,13 +34,15 @@ public:
         memcpy(ctrl_, rhs.ctrl_, (capacity_ + 7) / 8);
         
         for (uint32_t i = 0; i < capacity_; i++) {
-            if (ctrl_[i / 8] & (1 << (i % 8))) {
+            if (ctrl_[i / 8] & (1u << (i % 8))) {
                 data_[i] = rhs.data_[i];
             }
         }
     }
 
     SparseArray &operator=(const SparseArray &rhs) {
+        if (this == &rhs) return *this;
+
         clear();
         delete[] ctrl_;
 
@@ -52,10 +54,11 @@ public:
         memcpy(ctrl_, rhs.ctrl_, capacity_);
 
         for (uint32_t i = 0; i < capacity_; i++) {
-            if (ctrl_[i / 8] & (1 << (i % 8))) {
+            if (ctrl_[i / 8] & (1u << (i % 8))) {
                 data_[i] = rhs.data_[i];
             }
         }
+        return *this;
     }
 
     uint32_t size() const { return size_; }
@@ -66,7 +69,7 @@ public:
 
     void clear() {
         for (uint32_t i = 0; i < capacity_ && size_; i++) {
-            if (ctrl_[i / 8] & (1 << (i % 8))) {
+            if (ctrl_[i / 8] & (1u << (i % 8))) {
                 size_--;
                 data_[i].~T();
             }
@@ -102,7 +105,7 @@ public:
 
         // move old data
         for (uint32_t i = 0; i < capacity_; i++) {
-            if (ctrl_[i / 8] & (1 << (i % 8))) {
+            if (ctrl_[i / 8] & (1u << (i % 8))) {
                 T *el = data_ + i;
                 new(el) T(std::move(old_data[i]));
                 old_data[i].~T();
@@ -134,7 +137,7 @@ public:
         T *el = data_ + index;
         new(el) T(args...);
 
-        ctrl_[index / 8] |= (1 << (index % 8));
+        ctrl_[index / 8] |= (1u << (index % 8));
 
         size_++;
         return index;
@@ -148,17 +151,17 @@ public:
         memcpy(&first_free_, data_ + index, sizeof(uint32_t));
 
         data_[index] = el;
-        ctrl_[index / 8] |= (1 << (index % 8));
+        ctrl_[index / 8] |= (1u << (index % 8));
 
         size_++;
         return index;
     }
 
     void erase(uint32_t index) {
-        assert((ctrl_[index / 8] & (1 << (index % 8))) && "Invalid index!");
+        assert((ctrl_[index / 8] & (1u << (index % 8))) && "Invalid index!");
 
         data_[index].~T();
-        ctrl_[index / 8] &= ~(1 << (index % 8));
+        ctrl_[index / 8] &= ~(1u << (index % 8));
 
         memcpy(data_ + index, &first_free_, sizeof(uint32_t));
         first_free_ = index;
@@ -166,17 +169,17 @@ public:
     }
 
     T &at(uint32_t index) {
-        assert((ctrl_[index / 8] & (1 << (index % 8))) && "Invalid index!");
+        assert((ctrl_[index / 8] & (1u << (index % 8))) && "Invalid index!");
         return data_[index];
     }
 
     const T &at(uint32_t index) const {
-        assert((ctrl_[index / 8] & (1 << (index % 8))) && "Invalid index!");
+        assert((ctrl_[index / 8] & (1u << (index % 8))) && "Invalid index!");
         return data_[index];
     }
 
     T &operator[](uint32_t index) {
-        assert((ctrl_[index / 8] & (1 << (index % 8))) && "Invalid index!");
+        assert((ctrl_[index / 8] & (1u << (index % 8))) && "Invalid index!");
         return data_[index];
     }
 
@@ -186,7 +189,7 @@ public:
     }
 
     T *GetOrNull(uint32_t index) {
-        if (index < size_ && (ctrl_[index / 8] & (1 << (index % 8)))) {
+        if (index < size_ && (ctrl_[index / 8] & (1u << (index % 8)))) {
             return &data_[index];
         } else {
             return nullptr;
@@ -194,7 +197,7 @@ public:
     }
 
     const T *GetOrNull(uint32_t index) const {
-        if (index < size_ && (ctrl_[index / 8] & (1 << (index % 8)))) {
+        if (index < size_ && (ctrl_[index / 8] & (1u << (index % 8)))) {
             return &data_[index];
         } else {
             return nullptr;
@@ -267,6 +270,7 @@ public:
             index_ = container_->NextOccupied(index_);
             return *this;
         }
+
         SparseArrayConstIterator operator++(int) {
             SparseArrayConstIterator tmp(*this);
             ++(*this);
@@ -302,7 +306,7 @@ public:
 
     iterator begin() {
         for (uint32_t i = 0; i < capacity_; i++) {
-            if (ctrl_[i / 8] & (1 << (i % 8))) {
+            if (ctrl_[i / 8] & (1u << (i % 8))) {
                 return iterator(this, i);
             }
         }
@@ -311,7 +315,7 @@ public:
 
     const_iterator cbegin() const {
         for (uint32_t i = 0; i < capacity_; i++) {
-            if (ctrl_[i / 8] & (1 << (i % 8))) {
+            if (ctrl_[i / 8] & (1u << (i % 8))) {
                 return const_iterator(this, i);
             }
         }
@@ -336,9 +340,9 @@ public:
 
 private:
     uint32_t NextOccupied(uint32_t index) const {
-        assert((ctrl_[index / 8] & (1 << (index % 8))) && "Invalid index!");
+        assert((ctrl_[index / 8] & (1u << (index % 8))) && "Invalid index!");
         for (uint32_t i = index + 1; i < capacity_; i++) {
-            if (ctrl_[i / 8] & (1 << (i % 8))) {
+            if (ctrl_[i / 8] & (1u << (i % 8))) {
                 return i;
             }
         }

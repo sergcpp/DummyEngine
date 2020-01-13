@@ -13,6 +13,8 @@
 #include "MVec.h"
 
 namespace Ren {
+class ILog;
+
 enum eMaterialFlags {
     AlphaTest   = (1u << 0u),
     AlphaBlend  = (1u << 1u),
@@ -38,11 +40,11 @@ class Material : public RefCounter {
     String          name_;
 
     void InitFromTXT(const char *mat_src, eMatLoadStatus *status, const program_load_callback &on_prog_load,
-                     const texture_load_callback &on_tex_load);
+                     const texture_load_callback &on_tex_load, ILog *log);
 public:
     Material() = default;
     Material(const char *name, const char *mat_src, eMatLoadStatus *status,
-             const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load);
+             const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log);
 
     Material(const Mesh &rhs) = delete;
     Material(Material &&rhs) noexcept {
@@ -72,7 +74,7 @@ public:
     }
 
     void Init(const char *mat_src, eMatLoadStatus *status,
-              const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load);
+              const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log);
 };
 
 //typedef StorageRef<Material> MaterialRef;

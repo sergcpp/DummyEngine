@@ -9,6 +9,8 @@
 #include "String.h"
 
 namespace Ren {
+class ILog;
+
 enum eMeshFlags { MeshHasAlpha = 1 };
 
 struct TriGroup {
@@ -17,13 +19,13 @@ struct TriGroup {
     MaterialRef mat;
     uint32_t    flags = 0;
 
-    TriGroup() {}
+    TriGroup() = default;
     TriGroup(const TriGroup &rhs) = delete;
-    TriGroup(TriGroup &&rhs) {
+    TriGroup(TriGroup &&rhs) noexcept {
         (*this) = std::move(rhs);
     }
     TriGroup &operator=(const TriGroup &rhs) = delete;
-    TriGroup &operator=(TriGroup &&rhs) {
+    TriGroup &operator=(TriGroup &&rhs) noexcept {
         offset = rhs.offset;
         rhs.offset = -1;
         num_indices = rhs.num_indices;
@@ -48,7 +50,7 @@ struct BufferRange {
     }
 
     BufferRange(const BufferRange &rhs) = delete;
-    BufferRange(BufferRange &&rhs) {
+    BufferRange(BufferRange &&rhs) noexcept {
         buf = std::move(rhs.buf);
         offset = rhs.offset;
         rhs.offset = 0;
@@ -57,7 +59,7 @@ struct BufferRange {
     }
 
     BufferRange &operator=(const BufferRange &rhs) = delete;
-    BufferRange &operator=(BufferRange &&rhs) {
+    BufferRange &operator=(BufferRange &&rhs) noexcept {
         Release();
 
         buf = std::move(rhs.buf);
@@ -99,19 +101,22 @@ class Mesh : public RefCounter {
     Skeleton        skel_;
 
     // simple static mesh with normals
-    void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf);
+    void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load,
+            BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, ILog *log);
     // simple mesh with tex index per vertex
-    void InitMeshTerrain(std::istream &data, const material_load_callback &on_mat_load, BufferRef &vertex_buf, BufferRef &index_buf);
+    void InitMeshTerrain(std::istream &data, const material_load_callback &on_mat_load,
+            BufferRef &vertex_buf, BufferRef &index_buf, ILog *log);
     // mesh with 4 bone weights per vertex
-    void InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load, BufferRef &skin_vertex_buf, BufferRef &index_buf);
+    void InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load,
+            BufferRef &skin_vertex_buf, BufferRef &index_buf, ILog *log);
 
     // split skeletal mesh into chunks to fit uniforms limit in shader
-    void SplitMesh(int bones_limit);
+    void SplitMesh(int bones_limit, ILog *log);
 public:
     Mesh() = default;
     Mesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
          BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
-         eMeshLoadStatus *load_status);
+         eMeshLoadStatus *load_status, ILog *log);
 
     Mesh(const Mesh &rhs) = delete;
     Mesh(Mesh &&rhs) = default;
@@ -183,7 +188,7 @@ public:
 
     void Init(std::istream *data, const material_load_callback &on_mat_load,
               BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
-              eMeshLoadStatus *load_status);
+              eMeshLoadStatus *load_status, ILog *log);
 
     static int max_gpu_bones;
 };

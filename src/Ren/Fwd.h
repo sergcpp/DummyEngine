@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Log.h"
 #include "Storage.h"
 
 namespace Ren {

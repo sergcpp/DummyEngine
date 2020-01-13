@@ -15,6 +15,8 @@
 #endif
 
 namespace Ren {
+class ILog;
+
 const int MAX_NUM_ATTRIBUTES = 32;
 const int MAX_NUM_UNIFORMS = 32;
 const int MAX_NUM_UNIFORM_BLOCKS = 16;
@@ -50,12 +52,12 @@ class Program : public RefCounter {
         const int cs_data_size;
     };
 
-    void InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *status);
+    void InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *status, ILog *log);
 #ifndef __ANDROID__
-    void InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *status);
+    void InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *status, ILog *log);
 #endif
 public:
-    Program() {}
+    Program() = default;
     Program(const char *name, uint32_t prog_id, const Attribute *attrs, const Uniform *unifs, const UniformBlock *unif_blocks) : prog_id_(prog_id) {
         for (int i = 0; i < MAX_NUM_ATTRIBUTES; i++) {
             if (attrs[i].loc == -1) break;
@@ -72,20 +74,21 @@ public:
         ready_ = true;
         name_ = String{ name };
     }
-    Program(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status = nullptr);
-    Program(const char *name, const char *cs_source, eProgLoadStatus *status = nullptr);
+    Program(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status, ILog *log);
+    Program(const char *name, const char *cs_source, eProgLoadStatus *status, ILog *log);
 #ifndef __ANDROID__
-    Program(const char *name, const uint8_t *vs_data, const int vs_data_size, const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status = nullptr);
-    Program(const char *name, const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *status = nullptr);
+    Program(const char *name, const uint8_t *vs_data, int vs_data_size,
+            const uint8_t *fs_data, int fs_data_size, eProgLoadStatus *status, ILog *log);
+    Program(const char *name, const uint8_t *cs_data, int cs_data_size, eProgLoadStatus *status, ILog *log);
 #endif
     Program(const Program &rhs) = delete;
-    Program(Program &&rhs) {
+    Program(Program &&rhs) noexcept {
         *this = std::move(rhs);
     }
     ~Program();
 
     Program &operator=(const Program &rhs) = delete;
-    Program &operator=(Program &&rhs);
+    Program &operator=(Program &&rhs) noexcept;
 
     uint32_t prog_id() const {
         return prog_id_;
@@ -136,11 +139,11 @@ public:
         return uniform_blocks_[0];
     }
 
-    void Init(const char *vs_source, const char *fs_source, eProgLoadStatus *status);
-    void Init(const char *cs_source, eProgLoadStatus *status);
+    void Init(const char *vs_source, const char *fs_source, eProgLoadStatus *status, ILog *log);
+    void Init(const char *cs_source, eProgLoadStatus *status, ILog *log);
 #ifndef __ANDROID__
-    void Init(const uint8_t *vs_data, const int vs_data_size, const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status);
-    void Init(const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *status);
+    void Init(const uint8_t *vs_data, int vs_data_size, const uint8_t *fs_data, int fs_data_size, eProgLoadStatus *status, ILog *log);
+    void Init(const uint8_t *cs_data, int cs_data_size, eProgLoadStatus *status, ILog *log);
 #endif
 };
 

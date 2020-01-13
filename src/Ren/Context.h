@@ -21,6 +21,7 @@ const int
 class Context : public RenderThread {
 protected:
     int                     w_ = 0, h_ = 0;
+    ILog                    *log_ = nullptr;
 
     MeshStorage             meshes_;
     MaterialStorage         materials_;
@@ -45,7 +46,7 @@ protected:
 public:
     ~Context();
 
-    void Init(int w, int h);
+    void Init(int w, int h, ILog *log);
 
     int w() const {
         return w_;
@@ -53,6 +54,8 @@ public:
     int h() const {
         return h_;
     }
+
+    ILog *log() const { return log_; }
 
     BufferRef default_vertex_buf1() const { return default_vertex_buf1_; }
     BufferRef default_vertex_buf2() const { return default_vertex_buf2_; }
@@ -64,8 +67,8 @@ public:
     void Resize(int w, int h);
 
     /*** Mesh ***/
-    MeshRef LoadMesh(const char *name, std::istream *data, material_load_callback on_mat_load, eMeshLoadStatus *load_status);
-    MeshRef LoadMesh(const char *name, std::istream *data, material_load_callback on_mat_load,
+    MeshRef LoadMesh(const char *name, std::istream *data, const material_load_callback &on_mat_load, eMeshLoadStatus *load_status);
+    MeshRef LoadMesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
                      BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
                      eMeshLoadStatus *load_status);
 
@@ -132,6 +135,6 @@ public:
 };
 
 #if defined(USE_GL_RENDER)
-void CheckError(const char *op);
+void CheckError(const char *op, ILog *log);
 #endif
 }

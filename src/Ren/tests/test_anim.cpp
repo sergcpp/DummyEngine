@@ -74,6 +74,7 @@ class AnimTest : public Ren::Context {
     SDL_Window *window_;
     void *gl_ctx_;
 #endif
+    Ren::LogNull log_;
 public:
     AnimTest() {
 #if defined(_WIN32)
@@ -131,7 +132,7 @@ public:
         window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 256, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
         gl_ctx_ = SDL_GL_CreateContext(window_);
 #endif
-        Context::Init(256, 256);
+        Context::Init(256, 256, &log_);
     }
 
     ~AnimTest() {
@@ -170,7 +171,8 @@ void test_anim() {
         std::istream in(&sbuf);
 
         Ren::Context ctx;
-        ctx.Init(1, 1);
+        Ren::LogNull log;
+        ctx.Init(1, 1, &log);
         Ren::AnimSeqRef anim_ref = ctx.LoadAnimSequence("anim", in);
 
         require(anim_ref->act_name() == "ArmatureAction");

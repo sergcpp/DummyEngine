@@ -11,14 +11,15 @@ Ren::Context::~Context() {
     ReleaseAll();
 }
 
-void Ren::Context::Init(int w, int h) {
+void Ren::Context::Init(int w, int h, ILog *log) {
     InitGLExtentions();
 
     w_ = w;
     h_ = h;
+    log_ = log;
 
-    printf("===========================================\n");
-    printf("Device info:\n");
+    log_->Info("===========================================\n");
+    log_->Info("Device info:\n");
 
     // print device info
 #if !defined(EMSCRIPTEN) && !defined(__ANDROID__)
@@ -26,21 +27,21 @@ void Ren::Context::Init(int w, int h) {
     glGetIntegerv(GL_MAJOR_VERSION, &gl_major_version);
     GLint gl_minor_version;
     glGetIntegerv(GL_MINOR_VERSION, &gl_minor_version);
-    printf("\tOpenGL version\t: %i.%i\n", int(gl_major_version), int(gl_minor_version));
+    log_->Info("\tOpenGL version\t: %i.%i\n", int(gl_major_version), int(gl_minor_version));
 #endif
 
-    printf("\tVendor\t\t: %s\n", glGetString(GL_VENDOR));
-    printf("\tRenderer\t: %s\n", glGetString(GL_RENDERER));
-    printf("\tGLSL version\t: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    log_->Info("\tVendor\t\t: %s\n", glGetString(GL_VENDOR));
+    log_->Info("\tRenderer\t: %s\n", glGetString(GL_RENDERER));
+    log_->Info("\tGLSL version\t: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-    printf("Capabilities:\n");
+    log_->Info("Capabilities:\n");
     
     // determine if anisotropy supported
     if (IsExtensionSupported("GL_EXT_texture_filter_anisotropic")) {
         GLfloat f;
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &f);
         capabilities.max_anisotropy = f;
-        printf("\tAnisotropy\t: %f\n", capabilities.max_anisotropy);
+        log_->Info("\tAnisotropy\t: %f\n", capabilities.max_anisotropy);
     }
     
     {   // how many uniform vec4 vectors can be used
@@ -49,33 +50,33 @@ void Ren::Context::Init(int w, int h) {
         i /= 4;
         if (i == 0) i = 256;
         capabilities.max_uniform_vec4 = i;
-        printf("\tMax uniforms\t: %i\n", capabilities.max_uniform_vec4);
+        log_->Info("\tMax uniforms\t: %i\n", capabilities.max_uniform_vec4);
     }
 
     {
         GLint i = 0;
         glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &i);
         capabilities.max_vertex_input = i;
-        printf("\tMax vertex attribs\t: %i\n", capabilities.max_vertex_input);
+        log_->Info("\tMax vertex attribs\t: %i\n", capabilities.max_vertex_input);
 
         glGetIntegerv(GL_MAX_VERTEX_OUTPUT_COMPONENTS, &i);
         i /= 4;
         capabilities.max_vertex_output = i;
-        printf("\tMax vertex output\t: %i\n", capabilities.max_vertex_output);
+        log_->Info("\tMax vertex output\t: %i\n", capabilities.max_vertex_output);
     }
 
     // how many bones(mat4) can be used at time
     Mesh::max_gpu_bones = capabilities.max_uniform_vec4 / 8;
-    printf("\tBones per pass\t: %i\n", Mesh::max_gpu_bones);
+    log_->Info("\tBones per pass\t: %i\n", Mesh::max_gpu_bones);
     char buff[16];
     sprintf(buff, "%i", Mesh::max_gpu_bones);
     /*glsl_defines_ += "#define MAX_GPU_BONES ";
     glsl_defines_ += buff;
     glsl_defines_ += "\r\n";*/
 
-    printf("===========================================\n\n");
+    log_->Info("===========================================\n\n");
 
-#ifndef NDEBUG
+#if !defined(NDEBUG)
     if (IsExtensionSupported("GL_KHR_debug") || IsExtensionSupported("ARB_debug_output") ||
         IsExtensionSupported("AMD_debug_output")) {
 
@@ -87,13 +88,14 @@ void Ren::Context::Init(int w, int h) {
                                 const GLchar *message,
                                 const void *userParam) {
             if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
-                printf("%s\n", message);
+                auto *self = (Context *)userParam;
+                self->log_->Info("%s\n", message);
             }
         };
 
         glEnable(GL_DEBUG_OUTPUT);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageCallback(gl_debug_proc, nullptr);
+        glDebugMessageCallback(gl_debug_proc, this);
     }
 #endif
 
@@ -133,12 +135,12 @@ Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *vs_s
     }
 
     if (!ref) {
-        ref = programs_.Add(name, vs_source, fs_source, load_status);
+        ref = programs_.Add(name, vs_source, fs_source, load_status, log_);
     } else {
         if (ref->ready()) {
             if (load_status) *load_status = ProgFound;
         } else if (!ref->ready() && vs_source && fs_source) {
-            ref->Init(vs_source, fs_source, load_status);
+            ref->Init(vs_source, fs_source, load_status, log_);
         }
     }
 
@@ -156,12 +158,12 @@ Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *cs_s
     }
 
     if (!ref) {
-        ref = programs_.Add(name, cs_source, load_status);
+        ref = programs_.Add(name, cs_source, load_status, log_);
     } else {
         if (ref->ready()) {
             if (load_status) *load_status = ProgFound;
         } else if (!ref->ready() && cs_source) {
-            ref->Init(cs_source, load_status);
+            ref->Init(cs_source, load_status, log_);
         }
     }
 
@@ -176,12 +178,12 @@ Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *
     assert(capabilities.gl_spirv);
 
     if (!ref) {
-        ref = programs_.Add(name, vs_data, vs_data_size, fs_data, fs_data_size, load_status);
+        ref = programs_.Add(name, vs_data, vs_data_size, fs_data, fs_data_size, load_status, log_);
     } else {
         if (ref->ready()) {
             if (load_status) *load_status = ProgFound;
         } else if (!ref->ready() && vs_data && fs_data) {
-            ref->Init(vs_data, vs_data_size, fs_data, fs_data_size, load_status);
+            ref->Init(vs_data, vs_data_size, fs_data, fs_data_size, load_status, log_);
         }
     }
 
@@ -194,12 +196,12 @@ Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *
     assert(capabilities.gl_spirv);
 
     if (!ref) {
-        ref = programs_.Add(name, cs_data, cs_data_size, load_status);
+        ref = programs_.Add(name, cs_data, cs_data_size, load_status, log_);
     } else {
         if (ref->ready()) {
             if (load_status) *load_status = ProgFound;
         } else if (!ref->ready() && cs_data) {
-            ref->Init(cs_data, cs_data_size, load_status);
+            ref->Init(cs_data, cs_data_size, load_status, log_);
         }
     }
 
@@ -221,9 +223,9 @@ bool Ren::Context::IsExtensionSupported(const char *ext) {
     return false;
 }
 
-void Ren::CheckError(const char *op) {
+void Ren::CheckError(const char *op, ILog *log) {
     for (GLint error = glGetError(); error; error = glGetError()) {
-        fprintf(stderr, "after %s glError (0x%x)\n", op, error);
+        log->Error("after %s glError (0x%x)\n", op, error);
     }
 }
 
