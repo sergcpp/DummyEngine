@@ -416,7 +416,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const char *source, ILog *log) {
     if (info_len) {
         char *buf = (char *)malloc((size_t)info_len);
         glGetShaderInfoLog(shader, info_len, NULL, buf);
-        log->Error("%s\n", buf);
+        log->Info("%s", buf);
         free(buf);
     }
 

@@ -76,11 +76,11 @@ struct DDSHeader {
 };
 static_assert(sizeof(DDSHeader) == 128, "!");
 
-extern const uint8_t _blank_DXT5_block_16x16[];
-extern const int _blank_DXT5_block_16x16_len;
+extern const uint8_t _blank_DXT5_block_4x4[];
+extern const int _blank_DXT5_block_4x4_len;
 
-extern const uint8_t _blank_ASTC_block_16x16_8bb[];
-extern const int _blank_ASTC_block_16x16_8bb_len;
+extern const uint8_t _blank_ASTC_block_4x4[];
+extern const int _blank_ASTC_block_4x4_len;
 
 int CalcMipCount(int w, int h, int min_res, eTexFilter filter);
 }

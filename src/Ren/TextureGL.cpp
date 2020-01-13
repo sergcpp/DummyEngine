@@ -590,7 +590,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], con
         int data_len = size[i] - int(sizeof(DDSHeader));
 
         for (uint32_t j = 0; j < header.dwMipMapCount; j++) {
-            int width = std::max(int(header.dwWidth >> j), 1), height = std::max(int(header.dwHeight >> j), 1);
+            const int width = std::max(int(header.dwWidth >> j), 1), height = std::max(int(header.dwHeight >> j), 1);
 
             GLenum format = 0;
             int block_size = 0;
@@ -615,7 +615,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], con
 
             const int image_len = ((width + 3) / 4) * ((height + 3) / 4) * block_size;
             if (image_len > data_len) {
-                // TODO: report error in log
+                log->Error("Insufficient data length, bytes left %i, expected %i\n", data_len, image_len);
                 break;
             }
 
