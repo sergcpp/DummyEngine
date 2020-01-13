@@ -6,11 +6,10 @@ int main(int argc, char *argv[]) {
 }
 
 // TODO:
-// scene editing
+// more precise time in log
+// start with scene editing
 // use direct access extension
 // add assetstream
-// fix Gui tests
-// get rid of SDL in test applications (on windows at least)
 // get rid of SDL in Modl app
 // make full screen quad passes differently
 // refactor repetitive things in shaders
