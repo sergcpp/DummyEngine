@@ -625,7 +625,7 @@ void Ren::Mesh::SplitMesh(int bones_limit, ILog *log) {
         }
     }
 
-    log->Info("%li\n", clock() - t1);
+    log->Info("%li", clock() - t1);
     t1 = clock();
 
     std::vector<unsigned short> new_indices;
@@ -668,7 +668,7 @@ void Ren::Mesh::SplitMesh(int bones_limit, ILog *log) {
 
     }
     new_indices.shrink_to_fit();
-    log->Info("%li\n", clock() - t1);
+    log->Info("%li", clock() - t1);
     t1 = clock();
 
     clock_t find_time = 0;
@@ -715,15 +715,15 @@ void Ren::Mesh::SplitMesh(int bones_limit, ILog *log) {
         }
     }
 
-    log->Info("---------------------------\n");
+    log->Info("---------------------------");
     for (BoneGroup &g : skel_.bone_groups) {
-        log->Info("%u\n", (unsigned int)g.strip_ids.size() / 3);
+        log->Info("%u", (unsigned int)g.strip_ids.size() / 3);
     }
-    log->Info("---------------------------\n");
+    log->Info("---------------------------");
 
-    log->Info("%li\n", clock() - t1);
-    log->Info("find_time = %li\n", find_time);
-    log->Info("after bone broups2\n");
+    log->Info("%li", clock() - t1);
+    log->Info("find_time = %li", find_time);
+    log->Info("after bone broups2");
 
     indices_buf_.size = (uint32_t)(new_indices.size() * sizeof(unsigned short));
     indices_.reset(new char[indices_buf_.size]);

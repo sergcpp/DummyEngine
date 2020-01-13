@@ -18,8 +18,8 @@ void Ren::Context::Init(int w, int h, ILog *log) {
     h_ = h;
     log_ = log;
 
-    log_->Info("===========================================\n");
-    log_->Info("Device info:\n");
+    log_->Info("===========================================");
+    log_->Info("Device info:");
 
     // print device info
 #if !defined(EMSCRIPTEN) && !defined(__ANDROID__)
@@ -27,21 +27,21 @@ void Ren::Context::Init(int w, int h, ILog *log) {
     glGetIntegerv(GL_MAJOR_VERSION, &gl_major_version);
     GLint gl_minor_version;
     glGetIntegerv(GL_MINOR_VERSION, &gl_minor_version);
-    log_->Info("\tOpenGL version\t: %i.%i\n", int(gl_major_version), int(gl_minor_version));
+    log_->Info("\tOpenGL version\t: %i.%i", int(gl_major_version), int(gl_minor_version));
 #endif
 
-    log_->Info("\tVendor\t\t: %s\n", glGetString(GL_VENDOR));
-    log_->Info("\tRenderer\t: %s\n", glGetString(GL_RENDERER));
-    log_->Info("\tGLSL version\t: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    log_->Info("\tVendor\t\t: %s", glGetString(GL_VENDOR));
+    log_->Info("\tRenderer\t: %s", glGetString(GL_RENDERER));
+    log_->Info("\tGLSL version\t: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-    log_->Info("Capabilities:\n");
+    log_->Info("Capabilities:");
     
     // determine if anisotropy supported
     if (IsExtensionSupported("GL_EXT_texture_filter_anisotropic")) {
         GLfloat f;
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &f);
         capabilities.max_anisotropy = f;
-        log_->Info("\tAnisotropy\t: %f\n", capabilities.max_anisotropy);
+        log_->Info("\tAnisotropy\t: %f", capabilities.max_anisotropy);
     }
     
     {   // how many uniform vec4 vectors can be used
@@ -50,31 +50,31 @@ void Ren::Context::Init(int w, int h, ILog *log) {
         i /= 4;
         if (i == 0) i = 256;
         capabilities.max_uniform_vec4 = i;
-        log_->Info("\tMax uniforms\t: %i\n", capabilities.max_uniform_vec4);
+        log_->Info("\tMax uniforms\t: %i", capabilities.max_uniform_vec4);
     }
 
     {
         GLint i = 0;
         glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &i);
         capabilities.max_vertex_input = i;
-        log_->Info("\tMax vertex attribs\t: %i\n", capabilities.max_vertex_input);
+        log_->Info("\tMax vertex attribs\t: %i", capabilities.max_vertex_input);
 
         glGetIntegerv(GL_MAX_VERTEX_OUTPUT_COMPONENTS, &i);
         i /= 4;
         capabilities.max_vertex_output = i;
-        log_->Info("\tMax vertex output\t: %i\n", capabilities.max_vertex_output);
+        log_->Info("\tMax vertex output\t: %i", capabilities.max_vertex_output);
     }
 
     // how many bones(mat4) can be used at time
     Mesh::max_gpu_bones = capabilities.max_uniform_vec4 / 8;
-    log_->Info("\tBones per pass\t: %i\n", Mesh::max_gpu_bones);
+    log_->Info("\tBones per pass\t: %i", Mesh::max_gpu_bones);
     char buff[16];
     sprintf(buff, "%i", Mesh::max_gpu_bones);
     /*glsl_defines_ += "#define MAX_GPU_BONES ";
     glsl_defines_ += buff;
     glsl_defines_ += "\r\n";*/
 
-    log_->Info("===========================================\n\n");
+    log_->Info("===========================================");
 
 #if !defined(NDEBUG)
     if (IsExtensionSupported("GL_KHR_debug") || IsExtensionSupported("ARB_debug_output") ||
@@ -89,7 +89,7 @@ void Ren::Context::Init(int w, int h, ILog *log) {
                                 const void *userParam) {
             if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
                 auto *self = (Context *)userParam;
-                self->log_->Info("%s\n", message);
+                self->log_->Info("%s", message);
             }
         };
 
@@ -225,7 +225,7 @@ bool Ren::Context::IsExtensionSupported(const char *ext) {
 
 void Ren::CheckError(const char *op, ILog *log) {
     for (GLint error = glGetError(); error; error = glGetError()) {
-        log->Error("after %s glError (0x%x)\n", op, error);
+        log->Error("after %s glError (0x%x)", op, error);
     }
 }
 

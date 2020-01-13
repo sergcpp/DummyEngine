@@ -340,7 +340,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2D
     for (uint32_t i = 0; i < header.dwMipMapCount; i++) {
         const int len = ((w + 3) / 4) * ((h + 3) / 4) * block_size;
         if (len > bytes_left) {
-            log->Error("Insufficient data length, bytes left %i, expected %i\n", bytes_left, len);
+            log->Error("Insufficient data length, bytes left %i, expected %i", bytes_left, len);
             return;
         }
 
@@ -413,14 +413,14 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2D
 
     for (int i = 0; i < (int)header.mipmap_levels_count; i++) {
         if (data_offset + (int)sizeof(uint32_t) > size) {
-            log->Error("Insufficient data length, bytes left %i, expected %i\n", size - data_offset, sizeof(uint32_t));
+            log->Error("Insufficient data length, bytes left %i, expected %i", size - data_offset, sizeof(uint32_t));
             break;
         }
 
         uint32_t img_size;
         memcpy(&img_size, &_data[data_offset], sizeof(uint32_t));
         if (data_offset + (int)img_size > size) {
-            log->Error("Insufficient data length, bytes left %i, expected %i\n", size - data_offset, img_size);
+            log->Error("Insufficient data length, bytes left %i, expected %i", size - data_offset, img_size);
             break;
         }
 
@@ -609,13 +609,13 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], con
                 block_size = 16;
                 break;
             default:
-                log->Error("Unknown DDS format %i\n", int((header.sPixelFormat.dwFourCC >> 24u) - '0'));
+                log->Error("Unknown DDS format %i", int((header.sPixelFormat.dwFourCC >> 24u) - '0'));
                 break;
             }
 
             const int image_len = ((width + 3) / 4) * ((height + 3) / 4) * block_size;
             if (image_len > data_len) {
-                log->Error("Insufficient data length, bytes left %i, expected %i\n", data_len, image_len);
+                log->Error("Insufficient data length, bytes left %i, expected %i", data_len, image_len);
                 break;
             }
 
@@ -665,15 +665,15 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], con
 
         // make sure all images have same properties
         if (this_header.pixel_width != first_header.pixel_width) {
-            log->Error("Image width mismatch %i, expected %i\n", (int)this_header.pixel_width, (int)first_header.pixel_width);
+            log->Error("Image width mismatch %i, expected %i", (int)this_header.pixel_width, (int)first_header.pixel_width);
             continue;
         }
         if (this_header.pixel_height != first_header.pixel_height) {
-            log->Error("Image height mismatch %i, expected %i\n", (int)this_header.pixel_height, (int)first_header.pixel_height);
+            log->Error("Image height mismatch %i, expected %i", (int)this_header.pixel_height, (int)first_header.pixel_height);
             continue;
         }
         if (this_header.gl_internal_format != first_header.gl_internal_format) {
-            log->Error("Internal format mismatch %i, expected %i\n", (int)this_header.gl_internal_format, (int)first_header.gl_internal_format);
+            log->Error("Internal format mismatch %i, expected %i", (int)this_header.gl_internal_format, (int)first_header.gl_internal_format);
             continue;
         }
 #endif

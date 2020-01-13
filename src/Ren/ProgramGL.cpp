@@ -132,7 +132,7 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
                     char *buf = (char *)malloc((size_t)buf_len);
                     if (buf) {
                         glGetProgramInfoLog(program, buf_len, nullptr, buf);
-                        log->Error("Could not link program: %s\n", buf);
+                        log->Error("Could not link program: %s", buf);
                         free(buf);
                         throw;
                     }
@@ -141,7 +141,7 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
                 program = 0;
             }
         } else {
-            log->Error("glCreateProgram failed\n");
+            log->Error("glCreateProgram failed");
             throw std::runtime_error("Program creation error!");
         }
 
@@ -154,7 +154,7 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
 
         GLuint c_shader = LoadShader(GL_COMPUTE_SHADER, cs_source_str.c_str(), log);
         if (!c_shader) {
-            log->Error("ComputeShader %s error\n", name_.c_str());
+            log->Error("ComputeShader %s error", name_.c_str());
         }
 
         program = glCreateProgram();
@@ -170,7 +170,7 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
                     char *buf = (char *)malloc((size_t)buf_len);
                     if (buf) {
                         glGetProgramInfoLog(program, buf_len, nullptr, buf);
-                        log->Error( "Could not link program: %s\n", buf);
+                        log->Error( "Could not link program: %s", buf);
                         free(buf);
                         throw;
                     }
@@ -179,7 +179,7 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
                 program = 0;
             }
         } else {
-            log->Error("glCreateProgram failed\n");
+            log->Error("glCreateProgram failed");
             throw std::runtime_error("Program creation error!");
         }
 
@@ -241,15 +241,15 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
         }
     }
 
-    log->Info("PROGRAM %s\n", name_.c_str());
+    log->Info("PROGRAM %s", name_.c_str());
 
     // Print all attributes
-    log->Info("\tATTRIBUTES\n");
+    log->Info("\tATTRIBUTES");
     for (int i = 0; i < MAX_NUM_ATTRIBUTES; i++) {
         if (attributes_[i].loc == -1) {
             continue;
         }
-        log->Info("\t\t%s : %i\n", attributes_[i].name.c_str(), attributes_[i].loc);
+        log->Info("\t\t%s : %i", attributes_[i].name.c_str(), attributes_[i].loc);
     }
 
     // Enumerate rest of uniforms
@@ -278,12 +278,12 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
     }
 
     // Print all uniforms
-    log->Info("\tUNIFORMS\n");
+    log->Info("\tUNIFORMS");
     for (int i = 0; i < MAX_NUM_UNIFORMS; i++) {
         if (uniforms_[i].loc == -1) {
             continue;
         }
-        log->Info("\t\t%s : %i\n", uniforms_[i].name.c_str(), uniforms_[i].loc);
+        log->Info("\t\t%s : %i", uniforms_[i].name.c_str(), uniforms_[i].loc);
     }
 
     prog_id_ = (uint32_t)program;
@@ -335,7 +335,7 @@ void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *sta
                 program = 0;
             }
         } else {
-            log->Error("glCreateProgram failed\n");
+            log->Error("glCreateProgram failed");
             throw std::runtime_error("Program creation error!");
         }
     } else if (shaders.cs_data) {
@@ -357,24 +357,24 @@ void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *sta
         uniforms_[i].loc = i;
     }
 
-    log->Info("PROGRAM %s\n", name_.c_str());
+    log->Info("PROGRAM %s", name_.c_str());
 
     // Print all attributes
-    log->Info("\tATTRIBUTES\n");
+    log->Info("\tATTRIBUTES");
     for (int i = 0; i < MAX_NUM_ATTRIBUTES; i++) {
         if (attributes_[i].loc == -1) {
             continue;
         }
-        log->Info("\t\t%s : %i\n", attributes_[i].name.c_str(), attributes_[i].loc);
+        log->Info("\t\t%s : %i", attributes_[i].name.c_str(), attributes_[i].loc);
     }
 
     // Print all uniforms
-    log->Info("\tUNIFORMS\n");
+    log->Info("\tUNIFORMS");
     for (int i = 0; i < MAX_NUM_UNIFORMS; i++) {
         if (uniforms_[i].loc == -1) {
             continue;
         }
-        log->Info("\t\t%s : %i\n", uniforms_[i].name.c_str(), uniforms_[i].loc);
+        log->Info("\t\t%s : %i", uniforms_[i].name.c_str(), uniforms_[i].loc);
     }
 
     prog_id_ = (uint32_t)program;
@@ -397,7 +397,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const char *source, ILog *log) {
                 char *buf = (char *)malloc((size_t)infoLen);
                 if (buf) {
                     glGetShaderInfoLog(shader, infoLen, nullptr, buf);
-                    log->Error("Could not compile shader %d: %s\n", int(shader_type), buf);
+                    log->Error("Could not compile shader %d: %s", int(shader_type), buf);
                     free(buf);
                 }
                 glDeleteShader(shader);
@@ -406,7 +406,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const char *source, ILog *log) {
             throw std::runtime_error("Error compiling shader!");
         }
     } else {
-        log->Error("glCreateShader failed\n");
+        log->Error("glCreateShader failed");
         throw std::runtime_error("Error creating shader!");
     }
 
@@ -439,7 +439,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_s
                 char *buf = (char *)malloc((size_t)infoLen);
                 if (buf) {
                     glGetShaderInfoLog(shader, infoLen, nullptr, buf);
-                    log->Error("Could not compile shader %d: %s\n", int(shader_type), buf);
+                    log->Error("Could not compile shader %d: %s", int(shader_type), buf);
                     free(buf);
                 }
                 glDeleteShader(shader);
@@ -448,7 +448,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_s
             throw std::runtime_error("Error compiling shader!");
         }
     } else {
-        log->Error("glCreateShader failed\n");
+        log->Error("glCreateShader failed");
         throw std::runtime_error("Error creating shader!");
     }
 
@@ -458,7 +458,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_s
     if (info_len) {
         char *buf = (char *)malloc((size_t)info_len);
         glGetShaderInfoLog(shader, info_len, nullptr, buf);
-        log->Error("%s\n", buf);
+        log->Error("%s", buf);
         free(buf);
     }
 

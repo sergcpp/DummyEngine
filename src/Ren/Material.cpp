@@ -91,7 +91,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             } else if (flag == "alpha_blend") {
                 flags_ |= AlphaBlend;
             } else {
-                log->Error("Unknown flag %s\n", flag.c_str());
+                log->Error("Unknown flag %s", flag.c_str());
             }
         } else if (item == "texture:") {
             p = q + 1;

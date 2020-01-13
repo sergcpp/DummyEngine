@@ -53,11 +53,11 @@ int Ren::Context::NumMaterialsNotReady() {
 
 void Ren::Context::ReleaseMaterials() {
     if (!materials_.size()) return;
-    log_->Error("---------REMAINING MATERIALS--------\n");
+    log_->Error("---------REMAINING MATERIALS--------");
     for (const Material &m : materials_) {
-        log_->Error("%s\n", m.name().c_str());
+        log_->Error("%s", m.name().c_str());
     }
-    log_->Error("-----------------------------------\n");
+    log_->Error("-----------------------------------");
     materials_.clear();
 }
 
@@ -73,13 +73,13 @@ int Ren::Context::NumProgramsNotReady() {
 
 void Ren::Context::ReleasePrograms() {
     if (!programs_.size()) return;
-    log_->Error("---------REMAINING PROGRAMS--------\n");
+    log_->Error("---------REMAINING PROGRAMS--------");
     for (const Program &p : programs_) {
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
-        log_->Error("%s %i\n", p.name().c_str(), (int)p.prog_id());
+        log_->Error("%s %i", p.name().c_str(), (int)p.prog_id());
 #endif
     }
-    log_->Error("-----------------------------------\n");
+    log_->Error("-----------------------------------");
     programs_.clear();
 }
 
@@ -122,11 +122,11 @@ int Ren::Context::NumTexturesNotReady() {
 
 void Ren::Context::ReleaseTextures() {
     if (!textures_.size()) return;
-    log_->Error("---------REMAINING TEXTURES--------\n");
+    log_->Error("---------REMAINING TEXTURES--------");
     for (const Texture2D &t : textures_) {
-        log_->Error("%s\n", t.name().c_str());
+        log_->Error("%s", t.name().c_str());
     }
-    log_->Error("-----------------------------------\n");
+    log_->Error("-----------------------------------");
     textures_.clear();
 }
 
@@ -148,11 +148,11 @@ Ren::TextureRegionRef Ren::Context::LoadTextureRegion(
 
 void Ren::Context::ReleaseTextureRegions() {
     if (!texture_regions_.size()) return;
-    log_->Error("-------REMAINING TEX REGIONS-------\n");
+    log_->Error("-------REMAINING TEX REGIONS-------");
     for (const TextureRegion &t : texture_regions_) {
-        log_->Error("%s\n", t.name().c_str());
+        log_->Error("%s", t.name().c_str());
     }
-    log_->Error("-----------------------------------\n");
+    log_->Error("-----------------------------------");
     texture_regions_.clear();
 }
 
@@ -178,11 +178,11 @@ int Ren::Context::NumAnimsNotReady() {
 
 void Ren::Context::ReleaseAnims() {
     if (!anims_.size()) return;
-    log_->Error("---------REMAINING ANIMS--------\n");
+    log_->Error("---------REMAINING ANIMS--------");
     for (const AnimSequence &a : anims_) {
-        log_->Error("%s\n", a.name().c_str());
+        log_->Error("%s", a.name().c_str());
     }
-    log_->Error("-----------------------------------\n");
+    log_->Error("-----------------------------------");
     anims_.clear();
 }
 
@@ -192,11 +192,11 @@ Ren::BufferRef Ren::Context::CreateBuffer(const char *name, uint32_t initial_siz
 
 void Ren::Context::ReleaseBuffers() {
     if (!buffers_.size()) return;
-    log_->Error("---------REMAINING BUFFERS--------\n");
+    log_->Error("---------REMAINING BUFFERS--------");
     for (const Buffer &b : buffers_) {
-        log_->Error("%u\n", b.size());
+        log_->Error("%u", b.size());
     }
-    log_->Error("-----------------------------------\n");
+    log_->Error("-----------------------------------");
     buffers_.clear();
 }
 
