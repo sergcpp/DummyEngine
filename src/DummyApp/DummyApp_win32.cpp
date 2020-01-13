@@ -24,7 +24,6 @@
 #include <Eng/GameBase.h>
 #include <Eng/Input/InputManager.h>
 #include <Sys/DynLib.h>
-#include <Sys/Log.h>
 #include <Sys/Time_.h>
 
 #include "../DummyLib/Viewer.h"

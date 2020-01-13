@@ -39,7 +39,7 @@ extern const char *TEXTURES_PATH;
 extern const char *MATERIALS_PATH;
 extern const char *SHADERS_PATH;
 
-void WriteImage(const uint8_t *out_data, int w, int h, int channels, const char *name);
+int WriteImage(const uint8_t *out_data, int w, int h, int channels, const char *name);
 
 void Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
     std::unique_ptr<uint8_t[]> u8_data = Ren::ConvertRGB32F_to_RGBE(&out_data[0].r, w, h, 4);
@@ -369,7 +369,7 @@ void Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h, const i
     Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mip_count, channels, out_file);
 }
 
-void WriteImage(const uint8_t *out_data, int w, int h, int channels, const char *name) {
+int WriteImage(const uint8_t *out_data, int w, int h, int channels, const char *name) {
     int res = 0;
     if (strstr(name, ".tga")) {
         res = SOIL_save_image(name, SOIL_SAVE_TYPE_TGA, w, h, channels, out_data);
@@ -382,10 +382,7 @@ void WriteImage(const uint8_t *out_data, int w, int h, int channels, const char 
         res = 1;
         Write_KTX_ASTC(out_data, w, h, channels, true /* flip_y */, name);
     }
-
-    if (!res) {
-        LOGE("Failed to save image %s", name);
-    }
+    return res;
 }
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data) {
@@ -504,10 +501,10 @@ std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &t
     return tex_data;
 }
 
-void ReadAllFiles_r(const char *in_folder, const std::function<void(const char *)> &callback) {
+void ReadAllFiles_r(const char *in_folder, const std::function<void(const char *)> &callback, Ren::ILog *log) {
     DIR *in_dir = opendir(in_folder);
     if (!in_dir) {
-        LOGE("Cannot open folder %s", in_folder);
+        log->Error("Cannot open folder %s", in_folder);
         return;
     }
 
@@ -521,7 +518,7 @@ void ReadAllFiles_r(const char *in_folder, const std::function<void(const char *
             path += '/';
             path += in_ent->d_name;
 
-            ReadAllFiles_r(path.c_str(), callback);
+            ReadAllFiles_r(path.c_str(), callback, log);
         } else {
             std::string path = in_folder;
             path += '/';
@@ -534,10 +531,10 @@ void ReadAllFiles_r(const char *in_folder, const std::function<void(const char *
     closedir(in_dir);
 }
 
-void ReadAllFiles_MT_r(const char *in_folder, const std::function<void(const char *)> &callback, Sys::ThreadPool &threads, std::vector<std::future<void>> &events) {
+void ReadAllFiles_MT_r(const char *in_folder, const std::function<void(const char *)> &callback, Sys::ThreadPool *threads, Ren::ILog *log, std::vector<std::future<void>> &events) {
     DIR *in_dir = opendir(in_folder);
     if (!in_dir) {
-        LOGE("Cannot open folder %s", in_folder);
+        log->Error("Cannot open folder %s", in_folder);
         return;
     }
 
@@ -551,13 +548,13 @@ void ReadAllFiles_MT_r(const char *in_folder, const std::function<void(const cha
             path += '/';
             path += in_ent->d_name;
 
-            ReadAllFiles_r(path.c_str(), callback);
+            ReadAllFiles_r(path.c_str(), callback, log);
         } else {
             std::string path = in_folder;
             path += '/';
             path += in_ent->d_name;
 
-            events.push_back(threads.enqueue([path, &callback]() {
+            events.push_back(threads->enqueue([path, &callback]() {
                 callback(path.c_str());
             }));
         }
@@ -566,7 +563,7 @@ void ReadAllFiles_MT_r(const char *in_folder, const std::function<void(const cha
     closedir(in_dir);
 }
 
-bool CheckCanSkipAsset(const char *in_file, const char *out_file) {
+bool CheckCanSkipAsset(const char *in_file, const char *out_file, Ren::ILog *log) {
 #if !defined(NDEBUG) && 0
     if (strstr(in_file, ".glsl")) return false;
 #endif
@@ -574,7 +571,7 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file) {
 #ifdef _WIN32
     HANDLE in_h = CreateFile(in_file, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL);
     if (in_h == INVALID_HANDLE_VALUE) {
-        LOGI("[PrepareAssets] Failed to open file!");
+        log->Info("[PrepareAssets] Failed to open file!");
         CloseHandle(in_h);
         return true;
     }
@@ -613,7 +610,7 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file) {
     return false;
 }
 
-bool CreateFolders(const char *out_file) {
+bool CreateFolders(const char *out_file, Ren::ILog *log) {
     const char *end = strchr(out_file, '/');
     while (end) {
         char folder[256] = {};
@@ -621,7 +618,7 @@ bool CreateFolders(const char *out_file) {
 #ifdef _WIN32
         if (!CreateDirectory(folder, NULL)) {
             if (GetLastError() != ERROR_ALREADY_EXISTS) {
-                LOGE("[PrepareAssets] Failed to create directory!");
+                log->Error("[PrepareAssets] Failed to create directory!");
                 return false;
             }
         }
@@ -629,7 +626,7 @@ bool CreateFolders(const char *out_file) {
         struct stat st = {};
         if (stat(folder, &st) == -1) {
             if (mkdir(folder, 0777) != 0) {
-                LOGE("[PrepareAssets] Failed to create directory!");
+                log->Error("[PrepareAssets] Failed to create directory!");
                 return false;
             }
         }
@@ -662,7 +659,7 @@ void encode_astc_image(const astc_codec_image *input_image,
 
 bool g_astc_initialized = false;
 
-bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, const char *platform, Sys::ThreadPool *p_threads) {
+bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, const char *platform, Sys::ThreadPool *p_threads, Ren::ILog *log) {
     using namespace SceneManagerInternal;
 
     // for astc codec
@@ -755,7 +752,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     } else if (strcmp(platform, "android") == 0) {
         shader_constants.Insert("$ShadRes",     AS_STR(REN_SHAD_RES_ANDROID));
     } else {
-        LOGE("Unknown platform %s", platform);
+        log->Error("Unknown platform %s", platform);
         return false;
     }
 
@@ -774,7 +771,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
     shader_constants.Insert("$MaxBatchSize",    AS_STR(REN_MAX_BATCH_SIZE));
 
-    auto inline_constants = [&shader_constants](std::string &line) {
+    auto inline_constants = [&shader_constants, log](std::string &line) {
         size_t n = 0;
         while ((n = line.find('$', n)) != std::string::npos) {
             size_t l = 1;
@@ -790,18 +787,18 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             if (it) {
                 line.replace(n, l, *it);
             } else {
-                LOGE("Unknown variable %s", var.c_str());
+                log->Error("Unknown variable %s", var.c_str());
                 throw std::runtime_error("Unknown variable!");
             }
         }
     };
 
-    auto h_skip = [](const char *in_file, const char *out_file) {
-        LOGI("[PrepareAssets] Skip %s", out_file);
+    auto h_skip = [log](const char *in_file, const char *out_file) {
+        log->Info("[PrepareAssets] Skip %s", out_file);
     };
 
-    auto h_copy = [](const char *in_file, const char *out_file) {
-        LOGI("[PrepareAssets] Copy %s", out_file);
+    auto h_copy = [log](const char *in_file, const char *out_file) {
+        log->Info("[PrepareAssets] Copy %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary);
         std::ofstream dst_stream(out_file, std::ios::binary);
@@ -812,8 +809,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         std::copy(src_beg, src_end, dst_beg);
     };
 
-    auto h_conv_to_dds = [](const char *in_file, const char *out_file) {
-        LOGI("[PrepareAssets] Conv %s", out_file);
+    auto h_conv_to_dds = [log](const char *in_file, const char *out_file) {
+        log->Info("[PrepareAssets] Conv %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
         auto src_size = (size_t)src_stream.tellg();
@@ -847,8 +844,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
     };
 
-    auto h_conv_img_to_dds = [](const char *in_file, const char *out_file) {
-        LOGI("[PrepareAssets] Conv %s", out_file);
+    auto h_conv_img_to_dds = [log](const char *in_file, const char *out_file) {
+        log->Info("[PrepareAssets] Conv %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
         auto src_size = (int)src_stream.tellg();
@@ -877,14 +874,14 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
 
         if (src_size != 0) {
-            LOGE("Error reading file %s", in_file);
+            log->Error("Error reading file %s", in_file);
         }
 
         Write_DDS_Mips(_mipmaps, widths, heights, mips_count, 4, out_file);
     };
 
-    auto h_conv_img_to_astc = [](const char *in_file, const char *out_file) {
-        LOGI("[PrepareAssets] Conv %s", out_file);
+    auto h_conv_img_to_astc = [log](const char *in_file, const char *out_file) {
+        log->Info("[PrepareAssets] Conv %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
         auto src_size = (int)src_stream.tellg();
@@ -913,14 +910,14 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
 
         if (src_size != 0) {
-            LOGE("Error reading file %s", in_file);
+            log->Error("Error reading file %s", in_file);
         }
 
         Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mips_count, 4, out_file);
     };
 
-    auto h_conv_to_astc = [](const char *in_file, const char *out_file) {
-        LOGI("[PrepareAssets] Conv %s", out_file);
+    auto h_conv_to_astc = [log](const char *in_file, const char *out_file) {
+        log->Info("[PrepareAssets] Conv %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
         auto src_size = (size_t)src_stream.tellg();
@@ -955,8 +952,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
     };
 
-    auto h_conv_hdr_to_rgbm = [](const char *in_file, const char *out_file) {
-        LOGI("[PrepareAssets] Conv %s", out_file);
+    auto h_conv_hdr_to_rgbm = [log](const char *in_file, const char *out_file) {
+        log->Info("[PrepareAssets] Conv %s", out_file);
 
         int width, height;
         const std::vector<uint8_t> image_rgbe = LoadHDR(in_file, width, height);
@@ -973,8 +970,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         Write_RGBM(&image_f32[0], width, height, 3, out_file);
     };
 
-    auto h_preprocess_material = [&replace_texture_extension](const char *in_file, const char *out_file) {
-        LOGI("[PrepareAssets] Prep %s", out_file);
+    auto h_preprocess_material = [&replace_texture_extension, log](const char *in_file, const char *out_file) {
+        log->Info("[PrepareAssets] Prep %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary);
         std::ofstream dst_stream(out_file, std::ios::binary);
@@ -986,8 +983,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
     };
 
-    auto h_preprocess_json = [&replace_texture_extension](const char *in_file, const char *out_file) {
-        LOGI("[PrepareAssets] Prep %s", out_file);
+    auto h_preprocess_json = [&replace_texture_extension, log](const char *in_file, const char *out_file) {
+        log->Info("[PrepareAssets] Prep %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary);
         std::ofstream dst_stream(out_file, std::ios::binary);
@@ -1041,8 +1038,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         js_root.Write(dst_stream, flags);
     };
 
-    auto h_preprocess_shader = [&inline_constants, platform](const char *in_file, const char *out_file) {
-        LOGI("[PrepareAssets] Prep %s", out_file);
+    auto h_preprocess_shader = [&inline_constants, platform, log](const char *in_file, const char *out_file) {
+        log->Info("[PrepareAssets] Prep %s", out_file);
 
         {   // resolve includes, inline constants
             std::ifstream src_stream(in_file, std::ios::binary);
@@ -1112,7 +1109,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 #endif
             int res = system(compile_cmd.c_str());
             if (res != 0) {
-                LOGE("[PrepareAssets] Failed to compile %s", spv_file.c_str());
+                log->Error("[PrepareAssets] Failed to compile %s", spv_file.c_str());
             }
 
             std::string optimize_cmd = "src/libs/spirv/spirv-opt "
@@ -1161,7 +1158,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 #endif
             res = system(optimize_cmd.c_str());
             if (res != 0) {
-                LOGE("[PrepareAssets] Failed to optimize %s", spv_file.c_str());
+                log->Error("[PrepareAssets] Failed to optimize %s", spv_file.c_str());
             }
 
             std::string cross_cmd = "src/libs/spirv/spirv-cross ";
@@ -1181,15 +1178,15 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 #endif
             res = system(cross_cmd.c_str());
             if (res != 0) {
-                LOGE("[PrepareAssets] Failed to cross-compile %s", spv_file.c_str());
+                log->Error("[PrepareAssets] Failed to cross-compile %s", spv_file.c_str());
             }
         }
     };
 
-    auto h_conv_to_font = [](const char *in_file, const char *out_file) {
+    auto h_conv_to_font = [log](const char *in_file, const char *out_file) {
         using namespace Ren;
 
-        LOGI("[PrepareAssets] Conv %s", out_file);
+        log->Info("[PrepareAssets] Conv %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
         auto src_size = (size_t)src_stream.tellg();
@@ -1201,7 +1198,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         stbtt_fontinfo font;
         int res = stbtt_InitFont(&font, &src_buf[0], 0);
         if (!res) {
-            LOGE("stbtt_InitFont failed (%s)", in_file);
+            log->Error("stbtt_InitFont failed (%s)", in_file);
             return;
         }
 
@@ -1260,7 +1257,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         std::fill(&temp_bitmap[0], &temp_bitmap[0] + 4 * temp_bitmap_res[0] * temp_bitmap_res[1], 0);
 
         for (const Gui::glyph_range_t &range : glyph_ranges) {
-            LOGI("Processing glyph range (%i - %i)", range.beg, range.end);
+            log->Info("Processing glyph range (%i - %i)", range.beg, range.end);
             for (uint32_t i = range.beg; i < range.end; i++) {
                 const int glyph_index = stbtt_FindGlyphIndex(&font, i);
 
@@ -1622,7 +1619,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     handlers["uncompressed.tga"] = { "uncompressed.tga",  h_copy };
     handlers["uncompressed.png"] = { "uncompressed.png",  h_copy };
 
-    auto convert_file = [out_folder, &handlers](const char *in_file) {
+    auto convert_file = [out_folder, &handlers, log](const char *in_file) {
         const char *base_path = strchr(in_file, '/');
         if (!base_path) return;
         const char *ext = strchr(in_file, '.');
@@ -1632,7 +1629,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
         Handler *handler = handlers.Find(ext);
         if (!handler) {
-            LOGI("[PrepareAssets] No handler found for %s", in_file);
+            log->Info("[PrepareAssets] No handler found for %s", in_file);
             return;
         }
 
@@ -1641,12 +1638,12 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             std::string(base_path, strlen(base_path) - strlen(ext)) +
             handler->ext;
 
-        if (CheckCanSkipAsset(in_file, out_file.c_str())) {
+        if (CheckCanSkipAsset(in_file, out_file.c_str(), log)) {
             return;
         }
 
-        if (!CreateFolders(out_file.c_str())) {
-            LOGI("[PrepareAssets] Failed to create directories for %s", out_file.c_str());
+        if (!CreateFolders(out_file.c_str(), log)) {
+            log->Info("[PrepareAssets] Failed to create directories for %s", out_file.c_str());
             return;
         }
 
@@ -1658,19 +1655,19 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     if (system("chmod +x src/libs/spirv/glslangValidator") ||
         system("chmod +x src/libs/spirv/spirv-opt") ||
         system("chmod +x src/libs/spirv/spirv-cross")) {
-        LOGI("[PrepareAssets] Failed to chmod executables!");
+        log->Info("[PrepareAssets] Failed to chmod executables!");
     }
 #endif
 
     if (p_threads) {
         std::vector<std::future<void>> events;
-        ReadAllFiles_MT_r(in_folder, convert_file, *p_threads, events);
+        ReadAllFiles_MT_r(in_folder, convert_file, p_threads, log, events);
 
         for (std::future<void> &e : events) {
             e.wait();
         }
     } else {
-        ReadAllFiles_r(in_folder, convert_file);
+        ReadAllFiles_r(in_folder, convert_file, log);
     }
 
     return true;
@@ -1692,8 +1689,8 @@ bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_nam
     const size_t prelude_length = out_file_name_base.length();
     out_file_name_base += scene_name;
 
-    if (!CreateFolders(out_file_name_base.c_str())) {
-        LOGE("Failed to create folders!");
+    if (!CreateFolders(out_file_name_base.c_str(), log)) {
+        log->Error("Failed to create folders!");
         return false;
     }
 
@@ -1728,7 +1725,7 @@ bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_nam
                     const int buf_size = mip_res * mip_res * 4;
 
                     if (!probes.GetPixelData(k, lprobe->layer_index, j, buf_size, &temp_buf[0], log)) {
-                        LOGE("Failed to read cubemap level %i layer %i face %i", k, lprobe->layer_index, j);
+                        log->Error("Failed to read cubemap level %i layer %i face %i", k, lprobe->layer_index, j);
                         return false;
                     }
 

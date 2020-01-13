@@ -3,7 +3,6 @@
 #include <Ren/Camera.h>
 #include <Ren/Context.h>
 #include <Ren/GL.h>
-#include <Sys/Log.h>
 
 namespace RendererInternal {
 #include "Renderer_GL_Shaders.inl"

@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include <Eng/GameStateManager.h>
+#include <Eng/Log.h>
 #include <Eng/Renderer/Renderer.h>
 #include <Eng/Scene/SceneManager.h>
 #include <Eng/Utils/Cmdline.h>
@@ -11,7 +12,6 @@
 #include <Ren/MVec.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
-#include <Sys/Log.h>
 
 #include "Gui/DebugInfoUI.h"
 #include "Gui/FontStorage.h"
@@ -121,14 +121,16 @@ void Viewer::Frame() {
 }
 
 void Viewer::PrepareAssets(const char *platform) {
+    LogStdout log;
+
 #if !defined(__ANDROID__)
     if (strcmp(platform, "all") == 0) {
-        SceneManager::PrepareAssets("assets", "assets_pc", "pc", nullptr);
-        SceneManager::PrepareAssets("assets", "assets_android", "android", nullptr);
+        SceneManager::PrepareAssets("assets", "assets_pc", "pc", nullptr, &log);
+        SceneManager::PrepareAssets("assets", "assets_android", "android", nullptr, &log);
     } else {
         std::string out_folder = "assets_";
         out_folder += platform;
-        SceneManager::PrepareAssets("assets", out_folder.c_str(), platform, nullptr);
+        SceneManager::PrepareAssets("assets", out_folder.c_str(), platform, nullptr, &log);
     }
 #endif
 }

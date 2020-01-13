@@ -1,7 +1,6 @@
 #include "Renderer.h"
 
 #include <Ren/Context.h>
-#include <Sys/Log.h>
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 

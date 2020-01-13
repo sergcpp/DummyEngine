@@ -5,7 +5,6 @@
 #include <Eng/Gui/Image9Patch.h>
 #include <Eng/Gui/Utils.h>
 #include <Sys/Json.h>
-#include <Sys/Log.h>
 
 namespace TextPrinterInternal {
     const char Frame01[] =

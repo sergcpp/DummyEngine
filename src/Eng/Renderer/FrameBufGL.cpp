@@ -4,7 +4,6 @@
 
 #include <Ren/Fwd.h>
 #include <Ren/GL.h>
-#include <Sys/Log.h>
 
 FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int _attachments_count,
         const DepthAttachmentDesc &depth_att, int _msaa, Ren::ILog *log)

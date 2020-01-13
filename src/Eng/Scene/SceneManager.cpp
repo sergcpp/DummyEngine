@@ -11,7 +11,6 @@
 #include <Sys/AssetFile.h>
 #include <Sys/AssetFileIO.h>
 #include <Sys/Json.h>
-#include <Sys/Log.h>
 #include <Sys/MemBuf.h>
 
 extern "C" {

@@ -3,7 +3,6 @@
 #include <cassert>
 
 #include <Ren/GL.h>
-#include <Sys/Log.h>
 #include <Sys/Json.h>
 
 #define VTX_POS_LOC 0
