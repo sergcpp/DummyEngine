@@ -116,7 +116,7 @@ SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, S
     }
 
     {   // Allocate cubemap array
-        scene_data_.probe_storage.Resize(Ren::RawRGBA8888, PROBE_RES, PROBE_COUNT, ctx_.log());
+        scene_data_.probe_storage.Resize(Ren::Compressed, PROBE_RES, PROBE_COUNT, ctx_.log());
     }
 
     {   // Register default components
@@ -745,7 +745,11 @@ void SceneManager::LoadProbeCache() {
     const int
         res = scene_data_.probe_storage.res(),
         capacity = scene_data_.probe_storage.capacity();
-    scene_data_.probe_storage.Resize(Ren::Compressed, res, capacity, ctx_.log());
+
+    if (scene_data_.probe_storage.format() != Ren::Compressed) {
+        // switch to compressed texture format
+        scene_data_.probe_storage.Resize(Ren::Compressed, res, capacity, ctx_.log());
+    }
 
     CompStorage *probe_storage = scene_data_.comp_store[CompProbe];
 

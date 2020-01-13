@@ -13,6 +13,7 @@ public:
     int Allocate();
     void Free(int i);
 
+    Ren::eTexColorFormat format() const { return format_; }
     int res() const { return res_; }
     int size() const { return size_; }
     int capacity() const { return capacity_; }
