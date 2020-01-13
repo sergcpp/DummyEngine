@@ -635,7 +635,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             }
 
             Ren::Texture2DParams p;
-            p.format = Ren::RawRGBA8888;
+            p.format = Ren::Compressed;
             p.filter = Ren::Bilinear;
             p.repeat = Ren::ClampToEdge;
             p.w = res;

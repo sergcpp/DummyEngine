@@ -81,6 +81,15 @@ set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/__skydome_mesh.inl
                         Renderer/__sphere_mesh.inl)
 
+set(SCENE_SOURCES   Scene/SceneData.h
+                    Scene/SceneData.cpp
+                    Scene/SceneManager.h
+                    Scene/SceneManager.cpp
+                    Scene/SceneManager_ASS.cpp
+                    Scene/SceneManager_BVH.cpp
+                    Scene/SceneManager_PT.cpp
+                    Scene/ProbeStorage.h)
+
 if(${RENDERER} STREQUAL "GL")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                         Renderer/FrameBufGL.cpp
@@ -131,15 +140,6 @@ set(SHADERS_SOURCES Renderer/Shaders/blit.frag.glsl
                     Renderer/Shaders/skinning.comp.glsl
                     Renderer/Shaders/skydome.frag.glsl
                     Renderer/Shaders/skydome.vert.glsl)
-
-set(SCENE_SOURCES   Scene/SceneData.h
-                    Scene/SceneData.cpp
-                    Scene/SceneManager.h
-                    Scene/SceneManager.cpp
-                    Scene/SceneManager_ASS.cpp
-                    Scene/SceneManager_BVH.cpp
-                    Scene/SceneManager_PT.cpp
-                    Scene/ProbeStorage.h)
 
 set(SCENE_COMP_SOURCES   Scene/Comp/Common.h
                          Scene/Comp/AnimState.h

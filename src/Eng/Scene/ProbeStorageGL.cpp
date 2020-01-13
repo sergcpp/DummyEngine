@@ -60,34 +60,53 @@ void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity, Re
         ren_glTextureStorage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, mip_count, compressed_tex_format, res, res, capacity * 6);
     }
 
+    const int blank_block_res = 64;
+    uint8_t blank_block[blank_block_res * blank_block_res * 4] = {};
+    if (format == Ren::Compressed) {
+        for (int i = 0; i < (blank_block_res / 4) * (blank_block_res / 4) * 16; ) {
+#if defined(__ANDROID__)
+            memcpy(&blank_block[i], Ren::_blank_ASTC_block_4x4, Ren::_blank_ASTC_block_4x4_len);
+            i += Ren::_blank_ASTC_block_4x4_len;
+#else
+            memcpy(&blank_block[i], Ren::_blank_DXT5_block_4x4, Ren::_blank_DXT5_block_4x4_len);
+            i += Ren::_blank_DXT5_block_4x4_len;
+#endif
+        }
+    }
+
     // set texture color to black
     for (int level = 0; level < mip_count; level++) {
-        const int _res = int((unsigned)res >> (unsigned)level);
+        const int
+            _res = int((unsigned)res >> (unsigned)level),
+            _init_res = std::min(blank_block_res, _res);
         for (int layer = 0; layer < capacity; layer++) {
             for (int face = 0; face < 6; face++) {
-                for (int y_off = 0; y_off < _res; y_off += 16) {
-                    // TODO: this fixes an error on android (wtf ???)
-                    const int len_override = ((16 + 3) / 4) * ((16 + y_off + 3) / 4) * 16;
+                for (int y_off = 0; y_off < _res; y_off += blank_block_res) {
+                    const int buf_len =
+#if defined(__ANDROID__)
+                        // TODO: this fixes an error on android (wtf ???)
+                        (_init_res / 4) * ((_init_res + y_off) / 4) * 16;
+#else
+                        (_init_res / 4) * (_init_res / 4) * 16;
+#endif
 
-                    for (int x_off = 0; x_off < _res; x_off += 16) {
+                    for (int x_off = 0; x_off < _res; x_off += blank_block_res) {
                         if (format != Ren::Compressed) {
-                            const uint8_t blank_buf[1024] = {};
                             ren_glTextureSubImage3D_Comp(
-                                    GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, level, x_off, y_off, (layer * 6 + face), 16, 16, 1,
-                                    Ren::GLFormatFromTexFormat(format), GL_UNSIGNED_BYTE, &blank_buf);
+                                    GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, level, x_off, y_off, (layer * 6 + face), _init_res, _init_res, 1,
+                                    Ren::GLFormatFromTexFormat(format), GL_UNSIGNED_BYTE, blank_block);
                             Ren::CheckError("glTexSubImage2D", log);
                         } else {
                             ren_glCompressedTextureSubImage3D_Comp(
-                                    GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, level, x_off, y_off, (layer * 6 + face), 16, 16, 1, compressed_tex_format,
+                                    GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, level, x_off, y_off, (layer * 6 + face), _init_res, _init_res, 1, compressed_tex_format,
 #if defined(__ANDROID__)
                                     /*Ren::_blank_ASTC_block_16x16_8bb_len*/ len_override, Ren::_blank_ASTC_block_16x16_8bb);
 #else
-                                    Ren::_blank_DXT5_block_16x16_len, Ren::_blank_DXT5_block_16x16);
+                                    buf_len, blank_block);
 #endif
                             Ren::CheckError("glCompressedTexSubImage3D", log);
                         }
                     }
-                    (void)len_override;
                 }
             }
 
