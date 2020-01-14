@@ -18,6 +18,10 @@ enum eTexColorFormat { Undefined, RawRGB888, RawRGBA8888, RawLUM8, RawR32F, RawR
 enum eTexFilter { NoFilter, Bilinear, Trilinear, BilinearNoMipmap, FilterCount };
 enum eTexRepeat { Repeat, ClampToEdge, ClampToBorder, WrapModesCount };
 
+enum eTexFlags {
+    TexNoOwnership = (1u << 0u)
+};
+
 struct Texture2DParams {
     int                 w = 0, h = 0, cube = 0;
     eTexColorFormat     format = Undefined;
@@ -54,7 +58,7 @@ class Texture2D : public RefCounter {
 public:
     Texture2D() = default;
     Texture2D(const char *name, uint32_t tex_id, const Texture2DParams &params, ILog *log)
-        : tex_id_(tex_id), params_(params), ready_(false), name_(name) {
+        : tex_id_(tex_id), params_(params), ready_(true), name_(name) {
     }
     Texture2D(const char *name, const void *data, int size, const Texture2DParams &params, eTexLoadStatus *load_status, ILog *log);
     Texture2D(const char *name, const void *data[6], const int size[6], const Texture2DParams &params,

@@ -7,36 +7,58 @@
 #pragma warning(disable : 4996)
 #endif
 
-Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *status,
-                        const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log) {
+Ren::Material::Material(
+        const char *name, const char *mat_src, eMatLoadStatus *status,
+        const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log) {
     name_ = String{ name };
     Init(mat_src, status, on_prog_load, on_tex_load, log);
+}
+
+Ren::Material::Material(const char *name, uint32_t flags, ProgramRef programs[], Texture2DRef textures[], const Vec4f params[], ILog *log) {
+    name_ = String{ name };
+    Init(flags, programs, textures, params, log);
 }
 
 Ren::Material &Ren::Material::operator=(Material &&rhs) noexcept {
     flags_ = rhs.flags_;
     ready_ = rhs.ready_;
     name_ = std::move(rhs.name_);
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < MaxMaterialProgramCount; i++) {
         programs_[i] = std::move(rhs.programs_[i]);
     }
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < MaxMaterialTextureCount; i++) {
         textures_[i] = std::move(rhs.textures_[i]);
     }
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < MaxMaterialParamCount; i++) {
         params_[i] = rhs.params_[i];
     }
     RefCounter::operator=(std::move(rhs));
     return *this;
 }
 
-void Ren::Material::Init(const char *mat_src, eMatLoadStatus *status,
-                         const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log) {
+void Ren::Material::Init(uint32_t flags, ProgramRef programs[], Texture2DRef textures[], const Vec4f params[], ILog *log) {
+    flags_ = flags;
+    ready_ = true;
+    for (int i = 0; i < MaxMaterialProgramCount; i++) {
+        programs_[i] = programs[i];
+    }
+    for (int i = 0; i < MaxMaterialTextureCount; i++) {
+        textures_[i] = textures[i];
+    }
+    for (int i = 0; i < MaxMaterialParamCount; i++) {
+        params_[i] = params[i];
+    }
+}
+
+void Ren::Material::Init(
+        const char *mat_src, eMatLoadStatus *status,
+        const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log) {
     InitFromTXT(mat_src, status, on_prog_load, on_tex_load, log);
 }
 
-void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
-                                const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log) {
+void Ren::Material::InitFromTXT(
+        const char *mat_src, eMatLoadStatus *status,
+        const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log) {
     if (!mat_src) {
         if (status) *status = MatSetToDefault;
         return;

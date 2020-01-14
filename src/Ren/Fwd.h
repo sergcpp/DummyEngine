@@ -7,6 +7,7 @@ namespace Ren {
 class AnimSequence;
 class Buffer;
 class Camera;
+class Context;
 class Material;
 class Mesh;
 class Program;

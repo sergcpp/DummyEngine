@@ -25,6 +25,10 @@ enum eTextureFlags {
     SRGB    = (1u << 1u)
 };
 
+const int MaxMaterialProgramCount = 4;
+const int MaxMaterialTextureCount = 8;
+const int MaxMaterialParamCount = 8;
+
 enum eMatLoadStatus { MatFound, MatSetToDefault, MatCreatedFromData };
 
 typedef std::function<Texture2DRef(const char *name, uint32_t flags)> texture_load_callback;
@@ -33,9 +37,9 @@ typedef std::function<ProgramRef(const char *name, const char *arg1, const char 
 class Material : public RefCounter {
     uint32_t        flags_ = 0;
     bool            ready_ = false;
-    ProgramRef      programs_[4];
-    Texture2DRef    textures_[8];
-    Vec4f           params_[8];
+    ProgramRef      programs_[MaxMaterialProgramCount];
+    Texture2DRef    textures_[MaxMaterialTextureCount];
+    Vec4f           params_[MaxMaterialParamCount];
 
     String          name_;
 
@@ -43,8 +47,10 @@ class Material : public RefCounter {
                      const texture_load_callback &on_tex_load, ILog *log);
 public:
     Material() = default;
-    Material(const char *name, const char *mat_src, eMatLoadStatus *status,
-             const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log);
+    Material(
+        const char *name, const char *mat_src, eMatLoadStatus *status,
+        const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log);
+    Material(const char *name, uint32_t flags, ProgramRef programs[], Texture2DRef textures[], const Vec4f params[], ILog *log);
 
     Material(const Mesh &rhs) = delete;
     Material(Material &&rhs) noexcept {
@@ -73,8 +79,10 @@ public:
         return params_[i];
     }
 
-    void Init(const char *mat_src, eMatLoadStatus *status,
-              const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log);
+    void Init(uint32_t flags, ProgramRef programs[], Texture2DRef textures[], const Vec4f params[], ILog *log);
+    void Init(
+        const char *mat_src, eMatLoadStatus *status,
+        const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log);
 };
 
 //typedef StorageRef<Material> MaterialRef;

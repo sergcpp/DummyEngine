@@ -585,6 +585,7 @@ typedef void (APIENTRY *PFNGLUNIFORM3FVPROC)(GLint location, GLsizei count, cons
 typedef void (APIENTRY *PFNGLUNIFORM4FVPROC)(GLint location, GLsizei count, const GLfloat *value);
 
 typedef void (APIENTRY *PFNGLUNIFORMMATRIX4FVPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
+typedef void (APIENTRY *PFNGLUNIFORMMATRIX3X4FVPROC)(	GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 
 #if !defined(__linux__)
 typedef void (APIENTRY *PFNGLCOMPRESSEDTEXIMAGE2DPROC)(
@@ -831,6 +832,7 @@ typedef void (APIENTRY *PFNGLBINDTEXTUREUNITCOMPPROC)(GLenum target, GLuint unit
 #define glUniform4fv                ren_glUniform4fv
 
 #define glUniformMatrix4fv          ren_glUniformMatrix4fv
+#define glUniformMatrix3x4fv        ren_glUniformMatrix3x4fv
 
 #define glCompressedTexImage2D      ren_glCompressedTexImage2D
 #define glCompressedTexImage3D      ren_glCompressedTexImage3D
@@ -1015,6 +1017,7 @@ EXTERN_FUNC PFNGLUNIFORM3FVPROC                 ren_glUniform3fv;
 EXTERN_FUNC PFNGLUNIFORM4FVPROC                 ren_glUniform4fv;
 
 EXTERN_FUNC PFNGLUNIFORMMATRIX4FVPROC           ren_glUniformMatrix4fv;
+EXTERN_FUNC PFNGLUNIFORMMATRIX3X4FVPROC         ren_glUniformMatrix3x4fv;
 
 EXTERN_FUNC PFNGLCOMPRESSEDTEXIMAGE2DPROC       ren_glCompressedTexImage2D;
 EXTERN_FUNC PFNGLCOMPRESSEDTEXIMAGE3DPROC       ren_glCompressedTexImage3D;

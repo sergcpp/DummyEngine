@@ -219,7 +219,7 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6], const Texture2
 }
 
 void Ren::Texture2D::Free() {
-    if (params_.format != Undefined) {
+    if (params_.format != Undefined && !(params_.flags & TexNoOwnership)) {
         auto tex_id = (GLuint)tex_id_;
         glDeleteTextures(1, &tex_id);
         tex_id_ = 0;
@@ -312,7 +312,8 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2D
     params_.w = (int)header.dwWidth;
     params_.h = (int)header.dwHeight;
 
-    switch ((header.sPixelFormat.dwFourCC >> 24u) - '0') {
+    const int px_format = int(header.sPixelFormat.dwFourCC >> 24u) - '0';
+    switch (px_format) {
     case 1:
         internal_format = (p.flags & SRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT : GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
         block_size = 8;
@@ -326,7 +327,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2D
         block_size = 16;
         break;
     default:
-        // TODO: report error in log
+        log->Error("Unknow DDS pixel format %i", px_format);
         return;
     }
 

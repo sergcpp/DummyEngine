@@ -135,7 +135,7 @@ public:
         memcpy(&first_free_, data_ + index, sizeof(uint32_t));
 
         T *el = data_ + index;
-        new(el) T(args...);
+        new(el) T(std::forward<Args>(args)...);
 
         ctrl_[index / 8] |= (1u << (index % 8));
 

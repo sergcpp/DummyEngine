@@ -158,6 +158,7 @@ bool Ren::InitGLExtentions() {
     ren_glUniform4fv                = (PFNGLUNIFORM4FVPROC)GetProcAddress(glUniform4fv);
 
     ren_glUniformMatrix4fv          = (PFNGLUNIFORMMATRIX4FVPROC)GetProcAddress(glUniformMatrix4fv);
+    ren_glUniformMatrix3x4fv        = (PFNGLUNIFORMMATRIX3X4FVPROC)GetProcAddress(glUniformMatrix3x4fv);
 
     ren_glCompressedTexImage2D      = (PFNGLCOMPRESSEDTEXIMAGE2DPROC)GetProcAddress(glCompressedTexImage2D);
     ren_glCompressedTexImage3D      = (PFNGLCOMPRESSEDTEXIMAGE3DPROC)GetProcAddress(glCompressedTexImage3D);

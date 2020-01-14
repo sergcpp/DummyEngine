@@ -44,7 +44,10 @@ protected:
     std::string glsl_defines_;
 #endif
 public:
+    Context(){}
     ~Context();
+
+    Context(const Context &rhs) = delete;
 
     void Init(int w, int h, ILog *log);
 
@@ -56,6 +59,9 @@ public:
     }
 
     ILog *log() const { return log_; }
+
+    Texture2DStorage        &textures() { return textures_; }
+    MaterialStorage         &materials() { return materials_; }
 
     BufferRef default_vertex_buf1() const { return default_vertex_buf1_; }
     BufferRef default_vertex_buf2() const { return default_vertex_buf2_; }
