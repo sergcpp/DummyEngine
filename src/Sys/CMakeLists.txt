@@ -40,7 +40,8 @@ set(SOURCE_FILES AssetFile.h
                  ThreadPool.h
                  ThreadWorker.h
                  Time_.h
-                 Time.cpp)
+                 Time.cpp
+                 Variant.h)
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 
