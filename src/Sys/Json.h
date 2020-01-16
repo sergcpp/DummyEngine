@@ -5,7 +5,9 @@
 #include <string>
 #include <utility>
 
-enum JsType { JS_OBJECT, JS_ARRAY, JS_NUMBER, JS_LITERAL, JS_STRING };
+#include "Variant.h"
+
+enum JsType { JS_INVALID, JS_OBJECT, JS_ARRAY, JS_NUMBER, JS_LITERAL, JS_STRING };
 enum JsLiteralType { JS_TRUE, JS_FALSE, JS_NULL };
 
 struct JsFlags {
@@ -19,6 +21,24 @@ struct JsFlags {
 static_assert(sizeof(JsFlags) == 4, "!");
 
 struct JsElement;
+
+struct JsLiteral {
+    JsLiteralType val;
+
+    explicit JsLiteral(JsLiteralType v) : val(v) {}
+    bool operator==(const JsLiteral &rhs) const {
+        return val == rhs.val;
+    }
+
+    bool operator!=(const JsLiteral &rhs) const {
+        return val != rhs.val;
+    }
+
+    bool Read(std::istream &in);
+    void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
+
+    static const JsType type = JS_LITERAL;
+};
 
 struct JsNumber {
     double val;
@@ -47,6 +67,8 @@ struct JsNumber {
 
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
+
+    static const JsType type = JS_NUMBER;
 };
 
 struct JsString {
@@ -62,6 +84,8 @@ struct JsString {
 
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
+
+    static const JsType type = JS_STRING;
 };
 
 struct JsArray {
@@ -72,17 +96,8 @@ struct JsArray {
     JsArray(const std::initializer_list<JsElement> &l);
     JsArray(std::initializer_list<JsElement> &&l);
 
-    JsElement &operator[](size_t i) {
-        auto it = elements.begin();
-        std::advance(it, i);
-        return *it;
-    }
-
-    const JsElement &operator[](size_t i) const {
-        auto it = elements.cbegin();
-        std::advance(it, i);
-        return *it;
-    }
+    JsElement &operator[](size_t i);
+    const JsElement &operator[](size_t i) const;
 
     const JsElement &at(size_t i) const;
 
@@ -105,6 +120,8 @@ struct JsArray {
 
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
+
+    static const JsType type = JS_ARRAY;
 };
 
 struct JsObject {
@@ -132,41 +149,26 @@ struct JsObject {
 
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
-};
 
-struct JsLiteral {
-    JsLiteralType val;
-
-    explicit JsLiteral(JsLiteralType v) : val(v) {}
-    bool operator==(const JsLiteral &rhs) const {
-        return val == rhs.val;
-    }
-
-    bool operator!=(const JsLiteral &rhs) const {
-        return val != rhs.val;
-    }
-
-    bool Read(std::istream &in);
-    void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
+    static const JsType type = JS_OBJECT;
 };
 
 struct JsElement {
 private:
-    JsType type_;
-    union {
-        void        *p_;
-        JsNumber    *num_;
-        JsString    *str_;
-        JsArray     *arr_;
-        JsObject    *obj_;
-        JsLiteral   *lit_;
-    };
+    static const size_t
+        data_size = Sys::_compile_time_max<sizeof(JsLiteral), sizeof(JsNumber), sizeof(JsString), sizeof(JsArray), sizeof(JsObject)>::value,
+        data_align = Sys::_compile_time_max<alignof(JsLiteral), alignof(JsNumber), alignof(JsString), alignof(JsArray), alignof(JsObject)>::value;
+    using data_t = typename std::aligned_storage<data_size, data_align>::type;
+    using helper_t = Sys::_variant_helper<JsLiteral, JsNumber, JsString, JsArray, JsObject>;
 
-    void DestroyValue();
+    JsType type_;
+    data_t data_;
+
+    void Destroy();
 public:
+    explicit JsElement(JsLiteralType lit_type);
     explicit JsElement(double val);
     explicit JsElement(const char *str);
-    explicit JsElement(JsLiteralType lit_type);
     explicit JsElement(JsType type);
     JsElement(const JsNumber &rhs);
     JsElement(const JsString &rhs);
@@ -181,17 +183,17 @@ public:
         return type_;
     }
 
+    explicit operator JsLiteral &();
     explicit operator JsNumber &();
     explicit operator JsString &();
     explicit operator JsArray &();
     explicit operator JsObject &();
-    explicit operator JsLiteral &();
-
+    
+    explicit operator const JsLiteral &() const;
     explicit operator const JsNumber &() const;
     explicit operator const JsString &() const;
     explicit operator const JsArray &() const;
     explicit operator const JsObject &() const;
-    explicit operator const JsLiteral &() const;
 
     JsElement &operator=(JsElement &&rhs) noexcept;
     JsElement &operator=(const JsElement &rhs);
