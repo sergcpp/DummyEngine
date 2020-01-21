@@ -7,6 +7,7 @@ int main(int argc, char *argv[]) {
 
 // TODO:
 // fix freeze on early exit
+// fix decals
 // start with scene editing
 // use direct access extension
 // add assetstream

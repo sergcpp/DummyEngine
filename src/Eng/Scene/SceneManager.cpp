@@ -119,29 +119,31 @@ SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, S
     }
 
     {   // Register default components
+        using namespace std::placeholders;
+
         default_comp_storage_[CompTransform].reset(new DefaultCompStorage<Transform>);
-        RegisterComponent(CompTransform, default_comp_storage_[CompTransform].get());
+        RegisterComponent(CompTransform, default_comp_storage_[CompTransform].get(), nullptr);
         
         default_comp_storage_[CompDrawable].reset(new DefaultCompStorage<Drawable>);
-        RegisterComponent(CompDrawable, default_comp_storage_[CompDrawable].get());
+        RegisterComponent(CompDrawable, default_comp_storage_[CompDrawable].get(), std::bind(&SceneManager::PostloadDrawable, this, _1, _2, _3));
 
         default_comp_storage_[CompOccluder].reset(new DefaultCompStorage<Occluder>);
-        RegisterComponent(CompOccluder, default_comp_storage_[CompOccluder].get());
+        RegisterComponent(CompOccluder, default_comp_storage_[CompOccluder].get(), std::bind(&SceneManager::PostloadOccluder, this, _1, _2, _3));
 
         default_comp_storage_[CompLightmap].reset(new DefaultCompStorage<Lightmap>);
-        RegisterComponent(CompLightmap, default_comp_storage_[CompLightmap].get());
+        RegisterComponent(CompLightmap, default_comp_storage_[CompLightmap].get(), std::bind(&SceneManager::PostloadLightmap, this, _1, _2, _3));
 
         default_comp_storage_[CompLightSource].reset(new DefaultCompStorage<LightSource>);
-        RegisterComponent(CompLightSource, default_comp_storage_[CompLightSource].get());
+        RegisterComponent(CompLightSource, default_comp_storage_[CompLightSource].get(), std::bind(&SceneManager::PostloadLightSource, this, _1, _2, _3));
 
         default_comp_storage_[CompDecal].reset(new DefaultCompStorage<Decal>);
-        RegisterComponent(CompDecal, default_comp_storage_[CompDecal].get());
+        RegisterComponent(CompDecal, default_comp_storage_[CompDecal].get(), std::bind(&SceneManager::PostloadDecal, this, _1, _2, _3));
 
         default_comp_storage_[CompProbe].reset(new DefaultCompStorage<LightProbe>);
-        RegisterComponent(CompProbe, default_comp_storage_[CompProbe].get());
+        RegisterComponent(CompProbe, default_comp_storage_[CompProbe].get(), std::bind(&SceneManager::PostloadLightProbe, this, _1, _2, _3));
 
         default_comp_storage_[CompAnimState].reset(new DefaultCompStorage<AnimState>);
-        RegisterComponent(CompAnimState, default_comp_storage_[CompAnimState].get());
+        RegisterComponent(CompAnimState, default_comp_storage_[CompAnimState].get(), nullptr);
     }
 }
 
@@ -149,8 +151,9 @@ SceneManager::~SceneManager() {
     ClearScene();
 }
 
-void SceneManager::RegisterComponent(uint32_t index, CompStorage *storage) {
+void SceneManager::RegisterComponent(uint32_t index, CompStorage *storage, const std::function<PostLoadFunc> &post_init) {
     scene_data_.comp_store[index] = storage;
+    component_post_load_[index] = post_init;
 }
 
 void SceneManager::LoadScene(const JsObject &js_scene) {
@@ -161,7 +164,6 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     log->Info("SceneManager: Loading scene!");
     ClearScene();
 
-    std::map<std::string, Ren::MeshRef> all_meshes;
     std::map<std::string, Ren::Vec4f> decals_textures;
 
     if (js_scene.Has("name")) {
@@ -206,7 +208,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         }
     }
 
-    if (js_scene.Has("meshes")) {
+    /*if (js_scene.Has("meshes")) {
         const JsObject &js_meshes = (const JsObject &) js_scene.at("meshes");
         for (const auto &js_elem : js_meshes.elements) {
             const std::string &name = js_elem.first;
@@ -273,7 +275,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 }
             }
         }
-    }
+    }*/
 
     auto load_decal_texture = [this](const std::string &name) {
         std::string file_name = TEXTURES_PATH + name;
@@ -317,9 +319,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
         SceneObject obj;
 
-        Ren::Vec3f
-            obj_bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
-            obj_bbox_max = Ren::Vec3f{ -std::numeric_limits<float>::max() };
+        Ren::Vec3f obj_bbox[2] = { Ren::Vec3f{ std::numeric_limits<float>::max() }, Ren::Vec3f{ -std::numeric_limits<float>::max() } };
 
         for (const auto &js_comp : js_obj.elements) {
             if (js_comp.second.type() != JS_OBJECT) continue;
@@ -339,202 +339,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                     obj.components[i] = index;
                     obj.comp_mask |= (1u << i);
 
-                    // TODO: refactor this into something generic
-                    if (i == CompDrawable) {
-                        auto *dr = (Drawable *)new_component;
-
-                        if (js_comp_obj.Has("mesh_file")) {
-                            const JsString &js_mesh_file_name = (const JsString &)js_comp_obj.at("mesh_file");
-
-                            const char *js_mesh_lookup_name = js_mesh_file_name.val.c_str();
-                            if (js_comp_obj.Has("mesh_name")) {
-                                js_mesh_lookup_name = ((const JsString &)js_comp_obj.at("mesh_name")).val.c_str();
-                            }
-
-                            Ren::eMeshLoadStatus status;
-                            dr->mesh = ctx_.LoadMesh(js_mesh_lookup_name, nullptr, nullptr, &status);
-
-                            if (status != Ren::MeshFound) {
-                                const std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file_name.val;
-
-                                Sys::AssetFile in_file(mesh_path.c_str());
-                                size_t in_file_size = in_file.size();
-
-                                std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
-                                in_file.Read((char *)&in_file_data[0], in_file_size);
-
-                                Sys::MemBuf mem = { &in_file_data[0], in_file_size };
-                                std::istream in_file_stream(&mem);
-
-                                using namespace std::placeholders;
-                                dr->mesh = ctx_.LoadMesh(js_mesh_lookup_name, &in_file_stream,
-                                        std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
-                                assert(status == Ren::MeshCreatedFromData);
-                            }
-                        } else {
-                            const JsString &js_mesh_name = (const JsString &) js_comp_obj.at("mesh");
-
-                            const auto it = all_meshes.find(js_mesh_name.val);
-                            if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
-
-                            dr->mesh = it->second;
-                        }
-
-                        if (js_comp_obj.Has("material_override")) {
-                            const auto &js_materials = (const JsArray &)js_comp_obj.at("material_override");
-
-                            int index = 0;
-                            for (const JsElement &js_mat_el : js_materials.elements) {
-                                if (js_mat_el.type() == JS_STRING) {
-                                    dr->mesh->group(index).mat = OnLoadMaterial(((const JsString &)js_mat_el).val.c_str());
-                                }
-                                index++;
-                            }
-                        }
-
-                        obj_bbox_min = Ren::Min(obj_bbox_min, dr->mesh->bbox_min());
-                        obj_bbox_max = Ren::Max(obj_bbox_max, dr->mesh->bbox_max());
-                    } else if (i == CompOccluder) {
-                        const JsString &js_mesh_name = (const JsString &)js_comp_obj.at("mesh");
-
-                        const auto it = all_meshes.find(js_mesh_name.val);
-                        if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
-
-                        auto *occ = (Occluder *)new_component;
-                        occ->mesh = it->second;
-
-                        obj_bbox_min = Ren::Min(obj_bbox_min, occ->mesh->bbox_min());
-                        obj_bbox_max = Ren::Max(obj_bbox_max, occ->mesh->bbox_max());
-                    } else if (i == CompLightmap) {
-                        auto *lm = (Lightmap *)new_component;
-
-                        int node_id = scene_data_.lm_splitter.Allocate(lm->size, lm->pos);
-                        if (node_id == -1) {
-                            throw std::runtime_error("Cannot allocate lightmap region!");
-                        }
-
-                        lm->xform = Ren::Vec4f{
-                            float(lm->pos[0]) / LIGHTMAP_ATLAS_RESX, 1.0f - float(lm->pos[1]) / LIGHTMAP_ATLAS_RESY,
-                            float(lm->size[0]) / LIGHTMAP_ATLAS_RESX, -float(lm->size[1]) / LIGHTMAP_ATLAS_RESY,
-                        };
-                    } else if (i == CompLightSource) {
-                        auto *ls = (LightSource *)scene_data_.comp_store[CompLightSource]->Get(obj.components[CompLightSource]);
-
-                        // Compute bounding box of light source
-                        const auto
-                            pos = Ren::Vec4f{ ls->offset[0], ls->offset[1], ls->offset[2], 1.0f },
-                            dir = Ren::Vec4f{ ls->dir[0], ls->dir[1], ls->dir[2], 0.0f };
-
-                        Ren::Vec3f bbox_min, bbox_max;
-
-                        const auto _dir = Ren::Vec3f{ dir[0], dir[1], dir[2] };
-                        const Ren::Vec3f p1 = _dir * ls->influence;
-
-                        bbox_min = Ren::Min(bbox_min, p1);
-                        bbox_max = Ren::Max(bbox_max, p1);
-
-                        const Ren::Vec3f p2 = _dir * ls->spot * ls->influence;
-
-                        const float d = std::sqrt(1.0f - ls->spot * ls->spot) * ls->influence;
-
-                        bbox_min = Ren::Min(bbox_min, p2 - Ren::Vec3f{ d, 0.0f, d });
-                        bbox_max = Ren::Max(bbox_max, p2 + Ren::Vec3f{ d, 0.0f, d });
-
-                        if (ls->spot < 0.0f) {
-                            bbox_min = Ren::Min(bbox_min, p1 - Ren::Vec3f{ ls->influence, 0.0f, ls->influence });
-                            bbox_max = Ren::Max(bbox_max, p1 + Ren::Vec3f{ ls->influence, 0.0f, ls->influence });
-                        }
-
-                        auto up = Ren::Vec3f{ 1.0f, 0.0f, 0.0f };
-                        if (std::abs(_dir[1]) < std::abs(_dir[2]) && std::abs(_dir[1]) < std::abs(_dir[0])) {
-                            up = Ren::Vec3f{ 0.0f, 1.0f, 0.0f };
-                        } else if (std::abs(_dir[2]) < std::abs(_dir[0]) && std::abs(_dir[2]) < std::abs(_dir[1])) {
-                            up = Ren::Vec3f{ 0.0f, 0.0f, 1.0f };
-                        }
-
-                        const Ren::Vec3f side = Ren::Cross(_dir, up);
-
-                        Transform ls_transform;
-                        ls_transform.mat = { Ren::Vec4f{ side[0],  -_dir[0], up[0],    0.0f },
-                                             Ren::Vec4f{ side[1],  -_dir[1], up[1],    0.0f },
-                                             Ren::Vec4f{ side[2],  -_dir[2], up[2],    0.0f },
-                                             Ren::Vec4f{ ls->offset[0], ls->offset[1], ls->offset[2], 1.0f } };
-
-                        ls_transform.bbox_min = bbox_min;
-                        ls_transform.bbox_max = bbox_max;
-                        ls_transform.UpdateBBox();
-
-                        // Combine light's bounding box with object's
-                        obj_bbox_min = Ren::Min(obj_bbox_min, ls_transform.bbox_min_ws);
-                        obj_bbox_max = Ren::Max(obj_bbox_max, ls_transform.bbox_max_ws);
-                    } else if (i == CompDecal) {
-                        auto *de = (Decal *)new_component;
-
-                        if (js_comp_obj.Has("diff")) {
-                            const JsString &js_diff = (const JsString &)js_comp_obj.at("diff");
-
-                            auto it = decals_textures.find(js_diff.val);
-
-                            if (it == decals_textures.end()) {
-                                de->diff = load_decal_texture(js_diff.val);
-                                decals_textures[js_diff.val] = de->diff;
-                            } else {
-                                de->diff = decals_textures[js_diff.val];
-                            }
-                        }
-
-                        if (js_comp_obj.Has("norm")) {
-                            const JsString &js_norm = (const JsString &)js_comp_obj.at("norm");
-
-                            auto it = decals_textures.find(js_norm.val);
-
-                            if (it == decals_textures.end()) {
-                                de->norm = load_decal_texture(js_norm.val);
-                                decals_textures[js_norm.val] = de->norm;
-                            } else {
-                                de->norm = decals_textures[js_norm.val];
-                            }
-                        }
-
-                        if (js_comp_obj.Has("spec")) {
-                            const JsString &js_spec = (const JsString &)js_comp_obj.at("spec");
-
-                            auto it = decals_textures.find(js_spec.val);
-
-                            if (it == decals_textures.end()) {
-                                de->spec = load_decal_texture(js_spec.val);
-                                decals_textures[js_spec.val] = de->spec;
-                            } else {
-                                de->spec = decals_textures[js_spec.val];
-                            }
-                        }
-
-                        Ren::Vec4f points[] = {
-                            Ren::Vec4f{ -1.0f, -1.0f, -1.0f, 1.0f }, Ren::Vec4f{ -1.0f, 1.0f, -1.0f, 1.0f },
-                            Ren::Vec4f{ 1.0f, 1.0f, -1.0f, 1.0f }, Ren::Vec4f{ 1.0f, -1.0f, -1.0f, 1.0f },
-
-                            Ren::Vec4f{ -1.0f, -1.0f, 1.0f, 1.0f }, Ren::Vec4f{ -1.0f, 1.0f, 1.0f, 1.0f },
-                            Ren::Vec4f{ 1.0f, 1.0f, 1.0f, 1.0f }, Ren::Vec4f{ 1.0f, -1.0f, 1.0f, 1.0f }
-                        };
-
-                        Ren::Mat4f world_from_clip = Ren::Inverse(de->proj * de->view);
-
-                        for (Ren::Vec4f &point : points) {
-                            point = world_from_clip * point;
-                            point /= point[3];
-
-                            // Combine decals's bounding box with object's
-                            obj_bbox_min = Ren::Min(obj_bbox_min, Ren::Vec3f{ point });
-                            obj_bbox_max = Ren::Max(obj_bbox_max, Ren::Vec3f{ point });
-                        }
-                    } else if (i == CompProbe) {
-                        auto *pr = (LightProbe *)new_component;
-
-                        pr->layer_index = scene_data_.probe_storage.Allocate();
-
-                        // Combine probe's bounding box with object's
-                        obj_bbox_min = Ren::Min(obj_bbox_min, pr->offset - Ren::Vec3f{ pr->radius });
-                        obj_bbox_max = Ren::Max(obj_bbox_max, pr->offset + Ren::Vec3f{ pr->radius });
+                    if (component_post_load_[i]) {
+                        component_post_load_[i](js_comp_obj, new_component, obj_bbox);
                     }
 
                     break;
@@ -543,8 +349,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         }
 
         auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
-        tr->bbox_min = obj_bbox_min;
-        tr->bbox_max = obj_bbox_max;
+        tr->bbox_min = obj_bbox[0];
+        tr->bbox_max = obj_bbox[1];
         tr->UpdateBBox();
 
         if (js_obj.Has("name")) {
@@ -873,6 +679,241 @@ void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target,
     cam_.UpdatePlanes();
 
     cam_.set_max_exposure(max_exposure);
+}
+
+void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+    using namespace SceneManagerConstants;
+
+    auto *dr = (Drawable *)comp;
+
+    if (js_comp_obj.Has("mesh_file")) {
+        const JsString &js_mesh_file_name = (const JsString &)js_comp_obj.at("mesh_file");
+
+        const char *js_mesh_lookup_name = js_mesh_file_name.val.c_str();
+        if (js_comp_obj.Has("mesh_name")) {
+            js_mesh_lookup_name = ((const JsString &)js_comp_obj.at("mesh_name")).val.c_str();
+        }
+
+        Ren::eMeshLoadStatus status;
+        dr->mesh = ctx_.LoadMesh(js_mesh_lookup_name, nullptr, nullptr, &status);
+
+        if (status != Ren::MeshFound) {
+            const std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file_name.val;
+
+            Sys::AssetFile in_file(mesh_path.c_str());
+            size_t in_file_size = in_file.size();
+
+            std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+            in_file.Read((char *)&in_file_data[0], in_file_size);
+
+            Sys::MemBuf mem = { &in_file_data[0], in_file_size };
+            std::istream in_file_stream(&mem);
+
+            using namespace std::placeholders;
+            dr->mesh = ctx_.LoadMesh(js_mesh_lookup_name, &in_file_stream,
+                std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
+            assert(status == Ren::MeshCreatedFromData);
+        }
+    } else {
+        assert(false && "Not supported anymore, update scene file!");
+
+        /*const JsString &js_mesh_name = (const JsString &)js_comp_obj.at("mesh");
+
+        const auto it = all_meshes.find(js_mesh_name.val);
+        if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
+
+        dr->mesh = it->second;*/
+    }
+
+    if (js_comp_obj.Has("material_override")) {
+        const auto &js_materials = (const JsArray &)js_comp_obj.at("material_override");
+
+        int index = 0;
+        for (const JsElement &js_mat_el : js_materials.elements) {
+            if (js_mat_el.type() == JS_STRING) {
+                dr->mesh->group(index).mat = OnLoadMaterial(((const JsString &)js_mat_el).val.c_str());
+            }
+            index++;
+        }
+    }
+
+    obj_bbox[0] = Ren::Min(obj_bbox[0], dr->mesh->bbox_min());
+    obj_bbox[1] = Ren::Max(obj_bbox[1], dr->mesh->bbox_max());
+}
+
+void SceneManager::PostloadOccluder(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+    using namespace SceneManagerConstants;
+
+    auto *occ = (Occluder *)comp;
+
+    const JsString &js_mesh_file_name = (const JsString &)js_comp_obj.at("mesh_file");
+
+    Ren::eMeshLoadStatus status;
+    occ->mesh = ctx_.LoadMesh(js_mesh_file_name.val.c_str(), nullptr, nullptr, &status);
+
+    if (status != Ren::MeshFound) {
+        const std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file_name.val;
+
+        Sys::AssetFile in_file(mesh_path.c_str());
+        size_t in_file_size = in_file.size();
+
+        std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+        in_file.Read((char *)&in_file_data[0], in_file_size);
+
+        Sys::MemBuf mem = { &in_file_data[0], in_file_size };
+        std::istream in_file_stream(&mem);
+
+        using namespace std::placeholders;
+        occ->mesh = ctx_.LoadMesh(
+            js_mesh_file_name.val.c_str(), &in_file_stream,
+            std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
+        assert(status == Ren::MeshCreatedFromData);
+    }
+
+    obj_bbox[0] = Ren::Min(obj_bbox[0], occ->mesh->bbox_min());
+    obj_bbox[1] = Ren::Max(obj_bbox[1], occ->mesh->bbox_max());
+}
+
+void SceneManager::PostloadLightmap(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+    using namespace SceneManagerConstants;
+
+    auto *lm = (Lightmap *)comp;
+
+    int node_id = scene_data_.lm_splitter.Allocate(lm->size, lm->pos);
+    if (node_id == -1) {
+        throw std::runtime_error("Cannot allocate lightmap region!");
+    }
+
+    lm->xform = Ren::Vec4f{
+        float(lm->pos[0]) / LIGHTMAP_ATLAS_RESX, 1.0f - float(lm->pos[1]) / LIGHTMAP_ATLAS_RESY,
+        float(lm->size[0]) / LIGHTMAP_ATLAS_RESX, -float(lm->size[1]) / LIGHTMAP_ATLAS_RESY,
+    };
+}
+
+void SceneManager::PostloadLightSource(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+    auto *ls = (LightSource *)comp;
+
+    // Compute bounding box of light source
+    const auto
+        pos = Ren::Vec4f{ ls->offset[0], ls->offset[1], ls->offset[2], 1.0f },
+        dir = Ren::Vec4f{ ls->dir[0], ls->dir[1], ls->dir[2], 0.0f };
+
+    Ren::Vec3f bbox_min, bbox_max;
+
+    const auto _dir = Ren::Vec3f{ dir[0], dir[1], dir[2] };
+    const Ren::Vec3f p1 = _dir * ls->influence;
+
+    bbox_min = Ren::Min(bbox_min, p1);
+    bbox_max = Ren::Max(bbox_max, p1);
+
+    const Ren::Vec3f p2 = _dir * ls->spot * ls->influence;
+
+    const float d = std::sqrt(1.0f - ls->spot * ls->spot) * ls->influence;
+
+    bbox_min = Ren::Min(bbox_min, p2 - Ren::Vec3f{ d, 0.0f, d });
+    bbox_max = Ren::Max(bbox_max, p2 + Ren::Vec3f{ d, 0.0f, d });
+
+    if (ls->spot < 0.0f) {
+        bbox_min = Ren::Min(bbox_min, p1 - Ren::Vec3f{ ls->influence, 0.0f, ls->influence });
+        bbox_max = Ren::Max(bbox_max, p1 + Ren::Vec3f{ ls->influence, 0.0f, ls->influence });
+    }
+
+    auto up = Ren::Vec3f{ 1.0f, 0.0f, 0.0f };
+    if (std::abs(_dir[1]) < std::abs(_dir[2]) && std::abs(_dir[1]) < std::abs(_dir[0])) {
+        up = Ren::Vec3f{ 0.0f, 1.0f, 0.0f };
+    } else if (std::abs(_dir[2]) < std::abs(_dir[0]) && std::abs(_dir[2]) < std::abs(_dir[1])) {
+        up = Ren::Vec3f{ 0.0f, 0.0f, 1.0f };
+    }
+
+    const Ren::Vec3f side = Ren::Cross(_dir, up);
+
+    Transform ls_transform;
+    ls_transform.mat = { Ren::Vec4f{ side[0],  -_dir[0], up[0],    0.0f },
+        Ren::Vec4f{ side[1],  -_dir[1], up[1],    0.0f },
+        Ren::Vec4f{ side[2],  -_dir[2], up[2],    0.0f },
+        Ren::Vec4f{ ls->offset[0], ls->offset[1], ls->offset[2], 1.0f } };
+
+    ls_transform.bbox_min = bbox_min;
+    ls_transform.bbox_max = bbox_max;
+    ls_transform.UpdateBBox();
+
+    // Combine light's bounding box with object's
+    obj_bbox[0] = Ren::Min(obj_bbox[0], ls_transform.bbox_min_ws);
+    obj_bbox[1] = Ren::Max(obj_bbox[1], ls_transform.bbox_max_ws);
+}
+
+void SceneManager::PostloadDecal(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+    assert(false && "Temporary broken!");
+
+    /*auto *de = (Decal *)comp;
+
+    if (js_comp_obj.Has("diff")) {
+        const JsString &js_diff = (const JsString &)js_comp_obj.at("diff");
+
+        auto it = decals_textures.find(js_diff.val);
+
+        if (it == decals_textures.end()) {
+            de->diff = load_decal_texture(js_diff.val);
+            decals_textures[js_diff.val] = de->diff;
+        } else {
+            de->diff = decals_textures[js_diff.val];
+        }
+    }
+
+    if (js_comp_obj.Has("norm")) {
+        const JsString &js_norm = (const JsString &)js_comp_obj.at("norm");
+
+        auto it = decals_textures.find(js_norm.val);
+
+        if (it == decals_textures.end()) {
+            de->norm = load_decal_texture(js_norm.val);
+            decals_textures[js_norm.val] = de->norm;
+        } else {
+            de->norm = decals_textures[js_norm.val];
+        }
+    }
+
+    if (js_comp_obj.Has("spec")) {
+        const JsString &js_spec = (const JsString &)js_comp_obj.at("spec");
+
+        auto it = decals_textures.find(js_spec.val);
+
+        if (it == decals_textures.end()) {
+            de->spec = load_decal_texture(js_spec.val);
+            decals_textures[js_spec.val] = de->spec;
+        } else {
+            de->spec = decals_textures[js_spec.val];
+        }
+    }
+
+    Ren::Vec4f points[] = {
+        Ren::Vec4f{ -1.0f, -1.0f, -1.0f, 1.0f }, Ren::Vec4f{ -1.0f, 1.0f, -1.0f, 1.0f },
+        Ren::Vec4f{ 1.0f, 1.0f, -1.0f, 1.0f }, Ren::Vec4f{ 1.0f, -1.0f, -1.0f, 1.0f },
+
+        Ren::Vec4f{ -1.0f, -1.0f, 1.0f, 1.0f }, Ren::Vec4f{ -1.0f, 1.0f, 1.0f, 1.0f },
+        Ren::Vec4f{ 1.0f, 1.0f, 1.0f, 1.0f }, Ren::Vec4f{ 1.0f, -1.0f, 1.0f, 1.0f }
+    };
+
+    Ren::Mat4f world_from_clip = Ren::Inverse(de->proj * de->view);
+
+    for (Ren::Vec4f &point : points) {
+        point = world_from_clip * point;
+        point /= point[3];
+
+        // Combine decals's bounding box with object's
+        obj_bbox[0] = Ren::Min(obj_bbox[0], Ren::Vec3f{ point });
+        obj_bbox[1] = Ren::Max(obj_bbox[1], Ren::Vec3f{ point });
+    }*/
+}
+
+void SceneManager::PostloadLightProbe(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+    auto *pr = (LightProbe *)comp;
+
+    pr->layer_index = scene_data_.probe_storage.Allocate();
+
+    // Combine probe's bounding box with object's
+    obj_bbox[0] = Ren::Min(obj_bbox[0], pr->offset - Ren::Vec3f{ pr->radius });
+    obj_bbox[1] = Ren::Max(obj_bbox[1], pr->offset + Ren::Vec3f{ pr->radius });
 }
 
 Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {

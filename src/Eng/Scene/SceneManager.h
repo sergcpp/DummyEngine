@@ -46,7 +46,9 @@ public:
 
     void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov, float max_exposure);
 
-    void RegisterComponent(uint32_t index, CompStorage *storage);
+    using PostLoadFunc = void(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+
+    void RegisterComponent(uint32_t index, CompStorage *storage, const std::function<PostLoadFunc> &post_init);
 
     void InitScene_PT(bool _override = false);
     void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov);
@@ -59,9 +61,17 @@ public:
     void UpdateObjects();
 
     static bool PrepareAssets(const char *in_folder, const char *out_folder, const char *platform, Sys::ThreadPool *p_threads, Ren::ILog *log);
-    static bool WriteProbeCache(const char *out_folder, const char *scene_name, const ProbeStorage &probes,
-            const CompStorage *light_probe_storage, Ren::ILog *log);
+    static bool WriteProbeCache(
+        const char *out_folder, const char *scene_name, const ProbeStorage &probes,
+        const CompStorage *light_probe_storage, Ren::ILog *log);
 private:
+    void PostloadDrawable(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadOccluder(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadLightmap(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadLightSource(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadDecal(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadLightProbe(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+
     Ren::MaterialRef OnLoadMaterial(const char *name);
     Ren::ProgramRef OnLoadProgram(const char *name, const char *arg1, const char *arg2);
     Ren::Texture2DRef OnLoadTexture(const char *name, uint32_t flags);
@@ -82,7 +92,8 @@ private:
     SceneData scene_data_;
     std::vector<uint32_t> changed_objects_, last_changed_objects_;
 
-    std::unique_ptr<CompStorage> default_comp_storage_[MAX_COMPONENT_TYPES];
+    std::unique_ptr<CompStorage>    default_comp_storage_[MAX_COMPONENT_TYPES];
+    std::function<PostLoadFunc>     component_post_load_[MAX_COMPONENT_TYPES];
 
     std::vector<char> temp_buf;
 

@@ -1673,7 +1673,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     return true;
 }
 
-bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_name, const ProbeStorage &probes,
+bool SceneManager::WriteProbeCache(
+        const char *out_folder, const char *scene_name, const ProbeStorage &probes,
         const CompStorage *light_probe_storage, Ren::ILog *log) {
     using namespace SceneManagerInternal;
 
