@@ -53,6 +53,6 @@ list(APPEND ALL_SOURCE_FILES States/_States.cpp)
 source_group("src\\States" FILES States/_States.cpp)
 
 add_library(DummyLib STATIC ${ALL_SOURCE_FILES})
-target_link_libraries(DummyLib Eng Ray Ren Sys astc ${LIBS})
+target_link_libraries(DummyLib Eng Net Ray Ren Sys astc ${LIBS})
 
 add_subdirectory(tests)

@@ -48,6 +48,9 @@ protected:
     std::condition_variable thr_notify_, thr_done_;
     bool shutdown_ = false, notified_ = false;
 
+    // Enable all flags, Renderer will mask out what is not enabled
+    uint32_t                render_flags_ = 0xffffffff;
+
     FrameInfo fr_info_;
 
     Ren::Camera temp_probe_cam_;

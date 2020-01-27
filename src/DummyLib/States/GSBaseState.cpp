@@ -830,8 +830,8 @@ void GSBaseState::UpdateFrame(int list_index) {
             probe_to_render_ = probe;
             probes_to_update_.pop_back();
         }
-        // Enable all flags, Renderer will mask out what is not enabled
-        main_view_lists_[list_index].render_flags = 0xffffffff;
+        
+        main_view_lists_[list_index].render_flags = render_flags_;
 
         renderer_->PrepareDrawList(scene_manager_->scene_data(), scene_manager_->main_cam(), main_view_lists_[list_index]);
     }

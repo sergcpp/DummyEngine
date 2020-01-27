@@ -22,6 +22,7 @@ extern "C" {
 
 #include <Eng/Gui/Renderer.h>
 #include <Eng/Gui/Utils.h>
+#include <Net/Compress.h>
 #include <Ray/internal/TextureSplitter.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
@@ -856,20 +857,30 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         src_stream.read((char *)&mips_count, sizeof(int));
         src_size -= sizeof(int);
 
-        std::unique_ptr<uint8_t[]> mipmaps[16];
+        std::unique_ptr<uint8_t[]>
+            mipmaps[16],
+            compressed_buf(new uint8_t[Net::CalcLZOOutSize(res * res * 4)]);
         uint8_t *_mipmaps[16];
         int widths[16], heights[16];
 
         for (int i = 0; i < mips_count; i++) {
             const int mip_res = int((unsigned)res >> (unsigned)i);
-            const int buf_size = mip_res * mip_res * 4;
+            const int orig_size = mip_res * mip_res * 4;
 
-            mipmaps[i].reset(new uint8_t[buf_size]);
+            int compressed_size;
+            src_stream.read((char *)&compressed_size, sizeof(int));
+            src_stream.read((char *)&compressed_buf[0], compressed_size);
+
+            mipmaps[i].reset(new uint8_t[orig_size]);
+
+            const int decompressed_size = Net::DecompressLZO(&compressed_buf[0], compressed_size, &mipmaps[i][0], orig_size);
+            assert(decompressed_size == orig_size);
+
             _mipmaps[i] = mipmaps[i].get();
             widths[i] = heights[i] = mip_res;
 
-            src_stream.read((char *)&mipmaps[i][0], buf_size);
-            src_size -= buf_size;
+            src_size -= sizeof(int);
+            src_size -= compressed_size;
         }
 
         if (src_size != 0) {
@@ -892,20 +903,29 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         src_stream.read((char *)&mips_count, sizeof(int));
         src_size -= sizeof(int);
 
-        std::unique_ptr<uint8_t[]> mipmaps[16];
+        std::unique_ptr<uint8_t[]>
+            mipmaps[16],
+            compressed_buf(new uint8_t[Net::CalcLZOOutSize(res * res * 4)]);
         uint8_t *_mipmaps[16];
         int widths[16], heights[16];
 
         for (int i = 0; i < mips_count; i++) {
             const int mip_res = int((unsigned)res >> (unsigned)i);
-            const int buf_size = mip_res * mip_res * 4;
+            const int orig_size = mip_res * mip_res * 4;
 
-            mipmaps[i].reset(new uint8_t[buf_size]);
+            int compressed_size;
+            src_stream.read((char *)&compressed_size, sizeof(int));
+            src_stream.read((char *)&compressed_buf[0], compressed_size);
+
+            const int decompressed_size = Net::DecompressLZO(&compressed_buf[0], compressed_size, &mipmaps[i][0], orig_size);
+            assert(decompressed_size == orig_size);
+
+            mipmaps[i].reset(new uint8_t[orig_size]);
             _mipmaps[i] = mipmaps[i].get();
             widths[i] = heights[i] = mip_res;
 
-            src_stream.read((char *)&mipmaps[i][0], buf_size);
-            src_size -= buf_size;
+            src_size -= sizeof(int);
+            src_size -= compressed_size;
         }
 
         if (src_size != 0) {
@@ -1815,7 +1835,9 @@ bool SceneManager::WriteProbeCache(
 
     const int res = probes.res();
     const int temp_buf_size = 4 * res * res;
-    std::unique_ptr<uint8_t[]> temp_buf(new uint8_t[temp_buf_size]);
+    std::unique_ptr<uint8_t[]>
+        temp_buf(new uint8_t[temp_buf_size]),
+        temp_comp_buf(new uint8_t[Net::CalcLZOOutSize(temp_buf_size)]);
 
     std::string out_file_name_base;
     out_file_name_base += out_folder;
@@ -1865,7 +1887,9 @@ bool SceneManager::WriteProbeCache(
                         return false;
                     }
 
-                    out_file.write((char *)&temp_buf[0], buf_size);
+                    const int comp_size = Net::CompressLZO(&temp_buf[0], buf_size, &temp_comp_buf[0]);
+                    out_file.write((char *)&comp_size, sizeof(int));
+                    out_file.write((char *)&temp_comp_buf[0], comp_size);
                 }
             }
         }

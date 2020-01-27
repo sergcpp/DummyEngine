@@ -73,6 +73,7 @@ add_subdirectory(DummyApp)
 add_subdirectory(DummyLib)
 add_subdirectory(Eng)
 add_subdirectory(Modl)
+add_subdirectory(Net)
 add_subdirectory(Ray)
 add_subdirectory(Ren)
 add_subdirectory(Sys)
@@ -86,6 +87,7 @@ set_target_properties(DummyApp
                       ModlApp PROPERTIES FOLDER App)
 
 set_target_properties(Eng
+                      Net
                       Ray
                       Ren
                       SW
@@ -93,6 +95,7 @@ set_target_properties(Eng
 
 set_target_properties(test_DummyLib
                       test_Eng
+                      test_Net
                       test_Ray
                       test_Ren
                       test_SW
@@ -103,6 +106,7 @@ set_target_properties(SOIL2
 
 add_test(DummyLibTest   DummyLib/tests/test_DummyLib)
 add_test(EngTest        Eng/tests/test_Eng)
+add_test(NetTest        Net/tests/test_Net)
 add_test(RayTest        Ray/tests/test_Ray)
 add_test(RenTest        Ren/tests/test_Ren)
 add_test(SWTest         Ren/SW/tests/test_SW)
