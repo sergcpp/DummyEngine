@@ -92,9 +92,11 @@ struct JsArray {
     std::list<JsElement> elements;
 
     JsArray() {}
+    JsArray(const JsArray &rhs) = default;
+    JsArray(JsArray &&rhs) = default;
     JsArray(const JsElement *v, size_t num);
-    JsArray(const std::initializer_list<JsElement> &l);
-    JsArray(std::initializer_list<JsElement> &&l);
+    //JsArray(const std::initializer_list<JsElement> &l);
+    //JsArray(std::initializer_list<JsElement> &&l);
 
     JsElement &operator[](size_t i);
     const JsElement &operator[](size_t i) const;
@@ -115,7 +117,7 @@ struct JsArray {
     }
 
     void Push(JsElement &&el) {
-        elements.emplace_back(el);
+        elements.emplace_back(std::move(el));
     }
 
     bool Read(std::istream &in);
@@ -159,7 +161,6 @@ private:
         data_size = Sys::_compile_time_max<sizeof(JsLiteral), sizeof(JsNumber), sizeof(JsString), sizeof(JsArray), sizeof(JsObject)>::value,
         data_align = Sys::_compile_time_max<alignof(JsLiteral), alignof(JsNumber), alignof(JsString), alignof(JsArray), alignof(JsObject)>::value;
     using data_t = typename std::aligned_storage<data_size, data_align>::type;
-    using helper_t = Sys::_variant_helper<JsLiteral, JsNumber, JsString, JsArray, JsObject>;
 
     JsType type_;
     data_t data_;
@@ -176,6 +177,11 @@ public:
     JsElement(const JsObject &rhs);
     JsElement(const JsLiteral &rhs);
     JsElement(const JsElement &rhs);
+
+    JsElement(JsString &&rhs);
+    JsElement(JsArray &&rhs);
+    JsElement(JsObject &&rhs);
+    JsElement(JsElement &&rhs);
 
     ~JsElement();
 
