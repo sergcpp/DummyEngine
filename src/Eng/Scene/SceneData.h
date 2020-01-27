@@ -106,20 +106,20 @@ public:
 };
 
 struct SceneData {
-    Ren::String             name;
-    Environment             env;
-    Ren::TextureAtlas       decals_atlas;
-    Ren::TextureSplitter    lm_splitter;
-    ProbeStorage            probe_storage;
+    Ren::String                             name;
+    Environment                             env;
+    Ren::TextureAtlas                       decals_atlas;
+    Ren::TextureSplitter                    lm_splitter;
+    ProbeStorage                            probe_storage;
 
-    CompStorage                     *comp_store[MAX_COMPONENT_TYPES] = {};
+    CompStorage                             *comp_store[MAX_COMPONENT_TYPES] = {};
 
-    std::vector<SceneObject>        objects;
-    Ren::HashMap32<Ren::String, uint32_t> name_to_object;
+    Ren::SparseArray<SceneObject>           objects;
+    Ren::HashMap32<Ren::String, uint32_t>   name_to_object;
 
-    std::vector<bvh_node_t>         nodes;
-    std::vector<uint32_t>           free_nodes;
-    uint32_t                        root_node = 0xffffffff;
+    std::vector<bvh_node_t>                 nodes;
+    std::vector<uint32_t>                   free_nodes;
+    uint32_t                                root_node = 0xffffffff;
 
-    uint32_t                        update_counter = 0;
+    uint32_t                                update_counter = 0;
 };

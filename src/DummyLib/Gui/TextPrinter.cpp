@@ -2,8 +2,10 @@
 
 #include <random>
 
+#include <Eng/Gui/BitmapFont.h>
 #include <Eng/Gui/Image9Patch.h>
 #include <Eng/Gui/Utils.h>
+#include <Ren/Context.h>
 #include <Sys/Json.h>
 
 namespace TextPrinterInternal {
@@ -301,7 +303,8 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
     hint_rects_.clear();
     expanded_rects_.clear();
 
-    std::string portion_string;
+    char portion_buf[4096];
+    int portion_buf_size = 0;
 
     const float font_height = font_->height(parent_);
     const uint8_t
@@ -400,7 +403,10 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
                     expanded_y = y_offset;
                 }
 
-                const float width = font_->GetWidth(portion_string.c_str(), parent_);
+                // null terminate
+                portion_buf[portion_buf_size] = '\0';
+
+                const float width = font_->GetWidth(portion_buf, parent_);
 
                 rect_t &rect = options_rects_.back();
                 rect.dims[1] = Ren::Vec2f{ width, font_height };
@@ -430,7 +436,10 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
                     expanded_hint_y = y_offset;
                 }
 
-                const float width = font_->GetWidth(portion_string.c_str(), parent_);
+                // null terminate
+                portion_buf[portion_buf_size] = '\0';
+
+                const float width = font_->GetWidth(portion_buf, parent_);
 
                 rect_t &rect = hint_rects_.back();
                 rect.dims[1] = Gui::Vec2f{ width, font_height };
@@ -448,11 +457,11 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
         }
 
         for (int j = char_start; j < char_pos; j++) {
-            portion_string += cur_text_data_[j];
+            portion_buf[portion_buf_size++] = cur_text_data_[j];
         }
 
         if (unicode == Gui::g_unicode_spacebar) {
-            size_t len_before = portion_string.length();
+            const int len_before = portion_buf_size;
 
             int next_pos = char_pos;
             while (cur_text_data_[next_pos]) {
@@ -470,25 +479,31 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
                 }
 
                 for (int j = next_start; j < next_pos; j++) {
-                    portion_string += cur_text_data_[j];
+                    portion_buf[portion_buf_size++] = cur_text_data_[j];
                 }
 
                 if (unicode == Gui::g_unicode_spacebar) break;
             }
 
-            const float width = x_offset + font_->GetWidth(portion_string.c_str(), parent_);
+            // null terminate
+            portion_buf[portion_buf_size] = '\0';
+
+            const float width = x_offset + font_->GetWidth(portion_buf, parent_);
             if (width > 1.0f - side_offset) {
                 new_line = true;
             }
 
-            portion_string.resize(len_before);
+            portion_buf_size = len_before;
             draw = true;
         }
 
         if (draw) {
-            x_offset += font_->DrawText(r, portion_string.c_str(), Gui::Vec2f{ x_offset, y_offset }, cur_color, parent_);
+            // null terminate
+            portion_buf[portion_buf_size] = '\0';
 
-            portion_string.clear();
+            x_offset += font_->DrawText(r, portion_buf, Gui::Vec2f{ x_offset, y_offset }, cur_color, parent_);
+
+            portion_buf_size = 0;
             if (new_line) {
                 y_offset -= font_height;
                 x_offset = dims_[0][0] + side_offset;
@@ -500,8 +515,11 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
     }
 
     // draw the last line
-    if (!portion_string.empty()) {
-        x_offset += font_->DrawText(r, portion_string.c_str(), Gui::Vec2f{ x_offset, y_offset }, text_color_stack[text_color_stack_size - 1], parent_);
+    if (portion_buf_size) {
+        // null terminate
+        portion_buf[portion_buf_size] = '\0';
+
+        x_offset += font_->DrawText(r, portion_buf, Gui::Vec2f{ x_offset, y_offset }, text_color_stack[text_color_stack_size - 1], parent_);
     }
 
     // draw option selector

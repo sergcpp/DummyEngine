@@ -18,12 +18,14 @@ public:
         va_start(vl, fmt);
         vprintf(fmt, vl);
         va_end(vl);
+        putc('\n', stdout);
     }
     void Error(const char *fmt, ...) override {
         va_list vl;
         va_start(vl, fmt);
         vprintf(fmt, vl);
         va_end(vl);
+        putc('\n', stderr);
     }
 };
 
@@ -61,7 +63,7 @@ private:
     Ren::MeshRef view_mesh_;
     Ren::AnimSeqRef anim_seq_;
     float anim_time_ = 0.0f;
-    Ren::Mat4f matr_palette_[96];
+    Ren::Mat4f matr_palette_[160];
     Ren::Camera cam_;
     Ren::Context ctx_;
 

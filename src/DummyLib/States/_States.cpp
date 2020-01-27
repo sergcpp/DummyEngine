@@ -8,3 +8,9 @@
 #include "GSDrawTest.cpp"
 #include "GSUITest.cpp"
 #include "GSUITest2.cpp"
+#include "GSUITest3.cpp"
+
+#if defined(USE_GL_RENDER)
+#include "GSUITest3GL.cpp"
+#elif defined(USE_SW_RENDER)
+#endif

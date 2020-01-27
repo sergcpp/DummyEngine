@@ -98,7 +98,7 @@ private:
     std::vector<char> temp_buf;
 
     bool cur_lm_indir_ = false;
-    size_t cur_lm_obj_ = 0;
+    uint32_t cur_lm_obj_ = 0;
 
     // PT temp data
     std::vector<Ray::pixel_color_t> pt_lm_direct_, pt_lm_indir_,

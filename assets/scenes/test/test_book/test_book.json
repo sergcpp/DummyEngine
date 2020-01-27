@@ -1,0 +1,22 @@
+{
+    "title" : {
+        "en" : "Harry Potter and the Methods of Rationality",
+        "de" : "Harry Potter und die Methoden des rationalen Denkens"
+    },
+    "chapters" : [
+        {
+            "html_src" : {
+                "en" : "en/ch1.html",
+                "de" : "de/ch1.html"
+            }
+        },
+        {
+            "html_src" : {
+                "en" : "en/ch2.html",
+                "de" : "de/ch2.html"
+            }
+        }
+    ]
+}
+
+

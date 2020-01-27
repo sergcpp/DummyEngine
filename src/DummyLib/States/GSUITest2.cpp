@@ -218,7 +218,7 @@ void GSUITest2::Exit() {
 }
 
 void GSUITest2::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
-    using namespace GSUITestInternal;
+    using namespace GSUITest2Internal;
 
     GSBaseState::DrawUI(r, root);
 

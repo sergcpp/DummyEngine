@@ -455,7 +455,7 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
 }
 
 void GSDrawTest::OnUpdateScene() {
-    float delta_time_s = fr_info_.delta_time_us * 0.000001f;
+    const float delta_time_s = fr_info_.delta_time_us * 0.000001f;
 
     // test test test
     TestUpdateAnims(delta_time_s);

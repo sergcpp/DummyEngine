@@ -331,7 +331,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 if (!store) continue;
 
                 if (js_comp_name == store->name()) {
-                    uint32_t index = store->Create();
+                    const uint32_t index = store->Create();
 
                     void *new_component = store->Get(index);
                     store->ReadFromJs(js_comp_obj, new_component);
@@ -359,7 +359,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             scene_data_.name_to_object[obj.name] = (uint32_t)scene_data_.objects.size();
         }
 
-        scene_data_.objects.emplace_back(std::move(obj));
+        scene_data_.objects.emplace(std::move(obj));
     }
 
     if (js_scene.Has("environment")) {
@@ -528,7 +528,7 @@ void SceneManager::SaveScene(JsObject &js_scene) {
                     JsObject js_comp;
                     comp_storage[i]->WriteToJs(p_comp, js_comp);
 
-                    js_obj.Push(comp_storage[i]->name(), js_comp);
+                    js_obj.Push(comp_storage[i]->name(), std::move(js_comp));
                 }
             }
 
@@ -734,6 +734,30 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp, Ren
                 dr->mesh->group(index).mat = OnLoadMaterial(((const JsString &)js_mat_el).val.c_str());
             }
             index++;
+        }
+    }
+
+    if (js_comp_obj.Has("anims")) {
+        const JsArray &js_anims = (const JsArray &)js_comp_obj.at("anims");
+
+        assert(dr->mesh->type() == Ren::MeshSkeletal);
+        Ren::Skeleton *skel = dr->mesh->skel();
+
+        for (const auto &js_anim : js_anims.elements) {
+            const auto &js_anim_name = (const JsString &)js_anim;
+            std::string anim_path = std::string(MODELS_PATH) + js_anim_name.val;
+
+            Sys::AssetFile in_file(anim_path.c_str());
+            size_t in_file_size = in_file.size();
+
+            std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+            in_file.Read((char *)&in_file_data[0], in_file_size);
+
+            Sys::MemBuf mem = { &in_file_data[0], in_file_size };
+            std::istream in_file_stream(&mem);
+
+            Ren::AnimSeqRef anim_ref = ctx_.LoadAnimSequence(js_anim_name.val.c_str(), in_file_stream);
+            skel->AddAnimSequence(anim_ref);
         }
     }
 

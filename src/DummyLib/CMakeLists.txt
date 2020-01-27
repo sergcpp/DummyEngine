@@ -7,6 +7,8 @@ set(SOURCE_FILES    Viewer.h
 set(GUI_SOURCES Gui/DebugInfoUI.h
                 Gui/DebugInfoUI.cpp 
                 Gui/FontStorage.h
+                Gui/PagedReader.h
+                Gui/PagedReader.cpp
                 Gui/TextPrinter.h
                 Gui/TextPrinter.cpp)
 
@@ -19,7 +21,18 @@ set(STATES_SOURCES  States/GSCreate.h
                     States/GSUITest.h
                     States/GSUITest.cpp
                     States/GSUITest2.h
-                    States/GSUITest2.cpp)
+                    States/GSUITest2.cpp
+                    States/GSUITest3.h
+                    States/GSUITest3.cpp
+                    )
+
+if(${RENDERER} STREQUAL "GL")
+    set(STATES_SOURCES ${STATES_SOURCES}
+                        States/GSUITest3GL.cpp)
+elseif(${RENDERER} STREQUAL "SW")
+
+endif()
+
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 #set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)

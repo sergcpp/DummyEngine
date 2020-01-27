@@ -5,3 +5,4 @@
 
 #include "DebugInfoUI.cpp"
 #include "TextPrinter.cpp"
+#include "PagedReader.cpp"

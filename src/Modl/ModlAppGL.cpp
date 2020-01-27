@@ -109,8 +109,8 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
     Mat4f world_from_object = Mat4f{ 1.0f };
 
-    //world_from_object = Rotate(world_from_object, angle_x_, { 1, 0, 0 });
-    world_from_object = Rotate(world_from_object, angle_y_, { 0, 1, 0 });
+    //world_from_object = Rotate(world_from_object, angle_x_, Vec3f{ 1, 0, 0 });
+    world_from_object = Rotate(world_from_object, angle_y_, Vec3f{ 0, 1, 0 });
 
     Mat4f view_from_world = cam_.view_matrix(),
           proj_from_view = cam_.proj_matrix();
@@ -121,8 +121,8 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     glUniformMatrix4fv(U_MVP_MATR, 1, GL_FALSE, ValuePtr(proj_from_object));
     glUniformMatrix4fv(U_M_MATR, 1, GL_FALSE, ValuePtr(world_from_object));
 
-    size_t num_bones = skel->matr_palette.size();
-    glUniformMatrix4fv(U_M_PALETTE, (GLsizei)num_bones, GL_FALSE, ValuePtr(skel->matr_palette[0]));
+    size_t num_bones = skel->bones.size();
+    glUniformMatrix4fv(U_M_PALETTE, (GLsizei)num_bones, GL_FALSE, ValuePtr(matr_palette_[0]));
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -138,11 +138,11 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
         }
         BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
 
-        glDrawElementsBaseVertex(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset), (GLint)m->sk_indices_buf().offset - m->indices_buf().offset);
+        glDrawElementsBaseVertex(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset), (GLint)0);
         ++s;
     }
 
-    Ren::CheckError();
+    Ren::CheckError("", &log_);
 #else
 
     {   // transform vertices
@@ -158,8 +158,15 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
         glUniform2i(0, vertex_offset, 0);
 
-        size_t num_bones = skel->bones.size();
-        glUniformMatrix4fv(2, (GLsizei)num_bones, GL_FALSE, ValuePtr(matr_palette_[0]));
+        const size_t num_bones = skel->bones.size();
+
+        Mat3x4f _matr_palette[160];
+        for (size_t i = 0; i < num_bones; i++) {
+            const Mat4f tr_mat = Ren::Transpose(matr_palette_[i]);
+            memcpy(&_matr_palette[i][0][0], ValuePtr(tr_mat), 12 * sizeof(float));
+        }
+
+        glUniformMatrix3x4fv(2, (GLsizei)num_bones, GL_FALSE, ValuePtr(_matr_palette[0]));
 
         glDispatchCompute(vertex_count, 1, 1);
     }
@@ -218,19 +225,20 @@ void ModlApp::CheckInitVAOs() {
     Ren::BufferRef skin_vtx_buf = ctx_.default_skin_vertex_buf();
     Ren::BufferRef ndx_buf = ctx_.default_indices_buf();
 
-    GLuint gl_vertex_buf1 = (GLuint)vtx_buf1->buf_id(),
-           gl_vertex_buf2 = (GLuint)vtx_buf2->buf_id(),
-           gl_skin_vertex_buf = (GLuint)skin_vtx_buf->buf_id(),
-           gl_indices_buf = (GLuint)ndx_buf->buf_id();
+    const auto
+        gl_vertex_buf1 = (GLuint)vtx_buf1->buf_id(),
+        gl_vertex_buf2 = (GLuint)vtx_buf2->buf_id(),
+        gl_skin_vertex_buf = (GLuint)skin_vtx_buf->buf_id(),
+        gl_indices_buf = (GLuint)ndx_buf->buf_id();
 
     if (gl_vertex_buf1 != last_vertex_buf1_ || gl_vertex_buf2 != last_vertex_buf2_ ||
         gl_skin_vertex_buf != last_skin_vertex_buffer_ || gl_indices_buf != last_index_buffer_) {
 
         if (last_vertex_buf1_) {
-            GLuint simple_mesh_vao = (GLuint)simple_vao_;
+            auto simple_mesh_vao = (GLuint)simple_vao_;
             glDeleteVertexArrays(1, &simple_mesh_vao);
 
-            GLuint skinned_mesh_vao = (GLuint)skinned_vao_;
+            auto skinned_mesh_vao = (GLuint)skinned_vao_;
             glDeleteVertexArrays(1, &skinned_mesh_vao);
         }
 
@@ -461,7 +469,7 @@ void ModlApp::InitInternal() {
             } out_data1;
 
             layout(location = 0) uniform ivec2 uOffsets;
-            layout(location = 2) uniform mat4 uMPalette[96];
+            layout(location = 2) uniform mat3x4 uMPalette[160];
             
             layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
@@ -489,7 +497,7 @@ void ModlApp::InitInternal() {
                 mediump vec4 vtx_weights = vec4(unpackUnorm2x16(in_data.vertices[i].bone_weights.x),
                                                 unpackUnorm2x16(in_data.vertices[i].bone_weights.y));
 
-                highp mat4 mat = mat4(0.0);
+                highp mat3x4 mat = mat3x4(0.0);
 
                 for (int j = 0; j < 4; j++) {
                     if (vtx_weights[j] > 0.0) {
@@ -497,11 +505,11 @@ void ModlApp::InitInternal() {
                     }
                 }
 
-                highp vec4 _p = mat * vec4(p, 1.0);
+                highp mat4x3 tr_mat = transpose(mat);
 
-                highp vec3 tr_p = _p.xyz / _p.w;
-                mediump vec3 tr_n = normalize((mat * vec4(n, 0.0)).xyz);
-                mediump vec3 tr_b = normalize((mat * vec4(b, 0.0)).xyz);
+                highp vec3 tr_p = tr_mat * vec4(p, 1.0);
+                mediump vec3 tr_n = tr_mat * vec4(n, 0.0);
+                mediump vec3 tr_b = tr_mat * vec4(b, 0.0);
 
                 int out_ndx = int(uOffsets[1] + gl_GlobalInvocationID.x);
                 

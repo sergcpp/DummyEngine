@@ -218,8 +218,8 @@ int ModlApp::Init(int w, int h) {
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 #endif
 
-    window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                               w, h, SDL_WINDOW_OPENGL);
+    window_ = SDL_CreateWindow(
+        "View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_OPENGL);
 
 #if defined(USE_GL_RENDER)
     gl_ctx_ = SDL_GL_CreateContext(window_);

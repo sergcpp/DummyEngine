@@ -86,7 +86,7 @@ void SceneManager::ResetLightmaps_PT() {
     Ray::camera_desc_t cam_desc;
     ray_scene_->GetCamera(1, cam_desc);
 
-    for (size_t i = 0; i < scene_data_.objects.size(); i++) {
+    for (uint32_t i = 0; i < (uint32_t)scene_data_.objects.size(); i++) {
         if (scene_data_.objects[i].comp_mask & CompLightmapBit) {
             const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(scene_data_.objects[i].components[CompTransform]);
             const auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(scene_data_.objects[i].components[CompLightmap]);
@@ -273,7 +273,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
         } else {
             bool found = false;
 
-            for (size_t i = cur_lm_obj_ + 1; i < scene_data_.objects.size(); i++) {
+            for (uint32_t i = cur_lm_obj_ + 1; i < (uint32_t)scene_data_.objects.size(); i++) {
                 if (scene_data_.objects[i].comp_mask & CompLightmapBit) {
                     const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(scene_data_.objects[i].components[CompTransform]);
 

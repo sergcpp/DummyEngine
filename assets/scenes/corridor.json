@@ -15,14 +15,6 @@
         "fov" : 75.0,
         "max_exposure" : 10.0
     },
-    "meshes" : {
-        "corridor" : {
-            "mesh_file" : "new_test/corridor.mesh"
-        },
-        "holo_woman" : {
-            "mesh_file" : "new_test/holo_woman.mesh"
-        },
-    },
     "decals" : {
     },
     "objects" : [
@@ -32,7 +24,7 @@
                 "pos" : [ -4.192, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "corridor"
+                "mesh_file" : "new_test/corridor.mesh"
             }
         },
         {
@@ -41,7 +33,7 @@
                 "rot" : [ 0.0, -139.146, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "holo_woman"
+                "mesh_file" : "new_test/holo_woman.mesh"
             }
         },
         {

@@ -1,0 +1,6 @@
+gl_program: _book_test main_probelit.vert.glsl _book_test.frag.glsl
+gl_program: _book_test main_probelit.vert.glsl _book_test.frag.glsl
+sw_program: main
+texture: book/book_page.png srgb
+texture: default_normalmap.png
+texture: default_specular.png

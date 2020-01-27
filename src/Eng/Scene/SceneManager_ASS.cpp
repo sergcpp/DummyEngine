@@ -4,6 +4,7 @@
 #include <functional>
 #include <iterator>
 #include <numeric>
+#include <regex>
 
 #include <dirent.h>
 
@@ -648,8 +649,6 @@ bool CreateFolders(const char *out_file, Ren::ILog *log) {
 int astc_main(int argc, char **argv);
 
 void test_inappropriate_extended_precision();
-void prepare_angular_tables();
-void build_quantization_mode_table();
 void find_closest_blockdim_2d(float target_bitrate, int *x, int *y, int consider_illegal);
 
 void encode_astc_image(const astc_codec_image *input_image,
@@ -862,7 +861,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         int widths[16], heights[16];
 
         for (int i = 0; i < mips_count; i++) {
-            const int mip_res = (res >> i);
+            const int mip_res = int((unsigned)res >> (unsigned)i);
             const int buf_size = mip_res * mip_res * 4;
 
             mipmaps[i].reset(new uint8_t[buf_size]);
@@ -898,7 +897,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         int widths[16], heights[16];
 
         for (int i = 0; i < mips_count; i++) {
-            const int mip_res = (res >> i);
+            const int mip_res = int((unsigned)res >> (unsigned)i);
             const int buf_size = mip_res * mip_res * 4;
 
             mipmaps[i].reset(new uint8_t[buf_size]);
@@ -983,7 +982,72 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
     };
 
-    auto h_preprocess_json = [&replace_texture_extension, log](const char *in_file, const char *out_file) {
+    auto extract_html_data = [](const char *in_file, std::string &out_caption) -> std::string {
+        std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
+        int file_size = (int)src_stream.tellg();
+        src_stream.seekg(0, std::ios::beg);
+
+        // TODO: buffered read?
+        std::unique_ptr<char[]> in_buf(new char[file_size]);
+        src_stream.read(&in_buf[0], file_size);
+
+        std::string out_str;
+        out_str.reserve(file_size);
+
+        bool body_active = false, header_active = false;
+        bool p_active = false;
+
+        int buf_pos = 0;
+        while (buf_pos < file_size) {
+            int start_pos = buf_pos;
+
+            uint32_t unicode;
+            buf_pos += Gui::ConvChar_UTF8_to_Unicode(&in_buf[buf_pos], unicode);
+
+            if (unicode == Gui::g_unicode_less_than) {
+                char tag_str[32];
+                int tag_str_len = 0;
+
+                while (unicode != Gui::g_unicode_greater_than) {
+                    buf_pos += Gui::ConvChar_UTF8_to_Unicode(&in_buf[buf_pos], unicode);
+                    tag_str[tag_str_len++] = (char)unicode;
+                }
+                tag_str[tag_str_len - 1] = '\0';
+
+                if (strcmp(tag_str, "body") == 0) {
+                    body_active = true;
+                    continue;
+                } else if (strcmp(tag_str, "/body") == 0) {
+                    body_active = false;
+                    continue;
+                } else if (strcmp(tag_str, "header") == 0) {
+                    header_active = true;
+                    continue;
+                } else if (strcmp(tag_str, "p") == 0) {
+                    p_active = true;
+                } else if (strcmp(tag_str, "/p") == 0) {
+                    out_str += "</p>";
+                    p_active = false;
+                    continue;
+                } else if (strcmp(tag_str, "/header") == 0) {
+                    header_active = false;
+                    continue;
+                }
+            }
+
+            if (body_active) {
+                if (p_active) {
+                    out_str.append(&in_buf[start_pos], buf_pos - start_pos);
+                } else if (header_active) {
+                    out_caption.append(&in_buf[start_pos], buf_pos - start_pos);
+                }
+            }
+        }
+
+        return out_str;
+    };
+
+    auto h_preprocess_json = [&replace_texture_extension, &extract_html_data, log](const char *in_file, const char *out_file) {
         log->Info("[PrepareAssets] Prep %s", out_file);
 
         std::ifstream src_stream(in_file, std::ios::binary);
@@ -992,6 +1056,14 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         JsObject js_root;
         if (!js_root.Read(src_stream)) {
             throw std::runtime_error("Cannot load scene!");
+        }
+
+        std::string base_path = in_file;
+        {   // extract base part of file path
+            size_t n = base_path.find_last_of('/');
+            if (n != std::string::npos) {
+                base_path = base_path.substr(0, n + 1);
+            }
         }
 
         if (js_root.Has("objects")) {
@@ -1029,6 +1101,60 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
                         replace_texture_extension(js_face_str.val);
                     }
                 }
+            }
+        }
+
+        if (js_root.Has("chapters")) {
+            auto &js_chapters = (JsArray &)js_root.at("chapters");
+            for (JsElement &js_chapter_el : js_chapters.elements) {
+                auto &js_chapter = (JsObject &)js_chapter_el;
+
+                JsObject js_caption, js_text_data;
+
+                if (js_chapter.Has("html_src")) {
+                    auto &js_html_src = (JsObject &)js_chapter.at("html_src");
+                    for (auto &js_src_pair : js_html_src.elements) {
+                        const auto
+                            &js_lang = (JsString &)js_src_pair.first,
+                            &js_file_path = (JsString &)js_src_pair.second;
+
+                        const std::string html_file_path = base_path + js_file_path.val;
+
+                        std::string caption;
+                        std::string html_body = extract_html_data(html_file_path.c_str(), caption);
+
+                        caption = std::regex_replace(caption, std::regex("\n"), "");
+                        caption = std::regex_replace(caption, std::regex("\'"), "&apos;");
+                        caption = std::regex_replace(caption, std::regex("\""), "&quot;");
+                        caption = std::regex_replace(caption, std::regex("<h1>"), "");
+                        caption = std::regex_replace(caption, std::regex("</h1>"), "");
+
+                        html_body = std::regex_replace(html_body, std::regex("\n"), "");
+                        html_body = std::regex_replace(html_body, std::regex("\'"), "&apos;");
+                        html_body = std::regex_replace(html_body, std::regex("\""), "&quot;");
+
+                        // remove spaces
+                        if (!caption.empty()) {
+                            int n = 0;
+                            while (n < caption.length() && caption[n] == ' ') n++;
+                            caption.erase(0, n);
+                            while (caption.back() == ' ') caption.pop_back();
+                        }
+
+                        if (!html_body.empty()) {
+                            int n = 0;
+                            while (n < html_body.length() && html_body[n] == ' ') n++;
+                            html_body.erase(0, n);
+                            while (html_body.back() == ' ') html_body.pop_back();
+                        }
+
+                        js_caption[js_lang.val] = JsString{ caption };
+                        js_text_data[js_lang.val] = JsString{ html_body };
+                    }
+                }
+
+                js_chapter["caption"] = std::move(js_caption);
+                js_chapter["text_data"] = std::move(js_text_data);
             }
         }
 
@@ -1223,8 +1349,12 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             line_height = 24.0f;
         } else if (strstr(in_file, "_32px")) {
             line_height = 32.0f;
+        } else if (strstr(in_file, "_36px")) {
+            line_height = 36.0f;
         } else if (strstr(in_file, "_48px")) {
             line_height = 48.0f;
+            temp_bitmap_res[0] = 512;
+            temp_bitmap_res[1] = 512;
         }
 
         const float scale = stbtt_ScaleForPixelHeight(&font, line_height);
@@ -1239,6 +1369,11 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             { Gui::g_unicode_umlauts[1], Gui::g_unicode_umlauts[1] + 1 },
             { Gui::g_unicode_umlauts[2], Gui::g_unicode_umlauts[2] + 1 },
             { Gui::g_unicode_umlauts[3], Gui::g_unicode_umlauts[3] + 1 },
+            { Gui::g_unicode_umlauts[4], Gui::g_unicode_umlauts[4] + 1 },
+            { Gui::g_unicode_umlauts[5], Gui::g_unicode_umlauts[5] + 1 },
+            { Gui::g_unicode_umlauts[6], Gui::g_unicode_umlauts[6] + 1 },
+            { Gui::g_unicode_ampersand,  Gui::g_unicode_ampersand + 1 },
+            { Gui::g_unicode_semicolon,  Gui::g_unicode_semicolon + 1 },
             { Gui::g_unicode_heart,      Gui::g_unicode_heart + 1 }
         };
         const int glyph_range_count = sizeof(glyph_ranges) / sizeof(glyph_ranges[0]);
@@ -1499,7 +1634,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
         assert(out_glyph_count == total_glyph_count);
 
-        /*if (strstr(in_file, "Roboto-Regular_12px")) {
+        /*if (strstr(in_file, "Roboto-Regular_16px")) {
             WriteImage(temp_bitmap.get(), temp_bitmap_res[0], temp_bitmap_res[1], 4, "test.png");
         }*/
 

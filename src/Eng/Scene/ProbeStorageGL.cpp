@@ -84,7 +84,7 @@ void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity, Re
                 for (int y_off = 0; y_off < _res; y_off += blank_block_res) {
                     const int buf_len =
 #if defined(__ANDROID__)
-                        // TODO: this fixes an error on android (wtf ???)
+                        // TODO: '+ y_off' fixes an error on Qualcomm (wtf ???)
                         (_init_res / 4) * ((_init_res + y_off) / 4) * 16;
 #else
                         (_init_res / 4) * (_init_res / 4) * 16;
@@ -99,18 +99,12 @@ void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity, Re
                         } else {
                             ren_glCompressedTextureSubImage3D_Comp(
                                     GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, level, x_off, y_off, (layer * 6 + face), _init_res, _init_res, 1, compressed_tex_format,
-#if defined(__ANDROID__)
-                                    /*Ren::_blank_ASTC_block_16x16_8bb_len*/ len_override, Ren::_blank_ASTC_block_16x16_8bb);
-#else
                                     buf_len, blank_block);
-#endif
                             Ren::CheckError("glCompressedTexSubImage3D", log);
                         }
                     }
                 }
             }
-
-
         }
     }
 

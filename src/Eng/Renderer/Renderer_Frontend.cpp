@@ -61,9 +61,9 @@ static const uint8_t SunShadowUpdatePattern[4] = {
 };
 }
 
-#define REN_UNINITIALIZE_X2  Ren::Vec4f{ Ren::Uninitialize }, Ren::Vec4f{ Ren::Uninitialize }
-#define REN_UNINITIALIZE_X4  REN_UNINITIALIZE_X2, REN_UNINITIALIZE_X2
-#define REN_UNINITIALIZE_X8  REN_UNINITIALIZE_X4, REN_UNINITIALIZE_X4
+#define REN_UNINITIALIZE_X2(t)  t{ Ren::Uninitialize }, t{ Ren::Uninitialize }
+#define REN_UNINITIALIZE_X4(t)  REN_UNINITIALIZE_X2(t), REN_UNINITIALIZE_X2(t)
+#define REN_UNINITIALIZE_X8(t)  REN_UNINITIALIZE_X4(t), REN_UNINITIALIZE_X4(t)
 
 #define BBOX_POINTS(min, max) \
     (min)[0], (min)[1], (min)[2],     \
@@ -158,8 +158,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     assert(scene.comp_store[CompProbe]->IsSequential());
     assert(scene.comp_store[CompAnimState]->IsSequential());
 
-    const Ren::Mat4f view_from_world = list.draw_cam.view_matrix(),
-                     clip_from_view = list.draw_cam.proj_matrix();
+    const Ren::Mat4f
+        &view_from_world = list.draw_cam.view_matrix(),
+        &clip_from_view = list.draw_cam.proj_matrix();
 
     swCullCtxClear(&cull_ctx_);
 
@@ -203,7 +204,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 if ((obj.comp_mask & occluder_flags) == occluder_flags) {
                     const Transform &tr = transforms[obj.components[CompTransform]];
 
-                    // Node has slightly enlarged bounds, so we need to check object's bounding box here
+                    // Node has slightly enlarged bounds, so we need to check object'grp bounding box here
                     if (!skip_check &&
                         list.draw_cam.CheckFrustumVisibility(tr.bbox_min_ws, tr.bbox_max_ws) == Ren::Invisible) continue;
 
@@ -302,7 +303,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     if (!skip_check) {
                         const float bbox_points[8][3] = { BBOX_POINTS(tr.bbox_min_ws, tr.bbox_max_ws) };
 
-                        // Node has slightly enlarged bounds, so we need to check object's bounding box here
+                        // Node has slightly enlarged bounds, so we need to check object'grp bounding box here
                         if (list.draw_cam.CheckFrustumVisibility(bbox_points) == Ren::Invisible) continue;
 
                         if (culling_enabled) {
@@ -352,7 +353,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         const Ren::Mesh *mesh = dr.mesh.get();
 
                         const float max_sort_dist = 100.0f;
-                        const uint8_t dist = (uint8_t)_MIN(255 * Ren::Distance(tr.bbox_min_ws, cam.world_position()) / max_sort_dist, 255);
+                        const auto dist = (uint8_t)_MIN(255 * Ren::Distance(tr.bbox_min_ws, cam.world_position()) / max_sort_dist, 255);
 
                         uint32_t base_vertex = mesh->attribs_buf1().offset / 16;
 
@@ -364,9 +365,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             proc_objects_[n->prim_index].base_vertex = base_vertex;
                         }
 
-                        const Ren::TriGroup *s = &mesh->group(0);
-                        while (s->offset != -1) {
-                            const Ren::Material *mat = s->mat.get();
+                        const Ren::TriGroup *grp = &mesh->group(0);
+                        while (grp->offset != -1) {
+                            const Ren::Material *mat = grp->mat.get();
                             const uint32_t mat_flags = mat->flags();
                             
                             MainDrawBatch &main_batch = list.main_batches.data[list.main_batches.count++];
@@ -374,11 +375,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             main_batch.prog_id = (uint32_t)mat->program(program_index).index();
                             main_batch.alpha_test_bit = (mat_flags & Ren::AlphaTest) ? 1 : 0;
                             main_batch.alpha_blend_bit = (mat_flags & Ren::AlphaBlend) ? 1 : 0;
-                            main_batch.mat_id = (uint32_t)s->mat.index();
+                            main_batch.mat_id = (uint32_t)grp->mat.index();
                             main_batch.cam_dist = (mat_flags & Ren::AlphaBlend) ? uint32_t(dist) : 0;
-                            main_batch.indices_offset = mesh->indices_buf().offset + s->offset;
+                            main_batch.indices_offset = mesh->indices_buf().offset + grp->offset;
                             main_batch.base_vertex = base_vertex;
-                            main_batch.indices_count = s->num_indices;
+                            main_batch.indices_count = grp->num_indices;
                             main_batch.instance_indices[0] = (uint32_t)(list.instances.count - 1);
                             main_batch.instance_count = 1;
 
@@ -389,12 +390,12 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 zfill_batch.mat_id = (mat_flags & Ren::AlphaTest) ? main_batch.mat_id : 0;
                                 zfill_batch.indices_offset = main_batch.indices_offset;
                                 zfill_batch.base_vertex = base_vertex;
-                                zfill_batch.indices_count = s->num_indices;
+                                zfill_batch.indices_count = grp->num_indices;
                                 zfill_batch.instance_indices[0] = (uint32_t)(list.instances.count - 1);
                                 zfill_batch.instance_count = 1;
                             }
 
-                            ++s;
+                            ++grp;
                         }
                     }
 
@@ -453,7 +454,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                         const Ren::Mat4f world_from_clip = Ren::Inverse(clip_from_world);
 
-                        Ren::Vec4f bbox_points[] = { REN_UNINITIALIZE_X8 };
+                        Ren::Vec4f bbox_points[] = { REN_UNINITIALIZE_X8(Ren::Vec4f) };
 
                         Ren::Vec3f bbox_min = Ren::Vec3f{ std::numeric_limits<float>::max() },
                                    bbox_max = Ren::Vec3f{ std::numeric_limits<float>::lowest() };
@@ -637,20 +638,20 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             Ren::Frustum sh_clip_frustum;
 
             {   // Construct shadow clipping frustum
-                Ren::Vec4f frustum_points[8] = { REN_UNINITIALIZE_X8 };
+                Ren::Vec4f frustum_points[8] = { REN_UNINITIALIZE_X8(Ren::Vec4f) };
 
                 for (int k = 0; k < 8; k++) {
                     frustum_points[k] = tmp_cam_world_from_clip * ClipFrustumPoints[k];
                     frustum_points[k] /= frustum_points[k][3];
                 }
 
-                Ren::Vec2f frustum_points_proj[8];
+                Ren::Vec2f frustum_points_proj[8] = { REN_UNINITIALIZE_X8(Ren::Vec2f) };
 
                 for (int k = 0; k < 8; k++) {
                     Ren::Vec4f projected_p = sh_clip_from_world * frustum_points[k];
                     projected_p /= projected_p[3];
 
-                    frustum_points_proj[k] = Ren::Vec2f{ projected_p[0], projected_p[1] };
+                    frustum_points_proj[k] = Ren::Vec2f{ projected_p };
                 }
 
                 Ren::Vec2i frustum_edges[] = {
@@ -739,13 +740,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                     // Find region for scissor test
                     const auto p1i = Ren::Vec2i{
-                        sh_list.shadow_map_pos[0] + int((0.5f * sh_list.view_frustum_outline[2 * i + 0][0] + 0.5f) * sh_list.shadow_map_size[0]),
-                        sh_list.shadow_map_pos[1] + int((0.5f * sh_list.view_frustum_outline[2 * i + 0][1] + 0.5f) * sh_list.shadow_map_size[1])
+                        sh_list.shadow_map_pos[0] + int((0.5f * sh_list.view_frustum_outline[2 * i + 0][0] + 0.5f) * (float)sh_list.shadow_map_size[0]),
+                        sh_list.shadow_map_pos[1] + int((0.5f * sh_list.view_frustum_outline[2 * i + 0][1] + 0.5f) * (float)sh_list.shadow_map_size[1])
                     };
 
                     const auto p2i = Ren::Vec2i{
-                        sh_list.shadow_map_pos[0] + int((0.5f * sh_list.view_frustum_outline[2 * i + 1][0] + 0.5f) * sh_list.shadow_map_size[0]),
-                        sh_list.shadow_map_pos[1] + int((0.5f * sh_list.view_frustum_outline[2 * i + 1][1] + 0.5f) * sh_list.shadow_map_size[1])
+                        sh_list.shadow_map_pos[0] + int((0.5f * sh_list.view_frustum_outline[2 * i + 1][0] + 0.5f) * (float)sh_list.shadow_map_size[0]),
+                        sh_list.shadow_map_pos[1] + int((0.5f * sh_list.view_frustum_outline[2 * i + 1][1] + 0.5f) * (float)sh_list.shadow_map_size[1])
                     };
 
                     const auto scissor_margin = Ren::Vec2i{ 2 }; // shadow uses 5x5 filter
@@ -838,8 +839,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             }
 #endif
 
-            const uint32_t SkipCheckBit = (1u << 31);
-            const uint32_t IndexBits = ~SkipCheckBit;
+            //const uint32_t SkipCheckBit = (1u << 31u);
+            //const uint32_t IndexBits = ~SkipCheckBit;
 
             stack_size = 0;
             stack[stack_size++] = scene.root_node;

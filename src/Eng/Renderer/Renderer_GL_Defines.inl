@@ -34,8 +34,8 @@
 #define REN_MOMENTS0_TEX_SLOT 4 // shares slot with lightmap 0
 #define REN_MOMENTS1_TEX_SLOT 5 // shares slot with lightmap 1
 #define REN_MOMENTS2_TEX_SLOT 6 // shares slot with lightmap 2
-#define REN_MOMENTS0_MS_TEX_SLOT 7 shares slot with lightmap 3
-#define REN_MOMENTS1_MS_TEX_SLOT 9 shares slot with ssao texture
+#define REN_MOMENTS0_MS_TEX_SLOT 7 // shares slot with lightmap 3
+#define REN_MOMENTS1_MS_TEX_SLOT 9 // shares slot with ssao texture
 #define REN_MOMENTS2_MS_TEX_SLOT 17
 
 #define REN_ALPHATEST_TEX_SLOT 0

@@ -688,6 +688,9 @@ bool GSBaseState::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP2Move: {
     } break;
     case RawInputEvent::EvKeyDown: {
+        if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
+            shift_down_ = true;
+        }
     } break;
     case RawInputEvent::EvKeyUp: {
         if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
