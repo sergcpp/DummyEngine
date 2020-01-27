@@ -37,7 +37,7 @@ static void handle_assert(bool passed, const char* assert, const char* file, lon
 
 class Approx {
 public:
-    Approx(double val, double eps = 0.001) : val(val), eps(eps) {
+    explicit Approx(double val, double eps = 0.001) : val(val), eps(eps) {
         assert(eps > 0);
     }
 
