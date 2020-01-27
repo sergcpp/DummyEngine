@@ -47,21 +47,22 @@ public:
     float height(const BaseElement *parent) const;
     eDrawMode draw_mode() const { return draw_mode_; }
     eBlendMode blend_mode() const { return blend_mode_; }
-    Ren::Texture2DRef tex() const { return tex_; }
+    Ren::TextureRegionRef tex() const { return tex_; }
 
     void set_scale(float scale) { scale_ = scale; }
+    void set_draw_mode(eDrawMode mode) { draw_mode_ = mode; }
 
     bool Load(const char *name, Ren::Context &ctx);
 
     float GetWidth(const char *text, const BaseElement *parent) const;
-    float PrepareVertexData(const char *text, const Vec2f &pos, const uint8_t col[4], const BaseElement *parent,
-                            std::vector<vertex_t> &vtx_data, std::vector<uint16_t> &ndx_data) const;
+    float PrepareVertexData(
+            const char *text, const Vec2f &pos, const uint8_t col[4], const BaseElement *parent,
+            std::vector<vertex_t> &vtx_data, std::vector<uint16_t> &ndx_data) const;
     float DrawText(Renderer *r, const char *text, const Vec2f &pos, const uint8_t col[4], const BaseElement *parent) const;
 private:
     typgraph_info_t                     info_;
     float                               scale_;
-    Ren::Texture2DRef                   tex_;
-    Ren::TextureRegionRef               tex2_;
+    Ren::TextureRegionRef               tex_;
     uint32_t                            tex_res_[2];
     eDrawMode                           draw_mode_ = DrPassthrough;
     eBlendMode                          blend_mode_ = BlAlpha;

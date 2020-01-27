@@ -28,7 +28,7 @@ const char UI_PROGRAM2_NAME[] = "ui_program2";
 
 enum ePrimitiveType { PrimTriangle };
 enum eBlendMode { BlAlpha, BlColor };
-enum eDrawMode { DrPassthrough, DrDistanceField };
+enum eDrawMode { DrPassthrough, DrDistanceField, DrBlitDistanceField };
 
 using Ren::Vec2f;
 using Ren::Vec2i;
@@ -58,17 +58,30 @@ public:
     Renderer(const Renderer &rhs) = delete;
     Renderer &operator=(const Renderer &rhs) = delete;
 
+    Ren::ProgramRef program() const { return ui_program2_; }
+
     void BeginDraw();
+    void ForceDraw() {
+        // make a draw call
+        DrawCurrentBuffer();
+
+        // start new buffer
+        cur_buffer_index_++;
+        assert(cur_buffer_index_ < BuffersCount);
+
+        cur_mapped_vtx_data_ = nullptr;
+        cur_mapped_ndx_data_ = nullptr;
+    }
     void EndDraw();
 
-    // Returns pointers to mapped vertex buffer. Do NOT read from it, it is write-combined memory and will result in terrible latencies!
+    // Returns pointers to mapped vertex buffer. Do NOT read from it, it is write-combined memory and will result in terrible latency!
     int AcquireVertexData(vertex_t **vertex_data, int *vertex_avail, uint16_t **index_data, int *index_avail);
     void SubmitVertexData(int vertex_count, int index_count, bool force_new_buffer);
 
     void DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2f pos[2], const Vec2f uvs_px[2]);
 private:
     static const int FrameSyncWindow = 2;
-    static const int BuffersCount = 4;
+    static const int BuffersCount = 8;
 
     Ren::Context &ctx_;
 

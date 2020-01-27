@@ -92,8 +92,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
             p.repeat = Ren::ClampToBorder;
             p.format = Ren::RawRGBA8888;
 
-            tex_ = ctx.LoadTexture2D(fname, img_data.get(), img_data_size, p, nullptr);
-            tex2_ = ctx.LoadTextureRegion(fname, img_data.get(), img_data_size, p, nullptr);
+            tex_ = ctx.LoadTextureRegion(fname, img_data.get(), img_data_size, p, nullptr);
         } else if (chunk_id == Gui::FontChGlyphData) {
             if (!in_file.Read((char *)&glyph_range_count_, sizeof(uint32_t))) {
                 return false;
@@ -124,10 +123,10 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
 }
 
 float Gui::BitmapFont::GetWidth(const char *text, const BaseElement *parent) const {
-    const Vec2f
-        m = scale_ * parent->size() / (Vec2f)parent->size_px();
+    int cur_x = 0;
 
-    int cur_x = 0, cur_y = 0;
+    const glyph_range_t *glyph_ranges = glyph_ranges_.get();
+    const glyph_info_t *glyphs = glyphs_.get();
 
     int char_pos = 0;
     while (text[char_pos]) {
@@ -136,7 +135,7 @@ float Gui::BitmapFont::GetWidth(const char *text, const BaseElement *parent) con
 
         uint32_t glyph_index = 0;
         for (uint32_t i = 0; i < glyph_range_count_; i++) {
-            const glyph_range_t &rng = glyph_ranges_[i];
+            const glyph_range_t &rng = glyph_ranges[i];
 
             if (unicode >= rng.beg && unicode < rng.end) {
                 glyph_index += (unicode - rng.beg);
@@ -147,24 +146,29 @@ float Gui::BitmapFont::GetWidth(const char *text, const BaseElement *parent) con
         }
         assert(glyph_index < glyphs_count_);
 
-        const glyph_info_t &glyph = glyphs_[glyph_index];
+        const glyph_info_t &glyph = glyphs[glyph_index];
         cur_x += glyph.adv[0];
     }
 
-    return float(cur_x) * m[0];
+    const float mul = scale_ * parent->size()[0] / (float)parent->size_px()[0];
+    return float(cur_x) * mul;
 }
 
-float Gui::BitmapFont::PrepareVertexData(const char *text, const Vec2f &pos, const uint8_t col[4], const BaseElement *parent,
-                                         std::vector<vertex_t> &vtx_data, std::vector<uint16_t> &ndx_data) const {
+float Gui::BitmapFont::PrepareVertexData(
+        const char *text, const Vec2f &pos, const uint8_t col[4], const BaseElement *parent,
+        std::vector<vertex_t> &vtx_data, std::vector<uint16_t> &ndx_data) const {
     using namespace BitmapFontInternal;
+
+    const glyph_range_t *glyph_ranges = glyph_ranges_.get();
+    const glyph_info_t *glyphs = glyphs_.get();
 
     const Vec2f
         p = parent->pos() + 0.5f * (pos + Vec2f(1, 1)) * parent->size(),
         m = scale_ * parent->size() / (Vec2f)parent->size_px();
 
     const uint16_t
-        uvs_offset[2] = { (uint16_t)tex2_->pos(0), (uint16_t)tex2_->pos(1) },
-        tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex2_->pos(2)));
+        uvs_offset[2] = { (uint16_t)tex_->pos(0), (uint16_t)tex_->pos(1) },
+        tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_->pos(2)));
 
     int cur_x = 0;
 
@@ -177,7 +181,7 @@ float Gui::BitmapFont::PrepareVertexData(const char *text, const Vec2f &pos, con
 
         uint32_t glyph_index = 0;
         for (uint32_t i = 0; i < glyph_range_count_; i++) {
-            const glyph_range_t &rng = glyph_ranges_[i];
+            const glyph_range_t &rng = glyph_ranges[i];
 
             if (unicode >= rng.beg && unicode < rng.end) {
                 glyph_index += (unicode - rng.beg);
@@ -188,9 +192,9 @@ float Gui::BitmapFont::PrepareVertexData(const char *text, const Vec2f &pos, con
         }
         assert(glyph_index < glyphs_count_);
 
-        const glyph_info_t &glyph = glyphs_[glyph_index];
+        const glyph_info_t &glyph = glyphs[glyph_index];
         if (glyph.res[0]) {
-            uint16_t ndx_offset = (uint16_t)vtx_data.size();
+            auto ndx_offset = (uint16_t)vtx_data.size();
 
             vtx_data.resize(vtx_data.size() + 4);
             ndx_data.resize(ndx_data.size() + 6);
@@ -258,13 +262,23 @@ float Gui::BitmapFont::PrepareVertexData(const char *text, const Vec2f &pos, con
 float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos, const uint8_t col[4], const BaseElement *parent) const {
     using namespace BitmapFontInternal;
 
+    const glyph_range_t *glyph_ranges = glyph_ranges_.get();
+    const glyph_info_t *glyphs = glyphs_.get();
+
     const Vec2f
             p = parent->pos() + 0.5f * (pos + Vec2f(1, 1)) * parent->size(),
             m = scale_ * parent->size() / (Vec2f)parent->size_px();
 
     const uint16_t
-        uvs_offset[2] = { (uint16_t)tex2_->pos(0), (uint16_t)tex2_->pos(1) },
-        tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex2_->pos(2)));
+        uvs_offset[2] = { (uint16_t)tex_->pos(0), (uint16_t)tex_->pos(1) },
+        tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_->pos(2)));
+
+    uint16_t u16_draw_mode = 0;
+    if (draw_mode_ == DrDistanceField) {
+        u16_draw_mode = 32727;
+    } else if (draw_mode_ == DrBlitDistanceField) {
+        u16_draw_mode = 65535;
+    }
 
     vertex_t *vtx_data; int vtx_avail = 0;
     uint16_t *ndx_data; int ndx_avail = 0;
@@ -284,7 +298,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
 
         uint32_t glyph_index = 0;
         for (uint32_t i = 0; i < glyph_range_count_; i++) {
-            const glyph_range_t &rng = glyph_ranges_[i];
+            const glyph_range_t &rng = glyph_ranges[i];
 
             if (unicode >= rng.beg && unicode < rng.end) {
                 glyph_index += (unicode - rng.beg);
@@ -295,7 +309,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
         }
         assert(glyph_index < glyphs_count_);
 
-        const glyph_info_t &glyph = glyphs_[glyph_index];
+        const glyph_info_t &glyph = glyphs[glyph_index];
         if (glyph.res[0]) {
             vtx_avail -= 4;
             ndx_avail -= 6;
@@ -315,7 +329,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
             cur_vtx->uvs[0] = f32_to_u16(uvs_scale[0] * float(uvs_offset[0] + glyph.pos[0] - 1));
             cur_vtx->uvs[1] = f32_to_u16(uvs_scale[1] * float(uvs_offset[1] + glyph.pos[1] + glyph.res[1] + 1));
             cur_vtx->uvs[2] = tex_layer;
-            cur_vtx->uvs[3] = draw_mode_ == DrDistanceField ? 65535 : 0;
+            cur_vtx->uvs[3] = u16_draw_mode;
             ++cur_vtx;
 
             cur_vtx->pos[0] = p[0] + float(cur_x + glyph.off[0] + glyph.res[0] + 1) * m[0];
@@ -325,7 +339,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
             cur_vtx->uvs[0] = f32_to_u16(uvs_scale[0] * float(uvs_offset[0] + glyph.pos[0] + glyph.res[0] + 1));
             cur_vtx->uvs[1] = f32_to_u16(uvs_scale[1] * float(uvs_offset[1] + glyph.pos[1] + glyph.res[1] + 1));
             cur_vtx->uvs[2] = tex_layer;
-            cur_vtx->uvs[3] = draw_mode_ == DrDistanceField ? 65535 : 0;
+            cur_vtx->uvs[3] = u16_draw_mode;
             ++cur_vtx;
 
             cur_vtx->pos[0] = p[0] + float(cur_x + glyph.off[0] + glyph.res[0] + 1) * m[0];
@@ -335,7 +349,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
             cur_vtx->uvs[0] = f32_to_u16(uvs_scale[0] * float(uvs_offset[0] + glyph.pos[0] + glyph.res[0] + 1));
             cur_vtx->uvs[1] = f32_to_u16(uvs_scale[1] * float(uvs_offset[1] + glyph.pos[1] - 1));
             cur_vtx->uvs[2] = tex_layer;
-            cur_vtx->uvs[3] = draw_mode_ == DrDistanceField ? 65535 : 0;
+            cur_vtx->uvs[3] = u16_draw_mode;
             ++cur_vtx;
 
             cur_vtx->pos[0] = p[0] + float(cur_x + glyph.off[0] - 1) * m[0];
@@ -345,7 +359,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
             cur_vtx->uvs[0] = f32_to_u16(uvs_scale[0] * float(uvs_offset[0] + glyph.pos[0] - 1));
             cur_vtx->uvs[1] = f32_to_u16(uvs_scale[1] * float(uvs_offset[1] + glyph.pos[1] - 1));
             cur_vtx->uvs[2] = tex_layer;
-            cur_vtx->uvs[3] = draw_mode_ == DrDistanceField ? 65535 : 0;
+            cur_vtx->uvs[3] = u16_draw_mode;
             ++cur_vtx;
 
             (*cur_ndx++) = ndx_offset + 0;

@@ -16,11 +16,13 @@ const std::pair<uint32_t, uint32_t>
     g_unicode_cyrilic_range_full    = { 0x0400, 0x04FF },
     g_unicode_cyrilic_range_min     = { 1040,   1104   };
 
-const uint32_t g_unicode_umlauts[] = { 223, 228, 246, 252 };
+const uint32_t g_unicode_umlauts[] = { 223, 228, 246, 252, 196, 214, 220 };
 const uint32_t g_unicode_spacebar = 0x20;
 const uint32_t g_unicode_heart = 0x2665;
 const uint32_t g_unicode_less_than = 0x3C;
 const uint32_t g_unicode_greater_than = 0x3E;
+const uint32_t g_unicode_ampersand = 0x26;
+const uint32_t g_unicode_semicolon = 0x3B;
 
 int ConvChar_UTF8_to_Unicode(const char *utf8, uint32_t &out_unicode);
 int ConvChar_UTF8_to_UTF16(const char *utf8, uint16_t out_utf16[2]);

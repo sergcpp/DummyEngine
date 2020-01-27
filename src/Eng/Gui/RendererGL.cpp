@@ -59,10 +59,10 @@ float median(float r, float g, float b) {
 void main(void) {
     vec4 tex_color = texture(s_texture, aVertexUVs_);
 
-    if (aVertexMode_ < 0.5) {
+    if (aVertexMode_ < 0.25) {
         // Simple texture drawing
 	    outColor = aVertexColor_ * tex_color;
-    } else {
+    } else if (aVertexMode_ < 0.75) {
         // SDF drawing
         float sig_dist = median(tex_color.r, tex_color.g, tex_color.b);
         
@@ -74,6 +74,11 @@ void main(void) {
         base_color.a = clamp(v + 0.5, 0.0, 1.0);
         
         outColor = aVertexColor_ * base_color;
+    } else {
+        // SDF blitting
+        float sig_dist = median(tex_color.r, tex_color.g, tex_color.b);
+        outColor = aVertexColor_ * tex_color;
+        outColor.a = step(0.1, sig_dist);
     }
 }
 )";
@@ -86,8 +91,8 @@ inline void BindTexture(int slot, uint32_t tex) {
     glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
 }
 
-const int MaxVerticesPerBuf = 4 * 1024;
-const int MaxIndicesPerBuf = 8 * 1024;
+const int MaxVerticesPerBuf = 8 * 1024;
+const int MaxIndicesPerBuf = 16 * 1024;
 }
 
 Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config)
@@ -99,7 +104,7 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config)
     {   // Load main shader
         Ren::eProgLoadStatus status;
         ui_program2_ = ctx_.LoadProgramGLSL(UI_PROGRAM2_NAME, vs_source2, fs_source2, &status);
-        assert(status == Ren::ProgCreatedFromData);
+        assert(status == Ren::ProgCreatedFromData || status == Ren::ProgFound);
     }
 
     cur_range_index_ = 0;
@@ -144,7 +149,7 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config)
 
 Gui::Renderer::~Renderer() {
     for (int i = 0; i < BuffersCount; i++) {
-        GLuint buf_id = (GLuint)vao_[i];
+        auto buf_id = (GLuint)vao_[i];
         glDeleteVertexArrays(1, &buf_id);
 
         buf_id = (GLuint)vertex_buf_id_[i];
@@ -172,7 +177,7 @@ void Gui::Renderer::BeginDraw() {
 
     cur_range_index_ = (cur_range_index_ + 1) % FrameSyncWindow;
     if (buf_range_fences_[cur_range_index_]) {
-        GLsync sync = reinterpret_cast<GLsync>(buf_range_fences_[cur_range_index_]);
+        auto sync = reinterpret_cast<GLsync>(buf_range_fences_[cur_range_index_]);
         GLenum res = glClientWaitSync(sync, 0, 1000000000);
         if (res != GL_ALREADY_SIGNALED && res != GL_CONDITION_SATISFIED) {
             ctx_.log()->Error("[Gui::Renderer::BeginDraw2]: Wait failed!");
@@ -184,10 +189,15 @@ void Gui::Renderer::BeginDraw() {
 
     cur_mapped_vtx_data_ = nullptr;
     cur_mapped_ndx_data_ = nullptr;
+
+    cur_vertex_count_ = 0;
+    cur_index_count_ = 0;
 }
 
 void Gui::Renderer::EndDraw() {
-    SubmitVertexData(0, 0, true);
+    if (cur_mapped_vtx_data_ && cur_mapped_ndx_data_) {
+        SubmitVertexData(0, 0, true);
+    }
 
 #ifndef DISABLE_MARKERS
     glPopDebugGroup();
@@ -210,7 +220,9 @@ int Gui::Renderer::AcquireVertexData(vertex_t **vertex_data, int *vertex_avail, 
             index_buf_mem_offset = (cur_range_index_ * MaxIndicesPerBuf) * sizeof(uint16_t),
             index_buf_mem_size = MaxIndicesPerBuf * sizeof(uint16_t);
 
-        const GLbitfield BufferRangeBindFlags = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_FLUSH_EXPLICIT_BIT;
+        const GLbitfield BufferRangeBindFlags =
+            GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
+            GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
 
         glBindBuffer(GL_ARRAY_BUFFER, vertex_buf_id_[cur_buffer_index_]);
         cur_mapped_vtx_data_ = (vertex_t *)glMapBufferRange(GL_ARRAY_BUFFER, vertex_buf_mem_offset, vertex_buf_mem_size, BufferRangeBindFlags);
@@ -243,6 +255,8 @@ void Gui::Renderer::SubmitVertexData(int vertex_count, int index_count, bool for
     cur_index_count_ += index_count;
 
     if (cur_vertex_count_ == MaxVerticesPerBuf || cur_index_count_ == MaxIndicesPerBuf || force_new_buffer) {
+        assert(cur_mapped_vtx_data_ && cur_mapped_ndx_data_);
+
         {   // flush mapped buffers
             const size_t
                 vertex_buf_mem_size = cur_vertex_count_ * sizeof(vertex_t),
@@ -317,6 +331,10 @@ void Gui::Renderer::DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2
 
     uint16_t u16_tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_layer));
 
+    static const uint16_t u16_draw_mode[] = {
+        0, 32767, 65535
+    };
+
     cur_vtx->pos[0] = pos[0][0];
     cur_vtx->pos[1] = pos[0][1];
     cur_vtx->pos[2] = 0.0f;
@@ -324,7 +342,7 @@ void Gui::Renderer::DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2
     cur_vtx->uvs[0] = f32_to_u16(uvs[0][0]);
     cur_vtx->uvs[1] = f32_to_u16(uvs[1][1]);
     cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = draw_mode == DrDistanceField ? 65535 : 0;
+    cur_vtx->uvs[3] = u16_draw_mode[draw_mode];
     ++cur_vtx;
 
     cur_vtx->pos[0] = pos[1][0];
@@ -334,7 +352,7 @@ void Gui::Renderer::DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2
     cur_vtx->uvs[0] = f32_to_u16(uvs[1][0]);
     cur_vtx->uvs[1] = f32_to_u16(uvs[1][1]);
     cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = draw_mode == DrDistanceField ? 65535 : 0;
+    cur_vtx->uvs[3] = u16_draw_mode[draw_mode];
     ++cur_vtx;
 
     cur_vtx->pos[0] = pos[1][0];
@@ -344,7 +362,7 @@ void Gui::Renderer::DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2
     cur_vtx->uvs[0] = f32_to_u16(uvs[1][0]);
     cur_vtx->uvs[1] = f32_to_u16(uvs[0][1]);
     cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = draw_mode == DrDistanceField ? 65535 : 0;
+    cur_vtx->uvs[3] = u16_draw_mode[draw_mode];
     ++cur_vtx;
 
     cur_vtx->pos[0] = pos[0][0];
@@ -354,7 +372,7 @@ void Gui::Renderer::DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2
     cur_vtx->uvs[0] = f32_to_u16(uvs[0][0]);
     cur_vtx->uvs[1] = f32_to_u16(uvs[0][1]);
     cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = draw_mode == DrDistanceField ? 65535 : 0;
+    cur_vtx->uvs[3] = u16_draw_mode[draw_mode];
     ++cur_vtx;
 
     (*cur_ndx++) = ndx_offset + 0;
