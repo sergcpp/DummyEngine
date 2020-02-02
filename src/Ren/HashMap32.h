@@ -131,11 +131,11 @@ private:
     HashFunc    hash_func_;
     KeyEqual    key_equal_;
 public:
-    HashMap32(const HashFunc &hash_func = HashFunc(), const KeyEqual &key_equal = KeyEqual())
+    explicit HashMap32(const HashFunc &hash_func = HashFunc(), const KeyEqual &key_equal = KeyEqual()) noexcept
         : ctrl_(nullptr), nodes_(nullptr), capacity_(0), size_(0), hash_func_(hash_func), key_equal_(key_equal) {
     }
 
-    HashMap32(uint32_t capacity, const HashFunc &hash_func = HashFunc(), const KeyEqual &key_equal = KeyEqual())
+    explicit HashMap32(uint32_t capacity, const HashFunc &hash_func = HashFunc(), const KeyEqual &key_equal = KeyEqual())
         : hash_func_(hash_func), key_equal_(key_equal) {
         // Check if power of 2
         assert((capacity & (capacity - 1)) == 0);
