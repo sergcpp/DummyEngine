@@ -181,6 +181,10 @@ public:
         memset(ctrl_, 0, capacity_);
     }
 
+    void reserve(uint32_t capacity) {
+        ReserveRealloc(capacity);
+    }
+
     V &operator[](const K &key) {
         V *v = Find(key);
         if (!v) {
@@ -442,6 +446,38 @@ private:
             } else {
                 capacity_ = 8;
             }
+            size_ = 0;
+
+            uint32_t mem_size = capacity_;
+            mem_size += (mem_size % alignof(Node));
+
+            uint32_t node_begin = mem_size;
+            mem_size += sizeof(Node) * capacity_;
+
+            ctrl_ = new uint8_t[mem_size];
+            nodes_ = (Node *)&ctrl_[node_begin];
+
+            memset(ctrl_, 0, capacity_);
+
+            for (uint32_t i = 0; i < old_capacity; i++) {
+                if (old_ctrl[i] & OccupiedBit) {
+                    InsertInternal(old_nodes[i].hash, std::move(old_nodes[i].key), std::move(old_nodes[i].val));
+                }
+            }
+
+            delete[] old_ctrl;
+        }
+    }
+
+    void ReserveRealloc(uint32_t desired_capacity) {
+        if (capacity_ < desired_capacity) {
+            uint8_t *old_ctrl = ctrl_;
+            Node *old_nodes = nodes_;
+            uint32_t old_capacity = capacity_;
+
+            if (!capacity_) capacity_ = 8;
+            while (capacity_ < desired_capacity) capacity_ *= 2;
+
             size_ = 0;
 
             uint32_t mem_size = capacity_;
