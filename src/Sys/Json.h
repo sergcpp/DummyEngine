@@ -7,8 +7,8 @@
 
 #include "Variant.h"
 
-enum JsType { JS_INVALID, JS_OBJECT, JS_ARRAY, JS_NUMBER, JS_LITERAL, JS_STRING };
-enum JsLiteralType { JS_TRUE, JS_FALSE, JS_NULL };
+enum JsType { JS_TYPE_INVALID, JS_TYPE_OBJECT, JS_TYPE_ARRAY, JS_TYPE_NUMBER, JS_TYPE_LITERAL, JS_TYPE_STRING };
+enum JsLiteralType { JS_UNDEFINED, JS_TRUE, JS_FALSE, JS_NULL };
 
 struct JsFlags {
     int ident_levels    : 1;
@@ -37,7 +37,7 @@ struct JsLiteral {
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
 
-    static const JsType type = JS_LITERAL;
+    static const JsType type = JS_TYPE_LITERAL;
 };
 
 struct JsNumber {
@@ -68,7 +68,7 @@ struct JsNumber {
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
 
-    static const JsType type = JS_NUMBER;
+    static const JsType type = JS_TYPE_NUMBER;
 };
 
 struct JsString {
@@ -85,7 +85,7 @@ struct JsString {
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
 
-    static const JsType type = JS_STRING;
+    static const JsType type = JS_TYPE_STRING;
 };
 
 struct JsArray {
@@ -121,7 +121,7 @@ struct JsArray {
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
 
-    static const JsType type = JS_ARRAY;
+    static const JsType type = JS_TYPE_ARRAY;
 };
 
 struct JsObject {
@@ -130,6 +130,8 @@ struct JsObject {
     std::pair<std::string, JsElement> &operator[](size_t i);
     JsElement &operator[](const std::string &s);
 
+    const JsElement &at(const char *s) const;
+    JsElement &at(const char *s);
     const JsElement &at(const std::string &s) const;
     JsElement &at(const std::string &s);
 
@@ -138,6 +140,7 @@ struct JsObject {
         return !operator==(rhs);
     }
 
+    bool Has(const char *s) const;
     bool Has(const std::string &s) const;
 
     size_t Size() const {
@@ -150,7 +153,7 @@ struct JsObject {
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
 
-    static const JsType type = JS_OBJECT;
+    static const JsType type = JS_TYPE_OBJECT;
 };
 
 struct JsElement {
@@ -187,12 +190,24 @@ public:
         return type_;
     }
 
+    JsLiteral &as_lit();
+    JsNumber &as_num();
+    JsString &as_str();
+    JsArray &as_arr();
+    JsObject &as_obj();
+
+    const JsLiteral &as_lit() const;
+    const JsNumber &as_num() const;
+    const JsString &as_str() const;
+    const JsArray &as_arr() const;
+    const JsObject &as_obj() const;
+
     explicit operator JsLiteral &();
     explicit operator JsNumber &();
     explicit operator JsString &();
     explicit operator JsArray &();
     explicit operator JsObject &();
-    
+
     explicit operator const JsLiteral &() const;
     explicit operator const JsNumber &() const;
     explicit operator const JsString &() const;
