@@ -5,25 +5,24 @@
 #include <Sys/Json.h>
 
 void LightSource::Read(const JsObject &js_in, LightSource &ls) {
-    const auto &js_color = (const JsArray &)js_in.at("color");
+    const JsArray &js_color = js_in.at("color").as_arr();
 
-    ls.col[0] = (float)static_cast<const JsNumber &>(js_color[0]).val;
-    ls.col[1] = (float)static_cast<const JsNumber &>(js_color[1]).val;
-    ls.col[2] = (float)static_cast<const JsNumber &>(js_color[2]).val;
+    ls.col[0] = (float)js_color[0].as_num().val;
+    ls.col[1] = (float)js_color[1].as_num().val;
+    ls.col[2] = (float)js_color[2].as_num().val;
 
     ls.brightness = std::max(ls.col[0], std::max(ls.col[1], ls.col[2]));
 
     if (js_in.Has("offset")) {
-        const auto &js_offset = (const JsArray &)js_in.at("offset");
+        const JsArray &js_offset = js_in.at("offset").as_arr();
 
-        ls.offset[0] = (float)static_cast<const JsNumber &>(js_offset[0]).val;
-        ls.offset[1] = (float)static_cast<const JsNumber &>(js_offset[1]).val;
-        ls.offset[2] = (float)static_cast<const JsNumber &>(js_offset[2]).val;
+        ls.offset[0] = (float)js_offset[0].as_num().val;
+        ls.offset[1] = (float)js_offset[1].as_num().val;
+        ls.offset[2] = (float)js_offset[2].as_num().val;
     }
 
     if (js_in.Has("radius")) {
-        const auto &js_radius = (const JsNumber &)js_in.at("radius");
-
+        const JsNumber &js_radius = js_in.at("radius").as_num();
         ls.radius = (float)js_radius.val;
     } else {
         ls.radius = 1.0f;
@@ -32,15 +31,15 @@ void LightSource::Read(const JsObject &js_in, LightSource &ls) {
     ls.influence = ls.radius * (std::sqrt(ls.brightness / LIGHT_ATTEN_CUTOFF) - 1.0f);
 
     if (js_in.Has("direction")) {
-        const auto &js_dir = (const JsArray &)js_in.at("direction");
+        const JsArray &js_dir = js_in.at("direction").as_arr();
 
-        ls.dir[0] = (float)static_cast<const JsNumber &>(js_dir[0]).val;
-        ls.dir[1] = (float)static_cast<const JsNumber &>(js_dir[1]).val;
-        ls.dir[2] = (float)static_cast<const JsNumber &>(js_dir[2]).val;
+        ls.dir[0] = (float)js_dir[0].as_num().val;
+        ls.dir[1] = (float)js_dir[1].as_num().val;
+        ls.dir[2] = (float)js_dir[2].as_num().val;
 
         ls.angle_deg = 45.0f;
         if (js_in.Has("angle")) {
-            const auto &js_angle = (const JsNumber &)js_in.at("angle");
+            const JsNumber &js_angle = js_in.at("angle").as_num();
             ls.angle_deg = (float)js_angle.val;
         }
 
@@ -54,7 +53,7 @@ void LightSource::Read(const JsObject &js_in, LightSource &ls) {
     }
 
     if (js_in.Has("cast_shadow")) {
-        ls.cast_shadow = ((const JsLiteral &)js_in.at("cast_shadow")).val == JS_TRUE;
+        ls.cast_shadow = js_in.at("cast_shadow").as_lit().val == JS_TRUE;
     } else {
         ls.cast_shadow = false;
     }

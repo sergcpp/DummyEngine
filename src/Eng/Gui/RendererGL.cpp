@@ -99,7 +99,7 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config)
         : ctx_(ctx) {
     using namespace UIRendererConstants;
 
-    const JsString &js_gl_defines = (const JsString &)config.at(GL_DEFINES_KEY);
+    const JsString &js_gl_defines = config.at(GL_DEFINES_KEY).as_str();
 
     {   // Load main shader
         Ren::eProgLoadStatus status;

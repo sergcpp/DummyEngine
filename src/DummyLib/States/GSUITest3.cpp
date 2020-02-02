@@ -169,19 +169,19 @@ void GSUITest3::OnPostloadScene(JsObject &js_scene) {
     view_fov_ = 45.0f;
 
     if (js_scene.Has("camera")) {
-        const JsObject &js_cam = (const JsObject &)js_scene.at("camera");
+        const JsObject &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
-            const JsArray &js_orig = (const JsArray &)js_cam.at("view_origin");
-            view_origin_[0] = (float)((const JsNumber &)js_orig.at(0)).val;
-            view_origin_[1] = (float)((const JsNumber &)js_orig.at(1)).val;
-            view_origin_[2] = (float)((const JsNumber &)js_orig.at(2)).val;
+            const JsArray &js_orig = js_cam.at("view_origin").as_arr();
+            view_origin_[0] = (float)js_orig.at(0).as_num().val;
+            view_origin_[1] = (float)js_orig.at(1).as_num().val;
+            view_origin_[2] = (float)js_orig.at(2).as_num().val;
         }
 
         if (js_cam.Has("view_dir")) {
-            const JsArray &js_dir = (const JsArray &)js_cam.at("view_dir");
-            view_dir_[0] = (float)((const JsNumber &)js_dir.at(0)).val;
-            view_dir_[1] = (float)((const JsNumber &)js_dir.at(1)).val;
-            view_dir_[2] = (float)((const JsNumber &)js_dir.at(2)).val;
+            const JsArray &js_dir = js_cam.at("view_dir").as_arr();
+            view_dir_[0] = (float)js_dir.at(0).as_num().val;
+            view_dir_[1] = (float)js_dir.at(1).as_num().val;
+            view_dir_[2] = (float)js_dir.at(2).as_num().val;
         }
 
         /*if (js_cam.Has("fwd_speed")) {
@@ -190,12 +190,12 @@ void GSUITest3::OnPostloadScene(JsObject &js_scene) {
         }*/
 
         if (js_cam.Has("fov")) {
-            const JsNumber &js_fov = (const JsNumber &)js_cam.at("fov");
+            const JsNumber &js_fov = js_cam.at("fov").as_num();
             view_fov_ = (float)js_fov.val;
         }
 
         if (js_cam.Has("max_exposure")) {
-            const JsNumber &js_max_exposure = (const JsNumber &)js_cam.at("max_exposure");
+            const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
             max_exposure_ = (float)js_max_exposure.val;
         }
     }

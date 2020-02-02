@@ -26,6 +26,7 @@ extern "C" {
 #include <Ray/internal/TextureSplitter.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
+#include <Sys/MonoAlloc.h>
 #include <Sys/ThreadPool.h>
 
 #define STB_TRUETYPE_IMPLEMENTATION
@@ -1087,22 +1088,22 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
 
         if (js_root.Has("objects")) {
-            auto &js_objects = (JsArray &)js_root.at("objects");
+            JsArray &js_objects = js_root.at("objects").as_arr();
             for (JsElement &js_obj_el : js_objects.elements) {
-                auto &js_obj = (JsObject &)js_obj_el;
+                JsObject &js_obj = js_obj_el.as_obj();
 
                 if (js_obj.Has("decal")) {
-                    auto &js_decal = (JsObject &)js_obj.at("decal");
+                    JsObject &js_decal = js_obj.at("decal").as_obj();
                     if (js_decal.Has("diff")) {
-                        auto &js_diff_tex = (JsString &)js_decal.at("diff");
+                        JsString &js_diff_tex = js_decal.at("diff").as_str();
                         replace_texture_extension(js_diff_tex.val);
                     }
                     if (js_decal.Has("norm")) {
-                        auto &js_norm_tex = (JsString &)js_decal.at("norm");
+                        JsString &js_norm_tex = js_decal.at("norm").as_str();
                         replace_texture_extension(js_norm_tex.val);
                     }
                     if (js_decal.Has("spec")) {
-                        auto &js_spec_tex = (JsString &)js_decal.at("spec");
+                        JsString &js_spec_tex = js_decal.at("spec").as_str();
                         replace_texture_extension(js_spec_tex.val);
                     }
                 }
@@ -1110,14 +1111,14 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
 
         if (js_root.Has("probes")) {
-            auto &js_probes = (JsArray &)js_root.at("probes");
+            JsArray &js_probes = js_root.at("probes").as_arr();
             for (JsElement &js_probe_el : js_probes.elements) {
-                auto &js_probe = (JsObject &)js_probe_el;
+                JsObject &js_probe = js_probe_el.as_obj();
 
                 if (js_probe.Has("faces")) {
-                    JsArray &js_faces = (JsArray &)js_probe.at("faces");
+                    JsArray &js_faces = js_probe.at("faces").as_arr();
                     for (JsElement &js_face_el : js_faces.elements) {
-                        auto &js_face_str = (JsString &)js_face_el;
+                        JsString &js_face_str = js_face_el.as_str();
                         replace_texture_extension(js_face_str.val);
                     }
                 }
@@ -1125,20 +1126,20 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
 
         if (js_root.Has("chapters")) {
-            auto &js_chapters = (JsArray &)js_root.at("chapters");
+            JsArray &js_chapters = js_root.at("chapters").as_arr();
             for (JsElement &js_chapter_el : js_chapters.elements) {
-                auto &js_chapter = (JsObject &)js_chapter_el;
+                JsObject &js_chapter = js_chapter_el.as_obj();
 
                 JsObject js_caption, js_text_data;
 
                 if (js_chapter.Has("html_src")) {
-                    auto &js_html_src = (JsObject &)js_chapter.at("html_src");
+                    JsObject &js_html_src = js_chapter.at("html_src").as_obj();
                     for (auto &js_src_pair : js_html_src.elements) {
-                        const auto
-                            &js_lang = (JsString &)js_src_pair.first,
-                            &js_file_path = (JsString &)js_src_pair.second;
+                        const std::string
+                            &js_lang = js_src_pair.first,
+                            &js_file_path = js_src_pair.second.as_str().val;
 
-                        const std::string html_file_path = base_path + js_file_path.val;
+                        const std::string html_file_path = base_path + js_file_path;
 
                         std::string caption;
                         std::string html_body = extract_html_data(html_file_path.c_str(), caption);
@@ -1168,8 +1169,9 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
                             while (html_body.back() == ' ') html_body.pop_back();
                         }
 
-                        js_caption[js_lang.val] = JsString{ caption };
-                        js_text_data[js_lang.val] = JsString{ html_body };
+                        js_caption[js_lang] = JsString{ caption };
+                        js_text_data[js_lang
+                        ] = JsString{ html_body };
                     }
                 }
 
@@ -1182,6 +1184,390 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         flags.use_spaces = 1;
 
         js_root.Write(dst_stream, flags);
+    };
+
+    auto h_conv_tei_to_dict = [log](const char *in_file, const char *out_file) {
+        log->Info("[PrepareAssets] Prep %s", out_file);
+
+        enum eGramGrpPos {
+            Noun, Verb, Adjekt
+        };
+
+        enum eGramGrpNum {
+            Singular, Plural
+        };
+
+        enum eGramGrpGen {
+            Masculine, Feminine, Neutral
+        };
+
+        struct dict_link_t {
+            uint32_t entries[16];
+            uint32_t entries_count = 0;
+        };
+
+        struct dict_entry_t {
+            eGramGrpPos pos;
+            eGramGrpNum num;
+            eGramGrpGen gen;
+            Ren::String orth, pron;
+            uint32_t trans_index, trans_count;
+        };
+
+        Ren::HashMap32<Ren::String, dict_link_t> dictionary_hashmap;
+        std::vector<dict_entry_t> dict_entries;
+        std::vector<std::string> translations;
+
+        {   // parse file and fill dictionary data structures
+            JsObject js_root;
+
+            {   // read json file
+                std::ifstream src_stream(in_file, std::ios::binary);
+
+                if (!js_root.Read(src_stream)) {
+                    log->Error("Error parsing %s!", in_file);
+                    return false;
+                }
+            }
+
+            JsObject &js_tei = js_root.at("TEI").as_obj();
+
+            JsObject &js_text = js_tei.at("text").as_obj();
+            JsObject &js_body = js_text.at("body").as_obj();
+            JsArray &js_entries = js_body.at("entry").as_arr();
+
+            int index = 0;
+            for (JsElement &js_entry_el : js_entries.elements) {
+                JsObject &js_entry = js_entry_el.as_obj();
+                if (!js_entry.Has("sense")) continue;
+
+                JsObject &js_form = js_entry.at("form").as_obj();
+                JsString &js_orth = js_form.at("orth").as_str();
+
+                dict_link_t &link = dictionary_hashmap[Ren::String{js_orth.val.c_str()}];
+                link.entries[link.entries_count++] = (uint32_t) dict_entries.size();
+
+                dict_entries.emplace_back();
+                dict_entry_t &entry = dict_entries.back();
+
+                entry.orth = Ren::String{js_orth.val.c_str()};
+
+                if (js_form.Has("pron")) {
+                    const JsString &js_pron = js_form.at("pron").as_str();
+                    entry.pron = Ren::String{js_pron.val.c_str()};
+                }
+
+                // init defaults
+                entry.pos = Noun;
+                entry.num = Singular;
+                entry.gen = Feminine;
+
+                if (js_form.Has("gramGrp")) {
+                    const JsObject &js_gram_grp = js_form.at("gramGrp").as_obj();
+                    if (js_gram_grp.Has("pos")) {
+                        const JsString &js_gram_grp_pos = js_gram_grp.at("pos").as_str();
+                        if (js_gram_grp_pos.val == "n") {
+                            entry.pos = Noun;
+                        } else if (js_gram_grp_pos.val == "a") {
+                            entry.pos = Adjekt;
+                        }
+                    }
+                    if (js_gram_grp.Has("num")) {
+                        const JsString &js_gram_grp_num = js_form.at("num").as_str();
+                        if (js_gram_grp_num.val == "p") {
+                            entry.num = Plural;
+                        }
+                    }
+                    if (js_gram_grp.Has("gen")) {
+                        const JsString &js_gram_grp_gen = js_form.at("gen").as_str();
+                        if (js_gram_grp_gen.val == "m") {
+                            entry.gen = Masculine;
+                        } else if (js_gram_grp_gen.val == "n") {
+                            entry.gen = Neutral;
+                        }
+                    }
+                }
+
+                entry.trans_index = (uint32_t) translations.size();
+                entry.trans_count = 0;
+
+                if (js_entry.at("sense").type() == JS_TYPE_OBJECT) {
+                    JsObject &js_sense = js_entry.at("sense").as_obj();
+                    JsElement &js_cit_els = js_sense.at("cit");
+                    if (js_cit_els.type() == JS_TYPE_ARRAY) {
+                        JsArray &js_cits = js_cit_els.as_arr();
+                        for (JsElement &js_cit_el : js_cits.elements) {
+                            JsObject &js_cit = js_cit_el.as_obj();
+                            const JsString &js_cit_type = js_cit.at("-type").as_str();
+                            if (js_cit_type.val == "trans") {
+                                JsString &js_quote = js_cit.at("quote").as_str();
+
+                                translations.emplace_back(std::move(js_quote.val));
+                                entry.trans_count++;
+                            }
+                        }
+                    } else {
+                        assert(js_cit_els.type() == JS_TYPE_OBJECT);
+                        JsObject &js_cit = js_cit_els.as_obj();
+                        const JsString &js_cit_type = js_cit.at("-type").as_str();
+                        if (js_cit_type.val == "trans") {
+                            JsString &js_quote = js_cit.at("quote").as_str();
+
+                            translations.emplace_back(std::move(js_quote.val));
+                            entry.trans_count++;
+                        }
+                    }
+                } else {
+                    JsArray &js_senses = js_entry.at("sense").as_arr();
+                    for (JsElement &js_sense_el : js_senses.elements) {
+                        JsObject &js_sense = js_sense_el.as_obj();
+                        JsElement &js_cit_els = js_sense.at("cit");
+                        if (js_cit_els.type() == JS_TYPE_ARRAY) {
+                            JsArray &js_cits = js_cit_els.as_arr();
+                            for (JsElement &js_cit_el : js_cits.elements) {
+                                JsObject &js_cit = js_cit_el.as_obj();
+                                const JsString &js_cit_type = js_cit.at("-type").as_str();
+                                if (js_cit_type.val == "trans") {
+                                    JsString &js_quote = js_cit.at("quote").as_str();
+
+                                    translations.emplace_back(std::move(js_quote.val));
+                                    entry.trans_count++;
+                                }
+                            }
+                        } else {
+                            assert(js_cit_els.type() == JS_TYPE_OBJECT);
+                            JsObject &js_cit = js_cit_els.as_obj();
+                            const JsString &js_cit_type = js_cit.at("-type").as_str();
+                            if (js_cit_type.val == "trans") {
+                                JsString &js_quote = js_cit.at("quote").as_str();
+
+                                translations.emplace_back(std::move(js_quote.val));
+                                entry.trans_count++;
+                            }
+                        }
+                    }
+                }
+
+                index++;
+            }
+        }
+
+        {   // compact data structures and write output file
+            size_t str_mem_req = 0;
+            for (auto it = dictionary_hashmap.cbegin(); it < dictionary_hashmap.cend(); ++it) {
+                str_mem_req += it->key.length() + 1;
+
+                const dict_link_t &src_link = it->val;
+                for (uint32_t i = 0; i < src_link.entries_count; i++) {
+                    const dict_entry_t &src_entry = dict_entries[src_link.entries[i]];
+
+                    str_mem_req += src_entry.orth.length() + 1;
+                    if (!src_entry.pron.empty()) {
+                        str_mem_req += src_entry.pron.length() + 1;
+                    }
+                }
+            }
+
+            // offset in buffer at which translation begins
+            const size_t str_mem_trans_off = str_mem_req;
+
+            for (const std::string &tr : translations) {
+                str_mem_req += tr.length() + 1;
+            }
+
+            struct dict_link_compact_t {
+                uint32_t key_str_off;
+                uint32_t entry_index;
+                uint32_t entry_count;
+            };
+            static_assert(sizeof(dict_link_compact_t) == 12, "!");
+
+            struct dict_entry_compact_t {
+                uint8_t pos;
+                uint8_t num;
+                uint8_t gen;
+                uint8_t trans_count;
+                uint32_t orth_str_off;
+                uint32_t pron_str_off;
+                uint32_t trans_str_off;
+            };
+            static_assert(sizeof(dict_entry_compact_t) == 16, "!");
+
+            std::unique_ptr<char[]> comb_str_buf(new char[str_mem_req]);
+            size_t comb_str_buf_ndx1 = 0, comb_str_buf_ndx2 = str_mem_trans_off;
+
+            Ren::HashMap32<const char *, dict_link_compact_t> dictionary_hashmap_compact;
+            std::vector<dict_link_compact_t> links_compact;
+            std::vector<dict_entry_compact_t> entries_compact;
+
+            int translations_processed = 0;
+            int translations_count = translations.size();
+
+            for (auto it = dictionary_hashmap.cbegin(); it < dictionary_hashmap.cend(); ++it) {
+                const dict_link_t &src_link = it->val;
+
+                const size_t key_len = it->key.length();
+                memcpy(&comb_str_buf[comb_str_buf_ndx1], it->key.c_str(), key_len + 1);
+                const char *key = &comb_str_buf[comb_str_buf_ndx1];
+                uint32_t key_str_offset = comb_str_buf_ndx1;
+                comb_str_buf_ndx1 += key_len + 1;
+
+                dict_link_compact_t &link = dictionary_hashmap_compact[key];
+                link.key_str_off = key_str_offset;
+                link.entry_index = (uint32_t) entries_compact.size();
+                link.entry_count = src_link.entries_count;
+
+                for (uint32_t i = 0; i < src_link.entries_count; i++) {
+                    const dict_entry_t &src_entry = dict_entries[src_link.entries[i]];
+
+                    entries_compact.emplace_back();
+                    dict_entry_compact_t &dst_entry = entries_compact.back();
+
+                    dst_entry.pos = src_entry.pos;
+                    dst_entry.num = src_entry.num;
+                    dst_entry.gen = src_entry.gen;
+
+                    {   // correct word writing
+                        const size_t len = src_entry.orth.length();
+                        memcpy(&comb_str_buf[comb_str_buf_ndx1], src_entry.orth.c_str(), len + 1);
+                        dst_entry.orth_str_off = comb_str_buf_ndx1;
+                        comb_str_buf_ndx1 += len + 1;
+                    }
+
+                    if (!src_entry.pron.empty()) { // word pronunciation
+                        const size_t len = src_entry.pron.length();
+                        memcpy(&comb_str_buf[comb_str_buf_ndx1], src_entry.pron.c_str(), len + 1);
+                        dst_entry.pron_str_off = comb_str_buf_ndx1;
+                        comb_str_buf_ndx1 += len + 1;
+                    }
+
+                    for (int j = src_entry.trans_index; j < src_entry.trans_index + src_entry.trans_count; j++) {
+                        const size_t len = translations[j].length();
+                        memcpy(&comb_str_buf[comb_str_buf_ndx2], translations[j].c_str(), len + 1);
+
+                        if (j == src_entry.trans_index) {
+                            dst_entry.trans_str_off = comb_str_buf_ndx2;
+                        }
+
+                        comb_str_buf_ndx2 += len + 1;
+
+                        translations_processed++;
+                    }
+                    dst_entry.trans_count = src_entry.trans_count;
+                }
+            }
+
+            assert(comb_str_buf_ndx1 == str_mem_trans_off && "Translations start is not right!");
+            assert(comb_str_buf_ndx2 == str_mem_req && "Buffer end is not right!");
+            assert(translations_processed == translations_count && "Translations count does not match!");
+
+            const dict_link_compact_t *test1 = dictionary_hashmap_compact.Find("Wahrscheinlichkeit");
+            const dict_entry_compact_t &entry1 = entries_compact[test1->entry_index];
+            const dict_link_compact_t *test2 = dictionary_hashmap_compact.Find("ficken");
+            const dict_entry_compact_t &entry2 = entries_compact[test2->entry_index];
+
+            enum eDictChunks {
+                DictChInfo,
+                DictChLinks,
+                DictChEntries,
+                DictChStrings,
+                DictChCount
+            };
+
+            struct dict_info_t {
+                char src_lang[2], dst_lang[2];
+                uint32_t keys_count, entries_count;
+            };
+            static_assert(sizeof(dict_info_t) == 12, "!");
+
+            std::ofstream out_stream(out_file, std::ios::binary);
+            const uint32_t header_size = 4 + sizeof(uint32_t) + int(DictChCount) * 3 * sizeof(uint32_t);
+            uint32_t hdr_offset = 0, data_offset = header_size;
+
+            {   // File format string
+                const char signature[] = { 'D', 'I', 'C', 'T' };
+                out_stream.write(signature, 4);
+                hdr_offset += 4;
+            }
+
+            {   // Header size
+                out_stream.write((const char *)&header_size, sizeof(uint32_t));
+                hdr_offset += sizeof(uint32_t);
+            }
+
+            {   // Info data offsets
+                const uint32_t
+                        info_data_chunk_id = (uint32_t)DictChInfo,
+                        info_data_offset = data_offset,
+                        info_data_size = sizeof(dict_info_t);
+                out_stream.write((const char *)&info_data_chunk_id, sizeof(uint32_t));
+                out_stream.write((const char *)&info_data_offset, sizeof(uint32_t));
+                out_stream.write((const char *)&info_data_size, sizeof(uint32_t));
+                hdr_offset += 3 * sizeof(uint32_t);
+                data_offset += info_data_size;
+            }
+
+            {   // Link data offsets
+                const uint32_t
+                        link_data_chunk_id = (uint32_t)DictChLinks,
+                        link_data_offset = data_offset,
+                        link_data_size = sizeof(dict_link_compact_t) * links_compact.size();
+                out_stream.write((const char *)&link_data_chunk_id, sizeof(uint32_t));
+                out_stream.write((const char *)&link_data_offset, sizeof(uint32_t));
+                out_stream.write((const char *)&link_data_size, sizeof(uint32_t));
+                hdr_offset += 3 * sizeof(uint32_t);
+                data_offset += link_data_size;
+            }
+
+            {   // Entry data offsets
+                const uint32_t
+                        entry_data_chunk_id = (uint32_t)DictChEntries,
+                        entry_data_offset = data_offset,
+                        entry_data_size = sizeof(dict_entry_compact_t) * entries_compact.size();
+                out_stream.write((const char *)&entry_data_chunk_id, sizeof(uint32_t));
+                out_stream.write((const char *)&entry_data_offset, sizeof(uint32_t));
+                out_stream.write((const char *)&entry_data_size, sizeof(uint32_t));
+                hdr_offset += 3 * sizeof(uint32_t);
+                data_offset += entry_data_size;
+            }
+
+            {   // String data offsets
+                const uint32_t
+                        string_data_chunk_id = (uint32_t)DictChStrings,
+                        string_data_offset = data_offset,
+                        string_data_size = sizeof(dict_entry_compact_t) * entries_compact.size();
+                out_stream.write((const char *)&string_data_chunk_id, sizeof(uint32_t));
+                out_stream.write((const char *)&string_data_offset, sizeof(uint32_t));
+                out_stream.write((const char *)&string_data_size, sizeof(uint32_t));
+                hdr_offset += 3 * sizeof(uint32_t);
+                data_offset += string_data_size;
+            }
+
+            assert(hdr_offset == header_size);
+
+            {   // Info data
+                dict_info_t info;
+                info.src_lang[0] = 'e';
+                info.src_lang[1] = 'n';
+                info.dst_lang[0] = 'd';
+                info.dst_lang[1] = 'e';
+                info.keys_count = dictionary_hashmap_compact.size();
+                info.entries_count = (uint32_t)entries_compact.size();
+
+                out_stream.write((const char *)&info, sizeof(dict_info_t));
+            }
+
+            // Link data
+            out_stream.write((const char *)links_compact.data(), sizeof(dict_link_compact_t) * links_compact.size());
+
+            // Entry data
+            out_stream.write((const char *)entries_compact.data(), sizeof(dict_entry_compact_t) * entries_compact.size());
+
+            // String data
+            out_stream.write(comb_str_buf.get(), str_mem_req);
+
+            return true;
+        }
     };
 
     auto h_preprocess_shader = [&inline_constants, platform, log](const char *in_file, const char *out_file) {
@@ -1754,6 +2140,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     handlers["frag.glsl"]   = { "frag.glsl",    h_preprocess_shader };
     handlers["comp.glsl"]   = { "comp.glsl",    h_preprocess_shader };
     handlers["ttf"]         = { "font",         h_conv_to_font      };
+    handlers["tei.json"]    = { "dict",         h_conv_tei_to_dict     };
 
     if (strcmp(platform, "pc") == 0) {
         handlers["json"]    = { "json",         h_preprocess_json   };

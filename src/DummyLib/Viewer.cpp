@@ -41,13 +41,13 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         }
     }
 
-    const auto &ui_settings = (const JsObject &)main_config.at("ui_settings");
+    const JsObject &ui_settings = main_config.at("ui_settings").as_obj();
 
     {   // load fonts
         auto font_storage = std::make_shared<FontStorage>();
         AddComponent(UI_FONTS_KEY, font_storage);
 
-        const auto &fonts = (const JsObject &)ui_settings.at("fonts");
+        const JsObject &fonts = ui_settings.at("fonts").as_obj();
         for (const auto &el : fonts.elements) {
             const std::string &name = el.first;
             
@@ -57,7 +57,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
 #else
             std::string file_name = std::string("assets_pc/");
 #endif
-            file_name += ((const JsString &)el.second).val;
+            file_name += el.second.as_str().val;
 
             std::shared_ptr<Gui::BitmapFont> loaded_font = font_storage->LoadFont(name, file_name, ctx.get());
             (void)loaded_font;
@@ -109,7 +109,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     AddComponent(SWAP_TIMER_KEY, swap_interval);
 
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
-    state_manager->Push(GSCreate(GS_DRAW_TEST, this));
+    state_manager->Push(GSCreate(GS_UI_TEST3, this));
 }
 
 void Viewer::Resize(int w, int h) {

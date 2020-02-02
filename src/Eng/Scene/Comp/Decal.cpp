@@ -4,24 +4,20 @@
 
 void Decal::Read(const JsObject &js_in, Decal &de) {
     if (js_in.Has("pos")) {
-        const JsArray &js_pos = (const JsArray &)js_in.at("pos");
+        const JsArray &js_pos = js_in.at("pos").as_arr();
 
         const auto pos = Ren::Vec3f{
-            (float)((const JsNumber &)js_pos.at(0)).val,
-            (float)((const JsNumber &)js_pos.at(1)).val,
-            (float)((const JsNumber &)js_pos.at(2)).val
+            (float)js_pos.at(0).as_num().val, (float)js_pos.at(1).as_num().val, (float)js_pos.at(2).as_num().val
         };
 
         de.view = Ren::Translate(de.view, pos);
     }
 
     if (js_in.Has("rot")) {
-        const JsArray &js_rot = (const JsArray &)js_in.at("rot");
+        const JsArray &js_rot = js_in.at("rot").as_arr();
 
         auto rot = Ren::Vec3f{
-            (float)((const JsNumber &)js_rot.at(0)).val,
-            (float)((const JsNumber &)js_rot.at(1)).val,
-            (float)((const JsNumber &)js_rot.at(2)).val
+            (float)js_rot.at(0).as_num().val, (float)js_rot.at(1).as_num().val, (float)js_rot.at(2).as_num().val
         };
 
         rot *= Ren::Pi<float>() / 180.0f;
@@ -39,12 +35,10 @@ void Decal::Read(const JsObject &js_in, Decal &de) {
     auto dim = Ren::Vec3f{ 1.0f, 1.0f, 1.0f };
 
     if (js_in.Has("dim")) {
-        const JsArray &js_dim = (const JsArray &)js_in.at("dim");
+        const JsArray &js_dim = js_in.at("dim").as_arr();
 
         dim = Ren::Vec3f{
-            (float)((const JsNumber &)js_dim.at(0)).val,
-            (float)((const JsNumber &)js_dim.at(1)).val,
-            (float)((const JsNumber &)js_dim.at(2)).val
+            (float)js_dim.at(0).as_num().val, (float)js_dim.at(1).as_num().val, (float)js_dim.at(2).as_num().val
         };
     }
 

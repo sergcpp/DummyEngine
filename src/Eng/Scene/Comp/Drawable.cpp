@@ -7,7 +7,7 @@ void Drawable::Read(const JsObject &js_in, Drawable &dr) {
     dr.vis_mask = 0xffffffff;
 
     if (js_in.Has("visible_to_shadow")) {
-        auto v = (JsLiteral)js_in.at("visible_to_shadow");
+        JsLiteral v = js_in.at("visible_to_shadow").as_lit();
         if (v.val == JS_FALSE) {
             dr.vis_mask &= ~VisShadow;
         }
@@ -21,7 +21,7 @@ void Drawable::Read(const JsObject &js_in, Drawable &dr) {
     }
 
     if (js_in.Has("mesh_file")) {
-        const auto &mesh_name = (const JsString &)js_in.at("mesh_file");
+        const JsString &mesh_name = js_in.at("mesh_file").as_str();
         dr.mesh_file = Ren::String{ mesh_name.val.c_str() };
     }
 

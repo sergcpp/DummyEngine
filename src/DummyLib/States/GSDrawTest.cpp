@@ -116,44 +116,45 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
     cam_follow_param_ = 0.0f;
 
     if (js_scene.Has("camera")) {
-        const JsObject &js_cam = (const JsObject &)js_scene.at("camera");
+        const JsObject &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
-            const JsArray &js_orig = (const JsArray &)js_cam.at("view_origin");
-            initial_view_origin_[0] = (float)((const JsNumber &)js_orig.at(0)).val;
-            initial_view_origin_[1] = (float)((const JsNumber &)js_orig.at(1)).val;
-            initial_view_origin_[2] = (float)((const JsNumber &)js_orig.at(2)).val;
+            const JsArray &js_orig = js_cam.at("view_origin").as_arr();
+            initial_view_origin_[0] = (float)js_orig.at(0).as_num().val;
+            initial_view_origin_[1] = (float)js_orig.at(1).as_num().val;
+            initial_view_origin_[2] = (float)js_orig.at(2).as_num().val;
         }
 
         if (js_cam.Has("view_dir")) {
-            const JsArray &js_dir = (const JsArray &)js_cam.at("view_dir");
-            initial_view_dir_[0] = (float)((const JsNumber &)js_dir.at(0)).val;
-            initial_view_dir_[1] = (float)((const JsNumber &)js_dir.at(1)).val;
-            initial_view_dir_[2] = (float)((const JsNumber &)js_dir.at(2)).val;
+            const JsArray &js_dir = js_cam.at("view_dir").as_arr();
+            initial_view_dir_[0] = (float)js_dir.at(0).as_num().val;
+            initial_view_dir_[1] = (float)js_dir.at(1).as_num().val;
+            initial_view_dir_[2] = (float)js_dir.at(2).as_num().val;
         }
 
         if (js_cam.Has("fwd_speed")) {
-            const JsNumber &js_fwd_speed = (const JsNumber &)js_cam.at("fwd_speed");
+            const JsNumber &js_fwd_speed = js_cam.at("fwd_speed").as_num();
             max_fwd_speed_ = (float)js_fwd_speed.val;
         }
 
         if (js_cam.Has("fov")) {
-            const JsNumber &js_fov = (const JsNumber &)js_cam.at("fov");
+            const JsNumber &js_fov = js_cam.at("fov").as_num();
             view_fov_ = (float)js_fov.val;
         }
 
         if (js_cam.Has("max_exposure")) {
-            const JsNumber &js_max_exposure = (const JsNumber &)js_cam.at("max_exposure");
+            const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
             max_exposure_ = (float)js_max_exposure.val;
         }
 
         if (js_cam.Has("follow_path")) {
-            const JsArray &js_points = (const JsArray &)js_cam.at("follow_path");
+            const JsArray &js_points = js_cam.at("follow_path").as_arr();
             for (const JsElement &el : js_points.elements) {
-                const auto &js_point = static_cast<const JsArray &>(el);
+                const JsArray &js_point = el.as_arr();
 
-                const auto &x = (const JsNumber &)js_point.at(0),
-                    &y = (const JsNumber &)js_point.at(1),
-                    &z = (const JsNumber &)js_point.at(2);
+                const JsNumber
+                    &x = js_point.at(0).as_num(),
+                    &y = js_point.at(1).as_num(),
+                    &z = js_point.at(2).as_num();
 
                 cam_follow_path_.emplace_back((float)x.val, (float)y.val, (float)z.val);
             }

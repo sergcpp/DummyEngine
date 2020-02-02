@@ -167,7 +167,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     std::map<std::string, Ren::Vec4f> decals_textures;
 
     if (js_scene.Has("name")) {
-        const JsString &js_name = (const JsString &)js_scene.at("name");
+        const JsString &js_name = js_scene.at("name").as_str();
         scene_data_.name = Ren::String{ js_name.val.c_str() };
     } else {
         throw std::runtime_error("Level has no name!");
@@ -244,7 +244,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
                 int index = 0;
                 for (const auto &js_mat : js_materials.elements) {
-                    if (js_mat.type() == JS_STRING) {
+                    if (js_mat.type() == JS_TYPE_STRING) {
                         mesh_ref->group(index).mat = OnLoadMaterial(((const JsString &) js_mat).val.c_str());
                     }
                     index++;
@@ -313,17 +313,17 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                            float(res[1]) / DECALS_ATLAS_RESY };
     };
 
-    const JsArray &js_objects = (const JsArray &)js_scene.at("objects");
-    for (const auto &js_elem : js_objects.elements) {
-        const auto &js_obj = (const JsObject &)js_elem;
+    const JsArray &js_objects = js_scene.at("objects").as_arr();
+    for (const JsElement &js_elem : js_objects.elements) {
+        const JsObject &js_obj = js_elem.as_obj();
 
         SceneObject obj;
 
         Ren::Vec3f obj_bbox[2] = { Ren::Vec3f{ std::numeric_limits<float>::max() }, Ren::Vec3f{ -std::numeric_limits<float>::max() } };
 
         for (const auto &js_comp : js_obj.elements) {
-            if (js_comp.second.type() != JS_OBJECT) continue;
-            const auto &js_comp_obj = (const JsObject &)js_comp.second;
+            if (js_comp.second.type() != JS_TYPE_OBJECT) continue;
+            const JsObject &js_comp_obj = js_comp.second.as_obj();
             const std::string &js_comp_name = js_comp.first;
 
             for (unsigned i = 0; i < MAX_COMPONENT_TYPES; i++) {
@@ -354,7 +354,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         tr->UpdateBBox();
 
         if (js_obj.Has("name")) {
-            const auto &js_name = (const JsString &)js_obj.at("name");
+            const JsString &js_name = js_obj.at("name").as_str();
             obj.name = Ren::String{ js_name.val.c_str() };
             scene_data_.name_to_object[obj.name] = (uint32_t)scene_data_.objects.size();
         }
@@ -363,34 +363,34 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     }
 
     if (js_scene.Has("environment")) {
-        const JsObject &js_env = (const JsObject &)js_scene.at("environment");
+        const JsObject &js_env = js_scene.at("environment").as_obj();
         if (js_env.Has("sun_dir")) {
-            const JsArray &js_dir = (const JsArray &)js_env.at("sun_dir");
+            const JsArray &js_dir = js_env.at("sun_dir").as_arr();
 
             const double
-                x = ((const JsNumber &)js_dir.at(0)).val,
-                y = ((const JsNumber &)js_dir.at(1)).val,
-                z = ((const JsNumber &)js_dir.at(2)).val;
+                x = js_dir.at(0).as_num().val,
+                y = js_dir.at(1).as_num().val,
+                z = js_dir.at(2).as_num().val;
 
             scene_data_.env.sun_dir = Ren::Vec3f{ float(x), float(y), float(z) };
             scene_data_.env.sun_dir = -Ren::Normalize(scene_data_.env.sun_dir);
         }
         if (js_env.Has("sun_col")) {
-            const JsArray &js_col = (const JsArray &)js_env.at("sun_col");
+            const JsArray &js_col = js_env.at("sun_col").as_arr();
 
             const double
-                r = ((const JsNumber &)js_col.at(0)).val,
-                g = ((const JsNumber &)js_col.at(1)).val,
-                b = ((const JsNumber &)js_col.at(2)).val;
+                r = js_col.at(0).as_num().val,
+                g = js_col.at(1).as_num().val,
+                b = js_col.at(2).as_num().val;
 
             scene_data_.env.sun_col = Ren::Vec3f{ float(r), float(g), float(b) };
         }
         if (js_env.Has("sun_softness")) {
-            const auto &js_sun_softness = (const JsNumber &)js_env.at("sun_softness");
+            const JsNumber &js_sun_softness = js_env.at("sun_softness").as_num();
             scene_data_.env.sun_softness = (float)js_sun_softness.val;
         }
         if (js_env.Has("env_map")) {
-            const JsString &js_env_map = (const JsString &)js_env.at("env_map");
+            const JsString &js_env_map = js_env.at("env_map").as_str();
 
             scene_data_.env.env_map_name = Ren::String{ js_env_map.val.c_str() };
 
@@ -459,7 +459,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             scene_data_.env.env_map = ctx_.LoadTextureCube(tex_name.c_str(), data, size, p, &load_status);
         }
         if (js_env.Has("env_map_pt")) {
-            scene_data_.env.env_map_name_pt = Ren::String{ ((const JsString &)js_env.at("env_map_pt")).val.c_str() };
+            scene_data_.env.env_map_name_pt = Ren::String{ js_env.at("env_map_pt").as_str().val.c_str() };
         }
     } else {
         scene_data_.env = {};
@@ -687,11 +687,11 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp, Ren
     auto *dr = (Drawable *)comp;
 
     if (js_comp_obj.Has("mesh_file")) {
-        const JsString &js_mesh_file_name = (const JsString &)js_comp_obj.at("mesh_file");
+        const JsString &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
 
         const char *js_mesh_lookup_name = js_mesh_file_name.val.c_str();
         if (js_comp_obj.Has("mesh_name")) {
-            js_mesh_lookup_name = ((const JsString &)js_comp_obj.at("mesh_name")).val.c_str();
+            js_mesh_lookup_name = js_comp_obj.at("mesh_name").as_str().val.c_str();
         }
 
         Ren::eMeshLoadStatus status;
@@ -726,25 +726,25 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp, Ren
     }
 
     if (js_comp_obj.Has("material_override")) {
-        const auto &js_materials = (const JsArray &)js_comp_obj.at("material_override");
+        const JsArray &js_materials = js_comp_obj.at("material_override").as_arr();
 
         int index = 0;
         for (const JsElement &js_mat_el : js_materials.elements) {
-            if (js_mat_el.type() == JS_STRING) {
-                dr->mesh->group(index).mat = OnLoadMaterial(((const JsString &)js_mat_el).val.c_str());
+            if (js_mat_el.type() == JS_TYPE_STRING) {
+                dr->mesh->group(index).mat = OnLoadMaterial(js_mat_el.as_str().val.c_str());
             }
             index++;
         }
     }
 
     if (js_comp_obj.Has("anims")) {
-        const JsArray &js_anims = (const JsArray &)js_comp_obj.at("anims");
+        const JsArray &js_anims = js_comp_obj.at("anims").as_arr();
 
         assert(dr->mesh->type() == Ren::MeshSkeletal);
         Ren::Skeleton *skel = dr->mesh->skel();
 
         for (const auto &js_anim : js_anims.elements) {
-            const auto &js_anim_name = (const JsString &)js_anim;
+            const JsString &js_anim_name = js_anim.as_str();
             std::string anim_path = std::string(MODELS_PATH) + js_anim_name.val;
 
             Sys::AssetFile in_file(anim_path.c_str());
@@ -770,7 +770,7 @@ void SceneManager::PostloadOccluder(const JsObject &js_comp_obj, void *comp, Ren
 
     auto *occ = (Occluder *)comp;
 
-    const JsString &js_mesh_file_name = (const JsString &)js_comp_obj.at("mesh_file");
+    const JsString &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
 
     Ren::eMeshLoadStatus status;
     occ->mesh = ctx_.LoadMesh(js_mesh_file_name.val.c_str(), nullptr, nullptr, &status);

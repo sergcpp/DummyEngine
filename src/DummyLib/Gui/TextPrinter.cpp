@@ -47,21 +47,21 @@ bool TextPrinter::LoadScript(const JsObject &js_script) {
     std::mt19937 rand_gen(std::random_device{}());
 
     try {
-        const JsArray &js_texts = (const JsArray &)js_script.at("texts");
+        const JsArray &js_texts = js_script.at("texts").as_arr();
         for (const JsElement &js_text_el : js_texts.elements) {
-            const auto &js_text = (const JsObject &)js_text_el;
+            const JsObject &js_text = js_text_el.as_obj();
             if (!js_text.Has("data")) return false;
 
-            const JsString &js_data = (const JsString &)js_text.at("data");
+            const JsString &js_data = js_text.at("data").as_str();
             text_data_.push_back(js_data.val);
 
             if (js_text.Has("options")) {
                 text_options_.emplace_back();
                 std::vector<OptionData> &text_option = text_options_.back();
 
-                const JsArray &js_options = (const JsArray &)js_text.at("options");
+                const JsArray &js_options = js_text.at("options").as_arr();
                 for (const JsElement &js_opt_el : js_options.elements) {
-                    const auto &js_opt = (const JsObject &)js_opt_el;
+                    const JsObject &js_opt = js_opt_el.as_obj();
 
                     text_option.emplace_back();
 
@@ -73,9 +73,9 @@ bool TextPrinter::LoadScript(const JsObject &js_script) {
                     opt_data.is_hover = false;
                     opt_data.is_expanded = false;
 
-                    const JsArray &js_variants = (const JsArray &)js_opt.at("variants");
+                    const JsArray &js_variants = js_opt.at("variants").as_arr();
                     for (const JsElement &js_var_el : js_variants.elements) {
-                        const auto &js_var = (const JsString &)js_var_el;
+                        const JsString &js_var = js_var_el.as_str();
 
                         option_variants_.push_back(js_var.val);
                         opt_data.var_count++;
@@ -96,9 +96,9 @@ bool TextPrinter::LoadScript(const JsObject &js_script) {
             if (js_text.Has("hints")) {
                 text_hints_.emplace_back();
 
-                const JsArray &js_hints = (const JsArray &)js_text.at("hints");
+                const JsArray &js_hints = js_text.at("hints").as_arr();
                 for (const JsElement &js_hint_el : js_hints.elements) {
-                    const auto &js_hint = (const JsObject &)js_hint_el;
+                    const JsObject &js_hint = js_hint_el.as_obj();
 
                     text_hints_.back().emplace_back();
 
@@ -106,7 +106,7 @@ bool TextPrinter::LoadScript(const JsObject &js_script) {
                     hint_data.str_index = (int)hint_strings_.size();
                     hint_data.is_hover = false;
 
-                    const JsString &js_hint_en = (const JsString &)js_hint.at("en");
+                    const JsString &js_hint_en = js_hint.at("en").as_str();
                     hint_strings_.push_back(js_hint_en.val);
                 }
             }

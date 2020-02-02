@@ -4,31 +4,26 @@
 
 void LightProbe::Read(const JsObject &js_in, LightProbe &pr) {
     if (js_in.Has("offset")) {
-        const JsArray &js_offset = (const JsArray &)js_in.at("offset");
+        const JsArray &js_offset = js_in.at("offset").as_arr();
 
         pr.offset = Ren::Vec3f{
-            (float)((const JsNumber &)js_offset.at(0)).val,
-            (float)((const JsNumber &)js_offset.at(1)).val,
-            (float)((const JsNumber &)js_offset.at(2)).val
+            (float)js_offset.at(0).as_num().val, (float)js_offset.at(1).as_num().val, (float)js_offset.at(2).as_num().val
         };
     }
 
     if (js_in.Has("radius")) {
-        const JsNumber &js_radius = (const JsNumber &)js_in.at("radius");
-
+        const JsNumber &js_radius = js_in.at("radius").as_num();
         pr.radius = (float)js_radius.val;
     }
 
     if (js_in.Has("sh_coeffs")) {
-        const JsArray &js_sh_coeffs = (const JsArray &)js_in.at("sh_coeffs");
+        const JsArray &js_sh_coeffs = js_in.at("sh_coeffs").as_arr();
 
         for (int i = 0; i < 4; i++) {
-            const auto &js_sh_coeff = (const JsArray &)js_sh_coeffs.at(i);
+            const JsArray &js_sh_coeff = js_sh_coeffs.at(i).as_arr();
 
             pr.sh_coeffs[i] = Ren::Vec3f{
-                (float)((const JsNumber &)js_sh_coeff.at(0)),
-                (float)((const JsNumber &)js_sh_coeff.at(1)),
-                (float)((const JsNumber &)js_sh_coeff.at(2))
+                (float)js_sh_coeff.at(0).as_num().val, (float)js_sh_coeff.at(1).as_num().val, (float)js_sh_coeff.at(2).as_num().val
             };
         }
     }
