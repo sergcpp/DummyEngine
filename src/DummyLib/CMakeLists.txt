@@ -26,6 +26,10 @@ set(STATES_SOURCES  States/GSCreate.h
                     States/GSUITest3.cpp
                     )
 
+set(UTILS_SOURCES   Utils/Dictionary.h
+                    Utils/Dictionary.cpp)
+
+
 if(${RENDERER} STREQUAL "GL")
     set(STATES_SOURCES ${STATES_SOURCES}
                         States/GSUITest3GL.cpp)
@@ -46,11 +50,18 @@ list(APPEND ALL_SOURCE_FILES ${STATES_SOURCES})
 set_source_files_properties(${STATES_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\States" FILES ${STATES_SOURCES})
 
+list(APPEND ALL_SOURCE_FILES ${UTILS_SOURCES})
+set_source_files_properties(${UTILS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+source_group("src\\Utils" FILES ${UTILS_SOURCES})
+
 list(APPEND ALL_SOURCE_FILES Gui/_Gui1.cpp)
 source_group("src\\Gui" FILES Gui/_Gui1.cpp)
 
 list(APPEND ALL_SOURCE_FILES States/_States.cpp)
 source_group("src\\States" FILES States/_States.cpp)
+
+list(APPEND ALL_SOURCE_FILES Utils/_Utils.cpp)
+source_group("src\\Utils" FILES Utils/_Utils.cpp)
 
 add_library(DummyLib STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(DummyLib Eng Net Ray Ren Sys astc ${LIBS})

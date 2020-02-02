@@ -19,6 +19,7 @@
 
 class Cmdline;
 class DebugInfoUI;
+class Dictionary;
 class GameStateManager;
 class FontStorage;
 class SceneManager;
@@ -32,11 +33,9 @@ class GSUITest2 : public GSBaseState {
 
     std::shared_ptr<Gui::BitmapFont> dialog_font_;
     float test_time_counter_s = 0.0f;
-
-    std::unique_ptr<Gui::Image>         test_image_, test_image2_, test_image3_, test_image4_;
-    std::unique_ptr<Gui::Image9Patch>   test_frame_, test_frame2_, test_frame3_, test_frame4_;
-    //std::unique_ptr<TextPrinter>         text_printer_;
     bool                                 is_visible_ = false;
+
+    std::shared_ptr<Dictionary>     dict_;
 
     uint32_t zenith_index_          = 0xffffffff;
 

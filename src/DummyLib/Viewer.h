@@ -9,6 +9,7 @@ const char RENDERER_KEY[]               = "renderer";
 const char RAY_RENDERER_KEY[]           = "ray_renderer";
 const char SCENE_MANAGER_KEY[]          = "scene_manager";
 const char CMDLINE_KEY[]                = "cmdline";
+const char DICT_KEY[]                   = "dictionary";
 
 const char SWAP_TIMER_KEY[]             = "swap_timer";
 

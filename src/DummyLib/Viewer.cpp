@@ -17,6 +17,7 @@
 #include "Gui/DebugInfoUI.h"
 #include "Gui/FontStorage.h"
 #include "States/GSCreate.h"
+#include "Utils/Dictionary.h"
 
 Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) {
     auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
@@ -106,6 +107,11 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     });
 #endif
 
+    {
+        auto dictionary = std::make_shared<Dictionary>();
+        AddComponent(DICT_KEY, dictionary);
+    }
+
     auto swap_interval = std::make_shared<TimeInterval>();
     AddComponent(SWAP_TIMER_KEY, swap_interval);
 
@@ -141,18 +147,6 @@ void Viewer::PrepareAssets(const char *platform) {
 
 void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const char *out_file) {
     ctx.log->Info("[PrepareAssets] Prep %s", out_file);
-
-    enum eGramGrpPos {
-        Noun, Verb, Adjekt
-    };
-
-    enum eGramGrpNum {
-        Singular, Plural
-    };
-
-    enum eGramGrpGen {
-        Masculine, Feminine, Neutral
-    };
 
     struct dict_link_t {
         uint32_t entries[16];
@@ -219,10 +213,10 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
                 const JsObject &js_gram_grp = js_form.at("gramGrp").as_obj();
                 if (js_gram_grp.Has("pos")) {
                     const JsString &js_gram_grp_pos = js_gram_grp.at("pos").as_str();
-                    if (js_gram_grp_pos.val == "n") {
-                        entry.pos = Noun;
+                    if (js_gram_grp_pos.val == "v") {
+                        entry.pos = Verb;
                     } else if (js_gram_grp_pos.val == "a") {
-                        entry.pos = Adjekt;
+                        entry.pos = Adjective;
                     }
                 }
                 if (js_gram_grp.Has("num")) {
@@ -328,33 +322,17 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
             str_mem_req += tr.length() + 1;
         }
 
-        struct dict_link_compact_t {
-            uint32_t key_str_off;
-            uint32_t entry_index;
-            uint32_t entry_count;
-        };
-        static_assert(sizeof(dict_link_compact_t) == 12, "!");
-
-        struct dict_entry_compact_t {
-            uint8_t pos;
-            uint8_t num;
-            uint8_t gen;
-            uint8_t trans_count;
-            uint32_t orth_str_off;
-            uint32_t pron_str_off;
-            uint32_t trans_str_off;
-        };
-        static_assert(sizeof(dict_entry_compact_t) == 16, "!");
-
         std::unique_ptr<char[]> comb_str_buf(new char[str_mem_req]);
         size_t comb_str_buf_ndx1 = 0, comb_str_buf_ndx2 = str_mem_trans_off;
 
-        Ren::HashMap32<const char *, dict_link_compact_t> dictionary_hashmap_compact;
-        std::vector<dict_link_compact_t> links_compact;
-        std::vector<dict_entry_compact_t> entries_compact;
+        //Ren::HashMap32<const char *, Dictionary::dict_link_compact_t> dictionary_hashmap_compact;
+        std::vector<Dictionary::dict_link_compact_t> links_compact;
+        std::vector<Dictionary::dict_entry_compact_t> entries_compact;
 
         int translations_processed = 0;
         int translations_count = translations.size();
+
+        int links_count = 0;
 
         for (auto it = dictionary_hashmap.cbegin(); it < dictionary_hashmap.cend(); ++it) {
             const dict_link_t &src_link = it->val;
@@ -365,16 +343,19 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
             uint32_t key_str_offset = comb_str_buf_ndx1;
             comb_str_buf_ndx1 += key_len + 1;
 
-            dict_link_compact_t &link = dictionary_hashmap_compact[key];
+            links_compact.emplace_back();
+            Dictionary::dict_link_compact_t &link = links_compact.back(); //dictionary_hashmap_compact[key];
             link.key_str_off = key_str_offset;
             link.entry_index = (uint32_t) entries_compact.size();
             link.entry_count = src_link.entries_count;
+
+            links_count += link.entry_count;
 
             for (uint32_t i = 0; i < src_link.entries_count; i++) {
                 const dict_entry_t &src_entry = dict_entries[src_link.entries[i]];
 
                 entries_compact.emplace_back();
-                dict_entry_compact_t &dst_entry = entries_compact.back();
+                Dictionary::dict_entry_compact_t &dst_entry = entries_compact.back();
 
                 dst_entry.pos = src_entry.pos;
                 dst_entry.num = src_entry.num;
@@ -392,6 +373,8 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
                     memcpy(&comb_str_buf[comb_str_buf_ndx1], src_entry.pron.c_str(), len + 1);
                     dst_entry.pron_str_off = comb_str_buf_ndx1;
                     comb_str_buf_ndx1 += len + 1;
+                } else {
+                    dst_entry.pron_str_off = 0xffffffff;
                 }
 
                 for (int j = src_entry.trans_index; j < src_entry.trans_index + src_entry.trans_count; j++) {
@@ -413,28 +396,10 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
         assert(comb_str_buf_ndx1 == str_mem_trans_off && "Translations start is not right!");
         assert(comb_str_buf_ndx2 == str_mem_req && "Buffer end is not right!");
         assert(translations_processed == translations_count && "Translations count does not match!");
-
-        const dict_link_compact_t *test1 = dictionary_hashmap_compact.Find("Wahrscheinlichkeit");
-        const dict_entry_compact_t &entry1 = entries_compact[test1->entry_index];
-        const dict_link_compact_t *test2 = dictionary_hashmap_compact.Find("ficken");
-        const dict_entry_compact_t &entry2 = entries_compact[test2->entry_index];
-
-        enum eDictChunks {
-            DictChInfo,
-            DictChLinks,
-            DictChEntries,
-            DictChStrings,
-            DictChCount
-        };
-
-        struct dict_info_t {
-            char src_lang[2], dst_lang[2];
-            uint32_t keys_count, entries_count;
-        };
-        static_assert(sizeof(dict_info_t) == 12, "!");
+        assert(links_count == dict_entries.size() && "Links count is wrong!");
 
         std::ofstream out_stream(out_file, std::ios::binary);
-        const uint32_t header_size = 4 + sizeof(uint32_t) + int(DictChCount) * 3 * sizeof(uint32_t);
+        const uint32_t header_size = 4 + sizeof(uint32_t) + int(Dictionary::DictChCount) * 3 * sizeof(uint32_t);
         uint32_t hdr_offset = 0, data_offset = header_size;
 
         {   // File format string
@@ -450,9 +415,9 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
 
         {   // Info data offsets
             const uint32_t
-                    info_data_chunk_id = (uint32_t)DictChInfo,
+                    info_data_chunk_id = (uint32_t)Dictionary::DictChInfo,
                     info_data_offset = data_offset,
-                    info_data_size = sizeof(dict_info_t);
+                    info_data_size = sizeof(Dictionary::dict_info_t);
             out_stream.write((const char *)&info_data_chunk_id, sizeof(uint32_t));
             out_stream.write((const char *)&info_data_offset, sizeof(uint32_t));
             out_stream.write((const char *)&info_data_size, sizeof(uint32_t));
@@ -462,9 +427,9 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
 
         {   // Link data offsets
             const uint32_t
-                    link_data_chunk_id = (uint32_t)DictChLinks,
+                    link_data_chunk_id = (uint32_t)Dictionary::DictChLinks,
                     link_data_offset = data_offset,
-                    link_data_size = sizeof(dict_link_compact_t) * links_compact.size();
+                    link_data_size = sizeof(Dictionary::dict_link_compact_t) * links_compact.size();
             out_stream.write((const char *)&link_data_chunk_id, sizeof(uint32_t));
             out_stream.write((const char *)&link_data_offset, sizeof(uint32_t));
             out_stream.write((const char *)&link_data_size, sizeof(uint32_t));
@@ -474,9 +439,9 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
 
         {   // Entry data offsets
             const uint32_t
-                    entry_data_chunk_id = (uint32_t)DictChEntries,
+                    entry_data_chunk_id = (uint32_t)Dictionary::DictChEntries,
                     entry_data_offset = data_offset,
-                    entry_data_size = sizeof(dict_entry_compact_t) * entries_compact.size();
+                    entry_data_size = sizeof(Dictionary::dict_entry_compact_t) * entries_compact.size();
             out_stream.write((const char *)&entry_data_chunk_id, sizeof(uint32_t));
             out_stream.write((const char *)&entry_data_offset, sizeof(uint32_t));
             out_stream.write((const char *)&entry_data_size, sizeof(uint32_t));
@@ -486,9 +451,9 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
 
         {   // String data offsets
             const uint32_t
-                    string_data_chunk_id = (uint32_t)DictChStrings,
+                    string_data_chunk_id = (uint32_t)Dictionary::DictChStrings,
                     string_data_offset = data_offset,
-                    string_data_size = sizeof(dict_entry_compact_t) * entries_compact.size();
+                    string_data_size = str_mem_req;
             out_stream.write((const char *)&string_data_chunk_id, sizeof(uint32_t));
             out_stream.write((const char *)&string_data_offset, sizeof(uint32_t));
             out_stream.write((const char *)&string_data_size, sizeof(uint32_t));
@@ -499,22 +464,22 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
         assert(hdr_offset == header_size);
 
         {   // Info data
-            dict_info_t info;
+            Dictionary::dict_info_t info;
             info.src_lang[0] = 'e';
             info.src_lang[1] = 'n';
             info.dst_lang[0] = 'd';
             info.dst_lang[1] = 'e';
-            info.keys_count = dictionary_hashmap_compact.size();
+            info.keys_count = (uint32_t)links_compact.size();
             info.entries_count = (uint32_t)entries_compact.size();
 
-            out_stream.write((const char *)&info, sizeof(dict_info_t));
+            out_stream.write((const char *)&info, sizeof(Dictionary::dict_info_t));
         }
 
         // Link data
-        out_stream.write((const char *)links_compact.data(), sizeof(dict_link_compact_t) * links_compact.size());
+        out_stream.write((const char *)links_compact.data(), sizeof(Dictionary::dict_link_compact_t) * links_compact.size());
 
         // Entry data
-        out_stream.write((const char *)entries_compact.data(), sizeof(dict_entry_compact_t) * entries_compact.size());
+        out_stream.write((const char *)entries_compact.data(), sizeof(Dictionary::dict_entry_compact_t) * entries_compact.size());
 
         // String data
         out_stream.write(comb_str_buf.get(), str_mem_req);
