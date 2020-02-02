@@ -6,6 +6,9 @@
 #include "Scene/SceneData.cpp"
 #include "Scene/SceneManager.cpp"
 #include "Scene/SceneManager_ASS.cpp"
+#include "Scene/SceneManager_ASS_Font.cpp"
+#include "Scene/SceneManager_ASS_Shader.cpp"
+#include "Scene/SceneManager_ASS_Tex.cpp"
 #include "Scene/SceneManager_BVH.cpp"
 #include "Scene/SceneManager_PT.cpp"
 

@@ -13,6 +13,11 @@ namespace Sys {
     class ThreadPool;
 }
 
+struct assets_context_t {
+    const char *platform;
+    Ren::ILog *log;
+};
+
 class SceneManager : public std::enable_shared_from_this<SceneManager> {
 public:
     SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads);
@@ -47,7 +52,6 @@ public:
     void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov, float max_exposure);
 
     using PostLoadFunc = void(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
-
     void RegisterComponent(uint32_t index, CompStorage *storage, const std::function<PostLoadFunc> &post_init);
 
     void InitScene_PT(bool _override = false);
@@ -60,6 +64,8 @@ public:
 
     void UpdateObjects();
 
+    using ConvertAssetFunc = std::function<void(assets_context_t &ctx, const char *in_file, const char *out_file)>;
+    static void RegisterAsset(const char *in_ext, const char *out_ext, const ConvertAssetFunc &convert_func);
     static bool PrepareAssets(const char *in_folder, const char *out_folder, const char *platform, Sys::ThreadPool *p_threads, Ren::ILog *log);
     static bool WriteProbeCache(
         const char *out_folder, const char *scene_name, const ProbeStorage &probes,
@@ -103,4 +109,40 @@ private:
     // PT temp data
     std::vector<Ray::pixel_color_t> pt_lm_direct_, pt_lm_indir_,
                                     pt_lm_indir_sh_[4];
+
+    // static data for assets conversion
+    struct Handler {
+        const char *ext;
+        ConvertAssetFunc convert;
+    };
+
+    static Ren::HashMap32<std::string, Handler> g_asset_handlers;
+
+    static void InitASTCCodec();
+
+    static void HSkip(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static void HCopy(assets_context_t &ctx, const char *in_file, const char *out_file);
+
+    // image textures
+    static void HConvToASTC(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static void HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file);
+
+    static void HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, const char *out_file);
+
+    // probe textures
+    static void HConvImgToDDS(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static void HConvImgToASTC(assets_context_t &ctx, const char *in_file, const char *out_file);
+
+    // shaders
+    static void InlineShaderConstants(assets_context_t &ctx, std::string &line);
+    static void HPreprocessShader(assets_context_t &ctx, const char *in_file, const char *out_file);
+
+    // materials
+    static void HPreprocessMaterial(assets_context_t &ctx, const char *in_file, const char *out_file);
+
+    // scenes
+    static void HPreprocessJson(assets_context_t &ctx, const char *in_file, const char *out_file);
+
+    // fonts
+    static void HConvTTFToFont(assets_context_t &ctx, const char *in_file, const char *out_file);
 };

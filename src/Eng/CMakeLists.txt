@@ -86,6 +86,9 @@ set(SCENE_SOURCES   Scene/SceneData.h
                     Scene/SceneManager.h
                     Scene/SceneManager.cpp
                     Scene/SceneManager_ASS.cpp
+                    Scene/SceneManager_ASS_Font.cpp
+                    Scene/SceneManager_ASS_Shader.cpp
+                    Scene/SceneManager_ASS_Tex.cpp
                     Scene/SceneManager_BVH.cpp
                     Scene/SceneManager_PT.cpp
                     Scene/ProbeStorage.h)

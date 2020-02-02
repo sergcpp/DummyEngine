@@ -22,16 +22,11 @@ extern "C" {
 
 #include <Eng/Gui/Renderer.h>
 #include <Eng/Gui/Utils.h>
-#include <Net/Compress.h>
 #include <Ray/internal/TextureSplitter.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/MonoAlloc.h>
 #include <Sys/ThreadPool.h>
-
-#define STB_TRUETYPE_IMPLEMENTATION
-#define STBTT_STATIC
-#include <stb/stb_truetype.h>
 
 // TODO: pass defines as a parameter
 #include "../Renderer/Renderer_GL_Defines.inl"
@@ -41,352 +36,6 @@ extern const char *MODELS_PATH;
 extern const char *TEXTURES_PATH;
 extern const char *MATERIALS_PATH;
 extern const char *SHADERS_PATH;
-
-int WriteImage(const uint8_t *out_data, int w, int h, int channels, const char *name);
-
-void Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
-    std::unique_ptr<uint8_t[]> u8_data = Ren::ConvertRGB32F_to_RGBE(&out_data[0].r, w, h, 4);
-    WriteImage(&u8_data[0], w, h, 4, name);
-}
-
-void Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
-    std::vector<uint8_t> u8_data(w * h * 3);
-
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            const Ray::pixel_color_t &p = out_data[y * w + x];
-
-            u8_data[(y * w + x) * 3 + 0] = uint8_t(std::min(int(p.r * 255), 255));
-            u8_data[(y * w + x) * 3 + 1] = uint8_t(std::min(int(p.g * 255), 255));
-            u8_data[(y * w + x) * 3 + 2] = uint8_t(std::min(int(p.b * 255), 255));
-        }
-    }
-
-    WriteImage(&u8_data[0], w, h, 3, name);
-}
-
-void Write_RGBM(const float *out_data, int w, int h, int channels, const char *name) {
-    std::unique_ptr<uint8_t[]> u8_data = Ren::ConvertRGB32F_to_RGBM(out_data, w, h, channels);
-    WriteImage(&u8_data[0], w, h, 4, name);
-}
-
-void Write_DDS_Mips(
-        const uint8_t * const * mipmaps, const int *widths, const int *heights, const int mip_count,
-        const int channels, const char *out_file) {
-    //
-    // Compress mip images
-    //
-    uint8_t *dxt_data[16] = {};
-    int dxt_size[16] = {};
-    int dxt_size_total = 0;
-
-    for (int i = 0; i < mip_count; i++) {
-        if (channels == 3) {
-            dxt_data[i] = convert_image_to_DXT1(mipmaps[i], widths[i], heights[i], channels, &dxt_size[i]);
-        } else if (channels == 4) {
-            dxt_data[i] = convert_image_to_DXT5(mipmaps[i], widths[i], heights[i], channels, &dxt_size[i]);
-        }
-        dxt_size_total += dxt_size[i];
-    }
-
-    //
-    // Write out file
-    //
-    DDS_header header = {};
-    header.dwMagic = (unsigned('D') << 0u) | (unsigned('D') << 8u) | (unsigned('S') << 16u) | (unsigned(' ') << 24u);
-    header.dwSize = 124;
-    header.dwFlags =
-            unsigned(DDSD_CAPS) | unsigned(DDSD_HEIGHT) | unsigned(DDSD_WIDTH) |
-            unsigned(DDSD_PIXELFORMAT) | unsigned(DDSD_LINEARSIZE) | unsigned(DDSD_MIPMAPCOUNT);
-    header.dwWidth = widths[0];
-    header.dwHeight = heights[0];
-    header.dwPitchOrLinearSize = dxt_size_total;
-    header.dwMipMapCount = mip_count;
-    header.sPixelFormat.dwSize = 32;
-    header.sPixelFormat.dwFlags = DDPF_FOURCC;
-
-    if (channels == 3) {
-        header.sPixelFormat.dwFourCC =
-                (unsigned('D') << 0u) | (unsigned('X') << 8u) | (unsigned('T') << 16u) | (unsigned('1') << 24u);
-    } else {
-        header.sPixelFormat.dwFourCC =
-                (unsigned('D') << 0u) | (unsigned('X') << 8u) | (unsigned('T') << 16u) | (unsigned('5') << 24u);
-    }
-
-    header.sCaps.dwCaps1 = unsigned(DDSCAPS_TEXTURE) | unsigned(DDSCAPS_MIPMAP);
-
-    std::ofstream out_stream(out_file, std::ios::binary);
-    out_stream.write((char *)&header, sizeof(header));
-
-    for (int i = 0; i < mip_count; i++) {
-        out_stream.write((char *)dxt_data[i], dxt_size[i]);
-        SOIL_free_image_data(dxt_data[i]);
-        dxt_data[i] = nullptr;
-    }
-}
-
-void Write_DDS(const uint8_t *image_data, const int w, const int h, const int channels, const bool flip_y, const char *out_file) {
-    // Check if power of two
-    const bool store_mipmaps = (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
-
-    std::unique_ptr<uint8_t[]> mipmaps[16] = {};
-    int widths[16] = {},
-        heights[16] = {};
-
-    mipmaps[0].reset(new uint8_t[w * h * channels]);
-    if (flip_y) {
-        for (int j = 0; j < h; j++) {
-            memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels], w * channels);
-        }
-    } else {
-        memcpy(&mipmaps[0][0], &image_data[0], w * h * channels);
-    }
-    widths[0] = w;
-    heights[0] = h;
-    int mip_count;
-
-    if (store_mipmaps) {
-        mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
-    } else {
-        mip_count = 1;
-    }
-
-    uint8_t *_mipmaps[16];
-    for (int i = 0; i < mip_count; i++) {
-        _mipmaps[i] = mipmaps[i].get();
-    }
-
-    Write_DDS_Mips(_mipmaps, widths, heights, mip_count, channels, out_file);
-}
-
-void Write_KTX_DXT(const uint8_t *image_data, const int w, const int h, const int channels, const char *out_file) {
-    // Check if power of two
-    bool store_mipmaps = (w & (w - 1)) == 0 && (h & (h - 1)) == 0;
-
-    std::unique_ptr<uint8_t[]> mipmaps[16] = {};
-    int widths[16] = {},
-        heights[16] = {};
-
-    mipmaps[0].reset(new uint8_t[w * h * channels]);
-    // mirror by y (????)
-    for (int j = 0; j < h; j++) {
-        memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels], w * channels);
-    }
-    widths[0] = w;
-    heights[0] = h;
-    int mip_count;
-
-    if (store_mipmaps) {
-        mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
-    } else {
-        mip_count = 1;
-    }
-
-    //
-    // Compress mip images
-    //
-    uint8_t *dxt_data[16] = {};
-    int dxt_size[16] = {};
-    int dxt_size_total = 0;
-
-    for (int i = 0; i < mip_count; i++) {
-        if (channels == 3) {
-            dxt_data[i] = convert_image_to_DXT1(mipmaps[i].get(), widths[i], heights[i], channels, &dxt_size[i]);
-        } else if (channels == 4) {
-            dxt_data[i] = convert_image_to_DXT5(mipmaps[i].get(), widths[i], heights[i], channels, &dxt_size[i]);
-        }
-        dxt_size_total += dxt_size[i];
-    }
-
-    //
-    // Write out file
-    //
-    const uint32_t gl_rgb = 0x1907;
-    const uint32_t gl_rgba = 0x1908;
-
-    const uint32_t RGB_S3TC_DXT1 = 0x83F0;
-    const uint32_t RGBA_S3TC_DXT5 = 0x83F3;
-
-    Ren::KTXHeader header = {};
-    header.gl_type = 0;
-    header.gl_type_size = 1;
-    header.gl_format = 0; // should be zero for compressed texture
-    if (channels == 4) {
-        header.gl_internal_format = RGBA_S3TC_DXT5;
-        header.gl_base_internal_format = gl_rgba;
-    } else {
-        header.gl_internal_format = RGB_S3TC_DXT1;
-        header.gl_base_internal_format = gl_rgb;
-    }
-    header.pixel_width = w;
-    header.pixel_height = h;
-    header.pixel_depth = 0;
-
-    header.array_elements_count = 0;
-    header.faces_count = 1;
-    header.mipmap_levels_count = mip_count;
-        
-    header.key_value_data_size = 0;
-
-    uint32_t file_offset = 0;
-    std::ofstream out_stream(out_file, std::ios::binary);
-    out_stream.write((char *)&header, sizeof(header));
-    file_offset += sizeof(header);
-
-    for (int i = 0; i < mip_count; i++) {
-        assert((file_offset % 4) == 0);
-        auto size = (uint32_t)dxt_size[i];
-        out_stream.write((char *)&size, sizeof(uint32_t));
-        file_offset += sizeof(uint32_t);
-        out_stream.write((char *)dxt_data[i], size);
-        file_offset += size;
-
-        uint32_t pad = (file_offset % 4) ? (4 - (file_offset % 4)) : 0;
-        while (pad) {
-            const uint8_t zero_byte = 0;
-            out_stream.write((char *)&zero_byte, 1);
-            pad--;
-        }
-
-        SOIL_free_image_data(dxt_data[i]);
-        dxt_data[i] = nullptr;
-    }
-}
-
-int ConvertToASTC(const uint8_t *image_data, int width, int height, int channels, float bitrate, std::unique_ptr<uint8_t[]> &out_buf);
-std::unique_ptr<uint8_t[]> DecodeASTC(const uint8_t *image_data, int data_size, int xdim, int ydim, int width, int height);
-//std::unique_ptr<uint8_t[]> Decode_KTX_ASTC(const uint8_t *image_data, int data_size, int &width, int &height);
-
-void Write_KTX_ASTC_Mips(
-        const uint8_t * const * mipmaps, const int *widths, const int *heights, const int mip_count,
-        const int channels, const char *out_file) {
-
-    int quality = 0;
-    if (strstr(out_file, "_norm")) {
-        quality = 1;
-    } else if (strstr(out_file, "lightmaps") || strstr(out_file, "probes_cache")) {
-        quality = 2;
-    }
-
-    const float bits_per_pixel_sel[] = {
-        2.0f, 3.56f, 8.0f
-    };
-
-    // Write file
-    std::unique_ptr<uint8_t[]> astc_data[16];
-    int astc_size[16] = {};
-    int astc_size_total = 0;
-
-    for (int i = 0; i < mip_count; i++) {
-        astc_size[i] = ConvertToASTC(mipmaps[i], widths[i], heights[i], channels, bits_per_pixel_sel[quality], astc_data[i]);
-        astc_size_total += astc_size[i];
-    }
-
-    const uint32_t gl_rgb = 0x1907;
-    const uint32_t gl_rgba = 0x1908;
-
-    const uint32_t gl_compressed_rgba_astc_4x4_khr = 0x93B0;
-    const uint32_t gl_compressed_rgba_astc_6x6_khr = 0x93B4;
-    const uint32_t gl_compressed_rgba_astc_8x8_khr = 0x93B7;
-
-    const uint32_t gl_format_sel[] = {
-        gl_compressed_rgba_astc_8x8_khr,
-        gl_compressed_rgba_astc_6x6_khr,
-        gl_compressed_rgba_astc_4x4_khr
-    };
-
-    Ren::KTXHeader header = {};
-    header.gl_type = 0;
-    header.gl_type_size = 1;
-    header.gl_format = 0; // should be zero for compressed texture
-    header.gl_internal_format = gl_format_sel[quality];
-
-    if (channels == 4) {
-        header.gl_base_internal_format = gl_rgba;
-    } else {
-        header.gl_base_internal_format = gl_rgb;
-    }
-    header.pixel_width = widths[0];
-    header.pixel_height = heights[0];
-    header.pixel_depth = 0;
-
-    header.array_elements_count = 0;
-    header.faces_count = 1;
-    header.mipmap_levels_count = mip_count;
-
-    header.key_value_data_size = 0;
-
-    uint32_t file_offset = 0;
-    std::ofstream out_stream(out_file, std::ios::binary);
-    out_stream.write((char *)&header, sizeof(header));
-    file_offset += sizeof(header);
-
-    for (int i = 0; i < mip_count; i++) {
-        assert((file_offset % 4) == 0);
-        auto size = (uint32_t)astc_size[i];
-        out_stream.write((char *)&size, sizeof(uint32_t));
-        file_offset += sizeof(uint32_t);
-        out_stream.write((char *)astc_data[i].get(), size);
-        file_offset += size;
-
-        uint32_t pad = (file_offset % 4) ? (4 - (file_offset % 4)) : 0;
-        while (pad) {
-            const uint8_t zero_byte = 0;
-            out_stream.write((char *)&zero_byte, 1);
-            pad--;
-        }
-    }
-}
-
-void Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h, const int channels, const bool flip_y, const char *out_file) {
-    // Check if power of two
-    const bool store_mipmaps = (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
-
-    std::unique_ptr<uint8_t[]> mipmaps[16] = {};
-    int widths[16] = {},
-        heights[16] = {};
-
-    mipmaps[0].reset(new uint8_t[w * h * channels]);
-    if (flip_y) {
-        for (int j = 0; j < h; j++) {
-            memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels], w * channels);
-        }
-    } else {
-        memcpy(&mipmaps[0][0], &image_data[0], w * h * channels);
-    }
-    widths[0] = w;
-    heights[0] = h;
-    int mip_count;
-
-    if (store_mipmaps) {
-        mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
-    } else {
-        mip_count = 1;
-    }
-
-    uint8_t *_mipmaps[16];
-    for (int i = 0; i < mip_count; i++) {
-        _mipmaps[i] = mipmaps[i].get();
-    }
-
-    Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mip_count, channels, out_file);
-}
-
-int WriteImage(const uint8_t *out_data, int w, int h, int channels, const char *name) {
-    int res = 0;
-    if (strstr(name, ".tga")) {
-        res = SOIL_save_image(name, SOIL_SAVE_TYPE_TGA, w, h, channels, out_data);
-    } else if (strstr(name, ".png")) {
-        res = SOIL_save_image(name, SOIL_SAVE_TYPE_PNG, w, h, channels, out_data);
-    } else if (strstr(name, ".dds")) {
-        res = 1;
-        Write_DDS(out_data, w, h, channels, true /* flip_y */, name);
-    } else if (strstr(name, ".ktx")) {
-        res = 1;
-        Write_KTX_ASTC(out_data, w, h, channels, true /* flip_y */, name);
-    }
-    return res;
-}
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data) {
     auto in_file_size = (size_t)in_file.size();
@@ -504,10 +153,10 @@ std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &t
     return tex_data;
 }
 
-void ReadAllFiles_r(const char *in_folder, const std::function<void(const char *)> &callback, Ren::ILog *log) {
+void ReadAllFiles_r(assets_context_t &ctx, const char *in_folder, const std::function<void(assets_context_t &ctx, const char *)> &callback) {
     DIR *in_dir = opendir(in_folder);
     if (!in_dir) {
-        log->Error("Cannot open folder %s", in_folder);
+        ctx.log->Error("Cannot open folder %s", in_folder);
         return;
     }
 
@@ -521,23 +170,23 @@ void ReadAllFiles_r(const char *in_folder, const std::function<void(const char *
             path += '/';
             path += in_ent->d_name;
 
-            ReadAllFiles_r(path.c_str(), callback, log);
+            ReadAllFiles_r(ctx, path.c_str(), callback);
         } else {
             std::string path = in_folder;
             path += '/';
             path += in_ent->d_name;
 
-            callback(path.c_str());
+            callback(ctx, path.c_str());
         }
     }
 
     closedir(in_dir);
 }
 
-void ReadAllFiles_MT_r(const char *in_folder, const std::function<void(const char *)> &callback, Sys::ThreadPool *threads, Ren::ILog *log, std::vector<std::future<void>> &events) {
+void ReadAllFiles_MT_r(assets_context_t &ctx, const char *in_folder, const std::function<void(assets_context_t &ctx, const char *)> &callback, Sys::ThreadPool *threads, std::vector<std::future<void>> &events) {
     DIR *in_dir = opendir(in_folder);
     if (!in_dir) {
-        log->Error("Cannot open folder %s", in_folder);
+        ctx.log->Error("Cannot open folder %s", in_folder);
         return;
     }
 
@@ -551,14 +200,14 @@ void ReadAllFiles_MT_r(const char *in_folder, const std::function<void(const cha
             path += '/';
             path += in_ent->d_name;
 
-            ReadAllFiles_r(path.c_str(), callback, log);
+            ReadAllFiles_r(ctx, path.c_str(), callback);
         } else {
             std::string path = in_folder;
             path += '/';
             path += in_ent->d_name;
 
-            events.push_back(threads->enqueue([path, &callback]() {
-                callback(path.c_str());
+            events.push_back(threads->enqueue([path, &ctx, &callback]() {
+                callback(ctx, path.c_str());
             }));
         }
     }
@@ -639,1529 +288,138 @@ bool CreateFolders(const char *out_file, Ren::ILog *log) {
     return true;
 }
 
+void ReplaceTextureExtension(const char *platform, std::string &tex) {
+    size_t n;
+    if ((n = tex.find(".uncompressed")) == std::string::npos) {
+        if ((n = tex.find(".tga")) != std::string::npos) {
+            if (strcmp(platform, "pc") == 0) {
+                tex.replace(n + 1, 3, "dds");
+            } else if (strcmp(platform, "android") == 0) {
+                tex.replace(n + 1, 3, "ktx");
+            }
+        } else if ((n = tex.find(".png")) != std::string::npos ||
+                   (n = tex.find(".img")) != std::string::npos) {
+            if (strcmp(platform, "pc") == 0) {
+                tex.replace(n + 1, 3, "dds");
+            } else if (strcmp(platform, "android") == 0) {
+                tex.replace(n + 1, 3, "ktx");
+            }
+        }
+    }
 }
 
-// these are from astc codec
-#undef IGNORE
-#include <astc/astc_codec_internals.h>
-#include <Eng/Gui/BitmapFont.h>
+std::string ExtractHTMLData(assets_context_t &ctx, const char *in_file, std::string &out_caption) {
+    std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
+    int file_size = (int)src_stream.tellg();
+    src_stream.seekg(0, std::ios::beg);
 
-#undef MAX
+    // TODO: buffered read?
+    std::unique_ptr<char[]> in_buf(new char[file_size]);
+    src_stream.read(&in_buf[0], file_size);
 
-int astc_main(int argc, char **argv);
+    std::string out_str;
+    out_str.reserve(file_size);
 
-void test_inappropriate_extended_precision();
-void find_closest_blockdim_2d(float target_bitrate, int *x, int *y, int consider_illegal);
+    bool body_active = false, header_active = false;
+    bool p_active = false;
 
-void encode_astc_image(const astc_codec_image *input_image,
-                       astc_codec_image *output_image,
-                       int xdim, int ydim, int zdim,
-                       const error_weighting_params *ewp, astc_decode_mode decode_mode, swizzlepattern swz_encode, swizzlepattern swz_decode, uint8_t *buffer, int pack_and_unpack, int threadcount);
+    int buf_pos = 0;
+    while (buf_pos < file_size) {
+        int start_pos = buf_pos;
+
+        uint32_t unicode;
+        buf_pos += Gui::ConvChar_UTF8_to_Unicode(&in_buf[buf_pos], unicode);
+
+        if (unicode == Gui::g_unicode_less_than) {
+            char tag_str[32];
+            int tag_str_len = 0;
+
+            while (unicode != Gui::g_unicode_greater_than) {
+                buf_pos += Gui::ConvChar_UTF8_to_Unicode(&in_buf[buf_pos], unicode);
+                tag_str[tag_str_len++] = (char)unicode;
+            }
+            tag_str[tag_str_len - 1] = '\0';
+
+            if (strcmp(tag_str, "body") == 0) {
+                body_active = true;
+                continue;
+            } else if (strcmp(tag_str, "/body") == 0) {
+                body_active = false;
+                continue;
+            } else if (strcmp(tag_str, "header") == 0) {
+                header_active = true;
+                continue;
+            } else if (strcmp(tag_str, "p") == 0) {
+                p_active = true;
+            } else if (strcmp(tag_str, "/p") == 0) {
+                out_str += "</p>";
+                p_active = false;
+                continue;
+            } else if (strcmp(tag_str, "/header") == 0) {
+                header_active = false;
+                continue;
+            }
+        }
+
+        if (body_active) {
+            if (p_active) {
+                out_str.append(&in_buf[start_pos], buf_pos - start_pos);
+            } else if (header_active) {
+                out_caption.append(&in_buf[start_pos], buf_pos - start_pos);
+            }
+        }
+    }
+
+    return out_str;
+}
+
+}
+
+Ren::HashMap32<std::string, SceneManager::Handler> SceneManager::g_asset_handlers;
 
 bool g_astc_initialized = false;
+
+void SceneManager::RegisterAsset(const char *in_ext, const char *out_ext, const ConvertAssetFunc &convert_func) {
+    g_asset_handlers[in_ext] = { out_ext, convert_func };
+}
 
 bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, const char *platform, Sys::ThreadPool *p_threads, Ren::ILog *log) {
     using namespace SceneManagerInternal;
 
     // for astc codec
     if (!g_astc_initialized) {
-        test_inappropriate_extended_precision();
-        prepare_angular_tables();
-        build_quantization_mode_table();
+        InitASTCCodec();
         g_astc_initialized = true;
     }
 
-    auto replace_texture_extension = [platform](std::string &tex) {
-        size_t n;
-        if ((n = tex.find(".uncompressed")) == std::string::npos) {
-            if ((n = tex.find(".tga")) != std::string::npos) {
-                if (strcmp(platform, "pc") == 0) {
-                    tex.replace(n + 1, 3, "dds");
-                } else if (strcmp(platform, "android") == 0) {
-                    tex.replace(n + 1, 3, "ktx");
-                }
-            } else if ((n = tex.find(".png")) != std::string::npos ||
-                       (n = tex.find(".img")) != std::string::npos) {
-                if (strcmp(platform, "pc") == 0) {
-                    tex.replace(n + 1, 3, "dds");
-                } else if (strcmp(platform, "android") == 0) {
-                    tex.replace(n + 1, 3, "ktx");
-                }
-            }
-        }
-    };
-
-    Ren::HashMap32<std::string, std::string> shader_constants;
-
-    shader_constants.Insert("$ModifyWarning",   "/***********************************************/\r\n"
-                                                "/* This file was autogenerated, do not modify! */\r\n"
-                                                "/***********************************************/");
-
-    shader_constants.Insert("$FltEps",          "0.0000001");
-
-    shader_constants.Insert("$ItemGridResX",    AS_STR(REN_GRID_RES_X));
-    shader_constants.Insert("$ItemGridResY",    AS_STR(REN_GRID_RES_Y));
-    shader_constants.Insert("$ItemGridResZ",    AS_STR(REN_GRID_RES_Z));
-
-    // Vertex attributes
-    shader_constants.Insert("$VtxPosLoc",       AS_STR(REN_VTX_POS_LOC));
-    shader_constants.Insert("$VtxNorLoc",       AS_STR(REN_VTX_NOR_LOC));
-    shader_constants.Insert("$VtxTanLoc",       AS_STR(REN_VTX_TAN_LOC));
-    shader_constants.Insert("$VtxUV1Loc",       AS_STR(REN_VTX_UV1_LOC));
-    shader_constants.Insert("$VtxAUXLoc",       AS_STR(REN_VTX_AUX_LOC));
-
-    // Texture slots
-    shader_constants.Insert("$MatTex0Slot",     AS_STR(REN_MAT_TEX0_SLOT));
-    shader_constants.Insert("$MatTex1Slot",     AS_STR(REN_MAT_TEX1_SLOT));
-    shader_constants.Insert("$MatTex2Slot",     AS_STR(REN_MAT_TEX2_SLOT));
-    shader_constants.Insert("$ShadTexSlot",     AS_STR(REN_SHAD_TEX_SLOT));
-    //shader_constants.Insert("$LmapDirSlot",    AS_STR(REN_LMAP_DIR_SLOT));
-    //shader_constants.Insert("$LmapIndirSlot",  AS_STR(REN_LMAP_INDIR_SLOT));
-    shader_constants.Insert("$LmapSHSlot",      AS_STR(REN_LMAP_SH_SLOT));
-    shader_constants.Insert("$DecalTexSlot",    AS_STR(REN_DECAL_TEX_SLOT));
-    shader_constants.Insert("$SSAOTexSlot",     AS_STR(REN_SSAO_TEX_SLOT));
-    shader_constants.Insert("$BRDFLutTexSlot",  AS_STR(REN_BRDF_TEX_SLOT));
-    shader_constants.Insert("$LightBufSlot",    AS_STR(REN_LIGHT_BUF_SLOT));
-    shader_constants.Insert("$DecalBufSlot",    AS_STR(REN_DECAL_BUF_SLOT));
-    shader_constants.Insert("$CellsBufSlot",    AS_STR(REN_CELLS_BUF_SLOT));
-    shader_constants.Insert("$ItemsBufSlot",    AS_STR(REN_ITEMS_BUF_SLOT));
-    shader_constants.Insert("$InstanceBufSlot", AS_STR(REN_INST_BUF_SLOT));
-    shader_constants.Insert("$EnvTexSlot",      AS_STR(REN_ENV_TEX_SLOT));
-    shader_constants.Insert("$Moments0TexSlot", AS_STR(REN_MOMENTS0_TEX_SLOT));
-    shader_constants.Insert("$Moments1TexSlot", AS_STR(REN_MOMENTS1_TEX_SLOT));
-    shader_constants.Insert("$Moments2TexSlot", AS_STR(REN_MOMENTS2_TEX_SLOT));
-    shader_constants.Insert("$Moments0MsTexSlot", AS_STR(REN_MOMENTS0_MS_TEX_SLOT));
-    shader_constants.Insert("$Moments1MsTexSlot", AS_STR(REN_MOMENTS1_MS_TEX_SLOT));
-    shader_constants.Insert("$Moments2MsTexSlot", AS_STR(REN_MOMENTS2_MS_TEX_SLOT));
-
-    // Uniform locations
-    shader_constants.Insert("$uMMatrixLoc",     AS_STR(REN_U_M_MATRIX_LOC));
-    shader_constants.Insert("$uInstancesLoc",   AS_STR(REN_U_INSTANCES_LOC));
-
-    // Uniform block locations
-    shader_constants.Insert("$ubSharedDataLoc", AS_STR(REN_UB_SHARED_DATA_LOC));
-    shader_constants.Insert("$ubBatchDataLoc",  AS_STR(REN_UB_BATCH_DATA_LOC));
-
-    // Shader output channels
-    shader_constants.Insert("$OutColorIndex",   AS_STR(REN_OUT_COLOR_INDEX));
-    shader_constants.Insert("$OutNormIndex",    AS_STR(REN_OUT_NORM_INDEX));
-    shader_constants.Insert("$OutSpecIndex",    AS_STR(REN_OUT_SPEC_INDEX));
-
-    // Shadow properties
-    if (strcmp(platform, "pc") == 0) {
-        shader_constants.Insert("$ShadRes",     AS_STR(REN_SHAD_RES_PC));
-    } else if (strcmp(platform, "android") == 0) {
-        shader_constants.Insert("$ShadRes",     AS_STR(REN_SHAD_RES_ANDROID));
-    } else {
-        log->Error("Unknown platform %s", platform);
-        return false;
-    }
-
-    shader_constants.Insert("$ShadCasc0Dist",   AS_STR(REN_SHAD_CASCADE0_DIST));
-    shader_constants.Insert("$ShadCasc0Samp",   AS_STR(REN_SHAD_CASCADE0_SAMPLES));
-    shader_constants.Insert("$ShadCasc1Dist",   AS_STR(REN_SHAD_CASCADE1_DIST));
-    shader_constants.Insert("$ShadCasc1Samp",   AS_STR(REN_SHAD_CASCADE1_SAMPLES));
-    shader_constants.Insert("$ShadCasc2Dist",   AS_STR(REN_SHAD_CASCADE2_DIST));
-    shader_constants.Insert("$ShadCasc2Samp",   AS_STR(REN_SHAD_CASCADE2_SAMPLES));
-    shader_constants.Insert("$ShadCasc3Dist",   AS_STR(REN_SHAD_CASCADE3_DIST));
-    shader_constants.Insert("$ShadCasc3Samp",   AS_STR(REN_SHAD_CASCADE3_SAMPLES));
-    shader_constants.Insert("$ShadCascSoft",    AS_STR(REN_SHAD_CASCADE_SOFT));
-
-    shader_constants.Insert("$MaxShadowMaps",   AS_STR(REN_MAX_SHADOWMAPS_TOTAL));
-    shader_constants.Insert("$MaxProbes",       AS_STR(REN_MAX_PROBES_TOTAL));
-
-    shader_constants.Insert("$MaxBatchSize",    AS_STR(REN_MAX_BATCH_SIZE));
-
-    auto inline_constants = [&shader_constants, log](std::string &line) {
-        size_t n = 0;
-        while ((n = line.find('$', n)) != std::string::npos) {
-            size_t l = 1;
-
-            const char punctuation_chars[] = ".,(); $*[]\r\n";
-            while (std::find(std::begin(punctuation_chars), std::end(punctuation_chars), line[n + l]) == std::end(punctuation_chars)) {
-                l++;
-            }
-
-            const std::string var = line.substr(n, l);
-
-            const std::string *it = shader_constants.Find(var);
-            if (it) {
-                line.replace(n, l, *it);
-            } else {
-                log->Error("Unknown variable %s", var.c_str());
-                throw std::runtime_error("Unknown variable!");
-            }
-        }
-    };
-
-    auto h_skip = [log](const char *in_file, const char *out_file) {
-        log->Info("[PrepareAssets] Skip %s", out_file);
-    };
-
-    auto h_copy = [log](const char *in_file, const char *out_file) {
-        log->Info("[PrepareAssets] Copy %s", out_file);
-
-        std::ifstream src_stream(in_file, std::ios::binary);
-        std::ofstream dst_stream(out_file, std::ios::binary);
-
-        std::istreambuf_iterator<char> src_beg(src_stream);
-        std::istreambuf_iterator<char> src_end;
-        std::ostreambuf_iterator<char> dst_beg(dst_stream);
-        std::copy(src_beg, src_end, dst_beg);
-    };
-
-    auto h_conv_to_dds = [log](const char *in_file, const char *out_file) {
-        log->Info("[PrepareAssets] Conv %s", out_file);
-
-        std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
-        auto src_size = (size_t)src_stream.tellg();
-        src_stream.seekg(0, std::ios::beg);
-
-        std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
-        src_stream.read((char *)&src_buf[0], src_size);
-
-        int width, height, channels;
-        unsigned char *image_data = SOIL_load_image_from_memory(&src_buf[0], (int)src_size, &width, &height, &channels, 0);
-
-        if (strstr(in_file, "_norm")) {
-            // this is normal map, store it in RxGB format
-            std::unique_ptr<uint8_t[]> temp_data(new uint8_t[width * height * 4]);
-            assert(channels == 3);
-
-            for (int j = 0; j < height; j++) {
-                for (int i = 0; i < width; i++) {
-                    temp_data[4 * (j * width + i) + 0] = 0;
-                    temp_data[4 * (j * width + i) + 1] = image_data[3 * (j * width + i) + 1];
-                    temp_data[4 * (j * width + i) + 2] = image_data[3 * (j * width + i) + 2];
-                    temp_data[4 * (j * width + i) + 3] = image_data[3 * (j * width + i) + 0];
-                }
-            }
-
-            Write_DDS(temp_data.get(), width, height, 4, true /* flip_y */, out_file);
-            SOIL_free_image_data(image_data);
-        } else {
-            Write_DDS(image_data, width, height, channels, true /* flip_y */, out_file);
-            SOIL_free_image_data(image_data);
-        }
-    };
-
-    auto h_conv_img_to_dds = [log](const char *in_file, const char *out_file) {
-        log->Info("[PrepareAssets] Conv %s", out_file);
-
-        std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
-        auto src_size = (int)src_stream.tellg();
-        src_stream.seekg(0, std::ios::beg);
-
-        int res, mips_count;
-        src_stream.read((char *)&res, sizeof(int));
-        src_size -= sizeof(int);
-        src_stream.read((char *)&mips_count, sizeof(int));
-        src_size -= sizeof(int);
-
-        std::unique_ptr<uint8_t[]>
-            mipmaps[16],
-            compressed_buf(new uint8_t[Net::CalcLZOOutSize(res * res * 4)]);
-        uint8_t *_mipmaps[16];
-        int widths[16], heights[16];
-
-        for (int i = 0; i < mips_count; i++) {
-            const int mip_res = int((unsigned)res >> (unsigned)i);
-            const int orig_size = mip_res * mip_res * 4;
-
-            int compressed_size;
-            src_stream.read((char *)&compressed_size, sizeof(int));
-            src_stream.read((char *)&compressed_buf[0], compressed_size);
-
-            mipmaps[i].reset(new uint8_t[orig_size]);
-
-            const int decompressed_size = Net::DecompressLZO(&compressed_buf[0], compressed_size, &mipmaps[i][0], orig_size);
-            assert(decompressed_size == orig_size);
-
-            _mipmaps[i] = mipmaps[i].get();
-            widths[i] = heights[i] = mip_res;
-
-            src_size -= sizeof(int);
-            src_size -= compressed_size;
-        }
-
-        if (src_size != 0) {
-            log->Error("Error reading file %s", in_file);
-        }
-
-        Write_DDS_Mips(_mipmaps, widths, heights, mips_count, 4, out_file);
-    };
-
-    auto h_conv_img_to_astc = [log](const char *in_file, const char *out_file) {
-        log->Info("[PrepareAssets] Conv %s", out_file);
-
-        std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
-        auto src_size = (int)src_stream.tellg();
-        src_stream.seekg(0, std::ios::beg);
-
-        int res, mips_count;
-        src_stream.read((char *)&res, sizeof(int));
-        src_size -= sizeof(int);
-        src_stream.read((char *)&mips_count, sizeof(int));
-        src_size -= sizeof(int);
-
-        std::unique_ptr<uint8_t[]>
-            mipmaps[16],
-            compressed_buf(new uint8_t[Net::CalcLZOOutSize(res * res * 4)]);
-        uint8_t *_mipmaps[16];
-        int widths[16], heights[16];
-
-        for (int i = 0; i < mips_count; i++) {
-            const int mip_res = int((unsigned)res >> (unsigned)i);
-            const int orig_size = mip_res * mip_res * 4;
-
-            int compressed_size;
-            src_stream.read((char *)&compressed_size, sizeof(int));
-            src_stream.read((char *)&compressed_buf[0], compressed_size);
-
-            const int decompressed_size = Net::DecompressLZO(&compressed_buf[0], compressed_size, &mipmaps[i][0], orig_size);
-            assert(decompressed_size == orig_size);
-
-            mipmaps[i].reset(new uint8_t[orig_size]);
-            _mipmaps[i] = mipmaps[i].get();
-            widths[i] = heights[i] = mip_res;
-
-            src_size -= sizeof(int);
-            src_size -= compressed_size;
-        }
-
-        if (src_size != 0) {
-            log->Error("Error reading file %s", in_file);
-        }
-
-        Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mips_count, 4, out_file);
-    };
-
-    auto h_conv_to_astc = [log](const char *in_file, const char *out_file) {
-        log->Info("[PrepareAssets] Conv %s", out_file);
-
-        std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
-        auto src_size = (size_t)src_stream.tellg();
-        src_stream.seekg(0, std::ios::beg);
-
-        std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
-        src_stream.read((char *)&src_buf[0], src_size);
-
-        int width, height, channels;
-        unsigned char *image_data = SOIL_load_image_from_memory(&src_buf[0], (int)src_size, &width, &height, &channels, 0);
-
-
-        if (strstr(in_file, "_norm")) {
-            // this is normal map, store it in RxGB format
-            std::unique_ptr<uint8_t[]> temp_data(new uint8_t[width * height * 4]);
-            assert(channels == 3);
-
-            for (int j = 0; j < height; j++) {
-                for (int i = 0; i < width; i++) {
-                    temp_data[4 * (j * width + i) + 0] = 0;
-                    temp_data[4 * (j * width + i) + 1] = image_data[3 * (j * width + i) + 1];
-                    temp_data[4 * (j * width + i) + 2] = image_data[3 * (j * width + i) + 2];
-                    temp_data[4 * (j * width + i) + 3] = image_data[3 * (j * width + i) + 0];
-                }
-            }
-
-            Write_KTX_ASTC(temp_data.get(), width, height, 4, true /* flip_y */, out_file);
-            SOIL_free_image_data(image_data);
-        } else {
-            Write_KTX_ASTC(image_data, width, height, channels, true /* flip_y */, out_file);
-            SOIL_free_image_data(image_data);
-        }
-    };
-
-    auto h_conv_hdr_to_rgbm = [log](const char *in_file, const char *out_file) {
-        log->Info("[PrepareAssets] Conv %s", out_file);
-
-        int width, height;
-        const std::vector<uint8_t> image_rgbe = LoadHDR(in_file, width, height);
-        std::unique_ptr<float[]> image_f32 = Ren::ConvertRGBE_to_RGB32F(&image_rgbe[0], width, height);
-        
-        std::unique_ptr<float[]> temp(new float[width * 3]);
-        for (int j = 0; j < height / 2; j++) {
-            int j1 = j, j2 = height - j - 1;
-            memcpy(&temp[0], &image_f32[j1 * width * 3], width * 3 * sizeof(float));
-            memcpy(&image_f32[j1 * width * 3], &image_f32[j2 * width * 3], width * 3 * sizeof(float));
-            memcpy(&image_f32[j2 * width * 3], &temp[0], width * 3 * sizeof(float));
-        }
-
-        Write_RGBM(&image_f32[0], width, height, 3, out_file);
-    };
-
-    auto h_preprocess_material = [&replace_texture_extension, log](const char *in_file, const char *out_file) {
-        log->Info("[PrepareAssets] Prep %s", out_file);
-
-        std::ifstream src_stream(in_file, std::ios::binary);
-        std::ofstream dst_stream(out_file, std::ios::binary);
-
-        std::string line;
-        while (std::getline(src_stream, line)) {
-            replace_texture_extension(line);
-            dst_stream << line << '\n';
-        }
-    };
-
-    auto extract_html_data = [](const char *in_file, std::string &out_caption) -> std::string {
-        std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
-        int file_size = (int)src_stream.tellg();
-        src_stream.seekg(0, std::ios::beg);
-
-        // TODO: buffered read?
-        std::unique_ptr<char[]> in_buf(new char[file_size]);
-        src_stream.read(&in_buf[0], file_size);
-
-        std::string out_str;
-        out_str.reserve(file_size);
-
-        bool body_active = false, header_active = false;
-        bool p_active = false;
-
-        int buf_pos = 0;
-        while (buf_pos < file_size) {
-            int start_pos = buf_pos;
-
-            uint32_t unicode;
-            buf_pos += Gui::ConvChar_UTF8_to_Unicode(&in_buf[buf_pos], unicode);
-
-            if (unicode == Gui::g_unicode_less_than) {
-                char tag_str[32];
-                int tag_str_len = 0;
-
-                while (unicode != Gui::g_unicode_greater_than) {
-                    buf_pos += Gui::ConvChar_UTF8_to_Unicode(&in_buf[buf_pos], unicode);
-                    tag_str[tag_str_len++] = (char)unicode;
-                }
-                tag_str[tag_str_len - 1] = '\0';
-
-                if (strcmp(tag_str, "body") == 0) {
-                    body_active = true;
-                    continue;
-                } else if (strcmp(tag_str, "/body") == 0) {
-                    body_active = false;
-                    continue;
-                } else if (strcmp(tag_str, "header") == 0) {
-                    header_active = true;
-                    continue;
-                } else if (strcmp(tag_str, "p") == 0) {
-                    p_active = true;
-                } else if (strcmp(tag_str, "/p") == 0) {
-                    out_str += "</p>";
-                    p_active = false;
-                    continue;
-                } else if (strcmp(tag_str, "/header") == 0) {
-                    header_active = false;
-                    continue;
-                }
-            }
-
-            if (body_active) {
-                if (p_active) {
-                    out_str.append(&in_buf[start_pos], buf_pos - start_pos);
-                } else if (header_active) {
-                    out_caption.append(&in_buf[start_pos], buf_pos - start_pos);
-                }
-            }
-        }
-
-        return out_str;
-    };
-
-    auto h_preprocess_json = [&replace_texture_extension, &extract_html_data, log](const char *in_file, const char *out_file) {
-        log->Info("[PrepareAssets] Prep %s", out_file);
-
-        std::ifstream src_stream(in_file, std::ios::binary);
-        std::ofstream dst_stream(out_file, std::ios::binary);
-
-        JsObject js_root;
-        if (!js_root.Read(src_stream)) {
-            throw std::runtime_error("Cannot load scene!");
-        }
-
-        std::string base_path = in_file;
-        {   // extract base part of file path
-            size_t n = base_path.find_last_of('/');
-            if (n != std::string::npos) {
-                base_path = base_path.substr(0, n + 1);
-            }
-        }
-
-        if (js_root.Has("objects")) {
-            JsArray &js_objects = js_root.at("objects").as_arr();
-            for (JsElement &js_obj_el : js_objects.elements) {
-                JsObject &js_obj = js_obj_el.as_obj();
-
-                if (js_obj.Has("decal")) {
-                    JsObject &js_decal = js_obj.at("decal").as_obj();
-                    if (js_decal.Has("diff")) {
-                        JsString &js_diff_tex = js_decal.at("diff").as_str();
-                        replace_texture_extension(js_diff_tex.val);
-                    }
-                    if (js_decal.Has("norm")) {
-                        JsString &js_norm_tex = js_decal.at("norm").as_str();
-                        replace_texture_extension(js_norm_tex.val);
-                    }
-                    if (js_decal.Has("spec")) {
-                        JsString &js_spec_tex = js_decal.at("spec").as_str();
-                        replace_texture_extension(js_spec_tex.val);
-                    }
-                }
-            }
-        }
-
-        if (js_root.Has("probes")) {
-            JsArray &js_probes = js_root.at("probes").as_arr();
-            for (JsElement &js_probe_el : js_probes.elements) {
-                JsObject &js_probe = js_probe_el.as_obj();
-
-                if (js_probe.Has("faces")) {
-                    JsArray &js_faces = js_probe.at("faces").as_arr();
-                    for (JsElement &js_face_el : js_faces.elements) {
-                        JsString &js_face_str = js_face_el.as_str();
-                        replace_texture_extension(js_face_str.val);
-                    }
-                }
-            }
-        }
-
-        if (js_root.Has("chapters")) {
-            JsArray &js_chapters = js_root.at("chapters").as_arr();
-            for (JsElement &js_chapter_el : js_chapters.elements) {
-                JsObject &js_chapter = js_chapter_el.as_obj();
-
-                JsObject js_caption, js_text_data;
-
-                if (js_chapter.Has("html_src")) {
-                    JsObject &js_html_src = js_chapter.at("html_src").as_obj();
-                    for (auto &js_src_pair : js_html_src.elements) {
-                        const std::string
-                            &js_lang = js_src_pair.first,
-                            &js_file_path = js_src_pair.second.as_str().val;
-
-                        const std::string html_file_path = base_path + js_file_path;
-
-                        std::string caption;
-                        std::string html_body = extract_html_data(html_file_path.c_str(), caption);
-
-                        caption = std::regex_replace(caption, std::regex("\n"), "");
-                        caption = std::regex_replace(caption, std::regex("\'"), "&apos;");
-                        caption = std::regex_replace(caption, std::regex("\""), "&quot;");
-                        caption = std::regex_replace(caption, std::regex("<h1>"), "");
-                        caption = std::regex_replace(caption, std::regex("</h1>"), "");
-
-                        html_body = std::regex_replace(html_body, std::regex("\n"), "");
-                        html_body = std::regex_replace(html_body, std::regex("\'"), "&apos;");
-                        html_body = std::regex_replace(html_body, std::regex("\""), "&quot;");
-
-                        // remove spaces
-                        if (!caption.empty()) {
-                            int n = 0;
-                            while (n < caption.length() && caption[n] == ' ') n++;
-                            caption.erase(0, n);
-                            while (caption.back() == ' ') caption.pop_back();
-                        }
-
-                        if (!html_body.empty()) {
-                            int n = 0;
-                            while (n < html_body.length() && html_body[n] == ' ') n++;
-                            html_body.erase(0, n);
-                            while (html_body.back() == ' ') html_body.pop_back();
-                        }
-
-                        js_caption[js_lang] = JsString{ caption };
-                        js_text_data[js_lang
-                        ] = JsString{ html_body };
-                    }
-                }
-
-                js_chapter["caption"] = std::move(js_caption);
-                js_chapter["text_data"] = std::move(js_text_data);
-            }
-        }
-
-        JsFlags flags;
-        flags.use_spaces = 1;
-
-        js_root.Write(dst_stream, flags);
-    };
-
-    auto h_conv_tei_to_dict = [log](const char *in_file, const char *out_file) {
-        log->Info("[PrepareAssets] Prep %s", out_file);
-
-        enum eGramGrpPos {
-            Noun, Verb, Adjekt
-        };
-
-        enum eGramGrpNum {
-            Singular, Plural
-        };
-
-        enum eGramGrpGen {
-            Masculine, Feminine, Neutral
-        };
-
-        struct dict_link_t {
-            uint32_t entries[16];
-            uint32_t entries_count = 0;
-        };
-
-        struct dict_entry_t {
-            eGramGrpPos pos;
-            eGramGrpNum num;
-            eGramGrpGen gen;
-            Ren::String orth, pron;
-            uint32_t trans_index, trans_count;
-        };
-
-        Ren::HashMap32<Ren::String, dict_link_t> dictionary_hashmap;
-        std::vector<dict_entry_t> dict_entries;
-        std::vector<std::string> translations;
-
-        {   // parse file and fill dictionary data structures
-            JsObject js_root;
-
-            {   // read json file
-                std::ifstream src_stream(in_file, std::ios::binary);
-
-                if (!js_root.Read(src_stream)) {
-                    log->Error("Error parsing %s!", in_file);
-                    return false;
-                }
-            }
-
-            JsObject &js_tei = js_root.at("TEI").as_obj();
-
-            JsObject &js_text = js_tei.at("text").as_obj();
-            JsObject &js_body = js_text.at("body").as_obj();
-            JsArray &js_entries = js_body.at("entry").as_arr();
-
-            int index = 0;
-            for (JsElement &js_entry_el : js_entries.elements) {
-                JsObject &js_entry = js_entry_el.as_obj();
-                if (!js_entry.Has("sense")) continue;
-
-                JsObject &js_form = js_entry.at("form").as_obj();
-                JsString &js_orth = js_form.at("orth").as_str();
-
-                dict_link_t &link = dictionary_hashmap[Ren::String{js_orth.val.c_str()}];
-                link.entries[link.entries_count++] = (uint32_t) dict_entries.size();
-
-                dict_entries.emplace_back();
-                dict_entry_t &entry = dict_entries.back();
-
-                entry.orth = Ren::String{js_orth.val.c_str()};
-
-                if (js_form.Has("pron")) {
-                    const JsString &js_pron = js_form.at("pron").as_str();
-                    entry.pron = Ren::String{js_pron.val.c_str()};
-                }
-
-                // init defaults
-                entry.pos = Noun;
-                entry.num = Singular;
-                entry.gen = Feminine;
-
-                if (js_form.Has("gramGrp")) {
-                    const JsObject &js_gram_grp = js_form.at("gramGrp").as_obj();
-                    if (js_gram_grp.Has("pos")) {
-                        const JsString &js_gram_grp_pos = js_gram_grp.at("pos").as_str();
-                        if (js_gram_grp_pos.val == "n") {
-                            entry.pos = Noun;
-                        } else if (js_gram_grp_pos.val == "a") {
-                            entry.pos = Adjekt;
-                        }
-                    }
-                    if (js_gram_grp.Has("num")) {
-                        const JsString &js_gram_grp_num = js_form.at("num").as_str();
-                        if (js_gram_grp_num.val == "p") {
-                            entry.num = Plural;
-                        }
-                    }
-                    if (js_gram_grp.Has("gen")) {
-                        const JsString &js_gram_grp_gen = js_form.at("gen").as_str();
-                        if (js_gram_grp_gen.val == "m") {
-                            entry.gen = Masculine;
-                        } else if (js_gram_grp_gen.val == "n") {
-                            entry.gen = Neutral;
-                        }
-                    }
-                }
-
-                entry.trans_index = (uint32_t) translations.size();
-                entry.trans_count = 0;
-
-                if (js_entry.at("sense").type() == JS_TYPE_OBJECT) {
-                    JsObject &js_sense = js_entry.at("sense").as_obj();
-                    JsElement &js_cit_els = js_sense.at("cit");
-                    if (js_cit_els.type() == JS_TYPE_ARRAY) {
-                        JsArray &js_cits = js_cit_els.as_arr();
-                        for (JsElement &js_cit_el : js_cits.elements) {
-                            JsObject &js_cit = js_cit_el.as_obj();
-                            const JsString &js_cit_type = js_cit.at("-type").as_str();
-                            if (js_cit_type.val == "trans") {
-                                JsString &js_quote = js_cit.at("quote").as_str();
-
-                                translations.emplace_back(std::move(js_quote.val));
-                                entry.trans_count++;
-                            }
-                        }
-                    } else {
-                        assert(js_cit_els.type() == JS_TYPE_OBJECT);
-                        JsObject &js_cit = js_cit_els.as_obj();
-                        const JsString &js_cit_type = js_cit.at("-type").as_str();
-                        if (js_cit_type.val == "trans") {
-                            JsString &js_quote = js_cit.at("quote").as_str();
-
-                            translations.emplace_back(std::move(js_quote.val));
-                            entry.trans_count++;
-                        }
-                    }
-                } else {
-                    JsArray &js_senses = js_entry.at("sense").as_arr();
-                    for (JsElement &js_sense_el : js_senses.elements) {
-                        JsObject &js_sense = js_sense_el.as_obj();
-                        JsElement &js_cit_els = js_sense.at("cit");
-                        if (js_cit_els.type() == JS_TYPE_ARRAY) {
-                            JsArray &js_cits = js_cit_els.as_arr();
-                            for (JsElement &js_cit_el : js_cits.elements) {
-                                JsObject &js_cit = js_cit_el.as_obj();
-                                const JsString &js_cit_type = js_cit.at("-type").as_str();
-                                if (js_cit_type.val == "trans") {
-                                    JsString &js_quote = js_cit.at("quote").as_str();
-
-                                    translations.emplace_back(std::move(js_quote.val));
-                                    entry.trans_count++;
-                                }
-                            }
-                        } else {
-                            assert(js_cit_els.type() == JS_TYPE_OBJECT);
-                            JsObject &js_cit = js_cit_els.as_obj();
-                            const JsString &js_cit_type = js_cit.at("-type").as_str();
-                            if (js_cit_type.val == "trans") {
-                                JsString &js_quote = js_cit.at("quote").as_str();
-
-                                translations.emplace_back(std::move(js_quote.val));
-                                entry.trans_count++;
-                            }
-                        }
-                    }
-                }
-
-                index++;
-            }
-        }
-
-        {   // compact data structures and write output file
-            size_t str_mem_req = 0;
-            for (auto it = dictionary_hashmap.cbegin(); it < dictionary_hashmap.cend(); ++it) {
-                str_mem_req += it->key.length() + 1;
-
-                const dict_link_t &src_link = it->val;
-                for (uint32_t i = 0; i < src_link.entries_count; i++) {
-                    const dict_entry_t &src_entry = dict_entries[src_link.entries[i]];
-
-                    str_mem_req += src_entry.orth.length() + 1;
-                    if (!src_entry.pron.empty()) {
-                        str_mem_req += src_entry.pron.length() + 1;
-                    }
-                }
-            }
-
-            // offset in buffer at which translation begins
-            const size_t str_mem_trans_off = str_mem_req;
-
-            for (const std::string &tr : translations) {
-                str_mem_req += tr.length() + 1;
-            }
-
-            struct dict_link_compact_t {
-                uint32_t key_str_off;
-                uint32_t entry_index;
-                uint32_t entry_count;
-            };
-            static_assert(sizeof(dict_link_compact_t) == 12, "!");
-
-            struct dict_entry_compact_t {
-                uint8_t pos;
-                uint8_t num;
-                uint8_t gen;
-                uint8_t trans_count;
-                uint32_t orth_str_off;
-                uint32_t pron_str_off;
-                uint32_t trans_str_off;
-            };
-            static_assert(sizeof(dict_entry_compact_t) == 16, "!");
-
-            std::unique_ptr<char[]> comb_str_buf(new char[str_mem_req]);
-            size_t comb_str_buf_ndx1 = 0, comb_str_buf_ndx2 = str_mem_trans_off;
-
-            Ren::HashMap32<const char *, dict_link_compact_t> dictionary_hashmap_compact;
-            std::vector<dict_link_compact_t> links_compact;
-            std::vector<dict_entry_compact_t> entries_compact;
-
-            int translations_processed = 0;
-            int translations_count = translations.size();
-
-            for (auto it = dictionary_hashmap.cbegin(); it < dictionary_hashmap.cend(); ++it) {
-                const dict_link_t &src_link = it->val;
-
-                const size_t key_len = it->key.length();
-                memcpy(&comb_str_buf[comb_str_buf_ndx1], it->key.c_str(), key_len + 1);
-                const char *key = &comb_str_buf[comb_str_buf_ndx1];
-                uint32_t key_str_offset = comb_str_buf_ndx1;
-                comb_str_buf_ndx1 += key_len + 1;
-
-                dict_link_compact_t &link = dictionary_hashmap_compact[key];
-                link.key_str_off = key_str_offset;
-                link.entry_index = (uint32_t) entries_compact.size();
-                link.entry_count = src_link.entries_count;
-
-                for (uint32_t i = 0; i < src_link.entries_count; i++) {
-                    const dict_entry_t &src_entry = dict_entries[src_link.entries[i]];
-
-                    entries_compact.emplace_back();
-                    dict_entry_compact_t &dst_entry = entries_compact.back();
-
-                    dst_entry.pos = src_entry.pos;
-                    dst_entry.num = src_entry.num;
-                    dst_entry.gen = src_entry.gen;
-
-                    {   // correct word writing
-                        const size_t len = src_entry.orth.length();
-                        memcpy(&comb_str_buf[comb_str_buf_ndx1], src_entry.orth.c_str(), len + 1);
-                        dst_entry.orth_str_off = comb_str_buf_ndx1;
-                        comb_str_buf_ndx1 += len + 1;
-                    }
-
-                    if (!src_entry.pron.empty()) { // word pronunciation
-                        const size_t len = src_entry.pron.length();
-                        memcpy(&comb_str_buf[comb_str_buf_ndx1], src_entry.pron.c_str(), len + 1);
-                        dst_entry.pron_str_off = comb_str_buf_ndx1;
-                        comb_str_buf_ndx1 += len + 1;
-                    }
-
-                    for (int j = src_entry.trans_index; j < src_entry.trans_index + src_entry.trans_count; j++) {
-                        const size_t len = translations[j].length();
-                        memcpy(&comb_str_buf[comb_str_buf_ndx2], translations[j].c_str(), len + 1);
-
-                        if (j == src_entry.trans_index) {
-                            dst_entry.trans_str_off = comb_str_buf_ndx2;
-                        }
-
-                        comb_str_buf_ndx2 += len + 1;
-
-                        translations_processed++;
-                    }
-                    dst_entry.trans_count = src_entry.trans_count;
-                }
-            }
-
-            assert(comb_str_buf_ndx1 == str_mem_trans_off && "Translations start is not right!");
-            assert(comb_str_buf_ndx2 == str_mem_req && "Buffer end is not right!");
-            assert(translations_processed == translations_count && "Translations count does not match!");
-
-            const dict_link_compact_t *test1 = dictionary_hashmap_compact.Find("Wahrscheinlichkeit");
-            const dict_entry_compact_t &entry1 = entries_compact[test1->entry_index];
-            const dict_link_compact_t *test2 = dictionary_hashmap_compact.Find("ficken");
-            const dict_entry_compact_t &entry2 = entries_compact[test2->entry_index];
-
-            enum eDictChunks {
-                DictChInfo,
-                DictChLinks,
-                DictChEntries,
-                DictChStrings,
-                DictChCount
-            };
-
-            struct dict_info_t {
-                char src_lang[2], dst_lang[2];
-                uint32_t keys_count, entries_count;
-            };
-            static_assert(sizeof(dict_info_t) == 12, "!");
-
-            std::ofstream out_stream(out_file, std::ios::binary);
-            const uint32_t header_size = 4 + sizeof(uint32_t) + int(DictChCount) * 3 * sizeof(uint32_t);
-            uint32_t hdr_offset = 0, data_offset = header_size;
-
-            {   // File format string
-                const char signature[] = { 'D', 'I', 'C', 'T' };
-                out_stream.write(signature, 4);
-                hdr_offset += 4;
-            }
-
-            {   // Header size
-                out_stream.write((const char *)&header_size, sizeof(uint32_t));
-                hdr_offset += sizeof(uint32_t);
-            }
-
-            {   // Info data offsets
-                const uint32_t
-                        info_data_chunk_id = (uint32_t)DictChInfo,
-                        info_data_offset = data_offset,
-                        info_data_size = sizeof(dict_info_t);
-                out_stream.write((const char *)&info_data_chunk_id, sizeof(uint32_t));
-                out_stream.write((const char *)&info_data_offset, sizeof(uint32_t));
-                out_stream.write((const char *)&info_data_size, sizeof(uint32_t));
-                hdr_offset += 3 * sizeof(uint32_t);
-                data_offset += info_data_size;
-            }
-
-            {   // Link data offsets
-                const uint32_t
-                        link_data_chunk_id = (uint32_t)DictChLinks,
-                        link_data_offset = data_offset,
-                        link_data_size = sizeof(dict_link_compact_t) * links_compact.size();
-                out_stream.write((const char *)&link_data_chunk_id, sizeof(uint32_t));
-                out_stream.write((const char *)&link_data_offset, sizeof(uint32_t));
-                out_stream.write((const char *)&link_data_size, sizeof(uint32_t));
-                hdr_offset += 3 * sizeof(uint32_t);
-                data_offset += link_data_size;
-            }
-
-            {   // Entry data offsets
-                const uint32_t
-                        entry_data_chunk_id = (uint32_t)DictChEntries,
-                        entry_data_offset = data_offset,
-                        entry_data_size = sizeof(dict_entry_compact_t) * entries_compact.size();
-                out_stream.write((const char *)&entry_data_chunk_id, sizeof(uint32_t));
-                out_stream.write((const char *)&entry_data_offset, sizeof(uint32_t));
-                out_stream.write((const char *)&entry_data_size, sizeof(uint32_t));
-                hdr_offset += 3 * sizeof(uint32_t);
-                data_offset += entry_data_size;
-            }
-
-            {   // String data offsets
-                const uint32_t
-                        string_data_chunk_id = (uint32_t)DictChStrings,
-                        string_data_offset = data_offset,
-                        string_data_size = sizeof(dict_entry_compact_t) * entries_compact.size();
-                out_stream.write((const char *)&string_data_chunk_id, sizeof(uint32_t));
-                out_stream.write((const char *)&string_data_offset, sizeof(uint32_t));
-                out_stream.write((const char *)&string_data_size, sizeof(uint32_t));
-                hdr_offset += 3 * sizeof(uint32_t);
-                data_offset += string_data_size;
-            }
-
-            assert(hdr_offset == header_size);
-
-            {   // Info data
-                dict_info_t info;
-                info.src_lang[0] = 'e';
-                info.src_lang[1] = 'n';
-                info.dst_lang[0] = 'd';
-                info.dst_lang[1] = 'e';
-                info.keys_count = dictionary_hashmap_compact.size();
-                info.entries_count = (uint32_t)entries_compact.size();
-
-                out_stream.write((const char *)&info, sizeof(dict_info_t));
-            }
-
-            // Link data
-            out_stream.write((const char *)links_compact.data(), sizeof(dict_link_compact_t) * links_compact.size());
-
-            // Entry data
-            out_stream.write((const char *)entries_compact.data(), sizeof(dict_entry_compact_t) * entries_compact.size());
-
-            // String data
-            out_stream.write(comb_str_buf.get(), str_mem_req);
-
-            return true;
-        }
-    };
-
-    auto h_preprocess_shader = [&inline_constants, platform, log](const char *in_file, const char *out_file) {
-        log->Info("[PrepareAssets] Prep %s", out_file);
-
-        {   // resolve includes, inline constants
-            std::ifstream src_stream(in_file, std::ios::binary);
-            std::ofstream dst_stream(out_file, std::ios::binary);
-            std::string line;
-
-            int line_counter = 0;
-
-            while (std::getline(src_stream, line)) {
-                if (!line.empty() && line.back() == '\r') {
-                    line = line.substr(0, line.size() - 1);
-                }
-
-                if (line.rfind("#version ") == 0) {
-                    if (strcmp(platform, "pc") == 0) {
-                        line = "#version 430";
-                    }
-                    dst_stream << line << "\r\n";
-                } else if (line.rfind("#include ") == 0) {
-                    size_t n1 = line.find_first_of('\"');
-                    size_t n2 = line.find_last_of('\"');
-
-                    std::string file_name = line.substr(n1 + 1, n2 - n1 - 1);
-
-                    auto slash_pos = (size_t)intptr_t(strrchr(in_file, '/') - in_file);
-                    std::string full_path = std::string(in_file, slash_pos + 1) + file_name;
-
-                    dst_stream << "#line 0\r\n";
-
-                    std::ifstream incl_stream(full_path, std::ios::binary);
-                    while (std::getline(incl_stream, line)) {
-                        if (!line.empty() && line.back() == '\r') {
-                            line = line.substr(0, line.size() - 1);
-                        }
-
-                        inline_constants(line);
-
-                        dst_stream << line << "\r\n";
-                    }
-
-                    dst_stream << "\r\n#line " << line_counter << "\r\n";
-                } else {
-                    inline_constants(line);
-
-                    dst_stream << line << "\r\n";
-                }
-
-                line_counter++;
-            }
-        }
-
-        if (strcmp(platform, "pc") == 0) {
-            std::string spv_file = out_file;
-
-            size_t n;
-            if ((n = spv_file.find(".glsl")) != std::string::npos) {
-                spv_file.replace(n + 1, 4, "spv", 3);
-            }
-
-            std::string compile_cmd = "src/libs/spirv/glslangValidator -G ";
-            compile_cmd += out_file;
-            compile_cmd += " -o ";
-            compile_cmd += spv_file;
-
-#ifdef _WIN32
-            std::replace(compile_cmd.begin(), compile_cmd.end(), '/', '\\');
-#endif
-            int res = system(compile_cmd.c_str());
-            if (res != 0) {
-                log->Error("[PrepareAssets] Failed to compile %s", spv_file.c_str());
-            }
-
-            std::string optimize_cmd = "src/libs/spirv/spirv-opt "
-                "--eliminate-dead-branches "
-                "--merge-return "
-                "--inline-entry-points-exhaustive "
-                "--loop-unswitch --loop-unroll "
-                "--eliminate-dead-code-aggressive "
-                "--private-to-local "
-                "--eliminate-local-single-block "
-                "--eliminate-local-single-store "
-                "--eliminate-dead-code-aggressive "
-                //"--scalar-replacement=100 "
-                "--convert-local-access-chains "
-                "--eliminate-local-single-block "
-                "--eliminate-local-single-store "
-                //"--eliminate-dead-code-aggressive "
-                //"--eliminate-local-multi-store "
-                //"--eliminate-dead-code-aggressive "
-                "--ccp "
-                //"--eliminate-dead-code-aggressive "
-                "--redundancy-elimination "
-                "--combine-access-chains "
-                "--simplify-instructions "
-                "--vector-dce "
-                "--eliminate-dead-inserts "
-                "--eliminate-dead-branches "
-                "--simplify-instructions "
-                "--if-conversion "
-                "--copy-propagate-arrays "
-                "--reduce-load-size "
-                //"--eliminate-dead-code-aggressive "
-                //"--merge-blocks "
-                "--redundancy-elimination "
-                "--eliminate-dead-branches "
-                //"--merge-blocks "
-                "--simplify-instructions "
-                "--validate-after-all ";
-
-            optimize_cmd += spv_file;
-            optimize_cmd += " -o ";
-            optimize_cmd += spv_file;
-
-#ifdef _WIN32
-            std::replace(optimize_cmd.begin(), optimize_cmd.end(), '/', '\\');
-#endif
-            res = system(optimize_cmd.c_str());
-            if (res != 0) {
-                log->Error("[PrepareAssets] Failed to optimize %s", spv_file.c_str());
-            }
-
-            std::string cross_cmd = "src/libs/spirv/spirv-cross ";
-            if (strcmp(platform, "pc") == 0) {
-                cross_cmd += "--version 430 ";
-            } else if (strcmp(platform, "android") == 0) {
-                cross_cmd += "--version 310 --es ";
-                cross_cmd += "--extension GL_EXT_texture_buffer ";
-            }
-            cross_cmd += "--no-support-nonzero-baseinstance --glsl-emit-push-constant-as-ubo ";
-            cross_cmd += spv_file;
-            cross_cmd += " --output ";
-            cross_cmd += out_file;
-
-#ifdef _WIN32
-            std::replace(cross_cmd.begin(), cross_cmd.end(), '/', '\\');
-#endif
-            res = system(cross_cmd.c_str());
-            if (res != 0) {
-                log->Error("[PrepareAssets] Failed to cross-compile %s", spv_file.c_str());
-            }
-        }
-    };
-
-    auto h_conv_to_font = [log](const char *in_file, const char *out_file) {
-        using namespace Ren;
-
-        log->Info("[PrepareAssets] Conv %s", out_file);
-
-        std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
-        auto src_size = (size_t)src_stream.tellg();
-        src_stream.seekg(0, std::ios::beg);
-
-        std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
-        src_stream.read((char *)&src_buf[0], src_size);
-
-        stbtt_fontinfo font;
-        int res = stbtt_InitFont(&font, &src_buf[0], 0);
-        if (!res) {
-            log->Error("stbtt_InitFont failed (%s)", in_file);
-            return;
-        }
-
-        const bool
-            is_sdf_font = strstr(in_file, "_sdf") != nullptr,
-            is_inv_wind = strstr(in_file, "_inv") != nullptr;
-        float line_height = 48.0f;
-
-        int temp_bitmap_res[2] = { 512, 256 };
-
-        if (strstr(in_file, "_9px")) {
-            line_height = 9.0f;
-        } else if (strstr(in_file, "_12px")) {
-            line_height = 12.0f;
-            //temp_bitmap_res[0] = 256;
-            //temp_bitmap_res[1] = 128;
-        } else if (strstr(in_file, "_16px")) {
-            line_height = 16.0f;
-            //temp_bitmap_res[0] = 256;
-            //temp_bitmap_res[1] = 128;
-        } else if (strstr(in_file, "_24px")) {
-            line_height = 24.0f;
-        } else if (strstr(in_file, "_32px")) {
-            line_height = 32.0f;
-        } else if (strstr(in_file, "_36px")) {
-            line_height = 36.0f;
-        } else if (strstr(in_file, "_48px")) {
-            line_height = 48.0f;
-            temp_bitmap_res[0] = 512;
-            temp_bitmap_res[1] = 512;
-        }
-
-        const float scale = stbtt_ScaleForPixelHeight(&font, line_height);
-
-        const int sdf_radius_px = is_sdf_font ? 1 : 0;
-        const int padding = 1;
-
-        const Gui::glyph_range_t glyph_ranges[] = {
-            { Gui::g_unicode_latin_range.first, Gui::g_unicode_latin_range.second },
-            { Gui::g_unicode_cyrilic_range_min.first, Gui::g_unicode_cyrilic_range_min.second },
-            { Gui::g_unicode_umlauts[0], Gui::g_unicode_umlauts[0] + 1 },
-            { Gui::g_unicode_umlauts[1], Gui::g_unicode_umlauts[1] + 1 },
-            { Gui::g_unicode_umlauts[2], Gui::g_unicode_umlauts[2] + 1 },
-            { Gui::g_unicode_umlauts[3], Gui::g_unicode_umlauts[3] + 1 },
-            { Gui::g_unicode_umlauts[4], Gui::g_unicode_umlauts[4] + 1 },
-            { Gui::g_unicode_umlauts[5], Gui::g_unicode_umlauts[5] + 1 },
-            { Gui::g_unicode_umlauts[6], Gui::g_unicode_umlauts[6] + 1 },
-            { Gui::g_unicode_ampersand,  Gui::g_unicode_ampersand + 1 },
-            { Gui::g_unicode_semicolon,  Gui::g_unicode_semicolon + 1 },
-            { Gui::g_unicode_heart,      Gui::g_unicode_heart + 1 }
-        };
-        const int glyph_range_count = sizeof(glyph_ranges) / sizeof(glyph_ranges[0]);
-
-        const int total_glyph_count = std::accumulate(std::begin(glyph_ranges), std::end(glyph_ranges), 0,
-            [](int sum, const Gui::glyph_range_t val) -> int {
-                return sum + int(val.end - val.beg);
-            });
-
-        std::unique_ptr<Gui::glyph_info_t[]> out_glyphs(new Gui::glyph_info_t[total_glyph_count]);
-        int out_glyph_count = 0;
-
-        std::unique_ptr<uint8_t[]> temp_bitmap(new uint8_t[temp_bitmap_res[0] * temp_bitmap_res[1] * 4]);
-        Ray::TextureSplitter temp_bitmap_splitter(temp_bitmap_res);
-
-        std::fill(&temp_bitmap[0], &temp_bitmap[0] + 4 * temp_bitmap_res[0] * temp_bitmap_res[1], 0);
-
-        for (const Gui::glyph_range_t &range : glyph_ranges) {
-            log->Info("Processing glyph range (%i - %i)", range.beg, range.end);
-            for (uint32_t i = range.beg; i < range.end; i++) {
-                const int glyph_index = stbtt_FindGlyphIndex(&font, i);
-
-                int x0, y0, x1, y1;
-                bool is_drawable = stbtt_GetGlyphBox(&font, glyph_index, &x0, &y0, &x1, &y1) != 0;
-
-                int advance_width, left_side_bearing;
-                stbtt_GetGlyphHMetrics(&font, glyph_index, &advance_width, &left_side_bearing);
-
-                int glyph_pos[2] = {}, glyph_res[2] = {}, glyph_res_act[2] = {};
-                if (is_drawable) {
-                    glyph_res_act[0] = (int)std::round(scale * float(x1 - x0 + 1)) + 2 * sdf_radius_px;
-                    glyph_res_act[1] = (int)std::round(scale * float(y1 - y0 + 1)) + 2 * sdf_radius_px;
-
-                    glyph_res[0] = glyph_res_act[0] + 2 * padding;
-                    glyph_res[1] = glyph_res_act[1] + 2 * padding;
-
-                    int node_index = temp_bitmap_splitter.Allocate(glyph_res, glyph_pos);
-                    if (node_index == -1) {
-                        throw std::runtime_error("Region allocation failed!");
-                    }
-                }
-
-                Gui::glyph_info_t &out_glyph = out_glyphs[out_glyph_count++];
-
-                out_glyph.pos[0] = glyph_pos[0] + padding;
-                out_glyph.pos[1] = glyph_pos[1] + padding;
-                out_glyph.res[0] = glyph_res_act[0];
-                out_glyph.res[1] = glyph_res_act[1];
-                out_glyph.off[0] = (int)std::round(scale * float(x0));
-                out_glyph.off[1] = (int)std::round(scale * float(y0));
-                out_glyph.adv[0] = (int)std::round(scale * float(advance_width));
-                out_glyph.adv[1] = 0;
-
-                if (!is_drawable) continue;
-
-                using bezier_shape = std::vector<Gui::bezier_seg_t>;
-                std::vector<bezier_shape> shapes;
-
-                {   // Get glyph shapes
-                    stbtt_vertex *vertices = nullptr;
-                    const int vertex_count = stbtt_GetGlyphShape(&font, glyph_index, &vertices);
-
-                    {   // transform input data
-                        const auto pos_offset = Vec2d{ (double)(padding + sdf_radius_px), (double)(padding + sdf_radius_px) };
-
-                        Vec2i cur_p;
-
-                        for (int j = 0; j < vertex_count; j++) {
-                            const stbtt_vertex &v = vertices[j];
-
-                            const Vec2d
-                                p0 = pos_offset + Vec2d{ cur_p - Vec2i{x0, y0} } * scale,
-                                c0 = pos_offset + Vec2d{ double(v.cx - x0), double(v.cy - y0) } * scale,
-                                c1 = pos_offset + Vec2d{ double(v.cx1 - x0), double(v.cy1 - y0) } * scale,
-                                p1 = pos_offset + Vec2d{ double(v.x - x0), double(v.y - y0) } * scale;
-
-                            if (v.type == STBTT_vmove) {
-                                if (shapes.empty() || !shapes.back().empty()) {
-                                    // start new shape
-                                    shapes.emplace_back();
-                                }
-                            } else {
-                                // 1 - line; 2,3 - bezier with 1 and 2 control points
-                                const int order = (v.type == STBTT_vline) ? 1 : ((v.type == STBTT_vcurve) ? 2 : 3);
-
-                                shapes.back().push_back({
-                                    order, false /* is_closed */, false /* is_hard */,
-                                    p0, p1,
-                                    c0, c1
-                                });
-                            }
-
-                            cur_p = Vec2i{ v.x, v.y };
-                        }
-                    }
-
-                    stbtt_FreeShape(&font, vertices);
-                }
-
-                if (!is_sdf_font) {
-                    //
-                    // Simple rasterization
-                    //
-                    const int samples = 4;
-
-                    // Loop through image pixels
-                    for (int y = 0; y < glyph_res[1]; y++) {
-                        for (int x = 0; x < glyph_res[0]; x++) {
-                            uint32_t out_val = 0;
-
-                            for (int dy = 0; dy < samples; dy++) {
-                                for (int dx = 0; dx < samples; dx++) {
-                                    const auto p = Vec2d{
-                                        double(x) + (0.5 + double(dx)) / samples,
-                                        double(y) + (0.5 + double(dy)) / samples
-                                    };
-
-                                    double
-                                        min_sdist = std::numeric_limits<double>::max(),
-                                        min_dot = std::numeric_limits<double>::lowest();
-
-                                    for (const bezier_shape &sh : shapes) {
-                                        for (const Gui::bezier_seg_t & seg : sh) {
-                                            const Gui::dist_result_t result = Gui::BezierSegmentDistance(seg, p);
-
-                                            if (std::abs(result.sdist) < std::abs(min_sdist) ||
-                                                (std::abs(result.sdist) == std::abs(min_sdist) && result.dot < min_dot)) {
-                                                min_sdist = result.sdist;
-                                                min_dot = result.dot;
-                                            }
-                                        }
-                                    }
-
-                                    out_val += (min_sdist > 0.0) ? 255 : 0;
-                                }
-                            }
-
-                            // Write output value
-                            const int
-                                out_x = glyph_pos[0] + x,
-                                out_y = glyph_pos[1] + (glyph_res[1] - y - 1);
-                            uint8_t *out_pixel = &temp_bitmap[4 * (out_y * temp_bitmap_res[0] + out_x)];
-
-                            out_pixel[0] = out_pixel[1] = out_pixel[2] = 255;
-                            out_pixel[3] = (out_val / (samples * samples));
-                        }
-                    }
-                } else {
-                    //
-                    // Multi-channel SDF font
-                    //
-
-                    // find hard edges, mark if closed etc.
-                    for (bezier_shape &sh : shapes) {
-                        Gui::PreprocessBezierShape(sh.data(), (int)sh.size(), 30.0 * Ren::Pi<double>() / 180.0 /* angle threshold */);
-                    }
-
-                    // Loop through image pixels
-                    for (int y = 0; y < glyph_res[1]; y++) {
-                        for (int x = 0; x < glyph_res[0]; x++) {
-                            const auto p = Vec2d{ double(x) + 0.5, double(y) + 0.5 };
-
-                            // Per channel distances (used for multi-channel sdf)
-                            Gui::dist_result_t min_result[3];
-                            for (Gui::dist_result_t &r : min_result) {
-                                r.sdist = std::numeric_limits<double>::max();
-                                r.ortho = r.dot = std::numeric_limits<double>::lowest();
-                            }
-
-                            // Simple distances (used for normal sdf)
-                            double
-                                min_sdf_sdist = std::numeric_limits<double>::max(),
-                                min_sdf_dot = std::numeric_limits<double>::lowest();
-
-                            for (const bezier_shape &sh : shapes) {
-                                int edge_color_index = 0;
-                                static const Vec3i edge_colors[] = {
-                                    Vec3i{ 255, 0, 255 }, Vec3i{ 255, 255, 0 }, Vec3i{ 0, 255, 255 }
-                                };
-
-                                for (int i = 0; i < (int)sh.size(); i++) {
-                                    const Gui::bezier_seg_t &seg = sh[i];
-                                    const Gui::dist_result_t result = Gui::BezierSegmentDistance(seg, p);
-
-                                    if (i != 0 && seg.is_hard) {
-                                        if ((i == sh.size() - 1) && sh[0].is_closed && !sh[0].is_hard) {
-                                            edge_color_index = 0;
-                                        } else {
-                                            if (edge_color_index == 1) {
-                                                edge_color_index = 2;
-                                            } else {
-                                                edge_color_index = 1;
-                                            }
-                                        }
-                                    }
-                                    const Vec3i &edge_color = edge_colors[edge_color_index];
-
-                                    for (int j = 0; j < 3; j++) {
-                                        if (edge_color[j]) {
-                                            if (std::abs(result.sdist) < std::abs(min_result[j].sdist) ||
-                                                (std::abs(result.sdist) == std::abs(min_result[j].sdist) && result.dot < min_result[j].dot)) {
-                                                min_result[j] = result;
-                                            }
-                                        }
-                                    }
-
-                                    if (std::abs(result.sdist) < std::abs(min_sdf_sdist) ||
-                                        (std::abs(result.sdist) == std::abs(min_sdf_sdist) && result.dot < min_sdf_dot)) {
-                                        min_sdf_sdist = result.sdist;
-                                        min_sdf_dot = result.dot;
-                                    }
-                                }
-                            }
-
-                            // Write distance to closest shape
-                            const int
-                                out_x = glyph_pos[0] + x,
-                                out_y = glyph_pos[1] + (glyph_res[1] - y - 1);
-                            uint8_t *out_pixel = &temp_bitmap[4 * (out_y * temp_bitmap_res[0] + out_x)];
-
-                            for (int j = 0; j < 3; j++) {
-                                uint8_t out_val = 0;
-                                if (min_result[j].sdist != std::numeric_limits<double>::max()) {
-                                    min_result[j].pseudodist = Clamp(0.5 + (min_result[j].pseudodist / (2 * sdf_radius_px)), 0.0, 1.0);
-                                    out_val = (uint8_t)std::max(std::min(int(255 * min_result[j].pseudodist), 255), 0);
-                                }
-                                out_pixel[j] = out_val;
-                            }
-
-                            min_sdf_sdist = Clamp(0.5 + (min_sdf_sdist / (2 * sdf_radius_px)), 0.0, 1.0);
-                            out_pixel[3] = (uint8_t)std::max(std::min(int(255 * min_sdf_sdist), 255), 0);
-                        }
-                    }
-                }
-            }
-        }
-
-        if (is_sdf_font) {
-            // Fix collisions of uncorrelated areas
-            Gui::FixSDFCollisions(temp_bitmap.get(), temp_bitmap_res[0], temp_bitmap_res[1], 4, 200 /* threshold */);
-        }
-
-        if (is_inv_wind) {
-            // Flip colors (font has inversed winding order)
-            for (int y = 0; y < temp_bitmap_res[1]; y++) {
-                for (int x = 0; x < temp_bitmap_res[0]; x++) {
-                    uint8_t *out_pixel = &temp_bitmap[4 * (y * temp_bitmap_res[0] + x)];
-
-                    if (is_sdf_font) {
-                        out_pixel[0] = 255 - out_pixel[0];
-                        out_pixel[1] = 255 - out_pixel[1];
-                        out_pixel[2] = 255 - out_pixel[2];
-                    }
-                    out_pixel[3] = 255 - out_pixel[3];
-                }
-            }
-        }
-
-        assert(out_glyph_count == total_glyph_count);
-
-        /*if (strstr(in_file, "Roboto-Regular_16px")) {
-            WriteImage(temp_bitmap.get(), temp_bitmap_res[0], temp_bitmap_res[1], 4, "test.png");
-        }*/
-
-        std::ofstream out_stream(out_file, std::ios::binary);
-        const uint32_t header_size = 4 + sizeof(uint32_t) + int(Gui::FontChCount) * 3 * sizeof(uint32_t);
-        uint32_t hdr_offset = 0, data_offset = header_size;
-
-        {   // File format string
-            const char signature[] = { 'F', 'O', 'N', 'T' };
-            out_stream.write(signature, 4);
-            hdr_offset += 4;
-        }
-
-        {   // Header size
-            out_stream.write((const char *)&header_size, sizeof(uint32_t));
-            hdr_offset += sizeof(uint32_t);
-        }
-
-        {   // Typograph data offsets
-            const uint32_t
-                typo_data_chunk_id = (uint32_t)Gui::FontChTypoData,
-                typo_data_offset = data_offset,
-                typo_data_size = sizeof(Gui::typgraph_info_t);
-            out_stream.write((const char *)&typo_data_chunk_id, sizeof(uint32_t));
-            out_stream.write((const char *)&typo_data_offset, sizeof(uint32_t));
-            out_stream.write((const char *)&typo_data_size, sizeof(uint32_t));
-            hdr_offset += 3 * sizeof(uint32_t);
-            data_offset += typo_data_size;
-        }
-
-        {   // Image data offsets
-            const uint32_t
-                img_data_chunk_id = (uint32_t)Gui::FontChImageData,
-                img_data_offset = data_offset,
-                img_data_size = 2 * sizeof(uint16_t) + 2 * sizeof(uint16_t) + 4 * temp_bitmap_res[0] * temp_bitmap_res[1];
-            out_stream.write((const char *)&img_data_chunk_id, sizeof(uint32_t));
-            out_stream.write((const char *)&img_data_offset, sizeof(uint32_t));
-            out_stream.write((const char *)&img_data_size, sizeof(uint32_t));
-            hdr_offset += 3 * sizeof(uint32_t);
-            data_offset += img_data_size;
-        }
-
-        {   // Glyph data offsets
-            const uint32_t
-                glyph_data_chunk_id = (uint32_t)Gui::FontChGlyphData,
-                glyph_data_offset = data_offset,
-                glyph_data_size = sizeof(uint32_t) + sizeof(glyph_ranges) + total_glyph_count * sizeof(Gui::glyph_info_t);
-            out_stream.write((const char *)&glyph_data_chunk_id, sizeof(uint32_t));
-            out_stream.write((const char *)&glyph_data_offset, sizeof(uint32_t));
-            out_stream.write((const char *)&glyph_data_size, sizeof(uint32_t));
-            hdr_offset += 3 * sizeof(uint32_t);
-            data_offset += glyph_data_size;
-        }
-
-        assert(hdr_offset == header_size);
-
-        {   // Typograph data
-            Gui::typgraph_info_t info = {};
-            info.line_height = (uint32_t)line_height;
-
-            out_stream.write((const char *)&info, sizeof(Gui::typgraph_info_t));
-        }
-
-        {   // Image data
-            const auto img_data_w = (uint16_t)temp_bitmap_res[0], img_data_h = (uint16_t)temp_bitmap_res[1];
-            out_stream.write((const char *)&img_data_w, sizeof(uint16_t));
-            out_stream.write((const char *)&img_data_h, sizeof(uint16_t));
-
-            const uint16_t
-                draw_mode = is_sdf_font ? Gui::DrDistanceField : Gui::DrPassthrough,
-                blend_mode = Gui::BlAlpha;
-            out_stream.write((const char *)&draw_mode, sizeof(uint16_t));
-            out_stream.write((const char *)&blend_mode, sizeof(uint16_t));
-
-            out_stream.write((const char *)temp_bitmap.get(), 4 * temp_bitmap_res[0] * temp_bitmap_res[1]);
-        }
-
-        {   // Glyph data
-            uint32_t u32_glyph_range_count = glyph_range_count;
-            out_stream.write((const char *)&u32_glyph_range_count, sizeof(uint32_t));
-            out_stream.write((const char *)&glyph_ranges[0].beg, sizeof(glyph_ranges));
-            out_stream.write((const char *)out_glyphs.get(), total_glyph_count * sizeof(Gui::glyph_info_t));
-        }
-    };
-
-    struct Handler {
-        const char *ext;
-        std::function<void(const char *in_file, const char *out_file)> convert;
-    };
-
-    Ren::HashMap32<std::string, Handler> handlers;
-
-    handlers["bff"]         = { "bff",          h_copy              };
-    handlers["mesh"]        = { "mesh",         h_copy              };
-    handlers["anim"]        = { "anim",         h_copy              };
-    handlers["vert.glsl"]   = { "vert.glsl",    h_preprocess_shader };
-    handlers["frag.glsl"]   = { "frag.glsl",    h_preprocess_shader };
-    handlers["comp.glsl"]   = { "comp.glsl",    h_preprocess_shader };
-    handlers["ttf"]         = { "font",         h_conv_to_font      };
-    handlers["tei.json"]    = { "dict",         h_conv_tei_to_dict     };
+    g_asset_handlers["bff"]         = { "bff",          HCopy               };
+    g_asset_handlers["mesh"]        = { "mesh",         HCopy               };
+    g_asset_handlers["anim"]        = { "anim",         HCopy               };
+    g_asset_handlers["vert.glsl"]   = { "vert.glsl",    HPreprocessShader   };
+    g_asset_handlers["frag.glsl"]   = { "frag.glsl",    HPreprocessShader   };
+    g_asset_handlers["comp.glsl"]   = { "comp.glsl",    HPreprocessShader   };
+    g_asset_handlers["ttf"]         = { "font",         HConvTTFToFont      };
 
     if (strcmp(platform, "pc") == 0) {
-        handlers["json"]    = { "json",         h_preprocess_json   };
-        handlers["txt"]     = { "txt",          h_preprocess_material };
-        handlers["tga"]     = { "dds",          h_conv_to_dds       };
-        handlers["hdr"]     = { "dds",          h_conv_hdr_to_rgbm  };
-        handlers["png"]     = { "dds",          h_conv_to_dds       };
-        handlers["img"]     = { "dds",          h_conv_img_to_dds   };
+        g_asset_handlers["json"]    = { "json",         HPreprocessJson     };
+        g_asset_handlers["txt"]     = { "txt",          HPreprocessMaterial };
+        g_asset_handlers["tga"]     = { "dds",          HConvToDDS          };
+        g_asset_handlers["hdr"]     = { "dds",          HConvHDRToRGBM      };
+        g_asset_handlers["png"]     = { "dds",          HConvToDDS          };
+        g_asset_handlers["img"]     = { "dds",          HConvImgToDDS       };
     } else if (strcmp(platform, "android") == 0) {
-        handlers["json"]    = { "json",         h_preprocess_json   };
-        handlers["txt"]     = { "txt",          h_preprocess_material };
-        handlers["tga"]     = { "ktx",          h_conv_to_astc      };
-        handlers["hdr"]     = { "ktx",          h_conv_hdr_to_rgbm  };
-        handlers["png"]     = { "ktx",          h_conv_to_astc      };
-        handlers["img"]     = { "ktx",          h_conv_img_to_astc  };
+        g_asset_handlers["json"]    = { "json",         HPreprocessJson     };
+        g_asset_handlers["txt"]     = { "txt",          HPreprocessMaterial };
+        g_asset_handlers["tga"]     = { "ktx",          HConvToASTC         };
+        g_asset_handlers["hdr"]     = { "ktx",          HConvHDRToRGBM      };
+        g_asset_handlers["png"]     = { "ktx",          HConvToASTC         };
+        g_asset_handlers["img"]     = { "ktx",          HConvImgToASTC      };
     }
 
-    handlers["uncompressed.tga"] = { "uncompressed.tga",  h_copy };
-    handlers["uncompressed.png"] = { "uncompressed.png",  h_copy };
+    g_asset_handlers["uncompressed.tga"] = { "uncompressed.tga",  HCopy };
+    g_asset_handlers["uncompressed.png"] = { "uncompressed.png",  HCopy };
 
-    auto convert_file = [out_folder, &handlers, log](const char *in_file) {
+    auto convert_file = [out_folder](assets_context_t &ctx, const char *in_file) {
         const char *base_path = strchr(in_file, '/');
         if (!base_path) return;
         const char *ext = strchr(in_file, '.');
@@ -2169,9 +427,9 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
         ext++;
 
-        Handler *handler = handlers.Find(ext);
+        Handler *handler = g_asset_handlers.Find(ext);
         if (!handler) {
-            log->Info("[PrepareAssets] No handler found for %s", in_file);
+            ctx.log->Info("[PrepareAssets] No handler found for %s", in_file);
             return;
         }
 
@@ -2180,17 +438,17 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             std::string(base_path, strlen(base_path) - strlen(ext)) +
             handler->ext;
 
-        if (CheckCanSkipAsset(in_file, out_file.c_str(), log)) {
+        if (CheckCanSkipAsset(in_file, out_file.c_str(), ctx.log)) {
             return;
         }
 
-        if (!CreateFolders(out_file.c_str(), log)) {
-            log->Info("[PrepareAssets] Failed to create directories for %s", out_file.c_str());
+        if (!CreateFolders(out_file.c_str(), ctx.log)) {
+            ctx.log->Info("[PrepareAssets] Failed to create directories for %s", out_file.c_str());
             return;
         }
 
         const auto &conv_func = handler->convert;
-        conv_func(in_file, out_file.c_str());
+        conv_func(ctx, in_file, out_file.c_str());
     };
 
 #ifdef __linux__
@@ -2201,337 +459,170 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     }
 #endif
 
-    if (p_threads) {
+    assets_context_t ctx = {
+        platform,
+        log
+    };
+
+    /*if (p_threads) {
         std::vector<std::future<void>> events;
-        ReadAllFiles_MT_r(in_folder, convert_file, p_threads, log, events);
+        ReadAllFiles_MT_r(ctx, in_folder, convert_file, p_threads, events);
 
         for (std::future<void> &e : events) {
             e.wait();
         }
-    } else {
-        ReadAllFiles_r(in_folder, convert_file, log);
-    }
+    } else {*/
+        ReadAllFiles_r(ctx, in_folder, convert_file);
+    //}
 
     return true;
 }
 
-bool SceneManager::WriteProbeCache(
-        const char *out_folder, const char *scene_name, const ProbeStorage &probes,
-        const CompStorage *light_probe_storage, Ren::ILog *log) {
+void SceneManager::HSkip(assets_context_t &ctx, const char *in_file, const char *out_file) {
+    ctx.log->Info("[PrepareAssets] Skip %s", out_file);
+}
+
+void SceneManager::HCopy(assets_context_t &ctx, const char *in_file, const char *out_file) {
+    ctx.log->Info("[PrepareAssets] Copy %s", out_file);
+
+    std::ifstream src_stream(in_file, std::ios::binary);
+    std::ofstream dst_stream(out_file, std::ios::binary);
+
+    std::istreambuf_iterator<char> src_beg(src_stream);
+    std::istreambuf_iterator<char> src_end;
+    std::ostreambuf_iterator<char> dst_beg(dst_stream);
+    std::copy(src_beg, src_end, dst_beg);
+}
+
+void SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_file, const char *out_file) {
+    ctx.log->Info("[PrepareAssets] Prep %s", out_file);
+
+    std::ifstream src_stream(in_file, std::ios::binary);
+    std::ofstream dst_stream(out_file, std::ios::binary);
+
+    std::string line;
+    while (std::getline(src_stream, line)) {
+        SceneManagerInternal::ReplaceTextureExtension(ctx.platform, line);
+        dst_stream << line << "\r\n";
+    }
+}
+
+void SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file, const char *out_file) {
     using namespace SceneManagerInternal;
 
-    const int res = probes.res();
-    const int temp_buf_size = 4 * res * res;
-    std::unique_ptr<uint8_t[]>
-        temp_buf(new uint8_t[temp_buf_size]),
-        temp_comp_buf(new uint8_t[Net::CalcLZOOutSize(temp_buf_size)]);
+    ctx.log->Info("[PrepareAssets] Prep %s", out_file);
 
-    std::string out_file_name_base;
-    out_file_name_base += out_folder;
-    if (out_file_name_base.back() != '/') {
-        out_file_name_base += '/';
-    }
-    const size_t prelude_length = out_file_name_base.length();
-    out_file_name_base += scene_name;
+    std::ifstream src_stream(in_file, std::ios::binary);
+    std::ofstream dst_stream(out_file, std::ios::binary);
 
-    if (!CreateFolders(out_file_name_base.c_str(), log)) {
-        log->Error("Failed to create folders!");
-        return false;
+    JsObject js_root;
+    if (!js_root.Read(src_stream)) {
+        throw std::runtime_error("Cannot load scene!");
     }
 
-    // write probes
-    uint32_t cur_index = light_probe_storage->First();
-    while(cur_index != 0xffffffff) {
-        const auto *lprobe = (const LightProbe *)light_probe_storage->Get(cur_index);
-        assert(lprobe);
+    std::string base_path = in_file;
+    {   // extract base part of file path
+        size_t n = base_path.find_last_of('/');
+        if (n != std::string::npos) {
+            base_path = base_path.substr(0, n + 1);
+        }
+    }
 
-        if (lprobe->layer_index != -1) {
-            JsArray js_probe_faces;
+    if (js_root.Has("objects")) {
+        JsArray &js_objects = js_root.at("objects").as_arr();
+        for (JsElement &js_obj_el : js_objects.elements) {
+            JsObject &js_obj = js_obj_el.as_obj();
 
-            std::string out_file_name;
-
-            for (int j = 0; j < 6; j++) {
-                const int mipmap_count = probes.max_level() + 1;
-
-                out_file_name.clear();
-                out_file_name += out_file_name_base;
-                out_file_name += std::to_string(lprobe->layer_index);
-                out_file_name += "_";
-                out_file_name += std::to_string(j);
-                out_file_name += ".img";
-
-                std::ofstream out_file(out_file_name, std::ios::binary);
-
-                out_file.write((char *)&res, 4);
-                out_file.write((char *)&mipmap_count, 4);
-
-                for (int k = 0; k < mipmap_count; k++) {
-                    const int mip_res = int((unsigned)res >> (unsigned)k);
-                    const int buf_size = mip_res * mip_res * 4;
-
-                    if (!probes.GetPixelData(k, lprobe->layer_index, j, buf_size, &temp_buf[0], log)) {
-                        log->Error("Failed to read cubemap level %i layer %i face %i", k, lprobe->layer_index, j);
-                        return false;
-                    }
-
-                    const int comp_size = Net::CompressLZO(&temp_buf[0], buf_size, &temp_comp_buf[0]);
-                    out_file.write((char *)&comp_size, sizeof(int));
-                    out_file.write((char *)&temp_comp_buf[0], comp_size);
+            if (js_obj.Has("decal")) {
+                JsObject &js_decal = js_obj.at("decal").as_obj();
+                if (js_decal.Has("diff")) {
+                    JsString &js_diff_tex = js_decal.at("diff").as_str();
+                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_diff_tex.val);
+                }
+                if (js_decal.Has("norm")) {
+                    JsString &js_norm_tex = js_decal.at("norm").as_str();
+                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_norm_tex.val);
+                }
+                if (js_decal.Has("spec")) {
+                    JsString &js_spec_tex = js_decal.at("spec").as_str();
+                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_spec_tex.val);
                 }
             }
         }
-
-        cur_index = light_probe_storage->Next(cur_index);
     }
 
-    return true;
-}
+    if (js_root.Has("probes")) {
+        JsArray &js_probes = js_root.at("probes").as_arr();
+        for (JsElement &js_probe_el : js_probes.elements) {
+            JsObject &js_probe = js_probe_el.as_obj();
 
-int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, int height, int channels, float bitrate, std::unique_ptr<uint8_t[]> &out_buf) {
-    int padding = channels == 4 ? 1 : 0;
-    
-    astc_codec_image *src_image = allocate_image(8, width, height, 1, padding);
-
-    if (channels == 4) {
-        uint8_t *_img = &src_image->imagedata8[0][0][0];
-        for (int j = 0; j < height; j++) {
-            int y = j + padding;
-            for (int i = 0; i < width; i++) {
-                int x = i + padding;
-                src_image->imagedata8[0][y][4 * x + 0] = image_data[4 * (j * width + i) + 0];
-                src_image->imagedata8[0][y][4 * x + 1] = image_data[4 * (j * width + i) + 1];
-                src_image->imagedata8[0][y][4 * x + 2] = image_data[4 * (j * width + i) + 2];
-                src_image->imagedata8[0][y][4 * x + 3] = image_data[4 * (j * width + i) + 3];
-            }
-        }
-    } else {
-        uint8_t *_img = &src_image->imagedata8[0][0][0];
-        for (int j = 0; j < height; j++) {
-            int y = j + padding;
-            for (int i = 0; i < width; i++) {
-                int x = i + padding;
-                _img[4 * (y * width + x) + 0] = image_data[3 * (j * width + i) + 0];
-                _img[4 * (y * width + x) + 1] = image_data[3 * (j * width + i) + 1];
-                _img[4 * (y * width + x) + 2] = image_data[3 * (j * width + i) + 2];
-                _img[4 * (y * width + x) + 3] = 255;
+            if (js_probe.Has("faces")) {
+                JsArray &js_faces = js_probe.at("faces").as_arr();
+                for (JsElement &js_face_el : js_faces.elements) {
+                    JsString &js_face_str = js_face_el.as_str();
+                    ReplaceTextureExtension(ctx.platform, js_face_str.val);
+                }
             }
         }
     }
 
-    int buf_size = 0;
+    if (js_root.Has("chapters")) {
+        JsArray &js_chapters = js_root.at("chapters").as_arr();
+        for (JsElement &js_chapter_el : js_chapters.elements) {
+            JsObject &js_chapter = js_chapter_el.as_obj();
 
-    {
-        const float target_bitrate = bitrate;
-        int xdim, ydim;
+            JsObject js_caption, js_text_data;
 
-        find_closest_blockdim_2d(target_bitrate, &xdim, &ydim, 0);
+            if (js_chapter.Has("html_src")) {
+                JsObject &js_html_src = js_chapter.at("html_src").as_obj();
+                for (auto &js_src_pair : js_html_src.elements) {
+                    const std::string
+                            &js_lang = js_src_pair.first,
+                            &js_file_path = js_src_pair.second.as_str().val;
 
-        float log10_texels_2d = (std::log((float)(xdim * ydim)) / std::log(10.0f));
+                    const std::string html_file_path = base_path + js_file_path;
 
-        // 'medium' preset params
-        int plimit_autoset = 25;
-        float oplimit_autoset = 1.2f;
-        float mincorrel_autoset = 0.75f;
-        float dblimit_autoset_2d = std::max(95 - 35 * log10_texels_2d, 70 - 19 * log10_texels_2d);
-        float bmc_autoset = 75;
-        int maxiters_autoset = 2;
+                    std::string caption;
+                    std::string html_body = ExtractHTMLData(ctx, html_file_path.c_str(), caption);
 
-        int pcdiv;
+                    caption = std::regex_replace(caption, std::regex("\n"), "");
+                    caption = std::regex_replace(caption, std::regex("\'"), "&apos;");
+                    caption = std::regex_replace(caption, std::regex("\""), "&quot;");
+                    caption = std::regex_replace(caption, std::regex("<h1>"), "");
+                    caption = std::regex_replace(caption, std::regex("</h1>"), "");
 
-        switch (ydim) {
-        case 4:
-            pcdiv = 25;
-            break;
-        case 5:
-            pcdiv = 15;
-            break;
-        case 6:
-            pcdiv = 15;
-            break;
-        case 8:
-            pcdiv = 10;
-            break;
-        case 10:
-            pcdiv = 8;
-            break;
-        case 12:
-            pcdiv = 6;
-            break;
-        default:
-            pcdiv = 6;
-            break;
-        };
+                    html_body = std::regex_replace(html_body, std::regex("\n"), "");
+                    html_body = std::regex_replace(html_body, std::regex("\'"), "&apos;");
+                    html_body = std::regex_replace(html_body, std::regex("\""), "&quot;");
 
-        error_weighting_params ewp;
+                    // remove spaces
+                    if (!caption.empty()) {
+                        int n = 0;
+                        while (n < caption.length() && caption[n] == ' ') n++;
+                        caption.erase(0, n);
+                        while (caption.back() == ' ') caption.pop_back();
+                    }
 
-        ewp.rgb_power = 1.0f;
-        ewp.alpha_power = 1.0f;
-        ewp.rgb_base_weight = 1.0f;
-        ewp.alpha_base_weight = 1.0f;
-        ewp.rgb_mean_weight = 0.0f;
-        ewp.rgb_stdev_weight = 0.0f;
-        ewp.alpha_mean_weight = 0.0f;
-        ewp.alpha_stdev_weight = 0.0f;
+                    if (!html_body.empty()) {
+                        int n = 0;
+                        while (n < html_body.length() && html_body[n] == ' ') n++;
+                        html_body.erase(0, n);
+                        while (html_body.back() == ' ') html_body.pop_back();
+                    }
 
-        ewp.rgb_mean_and_stdev_mixing = 0.0f;
-        ewp.mean_stdev_radius = 0;
-        ewp.enable_rgb_scale_with_alpha = 0;
-        ewp.alpha_radius = 0;
-
-        ewp.block_artifact_suppression = 0.0f;
-        ewp.rgba_weights[0] = 1.0f;
-        ewp.rgba_weights[1] = 1.0f;
-        ewp.rgba_weights[2] = 1.0f;
-        ewp.rgba_weights[3] = 1.0f;
-        ewp.ra_normal_angular_scale = 0;
-
-        int partitions_to_test = plimit_autoset;
-        float dblimit_2d = dblimit_autoset_2d;
-        float oplimit = oplimit_autoset;
-        float mincorrel = mincorrel_autoset;
-
-        int maxiters = maxiters_autoset;
-        ewp.max_refinement_iters = maxiters;
-
-        ewp.block_mode_cutoff = (bmc_autoset) / 100.0f;
-
-        ewp.texel_avg_error_limit = 0.0f;
-
-        ewp.partition_1_to_2_limit = oplimit;
-        ewp.lowest_correlation_cutoff = mincorrel;
-
-        if (partitions_to_test < 1) {
-            partitions_to_test = 1;
-        } else if (partitions_to_test > PARTITION_COUNT) {
-            partitions_to_test = PARTITION_COUNT;
-        }
-        ewp.partition_search_limit = partitions_to_test;
-
-        float max_color_component_weight = std::max(std::max(ewp.rgba_weights[0], ewp.rgba_weights[1]),
-                                                    std::max(ewp.rgba_weights[2], ewp.rgba_weights[3]));
-        ewp.rgba_weights[0] = std::max(ewp.rgba_weights[0], max_color_component_weight / 1000.0f);
-        ewp.rgba_weights[1] = std::max(ewp.rgba_weights[1], max_color_component_weight / 1000.0f);
-        ewp.rgba_weights[2] = std::max(ewp.rgba_weights[2], max_color_component_weight / 1000.0f);
-        ewp.rgba_weights[3] = std::max(ewp.rgba_weights[3], max_color_component_weight / 1000.0f);
-
-        if (channels == 4) {
-            ewp.enable_rgb_scale_with_alpha = 1;
-            ewp.alpha_radius = 1;
-        }
-
-        ewp.texel_avg_error_limit = (float)pow(0.1f, dblimit_2d * 0.1f) * 65535.0f * 65535.0f;
-
-        expand_block_artifact_suppression(xdim, ydim, 1, &ewp);
-
-        swizzlepattern swz_encode = { 0, 1, 2, 3 };
-
-        //int padding = std::max(ewp.mean_stdev_radius, ewp.alpha_radius);
-
-        if (channels == 4 /*ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f || ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f*/) {
-            
-            compute_averages_and_variances(src_image, ewp.rgb_power, ewp.alpha_power, ewp.mean_stdev_radius, ewp.alpha_radius, swz_encode);
-        }
-
-        int xsize = src_image->xsize;
-        int ysize = src_image->ysize;
-
-        int xblocks = (xsize + xdim - 1) / xdim;
-        int yblocks = (ysize + ydim - 1) / ydim;
-        int zblocks = 1;
-
-        buf_size = xblocks * yblocks * zblocks * 16;
-        out_buf.reset(new uint8_t[buf_size]);
-
-        encode_astc_image(src_image, nullptr, xdim, ydim, 1, &ewp, DECODE_LDR, swz_encode, swz_encode, &out_buf[0], 0, 8);
-    }
-
-    destroy_image(src_image);
-
-    return buf_size;
-}
-
-std::unique_ptr<uint8_t[]> SceneManagerInternal::DecodeASTC(const uint8_t *image_data, int data_size, int xdim, int ydim, int width, int height) {
-    int xsize = width;
-    int ysize = height;
-    int zsize = 1;
-
-    int xblocks = (xsize + xdim - 1) / xdim;
-    int yblocks = (ysize + ydim - 1) / ydim;
-    int zblocks = 1;
-    
-    if (!g_astc_initialized) {
-        test_inappropriate_extended_precision();
-        prepare_angular_tables();
-        build_quantization_mode_table();
-        g_astc_initialized = true;
-    }
-
-    astc_codec_image *img = allocate_image(8, xsize, ysize, 1, 0);
-    initialize_image(img);
-
-    swizzlepattern swz_decode = { 0, 1, 2, 3 };
-
-    imageblock pb;
-    for (int z = 0; z < zblocks; z++) {
-        for (int y = 0; y < yblocks; y++) {
-            for (int x = 0; x < xblocks; x++) {
-                int offset = (((z * yblocks + y) * xblocks) + x) * 16;
-                const uint8_t *bp = image_data + offset;
-
-                physical_compressed_block pcb;
-                memcpy(&pcb, bp, sizeof(physical_compressed_block));
-
-                symbolic_compressed_block scb;
-                physical_to_symbolic(xdim, ydim, 1, pcb, &scb);
-                decompress_symbolic_block(DECODE_LDR, xdim, ydim, 1, x * xdim, y * ydim, z * 1, &scb, &pb);
-                write_imageblock(img, &pb, xdim, ydim, 1, x * xdim, y * ydim, z * 1, swz_decode);
+                    js_caption[js_lang] = JsString{ caption };
+                    js_text_data[js_lang
+                    ] = JsString{ html_body };
+                }
             }
+
+            js_chapter["caption"] = std::move(js_caption);
+            js_chapter["text_data"] = std::move(js_text_data);
         }
     }
 
-    std::unique_ptr<uint8_t[]> ret_data;
-    ret_data.reset(new uint8_t[xsize * ysize * 4]);
+    JsFlags flags;
+    flags.use_spaces = 1;
 
-    memcpy(&ret_data[0], &img->imagedata8[0][0][0], xsize * ysize * 4);
-
-    destroy_image(img);
-
-    return ret_data;
-}
-
-std::unique_ptr<uint8_t[]> SceneManagerInternal::Decode_KTX_ASTC(const uint8_t *image_data, int data_size, int &width, int &height) {
-    Ren::KTXHeader header;
-    memcpy(&header, &image_data[0], sizeof(Ren::KTXHeader));
-
-    width = (int)header.pixel_width;
-    height = (int)header.pixel_height;
-
-    int data_offset = sizeof(Ren::KTXHeader);
-
-    {   // Decode first mip level
-        uint32_t img_size;
-        memcpy(&img_size, &image_data[data_offset], sizeof(uint32_t));
-        data_offset += sizeof(uint32_t);
-
-        const uint32_t gl_compressed_rgba_astc_4x4_khr = 0x93B0;
-        const uint32_t gl_compressed_rgba_astc_6x6_khr = 0x93B4;
-        const uint32_t gl_compressed_rgba_astc_8x8_khr = 0x93B7;
-
-        int xdim, ydim;
-
-        if (header.gl_internal_format == gl_compressed_rgba_astc_4x4_khr) {
-            xdim = 4;
-            ydim = 4;
-        } else if (header.gl_internal_format == gl_compressed_rgba_astc_6x6_khr) {
-            xdim = 6;
-            ydim = 6;
-        } else if (header.gl_internal_format == gl_compressed_rgba_astc_8x8_khr) {
-            xdim = 8;
-            ydim = 8;
-        } else {
-            throw std::runtime_error("Unsupported block size!");
-        }
-
-        return DecodeASTC(&image_data[data_offset], img_size, xdim, ydim, width, height);
-    }
+    js_root.Write(dst_stream, flags);
 }

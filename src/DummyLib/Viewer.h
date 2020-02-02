@@ -18,6 +18,8 @@ const char ASSETS_BASE_PATH[]           = "assets";
 const char ASSETS_BASE_PATH[]           = "assets_pc";
 #endif
 
+struct assets_context_t;
+
 class Viewer : public GameBase {
 public:
     Viewer(int w, int h, const char *local_dir);
@@ -27,5 +29,6 @@ public:
     void Frame() override;
 
     static void PrepareAssets(const char *platform = "all");
+    static void HConvTEIToDict(assets_context_t &ctx, const char *in_file, const char *out_file);
 };
 

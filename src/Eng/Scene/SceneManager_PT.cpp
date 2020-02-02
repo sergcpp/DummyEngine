@@ -20,6 +20,7 @@ extern const int LIGHTMAP_ATLAS_RESX,
 }
 
 namespace SceneManagerInternal {
+void Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *name);
 void Write_RGBM(const float *out_data, int w, int h, int channels, const char *name);
 void Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name);
 
