@@ -172,6 +172,9 @@ void test_json() {
             require(lit.val == JS_TRUE);
             std::stringstream ss;
             lit.Write(ss);
+
+            ss.seekg(0, std::ios::beg);
+
             JsLiteral _lit(JS_NULL);
             require(_lit.Read(ss));
             require(_lit.val == JS_TRUE);
@@ -210,7 +213,7 @@ void test_json() {
             require_throws((JsLiteral)el2);
             require_throws((const JsLiteral &)el2);
 
-            JsElement _el3(JS_ARRAY);
+            JsElement _el3(JS_TYPE_ARRAY);
             const JsElement &el3 = _el3;
             require_nothrow((JsArray)_el3);
             require_nothrow((const JsArray &)el3);
@@ -223,7 +226,7 @@ void test_json() {
             require_throws((JsLiteral)_el3);
             require_throws((const JsLiteral &)el3);
 
-            JsElement _el4(JS_OBJECT);
+            JsElement _el4(JS_TYPE_OBJECT);
             const JsElement &el4 = _el4;
             require_nothrow((JsObject)_el4);
             require_nothrow((const JsObject &)el4);
