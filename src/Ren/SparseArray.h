@@ -204,7 +204,7 @@ public:
         }
     }
 
-    class SparseArrayIterator : public std::iterator<std::bidirectional_iterator_tag, T> {
+    class SparseArrayIterator : public std::iterator<std::forward_iterator_tag, T> {
         friend class SparseArray<T>;
 
         SparseArray<T> *container_;
@@ -252,7 +252,7 @@ public:
         }
     };
 
-    class SparseArrayConstIterator : public std::iterator<std::bidirectional_iterator_tag, T> {
+    class SparseArrayConstIterator : public std::iterator<std::forward_iterator_tag, T> {
         friend class SparseArray<T>;
 
         const SparseArray<T>    *container_;

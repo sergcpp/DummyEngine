@@ -55,6 +55,14 @@ public:
 };
 
 template <>
+class Hash<const char *> {
+public:
+    uint32_t operator()(const char *s) const {
+        return _str_hash(s);
+    }
+};
+
+template <>
 class Hash<std::string> {
 public:
     uint32_t operator()(const std::string &s) const {
@@ -88,6 +96,14 @@ public:
 };
 
 template <>
+class Equal<const char *> {
+public:
+    bool operator()(const char *k1, const char *k2) const {
+        return strcmp(k1, k2) == 0;
+    }
+};
+
+template <>
 class Equal<String> {
 public:
 
@@ -102,15 +118,16 @@ class HashMap32 {
     static const uint8_t OccupiedBit = 0b10000000;
     static const uint8_t HashMask = 0b01111111;
 
+public:
     struct Node {
         uint32_t hash;
         K        key;
         V        val;
     };
-
+private:
     uint8_t     *ctrl_;
     Node        *nodes_;
-    size_t      capacity_, size_;
+    uint32_t    capacity_, size_;
     HashFunc    hash_func_;
     KeyEqual    key_equal_;
 public:
@@ -118,17 +135,17 @@ public:
         : ctrl_(nullptr), nodes_(nullptr), capacity_(0), size_(0), hash_func_(hash_func), key_equal_(key_equal) {
     }
 
-    HashMap32(size_t capacity, const HashFunc &hash_func = HashFunc(), const KeyEqual &key_equal = KeyEqual())
+    HashMap32(uint32_t capacity, const HashFunc &hash_func = HashFunc(), const KeyEqual &key_equal = KeyEqual())
         : hash_func_(hash_func), key_equal_(key_equal) {
         // Check if power of 2
         assert((capacity & (capacity - 1)) == 0);
 
-        size_t mem_size = capacity;
+        uint32_t mem_size = capacity;
         if (mem_size % alignof(Node)) {
             mem_size += alignof(Node) - (mem_size % alignof(Node));
         }
 
-        size_t node_begin = mem_size;
+        uint32_t node_begin = mem_size;
         mem_size += sizeof(Node) * capacity;
 
         ctrl_ = new uint8_t[mem_size];
@@ -149,11 +166,11 @@ public:
         delete[] ctrl_;
     }
 
-    size_t size() const { return size_; }
-    size_t capacity() const { return capacity_; }
+    uint32_t size() const { return size_; }
+    uint32_t capacity() const { return capacity_; }
 
     void clear() {
-        for (size_t i = 0; i < capacity_ && size_; i++) {
+        for (uint32_t i = 0; i < capacity_ && size_; i++) {
             if (ctrl_[i] & OccupiedBit) {
                 size_--;
                 nodes_[i].key.~K();
@@ -254,12 +271,171 @@ public:
         return nullptr;
     }
 
+    Node *GetOrNull(uint32_t index) {
+        if (index < capacity_ && (ctrl_[index / 8] & (1u << (index % 8)))) {
+            return &nodes_[index];
+        } else {
+            return nullptr;
+        }
+    }
+
+    const Node *GetOrNull(uint32_t index) const {
+        if (index < capacity_ && (ctrl_[index / 8] & (1u << (index % 8)))) {
+            return &nodes_[index];
+        } else {
+            return nullptr;
+        }
+    }
+
+    class HashMap32Iterator : public std::iterator<std::forward_iterator_tag, Node> {
+        friend class HashMap32<K, V, HashFunc, KeyEqual>;
+
+        HashMap32<K, V, HashFunc, KeyEqual> *container_;
+        uint32_t                            index_;
+
+        HashMap32Iterator(HashMap32<K, V, HashFunc, KeyEqual> *container, uint32_t index) : container_(container), index_(index) {}
+    public:
+        Node &operator*() {
+            return container_->at(index_);
+        }
+        Node *operator->() {
+            return &container_->at(index_);
+        }
+        HashMap32Iterator &operator++() {
+            index_ = container_->NextOccupied(index_);
+            return *this;
+        }
+        HashMap32Iterator operator++(int) {
+            HashMap32Iterator tmp(*this);
+            ++(*this);
+            return tmp;
+        }
+
+        uint32_t index() const {
+            return index_;
+        }
+
+        bool operator< (const HashMap32Iterator &rhs) {
+            return index_ < rhs.index_;
+        }
+        bool operator<=(const HashMap32Iterator &rhs) {
+            return index_ <= rhs.index_;
+        }
+        bool operator> (const HashMap32Iterator &rhs) {
+            return index_ > rhs.index_;
+        }
+        bool operator>=(const HashMap32Iterator &rhs) {
+            return index_ >= rhs.index_;
+        }
+        bool operator==(const HashMap32Iterator &rhs) {
+            return index_ == rhs.index_;
+        }
+        bool operator!=(const HashMap32Iterator &rhs) {
+            return index_ != rhs.index_;
+        }
+    };
+
+    class HashMap32ConstIterator : public std::iterator<std::forward_iterator_tag, Node> {
+        friend class HashMap32<K, V, HashFunc, KeyEqual>;
+
+        const HashMap32<K, V, HashFunc, KeyEqual>   *container_;
+        uint32_t                                    index_;
+
+        HashMap32ConstIterator(const HashMap32<K, V, HashFunc, KeyEqual> *container, uint32_t index) : container_(container), index_(index) {}
+    public:
+        const Node &operator*() {
+            return container_->at(index_);
+        }
+        const Node *operator->() {
+            return &container_->at(index_);
+        }
+        HashMap32ConstIterator &operator++() {
+            index_ = container_->NextOccupied(index_);
+            return *this;
+        }
+        HashMap32ConstIterator operator++(int) {
+            HashMap32ConstIterator tmp(*this);
+            ++(*this);
+            return tmp;
+        }
+
+        uint32_t index() const {
+            return index_;
+        }
+
+        bool operator< (const HashMap32ConstIterator &rhs) {
+            return index_ < rhs.index_;
+        }
+        bool operator<=(const HashMap32ConstIterator &rhs) {
+            return index_ <= rhs.index_;
+        }
+        bool operator> (const HashMap32ConstIterator &rhs) {
+            return index_ > rhs.index_;
+        }
+        bool operator>=(const HashMap32ConstIterator &rhs) {
+            return index_ >= rhs.index_;
+        }
+        bool operator==(const HashMap32ConstIterator &rhs) {
+            return index_ == rhs.index_;
+        }
+        bool operator!=(const HashMap32ConstIterator &rhs) {
+            return index_ != rhs.index_;
+        }
+    };
+
+    using iterator = HashMap32Iterator;
+    using const_iterator = HashMap32ConstIterator;
+
+    iterator begin() {
+        for (uint32_t i = 0; i < capacity_; i++) {
+            if (ctrl_[i] & OccupiedBit) {
+                return iterator(this, i);
+            }
+        }
+        return end();
+    }
+
+    const_iterator cbegin() const {
+        for (uint32_t i = 0; i < capacity_; i++) {
+            if (ctrl_[i] & OccupiedBit) {
+                return const_iterator(this, i);
+            }
+        }
+        return cend();
+    }
+
+    iterator end() {
+        return iterator(this, capacity_);
+    }
+
+    const_iterator cend() const {
+        return const_iterator(this, capacity_);
+    }
+
+    iterator iter_at(uint32_t i) {
+        return iterator(this, i);
+    }
+
+    const_iterator citer_at(uint32_t i) const {
+        return const_iterator(this, i);
+    }
+
+    Node &at(uint32_t index) {
+        assert((ctrl_[index] & OccupiedBit) && "Invalid index!");
+        return nodes_[index];
+    }
+
+    const Node &at(uint32_t index) const {
+        assert((ctrl_[index] & OccupiedBit) && "Invalid index!");
+        return nodes_[index];
+    }
+
 private:
     void CheckRealloc() {
         if ((size_ + 1) > uint32_t(0.8 * capacity_)) {
             uint8_t *old_ctrl = ctrl_;
             Node *old_nodes = nodes_;
-            size_t old_capacity = capacity_;
+            uint32_t old_capacity = capacity_;
 
             if (capacity_) {
                 capacity_ *= 2;
@@ -268,10 +444,10 @@ private:
             }
             size_ = 0;
 
-            size_t mem_size = capacity_;
+            uint32_t mem_size = capacity_;
             mem_size += (mem_size % alignof(Node));
 
-            size_t node_begin = mem_size;
+            uint32_t node_begin = mem_size;
             mem_size += sizeof(Node) * capacity_;
 
             ctrl_ = new uint8_t[mem_size];
@@ -279,7 +455,7 @@ private:
 
             memset(ctrl_, 0, capacity_);
 
-            for (size_t i = 0; i < old_capacity; i++) {
+            for (uint32_t i = 0; i < old_capacity; i++) {
                 if (old_ctrl[i] & OccupiedBit) {
                     InsertInternal(old_nodes[i].hash, std::move(old_nodes[i].key), std::move(old_nodes[i].val));
                 }
@@ -336,6 +512,16 @@ private:
         nodes_[i].hash = hash;
         new (&nodes_[i].key) K(std::forward<K>(key));
         new (&nodes_[i].val) V(std::forward<V>(val));
+    }
+
+    uint32_t NextOccupied(uint32_t index) const {
+        assert((ctrl_[index] & OccupiedBit) && "Invalid index!");
+        for (uint32_t i = index + 1; i < capacity_; i++) {
+            if (ctrl_[i] & OccupiedBit) {
+                return i;
+            }
+        }
+        return capacity_;
     }
 };
 }

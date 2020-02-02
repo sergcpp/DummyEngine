@@ -1,5 +1,7 @@
 #include "test_common.h"
 
+#include <vector>
+
 #include "../HashMap32.h"
 
 void test_hashmap() {
@@ -76,5 +78,36 @@ void test_hashmap() {
         }
 
         require(cont.size() == 0);
+    }
+
+    {   // Test iteration
+        Ren::HashMap32<std::string, int> cont(16);
+
+        for (int i = 0; i < 100000; i++) {
+            std::string key = std::to_string(i);
+            cont[key] = i;
+        }
+
+        require(cont.size() == 100000);
+
+        {   // const iterator
+            int values_count = 0;
+            for (auto it = cont.cbegin(); it != cont.cend(); ++it) {
+                require(it->key == std::to_string(it->val));
+                values_count++;
+            }
+
+            require(values_count == 100000);
+        }
+
+        {   // normal iterator
+            int values_count = 0;
+            for (auto it = cont.begin(); it != cont.end(); ++it) {
+                require(it->key == std::to_string(it->val));
+                values_count++;
+            }
+
+            require(values_count == 100000);
+        }
     }
 }
