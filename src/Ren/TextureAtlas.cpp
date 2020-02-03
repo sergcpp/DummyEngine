@@ -52,7 +52,7 @@ Ren::TextureAtlas::~TextureAtlas() {
     for (int i = 0; i < MaxTextureCount; i++) {
 #if defined(USE_GL_RENDER)
         if (tex_ids_[i] != 0xffffffff) {
-            GLuint tex_id = (GLuint)tex_ids_[i];
+            auto tex_id = (GLuint)tex_ids_[i];
             glDeleteTextures(1, &tex_id);
         }
 #endif
@@ -94,7 +94,10 @@ Ren::TextureAtlas &Ren::TextureAtlas::operator=(TextureAtlas &&rhs) noexcept {
 }
 
 int Ren::TextureAtlas::Allocate(const void **data, const eTexColorFormat *format, const int res[2], int out_pos[2], int border) {
-    const int alloc_res[] = { res[0] + border, res[1] + border };
+    const int alloc_res[] = {
+        res[0] < splitter_.resx() ? res[0] + border : res[0],
+        res[1] < splitter_.resy() ? res[1] + border : res[1]
+    };
 
     int index = splitter_.Allocate(alloc_res, out_pos);
     if (index != -1) {
@@ -226,7 +229,10 @@ Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rh
 }
 
 int Ren::TextureAtlasArray::Allocate(const void *data, const eTexColorFormat format, const int res[2], int out_pos[3], int border) {
-    const int alloc_res[] = { res[0] + border, res[1] + border };
+    const int alloc_res[] = {
+         res[0] < splitters_[0].resx() ? res[0] + border : res[0],
+         res[1] < splitters_[1].resy() ? res[1] + border : res[1]
+    };
 
     for (int i = 0; i < layer_count_; i++) {
         int index = splitters_[i].Allocate(alloc_res, out_pos);
