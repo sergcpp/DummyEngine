@@ -25,16 +25,16 @@ void Gui::Image9Patch::Draw(Gui::Renderer *r) {
     const Vec2f pos[4] = {
         dims_[0],
         dims_[0] + dims_[1],
-        pos[0] + offset_norm,
-        pos[1] - offset_norm
+        dims_[0] + offset_norm,
+        dims_[0] + dims_[1] - offset_norm
     };
 
-    const Vec2f uvs[4] = {
+    Vec2f uvs[4] = {
         Vec2f{ (float)(tex_->pos(0)),        (float)(tex_->pos(1)) },
-        Vec2f{ (float)(tex_->pos(0) + p.w),  (float)(tex_->pos(1) + p.h) },
-        uvs[0] + offset_px_,
-        uvs[1] - offset_px_
+        Vec2f{ (float)(tex_->pos(0) + p.w),  (float)(tex_->pos(1) + p.h) }
     };
+    uvs[2] = uvs[0] + offset_px_;
+    uvs[3] = uvs[1] - offset_px_;
 
     //  _______________
     // |   |       |   |
