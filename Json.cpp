@@ -119,7 +119,7 @@ bool JsArray::operator==(const JsArray &rhs) const {
     return std::equal(elements.begin(), elements.end(), rhs.elements.begin());
 }
 
-void JsArray::Push(JsElement&& el) {
+void JsArray::Push(JsElement &&el) {
     elements.emplace_back(std::move(el));
 }
 
@@ -480,7 +480,9 @@ JsObject &JsElement::as_obj() {
 //
 
 const JsLiteral &JsElement::as_lit() const {
-    if (type_ != JS_TYPE_LITERAL) throw std::bad_cast();
+    if (type_ != JS_TYPE_LITERAL) {
+        throw std::bad_cast();
+    }
     return reinterpret_cast<const JsLiteral &>(data_);
 }
 
@@ -490,12 +492,16 @@ const JsNumber &JsElement::as_num() const {
 }
 
 const JsString &JsElement::as_str() const {
-    if (type_ != JS_TYPE_STRING) throw std::bad_cast();
+    if (type_ != JS_TYPE_STRING) {
+        throw std::bad_cast();
+    }
     return reinterpret_cast<const JsString &>(data_);
 }
 
 const JsArray &JsElement::as_arr() const {
-    if (type_ != JS_TYPE_ARRAY) throw std::bad_cast();
+    if (type_ != JS_TYPE_ARRAY) {
+        throw std::bad_cast();
+    }
     return reinterpret_cast<const JsArray &>(data_);
 }
 

@@ -109,17 +109,17 @@ void test_json() {
             a1.Push(JsNumber{ 2 });
             a1.Push(JsString{ "qwe123" });
             require(a1.Size() == 3);
-            require((JsNumber)a1[0] == Approx(1));
-            require((JsNumber)a1[1] == Approx(2));
-            require((JsString)a1[2] == JsString{ "qwe123" });
+            require(a1[0].as_num() == Approx(1));
+            require(a1[1].as_num() == Approx(2));
+            require(a1[2].as_str() == JsString{ "qwe123" });
             std::stringstream ss;
             a1.Write(ss);
             JsArray a2;
             require(a2.Read(ss));
             require(a2.Size() == 3);
-            require((JsNumber)a2[0] == Approx(1));
-            require((JsNumber)a2[1] == Approx(2));
-            require((JsString)a2[2] == JsString{ "qwe123" });
+            require(a2[0].as_num() == Approx(1));
+            require(a2[1].as_num() == Approx(2));
+            require(a2[2].as_str() == JsString{ "qwe123" });
 
             require_throws(a2.at(3));
 
@@ -142,15 +142,15 @@ void test_json() {
             obj["asdf"] = JsString{ "asdfsdf" };
             obj["123"] = JsNumber{ 46 };
             require(obj.Size() == 2);
-            require((JsNumber)obj["123"] == JsNumber{ 46 });
-            require((JsString)obj["asdf"] == JsString{ "asdfsdf" });
+            require(obj["123"].as_num() == JsNumber{ 46 });
+            require(obj["asdf"].as_str() == JsString{ "asdfsdf" });
             std::stringstream ss;
             obj.Write(ss);
             JsObject _obj;
             require(_obj.Read(ss));
             require(_obj.Size() == 2);
-            require((JsNumber)_obj["123"] == Approx(46));
-            require((JsString)_obj["asdf"] == JsString{ "asdfsdf" });
+            require(_obj["123"].as_num() == Approx(46));
+            require(_obj["asdf"].as_str() == JsString{ "asdfsdf" });
 
             require_throws(_obj.at("non exists"));
 
@@ -189,68 +189,68 @@ void test_json() {
             // JsElement
             JsElement _el1(16);
             const JsElement &el1 = _el1;
-            require_nothrow((JsNumber)_el1);
-            require_nothrow((const JsNumber &)el1);
-            require_throws((JsString)_el1);
-            require_throws((const JsString &)el1);
-            require_throws((JsArray)_el1);
-            require_throws((const JsArray &)el1);
-            require_throws((JsObject)_el1);
-            require_throws((const JsObject &)el1);
-            require_throws((JsLiteral)_el1);
-            require_throws((const JsLiteral &)el1);
+            require_nothrow(_el1.as_num());
+            require_nothrow(el1.as_num());
+            require_throws(_el1.as_str());
+            require_throws(el1.as_str());
+            require_throws(_el1.as_arr());
+            require_throws(el1.as_arr());
+            require_throws(_el1.as_obj());
+            require_throws(el1.as_obj());
+            require_throws(_el1.as_lit());
+            require_throws(el1.as_lit());
 
             JsElement _el2("my string");
             const JsElement &el2 = _el2;
-            require_nothrow((JsString)_el2);
-            require_nothrow((const JsString &)el2);
-            require_throws((JsNumber)_el2);
-            require_throws((const JsNumber &)el2);
-            require_throws((JsArray)el2);
-            require_throws((const JsArray &)el2);
-            require_throws((JsObject)el2);
-            require_throws((const JsObject &)el2);
-            require_throws((JsLiteral)el2);
-            require_throws((const JsLiteral &)el2);
+            require_nothrow(_el2.as_str());
+            require_nothrow(el2.as_str());
+            require_throws(_el2.as_num());
+            require_throws(el2.as_num());
+            require_throws(_el2.as_arr());
+            require_throws(el2.as_arr());
+            require_throws(_el2.as_obj());
+            require_throws(el2.as_obj());
+            require_throws(_el2.as_lit());
+            require_throws(el2.as_lit());
 
             JsElement _el3(JS_TYPE_ARRAY);
             const JsElement &el3 = _el3;
-            require_nothrow((JsArray)_el3);
-            require_nothrow((const JsArray &)el3);
-            require_throws((JsNumber)_el3);
-            require_throws((const JsNumber &)el3);
-            require_throws((JsString)_el3);
-            require_throws((const JsString &)el3);
-            require_throws((JsObject)_el3);
-            require_throws((const JsObject &)el3);
-            require_throws((JsLiteral)_el3);
-            require_throws((const JsLiteral &)el3);
+            require_nothrow(_el3.as_arr());
+            require_nothrow(el3.as_arr());
+            require_throws(_el3.as_num());
+            require_throws(el3.as_num());
+            require_throws(_el3.as_str());
+            require_throws(el3.as_str());
+            require_throws(_el3.as_obj());
+            require_throws(el3.as_obj());
+            require_throws(_el3.as_lit());
+            require_throws(el3.as_lit());
 
             JsElement _el4(JS_TYPE_OBJECT);
             const JsElement &el4 = _el4;
-            require_nothrow((JsObject)_el4);
-            require_nothrow((const JsObject &)el4);
-            require_throws((JsNumber)_el4);
-            require_throws((const JsNumber &)el4);
-            require_throws((JsString)_el4);
-            require_throws((const JsString &)el4);
-            require_throws((JsArray)_el4);
-            require_throws((const JsArray &)el4);
-            require_throws((JsLiteral)_el4);
-            require_throws((const JsLiteral &)el4);
+            require_nothrow(_el4.as_obj());
+            require_nothrow(el4.as_obj());
+            require_throws(_el4.as_num());
+            require_throws(el4.as_num());
+            require_throws(_el4.as_str());
+            require_throws(el4.as_str());
+            require_throws(_el4.as_arr());
+            require_throws(el4.as_arr());
+            require_throws(_el4.as_lit());
+            require_throws(el4.as_lit());
 
             JsElement _el5(JS_NULL);
             const JsElement &el5 = _el5;
-            require_nothrow((JsLiteral)_el5);
-            require_nothrow((const JsLiteral &)el5);
-            require_throws((JsNumber)_el5);
-            require_throws((const JsNumber &)el5);
-            require_throws((JsString)_el5);
-            require_throws((const JsString &)el5);
-            require_throws((JsArray)_el5);
-            require_throws((const JsArray &)el5);
-            require_throws((JsObject)_el5);
-            require_throws((const JsObject &)el5);
+            require_nothrow(_el5.as_lit());
+            require_nothrow(el5.as_lit());
+            require_throws(_el5.as_num());
+            require_throws(el5.as_num());
+            require_throws(_el5.as_str());
+            require_throws(el5.as_str());
+            require_throws(_el5.as_arr());
+            require_throws(el5.as_arr());
+            require_throws(_el5.as_obj());
+            require_throws(el5.as_obj());
         }
     }
 
@@ -262,25 +262,25 @@ void test_json() {
         require(el.Read(ss));
 
 AGAIN1:
-        auto &root = (JsObject &)el;
+        JsObject &root = el.as_obj();
         require(root.Size() == 1);
-        JsObject &widget = (JsObject &)root["widget"];
+        JsObject &widget = root["widget"].as_obj();
         require(widget.Size() == 4);
         require(widget["debug"] == JsString{ "on" });
-        JsObject &window = (JsObject &)widget["window"];
+        JsObject &window = widget["window"].as_obj();
         require(window.Size() == 4);
         require(window["title"] == JsString{ "Sample Konfabulator Widget" });
         require(window["name"] == JsString{ "main_window" });
         require(window["width"] == JsNumber{ 500 });
         require(window["height"] == JsNumber{ 500 });
-        JsObject &image = (JsObject &)widget["image"];
+        JsObject &image = widget["image"].as_obj();
         require(image.Size() == 5);
         require(image["src"] == JsString{ "Images/Sun.png" });
         require(image["name"] == JsString{ "sun1" });
         require(image["hOffset"] == JsNumber{ -250 });
         require(image["vOffset"] == JsNumber{ 250 });
         require(image["alignment"] == JsString{ "center" });
-        JsObject &text = (JsObject &)widget["text"];
+        JsObject &text = widget["text"].as_obj();
         require(text.Size() == 8);
         require(text["data"] == JsString{ "Click Here" });
         require(text["size"] == JsNumber{ 36 });
@@ -308,17 +308,17 @@ AGAIN1:
         require(el.Read(ss));
 
 AGAIN2:
-        auto &root = (JsObject &)el;
+        JsObject &root = el.as_obj();
         require(root.Size() == 1);
-        JsObject &glossary = (JsObject &)root["glossary"];
+        JsObject &glossary = root["glossary"].as_obj();
         require(glossary.Size() == 2);
         require(glossary["title"] == JsString{ "example glossary" });
-        JsObject &gloss_div = (JsObject &)glossary["GlossDiv"];
+        JsObject &gloss_div = glossary["GlossDiv"].as_obj();
         require(gloss_div.Size() == 2);
         require(gloss_div["title"] == JsString{ "S" });
-        JsObject &gloss_list = (JsObject &)gloss_div["GlossList"];
+        JsObject &gloss_list = gloss_div["GlossList"].as_obj();
         require(gloss_list.Size() == 1);
-        JsObject &gloss_entry = (JsObject &)gloss_list["GlossEntry"];
+        JsObject &gloss_entry = gloss_list["GlossEntry"].as_obj();
         require(gloss_entry.Size() == 7);
         require(gloss_entry["ID"] == JsString{ "SGML" });
         require(gloss_entry["SortAs"] == JsString{ "SGML" });
@@ -326,10 +326,10 @@ AGAIN2:
         require(gloss_entry["Acronym"] == JsString{ "SGML" });
         require(gloss_entry["Abbrev"] == JsString{ "ISO 8879:1986" });
         require(gloss_entry["GlossSee"] == JsString{ "markup" });
-        JsObject &gloss_def = (JsObject &)gloss_entry["GlossDef"];
+        JsObject &gloss_def = gloss_entry["GlossDef"].as_obj();
         require(gloss_def.Size() == 2);
         require(gloss_def["para"] == JsString{ "A meta-markup language, used to create markup languages such as DocBook." });
-        JsArray &gloss_see_also = (JsArray &)gloss_def["GlossSeeAlso"];
+        JsArray &gloss_see_also = gloss_def["GlossSeeAlso"].as_arr();
         require(gloss_see_also.Size() == 2);
         require(gloss_see_also[0] == JsString{ "GML" });
         require(gloss_see_also[1] == JsString{ "XML" });
@@ -351,21 +351,21 @@ AGAIN2:
 AGAIN3:
         require(el.Read(ss));
 
-        auto &root = (JsObject &)el;
+        JsObject &root = el.as_obj();
         require(root.Size() == 1);
-        JsObject &menu = (JsObject &)root["menu"];
+        JsObject &menu = root["menu"].as_obj();
         require(menu.Size() == 3);
         require(menu["id"] == JsString{ "file" });
         require(menu["value"] == JsString{ "File" });
-        JsObject &popup = (JsObject &)menu["popup"];
+        JsObject &popup = menu["popup"].as_obj();
         require(popup.Size() == 1);
-        JsArray &menuitem = (JsArray &)popup["menuitem"];
+        JsArray &menuitem = popup["menuitem"].as_arr();
         require(menuitem.Size() == 3);
-        auto &_0 = (JsObject &)menuitem[0];
+        JsObject &_0 = menuitem[0].as_obj();
         require(_0.Size() == 2);
-        auto &_1 = (JsObject &)menuitem[1];
+        JsObject &_1 = menuitem[1].as_obj();
         require(_1.Size() == 2);
-        auto &_2 = (JsObject &)menuitem[2];
+        JsObject &_2 = menuitem[2].as_obj();
         require(_2.Size() == 2);
         require(_0["value"] == JsString{ "New" });
         require(_0["onclick"] == JsString{ "CreateNewDoc()" });
@@ -383,15 +383,4 @@ AGAIN3:
             goto AGAIN3;
         }
     }
-
-    /*{ // Initializer lists
-        JsArray arr = { JsNumber{ 0.0 }, JsNumber{ 0.0 }, JsNumber{ 1.0 }, JsNumber{ 2.0 }, JsString{ "str" }, JsArray{ JsString{ "qwe" }, JsNumber{ 4.0 } } };
-        require(arr.at(0) == JsNumber{ 0.0 });
-        require(arr.at(1) == JsNumber{ 0.0 });
-        require(arr.at(2) == JsNumber{ 1.0 });
-        require(arr.at(3) == JsNumber{ 2.0 });
-        require(arr.at(4) == JsString{ "str" });
-        require(((const JsArray &)arr.at(5)).at(0) == JsString{ "qwe" });
-        require(((const JsArray &)arr.at(5)).at(1) == JsNumber{ 4.0 });
-    }*/
 }
