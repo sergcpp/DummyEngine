@@ -202,18 +202,6 @@ public:
     const JsArray &as_arr() const;
     const JsObject &as_obj() const;
 
-    explicit operator JsLiteral &();
-    explicit operator JsNumber &();
-    explicit operator JsString &();
-    explicit operator JsArray &();
-    explicit operator JsObject &();
-
-    explicit operator const JsLiteral &() const;
-    explicit operator const JsNumber &() const;
-    explicit operator const JsString &() const;
-    explicit operator const JsArray &() const;
-    explicit operator const JsObject &() const;
-
     JsElement &operator=(JsElement &&rhs) noexcept;
     JsElement &operator=(const JsElement &rhs);
 
