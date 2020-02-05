@@ -116,9 +116,7 @@ struct JsArray {
         elements.push_back(el);
     }
 
-    void Push(JsElement &&el) {
-        elements.emplace_back(std::move(el));
-    }
+    void Push(JsElement&& el);
 
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
