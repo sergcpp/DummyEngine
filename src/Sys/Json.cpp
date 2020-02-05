@@ -119,6 +119,10 @@ bool JsArray::operator==(const JsArray &rhs) const {
     return std::equal(elements.begin(), elements.end(), rhs.elements.begin());
 }
 
+void JsArray::Push(JsElement&& el) {
+    elements.emplace_back(std::move(el));
+}
+
 bool JsArray::Read(std::istream &in) {
     char c;
     if (!in.read(&c, 1) || c != '[') {
