@@ -7,6 +7,10 @@
 #include <html5.h>
 #endif
 
+#ifndef RELEASE_FINAL
+#include <vtune/ittnotify.h>
+#endif
+
 #if defined(USE_GL_RENDER)
 #include <Ren/GL.h>
 #elif defined(USE_SW_RENDER)
@@ -29,7 +33,7 @@ namespace {
 
     const int KeycodeOffset = 8;
 
-    static const unsigned char ScancodeToHID_table[256] = {
+    const unsigned char ScancodeToHID_table[256] = {
             0,41,30,31,32,33,34,35,36,37,38,39,45,46,42,43,20,26,8,21,23,28,24,12,18,19,
             47,48,158,224,4,22,7,9,10,11,13,14,15,51,52,53,225,49,29,27,6,25,5,17,16,54,
             55,56,229,85,226,44,57,58,59,60,61,62,63,64,65,66,67,83,71,95,96,97,86,92,
@@ -63,9 +67,7 @@ DummyApp::DummyApp() {
     g_app = this;
 }
 
-DummyApp::~DummyApp() {
-
-}
+DummyApp::~DummyApp() = default;
 
 int DummyApp::Init(int w, int h) {
 #if !defined(__ANDROID__)
@@ -216,7 +218,17 @@ int DummyApp::Run(int argc, char *argv[]) {
         return -1;
     }
 
+#ifndef RELEASE_FINAL
+    __itt_thread_set_name("Main Thread");
+
+    __itt_domain *pFrameDomain = __itt_domain_create("Frame domain");
+    pFrameDomain->flags = 1;
+#endif
+
     while (!terminated()) {
+#ifndef RELEASE_FINAL
+        __itt_frame_begin_v3(pFrameDomain, nullptr);
+#endif
         this->PollEvents();
 
         this->Frame();
@@ -233,6 +245,9 @@ int DummyApp::Run(int argc, char *argv[]) {
         }
 #elif defined(USE_SW_RENDER)
         // TODO
+#endif
+#ifndef RELEASE_FINAL
+        __itt_frame_end_v3(pFrameDomain, nullptr);
 #endif
     }
 
@@ -260,8 +275,6 @@ void DummyApp::PollEvents() {
             if (key_code == KeyEscape) {
                 quit_ = true;
             } else {
-                const uint32_t key_code = ScancodeToHID(scan_code);
-
                 evt.type = RawInputEvent::EvKeyDown;
                 evt.key_code = key_code;
             }
@@ -295,8 +308,8 @@ void DummyApp::PollEvents() {
                 Resize(xev.xconfigure.width, xev.xconfigure.height);
 
                 evt.type = RawInputEvent::EvResize;
-                evt.point.x = xev.xconfigure.width;
-                evt.point.y = xev.xconfigure.height;
+                evt.point.x = (float)xev.xconfigure.width;
+                evt.point.y = (float)xev.xconfigure.height;
 
                 last_window_size[0] = xev.xconfigure.width;
                 last_window_size[1] = xev.xconfigure.height;

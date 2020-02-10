@@ -5,6 +5,10 @@
 #include <html5.h>
 #endif
 
+#ifndef RELEASE_FINAL
+#include <vtune/ittnotify.h>
+#endif
+
 #if defined(USE_GL_RENDER)
 #include <Ren/GL.h>
 #elif defined(USE_SW_RENDER)
@@ -164,6 +168,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 }
 
 int DummyApp::Init(int w, int h) {
+    BOOL dpi_result = SetProcessDPIAware();
+    (void)dpi_result;
+
     WNDCLASSEX window_class = {};
     window_class.cbSize = sizeof(WNDCLASSEX);
     window_class.style = CS_OWNDC | CS_VREDRAW | CS_HREDRAW;
@@ -380,9 +387,20 @@ int DummyApp::Run(int argc, char *argv[]) {
         return -1;
     }
 
+#ifndef RELEASE_FINAL
+    __itt_thread_set_name("Main Thread");
+
+    __itt_domain* pFrameDomain = __itt_domain_create("Frame domain");
+    pFrameDomain->flags = 1;
+#endif
+
     MSG msg;
     bool done = false;
     while (!done) {
+#ifndef RELEASE_FINAL
+        __itt_frame_begin_v3(pFrameDomain, nullptr);
+#endif
+
         while (PeekMessage(&msg, NULL, NULL, NULL, PM_REMOVE)) {
             if (msg.message == WM_QUIT) {
                 done = true;
@@ -394,6 +412,9 @@ int DummyApp::Run(int argc, char *argv[]) {
         this->Frame();
 
         SwapBuffers(device_context_);
+#ifndef RELEASE_FINAL
+        __itt_frame_end_v3(pFrameDomain, nullptr);
+#endif
     }
 
     this->Destroy();

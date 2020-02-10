@@ -5,6 +5,10 @@
 #include <fstream>
 #include <memory>
 
+#ifndef RELEASE_FINAL
+#include <vtune/ittnotify.h>
+#endif
+
 #include <Eng/GameStateManager.h>
 #include <Eng/Renderer/Renderer.h>
 #include <Eng/Scene/SceneManager.h>
@@ -722,6 +726,10 @@ bool GSBaseState::HandleInput(const InputManager::Event &evt) {
 }
 
 void GSBaseState::BackgroundProc() {
+#ifndef RELEASE_FINAL
+    __itt_thread_set_name("Renderer Frontend Thread");
+#endif
+
     std::unique_lock<std::mutex> lock(mtx_);
     while (!shutdown_) {
         while (!notified_) {
