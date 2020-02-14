@@ -122,18 +122,6 @@ void Ren::Context::Resize(int w, int h) {
 Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *load_status) {
     ProgramRef ref = programs_.FindByName(name);
 
-    std::string vs_source_str, fs_source_str;
-
-    if (vs_source) {
-        vs_source_str = glsl_defines_ + vs_source;
-        vs_source = vs_source_str.c_str();
-    }
-
-    if (fs_source) {
-        fs_source_str = glsl_defines_ + fs_source;
-        fs_source = fs_source_str.c_str();
-    }
-
     if (!ref) {
         ref = programs_.Add(name, vs_source, fs_source, load_status, log_);
     } else {
@@ -149,13 +137,6 @@ Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *vs_s
 
 Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *cs_source, eProgLoadStatus *load_status) {
     ProgramRef ref = programs_.FindByName(name);
-
-    std::string cs_source_str;
-
-    if (cs_source) {
-        cs_source_str = glsl_defines_ + cs_source;
-        cs_source = cs_source_str.c_str();
-    }
 
     if (!ref) {
         ref = programs_.Add(name, cs_source, load_status, log_);

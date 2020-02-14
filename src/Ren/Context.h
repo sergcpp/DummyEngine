@@ -39,10 +39,6 @@ protected:
 #if defined(USE_SW_RENDER)
     SWcontext       *sw_ctx_;
 #endif
-
-#if defined(USE_GL_RENDER)
-    std::string glsl_defines_;
-#endif
 public:
     Context(){}
     ~Context();

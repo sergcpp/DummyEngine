@@ -18,9 +18,9 @@ struct Binding {
     String  name;
     int     loc;
 };
-void ParseGLSLBindings(const std::string &shader_str, Binding *attr_bindings, int &attr_bindings_count,
-                                                      Binding *uniform_bindings, int &uniform_bindings_count,
-                                                      Binding *uniform_block_bindings, int &uniform_block_bindings_count, ILog *log);
+void ParseGLSLBindings(const char *shader_str, Binding *attr_bindings, int &attr_bindings_count,
+    Binding *uniform_bindings, int &uniform_bindings_count,
+    Binding *uniform_block_bindings, int &uniform_block_bindings_count, ILog *log);
 }
 
 Ren::Program::Program(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status, ILog *log) {
@@ -106,14 +106,12 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
     GLuint program = 0;
 
     if (shaders.vs_source && shaders.fs_source) {
-        std::string vs_source_str = shaders.vs_source, fs_source_str = shaders.fs_source;
-
-        GLuint v_shader = LoadShader(GL_VERTEX_SHADER, vs_source_str.c_str(), log);
+        const GLuint v_shader = LoadShader(GL_VERTEX_SHADER, shaders.vs_source, log);
         if (!v_shader) {
             log->Error("VertexShader %s error", name_.c_str());
         }
 
-        GLuint f_shader = LoadShader(GL_FRAGMENT_SHADER, fs_source_str.c_str(), log);
+        const GLuint f_shader = LoadShader(GL_FRAGMENT_SHADER, shaders.fs_source, log);
         if (!f_shader) {
             log->Error("FragmentShader %s error", name_.c_str());
         }
@@ -145,14 +143,14 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
             throw std::runtime_error("Program creation error!");
         }
 
-        ParseGLSLBindings(vs_source_str, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
-                          uniform_block_bindings, uniform_block_bindings_count, log);
-        ParseGLSLBindings(fs_source_str, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
-                          uniform_block_bindings, uniform_block_bindings_count, log);
+        ParseGLSLBindings(
+            shaders.vs_source, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
+            uniform_block_bindings, uniform_block_bindings_count, log);
+        ParseGLSLBindings(
+            shaders.fs_source, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
+            uniform_block_bindings, uniform_block_bindings_count, log);
     } else if (shaders.cs_source) {
-        std::string cs_source_str = shaders.cs_source;
-
-        GLuint c_shader = LoadShader(GL_COMPUTE_SHADER, cs_source_str.c_str(), log);
+        const GLuint c_shader = LoadShader(GL_COMPUTE_SHADER, shaders.cs_source, log);
         if (!c_shader) {
             log->Error("ComputeShader %s error", name_.c_str());
         }
@@ -183,8 +181,9 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
             throw std::runtime_error("Program creation error!");
         }
 
-        ParseGLSLBindings(cs_source_str, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
-                          uniform_block_bindings, uniform_block_bindings_count, log);
+        ParseGLSLBindings(
+            shaders.cs_source, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
+            uniform_block_bindings, uniform_block_bindings_count, log);
     }
 
     for (int i = 0; i < attr_bindings_count; i++) {
@@ -466,12 +465,12 @@ GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_s
 }
 #endif
 
-void Ren::ParseGLSLBindings(const std::string &shader_str, Binding *attr_bindings, int &attr_bindings_count,
+void Ren::ParseGLSLBindings(const char *shader_str, Binding *attr_bindings, int &attr_bindings_count,
                             Binding *uniform_bindings, int &uniform_bindings_count,
                             Binding *uniform_block_bindings, int &uniform_block_bindings_count, ILog *log) {
     const char *delims = " \r\n\t";
-    char const* p = shader_str.c_str() + shader_str.find("/*");
-    char const* q = strpbrk(p + 2, delims);
+    const char *p = strstr(shader_str, "/*");
+    const char *q = p ? strpbrk(p + 2, delims) : nullptr;
     int pass = 0;
 
     Binding *cur_bind_target = nullptr;
