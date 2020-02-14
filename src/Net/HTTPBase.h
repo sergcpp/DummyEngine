@@ -11,7 +11,8 @@ namespace Net {
     protected:
         std::string key_;
     public:
-        HTTPField(const std::string &key) : key_(key) {}
+        HTTPField(std::string key) : key_(std::move(key)) {}
+        virtual ~HTTPField() = default;
         const std::string &key() const {
             return key_;
         }
@@ -31,7 +32,7 @@ namespace Net {
         eType type;
         Charset charset;
         ContentType() : HTTPField("Content-Type"), type(TextHTML), charset(UTF_8) {}
-        virtual std::string str() const {
+        std::string str() const override {
             std::string ret;
             ret += TypeString(type) + "; ";
             if (type == TextHTML && charset == UTF_8) {
@@ -51,7 +52,7 @@ namespace Net {
     public:
         size_t len;
         ContentLen() : HTTPField("Content-Length"), len(0) {}
-        virtual std::string str() const {
+        std::string str() const override {
             std::string ret;
             ret += std::to_string(len);
             return ret;
@@ -61,7 +62,7 @@ namespace Net {
     public:
         std::string val;
         MessageBody() : HTTPField("") {}
-        virtual std::string str() const {
+        std::string str() const override {
             if (val.empty()) {
                 return "";
             }
@@ -71,8 +72,8 @@ namespace Net {
     class SimpleField : public HTTPField {
     public:
         std::string val;
-        SimpleField(const std::string &key, const std::string &val) : HTTPField(key), val(val) {}
-        virtual std::string str() const {
+        SimpleField(const std::string &key, std::string val) : HTTPField(key), val(std::move(val)) {}
+        std::string str() const override {
             return val;
         }
     };
@@ -82,9 +83,7 @@ namespace Net {
         ContentLen content_len_;
         MessageBody body_;
     public:
-        HTTPBase() {
-
-        }
+        HTTPBase() = default;
 
         void set_body(const std::string &body) {
             body_.val = body;
