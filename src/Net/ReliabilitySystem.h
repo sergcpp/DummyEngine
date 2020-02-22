@@ -57,18 +57,11 @@ public:
 
     void GetAcks(unsigned int **acks, int &count);
 
-    static int bit_index_for_sequence(unsigned int sequence, unsigned int ack, unsigned int max_sequence);
-    static unsigned int generate_ack_bits(unsigned int ack,
-                                          const PacketQueue &received_queue,
-                                          unsigned int max_sequence);
-    static void process_ack(unsigned int ack,
-                            unsigned int ack_bits,
-                            PacketQueue &pending_ack_queue,
-                            PacketQueue &acked_queue,
-                            std::vector<unsigned int> &acks,
-                            unsigned int &acked_packets,
-                            float &rtt,
-                            unsigned int max_sequence);
+    static unsigned int bit_index_for_sequence(unsigned int sequence, unsigned int ack, unsigned int max_sequence);
+    static unsigned int generate_ack_bits(unsigned int ack, const PacketQueue &received_queue, unsigned int max_sequence);
+    static void process_ack(
+            unsigned int ack, unsigned int ack_bits, PacketQueue &pending_ack_queue, PacketQueue &acked_queue,
+            std::vector<unsigned int> &acks, unsigned int &acked_packets, float &rtt, unsigned int max_sequence);
 
 protected:
     void AdvanceQueueTime(float dt_s);

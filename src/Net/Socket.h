@@ -39,12 +39,12 @@ namespace Net {
         Address remote_addr_;
     public:
         TCPSocket();
-        TCPSocket(TCPSocket &&rhs);
+        TCPSocket(TCPSocket &&rhs) noexcept;
         ~TCPSocket();
 
         TCPSocket(const TCPSocket &rhs) = delete;
         TCPSocket &operator=(const TCPSocket &rhs) = delete;
-        TCPSocket &operator=(TCPSocket &&rhs);
+        TCPSocket &operator=(TCPSocket &&rhs) noexcept;
 
         static TCPSocket PassClientConnection(TCPSocket &rhs) {
             TCPSocket ret;

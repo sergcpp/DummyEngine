@@ -229,8 +229,7 @@ namespace Net {
         };
 
         PMPSession(PMPProto proto, const Address &gateway_addr,
-                   unsigned short internal_port, unsigned short external_port,
-                   unsigned int lifetime = 7200);
+                   unsigned short internal_port, unsigned short external_port, unsigned int lifetime = 7200);
 
         Address local_addr() const {
             return sock_.local_addr();

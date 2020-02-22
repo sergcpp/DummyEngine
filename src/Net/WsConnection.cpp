@@ -51,8 +51,8 @@ Net::WsConnection::WsConnection(TCPSocket &&conn, const HTTPRequest &upgrade_req
         unsigned int sha1_digest[5];
         sha1(key, sha1_digest);
 
-        for (int i = 0; i < 5; i++) {
-            sha1_digest[i] = htonl(sha1_digest[i]);
+        for (unsigned int &i : sha1_digest) {
+            i = htonl(i);
         }
 
         key_hash = base64_encode((const unsigned char*)sha1_digest, 5 * sizeof(unsigned int));
@@ -69,12 +69,13 @@ Net::WsConnection::WsConnection(TCPSocket &&conn, const HTTPRequest &upgrade_req
     conn_.Send(answer.c_str(), (int)answer.length());
 }
 
-Net::WsConnection::WsConnection(WsConnection &&rhs) : conn_(std::move(rhs.conn_)), on_connection_close(move(rhs.on_connection_close)), should_mask_(rhs.should_mask_) { }
+Net::WsConnection::WsConnection(WsConnection &&rhs) noexcept
+    : conn_(std::move(rhs.conn_)), on_connection_close(move(rhs.on_connection_close)), should_mask_(rhs.should_mask_) { }
 
 int Net::WsConnection::Receive(void *data, int size) {
     int received = conn_.Receive(data, size);
-    if (received && received >= sizeof(WsHeader)) {
-        WsHeader *header = (WsHeader *)data;
+    if (received >= sizeof(WsHeader)) {
+        auto *header = (WsHeader *)data;
         if (header->fin) {
             if (header->opcode == WS_CONTINUATION) {
                 fprintf(stderr, "Continuation received\n");
@@ -128,7 +129,7 @@ int Net::WsConnection::Receive(void *data, int size) {
 bool Net::WsConnection::Send(const void *data, int size) {
     uint8_t buf[2048];
     uint8_t *payload = buf + sizeof(WsHeader);
-    WsHeader *header = (WsHeader *)buf;
+    auto *header = (WsHeader *)buf;
     header->opcode      = WS_BINARY_MESSAGE;
     header->reserved    = 0;
     header->fin         = 1;
@@ -143,7 +144,7 @@ bool Net::WsConnection::Send(const void *data, int size) {
     uint32_t mask = 0;
 
     if (should_mask_) {
-        mask = (uint32_t)rand();
+        mask = (uint32_t)rand();    // NOLINT
         *(uint32_t *)payload = mask;
         payload += 4;
     }
@@ -156,8 +157,8 @@ bool Net::WsConnection::Send(const void *data, int size) {
 
 void Net::WsConnection::ApplyMask(uint32_t mask, uint8_t *data, int size) {
     if (!mask) return;
-    uint8_t *m = (uint8_t *) &mask;
+    auto *m = (uint8_t *) &mask;
     for (int i = 0; i < size; i++) {
-        data[i] = data[i] ^ m[i & 3];
+        data[i] = data[i] ^ m[unsigned(i) & 3u];
     }
 }

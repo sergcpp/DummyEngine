@@ -82,12 +82,9 @@ namespace Net {
             client_address_ = client_address;
         }
 
-        void MakeMapRequest(PCPProto proto,
-                            uint16_t internal_port,
-                            uint16_t external_port,
-                            uint32_t lifetime,
-                            const Address &client_address,
-                            const PCPNonce &nonce) {
+        void MakeMapRequest(
+                PCPProto proto, uint16_t internal_port, uint16_t external_port, uint32_t lifetime,
+                const Address &client_address, const PCPNonce &nonce) {
             opcode_         = OP_MAP;
             proto_          = proto;
             internal_port_  = internal_port;
@@ -97,14 +94,10 @@ namespace Net {
             nonce_          = nonce;
         }
 
-        void MakePeerRequest(PCPProto proto,
-                             uint16_t internal_port,
-                             uint16_t external_port,
-                             uint32_t lifetime,
-                             const Address &external_address,
-                             uint16_t remote_port,
-                             const Address &remote_address,
-                             const PCPNonce &nonce) {
+        void MakePeerRequest(
+                PCPProto proto, uint16_t internal_port, uint16_t external_port, uint32_t lifetime,
+                const Address &external_address, uint16_t remote_port, const Address &remote_address,
+                const PCPNonce &nonce) {
             opcode_             = OP_PEER;
             proto_              = proto;
             internal_port_      = internal_port;
@@ -148,14 +141,9 @@ namespace Net {
             lifetime_   = 0;
         }
 
-        void MakeMapResponse(PCPProto proto,
-                             PCPResCode res_code,
-                             uint16_t internal_port,
-                             uint16_t external_port,
-                             uint32_t lifetime,
-                             uint32_t time,
-                             const Address &external_address,
-                             const PCPNonce &nonce) {
+        void MakeMapResponse(
+                PCPProto proto, PCPResCode res_code, uint16_t internal_port, uint16_t external_port, uint32_t lifetime,
+                uint32_t time, const Address &external_address, const PCPNonce &nonce) {
             opcode_             = OP_MAP;
             res_code_           = res_code;
             internal_port_      = internal_port;
@@ -167,16 +155,10 @@ namespace Net {
             proto_              = proto;
         }
 
-        void MakePeerResponse(PCPProto proto,
-                              PCPResCode res_code,
-                              uint16_t internal_port,
-                              uint16_t external_port,
-                              uint32_t lifetime,
-                              uint32_t time,
-                              const Address &external_address,
-                              uint16_t remote_port,
-                              const Address &remote_address,
-                              const PCPNonce &nonce) {
+        void MakePeerResponse(
+                PCPProto proto, PCPResCode res_code, uint16_t internal_port, uint16_t external_port, uint32_t lifetime,
+                uint32_t time, const Address &external_address, uint16_t remote_port, const Address &remote_address,
+                const PCPNonce &nonce) {
             opcode_             = OP_PEER;
             res_code_           = res_code;
             internal_port_      = internal_port;
@@ -202,21 +184,12 @@ namespace Net {
             IDLE_FAILED,
         };
 
-        PCPSession(PCPProto proto,
-                   const Address &pcp_server,
-                   uint16_t internal_port,
-                   uint16_t external_port,
-                   unsigned int lifetime = 7200)
-                : proto_(proto),
-                  pcp_server_(pcp_server),
-                  internal_port_(internal_port),
-                  external_port_(external_port),
-                  lifetime_(lifetime),
-                  err_code_(PCP_RES_SUCCESS),
-                  state_(REQUEST_MAPPING),
-                  main_timer_(0),
-                  request_timer_(0),
-                  request_counter_(0) {
+        PCPSession(
+                PCPProto proto, const Address &pcp_server, uint16_t internal_port, uint16_t external_port,
+                unsigned int lifetime = 7200)
+                : proto_(proto), pcp_server_(pcp_server), internal_port_(internal_port), external_port_(external_port),
+                  lifetime_(lifetime), err_code_(PCP_RES_SUCCESS), state_(REQUEST_MAPPING), main_timer_(0),
+                  request_timer_(0), request_counter_(0) {
             GenPCPNonce(&nonce_, sizeof(PCPNonce));
             rt_ = (1 + RAND()) * IRT;
 

@@ -11,7 +11,7 @@ namespace Net {
     protected:
         std::string key_;
     public:
-        HTTPField(std::string key) : key_(std::move(key)) {}
+        explicit HTTPField(std::string key) : key_(std::move(key)) {}
         virtual ~HTTPField() = default;
         const std::string &key() const {
             return key_;

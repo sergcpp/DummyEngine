@@ -11,10 +11,10 @@ namespace Net {
         TCPSocket   conn_;
         bool        should_mask_;
 
-        void ApplyMask(uint32_t mask, uint8_t *data, int size);
+        static void ApplyMask(uint32_t mask, uint8_t *data, int size);
     public:
         WsConnection(TCPSocket &&conn, const HTTPRequest &upgrade_req, bool should_mask = false);
-        WsConnection(WsConnection &&rhs);
+        WsConnection(WsConnection &&rhs) noexcept;
 
         Address remote_addr() const {
             return conn_.remote_addr();

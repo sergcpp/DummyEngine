@@ -12,10 +12,10 @@
 bool Net::GenPCPNonce(void *buf, int len) {
     if (len < 12) return false;
 
-    int32_t *p = (int32_t *)buf;
-    p[0] = rand();
-    p[1] = rand();
-    p[2] = rand();
+    auto *p = (int32_t *)buf;
+    p[0] = rand();  // NOLINT
+    p[1] = rand();  // NOLINT
+    p[2] = rand();  // NOLINT
 
     return true;
 }
@@ -23,13 +23,13 @@ bool Net::GenPCPNonce(void *buf, int len) {
 /*************** PCPRequest ***************/
 
 bool Net::PCPRequest::Read(const void *buf, int size) {
-    uint8_t *p = (uint8_t *)buf;
+    auto *p = (uint8_t *)buf;
 
     if (size < 24) return false;
 
-    if (p[0] != 2 || (p[1] & (1 << 7))) return false; // 0b10000000
+    if (p[0] != 2 || (p[1] & (1u << 7u))) return false; // 0b10000000
 
-    opcode_ = (PCPOpCode)(p[1] & ((1 << 7) - 1)); // 0b01111111
+    opcode_ = (PCPOpCode)(p[1] & ((1u << 7u) - 1)); // 0b01111111
 
     lifetime_ = ntohl(*(uint32_t*)(&p[4]));
 
@@ -71,7 +71,7 @@ bool Net::PCPRequest::Read(const void *buf, int size) {
 }
 
 int Net::PCPRequest::Write(void *buf, int size) const {
-    uint8_t *p = (uint8_t *)buf;
+    auto *p = (uint8_t *)buf;
 
     if (opcode_ == OP_NONE || size < 24) return -1;
 
@@ -82,13 +82,13 @@ int Net::PCPRequest::Write(void *buf, int size) const {
     p[1] = 0;
 
     // opcode
-    p[1] |= opcode_ & 0xFF;
+    p[1] |= uint8_t(opcode_) & 0xFFu;
 
     // reserved
     p[2] = 0;
     p[3] = 0;
 
-    // filetime
+    // lifetime
     *(uint32_t*)(&p[4]) = htonl(lifetime_);
 
     // ipv4 mapped to ipv6
@@ -167,13 +167,13 @@ int Net::PCPRequest::Write(void *buf, int size) const {
 /*************** PCPResponse ***************/
 
 bool Net::PCPResponse::Read(const void *buf, int size) {
-    uint8_t *p = (uint8_t *)buf;
+    auto *p = (uint8_t *)buf;
 
     if (size < 24) return false;
 
-    if (p[0] != 2 || !(p[1] & (1 << 7))) return false; // 0b10000000
+    if (p[0] != 2 || !(p[1] & (1u << 7u))) return false; // 0b10000000
 
-    opcode_ = (PCPOpCode)(p[1] & ((1 << 7) - 1)); // 0b01111111
+    opcode_ = (PCPOpCode)(p[1] & ((1u << 7u) - 1)); // 0b01111111
     res_code_ = (PCPResCode)p[3];
 
     lifetime_ = ntohl(*(uint32_t*)(&p[4]));
@@ -216,7 +216,7 @@ bool Net::PCPResponse::Read(const void *buf, int size) {
 }
 
 int Net::PCPResponse::Write(void *buf, int size) const {
-    uint8_t *p = (uint8_t *)buf;
+    auto *p = (uint8_t *)buf;
 
     if (opcode_ == OP_NONE || size < 24) return -1;
 
@@ -224,15 +224,15 @@ int Net::PCPResponse::Write(void *buf, int size) const {
     p[0] = 2;
 
     // response
-    p[1] = 1 << 7; // 0b10000000
+    p[1] = 1u << 7u; // 0b10000000
 
     // opcode
-    p[1] |= opcode_ & 0xFF;
+    p[1] |= uint8_t(opcode_) & 0xFFu;
 
     // reserved
     p[2] = 0;
 
-    p[3] = res_code_ & 0xFF;
+    p[3] = uint8_t(res_code_) & 0xFFu;
 
     *(uint32_t*)(&p[4]) = htonl(lifetime_);
     *(uint32_t*)(&p[8]) = htonl(time_);
@@ -312,8 +312,7 @@ void Net::PCPSession::Update(unsigned int dt_ms) {
 
     if (state_ == REQUEST_MAPPING) {
         if (main_timer_ >= request_timer_) {
-            if ((MRC && request_counter_ >= MRC) ||
-                (MRD && main_timer_ >= MRD * 1000)) {
+            if ((MRC && request_counter_ >= MRC) || (MRD && main_timer_ >= MRD * 1000)) {
                 state_ = IDLE_FAILED;
                 return;
             }
@@ -326,7 +325,7 @@ void Net::PCPSession::Update(unsigned int dt_ms) {
             sock_.Send(pcp_server_, buf, size);
 
             request_counter_++;
-            request_timer_ += rt_ * 1000;
+            request_timer_ += (unsigned int)(rt_ * 1000);
             rt_ = RT(rt_);
         }
 
@@ -349,7 +348,7 @@ void Net::PCPSession::Update(unsigned int dt_ms) {
             }
         }
     } else if (state_ == IDLE_MAPPED) {
-        if (main_timer_ - mapped_time_ > (5.0f/8) * lifetime_) {
+        if (float(main_timer_ - mapped_time_) > (5.0f/8) * float(lifetime_)) {
             rt_ = (1 + RAND()) * IRT;
             state_ = REQUEST_MAPPING;
         }

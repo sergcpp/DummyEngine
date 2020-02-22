@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <string>
 
 namespace Net {
@@ -9,7 +11,7 @@ namespace Net {
             address_ = 0;
             port_ = 0;
         }
-        Address(unsigned char a, unsigned char b, unsigned char c, unsigned char d, unsigned short port) {
+        Address(uint8_t a, uint8_t b, uint8_t c, uint8_t d, uint16_t port) {
             address_ = (a << 24) | (b << 16) | (c << 8) | d;
             port_ = port;
         }
@@ -18,22 +20,22 @@ namespace Net {
             port_ = port;
         }
         Address(const char *str);
-        unsigned int address() const {
+        uint32_t address() const {
             return address_;
         }
-        unsigned char a() const {
+        uint8_t a() const {
             return (unsigned char)(address_ >> 24);
         }
-        unsigned char b() const {
+        uint8_t b() const {
             return (unsigned char)(address_ >> 16);
         }
-        unsigned char c() const {
+        uint8_t c() const {
             return (unsigned char)(address_ >> 8);
         }
-        unsigned char d() const {
+        uint8_t d() const {
             return (unsigned char)(address_);
         }
-        unsigned short port() const {
+        uint16_t port() const {
             return port_;
         }
 
@@ -59,7 +61,7 @@ namespace Net {
             return false;
         }
     private:
-        unsigned int address_;
-        unsigned short port_;
+        uint32_t address_;
+        uint16_t port_;
     };
 }

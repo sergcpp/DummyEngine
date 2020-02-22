@@ -1,7 +1,7 @@
 #pragma warning(disable : 4996)
 #include "Address.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #ifdef _WIN32
     #include <winsock2.h>

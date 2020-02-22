@@ -26,10 +26,8 @@ namespace Net {
         static void WriteInteger(unsigned char *data, unsigned int value);
         static void WriteHeader(unsigned char *header, unsigned int sequence, unsigned int ack, unsigned int ack_bits);
         static void ReadInteger(const unsigned char *data, unsigned int &value);
-        static void ReadHeader(const unsigned char *header,
-            unsigned int &sequence,
-            unsigned int &ack,
-            unsigned int &ack_bits);
+        static void ReadHeader(
+                const unsigned char *header, unsigned int &sequence, unsigned int &ack, unsigned int &ack_bits);
 
     private:
         void ClearData() {

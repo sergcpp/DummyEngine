@@ -46,7 +46,7 @@ int Net::ReliableUDPConnection::ReceivePacket(unsigned char data[], int size) {
     }
     unsigned char packet[MAX_PACKET_SIZE];
     int received_bytes = UDPConnection::ReceivePacket(packet, size + header_size);
-    if (received_bytes == 0 || received_bytes < header_size) {
+    if (received_bytes < header_size) {
         return 0;
     }
     unsigned int packet_sequence = 0,
@@ -69,26 +69,26 @@ void Net::ReliableUDPConnection::Update(float dt_s) {
 }
 
 void Net::ReliableUDPConnection::WriteInteger(unsigned char *data, unsigned int value) {
-    data[0] = (unsigned char) (value >> 24);
-    data[1] = (unsigned char) ((value >> 16) & 0xFF);
-    data[2] = (unsigned char) ((value >> 8) & 0xFF);
-    data[3] = (unsigned char) (value & 0xFF);
+    data[0] = (unsigned char) (value >> 24u);
+    data[1] = (unsigned char) ((value >> 16u) & 0xFFu);
+    data[2] = (unsigned char) ((value >> 8u) & 0xFFu);
+    data[3] = (unsigned char) (value & 0xFFu);
 }
 
-void Net::ReliableUDPConnection::WriteHeader(unsigned char *header, unsigned int sequence, unsigned int ack,
-                                     unsigned int ack_bits) {
+void Net::ReliableUDPConnection::WriteHeader(
+        unsigned char *header, unsigned int sequence, unsigned int ack, unsigned int ack_bits) {
     WriteInteger(header, sequence);
     WriteInteger(header + 4, ack);
     WriteInteger(header + 8, ack_bits);
 }
 
 void Net::ReliableUDPConnection::ReadInteger(const unsigned char *data, unsigned int &value) {
-    value = (((unsigned int) data[0] << 24) | ((unsigned int) data[1] << 16) |
-             ((unsigned int) data[2] << 8) | ((unsigned int) data[3]));
+    value = (((unsigned int) data[0] << 24u) | ((unsigned int) data[1] << 16u) |
+             ((unsigned int) data[2] << 8u) | ((unsigned int) data[3]));
 }
 
-void Net::ReliableUDPConnection::ReadHeader(const unsigned char *header, unsigned int &sequence, unsigned int &ack,
-                                    unsigned int &ack_bits) {
+void Net::ReliableUDPConnection::ReadHeader(
+        const unsigned char *header, unsigned int &sequence, unsigned int &ack, unsigned int &ack_bits) {
     ReadInteger(header, sequence);
     ReadInteger(header + 4, ack);
     ReadInteger(header + 8, ack_bits);

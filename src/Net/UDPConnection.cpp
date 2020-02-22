@@ -6,7 +6,7 @@
 #include "hash/Crc32.h"
 
 Net::UDPConnection::UDPConnection(unsigned int protocol_id, float timeout_s)
-: protocol_id_(protocol_id), timeout_s_(timeout_s), running_(false), mode_(NONE) {
+        : protocol_id_(protocol_id), timeout_s_(timeout_s), running_(false), mode_(NONE) {
     ClearData();
 }
 
@@ -85,18 +85,18 @@ bool Net::UDPConnection::SendPacket(const unsigned char data[], int size) {
     }
 #ifndef __EMSCRIPTEN__
     unsigned char packet[MAX_PACKET_SIZE];
-    packet[0] = (unsigned char)(protocol_id_ >> 24);
-    packet[1] = (unsigned char)((protocol_id_ >> 16) & 0xFF);
-    packet[2] = (unsigned char)((protocol_id_ >> 8) & 0xFF);
-    packet[3] = (unsigned char)((protocol_id_) & 0xFF);
+    packet[0] = (unsigned char)(protocol_id_ >> 24u);
+    packet[1] = (unsigned char)((protocol_id_ >> 16u) & 0xFFu);
+    packet[2] = (unsigned char)((protocol_id_ >> 8u) & 0xFFu);
+    packet[3] = (unsigned char)((protocol_id_) & 0xFFu);
     memcpy(&packet[4], data, size);
 
     {   // compute crc32 and use it instead protocol id
         uint32_t crc = crc32_fast(packet, size + 4);
-        packet[0] = (unsigned char)(crc >> 24);
-        packet[1] = (unsigned char)((crc >> 16) & 0xFF);
-        packet[2] = (unsigned char)((crc >> 8) & 0xFF);
-        packet[3] = (unsigned char)((crc) & 0xFF);
+        packet[0] = (unsigned char)(crc >> 24u);
+        packet[1] = (unsigned char)((crc >> 16u) & 0xFFu);
+        packet[2] = (unsigned char)((crc >> 8u) & 0xFFu);
+        packet[3] = (unsigned char)((crc) & 0xFFu);
     }
 
     return socket_.Send(address_, packet, size + 4);
@@ -112,18 +112,18 @@ int Net::UDPConnection::ReceivePacket(unsigned char data[], int size) {
     assert(size + 4 <= MAX_PACKET_SIZE);
     unsigned char packet[MAX_PACKET_SIZE];
     int bytes_read = socket_.Receive(sender, packet, size + 4);
-    if (bytes_read == 0 || bytes_read <= 4) {
+    if (bytes_read <= 4) {
         return 0;
     }
 
     {   // check protocol id hashsum
-        uint32_t crc = (((unsigned int)packet[0] << 24) | ((unsigned int)packet[1] << 16) |
-                        ((unsigned int)packet[2] << 8) | ((unsigned int)packet[3]));
+        uint32_t crc = (((unsigned int)packet[0] << 24u) | ((unsigned int)packet[1] << 16u) |
+                        ((unsigned int)packet[2] << 8u) | ((unsigned int)packet[3]));
 
-        packet[0] = (unsigned char)(protocol_id_ >> 24);
-        packet[1] = (unsigned char)((protocol_id_ >> 16) & 0xFF);
-        packet[2] = (unsigned char)((protocol_id_ >> 8) & 0xFF);
-        packet[3] = (unsigned char)((protocol_id_)& 0xFF);
+        packet[0] = (unsigned char)(protocol_id_ >> 24u);
+        packet[1] = (unsigned char)((protocol_id_ >> 16u) & 0xFFu);
+        packet[2] = (unsigned char)((protocol_id_ >> 8u) & 0xFFu);
+        packet[3] = (unsigned char)((protocol_id_) & 0xFFu);
 
         uint32_t crc_check = crc32_fast(packet, bytes_read);
 

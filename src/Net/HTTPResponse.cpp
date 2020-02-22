@@ -1,7 +1,7 @@
 #include "HTTPResponse.h"
 
-Net::HTTPResponse::HTTPResponse(int resp_code, const std::string &status_line)
-        : resp_code_(resp_code), status_line_(status_line), content_length_(0) {
+Net::HTTPResponse::HTTPResponse(int resp_code, std::string status_line)
+        : resp_code_(resp_code), status_line_(std::move(status_line)), content_length_(0) {
     if (status_line_.empty() && resp_code_ == 200) {
         status_line_ = "OK";
     }

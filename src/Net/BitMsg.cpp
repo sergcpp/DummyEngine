@@ -7,35 +7,27 @@
 #include <string>
 
 namespace {
-#define MASK_FIRST_N(x) (uint64_t) ((1LL << (x)) - 1)
+#define MASK_FIRST_N(x) (uint64_t) ((1ull << (x)) - 1)
 #define MFN(x) MASK_FIRST_N(x)
-    uint64_t mask_first_n_bits[33] = { MFN(0x00), MFN(0x01), MFN(0x02), MFN(0x03),
-                                       MFN(0x04), MFN(0x05), MFN(0x06), MFN(0x07),
-                                       MFN(0x08), MFN(0x09), MFN(0x0A), MFN(0x0B),
-                                       MFN(0x0C), MFN(0x0D), MFN(0x0E), MFN(0x0F),
-                                       MFN(0x10), MFN(0x11), MFN(0x12), MFN(0x13),
-                                       MFN(0x14), MFN(0x15), MFN(0x16), MFN(0x17),
-                                       MFN(0x18), MFN(0x19), MFN(0x1A), MFN(0x1B),
-                                       MFN(0x1C), MFN(0x1D), MFN(0x1E), MFN(0x1F), 0xFFFFFFFF};
+    uint64_t mask_first_n_bits[33] = {
+        MFN(0x00u), MFN(0x01u), MFN(0x02u), MFN(0x03u),
+        MFN(0x04u), MFN(0x05u), MFN(0x06u), MFN(0x07u),
+        MFN(0x08u), MFN(0x09u), MFN(0x0Au), MFN(0x0Bu),
+        MFN(0x0Cu), MFN(0x0Du), MFN(0x0Eu), MFN(0x0Fu),
+        MFN(0x10u), MFN(0x11u), MFN(0x12u), MFN(0x13u),
+        MFN(0x14u), MFN(0x15u), MFN(0x16u), MFN(0x17u),
+        MFN(0x18u), MFN(0x19u), MFN(0x1Au), MFN(0x1Bu),
+        MFN(0x1Cu), MFN(0x1Du), MFN(0x1Eu), MFN(0x1Fu), 0xFFFFFFFFu
+    };
 }
 
-Net::BitMsg::BitMsg(uint8_t *p_data, size_t len) : write_bit_(0),
-                                              read_bit_(0),
-                                              read_pos_(0),
-                                              temp_val_(0),
-                                              write_data_(p_data),
-                                              read_data_(p_data),
-                                              len_(0),
-                                              cap_(len) {}
+Net::BitMsg::BitMsg(uint8_t *p_data, size_t len)
+        : write_bit_(0), read_bit_(0), read_pos_(0), temp_val_(0), write_data_(p_data), read_data_(p_data),
+          len_(0), cap_(len) {}
 
-Net::BitMsg::BitMsg(const uint8_t *p_data, size_t len) : write_bit_(0),
-                                                    read_bit_(0),
-                                                    read_pos_(0),
-                                                    temp_val_(0),
-                                                    write_data_(nullptr),
-                                                    read_data_(p_data),
-                                                    len_(len),
-                                                    cap_(len) {}
+Net::BitMsg::BitMsg(const uint8_t *p_data, size_t len)
+        : write_bit_(0), read_bit_(0), read_pos_(0), temp_val_(0), write_data_(nullptr), read_data_(p_data),
+          len_(len), cap_(len) {}
 
 void Net::BitMsg::WriteBits(int val, int num_bits) {
     assert(write_data_);
@@ -69,17 +61,17 @@ void Net::BitMsg::WriteBits(int val, int num_bits) {
         throw std::runtime_error("Overflow");
     }
 
-    temp_val_ |= (((int64_t)val) & mask_first_n_bits[num_bits]) << write_bit_;
+    temp_val_ |= (((uint64_t)val) & mask_first_n_bits[num_bits]) << uint64_t(write_bit_);
     write_bit_ += num_bits;
 
     while (write_bit_ >= 8) {
-        write_data_[len_++] = /*(uint8_t)*/(temp_val_ & 255);
-        temp_val_ >>= 8;
+        write_data_[len_++] = /*(uint8_t)*/(temp_val_ & 255u);
+        temp_val_ >>= 8u;
         write_bit_ -= 8;
     }
 
     if (write_bit_ > 0) {
-        write_data_[len_] = (uint8_t)(temp_val_ & 255);
+        write_data_[len_] = (uint8_t)(temp_val_ & 255u);
     }
 }
 

@@ -34,14 +34,14 @@
 
 class Net::SocketContext {
 public:
-    SocketContext() {
-        srand((unsigned int)time(0));
+    SocketContext() {   // NOLINT
+        //srand((unsigned int)time(nullptr));
 #ifdef _WIN32
         WSADATA WsaData;
         WSAStartup(MAKEWORD(2, 2), &WsaData);
 #endif
     }
-    ~SocketContext() {
+    ~SocketContext() {  // NOLINT
 #ifdef _WIN32
         WSACleanup();
 #endif
@@ -61,11 +61,11 @@ namespace {
         if (gethostname(hostname, sizeof(hostname)) != -1) {
             struct hostent *phe = gethostbyname(hostname);
             int i = 0;
-            while (phe != NULL && phe->h_addr_list[i] != NULL) {
-                struct in_addr addr;
+            while (phe != nullptr && phe->h_addr_list[i] != nullptr) {
+                struct in_addr addr;    // NOLINT
                 memcpy(&addr, phe->h_addr_list[i++], sizeof(struct in_addr));
                 local_addr = ntohl(addr.s_addr);
-                unsigned char a = (unsigned char)(local_addr >> 24);
+                auto a = (unsigned char)(local_addr >> 24u);
                 if (a == 192 || a == 10 || a == 172) {
                     break;
                 }
@@ -126,7 +126,7 @@ void Net::UDPSocket::Open(unsigned short port, bool reuse_addr) {
     }
 #endif
 
-    sockaddr_in address;
+    sockaddr_in address;    // NOLINT
     memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
@@ -145,7 +145,7 @@ void Net::UDPSocket::Open(unsigned short port, bool reuse_addr) {
 
     unsigned int local_addr = GetLocalAddr();
 
-    struct sockaddr_in sin;
+    struct sockaddr_in sin; // NOLINT
     socklen_t addrlen = sizeof(sin);
     if (getsockname(handle_, (struct sockaddr *)&sin, &addrlen) == 0 &&
         sin.sin_family == AF_INET &&
@@ -177,7 +177,7 @@ bool Net::UDPSocket::Send(const Address &destination, const void *data, int size
         return false;
     }
 
-    sockaddr_in address;
+    sockaddr_in address;    // NOLINT
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = htonl(destination.address());
     address.sin_port = htons((unsigned short)destination.port());
@@ -195,7 +195,7 @@ int Net::UDPSocket::Receive(Address &sender, void *data, int size) {
         return 0;
     }
 
-    sockaddr_in from;
+    sockaddr_in from;   // NOLINT
     socklen_t from_len = sizeof(sockaddr_in);
 
     int received_bytes = (int)recvfrom(handle_, (char *) data, (size_t)size, 0, (sockaddr *) &from, &from_len);
@@ -213,14 +213,14 @@ int Net::UDPSocket::Receive(Address &sender, void *data, int size) {
 }
 
 bool Net::UDPSocket::JoinMulticast(const Address &addr) {
-    struct ip_mreq mreq;
+    struct ip_mreq mreq;    // NOLINT
     mreq.imr_interface.s_addr = htonl(local_addr_.address());
     mreq.imr_multiaddr.s_addr = htonl(addr.address());
     return setsockopt(handle_, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *) &mreq, sizeof(mreq)) == 0;
 }
 
 bool Net::UDPSocket::DropMulticast(const Address &addr) {
-    struct ip_mreq mreq;
+    struct ip_mreq mreq;    // NOLINT
     mreq.imr_interface.s_addr = htonl(local_addr_.address());
     mreq.imr_multiaddr.s_addr = htonl(addr.address());
     return setsockopt(handle_, IPPROTO_IP, IP_DROP_MEMBERSHIP, (const char *) &mreq, sizeof(mreq)) == 0;
@@ -238,10 +238,8 @@ Net::TCPSocket::TCPSocket() : handle_(0), connection_(0) {
     }
 }
 
-Net::TCPSocket::TCPSocket(TCPSocket &&rhs) : context_(move(rhs.context_)),
-                                        handle_(rhs.handle_),
-                                        connection_(rhs.connection_),
-                                        remote_addr_(rhs.remote_addr_) {
+Net::TCPSocket::TCPSocket(TCPSocket &&rhs) noexcept
+        : context_(move(rhs.context_)), handle_(rhs.handle_), connection_(rhs.connection_), remote_addr_(rhs.remote_addr_) {
     rhs.handle_      = 0;
     rhs.connection_  = 0;
     rhs.remote_addr_ = Address();
@@ -252,7 +250,7 @@ Net::TCPSocket::~TCPSocket() {
     CloseClient();
 }
 
-Net::TCPSocket &Net::TCPSocket::operator=(TCPSocket &&rhs) {
+Net::TCPSocket &Net::TCPSocket::operator=(TCPSocket &&rhs) noexcept {
     context_        = move(rhs.context_);
     handle_         = rhs.handle_;
     connection_     = rhs.connection_;
@@ -278,7 +276,7 @@ void Net::TCPSocket::Open(unsigned short port, bool reuse_addr) {
     }
 #endif
 
-    sockaddr_in address;
+    sockaddr_in address;    // NOLINT
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(port);
@@ -326,7 +324,7 @@ bool Net::TCPSocket::Accept(bool is_blocking) {
         return false;
     }
 
-    sockaddr_in from;
+    sockaddr_in from;   // NOLINT
     socklen_t from_len = sizeof(from);
 
     connection_ = accept(handle_, (struct sockaddr *)&from, &from_len);
@@ -349,7 +347,7 @@ bool Net::TCPSocket::Connect(const Address &dest) {
         return false;
     }
 
-    sockaddr_in address;
+    sockaddr_in address;    // NOLINT
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = htonl(dest.address());
     address.sin_port = htons((unsigned short)dest.port());

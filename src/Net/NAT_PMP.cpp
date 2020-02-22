@@ -28,9 +28,8 @@ void Net::PMPSession::Update(unsigned int dt_ms) {
         Address sender;
         int size = sock_.Receive(sender, recv_buf, sizeof(recv_buf));
         if (size == sizeof(PMPExternalIPResponse) && sender == gateway_addr_) {
-            auto *resp = (PMPExternalIPResponse *) recv_buf;
-            if (resp->vers() == 0 &&
-                resp->op() == 128 + OP_EXTERNAL_IP_REQUEST) {
+            const auto *resp = reinterpret_cast<const PMPExternalIPResponse *>(recv_buf);
+            if (resp->vers() == 0 && resp->op() == 128 + OP_EXTERNAL_IP_REQUEST) {
 
                 if (resp->res_code() == PMP_RES_SUCCESS) {
                     external_ip_ = Address(resp->ip(), 0);
@@ -45,9 +44,8 @@ void Net::PMPSession::Update(unsigned int dt_ms) {
                 }
             }
         } else if (size == sizeof(PMPUnsupportedVersionResponse) && sender == gateway_addr_) {
-            auto *resp = (PMPUnsupportedVersionResponse *) recv_buf;
-            if (resp->vers() == 0 &&
-                resp->op() == 128 + OP_EXTERNAL_IP_REQUEST) {
+            const auto *resp = reinterpret_cast<const PMPUnsupportedVersionResponse *>(recv_buf);
+            if (resp->vers() == 0 && resp->op() == 128 + OP_EXTERNAL_IP_REQUEST) {
                 state_ = IDLE_RETRIEVE_EXTERNAL_IP_ERROR;
             }
         }
@@ -66,10 +64,9 @@ void Net::PMPSession::Update(unsigned int dt_ms) {
 
         Address sender;
         if (sock_.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(PMPMappingResponse) && sender == gateway_addr_) {
-            auto *resp = (PMPMappingResponse *) recv_buf;
+            const auto *resp = reinterpret_cast<const PMPMappingResponse *>(recv_buf);
             if (resp->vers() == 0 &&
-                resp->op() ==
-                128 + (proto_ == PMP_UDP ? OP_MAP_UDP_REQUEST : OP_MAP_TCP_REQUEST)) {
+                resp->op() == 128 + (proto_ == PMP_UDP ? OP_MAP_UDP_REQUEST : OP_MAP_TCP_REQUEST)) {
                 if (resp->res_code() == PMP_RES_SUCCESS) {
                     time_ = resp->time();
                     state_ = IDLE_MAPPED;
@@ -82,9 +79,8 @@ void Net::PMPSession::Update(unsigned int dt_ms) {
     } else if (state_ == IDLE_MAPPED) {
         Address sender;
         if (multicast_listen_sock_.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(PMPExternalIPResponse) && sender.port() == gateway_addr_.port()) {
-            auto *resp = (PMPExternalIPResponse *) recv_buf;
-            if (resp->vers() == 0 &&
-                resp->op() == 128 + OP_EXTERNAL_IP_REQUEST) {
+            const auto *resp = reinterpret_cast<const PMPExternalIPResponse *>(recv_buf);
+            if (resp->vers() == 0 && resp->op() == 128 + OP_EXTERNAL_IP_REQUEST) {
 
                 Address new_external_ip = Address(resp->ip(), 0);
 
