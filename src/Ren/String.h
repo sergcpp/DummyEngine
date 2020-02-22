@@ -58,7 +58,7 @@ public:
         }
     }
 
-    BasicString(BasicString &&rhs) {
+    BasicString(BasicString &&rhs) noexcept {
         len_ = rhs.len_;
         rhs.len_ = 0;
         str_ = rhs.str_;
@@ -84,7 +84,7 @@ public:
         return *this;
     }
 
-    BasicString &operator=(BasicString &&rhs) {
+    BasicString &operator=(BasicString &&rhs) noexcept {
         Release();
 
         len_ = rhs.len_;

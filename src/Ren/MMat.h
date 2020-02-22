@@ -11,7 +11,7 @@ T Pi() {
 template <typename T, int M, int N>
 class Mat : public Vec<Vec<T, N>, M> {
 public:
-    Mat(eUninitialized) noexcept {}
+    explicit Mat(eUninitialized) noexcept {}
     Mat() noexcept : Mat(T(1)) {}
     explicit Mat(T v) noexcept {
         for (int i = 0; i < M; i++) {
@@ -37,7 +37,7 @@ public:
     }
 
     template <typename... Tail>
-    Mat(typename std::enable_if<sizeof...(Tail)+1 == M, Vec<T, N>>::type head, Tail... tail) noexcept
+    explicit Mat(typename std::enable_if<sizeof...(Tail)+1 == M, Vec<T, N>>::type head, Tail... tail) noexcept
         : Vec<Vec<T, N>, M> { head, tail... } {
     }
 
@@ -108,7 +108,7 @@ public:
     }
 
     friend Mat<T, M, N> operator+(const Mat<T, M, N> &lhs, const Mat<T, M, N> &rhs) {
-        Mat<T, M, N> res = { Uninitialize };
+        auto res = Mat<T, M, N>{ Uninitialize };
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs.data_[i] + rhs.data_[i];
         }
@@ -116,7 +116,7 @@ public:
     }
 
     friend Mat<T, M, N> operator-(const Mat<T, M, N> &lhs, const Mat<T, M, N> &rhs) {
-        Mat<T, M, N> res = { Uninitialize };
+        auto res = Mat<T, M, N>{ Uninitialize };
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs.data_[i] - rhs.data_[i];
         }
@@ -124,7 +124,7 @@ public:
     }
 
     friend Mat<T, M, N> operator/(const Mat<T, M, N> &lhs, const Mat<T, M, N> &rhs) {
-        Mat<T, M, N> res = { Uninitialize };
+        auto res = Mat<T, M, N>{ Uninitialize };
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs.data_[i] / rhs.data_[i];
         }
@@ -132,7 +132,7 @@ public:
     }
 
     friend Mat<T, M, N> operator*(T lhs, const Mat<T, M, N> &rhs) {
-        Mat<T, M, N> res = { Uninitialize };
+        auto res = Mat<T, M, N>{ Uninitialize };
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs * rhs.data_[i];
         }
@@ -140,7 +140,7 @@ public:
     }
 
     friend Mat<T, M, N> operator/(T lhs, const Mat<T, M, N> &rhs) {
-        Mat<T, M, N> res = { Uninitialize };
+        auto res = Mat<T, M, N>{ Uninitialize };
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs / rhs.data_[i];
         }
@@ -148,7 +148,7 @@ public:
     }
 
     friend Mat<T, M, N> operator*(const Mat<T, M, N> &lhs, const T &rhs) {
-        Mat<T, M, N> res = { Uninitialize };
+        auto res = Mat<T, M, N>{ Uninitialize };
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs.data_[i] * rhs;
         }
@@ -156,7 +156,7 @@ public:
     }
 
     friend Mat<T, M, N> operator/(const Mat<T, M, N> &lhs, const T &rhs) {
-        Mat<T, M, N> res = { Uninitialize };
+        auto res = Mat<T, M, N>{ Uninitialize };
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs.data_[i] / rhs;
         }
@@ -199,7 +199,7 @@ Vec<T, M> operator*(const Mat<T, M, N> &lhs, const Vec<T, M> &rhs) {
 
 template <typename T, int M, int N, int P>
 Mat<T, M, P> operator*(const Mat<T, M, N> &lhs, const Mat<T, N, P> &rhs) {
-    Mat<T, M, P> res = { Uninitialize };
+    auto res = Mat<T, M, P>{ Uninitialize };
     for (int m = 0; m < M; m++) {
         for (int p = 0; p < P; p++) {
             T sum = (T)0;
@@ -214,7 +214,7 @@ Mat<T, M, P> operator*(const Mat<T, M, N> &lhs, const Mat<T, N, P> &rhs) {
 
 template <typename T, int M, int N>
 Mat<T, N, M> Transpose(const Mat<T, M, N> &mat) {
-    Mat<T, N, M> res = { Uninitialize };
+    auto res = Mat<T, N, M>{ Uninitialize };
     for (int m = 0; m < M; m++) {
         for (int n = 0; n < N; n++) {
             res[n][m] = mat[m][n];
@@ -228,7 +228,7 @@ T Det(const Mat<T, N, N> &mat);
 
 template <typename T, int N>
 T Minor(const Mat<T, N, N> &mat, int row, int col) {
-    Mat<T, N - 1, N - 1> res = { Uninitialize };
+    auto res = Mat<T, N - 1, N - 1>{ Uninitialize };
     int dst_row, dst_col;
     dst_row = 0;
     for (int src_row = 0; src_row < N; src_row++) {
@@ -267,9 +267,10 @@ T Det(const Mat<T, 2, 2> &mat) {
 
 template <typename T>
 T Det(const Mat<T, 3, 3> &mat) {
-    return mat[0][0] * (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2]) -
-           mat[1][0] * (mat[0][1] * mat[2][2] - mat[2][1] * mat[0][2]) +
-           mat[2][0] * (mat[0][1] * mat[1][2] - mat[1][1] * mat[0][2]);
+    return
+        mat[0][0] * (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2]) -
+        mat[1][0] * (mat[0][1] * mat[2][2] - mat[2][1] * mat[0][2]) +
+        mat[2][0] * (mat[0][1] * mat[1][2] - mat[1][1] * mat[0][2]);
 }
 
 template <typename T>
@@ -312,7 +313,7 @@ template <typename T>
 Mat<T, 2, 2> Inverse(const Mat<T, 2, 2> &mat) {
     T det = Det(mat);
     T inv_det = T(1) / det;
-    Mat<T, 2, 2> res = { Uninitialize };
+    auto res = Mat<T, 2, 2>{ Uninitialize };
     res[0][0] = inv_det * mat[1][1];
     res[0][1] = inv_det * -mat[0][1];
     res[1][0] = inv_det * -mat[1][0];
@@ -329,7 +330,7 @@ Mat<T, 3, 3> Inverse(const Mat<T, 3, 3> &mat) {
     T det = mat[0][0] * minor0 - mat[1][0] * minor1 + mat[2][0] * minor2;
     T inv_det = T(1) / det;
 
-    Mat<T, 3, 3> res = { Uninitialize };
+    auto res = Mat<T, 3, 3>{ Uninitialize };
     res[0][0] = inv_det * minor0;
     res[0][1] = inv_det * -minor1;
     res[0][2] = inv_det * minor2;
@@ -358,7 +359,7 @@ Mat<T, 4, 4> Inverse(const Mat<T, 4, 4> &mat) {
     T det = mat[0][0] * minor0 - mat[1][0] * minor1 + mat[2][0] * minor2 - mat[3][0] * minor3;
     T inv_det = T(1) / det;
 
-    Mat<T, 4, 4> res = { Uninitialize };
+    auto res = Mat<T, 4, 4>{ Uninitialize };
     res[0][0] = inv_det * minor0;
     res[0][1] = inv_det * -minor1;
     res[0][2] = inv_det * minor2;

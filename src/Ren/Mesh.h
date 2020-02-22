@@ -84,7 +84,7 @@ struct BufferRange {
 
 enum eMeshLoadStatus { MeshFound, MeshSetToDefault, MeshCreatedFromData };
 
-enum eMeshType { MeshUndefined, MeshSimple, MeshTerrain, MeshSkeletal };
+enum eMeshType { MeshUndefined, MeshSimple, MeshColored, MeshSkeletal };
 
 typedef std::function<MaterialRef(const char *name)> material_load_callback;
 
@@ -102,13 +102,13 @@ class Mesh : public RefCounter {
 
     // simple static mesh with normals
     void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load,
-            BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, ILog *log);
-    // simple mesh with tex index per vertex
-    void InitMeshTerrain(std::istream &data, const material_load_callback &on_mat_load,
-            BufferRef &vertex_buf, BufferRef &index_buf, ILog *log);
+        BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, ILog *log);
+    // simple mesh with 4 per-vertex colors
+    void InitMeshColored(std::istream &data, const material_load_callback &on_mat_load,
+        BufferRef& vertex_buf1, BufferRef& vertex_buf2, BufferRef& index_buf, ILog* log);
     // mesh with 4 bone weights per vertex
     void InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load,
-            BufferRef &skin_vertex_buf, BufferRef &index_buf, ILog *log);
+        BufferRef &skin_vertex_buf, BufferRef &index_buf, ILog *log);
 
     // split skeletal mesh into chunks to fit uniforms limit in shader
     void SplitMesh(int bones_limit, ILog *log);
@@ -189,8 +189,6 @@ public:
     void Init(std::istream *data, const material_load_callback &on_mat_load,
               BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
               eMeshLoadStatus *load_status, ILog *log);
-
-    static int max_gpu_bones;
 };
 
 typedef StorageRef<Mesh> MeshRef;
