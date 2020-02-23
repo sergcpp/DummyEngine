@@ -14,6 +14,9 @@ namespace {
     DummyApp *g_app = nullptr;
 }
 
+// dummy value for now
+unsigned int g_android_local_ip_address = 0;
+
 extern "C" JNIEXPORT void JNICALL Java_com_serg_dummyapp_LibJNI_Init(JNIEnv *env, jclass, jint w, jint h, jobject am) {
     AAssetManager *asset_mgr = AAssetManager_fromJava(env, am);
     Sys::AssetFile::InitAssetManager(asset_mgr);

@@ -5,7 +5,7 @@
 #include <fstream>
 #include <memory>
 
-#ifndef RELEASE_FINAL
+#if !defined(RELEASE_FINAL) && !defined(__ANDROID__)
 #include <vtune/ittnotify.h>
 #endif
 
@@ -749,7 +749,7 @@ bool GSBaseState::HandleInput(const InputManager::Event &evt) {
 }
 
 void GSBaseState::BackgroundProc() {
-#ifndef RELEASE_FINAL
+#if !defined(RELEASE_FINAL) && !defined(__ANDROID__)
     __itt_thread_set_name("Renderer Frontend Thread");
 #endif
 

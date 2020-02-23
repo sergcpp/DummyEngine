@@ -1771,8 +1771,9 @@ uint32_t RendererInternal::__push_vegetation_mesh(const uint32_t vege_buf_vtx_of
     wind_vec_packed.in[0] = f32_to_s16(wind_vec[0]);
     wind_vec_packed.in[1] = f32_to_s16(wind_vec[2]);
 
-    float __unused;
-    const uint16_t obj_phase = Ren::f32_to_f16(std::modf(wind_vec[3] * 12.9898f, &__unused));
+    float integral_part;
+    const uint16_t obj_phase = Ren::f32_to_f16(std::modf(wind_vec[3] * 12.9898f, &integral_part));
+    (void)integral_part;
 
     for (uint32_t i = vertex_beg; i < vertex_end; i += REN_VEGE_REGION_SIZE) {
         const uint16_t count = (uint16_t)_MIN(vertex_end - i, REN_VEGE_REGION_SIZE);
