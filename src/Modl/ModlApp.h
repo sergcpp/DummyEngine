@@ -67,18 +67,21 @@ private:
     Ren::Camera cam_;
     Ren::Context ctx_;
 
-    Ren::ProgramRef diag_prog_, diag_skinned_prog_, skinning_prog_;
+    Ren::ProgramRef diag_prog_, diag_colored_prog_, diag_skinned_prog_, skinning_prog_;
     Ren::Texture2DRef checker_tex_;
 
     float angle_x_ = 0.0f, angle_y_ = 0.0f;
     float view_dist_ = 10.0f;
     bool mouse_grabbed_ = false;
 
-    enum eViewMode { Diffuse, DiagNormals1, DiagNormals2, DiagUVs1, DiagUVs2 } view_mode_ = DiagNormals1;
+    enum eViewMode {
+        Diffuse, DiagNormals1, DiagNormals2, DiagUVs1, DiagUVs2, DiagVtxColor
+    } view_mode_ = DiagNormals1;
 
     void InitInternal();
     void DestroyInternal();
     void DrawMeshSimple(Ren::MeshRef &ref);
+    void DrawMeshColored(Ren::MeshRef &ref);
     void DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s);
 
     void PrintUsage();

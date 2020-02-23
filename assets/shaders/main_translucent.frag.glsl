@@ -52,7 +52,8 @@ uniform SharedDataBlock {
     ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspDepthRangeAndMode;
+    vec4 uResAndFRes, uTranspParamsAndTime;
+	vec4 uWindParams;
     ProbeItem uProbes[$MaxProbes];
 };
 
@@ -81,11 +82,11 @@ void main(void) {
     
     // remapped depth in [-1; 1] range used for moments calculation
     highp float transp_z =
-        2.0 * (log(lin_depth) - uTranspDepthRangeAndMode[0]) / uTranspDepthRangeAndMode[1] - 1.0;
+        2.0 * (log(lin_depth) - uTranspParamsAndTime[0]) / uTranspParamsAndTime[1] - 1.0;
     
     vec4 diff_tex_color = texture(diffuse_texture, aVertexUVs_);
     
-    if (floatBitsToInt(uTranspDepthRangeAndMode[2]) != 2) {
+    if (floatBitsToInt(uTranspParamsAndTime[2]) != 2) {
         highp float k = log2(lin_depth / uClipInfo[1]) / uClipInfo[3];
         int slice = int(floor(k * $ItemGridResZ.0));
         
@@ -244,16 +245,16 @@ void main(void) {
                                
         vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + indirect_col + additional_light);
         
-        if (floatBitsToInt(uTranspDepthRangeAndMode[2]) == 0) {
+        if (floatBitsToInt(uTranspParamsAndTime[2]) == 0) {
             outColor = vec4(diffuse_color, diff_tex_color.a);
-        } else if (floatBitsToInt(uTranspDepthRangeAndMode[2]) == 1) {
+        } else if (floatBitsToInt(uTranspParamsAndTime[2]) == 1) {
             outColor = vec4(diffuse_color, diff_tex_color.a) * TransparentDepthWeight(gl_FragCoord.z, diff_tex_color.a);
             outNormal = vec4(diff_tex_color.a);
         } else {
             float b_0;
             vec4 b_1234;
                                
-            if (floatBitsToInt(uTranspDepthRangeAndMode[2]) == 3) {
+            if (floatBitsToInt(uTranspParamsAndTime[2]) == 3) {
                 b_0 = texelFetch(moments0_texture, ivec2(ix, iy), 0).x;
                 b_1234 = vec4(texelFetch(moments1_texture, ivec2(ix, iy), 0).xy,
                               texelFetch(moments2_texture, ivec2(ix, iy), 0).xy);

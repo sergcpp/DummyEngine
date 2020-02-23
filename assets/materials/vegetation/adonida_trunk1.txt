@@ -1,0 +1,6 @@
+gl_program: main_probelit_vege_nossr main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
+gl_program: main_probelit_vege_nossr main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
+sw_program: main
+texture: vegetation/adonida_diff.png srgb
+texture: default_normalmap.png
+texture: default_specular.png

@@ -1,0 +1,138 @@
+{
+	"name" : "vegetation_test", 
+	"environment" : {
+		"sun_dir" : [
+			0.57735, 
+			-0.57735, 
+			-0.57735
+		], 
+		"sun_col" : [
+			5, 
+			5, 
+			4.5
+		], 
+		"sun_softness" : 0.1, 
+		"env_map" : "env/clear", 
+		"env_map_pt" : "env/noon_grass_2k.hdr"
+	}, 
+	"objects" : [
+		{
+			"name" : "palm",
+			"transform" : {
+				"pos" : [
+					10, 
+					0, 
+					0
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"drawable" : {
+				"mesh_file" : "vegetation/palm.mesh",
+				"visible_to_probes" : false,
+				"anims" : [
+					"vegetation/palm_idle.anim"
+				]
+			},
+			"anim_state" : {}
+		},
+		{
+			"name" : "palm_new",
+			"transform" : {
+				"pos" : [
+					0, 
+					0, 
+					0
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"drawable" : {
+				"mesh_file" : "vegetation/palm_new.mesh",
+				"visible_to_probes" : false
+			}
+		},
+		{
+			"transform" : {
+				"pos" : [
+					0, 
+					0, 
+					0
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"drawable" : {
+				"mesh_file" : "ground_plane_200x200.mesh"
+			}
+		}, 
+		{
+			"transform" : {
+				"pos" : [
+					0, 
+					10, 
+					0
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"probe" : {
+				"offset" : [
+					0, 
+					0, 
+					0
+				], 
+				"radius" : 100, 
+				"sh_coeffs" : [
+					[
+						0.228231, 
+						0.242044, 
+						0.266643
+					], 
+					[
+						-0.16587, 
+						-0.155331, 
+						-0.0989288
+					], 
+					[
+						0.00900161, 
+						0.0115595, 
+						0.0206241
+					], 
+					[
+						-0.0215879, 
+						-0.0255891, 
+						-0.0395529
+					]
+				]
+			}
+		}
+	], 
+	"camera" : {
+		"view_origin" : [
+			5, 
+			10, 
+			35
+		], 
+		"view_dir" : [
+			0, 
+			0, 
+			-1
+		], 
+		"fwd_speed" : 0.25, 
+		"fov" : 45, 
+		"max_exposure" : 1000
+	}
+}

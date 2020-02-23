@@ -26,6 +26,18 @@ static const char fillz_transp_fs[] =
 #undef __ADDITIONAL_DEFINES_STR__
 
 #define __ADDITIONAL_DEFINES_STR__ ""
+static const char fillz_vege_solid_vs[] =
+#include "Shaders/fillz_vege.vert.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM"
+static const char fillz_vege_transp_vs[] =
+#include "Shaders/fillz_vege.vert.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ ""
 static const char shadow_solid_vs[] =
 #include "Shaders/shadow.vert.glsl"
 ;
@@ -40,6 +52,17 @@ static const char shadow_transp_vs[] =
 ;
 static const char shadow_transp_fs[] =
 #include "Shaders/shadow.frag.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ ""
+static const char shadow_vege_solid_vs[] =
+#include "Shaders/shadow_vege.vert.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+#define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM"
+static const char shadow_vege_transp_vs[] =
+#include "Shaders/shadow_vege.vert.glsl"
 ;
 #undef __ADDITIONAL_DEFINES_STR__
 
@@ -244,4 +267,8 @@ static const char probe_fs[] =
 
 static const char skinning_cs[] =
 #include "Shaders/skinning.comp.glsl"
+;
+
+static const char vegetation_cs[] =
+#include "Shaders/vegetation.comp.glsl"
 ;

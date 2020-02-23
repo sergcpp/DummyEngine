@@ -59,7 +59,8 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
 #endif
             file_name += ((const JsString &)el.second).val;
 
-            font_storage->LoadFont(name, file_name, ctx.get());
+            std::shared_ptr<Gui::BitmapFont> loaded_font = font_storage->LoadFont(name, file_name, ctx.get());
+            (void)loaded_font;
         }
     }
 

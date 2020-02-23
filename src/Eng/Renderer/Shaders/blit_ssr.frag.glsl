@@ -38,7 +38,8 @@ layout (std140) uniform SharedDataBlock {
     ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspDepthRangeAndUnused;
+    vec4 uResAndFRes, uTranspParamsAndTime;
+    vec4 uWindParams;
     ProbeItem uProbes[)" AS_STR(REN_MAX_PROBES_TOTAL) R"(];
 };
 

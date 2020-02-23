@@ -34,6 +34,8 @@ void DebugInfoUI::UpdateInfo(const FrontendInfo &frontend_info, const BackendInf
 
     back_info_smooth_.skinning_time_ms          *= alpha;
     back_info_smooth_.skinning_time_ms          += k * us_to_ms(backend_info.skinning_time_us);
+    back_info_smooth_.vegetation_time_ms        *= alpha;
+    back_info_smooth_.vegetation_time_ms        += k * us_to_ms(backend_info.vegetation_time_us);
     back_info_smooth_.shadow_time_ms            *= alpha;
     back_info_smooth_.shadow_time_ms            += k * us_to_ms(backend_info.shadow_time_us);
     back_info_smooth_.depth_opaque_pass_time_ms *= alpha;
@@ -153,6 +155,10 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
 
         vertical_offset -= font_height;
         sprintf(text_buffer, "   skinning: %.3f ms", back_info_smooth_.skinning_time_ms);
+        font_->DrawText(r, text_buffer, Ren::Vec2f{ -1.0f, vertical_offset }, text_color, parent_);
+
+        vertical_offset -= font_height;
+        sprintf(text_buffer, " vegetation: %.3f ms", back_info_smooth_.vegetation_time_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{ -1.0f, vertical_offset }, text_color, parent_);
 
         vertical_offset -= font_height;

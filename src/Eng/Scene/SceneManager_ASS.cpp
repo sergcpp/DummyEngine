@@ -707,7 +707,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     shader_constants.Insert("$VtxNorLoc",       AS_STR(REN_VTX_NOR_LOC));
     shader_constants.Insert("$VtxTanLoc",       AS_STR(REN_VTX_TAN_LOC));
     shader_constants.Insert("$VtxUV1Loc",       AS_STR(REN_VTX_UV1_LOC));
-    shader_constants.Insert("$VtxUV2Loc",       AS_STR(REN_VTX_UV2_LOC));
+    shader_constants.Insert("$VtxAUXLoc",       AS_STR(REN_VTX_AUX_LOC));
 
     // Texture slots
     shader_constants.Insert("$MatTex0Slot",     AS_STR(REN_MAT_TEX0_SLOT));
@@ -998,7 +998,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         std::string line;
         while (std::getline(src_stream, line)) {
             replace_texture_extension(line);
-            dst_stream << line << "\r\n";
+            dst_stream << line << '\n';
         }
     };
 

@@ -29,6 +29,7 @@ class DebugInfoUI : public Gui::BaseElement {
 
     struct {
         float skinning_time_ms          = 0.0f,
+              vegetation_time_ms        = 0.0f,
               shadow_time_ms            = 0.0f,
               depth_opaque_pass_time_ms = 0.0f,
               ao_pass_time_ms           = 0.0f,

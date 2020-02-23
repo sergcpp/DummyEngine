@@ -852,10 +852,12 @@ void SceneManager::PostloadLightSource(const JsObject &js_comp_obj, void *comp, 
     const Ren::Vec3f side = Ren::Cross(_dir, up);
 
     Transform ls_transform;
-    ls_transform.mat = { Ren::Vec4f{ side[0],  -_dir[0], up[0],    0.0f },
+    ls_transform.mat = Ren::Mat4f{
+        Ren::Vec4f{ side[0],  -_dir[0], up[0],    0.0f },
         Ren::Vec4f{ side[1],  -_dir[1], up[1],    0.0f },
         Ren::Vec4f{ side[2],  -_dir[2], up[2],    0.0f },
-        Ren::Vec4f{ ls->offset[0], ls->offset[1], ls->offset[2], 1.0f } };
+        Ren::Vec4f{ ls->offset[0], ls->offset[1], ls->offset[2], 1.0f }
+    };
 
     ls_transform.bbox_min = bbox_min;
     ls_transform.bbox_max = bbox_max;
@@ -1038,23 +1040,26 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
 Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) {
     using namespace SceneManagerConstants;
 
-    std::string tex_name = TEXTURES_PATH;
-    tex_name += name;
+    char name_buf[4096];
+    strcpy(name_buf, TEXTURES_PATH);
+    strcat(name_buf, name);
 
     Ren::eTexLoadStatus status;
-    Ren::Texture2DRef ret = ctx_.LoadTexture2D(tex_name.c_str(), nullptr, 0, {}, &status);
+    Ren::Texture2DRef ret = ctx_.LoadTexture2D(name_buf, nullptr, 0, {}, &status);
     if (status == Ren::TexCreatedDefault) {
+        const char* tex_name_persistent = ret->name().c_str();
+
         scene_texture_load_counter_++;
 
         std::weak_ptr<SceneManager> _self = shared_from_this();
-        Sys::LoadAssetComplete(tex_name.c_str(),
-        [_self, tex_name, flags](void *data, int size) {
+        Sys::LoadAssetComplete(tex_name_persistent,
+        [_self, tex_name_persistent, flags](void *data, int size) {
             std::shared_ptr<SceneManager> self = _self.lock();
             if (!self) return;
 
-            self->ctx_.ProcessSingleTask([&self, tex_name, data, size, flags]() {
+            self->ctx_.ProcessSingleTask([&self, tex_name_persistent, data, size, flags]() {
                 Ren::Texture2DParams p;
-                if (strstr(tex_name.c_str(), ".tga_rgbe")) {
+                if (strstr(tex_name_persistent, ".tga_rgbe")) {
                     p.filter = Ren::BilinearNoMipmap;
                     p.repeat = Ren::ClampToEdge;
                 } else {
@@ -1062,16 +1067,16 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
                     p.repeat = Ren::Repeat;
                 }
                 p.flags = flags;
-                self->ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, nullptr);
+                (void)self->ctx_.LoadTexture2D(tex_name_persistent, data, size, p, nullptr);
                 int count = --(self->scene_texture_load_counter_);
-                self->ctx_.log()->Info("Texture %s loaded (%i left)", tex_name.c_str(), count);
+                self->ctx_.log()->Info("Texture %s loaded (%i left)", tex_name_persistent, count);
                 self.reset();
             });
-        }, [_self, tex_name]() {
+        }, [_self, tex_name_persistent]() {
             std::shared_ptr<SceneManager> self = _self.lock();
             if (!self) return;
 
-            self->ctx_.log()->Error("Error loading %s", tex_name.c_str());
+            self->ctx_.log()->Error("Error loading %s", tex_name_persistent);
         });
     }
 

@@ -10,7 +10,7 @@ layout(location = )" AS_STR(REN_VTX_UV1_LOC) R"() in vec2 aVertexUVs1;
 
 layout(binding = )" AS_STR(REN_INST_BUF_SLOT) R"() uniform highp samplerBuffer instances_buffer;
 
-layout(location = )" AS_STR(REN_U_M_MATRIX_LOC) R"() uniform mat4 uViewProjMatrix;
+layout(location = )" AS_STR(REN_U_M_MATRIX_LOC) R"() uniform mat4 uShadowViewProjMatrix;
 layout(location = )" AS_STR(REN_U_INSTANCES_LOC) R"() uniform ivec4 uInstanceIndices[)" AS_STR(REN_MAX_BATCH_SIZE) R"( / 4];
 
 #ifdef TRANSPARENT_PERM
@@ -32,6 +32,7 @@ void main() {
     aVertexUVs1_ = aVertexUVs1;
 #endif
 
-    gl_Position = uViewProjMatrix * MMatrix * vec4(aVertexPosition, 1.0);
+    vec3 vertex_position_ws = (MMatrix * vec4(aVertexPosition, 1.0)).xyz;
+    gl_Position = uShadowViewProjMatrix * vec4(vertex_position_ws, 1.0);
 } 
 )"

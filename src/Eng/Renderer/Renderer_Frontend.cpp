@@ -1,6 +1,7 @@
 #include "Renderer.h"
 
 #include <Ren/Context.h>
+#include <Ren/Utils.h>
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 
@@ -27,14 +28,14 @@ void RadixSort_LSB(SpanType *begin, SpanType *end, SpanType *begin1) {
     for (unsigned shift = 0; shift < sizeof(SpanType::key) * 8; shift += 8) {
         size_t count[0x100] = {};
         for (SpanType *p = begin; p != end; p++) {
-            count[(p->key >> shift) & 0xFF]++;
+            count[(p->key >> shift) & 0xFFu]++;
         }
         SpanType *bucket[0x100], *q = begin1;
         for (int i = 0; i < 0x100; q += count[i++]) {
             bucket[i] = q;
         }
         for (SpanType *p = begin; p != end; p++) {
-            *bucket[(p->key >> shift) & 0xFF]++ = *p;
+            *bucket[(p->key >> shift) & 0xFFu]++ = *p;
         }
         std::swap(begin, begin1);
         std::swap(end, end1);
@@ -59,6 +60,17 @@ static const uint8_t SunShadowUpdatePattern[4] = {
     0b01010101,  // update cascade 2 once in two frames
     0b00100010   // update cascade 3 once in four frames
 };
+
+int16_t f32_to_s16(float value) {
+    return int16_t(value * 32767);
+}
+
+/*uint16_t f32_to_u16(float value) {
+    return uint16_t(value * 65535);
+}*/
+
+uint32_t __push_skeletal_mesh(uint32_t skinned_buf_vtx_offset, uint32_t obj_index, const AnimState &as, const Ren::Mesh *mesh, DrawList &list);
+uint32_t __push_vegetation_mesh(uint32_t vege_buf_vtx_offset, uint32_t obj_index, const Ren::Mesh *mesh, const Ren::Vec4f &wind_vec, DrawList &list);
 }
 
 #define REN_UNINITIALIZE_X2(t)  t{ Ren::Uninitialize }, t{ Ren::Uninitialize }
@@ -75,9 +87,10 @@ static const uint8_t SunShadowUpdatePattern[4] = {
     (min)[0], (max)[1], (max)[2],     \
     (max)[0], (max)[1], (max)[2]
 
-// fast than std::min/max in debug
+// faster than std::min/max/abs in debug
 #define _MIN(x, y) ((x) < (y) ? (x) : (y))
 #define _MAX(x, y) ((x) < (y) ? (y) : (x))
+#define _ABS(x) ((x) < 0 ? -(x) : (x))
 
 #define _CROSS(x, y) { (x)[1] * (y)[2] - (x)[2] * (y)[1],   \
                        (x)[2] * (y)[0] - (x)[0] * (y)[2],   \
@@ -86,7 +99,7 @@ static const uint8_t SunShadowUpdatePattern[4] = {
 void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list) {
     using namespace RendererInternal;
 
-    uint64_t iteration_start = Sys::GetTimeUs();
+    const uint64_t iteration_start = Sys::GetTimeUs();
 
     list.draw_cam = cam;
     list.env = scene.env;
@@ -101,7 +114,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         list.temp_nodes = scene.nodes;
         list.root_index = scene.root_node;
     } else {
-        // free memory
+        // free allocated memory
         list.temp_nodes = {};
     }
 
@@ -121,11 +134,19 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     list.skin_regions.count = 0;
     list.skin_vertices_count = 0;
 
+    list.vege_regions.count = 0;
+    list.vege_vertices_count = 0;
+
     const bool culling_enabled = (list.render_flags & EnableCulling) != 0;
     const bool lighting_enabled = (list.render_flags & EnableLights) != 0;
     const bool decals_enabled = (list.render_flags & EnableDecals) != 0;
     const bool shadows_enabled = (list.render_flags & EnableShadows) != 0;
     const bool zfill_enabled = (list.render_flags & (EnableZFill | EnableSSAO)) != 0;
+
+    const bool animate_vegetation = true;
+    const bool pretransform_vegetation = false;
+
+    const uint32_t render_mask = list.draw_cam.render_mask();
 
     int program_index = 0;
     if ((list.render_flags & EnableLightmap) == 0) {
@@ -136,8 +157,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     ditem_to_decal_.count = 0;
     decals_boxes_.count = 0;
 
-    proc_objects_.clear();
-    proc_objects_.resize(scene.objects.size(), { 0xffffffff, 0xffffffff });
+    memset(proc_objects_.data, 0xff, sizeof(ProcessedObjData) * scene.objects.size());
 
     // retrieve pointers to components for fast access
     const auto *transforms = (Transform *)scene.comp_store[CompTransform]->Get(0);
@@ -149,6 +169,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     const auto *probes     = (LightProbe *)scene.comp_store[CompProbe]->Get(0);
     const auto *anims      = (AnimState *)scene.comp_store[CompAnimState]->Get(0);
 
+    // make sure we can access components by index
     assert(scene.comp_store[CompTransform]->IsSequential());
     assert(scene.comp_store[CompDrawable]->IsSequential());
     assert(scene.comp_store[CompOccluder]->IsSequential());
@@ -157,6 +178,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     assert(scene.comp_store[CompDecal]->IsSequential());
     assert(scene.comp_store[CompProbe]->IsSequential());
     assert(scene.comp_store[CompAnimState]->IsSequential());
+
+    const uint32_t
+        skinned_buf_vtx_offset = skinned_buf1_vtx_offset_ / 16,
+        vege_buf_vtx_offset = vegetation_buf1_vtx_offset_ / 16;
 
     const Ren::Mat4f
         &view_from_world = list.draw_cam.view_matrix(),
@@ -167,7 +192,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     const Ren::Mat4f view_from_identity = view_from_world * Ren::Mat4f{ 1.0f },
                      clip_from_identity = clip_from_view * view_from_identity;
 
-    const uint32_t SkipCheckBit = (1u << 31);
+    const uint32_t SkipCheckBit = (1u << 31u);
     const uint32_t IndexBits = ~SkipCheckBit;
 
     uint32_t stack[MAX_STACK_SIZE];
@@ -177,7 +202,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     /*                                     OCCLUDERS PROCESSING                                       */
     /**************************************************************************************************/
 
-    uint64_t occluders_start = Sys::GetTimeUs();
+    const uint64_t occluders_start = Sys::GetTimeUs();
 
     if (scene.root_node != 0xffffffff) {
         // Rasterize occluder meshes into a small framebuffer
@@ -189,7 +214,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             const bvh_node_t *n = &scene.nodes[cur];
 
             if (!skip_check) {
-                const Ren::eVisibilityResult res = list.draw_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
+                const Ren::eVisibilityResult
+                    res = list.draw_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
                 if (res == Ren::Invisible) continue;
                 else if (res == Ren::FullyVisible) skip_check = SkipCheckBit;
             }
@@ -204,7 +230,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 if ((obj.comp_mask & occluder_flags) == occluder_flags) {
                     const Transform &tr = transforms[obj.components[CompTransform]];
 
-                    // Node has slightly enlarged bounds, so we need to check object'grp bounding box here
+                    // Node has slightly enlarged bounds, so we need to check object's bounding box here
                     if (!skip_check &&
                         list.draw_cam.CheckFrustumVisibility(tr.bbox_min_ws, tr.bbox_max_ws) == Ren::Invisible) continue;
 
@@ -335,7 +361,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     const Ren::Mat4f &world_from_object = tr.mat;
                     const Ren::Mat4f world_from_object_trans = Ren::Transpose(world_from_object);
 
-                    proc_objects_[n->prim_index].instance_index = list.instances.count;
+                    proc_objects_.data[n->prim_index].instance_index = list.instances.count;
 
                     InstanceData &instance = list.instances.data[list.instances.count++];
                     memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
@@ -350,6 +376,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                     if (obj.comp_mask & CompDrawableBit) {
                         const Drawable &dr = drawables[obj.components[CompDrawable]];
+                        if (!(dr.vis_mask & render_mask)) continue;
+
                         const Ren::Mesh *mesh = dr.mesh.get();
 
                         const float max_sort_dist = 100.0f;
@@ -358,11 +386,22 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         uint32_t base_vertex = mesh->attribs_buf1().offset / 16;
 
                         if (obj.comp_mask & CompAnimStateBit) {
-                            const AnimState &as = anims[obj.components[CompAnimState]];
-                            __push_skeletal_mesh(n->prim_index, as, mesh, list);
-                            base_vertex = proc_objects_[n->prim_index].base_vertex;
+                            const AnimState& as = anims[obj.components[CompAnimState]];
+                            base_vertex = __push_skeletal_mesh(skinned_buf_vtx_offset, n->prim_index, as, mesh, list);
+                            proc_objects_.data[n->prim_index].base_vertex = base_vertex;
+                        } else if (mesh->type() == Ren::MeshColored) {
+                            if (pretransform_vegetation && animate_vegetation) {
+                                const Ren::Mat4f object_from_world = Ren::Inverse(world_from_object);
+                                Ren::Vec4f wind_vec_object = object_from_world * Ren::Vec4f{ list.env.wind_vec[0], list.env.wind_vec[1], list.env.wind_vec[2], 0.0f };
+
+                                const Ren::Vec3f obj_pos_ws = 0.5f * (tr.bbox_min_ws + tr.bbox_max_ws);
+                                wind_vec_object[3] = obj_pos_ws[0] + obj_pos_ws[1] + obj_pos_ws[2];
+
+                                base_vertex = __push_vegetation_mesh(vege_buf_vtx_offset, n->prim_index, mesh, wind_vec_object, list);
+                            }
+                            proc_objects_.data[n->prim_index].base_vertex = base_vertex;
                         } else {
-                            proc_objects_[n->prim_index].base_vertex = base_vertex;
+                            proc_objects_.data[n->prim_index].base_vertex = base_vertex;
                         }
 
                         const Ren::TriGroup *grp = &mesh->group(0);
@@ -387,6 +426,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 DepthDrawBatch &zfill_batch = list.zfill_batches.data[list.zfill_batches.count++];
 
                                 zfill_batch.alpha_test_bit = (mat_flags & Ren::AlphaTest) ? 1 : 0;
+                                zfill_batch.vegetation_bit = animate_vegetation && !pretransform_vegetation && (mesh->type() == Ren::MeshColored);
                                 zfill_batch.mat_id = (mat_flags & Ren::AlphaTest) ? main_batch.mat_id : 0;
                                 zfill_batch.indices_offset = main_batch.indices_offset;
                                 zfill_batch.base_vertex = base_vertex;
@@ -415,9 +455,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             for (int k = 0; k < 6; k++) {
                                 const Ren::Plane &plane = list.draw_cam.frustum_plane(k);
 
-                                float dist = plane.n[0] * pos[0] +
-                                             plane.n[1] * pos[1] +
-                                             plane.n[2] * pos[2] + plane.d;
+                                const float dist = 
+                                    plane.n[0] * pos[0] + plane.n[1] * pos[1] + plane.n[2] * pos[2] + plane.d;
 
                                 if (dist < -light.influence) {
                                     res = Ren::Invisible;
@@ -631,7 +670,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             sh_list.shadow_map_size[1] = OneCascadeRes;
             sh_list.shadow_batch_start = list.shadow_batches.count;
             sh_list.shadow_batch_count = 0;
-            sh_list.solid_batches_count = 0;
             sh_list.cam_near = shadow_cam.near();
             sh_list.cam_far = shadow_cam.far();
 
@@ -691,23 +729,23 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             std::swap(frustum_edges[i][0], frustum_edges[i][1]);
                         }
 
-                        const float k0 =
-                            (frustum_points_proj[frustum_edges[i][0]][1] - frustum_points_proj[frustum_edges[i][1]][1]) /
-                            (frustum_points_proj[frustum_edges[i][0]][0] - frustum_points_proj[frustum_edges[i][1]][0]);
+                        const float x_diff0 = (frustum_points_proj[k1][0] - frustum_points_proj[k2][0]);
+                        const bool is_vertical0 = _ABS(x_diff0) < std::numeric_limits<float>::epsilon();
+                        const float
+                            slope0 = is_vertical0 ? 0.0f : (frustum_points_proj[k1][1] - frustum_points_proj[k2][1]) / x_diff0,
+                            b0 = is_vertical0 ? frustum_points_proj[k1][0] : (frustum_points_proj[k1][1] - slope0 * frustum_points_proj[k1][0]);
 
-                        const float b0 = frustum_points_proj[frustum_edges[i][0]][1] - k0 * frustum_points_proj[frustum_edges[i][0]][0];
-
-                        // Check if it is duplicate
+                        // Check if it is a duplicate
                         for (int k = 0; k < silhouette_edges_count - 1; k++) {
                             const int j = silhouette_edges[k];
 
-                            const float k1 =
-                                (frustum_points_proj[frustum_edges[j][0]][1] - frustum_points_proj[frustum_edges[j][1]][1]) /
-                                (frustum_points_proj[frustum_edges[j][0]][0] - frustum_points_proj[frustum_edges[j][1]][0]);
+                            const float x_diff1 = (frustum_points_proj[frustum_edges[j][0]][0] - frustum_points_proj[frustum_edges[j][1]][0]);
+                            const bool is_vertical1 = _ABS(x_diff1) < std::numeric_limits<float>::epsilon();
+                            const float
+                                slope1 = is_vertical1 ? 0.0f : (frustum_points_proj[frustum_edges[j][0]][1] - frustum_points_proj[frustum_edges[j][1]][1]) / x_diff1,
+                                b1 = is_vertical1 ? frustum_points_proj[frustum_edges[j][0]][0] : frustum_points_proj[frustum_edges[j][0]][1] - slope1 * frustum_points_proj[frustum_edges[j][0]][0];
 
-                            const float b1 = frustum_points_proj[frustum_edges[j][0]][1] - k1 * frustum_points_proj[frustum_edges[j][0]][0];
-
-                            if (std::abs(k1 - k0) < 0.001f && std::abs(b1 - b0) < 0.001f) {
+                            if (is_vertical1 == is_vertical0 && _ABS(slope1 - slope0) < 0.001f && _ABS(b1 - b0) < 0.001f) {
                                 silhouette_edges_count--;
                                 break;
                             }
@@ -839,9 +877,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             }
 #endif
 
-            //const uint32_t SkipCheckBit = (1u << 31u);
-            //const uint32_t IndexBits = ~SkipCheckBit;
-
             stack_size = 0;
             stack[stack_size++] = scene.root_node;
 
@@ -866,7 +901,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     if ((obj.comp_mask & drawable_flags) == drawable_flags) {
                         const Transform &tr = transforms[obj.components[CompTransform]];
                         const Drawable &dr = drawables[obj.components[CompDrawable]];
-                        if ((dr.flags & Drawable::DrVisibleToShadow) == 0) continue;
+                        if ((dr.vis_mask & Drawable::VisShadow) == 0) continue;
 
                         if (!skip_check &&
                             sh_clip_frustum.CheckVisibility(tr.bbox_min_ws, tr.bbox_max_ws) == Ren::Invisible) continue;
@@ -878,21 +913,31 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         const Ren::Mat4f &world_from_object = tr.mat;
                         const Ren::Mesh *mesh = dr.mesh.get();
 
-                        if (proc_objects_[n->prim_index].instance_index == 0xffffffff) {
-                            proc_objects_[n->prim_index].instance_index = list.instances.count;
+                        if (proc_objects_.data[n->prim_index].instance_index == 0xffffffff) {
+                            proc_objects_.data[n->prim_index].instance_index = list.instances.count;
 
-                            Ren::Mat4f world_from_object_trans = Ren::Transpose(world_from_object);
+                            const Ren::Mat4f world_from_object_trans = Ren::Transpose(world_from_object);
 
                             InstanceData &instance = list.instances.data[list.instances.count++];
                             memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
                         }
 
-                        if (proc_objects_[n->prim_index].base_vertex == 0xffffffff) {
-                            proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf1().offset / 16;
+                        if (proc_objects_.data[n->prim_index].base_vertex == 0xffffffff) {
+                            proc_objects_.data[n->prim_index].base_vertex = mesh->attribs_buf1().offset / 16;
 
                             if (obj.comp_mask & CompAnimStateBit) {
                                 const AnimState &as = anims[obj.components[CompAnimState]];
-                                __push_skeletal_mesh(n->prim_index, as, mesh, list);
+                                proc_objects_.data[n->prim_index].base_vertex = __push_skeletal_mesh(skinned_buf_vtx_offset, n->prim_index, as, mesh, list);
+                            } else if (mesh->type() == Ren::MeshColored) {
+                                if (pretransform_vegetation && animate_vegetation) {
+                                    const Ren::Mat4f object_from_world = Ren::Inverse(world_from_object);
+                                    Ren::Vec4f wind_vec_object = object_from_world * Ren::Vec4f{ list.env.wind_vec[0], list.env.wind_vec[1], list.env.wind_vec[2], 0.0f };
+
+                                    const Ren::Vec3f obj_pos_ws = 0.5f * (tr.bbox_min_ws + tr.bbox_max_ws);
+                                    wind_vec_object[3] = obj_pos_ws[0] + obj_pos_ws[1] + obj_pos_ws[2];
+
+                                    proc_objects_.data[n->prim_index].base_vertex = __push_vegetation_mesh(vege_buf_vtx_offset, n->prim_index, mesh, wind_vec_object, list);
+                                }
                             }
                         }
 
@@ -904,10 +949,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                                 batch.mat_id = (mat->flags() & Ren::AlphaTest) ? (uint32_t)s->mat.index() : 0;
                                 batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
+                                batch.vegetation_bit = animate_vegetation && !pretransform_vegetation && (mesh->type() == Ren::MeshColored);
                                 batch.indices_offset = mesh->indices_buf().offset + s->offset;
-                                batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
+                                batch.base_vertex = proc_objects_.data[n->prim_index].base_vertex;
                                 batch.indices_count = s->num_indices;
-                                batch.instance_indices[0] = proc_objects_[n->prim_index].instance_index;
+                                batch.instance_indices[0] = proc_objects_.data[n->prim_index].instance_index;
                                 batch.instance_count = 1;
                             }
 
@@ -1056,25 +1102,35 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                         const Ren::Mat4f &world_from_object = tr.mat;
                         const Drawable &dr = drawables[obj.components[CompDrawable]];
-                        if ((dr.flags & Drawable::DrVisibleToShadow) == 0) continue;
+                        if ((dr.vis_mask & Drawable::VisShadow) == 0) continue;
 
                         const Ren::Mesh *mesh = dr.mesh.get();
 
                         Ren::Mat4f world_from_object_trans = Ren::Transpose(world_from_object);
 
-                        if (proc_objects_[n->prim_index].instance_index == 0xffffffff) {
-                            proc_objects_[n->prim_index].instance_index = list.instances.count;
+                        if (proc_objects_.data[n->prim_index].instance_index == 0xffffffff) {
+                            proc_objects_.data[n->prim_index].instance_index = list.instances.count;
 
                             InstanceData &instance = list.instances.data[list.instances.count++];
                             memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
                         }
 
-                        if (proc_objects_[n->prim_index].base_vertex == 0xffffffff) {
-                            proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf1().offset / 16;
+                        if (proc_objects_.data[n->prim_index].base_vertex == 0xffffffff) {
+                            proc_objects_.data[n->prim_index].base_vertex = mesh->attribs_buf1().offset / 16;
 
                             if (obj.comp_mask & CompAnimStateBit) {
                                 const AnimState &as = anims[obj.components[CompAnimState]];
-                                __push_skeletal_mesh(n->prim_index, as, mesh, list);
+                                proc_objects_.data[n->prim_index].base_vertex = __push_skeletal_mesh(skinned_buf_vtx_offset, n->prim_index, as, mesh, list);
+                            } else if (mesh->type() == Ren::MeshColored) {
+                                if (pretransform_vegetation && animate_vegetation) {
+                                    const Ren::Mat4f object_from_world = Ren::Inverse(world_from_object);
+                                    Ren::Vec4f wind_vec_object = object_from_world * Ren::Vec4f{ list.env.wind_vec[0], list.env.wind_vec[1], list.env.wind_vec[2], 0.0f };
+
+                                    const Ren::Vec3f obj_pos_ws = 0.5f * (tr.bbox_min_ws + tr.bbox_max_ws);
+                                    wind_vec_object[3] = obj_pos_ws[0] + obj_pos_ws[1] + obj_pos_ws[2];
+
+                                    proc_objects_.data[n->prim_index].base_vertex = __push_vegetation_mesh(vege_buf_vtx_offset, n->prim_index, mesh, wind_vec_object, list);
+                                }
                             }
                         }
 
@@ -1086,10 +1142,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                                 batch.mat_id = (mat->flags() & Ren::AlphaTest) ? (uint32_t)s->mat.index() : 0;
                                 batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
+                                batch.vegetation_bit = animate_vegetation && !pretransform_vegetation && (mesh->type() == Ren::MeshColored);
                                 batch.indices_offset = mesh->indices_buf().offset + s->offset;
-                                batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
+                                batch.base_vertex = proc_objects_.data[n->prim_index].base_vertex;
                                 batch.indices_count = s->num_indices;
-                                batch.instance_indices[0] = proc_objects_[n->prim_index].instance_index;
+                                batch.instance_indices[0] = proc_objects_.data[n->prim_index].instance_index;
                                 batch.instance_count = 1;
                             }
                             ++s;
@@ -1131,7 +1188,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     /*                                    OPTIMIZING DRAW LISTS                                       */
     /**************************************************************************************************/
 
-    uint64_t drawables_sort_start = Sys::GetTimeUs();
+    const uint64_t drawables_sort_start = Sys::GetTimeUs();
 
     // Sort drawables to optimize state switches
 
@@ -1163,14 +1220,14 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
         // Merge similar batches
         for (uint32_t start = 0, end = 1; end <= list.zfill_batch_indices.count; end++) {
-            if (end == list.zfill_batch_indices.count ||
+            if ((end - start) >= REN_MAX_BATCH_SIZE || end == list.zfill_batch_indices.count ||
                 list.zfill_batches.data[list.zfill_batch_indices.data[start]].sort_key != list.zfill_batches.data[list.zfill_batch_indices.data[end]].sort_key) {
 
                 DepthDrawBatch &b1 = list.zfill_batches.data[list.zfill_batch_indices.data[start]];
                 for (uint32_t i = start + 1; i < end; i++) {
                     DepthDrawBatch &b2 = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
 
-                    if (b1.base_vertex == b2.base_vertex && b1.instance_count + b2.instance_count < REN_MAX_BATCH_SIZE) {
+                    if (b1.base_vertex == b2.base_vertex && b1.instance_count + b2.instance_count <= REN_MAX_BATCH_SIZE) {
                         memcpy(&b1.instance_indices[b1.instance_count], &b2.instance_indices[0], b2.instance_count * sizeof(int));
                         b1.instance_count += b2.instance_count;
                         b2.instance_count = 0;
@@ -1209,14 +1266,14 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     // Merge similar batches
     for (uint32_t start = 0, end = 1; end <= list.main_batch_indices.count; end++) {
-        if (end == list.main_batch_indices.count ||
+        if ((end - start) >= REN_MAX_BATCH_SIZE || end == list.main_batch_indices.count ||
             list.main_batches.data[list.main_batch_indices.data[start]].sort_key != list.main_batches.data[list.main_batch_indices.data[end]].sort_key) {
 
             MainDrawBatch &b1 = list.main_batches.data[list.main_batch_indices.data[start]];
             for (uint32_t i = start + 1; i < end; i++) {
                 MainDrawBatch &b2 = list.main_batches.data[list.main_batch_indices.data[i]];
 
-                if (b1.base_vertex == b2.base_vertex && b1.instance_count + b2.instance_count < REN_MAX_BATCH_SIZE) {
+                if (b1.base_vertex == b2.base_vertex && b1.instance_count + b2.instance_count <= REN_MAX_BATCH_SIZE) {
                     memcpy(&b1.instance_indices[b1.instance_count], &b2.instance_indices[0], b2.instance_count * sizeof(int));
                     b1.instance_count += b2.instance_count;
                     b2.instance_count = 0;
@@ -1234,7 +1291,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     for (int i = 0; i < (int)list.shadow_lists.count; i++) {
         ShadowList &sh_list = list.shadow_lists.data[i];
 
-        uint32_t shadow_batch_end = sh_list.shadow_batch_start + sh_list.shadow_batch_count;
+        const uint32_t shadow_batch_end = sh_list.shadow_batch_start + sh_list.shadow_batch_count;
 
         temp_sort_spans_32_[0].count = sh_list.shadow_batch_count;
         temp_sort_spans_32_[1].count = sh_list.shadow_batch_count;
@@ -1261,22 +1318,16 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
         assert(sh_batch_indices_counter == shadow_batch_end);
 
-        sh_list.solid_batches_count = 0xffffffff;
-
         // Merge similar batches
         for (uint32_t start = sh_list.shadow_batch_start, end = sh_list.shadow_batch_start + 1; end <= shadow_batch_end; end++) {
-            if (sh_list.solid_batches_count == 0xffffffff && list.shadow_batches.data[list.shadow_batch_indices.data[start]].alpha_test_bit) {
-                sh_list.solid_batches_count = (start - sh_list.shadow_batch_start);
-            }
-
-            if (end == shadow_batch_end ||
+            if ((end - start) >= REN_MAX_BATCH_SIZE || end == shadow_batch_end ||
                 list.shadow_batches.data[list.shadow_batch_indices.data[start]].sort_key != list.shadow_batches.data[list.shadow_batch_indices.data[end]].sort_key) {
 
                 DepthDrawBatch &b1 = list.shadow_batches.data[list.shadow_batch_indices.data[start]];
                 for (uint32_t i = start + 1; i < end; i++) {
                     DepthDrawBatch &b2 = list.shadow_batches.data[list.shadow_batch_indices.data[i]];
 
-                    if (b1.base_vertex == b2.base_vertex && b1.instance_count + b2.instance_count < REN_MAX_BATCH_SIZE) {
+                    if (b1.base_vertex == b2.base_vertex && b1.instance_count + b2.instance_count <= REN_MAX_BATCH_SIZE) {
                         memcpy(&b1.instance_indices[b1.instance_count], &b2.instance_indices[0], b2.instance_count * sizeof(int));
                         b1.instance_count += b2.instance_count;
                         b2.instance_count = 0;
@@ -1286,17 +1337,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 start = end;
             }
         }
-
-        if (sh_list.solid_batches_count == 0xffffffff) {
-            sh_list.solid_batches_count = sh_list.shadow_batch_count;
-        }
     }
 
     /**************************************************************************************************/
     /*                                    ASSIGNING TO CLUSTERS                                       */
     /**************************************************************************************************/
 
-    uint64_t items_assignment_start = Sys::GetTimeUs();
+    const uint64_t items_assignment_start = Sys::GetTimeUs();
 
     if (list.light_sources.count || list.decals.count || list.probes.count) {
         list.draw_cam.ExtractSubFrustums(REN_GRID_RES_X, REN_GRID_RES_Y, REN_GRID_RES_Z, temp_sub_frustums_.data);
@@ -1365,35 +1412,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     }
 }
 
-void Renderer::__push_skeletal_mesh(uint32_t obj_index, const AnimState &as, const Ren::Mesh *mesh, DrawList &list) {
-    const Ren::Skeleton *skel = mesh->skel();
-
-    uint16_t palette_start = (uint16_t)list.skin_transforms.count;
-    SkinTransform *matr_palette = &list.skin_transforms.data[list.skin_transforms.count];
-    list.skin_transforms.count += (uint32_t)skel->bones.size();
-
-    for (int i = 0; i < (int)skel->bones.size(); i++) {
-        Ren::Mat4f matr_trans = Ren::Transpose(as.matr_palette[i]);
-        memcpy(&matr_palette[i].matr[0][0], Ren::ValuePtr(matr_trans), 12 * sizeof(float));
-    }
-
-    const Ren::BufferRange &buf = mesh->sk_attribs_buf();
-
-    uint32_t vertex_beg = buf.offset / 48,
-             vertex_end = (buf.offset + buf.size) / 48;
-
-    proc_objects_[obj_index].base_vertex = (skinned_buf1_vtx_offset_ / 16) + list.skin_vertices_count;
-
-    for (uint32_t i = vertex_beg; i < vertex_end; i += REN_SKIN_REGION_SIZE) {
-        uint16_t count = (uint16_t)_MIN(vertex_end - i, REN_SKIN_REGION_SIZE);
-        uint32_t out_offset = (skinned_buf1_vtx_offset_ / 16) + list.skin_vertices_count;
-        list.skin_regions.data[list.skin_regions.count++] = { i, out_offset, palette_start, count };
-        list.skin_vertices_count += count;
-    }
-
-    assert(list.skin_vertices_count <= REN_MAX_SKIN_VERTICES_TOTAL);
-}
-
 void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,
                                         const DecalItem *decals, int decals_count, const BBox *decals_boxes, const ProbeItem *probes, int probes_count,
                                         const LightSource * const*litem_to_lsource, CellData *cells, ItemData *items, std::atomic_int &items_count) {
@@ -1433,9 +1451,11 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 const float dn[3] = _CROSS(l.dir, p_n);
                 const float m[3] = _CROSS(l.dir, dn);
 
-                const float Q[3] = { l.pos[0] - influence * l.dir[0] - cap_radius * m[0],
-                                     l.pos[1] - influence * l.dir[1] - cap_radius * m[1],
-                                     l.pos[2] - influence * l.dir[2] - cap_radius * m[2] };
+                const float Q[3] = {
+                    l.pos[0] - influence * l.dir[0] - cap_radius * m[0],
+                    l.pos[1] - influence * l.dir[1] - cap_radius * m[1],
+                    l.pos[2] - influence * l.dir[2] - cap_radius * m[2]
+                };
 
                 if (dist < -radius && p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d < -epsilon) {
                     visible_to_slice = Ren::Invisible;
@@ -1463,9 +1483,11 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                     const float dn[3] = _CROSS(l.dir, p_n);
                     const float m[3] = _CROSS(l.dir, dn);
 
-                    const float Q[3] = { l.pos[0] - influence * l.dir[0] - cap_radius * m[0],
-                                         l.pos[1] - influence * l.dir[1] - cap_radius * m[1],
-                                         l.pos[2] - influence * l.dir[2] - cap_radius * m[2] };
+                    const float Q[3] = {
+                        l.pos[0] - influence * l.dir[0] - cap_radius * m[0],
+                        l.pos[1] - influence * l.dir[1] - cap_radius * m[1],
+                        l.pos[2] - influence * l.dir[2] - cap_radius * m[2]
+                    };
 
                     float val = p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d;
 
@@ -1495,9 +1517,11 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                         const float dn[3] = _CROSS(l.dir, p_n);
                         const float m[3] = _CROSS(l.dir, dn);
 
-                        const float Q[3] = { l.pos[0] - influence * l.dir[0] - cap_radius * m[0],
-                                             l.pos[1] - influence * l.dir[1] - cap_radius * m[1],
-                                             l.pos[2] - influence * l.dir[2] - cap_radius * m[2] };
+                        const float Q[3] = {
+                            l.pos[0] - influence * l.dir[0] - cap_radius * m[0],
+                            l.pos[1] - influence * l.dir[1] - cap_radius * m[1],
+                            l.pos[2] - influence * l.dir[2] - cap_radius * m[2]
+                        };
 
                         if (dist < -radius && p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d < -epsilon) {
                             res = Ren::Invisible;
@@ -1653,9 +1677,10 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 
                 // Can skip near, far, top and bottom plane check
                 for (int k = Ren::LeftPlane; k <= Ren::RightPlane; k++) {
-                    float dist = sf->planes[k].n[0] * p_pos[0] +
-                                 sf->planes[k].n[1] * p_pos[1] +
-                                 sf->planes[k].n[2] * p_pos[2] + sf->planes[k].d;
+                    const float dist =
+                        sf->planes[k].n[0] * p_pos[0] +
+                        sf->planes[k].n[1] * p_pos[1] +
+                        sf->planes[k].n[2] * p_pos[2] + sf->planes[k].d;
 
                     if (dist < -p.radius) {
                         res = Ren::Invisible;
@@ -1684,9 +1709,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
             cell.item_offset = items_count.fetch_add(local_items_count);
             if (cell.item_offset > REN_MAX_ITEMS_TOTAL) {
                 cell.item_offset = 0;
-                cell.light_count = 0;
-                cell.decal_count = 0;
-                cell.probe_count = 0;
+                cell.light_count = cell.decal_count = cell.probe_count = 0;
             } else {
                 int free_items_left = REN_MAX_ITEMS_TOTAL - cell.item_offset;
 
@@ -1698,6 +1721,68 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
             }
         }
     }
+}
+
+uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_offset, const uint32_t obj_index, const AnimState &as, const Ren::Mesh *mesh, DrawList &list) {
+    const Ren::Skeleton *skel = mesh->skel();
+
+    const uint16_t palette_start = (uint16_t)list.skin_transforms.count;
+    SkinTransform *matr_palette = &list.skin_transforms.data[list.skin_transforms.count];
+    list.skin_transforms.count += (uint32_t)skel->bones.size();
+
+    for (int i = 0; i < (int)skel->bones.size(); i++) {
+        const Ren::Mat4f matr_trans = Ren::Transpose(as.matr_palette[i]);
+        memcpy(&matr_palette[i].matr[0][0], Ren::ValuePtr(matr_trans), 12 * sizeof(float));
+    }
+
+    const Ren::BufferRange &buf = mesh->sk_attribs_buf();
+
+    const uint32_t
+        vertex_beg = buf.offset / 48,
+        vertex_end = (buf.offset + buf.size) / 48;
+
+    const uint32_t base_vertex = skinned_buf_vtx_offset + list.skin_vertices_count;
+
+    for (uint32_t i = vertex_beg; i < vertex_end; i += REN_SKIN_REGION_SIZE) {
+        const uint16_t count = (uint16_t)_MIN(vertex_end - i, REN_SKIN_REGION_SIZE);
+        const uint32_t out_offset = skinned_buf_vtx_offset + list.skin_vertices_count;
+        list.skin_regions.data[list.skin_regions.count++] = { i, out_offset, palette_start, count };
+        list.skin_vertices_count += count;
+    }
+
+    assert(list.skin_vertices_count <= REN_MAX_SKIN_VERTICES_TOTAL);
+    return base_vertex;
+}
+
+uint32_t RendererInternal::__push_vegetation_mesh(const uint32_t vege_buf_vtx_offset, const uint32_t obj_index, const Ren::Mesh *mesh, const Ren::Vec4f &wind_vec, DrawList &list) {
+    const Ren::BufferRange &buf = mesh->attribs_buf1();
+
+    const uint32_t
+        vertex_beg = buf.offset / 16,
+        vertex_end = (buf.offset + buf.size) / 16;
+
+    const uint32_t base_vertex = vege_buf_vtx_offset + list.vege_vertices_count;
+
+    union {
+        int16_t     in[2];
+        uint32_t    out;
+    } wind_vec_packed;
+
+    wind_vec_packed.in[0] = f32_to_s16(wind_vec[0]);
+    wind_vec_packed.in[1] = f32_to_s16(wind_vec[2]);
+
+    float __unused;
+    const uint16_t obj_phase = Ren::f32_to_f16(std::modf(wind_vec[3] * 12.9898f, &__unused));
+
+    for (uint32_t i = vertex_beg; i < vertex_end; i += REN_VEGE_REGION_SIZE) {
+        const uint16_t count = (uint16_t)_MIN(vertex_end - i, REN_VEGE_REGION_SIZE);
+        const uint32_t out_offset = vege_buf_vtx_offset + list.vege_vertices_count;
+        list.vege_regions.data[list.vege_regions.count++] = { i, out_offset, wind_vec_packed.out, obj_phase, count };
+        list.vege_vertices_count += count;
+    }
+
+    assert(list.vege_vertices_count <= REN_MAX_VEGE_VERTICES_TOTAL);
+    return base_vertex;
 }
 
 #undef BBOX_POINTS

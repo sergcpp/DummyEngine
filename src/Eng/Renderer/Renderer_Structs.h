@@ -52,8 +52,9 @@ static_assert(sizeof(InstanceData) == 64, "!");
 struct DepthDrawBatch {
     union {
         struct {
-            uint32_t _pad1 : 3;
+            uint32_t _pad1 : 2;
             uint32_t indices_offset : 28;
+            uint32_t vegetation_bit : 1;
             uint32_t alpha_test_bit : 1;
         };
         uint32_t sort_key = 0;
@@ -89,7 +90,6 @@ struct ShadowList {
     int shadow_map_pos[2], shadow_map_size[2];
     int scissor_test_pos[2], scissor_test_size[2];
     uint32_t shadow_batch_start, shadow_batch_count;
-    uint32_t solid_batches_count;
 
     // for debugging
     float cam_near, cam_far;
@@ -125,6 +125,13 @@ struct SkinRegion {
     uint16_t xform_offset, vertex_count;
 };
 static_assert(sizeof(SkinRegion) == 12, "!");
+
+struct VegeRegion {
+    uint32_t in_vtx_offset, out_vtx_offset;
+    uint32_t wind_vec_packed;
+    uint16_t wind_phase, vertex_count;
+};
+static_assert(sizeof(VegeRegion) == 16, "!");
 
 enum eRenderFlags : uint32_t {
     EnableZFill     = (1u << 0u),
@@ -171,6 +178,7 @@ struct BackendInfo {
     uint64_t gpu_start_timepoint_us = 0,
              gpu_end_timepoint_us = 0;
     uint32_t skinning_time_us = 0,
+             vegetation_time_us = 0,
              shadow_time_us = 0,
              depth_opaque_pass_time_us = 0,
              ao_pass_time_us = 0,

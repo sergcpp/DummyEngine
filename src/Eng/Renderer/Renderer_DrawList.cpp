@@ -3,6 +3,7 @@
 DrawList::DrawList() {
     skin_transforms.realloc(REN_MAX_SKIN_XFORMS_TOTAL);
     skin_regions.realloc(REN_MAX_SKIN_REGIONS_TOTAL);
+    vege_regions.realloc(REN_MAX_VEGE_REGIONS_TOTAL);
     instances.realloc(REN_MAX_INSTANCES_TOTAL);
     shadow_batches.realloc(REN_MAX_SHADOW_BATCHES);
     shadow_batch_indices.realloc(REN_MAX_SHADOW_BATCHES);

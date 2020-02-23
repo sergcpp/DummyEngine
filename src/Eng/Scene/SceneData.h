@@ -52,11 +52,12 @@ struct SceneObject {
 
     SceneObject() : comp_mask(0), change_mask(0), last_change_mask(0) {}
     SceneObject(const SceneObject &rhs) = delete;
-    SceneObject(SceneObject &&rhs) = default;
+    SceneObject(SceneObject &&rhs) noexcept = default;
 
     SceneObject &operator=(const SceneObject &rhs) = delete;
     SceneObject &operator=(SceneObject &&rhs) = default;
 };
+//static_assert(sizeof(SceneObject) == 156 + 4, "!");
 
 struct bvh_node_t {
     uint32_t prim_index, prim_count,
@@ -68,11 +69,12 @@ struct bvh_node_t {
 };
 static_assert(sizeof(bvh_node_t) == 48, "!");
 
-#define MAX_STACK_SIZE 64
+const int MAX_STACK_SIZE = 64;
 
 struct Environment {
     Ren::Vec3f          sun_dir, sun_col;
     float               sun_softness = 0.0f;
+    Ren::Vec3f          wind_vec;
     Ren::Texture2DRef   env_map;
     Ren::Texture2DRef   lm_direct, lm_indir,
                         lm_indir_sh[4];

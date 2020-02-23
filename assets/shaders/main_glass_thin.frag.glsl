@@ -48,7 +48,8 @@ uniform SharedDataBlock {
     ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspDepthRangeAndMode;
+    vec4 uResAndFRes, uTranspParamsAndTime;
+	vec4 uWindParams;
     ProbeItem uProbes[$MaxProbes];
 };
 
@@ -75,7 +76,7 @@ void main(void) {
     
     // remapped depth in [-1; 1] range used for moments calculation
     highp float transp_z =
-        2.0 * (log(lin_depth) - uTranspDepthRangeAndMode[0]) / uTranspDepthRangeAndMode[1] - 1.0;
+        2.0 * (log(lin_depth) - uTranspParamsAndTime[0]) / uTranspParamsAndTime[1] - 1.0;
     
     vec3 normal_color = texture(normals_texture, aVertexUVs_).wyz;
     
@@ -88,7 +89,7 @@ void main(void) {
     float factor = pow5(clamp(1.0 - dot(normal, -view_ray_ws), 0.0, 1.0));
     float fresnel = clamp(R0 + (1.0 - R0) * factor, 0.0, 1.0);
     
-    if (uTranspDepthRangeAndMode[2] < 1.5 || uTranspDepthRangeAndMode[2] > 2.5) {
+    if (uTranspParamsAndTime[2] < 1.5 || uTranspParamsAndTime[2] > 2.5) {
         highp float k = log2(lin_depth / uClipInfo[1]) / uClipInfo[3];
         int slice = int(floor(k * $ItemGridResZ.0));
         
@@ -120,16 +121,16 @@ void main(void) {
             reflected_color /= total_fade;
         }
         
-        if (uTranspDepthRangeAndMode[2] < 0.5) {
+        if (uTranspParamsAndTime[2] < 0.5) {
             outColor = vec4(reflected_color * specular_color.rgb, fresnel);
-        } else if (uTranspDepthRangeAndMode[2] < 1.5) {
+        } else if (uTranspParamsAndTime[2] < 1.5) {
             outColor = vec4(reflected_color * specular_color.rgb, fresnel) * TransparentDepthWeight(gl_FragCoord.z, fresnel);
             outNormal = vec4(fresnel);
         } else {
             float b_0;
             vec4 b_1234;
                                
-            if (uTranspDepthRangeAndMode[2] < 3.5) {
+            if (uTranspParamsAndTime[2] < 3.5) {
                 b_0 = texelFetch(moments0_texture, ivec2(ix, iy), 0).x;
                 b_1234 = vec4(texelFetch(moments1_texture, ivec2(ix, iy), 0).xy,
                               texelFetch(moments2_texture, ivec2(ix, iy), 0).xy);

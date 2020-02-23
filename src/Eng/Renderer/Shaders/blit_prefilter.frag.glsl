@@ -18,8 +18,7 @@ out vec4 outColor;
 
 vec3 gen_cubemap_coord(in vec2 txc, in int face) {
     vec3 v;
-    switch(face)
-    {
+    switch(face) {
         case 0: v = vec3( 1.0,   -txc.x,  txc.y); break; // +X
         case 1: v = vec3(-1.0,   -txc.x, -txc.y); break; // -X
         case 2: v = vec3(-txc.y,  1.0,    txc.x); break; // +Y

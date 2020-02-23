@@ -15,10 +15,11 @@ namespace RendererInternal {
         ShadowMapRegion uShadowMapRegions[REN_MAX_SHADOWMAPS_TOTAL];
         Ren::Vec4f uSunDir, uSunCol;
         Ren::Vec4f uClipInfo, uCamPosAndGamma;
-        Ren::Vec4f uResAndFRes, uTranspDepthRangeAndMode;
-        ProbeItem uProbes[REN_MAX_PROBES_TOTAL];
+        Ren::Vec4f uResAndFRes, uTranspParamsAndTime;
+        Ren::Vec4f uWindParams;
+        ProbeItem uProbes[REN_MAX_PROBES_TOTAL] = {};
     };
-    static_assert(sizeof(SharedDataBlock) == 5664, "!");
+    static_assert(sizeof(SharedDataBlock) == 5680, "!");
 
     const Ren::Vec2f poisson_disk[] = {
         Ren::Vec2f{ -0.705374f, -0.668203f }, Ren::Vec2f{ -0.780145f, 0.486251f  }, Ren::Vec2f{ 0.566637f, 0.605213f   }, Ren::Vec2f{ 0.488876f, -0.783441f  },
@@ -39,15 +40,15 @@ namespace RendererInternal {
         Ren::Vec2f{ -0.620106f, -0.328104f }, Ren::Vec2f{ 0.789239f, -0.419965f  }, Ren::Vec2f{ -0.545396f, 0.538133f  }, Ren::Vec2f{ -0.178564f, -0.596057f }
     };
 
-    const GLuint A_INDICES = 3;
-    const GLuint A_WEIGHTS = 4;
+    //const GLuint A_INDICES = 3;
+    //const GLuint A_WEIGHTS = 4;
 
     const int U_MVP_MATR = 0;
-    const int U_MV_MATR = 1;
+    //const int U_MV_MATR = 1;
 
-    const int U_SH_MVP_MATR = 2;
+    //const int U_SH_MVP_MATR = 2;
 
-    const int U_TEX = 3;
+    //const int U_TEX = 3;
 
     const int U_GAMMA = 14;
 
@@ -55,9 +56,9 @@ namespace RendererInternal {
 
     const int U_RES = 15;
     
-    const int U_LM_TRANSFORM = 16;
+    //const int U_LM_TRANSFORM = 16;
 
-    const int LIGHTS_BUFFER_BINDING = 0;
+    //const int LIGHTS_BUFFER_BINDING = 0;
 
     const int TEMP_BUF_SIZE = 256;
 
@@ -75,6 +76,7 @@ namespace RendererInternal {
 
     const size_t SkinTransformsBufChunkSize = sizeof(SkinTransform) * REN_MAX_SKIN_XFORMS_TOTAL;
     const size_t SkinRegionsBufChunkSize    = sizeof(SkinRegion) * REN_MAX_SKIN_REGIONS_TOTAL;
+    const size_t VegeRegionsBufChunkSize    = sizeof(VegeRegion) * REN_MAX_VEGE_REGIONS_TOTAL;
     const size_t InstanceDataBufChunkSize   = sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL;
     const size_t LightsBufChunkSize         = sizeof(LightSourceItem) * REN_MAX_LIGHTS_TOTAL;
     const size_t DecalsBufChunkSize         = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
@@ -99,147 +101,114 @@ namespace RendererInternal {
 void Renderer::InitRendererInternal() {
     using namespace RendererInternal;
 
-    Ren::ILog *log = ctx_.log();
+    //Ren::ILog *log = ctx_.log();
 
     Ren::eProgLoadStatus status;
-    log->Info("Compiling skydome");
     skydome_prog_ = ctx_.LoadProgramGLSL("skydome", skydome_vs, skydome_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling fillz_solid");
     fillz_solid_prog_ = ctx_.LoadProgramGLSL("fillz_solid", fillz_solid_vs, fillz_solid_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling fillz_transp");
+    fillz_vege_solid_prog_ = ctx_.LoadProgramGLSL("fillz_vege_solid", fillz_vege_solid_vs, fillz_solid_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
     fillz_transp_prog_ = ctx_.LoadProgramGLSL("fillz_transp", fillz_transp_vs, fillz_transp_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling shadow_solid");
+    fillz_vege_transp_prog_ = ctx_.LoadProgramGLSL("fillz_vege_transp", fillz_vege_transp_vs, fillz_transp_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
     shadow_solid_prog_ = ctx_.LoadProgramGLSL("shadow_solid", shadow_solid_vs, shadow_solid_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling shadow_transp");
+    shadow_vege_solid_prog_ = ctx_.LoadProgramGLSL("shadow_vege_solid", shadow_vege_solid_vs, shadow_solid_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
     shadow_transp_prog_ = ctx_.LoadProgramGLSL("shadow_transp", shadow_transp_vs, shadow_transp_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit");
+    shadow_vege_transp_prog_ = ctx_.LoadProgramGLSL("shadow_vege_transp", shadow_vege_transp_vs, shadow_transp_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
     blit_prog_ = ctx_.LoadProgramGLSL("blit", blit_vs, blit_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_combine");
     blit_combine_prog_ = ctx_.LoadProgramGLSL("blit_combine", blit_vs, blit_combine_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_combine_ms");
     blit_combine_ms_prog_ = ctx_.LoadProgramGLSL("blit_combine_ms", blit_vs, blit_combine_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_ms");
     blit_ms_prog_ = ctx_.LoadProgramGLSL("blit_ms", blit_vs, blit_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_red");
     blit_red_prog_ = ctx_.LoadProgramGLSL("blit_red", blit_vs, blit_reduced_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_down");
     blit_down_prog_ = ctx_.LoadProgramGLSL("blit_down", blit_vs, blit_down_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_down_ms");
     blit_down_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_ms", blit_vs, blit_down_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_down_depth");
     blit_down_depth_prog_ = ctx_.LoadProgramGLSL("blit_down_depth", blit_vs, blit_down_depth_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_down_depth_ms");
     blit_down_depth_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_depth_ms", blit_vs, blit_down_depth_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_gauss");
     blit_gauss_prog_ = ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_gauss_sep");
     blit_gauss_sep_prog_ = ctx_.LoadProgramGLSL("blit_gauss_sep", blit_vs, blit_gauss_sep_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_bilateral");
     blit_bilateral_prog_ = ctx_.LoadProgramGLSL("blit_bilateral", blit_vs, blit_bilateral_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_upscale");
     blit_upscale_prog_ = ctx_.LoadProgramGLSL("blit_upscale", blit_vs, blit_upscale_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_upscale_ms");
     blit_upscale_ms_prog_ = ctx_.LoadProgramGLSL("blit_upscale_ms", blit_vs, blit_upscale_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_debug");
     blit_debug_prog_ = ctx_.LoadProgramGLSL("blit_debug", blit_vs, blit_debug_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_debug_ms");
     blit_debug_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug_ms", blit_vs, blit_debug_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
 
     {   // ssr related
-        log->Info("Compiling blit_ssr");
         blit_ssr_prog_ = ctx_.LoadProgramGLSL("blit_ssr", blit_vs, blit_ssr_fs, &status);
         assert(status == Ren::ProgCreatedFromData);
-        log->Info("Compiling blit_ssr_ms");
         blit_ssr_ms_prog_ = ctx_.LoadProgramGLSL("blit_ssr_ms", blit_vs, blit_ssr_ms_fs, &status);
         assert(status == Ren::ProgCreatedFromData);
-        log->Info("Compiling blit_ssr_compose");
         blit_ssr_compose_prog_ = ctx_.LoadProgramGLSL("blit_ssr_compose", blit_vs, blit_ssr_compose_fs, &status);
         assert(status == Ren::ProgCreatedFromData);
-        log->Info("Compiling blit_ssr_compose_ms");
         blit_ssr_compose_ms_prog_ = ctx_.LoadProgramGLSL("blit_ssr_compose_ms", blit_vs, blit_ssr_compose_ms_fs, &status);
         assert(status == Ren::ProgCreatedFromData);
-        log->Info("Compiling blit_ssr_dilate");
         blit_ssr_dilate_prog_ = ctx_.LoadProgramGLSL("blit_ssr_dilate", blit_vs, blit_ssr_dilate_fs, &status);
         assert(status == Ren::ProgCreatedFromData);
     }
 
-    log->Info("Compiling blit_ms_resolve");
     blit_ms_resolve_prog_ = ctx_.LoadProgramGLSL("blit_ms_resolve", blit_vs, blit_ms_resolve_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_ao");
     blit_ao_prog_ = ctx_.LoadProgramGLSL("blit_ao", blit_vs, blit_ssao_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_multiply");
     blit_multiply_prog_ = ctx_.LoadProgramGLSL("blit_multiply", blit_vs, blit_multiply_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_multiply_ms");
     blit_multiply_ms_prog_ = ctx_.LoadProgramGLSL("blit_multiply_ms", blit_vs, blit_multiply_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_debug_bvh");
     blit_debug_bvh_prog_ = ctx_.LoadProgramGLSL("blit_debug_bvh", blit_vs, blit_debug_bvh_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_debug_bvh_ms");
     blit_debug_bvh_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug_bvh_ms", blit_vs, blit_debug_bvh_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_depth");
     blit_depth_prog_ = ctx_.LoadProgramGLSL("blit_depth", blit_vs, blit_depth_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_rgbm");
     blit_rgbm_prog_ = ctx_.LoadProgramGLSL("blit_rgbm", blit_vs, blit_rgbm_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_mipmap");
     blit_mipmap_prog_ = ctx_.LoadProgramGLSL("blit_mipmap", blit_vs, blit_mipmap_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_prefilter");
     blit_prefilter_prog_ = ctx_.LoadProgramGLSL("blit_prefilter", blit_vs, blit_prefilter_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_project_sh_prog");
     blit_project_sh_prog_ = ctx_.LoadProgramGLSL("blit_project_sh_prog", blit_vs, blit_project_sh_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_fxaa_prog");
     blit_fxaa_prog_ = ctx_.LoadProgramGLSL("blit_fxaa_prog", blit_vs, blit_fxaa_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_transparent_compose_prog");
     blit_transparent_compose_prog_ = ctx_.LoadProgramGLSL("blit_transparent_compose_prog", blit_vs, blit_transparent_compose_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_transparent_compose_ms_prog");
     blit_transparent_compose_ms_prog_ = ctx_.LoadProgramGLSL("blit_transparent_compose_ms_prog", blit_vs, blit_transparent_compose_ms_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling blit_transparent_init_prog");
     blit_transparent_init_prog_ = ctx_.LoadProgramGLSL("blit_transparent_init_prog", blit_vs, blit_transparent_init_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling probe_prog");
     probe_prog_ = ctx_.LoadProgramGLSL("probe_prog", probe_vs, probe_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    log->Info("Compiling skinning_prog");
     skinning_prog_ = ctx_.LoadProgramGLSL("skinning_prog", skinning_cs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    vegetation_prog_ = ctx_.LoadProgramGLSL("vegetation_prog", vegetation_cs, &status);
     assert(status == Ren::ProgCreatedFromData);
 
     GLint tex_buf_offset_alignment;
     glGetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT, &tex_buf_offset_alignment);
 
-    for (int i = 0; i < FrameSyncWindow; i++) {
+    for (uint32_t &ubo : unif_shared_data_block_) {
         GLuint shared_data_ubo;
 
         glGenBuffers(1, &shared_data_ubo);
@@ -247,7 +216,7 @@ void Renderer::InitRendererInternal() {
         glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedDataBlock), nullptr, GL_DYNAMIC_COPY);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-        unif_shared_data_block_[i] = (uint32_t)shared_data_ubo;
+        ubo = (uint32_t)shared_data_ubo;
     }
 
     Ren::CheckError("[InitRendererInternal]: UBO creation", ctx_.log());
@@ -268,7 +237,7 @@ void Renderer::InitRendererInternal() {
             glGenTextures(1, &instances_tbo);
             glBindTexture(GL_TEXTURE_BUFFER, instances_tbo);
 
-            GLuint offset = i * InstanceDataBufChunkSize;
+            const GLuint offset = i * InstanceDataBufChunkSize;
             assert((offset % tex_buf_offset_alignment == 0) && "Offset is not properly aligned!");
             glTexBufferRange(GL_TEXTURE_BUFFER, GL_RGBA32F, instances_buf, offset, InstanceDataBufChunkSize);
             glBindTexture(GL_TEXTURE_BUFFER, 0);
@@ -325,6 +294,29 @@ void Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: skin transforms TBO", ctx_.log());
 
+    {   // Create buffer that holds offsets for vegetation shader invocation
+        GLuint vege_regions_buf;
+
+        glGenBuffers(1, &vege_regions_buf);
+        glBindBuffer(GL_TEXTURE_BUFFER, vege_regions_buf);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * VegeRegionsBufChunkSize, nullptr, GL_DYNAMIC_COPY);
+        glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+        vege_regions_buf_ = (uint32_t)vege_regions_buf;
+
+        GLuint vege_regions_tbo;
+
+        glGenTextures(1, &vege_regions_tbo);
+        glBindTexture(GL_TEXTURE_BUFFER, vege_regions_tbo);
+
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, vege_regions_buf);
+        glBindTexture(GL_TEXTURE_BUFFER, 0);
+
+        vege_regions_tbo_ = (uint32_t)vege_regions_tbo;
+    }
+
+    Ren::CheckError("[InitRendererInternal]: vege regions TBO", ctx_.log());
+
     {   // Create buffer for lights information
         GLuint lights_buf;
 
@@ -368,7 +360,7 @@ void Renderer::InitRendererInternal() {
             glGenTextures(1, &decals_tbo);
             glBindTexture(GL_TEXTURE_BUFFER, decals_tbo);
 
-            GLuint offset = i * DecalsBufChunkSize;
+            const GLuint offset = i * DecalsBufChunkSize;
             assert((offset % tex_buf_offset_alignment == 0) && "Offset is not properly aligned!");
             glTexBufferRange(GL_TEXTURE_BUFFER, GL_RGBA32F, decals_buf, offset, DecalsBufChunkSize);
             glBindTexture(GL_TEXTURE_BUFFER, 0);
@@ -407,7 +399,7 @@ void Renderer::InitRendererInternal() {
             glGenTextures(1, &cells_tbo);
             glBindTexture(GL_TEXTURE_BUFFER, cells_tbo);
 
-            GLuint offset = i * CellsBufChunkSize;
+            const GLuint offset = i * CellsBufChunkSize;
             assert((offset % tex_buf_offset_alignment == 0) && "Offset is not properly aligned!");
             glTexBufferRange(GL_TEXTURE_BUFFER, GL_RG32UI, cells_buf, offset, CellsBufChunkSize);
             glBindTexture(GL_TEXTURE_BUFFER, 0);
@@ -442,7 +434,7 @@ void Renderer::InitRendererInternal() {
             glGenTextures(1, &items_tbo);
             glBindTexture(GL_TEXTURE_BUFFER, items_tbo);
 
-            GLuint offset = i * ItemsBufChunkSize;
+            const GLuint offset = i * ItemsBufChunkSize;
             assert((offset % tex_buf_offset_alignment == 0) && "Offset is not properly aligned!");
             glTexBufferRange(GL_TEXTURE_BUFFER, GL_R32UI, items_buf, offset, ItemsBufChunkSize);
             glBindTexture(GL_TEXTURE_BUFFER, 0);
@@ -454,14 +446,14 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: items TBO", ctx_.log());
 
     {   // Create pbo for reading back frame brightness
-        for (int i = 0; i < FrameSyncWindow; i++) {
+        for (uint32_t &pbo : reduce_pbo_) {
             GLuint reduce_pbo;
             glGenBuffers(1, &reduce_pbo);
             glBindBuffer(GL_PIXEL_PACK_BUFFER, reduce_pbo);
-            glBufferData(GL_PIXEL_PACK_BUFFER, 4 * reduced_buf_.w * reduced_buf_.h * sizeof(float), 0, GL_DYNAMIC_READ);
+            glBufferData(GL_PIXEL_PACK_BUFFER, GLsizeiptr(4 * reduced_buf_.w * reduced_buf_.h * sizeof(float)), nullptr, GL_DYNAMIC_READ);
 
             glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-            reduce_pbo_[i] = (uint32_t)reduce_pbo;
+            pbo = (uint32_t)reduce_pbo;
         }
     }
 
@@ -471,7 +463,7 @@ void Renderer::InitRendererInternal() {
         GLuint probe_sample_pbo;
         glGenBuffers(1, &probe_sample_pbo);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, probe_sample_pbo);
-        glBufferData(GL_PIXEL_PACK_BUFFER, 4 * probe_sample_buf_.w * probe_sample_buf_.h * sizeof(float), 0, GL_DYNAMIC_READ);
+        glBufferData(GL_PIXEL_PACK_BUFFER, GLsizeiptr(4 * probe_sample_buf_.w * probe_sample_buf_.h * sizeof(float)), nullptr, GL_DYNAMIC_READ);
 
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         probe_sample_pbo_ = (uint32_t)probe_sample_pbo;
@@ -510,7 +502,7 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: temp framebuffer", ctx_.log());
 
     {   // Create timer queries
-        for (int i = 0; i < FrameSyncWindow; i++) {
+        for (int i = 0; i < FrameSyncWindow; i++) { // NOLINT
             glGenQueries(TimersCount, queries_[i]);
             
             for (int j = 0; j < TimersCount; j++) {
@@ -537,6 +529,11 @@ void Renderer::InitRendererInternal() {
         skinned_buf1_vtx_offset_ = vtx_buf1->Alloc(REN_MAX_SKIN_VERTICES_TOTAL * 16);
         skinned_buf2_vtx_offset_ = vtx_buf2->Alloc(REN_MAX_SKIN_VERTICES_TOTAL * 16);
         assert(skinned_buf1_vtx_offset_ == skinned_buf2_vtx_offset_ && "Offsets do not match!");
+
+        // Allocate buffer for vegetation vertices
+        vegetation_buf1_vtx_offset_ = vtx_buf1->Alloc(REN_MAX_VEGE_VERTICES_TOTAL * 16);
+        vegetation_buf2_vtx_offset_ = vtx_buf2->Alloc(REN_MAX_VEGE_VERTICES_TOTAL * 16);
+        assert(vegetation_buf1_vtx_offset_ == vegetation_buf2_vtx_offset_ && "Offsets do not match!");
 
         // Allocate skydome vertices
         skydome_vtx1_offset_ = vtx_buf1->Alloc(sizeof(__skydome_positions) + (16 - sizeof(__skydome_positions) % 16), __skydome_positions);
@@ -795,8 +792,14 @@ void Renderer::CheckInitVAOs() {
             auto depth_pass_solid_vao = (GLuint)depth_pass_solid_vao_;
             glDeleteVertexArrays(1, &depth_pass_solid_vao);
 
+            auto depth_pass_vege_solid_vao = (GLuint)depth_pass_vege_solid_vao_;
+            glDeleteVertexArrays(1, &depth_pass_vege_solid_vao);
+
             auto depth_pass_transp_vao = (GLuint)depth_pass_transp_vao_;
             glDeleteVertexArrays(1, &depth_pass_transp_vao);
+
+            auto depth_pass_vege_transp_vao = (GLuint)depth_pass_vege_transp_vao_;
+            glDeleteVertexArrays(1, &depth_pass_vege_transp_vao);
         }
 
         const int buf1_stride = 16, buf2_stride = 16;
@@ -810,10 +813,38 @@ void Renderer::CheckInitVAOs() {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);
+            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);  // NOLINT
 
             glBindVertexArray(0);
             depth_pass_solid_vao_ = (uint32_t)depth_pass_solid_vao;
+        }
+
+        {   // VAO for shadow and depth-fill passes of vegetation (solid, uses position and color attributes only)
+            GLuint depth_pass_vege_solid_vao;
+            glGenVertexArrays(1, &depth_pass_vege_solid_vao);
+            glBindVertexArray(depth_pass_vege_solid_vao);
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
+
+            {   // Setup attributes from buffer 1
+                glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
+
+                glEnableVertexAttribArray(REN_VTX_POS_LOC);
+                glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void*)0);   // NOLINT
+            }
+
+            {   // Setup attributes from buffer 2
+                glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf2);
+
+                glEnableVertexAttribArray(REN_VTX_NOR_LOC);
+                glVertexAttribPointer(REN_VTX_NOR_LOC, 3, GL_SHORT, GL_TRUE, buf2_stride, (void*)0);    // NOLINT
+
+                glEnableVertexAttribArray(REN_VTX_AUX_LOC);
+                glVertexAttribIPointer(REN_VTX_AUX_LOC, 1, GL_UNSIGNED_INT, buf2_stride, (void*)(6 * sizeof(uint16_t)));
+            }
+
+            glBindVertexArray(0);
+            depth_pass_vege_solid_vao_ = (uint32_t)depth_pass_vege_solid_vao;
         }
 
         {   // VAO for shadow and depth-fill passes (alpha-tested, uses position and uv attributes)
@@ -825,13 +856,44 @@ void Renderer::CheckInitVAOs() {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);
+            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);  // NOLINT
 
             glEnableVertexAttribArray(REN_VTX_UV1_LOC);
             glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride, (void *)(3 * sizeof(float)));
 
             glBindVertexArray(0);
             depth_pass_transp_vao_ = (uint32_t)depth_pass_transp_vao;
+        }
+
+        {   // VAO for shadow and depth-fill passes of vegetation (solid, uses position and color attributes only)
+            GLuint depth_pass_vege_transp_vao;
+            glGenVertexArrays(1, &depth_pass_vege_transp_vao);
+            glBindVertexArray(depth_pass_vege_transp_vao);
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
+
+            {   // Setup attributes from buffer 1
+                glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
+
+                glEnableVertexAttribArray(REN_VTX_POS_LOC);
+                glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void*)0);   // NOLINT
+
+                glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+                glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride, (void*)(3 * sizeof(float)));
+            }
+
+            {   // Setup attributes from buffer 2
+                glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf2);
+
+                glEnableVertexAttribArray(REN_VTX_NOR_LOC);
+                glVertexAttribPointer(REN_VTX_NOR_LOC, 3, GL_SHORT, GL_TRUE, buf2_stride, (void*)0);    // NOLINT
+
+                glEnableVertexAttribArray(REN_VTX_AUX_LOC);
+                glVertexAttribIPointer(REN_VTX_AUX_LOC, 1, GL_UNSIGNED_INT, buf2_stride, (void*)(6 * sizeof(uint16_t)));
+            }
+
+            glBindVertexArray(0);
+            depth_pass_vege_transp_vao_ = (uint32_t)depth_pass_vege_transp_vao;
         }
 
         {   // VAO for main drawing (uses all attributes)
@@ -845,7 +907,7 @@ void Renderer::CheckInitVAOs() {
                 glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
 
                 glEnableVertexAttribArray(REN_VTX_POS_LOC);
-                glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);
+                glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);  // NOLINT
 
                 glEnableVertexAttribArray(REN_VTX_UV1_LOC);
                 glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride, (void *)(3 * sizeof(float)));
@@ -855,13 +917,13 @@ void Renderer::CheckInitVAOs() {
                 glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf2);
 
                 glEnableVertexAttribArray(REN_VTX_NOR_LOC);
-                glVertexAttribPointer(REN_VTX_NOR_LOC, 4, GL_SHORT, GL_TRUE, buf2_stride, (void *)0);
+                glVertexAttribPointer(REN_VTX_NOR_LOC, 4, GL_SHORT, GL_TRUE, buf2_stride, (void *)0);   // NOLINT
 
                 glEnableVertexAttribArray(REN_VTX_TAN_LOC);
                 glVertexAttribPointer(REN_VTX_TAN_LOC, 2, GL_SHORT, GL_TRUE, buf2_stride, (void *)(4 * sizeof(uint16_t)));
 
-                glEnableVertexAttribArray(REN_VTX_UV2_LOC);
-                glVertexAttribPointer(REN_VTX_UV2_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf2_stride, (void *)(6 * sizeof(uint16_t)));
+                glEnableVertexAttribArray(REN_VTX_AUX_LOC);
+                glVertexAttribIPointer(REN_VTX_AUX_LOC, 1, GL_UNSIGNED_INT, buf2_stride, (void *)(6 * sizeof(uint16_t)));
             }
 
             glBindVertexArray(0);
@@ -942,9 +1004,9 @@ void Renderer::DestroyRendererInternal() {
                    vtx_buf2 = ctx_.default_vertex_buf2(),
                    ndx_buf = ctx_.default_indices_buf();
 
-    for (int i = 0; i < FrameSyncWindow; i++) {
-        auto shared_data_ubo = (GLuint)unif_shared_data_block_[i];
-        glDeleteBuffers(1, &shared_data_ubo);
+    for (uint32_t ubo : unif_shared_data_block_) {
+        auto _ubo = (GLuint)ubo;
+        glDeleteBuffers(1, &_ubo);
     }
 
     static_assert(sizeof(GLuint) == sizeof(uint32_t), "!");
@@ -970,6 +1032,14 @@ void Renderer::DestroyRendererInternal() {
 
         auto skin_regions_buf = (GLuint)skin_regions_buf_;
         glDeleteBuffers(1, &skin_regions_buf);
+    }
+
+    {
+        auto vege_regions_tbo = (GLuint)vege_regions_tbo_;
+        glDeleteTextures(1, &vege_regions_tbo);
+
+        auto vege_regions_buf = (GLuint)vege_regions_buf_;
+        glDeleteBuffers(1, &vege_regions_buf);
     }
 
     {
@@ -1018,9 +1088,9 @@ void Renderer::DestroyRendererInternal() {
         glDeleteBuffers(1, &nodes_buf);
     }
 
-    for (int i = 0; i < FrameSyncWindow; i++) {
-        auto reduce_pbo = (GLuint)reduce_pbo_[i];
-        glDeleteBuffers(1, &reduce_pbo);
+    for (uint32_t pbo : reduce_pbo_) {
+        auto _pbo = (GLuint)pbo;
+        glDeleteBuffers(1, &_pbo);
     }
 
     {
@@ -1090,8 +1160,14 @@ void Renderer::DestroyRendererInternal() {
         auto depth_pass_solid_vao = (GLuint)depth_pass_solid_vao_;
         glDeleteVertexArrays(1, &depth_pass_solid_vao);
 
+        auto depth_pass_vege_solid_vao = (GLuint)depth_pass_vege_solid_vao_;
+        glDeleteVertexArrays(1, &depth_pass_vege_solid_vao);
+
         auto depth_pass_transp_vao = (GLuint)depth_pass_transp_vao_;
         glDeleteVertexArrays(1, &depth_pass_transp_vao);
+
+        auto depth_pass_vege_transp_vao = (GLuint)depth_pass_vege_transp_vao_;
+        glDeleteVertexArrays(1, &depth_pass_vege_transp_vao);
     }
 
     for (int i = 0; i < FrameSyncWindow; i++) {
@@ -1127,6 +1203,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     assert(list.instances.count < REN_MAX_INSTANCES_TOTAL);
     assert(list.skin_transforms.count < REN_MAX_SKIN_XFORMS_TOTAL);
+    assert(list.skin_regions.count < REN_MAX_SKIN_REGIONS_TOTAL);
+    assert(list.skin_vertices_count < REN_MAX_SKIN_VERTICES_TOTAL);
+    assert(list.vege_regions.count < REN_MAX_VEGE_REGIONS_TOTAL);
+    assert(list.vege_vertices_count < REN_MAX_VEGE_VERTICES_TOTAL);
     assert(list.light_sources.count < REN_MAX_LIGHTS_TOTAL);
     assert(list.decals.count < REN_MAX_DECALS_TOTAL);
     assert(list.probes.count < REN_MAX_PROBES_TOTAL);
@@ -1154,7 +1234,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             buf_range_fences_[cur_buf_chunk_] = nullptr;
         }
 
-        const GLbitfield BufferRangeBindFlags = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_FLUSH_EXPLICIT_BIT;
+        const GLbitfield BufferRangeBindFlags =
+            GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
+            GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
 
         // Update skinning buffers
         if (list.skin_transforms.count) {
@@ -1184,6 +1266,22 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
             } else {
                 log->Error("[Renderer::DrawObjectsInternal]: Failed to map skin regions buffer!");
+            }
+
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        }
+
+        if (list.vege_regions.count) {
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)vege_regions_buf_);
+
+            void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, cur_buf_chunk_ * VegeRegionsBufChunkSize, VegeRegionsBufChunkSize, BufferRangeBindFlags);
+            if (pinned_mem) {
+                size_t vege_regions_mem_size = list.vege_regions.count * sizeof(VegeRegion);
+                memcpy(pinned_mem, list.vege_regions.data, vege_regions_mem_size);
+                glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0, vege_regions_mem_size);
+                glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+            } else {
+                log->Error("[Renderer::DrawObjectsInternal]: Failed to map vege regions buffer!");
             }
 
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -1320,14 +1418,16 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             0;
 #endif
         
-        shrd_data.uTranspDepthRangeAndMode = Ren::Vec4f{
+        shrd_data.uTranspParamsAndTime = Ren::Vec4f{
                 std::log(transparent_near),
                 std::log(transparent_far) - std::log(transparent_near),
-                float(transparent_mode), time };
+                float(transparent_mode), time
+        };
         shrd_data.uClipInfo = Ren::Vec4f{ near * far, near, far, std::log2(1.0f + far / near) };
 
         const Ren::Vec3f &pos = list.draw_cam.world_position();
         shrd_data.uCamPosAndGamma = Ren::Vec4f{ pos[0], pos[1], pos[2], 2.2f };
+        shrd_data.uWindParams = Ren::Vec4f{ list.env.wind_vec[0], list.env.wind_vec[1], list.env.wind_vec[2], 0.0f };
 
         if (list.probes.count) {
             assert(list.probes.count <= REN_MAX_PROBES_TOTAL);
@@ -1336,7 +1436,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_shared_data_block_[cur_buf_chunk_]);
 
-        const GLbitfield BufferRangeBindFlags = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_FLUSH_EXPLICIT_BIT;
+        const GLbitfield BufferRangeBindFlags =
+                GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
+                GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
 
         void *pinned_mem = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(SharedDataBlock), BufferRangeBindFlags);
         if (pinned_mem) {
@@ -1358,6 +1460,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeSkinningStart], GL_TIMESTAMP);
     }
 
+    bool insert_vtx_attrib_barrier = false;
+
     if (list.skin_regions.count) {
         DebugMarker _("SKINNING");
 
@@ -1371,6 +1475,29 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, (GLuint)ctx_.default_vertex_buf2()->buf_id());
 
         glDispatchCompute(list.skin_regions.count, 1, 1);
+        insert_vtx_attrib_barrier = true;
+    }
+
+    if (list.render_flags & EnableTimers) {
+        glQueryCounter(queries_[cur_query_][TimeVegetationStart], GL_TIMESTAMP);
+    }
+
+    if (list.vege_regions.count) {
+        DebugMarker _("VEGETATION");
+
+        const Ren::Program *p = vegetation_prog_.get();
+
+        glUseProgram(p->prog_id());
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, (GLuint)ctx_.default_vertex_buf1()->buf_id());
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)ctx_.default_vertex_buf2()->buf_id());
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)vege_regions_buf_, cur_buf_chunk_ * VegeRegionsBufChunkSize, VegeRegionsBufChunkSize);
+
+        assert(list.vege_regions.count < (uint32_t)ctx_.capabilities.max_compute_work_group_size[0]);
+        glDispatchCompute(list.vege_regions.count, 1, 1);
+        insert_vtx_attrib_barrier = true;
+    }
+
+    if (insert_vtx_attrib_barrier) {
         glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
     }
 
@@ -1393,36 +1520,76 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         DebugMarker _("UPDATE SHADOW MAPS");
 
+        bool region_cleared[REN_MAX_SHADOWMAPS_TOTAL] = {};
+
         // draw opaque objects
         glBindVertexArray(depth_pass_solid_vao_);
         glUseProgram(shadow_solid_prog_->prog_id());
 
-        bool region_cleared[REN_MAX_SHADOWMAPS_TOTAL] = {};
-
         for (int i = 0; i < (int)list.shadow_lists.count; i++) {
             const ShadowList &sh_list = list.shadow_lists.data[i];
-            if (!sh_list.solid_batches_count) continue;
+            if (!sh_list.shadow_batch_count) continue;
 
-            glViewport(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
-                       sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
+            glViewport(
+                sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
+                sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]
+            );
+            glScissor(
+                sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
+                sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]
+            );
 
             {   // clear buffer region
-                glScissor(sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
-                          sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]);
                 glClear(GL_DEPTH_BUFFER_BIT);
                 region_cleared[i] = true;
             }
 
             glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
 
-            for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.solid_batches_count; j++) {
+            for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
                 const DepthDrawBatch &batch = list.shadow_batches.data[list.shadow_batch_indices.data[j]];
-                if (!batch.instance_count) continue;
+                if (!batch.instance_count || batch.alpha_test_bit || batch.vegetation_bit) continue;
 
                 glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
 
                 glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
                                                   (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+                backend_info_.shadow_draw_calls_count++;
+            }
+        }
+
+        // draw opaque vegetation
+        glBindVertexArray(depth_pass_vege_solid_vao_);
+        glUseProgram(shadow_vege_solid_prog_->prog_id());
+
+        for (int i = 0; i < (int)list.shadow_lists.count; i++) {
+            const ShadowList& sh_list = list.shadow_lists.data[i];
+            if (!sh_list.shadow_batch_count) continue;
+
+            glViewport(
+                sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
+                sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]
+            );
+            glScissor(
+                sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
+                sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]
+            );
+
+            if (!region_cleared[i]) {
+                glClear(GL_DEPTH_BUFFER_BIT);
+                region_cleared[i] = true;
+            }
+
+            glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
+
+            for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
+                const DepthDrawBatch& batch = list.shadow_batches.data[list.shadow_batch_indices.data[j]];
+                if (!batch.instance_count || batch.alpha_test_bit || !batch.vegetation_bit) continue;
+
+                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+
+                glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid*)uintptr_t(batch.indices_offset),
+                    (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
                 backend_info_.shadow_draw_calls_count++;
             }
         }
@@ -1433,15 +1600,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         for (int i = 0; i < (int)list.shadow_lists.count; i++) {
             const ShadowList &sh_list = list.shadow_lists.data[i];
-            if (sh_list.shadow_batch_count == sh_list.solid_batches_count) continue;
+            if (!sh_list.shadow_batch_count) continue;
 
-            glViewport(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
-                       sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
-            glScissor(sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
-                      sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]);
+            glViewport(
+                sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
+                sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]
+            );
+            glScissor(
+                sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
+                sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]
+            );
 
             if (!region_cleared[i]) {
-                // clear buffer region
                 glClear(GL_DEPTH_BUFFER_BIT);
                 region_cleared[i] = true;
             }
@@ -1450,9 +1620,53 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             uint32_t cur_mat_id = 0xffffffff;
 
-            for (uint32_t j = sh_list.shadow_batch_start + sh_list.solid_batches_count; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
+            for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
                 const DepthDrawBatch &batch = list.shadow_batches.data[list.shadow_batch_indices.data[j]];
-                if (!batch.instance_count) continue;
+                if (!batch.instance_count || !batch.alpha_test_bit || batch.vegetation_bit) continue;
+
+                if (batch.mat_id != cur_mat_id) {
+                    const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, mat->texture(0)->tex_id());
+                    cur_mat_id = batch.mat_id;
+                }
+
+                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+
+                glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
+                                                  (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+                backend_info_.shadow_draw_calls_count++;
+            }
+        }
+
+        // draw transparent (alpha-tested) vegetation
+        glBindVertexArray(depth_pass_vege_transp_vao_);
+        glUseProgram(shadow_vege_transp_prog_->prog_id());
+
+        for (int i = 0; i < (int)list.shadow_lists.count; i++) {
+            const ShadowList &sh_list = list.shadow_lists.data[i];
+            if (!sh_list.shadow_batch_count) continue;
+
+            glViewport(
+                sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
+                sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]
+            );
+            glScissor(
+                sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
+                sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]
+            );
+
+            if (!region_cleared[i]) {
+                glClear(GL_DEPTH_BUFFER_BIT);
+                region_cleared[i] = true;
+            }
+
+            glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
+
+            uint32_t cur_mat_id = 0xffffffff;
+
+            for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
+                const DepthDrawBatch &batch = list.shadow_batches.data[list.shadow_batch_indices.data[j]];
+                if (!batch.instance_count || !batch.alpha_test_bit || !batch.vegetation_bit) continue;
 
                 if (batch.mat_id != cur_mat_id) {
                     const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
@@ -1522,7 +1736,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glDepthFunc(GL_LESS);
     } else {
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)skydome_framebuf_);
-        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+        glClear(GLbitfield(GL_DEPTH_BUFFER_BIT) | GLbitfield(GL_COLOR_BUFFER_BIT));
     }
 
     glEnable(GL_MULTISAMPLE);
@@ -1586,12 +1800,27 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
             const DepthDrawBatch &batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || batch.alpha_test_bit) continue;
+            if (!batch.instance_count || batch.alpha_test_bit || batch.vegetation_bit) continue;
 
             glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
 
             glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
                                               (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+            backend_info_.depth_fill_draw_calls_count++;
+        }
+
+        // draw solid vegetation
+        glBindVertexArray(depth_pass_vege_solid_vao_);
+        glUseProgram(fillz_vege_solid_prog_->prog_id());
+
+        for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
+            const DepthDrawBatch& batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+            if (!batch.instance_count || batch.alpha_test_bit || !batch.vegetation_bit) continue;
+
+            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+
+            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid*)uintptr_t(batch.indices_offset),
+                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
 
@@ -1605,7 +1834,32 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
             const DepthDrawBatch &batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || !batch.alpha_test_bit) continue;
+            if (!batch.instance_count || !batch.alpha_test_bit || batch.vegetation_bit) continue;
+
+            if (batch.mat_id != cur_mat_id) {
+                const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT, mat->texture(0)->tex_id());
+                cur_mat_id = batch.mat_id;
+            }
+
+            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+
+            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
+                                              (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+            backend_info_.depth_fill_draw_calls_count++;
+        }
+
+        // draw alpha-tested vegetation
+        glBindVertexArray(depth_pass_vege_transp_vao_);
+        glUseProgram(fillz_vege_transp_prog_->prog_id());
+
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT, dummy_white_->tex_id());
+
+        cur_mat_id = 0xffffffff;
+
+        for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
+            const DepthDrawBatch &batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+            if (!batch.instance_count || !batch.alpha_test_bit || !batch.vegetation_bit) continue;
 
             if (batch.mat_id != cur_mat_id) {
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
@@ -1635,7 +1889,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     glBindVertexArray((GLuint)fs_quad_vao_);
 
-    const uint32_t use_down_depth_mask = (EnableZFill | EnableSSAO | EnableSSR);
+    //const uint32_t use_down_depth_mask = (EnableZFill | EnableSSAO | EnableSSR);
     if ((list.render_flags & EnableZFill) && (list.render_flags & (EnableSSAO | EnableSSR)) && ((list.render_flags & DebugWireframe) == 0)) {
         DebugMarker _("DOWNSAMPLE DEPTH");
 
@@ -1885,7 +2139,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         {   // Change transparency draw mode
             glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_shared_data_block_[cur_buf_chunk_]);
             const float transp_mode = clean_buf_.sample_count > 1 ? 4.0f : 3.0f;
-            glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SharedDataBlock, uTranspDepthRangeAndMode) + 2 * sizeof(float), sizeof(float), &transp_mode);
+            glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SharedDataBlock, uTranspParamsAndTime) + 2 * sizeof(float), sizeof(float), &transp_mode);
         }
 
         uint32_t target_framebuf =
@@ -2060,7 +2314,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
 #if !defined(REN_DIRECT_DRAWING)
         if (clean_buf_.sample_count > 1) {
-            DebugMarker _("RESOLVE MS BUFFER");
+            DebugMarker _resolve_ms("RESOLVE MS BUFFER");
 
             glBindVertexArray((GLuint)fs_quad_vao_);
             glBindFramebuffer(GL_FRAMEBUFFER, resolved_or_transparent_buf_.fb);
@@ -2387,7 +2641,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         }
 
-        float k = 1.0f / float(reduced_buf_.w * reduced_buf_.h);
+        const float k = 1.0f / float(reduced_buf_.w * reduced_buf_.h);
         cur_average *= k;
 
         const float alpha = 1.0f / 64;
@@ -2542,10 +2796,12 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUniform4f(0, 0.0f, 0.0f, 256.0f, 128.0f);
 
-        float sx = 2 * 256.0f / float(scr_w_), sy = 2 * 128.0f / float(scr_h_);
+        const float sx = 2 * 256.0f / float(scr_w_), sy = 2 * 128.0f / float(scr_h_);
 
-        const float positions[] = { -1.0f, -1.0f,               -1.0f + sx, -1.0f,
-                                    -1.0f + sx, -1.0f + sy,     -1.0f, -1.0f + sy };
+        //const float positions[] = {
+        //    -1.0f, -1.0f,               -1.0f + sx, -1.0f,
+        //    -1.0f + sx, -1.0f + sy,     -1.0f, -1.0f + sy
+        //};
 
         glUniform1f(4, 1.0f);
 
@@ -2556,8 +2812,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         /////
 
-        const float positions2[] = { -1.0f + sx, -1.0f,               -1.0f + sx + sx, -1.0f,
-                                     -1.0f + sx + sx, -1.0f + sy,     -1.0f + sx, -1.0f + sy };
+        const float positions2[] = {
+            -1.0f + sx, -1.0f,               -1.0f + sx + sx, -1.0f,
+            -1.0f + sx + sx, -1.0f + sy,     -1.0f + sx, -1.0f + sy
+        };
 
         glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions2), positions2);
 
@@ -2590,7 +2848,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
-        const float k = (float(shadow_buf_.h) / float(shadow_buf_.w)) * (float(scr_w_) / scr_h_);
+        const float k = (float(shadow_buf_.h) / float(shadow_buf_.w)) * (float(scr_w_) / float(scr_h_));
 
         {   // Clear region
             glEnable(GL_SCISSOR_TEST);
@@ -2606,15 +2864,19 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             const ShadowList &sh_list = list.shadow_lists.data[i];
             const ShadowMapRegion &reg = list.shadow_regions.data[i];
 
-            const float positions[] = { -1.0f + reg.transform[0],                       -1.0f + reg.transform[1] * k,
-                                        -1.0f + reg.transform[0] + reg.transform[2],    -1.0f + reg.transform[1] * k,
-                                        -1.0f + reg.transform[0] + reg.transform[2],    -1.0f + (reg.transform[1] + reg.transform[3]) * k,
-                                        -1.0f + reg.transform[0],                       -1.0f + (reg.transform[1] + reg.transform[3]) * k };
+            const float positions[] = {
+                -1.0f + reg.transform[0],                       -1.0f + reg.transform[1] * k,
+                -1.0f + reg.transform[0] + reg.transform[2],    -1.0f + reg.transform[1] * k,
+                -1.0f + reg.transform[0] + reg.transform[2],    -1.0f + (reg.transform[1] + reg.transform[3]) * k,
+                -1.0f + reg.transform[0],                       -1.0f + (reg.transform[1] + reg.transform[3]) * k
+            };
 
-            const float uvs[] = { float(sh_list.shadow_map_pos[0]),                                 float(sh_list.shadow_map_pos[1]),
-                                  float(sh_list.shadow_map_pos[0] + sh_list.shadow_map_size[0]),    float(sh_list.shadow_map_pos[1]),
-                                  float(sh_list.shadow_map_pos[0] + sh_list.shadow_map_size[0]),    float(sh_list.shadow_map_pos[1] + sh_list.shadow_map_size[1]),
-                                  float(sh_list.shadow_map_pos[0]),                                 float(sh_list.shadow_map_pos[1] + sh_list.shadow_map_size[1]) };
+            const float uvs[] = {
+                float(sh_list.shadow_map_pos[0]),                                 float(sh_list.shadow_map_pos[1]),
+                float(sh_list.shadow_map_pos[0] + sh_list.shadow_map_size[0]),    float(sh_list.shadow_map_pos[1]),
+                float(sh_list.shadow_map_pos[0] + sh_list.shadow_map_size[0]),    float(sh_list.shadow_map_pos[1] + sh_list.shadow_map_size[1]),
+                float(sh_list.shadow_map_pos[0]),                                 float(sh_list.shadow_map_pos[1] + sh_list.shadow_map_size[1])
+            };
 
             glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
             glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
@@ -2637,15 +2899,19 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         for (int i = 0; i < (int)list.cached_shadow_regions.count; i++) {
             const ShadReg &r = list.cached_shadow_regions.data[i];
 
-            const float positions[] = { -1.0f + float(r.pos[0]) / SHADOWMAP_WIDTH,                       -1.0f + k * float(r.pos[1]) / SHADOWMAP_HEIGHT,
-                                        -1.0f + float(r.pos[0] + r.size[0]) / SHADOWMAP_WIDTH,           -1.0f + k * float(r.pos[1]) / SHADOWMAP_HEIGHT,
-                                        -1.0f + float(r.pos[0] + r.size[0]) / SHADOWMAP_WIDTH,           -1.0f + k * float(r.pos[1] + r.size[1]) / SHADOWMAP_HEIGHT,
-                                        -1.0f + float(r.pos[0]) / SHADOWMAP_WIDTH,                       -1.0f + k * float(r.pos[1] + r.size[1]) / SHADOWMAP_HEIGHT };
+            const float positions[] = {
+                -1.0f + float(r.pos[0]) / SHADOWMAP_WIDTH,                       -1.0f + k * float(r.pos[1]) / SHADOWMAP_HEIGHT,
+                -1.0f + float(r.pos[0] + r.size[0]) / SHADOWMAP_WIDTH,           -1.0f + k * float(r.pos[1]) / SHADOWMAP_HEIGHT,
+                -1.0f + float(r.pos[0] + r.size[0]) / SHADOWMAP_WIDTH,           -1.0f + k * float(r.pos[1] + r.size[1]) / SHADOWMAP_HEIGHT,
+                -1.0f + float(r.pos[0]) / SHADOWMAP_WIDTH,                       -1.0f + k * float(r.pos[1] + r.size[1]) / SHADOWMAP_HEIGHT
+            };
 
-            const float uvs[] = { float(r.pos[0]),                  float(r.pos[1]),
-                                  float(r.pos[0] + r.size[0]),      float(r.pos[1]),
-                                  float(r.pos[0] + r.size[0]),      float(r.pos[1] + r.size[1]),
-                                  float(r.pos[0]),                  float(r.pos[1] + r.size[1]) };
+            const float uvs[] = {
+                float(r.pos[0]),                  float(r.pos[1]),
+                float(r.pos[0] + r.size[0]),      float(r.pos[1]),
+                float(r.pos[0] + r.size[0]),      float(r.pos[1] + r.size[1]),
+                float(r.pos[0]),                  float(r.pos[1] + r.size[1])
+            };
 
             glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
             glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
@@ -2715,8 +2981,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         int resx = list.decals_atlas->resx(),
             resy = list.decals_atlas->resy();
 
-        float k = float(scr_w_) / scr_h_;
-        k *= float(resy) / resx;
+        float k = float(scr_w_) / float(scr_h_);
+        k *= float(resy) / float(resx);
 
         BlitTexture(-1.0f, -1.0f, 1.0f, 1.0f * k, list.decals_atlas->tex_id(0), resx, resy);
     }
@@ -2807,6 +3073,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         GLuint64 time_draw_start,
                  time_skinning_start,
+                 time_vegetation_start,
                  time_shadow_start,
                  time_depth_opaque_start,
                  time_ao_start,
@@ -2821,6 +3088,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glGetQueryObjectui64v(queries_[cur_query_][TimeDrawStart], GL_QUERY_RESULT, &time_draw_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeSkinningStart], GL_QUERY_RESULT, &time_skinning_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeVegetationStart], GL_QUERY_RESULT, &time_vegetation_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeShadowMapStart], GL_QUERY_RESULT, &time_shadow_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeDepthOpaqueStart], GL_QUERY_RESULT, &time_depth_opaque_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeAOPassStart], GL_QUERY_RESULT, &time_ao_start);
@@ -2839,7 +3107,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         backend_info_.gpu_start_timepoint_us = uint64_t(time_draw_start / 1000);
         backend_info_.gpu_end_timepoint_us = uint64_t(time_draw_end / 1000);
 
-        backend_info_.skinning_time_us = uint32_t((time_shadow_start - time_skinning_start) / 1000);
+        backend_info_.skinning_time_us = uint32_t((time_vegetation_start - time_skinning_start) / 1000);
+        backend_info_.vegetation_time_us = uint32_t((time_shadow_start - time_vegetation_start) / 1000);
         backend_info_.shadow_time_us = uint32_t((time_depth_opaque_start - time_shadow_start) / 1000);
         backend_info_.depth_opaque_pass_time_us = uint32_t((time_ao_start - time_depth_opaque_start) / 1000);
         backend_info_.ao_pass_time_us = uint32_t((time_opaque_start - time_ao_start) / 1000);
@@ -2966,7 +3235,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
     avarage_color[1] /= (float)sample_count;
     avarage_color[2] /= (float)sample_count;
 
-    float lum = 0.299f * avarage_color[0] + 0.587f * avarage_color[1] + 0.114f * avarage_color[2];
+    const float lum = 0.299f * avarage_color[0] + 0.587f * avarage_color[1] + 0.114f * avarage_color[2];
 
     const float alpha = 0.25f;
     reduced_average_ = alpha * lum + (1.0f - alpha) * reduced_average_;
@@ -3343,7 +3612,7 @@ void Renderer::BlitPrefilterFromTemp(const ProbeStorage &dst_store, int probe_in
     while (level <= dst_store.max_level()) {
         glViewport(0, 0, res, res);
 
-        float roughness = (1.0f / 6.0f) * float(level);
+        const float roughness = (1.0f / 6.0f) * float(level);
         glUniform1f(3, roughness);
 
         for (int face = 0; face < 6; face++) {
@@ -3413,7 +3682,7 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
         if (pixels) {
             for (int y = 0; y < probe_sample_buf_.h; y++) {
                 for (int x = 0; x < probe_sample_buf_.w; x++) {
-                    int i = (x >= 8) ? ((x >= 16) ? 2 : 1) : 0;
+                    const int i = (x >= 8) ? ((x >= 16) ? 2 : 1) : 0;
 
                     sh_coeffs[0][i] += pixels[4 * (y * probe_sample_buf_.w + x) + 0];
                     sh_coeffs[1][i] += pixels[4 * (y * probe_sample_buf_.w + x) + 1];
@@ -3426,10 +3695,8 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
         const float inv_weight = 4.0f * Ren::Pi<float>() / float(probe_sample_buf_.w * probe_sample_buf_.w);
-        for (int i = 0; i < 4; i++) {
-            sh_coeffs[i][0] *= inv_weight;
-            sh_coeffs[i][1] *= inv_weight;
-            sh_coeffs[i][2] *= inv_weight;
+        for (Ren::Vec3f &sh_coeff : sh_coeffs) {
+            sh_coeff *= inv_weight;
         }
 
         const float k = 1.0f / float(iteration);

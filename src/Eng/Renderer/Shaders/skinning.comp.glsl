@@ -1,5 +1,32 @@
 R"(#version )" GLSL_VERSION_STR R"(
 
+/*
+UNIFORM_BLOCKS
+    SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
+*/
+
+struct ShadowMapRegion {
+    vec4 transform;
+    mat4 clip_from_world;
+};
+
+struct ProbeItem {
+    vec4 pos_and_radius;
+    vec4 unused_and_layer;
+    vec4 sh_coeffs[3];
+};
+
+layout (std140) uniform SharedDataBlock {
+    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
+    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
+    ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
+    vec4 uSunDir, uSunCol;
+    vec4 uClipInfo, uCamPosAndGamma;
+    vec4 uResAndFRes, uTranspParamsAndTime;
+    vec4 uWindParams;
+    ProbeItem uProbes[)" AS_STR(REN_MAX_PROBES_TOTAL) R"(];
+};
+
 struct InVertex {
     highp vec4 p_and_nxy;
     highp uvec2 nz_and_b;
@@ -68,18 +95,18 @@ void main() {
     highp vec3 n = vec3(nxy, nz_and_bx.x),
                b = vec3(nz_and_bx.y, byz);
 
-    mediump uvec4 vtx_indices = uvec4(bitfieldExtract(in_data0.vertices[in_ndx].bone_indices.x, 0, 16),
-                                      bitfieldExtract(in_data0.vertices[in_ndx].bone_indices.x, 16, 16),
-                                      bitfieldExtract(in_data0.vertices[in_ndx].bone_indices.y, 0, 16),
-                                      bitfieldExtract(in_data0.vertices[in_ndx].bone_indices.y, 16, 16));
-    mediump vec4 vtx_weights = vec4(unpackUnorm2x16(in_data0.vertices[in_ndx].bone_weights.x),
-                                    unpackUnorm2x16(in_data0.vertices[in_ndx].bone_weights.y));
+    mediump uvec4 bone_indices = uvec4(bitfieldExtract(in_data0.vertices[in_ndx].bone_indices.x, 0, 16),
+                                       bitfieldExtract(in_data0.vertices[in_ndx].bone_indices.x, 16, 16),
+                                       bitfieldExtract(in_data0.vertices[in_ndx].bone_indices.y, 0, 16),
+                                       bitfieldExtract(in_data0.vertices[in_ndx].bone_indices.y, 16, 16));
+    mediump vec4 bone_weights = vec4(unpackUnorm2x16(in_data0.vertices[in_ndx].bone_weights.x),
+                                     unpackUnorm2x16(in_data0.vertices[in_ndx].bone_weights.y));
 
     highp mat3x4 _mat = mat3x4(0.0);
 
     for (int j = 0; j < 4; j++) {
-        if (vtx_weights[j] > 0.0) {
-            _mat = _mat + in_data1.matrices[xform_offset + vtx_indices[j]] * vtx_weights[j];
+        if (bone_weights[j] > 0.0) {
+            _mat = _mat + in_data1.matrices[xform_offset + bone_indices[j]] * bone_weights[j];
         }
     }
 

@@ -10,6 +10,7 @@
 #endif
 
 #include <Eng/GameStateManager.h>
+#include <Eng/Random.h>
 #include <Eng/Renderer/Renderer.h>
 #include <Eng/Scene/SceneManager.h>
 #include <Eng/Utils/Cmdline.h>
@@ -53,8 +54,11 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
 
     swap_interval_  = game->GetComponent<TimeInterval>(SWAP_TIMER_KEY);
 
+    random_         = game->GetComponent<Random>(RANDOM_KEY);
+
     // Prepare cam for probes updating
     temp_probe_cam_.Perspective(90.0f, 1.0f, 0.1f, 10000.0f);
+    temp_probe_cam_.set_render_mask(Drawable::VisProbes);
 }
 
 void GSBaseState::Enter() {
@@ -185,6 +189,16 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("zfill", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= EnableZFill;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+    });
+
     cmdline_->RegisterCommand("update_probes", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
@@ -248,7 +262,11 @@ void GSBaseState::Enter() {
                             name1 = "assets/scenes/" + name_str + ".json" + std::to_string(i),
                             name2 = "assets/scenes/" + name_str + ".json" + std::to_string(i + 1);
 
-                        ::rename(name1.c_str(), name2.c_str());
+                        int ret = std::rename(name1.c_str(), name2.c_str());
+                        if (ret) {
+                            shrd_this->ctx_->log()->Error("Failed to rename file %s", name1.c_str());
+                            return false;
+                        }
                     }
                 }
 
@@ -256,7 +274,12 @@ void GSBaseState::Enter() {
                     const std::string
                         name1 = "assets/scenes/" + name_str + ".json",
                         name2 = "assets/scenes/" + name_str + ".json1";
-                    ::rename(name1.c_str(), name2.c_str());
+
+                    int ret = std::rename(name1.c_str(), name2.c_str());
+                    if (ret) {
+                        shrd_this->ctx_->log()->Error("Failed to rename file %s", name1.c_str());
+                        return false;
+                    }
 
                     std::ofstream out_file(name1, std::ios::binary);
                     out_scene.Write(out_file);

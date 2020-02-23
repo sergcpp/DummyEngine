@@ -24,7 +24,8 @@ layout (std140) uniform SharedDataBlock {
     ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspDepthRangeAndUnused;
+    vec4 uResAndFRes, uTranspParamsAndTime;
+    vec4 uWindParams;
 };
 
 layout(binding = )" AS_STR(REN_INST_BUF_SLOT) R"() uniform mediump samplerBuffer instances_buffer;
@@ -49,6 +50,7 @@ void main() {
     aVertexUVs1_ = aVertexUVs1;
 #endif
 
-    gl_Position = uViewProjMatrix * MMatrix * vec4(aVertexPosition, 1.0);
+    vec3 vertex_position_ws = (MMatrix * vec4(aVertexPosition, 1.0)).xyz;
+    gl_Position = uViewProjMatrix * vec4(vertex_position_ws, 1.0);
 } 
 )"

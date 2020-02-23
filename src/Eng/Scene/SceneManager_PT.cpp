@@ -388,11 +388,9 @@ void SceneManager::InitScene_PT(bool _override) {
     }
 
     ray_scene_ = ray_renderer_.CreateScene();
-
     ray_reg_ctx_.clear();
 
-    // Setup environment
-    {
+    {   // Setup environment
         Ray::environment_desc_t env_desc;
         env_desc.env_col[0] = env_desc.env_col[1] = env_desc.env_col[2] = 1.0f;
 
@@ -468,8 +466,7 @@ void SceneManager::InitScene_PT(bool _override) {
 
     uint32_t default_white_tex;
 
-    {
-        //  Add default white texture
+    {   //  Add default white texture
         Ray::pixel_color8_t white = { 255, 255, 255, 255 };
 
         Ray::tex_desc_t tex_desc;
@@ -500,7 +497,7 @@ void SceneManager::InitScene_PT(bool _override) {
         const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
             const auto *dr = (Drawable *)scene_data_.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
-            if (!(dr->flags & Drawable::DrVisibleToShadow)) continue;
+            if (!(dr->vis_mask & Drawable::VisShadow)) continue;
 
             const Ren::Mesh *mesh = dr->mesh.get();
             const char *mesh_name = mesh->name().c_str();

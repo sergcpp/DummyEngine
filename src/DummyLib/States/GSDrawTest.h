@@ -47,18 +47,23 @@ class GSDrawTest : public GSBaseState {
 
     uint32_t click_time_ = 0;
 
+    uint64_t wind_update_time_ = 0;
+    Ren::Vec3f wind_vector_goal_ = Ren::Vec3f{ 1.0f, 0.0f, 0.0 };
+
     // test test
     uint32_t wolf_indices_[32]      = { 0xffffffff };
     uint32_t scooter_indices_[16]   = { 0xffffffff };
     uint32_t sophia_indices_[2]     = { 0xffffffff }, eric_indices_[2] = { 0xffffffff };
     uint32_t font_meshes_[4]        = { 0xffffffff };
     uint32_t zenith_index_          = 0xffffffff;
+    uint32_t palm_index_            = 0xffffffff;
     float scooters_angle_ = 0.0f;
 
     std::vector<Ren::Vec3f>             cam_follow_path_;
     int                                 cam_follow_point_;
     float                               cam_follow_param_;
 
+    void OnPreloadScene(JsObject &js_scene) override;
     void OnPostloadScene(JsObject &js_scene) override;
 
     void OnUpdateScene() override;

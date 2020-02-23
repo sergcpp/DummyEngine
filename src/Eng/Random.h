@@ -14,7 +14,7 @@ public:
     float GetFloat(float min, float max);
     float GetNormalizedFloat();
     float GetMinus1to1Float();
-    Ren::Vec3f GetNormalizedVec3();
+    Ren::Vec3f GetUnitVec3();
 
     double GetNormalizedDouble();
 };

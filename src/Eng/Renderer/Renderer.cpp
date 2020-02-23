@@ -27,38 +27,40 @@ int upper_power_of_two(int v) {
     return res;
 }
 
-const Ren::Vec2f HaltonSeq23[] = { Ren::Vec2f{ 0.0000000000f, 0.0000000000f }, Ren::Vec2f{ 0.5000000000f, 0.3333333430f },
-                                   Ren::Vec2f{ 0.2500000000f, 0.6666666870f }, Ren::Vec2f{ 0.7500000000f, 0.1111111190f },
-                                   Ren::Vec2f{ 0.1250000000f, 0.4444444780f }, Ren::Vec2f{ 0.6250000000f, 0.7777778510f },
-                                   Ren::Vec2f{ 0.3750000000f, 0.2222222390f }, Ren::Vec2f{ 0.8750000000f, 0.5555555820f },
-                                   Ren::Vec2f{ 0.0625000000f, 0.8888889550f }, Ren::Vec2f{ 0.5625000000f, 0.0370370410f },
-                                   Ren::Vec2f{ 0.3125000000f, 0.3703704180f }, Ren::Vec2f{ 0.8125000000f, 0.7037037610f },
-                                   Ren::Vec2f{ 0.1875000000f, 0.1481481640f }, Ren::Vec2f{ 0.6875000000f, 0.4814815220f },
-                                   Ren::Vec2f{ 0.4375000000f, 0.8148149250f }, Ren::Vec2f{ 0.9375000000f, 0.2592592840f },
-                                   Ren::Vec2f{ 0.0312500000f, 0.5925926570f }, Ren::Vec2f{ 0.5312500000f, 0.9259260300f },
-                                   Ren::Vec2f{ 0.2812500000f, 0.0740740821f }, Ren::Vec2f{ 0.7812500000f, 0.4074074630f },
-                                   Ren::Vec2f{ 0.1562500000f, 0.7407408360f }, Ren::Vec2f{ 0.6562500000f, 0.1851852090f },
-                                   Ren::Vec2f{ 0.4062500000f, 0.5185185670f }, Ren::Vec2f{ 0.9062500000f, 0.8518519400f },
-                                   Ren::Vec2f{ 0.0937500000f, 0.2962963280f }, Ren::Vec2f{ 0.5937500000f, 0.6296296720f },
-                                   Ren::Vec2f{ 0.3437500000f, 0.9629630450f }, Ren::Vec2f{ 0.8437500000f, 0.0123456810f },
-                                   Ren::Vec2f{ 0.2187500000f, 0.3456790750f }, Ren::Vec2f{ 0.7187500000f, 0.6790124770f },
-                                   Ren::Vec2f{ 0.4687500000f, 0.1234568060f }, Ren::Vec2f{ 0.9687500000f, 0.4567902090f },
-                                   Ren::Vec2f{ 0.0156250000f, 0.7901235820f }, Ren::Vec2f{ 0.5156250000f, 0.2345679400f },
-                                   Ren::Vec2f{ 0.2656250000f, 0.5679013130f }, Ren::Vec2f{ 0.7656250000f, 0.9012346860f },
-                                   Ren::Vec2f{ 0.1406250000f, 0.0493827239f }, Ren::Vec2f{ 0.6406250000f, 0.3827161190f },
-                                   Ren::Vec2f{ 0.3906250000f, 0.7160494920f }, Ren::Vec2f{ 0.8906250000f, 0.1604938510f },
-                                   Ren::Vec2f{ 0.0781250000f, 0.4938272240f }, Ren::Vec2f{ 0.5781250000f, 0.8271605970f },
-                                   Ren::Vec2f{ 0.3281250000f, 0.2716049850f }, Ren::Vec2f{ 0.8281250000f, 0.6049383880f },
-                                   Ren::Vec2f{ 0.2031250000f, 0.9382717610f }, Ren::Vec2f{ 0.7031250000f, 0.0864197686f },
-                                   Ren::Vec2f{ 0.4531250000f, 0.4197531640f }, Ren::Vec2f{ 0.9531250000f, 0.7530865670f },
-                                   Ren::Vec2f{ 0.0468750000f, 0.1975308950f }, Ren::Vec2f{ 0.5468750000f, 0.5308642980f },
-                                   Ren::Vec2f{ 0.2968750000f, 0.8641976710f }, Ren::Vec2f{ 0.7968750000f, 0.3086420300f },
-                                   Ren::Vec2f{ 0.1718750000f, 0.6419754030f }, Ren::Vec2f{ 0.6718750000f, 0.9753087760f },
-                                   Ren::Vec2f{ 0.4218750000f, 0.0246913619f }, Ren::Vec2f{ 0.9218750000f, 0.3580247460f },
-                                   Ren::Vec2f{ 0.1093750000f, 0.6913581490f }, Ren::Vec2f{ 0.6093750000f, 0.1358024920f },
-                                   Ren::Vec2f{ 0.3593750000f, 0.4691358800f }, Ren::Vec2f{ 0.8593750000f, 0.8024692540f },
-                                   Ren::Vec2f{ 0.2343750000f, 0.2469136120f }, Ren::Vec2f{ 0.7343750000f, 0.5802469850f },
-                                   Ren::Vec2f{ 0.4843750000f, 0.9135804180f }, Ren::Vec2f{ 0.9843750000f, 0.0617284030f } };
+const Ren::Vec2f HaltonSeq23[] = {
+    Ren::Vec2f{ 0.0000000000f, 0.0000000000f }, Ren::Vec2f{ 0.5000000000f, 0.3333333430f },
+    Ren::Vec2f{ 0.2500000000f, 0.6666666870f }, Ren::Vec2f{ 0.7500000000f, 0.1111111190f },
+    Ren::Vec2f{ 0.1250000000f, 0.4444444780f }, Ren::Vec2f{ 0.6250000000f, 0.7777778510f },
+    Ren::Vec2f{ 0.3750000000f, 0.2222222390f }, Ren::Vec2f{ 0.8750000000f, 0.5555555820f },
+    Ren::Vec2f{ 0.0625000000f, 0.8888889550f }, Ren::Vec2f{ 0.5625000000f, 0.0370370410f },
+    Ren::Vec2f{ 0.3125000000f, 0.3703704180f }, Ren::Vec2f{ 0.8125000000f, 0.7037037610f },
+    Ren::Vec2f{ 0.1875000000f, 0.1481481640f }, Ren::Vec2f{ 0.6875000000f, 0.4814815220f },
+    Ren::Vec2f{ 0.4375000000f, 0.8148149250f }, Ren::Vec2f{ 0.9375000000f, 0.2592592840f },
+    Ren::Vec2f{ 0.0312500000f, 0.5925926570f }, Ren::Vec2f{ 0.5312500000f, 0.9259260300f },
+    Ren::Vec2f{ 0.2812500000f, 0.0740740821f }, Ren::Vec2f{ 0.7812500000f, 0.4074074630f },
+    Ren::Vec2f{ 0.1562500000f, 0.7407408360f }, Ren::Vec2f{ 0.6562500000f, 0.1851852090f },
+    Ren::Vec2f{ 0.4062500000f, 0.5185185670f }, Ren::Vec2f{ 0.9062500000f, 0.8518519400f },
+    Ren::Vec2f{ 0.0937500000f, 0.2962963280f }, Ren::Vec2f{ 0.5937500000f, 0.6296296720f },
+    Ren::Vec2f{ 0.3437500000f, 0.9629630450f }, Ren::Vec2f{ 0.8437500000f, 0.0123456810f },
+    Ren::Vec2f{ 0.2187500000f, 0.3456790750f }, Ren::Vec2f{ 0.7187500000f, 0.6790124770f },
+    Ren::Vec2f{ 0.4687500000f, 0.1234568060f }, Ren::Vec2f{ 0.9687500000f, 0.4567902090f },
+    Ren::Vec2f{ 0.0156250000f, 0.7901235820f }, Ren::Vec2f{ 0.5156250000f, 0.2345679400f },
+    Ren::Vec2f{ 0.2656250000f, 0.5679013130f }, Ren::Vec2f{ 0.7656250000f, 0.9012346860f },
+    Ren::Vec2f{ 0.1406250000f, 0.0493827239f }, Ren::Vec2f{ 0.6406250000f, 0.3827161190f },
+    Ren::Vec2f{ 0.3906250000f, 0.7160494920f }, Ren::Vec2f{ 0.8906250000f, 0.1604938510f },
+    Ren::Vec2f{ 0.0781250000f, 0.4938272240f }, Ren::Vec2f{ 0.5781250000f, 0.8271605970f },
+    Ren::Vec2f{ 0.3281250000f, 0.2716049850f }, Ren::Vec2f{ 0.8281250000f, 0.6049383880f },
+    Ren::Vec2f{ 0.2031250000f, 0.9382717610f }, Ren::Vec2f{ 0.7031250000f, 0.0864197686f },
+    Ren::Vec2f{ 0.4531250000f, 0.4197531640f }, Ren::Vec2f{ 0.9531250000f, 0.7530865670f },
+    Ren::Vec2f{ 0.0468750000f, 0.1975308950f }, Ren::Vec2f{ 0.5468750000f, 0.5308642980f },
+    Ren::Vec2f{ 0.2968750000f, 0.8641976710f }, Ren::Vec2f{ 0.7968750000f, 0.3086420300f },
+    Ren::Vec2f{ 0.1718750000f, 0.6419754030f }, Ren::Vec2f{ 0.6718750000f, 0.9753087760f },
+    Ren::Vec2f{ 0.4218750000f, 0.0246913619f }, Ren::Vec2f{ 0.9218750000f, 0.3580247460f },
+    Ren::Vec2f{ 0.1093750000f, 0.6913581490f }, Ren::Vec2f{ 0.6093750000f, 0.1358024920f },
+    Ren::Vec2f{ 0.3593750000f, 0.4691358800f }, Ren::Vec2f{ 0.8593750000f, 0.8024692540f },
+    Ren::Vec2f{ 0.2343750000f, 0.2469136120f }, Ren::Vec2f{ 0.7343750000f, 0.5802469850f },
+    Ren::Vec2f{ 0.4843750000f, 0.9135804180f }, Ren::Vec2f{ 0.9843750000f, 0.0617284030f }
+};
 
 float RadicalInverse_VdC(uint32_t bits) {
     bits = (bits << 16u) | (bits >> 16u);
@@ -98,16 +100,16 @@ float GeometrySchlickGGX(float NdotV, float k) {
 }
 
 float GeometrySmith(const Ren::Vec3f &N, const Ren::Vec3f &V, const Ren::Vec3f &L, float k) {
-    float NdotV = std::max(Ren::Dot(N, V), 0.0f);
-    float NdotL = std::max(Ren::Dot(N, L), 0.0f);
-    float ggx1 = GeometrySchlickGGX(NdotV, k);
-    float ggx2 = GeometrySchlickGGX(NdotL, k);
+    const float NdotV = std::max(Ren::Dot(N, V), 0.0f);
+    const float NdotL = std::max(Ren::Dot(N, L), 0.0f);
+    const float ggx1 = GeometrySchlickGGX(NdotV, k);
+    const float ggx2 = GeometrySchlickGGX(NdotL, k);
 
     return ggx1 * ggx2;
 }
 
 float G1V_Epic(float roughness, float n_dot_v) {
-    float k = roughness * roughness;
+    const float k = roughness * roughness;
     return n_dot_v / (n_dot_v * (1.0f - k) + k);
 }
 
@@ -128,18 +130,18 @@ Ren::Vec2f IntegrateBRDF(float NdotV, float roughness) {
 
     const int SampleCount = 1024;
     for (int i = 0; i < SampleCount; ++i) {
-        Ren::Vec2f Xi = Hammersley2D(i, SampleCount);
-        Ren::Vec3f H = ImportanceSampleGGX(Xi, roughness, N);
-        Ren::Vec3f L = Ren::Normalize(2.0f * Ren::Dot(V, H) * H - V);
+        const Ren::Vec2f Xi = Hammersley2D(i, SampleCount);
+        const Ren::Vec3f H = ImportanceSampleGGX(Xi, roughness, N);
+        const Ren::Vec3f L = Ren::Normalize(2.0f * Ren::Dot(V, H) * H - V);
 
-        float NdotL = std::max(L[2], 0.0f);
-        float NdotH = std::max(H[2], 0.0f);
-        float VdotH = std::max(Ren::Dot(V, H), 0.0f);
+        const float NdotL = std::max(L[2], 0.0f);
+        const float NdotH = std::max(H[2], 0.0f);
+        const float VdotH = std::max(Ren::Dot(V, H), 0.0f);
 
         if (NdotL > 0.0f) {
-            float G = G1V_Epic(roughness, NdotV);
-            float G_Vis = (G * VdotH) / (NdotH * NdotV);
-            float Fc = std::pow(1.0f - VdotH, 5.0f);
+            const float G = G1V_Epic(roughness, NdotV);
+            const float G_Vis = (G * VdotH) / (NdotH * NdotV);
+            const float Fc = std::pow(1.0f - VdotH, 5.0f);
 
             A += (1.0f - Fc) * G_Vis;
             B += Fc * G_Vis;
@@ -193,7 +195,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
         probe_sample_buf_ = FrameBuf(24, 8, &desc, 1, { FrameBuf::DepthNone }, 1, ctx.log());
     }
 
-    uint8_t black[] = { 0, 0, 0, 0 }, white[] = { 255, 255, 255, 255 };
+    static const uint8_t black[] = { 0, 0, 0, 0 }, white[] = { 255, 255, 255, 255 };
 
     Ren::Texture2DParams p;
     p.w = p.h = 1;
@@ -263,6 +265,8 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
         temp_sort_spans_32_[i].realloc(REN_MAX_SHADOW_BATCHES);
         temp_sort_spans_64_[i].realloc(REN_MAX_MAIN_BATCHES);
     }
+
+    proc_objects_.realloc(REN_MAX_OBJ_COUNT);
 }
 
 Renderer::~Renderer() {
@@ -289,7 +293,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
     if (list.render_flags & DebugTimings) {
         gpu_draw_start = GetGpuTimeBlockingUs();
     }
-    uint64_t cpu_draw_start_us = Sys::GetTimeUs();
+    const uint64_t cpu_draw_start_us = Sys::GetTimeUs();
     
     if (cur_scr_w != scr_w_ || cur_scr_h != scr_h_) {
         {   // Main buffer for raw frame before tonemapping
@@ -407,7 +411,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         // blur_buf2_       : ~0.49 Mb
         // Total            : ~22.2 Mb
 
-        bool init_success = InitFramebuffersInternal();
+        const bool init_success = InitFramebuffersInternal();
         if (init_success) {
             scr_w_ = cur_scr_w;
             scr_h_ = cur_scr_h;
@@ -435,7 +439,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
 
     DrawObjectsInternal(list, target);
     
-    uint64_t cpu_draw_end_us = Sys::GetTimeUs();
+    const uint64_t cpu_draw_end_us = Sys::GetTimeUs();
 
     // store values for current frame
     backend_cpu_start_ = cpu_draw_start_us;

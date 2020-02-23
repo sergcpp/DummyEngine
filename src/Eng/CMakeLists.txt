@@ -132,12 +132,15 @@ set(SHADERS_SOURCES Renderer/Shaders/blit.frag.glsl
                     Renderer/Shaders/blit_transparent_init.frag.glsl
                     Renderer/Shaders/blit_upscale.frag.glsl
                     Renderer/Shaders/fillz.vert.glsl
+                    Renderer/Shaders/fillz_vege.vert.glsl
                     Renderer/Shaders/fillz.frag.glsl
                     Renderer/Shaders/probe.vert.glsl
                     Renderer/Shaders/probe.frag.glsl
                     Renderer/Shaders/shadow.vert.glsl
+                    Renderer/Shaders/shadow_vege.vert.glsl
                     Renderer/Shaders/shadow.frag.glsl
                     Renderer/Shaders/skinning.comp.glsl
+                    Renderer/Shaders/vegetation.comp.glsl
                     Renderer/Shaders/skydome.frag.glsl
                     Renderer/Shaders/skydome.vert.glsl)
 

@@ -9,7 +9,7 @@ const int A_POS     = 0;
 const int A_NORMAL  = 1;
 const int A_TANGENT = 2;
 const int A_UVS1    = 3;
-const int A_UVS2    = 4;
+const int A_ATTRIB  = 4;
 const int A_INDICES = 5;
 const int A_WEIGHTS = 6;
 
@@ -75,6 +75,61 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
         BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
 
         glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset));
+        ++s;
+    }
+
+    Ren::CheckError("", &log_);
+}
+
+void ModlApp::DrawMeshColored(Ren::MeshRef& ref) {
+    using namespace Ren;
+
+    Mesh *m = ref.get();
+    Material *mat = m->group(0).mat.get();
+    ProgramRef p = mat->program(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
+
+    p = diag_colored_prog_;
+    glUniform1f(U_MODE, (float)view_mode_);
+
+    CheckInitVAOs();
+
+    glBindVertexArray((GLuint)simple_vao_);
+
+    glUseProgram(p->prog_id());
+
+    Mat4f world_from_object = Mat4f{ 1.0f };
+
+    world_from_object = Rotate(world_from_object, angle_x_, Vec3f{ 1, 0, 0 });
+    world_from_object = Rotate(world_from_object, angle_y_, Vec3f{ 0, 1, 0 });
+
+    Mat4f view_from_world = cam_.view_matrix(),
+        proj_from_view = cam_.proj_matrix();
+
+    Mat4f view_from_object = view_from_world * world_from_object,
+        proj_from_object = proj_from_view * view_from_object;
+
+    glUniformMatrix4fv(U_MVP_MATR, 1, GL_FALSE, ValuePtr(proj_from_object));
+    glUniformMatrix4fv(U_M_MATR, 1, GL_FALSE, ValuePtr(world_from_object));
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    const Ren::TriGroup *s = &m->group(0);
+    while (s->offset != -1) {
+        const Ren::Material *mat = s->mat.get();
+
+        if (view_mode_ == DiagUVs1) {
+            BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
+        } else if (view_mode_ == DiagVtxColor) {
+        } else {
+            BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
+        }
+        BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
+
+        glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void*)uintptr_t(s->offset));
         ++s;
     }
 
@@ -270,8 +325,8 @@ void ModlApp::CheckInitVAOs() {
             glEnableVertexAttribArray(A_TANGENT);
             glVertexAttribPointer(A_TANGENT, 2, GL_SHORT, GL_TRUE, buf2_stride, (void *)(4 * sizeof(uint16_t)));
 
-            glEnableVertexAttribArray(A_UVS2);
-            glVertexAttribPointer(A_UVS2, 2, GL_HALF_FLOAT, GL_FALSE, buf2_stride, (void *)(6 * sizeof(uint16_t)));
+            glEnableVertexAttribArray(A_ATTRIB);
+            glVertexAttribIPointer(A_ATTRIB, 1, GL_UNSIGNED_INT, buf2_stride, (void *)(6 * sizeof(uint16_t)));
         }
 
         glBindVertexArray(0);
@@ -298,8 +353,8 @@ void ModlApp::CheckInitVAOs() {
         glEnableVertexAttribArray(A_UVS1);
         glVertexAttribPointer(A_UVS1, 2, GL_HALF_FLOAT, GL_FALSE, stride_skin_buf, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t)));
 
-        glEnableVertexAttribArray(A_UVS2);
-        glVertexAttribPointer(A_UVS2, 2, GL_HALF_FLOAT, GL_FALSE, stride_skin_buf, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 2 * sizeof(uint16_t)));
+        glEnableVertexAttribArray(A_ATTRIB);
+        glVertexAttribIPointer(A_ATTRIB, 1, GL_UNSIGNED_INT, buf2_stride, (void*)(6 * sizeof(uint16_t)));
 
         glEnableVertexAttribArray(A_INDICES);
         glVertexAttribPointer(A_INDICES, 4, GL_UNSIGNED_SHORT, GL_FALSE, stride_skin_buf, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 4 * sizeof(uint16_t)));
@@ -319,119 +374,157 @@ void ModlApp::CheckInitVAOs() {
 }
 
 void ModlApp::InitInternal() {
-    static const char diag_vs[] = R"(
-            #version 430
+    static const char diag_vs[] =
+R"(#version 430
 
-            layout(location = 0) in vec3 aVertexPosition;
-            layout(location = 1) in vec4 aVertexNormal;
-            layout(location = 2) in vec2 aVertexTangent;
-            layout(location = 3) in vec2 aVertexUVs1;
-            layout(location = 4) in vec2 aVertexUVs2;
+layout(location = 0) in vec3 aVertexPosition;
+layout(location = 1) in vec4 aVertexNormal;
+layout(location = 2) in vec2 aVertexTangent;
+layout(location = 3) in vec2 aVertexUVs1;
+layout(location = 4) in uint aVertexUVs2Packed;
 
-            layout(location = 0) uniform mat4 uMVPMatrix;
-            layout(location = 1) uniform mat4 uMMatrix;
+layout(location = 0) uniform mat4 uMVPMatrix;
+layout(location = 1) uniform mat4 uMMatrix;
 
-            out mat3 aVertexTBN_;
-            out vec2 aVertexUVs1_;
-            out vec2 aVertexUVs2_;
+out mat3 aVertexTBN_;
+out vec2 aVertexUVs1_;
+out vec4 aVertexAttrib_;
 
-            void main(void) {
-                vec3 vertex_normal_ws = normalize((uMMatrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
-                vec3 vertex_tangent_ws = normalize((uMMatrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
+void main(void) {
+    vec3 vertex_normal_ws = normalize((uMMatrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
+    vec3 vertex_tangent_ws = normalize((uMMatrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
 
-                aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);
-                aVertexUVs1_ = aVertexUVs1;
-                aVertexUVs2_ = aVertexUVs2;
+    aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);
+    aVertexUVs1_ = aVertexUVs1;
+    aVertexAttrib_ = vec4(unpackHalf2x16(aVertexUVs2Packed), 0.0, 0.0);
 
-                gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
-            }
-        )";
+    gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
+}
+)";
 
-    static const char diag_skinned_vs[] = R"(
-            #version 430
+    static const char diag_colored_vs[] =
+R"(#version 430
 
-            layout(location = 0) in vec3 aVertexPosition;
-            layout(location = 1) in mediump vec4 aVertexNormal;
-            layout(location = 2) in mediump vec2 aVertexTangent;
-            layout(location = 3) in mediump vec2 aVertexUVs1;
-            layout(location = 4) in mediump vec2 aVertexUVs2;
-            layout(location = 5) in mediump vec4 aVertexIndices;
-            layout(location = 6) in mediump vec4 aVertexWeights;
+layout(location = 0) in vec3 aVertexPosition;
+layout(location = 1) in vec4 aVertexNormal;
+layout(location = 2) in vec2 aVertexTangent;
+layout(location = 3) in vec2 aVertexUVs1;
+layout(location = 4) in uint aVertexColorPacked;
 
-            layout(location = 0) uniform mat4 uMVPMatrix;
-            layout(location = 1) uniform mat4 uMMatrix;
-            layout(location = 3) uniform mat4 uMPalette[64];
+layout(location = 0) uniform mat4 uMVPMatrix;
+layout(location = 1) uniform mat4 uMMatrix;
 
-            out mat3 aVertexTBN_;
-            out vec2 aVertexUVs1_;
-            out vec2 aVertexUVs2_;
+out mat3 aVertexTBN_;
+out vec2 aVertexUVs1_;
+out vec4 aVertexAttrib_;
 
-            void main(void) {
-                uvec4 vtx_indices = uvec4(aVertexIndices);
-                vec4 vtx_weights = aVertexWeights;
+void main(void) {
+    vec3 vertex_normal_ws = normalize((uMMatrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
+    vec3 vertex_tangent_ws = normalize((uMMatrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
 
-                mat4 mat = uMPalette[vtx_indices.x] * aVertexWeights.x;
-                for(int i = 0; i < 3; i++) {
-                    vtx_indices = vtx_indices.yzwx;
-                    vtx_weights = vtx_weights.yzwx;
-                    if(vtx_weights.x > 0.0) {
-                        mat = mat + uMPalette[vtx_indices.x] * vtx_weights.x;
-                    }
-                }
+    aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);
+    aVertexUVs1_ = aVertexUVs1;
+    aVertexAttrib_ = unpackUnorm4x8(aVertexColorPacked);
 
-                mat = uMMatrix * mat;
+    gl_Position = uMVPMatrix * vec4(aVertexPosition, 1.0);
+}
+)";
 
-                vec3 vertex_normal_ws = normalize((mat * vec4(aVertexNormal.xyz, 0.0)).xyz);
-                vec3 vertex_tangent_ws = normalize((mat * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
+    static const char diag_skinned_vs[] =
+R"(#version 430
 
-                aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);
-                aVertexUVs1_ = aVertexUVs1;
-                aVertexUVs2_ = aVertexUVs2;
+layout(location = 0) in vec3 aVertexPosition;
+layout(location = 1) in mediump vec4 aVertexNormal;
+layout(location = 2) in mediump vec2 aVertexTangent;
+layout(location = 3) in mediump vec2 aVertexUVs1;
+layout(location = 4) in highp uint aVertexUVs2Packed;
+layout(location = 5) in mediump vec4 aVertexIndices;
+layout(location = 6) in mediump vec4 aVertexWeights;
 
-                gl_Position = (uMVPMatrix * mat) * vec4(aVertexPosition, 1.0);
-            }
-        )";
+layout(location = 0) uniform mat4 uMVPMatrix;
+layout(location = 1) uniform mat4 uMMatrix;
+layout(location = 3) uniform mat4 uMPalette[64];
 
-    static const char diag_fs[] = R"(
-            #version 430
+out mat3 aVertexTBN_;
+out vec2 aVertexUVs1_;
+out vec4 aVertexAttrib_;
 
-            #ifdef GL_ES
-                precision mediump float;
-            #endif
+void main(void) {
+    uvec4 vtx_indices = uvec4(aVertexIndices);
+    vec4 vtx_weights = aVertexWeights;
 
-            layout(binding = 0) uniform sampler2D diffuse_texture;
-            layout(binding = 1) uniform sampler2D normals_texture;
+    mat4 mat = uMPalette[vtx_indices.x] * aVertexWeights.x;
+    for(int i = 0; i < 3; i++) {
+        vtx_indices = vtx_indices.yzwx;
+        vtx_weights = vtx_weights.yzwx;
+        if(vtx_weights.x > 0.0) {
+            mat = mat + uMPalette[vtx_indices.x] * vtx_weights.x;
+        }
+    }
 
-            layout(location = 2) uniform float mode;
+    mat = uMMatrix * mat;
+
+    vec3 vertex_normal_ws = normalize((mat * vec4(aVertexNormal.xyz, 0.0)).xyz);
+    vec3 vertex_tangent_ws = normalize((mat * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
+
+    aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);
+    aVertexUVs1_ = aVertexUVs1;
+    aVertexAttrib_ = vec4(unpackHalf2x16(aVertexUVs2Packed), 0.0, 0.0);
+
+    gl_Position = (uMVPMatrix * mat) * vec4(aVertexPosition, 1.0);
+}
+)";
+
+    static const char diag_fs[] =
+R"(#version 430
+
+#ifdef GL_ES
+    precision mediump float;
+#endif
+
+layout(binding = 0) uniform sampler2D diffuse_texture;
+layout(binding = 1) uniform sampler2D normals_texture;
+
+layout(location = 2) uniform float mode;
             
-            in mat3 aVertexTBN_;
-            in vec2 aVertexUVs1_;
-            in vec2 aVertexUVs2_;
+in mat3 aVertexTBN_;
+in vec2 aVertexUVs1_;
+in vec4 aVertexAttrib_;
 
-            out vec4 outColor;
+out vec4 outColor;
 
-            void main(void) {
-                if (mode < 0.5) {
-                    outColor = texture(diffuse_texture, aVertexUVs1_);
-                } else if (mode < 1.5) {
-                    vec3 normal = aVertexTBN_[2] * 0.5 + vec3(0.5);
-                    outColor = vec4(normal, 1.0);
-                } else if (mode < 2.5) {
-                    vec3 tangent = aVertexTBN_[0] * 0.5 + vec3(0.5);
-                    outColor = vec4(tangent, 1.0);
-                } else if (mode < 3.5) {
-                    vec3 tex_normal = texture(normals_texture, aVertexUVs1_).xyz * 2.0 - 1.0;
-                    outColor = vec4((aVertexTBN_ * tex_normal) * 0.5 + vec3(0.5), 1.0);
-                } else if (mode < 4.5) {
-                    outColor = texture(diffuse_texture, aVertexUVs1_);
-                } else if (mode < 5.5) {
-                    outColor = texture(diffuse_texture, aVertexUVs2_);
-                }
-            }
-        )";
+void main(void) {
+    if (mode < 0.5) {
+        outColor = texture(diffuse_texture, aVertexUVs1_);
+    } else if (mode < 1.5) {
+        vec3 normal = aVertexTBN_[2] * 0.5 + vec3(0.5);
+        outColor = vec4(normal, 1.0);
+    } else if (mode < 2.5) {
+        vec3 tangent = aVertexTBN_[0] * 0.5 + vec3(0.5);
+        outColor = vec4(tangent, 1.0);
+    } else if (mode < 3.5) {
+        vec3 tex_normal = texture(normals_texture, aVertexUVs1_).xyz * 2.0 - 1.0;
+        outColor = vec4((aVertexTBN_ * tex_normal) * 0.5 + vec3(0.5), 1.0);
+    } else if (mode < 4.5) {
+        outColor = texture(diffuse_texture, aVertexUVs1_);
+    } else if (mode < 5.5) {
+        outColor = texture(diffuse_texture, aVertexAttrib_.xy);
+    } else if (mode < 6.5) {
+        outColor = vec4(aVertexAttrib_.xxx, 1.0);
+    } else if (mode < 7.5) {
+        outColor = vec4(aVertexAttrib_.yyy, 1.0);
+    } else if (mode < 8.5) {
+        outColor = vec4(aVertexAttrib_.zzz, 1.0);
+    } else if (mode < 9.5) {
+        outColor = vec4(aVertexAttrib_.www, 1.0);
+    }
+}
+)";
 
     Ren::eProgLoadStatus status;
     diag_prog_ = ctx_.LoadProgramGLSL("__diag", diag_vs, diag_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    diag_colored_prog_ = ctx_.LoadProgramGLSL("__diag_colored", diag_colored_vs, diag_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     diag_skinned_prog_ = ctx_.LoadProgramGLSL("__diag_skinned", diag_skinned_vs, diag_fs, &status);
     assert(status == Ren::ProgCreatedFromData);

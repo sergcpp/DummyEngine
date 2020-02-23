@@ -3,7 +3,6 @@
 #include <fstream>
 #include <memory>
 
-#include <Eng/GameStateManager.h>
 #include <Eng/Renderer/Renderer.h>
 #include <Eng/Scene/SceneManager.h>
 #include <Eng/Utils/Cmdline.h>
@@ -32,6 +31,7 @@ namespace GSDrawTestInternal {
         //"pbr_test.json";
         //"zenith.json";
         //"corridor.json";
+        //"vegetation_test2.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {
@@ -44,6 +44,68 @@ void GSDrawTest::Enter() {
 
     log_->Info("GSDrawTest: Loading scene!");
     GSBaseState::LoadScene(SCENE_NAME);
+}
+
+void GSDrawTest::OnPreloadScene(JsObject &js_scene) {
+    GSBaseState::OnPreloadScene(js_scene);
+
+#if 1
+    JsArray &js_objects = (JsArray &)js_scene.at("objects");
+    if (js_objects.elements.size() < 2) return;
+
+    JsObject 
+        js_leaf_tree = (const JsObject &)*js_objects.elements.begin(),
+        js_palm_tree = (const JsObject &)*(++js_objects.elements.begin());
+    if (!js_leaf_tree.Has("name") || !js_palm_tree.Has("name")) return;
+
+    if (((const JsString &)js_leaf_tree.at("name")).val != "leaf_tree" ||
+        ((const JsString &)js_palm_tree.at("name")).val != "palm_tree") return;
+    
+    for (int j = -9; j < 10; j++) {
+        for (int i = -9; i < 10; i++) {
+            if (j == 0 && i == 0) continue;
+
+            ((JsString &)js_leaf_tree.at("name")).val = "leaf " + std::to_string(j) + ":" + std::to_string(i);
+            ((JsString &)js_palm_tree.at("name")).val = "palm " + std::to_string(j) + ":" + std::to_string(i);
+
+            {   // set leaf tree position
+                JsObject &js_leaf_tree_tr = (JsObject &)js_leaf_tree.at("transform");
+                JsArray &js_leaf_tree_pos = (JsArray &)js_leaf_tree_tr.at("pos");
+                JsArray &js_leaf_tree_rot = (JsArray &)js_leaf_tree_tr.at("rot");
+
+                JsNumber &js_leaf_posx = (JsNumber &)(*js_leaf_tree_pos.elements.begin());
+                JsNumber &js_leaf_posz = (JsNumber &)(*++(++js_leaf_tree_pos.elements.begin()));
+
+                js_leaf_posx.val = double(i * 10);
+                js_leaf_posz.val = double(j * 10);
+
+                JsNumber &js_leaf_roty = (JsNumber &)(*++js_leaf_tree_rot.elements.begin());
+                js_leaf_roty.val = double(i) * 43758.5453;
+            }
+
+            {   // set palm tree position
+                JsObject &js_palm_tree_tr = (JsObject &)js_palm_tree.at("transform");
+                JsArray &js_palm_tree_pos = (JsArray &)js_palm_tree_tr.at("pos");
+                JsArray &js_palm_tree_rot = (JsArray &)js_palm_tree_tr.at("rot");
+
+                JsNumber &js_palm_posx = (JsNumber &)(*js_palm_tree_pos.elements.begin());
+                JsNumber &js_palm_posz = (JsNumber &)(*++(++js_palm_tree_pos.elements.begin()));
+
+                js_palm_posx.val = double(i * 10) + 5.0;
+                js_palm_posz.val = double(j * 10);
+
+                JsNumber &js_palm_roty = (JsNumber &)(*++js_palm_tree_rot.elements.begin());
+                js_palm_roty.val = double(i) * 12.9898;
+            }
+
+            js_objects.elements.push_back(js_leaf_tree);
+            js_objects.elements.push_back(js_palm_tree);
+        }
+    }
+
+    //std::ofstream test_out_file("C:\\repos\\DummyEngine\\assets\\scenes\\veg_test.json", std::ios::binary);
+    //js_scene.Write(test_out_file);
+#endif
 }
 
 void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
@@ -172,9 +234,8 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
         }
     }
 
-    {
-        zenith_index_ = scene_manager_->FindObject("zenith");
-    }
+    zenith_index_ = scene_manager_->FindObject("zenith");
+    palm_index_ = scene_manager_->FindObject("palm");
 }
 
 void GSDrawTest::Exit() {
@@ -307,6 +368,17 @@ void GSDrawTest::Update(uint64_t dt_us) {
 
         scene_manager_->InvalidateObjects(scooter_indices_, 16, CompTransformBit);
     }
+
+    wind_update_time_ += dt_us;
+
+    if (wind_update_time_ > 400000) {
+        wind_update_time_ = 0;
+        // update wind vector
+        const float next_wind_strength = 0.15f * random_->GetNormalizedFloat();
+        wind_vector_goal_ = next_wind_strength * random_->GetUnitVec3();
+    }
+
+    scene.env.wind_vec = 0.99f * scene.env.wind_vec + 0.01f * wind_vector_goal_;
 }
 
 bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
@@ -465,7 +537,7 @@ void GSDrawTest::OnUpdateScene() {
             view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f },
             view_fov_, max_exposure_);
 
-    //LOGI("%f %f %f | %f %f %f",
+    //log_->Info("%f %f %f | %f %f %f",
     //        view_origin_[0], view_origin_[1], view_origin_[2],
     //        view_dir_[0], view_dir_[1], view_dir_[2]);
 }
@@ -639,6 +711,27 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
         if ((zenith->comp_mask & mask) == mask) {
             auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(zenith->components[CompDrawable]);
             auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(zenith->components[CompAnimState]);
+
+            as->anim_time_s += delta_time_s;
+
+            Ren::Mesh *mesh = dr->mesh.get();
+            Ren::Skeleton *skel = mesh->skel();
+
+            const int anim_index = 0;
+
+            skel->UpdateAnim(anim_index, as->anim_time_s);
+            skel->ApplyAnim(anim_index);
+            skel->UpdateBones(as->matr_palette);
+        }
+    }
+
+    if (palm_index_ != 0xffffffff) {
+        SceneObject *palm = scene_manager_->GetObject(palm_index_);
+
+        uint32_t mask = CompDrawableBit | CompAnimStateBit;
+        if ((palm->comp_mask & mask) == mask) {
+            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(palm->components[CompDrawable]);
+            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(palm->components[CompAnimState]);
 
             as->anim_time_s += delta_time_s;
 

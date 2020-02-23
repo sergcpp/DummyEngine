@@ -15,7 +15,7 @@ layout(location = $VtxPosLoc) in vec3 aVertexPosition;
 layout(location = $VtxNorLoc) in vec4 aVertexNormal;
 layout(location = $VtxTanLoc) in vec2 aVertexTangent;
 layout(location = $VtxUV1Loc) in vec2 aVertexUVs1;
-//layout(location = $VtxUV2Loc) in vec2 aVertexUVs2;
+layout(location = $VtxAUXLoc) in vec2 aVertexUnused;
 
 struct ShadowMapRegion {
     vec4 transform;
@@ -39,7 +39,8 @@ uniform SharedDataBlock {
     ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspDepthRangeAndUnused;
+    vec4 uResAndFRes, uTranspParamsAndTime;
+	vec4 uWindParams;
     ProbeItem uProbes[$MaxProbes];
 };
 
@@ -94,11 +95,11 @@ void main(void) {
     );
     
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
-        aVertexShUVs_[i] = (uShadowMapRegions[i].clip_from_world * MMatrix * vec4(aVertexPosition, 1.0)).xyz;
+        aVertexShUVs_[i] = (uShadowMapRegions[i].clip_from_world * vec4(vertex_position_ws, 1.0)).xyz;
         aVertexShUVs_[i] = 0.5 * aVertexShUVs_[i] + 0.5;
         aVertexShUVs_[i].xy *= vec2(0.25, 0.5);
         aVertexShUVs_[i].xy += offsets[i];
     }
     
-    gl_Position = uViewProjMatrix * MMatrix * vec4(aVertexPosition, 1.0);
+    gl_Position = uViewProjMatrix * vec4(vertex_position_ws, 1.0);
 } 

@@ -1,0 +1,7 @@
+gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+sw_program: main
+flag: alpha_test
+texture: vegetation/leaf_tree_leaves_diff.png srgb
+texture: vegetation/leaf_tree_leaves_norm.png
+texture: default_specular.png

@@ -36,7 +36,8 @@ uniform SharedDataBlock {
     ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspDepthRangeAndUnused;
+    vec4 uResAndFRes, uTranspParamsAndTime;
+	vec4 uWindParams;
     ProbeItem uProbes[$MaxProbes];
 };
 

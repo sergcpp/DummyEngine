@@ -6,11 +6,15 @@
 
 struct Drawable {
     enum eDrFlags {
-        DrVisibleToShadow   = (1 << 0),
-        DrMaterialOverride  = (1 << 1)
+        DrMaterialOverride  = (1 << 0)
     };
 
-    uint32_t            flags = 0;
+    enum eDrVisibility {
+        VisShadow = (1 << 0),
+        VisProbes = (1 << 1)
+    };
+
+    uint32_t            flags = 0, vis_mask = 0xffffffff;
     Ren::MeshRef        mesh;
     Ren::String         mesh_file;
 

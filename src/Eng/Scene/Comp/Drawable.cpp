@@ -3,12 +3,20 @@
 #include <Ren/Mesh.h>
 
 void Drawable::Read(const JsObject &js_in, Drawable &dr) {
-    dr.flags = DrVisibleToShadow;
+    dr.flags = 0;
+    dr.vis_mask = 0xffffffff;
 
     if (js_in.Has("visible_to_shadow")) {
         auto v = (JsLiteral)js_in.at("visible_to_shadow");
         if (v.val == JS_FALSE) {
-            dr.flags &= ~DrVisibleToShadow;
+            dr.vis_mask &= ~VisShadow;
+        }
+    }
+
+    if (js_in.Has("visible_to_probes")) {
+        auto v = (JsLiteral)js_in.at("visible_to_probes");
+        if (v.val == JS_FALSE) {
+            dr.vis_mask &= ~VisProbes;
         }
     }
 
@@ -46,9 +54,12 @@ void Drawable::Write(const Drawable &dr, JsObject &js_out) {
         js_out.Push("material_override", std::move(js_material_override));
     }
 
-    {   // write flags
-        if (!(dr.flags & DrVisibleToShadow)) {
+    {   // write visibility
+        if (!(dr.vis_mask & VisShadow)) {
             js_out.Push("visible_to_shadow", JsLiteral(JS_FALSE));
+        }
+        if (!(dr.vis_mask & VisProbes)) {
+            js_out.Push("visible_to_probes", JsLiteral(JS_FALSE));
         }
     }
 }

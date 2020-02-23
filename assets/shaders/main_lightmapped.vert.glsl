@@ -14,7 +14,7 @@ layout(location = $VtxPosLoc) in vec3 aVertexPosition;
 layout(location = $VtxNorLoc) in vec4 aVertexNormal;
 layout(location = $VtxTanLoc) in vec2 aVertexTangent;
 layout(location = $VtxUV1Loc) in vec2 aVertexUVs1;
-layout(location = $VtxUV2Loc) in vec2 aVertexUVs2;
+layout(location = $VtxAUXLoc) in uint aVertexUVs2Packed;
 
 struct ShadowMapRegion {
     vec4 transform;
@@ -38,7 +38,8 @@ uniform SharedDataBlock {
     ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspDepthRangeAndUnused;
+    vec4 uResAndFRes, uTranspParamsAndTime;
+	vec4 uWindParams;
     ProbeItem uProbes[$MaxProbes];
 };
 
@@ -86,7 +87,7 @@ void main(void) {
     aVertexPos_ = vertex_position_ws;
     aVertexNormal_ = vertex_normal_ws;
     aVertexTangent_ = vertex_tangent_ws;
-    aVertexUVs_ = vec4(aVertexUVs1, LightmapTr.xy + LightmapTr.zw * aVertexUVs2);
+    aVertexUVs_ = vec4(aVertexUVs1, LightmapTr.xy + LightmapTr.zw * unpackHalf2x16(aVertexUVs2Packed));
 
     const vec2 offsets[4] = vec2[4](
         vec2(0.0, 0.0),
