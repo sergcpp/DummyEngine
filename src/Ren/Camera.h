@@ -40,6 +40,7 @@ protected:
     Mat4f proj_matrix_;
 
     Vec3f world_position_;
+    uint32_t render_mask_ = 0xffffffff;
 
     Frustum frustum_;
     bool is_orthographic_;
@@ -60,6 +61,9 @@ public:
     const Vec3f &world_position() const {
         return world_position_;
     }
+
+    uint32_t render_mask() const { return render_mask_; }
+    void set_render_mask(uint32_t mask) { render_mask_ = mask; }
 
     Vec3f view_dir() const {
         return Vec3f{ view_matrix_[0][2], view_matrix_[1][2], view_matrix_[2][2] };

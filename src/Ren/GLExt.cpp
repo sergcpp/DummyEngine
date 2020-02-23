@@ -81,6 +81,7 @@ bool Ren::InitGLExtentions() {
     ren_glGetUniformBlockIndex      = (PFNGLGETUNIFORMBLOCKINDEXPROC)GetProcAddress(glGetUniformBlockIndex);
     ren_glUniformBlockBinding       = (PFNGLUNIFORMBLOCKBINDINGPROC)GetProcAddress(glUniformBlockBinding);
     ren_glVertexAttribPointer       = (PFNGLVERTEXATTRIBPOINTERPROC)GetProcAddress(glVertexAttribPointer);
+    ren_glVertexAttribIPointer      = (PFNGLVERTEXATTRIBIPOINTERPROC)GetProcAddress(glVertexAttribIPointer);
     ren_glEnableVertexAttribArray   = (PFNGLENABLEVERTEXATTRIBARRAYPROC)GetProcAddress(glEnableVertexAttribArray);
     ren_glDisableVertexAttribArray  = (PFNGLDISABLEVERTEXATTRIBARRAYPROC)GetProcAddress(glDisableVertexAttribArray);
 

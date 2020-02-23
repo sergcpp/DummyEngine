@@ -450,6 +450,9 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 
 #define GL_SHADER_BINARY_FORMAT_SPIR_V  0x9551
 
+#define GL_MAX_COMPUTE_WORK_GROUP_COUNT 0x91BE
+#define GL_MAX_COMPUTE_WORK_GROUP_SIZE  0x91BF
+
 #ifndef APIENTRY
 #if defined(WIN32)
 #define WINAPI      __stdcall
@@ -505,6 +508,7 @@ typedef void (APIENTRY *PFNGLGETACTIVEUNIFORMPROC)(GLuint program, GLuint index,
 typedef GLuint (APIENTRY *PFNGLGETUNIFORMBLOCKINDEXPROC)(GLuint program, const GLchar *uniformBlockName);
 typedef void (APIENTRY *PFNGLUNIFORMBLOCKBINDINGPROC)(GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding);
 typedef void (APIENTRY *PFNGLVERTEXATTRIBPOINTERPROC)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid * pointer);
+typedef void (APIENTRY *PFNGLVERTEXATTRIBIPOINTERPROC)(GLuint index, GLint size, GLenum type, GLsizei stride, const void* pointer);
 typedef void (APIENTRY *PFNGLENABLEVERTEXATTRIBARRAYPROC)(GLuint index);
 typedef void (APIENTRY *PFNGLDISABLEVERTEXATTRIBARRAYPROC)(GLuint index);
 
@@ -758,6 +762,7 @@ typedef void (APIENTRY *PFNGLBINDTEXTUREUNITCOMPPROC)(GLenum target, GLuint unit
 #define glGetUniformBlockIndex      ren_glGetUniformBlockIndex
 #define glUniformBlockBinding       ren_glUniformBlockBinding
 #define glVertexAttribPointer       ren_glVertexAttribPointer
+#define glVertexAttribIPointer      ren_glVertexAttribIPointer
 #define glEnableVertexAttribArray   ren_glEnableVertexAttribArray
 #define glDisableVertexAttribArray  ren_glDisableVertexAttribArray
 #define glCreateShader              ren_glCreateShader
@@ -942,6 +947,7 @@ EXTERN_FUNC PFNGLGETACTIVEUNIFORMPROC           ren_glGetActiveUniform;
 EXTERN_FUNC PFNGLGETUNIFORMBLOCKINDEXPROC       ren_glGetUniformBlockIndex;
 EXTERN_FUNC PFNGLUNIFORMBLOCKBINDINGPROC        ren_glUniformBlockBinding;
 EXTERN_FUNC PFNGLVERTEXATTRIBPOINTERPROC        ren_glVertexAttribPointer;
+EXTERN_FUNC PFNGLVERTEXATTRIBIPOINTERPROC       ren_glVertexAttribIPointer;
 EXTERN_FUNC PFNGLENABLEVERTEXATTRIBARRAYPROC    ren_glEnableVertexAttribArray;
 EXTERN_FUNC PFNGLDISABLEVERTEXATTRIBARRAYPROC   ren_glDisableVertexAttribArray;
 

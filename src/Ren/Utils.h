@@ -21,6 +21,8 @@ struct vertex_t {
     int index;
 };
 
+uint16_t f32_to_f16(float value);
+
 void ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint32_t> &new_vtx_indices,
                          const uint32_t *indices, size_t indices_count);
 

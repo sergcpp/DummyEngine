@@ -65,11 +65,18 @@ void Ren::Context::Init(int w, int h, ILog *log) {
         log_->Info("\tMax vertex output\t: %i", capabilities.max_vertex_output);
     }
 
+    // determine compute work group sizes
+    for (int i = 0; i < 3; i++) {
+        GLint val;
+        glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, i, &val);
+        capabilities.max_compute_work_group_size[i] = val;
+    }
+
     // how many bones(mat4) can be used at time
-    Mesh::max_gpu_bones = capabilities.max_uniform_vec4 / 8;
+    /*Mesh::max_gpu_bones = capabilities.max_uniform_vec4 / 8;
     log_->Info("\tBones per pass\t: %i", Mesh::max_gpu_bones);
     char buff[16];
-    sprintf(buff, "%i", Mesh::max_gpu_bones);
+    sprintf(buff, "%i", Mesh::max_gpu_bones);*/
     /*glsl_defines_ += "#define MAX_GPU_BONES ";
     glsl_defines_ += buff;
     glsl_defines_ += "\r\n";*/
@@ -107,7 +114,7 @@ void Ren::Context::Init(int w, int h, ILog *log) {
 
     default_vertex_buf1_        = buffers_.Add("default_vtx_buf1", 64 * 1024 * 1024);
     default_vertex_buf2_        = buffers_.Add("default_vtx_buf2", 64 * 1024 * 1024);
-    default_skin_vertex_buf_    = buffers_.Add("default_skin_buf", 64 * 1024 * 1024);
+    default_skin_vertex_buf_    = buffers_.Add("default_skin_vtx_buf", 64 * 1024 * 1024);
     default_indices_buf_        = buffers_.Add("default_ndx_buf2", 64 * 1024 * 1024);
 
     texture_atlas_ = TextureAtlasArray{ TextureAtlasWidth, TextureAtlasHeight, TextureAtlasLayers, RawRGBA8888, BilinearNoMipmap };
