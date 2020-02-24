@@ -24,7 +24,7 @@ void SceneManager::InlineShaderConstants(assets_context_t &ctx, std::string &lin
         shader_constants.Insert("$VtxNorLoc",       AS_STR(REN_VTX_NOR_LOC));
         shader_constants.Insert("$VtxTanLoc",       AS_STR(REN_VTX_TAN_LOC));
         shader_constants.Insert("$VtxUV1Loc",       AS_STR(REN_VTX_UV1_LOC));
-        shader_constants.Insert("$VtxUV2Loc",       AS_STR(REN_VTX_UV2_LOC));
+        shader_constants.Insert("$VtxAUXLoc",       AS_STR(REN_VTX_AUX_LOC));
 
         // Texture slots
         shader_constants.Insert("$MatTex0Slot",     AS_STR(REN_MAT_TEX0_SLOT));

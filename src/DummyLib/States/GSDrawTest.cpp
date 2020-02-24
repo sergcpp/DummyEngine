@@ -50,51 +50,51 @@ void GSDrawTest::OnPreloadScene(JsObject &js_scene) {
     GSBaseState::OnPreloadScene(js_scene);
 
 #if 1
-    JsArray &js_objects = (JsArray &)js_scene.at("objects");
+    JsArray &js_objects = js_scene.at("objects").as_arr();
     if (js_objects.elements.size() < 2) return;
 
     JsObject 
-        js_leaf_tree = (const JsObject &)*js_objects.elements.begin(),
-        js_palm_tree = (const JsObject &)*(++js_objects.elements.begin());
+        js_leaf_tree = js_objects.elements.begin()->as_obj(),
+        js_palm_tree = (++js_objects.elements.begin())->as_obj();
     if (!js_leaf_tree.Has("name") || !js_palm_tree.Has("name")) return;
 
-    if (((const JsString &)js_leaf_tree.at("name")).val != "leaf_tree" ||
-        ((const JsString &)js_palm_tree.at("name")).val != "palm_tree") return;
+    if (js_leaf_tree.at("name").as_str().val != "leaf_tree" ||
+        js_palm_tree.at("name").as_str().val != "palm_tree") return;
     
     for (int j = -9; j < 10; j++) {
         for (int i = -9; i < 10; i++) {
             if (j == 0 && i == 0) continue;
 
-            ((JsString &)js_leaf_tree.at("name")).val = "leaf " + std::to_string(j) + ":" + std::to_string(i);
-            ((JsString &)js_palm_tree.at("name")).val = "palm " + std::to_string(j) + ":" + std::to_string(i);
+            js_leaf_tree.at("name").as_str().val = "leaf " + std::to_string(j) + ":" + std::to_string(i);
+            js_palm_tree.at("name").as_str().val = "palm " + std::to_string(j) + ":" + std::to_string(i);
 
             {   // set leaf tree position
-                JsObject &js_leaf_tree_tr = (JsObject &)js_leaf_tree.at("transform");
-                JsArray &js_leaf_tree_pos = (JsArray &)js_leaf_tree_tr.at("pos");
-                JsArray &js_leaf_tree_rot = (JsArray &)js_leaf_tree_tr.at("rot");
+                JsObject &js_leaf_tree_tr = js_leaf_tree.at("transform").as_obj();
+                JsArray &js_leaf_tree_pos = js_leaf_tree_tr.at("pos").as_arr();
+                JsArray &js_leaf_tree_rot = js_leaf_tree_tr.at("rot").as_arr();
 
-                JsNumber &js_leaf_posx = (JsNumber &)(*js_leaf_tree_pos.elements.begin());
-                JsNumber &js_leaf_posz = (JsNumber &)(*++(++js_leaf_tree_pos.elements.begin()));
+                JsNumber &js_leaf_posx = js_leaf_tree_pos.elements.begin()->as_num();
+                JsNumber &js_leaf_posz = (++(++js_leaf_tree_pos.elements.begin()))->as_num();
 
                 js_leaf_posx.val = double(i * 10);
                 js_leaf_posz.val = double(j * 10);
 
-                JsNumber &js_leaf_roty = (JsNumber &)(*++js_leaf_tree_rot.elements.begin());
+                JsNumber &js_leaf_roty = (++js_leaf_tree_rot.elements.begin())->as_num();
                 js_leaf_roty.val = double(i) * 43758.5453;
             }
 
             {   // set palm tree position
-                JsObject &js_palm_tree_tr = (JsObject &)js_palm_tree.at("transform");
-                JsArray &js_palm_tree_pos = (JsArray &)js_palm_tree_tr.at("pos");
-                JsArray &js_palm_tree_rot = (JsArray &)js_palm_tree_tr.at("rot");
+                JsObject &js_palm_tree_tr = js_palm_tree.at("transform").as_obj();
+                JsArray &js_palm_tree_pos = js_palm_tree_tr.at("pos").as_arr();
+                JsArray &js_palm_tree_rot = js_palm_tree_tr.at("rot").as_arr();
 
-                JsNumber &js_palm_posx = (JsNumber &)(*js_palm_tree_pos.elements.begin());
-                JsNumber &js_palm_posz = (JsNumber &)(*++(++js_palm_tree_pos.elements.begin()));
+                JsNumber &js_palm_posx = js_palm_tree_pos.elements.begin()->as_num();
+                JsNumber &js_palm_posz = (++(++js_palm_tree_pos.elements.begin()))->as_num();
 
                 js_palm_posx.val = double(i * 10) + 5.0;
                 js_palm_posz.val = double(j * 10);
 
-                JsNumber &js_palm_roty = (JsNumber &)(*++js_palm_tree_rot.elements.begin());
+                JsNumber &js_palm_roty = (++js_palm_tree_rot.elements.begin())->as_num();
                 js_palm_roty.val = double(i) * 12.9898;
             }
 

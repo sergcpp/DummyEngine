@@ -103,5 +103,5 @@ void main(void) {
         aVertexShUVs_[i].xy += offsets[i];
     }
     
-    gl_Position = uViewProjMatrix * MMatrix * vec4(aVertexPosition, 1.0);
+    gl_Position = uViewProjMatrix * vec4(vertex_position_ws, 1.0);
 } 

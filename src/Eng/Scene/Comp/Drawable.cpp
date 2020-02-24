@@ -14,7 +14,7 @@ void Drawable::Read(const JsObject &js_in, Drawable &dr) {
     }
 
     if (js_in.Has("visible_to_probes")) {
-        auto v = (JsLiteral)js_in.at("visible_to_probes");
+        JsLiteral v = js_in.at("visible_to_probes").as_lit();
         if (v.val == JS_FALSE) {
             dr.vis_mask &= ~VisProbes;
         }
