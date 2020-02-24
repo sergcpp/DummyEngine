@@ -598,14 +598,14 @@ void SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file, c
                     // remove spaces
                     if (!caption.empty()) {
                         int n = 0;
-                        while (n < caption.length() && caption[n] == ' ') n++;
+                        while (n < (int)caption.length() && caption[n] == ' ') n++;
                         caption.erase(0, n);
                         while (caption.back() == ' ') caption.pop_back();
                     }
 
                     if (!html_body.empty()) {
                         int n = 0;
-                        while (n < html_body.length() && html_body[n] == ' ') n++;
+                        while (n < (int)html_body.length() && html_body[n] == ' ') n++;
                         html_body.erase(0, n);
                         while (html_body.back() == ' ') html_body.pop_back();
                     }

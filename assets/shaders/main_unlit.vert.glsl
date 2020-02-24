@@ -69,5 +69,6 @@ void main(void) {
 
     aVertexUVs1_ = aVertexUVs1;
     
-    gl_Position = uViewProjMatrix * MMatrix * vec4(aVertexPosition, 1.0);
+	vec3 vertex_pos_ws = (MMatrix * vec4(aVertexPosition, 1.0)).xyz;
+    gl_Position = uViewProjMatrix * vec4(vertex_pos_ws, 1.0);
 } 
