@@ -14,14 +14,14 @@ bool JsLiteral::Read(std::istream &in) {
     if (!in.read(str, 4)) return false;
 
     if (strcmp(str, "null") == 0) {
-        val = JS_NULL;
+        val = JsLiteralType::Null;
         return true;
     } else if (strcmp(str, "true") == 0) {
-        val = JS_TRUE;
+        val = JsLiteralType::True;
         return true;
     } else if (strcmp(str, "fals") == 0) {
         if (!in.read(&c, 1) || c != 'e') return false;
-        val = JS_FALSE;
+        val = JsLiteralType::False;
         return true;
     }
 
@@ -30,11 +30,11 @@ bool JsLiteral::Read(std::istream &in) {
 }
 
 void JsLiteral::Write(std::ostream &out, JsFlags /*flags*/) const {
-    if (val == JS_TRUE) {
+    if (val == JsLiteralType::True) {
         out << "true";
-    } else if (val == JS_FALSE) {
+    } else if (val == JsLiteralType::False) {
         out << "false";
-    } else if (val == JS_NULL) {
+    } else if (val == JsLiteralType::Null) {
         out << "null";
     }
 }
@@ -135,7 +135,7 @@ bool JsArray::Read(std::istream &in) {
         if (c == ']') return true;
         in.seekg(-1, std::ios::cur);
 
-        elements.emplace_back(JS_NULL);
+        elements.emplace_back(JsLiteralType::Null);
         if (!elements.back().Read(in)) {
             return false;
         }
@@ -191,7 +191,7 @@ JsElement &JsObject::operator[](const std::string &s) {
             return e.second;
         }
     }
-    elements.emplace_back(s, JsLiteral{ JS_NULL });
+    elements.emplace_back(s, JsLiteral{ JsLiteralType::Null });
     return elements.back().second;
 }
 
@@ -286,7 +286,7 @@ bool JsObject::Read(std::istream &in) {
         while (in.read(&c, 1) && isspace(c));
         in.seekg(-1, std::ios::cur);
 
-        elements.emplace_back(key.val, JsLiteral{ JS_NULL });
+        elements.emplace_back(key.val, JsLiteral{ JsLiteralType::Null });
         if (!elements.back().second.Read(in)) {
             return false;
         }
@@ -327,67 +327,67 @@ void JsObject::Write(std::ostream &out, JsFlags flags) const {
 
 /////////////////////////////////////////////////////////////////
 
-JsElement::JsElement(JsLiteralType lit_type) : type_(JS_TYPE_LITERAL) {
+JsElement::JsElement(JsLiteralType lit_type) : type_(JsType::Literal) {
     new(&data_) JsLiteral{ lit_type };
 }
 
-JsElement::JsElement(double val) : type_(JS_TYPE_NUMBER) {
+JsElement::JsElement(double val) : type_(JsType::Number) {
     new(&data_) JsNumber{ val };
 }
 
-JsElement::JsElement(const char *str) : type_(JS_TYPE_STRING) {
+JsElement::JsElement(const char *str) : type_(JsType::String) {
     new(&data_) JsString{ str };
 }
 
 JsElement::JsElement(JsType type) : type_(type) {
-    if (type_ == JS_TYPE_LITERAL) {
-        new (&data_) JsLiteral{ JS_NULL };
-    } else if (type_ == JS_TYPE_NUMBER) {
+    if (type_ == JsType::Literal) {
+        new (&data_) JsLiteral{ JsLiteralType::Null };
+    } else if (type_ == JsType::Number) {
         new (&data_) JsNumber{};
-    } else if (type_ == JS_TYPE_STRING) {
+    } else if (type_ == JsType::String) {
         new (&data_) JsString{};
-    } else if (type_ == JS_TYPE_ARRAY) {
+    } else if (type_ == JsType::Array) {
         new (&data_) JsArray{};
-    } else if (type_ == JS_TYPE_OBJECT) {
+    } else if (type_ == JsType::Object) {
         new (&data_) JsObject{};
     }
 }
 
 JsElement::JsElement(const JsLiteral &rhs) {
     new(&data_) JsLiteral{ rhs };
-    type_ = JS_TYPE_LITERAL;
+    type_ = JsType::Literal;
 }
 
 JsElement::JsElement(const JsNumber &rhs) {
     new(&data_) JsNumber{ rhs };
-    type_ = JS_TYPE_NUMBER;
+    type_ = JsType::Number;
 }
 
 JsElement::JsElement(const JsString &rhs) {
     new(&data_) JsString{ rhs };
-    type_ = JS_TYPE_STRING;
+    type_ = JsType::String;
 }
 
 JsElement::JsElement(const JsArray &rhs) {
     new(&data_) JsArray{ rhs };
-    type_ = JS_TYPE_ARRAY;
+    type_ = JsType::Array;
 }
 
 JsElement::JsElement(const JsObject &rhs) {
     new(&data_) JsObject{ rhs };
-    type_ = JS_TYPE_OBJECT;
+    type_ = JsType::Object;
 }
 
 JsElement::JsElement(const JsElement &rhs) {
-    if (rhs.type_ == JS_TYPE_LITERAL) {
+    if (rhs.type_ == JsType::Literal) {
         new (&data_) JsLiteral{ reinterpret_cast<const JsLiteral &>(rhs.data_) };
-    } else if (rhs.type_ == JS_TYPE_NUMBER) {
+    } else if (rhs.type_ == JsType::Number) {
         new (&data_) JsNumber{ reinterpret_cast<const JsNumber &>(rhs.data_) };
-    } else if (rhs.type_ == JS_TYPE_STRING) {
+    } else if (rhs.type_ == JsType::String) {
         new (&data_) JsString{ reinterpret_cast<const JsString &>(rhs.data_) };
-    } else if (rhs.type_ == JS_TYPE_ARRAY) {
+    } else if (rhs.type_ == JsType::Array) {
         new (&data_) JsArray{ reinterpret_cast<const JsArray &>(rhs.data_) };
-    } else if (rhs.type_ == JS_TYPE_OBJECT) {
+    } else if (rhs.type_ == JsType::Object) {
         new (&data_) JsObject{ reinterpret_cast<const JsObject &>(rhs.data_) };
     }
     type_ = rhs.type_;
@@ -395,29 +395,29 @@ JsElement::JsElement(const JsElement &rhs) {
 
 JsElement::JsElement(JsString &&rhs) {
     new(&data_) JsString{ std::move(rhs) };
-    type_ = JS_TYPE_STRING;
+    type_ = JsType::String;
 }
 
 JsElement::JsElement(JsArray &&rhs) {
     new(&data_) JsArray{ std::move(rhs) };
-    type_ = JS_TYPE_ARRAY;
+    type_ = JsType::Array;
 }
 
 JsElement::JsElement(JsObject &&rhs) {
     new(&data_) JsObject{ std::move(rhs) };
-    type_ = JS_TYPE_OBJECT;
+    type_ = JsType::Object;
 }
 
 JsElement::JsElement(JsElement &&rhs) {
-    if (rhs.type_ == JS_TYPE_LITERAL) {
+    if (rhs.type_ == JsType::Literal) {
         new (&data_) JsLiteral{ reinterpret_cast<const JsLiteral &>(rhs.data_) };
-    } else if (rhs.type_ == JS_TYPE_NUMBER) {
+    } else if (rhs.type_ == JsType::Number) {
         new (&data_) JsNumber{ reinterpret_cast<const JsNumber &>(rhs.data_) };
-    } else if (rhs.type_ == JS_TYPE_STRING) {
+    } else if (rhs.type_ == JsType::String) {
         new (&data_) JsString{ std::move(reinterpret_cast<JsString &>(rhs.data_)) };
-    } else if (rhs.type_ == JS_TYPE_ARRAY) {
+    } else if (rhs.type_ == JsType::Array) {
         new (&data_) JsArray{ std::move(reinterpret_cast<JsArray &>(rhs.data_)) };
-    } else if (rhs.type_ == JS_TYPE_OBJECT) {
+    } else if (rhs.type_ == JsType::Object) {
         new (&data_) JsObject{ std::move(reinterpret_cast<JsObject &>(rhs.data_)) };
     }
     type_ = rhs.type_;
@@ -428,75 +428,75 @@ JsElement::~JsElement() {
 }
 
 void JsElement::Destroy() {
-    if (type_ == JS_TYPE_LITERAL) {
+    if (type_ == JsType::Literal) {
         reinterpret_cast<JsLiteral &>(data_).~JsLiteral();
-    } else if (type_ == JS_TYPE_NUMBER) {
+    } else if (type_ == JsType::Number) {
         reinterpret_cast<JsNumber &>(data_).~JsNumber();
-    } else if (type_ == JS_TYPE_STRING) {
+    } else if (type_ == JsType::String) {
         reinterpret_cast<JsString &>(data_).~JsString();
-    } else if (type_ == JS_TYPE_ARRAY) {
+    } else if (type_ == JsType::Array) {
         reinterpret_cast<JsArray &>(data_).~JsArray();
-    } else if (type_ == JS_TYPE_OBJECT) {
+    } else if (type_ == JsType::Object) {
         reinterpret_cast<JsObject &>(data_).~JsObject();
     }
-    type_ = JS_TYPE_INVALID;
+    type_ = JsType::Invalid;
 }
 
 JsLiteral &JsElement::as_lit() {
-    if (type_ != JS_TYPE_LITERAL) throw std::bad_cast();
+    if (type_ != JsType::Literal) throw std::bad_cast();
     return reinterpret_cast<JsLiteral &>(data_);
 }
 
 JsNumber &JsElement::as_num() {
-    if (type_ != JS_TYPE_NUMBER) throw std::bad_cast();
+    if (type_ != JsType::Number) throw std::bad_cast();
     return reinterpret_cast<JsNumber &>(data_);
 }
 
 JsString &JsElement::as_str() {
-    if (type_ != JS_TYPE_STRING) throw std::bad_cast();
+    if (type_ != JsType::String) throw std::bad_cast();
     return reinterpret_cast<JsString &>(data_);
 }
 
 JsArray &JsElement::as_arr() {
-    if (type_ != JS_TYPE_ARRAY) throw std::bad_cast();
+    if (type_ != JsType::Array) throw std::bad_cast();
     return reinterpret_cast<JsArray &>(data_);
 }
 
 JsObject &JsElement::as_obj() {
-    if (type_ != JS_TYPE_OBJECT) throw std::bad_cast();
+    if (type_ != JsType::Object) throw std::bad_cast();
     return reinterpret_cast<JsObject &>(data_);
 }
 
 //
 
 const JsLiteral &JsElement::as_lit() const {
-    if (type_ != JS_TYPE_LITERAL) {
+    if (type_ != JsType::Literal) {
         throw std::bad_cast();
     }
     return reinterpret_cast<const JsLiteral &>(data_);
 }
 
 const JsNumber &JsElement::as_num() const {
-    if (type_ != JS_TYPE_NUMBER) throw std::bad_cast();
+    if (type_ != JsType::Number) throw std::bad_cast();
     return reinterpret_cast<const JsNumber &>(data_);
 }
 
 const JsString &JsElement::as_str() const {
-    if (type_ != JS_TYPE_STRING) {
+    if (type_ != JsType::String) {
         throw std::bad_cast();
     }
     return reinterpret_cast<const JsString &>(data_);
 }
 
 const JsArray &JsElement::as_arr() const {
-    if (type_ != JS_TYPE_ARRAY) {
+    if (type_ != JsType::Array) {
         throw std::bad_cast();
     }
     return reinterpret_cast<const JsArray &>(data_);
 }
 
 const JsObject &JsElement::as_obj() const {
-    if (type_ != JS_TYPE_OBJECT) throw std::bad_cast();
+    if (type_ != JsType::Object) throw std::bad_cast();
     return reinterpret_cast<const JsObject &>(data_);
 }
 
@@ -504,15 +504,15 @@ const JsObject &JsElement::as_obj() const {
 
 JsElement &JsElement::operator=(JsElement &&rhs) noexcept {
     Destroy();
-    if (rhs.type_ == JS_TYPE_LITERAL) {
+    if (rhs.type_ == JsType::Literal) {
         new (&data_) JsLiteral{ reinterpret_cast<JsLiteral &>(rhs.data_) };
-    } else if (rhs.type_ == JS_TYPE_NUMBER) {
+    } else if (rhs.type_ == JsType::Number) {
         new (&data_) JsNumber{ reinterpret_cast<JsNumber &>(rhs.data_) };
-    } else if (rhs.type_ == JS_TYPE_STRING) {
+    } else if (rhs.type_ == JsType::String) {
         new (&data_) JsString{ std::move(reinterpret_cast<JsString &>(rhs.data_)) };
-    } else if (rhs.type_ == JS_TYPE_ARRAY) {
+    } else if (rhs.type_ == JsType::Array) {
         new (&data_) JsArray{ std::move(reinterpret_cast<JsArray &>(rhs.data_)) };
-    } else if (rhs.type_ == JS_TYPE_OBJECT) {
+    } else if (rhs.type_ == JsType::Object) {
         new (&data_) JsObject{ std::move(reinterpret_cast<JsObject &>(rhs.data_)) };
     }
     type_ = rhs.type_;
@@ -523,15 +523,15 @@ JsElement &JsElement::operator=(const JsElement &rhs) {
     if (&rhs == this) return *this;
 
     Destroy();
-    if (rhs.type_ == JS_TYPE_LITERAL) {
+    if (rhs.type_ == JsType::Literal) {
         new (&data_) JsLiteral{ reinterpret_cast<const JsLiteral &>(rhs.data_) };
-    } else if (rhs.type_ == JS_TYPE_NUMBER) {
+    } else if (rhs.type_ == JsType::Number) {
         new (&data_) JsNumber{ reinterpret_cast<const JsNumber &>(rhs.data_) };
-    } else if (rhs.type_ == JS_TYPE_STRING) {
+    } else if (rhs.type_ == JsType::String) {
         new (&data_) JsString{ reinterpret_cast<const JsString &>(rhs.data_) };
-    } else if (rhs.type_ == JS_TYPE_ARRAY) {
+    } else if (rhs.type_ == JsType::Array) {
         new (&data_) JsArray{ reinterpret_cast<const JsArray &>(rhs.data_) };
-    } else if (rhs.type_ == JS_TYPE_OBJECT) {
+    } else if (rhs.type_ == JsType::Object) {
         new (&data_) JsObject{ reinterpret_cast<const JsObject &>(rhs.data_) };
     }
     type_ = rhs.type_;
@@ -541,15 +541,15 @@ JsElement &JsElement::operator=(const JsElement &rhs) {
 bool JsElement::operator==(const JsElement &rhs) const {
     if (type_ != rhs.type_) return false;
 
-    if (type_ == JS_TYPE_LITERAL) {
+    if (type_ == JsType::Literal) {
         return reinterpret_cast<const JsLiteral &>(data_) == reinterpret_cast<const JsLiteral &>(rhs.data_);
-    } else if (type_ == JS_TYPE_NUMBER) {
+    } else if (type_ == JsType::Number) {
         return reinterpret_cast<const JsNumber &>(data_) == reinterpret_cast<const JsNumber &>(rhs.data_);
-    } else if (type_ == JS_TYPE_STRING) {
+    } else if (type_ == JsType::String) {
         return reinterpret_cast<const JsString &>(data_) == reinterpret_cast<const JsString &>(rhs.data_);
-    } else if (type_ == JS_TYPE_ARRAY) {
+    } else if (type_ == JsType::Array) {
         return reinterpret_cast<const JsArray &>(data_) == reinterpret_cast<const JsArray &>(rhs.data_);
-    } else if (type_ == JS_TYPE_OBJECT) {
+    } else if (type_ == JsType::Object) {
         return reinterpret_cast<const JsObject &>(data_) == reinterpret_cast<const JsObject &>(rhs.data_);
     }
 
@@ -564,39 +564,39 @@ bool JsElement::Read(std::istream &in) {
     in.seekg(-1, std::ios::cur);
     if (c == '\"') {
         new (&data_) JsString{};
-        type_ = JS_TYPE_STRING;
+        type_ = JsType::String;
         return reinterpret_cast<JsString &>(data_).Read(in);
     } else if (c == '[') {
         new (&data_) JsArray{};
-        type_ = JS_TYPE_ARRAY;
+        type_ = JsType::Array;
         return reinterpret_cast<JsArray &>(data_).Read(in);
     } else if (c == '{') {
         new (&data_) JsObject{};
-        type_ = JS_TYPE_OBJECT;
+        type_ = JsType::Object;
         return reinterpret_cast<JsObject &>(data_).Read(in);
     } else {
         if (isdigit(c) || c == '-') {
             new (&data_) JsNumber{};
-            type_ = JS_TYPE_NUMBER;
+            type_ = JsType::Number;
             return reinterpret_cast<JsNumber &>(data_).Read(in);
         } else {
-            new (&data_) JsLiteral{ JS_NULL };
-            type_ = JS_TYPE_LITERAL;
+            new (&data_) JsLiteral{ JsLiteralType::Null };
+            type_ = JsType::Literal;
             return reinterpret_cast<JsLiteral &>(data_).Read(in);
         }
     }
 }
 
 void JsElement::Write(std::ostream &out, JsFlags flags) const {
-    if (type_ == JS_TYPE_LITERAL) {
+    if (type_ == JsType::Literal) {
         reinterpret_cast<const JsLiteral &>(data_).Write(out, flags);
-    } else if (type_ == JS_TYPE_NUMBER) {
+    } else if (type_ == JsType::Number) {
         reinterpret_cast<const JsNumber &>(data_).Write(out, flags);
-    } else if (type_ == JS_TYPE_STRING) {
+    } else if (type_ == JsType::String) {
         reinterpret_cast<const JsString &>(data_).Write(out, flags);
-    } else if (type_ == JS_TYPE_ARRAY) {
+    } else if (type_ == JsType::Array) {
         reinterpret_cast<const JsArray &>(data_).Write(out, flags);
-    } else if (type_ == JS_TYPE_OBJECT) {
+    } else if (type_ == JsType::Object) {
         reinterpret_cast<const JsObject &>(data_).Write(out, flags);
     }
 }

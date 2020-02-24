@@ -20,14 +20,14 @@ Sys::DynLib::DynLib(const char *name) {
 #endif
 }
 
-Sys::DynLib::DynLib(DynLib &&rhs) {
+Sys::DynLib::DynLib(DynLib &&rhs) noexcept {
 #if defined(WIN32) || defined(__unix__) || defined(__APPLE__)
     handle_ = rhs.handle_;
     rhs.handle_ = nullptr;
 #endif
 }
 
-Sys::DynLib &Sys::DynLib::operator=(DynLib &&rhs) {
+Sys::DynLib &Sys::DynLib::operator=(DynLib &&rhs) noexcept {
 #if defined(WIN32)
     if (handle_) {
         FreeLibrary(handle_);

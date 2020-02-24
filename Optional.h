@@ -16,7 +16,7 @@ public:
             p_obj_ = new(&data_[0]) T(*rhs.p_obj_);
         }
     }
-    Optional(Optional &&rhs) : p_obj_(nullptr) {
+    Optional(Optional &&rhs) noexcept : p_obj_(nullptr) {
         if (rhs.initialized()) {
             p_obj_ = new(&data_[0]) T(std::move(*rhs.p_obj_));
             rhs.p_obj_ = nullptr;
@@ -42,7 +42,7 @@ public:
         return *this;
     }
 
-    Optional &operator=(Optional &&rhs) {
+    Optional &operator=(Optional &&rhs) noexcept {
         if (this != &rhs) {
             destroy();
             if (rhs.initialized()) {

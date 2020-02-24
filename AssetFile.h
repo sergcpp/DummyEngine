@@ -57,7 +57,7 @@ class AssetFile {
     void SeekAbsolute(uint64_t pos);
     void SeekRelative(int64_t off);
 
-    operator bool();
+    explicit operator bool();
 
     static void AddPackage(const char *name);
     static void RemovePackage(const char *name);

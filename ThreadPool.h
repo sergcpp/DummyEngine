@@ -148,7 +148,7 @@ inline QThreadPool::QThreadPool(const int threads_count, const int q_count,
         q_active_[i] = false;
     }
     for (int i = 0; i < threads_count; ++i) {
-        workers_.push_back(std::thread([this, i, threads_name] {
+        workers_.emplace_back([this, i, threads_name] {
 #ifdef ENABLE_ITT_API
             char name_buf[64];
             if (threads_name) {
@@ -186,7 +186,7 @@ inline QThreadPool::QThreadPool(const int threads_count, const int q_count,
                 task();
                 q_active_[q_index] = false;
             }
-        }));
+        });
     }
 }
 

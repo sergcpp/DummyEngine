@@ -74,10 +74,8 @@ const char json_example3[] = "{\n"
 
 void test_json() {
 
-    {
-        // Test types
-        {
-            // JsNumber
+    { // Test types
+        { // JsNumber
             JsNumber n1(3.1568);
             std::stringstream ss;
             n1.Write(ss);
@@ -90,8 +88,7 @@ void test_json() {
             require(n1 == n2);
         }
 
-        {
-            // JsString
+        { // JsString
             JsString s1("qwe123");
             std::stringstream ss;
             s1.Write(ss);
@@ -102,8 +99,7 @@ void test_json() {
             require(s2 == JsString{ "asd111" });
         }
 
-        {
-            // JsArray
+        { // JsArray
             JsArray a1;
             a1.Push(JsNumber{ 1 });
             a1.Push(JsNumber{ 2 });
@@ -135,8 +131,7 @@ void test_json() {
             require(a3 != a5);
         }
 
-        {
-            // JsObject
+        { // JsObject
             JsObject obj;
             obj["123"] = JsNumber{ 143 };
             obj["asdf"] = JsString{ "asdfsdf" };
@@ -166,27 +161,25 @@ void test_json() {
             require(obj1 != obj3);
         }
 
-        {
-            // JsLiteral
-            JsLiteral lit(JS_TRUE);
-            require(lit.val == JS_TRUE);
+        { // JsLiteral
+            JsLiteral lit(JsLiteralType::True);
+            require(lit.val == JsLiteralType::True);
             std::stringstream ss;
             lit.Write(ss);
 
             ss.seekg(0, std::ios::beg);
 
-            JsLiteral _lit(JS_NULL);
+            JsLiteral _lit(JsLiteralType::Null);
             require(_lit.Read(ss));
-            require(_lit.val == JS_TRUE);
+            require(_lit.val == JsLiteralType::True);
 
             // check equality
-            JsLiteral lit1(JS_FALSE), lit2(JS_FALSE), lit3(JS_NULL);
+            JsLiteral lit1(JsLiteralType::False), lit2(JsLiteralType::False), lit3(JsLiteralType::Null);
             require(lit1 == lit2);
             require(lit1 != lit3);
         }
 
-        {
-            // JsElement
+        { // JsElement
             JsElement _el1(16);
             const JsElement &el1 = _el1;
             require_nothrow(_el1.as_num());
@@ -213,7 +206,7 @@ void test_json() {
             require_throws(_el2.as_lit());
             require_throws(el2.as_lit());
 
-            JsElement _el3(JS_TYPE_ARRAY);
+            JsElement _el3(JsType::Array);
             const JsElement &el3 = _el3;
             require_nothrow(_el3.as_arr());
             require_nothrow(el3.as_arr());
@@ -226,7 +219,7 @@ void test_json() {
             require_throws(_el3.as_lit());
             require_throws(el3.as_lit());
 
-            JsElement _el4(JS_TYPE_OBJECT);
+            JsElement _el4(JsType::Object);
             const JsElement &el4 = _el4;
             require_nothrow(_el4.as_obj());
             require_nothrow(el4.as_obj());
@@ -239,7 +232,7 @@ void test_json() {
             require_throws(_el4.as_lit());
             require_throws(el4.as_lit());
 
-            JsElement _el5(JS_NULL);
+            JsElement _el5(JsLiteralType::Null);
             const JsElement &el5 = _el5;
             require_nothrow(_el5.as_lit());
             require_nothrow(el5.as_lit());
@@ -254,10 +247,9 @@ void test_json() {
         }
     }
 
-    {
-        // Complex test1
+    { // Complex test1
         bool flag = true;
-        JsElement el(JS_NULL);
+        JsElement el(JsLiteralType::Null);
         std::stringstream ss(json_example);
         require(el.Read(ss));
 
@@ -300,10 +292,9 @@ AGAIN1:
         }
     }
 
-    {
-        // Complex test2
+    { // Complex test2
         bool flag = true;
-        JsElement el(JS_NULL);
+        JsElement el(JsLiteralType::Null);
         std::stringstream ss(json_example2);
         require(el.Read(ss));
 
@@ -345,7 +336,7 @@ AGAIN2:
 
     {   // Complex test3
         bool flag = true;
-        JsElement el(JS_NULL);
+        JsElement el(JsLiteralType::Null);
         std::stringstream ss(json_example3);
 
 AGAIN3:

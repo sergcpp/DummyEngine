@@ -7,7 +7,7 @@
 #include <vector>
 
 namespace Sys {
-typedef void(*onfile_func)(const char *name, void *data, int size);
+typedef void (*onfile_func)(const char *name, void *data, int size);
 
 struct FileDesc {
     char name[120];
@@ -22,6 +22,6 @@ void WritePackage(const char *pack_name, std::vector<std::string> &file_list);
 
 std::vector<FileDesc> EnumFilesInPackage(const char *pack_name);
 
-bool ReadFromPackage(const char *pack_name, const char *fname, size_t pos, char *buf, size_t size);
-bool ReadFromPackage(const char *pack_name, const char *fname, size_t pos, char *buf, size_t size);
-}
+bool ReadFromPackage(const char *pack_name, const char *fname, size_t pos, char *buf,
+                     size_t size);
+} // namespace Sys

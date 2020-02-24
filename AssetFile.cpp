@@ -60,7 +60,7 @@ Sys::AssetFile& Sys::AssetFile::operator=(AssetFile&& rhs) noexcept {
     return (*this);
 }
 
-bool Sys::AssetFile::Open(const char* file_name, eOpenMode mode) {
+bool Sys::AssetFile::Open(const char* file_name, const eOpenMode mode) {
     using namespace std;
 
     Close();
@@ -164,7 +164,7 @@ void Sys::AssetFile::Close() {
     size_ = 0;
 }
 
-size_t Sys::AssetFile::Read(char *buf, size_t size) {
+size_t Sys::AssetFile::Read(char *buf, const size_t size) {
 #ifdef __ANDROID__
     return size_t(AAsset_read(asset_file_, buf, size));
 #else
@@ -201,7 +201,7 @@ Sys::AssetFile::operator bool() {
 }
 
 #ifndef __ANDROID__
-bool Sys::AssetFile::Write(const char *buf, size_t size) {
+bool Sys::AssetFile::Write(const char *buf, const size_t size) {
     if (!file_stream_) {
         return false;
     }
