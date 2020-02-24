@@ -27,6 +27,10 @@ const uint32_t g_unicode_semicolon = 0x3B;
 int ConvChar_UTF8_to_Unicode(const char *utf8, uint32_t &out_unicode);
 int ConvChar_UTF8_to_UTF16(const char *utf8, uint16_t out_utf16[2]);
 
+int ConvChar_Unicode_to_UTF8(uint32_t unicode, char *out_utf8);
+
+int CalcUTF8Length(const char *utf8);
+
 //
 // SDF font generation
 //

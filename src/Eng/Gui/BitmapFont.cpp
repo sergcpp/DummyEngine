@@ -122,14 +122,16 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
     return true;
 }
 
-float Gui::BitmapFont::GetWidth(const char *text, const BaseElement *parent) const {
+float Gui::BitmapFont::GetWidth(const char *text, int text_len, const BaseElement *parent) const {
     int cur_x = 0;
 
     const glyph_range_t *glyph_ranges = glyph_ranges_.get();
     const glyph_info_t *glyphs = glyphs_.get();
 
+    if (text_len == -1) text_len = std::numeric_limits<int>::max();
+
     int char_pos = 0;
-    while (text[char_pos]) {
+    while (text[char_pos] && text_len--) {
         uint32_t unicode;
         char_pos += Gui::ConvChar_UTF8_to_Unicode(&text[char_pos], unicode);
 
@@ -379,4 +381,66 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
     r->SubmitVertexData(int(cur_vtx - vtx_data), int(cur_ndx - ndx_data), false);
 
     return float(cur_x) * m[0];
+}
+
+int Gui::BitmapFont::CheckText(
+        const char *text, const Vec2f &pos, const Vec2f &press_pos, float &out_char_offset,
+        const BaseElement *parent) const {
+    using namespace BitmapFontInternal;
+
+    const glyph_range_t *glyph_ranges = glyph_ranges_.get();
+    const glyph_info_t *glyphs = glyphs_.get();
+
+    const Vec2f
+        p = parent->pos() + 0.5f * (pos + Vec2f(1, 1)) * parent->size(),
+        m = scale_ * parent->size() / (Vec2f)parent->size_px();
+
+    int cur_x = 0;
+    int char_index = 0;
+
+    int char_pos = 0;
+    while(text[char_pos]) {
+        uint32_t unicode;
+        char_pos += Gui::ConvChar_UTF8_to_Unicode(&text[char_pos], unicode);
+
+        uint32_t glyph_index = 0;
+        for (uint32_t i = 0; i < glyph_range_count_; i++) {
+            const glyph_range_t &rng = glyph_ranges[i];
+
+            if (unicode >= rng.beg && unicode < rng.end) {
+                glyph_index += (unicode - rng.beg);
+                break;
+            } else {
+                glyph_index += (rng.end - rng.beg);
+            }
+        }
+        assert(glyph_index < glyphs_count_);
+
+        const glyph_info_t &glyph = glyphs[glyph_index];
+        if (glyph.res[0]) {
+            const float corners[2][2] {
+                {
+                    p[0] + float(cur_x + glyph.off[0] - 1) * m[0],
+                    p[1] + float(glyph.off[1] - 1) * m[1]
+                },
+                {
+                    p[0] + float(cur_x + glyph.off[0] + glyph.res[0] + 1) * m[0],
+                    p[1] + float(glyph.off[1] + glyph.res[1] + 1) * m[1]
+                }
+            };
+
+            if (press_pos[0] >= corners[0][0] &&
+                press_pos[0] <= corners[1][0] /*&&
+                press_pos[1] >= corners[0][1] &&
+                press_pos[1] <= corners[1][1]*/) {
+                out_char_offset = cur_x * m[0];
+                return char_index;
+            }
+        }
+
+        cur_x += glyph.adv[0];
+        char_index++;
+    }
+
+    return -1;
 }

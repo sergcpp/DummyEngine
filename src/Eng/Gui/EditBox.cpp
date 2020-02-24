@@ -3,63 +3,61 @@
 #include "Renderer.h"
 
 namespace EditBoxConstants {
-const unsigned long long default_flags =
-    (1 << Gui::Integers) |
-    (1 << Gui::Chars) |
-    (1 << Gui::Floats) |
-    (1 << Gui::Signed) |
-    (1 << Gui::Multiline);
+const uint32_t default_flags =
+    (1u << Gui::Integers) |
+    (1u << Gui::Chars) |
+    (1u << Gui::Floats) |
+    (1u << Gui::Signed) |
+    (1u << Gui::Multiline);
 
 const int padding = 10;
 const int cursor_offset = 12;
 }
 
 Gui::EditBox::EditBox(Ren::Context &ctx, const char *frame_tex_name, const Vec2f &frame_offsets,
-                      BitmapFont *font,
-                      const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
+                      BitmapFont *font, const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
     : EditBox( { ctx, frame_tex_name, frame_offsets, 1.0f, Vec2f{ -1, -1 }, Vec2f{ 2, 2 }, this }, font, pos, size, parent) {
 }
 
-Gui::EditBox::EditBox(const Image9Patch &frame, BitmapFont *font,
+Gui::EditBox::EditBox(Image9Patch frame, BitmapFont *font,
                       const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
-    : BaseElement(pos, size, parent), cursor_("|", font, Vec2f{ 0, 0 }, this),
-      lay_(Vec2f{ -1 + 2.0f * EditBoxConstants::padding / parent->size_px()[0], -1 }, Vec2f{ 2, 2 }, this),
-      frame_(frame), font_(font), edit_flags_(EditBoxConstants::default_flags), focused_(false),
+    : BaseElement(pos, size, parent),
+      frame_(std::move(frame)), font_(font), edit_flags_(EditBoxConstants::default_flags), focused_(false),
       current_line_(0), current_char_(0) {
-    lay_.set_vetical(true);
     frame_.Resize(this);
+    lines_.emplace_back();
 }
 
 void Gui::EditBox::Resize(const BaseElement *parent) {
     BaseElement::Resize(parent);
-    lay_.Resize(Vec2f{ -1 + 2.0f * EditBoxConstants::padding / parent->size_px()[0], -1 }, Vec2f{ 2, 2 }, this);
-    frame_.Resize(this);
 
-    UpdateCursor();
+    frame_.Resize(this);
 }
 
 void Gui::EditBox::Press(const Vec2f &p, bool push) {
     if (!push) return;
 
+    const float font_height = font_->height(this);
+
     if (Check(p)) {
         focused_ = true;
-        for (auto it = lines_.begin(); it != lines_.end(); ++it) {
-            if (it->Check(p)) {
-                current_line_ = (int)std::distance(lines_.begin(), it);
-                const std::vector<float> &pos = it->positions();
-                for (unsigned i = 0; i < pos.size(); i += 4 * 3) {
-                    if ((i == 0 && p[0] > pos[i]) || (i > 0 && p[0] > 0.5f * (pos[i] + pos[i - 3]))) {
-                        current_char_ = i / 12;
-                    }
+
+        float cur_y = 1.0f - font_height;
+
+        for (int i = 0; i < (int)lines_.size(); i++) {
+            const std::string &line = lines_[i];
+
+            if (p[1] > cur_y && p[1] < cur_y + font_height) {
+                float char_offset = 0.0f;
+                const int intersected_char = font_->CheckText(line.c_str(), Vec2f{ -1.0f, cur_y }, p, char_offset, this);
+                if (intersected_char != -1) {
+                    current_line_ = i;
+                    current_char_ = intersected_char;
                 }
-                UpdateCursor();
-                break;
-            } else if (p[1] >= it->pos()[1] && p[1] <= it->pos()[1] + it->size()[1]) {
-                current_line_ = (int)std::distance(lines_.begin(), it);
-                current_char_ = (int)lines_[current_line_].text().length();
-                UpdateCursor();
                 break;
             }
+
+            cur_y -= font_height;
         }
     } else {
         focused_ = false;
@@ -67,76 +65,65 @@ void Gui::EditBox::Press(const Vec2f &p, bool push) {
 }
 
 void Gui::EditBox::Draw(Renderer *r) {
-    /*const Renderer::DrawParams &cur = r->GetParams();
-    r->EmplaceParams(cur.col_and_mode(), cur.z_val(), cur.blend_mode(), dims_px_);
-
     frame_.Draw(r);
-    lay_.Draw(r);
 
-    r->EmplaceParams(Vec4f(0.75f, 0.75f, 0.75f, 0.0f), cur.z_val(), cur.blend_mode(), dims_px_);
-    if (focused_) {
-        cursor_.Draw(r);
+    static const uint8_t color_white[] = { 255, 255, 255, 255 };
+
+    const float font_height_orig = font_->height(this);
+
+    const float
+        font_height = font_height_orig / dims_[1][1],
+        line_spacing = 1.5f * font_height,
+        x_start = -1.0f + 8.0f / dims_px_[1][0],
+        y_start = 1.0f - 2.0f * font_height;
+
+    float cur_y = y_start;
+    for (const std::string &line : lines_) {
+        font_->DrawText(r, line.c_str(), Vec2f{ x_start, cur_y }, color_white, this);
+        cur_y -= line_spacing;
     }
-    r->PopParams();
 
-    r->PopParams();*/
+    if (focused_) {
+        const float
+            width_until_cursor = 2.0f * font_->GetWidth(lines_[current_line_].c_str(), current_char_, this),
+            y_offset = y_start - float(current_line_) * line_spacing;
+
+        // draw cursor
+        font_->DrawText(r, "|", Vec2f{ x_start + width_until_cursor, y_offset }, color_white, this);
+    }
 }
 
-int Gui::EditBox::AddLine(const std::string &text) {
+int Gui::EditBox::AddLine(std::string text) {
     if (!edit_flags_[Multiline] && !lines_.empty()) return -1;
 
-    lines_.emplace_back(text, font_, Vec2f{ 0, 0 }, this);
-
-    // pointers could be invalidated after reallocation, so...
-    UpdateLayout();
+    lines_.emplace_back(std::move(text));
 
     return (int)lines_.size() - 1;
 }
 
-int Gui::EditBox::InsertLine(const std::string &text) {
+int Gui::EditBox::InsertLine(std::string text) {
     if (!edit_flags_[Multiline]) return -1;
 
-    lines_.insert(lines_.begin() + current_line_, { text, font_, Vec2f{ 0, 0 }, this });
-
-    UpdateLayout();
+    lines_.insert(lines_.begin() + current_line_ + 1, std::move(text));
+    current_line_++;
+    current_char_ = 0;
 
     return current_line_;
 }
 
-void Gui::EditBox::DeleteLine(unsigned line) {
+void Gui::EditBox::DeleteLine(int line) {
     lines_.erase(lines_.begin() + line);
-    UpdateLayout();
 }
 
-void Gui::EditBox::UpdateLayout() {
-    lay_.Clear();
-    for (TypeMesh &l : lines_) {
-        lay_.AddElement(&l);
-    }
-    lay_.Resize(this);
-}
-
-void Gui::EditBox::UpdateCursor() {
-    using namespace EditBoxConstants;
-
+void Gui::EditBox::AddChar(int ch) {
     if (current_line_ >= (int)lines_.size()) return;
-    const TypeMesh &cur_line = lines_[current_line_];
 
-    auto cur_pos = Vec2f{ 0, cur_line.pos()[1] };
-    if (current_char_ < (int)line_text(current_line_).length()) {
-        cur_pos[0] = cur_line.positions()[current_char_ * 12];
-    } else {
-        cur_pos[0] = cur_line.pos()[0] + cur_line.size()[0];
-    }
+    std::string &cur_line = lines_[current_line_];
+    cur_line.insert(cur_line.begin() + current_char_, ch);
 
-    cur_pos = 2.0f * (cur_pos - pos()) / size() - Vec2f(1, 1);
-    cur_pos[0] -= float(cursor_offset) / size_px()[0];
+    current_char_++;
 
-    cursor_.Move(cur_pos, this);
-}
-
-void Gui::EditBox::AddChar(int c) {
-    if (current_line_ >= (int)lines_.size()) return;
+    /*if (current_line_ >= (int)lines_.size()) return;
 
     switch (c) {
     case 191:
@@ -164,74 +151,39 @@ void Gui::EditBox::AddChar(int c) {
     text.insert(text.begin() + current_char_, (char)c);
 
     lines_[current_line_] = TypeMesh(text, font_, Vec2f{ 0.0f, 0.0f }, this);
-    current_char_++;
-
-    UpdateLayout();
-    UpdateCursor();
+    current_char_++;*/
 }
 
-void Gui::EditBox::DeleteChar() {
+void Gui::EditBox::DeleteBck() {
     if (current_line_ >= (int)lines_.size()) return;
 
-    std::string text = lines_[current_line_].text();
+    std::string &line = lines_[current_line_];
+    const int ch = current_char_ - 1;
+    if (ch < 0 || ch >= (int)line.length()) return;
 
-    int ch = current_char_ - 1;
-    if (ch < 0 || ch >= (int)text.length()) return;
-    text.erase(text.begin() + ch);
-
-    lines_[current_line_] = TypeMesh(text, font_, Vec2f{ 0.0f, 0.0f }, this);
+    line.erase(ch, 1);
     current_char_--;
-
-    UpdateLayout();
-    UpdateCursor();
 }
 
-bool Gui::EditBox::MoveCursorH(int m) {
-    if (current_line_ >= (int)lines_.size()) return false;
+void Gui::EditBox::DeleteFwd() {
+    if (current_line_ >= (int)lines_.size()) return;
 
-    current_char_ += m;
+    std::string &line = lines_[current_line_];
+    const int ch = current_char_;
+    if (ch < 0 || ch >= (int)line.length()) return;
 
-    int len = (int)lines_[current_line_].text().length();
-
-    if (current_char_ < 0) {
-        current_char_ = 0;
-        return false;
-    } else if (current_char_ > len) {
-        current_char_ = len;
-        return false;
-    }
-
-    UpdateCursor();
-
-    return true;
+    line.erase(ch, 1);
 }
 
-bool Gui::EditBox::MoveCursorV(int m) {
-    if (current_line_ >= (int)lines_.size()) return false;
+void Gui::EditBox::MoveCursorH(const int m) {
+    const int line_len = Gui::CalcUTF8Length(lines_[current_line_].c_str());
+    current_char_ = std::max(std::min(current_char_ + m, line_len), 0);
+}
 
-    bool res = true;
+void Gui::EditBox::MoveCursorV(int m) {
+    current_line_ = std::max(std::min(current_line_ + m, (int)lines_.size() - 1), 0);
 
-    current_line_ += m;
+    const int line_len = Gui::CalcUTF8Length(lines_[current_line_].c_str());
+    current_char_ = std::max(std::min(current_char_, line_len), 0);
 
-    if (current_line_ < 0) {
-        current_line_ = 0;
-        res = false;
-    } else if (current_line_ >= (int)lines_.size()) {
-        current_line_ = (int)lines_.size() - 1;
-        res = false;
-    }
-
-    int len = (int)lines_[current_line_].text().length();
-
-    if (current_char_ < 0) {
-        current_char_ = 0;
-        return false;
-    } else if (current_char_ > len) {
-        current_char_ = len;
-        return false;
-    }
-
-    UpdateCursor();
-
-    return res;
 }

@@ -145,6 +145,54 @@ int Gui::ConvChar_UTF8_to_UTF16(const char *utf8, uint16_t out_utf16[2]) {
     return consumed_bytes;
 }
 
+int Gui::ConvChar_Unicode_to_UTF8(uint32_t unicode, char *out_utf8) {
+    if (0 <= unicode && unicode <= 0x7f) {
+        out_utf8[0] = (char)unicode;
+        return 1;
+    } else if (0x80 <= unicode && unicode <= 0x7ff) {
+        out_utf8[0] = char(0xc0u | (unicode >> 6u));
+        out_utf8[1] = char(0x80u | (unicode & 0x3fu));
+        return 2;
+    } else if (0x800 <= unicode && unicode <= 0xffff) {
+        out_utf8[0] = char(0xe0u | (unicode >> 12u));
+        out_utf8[1] = char(0x80u | ((unicode >> 6u) & 0x3fu));
+        out_utf8[2] = char(0x80u | (unicode & 0x3fu));
+        return 3;
+    } else if (0x10000 <= unicode && unicode <= 0x1fffff) {
+        out_utf8[0] = char(0xf0u | (unicode >> 18u));
+        out_utf8[1] = char(0x80u | ((unicode >> 12u) & 0x3fu));
+        out_utf8[2] = char(0x80u | ((unicode >> 6u) & 0x3fu));
+        out_utf8[3] = char(0x80u | (unicode & 0x3fu));
+        return 4;
+    } else if (0x200000 <= unicode && unicode <= 0x3ffffff) {
+        out_utf8[0] = char(0xf8u | (unicode >> 24u));
+        out_utf8[1] = char(0x80u | ((unicode >> 18u) & 0x3fu));
+        out_utf8[2] = char(0x80u | ((unicode >> 12u) & 0x3fu));
+        out_utf8[3] = char(0x80u | ((unicode >> 6u) & 0x3fu));
+        out_utf8[4] = char(0x80u | (unicode & 0x3fu));
+        return 5;
+    } else if (0x4000000 <= unicode && unicode <= 0x7fffffff) {
+        out_utf8[0] = char(0xfcu | (unicode >> 30u) );
+        out_utf8[1] = char(0x80u | ((unicode >> 24u) & 0x3fu));
+        out_utf8[2] = char(0x80u | ((unicode >> 18u) & 0x3fu));
+        out_utf8[3] = char(0x80u | ((unicode >> 12u) & 0x3fu));
+        out_utf8[4] = char(0x80u | ((unicode >> 6u) & 0x3fu));
+        out_utf8[5] = char(0x80u | (unicode & 0x3fu));
+        return 6;
+    }
+    return -1;
+}
+
+int Gui::CalcUTF8Length(const char *utf8) {
+    int char_pos = 0, char_len = 0;
+    while (utf8[char_pos]) {
+        uint32_t unicode;
+        char_pos += Gui::ConvChar_UTF8_to_Unicode(&utf8[char_pos], unicode);
+        char_len++;
+    }
+    return char_len;
+}
+
 void Gui::DrawBezier1ToBitmap(const Ren::Vec2d &p0, const Ren::Vec2d &p1, int stride, int channels, uint8_t *out_rgba) {
     auto p0i = Ren::Vec2i{ p0 }, p1i = Ren::Vec2i{ p1 };
 
