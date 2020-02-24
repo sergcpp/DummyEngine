@@ -29,11 +29,11 @@ class DialogEditUI : public Gui::BaseElement {
                         const Ren::Vec2f &p2, const Ren::Vec2f &p3,
                         const Ren::Vec2f &width, const uint8_t color[4]) const;
 
-    void
-    IterateElements(std::function<bool(const ScriptedSequence *seq,
-                                       const ScriptedSequence *parent, int depth, int ndx,
-                                       int parent_ndx, int choice_ndx, bool visited)>
-                        callback);
+    using IterationCallback = std::function<bool(
+        const ScriptedSequence *seq, const ScriptedSequence *parent, int depth, int ndx,
+        int parent_ndx, int choice_ndx, bool visited)>;
+
+    void IterateElements(const IterationCallback &callback);
 
   public:
     DialogEditUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Ren::Vec2f &pos,

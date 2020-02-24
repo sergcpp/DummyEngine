@@ -6,7 +6,7 @@
 #include "MVec.h"
 
 namespace Ren {
-enum class eTexFormat;
+enum class eTexFormat : uint8_t;
 std::unique_ptr<uint8_t[]> ReadTGAFile(const void *data, int &w, int &h,
                                        eTexFormat &format);
 

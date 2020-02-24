@@ -46,7 +46,7 @@ class GSUITest final : public GSBaseState {
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 public:
     explicit GSUITest(GameBase *game);
-    ~GSUITest() final = default;
+    ~GSUITest() final;
 
     void Enter() override;
     void Exit() override;

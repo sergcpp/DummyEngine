@@ -8,10 +8,10 @@ layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs;
 layout(location = 0) uniform vec4 uTransform;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) out vec2 aVertexUVs_;
-#else
-out vec2 aVertexUVs_;
+layout(location = 0)
 #endif
+out vec2 aVertexUVs_;
+
 
 void main() {
     aVertexUVs_ = uTransform.xy + aVertexUVs * uTransform.zw;

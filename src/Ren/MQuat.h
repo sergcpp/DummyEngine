@@ -12,13 +12,13 @@ template <typename T> class Quat {
     explicit Quat(eUninitialized) {}
     Quat() : x(0), y(0), z(0), w(0) {}
 
-    Quat(T _x, T _y, T _z, T _w) : x(_x), y(_y), z(_z), w(_w) {}
+    Quat(const T _x, const T _y, const T _z, const T _w) : x(_x), y(_y), z(_z), w(_w) {}
 
-    T &operator[](int i) {
+    T &operator[](const int i) {
         T *data = &x;
         return data[i];
     }
-    const T &operator[](int i) const {
+    const T &operator[](const int i) const {
         const T *data = &x;
         return data[i];
     }
@@ -39,7 +39,7 @@ template <typename T> class Quat {
         return *this;
     }
 
-    Quat<T> &operator*=(T rhs) {
+    Quat<T> &operator*=(const T rhs) {
         x *= rhs;
         y *= rhs;
         z *= rhs;
@@ -47,7 +47,7 @@ template <typename T> class Quat {
         return *this;
     }
 
-    Quat<T> &operator/=(T rhs) {
+    Quat<T> &operator/=(const T rhs) {
         x /= rhs;
         y /= rhs;
         z /= rhs;
@@ -66,7 +66,7 @@ template <typename T> class Quat {
         return res;
     }
 
-    friend Quat<T> operator*(T lhs, const Quat<T> &rhs) {
+    friend Quat<T> operator*(const T lhs, const Quat<T> &rhs) {
         auto res = Quat<T>{Uninitialize};
 
         res.x = lhs * rhs.x;
@@ -77,7 +77,7 @@ template <typename T> class Quat {
         return res;
     }
 
-    friend Quat<T> operator/(T lhs, const Quat<T> &rhs) {
+    friend Quat<T> operator/(const T lhs, const Quat<T> &rhs) {
         auto res = Quat<T>{Uninitialize};
 
         res.x = lhs / rhs.x;
@@ -88,7 +88,7 @@ template <typename T> class Quat {
         return res;
     }
 
-    friend Quat<T> operator*(const Quat<T> &lhs, T rhs) {
+    friend Quat<T> operator*(const Quat<T> &lhs, const T rhs) {
         auto res = Quat<T>{Uninitialize};
 
         res.x = lhs.x * rhs;
@@ -99,7 +99,7 @@ template <typename T> class Quat {
         return res;
     }
 
-    friend Quat<T> operator/(const Quat<T> &lhs, T rhs) {
+    friend Quat<T> operator/(const Quat<T> &lhs, const T rhs) {
         auto res = Quat<T>{Uninitialize};
 
         res.x = lhs.x / rhs;
@@ -162,7 +162,7 @@ template <typename T> Vec<T, 3> EulerAngles(const Quat<T> &q) {
     return Vec<T, 3>{Pitch(q), Yaw(q), Roll(q)};
 }
 
-template <typename T> Quat<T> Slerp(const Quat<T> &q0, const Quat<T> &q1, T a) {
+template <typename T> Quat<T> Slerp(const Quat<T> &q0, const Quat<T> &q1, const T a) {
     Quat<T> q2 = q1;
 
     float cos_theta = Dot(q0, q1);
@@ -211,8 +211,7 @@ template <typename T> Mat<T, 3, 3> ToMat3(const Quat<T> &vec) {
 }
 
 template <typename T> Mat<T, 4, 4> ToMat4(const Quat<T> &vec) {
-    Mat<T, 4, 4> ret = Mat<T, 4, 4>{ToMat3(vec)};
-    return ret;
+    return Mat<T, 4, 4>{ToMat3(vec)};
 }
 
 template <typename T> Quat<T> MakeQuat(const T *v) {

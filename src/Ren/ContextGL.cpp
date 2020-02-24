@@ -94,7 +94,7 @@ void Ren::Context::Init(int w, int h, ILog *log) {
                                 const void *userParam) {
             if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
                 auto *self = (Context *)userParam;
-                self->log_->Info("%s", message);
+                self->log_->Error("%s", message);
             }
         };
 
@@ -111,11 +111,11 @@ void Ren::Context::Init(int w, int h, ILog *log) {
     capabilities.gl_spirv = IsExtensionSupported("GL_ARB_gl_spirv");
     capabilities.persistent_buf_mapping = IsExtensionSupported("GL_ARB_buffer_storage");
 
-    default_vertex_buf1_ = buffers_.Add("default_vtx_buf1", 64 * 1024 * 1024);
-    default_vertex_buf2_ = buffers_.Add("default_vtx_buf2", 64 * 1024 * 1024);
-    default_skin_vertex_buf_ = buffers_.Add("default_skin_vtx_buf", 64 * 1024 * 1024);
-    default_delta_buf_ = buffers_.Add("default_delta_buf", 64 * 1024 * 1024);
-    default_indices_buf_ = buffers_.Add("default_ndx_buf2", 64 * 1024 * 1024);
+    default_vertex_buf1_ = buffers_.Add("default_vtx_buf1", eBufferType::VertexAttribs, eBufferAccessType::Draw, eBufferAccessFreq::Static, 64 * 1024 * 1024);
+    default_vertex_buf2_ = buffers_.Add("default_vtx_buf2", eBufferType::VertexAttribs, eBufferAccessType::Draw, eBufferAccessFreq::Static, 64 * 1024 * 1024);
+    default_skin_vertex_buf_ = buffers_.Add("default_skin_vtx_buf", eBufferType::VertexAttribs, eBufferAccessType::Draw, eBufferAccessFreq::Static, 64 * 1024 * 1024);
+    default_delta_buf_ = buffers_.Add("default_delta_buf", eBufferType::VertexAttribs, eBufferAccessType::Draw, eBufferAccessFreq::Static, 64 * 1024 * 1024);
+    default_indices_buf_ = buffers_.Add("default_ndx_buf2", eBufferType::VertexIndices, eBufferAccessType::Draw, eBufferAccessFreq::Static, 64 * 1024 * 1024);
 
     texture_atlas_ =
         TextureAtlasArray{TextureAtlasWidth, TextureAtlasHeight, TextureAtlasLayers,
@@ -223,6 +223,15 @@ bool Ren::Context::IsExtensionSupported(const char *ext) {
     }
 
     return false;
+}
+
+void Ren::ResetGLState() {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindVertexArray(0);
+    glUseProgram(0);
+
+    Ren::GLUnbindTextureUnits(0, 24);
+    Ren::GLUnbindBufferUnits(0, 24);
 }
 
 void Ren::CheckError(const char *op, ILog *log) {

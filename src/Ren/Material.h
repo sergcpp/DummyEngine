@@ -29,7 +29,7 @@ const int MaxMaterialParamCount = 8;
 
 enum class eMatLoadStatus { Found, SetToDefault, CreatedFromData };
 
-typedef std::function<Texture2DRef(const char *name, uint32_t flags)>
+typedef std::function<Tex2DRef(const char *name, uint32_t flags)>
     texture_load_callback;
 typedef std::function<ProgramRef(const char *name, const char *arg1, const char *arg2,
                                  const char *arg3, const char *arg4)>
@@ -46,7 +46,7 @@ class Material : public RefCounter {
 
   public:
     ProgramRef programs[MaxMaterialProgramCount];
-    Texture2DRef textures[MaxMaterialTextureCount];
+    Tex2DRef textures[MaxMaterialTextureCount];
     Vec4f params[MaxMaterialParamCount];
     int params_count = 0;
 
@@ -55,7 +55,7 @@ class Material : public RefCounter {
              const program_load_callback &on_prog_load,
              const texture_load_callback &on_tex_load, ILog *log);
     Material(const char *name, uint32_t flags, ProgramRef programs[],
-             Texture2DRef textures[], const Vec4f params[], ILog *log);
+             Tex2DRef textures[], const Vec4f params[], ILog *log);
 
     Material(const Mesh &rhs) = delete;
     Material(Material &&rhs) noexcept { *this = std::move(rhs); }
@@ -67,13 +67,13 @@ class Material : public RefCounter {
     bool ready() const { return ready_; }
     const String &name() const { return name_; }
 
-    void Init(uint32_t flags, ProgramRef _programs[], Texture2DRef _textures[],
+    void Init(uint32_t flags, ProgramRef _programs[], Tex2DRef _textures[],
               const Vec4f _params[], ILog *log);
     void Init(const char *mat_src, eMatLoadStatus *status,
               const program_load_callback &on_prog_load,
               const texture_load_callback &on_tex_load, ILog *log);
 };
 
-// typedef StorageRef<Material> MaterialRef;
+// typedef StrongRef<Material> MaterialRef;
 typedef Storage<Material> MaterialStorage;
 } // namespace Ren

@@ -17,13 +17,13 @@ typedef Descr Attribute;
 typedef Descr Uniform;
 typedef Descr UniformBlock;
 
-enum class eShaderType { Vert, Frag, Tesc, Tese, Comp, _Count };
+enum class eShaderType { None, Vert, Frag, Tesc, Tese, Comp, _Count };
 
 enum class eShaderLoadStatus { Found, SetToDefault, CreatedFromData };
 
 class Shader : public RefCounter {
-    uint32_t shader_id_ = 0;
-    eShaderType type_;
+    uint32_t id_ = 0;
+    eShaderType type_ = eShaderType::None;
     String name_;
 
     void InitFromGLSL(const char *shader_src, eShaderType type, eShaderLoadStatus *status,
@@ -50,8 +50,8 @@ class Shader : public RefCounter {
     Shader &operator=(const Shader &rhs) = delete;
     Shader &operator=(Shader &&rhs) noexcept;
 
-    bool ready() const { return shader_id_ != 0; }
-    uint32_t shader_id() const { return shader_id_; }
+    bool ready() const { return id_ != 0; }
+    uint32_t id() const { return id_; }
     eShaderType type() const { return type_; }
     const String &name() const { return name_; }
 
@@ -63,6 +63,6 @@ class Shader : public RefCounter {
 #endif
 };
 
-typedef StorageRef<Shader> ShaderRef;
+typedef StrongRef<Shader> ShaderRef;
 typedef Storage<Shader> ShaderStorage;
 } // namespace Ren

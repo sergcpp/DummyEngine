@@ -8,23 +8,25 @@ class AnimSequence;
 class Buffer;
 class Camera;
 class Context;
+class ILog;
 class Material;
 class Mesh;
 class Program;
+struct RastState;
 class Shader;
 class Texture2D;
+class Texture1D;
 class TextureAtlas;
 class TextureSplitter;
 
-using AnimSeqRef = StorageRef<AnimSequence>;
-using BufferRef = StorageRef<Buffer>;
-using MaterialRef = StorageRef<Material>;
-using MeshRef = StorageRef<Mesh>;
-using ProgramRef = StorageRef<Program>;
-using ShaderRef = StorageRef<Shader>;
-using Texture2DRef = StorageRef<Texture2D>;
-
-#if defined(USE_GL_RENDER)
-void CheckError(const char *op = "undefined");
-#endif
+using AnimSeqRef = StrongRef<AnimSequence>;
+using BufferRef = StrongRef<Buffer>;
+using MaterialRef = StrongRef<Material>;
+using MeshRef = StrongRef<Mesh>;
+using ProgramRef = StrongRef<Program>;
+using ShaderRef = StrongRef<Shader>;
+using Tex2DRef = StrongRef<Texture2D>;
+using WeakTex2DRef = WeakRef<Texture2D>;
+using Tex1DRef = StrongRef<Texture1D>;
+using WeakTex1DRef = WeakRef<Texture1D>;
 }

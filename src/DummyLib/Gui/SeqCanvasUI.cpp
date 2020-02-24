@@ -8,8 +8,6 @@ const int TrackCount = 8;
 const int ElementCropRegionPx = 12;
 const float ElementMoveStep = 0.1f;
 const float ElementDurationMin = 0.3f;
-
-const uint8_t ColorHighlight[] = {255, 128, 128, 255};
 } // namespace SeqCanvasUIInternal
 
 SeqCanvasUI::SeqCanvasUI(Ren::Context &ctx, const Gui::BitmapFont &font,
@@ -40,7 +38,7 @@ SeqCanvasUI::SeqCanvasUI(Ren::Context &ctx, const Gui::BitmapFont &font,
       end_(ctx, "assets_pc/textures/editor/canvas_end.uncompressed.tga",
            Ren::Vec2f{1.0f, 1.5f}, 1.0f, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f},
            this) {
-    Resize(parent);
+    SeqCanvasUI::Resize(parent);
 }
 
 void SeqCanvasUI::Draw(Gui::Renderer *r) {
@@ -53,7 +51,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
     const float font_height = font_.height(this);
 
     for (int track = 0; track < TrackCount; track++) {
-        const float y_coord = 1.0f - (track + 1) * track_height;
+        const float y_coord = 1.0f - float(track + 1) * track_height;
 
         // draw background
         back_.Resize(Ren::Vec2f{-1.0f, y_coord}, Ren::Vec2f{2.0f, track_height}, this);
@@ -171,7 +169,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
     }
 
     if (sequence_) {
-        const float end_time = (float)sequence_->duration();
+        const auto end_time = (float)sequence_->duration();
         if (end_time >= time_range_[0] && end_time <= time_range_[1]) {
             const float xpos = GetPointFromTime(end_time) - 10.0f / dims_px_[1][0];
 
@@ -265,7 +263,8 @@ SeqAction *SeqCanvasUI::GetActionAtPoint(const Ren::Vec2f &p, Ren::Vec2i &out_in
         const float border_height = 4.0f / float(size_px()[1]);
 
         for (int track = 0; track < TrackCount; track++) {
-            const float y_coord = dims_[0][1] + dims_[1][1] - (track + 1) * track_height;
+            const float y_coord =
+                dims_[0][1] + dims_[1][1] - float(track + 1) * track_height;
             if (p[1] < y_coord || p[1] > y_coord + track_height) {
                 continue;
             }

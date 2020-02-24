@@ -87,7 +87,7 @@ public:
             mem_size += alignof(T)-(mem_size % alignof(T));
         }
 
-        size_t data_start = mem_size;
+        const size_t data_start = mem_size;
         mem_size += sizeof(T) * new_capacity;
 
         ctrl_ = new uint8_t[mem_size];

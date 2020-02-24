@@ -64,10 +64,10 @@ void main() {
     float depth = texelFetch(depth_texture, ivec2(aVertexUVs_), 0).r;
     depth = 2.0 * depth - 1.0;
 
-    vec4 ray_start_cs = vec4(aVertexUVs_.xy / shrd_data.uResAndFRes.xy, 0.0, 1.0);
+    vec4 ray_start_cs = vec4(aVertexUVs_ / shrd_data.uResAndFRes.xy, 0.0, 1.0);
     ray_start_cs.xy = 2.0 * ray_start_cs.xy - 1.0;
 
-    vec4 ray_end_cs = vec4(aVertexUVs_.xy / shrd_data.uResAndFRes.xy, depth, 1.0);
+    vec4 ray_end_cs = vec4(aVertexUVs_ / shrd_data.uResAndFRes.xy, depth, 1.0);
     ray_end_cs.xy = 2.0 * ray_end_cs.xy - 1.0;
 
     vec4 ray_start_ws = shrd_data.uInvViewProjMatrix * ray_start_cs;

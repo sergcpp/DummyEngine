@@ -16,8 +16,6 @@
 #include <Eng/Scene/SceneManager.h>
 #include <Eng/Utils/Cmdline.h>
 #include <Ren/Context.h>
-#include <Ren/GL.h>
-#include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
 #include <Sys/MemBuf.h>
@@ -64,6 +62,8 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
     temp_probe_cam_.set_render_mask(uint32_t(Drawable::eDrVisibility::VisProbes));
 }
 
+GSBaseState::~GSBaseState() = default;
+
 void GSBaseState::Enter() {
     using namespace GSBaseStateInternal;
 
@@ -78,8 +78,8 @@ void GSBaseState::Enter() {
         desc.repeat = Ren::eTexRepeat::ClampToEdge;
 
         const int res = scene_manager_->scene_data().probe_storage.res();
-        temp_probe_buf_ = FrameBuf(
-            res, res, &desc, 1, {FrameBuf::eDepthFormat::DepthNone}, 1, ren_ctx_->log());
+        temp_probe_buf_ =
+            FrameBuf("Temp probe", *ren_ctx_, res, res, &desc, 1, {}, 1, ren_ctx_->log());
     }
 
     cmdline_history_.resize(MAX_CMD_LINES, "~");
@@ -476,6 +476,17 @@ void GSBaseState::Enter() {
             return true;
         });
 
+    cmdline_->RegisterCommand(
+        "debug_ellipsoids", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
+            auto shrd_this = weak_this.lock();
+            if (shrd_this) {
+                uint32_t flags = shrd_this->renderer_->render_flags();
+                flags ^= DebugEllipsoids;
+                shrd_this->renderer_->set_render_flags(flags);
+            }
+            return true;
+        });
+
     // Initialize first draw list
     UpdateFrame(0);
 }
@@ -577,7 +588,7 @@ void GSBaseState::Exit() {
     }
 }
 
-void GSBaseState::Draw(uint64_t dt_us) {
+void GSBaseState::Draw(const uint64_t dt_us) {
     using namespace GSBaseStateInternal;
 
     if (cmdline_enabled_) {
@@ -604,10 +615,11 @@ void GSBaseState::Draw(uint64_t dt_us) {
             } else {
                 char ch = InputManager::CharFromKeycode(evt.key_code);
                 if (shift_down_) {
-                    if (ch == '-')
+                    if (ch == '-') {
                         ch = '_';
-                    else
+                    } else {
                         ch = std::toupper(ch);
+                    }
                 }
                 cmdline_history_.back() += ch;
             }
@@ -734,16 +746,6 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     const uint8_t text_color[4] = {255, 255, 255, 255};
 
     if (cmdline_enabled_) {
-        const int ifont_height = (int)(0.5f * font_->height(root) * (float)game_->height);
-        /*#if defined(USE_GL_RENDER)
-                glEnable(GL_SCISSOR_TEST);
-                glScissor(0, game_->height - MAX_CMD_LINES * ifont_height - 2,
-        game_->width, MAX_CMD_LINES * ifont_height + 2);
-
-                glClearColor(0, 0.5f, 0.5f, 1);
-                glClear(GL_COLOR_BUFFER_BIT);
-                glDisable(GL_SCISSOR_TEST);
-        #endif*/
         float cur_y = 1.0f - font_->height(root);
 
         for (const std::string &cmd : cmdline_history_) {
@@ -785,16 +787,11 @@ bool GSBaseState::HandleInput(const InputManager::Event &evt) {
     using namespace GSBaseStateInternal;
 
     switch (evt.type) {
-    case RawInputEvent::EvP1Down: {
-    } break;
-    case RawInputEvent::EvP2Down: {
-    } break;
-    case RawInputEvent::EvP1Up: {
-    } break;
-    case RawInputEvent::EvP2Up: {
-    } break;
-    case RawInputEvent::EvP1Move: {
-    } break;
+    case RawInputEvent::EvP1Down:
+    case RawInputEvent::EvP2Down:
+    case RawInputEvent::EvP1Up:
+    case RawInputEvent::EvP2Up:
+    case RawInputEvent::EvP1Move:
     case RawInputEvent::EvP2Move: {
     } break;
     case RawInputEvent::EvKeyDown: {
@@ -823,7 +820,6 @@ bool GSBaseState::HandleInput(const InputManager::Event &evt) {
         }
     }
     case RawInputEvent::EvResize:
-        break;
     default:
         break;
     }

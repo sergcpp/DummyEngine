@@ -15,15 +15,18 @@ void ParseGLSLBindings(const char *shader_str, Descr **bindings, int *bindings_c
                        ILog *log);
 bool IsMainThread();
 
-const GLenum GLShaderTypes[] = {GL_VERTEX_SHADER, GL_FRAGMENT_SHADER,
-                                GL_TESS_CONTROL_SHADER, GL_TESS_EVALUATION_SHADER,
+const GLenum GLShaderTypes[] = {0xffffffff,
+                                GL_VERTEX_SHADER,
+                                GL_FRAGMENT_SHADER,
+                                GL_TESS_CONTROL_SHADER,
+                                GL_TESS_EVALUATION_SHADER,
                                 GL_COMPUTE_SHADER};
 static_assert(sizeof(GLShaderTypes) / sizeof(GLShaderTypes[0]) ==
                   int(Ren::eShaderType::_Count),
               "!");
 } // namespace Ren
 
-Ren::Shader::Shader(const char *name, const char *shader_src, eShaderType type,
+Ren::Shader::Shader(const char *name, const char *shader_src, const eShaderType type,
                     eShaderLoadStatus *status, ILog *log) {
     name_ = String{name};
     Init(shader_src, type, status, log);
@@ -38,22 +41,22 @@ Ren::Shader::Shader(const char *name, const uint8_t *shader_data, int data_size,
 #endif
 
 Ren::Shader::~Shader() {
-    if (shader_id_) {
+    if (id_) {
         assert(IsMainThread());
-        auto shader = (GLuint)shader_id_;
-        glDeleteShader(shader);
+        auto id = GLuint(id_);
+        glDeleteShader(id);
     }
 }
 
 Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
-    if (shader_id_) {
+    if (id_) {
         assert(IsMainThread());
-        auto shader = (GLuint)shader_id_;
-        glDeleteShader(shader);
+        auto id = GLuint(id_);
+        glDeleteShader(id);
     }
 
-    shader_id_ = rhs.shader_id_;
-    rhs.shader_id_ = 0;
+    id_ = rhs.id_;
+    rhs.id_ = 0;
     type_ = rhs.type_;
     name_ = std::move(rhs.name_);
 
@@ -73,21 +76,21 @@ Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Shader::Init(const char *shader_src, eShaderType type,
+void Ren::Shader::Init(const char *shader_src, const eShaderType type,
                        eShaderLoadStatus *status, ILog *log) {
     assert(IsMainThread());
     InitFromGLSL(shader_src, type, status, log);
 }
 
 #ifndef __ANDROID__
-void Ren::Shader::Init(const uint8_t *shader_data, int data_size, eShaderType type,
-                       eShaderLoadStatus *status, ILog *log) {
+void Ren::Shader::Init(const uint8_t *shader_data, const int data_size,
+                       const eShaderType type, eShaderLoadStatus *status, ILog *log) {
     assert(IsMainThread());
     InitFromSPIRV(shader_data, data_size, type, status, log);
 }
 #endif
 
-void Ren::Shader::InitFromGLSL(const char *shader_src, eShaderType type,
+void Ren::Shader::InitFromGLSL(const char *shader_src, const eShaderType type,
                                eShaderLoadStatus *status, ILog *log) {
     if (!shader_src) {
         if (status) {
@@ -96,13 +99,17 @@ void Ren::Shader::InitFromGLSL(const char *shader_src, eShaderType type,
         return;
     }
 
-    assert(shader_id_ == 0);
-    shader_id_ = LoadShader(GLShaderTypes[int(type)], shader_src, log);
-    if (!shader_id_) {
+    assert(id_ == 0);
+    id_ = LoadShader(GLShaderTypes[int(type)], shader_src, log);
+    if (!id_) {
         if (status) {
             (*status) = eShaderLoadStatus::SetToDefault;
         }
         return;
+    } else {
+#ifdef ENABLE_OBJ_LABELS
+        glObjectLabel(GL_SHADER, id_, -1, name_.c_str());
+#endif
     }
 
     Descr *_bindings[3] = {bindings[0], bindings[1], bindings[2]};
@@ -114,8 +121,8 @@ void Ren::Shader::InitFromGLSL(const char *shader_src, eShaderType type,
 }
 
 #ifndef __ANDROID__
-void Ren::Shader::InitFromSPIRV(const uint8_t *shader_data, int data_size,
-                                eShaderType type, eShaderLoadStatus *status, ILog *log) {
+void Ren::Shader::InitFromSPIRV(const uint8_t *shader_data, const int data_size,
+                                const eShaderType type, eShaderLoadStatus *status, ILog *log) {
     if (!shader_data) {
         if (status) {
             (*status) = eShaderLoadStatus::SetToDefault;
@@ -123,14 +130,18 @@ void Ren::Shader::InitFromSPIRV(const uint8_t *shader_data, int data_size,
         return;
     }
 
-    assert(shader_id_ == 0);
-    shader_id_ = LoadShader(GLShaderTypes[int(type)], shader_data, data_size, log);
-    if (!shader_id_) {
+    assert(id_ == 0);
+    id_ = LoadShader(GLShaderTypes[int(type)], shader_data, data_size, log);
+    if (!id_) {
         if (status) {
             (*status) = eShaderLoadStatus::SetToDefault;
         }
         return;
     }
+
+#ifdef ENABLE_OBJ_LABELS
+    glObjectLabel(GL_SHADER, id_, -1, name_.c_str());
+#endif
 
     SpvReflectShaderModule module = {};
     const SpvReflectResult res =
@@ -183,7 +194,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const char *source, ILog *log) {
 
         if (info_len) {
             char *buf = (char *)malloc((size_t)info_len);
-            glGetShaderInfoLog(shader, info_len, NULL, buf);
+            glGetShaderInfoLog(shader, info_len, nullptr, buf);
             if (compiled) {
                 log->Info("%s", buf);
             } else {
@@ -220,7 +231,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_s
 
         if (info_len) {
             char *buf = (char *)malloc((size_t)info_len);
-            glGetShaderInfoLog(shader, info_len, NULL, buf);
+            glGetShaderInfoLog(shader, info_len, nullptr, buf);
             if (compiled) {
                 log->Info("%s", buf);
             } else {
@@ -278,7 +289,7 @@ void Ren::ParseGLSLBindings(const char *shader_str, Descr **bindings, int *bindi
             }
             p = q + 1;
             q = strpbrk(p, delims);
-            int loc = atoi(p);
+            int loc = std::atoi(p);
 
             cur_bind_target[*cur_bind_count].name = item;
             cur_bind_target[*cur_bind_count].loc = loc;

@@ -26,6 +26,7 @@ class Context : public TaskExecutor {
     ProgramStorage programs_;
     ShaderStorage shaders_;
     Texture2DStorage textures_;
+    Texture1DStorage textures_1D_;
     TextureRegionStorage texture_regions_;
     AnimSeqStorage anims_;
     BufferStorage buffers_;
@@ -52,6 +53,7 @@ class Context : public TaskExecutor {
     ILog *log() const { return log_; }
 
     Texture2DStorage &textures() { return textures_; }
+    Texture1DStorage &textures1D() { return textures_1D_; }
     MaterialStorage &materials() { return materials_; }
 
     BufferRef default_vertex_buf1() const { return default_vertex_buf1_; }
@@ -65,6 +67,11 @@ class Context : public TaskExecutor {
     void Resize(int w, int h);
 
     /*** Mesh ***/
+    MeshRef LoadMesh(const char *name, const float *positions, int vtx_count,
+                     const uint32_t *indices, int ndx_count, eMeshLoadStatus* load_status);
+    MeshRef LoadMesh(const char *name, const float *positions, int vtx_count,
+                     const uint32_t *indices, int ndx_count, BufferRef &vertex_buf1,
+                     BufferRef &vertex_buf2, BufferRef &index_buf, eMeshLoadStatus* load_status);
     MeshRef LoadMesh(const char *name, std::istream *data,
                      const material_load_callback &on_mat_load,
                      eMeshLoadStatus *load_status);
@@ -107,15 +114,22 @@ class Context : public TaskExecutor {
     void ReleasePrograms();
 
     /*** Texture ***/
-    Texture2DRef LoadTexture2D(const char *name, const void *data, int size,
+    Tex2DRef LoadTexture2D(const char *name, const Texture2DParams &p,
+                               eTexLoadStatus *load_status);
+    Tex2DRef LoadTexture2D(const char *name, const void *data, int size,
                                const Texture2DParams &p, eTexLoadStatus *load_status);
-    Texture2DRef LoadTextureCube(const char *name, const void *data[6], const int size[6],
+    Tex2DRef LoadTextureCube(const char *name, const void *data[6], const int size[6],
                                  const Texture2DParams &p, eTexLoadStatus *load_status);
 
     void VisitTextures(uint32_t mask,
                        const std::function<void(Texture2D &tex)> &callback);
     int NumTexturesNotReady();
-    void ReleaseTextures();
+    void Release2DTextures();
+
+    /*** Texture 1D ***/
+    Tex1DRef CreateTexture1D(const char *name, BufferRef buf, eTexFormat format,
+                                 uint32_t offset, uint32_t size);
+    void Release1DTextures();
 
     /** Texture regions **/
     TextureRegionRef LoadTextureRegion(const char *name, const void *data, int size,
@@ -130,7 +144,8 @@ class Context : public TaskExecutor {
     void ReleaseAnims();
 
     /*** Buffers ***/
-    BufferRef CreateBuffer(const char *name, uint32_t initial_size);
+    BufferRef CreateBuffer(const char *name, eBufferType type, eBufferAccessType access,
+                           eBufferAccessFreq freq, uint32_t initial_size);
     void ReleaseBuffers();
 
     void ReleaseAll();
@@ -152,6 +167,7 @@ class Context : public TaskExecutor {
 };
 
 #if defined(USE_GL_RENDER)
+void ResetGLState();
 void CheckError(const char *op, ILog *log);
 #endif
 } // namespace Ren

@@ -18,8 +18,8 @@ class TimelineUI : public Gui::BaseElement {
     float rmb_time_offset_;
     Ren::Vec2f rmb_point_;
 
-    float GetTimeFromPoint(float px);
-    float GetPointFromTime(float t);
+    float GetTimeFromPoint(float px) const;
+    float GetPointFromTime(float t) const;
     void SetCurTimeFromPoint(float px);
     Ren::Vec2f SnapToPixels(const Ren::Vec2f &p);
 

@@ -1076,10 +1076,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                             if (obj.comp_mask & CompVegStateBit) {
                                 const VegState &vs = vegs[obj.components[CompVegState]];
-                                const Mat4f object_from_world =
-                                    Inverse(world_from_object);
-                                __init_wind_params(vs, list.env, object_from_world,
-                                                   instance);
+                                __init_wind_params(vs, list.env,
+                                                   Inverse(world_from_object), instance);
                             }
                         }
 
@@ -1544,7 +1542,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
     uint32_t sh_batch_indices_counter = 0;
 
-    for (int i = 0; i < (int)list.shadow_lists.count; i++) {
+    for (int i = 0; i < int(list.shadow_lists.count); i++) {
         ShadowList &sh_list = list.shadow_lists.data[i];
 
         const uint32_t shadow_batch_end =
@@ -1646,21 +1644,26 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
         const float NEAR_CLIP = 0.5f;
         const float FAR_CLIP = 10000.0f;
 
-        int w = cull_ctx_.zbuf.w, h = cull_ctx_.zbuf.h;
-        depth_pixels_[1].resize(w * h * 4);
+        const int w = cull_ctx_.zbuf.w, h = cull_ctx_.zbuf.h;
+
+        list.depth_pixels.resize(w * h * 4ul);
+        uint8_t *_depth_pixels = list.depth_pixels.data();
+
         for (int x = 0; x < w; x++) {
             for (int y = 0; y < h; y++) {
                 float z = cull_ctx_.zbuf.depth[(h - y - 1) * w + x];
                 z = (2.0f * NEAR_CLIP) /
                     (FAR_CLIP + NEAR_CLIP - z * (FAR_CLIP - NEAR_CLIP));
-                depth_pixels_[1][4 * (y * w + x) + 0] = (uint8_t)(z * 255);
-                depth_pixels_[1][4 * (y * w + x) + 1] = (uint8_t)(z * 255);
-                depth_pixels_[1][4 * (y * w + x) + 2] = (uint8_t)(z * 255);
-                depth_pixels_[1][4 * (y * w + x) + 3] = 255;
+                _depth_pixels[4ul * (y * w + x) + 0] = uint8_t(z * 255);
+                _depth_pixels[4ul * (y * w + x) + 1] = uint8_t(z * 255);
+                _depth_pixels[4ul * (y * w + x) + 2] = uint8_t(z * 255);
+                _depth_pixels[4ul * (y * w + x) + 3] = 255;
             }
         }
 
-        depth_tiles_[1].resize(w * h * 4);
+        list.depth_tiles.resize(w * h * 4ul);
+        uint8_t *_depth_tiles = list.depth_tiles.data();
+
         for (int x = 0; x < w; x++) {
             for (int y = 0; y < h; y++) {
                 const SWzrange *zr = swZbufGetTileRange(&cull_ctx_.zbuf, x, (h - y - 1));
@@ -1668,10 +1671,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                 float z = zr->min;
                 z = (2.0f * NEAR_CLIP) /
                     (FAR_CLIP + NEAR_CLIP - z * (FAR_CLIP - NEAR_CLIP));
-                depth_tiles_[1][4 * (y * w + x) + 0] = (uint8_t)(z * 255);
-                depth_tiles_[1][4 * (y * w + x) + 1] = (uint8_t)(z * 255);
-                depth_tiles_[1][4 * (y * w + x) + 2] = (uint8_t)(z * 255);
-                depth_tiles_[1][4 * (y * w + x) + 3] = 255;
+                _depth_tiles[4ul * (y * w + x) + 0] = uint8_t(z * 255);
+                _depth_tiles[4ul * (y * w + x) + 1] = uint8_t(z * 255);
+                _depth_tiles[4ul * (y * w + x) + 2] = uint8_t(z * 255);
+                _depth_tiles[4ul * (y * w + x) + 3] = 255;
             }
         }
     }
@@ -1694,7 +1697,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
     }
 }
 
-void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums,
+void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub_frustums,
                                         const BBox *decals_boxes,
                                         const LightSource *const *litem_to_lsource,
                                         DrawList &list, std::atomic_int &items_count) {

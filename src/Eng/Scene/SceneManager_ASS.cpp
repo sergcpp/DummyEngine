@@ -12,11 +12,6 @@
 #include <sys/stat.h>
 #endif
 
-extern "C" {
-#include <Ren/SOIL2/image_DXT.h>
-}
-#include <Ren/SOIL2/SOIL2.h>
-
 #undef max
 #undef min
 
@@ -145,7 +140,7 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
     return temp_pixels1;
 }
 
-std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &tex_ref,
+std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref,
                                                       const bool flip_y) {
     const Ren::Texture2DParams &params = tex_ref->params();
 
@@ -240,10 +235,10 @@ uint32_t Crc32HashFile(const char *in_file, Ren::ILog *log) {
     if (!in_file_stream) {
         return 0;
     }
-    const size_t in_file_size = (size_t)in_file_stream.tellg();
+    const size_t in_file_size = size_t(in_file_stream.tellg());
     in_file_stream.seekg(0, std::ios::beg);
 
-    const size_t HashChunkSize = 64 * 1024;
+    const size_t HashChunkSize = 16 * 1024;
     uint8_t in_file_buf[HashChunkSize];
 
     log->Info("[PrepareAssets] Hashing %s", in_file);
@@ -499,7 +494,7 @@ bool WriteDB(const JsObject &js_db, const char *out_folder) {
 std::string ExtractHTMLData(assets_context_t &ctx, const char *in_file,
                             std::string &out_caption) {
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
-    int file_size = (int)src_stream.tellg();
+    const int file_size = int(src_stream.tellg());
     src_stream.seekg(0, std::ios::beg);
 
     // TODO: buffered read?
@@ -525,7 +520,7 @@ std::string ExtractHTMLData(assets_context_t &ctx, const char *in_file,
 
             while (unicode != Gui::g_unicode_greater_than) {
                 buf_pos += Gui::ConvChar_UTF8_to_Unicode(&in_buf[buf_pos], unicode);
-                tag_str[tag_str_len++] = (char)unicode;
+                tag_str[tag_str_len++] = char(unicode);
             }
             tag_str[tag_str_len - 1] = '\0';
 
@@ -873,20 +868,24 @@ bool SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file,
                     // remove spaces
                     if (!caption.empty()) {
                         int n = 0;
-                        while (n < (int)caption.length() && caption[n] == ' ')
+                        while (n < (int)caption.length() && caption[n] == ' ') {
                             n++;
+                        }
                         caption.erase(0, n);
-                        while (caption.back() == ' ')
+                        while (caption.back() == ' ') {
                             caption.pop_back();
+                        }
                     }
 
                     if (!html_body.empty()) {
                         int n = 0;
-                        while (n < (int)html_body.length() && html_body[n] == ' ')
+                        while (n < (int)html_body.length() && html_body[n] == ' ') {
                             n++;
+                        }
                         html_body.erase(0, n);
-                        while (html_body.back() == ' ')
+                        while (html_body.back() == ' ') {
                             html_body.pop_back();
+                        }
                     }
 
                     js_caption[js_lang] = JsString{caption};

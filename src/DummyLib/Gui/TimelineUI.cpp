@@ -94,7 +94,7 @@ void TimelineUI::Draw(Gui::Renderer *r) {
 
     const float RoundingThres = 0.5f * TimeStepSmall;
 
-    for (float t = t_beg; t < t_end + 0.5f * TimeStepSmall; t += TimeStepSmall) {
+    for (float t = t_beg; t < t_end + 0.5f * TimeStepSmall; t += TimeStepSmall) { // NOLINT
         // minus zero fixup
         if (std::abs(t) < RoundingThres) {
             t = 0.0f;
@@ -202,14 +202,14 @@ void TimelineUI::PressRMB(const Ren::Vec2f &p, bool push) {
     }
 }
 
-float TimelineUI::GetTimeFromPoint(const float px) {
+float TimelineUI::GetTimeFromPoint(const float px) const {
     const Ren::Vec2f time_range_cur = time_range();
 
     const float param = (px - dims_[0][0]) / dims_[1][0];
     return time_range_cur[0] + param * (time_range_cur[1] - time_range_cur[0]);
 }
 
-float TimelineUI::GetPointFromTime(const float t) {
+float TimelineUI::GetPointFromTime(const float t) const {
     const Ren::Vec2f time_range_cur = time_range();
 
     const float param = (t - time_range_cur[0]) / (time_range_cur[1] - time_range_cur[0]);

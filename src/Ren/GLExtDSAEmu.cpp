@@ -76,6 +76,13 @@ void APIENTRY ren_glGenerateTextureMipmap_Comp_emu(GLenum target, GLuint texture
 }
 
 void APIENTRY ren_glBindTextureUnit_Comp_emu(GLenum target, GLuint unit, GLuint texture) {
-    glActiveTexture((GLenum)(GL_TEXTURE0 + unit));
+    glActiveTexture(GLenum(GL_TEXTURE0 + unit));
     glBindTexture(target, texture);
 }
+
+#ifndef __ANDROID__
+void APIENTRY ren_glNamedBufferStorage_Comp_emu(GLenum target, GLuint buffer, GLsizeiptr size, const void* data, GLbitfield flags) {
+    glBindBuffer(target, buffer);
+    glBufferStorage(target, size, data, flags);
+}
+#endif

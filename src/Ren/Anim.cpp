@@ -145,7 +145,7 @@ void Ren::AnimSequence::Update(float time) {
     InterpolateFrames(fr_0, fr_1, t);
 }
 
-void Ren::AnimSequence::InterpolateFrames(int fr_0, int fr_1, float t) {
+void Ren::AnimSequence::InterpolateFrames(const int fr_0, const int fr_1, const float t) {
     for (AnimBone &bone : bones_) {
         int offset = bone.offset;
         if (bone.flags & uint32_t(eAnimBoneFlags::AnimHasTranslate)) {
@@ -184,7 +184,7 @@ Ren::Vec3f Ren::Skeleton::bone_pos(const char *name) {
     return ret;
 }
 
-Ren::Vec3f Ren::Skeleton::bone_pos(int i) {
+Ren::Vec3f Ren::Skeleton::bone_pos(const int i) {
     auto bone_it = &bones[i];
     Vec3f ret;
     const float *m = ValuePtr(bone_it->cur_comb_matrix);
@@ -205,7 +205,9 @@ void Ren::Skeleton::bone_matrix(const char *name, Mat4f &mat) {
     mat = bone->cur_comb_matrix;
 }
 
-void Ren::Skeleton::bone_matrix(int i, Mat4f &mat) { mat = bones[i].cur_comb_matrix; }
+void Ren::Skeleton::bone_matrix(const int i, Mat4f &mat) {
+    mat = bones[i].cur_comb_matrix;
+}
 
 void Ren::Skeleton::UpdateBones(Ren::Mat4f *matr_palette) {
     for (int i = 0; i < bones_count; i++) {
@@ -237,15 +239,15 @@ int Ren::Skeleton::UpdateShapes(uint16_t *out_shape_palette) {
     return active_shapes_count;
 }
 
-int Ren::Skeleton::AddAnimSequence(const AnimSeqRef &ref) {
-    for (int i = 0; i < (int)anims.size(); i++) {
+int Ren::Skeleton::AddAnimSequence(AnimSeqRef ref) {
+    for (int i = 0; i < int(anims.size()); i++) {
         if (anims[i].anim == ref) {
             return i;
         }
     }
     anims.emplace_back();
     AnimLink &a = anims.back();
-    a.anim = ref;
+    a.anim = std::move(ref);
     a.anim_bones.reset(new int[bones_count]);
     a.anim->LinkBones(&bones[0], bones_count, &a.anim_bones[0]);
     a.anim_shapes.reset(new int[bones_count]);
@@ -261,7 +263,7 @@ void Ren::Skeleton::MarkChildren() {
     }
 }
 
-void Ren::Skeleton::ApplyAnim(int id) {
+void Ren::Skeleton::ApplyAnim(const int id) {
     for (int i = 0; i < bones_count; i++) {
         const int ndx = anims[id].anim_bones[i];
         if (ndx != -1) {
@@ -288,7 +290,7 @@ void Ren::Skeleton::ApplyAnim(int id) {
     }
 }
 
-void Ren::Skeleton::ApplyAnim(int anim_id1, int anim_id2, float t) {
+void Ren::Skeleton::ApplyAnim(const int anim_id1, const int anim_id2, const float t) {
     for (int i = 0; i < bones_count; i++) {
         if (anims[anim_id1].anim_bones[i] != -1 || anims[anim_id2].anim_bones[i] != -1) {
             const int ndx1 = anims[anim_id1].anim_bones[i];
@@ -323,7 +325,9 @@ void Ren::Skeleton::ApplyAnim(int anim_id1, int anim_id2, float t) {
     MarkChildren();
 }
 
-void Ren::Skeleton::UpdateAnim(int anim_id, float t) { anims[anim_id].anim->Update(t); }
+void Ren::Skeleton::UpdateAnim(const int anim_id, const float t) {
+    anims[anim_id].anim->Update(t);
+}
 
 #ifdef _MSC_VER
 #pragma warning(pop)

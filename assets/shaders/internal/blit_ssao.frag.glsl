@@ -23,7 +23,6 @@ uniform SharedDataBlock {
 
 layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2D depth_texture;
 layout(binding = REN_BASE1_TEX_SLOT) uniform mediump sampler2D rand_texture;
-layout(binding = REN_BASE2_TEX_SLOT) uniform lowp sampler2D cone_rt_lut;
 
 layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer cells_buffer;
 layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer items_buffer;

@@ -97,7 +97,7 @@ Snd::eSrcState Snd::Source::GetState() const {
     return eSrcState(state - AL_INITIAL);
 }
 
-const Snd::BufferRef &Snd::Source::GetBuffer(int i) const { return buf_refs_[i]; }
+const Snd::BufferRef &Snd::Source::GetBuffer(const int i) const { return buf_refs_[i]; }
 
 void Snd::Source::SetBuffer(const BufferRef &buf) {
     ResetBuffers();
@@ -108,7 +108,7 @@ void Snd::Source::SetBuffer(const BufferRef &buf) {
     alSourcei(ALuint(source_), AL_BUFFER, ALint(buf->id()));
 }
 
-void Snd::Source::EnqueueBuffers(const BufferRef bufs[], int bufs_count) {
+void Snd::Source::EnqueueBuffers(const BufferRef bufs[], const int bufs_count) {
     assert(bufs_count_ + bufs_count < MaxQueuedBuffers);
 
     ALuint al_buffers[MaxQueuedBuffers];
@@ -155,21 +155,21 @@ float Snd::Source::GetOffset() {
     return ret;
 }
 
-void Snd::Source::SetOffset(float offset_s) {
+void Snd::Source::SetOffset(const float offset_s) {
     alSourcef(ALuint(source_), AL_SEC_OFFSET, offset_s);
 }
 
-void Snd::Source::set_looping(bool val) {
+void Snd::Source::set_looping(const bool val) {
     alSourcei(ALuint(source_), AL_LOOPING, val ? AL_TRUE : AL_FALSE);
     looping_ = val;
 }
 
-void Snd::Source::set_pitch(float pitch) {
+void Snd::Source::set_pitch(const float pitch) {
     alSourcef(ALuint(source_), AL_PITCH, pitch);
     pitch_ = pitch;
 }
 
-void Snd::Source::set_gain(float gain) {
+void Snd::Source::set_gain(const float gain) {
     alSourcef(ALuint(source_), AL_GAIN, gain);
     gain_ = gain;
 }

@@ -18,8 +18,8 @@ Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *s
     Init(mat_src, status, on_prog_load, on_tex_load, log);
 }
 
-Ren::Material::Material(const char *name, uint32_t flags, ProgramRef programs[],
-                        Texture2DRef textures[], const Vec4f params[], ILog *log) {
+Ren::Material::Material(const char *name, const uint32_t flags, ProgramRef programs[],
+                        Tex2DRef textures[], const Vec4f params[], ILog *log) {
     name_ = String{name};
     Init(flags, programs, textures, params, log);
 }
@@ -43,7 +43,7 @@ Ren::Material &Ren::Material::operator=(Material &&rhs) noexcept {
     return *this;
 }
 
-void Ren::Material::Init(uint32_t flags, ProgramRef _programs[], Texture2DRef _textures[],
+void Ren::Material::Init(uint32_t flags, ProgramRef _programs[], Tex2DRef _textures[],
                          const Vec4f _params[], ILog *log) {
     assert(IsMainThread());
     flags_ = flags;

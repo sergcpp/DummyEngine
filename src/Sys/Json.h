@@ -7,8 +7,8 @@
 
 #include "Variant.h"
 
-enum JsType { JS_TYPE_INVALID, JS_TYPE_OBJECT, JS_TYPE_ARRAY, JS_TYPE_NUMBER, JS_TYPE_LITERAL, JS_TYPE_STRING };
-enum JsLiteralType { JS_UNDEFINED, JS_TRUE, JS_FALSE, JS_NULL };
+enum class JsType { Invalid, Object, Array, Number, Literal, String };
+enum class JsLiteralType { Undefined, True, False, Null };
 
 struct JsFlags {
     int ident_levels    : 1;
@@ -25,7 +25,7 @@ struct JsElement;
 struct JsLiteral {
     JsLiteralType val;
 
-    explicit JsLiteral(JsLiteralType v) : val(v) {}
+    explicit JsLiteral(const JsLiteralType v) : val(v) {}
     bool operator==(const JsLiteral &rhs) const {
         return val == rhs.val;
     }
@@ -37,13 +37,13 @@ struct JsLiteral {
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
 
-    static const JsType type = JS_TYPE_LITERAL;
+    static const JsType type = JsType::Literal;
 };
 
 struct JsNumber {
     double val;
 
-    explicit JsNumber(double v = 0) : val(v) {}
+    explicit JsNumber(const double v = 0.0) : val(v) {}
 
     bool operator==(const JsNumber &rhs) const {
         return val == rhs.val;
@@ -68,15 +68,15 @@ struct JsNumber {
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
 
-    static const JsType type = JS_TYPE_NUMBER;
+    static const JsType type = JsType::Number;
 };
 
 struct JsString {
     std::string val;
 
-    JsString() {}
+    JsString() = default;
     explicit JsString(const char *s) : val(s) {}
-    explicit JsString(const std::string &s) : val(s) {}
+    explicit JsString(std::string s) : val(std::move(s)) {}
 
     bool operator==(const JsString &rhs) const {
         return val == rhs.val;
@@ -85,13 +85,13 @@ struct JsString {
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
 
-    static const JsType type = JS_TYPE_STRING;
+    static const JsType type = JsType::String;
 };
 
 struct JsArray {
     std::vector<JsElement> elements;
 
-    JsArray() {}
+    JsArray() = default;
     JsArray(const JsArray &rhs) = default;
     JsArray(JsArray &&rhs) = default;
     JsArray(const JsElement *v, size_t num);
@@ -121,7 +121,7 @@ struct JsArray {
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
 
-    static const JsType type = JS_TYPE_ARRAY;
+    static const JsType type = JsType::Array;
 };
 
 struct JsObject {
@@ -153,7 +153,7 @@ struct JsObject {
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
 
-    static const JsType type = JS_TYPE_OBJECT;
+    static const JsType type = JsType::Object;
 };
 
 struct JsElement {
@@ -172,11 +172,11 @@ public:
     explicit JsElement(double val);
     explicit JsElement(const char *str);
     explicit JsElement(JsType type);
-    JsElement(const JsNumber &rhs);
-    JsElement(const JsString &rhs);
-    JsElement(const JsArray &rhs);
-    JsElement(const JsObject &rhs);
-    JsElement(const JsLiteral &rhs);
+    JsElement(const JsNumber &rhs); // NOLINT
+    JsElement(const JsString &rhs); // NOLINT
+    JsElement(const JsArray &rhs); // NOLINT
+    JsElement(const JsObject &rhs); // NOLINT
+    JsElement(const JsLiteral &rhs); // NOLINT
     JsElement(const JsElement &rhs);
 
     JsElement(JsString &&rhs);

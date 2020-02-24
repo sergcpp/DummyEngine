@@ -34,22 +34,22 @@ Ren::Program::Program(const char *name, ShaderRef cs_ref, eProgLoadStatus *statu
 }
 
 Ren::Program::~Program() {
-    if (prog_id_) {
+    if (id_) {
         assert(IsMainThread());
-        auto prog = (GLuint)prog_id_;
+        auto prog = GLuint(id_);
         glDeleteProgram(prog);
     }
 }
 
 Ren::Program &Ren::Program::operator=(Program &&rhs) noexcept {
-    if (prog_id_) {
+    if (id_) {
         assert(IsMainThread());
-        auto prog = (GLuint)prog_id_;
+        auto prog = GLuint(id_);
         glDeleteProgram(prog);
     }
 
-    prog_id_ = rhs.prog_id_;
-    rhs.prog_id_ = 0;
+    id_ = rhs.id_;
+    rhs.id_ = 0;
     shaders_ = std::move(rhs.shaders_);
     attributes_ = std::move(rhs.attributes_);
     uniforms_ = std::move(rhs.uniforms_);
@@ -63,7 +63,7 @@ Ren::Program &Ren::Program::operator=(Program &&rhs) noexcept {
 
 void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
                         ShaderRef tes_ref, eProgLoadStatus *status, ILog *log) {
-    assert(prog_id_ == 0);
+    assert(id_ == 0);
     assert(IsMainThread());
 
     if (!vs_ref || !fs_ref) {
@@ -75,11 +75,11 @@ void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
 
     GLuint program = glCreateProgram();
     if (program) {
-        glAttachShader(program, (GLuint)vs_ref->shader_id());
-        glAttachShader(program, (GLuint)fs_ref->shader_id());
+        glAttachShader(program, (GLuint)vs_ref->id());
+        glAttachShader(program, (GLuint)fs_ref->id());
         if (tcs_ref && tes_ref) {
-            glAttachShader(program, (GLuint)tcs_ref->shader_id());
-            glAttachShader(program, (GLuint)tes_ref->shader_id());
+            glAttachShader(program, (GLuint)tcs_ref->id());
+            glAttachShader(program, (GLuint)tes_ref->id());
         }
         glLinkProgram(program);
         GLint link_status = GL_FALSE;
@@ -96,12 +96,16 @@ void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
             }
             glDeleteProgram(program);
             program = 0;
+        } else {
+#ifdef ENABLE_OBJ_LABELS
+            glObjectLabel(GL_PROGRAM, program, -1, name_.c_str());
+#endif
         }
     } else {
         log->Error("glCreateProgram failed");
     }
 
-    prog_id_ = uint32_t(program);
+    id_ = uint32_t(program);
     // store shaders
     shaders_[int(eShaderType::Vert)] = std::move(vs_ref);
     shaders_[int(eShaderType::Frag)] = std::move(fs_ref);
@@ -116,7 +120,7 @@ void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
 }
 
 void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
-    assert(prog_id_ == 0);
+    assert(id_ == 0);
     assert(IsMainThread());
 
     if (!cs_ref) {
@@ -128,7 +132,7 @@ void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
 
     GLuint program = (uint32_t)glCreateProgram();
     if (program) {
-        glAttachShader(program, (GLuint)cs_ref->shader_id());
+        glAttachShader(program, (GLuint)cs_ref->id());
         glLinkProgram(program);
         GLint link_status = GL_FALSE;
         glGetProgramiv(program, GL_LINK_STATUS, &link_status);
@@ -144,12 +148,16 @@ void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
             }
             glDeleteProgram(program);
             program = 0;
+        } else {
+#ifdef ENABLE_OBJ_LABELS
+            glObjectLabel(GL_PROGRAM, program, -1, name_.c_str());
+#endif
         }
     } else {
         log->Error("glCreateProgram failed");
     }
 
-    prog_id_ = uint32_t(program);
+    id_ = uint32_t(program);
     // store shader
     shaders_[int(eShaderType::Comp)] = std::move(cs_ref);
 
@@ -170,7 +178,7 @@ void Ren::Program::InitBindings(ILog *log) {
         for (int i = 0; i < sh.bindings_count[0]; i++) {
             Descr& b = sh.bindings[0][i];
             Attribute& a = attributes_[b.loc];
-            a.loc = glGetAttribLocation(GLuint(prog_id_), b.name.c_str());
+            a.loc = glGetAttribLocation(GLuint(id_), b.name.c_str());
             if (a.loc != -1) {
                 a.name = b.name;
             }
@@ -179,7 +187,7 @@ void Ren::Program::InitBindings(ILog *log) {
         for (int i = 0; i < sh.bindings_count[1]; i++) {
             Descr& b = sh.bindings[1][i];
             Attribute& u = uniforms_[b.loc];
-            u.loc = glGetUniformLocation(GLuint(prog_id_), b.name.c_str());
+            u.loc = glGetUniformLocation(GLuint(id_), b.name.c_str());
             if (u.loc != -1) {
                 u.name = b.name;
             }
@@ -188,22 +196,22 @@ void Ren::Program::InitBindings(ILog *log) {
         for (int i = 0; i < sh.bindings_count[2]; i++) {
             Descr& b = sh.bindings[2][i];
             Attribute& u = uniform_blocks_[b.loc];
-            u.loc = glGetUniformBlockIndex(GLuint(prog_id_), b.name.c_str());
+            u.loc = glGetUniformBlockIndex(GLuint(id_), b.name.c_str());
             if (u.loc != -1) {
                 u.name = b.name;
-                glUniformBlockBinding(GLuint(prog_id_), u.loc, b.loc);
+                glUniformBlockBinding(GLuint(id_), u.loc, b.loc);
             }
         }
     }
 
     // Enumerate rest of attributes
     GLint num;
-    glGetProgramiv(GLuint(prog_id_), GL_ACTIVE_ATTRIBUTES, &num);
+    glGetProgramiv(GLuint(id_), GL_ACTIVE_ATTRIBUTES, &num);
     for (int i = 0; i < num; i++) {
         int len;
         GLenum n;
         char name[128];
-        glGetActiveAttrib(GLuint(prog_id_), i, 128, &len, &len, &n, name);
+        glGetActiveAttrib(GLuint(id_), i, 128, &len, &len, &n, name);
 
         int skip = 0, free_index = -1;
         for (int j = 0; j < MaxAttributesCount; j++) {
@@ -218,7 +226,7 @@ void Ren::Program::InitBindings(ILog *log) {
 
         if (!skip && free_index != -1) {
             attributes_[free_index].name = String{ name };
-            attributes_[free_index].loc = glGetAttribLocation(GLuint(prog_id_), name);
+            attributes_[free_index].loc = glGetAttribLocation(GLuint(id_), name);
         }
     }
 
@@ -234,12 +242,12 @@ void Ren::Program::InitBindings(ILog *log) {
     }
 
     // Enumerate rest of uniforms
-    glGetProgramiv(GLuint(prog_id_), GL_ACTIVE_UNIFORMS, &num);
+    glGetProgramiv(GLuint(id_), GL_ACTIVE_UNIFORMS, &num);
     for (int i = 0; i < num; i++) {
         int len;
         GLenum n;
         char name[128];
-        glGetActiveUniform(GLuint(prog_id_), i, 128, &len, &len, &n, name);
+        glGetActiveUniform(GLuint(id_), i, 128, &len, &len, &n, name);
 
         int skip = 0, free_index = -1;
         for (int j = 0; j < MaxUniformsCount; j++) {
@@ -254,7 +262,7 @@ void Ren::Program::InitBindings(ILog *log) {
 
         if (!skip && free_index != -1) {
             uniforms_[free_index].name = String{ name };
-            uniforms_[free_index].loc = glGetUniformLocation(GLuint(prog_id_), name);
+            uniforms_[free_index].loc = glGetUniformLocation(GLuint(id_), name);
         }
     }
 

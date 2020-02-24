@@ -115,7 +115,7 @@ static Ren::ProgramRef OnProgramNeeded(const char *name, const char *arg1,
     return {};
 }
 
-static Ren::Texture2DRef OnTextureNeeded(const char *name) { return {}; }
+static Ren::Tex2DRef OnTextureNeeded(const char *name) { return {}; }
 
 void test_material() {
     { // Load material
@@ -169,10 +169,10 @@ void test_material() {
         require(p->name() == "constant");
         require(!p->ready());
 
-        Ren::Texture2DRef t0 = m_ref->textures[0];
-        Ren::Texture2DRef t1 = m_ref->textures[1];
-        Ren::Texture2DRef t2 = m_ref->textures[2];
-        Ren::Texture2DRef t3 = m_ref->textures[3];
+        Ren::Tex2DRef t0 = m_ref->textures[0];
+        Ren::Tex2DRef t1 = m_ref->textures[1];
+        Ren::Tex2DRef t2 = m_ref->textures[2];
+        Ren::Tex2DRef t3 = m_ref->textures[3];
 
         require(t0 == t1);
         require(t0 == t3);

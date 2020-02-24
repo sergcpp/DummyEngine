@@ -3,8 +3,9 @@
 #include "GL.h"
 #include "Utils.h"
 
-Ren::TextureAtlas::TextureAtlas(int w, int h, int min_res, const eTexFormat *formats,
-                                const uint32_t *flags, eTexFilter filter, ILog *log)
+Ren::TextureAtlas::TextureAtlas(const int w, const int h, const int min_res,
+                                const eTexFormat *formats, const uint32_t *flags,
+                                eTexFilter filter, ILog *log)
     : splitter_(w, h) {
     filter_ = filter;
 
@@ -151,7 +152,7 @@ int Ren::TextureAtlas::AllocateRegion(const int res[2], int out_pos[2]) {
 
 void Ren::TextureAtlas::InitRegion(const void *data, const int data_len,
                                    const eTexFormat format, const uint32_t flags,
-                                   int layer, int level, const int pos[2],
+                                   const int layer, const int level, const int pos[2],
                                    const int res[2], ILog *log) {
 #ifndef NDEBUG
     if (level == 0) {
@@ -272,7 +273,7 @@ Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rhs) noexcept {
 }
 
 int Ren::TextureAtlasArray::Allocate(const void *data, const eTexFormat format,
-                                     const int res[2], int out_pos[3], int border) {
+                                     const int res[2], int out_pos[3], const int border) {
     const int alloc_res[] = {res[0] < splitters_[0].resx() ? res[0] + border : res[0],
                              res[1] < splitters_[1].resy() ? res[1] + border : res[1]};
 

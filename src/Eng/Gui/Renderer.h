@@ -8,6 +8,10 @@
 
 #include <Ren/MVec.h>
 
+#if defined(USE_GL_RENDER)
+#include <Ren/VaoGL.h>
+#endif
+
 #ifdef __GNUC__
 #define force_inline __attribute__((always_inline)) inline
 #endif
@@ -99,8 +103,8 @@ class Renderer {
 
     Ren::ProgramRef ui_program_;
 #if defined(USE_GL_RENDER)
-    uint32_t vao_;
-    uint32_t vertex_buf_id_, index_buf_id_;
+    Ren::Vao vao_;
+    Ren::BufferRef vertex_buf_, index_buf_;
 #endif
     // TODO: Replace with buffer mapping
     std::unique_ptr<vertex_t> vtx_data_;

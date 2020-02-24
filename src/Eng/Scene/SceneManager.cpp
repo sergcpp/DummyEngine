@@ -40,7 +40,6 @@ const char *SHADERS_PATH = "./assets_pc/shaders/";
 #endif
 
 const int DECALS_ATLAS_RESX = 4096, DECALS_ATLAS_RESY = 2048;
-
 const int LIGHTMAP_ATLAS_RESX = 2048, LIGHTMAP_ATLAS_RESY = 1024;
 
 const int PROBE_RES = 512;
@@ -59,9 +58,8 @@ template <typename T> class DefaultCompStorage : public CompStorage {
 
     uint32_t Create() override { return data_.emplace(); }
 
-    void *Get(uint32_t i) override { return data_.GetOrNull(i); }
-
     const void *Get(uint32_t i) const override { return data_.GetOrNull(i); }
+    void *Get(uint32_t i) override { return data_.GetOrNull(i); }
 
     uint32_t First() const override {
         return !data_.size() ? 0xffffffff : data_.cbegin().index();
@@ -249,8 +247,9 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                                   Ren::Vec3f{-std::numeric_limits<float>::max()}};
 
         for (const auto &js_comp : js_obj.elements) {
-            if (js_comp.second.type() != JS_TYPE_OBJECT)
+            if (js_comp.second.type() != JsType::Object) {
                 continue;
+            }
             const JsObject &js_comp_obj = js_comp.second.as_obj();
             const std::string &js_comp_name = js_comp.first;
 
@@ -314,7 +313,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         }
         if (js_env.Has("sun_softness")) {
             const JsNumber &js_sun_softness = js_env.at("sun_softness").as_num();
-            scene_data_.env.sun_softness = (float)js_sun_softness.val;
+            scene_data_.env.sun_softness = float(js_sun_softness.val);
         }
         if (js_env.Has("env_map")) {
             const JsString &js_env_map = js_env.at("env_map").as_str();
@@ -355,7 +354,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 DDS_header header;
                 memcpy(&header, &tex_data[i][0], sizeof(DDS_header));
 
-                const int w = (int)header.dwWidth, h = (int)header.dwHeight;
+                const int w = int(header.dwWidth), h = int(header.dwHeight);
 
                 assert(w == h);
                 res = w;
@@ -364,7 +363,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 #endif
 
                 data[i] = (const void *)&tex_data[i][0];
-                size[i] = (int)tex_data[i].size();
+                size[i] = int(tex_data[i].size());
             }
 
             Ren::Texture2DParams p;
@@ -392,9 +391,9 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         if (js_env.Has("sun_shadow_bias")) {
             const JsArray &js_sun_shadow_bias = js_env.at("sun_shadow_bias").as_arr();
             scene_data_.env.sun_shadow_bias[0] =
-                (float)js_sun_shadow_bias.at(0).as_num().val;
+                float(js_sun_shadow_bias.at(0).as_num().val);
             scene_data_.env.sun_shadow_bias[1] =
-                (float)js_sun_shadow_bias.at(1).as_num().val;
+                float(js_sun_shadow_bias.at(1).as_num().val);
         } else {
             scene_data_.env.sun_shadow_bias[0] = 4.0f;
             scene_data_.env.sun_shadow_bias[1] = 8.0f;
@@ -422,24 +421,24 @@ void SceneManager::SaveScene(JsObject &js_scene) {
 
         { // write sun direction
             JsArray js_sun_dir;
-            js_sun_dir.Push(JsNumber((double)-scene_data_.env.sun_dir[0]));
-            js_sun_dir.Push(JsNumber((double)-scene_data_.env.sun_dir[1]));
-            js_sun_dir.Push(JsNumber((double)-scene_data_.env.sun_dir[2]));
+            js_sun_dir.Push(JsNumber(double(-scene_data_.env.sun_dir[0])));
+            js_sun_dir.Push(JsNumber(double(-scene_data_.env.sun_dir[1])));
+            js_sun_dir.Push(JsNumber(double(-scene_data_.env.sun_dir[2])));
 
             js_env.Push("sun_dir", std::move(js_sun_dir));
         }
 
         { // write sun color
             JsArray js_sun_col;
-            js_sun_col.Push(JsNumber((double)scene_data_.env.sun_col[0]));
-            js_sun_col.Push(JsNumber((double)scene_data_.env.sun_col[1]));
-            js_sun_col.Push(JsNumber((double)scene_data_.env.sun_col[2]));
+            js_sun_col.Push(JsNumber(double(scene_data_.env.sun_col[0])));
+            js_sun_col.Push(JsNumber(double(scene_data_.env.sun_col[1])));
+            js_sun_col.Push(JsNumber(double(scene_data_.env.sun_col[2])));
 
             js_env.Push("sun_col", std::move(js_sun_col));
         }
 
         { // write sun softness
-            js_env.Push("sun_softness", JsNumber((double)scene_data_.env.sun_softness));
+            js_env.Push("sun_softness", JsNumber(double(scene_data_.env.sun_softness)));
         }
 
         { // write env map names
@@ -545,7 +544,7 @@ void SceneManager::LoadProbeCache() {
 
 #if !defined(__ANDROID__)
                         const uint8_t *p_data = (uint8_t *)data + sizeof(Ren::DDSHeader);
-                        int data_len = size - (int)sizeof(Ren::DDSHeader);
+                        int data_len = size - int(sizeof(Ren::DDSHeader));
 
                         int _res = res;
                         int level = 0;
@@ -570,7 +569,7 @@ void SceneManager::LoadProbeCache() {
 #else
                         const uint8_t *p_data = (uint8_t *)data;
                         int data_offset = sizeof(Ren::KTXHeader);
-                        int data_len = size - (int)sizeof(Ren::KTXHeader);
+                        int data_len = size - int(sizeof(Ren::KTXHeader));
 
                         int _res = res;
                         int level = 0;
@@ -604,8 +603,9 @@ void SceneManager::LoadProbeCache() {
                 },
                 [_self, probe_id, face_index]() {
                     std::shared_ptr<SceneManager> self = _self.lock();
-                    if (!self)
+                    if (!self) {
                         return;
+                    }
 
                     self->ren_ctx_.log()->Error("Failed to load probe %i face %i",
                                                 probe_id, face_index);
@@ -617,7 +617,8 @@ void SceneManager::LoadProbeCache() {
 }
 
 void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target,
-                             const Ren::Vec3f &up, float fov, float max_exposure) {
+                             const Ren::Vec3f &up, const float fov,
+                             const float max_exposure) {
     using namespace SceneManagerConstants;
 
     const int cur_scr_w = ren_ctx_.w(), cur_scr_h = ren_ctx_.h();
@@ -720,7 +721,7 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp,
 
         int index = 0;
         for (const JsElement &js_mat_el : js_materials.elements) {
-            if (js_mat_el.type() == JS_TYPE_STRING) {
+            if (js_mat_el.type() == JsType::String) {
                 Ren::TriGroup &grp = dr->mesh->group(index);
                 grp.mat = OnLoadMaterial(js_mat_el.as_str().val.c_str());
             }
@@ -1039,7 +1040,7 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *v_shad
 #endif
 }
 
-Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) {
+Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) {
     using namespace SceneManagerConstants;
 
     char name_buf[4096];
@@ -1068,7 +1069,7 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
 
     Ren::eTexLoadStatus status;
 
-    Ren::Texture2DRef ret = ren_ctx_.LoadTexture2D(name_buf, nullptr, 0, p, &status);
+    Ren::Tex2DRef ret = ren_ctx_.LoadTexture2D(name_buf, nullptr, 0, p, &status);
     if (status == Ren::eTexLoadStatus::TexCreatedDefault) {
         requested_textures_.emplace_back(ret);
     }
@@ -1095,8 +1096,8 @@ Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
     const int px_format = int(header.sPixelFormat.dwFourCC >> 24u) - '0';
     assert(px_format == 5);
 
-    res[0] = (int)header.dwWidth;
-    res[1] = (int)header.dwHeight;
+    res[0] = int(header.dwWidth);
+    res[1] = int(header.dwHeight);
 
     const uint8_t *p_data = (uint8_t *)in_file_data.get() + sizeof(Ren::DDSHeader);
     int data_len = int(in_file_size) - int(sizeof(Ren::DDSHeader));
@@ -1138,8 +1139,8 @@ Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
 
     assert(header.gl_internal_format == 0x93B0 /* GL_COMPRESSED_RGBA_ASTC_4x4_KHR */);
 
-    res[0] = (int)header.pixel_width;
-    res[1] = (int)header.pixel_height;
+    res[0] = int(header.pixel_width);
+    res[1] = int(header.pixel_height);
 
     int pos[2];
     const int rc = scene_data_.decals_atlas.AllocateRegion(res, pos);
@@ -1235,7 +1236,7 @@ void SceneManager::Serve(const int texture_budget) {
 
             req.ref->Init(req.data, req.data_size, p, nullptr, ren_ctx_.log());
 
-            const int count = (int)requested_textures_.size();
+            const int count = int(requested_textures_.size());
             ren_ctx_.log()->Info("Texture %s loaded (%i left)", tex_name, count);
         } else {
             ren_ctx_.log()->Error("Error loading %s", req.ref->name().c_str());
@@ -1243,7 +1244,7 @@ void SceneManager::Serve(const int texture_budget) {
     }
 
     if (loading_textures_.Empty() && !requested_textures_.empty()) {
-        Ren::Texture2DRef ref = requested_textures_.front();
+        Ren::Tex2DRef ref = requested_textures_.front();
         requested_textures_.pop_front();
 
         loading_textures_.Push({ref, nullptr, 0});

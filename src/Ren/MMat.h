@@ -37,8 +37,8 @@ template <typename T, int M, int N> class Mat : public Vec<Vec<T, N>, M> {
                  Tail... tail) noexcept
         : Vec<Vec<T, N>, M>{head, tail...} {}
 
-    Vec<T, N> &operator[](int i) { return this->data_[i]; }
-    const Vec<T, N> &operator[](int i) const { return this->data_[i]; }
+    Vec<T, N> &operator[](const int i) { return this->data_[i]; }
+    const Vec<T, N> &operator[](const int i) const { return this->data_[i]; }
 
     friend bool operator==(const Mat<T, M, N> &lhs, const Mat<T, M, N> &rhs) {
         bool res = true;
@@ -77,14 +77,14 @@ template <typename T, int M, int N> class Mat : public Vec<Vec<T, N>, M> {
         return *this;
     }
 
-    Mat<T, M, N> &operator*=(T rhs) {
+    Mat<T, M, N> &operator*=(const T rhs) {
         for (int i = 0; i < M; i++) {
             this->data_[i] *= rhs;
         }
         return *this;
     }
 
-    Mat<T, M, N> &operator/=(T rhs) {
+    Mat<T, M, N> &operator/=(const T rhs) {
         for (int i = 0; i < M; i++) {
             this->data_[i] /= rhs;
         }
@@ -123,7 +123,7 @@ template <typename T, int M, int N> class Mat : public Vec<Vec<T, N>, M> {
         return res;
     }
 
-    friend Mat<T, M, N> operator*(T lhs, const Mat<T, M, N> &rhs) {
+    friend Mat<T, M, N> operator*(const T lhs, const Mat<T, M, N> &rhs) {
         auto res = Mat<T, M, N>{Uninitialize};
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs * rhs.data_[i];
@@ -131,7 +131,7 @@ template <typename T, int M, int N> class Mat : public Vec<Vec<T, N>, M> {
         return res;
     }
 
-    friend Mat<T, M, N> operator/(T lhs, const Mat<T, M, N> &rhs) {
+    friend Mat<T, M, N> operator/(const T lhs, const Mat<T, M, N> &rhs) {
         auto res = Mat<T, M, N>{Uninitialize};
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs / rhs.data_[i];
@@ -156,10 +156,13 @@ template <typename T, int M, int N> class Mat : public Vec<Vec<T, N>, M> {
     }
 };
 
+using Mat2i = Mat<int, 2, 2>;
 using Mat2f = Mat<float, 2, 2>;
 using Mat2d = Mat<double, 2, 2>;
+using Mat3i = Mat<int, 3, 3>;
 using Mat3f = Mat<float, 3, 3>;
 using Mat3d = Mat<double, 3, 3>;
+using Mat4i = Mat<int, 4, 4>;
 using Mat4f = Mat<float, 4, 4>;
 using Mat4d = Mat<double, 4, 4>;
 using Mat4x3f = Mat<float, 4, 3>;
@@ -216,7 +219,8 @@ template <typename T, int M, int N> Mat<T, N, M> Transpose(const Mat<T, M, N> &m
 
 template <typename T, int N> T Det(const Mat<T, N, N> &mat);
 
-template <typename T, int N> T Minor(const Mat<T, N, N> &mat, int row, int col) {
+template <typename T, int N>
+T Minor(const Mat<T, N, N> &mat, const int row, const int col) {
     auto res = Mat<T, N - 1, N - 1>{Uninitialize};
     int dst_row, dst_col;
     dst_row = 0;
@@ -479,7 +483,8 @@ void LookAt(Mat<T, 4, 4> &m, const Vec<T, 3> &src, const Vec<T, 3> &trg,
 }
 
 template <typename T>
-void PerspectiveProjection(Mat<T, 4, 4> &m, T fov, T aspect, T znear, T zfar) {
+void PerspectiveProjection(Mat<T, 4, 4> &m, const T fov, const T aspect, const T znear,
+                           const T zfar) {
     T xymax = znear * std::tan(fov * Pi<T>() / T(360));
     T ymin = -xymax;
     T xmin = -xymax;
@@ -511,8 +516,8 @@ void PerspectiveProjection(Mat<T, 4, 4> &m, T fov, T aspect, T znear, T zfar) {
 }
 
 template <typename T>
-void OrthographicProjection(Mat<T, 4, 4> &m, T left, T right, T bottom, T top, T nnear,
-                            T ffar) {
+void OrthographicProjection(Mat<T, 4, 4> &m, const T left, const T right, const T bottom,
+                            const T top, const T nnear, const T ffar) {
     /*T r_width = T(1) / (right - left);
     T r_height = T(1) / (top - bottom);
     T r_depth = T(1) / (nnear - ffar);

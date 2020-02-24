@@ -8,14 +8,14 @@ void Drawable::Read(const JsObject &js_in, Drawable &dr) {
 
     if (js_in.Has("visible_to_shadow")) {
         JsLiteral v = js_in.at("visible_to_shadow").as_lit();
-        if (v.val == JS_FALSE) {
+        if (v.val == JsLiteralType::False) {
             dr.vis_mask &= ~uint32_t(eDrVisibility::VisShadow);
         }
     }
 
     if (js_in.Has("visible_to_probes")) {
         JsLiteral v = js_in.at("visible_to_probes").as_lit();
-        if (v.val == JS_FALSE) {
+        if (v.val == JsLiteralType::False) {
             dr.vis_mask &= ~uint32_t(eDrVisibility::VisProbes);
         }
     }
@@ -35,15 +35,15 @@ void Drawable::Read(const JsObject &js_in, Drawable &dr) {
             const JsObject &js_ellipsoid = js_ellipsoids[i].as_obj();
 
             const JsArray &js_ellipsoid_offset = js_ellipsoid.at("offset").as_arr();
-            dr.ellipsoids[i].offset[0] = (float)js_ellipsoid_offset[0].as_num();
-            dr.ellipsoids[i].offset[1] = (float)js_ellipsoid_offset[1].as_num();
-            dr.ellipsoids[i].offset[2] = (float)js_ellipsoid_offset[2].as_num();
-            dr.ellipsoids[i].radius = (float)js_ellipsoid.at("radius").as_num();
+            dr.ellipsoids[i].offset[0] = float(js_ellipsoid_offset[0].as_num());
+            dr.ellipsoids[i].offset[1] = float(js_ellipsoid_offset[1].as_num());
+            dr.ellipsoids[i].offset[2] = float(js_ellipsoid_offset[2].as_num());
+            dr.ellipsoids[i].radius = float(js_ellipsoid.at("radius").as_num());
 
             const JsArray &js_ellipsoid_axis = js_ellipsoid.at("axis").as_arr();
-            dr.ellipsoids[i].axis[0] = (float)js_ellipsoid_axis[0].as_num();
-            dr.ellipsoids[i].axis[1] = (float)js_ellipsoid_axis[1].as_num();
-            dr.ellipsoids[i].axis[2] = (float)js_ellipsoid_axis[2].as_num();
+            dr.ellipsoids[i].axis[0] = float(js_ellipsoid_axis[0].as_num());
+            dr.ellipsoids[i].axis[1] = float(js_ellipsoid_axis[1].as_num());
+            dr.ellipsoids[i].axis[2] = float(js_ellipsoid_axis[2].as_num());
             
             if (js_ellipsoid.Has("bone")) {
                 dr.ellipsoids[i].bone_name =
@@ -88,10 +88,10 @@ void Drawable::Write(const Drawable &dr, JsObject &js_out) {
 
     { // write visibility
         if (!(dr.vis_mask & uint32_t(eDrVisibility::VisShadow))) {
-            js_out.Push("visible_to_shadow", JsLiteral(JS_FALSE));
+            js_out.Push("visible_to_shadow", JsLiteral(JsLiteralType::False));
         }
         if (!(dr.vis_mask & uint32_t(eDrVisibility::VisProbes))) {
-            js_out.Push("visible_to_probes", JsLiteral(JS_FALSE));
+            js_out.Push("visible_to_probes", JsLiteral(JsLiteralType::False));
         }
     }
 

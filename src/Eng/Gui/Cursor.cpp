@@ -2,7 +2,7 @@
 
 #include "Renderer.h"
 
-Gui::Cursor::Cursor(const Ren::Texture2DRef &tex, const Vec2f uvs[2], const Vec2f &size, const BaseElement *parent)
+Gui::Cursor::Cursor(const Ren::Tex2DRef &tex, const Vec2f uvs[2], const Vec2f &size, const BaseElement *parent)
     : BaseElement(Vec2f(0, 0), size, parent),
       img_(tex, uvs, Vec2f(-1, -1), Vec2f(2, 2), this), clicked_(false) {
 }

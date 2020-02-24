@@ -19,14 +19,14 @@ public:
     explicit DynLib(const char *name);
 
     DynLib(const DynLib &rhs) = delete;
-    DynLib(DynLib &&rhs);
+    DynLib(DynLib &&rhs) noexcept;
 
     DynLib &operator=(const DynLib &rhs) = delete;
-    DynLib &operator=(DynLib &&rhs);
+    DynLib &operator=(DynLib &&rhs) noexcept;
 
     ~DynLib();
 
-    operator bool() const;
+    explicit operator bool() const;
 
     void *GetProcAddress(const char *name);
 };

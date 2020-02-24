@@ -14,7 +14,7 @@
                     "pos_end" : [ -1.5, 0.0, 5.0 ],
                     "rot_beg" : [ 0.0, 180.0, 0.0 ],
                     "rot_end" : [ 0.0, 180.0, 0.0 ],
-                    "anim" : "chars/lawyer_talk.anim", 
+                    "anim" : "chars/lawyer/talk.anim", 
                     "caption" : "",
                     "sound" : "lawyer/28_trial_by_combat.wav",
 					"sound_offset" : 0.0

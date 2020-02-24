@@ -237,7 +237,7 @@ bool Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
                     }
                 }
                 if (js_gram_grp.Has("num")) {
-                    if (js_gram_grp.at("num").type() == JS_TYPE_STRING) {
+                    if (js_gram_grp.at("num").type() == JsType::String) {
                         const JsString &js_gram_grp_num = js_gram_grp.at("num").as_str();
                         if (js_gram_grp_num.val == "p") {
                             entry.num = eGramGrpNum::Plural;
@@ -245,7 +245,7 @@ bool Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
                     }
                 }
                 if (js_gram_grp.Has("gen")) {
-                    if (js_gram_grp.at("gen").type() == JS_TYPE_STRING) {
+                    if (js_gram_grp.at("gen").type() == JsType::String) {
 
                         const JsString &js_gram_grp_gen = js_gram_grp.at("gen").as_str();
                         if (js_gram_grp_gen.val == "f") {
@@ -260,10 +260,10 @@ bool Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
             entry.trans_index = (uint32_t)translations.size();
             entry.trans_count = 0;
 
-            if (js_entry.at("sense").type() == JS_TYPE_OBJECT) {
+            if (js_entry.at("sense").type() == JsType::Object) {
                 JsObject &js_sense = js_entry.at("sense").as_obj();
                 JsElement &js_cit_els = js_sense.at("cit");
-                if (js_cit_els.type() == JS_TYPE_ARRAY) {
+                if (js_cit_els.type() == JsType::Array) {
                     JsArray &js_cits = js_cit_els.as_arr();
                     for (JsElement &js_cit_el : js_cits.elements) {
                         JsObject &js_cit = js_cit_el.as_obj();
@@ -276,7 +276,7 @@ bool Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
                         }
                     }
                 } else {
-                    assert(js_cit_els.type() == JS_TYPE_OBJECT);
+                    assert(js_cit_els.type() == JsType::Object);
                     JsObject &js_cit = js_cit_els.as_obj();
                     const JsString &js_cit_type = js_cit.at("-type").as_str();
                     if (js_cit_type.val == "trans") {
@@ -291,7 +291,7 @@ bool Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
                 for (JsElement &js_sense_el : js_senses.elements) {
                     JsObject &js_sense = js_sense_el.as_obj();
                     JsElement &js_cit_els = js_sense.at("cit");
-                    if (js_cit_els.type() == JS_TYPE_ARRAY) {
+                    if (js_cit_els.type() == JsType::Array) {
                         JsArray &js_cits = js_cit_els.as_arr();
                         for (JsElement &js_cit_el : js_cits.elements) {
                             JsObject &js_cit = js_cit_el.as_obj();
@@ -304,7 +304,7 @@ bool Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
                             }
                         }
                     } else {
-                        assert(js_cit_els.type() == JS_TYPE_OBJECT);
+                        assert(js_cit_els.type() == JsType::Object);
                         JsObject &js_cit = js_cit_els.as_obj();
                         const JsString &js_cit_type = js_cit.at("-type").as_str();
                         if (js_cit_type.val == "trans") {

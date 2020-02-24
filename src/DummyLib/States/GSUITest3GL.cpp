@@ -2,6 +2,8 @@
 
 #include <Ren/GL.h>
 
+#include "../Gui/PagedReader.h"
+
 namespace GSUITest3Internal {
 extern const Ren::Vec2f page_corners_uvs[];
 extern const int page_order_indices[][4];
@@ -23,7 +25,7 @@ void GSUITest3::InitBookMaterials() {
         params.flags = Ren::TexNoOwnership;
 
         page_tex_ = ren_ctx_->textures().Add(
-            "__book_page_texture__", page_buf_.attachments[0].tex, params, log_.get());
+            "__book_page_texture__", page_buf_.attachments[0].tex->id(), params, log_.get());
     }
 
     { // register material
@@ -40,7 +42,7 @@ void GSUITest3::InitBookMaterials() {
             programs[i] = orig_page_mat_->programs[i];
         }
 
-        Ren::Texture2DRef textures[Ren::MaxMaterialTextureCount];
+        Ren::Tex2DRef textures[Ren::MaxMaterialTextureCount];
         for (int i = 0; i < Ren::MaxMaterialTextureCount; i++) {
             textures[i] = orig_page_mat_->textures[i];
         }

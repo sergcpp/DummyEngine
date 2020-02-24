@@ -7,8 +7,8 @@
 
 DebugInfoUI::DebugInfoUI(const Ren::Vec2f &pos, const Ren::Vec2f &size,
                          const BaseElement *parent,
-                         const std::shared_ptr<Gui::BitmapFont> &font)
-    : BaseElement(pos, size, parent), parent_(parent), font_(font) {}
+                         std::shared_ptr<Gui::BitmapFont> font)
+    : BaseElement(pos, size, parent), parent_(parent), font_(std::move(font)) {}
 
 void DebugInfoUI::UpdateInfo(const FrontendInfo &frontend_info,
                              const BackendInfo &backend_info, const ItemsInfo &items_info,
@@ -74,9 +74,8 @@ void DebugInfoUI::UpdateInfo(const FrontendInfo &frontend_info,
         k * backend_info.depth_fill_draw_calls_count;
     back_info_smooth_.opaque_draw_calls_count *= alpha;
     back_info_smooth_.opaque_draw_calls_count += k * backend_info.opaque_draw_calls_count;
-    back_info_smooth_.triangles_rendered *= alpha;
-    back_info_smooth_.triangles_rendered +=
-        k * 0.000001f * backend_info.triangles_rendered;
+    back_info_smooth_.tris_rendered *= alpha;
+    back_info_smooth_.tris_rendered += k * 0.000001f * backend_info.tris_rendered;
 
     items_info_smooth_.light_sources_count *= alpha;
     items_info_smooth_.light_sources_count += k * items_info.light_sources_count;
@@ -177,7 +176,7 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
                         parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "  triangles: %.2f M", back_info_smooth_.triangles_rendered);
+        sprintf(text_buffer, "  triangles: %.2f M", back_info_smooth_.tris_rendered);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color,
                         parent_);
 

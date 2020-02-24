@@ -46,7 +46,7 @@ struct BufferRange {
     uint32_t offset, size;
 
     BufferRange() : offset(0), size(0) {}
-    BufferRange(BufferRef &_buf, uint32_t _offset, uint32_t _size)
+    BufferRange(BufferRef &_buf, const uint32_t _offset, const uint32_t _size)
         : buf(_buf), offset(_offset), size(_size) {}
     ~BufferRange() { Release(); }
 
@@ -117,10 +117,13 @@ class Mesh : public RefCounter {
                           BufferRef &index_buf, ILog *log);
 
     // split skeletal mesh into chunks to fit uniforms limit in shader
-    //void SplitMesh(int bones_limit, ILog *log);
+    // void SplitMesh(int bones_limit, ILog *log);
 
   public:
     Mesh() = default;
+    Mesh(const char *name, const float *positions, int vtx_count, const uint32_t *indices,
+         int ndx_count, BufferRef &vertex_buf1, BufferRef &vertex_buf2,
+         BufferRef &index_buf, eMeshLoadStatus *load_status, ILog *log);
     Mesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
          BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
          BufferRef &skin_vertex_buf, BufferRef &delta_buf, eMeshLoadStatus *load_status,
@@ -136,10 +139,13 @@ class Mesh : public RefCounter {
     uint32_t flags() const { return flags_; }
     bool ready() const { return ready_; }
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
-    uint32_t attribs_buf1_id() const { return attribs_buf1_.buf->buf_id(); }
-    uint32_t attribs_buf2_id() const { return attribs_buf2_.buf->buf_id(); }
-    uint32_t indices_buf_id() const { return indices_buf_.buf->buf_id(); }
+    uint32_t attribs_buf1_id() const { return attribs_buf1_.buf->id(); }
+    uint32_t attribs_buf2_id() const { return attribs_buf2_.buf->id(); }
+    uint32_t indices_buf_id() const { return indices_buf_.buf->id(); }
 #endif
+    BufHandle attribs_buf1_handle() const { return attribs_buf1_.buf->handle(); }
+    BufHandle attribs_buf2_handle() const { return attribs_buf2_.buf->handle(); }
+    BufHandle indices_buf_handle() const { return indices_buf_.buf->handle(); }
     const void *attribs() const { return attribs_.get(); }
     const BufferRange &attribs_buf1() const { return attribs_buf1_; }
     const BufferRange &attribs_buf2() const { return attribs_buf2_; }
@@ -157,12 +163,15 @@ class Mesh : public RefCounter {
 
     const Skeleton *skel() const { return &skel_; }
 
+    void Init(const float *positions, int vtx_count, const uint32_t *indices,
+              int ndx_count, BufferRef &vertex_buf1, BufferRef &vertex_buf2,
+              BufferRef &index_buf, eMeshLoadStatus *load_status, ILog *log);
     void Init(std::istream *data, const material_load_callback &on_mat_load,
               BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
               BufferRef &skin_vertex_buf, BufferRef &delta_buf,
               eMeshLoadStatus *load_status, ILog *log);
 };
 
-typedef StorageRef<Mesh> MeshRef;
+typedef StrongRef<Mesh> MeshRef;
 typedef Storage<Mesh> MeshStorage;
 } // namespace Ren

@@ -248,7 +248,7 @@ struct BackendInfo {
              depth_fill_draw_calls_count = 0,
              opaque_draw_calls_count = 0;
 
-    uint32_t triangles_rendered = 0;
+    uint32_t tris_rendered = 0;
 };
 
 struct ItemsInfo {
@@ -257,3 +257,32 @@ struct ItemsInfo {
              probes_count = 0;
     uint32_t items_total = 0;
 };
+
+struct ViewState {
+    Ren::Vec2i act_res, scr_res;
+    Ren::Mat4f prev_clip_from_world, down_buf_view_from_world, prev_clip_from_view;
+    Ren::Vec4f clip_info;
+    bool is_multisampled = false;
+};
+
+struct SharedDataBlock {
+    Ren::Mat4f uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
+    Ren::Mat4f uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
+    ShadowMapRegion uShadowMapRegions[REN_MAX_SHADOWMAPS_TOTAL];
+    Ren::Vec4f uSunDir, uSunCol, uTaaInfo;
+    Ren::Vec4f uClipInfo, uCamPosAndGamma;
+    Ren::Vec4f uResAndFRes, uTranspParamsAndTime;
+    Ren::Vec4f uWindScroll, uWindScrollPrev;
+    ProbeItem uProbes[REN_MAX_PROBES_TOTAL] = {};
+    EllipsItem uEllipsoids[REN_MAX_ELLIPSES_TOTAL] = {};
+};
+static_assert(sizeof(SharedDataBlock) == 7824, "!");
+
+const size_t SkinTransformsBufChunkSize = sizeof(SkinTransform) * REN_MAX_SKIN_XFORMS_TOTAL;
+const size_t ShapeKeysBufChunkSize = sizeof(ShapeKeyData) * REN_MAX_SHAPE_KEYS_TOTAL;
+const size_t SkinRegionsBufChunkSize = sizeof(SkinRegion) * REN_MAX_SKIN_REGIONS_TOTAL;
+const size_t InstanceDataBufChunkSize = sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL;
+const size_t LightsBufChunkSize = sizeof(LightSourceItem) * REN_MAX_LIGHTS_TOTAL;
+const size_t DecalsBufChunkSize = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
+const size_t CellsBufChunkSize = sizeof(CellData) * REN_CELLS_COUNT;
+const size_t ItemsBufChunkSize = sizeof(ItemData) * REN_MAX_ITEMS_TOTAL;

@@ -5,7 +5,9 @@
 extern __itt_domain *__g_itt_domain; // NOLINT
 #endif
 
+#include <Ren/Context.h>
 #include <Ren/GL.h>
+#include <Ren/Utils.h>
 
 namespace GSVideoTestInternal {
 #ifdef ENABLE_ITT_API
@@ -81,7 +83,7 @@ void GSVideoTest::InitVideoTextures() {
                 programs[j] = orig_vid_mat_[tx]->programs[j];
             }
 
-            Ren::Texture2DRef textures[Ren::MaxMaterialTextureCount];
+            Ren::Tex2DRef textures[Ren::MaxMaterialTextureCount];
             for (int j = 0; j < Ren::MaxMaterialTextureCount; j++) {
                 textures[j] = orig_vid_mat_[tx]->textures[j];
             }
@@ -307,7 +309,7 @@ void GSVideoTest::UpdateVideoTextureData(const int tex_index, const int frame_in
     glFlushMappedBufferRange(GL_PIXEL_UNPACK_BUFFER, frame_index * y_buf_chunk_size,
                              GLsizeiptr(y_buf_chunk_size));
 
-    glBindTexture(GL_TEXTURE_2D, GLuint(y_tex_[tex_index][frame_index]->tex_id()));
+    glBindTexture(GL_TEXTURE_2D, GLuint(y_tex_[tex_index][frame_index]->id()));
 #ifdef ORPHAN_TEXTURES
     glTexImage2D(
         GL_TEXTURE_2D, 0, Ren::GLInternalFormatFromTexFormat(Ren::eTexFormat::RawR8),
@@ -325,7 +327,7 @@ void GSVideoTest::UpdateVideoTextureData(const int tex_index, const int frame_in
     glFlushMappedBufferRange(GL_PIXEL_UNPACK_BUFFER, frame_index * uv_buf_chunk_size,
                              GLsizeiptr(uv_buf_chunk_size));
 
-    glBindTexture(GL_TEXTURE_2D, GLuint(uv_tex_[tex_index][frame_index]->tex_id()));
+    glBindTexture(GL_TEXTURE_2D, GLuint(uv_tex_[tex_index][frame_index]->id()));
 #ifdef ORPHAN_TEXTURES
     glTexImage2D(
         GL_TEXTURE_2D, 0, Ren::GLInternalFormatFromTexFormat(Ren::eTexFormat::RawRG88),

@@ -104,7 +104,7 @@ public:
               const Attribute *attrs, const Uniform *unifs, eProgLoadStatus *status);
 };
 
-typedef StorageRef<Program> ProgramRef;
+typedef StrongRef<Program> ProgramRef;
 typedef Storage<Program> ProgramStorage;
 }
 

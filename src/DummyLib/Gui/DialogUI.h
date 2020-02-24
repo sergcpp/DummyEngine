@@ -11,14 +11,13 @@ class DialogUI : public Gui::BaseElement {
         const char *key;
         const char *text;
         int off;
-    } choices_[8];
+    } choices_[8] = {};
     int choices_count_ = 0;
 
     int hovered_choice_ = -1, clicked_choice_ = -1;
 
-    void IterateChoices(
-        std::function<bool(int i, const Ren::Vec2f &pos, const Ren::Vec2f &size)>
-            callback);
+    void IterateChoices(const std::function<bool(int i, const Ren::Vec2f &pos,
+                                                 const Ren::Vec2f &size)> &callback);
 
   public:
     DialogUI(const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,

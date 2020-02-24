@@ -284,8 +284,10 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_DYNAMIC_DRAW                     0x88E8
 
 #define GL_STREAM_READ                      0x88E1
+#define GL_STREAM_COPY                      0x88E2
+#define GL_STATIC_READ                      0x88E5
+#define GL_STATIC_COPY                      0x88E6
 #define GL_DYNAMIC_READ                     0x88E9
-
 #define GL_DYNAMIC_COPY                     0x88EA
 
 #define GL_READ_ONLY                        0x88B8
@@ -474,6 +476,9 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 
 #define GL_NUM_SHADER_BINARY_FORMATS    0x8DF9
 
+#define GL_SHADER                       0x82E1
+#define GL_PROGRAM                      0x82E2
+
 #ifndef APIENTRY
 #if defined(WIN32)
 #define WINAPI      __stdcall
@@ -518,7 +523,7 @@ typedef struct __GLsync *GLsync;
 extern "C" {
 
 #if !defined(__APPLE__)
-typedef GLuint(APIENTRY *PFNGLCREATEPROGRAMPROC)(void);
+typedef GLuint(APIENTRY *PFNGLCREATEPROGRAMPROC)();
 typedef void (APIENTRY *PFNGLDELETEPROGRAMPROC)(GLuint program);
 typedef void (APIENTRY *PFNGLUSEPROGRAMPROC)(GLuint program);
 typedef void (APIENTRY *PFNGLATTACHSHADERPROC)(GLuint program, GLuint shader);
@@ -786,6 +791,9 @@ typedef void (APIENTRY *PFNGLGENERATETEXTUREMIPMAPCOMPPROC)(GLenum target, GLuin
 typedef void (APIENTRY *PFNGLBINDTEXTUREUNITPROC)(GLuint unit, GLuint texture);
 typedef void (APIENTRY *PFNGLBINDTEXTUREUNITCOMPPROC)(GLenum target, GLuint unit, GLuint texture);
 
+typedef void (APIENTRY* PFNGLNAMEDBUFFERSTORAGEPROC)(GLuint buffer, GLsizeiptr size, const void* data, GLbitfield flags);
+typedef void (APIENTRY* PFNGLNAMEDBUFFERSTORAGECOMPPROC)(GLenum target, GLuint buffer, GLsizeiptr size, const void* data, GLbitfield flags);
+
 #if !defined(__APPLE__)
 
 #define glCreateProgram             ren_glCreateProgram
@@ -990,6 +998,8 @@ typedef void (APIENTRY *PFNGLBINDTEXTUREUNITCOMPPROC)(GLenum target, GLuint unit
 #define glGenerateTextureMipmap     ren_glGenerateTextureMipmap
 
 #define glBindTextureUnit           ren_glBindTextureUnit
+
+#define glNamedBufferStorage        ren_glNamedBufferStorage
 
 #if !defined(__APPLE__)
 EXTERN_FUNC PFNGLCREATEPROGRAMPROC              ren_glCreateProgram;
@@ -1209,6 +1219,9 @@ EXTERN_FUNC PFNGLGENERATETEXTUREMIPMAPCOMPPROC  ren_glGenerateTextureMipmap_Comp
 
 EXTERN_FUNC PFNGLBINDTEXTUREUNITPROC            ren_glBindTextureUnit;
 EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
+
+EXTERN_FUNC PFNGLNAMEDBUFFERSTORAGEPROC         ren_glNamedBufferStorage;
+EXTERN_FUNC PFNGLNAMEDBUFFERSTORAGECOMPPROC     ren_glNamedBufferStorage_Comp;
 }
 
 #undef EXTERN_FUNC

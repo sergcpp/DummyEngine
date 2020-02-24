@@ -117,7 +117,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     Ren::ProgramRef OnLoadProgram(const char *name, const char *v_shader,
                                   const char *f_shader, const char *tc_shader,
                                   const char *te_shader);
-    Ren::Texture2DRef OnLoadTexture(const char *name, uint32_t flags);
+    Ren::Tex2DRef OnLoadTexture(const char *name, uint32_t flags);
 
     Ren::Vec4f LoadDecalTexture(const char *name);
 
@@ -147,11 +147,11 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     std::function<PostLoadFunc> component_post_load_[MAX_COMPONENT_TYPES];
 
     struct TextureRequest {
-        Ren::Texture2DRef ref;
+        Ren::Tex2DRef ref;
         const void *data;
         int data_size;
     };
-    std::deque<Ren::Texture2DRef> requested_textures_;
+    std::deque<Ren::Tex2DRef> requested_textures_;
     Ren::RingBuffer<TextureRequest> loading_textures_, pending_textures_;
 
     static void OnTextureDataLoaded(void *arg, void *data, int size);

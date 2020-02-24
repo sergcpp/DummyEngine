@@ -13,7 +13,7 @@ SeqEditUI::SeqEditUI(Ren::Context &ctx, const Gui::BitmapFont &font,
     : Gui::BaseElement(pos, size, parent), parent_(parent),
       font_(font), timeline_{ctx, font, Gui::Vec2f{}, Gui::Vec2f{}, this},
       canvas_{ctx, font, Gui::Vec2f{}, Gui::Vec2f{}, this} {
-    Resize(parent);
+    SeqEditUI::Resize(parent);
 
     timeline_.time_changed_signal.Connect<SeqCanvasUI, &SeqCanvasUI::OnCurTimeChange>(
         &canvas_);

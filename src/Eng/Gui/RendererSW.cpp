@@ -103,7 +103,7 @@ void Gui::Renderer::EndDraw() {
     this->PopParams();
 }
 
-void Gui::Renderer::PushImageQuad(const Ren::Texture2DRef &tex, const Ren::Vec2f dims[2], const Ren::Vec2f uvs[2]) {
+void Gui::Renderer::PushImageQuad(const Ren::Tex2DRef &tex, const Ren::Vec2f dims[2], const Ren::Vec2f uvs[2]) {
     using namespace UIRendererConstants;
 
     const float vertices[] = { dims[0][0], dims[0][1], 0,
@@ -130,7 +130,7 @@ void Gui::Renderer::PushImageQuad(const Ren::Texture2DRef &tex, const Ren::Vec2f
     swDrawElements(SW_TRIANGLES, 6, SW_UNSIGNED_BYTE, indices);
 }
 
-void Gui::Renderer::DrawUIElement(const Ren::Texture2DRef &tex, ePrimitiveType prim_type,
+void Gui::Renderer::DrawUIElement(const Ren::Tex2DRef &tex, ePrimitiveType prim_type,
                                   const std::vector<float> &pos, const std::vector<float> &uvs,
                                   const std::vector<unsigned char> &indices) {
     using namespace UIRendererConstants;

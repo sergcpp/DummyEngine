@@ -77,7 +77,7 @@ class ModlApp {
     Ren::Context ctx_;
 
     Ren::ProgramRef diag_prog_, diag_colored_prog_, diag_skinned_prog_, skinning_prog_;
-    Ren::Texture2DRef checker_tex_;
+    Ren::Tex2DRef checker_tex_;
 
     float angle_x_ = 0.0f, angle_y_ = 0.0f;
     float offset_x_ = 0.0f, offset_y_ = 0.0f;
@@ -104,7 +104,7 @@ class ModlApp {
 
     void PrintUsage();
 
-    Ren::Texture2DRef OnTextureNeeded(const char *name);
+    Ren::Tex2DRef OnTextureNeeded(const char *name);
     Ren::ProgramRef OnProgramNeeded(const char *name, const char *vs_shader,
                                     const char *fs_shader);
     Ren::MaterialRef OnMaterialNeeded(const char *name);

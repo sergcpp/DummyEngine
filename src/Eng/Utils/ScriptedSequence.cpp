@@ -249,7 +249,7 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
 
                 if (js_action.Has("dof")) {
                     const JsLiteral js_action_dof = js_action.at("dof").as_lit();
-                    action.dof = (js_action_dof.val == JsLiteralType::JS_TRUE);
+                    action.dof = (js_action_dof.val == JsLiteralType::True);
                 } else {
                     action.dof = false;
                 }
@@ -384,7 +384,7 @@ void ScriptedSequence::Save(JsObject &js_seq) {
                     }
 
                     if (action.dof) {
-                        js_action.Push("dof", JsLiteral{JS_TRUE});
+                        js_action.Push("dof", JsLiteral{JsLiteralType::True});
                     }
 
                     if (action.fade_beg != 0.0f || action.fade_end != 0.0f) {

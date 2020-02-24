@@ -462,6 +462,15 @@ bool Ren::InitGLExtentions() {
     } else {
         ren_glBindTextureUnit_Comp = ren_glBindTextureUnit_Comp_emu;
     }
+
+    ren_glNamedBufferStorage = (PFNGLNAMEDBUFFERSTORAGEPROC)GetProcAddress(glNamedBufferStorage);
+    if (ren_glNamedBufferStorage) {
+        ren_glNamedBufferStorage_Comp = [](GLenum /*target*/, GLuint buffer, GLsizeiptr size, const void* data, GLbitfield flags) {
+            ren_glNamedBufferStorage(buffer, size, data, flags);
+        };
+    } else {
+        ren_glNamedBufferStorage_Comp = ren_glNamedBufferStorage_Comp_emu;
+    }
 #else
     ren_glCreateTextures = ren_glCreateTextures_emu;
 

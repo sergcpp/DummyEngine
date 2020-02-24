@@ -184,7 +184,7 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width
 
                 // store in green channel
                 out_conemap[4 * (y * width + x) + 1] =
-                    (uint8_t)_MAX(255.0f * ratio + 0.5f, 1.0f);
+                    uint8_t(_MAX(255.0f * ratio + 0.5f, 1.0f));
             }
         }
     };
@@ -599,7 +599,7 @@ bool Write_KTX_ASTC_Mips(const uint8_t *const *mipmaps, const int *widths,
 
     for (int i = 0; i < mip_count; i++) {
         assert((file_offset % 4) == 0);
-        auto size = (uint32_t)astc_size[i];
+        const auto size = uint32_t(astc_size[i]);
         out_stream.write((char *)&size, sizeof(uint32_t));
         file_offset += sizeof(uint32_t);
         out_stream.write((char *)astc_data[i].get(), size);
@@ -674,7 +674,8 @@ int WriteImage(const uint8_t *out_data, const int w, const int h, const int chan
             out_data = &temp_data[0];
         }
 
-        const int img_type = strstr(name, ".tga") ? SOIL_SAVE_TYPE_TGA : SOIL_SAVE_TYPE_PNG;
+        const int img_type =
+            strstr(name, ".tga") ? SOIL_SAVE_TYPE_TGA : SOIL_SAVE_TYPE_PNG;
         res = SOIL_save_image(name, img_type, w, h, channels, out_data);
     } else if (strstr(name, ".dds")) {
         res = 1;
@@ -700,7 +701,7 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
     if (!src_stream) {
         return false;
     }
-    auto src_size = (size_t)src_stream.tellg();
+    const auto src_size = size_t(src_stream.tellg());
     src_stream.seekg(0, std::ios::beg);
 
     std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
@@ -708,7 +709,7 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
 
     int width, height, channels;
     unsigned char *image_data = SOIL_load_image_from_memory(
-        &src_buf[0], (int)src_size, &width, &height, &channels, 0);
+        &src_buf[0], int(src_size), &width, &height, &channels, 0);
 
     bool res = true;
     if (strstr(in_file, "_norm")) {
@@ -829,7 +830,7 @@ bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
         }
 
         // prepare data for cone stepping
-        //std::unique_ptr<uint8_t[]> conemap_data =
+        // std::unique_ptr<uint8_t[]> conemap_data =
         //    ComputeBumpConemap(image_data, width, height, channels, ctx);
 
         // prepare data for quad tree displacement
@@ -846,7 +847,7 @@ bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
             for (int x = 0; x < width; x++) {
                 uint8_t *rgba = &mipmaps[0][4 * (y * height + x)];
                 // store cone map in alpha channel
-                //rgba[3] = conemap_data[4 * (y * height + x) + 1];
+                // rgba[3] = conemap_data[4 * (y * height + x) + 1];
             }
         }
 
@@ -918,7 +919,7 @@ bool SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file,
     int widths[16], heights[16];
 
     for (int i = 0; i < mips_count; i++) {
-        const int mip_res = int((unsigned)res >> (unsigned)i);
+        const int mip_res = int(unsigned(res) >> unsigned(i));
         const int orig_size = mip_res * mip_res * 4;
 
         int compressed_size;
@@ -956,7 +957,7 @@ bool SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file,
     if (!src_stream) {
         return false;
     }
-    auto src_size = (int)src_stream.tellg();
+    auto src_size = int(src_stream.tellg());
     src_stream.seekg(0, std::ios::beg);
 
     int res, mips_count;
@@ -971,7 +972,7 @@ bool SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file,
     int widths[16], heights[16];
 
     for (int i = 0; i < mips_count; i++) {
-        const int mip_res = int((unsigned)res >> (unsigned)i);
+        const int mip_res = int(unsigned(res) >> unsigned(i));
         const int orig_size = mip_res * mip_res * 4;
 
         int compressed_size;
@@ -1050,7 +1051,7 @@ bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_nam
                 out_file.write((char *)&mipmap_count, 4);
 
                 for (int k = 0; k < mipmap_count; k++) {
-                    const int mip_res = int((unsigned)res >> (unsigned)k);
+                    const int mip_res = int(unsigned(res) >> unsigned(k));
                     const int buf_size = mip_res * mip_res * 4;
 
                     if (!probes.GetPixelData(k, lprobe->layer_index, j, buf_size,
@@ -1147,7 +1148,7 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
 
         find_closest_blockdim_2d(target_bitrate, &xdim, &ydim, 0);
 
-        float log10_texels_2d = (std::log((float)(xdim * ydim)) / std::log(10.0f));
+        const float log10_texels_2d = (std::log(float(xdim * ydim)) / std::log(10.0f));
 
         // 'medium' preset params
         int plimit_autoset = 25;
@@ -1229,17 +1230,17 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
         }
         ewp.partition_search_limit = partitions_to_test;
 
-        float max_color_component_weight =
+        const float max_color_comp_weight =
             std::max(std::max(ewp.rgba_weights[0], ewp.rgba_weights[1]),
                      std::max(ewp.rgba_weights[2], ewp.rgba_weights[3]));
         ewp.rgba_weights[0] =
-            std::max(ewp.rgba_weights[0], max_color_component_weight / 1000.0f);
+            std::max(ewp.rgba_weights[0], max_color_comp_weight / 1000.0f);
         ewp.rgba_weights[1] =
-            std::max(ewp.rgba_weights[1], max_color_component_weight / 1000.0f);
+            std::max(ewp.rgba_weights[1], max_color_comp_weight / 1000.0f);
         ewp.rgba_weights[2] =
-            std::max(ewp.rgba_weights[2], max_color_component_weight / 1000.0f);
+            std::max(ewp.rgba_weights[2], max_color_comp_weight / 1000.0f);
         ewp.rgba_weights[3] =
-            std::max(ewp.rgba_weights[3], max_color_component_weight / 1000.0f);
+            std::max(ewp.rgba_weights[3], max_color_comp_weight / 1000.0f);
 
         if (channels == 4) {
             ewp.enable_rgb_scale_with_alpha = 1;
@@ -1247,7 +1248,7 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
         }
 
         ewp.texel_avg_error_limit =
-            (float)pow(0.1f, dblimit_2d * 0.1f) * 65535.0f * 65535.0f;
+            float(std::pow(0.1f, dblimit_2d * 0.1f)) * 65535.0f * 65535.0f;
 
         expand_block_artifact_suppression(xdim, ydim, 1, &ewp);
 
@@ -1256,18 +1257,17 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
         // int padding = std::max(ewp.mean_stdev_radius, ewp.alpha_radius);
 
         if (channels == 4 /*ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f || ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f*/) {
-
             compute_averages_and_variances(src_image, ewp.rgb_power, ewp.alpha_power,
                                            ewp.mean_stdev_radius, ewp.alpha_radius,
                                            swz_encode);
         }
 
-        int xsize = src_image->xsize;
-        int ysize = src_image->ysize;
+        const int xsize = src_image->xsize;
+        const int ysize = src_image->ysize;
 
-        int xblocks = (xsize + xdim - 1) / xdim;
-        int yblocks = (ysize + ydim - 1) / ydim;
-        int zblocks = 1;
+        const int xblocks = (xsize + xdim - 1) / xdim;
+        const int yblocks = (ysize + ydim - 1) / ydim;
+        const int zblocks = 1;
 
         buf_size = xblocks * yblocks * zblocks * 16;
         out_buf.reset(new uint8_t[buf_size]);

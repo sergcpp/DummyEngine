@@ -219,6 +219,15 @@ void pack_vertex_delta(const VtxDelta &in_v, packed_vertex_delta_t &out_v) {
 
 } // namespace Ren
 
+Ren::Mesh::Mesh(const char *name, const float *positions, const int vtx_count,
+                const uint32_t *indices, const int ndx_count, BufferRef &vertex_buf1,
+                BufferRef &vertex_buf2, BufferRef &index_buf,
+                eMeshLoadStatus *load_status, ILog *log) {
+    name_ = String{name};
+    Init(positions, vtx_count, indices, ndx_count, vertex_buf1, vertex_buf2, index_buf,
+         load_status, log);
+}
+
 Ren::Mesh::Mesh(const char *name, std::istream *data,
                 const material_load_callback &on_mat_load, BufferRef &vertex_buf1,
                 BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
@@ -226,6 +235,68 @@ Ren::Mesh::Mesh(const char *name, std::istream *data,
     name_ = String{name};
     Init(data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf,
          delta_buf, load_status, log);
+}
+
+void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t *indices,
+                     const int ndx_count, BufferRef &vertex_buf1, BufferRef &vertex_buf2,
+                     BufferRef &index_buf, eMeshLoadStatus *load_status, ILog *log) {
+
+    if (!positions) {
+        // TODO: actually set to default mesh ('error' label like in source engine for
+        // example)
+        if (load_status) {
+
+            (*load_status) = eMeshLoadStatus::SetToDefault;
+        }
+        return;
+    }
+
+    std::unique_ptr<packed_vertex_data1_t[]> vtx_data1(
+        new packed_vertex_data1_t[vtx_count]);
+    packed_vertex_data1_t *_vtx_data1 = vtx_data1.get();
+
+    bbox_min_ =
+        Vec3f{std::numeric_limits<float>::max(), std::numeric_limits<float>::max(),
+              std::numeric_limits<float>::max()};
+    bbox_max_ =
+        Vec3f{std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(),
+              std::numeric_limits<float>::lowest()};
+
+    for (int i = 0; i < vtx_count; i++) {
+        bbox_min_[0] = std::min(bbox_min_[0], positions[i * 3 + 0]);
+        bbox_min_[1] = std::min(bbox_min_[1], positions[i * 3 + 1]);
+        bbox_min_[2] = std::min(bbox_min_[2], positions[i * 3 + 2]);
+
+        bbox_max_[0] = std::max(bbox_max_[0], positions[i * 3 + 0]);
+        bbox_max_[1] = std::max(bbox_max_[1], positions[i * 3 + 1]);
+        bbox_max_[2] = std::max(bbox_max_[2], positions[i * 3 + 2]);
+
+        memcpy(&_vtx_data1[i].p[0], &positions[i * 3], 3 * sizeof(float));
+        _vtx_data1[i].t0[0] = 0;
+        _vtx_data1[i].t0[1] = 0;
+    }
+
+    type_ = eMeshType::Simple;
+    flags_ = 0;
+    ready_ = true;
+
+    attribs_buf1_.buf = vertex_buf1;
+    attribs_buf1_.size = vtx_count * sizeof(packed_vertex_data1_t);
+    attribs_buf1_.offset = vertex_buf1->Alloc(attribs_buf1_.size, _vtx_data1);
+
+    attribs_buf2_.buf = vertex_buf2;
+    attribs_buf2_.size = vtx_count * sizeof(packed_vertex_data2_t);
+    attribs_buf2_.offset = vertex_buf2->Alloc(attribs_buf2_.size, nullptr);
+
+    assert(attribs_buf1_.offset == attribs_buf2_.offset && "Offsets do not match!");
+
+    indices_buf_.buf = index_buf;
+    indices_buf_.size = ndx_count * sizeof(uint32_t);
+    indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices);
+
+    if (load_status) {
+        (*load_status) = Ren::eMeshLoadStatus::CreatedFromData;
+    }
 }
 
 void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_load,

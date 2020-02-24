@@ -106,7 +106,7 @@ protected:
     virtual void DrawUI(Gui::Renderer *r, Gui::BaseElement *root);
 public:
     explicit GSBaseState(GameBase *game);
-    ~GSBaseState() override = default;
+    ~GSBaseState() override;
 
     void Enter() override;
     void Exit() override;

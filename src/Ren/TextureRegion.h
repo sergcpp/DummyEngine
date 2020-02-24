@@ -10,7 +10,7 @@ class TextureRegion : public Ren::RefCounter {
     TextureAtlasArray   *atlas_ = nullptr;
     int                 texture_pos_[3] = {};
     Texture2DParams     params_;
-    bool                ready_;
+    bool                ready_ = false;
 
     void InitFromRAWData(const void *data, int size, const Texture2DParams &p, Ren::TextureAtlasArray *atlas);
     void InitFromTGAFile(const void *data, int size, const Texture2DParams &p, Ren::TextureAtlasArray *atlas);
@@ -41,6 +41,6 @@ public:
     void Init(const void *data, int size, const Texture2DParams &p, Ren::TextureAtlasArray *atlas, eTexLoadStatus *load_status);
 };
 
-typedef Ren::StorageRef<TextureRegion> TextureRegionRef;
+typedef Ren::StrongRef<TextureRegion> TextureRegionRef;
 typedef Ren::Storage<TextureRegion> TextureRegionStorage;
 }

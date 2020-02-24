@@ -22,6 +22,8 @@ extern __itt_domain *__g_itt_domain;
 #include <Sys/ThreadWorker.h>
 #include <Sys/Time_.h>
 
+#include "../Viewer.h"
+
 namespace GSVideoTestInternal {
 #if defined(__ANDROID__)
 const char SCENE_NAME[] = "assets/scenes/"
@@ -131,31 +133,31 @@ void GSVideoTest::OnPostloadScene(JsObject &js_scene) {
         const JsObject &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
             const JsArray &js_orig = js_cam.at("view_origin").as_arr();
-            initial_view_pos_[0] = (float)js_orig.at(0).as_num().val;
-            initial_view_pos_[1] = (float)js_orig.at(1).as_num().val;
-            initial_view_pos_[2] = (float)js_orig.at(2).as_num().val;
+            initial_view_pos_[0] = float(js_orig.at(0).as_num().val);
+            initial_view_pos_[1] = float(js_orig.at(1).as_num().val);
+            initial_view_pos_[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
             const JsArray &js_dir = js_cam.at("view_dir").as_arr();
-            initial_view_dir_[0] = (float)js_dir.at(0).as_num().val;
-            initial_view_dir_[1] = (float)js_dir.at(1).as_num().val;
-            initial_view_dir_[2] = (float)js_dir.at(2).as_num().val;
+            initial_view_dir_[0] = float(js_dir.at(0).as_num().val);
+            initial_view_dir_[1] = float(js_dir.at(1).as_num().val);
+            initial_view_dir_[2] = float(js_dir.at(2).as_num().val);
         }
 
         if (js_cam.Has("fwd_speed")) {
             const JsNumber &js_fwd_speed = js_cam.at("fwd_speed").as_num();
-            max_fwd_speed_ = (float)js_fwd_speed.val;
+            max_fwd_speed_ = float(js_fwd_speed.val);
         }
 
         if (js_cam.Has("fov")) {
             const JsNumber &js_fov = js_cam.at("fov").as_num();
-            view_fov_ = (float)js_fov.val;
+            view_fov_ = float(js_fov.val);
         }
 
         if (js_cam.Has("max_exposure")) {
             const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
-            max_exposure_ = (float)js_max_exposure.val;
+            max_exposure_ = float(js_max_exposure.val);
         }
     }
 
@@ -239,8 +241,8 @@ bool GSVideoTest::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
-        if (evt.point.x > (float)ren_ctx_->w() * 0.9f &&
-            evt.point.y < (float)ren_ctx_->h() * 0.1f) {
+        if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
+            evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -259,14 +261,14 @@ bool GSVideoTest::HandleInput(const InputManager::Event &evt) {
 
     switch (evt.type) {
     case RawInputEvent::EvP1Down:
-        if (evt.point.x < ((float)ren_ctx_->w() / 3.0f) && move_pointer_ == 0) {
+        if (evt.point.x < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 1;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 1;
         }
         break;
     case RawInputEvent::EvP2Down:
-        if (evt.point.x < ((float)ren_ctx_->w() / 3.0f) && move_pointer_ == 0) {
+        if (evt.point.x < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 2;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 2;
@@ -409,32 +411,32 @@ void GSVideoTest::SaveScene(JsObject &js_scene) {
 
         { // write view origin
             JsArray js_view_origin;
-            js_view_origin.Push(JsNumber{(double)initial_view_pos_[0]});
-            js_view_origin.Push(JsNumber{(double)initial_view_pos_[1]});
-            js_view_origin.Push(JsNumber{(double)initial_view_pos_[2]});
+            js_view_origin.Push(JsNumber{double(initial_view_pos_[0])});
+            js_view_origin.Push(JsNumber{double(initial_view_pos_[1])});
+            js_view_origin.Push(JsNumber{double(initial_view_pos_[2])});
 
             js_camera.Push("view_origin", std::move(js_view_origin));
         }
 
         { // write view direction
             JsArray js_view_dir;
-            js_view_dir.Push(JsNumber{(double)initial_view_dir_[0]});
-            js_view_dir.Push(JsNumber{(double)initial_view_dir_[1]});
-            js_view_dir.Push(JsNumber{(double)initial_view_dir_[2]});
+            js_view_dir.Push(JsNumber{double(initial_view_dir_[0])});
+            js_view_dir.Push(JsNumber{double(initial_view_dir_[1])});
+            js_view_dir.Push(JsNumber{double(initial_view_dir_[2])});
 
             js_camera.Push("view_dir", std::move(js_view_dir));
         }
 
         { // write forward speed
-            js_camera.Push("fwd_speed", JsNumber{(double)max_fwd_speed_});
+            js_camera.Push("fwd_speed", JsNumber{double(max_fwd_speed_)});
         }
 
         { // write fov
-            js_camera.Push("fov", JsNumber{(double)view_fov_});
+            js_camera.Push("fov", JsNumber{double(view_fov_)});
         }
 
         { // write max exposure
-            js_camera.Push("max_exposure", JsNumber{(double)max_exposure_});
+            js_camera.Push("max_exposure", JsNumber{double(max_exposure_)});
         }
 
         js_scene.Push("camera", std::move(js_camera));

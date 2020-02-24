@@ -81,7 +81,7 @@ class AnimSequence : public RefCounter {
     void InterpolateFrames(int fr_0, int fr_1, float t);
 };
 
-typedef StorageRef<AnimSequence> AnimSeqRef;
+typedef StrongRef<AnimSequence> AnimSeqRef;
 typedef Storage<AnimSequence> AnimSeqStorage;
 
 struct AnimLink {
@@ -125,7 +125,7 @@ struct Skeleton {
     std::vector<AnimLink> anims;
     // std::vector<BoneGroup>  bone_groups;
 
-    Bone *find_bone(const char *name) {
+    Bone *find_bone(const char *name) const {
         for (int i = 0; i < bones_count; i++) {
             if (strcmp(bones[i].name, name) == 0) {
                 return &bones[i];
@@ -140,7 +140,7 @@ struct Skeleton {
     void bone_matrix(const char *name, Mat4f &mat);
     void bone_matrix(int i, Mat4f &mat);
 
-    int AddAnimSequence(const AnimSeqRef &ref);
+    int AddAnimSequence(AnimSeqRef ref);
 
     void MarkChildren();
     void ApplyAnim(int id);

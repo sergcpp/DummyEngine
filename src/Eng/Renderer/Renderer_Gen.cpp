@@ -284,9 +284,9 @@ Renderer::Generate_SSSProfile_LUT(const int res, const int gauss_count,
             result[1] = linear_to_srgb(result[1]);
             result[2] = linear_to_srgb(result[2]);
 
-            img_data[4 * (y * res + x) + 0] = (uint8_t)(result[0] * 255);
-            img_data[4 * (y * res + x) + 1] = (uint8_t)(result[1] * 255);
-            img_data[4 * (y * res + x) + 2] = (uint8_t)(result[2] * 255);
+            img_data[4 * (y * res + x) + 0] = uint8_t(result[0] * 255);
+            img_data[4 * (y * res + x) + 1] = uint8_t(result[1] * 255);
+            img_data[4 * (y * res + x) + 2] = uint8_t(result[2] * 255);
             img_data[4 * (y * res + x) + 3] = 255;
         }
     }
@@ -362,8 +362,6 @@ std::unique_ptr<uint8_t[]> Renderer::Generate_ConeTraceLUT(const int resx, const
             }
         }
 
-        // t = t0;
-
         return true;
     };
 
@@ -374,12 +372,12 @@ std::unique_ptr<uint8_t[]> Renderer::Generate_ConeTraceLUT(const int resx, const
 
     for (int y = 0; y < resy; y++) {
         const float sin_omega = (float(y) + 0.5f) / float(resy - 0);
-        const float tan_omega = (float)std::tan(std::asin((double)sin_omega));
+        const auto tan_omega = float(std::tan(std::asin(double(sin_omega))));
         const float sph_dist = (y == 0) ? -1.5f : (/*sph_radius*/ 1.0f / tan_omega);
 
         for (int x = 0; x < resx; x++) {
             const float cos_phi = (float(x) + 0.5f) / float(resx - 0);
-            const float phi = (float)std::acos((double)cos_phi);
+            const auto phi = float(std::acos(double(cos_phi)));
 
             const Ren::Mat4f rot_matrix = Ren::Rotate(Ren::Mat4f{}, phi, B);
 

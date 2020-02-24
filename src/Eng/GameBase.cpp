@@ -9,8 +9,8 @@
 #include <Snd/Context.h>
 #include <Sys/AssetFileIO.h>
 #include <Sys/Json.h>
-#include <Sys/Time_.h>
 #include <Sys/ThreadPool.h>
+#include <Sys/Time_.h>
 
 #include "FlowControl.h"
 #include "GameStateManager.h"
@@ -18,16 +18,17 @@
 #include "Random.h"
 #include "Utils/ShaderLoader.h"
 
-GameBase::GameBase(int w, int h, const char * /*local_dir*/) : width(w), height(h) {
+GameBase::GameBase(const int w, const int h, const char * /*local_dir*/)
+    : width(w), height(h) {
     terminated = false;
 
     Sys::InitWorker();
 
     auto log =
 #if !defined(__ANDROID__)
-            std::make_shared<LogStdout>();
+        std::make_shared<LogStdout>();
 #else
-            std::make_shared<LogAndroid>("APP_JNI");
+        std::make_shared<LogAndroid>("APP_JNI");
 #endif
     AddComponent(LOG_KEY, log);
 
@@ -54,14 +55,15 @@ GameBase::GameBase(int w, int h, const char * /*local_dir*/) : width(w), height(
     auto shader_loader = std::make_shared<ShaderLoader>();
     AddComponent(SHADER_LOADER_KEY, shader_loader);
 
-    auto flow_control = std::make_shared<FlowControl>(2 * NET_UPDATE_DELTA, NET_UPDATE_DELTA);
+    auto flow_control =
+        std::make_shared<FlowControl>(2 * NET_UPDATE_DELTA, NET_UPDATE_DELTA);
     AddComponent(FLOW_CONTROL_KEY, flow_control);
 
     auto random_engine = std::make_shared<Random>(std::random_device{}());
     AddComponent(RANDOM_KEY, random_engine);
 
     JsObject config;
-    config[Gui::GL_DEFINES_KEY] = JsString{ "" };
+    config[Gui::GL_DEFINES_KEY] = JsString{""};
     auto ui_renderer = std::make_shared<Gui::Renderer>(*ren_ctx, config);
     AddComponent(UI_RENDERER_KEY, ui_renderer);
 
@@ -76,9 +78,11 @@ GameBase::~GameBase() {
         auto ren_ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
         auto snd_ctx = GetComponent<Snd::Context>(SND_CONTEXT_KEY);
         // finish file IO tasks
-        while (!Sys::StopWorker()) ren_ctx->ProcessTasks();
+        while (!Sys::StopWorker())
+            ren_ctx->ProcessTasks();
         // finish remaining tasks in queue
-        while (ren_ctx->ProcessTasks());
+        while (ren_ctx->ProcessTasks())
+            ;
         components_.clear();
     }
 }
@@ -91,24 +95,23 @@ void GameBase::Resize(int w, int h) {
     ctx->Resize(width, height);
 
     auto ui_root = GetComponent<Gui::RootElement>(UI_ROOT_KEY);
-    ui_root->set_zone(Ren::Vec2i{ width, height });
+    ui_root->set_zone(Ren::Vec2i{width, height});
     ui_root->Resize(nullptr);
 }
 
-void GameBase::Start() {
-
-}
+void GameBase::Start() {}
 
 void GameBase::Frame() {
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
     auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);
 
-    //PROFILE_FUNC();
+    // PROFILE_FUNC();
 
     FrameInfo &fr = fr_info_;
 
     fr.cur_time_us = Sys::GetTimeUs();
-    if (fr.cur_time_us < fr.prev_time_us) fr.prev_time_us = 0;
+    if (fr.cur_time_us < fr.prev_time_us)
+        fr.prev_time_us = 0;
     fr.delta_time_us = fr.cur_time_us - fr.prev_time_us;
     if (fr.delta_time_us > 200000) {
         fr.delta_time_us = 200000;
@@ -119,7 +122,7 @@ void GameBase::Frame() {
     uint64_t poll_time_point = fr.cur_time_us - fr.time_acc_us;
 
     {
-        //PROFILE_BLOCK(Update);
+        // PROFILE_BLOCK(Update);
         while (fr.time_acc_us >= UPDATE_DELTA) {
             InputManager::Event evt;
             while (input_manager->PollEvent(poll_time_point, evt)) {
@@ -136,11 +139,9 @@ void GameBase::Frame() {
     fr.time_fract = double(fr.time_acc_us) / UPDATE_DELTA;
 
     {
-        //PROFILE_BLOCK(Draw);
+        // PROFILE_BLOCK(Draw);
         state_manager->Draw(fr_info_.delta_time_us);
     }
 }
 
-void GameBase::Quit() {
-    terminated = true;
-}
+void GameBase::Quit() { terminated = true; }

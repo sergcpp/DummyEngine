@@ -21,7 +21,7 @@ layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer cells_buffer;
 layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer items_buffer;
 
 layout(location = 15) uniform ivec2 res;
-layout(location = 16) uniform int mode;
+layout(location = 16) uniform float mode;
 layout(location = 17) uniform vec4 uClipInfo;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -46,9 +46,9 @@ void main() {
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 
-    if (mode == 0) {
+    if (mode < 1.0) {
         outColor = vec4(heatmap(float(offset_and_lcount.y) * (1.0 / 48.0)), 0.85);
-    } else if (mode == 1) {
+    } else if (mode < 2.0) {
         outColor = vec4(heatmap(float(dcount_and_pcount.x) * (1.0 / 8.0)), 0.85);
     }
 

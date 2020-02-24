@@ -43,6 +43,8 @@ GSUITest::GSUITest(GameBase *game) : GSBaseState(game) {
                                         *dialog_font_});
 }
 
+GSUITest::~GSUITest() = default;
+
 void GSUITest::Enter() {
     using namespace GSUITestInternal;
 
@@ -93,16 +95,16 @@ void GSUITest::OnPostloadScene(JsObject &js_scene) {
         const JsObject &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
             const JsArray &js_orig = js_cam.at("view_origin").as_arr();
-            view_origin[0] = (float)js_orig.at(0).as_num().val;
-            view_origin[1] = (float)js_orig.at(1).as_num().val;
-            view_origin[2] = (float)js_orig.at(2).as_num().val;
+            view_origin[0] = float(js_orig.at(0).as_num().val);
+            view_origin[1] = float(js_orig.at(1).as_num().val);
+            view_origin[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
             const JsArray &js_dir = js_cam.at("view_dir").as_arr();
-            view_dir[0] = (float)js_dir.at(0).as_num().val;
-            view_dir[1] = (float)js_dir.at(1).as_num().val;
-            view_dir[2] = (float)js_dir.at(2).as_num().val;
+            view_dir[0] = float(js_dir.at(0).as_num().val);
+            view_dir[1] = float(js_dir.at(1).as_num().val);
+            view_dir[2] = float(js_dir.at(2).as_num().val);
         }
 
         /*if (js_cam.Has("fwd_speed")) {
@@ -112,12 +114,12 @@ void GSUITest::OnPostloadScene(JsObject &js_scene) {
 
         if (js_cam.Has("fov")) {
             const JsNumber &js_fov = js_cam.at("fov").as_num();
-            view_fov = (float)js_fov.val;
+            view_fov = float(js_fov.val);
         }
 
         if (js_cam.Has("max_exposure")) {
             const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
-            max_exposure = (float)js_max_exposure.val;
+            max_exposure = float(js_max_exposure.val);
         }
     }
 
@@ -154,9 +156,10 @@ void GSUITest::OnUpdateScene() {
     const SceneData &scene = scene_manager_->scene_data();
 
     if (sophia_indices_[0] != 0xffffffff) {
-        for (int i = 0; i < 2; i++) {
-            if (sophia_indices_[i] == 0xffffffff)
+        for (int i = 0; i < 2; i++) { // NOLINT
+            if (sophia_indices_[i] == 0xffffffff) {
                 break;
+            }
 
             SceneObject *sophia = scene_manager_->GetObject(sophia_indices_[i]);
 
@@ -202,8 +205,8 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
-        if (evt.point.x > (float)ren_ctx_->w() * 0.9f &&
-            evt.point.y < (float)ren_ctx_->h() * 0.1f) {
+        if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
+            evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -224,7 +227,7 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
     switch (evt.type) {
     case RawInputEvent::EvP1Down: {
         Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Press(p, true);
     } break;
@@ -232,10 +235,8 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
 
     } break;
     case RawInputEvent::EvP1Up: {
-        //word_puzzle_->skip();
-
-        Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+        const Ren::Vec2f p =
+            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Press(p, false);
     } break;
@@ -244,7 +245,7 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEvent::EvP1Move: {
         Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Hover(p);
     } break;

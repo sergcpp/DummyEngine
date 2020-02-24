@@ -21,18 +21,18 @@ public:
     BasicString() : str_(nullptr), len_(0) {}
     explicit BasicString(const char *str) {
         len_ = strlen(str);
-        uint32_t *storage = (uint32_t *)alloc_.allocate(sizeof(uint32_t) + len_ + 1);
+        auto *storage = (uint32_t *)alloc_.allocate(sizeof(uint32_t) + len_ + 1);
         // set number of users to 1
-        *storage = 1;
+        (*storage) = 1;
         str_ = (char *)(storage + 1);
         memcpy(str_, str, len_ + 1);
     }
 
     explicit BasicString(const char *start, const char *end) {
         len_ = end - start;
-        uint32_t *storage = (uint32_t *)alloc_.allocate(sizeof(uint32_t) + len_ + 1);
+        auto *storage = (uint32_t *)alloc_.allocate(sizeof(uint32_t) + len_ + 1);
         // set number of users to 1
-        *storage = 1;
+        (*storage) = 1;
         str_ = (char *)(storage + 1);
         memcpy(str_, start, len_);
         str_[len_] = '\0';
@@ -40,9 +40,9 @@ public:
 
     explicit BasicString(const StringPart &str) {
         len_ = str.len;
-        uint32_t *storage = (uint32_t *)alloc_.allocate(sizeof(uint32_t) + len_ + 1);
+        auto *storage = (uint32_t *)alloc_.allocate(sizeof(uint32_t) + len_ + 1);
         // set number of users to 1
-        *storage = 1;
+        (*storage) = 1;
         str_ = (char *)(storage + 1);
         memcpy(str_, str.str, len_);
         str_[len_] = '\0';
@@ -53,7 +53,7 @@ public:
         len_ = rhs.len_;
         if (str_) {
             // increase number of users
-            uint32_t *counter = (uint32_t *)(str_ - sizeof(uint32_t));
+            auto *counter = (uint32_t *)(str_ - sizeof(uint32_t));
             ++(*counter);
         }
     }
@@ -71,13 +71,17 @@ public:
     }
 
     BasicString &operator=(const BasicString &rhs) {
+        if (this == &rhs) {
+            return (*this);
+        }
+
         Release();
 
         str_ = rhs.str_;
         len_ = rhs.len_;
         if (str_) {
             // increase number of users
-            uint32_t *counter = reinterpret_cast<uint32_t *>(str_ - sizeof(uint32_t));
+            auto *counter = reinterpret_cast<uint32_t *>(str_ - sizeof(uint32_t));
             ++(*counter);
         }
 
@@ -85,6 +89,10 @@ public:
     }
 
     BasicString &operator=(BasicString &&rhs) noexcept {
+        if (this == &rhs) {
+            return (*this);
+        }
+
         Release();
 
         len_ = rhs.len_;
@@ -112,7 +120,7 @@ public:
 
     void Release() {
         if (str_) {
-            uint32_t *counter = (uint32_t *)(str_ - sizeof(uint32_t));
+            auto *counter = (uint32_t *)(str_ - sizeof(uint32_t));
             --(*counter);
 
             if (!*counter) {

@@ -31,7 +31,7 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
                                            int height, float invalid_threshold,
                                            int filter_size);
 
-std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &tex_ref,
+std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref,
                                                       bool flip_y);
 } // namespace SceneManagerInternal
 
@@ -552,7 +552,7 @@ void SceneManager::InitScene_PT(bool _override) {
     uint32_t default_white_tex;
 
     { //  Add default white texture
-        Ray::pixel_color8_t white = {255, 255, 255, 255};
+        const Ray::pixel_color8_t white = {255, 255, 255, 255};
 
         Ray::tex_desc_t tex_desc;
         tex_desc.data = &white;
@@ -625,7 +625,7 @@ void SceneManager::InitScene_PT(bool _override) {
                         mat_desc.main_color[0] = mat_desc.main_color[1] =
                             mat_desc.main_color[2] = 1.0f;
 
-                        Ren::Texture2DRef tex_ref;
+                        Ren::Tex2DRef tex_ref;
 
                         // if (mat->flags() & Ren::AlphaBlend) {
                         //    mat_desc.type = Ray::TransparentMaterial;

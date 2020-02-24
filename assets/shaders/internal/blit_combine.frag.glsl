@@ -67,7 +67,7 @@ vec3 BilinearTexelFetch(sampler2D texture, vec2 texcoord) {
     vec3 texel11 = texelFetch(texture, coord + ivec2(1, 1), 0).rgb;
     vec3 texel01 = texelFetch(texture, coord + ivec2(0, 1), 0).rgb;
             
-    vec2 sample_coord = fract(texcoord.xy);
+    vec2 sample_coord = fract(texcoord);
             
     vec3 texel0 = mix(texel00, texel01, sample_coord.y);
     vec3 texel1 = mix(texel10, texel11, sample_coord.y);

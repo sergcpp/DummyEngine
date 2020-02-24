@@ -70,16 +70,16 @@ class AuxGfxThread : public Sys::ThreadWorker {
 
   public:
     AuxGfxThread(HDC device_ctx, HGLRC gl_ctx)
-        : device_ctx_(device_ctx), gl_ctx_(gl_ctx) {}
-
-    void OnStart() override {
+        : device_ctx_(device_ctx), gl_ctx_(gl_ctx) {
+        AddTask([this]() {
 #ifdef ENABLE_ITT_API
-        __itt_thread_set_name("AuxGfxThread");
+            __itt_thread_set_name("AuxGfxThread");
 #endif
-        wglMakeCurrent(device_ctx_, gl_ctx_);
+            ::wglMakeCurrent(device_ctx_, gl_ctx_);
+        });
     }
 
-    void OnStop() override { wglMakeCurrent(nullptr, nullptr); }
+    ~AuxGfxThread() override { AddTask(::wglMakeCurrent, nullptr, nullptr); }
 };
 } // namespace
 
@@ -299,6 +299,8 @@ int DummyApp::Init(int w, int h) {
                                         WGL_FULL_ACCELERATION_ARB,
                                         WGL_COLOR_BITS_ARB,
                                         24,
+                                        WGL_DEPTH_BITS_ARB,
+                                        0,
                                         0};
 
     UINT format_count;
@@ -311,7 +313,8 @@ int DummyApp::Init(int w, int h) {
     }
 
     PIXELFORMATDESCRIPTOR PFD;
-    int res = DescribePixelFormat(device_context_, pix_format_id, sizeof(PFD), &PFD);
+    const int res =
+        DescribePixelFormat(device_context_, pix_format_id, sizeof(PFD), &PFD);
     if (!res) {
         std::cerr << "DescribePixelFormat() failed\n";
         return -1;
@@ -358,7 +361,8 @@ int DummyApp::Init(int w, int h) {
     try {
         Viewer::PrepareAssets("pc");
 
-        auto aux_gfx_thread = std::make_shared<AuxGfxThread>(device_context_, gl_ctx_aux_);
+        auto aux_gfx_thread =
+            std::make_shared<AuxGfxThread>(device_context_, gl_ctx_aux_);
         viewer_.reset(new Viewer(w, h, nullptr, std::move(aux_gfx_thread)));
 
         auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);

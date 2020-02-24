@@ -55,6 +55,8 @@ GSUITest3::GSUITest3(GameBase *game) : GSBaseState(game) {
     book_caption_font_->set_scale(1.25f);
 }
 
+GSUITest3::~GSUITest3() = default;
+
 void GSUITest3::Enter() {
     using namespace GSUITest3Internal;
 
@@ -123,9 +125,8 @@ void GSUITest3::Enter() {
         attachment.filter = Ren::eTexFilter::BilinearNoMipmap;
         attachment.repeat = Ren::eTexRepeat::ClampToEdge;
 
-        page_buf_ =
-            FrameBuf{3072, 3072,      &attachment, 1, {FrameBuf::eDepthFormat::DepthNone},
-                     1,    log_.get()};
+        page_buf_ = FrameBuf{"Page buf", *ren_ctx_, 3072, 3072,      &attachment,
+                             1,          {},        1,    log_.get()};
     }
 
     InitBookMaterials();
@@ -175,16 +176,16 @@ void GSUITest3::OnPostloadScene(JsObject &js_scene) {
         const JsObject &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
             const JsArray &js_orig = js_cam.at("view_origin").as_arr();
-            view_origin_[0] = (float)js_orig.at(0).as_num().val;
-            view_origin_[1] = (float)js_orig.at(1).as_num().val;
-            view_origin_[2] = (float)js_orig.at(2).as_num().val;
+            view_origin_[0] = float(js_orig.at(0).as_num().val);
+            view_origin_[1] = float(js_orig.at(1).as_num().val);
+            view_origin_[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
             const JsArray &js_dir = js_cam.at("view_dir").as_arr();
-            view_dir_[0] = (float)js_dir.at(0).as_num().val;
-            view_dir_[1] = (float)js_dir.at(1).as_num().val;
-            view_dir_[2] = (float)js_dir.at(2).as_num().val;
+            view_dir_[0] = float(js_dir.at(0).as_num().val);
+            view_dir_[1] = float(js_dir.at(1).as_num().val);
+            view_dir_[2] = float(js_dir.at(2).as_num().val);
         }
 
         /*if (js_cam.Has("fwd_speed")) {
@@ -194,12 +195,12 @@ void GSUITest3::OnPostloadScene(JsObject &js_scene) {
 
         if (js_cam.Has("fov")) {
             const JsNumber &js_fov = js_cam.at("fov").as_num();
-            view_fov_ = (float)js_fov.val;
+            view_fov_ = float(js_fov.val);
         }
 
         if (js_cam.Has("max_exposure")) {
             const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
-            max_exposure_ = (float)js_max_exposure.val;
+            max_exposure_ = float(js_max_exposure.val);
         }
     }
 
@@ -260,7 +261,7 @@ void GSUITest3::OnUpdateScene() {
             Ren::Mesh *mesh = dr->mesh.get();
             Ren::Skeleton *skel = mesh->skel();
 
-            const int book_anim_index = (int)book_state_;
+            const int book_anim_index = int(book_state_);
 
             skel->UpdateAnim(book_anim_index, as->anim_time_s);
             skel->ApplyAnim(book_anim_index);
@@ -282,7 +283,7 @@ void GSUITest3::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     GSBaseState::DrawUI(r, root);
 }
 
-void GSUITest3::Draw(uint64_t dt_us) {
+void GSUITest3::Draw(const uint64_t dt_us) {
     using namespace GSUITest3Internal;
 
     if (book_state_ != eBookState::BkClosed) {
@@ -293,7 +294,7 @@ void GSUITest3::Draw(uint64_t dt_us) {
                 const int page_base = paged_reader_->cur_page();
                 for (int i = 0; i < 2; i++) {
                     paged_reader_->set_cur_page(
-                        page_base + page_order_indices[(size_t)book_state_][i]);
+                        page_base + page_order_indices[size_t(book_state_)][i]);
 
                     paged_reader_->Resize(
                         2.0f * page_corners_uvs[i * 2] - Ren::Vec2f{1.0f},
@@ -305,7 +306,7 @@ void GSUITest3::Draw(uint64_t dt_us) {
                     }
                 }
                 paged_reader_->set_cur_page(page_base +
-                                            page_order_indices[(size_t)book_state_][0]);
+                                            page_order_indices[size_t(book_state_)][0]);
 
                 hit_point_ndc_.destroy();
             }
@@ -332,8 +333,8 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
-        if (evt.point.x > (float)ren_ctx_->w() * 0.9f &&
-            evt.point.y < (float)ren_ctx_->h() * 0.1f) {
+        if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
+            evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -354,7 +355,7 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
     switch (evt.type) {
     case RawInputEvent::EvP1Down: {
         const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (book_state_ == eBookState::BkOpened) {
         }
@@ -364,7 +365,7 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEvent::EvP1Up: {
         const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
 
         bool blocked = false;
@@ -412,7 +413,7 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
                 const SceneData &scene = scene_manager_->scene_data();
                 SceneObject *book = scene_manager_->GetObject(book_index_);
 
-                uint32_t mask = CompDrawableBit | CompAnimStateBit;
+                const uint32_t mask = CompDrawableBit | CompAnimStateBit;
                 if ((book->comp_mask & mask) == mask) {
                     auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(
                         book->components[CompAnimState]);
@@ -425,7 +426,7 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEvent::EvP1Move: {
         const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         paged_reader_->Hover(p);
 

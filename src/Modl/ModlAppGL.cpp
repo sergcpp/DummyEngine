@@ -51,7 +51,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
 
     glBindVertexArray((GLuint)simple_vao_);
 
-    glUseProgram(p->prog_id());
+    glUseProgram(p->id());
 
     Mat4f world_from_object = Mat4f{1.0f};
 
@@ -75,11 +75,11 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
         const Ren::Material *mat = s->mat.get();
 
         if (view_mode_ == eViewMode::DiagUVs1 || view_mode_ == eViewMode::DiagUVs2) {
-            BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
+            BindTexture(DIFFUSEMAP_SLOT, checker_tex_->id());
         } else {
-            BindTexture(DIFFUSEMAP_SLOT, mat->textures[0]->tex_id());
+            BindTexture(DIFFUSEMAP_SLOT, mat->textures[0]->id());
         }
-        BindTexture(NORMALMAP_SLOT, mat->textures[1]->tex_id());
+        BindTexture(NORMALMAP_SLOT, mat->textures[1]->id());
 
         glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT,
                        (void *)uintptr_t(s->offset));
@@ -106,7 +106,7 @@ void ModlApp::DrawMeshColored(Ren::MeshRef &ref) {
 
     glBindVertexArray((GLuint)simple_vao_);
 
-    glUseProgram(p->prog_id());
+    glUseProgram(p->id());
 
     Mat4f world_from_object = Mat4f{1.0f};
 
@@ -130,12 +130,12 @@ void ModlApp::DrawMeshColored(Ren::MeshRef &ref) {
         const Ren::Material *mat = s->mat.get();
 
         if (view_mode_ == eViewMode::DiagUVs1) {
-            BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
+            BindTexture(DIFFUSEMAP_SLOT, checker_tex_->id());
         } else if (view_mode_ == eViewMode::DiagVtxColor) {
         } else {
-            BindTexture(DIFFUSEMAP_SLOT, mat->textures[0]->tex_id());
+            BindTexture(DIFFUSEMAP_SLOT, mat->textures[0]->id());
         }
-        BindTexture(NORMALMAP_SLOT, mat->textures[1]->tex_id());
+        BindTexture(NORMALMAP_SLOT, mat->textures[1]->id());
 
         glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT,
                        (void *)uintptr_t(s->offset));
@@ -225,7 +225,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     { // transform vertices
         const Ren::Program *p = skinning_prog_.get();
 
-        glUseProgram(p->prog_id());
+        glUseProgram(p->id());
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, (GLuint)last_skin_vertex_buffer_);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)last_delta_buffer_);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)last_vertex_buf1_);
@@ -300,7 +300,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     glBindVertexArray((GLuint)simple_vao_);
 
     const Ren::Program *p = diag_prog_.get();
-    glUseProgram(p->prog_id());
+    glUseProgram(p->id());
 
     glUniform1f(U_MODE, (float)view_mode_);
 
@@ -331,11 +331,11 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
         }
 
         if (view_mode_ == eViewMode::DiagUVs1 || view_mode_ == eViewMode::DiagUVs2) {
-            BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
+            BindTexture(DIFFUSEMAP_SLOT, checker_tex_->id());
         } else {
-            BindTexture(DIFFUSEMAP_SLOT, mat->textures[0]->tex_id());
+            BindTexture(DIFFUSEMAP_SLOT, mat->textures[0]->id());
         }
-        BindTexture(NORMALMAP_SLOT, mat->textures[1]->tex_id());
+        BindTexture(NORMALMAP_SLOT, mat->textures[1]->id());
 
         glDrawElementsBaseVertex(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT,
                                  (void *)uintptr_t(s->offset), (GLint)0);
@@ -358,11 +358,11 @@ void ModlApp::CheckInitVAOs() {
     Ren::BufferRef delta_buf = ctx_.default_delta_buf();
     Ren::BufferRef ndx_buf = ctx_.default_indices_buf();
 
-    const auto gl_vertex_buf1 = (GLuint)vtx_buf1->buf_id(),
-               gl_vertex_buf2 = (GLuint)vtx_buf2->buf_id(),
-               gl_skin_vertex_buf = (GLuint)skin_vtx_buf->buf_id(),
-               gl_delta_buf = (GLuint)delta_buf->buf_id(),
-               gl_indices_buf = (GLuint)ndx_buf->buf_id();
+    const auto gl_vertex_buf1 = (GLuint)vtx_buf1->id(),
+               gl_vertex_buf2 = (GLuint)vtx_buf2->id(),
+               gl_skin_vertex_buf = (GLuint)skin_vtx_buf->id(),
+               gl_delta_buf = (GLuint)delta_buf->id(),
+               gl_indices_buf = (GLuint)ndx_buf->id();
 
     if (gl_vertex_buf1 != last_vertex_buf1_ || gl_vertex_buf2 != last_vertex_buf2_ ||
         gl_skin_vertex_buf != last_skin_vertex_buffer_ ||

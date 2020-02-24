@@ -15,7 +15,6 @@ class SeqCanvasUI : public Gui::BaseElement {
 
     ScriptedSequence *sequence_ = nullptr;
 
-    Ren::Vec2i highlighted_action_ = Ren::Vec2i{-1, -1};
     Ren::Vec2i selected_index_ = Ren::Vec2i{-1, -1};
     enum eDragFlags { DragBeg = (1u << 0u), DragEnd = (1u << 1u) };
     uint32_t selected_drag_flags_ = 0;

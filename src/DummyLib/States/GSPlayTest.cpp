@@ -47,22 +47,16 @@ GSPlayTest::GSPlayTest(GameBase *game) : GSBaseState(game) {
     const std::shared_ptr<FontStorage> fonts =
         game->GetComponent<FontStorage>(UI_FONTS_KEY);
     dialog_font_ = fonts->FindFont("book_main_font");
-    // dialog_font_->set_scale(1.5f);
-
-    const float font_height = dialog_font_->height(ui_root_.get());
 
     cam_ctrl_.reset(new FreeCamController(ren_ctx_->w(), ren_ctx_->h(), 0.3f));
 
     test_dialog_.reset(new ScriptedDialog{*ren_ctx_, *snd_ctx_, *scene_manager_});
-
-    // test_seq_.reset(new ScriptedSequence{*ctx_, *scene_manager_});
 
     dialog_ui_.reset(
         new DialogUI{Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_.get(), *dialog_font_});
 
     seq_edit_ui_.reset(new SeqEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f},
                                      Gui::Vec2f{2.0f, 1.0f}, ui_root_.get()});
-    // seq_edit_ui_->set_sequence(/*test_seq_.get()*/ test_dialog_->GetSequence(0));
 
     dialog_edit_ui_.reset(new DialogEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f},
                                            Gui::Vec2f{2.0f, 1.0f}, ui_root_.get()});
@@ -219,9 +213,8 @@ void GSPlayTest::OnPostloadScene(JsObject &js_scene) {
         }
 
         if (js_cam.Has("fwd_speed")) {
-            const JsNumber &js_fwd_speed =
-                (const JsNumber &)js_cam.at("fwd_speed").as_num();
-            cam_ctrl_->max_fwd_speed = (float)js_fwd_speed.val;
+            const JsNumber &js_fwd_speed = js_cam.at("fwd_speed").as_num();
+            cam_ctrl_->max_fwd_speed = float(js_fwd_speed.val);
         }
 
         if (js_cam.Has("fov")) {
@@ -240,8 +233,6 @@ void GSPlayTest::OnUpdateScene() {
     using namespace GSPlayTestInternal;
 
     GSBaseState::OnUpdateScene();
-
-    const float delta_time_s = fr_info_.delta_time_us * 0.000001f;
 
     scene_manager_->SetupView(
         cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
@@ -273,7 +264,7 @@ void GSPlayTest::Draw(uint64_t dt_us) {
         if (seq_edit_ui_->timeline_grabbed()) {
             play_started_time_s_ = cur_time_s - seq_edit_ui_->GetTime();
         } else {
-            const float end_time = (float)test_seq_->duration();
+            const auto end_time = float(test_seq_->duration());
 
             float play_time_s = cur_time_s - play_started_time_s_;
             while (play_time_s > end_time) {
@@ -408,9 +399,6 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
 
         } else if (evt.key_code == KeyDeleteForward) {
         } else if (evt.key_code == KeyTab) {
-            /*if (dial_edit_mode_ != -1) {
-                dial_edit_mode_ = -1;
-            } else*/
             if (dial_edit_mode_ == 1) {
                 dial_edit_mode_ = 0;
             } else {
@@ -419,10 +407,11 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
         } else {
             char ch = InputManager::CharFromKeycode(evt.key_code);
             if (shift_down_) {
-                if (ch == '-')
+                if (ch == '-') {
                     ch = '_';
-                else
-                    ch = (char)std::toupper(ch);
+                } else {
+                    ch = char(std::toupper(ch));
+                }
             }
         }
     } break;

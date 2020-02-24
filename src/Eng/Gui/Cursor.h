@@ -9,7 +9,7 @@ protected:
     bool    clicked_;
     Vec2f   offset_;
 public:
-    Cursor(const Ren::Texture2DRef &tex, const Vec2f uvs[2], const Vec2f &size, const BaseElement *parent);
+    Cursor(const Ren::Tex2DRef &tex, const Vec2f uvs[2], const Vec2f &size, const BaseElement *parent);
     Cursor(Ren::Context &ctx, const char *tex_name, const Vec2f uvs[2], const Vec2f &size, const BaseElement *parent);
 
     void set_clicked(bool b) {

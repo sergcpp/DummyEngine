@@ -1,6 +1,5 @@
 ﻿#include "GSDrawTest.h"
 
-#include <fstream>
 #include <memory>
 
 #include <Eng/Gui/Renderer.h>
@@ -122,31 +121,31 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
         const JsObject &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
             const JsArray &js_orig = js_cam.at("view_origin").as_arr();
-            initial_view_pos_[0] = (float)js_orig.at(0).as_num().val;
-            initial_view_pos_[1] = (float)js_orig.at(1).as_num().val;
-            initial_view_pos_[2] = (float)js_orig.at(2).as_num().val;
+            initial_view_pos_[0] = float(js_orig.at(0).as_num().val);
+            initial_view_pos_[1] = float(js_orig.at(1).as_num().val);
+            initial_view_pos_[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
             const JsArray &js_dir = js_cam.at("view_dir").as_arr();
-            initial_view_dir_[0] = (float)js_dir.at(0).as_num().val;
-            initial_view_dir_[1] = (float)js_dir.at(1).as_num().val;
-            initial_view_dir_[2] = (float)js_dir.at(2).as_num().val;
+            initial_view_dir_[0] = float(js_dir.at(0).as_num().val);
+            initial_view_dir_[1] = float(js_dir.at(1).as_num().val);
+            initial_view_dir_[2] = float(js_dir.at(2).as_num().val);
         }
 
         if (js_cam.Has("fwd_speed")) {
             const JsNumber &js_fwd_speed = js_cam.at("fwd_speed").as_num();
-            max_fwd_speed_ = (float)js_fwd_speed.val;
+            max_fwd_speed_ = float(js_fwd_speed.val);
         }
 
         if (js_cam.Has("fov")) {
             const JsNumber &js_fov = js_cam.at("fov").as_num();
-            view_fov_ = (float)js_fov.val;
+            view_fov_ = float(js_fov.val);
         }
 
         if (js_cam.Has("max_exposure")) {
             const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
-            max_exposure_ = (float)js_max_exposure.val;
+            max_exposure_ = float(js_max_exposure.val);
         }
 
         if (js_cam.Has("follow_path")) {
@@ -157,7 +156,7 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
                 const JsNumber &x = js_point.at(0).as_num(), &y = js_point.at(1).as_num(),
                                &z = js_point.at(2).as_num();
 
-                cam_follow_path_.emplace_back((float)x.val, (float)y.val, (float)z.val);
+                cam_follow_path_.emplace_back(float(x.val), float(y.val), float(z.val));
             }
         }
     }
@@ -172,7 +171,7 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
 
         for (int j = 0; j < 4; j++) {
             for (int i = 0; i < 8; i++) {
-                int index = j * 8 + i;
+                const int index = j * 8 + i;
 
                 wolf_name[4] = char('0' + j);
                 wolf_name[5] = char('0' + i);
@@ -238,7 +237,7 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
 
 void GSDrawTest::Exit() { GSBaseState::Exit(); }
 
-void GSDrawTest::Draw(uint64_t dt_us) { GSBaseState::Draw(dt_us); }
+void GSDrawTest::Draw(const uint64_t dt_us) { GSBaseState::Draw(dt_us); }
 
 void GSDrawTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     GSBaseState::DrawUI(r, root);
@@ -264,7 +263,7 @@ void GSDrawTest::Update(uint64_t dt_us) {
             invalidate_view_ = true;
         }
     } else {
-        int next_point = (cam_follow_point_ + 1) % (int)cam_follow_path_.size();
+        int next_point = (cam_follow_point_ + 1) % int(cam_follow_path_.size());
 
         { // update param
             const Ren::Vec3f &p1 = cam_follow_path_[cam_follow_point_],
@@ -273,12 +272,12 @@ void GSDrawTest::Update(uint64_t dt_us) {
             cam_follow_param_ += 0.000005f * dt_us / Ren::Distance(p1, p2);
             while (cam_follow_param_ > 1.0f) {
                 cam_follow_point_ =
-                    (cam_follow_point_ + 1) % (int)cam_follow_path_.size();
+                    (cam_follow_point_ + 1) % int(cam_follow_path_.size());
                 cam_follow_param_ -= 1.0f;
             }
         }
 
-        next_point = (cam_follow_point_ + 1) % (int)cam_follow_path_.size();
+        next_point = (cam_follow_point_ + 1) % int(cam_follow_path_.size());
 
         const Ren::Vec3f &p1 = cam_follow_path_[cam_follow_point_],
                          &p2 = cam_follow_path_[next_point];
@@ -339,8 +338,9 @@ void GSDrawTest::Update(uint64_t dt_us) {
         scooters_angle_ += 0.0000005f * dt_us;
 
         for (int i = 0; i < 16; i++) {
-            if (scooter_indices_[i] == 0xffffffff)
+            if (scooter_indices_[i] == 0xffffffff) {
                 break;
+            }
 
             SceneObject *scooter = scene_manager_->GetObject(scooter_indices_[i]);
 
@@ -392,8 +392,8 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
-        if (evt.point.x > (float)ren_ctx_->w() * 0.9f &&
-            evt.point.y < (float)ren_ctx_->h() * 0.1f) {
+        if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
+            evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -413,14 +413,14 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
 
     switch (evt.type) {
     case RawInputEvent::EvP1Down:
-        if (evt.point.x < ((float)ren_ctx_->w() / 3.0f) && move_pointer_ == 0) {
+        if (evt.point.x < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 1;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 1;
         }
         break;
     case RawInputEvent::EvP2Down:
-        if (evt.point.x < ((float)ren_ctx_->w() / 3.0f) && move_pointer_ == 0) {
+        if (evt.point.x < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 2;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 2;
@@ -562,45 +562,46 @@ void GSDrawTest::SaveScene(JsObject &js_scene) {
 
         { // write view origin
             JsArray js_view_origin;
-            js_view_origin.Push(JsNumber{(double)initial_view_pos_[0]});
-            js_view_origin.Push(JsNumber{(double)initial_view_pos_[1]});
-            js_view_origin.Push(JsNumber{(double)initial_view_pos_[2]});
+            js_view_origin.Push(JsNumber{double(initial_view_pos_[0])});
+            js_view_origin.Push(JsNumber{double(initial_view_pos_[1])});
+            js_view_origin.Push(JsNumber{double(initial_view_pos_[2])});
 
             js_camera.Push("view_origin", std::move(js_view_origin));
         }
 
         { // write view direction
             JsArray js_view_dir;
-            js_view_dir.Push(JsNumber{(double)initial_view_dir_[0]});
-            js_view_dir.Push(JsNumber{(double)initial_view_dir_[1]});
-            js_view_dir.Push(JsNumber{(double)initial_view_dir_[2]});
+            js_view_dir.Push(JsNumber{double(initial_view_dir_[0])});
+            js_view_dir.Push(JsNumber{double(initial_view_dir_[1])});
+            js_view_dir.Push(JsNumber{double(initial_view_dir_[2])});
 
             js_camera.Push("view_dir", std::move(js_view_dir));
         }
 
         { // write forward speed
-            js_camera.Push("fwd_speed", JsNumber{(double)max_fwd_speed_});
+            js_camera.Push("fwd_speed", JsNumber{double(max_fwd_speed_)});
         }
 
         { // write fov
-            js_camera.Push("fov", JsNumber{(double)view_fov_});
+            js_camera.Push("fov", JsNumber{double(view_fov_)});
         }
 
         { // write max exposure
-            js_camera.Push("max_exposure", JsNumber{(double)max_exposure_});
+            js_camera.Push("max_exposure", JsNumber{double(max_exposure_)});
         }
 
         js_scene.Push("camera", std::move(js_camera));
     }
 }
 
-void GSDrawTest::TestUpdateAnims(float delta_time_s) {
+void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
     SceneData &scene = scene_manager_->scene_data();
 
     if (wolf_indices_[0] != 0xffffffff) {
         for (uint32_t wolf_index : wolf_indices_) {
-            if (wolf_index == 0xffffffff)
+            if (wolf_index == 0xffffffff) {
                 break;
+            }
 
             SceneObject *wolf = scene_manager_->GetObject(wolf_index);
 
@@ -686,8 +687,9 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
     }
 
     for (const uint32_t ndx : eric_indices_) {
-        if (ndx == 0xffffffff)
+        if (ndx == 0xffffffff) {
             break;
+        }
 
         SceneObject *eric = scene_manager_->GetObject(ndx);
 
@@ -781,8 +783,11 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
     }*/
 
     const auto wind_scroll_dir = Ren::Vec2f{scene.env.wind_vec[0], scene.env.wind_vec[2]};
-    scene.env.wind_scroll_lf = Ren::Fract(
-        scene.env.wind_scroll_lf - (1.0f / 256.0f) * delta_time_s * wind_scroll_dir);
-    scene.env.wind_scroll_hf = Ren::Fract(
-        scene.env.wind_scroll_hf - (1.0f / 32.0f) * delta_time_s * wind_scroll_dir);
+    scene.env.prev_wind_scroll_lf = scene.env.curr_wind_scroll_lf;
+    scene.env.prev_wind_scroll_hf = scene.env.curr_wind_scroll_hf;
+
+    scene.env.curr_wind_scroll_lf = Ren::Fract(
+        scene.env.curr_wind_scroll_lf - (1.0f / 256.0f) * delta_time_s * wind_scroll_dir);
+    scene.env.curr_wind_scroll_hf = Ren::Fract(
+        scene.env.curr_wind_scroll_hf - (1.0f / 32.0f) * delta_time_s * wind_scroll_dir);
 }

@@ -13,7 +13,7 @@ class CaptionsUI : public Gui::BaseElement {
         const char *text;
         uint8_t color[4];
     };
-    SeqCaption captions_[16];
+    SeqCaption captions_[16] = {};
     int captions_count_ = 0;
 
   public:

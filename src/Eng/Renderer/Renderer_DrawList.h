@@ -35,6 +35,24 @@ struct DynArray {
                   std::is_trivially_copyable<T>::value, "DynArray is intended to be used with simple data types!");
 };
 
+template <typename T>
+struct DynArrayRef {
+    T* data = nullptr;
+    uint32_t count = 0;
+
+    DynArrayRef() = default;
+    DynArrayRef(DynArray<T>& arr) : data(arr.data), count(arr.count) {}
+};
+
+template <typename T>
+struct DynArrayConstRef {
+    const T* data = nullptr;
+    uint32_t count = 0;
+
+    DynArrayConstRef() = default;
+    DynArrayConstRef(const DynArray<T>& arr) : data(arr.data), count(arr.count) {}
+};
+
 struct ShadReg {
     const LightSource *ls;
     int pos[2], size[2];
@@ -74,6 +92,8 @@ struct DrawList {
     // for debugging only, backend does not require nodes for drawing
     std::vector<bvh_node_t>     temp_nodes;
     uint32_t                    root_index = 0xffffffff;
+    // culling depth buffer
+    std::vector<uint8_t> depth_pixels, depth_tiles;
 
     DrawList();
 };

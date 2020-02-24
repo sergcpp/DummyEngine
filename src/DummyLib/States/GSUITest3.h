@@ -40,12 +40,12 @@ class GSUITest3 : public GSBaseState {
     std::unique_ptr<PagedReader>        paged_reader_;
 
     Ren::Vec3f                          view_origin_, view_dir_;
-    float                               view_fov_, view_offset_ = 0.0f;
+    float                               view_fov_ = 0.0f, view_offset_ = 0.0f;
     float                               max_exposure_ = 1000.0f;
 
     std::unique_ptr<Gui::Renderer>      page_renderer_;
     FrameBuf                            page_buf_;
-    Ren::Texture2DRef                   page_tex_;
+    Ren::Tex2DRef                       page_tex_;
     Ren::MaterialRef                    orig_page_mat_, page_mat_;
 
     Sys::Optional<Ren::Vec2f>           hit_point_screen_, hit_point_ndc_;
@@ -73,7 +73,7 @@ class GSUITest3 : public GSBaseState {
     void RedrawPages(Gui::Renderer *r);
 public:
     explicit GSUITest3(GameBase *game);
-    ~GSUITest3() final = default;
+    ~GSUITest3() final;
 
     void Enter() override;
     void Exit() override;

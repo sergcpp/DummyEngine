@@ -21,8 +21,8 @@ class TextureSplitter {
     int Find_Recursive(int i, const int pos[2]) const;
     void SafeErase(int i, int *indices, int num);
 public:
-    TextureSplitter() {}
-    TextureSplitter(int resx, int resy) {
+    TextureSplitter() = default;
+    TextureSplitter(const int resx, const int resy) {
         nodes_.emplace_back();
         nodes_.back().size[0] = resx;
         nodes_.back().size[1] = resy;

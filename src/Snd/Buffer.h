@@ -53,6 +53,6 @@ class Buffer : public RefCounter {
               eBufLoadStatus *load_status, ILog *log);
 };
 
-typedef StorageRef<Buffer> BufferRef;
+typedef StrongRef<Buffer> BufferRef;
 typedef Storage<Buffer> BufferStorage;
 } // namespace Snd

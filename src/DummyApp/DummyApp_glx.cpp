@@ -65,16 +65,16 @@ class AuxGfxThread : public Sys::ThreadWorker {
     GLXContext gl_ctx_;
 
   public:
-    AuxGfxThread(Display *dpy, GLXContext gl_ctx) : dpy_(dpy), gl_ctx_(gl_ctx) {}
-
-    void OnStart() override {
+    AuxGfxThread(Display *dpy, GLXContext gl_ctx) : dpy_(dpy), gl_ctx_(gl_ctx) {
+        AddTask([this]() {
 #ifdef ENABLE_ITT_API
-        __itt_thread_set_name("AuxGfxThread");
+          __itt_thread_set_name("AuxGfxThread");
 #endif
-        glXMakeCurrent(dpy_, None, gl_ctx_);
+          glXMakeCurrent(dpy_, None, gl_ctx_);
+        });
     }
 
-    void OnStop() override { glXMakeCurrent(dpy_, None, nullptr); }
+    ~AuxGfxThread() override { AddTask(::glXMakeCurrent, dpy_, None, nullptr); }
 };
 #endif
 } // namespace
@@ -106,10 +106,8 @@ int DummyApp::Init(int w, int h) {
     static const int attribute_list[] = {
         GLX_X_RENDERABLE, True, GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT, GLX_RENDER_TYPE,
         GLX_RGBA_BIT, GLX_X_VISUAL_TYPE, GLX_TRUE_COLOR, GLX_RED_SIZE, 8, GLX_GREEN_SIZE,
-        8, GLX_BLUE_SIZE, 8, GLX_ALPHA_SIZE, 8, GLX_DEPTH_SIZE, 0, GLX_STENCIL_SIZE, 0,
+        8, GLX_BLUE_SIZE, 8, GLX_ALPHA_SIZE, 0, GLX_DEPTH_SIZE, 0, GLX_STENCIL_SIZE, 0,
         GLX_DOUBLEBUFFER, True,
-        // GLX_SAMPLE_BUFFERS  , 1,
-        // GLX_SAMPLES         , 4,
         None};
 
     int element_count = 0;

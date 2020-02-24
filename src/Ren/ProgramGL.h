@@ -25,7 +25,7 @@ const int MaxUniformBlocksCount = 16;
 enum class eProgLoadStatus { Found, SetToDefault, CreatedFromData };
 
 class Program : public RefCounter {
-    uint32_t prog_id_ = 0;
+    uint32_t id_ = 0; // native gl name
     uint32_t flags_ = 0;
     std::array<ShaderRef, int(eShaderType::_Count)> shaders_;
     std::array<Attribute, MaxAttributesCount> attributes_;
@@ -36,9 +36,9 @@ class Program : public RefCounter {
     void InitBindings(ILog* log);
   public:
     Program() = default;
-    Program(const char *name, uint32_t prog_id, const Attribute *attrs,
+    Program(const char *name, const uint32_t id, const Attribute *attrs,
             const Uniform *unifs, const UniformBlock *unif_blocks)
-        : prog_id_(prog_id) {
+        : id_(id) {
         for (int i = 0; i < MaxAttributesCount; i++) {
             if (attrs[i].loc == -1) {
                 break;
@@ -64,21 +64,21 @@ class Program : public RefCounter {
     Program(const char *name, ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
 
     Program(const Program &rhs) = delete;
-    Program(Program &&rhs) noexcept { *this = std::move(rhs); }
+    Program(Program &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Program();
 
     Program &operator=(const Program &rhs) = delete;
     Program &operator=(Program &&rhs) noexcept;
 
-    uint32_t prog_id() const { return prog_id_; }
+    uint32_t id() const { return id_; }
     uint32_t flags() const { return flags_; }
-    bool ready() const { return prog_id_ != 0; }
+    bool ready() const { return id_ != 0; }
     bool has_tessellation() const {
         return shaders_[int(eShaderType::Tesc)] && shaders_[int(eShaderType::Tese)];
     }
     const String &name() const { return name_; }
 
-    const Attribute &attribute(int i) const { return attributes_[i]; }
+    const Attribute &attribute(const int i) const { return attributes_[i]; }
 
     const Attribute &attribute(const char *name) const {
         for (int i = 0; i < MaxAttributesCount; i++) {
@@ -89,7 +89,7 @@ class Program : public RefCounter {
         return attributes_[0];
     }
 
-    const Uniform &uniform(int i) const { return uniforms_[i]; }
+    const Uniform &uniform(const int i) const { return uniforms_[i]; }
 
     const Uniform &uniform(const char *name) const {
         for (int i = 0; i < MaxUniformsCount; i++) {
@@ -100,7 +100,7 @@ class Program : public RefCounter {
         return uniforms_[0];
     }
 
-    const UniformBlock &uniform_block(int i) const { return uniform_blocks_[i]; }
+    const UniformBlock &uniform_block(const int i) const { return uniform_blocks_[i]; }
 
     const UniformBlock &uniform_block(const char *name) const {
         for (int i = 0; i < MaxUniformBlocksCount; i++) {
@@ -116,7 +116,7 @@ class Program : public RefCounter {
     void Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
 };
 
-typedef StorageRef<Program> ProgramRef;
+typedef StrongRef<Program> ProgramRef;
 typedef Storage<Program> ProgramStorage;
 } // namespace Ren
 

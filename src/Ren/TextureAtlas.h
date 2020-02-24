@@ -21,7 +21,7 @@ class TextureAtlas {
 
     int resx() const { return splitter_.resx(); }
     int resy() const { return splitter_.resy(); }
-    uint32_t tex_id(int i) const { return tex_ids_[i]; }
+    uint32_t tex_id(const int i) const { return tex_ids_[i]; }
 
     int AllocateRegion(const int res[2], int out_pos[2]);
     void InitRegion(const void *data, int data_len, eTexFormat format, uint32_t flags,

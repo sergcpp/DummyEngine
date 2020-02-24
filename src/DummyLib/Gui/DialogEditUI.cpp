@@ -38,10 +38,6 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
 
         const Ren::TextureRegionRef &line_tex = line_img_.tex();
 
-        const Ren::Vec2f *_uvs = line_img_.uvs_px();
-        const Ren::Vec2f uvs[2] = {_uvs[0] + Ren::Vec2f{1.0f, 0.0f},
-                                   _uvs[1] - Ren::Vec2f{1.0f, 0.0f}};
-
         const Ren::Vec2f line_width =
             Ren::Vec2f{1.0f, aspect()} * 4.0f / Ren::Vec2f{size_px()};
 
@@ -59,12 +55,12 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
                 // draw connection curve
                 const Ren::Vec2f p0 =
                     view_offset_ +
-                    Ren::Vec2f{spacing[0] * (depth - 1) + elem_size[0],
-                               -spacing[1] * parent_ndx + 0.75f * elem_size[1] -
+                    Ren::Vec2f{spacing[0] * float(depth - 1) + elem_size[0],
+                               -spacing[1] * float(parent_ndx) + 0.75f * elem_size[1] -
                                    0.1f * elem_size[1] * float(choice_ndx)};
-                const Ren::Vec2f p3 =
-                    view_offset_ + Ren::Vec2f{spacing[0] * depth,
-                                              -spacing[1] * ndx + 0.5f * elem_size[1]};
+                const Ren::Vec2f p3 = view_offset_ + Ren::Vec2f{spacing[0] * float(depth),
+                                                                -spacing[1] * float(ndx) +
+                                                                    0.5f * elem_size[1]};
                 const Ren::Vec2f p1 = p0 + Ren::Vec2f{0.1f, 0.0f};
                 const Ren::Vec2f p2 = p3 - Ren::Vec2f{0.1f, 0.0f};
 
@@ -89,8 +85,9 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
             }
 
             if (!visited) {
-                const Ren::Vec2f elem_pos = SnapToPixels(
-                    view_offset_ + Ren::Vec2f{spacing[0] * depth, -spacing[1] * ndx});
+                const Ren::Vec2f elem_pos =
+                    SnapToPixels(view_offset_ + Ren::Vec2f{spacing[0] * float(depth),
+                                                           -spacing[1] * float(ndx)});
 
                 Gui::Image9Patch *el =
                     elem_index == selected_element_ ? &element_highlighted_ : &element_;
@@ -181,10 +178,7 @@ void DialogEditUI::DrawCurveLocal(Gui::Renderer *r, const Ren::Vec2f &_p0,
                  Ren::Vec4f{width[0], width[1], 2.0f, 0.0f});
 }
 
-void DialogEditUI::IterateElements(
-    std::function<bool(const ScriptedSequence *seq, const ScriptedSequence *parent,
-                       int depth, int ndx, int parent_ndx, int choice_ndx, bool visited)>
-        callback) {
+void DialogEditUI::IterateElements(const IterationCallback &callback) {
     if (!dialog_ || dialog_->empty()) {
         return;
     }
@@ -203,7 +197,7 @@ void DialogEditUI::IterateElements(
 
     while (queue_head != queue_tail) {
         const entry_t e = queue[queue_head];
-        queue_head = (queue_head + 1) % 128;
+        queue_head = (queue_head + 1) % 256;
 
         const ScriptedSequence *seq = dialog_->GetSequence(e.id);
         assert(seq);
@@ -232,7 +226,7 @@ void DialogEditUI::IterateElements(
 
             queue[queue_tail] = {choice->seq_id, e.id, child_depth, level,
                                  e.ndx,          i,    visited};
-            queue_tail = (queue_tail + 1) % 128;
+            queue_tail = (queue_tail + 1) % 256;
             seq_ids[child_depth][level] = choice->seq_id;
         }
     }
@@ -253,8 +247,9 @@ void DialogEditUI::Press(const Ren::Vec2f &p, bool push) {
             if (visited) {
                 return true;
             }
-            const Ren::Vec2f elem_pos = SnapToPixels(
-                view_offset_ + Ren::Vec2f{spacing[0] * depth, -spacing[1] * ndx});
+            const Ren::Vec2f elem_pos =
+                SnapToPixels(view_offset_ + Ren::Vec2f{spacing[0] * float(depth),
+                                                       -spacing[1] * float(ndx)});
 
             element_.Resize(elem_pos, elem_size, this);
 

@@ -68,7 +68,7 @@ void Ren::TextureRegion::Init(const void *data, const int size, const Texture2DP
     }
 }
 
-void Ren::TextureRegion::InitFromRAWData(const void *data, int size,
+void Ren::TextureRegion::InitFromRAWData(const void *data, const int /*size*/,
                                          const Texture2DParams &p,
                                          TextureAtlasArray *atlas) {
     const int res[2] = {p.w, p.h};
@@ -79,7 +79,7 @@ void Ren::TextureRegion::InitFromRAWData(const void *data, int size,
     }
 }
 
-void Ren::TextureRegion::InitFromTGAFile(const void *data, int size,
+void Ren::TextureRegion::InitFromTGAFile(const void *data, const int /*size*/,
                                          const Texture2DParams &p,
                                          TextureAtlasArray *atlas) {
     int w = 0, h = 0;
@@ -94,7 +94,7 @@ void Ren::TextureRegion::InitFromTGAFile(const void *data, int size,
     InitFromRAWData(image_data.get(), 0, _p, atlas);
 }
 
-void Ren::TextureRegion::InitFromPNGFile(const void *data, int size,
+void Ren::TextureRegion::InitFromPNGFile(const void *data, const int size,
                                          const Texture2DParams &p,
                                          TextureAtlasArray *atlas) {
     int w, h, channels;

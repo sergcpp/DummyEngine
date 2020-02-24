@@ -76,7 +76,7 @@ class GSVideoTest final : public GSBaseState {
     uint32_t y_pbo_[5] = {}, uv_pbo_[5] = {};
     uint8_t *y_ptr_[5] = {}, *uv_ptr_[5] = {};
     int cur_frame_index_[5] = {};
-    Ren::Texture2DRef y_tex_[5][TextureSyncWindow], uv_tex_[5][TextureSyncWindow];
+    Ren::Tex2DRef y_tex_[5][TextureSyncWindow], uv_tex_[5][TextureSyncWindow];
     void *after_tex_update_fences_[5][TextureSyncWindow] = {};
 
     double frame_decode_time_ms_ = 0.0, tex_update_time_ms_ = 0.0;

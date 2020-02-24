@@ -9,6 +9,30 @@ extern "C" {
 
 #include "../Scene/SceneData.h"
 #include "FrameBuf.h"
+#include "Passes/RpBlur.h"
+#include "Passes/RpCombine.h"
+#include "Passes/RpDOF.h"
+#include "Passes/RpDebugEllipsoids.h"
+#include "Passes/RpDebugProbes.h"
+#include "Passes/RpDebugTextures.h"
+#include "Passes/RpDepthFill.h"
+#include "Passes/RpDownColor.h"
+#include "Passes/RpDownDepth.h"
+#include "Passes/RpFXAA.h"
+#include "Passes/RpInsertFence.h"
+#include "Passes/RpOpaque.h"
+#include "Passes/RpReflections.h"
+#include "Passes/RpResolve.h"
+#include "Passes/RpSSAO.h"
+#include "Passes/RpSampleBrightness.h"
+#include "Passes/RpShadowMaps.h"
+#include "Passes/RpSkinning.h"
+#include "Passes/RpSkydome.h"
+#include "Passes/RpTAA.h"
+#include "Passes/RpTransparent.h"
+#include "Passes/RpUpdateBuffers.h"
+#include "PrimDraw.h"
+
 #include "Renderer_DrawList.h"
 #include "Renderer_GL_Defines.inl"
 
@@ -26,7 +50,7 @@ class Renderer {
 
     uint32_t render_flags() const { return render_flags_; }
 
-    void set_render_flags(uint32_t f) { render_flags_ = f; }
+    void set_render_flags(const uint32_t f) { render_flags_ = f; }
 
     BackendInfo backend_info() const { return backend_info_; }
 
@@ -37,8 +61,8 @@ class Renderer {
     void BlitPixelsTonemap(const void *data, int w, int h, Ren::eTexFormat format);
     void BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf,
                     int first_att, int att_count, float multiplier = 1.0f);
-    void BlitTexture(float px, float py, float sx, float sy, uint32_t tex_id, int resx,
-                     int resy, bool is_ms = false);
+    void BlitTexture(float px, float py, float sx, float sy, const Ren::Tex2DRef &tex,
+                     float multiplier = 1.0f, bool is_ms = false);
 
     void BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &dst_store,
                              int face);
@@ -51,42 +75,21 @@ class Renderer {
     ShaderLoader &sh_;
     std::shared_ptr<Sys::ThreadPool> threads_;
     SWcull_ctx cull_ctx_ = {};
-    Ren::ProgramRef skydome_prog_, fillz_solid_prog_, fillz_solid_mov_prog_,
-        fillz_vege_solid_prog_, fillz_vege_solid_vel_prog_,
-        fillz_vege_solid_vel_mov_prog_, fillz_transp_prog_, fillz_transp_mov_prog_,
-        fillz_vege_transp_prog_, fillz_vege_transp_vel_prog_,
-        fillz_vege_transp_vel_mov_prog_, fillz_skin_solid_prog_,
-        fillz_skin_solid_vel_prog_, fillz_skin_solid_vel_mov_prog_,
-        fillz_skin_transp_prog_, fillz_skin_transp_vel_prog_,
-        fillz_skin_transp_vel_mov_prog_, shadow_solid_prog_, shadow_vege_solid_prog_,
-        shadow_transp_prog_, shadow_vege_transp_prog_, blit_prog_, blit_ms_prog_,
-        blit_combine_prog_, blit_combine_ms_prog_, blit_red_prog_, blit_down_prog_,
-        blit_down_ms_prog_, blit_down_depth_prog_, blit_down_depth_ms_prog_,
-        blit_dof_init_coc_prog_, blit_dof_bilateral_prog_, blit_dof_calc_near_prog_,
-        blit_dof_small_blur_prog_, blit_dof_combine_prog_, blit_dof_combine_ms_prog_,
-        blit_gauss_prog_, blit_gauss_sep_prog_, blit_bilateral_prog_, blit_upscale_prog_,
-        blit_upscale_ms_prog_, blit_debug_prog_, blit_debug_ms_prog_, blit_ssr_prog_,
-        blit_ssr_ms_prog_, blit_ssr_compose_prog_, blit_ssr_compose_ms_prog_,
-        blit_ssr_dilate_prog_, blit_ms_resolve_prog_, blit_ao_prog_, blit_multiply_prog_,
-        blit_multiply_ms_prog_, blit_debug_bvh_prog_, blit_debug_bvh_ms_prog_,
-        blit_depth_prog_, blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_,
-        blit_project_sh_prog_, blit_fxaa_prog_, blit_taa_prog_, blit_static_vel_prog_,
-        blit_transparent_compose_prog_, blit_transparent_compose_ms_prog_,
-        blit_transparent_init_prog_, probe_prog_, ellipsoid_prog_, skinning_prog_;
-    Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_,
+    Ren::ProgramRef blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_down_prog_,
+        blit_gauss_prog_, blit_depth_prog_, blit_rgbm_prog_, blit_mipmap_prog_,
+        blit_prefilter_prog_, blit_project_sh_prog_;
+    Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_,
         brdf_lut_, cone_rt_lut_, noise_tex_;
 
-    FrameBuf clean_buf_, resolved_or_transparent_buf_, ssr_buf1_, ssr_buf2_,
-        down_buf_coc_[2], down_buf_4x_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_,
-        ssao_buf1_, ssao_buf2_, probe_sample_buf_, combined_buf_, history_buf_, dof_buf_,
-        down_depth_2x_, down_depth_4x_;
-#if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
+    FrameBuf probe_sample_buf_;
+    Ren::Tex2DRef color_tex_, spec_tex_, normal_tex_, depth_tex_;
+    Ren::Tex2DRef down_depth_2x_, velocity_tex_, shadow_tex_,
+        resolved_or_transparent_tex_, history_tex_, ssao_tex1_, ssao_tex2_, ssr_tex1_,
+        ssr_tex2_, down_depth_4x_, blur_tex_[2], reduced_tex_, down_tex_coc_[2], dof_tex_,
+        down_tex_4x_, combined_tex_;
+    Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
     FrameBuf moments_buf_;
-#endif
-    int scr_w_ = 0, scr_h_ = 0, // allocated screen resolution
-        act_w_ = 0, act_h_ = 0; // actual resolution
-
-    bool msaa_enabled_ = false, taa_enabled_ = false, dof_enabled_ = false;
+    bool taa_enabled_ = false, dof_enabled_ = false;
 
     Ren::TextureSplitter shadow_splitter_;
 
@@ -94,8 +97,8 @@ class Renderer {
 #if !defined(__ANDROID__)
         (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap |
          EnableLights | EnableDecals | EnableShadows /*| EnableOIT*/ | EnableTonemap |
-         EnableBloom | EnableTaa /*EnableMsaa | EnableFxaa*/ | EnableTimers |
-         EnableDOF /*| DebugEllipsoids*/);
+         EnableBloom | EnableTaa /*EnableMsaa | EnableFxaa*/ | EnableTimers | EnableDOF /*|
+         DebugEllipsoids*/);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights |
          EnableDecals | EnableShadows | EnableTonemap | EnableDOF | EnableTimers);
@@ -117,7 +120,6 @@ class Renderer {
     uint64_t backend_cpu_start_ = 0, backend_cpu_end_ = 0;
     int64_t backend_time_diff_ = 0;
     float reduced_average_ = 0.0f;
-    Ren::Mat4f down_buf_view_from_world_, prev_clip_from_world_, prev_clip_from_view_;
     Ren::Vec4f prev_wind_scroll_;
 
     DynArray<Ren::Frustum> temp_sub_frustums_;
@@ -136,35 +138,19 @@ class Renderer {
     // Constant that controls buffers orphaning
     static const int FrameSyncWindow = 2;
 
-    uint32_t temp_tex_ = 0xffffffff;
-    Ren::eTexFormat temp_tex_format_ = Ren::eTexFormat::Undefined;
-    int temp_tex_w_ = 0, temp_tex_h_ = 0;
+    Ren::Tex2DRef temp_tex_;
 
-    uint32_t temp_framebuf_ = 0, skydome_framebuf_ = 0, depth_fill_framebuf_ = 0,
-             depth_fill_framebuf_vel_ = 0, refl_comb_framebuf_ = 0,
-             transparent_comb_framebuf_ = 0, clean_buf_color_only_ = 0,
-             clean_buf_vel_only_ = 0, clean_buf_transparent_ = 0,
-             temporal_resolve_framebuf_ = 0;
+    uint32_t temp_framebuf_ = 0;
 
-    uint32_t unif_shared_data_block_[FrameSyncWindow];
-    uint32_t temp_vao_, fs_quad_vao_, depth_pass_solid_vao_, depth_pass_vege_solid_vao_,
-        depth_pass_transp_vao_, depth_pass_vege_transp_vao_, depth_pass_skin_solid_vao_,
-        depth_pass_skin_transp_vao_, draw_pass_vao_, skydome_vao_, sphere_vao_;
+    // uint32_t unif_shared_data_block_[FrameSyncWindow];
+    Ren::Vao temp_vao_;
     uint32_t temp_buf1_vtx_offset_, temp_buf2_vtx_offset_, temp_buf_ndx_offset_,
-        skydome_vtx1_offset_, skydome_vtx2_offset_, skydome_ndx_offset_,
-        sphere_vtx1_offset_, sphere_vtx2_offset_, sphere_ndx_offset_, quad_vtx1_offset_,
-        quad_vtx2_offset_, quad_ndx_offset_, skinned_buf1_vtx_offset_,
-        skinned_buf2_vtx_offset_;
-    uint32_t last_vertex_buf1_ = 0, last_vertex_buf2_ = 0, last_index_buffer_ = 0;
-    uint32_t instances_buf_, instances_tbo_[FrameSyncWindow], skin_transforms_buf_,
-        skin_transforms_tbo_, shape_keys_buf_, shape_keys_tbo_;
-    uint32_t lights_buf_, lights_tbo_[FrameSyncWindow], decals_buf_,
-        decals_tbo_[FrameSyncWindow], cells_buf_, cells_tbo_[FrameSyncWindow], items_buf_,
-        items_tbo_[FrameSyncWindow];
-    uint32_t reduce_pbo_[FrameSyncWindow], probe_sample_pbo_;
-    int cur_reduce_pbo_ = 0;
-
-    uint32_t nodes_buf_ = 0, nodes_tbo_ = 0;
+        skinned_buf1_vtx_offset_, skinned_buf2_vtx_offset_;
+    Ren::Tex1DRef cells_tbo_[FrameSyncWindow], items_tbo_[FrameSyncWindow];
+    Ren::Tex1DRef instances_tbo_[FrameSyncWindow], lights_tbo_[FrameSyncWindow],
+        decals_tbo_[FrameSyncWindow];
+    uint32_t /*reduce_pbo_[FrameSyncWindow], */ probe_sample_pbo_;
+    // int cur_reduce_pbo_ = 0;
 
     enum {
         TimeDrawStart,
@@ -186,22 +172,56 @@ class Renderer {
 
     void *buf_range_fences_[FrameSyncWindow] = {};
     int cur_buf_chunk_ = 0;
-
-    void CheckInitVAOs();
 #endif
 
     DynArray<ShadReg> allocated_shadow_regions_;
 
-    // temp
-    std::vector<uint8_t> depth_pixels_[2], depth_tiles_[2];
-    float debug_roughness_ = 0.0f;
+    Graph::RpBuilder rp_builder_;
+
+    // persistent resources
+    Graph::ResourceHandle skin_transofrms_buf2_;
+    Graph::ResourceHandle instances_buf2_;
+    Graph::ResourceHandle shape_keys_buf2_;
+    Graph::ResourceHandle cells_buf2_;
+    Graph::ResourceHandle lights_buf2_;
+    Graph::ResourceHandle decals_buf2_;
+    Graph::ResourceHandle items_buf2_;
+
+    Graph::ResourceHandle unif_shared_data_buf_[FrameSyncWindow];
+
+    RpUpdateBuffers rp_update_buffers_;
+    RpSkinning rp_skinning_;
+    RpShadowMaps rp_shadow_maps_;
+    RpSkydome rp_skydome_;
+    RpDepthFill rp_depth_fill_;
+    RpDownColor rp_down_color_ = {prim_draw_};
+    RpDownDepth rp_down_depth_ = {prim_draw_};
+    RpSSAO rp_ssao_ = {prim_draw_};
+    RpOpaque rp_opaque_;
+    RpResolve rp_resolve_ = {prim_draw_};
+    RpTransparent rp_transparent_ = {prim_draw_};
+    RpReflections rp_reflections_ = {prim_draw_};
+    RpTAA rp_taa_ = {prim_draw_};
+    RpDOF rp_dof_ = {prim_draw_};
+    RpBlur rp_blur_ = {prim_draw_};
+    RpInsertFence rp_fence_;
+    RpSampleBrightness rp_sample_brightness_ = {prim_draw_, Ren::Vec2i{16, 8},
+                                                FrameSyncWindow};
+    RpCombine rp_combine_ = {prim_draw_};
+    RpFXAA rp_fxaa_ = {prim_draw_};
+
+    // debugging passes
+    RpDebugEllipsoids rp_debug_ellipsoids_ = {prim_draw_};
+    RpDebugProbes rp_debug_probes_ = {prim_draw_};
+    RpDebugTextures rp_debug_textures_ = {prim_draw_};
+
+    ViewState view_state_;
+    PrimDraw prim_draw_;
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
 
     void InitRendererInternal();
-    bool InitFramebuffersInternal();
     void DestroyRendererInternal();
-    void DrawObjectsInternal(const DrawList &list, const FrameBuf *target);
     static uint64_t GetGpuTimeBlockingUs();
 
     // Parallel Jobs

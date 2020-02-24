@@ -13,7 +13,6 @@
 #include <Eng/Scene/SceneManager.h>
 #include <Eng/Utils/Cmdline.h>
 #include <Ren/Context.h>
-#include <Ren/GL.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
@@ -71,7 +70,7 @@ void GSUITest2::Enter() {
     log_->Info("GSUITest: Loading scene!");
     // GSBaseState::LoadScene(SCENE_NAME);
 
-    {
+    /*{
         std::ifstream dict_file("assets_pc/scenes/test/test_dict/de-en.dict",
                                 std::ios::binary);
         dict_->Load(dict_file, log_.get());
@@ -87,7 +86,7 @@ void GSUITest2::Enter() {
 
         const double t_diff_ms = double(t2_us - t1_us) / 1000.0;
         volatile int ii = 0;
-    }
+    }*/
 
     zenith_index_ = scene_manager_->FindObject("zenith");
 }
@@ -104,16 +103,16 @@ void GSUITest2::OnPostloadScene(JsObject &js_scene) {
         const JsObject &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
             const JsArray &js_orig = js_cam.at("view_origin").as_arr();
-            view_origin[0] = (float)js_orig.at(0).as_num().val;
-            view_origin[1] = (float)js_orig.at(1).as_num().val;
-            view_origin[2] = (float)js_orig.at(2).as_num().val;
+            view_origin[0] = float(js_orig.at(0).as_num().val);
+            view_origin[1] = float(js_orig.at(1).as_num().val);
+            view_origin[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
             const JsArray &js_dir = js_cam.at("view_dir").as_arr();
-            view_dir[0] = (float)js_dir.at(0).as_num().val;
-            view_dir[1] = (float)js_dir.at(1).as_num().val;
-            view_dir[2] = (float)js_dir.at(2).as_num().val;
+            view_dir[0] = float(js_dir.at(0).as_num().val);
+            view_dir[1] = float(js_dir.at(1).as_num().val);
+            view_dir[2] = float(js_dir.at(2).as_num().val);
         }
 
         /*if (js_cam.Has("fwd_speed")) {
@@ -123,12 +122,12 @@ void GSUITest2::OnPostloadScene(JsObject &js_scene) {
 
         if (js_cam.Has("fov")) {
             const JsNumber &js_fov = js_cam.at("fov").as_num();
-            view_fov = (float)js_fov.val;
+            view_fov = float(js_fov.val);
         }
 
         if (js_cam.Has("max_exposure")) {
             const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
-            max_exposure = (float)js_max_exposure.val;
+            max_exposure = float(js_max_exposure.val);
         }
     }
 
@@ -343,8 +342,8 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
-        if (evt.point.x > (float)ren_ctx_->w() * 0.9f &&
-            evt.point.y < (float)ren_ctx_->h() * 0.1f) {
+        if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
+            evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -365,7 +364,7 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
     switch (evt.type) {
     case RawInputEvent::EvP1Down: {
         Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         // text_printer_->Press(p, true);
         edit_box_->Press(p, true);
@@ -376,23 +375,15 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP1Up: {
         // text_printer_->skip();
 
-        Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+        const Ren::Vec2f p =
+            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         // text_printer_->Press(p, false);
         edit_box_->Press(p, false);
 
         is_visible_ = !is_visible_;
     } break;
-    case RawInputEvent::EvP2Up: {
-
-    } break;
-    case RawInputEvent::EvP1Move: {
-        Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
-                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
-        // text_printer_->Hover(p);
-    } break;
+    case RawInputEvent::EvP2Up:
     case RawInputEvent::EvP2Move: {
 
     } break;
@@ -417,10 +408,11 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
         } else {
             char ch = InputManager::CharFromKeycode(evt.key_code);
             if (shift_down_) {
-                if (ch == '-')
+                if (ch == '-') {
                     ch = '_';
-                else
-                    ch = (char)std::toupper(ch);
+                } else {
+                    ch = char(std::toupper(ch));
+                }
             }
 
             edit_box_->AddChar(ch);

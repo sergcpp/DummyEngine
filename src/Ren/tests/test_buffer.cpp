@@ -2,8 +2,8 @@
 
 #include "membuf.h"
 
-#include "../Context.h"
 #include "../Buffer.h"
+#include "../Context.h"
 #include "../Utils.h"
 
 #ifdef USE_GL_RENDER
@@ -25,7 +25,8 @@ class BufferTest : public Ren::Context {
     void *gl_ctx_main_;
 #endif
     Ren::LogNull log_;
-public:
+
+  public:
     BufferTest() {
 #if defined(_WIN32)
         hInstance = GetModuleHandle(NULL);
@@ -45,9 +46,9 @@ public:
             throw std::runtime_error("Cannot register window class!");
         }
 
-        hWnd = CreateWindow("BufferTest", "!!", WS_OVERLAPPEDWINDOW |
-                            WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-                            0, 0, 100, 100, NULL, NULL, hInstance, NULL);
+        hWnd = CreateWindow("BufferTest", "!!",
+                            WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0,
+                            100, 100, NULL, NULL, hInstance, NULL);
 
         if (hWnd == NULL) {
             throw std::runtime_error("Cannot create window!");
@@ -79,7 +80,9 @@ public:
 #else
         SDL_Init(SDL_INIT_VIDEO);
 
-        window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 256, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+        window_ =
+            SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                             256, 256, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
         gl_ctx_main_ = SDL_GL_CreateContext(window_);
 #endif
         Context::Init(256, 256, &log_);
@@ -104,10 +107,8 @@ public:
 #else
 #include "../SW/SW.h"
 class BufferTest : public Ren::Context {
-public:
-    BufferTest() {
-        Ren::Context::Init(256, 256);
-    }
+  public:
+    BufferTest() { Ren::Context::Init(256, 256); }
 };
 #endif
 
@@ -116,7 +117,9 @@ void test_buffer() {
     {
         BufferTest test;
 
-        auto buf = Ren::Buffer{ "buf", 256 };
+        auto buf =
+            Ren::Buffer{"buf", Ren::eBufferType::Uniform, Ren::eBufferAccessType::Draw,
+                        Ren::eBufferAccessFreq::Static, 256};
 
         require(buf.Alloc(16) == 0);
         require(buf.Alloc(32) == 16);

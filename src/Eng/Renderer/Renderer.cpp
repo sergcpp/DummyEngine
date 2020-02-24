@@ -1,5 +1,7 @@
 #include "Renderer.h"
 
+#include <cstdio>
+
 #include <Ren/Context.h>
 #include <Ren/Utils.h>
 #include <Sys/ThreadPool.h>
@@ -62,6 +64,8 @@ const Ren::Vec2f HaltonSeq23[64] = {
     Ren::Vec2f{0.2343750000f, 0.2469136120f}, Ren::Vec2f{0.7343750000f, 0.5802469850f},
     Ren::Vec2f{0.4843750000f, 0.9135804180f}, Ren::Vec2f{0.9843750000f, 0.0617284030f}};
 
+const int TaaSampleCount = 8;
+
 #include "__brdf_lut.inl"
 #include "__cone_rt_lut.inl"
 #include "__noise.inl"
@@ -78,10 +82,12 @@ int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y,
         (max)[2], (max)[0], (min)[1], (max)[2], (min)[0], (max)[1], (min)[2], (max)[0],  \
         (max)[1], (min)[2], (min)[0], (max)[1], (max)[2], (max)[0], (max)[1], (max)[2]
 
-Renderer::Renderer(Ren::Context &ctx, ShaderLoader& sh, std::shared_ptr<Sys::ThreadPool> threads)
+Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
+                   std::shared_ptr<Sys::ThreadPool> threads)
     : ctx_(ctx), sh_(sh), threads_(std::move(threads)),
       shadow_splitter_(RendererInternal::SHADOWMAP_WIDTH,
-                       RendererInternal::SHADOWMAP_HEIGHT) {
+                       RendererInternal::SHADOWMAP_HEIGHT),
+      rp_builder_(ctx_, sh_) {
     using namespace RendererInternal;
 
     {
@@ -93,28 +99,38 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader& sh, std::shared_ptr<Sys::Thr
     }
 
     { // shadow map buffer
-        shadow_buf_ =
-            FrameBuf(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, nullptr, 0,
-                     {FrameBuf::eDepthFormat::Depth16, Ren::eTexFilter::BilinearNoMipmap},
-                     1, ctx.log());
+        Ren::Texture2DParams params;
+        params.w = SHADOWMAP_WIDTH;
+        params.h = SHADOWMAP_HEIGHT;
+        params.format = Ren::eTexFormat::Depth16;
+        params.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+        Ren::eTexLoadStatus status;
+        shadow_tex_ = ctx_.LoadTexture2D("Shadowmap", params, &status);
+        assert(status == Ren::eTexLoadStatus::TexCreatedDefault);
     }
 
-    {                                       // aux buffer which gathers frame luminance
-        FrameBuf::ColorAttachmentDesc desc; // NOLINT
-        desc.format = Ren::eTexFormat::RawR16F;
-        desc.filter = Ren::eTexFilter::BilinearNoMipmap;
-        desc.repeat = Ren::eTexRepeat::ClampToEdge;
-        reduced_buf_ =
-            FrameBuf(16, 8, &desc, 1, {FrameBuf::eDepthFormat::DepthNone}, 1, ctx.log());
+    { // aux buffer which gathers frame luminance
+        Ren::Texture2DParams params;
+        params.w = 16;
+        params.h = 8;
+        params.format = Ren::eTexFormat::RawR16F;
+        params.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+        Ren::eTexLoadStatus status;
+        reduced_tex_ = ctx_.LoadTexture2D("Luma", params, &status);
+        assert(status == Ren::eTexLoadStatus::TexCreatedDefault);
     }
 
-    {                                       // buffer used to sample probes
-        FrameBuf::ColorAttachmentDesc desc; // NOLINT
+    { // buffer used to sample probes
+        FrameBuf::ColorAttachmentDesc desc;
         desc.format = Ren::eTexFormat::RawRGBA32F;
         desc.filter = Ren::eTexFilter::NoFilter;
         desc.repeat = Ren::eTexRepeat::ClampToEdge;
         probe_sample_buf_ =
-            FrameBuf(24, 8, &desc, 1, {FrameBuf::eDepthFormat::DepthNone}, 1, ctx.log());
+            FrameBuf("Probe sample", ctx_, 24, 8, &desc, 1, {}, 1, ctx.log());
     }
 
     static const uint8_t black[] = {0, 0, 0, 0}, white[] = {255, 255, 255, 255};
@@ -123,7 +139,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader& sh, std::shared_ptr<Sys::Thr
         Ren::Texture2DParams p;
         p.w = p.h = 1;
         p.format = Ren::eTexFormat::RawRGBA8888;
-        p.filter = Ren::eTexFilter::Bilinear;
+        p.filter = Ren::eTexFilter::NoFilter;
         p.repeat = Ren::eTexRepeat::ClampToEdge;
 
         Ren::eTexLoadStatus status;
@@ -253,6 +269,89 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader& sh, std::shared_ptr<Sys::Thr
         "assets/textures/skin_diffusion.uncompressed.png");
     }*/
 
+    { // create persistent skin transforms buffer
+        Graph::BufferDesc desc;
+        desc.type = Ren::eBufferType::Texture;
+        desc.size = FrameSyncWindow * SkinTransformsBufChunkSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        skin_transofrms_buf2_ = rp_builder_.CreateBuffer("Skin Transforms Buffer", desc);
+    }
+
+    { // create persistent shape keys buffer
+        Graph::BufferDesc desc;
+        desc.type = Ren::eBufferType::Texture;
+        desc.size = FrameSyncWindow * ShapeKeysBufChunkSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        shape_keys_buf2_ = rp_builder_.CreateBuffer("Shape Keys Buffer", desc);
+    }
+
+    { // create persistent instances buffer
+        Graph::BufferDesc desc;
+        desc.type = Ren::eBufferType::Texture;
+        desc.size = FrameSyncWindow * InstanceDataBufChunkSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        instances_buf2_ = rp_builder_.CreateBuffer("Instances Buffer", desc);
+    }
+
+    { // create persistent cells buffer
+        Graph::BufferDesc desc;
+        desc.type = Ren::eBufferType::Texture;
+        desc.size = FrameSyncWindow * CellsBufChunkSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        cells_buf2_ = rp_builder_.CreateBuffer("Cells Buffer", desc);
+    }
+
+    { // create persistent lights buffer
+        Graph::BufferDesc desc;
+        desc.type = Ren::eBufferType::Texture;
+        desc.size = FrameSyncWindow * LightsBufChunkSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        lights_buf2_ = rp_builder_.CreateBuffer("Lights Buffer", desc);
+    }
+
+    { // create persistent decals buffer
+        Graph::BufferDesc desc;
+        desc.type = Ren::eBufferType::Texture;
+        desc.size = FrameSyncWindow * DecalsBufChunkSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        decals_buf2_ = rp_builder_.CreateBuffer("Decals Buffer", desc);
+    }
+
+    { // create persistent items buffer
+        Graph::BufferDesc desc;
+        desc.type = Ren::eBufferType::Texture;
+        desc.size = FrameSyncWindow * ItemsBufChunkSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        items_buf2_ = rp_builder_.CreateBuffer("Items Buffer", desc);
+    }
+
+    // create persistent uniform buffer
+    for (int i = 0; i < FrameSyncWindow; i++) {
+        Graph::BufferDesc desc;
+        desc.type = Ren::eBufferType::Uniform;
+        desc.size = sizeof(SharedDataBlock);
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        char name_buf[32];
+        sprintf(name_buf, "Shared Data Buffer #%i", i);
+        unif_shared_data_buf_[i] = rp_builder_.CreateBuffer(name_buf, desc);
+    }
+
     // Compile built-in shaders etc.
     InitRendererInternal();
 
@@ -273,6 +372,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader& sh, std::shared_ptr<Sys::Thr
 }
 
 Renderer::~Renderer() {
+    prim_draw_.CleanUp(ctx_);
     DestroyRendererInternal();
     swCullCtxDestroy(&cull_ctx_);
 }
@@ -293,6 +393,10 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         return;
     }
 
+    if (!prim_draw_.LazyInit(ctx_)) {
+        log->Error("[Renderer] Failed to initialize primitive drawing!");
+    }
+
     const bool cur_msaa_enabled = (list.render_flags & EnableMsaa) != 0;
     const bool cur_taa_enabled = (list.render_flags & EnableTaa) != 0;
     const bool cur_dof_enabled = (list.render_flags & EnableDOF) != 0;
@@ -303,123 +407,187 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
     }
     const uint64_t cpu_draw_start_us = Sys::GetTimeUs();
 
-    if (cur_scr_w != scr_w_ || cur_scr_h != scr_h_ || cur_msaa_enabled != msaa_enabled_ ||
+    if (cur_scr_w != view_state_.scr_res[0] || cur_scr_h != view_state_.scr_res[1] ||
+        cur_msaa_enabled != view_state_.is_multisampled ||
         cur_taa_enabled != taa_enabled_ || cur_dof_enabled != dof_enabled_) {
-        { // Main buffer for raw frame before tonemapping
-            FrameBuf::ColorAttachmentDesc desc[4];
-            int desc_count = 0;
-            { // Main color
+        { // Main color
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w;
+            params.h = cur_scr_h;
 #if (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED) ||                                        \
     (REN_OIT_MODE == REN_OIT_MOMENT_BASED && REN_OIT_MOMENT_RENORMALIZE)
-              // renormalization requires buffer with alpha channel
-                desc[0].format = Ren::RawRGBA16F;
+            // renormalization requires buffer with alpha channel
+            params.format = Ren::eTexFormat::RawRGBA16F;
 #else
-                desc[0].format = Ren::eTexFormat::RawRG11F_B10F;
+            params.format = Ren::eTexFormat::RawRG11F_B10F;
 #endif
-                desc[0].filter = Ren::eTexFilter::NoFilter;
-                desc[0].repeat = Ren::eTexRepeat::ClampToEdge;
-                ++desc_count;
-            }
-            { // 4-component world-space normal (alpha is 'ssr' flag)
-                desc[1].format = Ren::eTexFormat::RawRGB10_A2;
-                desc[1].filter = Ren::eTexFilter::NoFilter;
-                desc[1].repeat = Ren::eTexRepeat::ClampToEdge;
-                ++desc_count;
-            }
-            { // 4-component specular (alpha is roughness)
-                desc[2].format = Ren::eTexFormat::RawRGBA8888;
-                desc[2].filter = Ren::eTexFilter::NoFilter;
-                desc[2].repeat = Ren::eTexRepeat::ClampToEdge;
-                ++desc_count;
-            }
-            if (cur_taa_enabled) {
-                // 2-component velocity
-                desc[3].format = Ren::eTexFormat::RawRG16;
-                desc[3].filter = Ren::eTexFilter::NoFilter;
-                desc[3].repeat = Ren::eTexRepeat::ClampToEdge;
-                desc[3].attached = false;
-                ++desc_count;
-            }
-            clean_buf_ = FrameBuf(
-                cur_scr_w, cur_scr_h, desc, desc_count,
-                {FrameBuf::eDepthFormat::Depth24Stencil8, Ren::eTexFilter::NoFilter},
-                cur_msaa_enabled ? 4 : 1, log);
+            params.filter = Ren::eTexFilter::NoFilter;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+            params.samples = cur_msaa_enabled ? 4 : 1;
+
+            Ren::eTexLoadStatus status;
+            color_tex_ = ctx_.LoadTexture2D("Main color", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
+        }
+        { // 4-component world-space normal (alpha is 'ssr' flag)
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w;
+            params.h = cur_scr_h;
+            params.format = Ren::eTexFormat::RawRGB10_A2;
+            params.filter = Ren::eTexFilter::NoFilter;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+            params.samples = cur_msaa_enabled ? 4 : 1;
+
+            Ren::eTexLoadStatus status;
+            normal_tex_ = ctx_.LoadTexture2D("Main normals", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
+        }
+        { // 4-component specular (alpha is roughness)
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w;
+            params.h = cur_scr_h;
+            params.format = Ren::eTexFormat::RawRGBA8888;
+            params.filter = Ren::eTexFilter::NoFilter;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+            params.samples = cur_msaa_enabled ? 4 : 1;
+
+            Ren::eTexLoadStatus status;
+            spec_tex_ = ctx_.LoadTexture2D("Main specular", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
+        }
+        { // 24-bit depth
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w;
+            params.h = cur_scr_h;
+            params.format = Ren::eTexFormat::Depth24Stencil8;
+            params.filter = Ren::eTexFilter::NoFilter;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+            params.samples = cur_msaa_enabled ? 4 : 1;
+
+            Ren::eTexLoadStatus status;
+            depth_tex_ = ctx_.LoadTexture2D("Main depth", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
+        }
+
+        { // Texture that holds 2D velocity
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w;
+            params.h = cur_scr_h;
+            params.format = Ren::eTexFormat::RawRG16;
+            params.filter = Ren::eTexFilter::NoFilter;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+            params.samples = cur_msaa_enabled ? 4 : 1;
+
+            Ren::eTexLoadStatus status;
+            velocity_tex_ = ctx_.LoadTexture2D("Velocity", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
         }
 
 #if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
         { // Buffer that holds moments (used for transparency)
             FrameBuf::ColorAttachmentDesc desc[3];
             { // b0
-                desc[0].format = Ren::RawR32F;
-                desc[0].filter = Ren::NoFilter;
-                desc[0].repeat = Ren::ClampToEdge;
+                desc[0].format = Ren::eTexFormat::RawR32F;
+                desc[0].filter = Ren::eTexFilter::NoFilter;
+                desc[0].repeat = Ren::eTexRepeat::ClampToEdge;
             }
             { // z and z^2
-                desc[1].format = Ren::RawRG16F;
-                desc[1].filter = Ren::NoFilter;
-                desc[1].repeat = Ren::ClampToEdge;
+                desc[1].format = Ren::eTexFormat::RawRG16F;
+                desc[1].filter = Ren::eTexFilter::NoFilter;
+                desc[1].repeat = Ren::eTexRepeat::ClampToEdge;
             }
             { // z^3 and z^4
-                desc[2].format = Ren::RawRG16F;
-                desc[2].filter = Ren::NoFilter;
-                desc[2].repeat = Ren::ClampToEdge;
+                desc[2].format = Ren::eTexFormat::RawRG16F;
+                desc[2].filter = Ren::eTexFilter::NoFilter;
+                desc[2].repeat = Ren::eTexRepeat::ClampToEdge;
             }
-            moments_buf_ = FrameBuf(cur_scr_w, cur_scr_h, desc, 3, {FrameBuf::DepthNone},
-                                    clean_buf_.sample_count, log);
+            moments_buf_ =
+                FrameBuf("Moments buf", ctx_, cur_scr_w, cur_scr_h, desc, 3,
+                         {Ren::eTexFormat::None}, clean_buf_.sample_count, log);
         }
 #endif
 
-        {                                       // Buffer that holds resolved color
-            FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::eTexFormat::RawRG11F_B10F;
-            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
-            desc.repeat = Ren::eTexRepeat::ClampToEdge;
-            resolved_or_transparent_buf_ =
-                FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1,
-                         {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+        { // Texture that holds resolved color
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w;
+            params.h = cur_scr_h;
+            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            params.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+            Ren::eTexLoadStatus status;
+            resolved_or_transparent_tex_ =
+                ctx_.LoadTexture2D("Resolved tex", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
         }
 
-        { // Buffer that holds 2x downsampled linear depth
-            FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::eTexFormat::RawR32F;
-            desc.filter = Ren::eTexFilter::NoFilter;
-            desc.repeat = Ren::eTexRepeat::ClampToEdge;
-            down_depth_2x_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1,
-                                      {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+        { // Texture that holds 2x downsampled linear depth
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w / 2;
+            params.h = cur_scr_h / 2;
+            params.format = Ren::eTexFormat::RawR32F;
+            params.filter = Ren::eTexFilter::NoFilter;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+            Ren::eTexLoadStatus status;
+            down_depth_2x_ = ctx_.LoadTexture2D("Down depth 2x", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
         }
 
         { // Buffer that holds 4x downsampled linear depth
-            FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::eTexFormat::RawR32F;
-            desc.filter = Ren::eTexFilter::NoFilter;
-            desc.repeat = Ren::eTexRepeat::ClampToEdge;
-            down_depth_4x_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1,
-                                      {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w / 4;
+            params.h = cur_scr_h / 4;
+            params.format = Ren::eTexFormat::RawR32F;
+            params.filter = Ren::eTexFilter::NoFilter;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+            Ren::eTexLoadStatus status;
+            down_depth_4x_ = ctx_.LoadTexture2D("Down depth 4x", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
         }
 
         { // Buffer that holds tonemapped ldr frame before fxaa applied
-            FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::eTexFormat::RawRGB888;
-            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
-            desc.repeat = Ren::eTexRepeat::ClampToEdge;
-            combined_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1,
-                                     {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w;
+            params.h = cur_scr_h;
+            params.format = Ren::eTexFormat::RawRGB888;
+            params.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+            Ren::eTexLoadStatus status;
+            combined_tex_ = ctx_.LoadTexture2D("Combined buf", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
         }
 
         if (cur_taa_enabled) {
-            FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::eTexFormat::RawRG11F_B10F;
-            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
-            desc.repeat = Ren::eTexRepeat::ClampToEdge;
-            history_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1,
-                                    {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w;
+            params.h = cur_scr_h;
+            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            params.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+            Ren::eTexLoadStatus status;
+            history_tex_ = ctx_.LoadTexture2D("History tex", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
 
             log->Info("Setting texture lod bias to -1.0");
 
             // TODO: Replace this with usage of sampler objects
             int counter = 0;
             ctx_.VisitTextures(Ren::TexUsageScene, [&counter](Ren::Texture2D &tex) {
-                Ren::Texture2DParams &p = tex.params();
+                Ren::Texture2DParams p = tex.params();
                 if (p.lod_bias > -1.0f) {
                     p.lod_bias = -1.0f;
                     tex.SetFilter(p.filter, p.repeat, p.lod_bias);
@@ -429,13 +597,13 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
 
             log->Info("Textures processed: %i", counter);
         } else {
-            history_buf_ = {};
+            history_tex_ = {};
 
             log->Info("Setting texture lod bias to 0.0");
 
             int counter = 0;
             ctx_.VisitTextures(Ren::TexUsageScene, [&counter](Ren::Texture2D &tex) {
-                Ren::Texture2DParams &p = tex.params();
+                Ren::Texture2DParams p = tex.params();
                 if (p.lod_bias < 0.0f) {
                     p.lod_bias = 0.0f;
                     tex.SetFilter(p.filter, p.repeat, p.lod_bias);
@@ -447,63 +615,97 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         }
 
         if (cur_dof_enabled) {
-            FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::eTexFormat::RawRG11F_B10F;
-            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
-            desc.repeat = Ren::eTexRepeat::ClampToEdge;
-            dof_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1,
-                                {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w;
+            params.h = cur_scr_h;
+            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            params.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+            Ren::eTexLoadStatus status;
+            dof_tex_ = ctx_.LoadTexture2D("DOF tex", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
         } else {
-            dof_buf_ = {};
+            dof_tex_ = {};
         }
 
-        { // Buffer for SSAO
-            FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::eTexFormat::RawR8;
-            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
-            desc.repeat = Ren::eTexRepeat::ClampToEdge;
-            ssao_buf1_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1,
-                                  {FrameBuf::eDepthFormat::DepthNone}, 1, log);
-            ssao_buf2_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1,
-                                  {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+        { // Textures for SSAO
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w / 2;
+            params.h = cur_scr_h / 2;
+            params.format = Ren::eTexFormat::RawR8;
+            params.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+            Ren::eTexLoadStatus status;
+            ssao_tex1_ = ctx_.LoadTexture2D("SSAO tex 1", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
+            ssao_tex2_ = ctx_.LoadTexture2D("SSAO tex 2", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
         }
-        { // Auxilary buffer for reflections (rg - uvs, b - influence)
-            FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::eTexFormat::RawRGB10_A2;
-            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
-            desc.repeat = Ren::eTexRepeat::ClampToEdge;
-            ssr_buf1_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1,
-                                 {FrameBuf::eDepthFormat::DepthNone}, 1, log);
-            ssr_buf2_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1,
-                                 {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+        { // Auxilary texture for reflections (rg - uvs, b - influence)
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w / 2;
+            params.h = cur_scr_h / 2;
+            params.format = Ren::eTexFormat::RawRGB10_A2;
+            params.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+            Ren::eTexLoadStatus status;
+            ssr_tex1_ = ctx_.LoadTexture2D("SSR tex 1", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
+            ssr_tex2_ = ctx_.LoadTexture2D("SSR tex 2", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
         }
-        { // Buffer that holds near circle of confusion values
-            FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::eTexFormat::RawR8;
-            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
-            desc.repeat = Ren::eTexRepeat::ClampToEdge;
-            down_buf_coc_[0] = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1,
-                                        {FrameBuf::eDepthFormat::DepthNone}, 1, log);
-            down_buf_coc_[1] = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1,
-                                        {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+        { // Texture that holds near circle of confusion values
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w / 4;
+            params.h = cur_scr_h / 4;
+            params.format = Ren::eTexFormat::RawR8;
+            params.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+            Ren::eTexLoadStatus status;
+            down_tex_coc_[0] = ctx_.LoadTexture2D("COC 1", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
+            down_tex_coc_[1] = ctx_.LoadTexture2D("COC 2", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
         }
-        { // Buffer that holds previous frame (used for SSR)
-            FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::eTexFormat::RawRG11F_B10F;
-            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
-            desc.repeat = Ren::eTexRepeat::ClampToEdge;
-            down_buf_4x_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1,
-                                    {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+        { // Texture that holds previous frame (used for SSR)
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w / 4;
+            params.h = cur_scr_h / 4;
+            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            params.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+            Ren::eTexLoadStatus status;
+            down_tex_4x_ = ctx_.LoadTexture2D("DOWN 4x", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
         }
-        { // Auxilary buffers for bloom effect
-            FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::eTexFormat::RawRG11F_B10F;
-            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
-            desc.repeat = Ren::eTexRepeat::ClampToEdge;
-            blur_buf1_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1,
-                                  {FrameBuf::eDepthFormat::DepthNone}, 1, log);
-            blur_buf2_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1,
-                                  {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+        { // Auxilary textures for bloom effect
+            Ren::Texture2DParams params;
+            params.w = cur_scr_w / 4;
+            params.h = cur_scr_h / 4;
+            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            params.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+            Ren::eTexLoadStatus status;
+            blur_tex_[0] = ctx_.LoadTexture2D("BLUR 1", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
+            blur_tex_[1] = ctx_.LoadTexture2D("BLUE 2", params, &status);
+            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
         }
 
         // Memory consumption for FullHD frame (except clean_buf_):
@@ -515,40 +717,443 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         // ssr_buf1_        : ~1.97 Mb
         // ssr_buf2_        : ~1.97 Mb
         // down_buf_        : ~0.49 Mb
-        // blur_buf1_       : ~0.49 Mb
-        // blur_buf2_       : ~0.49 Mb
+        // blur_tex_[0]     : ~0.49 Mb
+        // blur_tex_[1]     : ~0.49 Mb
         // Total            : ~22.2 Mb
 
-        const bool init_success = InitFramebuffersInternal();
-        if (init_success) {
-            scr_w_ = cur_scr_w;
-            scr_h_ = cur_scr_h;
-            msaa_enabled_ = cur_msaa_enabled;
-            taa_enabled_ = cur_taa_enabled;
-            dof_enabled_ = cur_dof_enabled;
-            log->Info("Successfully initialized framebuffers %ix%i", scr_w_, scr_h_);
-        } else {
-            log->Error("InitFramebuffersInternal failed, frame will not be drawn!");
-            return;
-        }
+        view_state_.scr_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
+        view_state_.is_multisampled = cur_msaa_enabled;
+        taa_enabled_ = cur_taa_enabled;
+        dof_enabled_ = cur_dof_enabled;
+        log->Info("Successfully initialized framebuffers %ix%i", view_state_.scr_res[0],
+                  view_state_.scr_res[1]);
     }
 
     if (!target) {
         // TODO: Change actual resolution dynamically
 #if defined(__ANDROID__)
-        act_w_ = int((float)scr_w_ * 0.4f);
-        act_h_ = int((float)scr_h_ * 0.6f);
+        view_state_.act_res[0] = int(float(view_state_.scr_res[0]) * 0.4f);
+        view_state_.act_res[1] = int(float(view_state_.scr_res[1]) * 0.6f);
 #else
-        act_w_ = int((float)scr_w_ * 1.0f);
-        act_h_ = int((float)scr_h_ * 1.0f);
+        view_state_.act_res[0] = int(float(view_state_.scr_res[0]) * 1.0f);
+        view_state_.act_res[1] = int(float(view_state_.scr_res[1]) * 1.0f);
 #endif
     } else {
-        act_w_ = target->w;
-        act_h_ = target->h;
-        assert(act_w_ <= scr_w_ && act_h_ <= scr_h_);
+        view_state_.act_res[0] = target->w;
+        view_state_.act_res[1] = target->h;
+    }
+    assert(view_state_.act_res[0] <= view_state_.scr_res[0] &&
+           view_state_.act_res[1] <= view_state_.scr_res[1]);
+
+    cur_buf_chunk_ = (cur_buf_chunk_ + 1) % FrameSyncWindow;
+
+    if ((list.render_flags & EnableTaa) != 0) {
+        Ren::Vec2f jitter = HaltonSeq23[frame_counter_ % TaaSampleCount];
+        jitter = (jitter * 2.0f - Ren::Vec2f{1.0f}) / Ren::Vec2f{view_state_.act_res};
+
+        list.draw_cam.SetPxOffset(jitter);
+    } else {
+        list.draw_cam.SetPxOffset(Ren::Vec2f{0.0f, 0.0f});
     }
 
-    DrawObjectsInternal(list, target);
+    { // Setup render passes
+        skin_transofrms_buf2_._generation = 0;
+        instances_buf2_._generation = 0;
+        shape_keys_buf2_._generation = 0;
+        cells_buf2_._generation = 0;
+        lights_buf2_._generation = 0;
+        decals_buf2_._generation = 0;
+        items_buf2_._generation = 0;
+        unif_shared_data_buf_[cur_buf_chunk_]._generation = 0;
+
+        rp_builder_.Reset();
+
+        //
+        // Update buffers
+        //
+        rp_update_buffers_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk_,
+                                 buf_range_fences_, skin_transofrms_buf2_,
+                                 shape_keys_buf2_, instances_buf2_, cells_buf2_,
+                                 lights_buf2_, decals_buf2_, items_buf2_,
+                                 unif_shared_data_buf_[cur_buf_chunk_]);
+        Graph::RenderPassBase *rp_head = &rp_update_buffers_;
+        Graph::RenderPassBase *rp_tail = &rp_update_buffers_;
+
+        //
+        // Skinning and blend shapes
+        //
+        rp_skinning_.Setup(rp_builder_, list, cur_buf_chunk_, ctx_.default_vertex_buf1(),
+                           ctx_.default_vertex_buf2(), ctx_.default_delta_buf(),
+                           ctx_.default_skin_vertex_buf(),
+                           rp_update_buffers_.out_skin_transforms_buf(),
+                           rp_update_buffers_.out_shape_keys_buf());
+        rp_tail->p_next = &rp_skinning_;
+        rp_tail = rp_tail->p_next;
+
+        //
+        // Shadow maps
+        //
+        rp_shadow_maps_.Setup(rp_builder_, list, cur_buf_chunk_, shadow_tex_->handle(),
+                              rp_update_buffers_.out_instances_buf(),
+                              instances_tbo_[cur_buf_chunk_]);
+        rp_tail->p_next = &rp_shadow_maps_;
+        rp_tail = rp_tail->p_next;
+
+        //
+        // Skydome drawing
+        //
+        if ((list.render_flags & DebugWireframe) == 0 && list.env.env_map) {
+            rp_skydome_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk_,
+                              color_tex_->handle(), spec_tex_->handle(),
+                              depth_tex_->handle(),
+                              rp_update_buffers_.out_shared_data_buf());
+            rp_tail->p_next = &rp_skydome_;
+            rp_tail = rp_tail->p_next;
+        } else {
+            // TODO: ...
+        }
+
+        //
+        // Depth prepass
+        //
+        if (list.render_flags & EnableZFill) {
+            rp_depth_fill_.Setup(
+                rp_builder_, list, &view_state_, cur_buf_chunk_, depth_tex_->handle(),
+                velocity_tex_->handle(), rp_update_buffers_.out_instances_buf(),
+                instances_tbo_[cur_buf_chunk_], rp_update_buffers_.out_shared_data_buf());
+            rp_tail->p_next = &rp_depth_fill_;
+            rp_tail = rp_tail->p_next;
+        }
+
+        //
+        // Downsample depth
+        //
+        if ((list.render_flags & EnableZFill) &&
+            (list.render_flags & (EnableSSAO | EnableSSR)) &&
+            ((list.render_flags & DebugWireframe) == 0)) {
+            rp_down_depth_.Setup(rp_builder_, &view_state_, depth_tex_->handle(),
+                                 down_depth_2x_->handle(),
+                                 rp_update_buffers_.out_shared_data_buf());
+            rp_tail->p_next = &rp_down_depth_;
+            rp_tail = rp_tail->p_next;
+        }
+
+        //
+        // Ambient occlusion
+        //
+        const uint32_t use_ssao_mask = (EnableZFill | EnableSSAO | DebugWireframe);
+        const uint32_t use_ssao = (EnableZFill | EnableSSAO);
+        if ((list.render_flags & use_ssao_mask) == use_ssao) {
+            rp_ssao_.Setup(
+                rp_builder_, &view_state_, depth_tex_->handle(), down_depth_2x_->handle(),
+                rand2d_dirs_4x4_->handle(), ssao_tex1_->handle(), ssao_tex2_->handle(),
+                rp_update_buffers_.out_shared_data_buf(), combined_tex_->handle());
+            rp_tail->p_next = &rp_ssao_;
+            rp_tail = rp_tail->p_next;
+        }
+
+        //
+        // Opaque pass
+        //
+        rp_opaque_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk_,
+                         color_tex_->handle(), normal_tex_->handle(), spec_tex_->handle(),
+                         depth_tex_->handle(), rp_update_buffers_.out_instances_buf(),
+                         instances_tbo_[cur_buf_chunk_],
+                         rp_update_buffers_.out_shared_data_buf(), shadow_tex_->handle(),
+                         combined_tex_->handle(), lights_tbo_[cur_buf_chunk_],
+                         decals_tbo_[cur_buf_chunk_], cells_tbo_[cur_buf_chunk_],
+                         items_tbo_[cur_buf_chunk_], brdf_lut_, noise_tex_, cone_rt_lut_);
+        rp_tail->p_next = &rp_opaque_;
+        rp_tail = rp_tail->p_next;
+
+        //
+        // Resolve ms buffer
+        //
+        if ((list.render_flags & EnableOIT) && cur_msaa_enabled) {
+            rp_resolve_.Setup(rp_builder_, &view_state_, color_tex_->handle(),
+                              resolved_or_transparent_tex_->handle());
+        }
+
+        //
+        // Transparent pass
+        //
+
+        // TODO: remove this
+        Ren::TexHandle moments[3];
+
+        if (moments_buf_.attachments_count) {
+            moments[0] = moments_buf_.attachments[0].tex->handle();
+            moments[1] = moments_buf_.attachments[1].tex->handle();
+            moments[2] = moments_buf_.attachments[2].tex->handle();
+        }
+
+        rp_transparent_.Setup(
+            rp_builder_, list, &rp_opaque_.alpha_blend_start_index_, &view_state_,
+            cur_buf_chunk_, color_tex_->handle(), normal_tex_->handle(),
+            spec_tex_->handle(), depth_tex_->handle(),
+            resolved_or_transparent_tex_->handle(), moments[0], moments[1], moments[2],
+            rp_update_buffers_.out_instances_buf(), instances_tbo_[cur_buf_chunk_],
+            rp_update_buffers_.out_shared_data_buf(), shadow_tex_->handle(),
+            combined_tex_->handle(), lights_tbo_[cur_buf_chunk_],
+            decals_tbo_[cur_buf_chunk_], cells_tbo_[cur_buf_chunk_],
+            items_tbo_[cur_buf_chunk_], brdf_lut_, noise_tex_, cone_rt_lut_);
+        rp_tail->p_next = &rp_transparent_;
+        rp_tail = rp_tail->p_next;
+
+        //
+        // Reflections pass
+        //
+
+        Ren::TexHandle refl_out = view_state_.is_multisampled
+                                      ? resolved_or_transparent_tex_->handle()
+                                      : color_tex_->handle();
+
+        rp_reflections_.Setup(
+            rp_builder_, &view_state_, list.probe_storage, depth_tex_->handle(),
+            normal_tex_->handle(), spec_tex_->handle(), down_depth_2x_->handle(),
+            down_tex_4x_->handle(), ssr_tex1_->handle(), ssr_tex2_->handle(),
+            rp_update_buffers_.out_shared_data_buf(), cells_tbo_[cur_buf_chunk_],
+            items_tbo_[cur_buf_chunk_], brdf_lut_, refl_out);
+        rp_tail->p_next = &rp_reflections_;
+        rp_tail = rp_tail->p_next;
+
+        //
+        // Debug geometry
+        //
+        if (list.render_flags & DebugProbes) {
+            rp_debug_probes_.Setup(rp_builder_, list, &view_state_,
+                                   rp_update_buffers_.out_shared_data_buf(), refl_out);
+            rp_tail->p_next = &rp_debug_probes_;
+            rp_tail = rp_tail->p_next;
+        }
+
+        if (list.render_flags & DebugEllipsoids) {
+            rp_debug_ellipsoids_.Setup(rp_builder_, list, &view_state_,
+                                       rp_update_buffers_.out_shared_data_buf(),
+                                       refl_out);
+            rp_tail->p_next = &rp_debug_ellipsoids_;
+            rp_tail = rp_tail->p_next;
+        }
+
+        //
+        // Temporal resolve
+        //
+        if (list.render_flags & EnableTaa) {
+            assert(!view_state_.is_multisampled);
+            rp_taa_.Setup(
+                rp_builder_, &view_state_, depth_tex_->handle(), color_tex_->handle(),
+                history_tex_->handle(), velocity_tex_->handle(), reduced_average_,
+                list.draw_cam.max_exposure, rp_update_buffers_.out_shared_data_buf(),
+                resolved_or_transparent_tex_->handle());
+            rp_tail->p_next = &rp_taa_;
+            rp_tail = rp_tail->p_next;
+        }
+
+        //
+        // Color downsampling
+        //
+        if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap | EnableDOF)) &&
+            ((list.render_flags & DebugWireframe) == 0)) {
+            rp_down_color_.Setup(rp_builder_, &view_state_, refl_out,
+                                 rp_update_buffers_.out_shared_data_buf(),
+                                 down_tex_4x_->handle());
+            rp_tail->p_next = &rp_down_color_;
+            rp_tail = rp_tail->p_next;
+        }
+
+        const bool apply_dof = (list.render_flags & EnableDOF) &&
+                               list.draw_cam.focus_near_mul > 0.0f &&
+                               list.draw_cam.focus_far_mul > 0.0f &&
+                               ((list.render_flags & DebugWireframe) == 0);
+
+        if (apply_dof) {
+            const int qres_w = cur_scr_w / 4, qres_h = cur_scr_h / 4;
+            assert(down_tex_coc_[0]->params().w == qres_w &&
+                   down_tex_coc_[0]->params().h == qres_h);
+            assert(down_tex_coc_[1]->params().w == qres_w &&
+                   down_tex_coc_[1]->params().h == qres_h);
+            assert(blur_tex_[0]->params().w == qres_w &&
+                   blur_tex_[0]->params().h == qres_h);
+            assert(blur_tex_[1]->params().w == qres_w &&
+                   blur_tex_[1]->params().h == qres_h);
+            assert(down_depth_4x_->params().w == qres_w &&
+                   down_depth_4x_->params().h == qres_h);
+
+            Ren::TexHandle color_tex = {};
+            Ren::TexHandle dof_out = refl_out;
+
+            if (view_state_.is_multisampled) {
+                color_tex = resolved_or_transparent_tex_->handle();
+            } else {
+                if ((list.render_flags & EnableTaa) != 0u) {
+                    color_tex = resolved_or_transparent_tex_->handle();
+                } else {
+                    color_tex = color_tex_->handle();
+                }
+            }
+
+            Ren::TexHandle coc_tex[2] = {down_tex_coc_[0]->handle(),
+                                         down_tex_coc_[1]->handle()};
+
+            Ren::TexHandle blur_tex[2] = {blur_tex_[0]->handle(), blur_tex_[1]->handle()};
+
+            rp_dof_.Setup(rp_builder_, &list.draw_cam, &view_state_, color_tex,
+                          depth_tex_->handle(), down_tex_4x_->handle(),
+                          down_depth_2x_->handle(), down_depth_4x_->handle(), coc_tex,
+                          blur_tex, dof_tex_->handle(),
+                          rp_update_buffers_.out_shared_data_buf(), dof_out);
+            rp_tail->p_next = &rp_dof_;
+            rp_tail = rp_tail->p_next;
+        }
+
+        //
+        // Blur
+        //
+        if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap)) &&
+            ((list.render_flags & DebugWireframe) == 0)) {
+            assert(blur_tex_[0]->params().w == blur_tex_[1]->params().w &&
+                   blur_tex_[0]->params().h == blur_tex_[1]->params().h);
+
+            rp_blur_.Setup(
+                rp_builder_, &view_state_, down_tex_4x_->handle(), blur_tex_[1]->handle(),
+                rp_update_buffers_.out_shared_data_buf(), blur_tex_[0]->handle());
+            rp_tail->p_next = &rp_blur_;
+            rp_tail = rp_tail->p_next;
+        }
+
+        //
+        // Fence
+        //
+        rp_fence_.Setup(rp_builder_, cur_buf_chunk_, buf_range_fences_);
+        rp_tail->p_next = &rp_fence_;
+        rp_tail = rp_tail->p_next;
+
+        //
+        // Sample brightness
+        //
+        if (list.render_flags & EnableTonemap) {
+            Ren::TexHandle tex_to_sample = {};
+
+            if (list.render_flags & EnableBloom) {
+                // sample blured buffer
+                tex_to_sample = blur_tex_[0]->handle();
+            } else {
+                // sample small buffer
+                tex_to_sample = down_tex_4x_->handle();
+            }
+
+            rp_sample_brightness_.Setup(rp_builder_, tex_to_sample,
+                                        reduced_tex_->handle());
+            rp_tail->p_next = &rp_sample_brightness_;
+            rp_tail = rp_tail->p_next;
+        }
+
+        //
+        // Combine with blurred and tonemap
+        //
+        {
+            Ren::TexHandle color_tex = {}, blur_tex = {}, output_tex = {};
+
+            if (cur_msaa_enabled || ((list.render_flags & EnableTaa) != 0) || apply_dof) {
+                if (apply_dof) {
+                    if ((list.render_flags & EnableTaa) != 0) {
+                        color_tex = color_tex_->handle();
+                    } else {
+                        color_tex = dof_tex_->handle();
+                    }
+                } else {
+                    color_tex = resolved_or_transparent_tex_->handle();
+                }
+            } else {
+                color_tex = color_tex_->handle();
+            }
+
+            if ((list.render_flags & EnableBloom) &&
+                !(list.render_flags & DebugWireframe)) {
+                blur_tex = blur_tex_[0]->handle();
+            } else {
+                blur_tex = dummy_black_->handle();
+            }
+
+            if ((list.render_flags & EnableFxaa) &&
+                !(list.render_flags & DebugWireframe)) {
+                output_tex = combined_tex_->handle();
+            } else {
+                if (!target) {
+                    output_tex = {};
+                } else {
+                    output_tex = target->attachments[0].tex->handle();
+                }
+            }
+
+            float gamma = 1.0f;
+            if ((list.render_flags & EnableTonemap) &&
+                !(list.render_flags & DebugLights)) {
+                gamma = 2.2f;
+            }
+
+            const bool tonemap = (list.render_flags & EnableTonemap);
+            const float reduced_average = rp_sample_brightness_.reduced_average();
+
+            float exposure = reduced_average > std::numeric_limits<float>::epsilon()
+                                 ? (1.0f / reduced_average)
+                                 : 1.0f;
+            exposure = std::min(exposure, list.draw_cam.max_exposure);
+
+            rp_combine_.Setup(rp_builder_, &view_state_, gamma, exposure,
+                              list.draw_cam.fade, tonemap, color_tex, blur_tex,
+                              output_tex);
+            rp_tail->p_next = &rp_combine_;
+            rp_tail = rp_tail->p_next;
+        }
+
+        //
+        // FXAA
+        //
+        if ((list.render_flags & EnableFxaa) && !(list.render_flags & DebugWireframe)) {
+            Ren::TexHandle output_tex =
+                target ? target->attachments[0].tex->handle() : Ren::TexHandle{};
+
+            rp_fxaa_.Setup(rp_builder_, &view_state_, combined_tex_->handle(),
+                           rp_update_buffers_.out_shared_data_buf(), output_tex);
+            rp_tail->p_next = &rp_fxaa_;
+            rp_tail = rp_tail->p_next;
+        }
+
+        //
+        // Debugging (draw auxiliary surfaces)
+        //
+        {
+            Ren::TexHandle output_tex =
+                target ? target->attachments[0].tex->handle() : Ren::TexHandle{};
+
+            rp_debug_textures_.Setup(
+                rp_builder_, &view_state_, list, cur_buf_chunk_, depth_tex_->handle(),
+                cells_tbo_[cur_buf_chunk_], items_tbo_[cur_buf_chunk_], color_tex_,
+                normal_tex_, spec_tex_, down_tex_4x_, reduced_tex_, blur_tex_[0],
+                ssao_tex1_, shadow_tex_, rp_update_buffers_.out_shared_data_buf(),
+                output_tex);
+            rp_tail->p_next = &rp_debug_textures_;
+            rp_tail = rp_tail->p_next;
+        }
+
+        //
+        // Compile and execute
+        //
+        rp_tail->p_next = nullptr;
+
+        rp_builder_.Compile(rp_head);
+        rp_builder_.Execute(rp_head);
+    }
+
+    // DrawObjectsInternal(list, target);
+
+    { // store matrix to use it in next frame
+        view_state_.down_buf_view_from_world = list.draw_cam.view_matrix();
+        view_state_.prev_clip_from_world =
+            list.draw_cam.proj_matrix() * list.draw_cam.view_matrix();
+        view_state_.prev_clip_from_view = list.draw_cam.proj_matrix_offset();
+    }
 
     const uint64_t cpu_draw_end_us = Sys::GetTimeUs();
 

@@ -10,10 +10,9 @@ layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D s_texture;
 layout(location = 4) uniform float multiplier;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs_;
-#else
-in vec2 aVertexUVs_;
+layout(location = 0)
 #endif
+in vec2 aVertexUVs_;
 
 layout(location = 0) out vec4 outColor;
 

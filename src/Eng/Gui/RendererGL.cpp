@@ -129,45 +129,25 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config) : ctx_(ctx) {
         index_count_[i] = 0;
     }
 
-    GLuint vtx_buf_id;
-    glGenBuffers(1, &vtx_buf_id);
-    glBindBuffer(GL_ARRAY_BUFFER, vtx_buf_id);
-    glBufferData(GL_ARRAY_BUFFER,
-                 FrameSyncWindow * MaxVerticesPerRange * sizeof(vertex_t), nullptr,
-                 GL_DYNAMIC_DRAW);
+    vertex_buf_ =
+        ctx_.CreateBuffer("UI_VertexBuffer", Ren::eBufferType::VertexAttribs,
+                          Ren::eBufferAccessType::Draw, Ren::eBufferAccessFreq::Dynamic,
+                          FrameSyncWindow * MaxVerticesPerRange * sizeof(vertex_t));
 
-    GLuint ndx_buf_id;
-    glGenBuffers(1, &ndx_buf_id);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ndx_buf_id);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 FrameSyncWindow * MaxIndicesPerRange * sizeof(uint16_t), nullptr,
-                 GL_DYNAMIC_DRAW);
+    index_buf_ =
+        ctx_.CreateBuffer("UI_IndexBuffer", Ren::eBufferType::VertexIndices,
+                          Ren::eBufferAccessType::Draw, Ren::eBufferAccessFreq::Dynamic,
+                          FrameSyncWindow * MaxIndicesPerRange * sizeof(uint16_t));
 
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    const Ren::VtxAttribDesc attribs[] = {
+        {vertex_buf_->handle(), VTX_POS_LOC, 3, Ren::eType::Float32,
+         sizeof(vertex_t), uintptr_t(offsetof(vertex_t, pos))},
+        {vertex_buf_->handle(), VTX_COL_LOC, 4, Ren::eType::Uint8UNorm,
+         sizeof(vertex_t), uintptr_t(offsetof(vertex_t, col))},
+        {vertex_buf_->handle(), VTX_UVS_LOC, 4, Ren::eType::Uint16UNorm,
+         sizeof(vertex_t), uintptr_t(offsetof(vertex_t, uvs))}};
 
-    glBindBuffer(GL_ARRAY_BUFFER, vtx_buf_id);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ndx_buf_id);
-
-    glEnableVertexAttribArray(VTX_POS_LOC);
-    glVertexAttribPointer(VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-                          (void *)uintptr_t(offsetof(vertex_t, pos)));
-
-    glEnableVertexAttribArray(VTX_COL_LOC);
-    glVertexAttribPointer(VTX_COL_LOC, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(vertex_t),
-                          (void *)uintptr_t(offsetof(vertex_t, col)));
-
-    glEnableVertexAttribArray(VTX_UVS_LOC);
-    glVertexAttribPointer(VTX_UVS_LOC, 4, GL_UNSIGNED_SHORT, GL_TRUE, sizeof(vertex_t),
-                          (void *)uintptr_t(offsetof(vertex_t, uvs)));
-
-    glBindVertexArray(0);
-
-    vao_ = (uint32_t)vao;
-
-    vertex_buf_id_ = (uint32_t)vtx_buf_id;
-    index_buf_id_ = (uint32_t)ndx_buf_id;
+    vao_.Setup(attribs, 3, index_buf_->handle());
 
     draw_range_index_ = 0;
     fill_range_index_ = (draw_range_index_ + (FrameSyncWindow - 1)) % FrameSyncWindow;
@@ -185,14 +165,6 @@ Gui::Renderer::~Renderer() {
             buf_range_fences_[i] = nullptr;
         }
     }
-
-    auto buf_id = (GLuint)vao_;
-    glDeleteVertexArrays(1, &buf_id);
-
-    buf_id = (GLuint)vertex_buf_id_;
-    glDeleteBuffers(1, &buf_id);
-    buf_id = (GLuint)index_buf_id_;
-    glDeleteBuffers(1, &buf_id);
 }
 
 void Gui::Renderer::PushClipArea(const Vec2f dims[2]) {
@@ -272,7 +244,7 @@ void Gui::Renderer::Draw() {
         GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
 
     if (vertex_count_[draw_range_index_]) {
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buf_id_);
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buf_->id());
 
         void *pinned_mem = glMapBufferRange(
             GL_ARRAY_BUFFER, draw_range_index_ * MaxVerticesPerRange * sizeof(vertex_t),
@@ -291,7 +263,7 @@ void Gui::Renderer::Draw() {
     }
 
     if (index_count_[draw_range_index_]) {
-        glBindBuffer(GL_ARRAY_BUFFER, index_buf_id_);
+        glBindBuffer(GL_ARRAY_BUFFER, index_buf_->id());
 
         void *pinned_mem = glMapBufferRange(
             GL_ARRAY_BUFFER, draw_range_index_ * MaxIndicesPerRange * sizeof(uint16_t),
@@ -319,8 +291,8 @@ void Gui::Renderer::Draw() {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
 
-    glBindVertexArray(vao_);
-    glUseProgram(ui_program_->prog_id());
+    glBindVertexArray(vao_.id());
+    glUseProgram(ui_program_->id());
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, (GLuint)ctx_.texture_atlas().tex_id());

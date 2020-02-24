@@ -8,7 +8,7 @@
 #include "String.h"
 
 namespace Ren {
-inline uint32_t _lua_hash(void const *v, uint32_t l) {
+inline uint32_t _lua_hash(void const *v, const uint32_t l) {
     uint32_t i, step = (l >> 5u) + 1;
     uint32_t h = l + (l >= 4 ? *(uint32_t*)v : 0);
     for (i = l; i >= step; i -= step) {
@@ -274,7 +274,7 @@ public:
         return nullptr;
     }
 
-    Node *GetOrNull(uint32_t index) {
+    Node *GetOrNull(const uint32_t index) {
         if (index < capacity_ && (ctrl_[index / 8] & (1u << (index % 8)))) {
             return &nodes_[index];
         } else {
@@ -282,7 +282,7 @@ public:
         }
     }
 
-    const Node *GetOrNull(uint32_t index) const {
+    const Node *GetOrNull(const uint32_t index) const {
         if (index < capacity_ && (ctrl_[index / 8] & (1u << (index % 8)))) {
             return &nodes_[index];
         } else {

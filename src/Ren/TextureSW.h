@@ -70,7 +70,7 @@ public:
     void SetFilter(eTexFilter f, eTexRepeat r);
 };
 
-typedef StorageRef<Texture2D> Texture2DRef;
+typedef StrongRef<Texture2D> Tex2DRef;
 typedef Storage<Texture2D> Texture2DStorage;
 }
 

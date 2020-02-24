@@ -64,7 +64,7 @@ static const float __skydome_positions[] = {
 };
 static const int __skydome_vertices_count = 180 / 3;
 
-static const unsigned short __skydome_indices[] = {
+static const unsigned int __skydome_indices[] = {
     31, 30, 29,     32, 28, 29,      29, 28, 27,
     50, 27, 16,     49, 16, 17,      48, 47, 17,
     17, 16, 15,     33, 24, 28,      27, 28, 14,

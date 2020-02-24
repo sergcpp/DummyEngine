@@ -7,9 +7,9 @@ bool Dictionary::Lookup(const char *key, dict_entry_res_t &result) {
              i++) {
             const dict_entry_compact_t &entry = entries_[i];
 
-            result.pos = (eGramGrpPos)entry.pos;
-            result.num = (eGramGrpNum)entry.num;
-            result.gen = (eGramGrpGen)entry.gen;
+            result.pos = eGramGrpPos(entry.pos);
+            result.num = eGramGrpNum(entry.num);
+            result.gen = eGramGrpGen(entry.gen);
 
             result.orth = &comb_str_buf_[entry.orth_str_off];
             result.pron = entry.pron_str_off != 0xffffffff

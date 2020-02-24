@@ -1713,9 +1713,9 @@ ModlApp::GenerateOcclusion(const std::vector<float> &positions,
     return occlusion;
 }
 
-Ren::Texture2DRef ModlApp::OnTextureNeeded(const char *name) {
+Ren::Tex2DRef ModlApp::OnTextureNeeded(const char *name) {
     Ren::eTexLoadStatus status;
-    Ren::Texture2DRef ret = ctx_.LoadTexture2D(name, nullptr, 0, {}, &status);
+    Ren::Tex2DRef ret = ctx_.LoadTexture2D(name, nullptr, 0, {}, &status);
     if (!ret->ready()) {
         std::string tex_name = name;
         Sys::LoadAssetComplete(

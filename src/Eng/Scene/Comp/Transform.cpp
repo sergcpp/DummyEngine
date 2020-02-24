@@ -21,17 +21,15 @@ void Transform::UpdateBBox() {
     }
 }
 
-void Transform::UpdateInvMatrix() {
-    inv_mat = Ren::Inverse(mat);
-}
+void Transform::UpdateInvMatrix() { inv_mat = Ren::Inverse(mat); }
 
 void Transform::Read(const JsObject &js_in, Transform &tr) {
     if (js_in.Has("pos")) {
         const JsArray &js_pos = js_in.at("pos").as_arr();
 
-        const auto pos = Ren::Vec3f{
-            (float)js_pos.at(0).as_num().val, (float)js_pos.at(1).as_num().val, (float)js_pos.at(2).as_num().val
-        };
+        const auto pos =
+            Ren::Vec3f{float(js_pos.at(0).as_num().val), float(js_pos.at(1).as_num().val),
+                       float(js_pos.at(2).as_num().val)};
 
         tr.mat = Ren::Translate(tr.mat, pos);
     }
@@ -40,19 +38,21 @@ void Transform::Read(const JsObject &js_in, Transform &tr) {
         const JsArray &js_rot = js_in.at("rot").as_arr();
 
         // angles in degrees
-        tr.euler_angles_rad = Ren::Vec3f{
-            (float)js_rot.at(0).as_num().val, (float)js_rot.at(1).as_num().val, (float)js_rot.at(2).as_num().val
-        };
+        tr.euler_angles_rad =
+            Ren::Vec3f{float(js_rot.at(0).as_num().val), float(js_rot.at(1).as_num().val),
+                       float(js_rot.at(2).as_num().val)};
 
         // convert to radians
         tr.euler_angles_rad *= Ren::Pi<float>() / 180.0f;
 
-        const Ren::Mat4f
-            rot_z = Ren::Rotate(Ren::Mat4f{ 1.0f }, tr.euler_angles_rad[2], Ren::Vec3f{ 0.0f, 0.0f, 1.0f }),
-            rot_x = Ren::Rotate(Ren::Mat4f{ 1.0f }, tr.euler_angles_rad[0], Ren::Vec3f{ 1.0f, 0.0f, 0.0f }),
-            rot_y = Ren::Rotate(Ren::Mat4f{ 1.0f }, tr.euler_angles_rad[1], Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+        const Ren::Mat4f rot_z = Ren::Rotate(Ren::Mat4f{1.0f}, tr.euler_angles_rad[2],
+                                             Ren::Vec3f{0.0f, 0.0f, 1.0f}),
+                         rot_x = Ren::Rotate(Ren::Mat4f{1.0f}, tr.euler_angles_rad[0],
+                                             Ren::Vec3f{1.0f, 0.0f, 0.0f}),
+                         rot_y = Ren::Rotate(Ren::Mat4f{1.0f}, tr.euler_angles_rad[1],
+                                             Ren::Vec3f{0.0f, 1.0f, 0.0f});
 
-        Ren::Mat4f rot_all = rot_y * rot_x * rot_z;
+        const Ren::Mat4f rot_all = rot_y * rot_x * rot_z;
         tr.mat = tr.mat * rot_all;
     }
 
@@ -60,31 +60,32 @@ void Transform::Read(const JsObject &js_in, Transform &tr) {
 }
 
 void Transform::Write(const Transform &tr, JsObject &js_out) {
-    {   // write position
+    { // write position
         JsArray js_pos;
 
-        js_pos.Push(JsNumber((double)tr.mat[3][0]));
-        js_pos.Push(JsNumber((double)tr.mat[3][1]));
-        js_pos.Push(JsNumber((double)tr.mat[3][2]));
+        js_pos.Push(JsNumber(double(tr.mat[3][0])));
+        js_pos.Push(JsNumber(double(tr.mat[3][1])));
+        js_pos.Push(JsNumber(double(tr.mat[3][2])));
 
         js_out.Push("pos", std::move(js_pos));
     }
 
-    {   // write rotation
+    { // write rotation
         JsArray js_rot;
 
-        const Ren::Vec3f euler_angles_deg = tr.euler_angles_rad * 180.0f / Ren::Pi<float>();
+        const Ren::Vec3f euler_angles_deg =
+            tr.euler_angles_rad * 180.0f / Ren::Pi<float>();
 
-        js_rot.Push(JsNumber((double)euler_angles_deg[0]));
-        js_rot.Push(JsNumber((double)euler_angles_deg[1]));
-        js_rot.Push(JsNumber((double)euler_angles_deg[2]));
+        js_rot.Push(JsNumber(double(euler_angles_deg[0])));
+        js_rot.Push(JsNumber(double(euler_angles_deg[1])));
+        js_rot.Push(JsNumber(double(euler_angles_deg[2])));
 
         js_out.Push("rot", std::move(js_rot));
     }
 }
 
 //
-// Euler angles from matrix (maybe will need it later)
+// Euler angles from matrix (maybe will be needed later)
 //
 /*
     // https://www.gregslabaugh.net/publications/euler.pdf

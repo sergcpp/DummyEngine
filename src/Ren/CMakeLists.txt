@@ -24,7 +24,6 @@ endif()
 set(SOURCE_FILES Anim.h
                  Anim.cpp
                  Buffer.h
-                 Buffer.cpp
                  Camera.h
                  Camera.cpp
                  Context.h
@@ -42,6 +41,7 @@ set(SOURCE_FILES Anim.h
                  MQuat.h
                  MVec.h
                  Program.h
+                 RastState.h
                  RingBuffer.h
                  Shader.h
                  SparseArray.h
@@ -64,6 +64,7 @@ set(SOURCE_FILES Anim.h
 if(${RENDERER} STREQUAL "GL")
     add_definitions(-DUSE_GL_RENDER)
     set(SOURCE_FILES ${SOURCE_FILES}
+                     BufferGL.cpp
                      ContextGL.cpp
                      GL.h
                      GLExt.cpp
@@ -73,9 +74,12 @@ if(${RENDERER} STREQUAL "GL")
                      ShaderGL.cpp
                      ProgramGL.h
                      ProgramGL.cpp
+                     RastStateGL.cpp
                      TextureGL.h
                      TextureGL.cpp
-                     TextureAtlasGL.cpp)
+                     TextureAtlasGL.cpp
+                     VaoGL.h
+                     VaoGL.cpp)
 
     if(WIN32)
         set(LIBS ${LIBS} opengl32 SOIL2 SPIRV-Reflect)
@@ -85,6 +89,7 @@ if(${RENDERER} STREQUAL "GL")
 elseif(${RENDERER} STREQUAL "SW")
     add_definitions(-DUSE_SW_RENDER)
     set(SOURCE_FILES ${SOURCE_FILES}
+                     BufferSW.cpp
                      ContextSW.cpp
                      ProgramSW.h
                      ProgramSW.cpp

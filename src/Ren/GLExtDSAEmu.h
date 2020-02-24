@@ -30,3 +30,6 @@ void APIENTRY ren_glTextureParameteriv_Comp_emu(GLenum target, GLuint texture, G
 void APIENTRY ren_glGenerateTextureMipmap_Comp_emu(GLenum target, GLuint texture);
 
 void APIENTRY ren_glBindTextureUnit_Comp_emu(GLenum target, GLuint unit, GLuint texture);
+#ifndef __ANDROID__
+void APIENTRY ren_glNamedBufferStorage_Comp_emu(GLenum target, GLuint buffer, GLsizeiptr size, const void* data, GLbitfield flags);
+#endif

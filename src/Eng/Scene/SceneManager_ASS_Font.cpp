@@ -116,9 +116,9 @@ bool SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file,
             int glyph_pos[2] = {}, glyph_res[2] = {}, glyph_res_act[2] = {};
             if (is_drawable) {
                 glyph_res_act[0] =
-                    (int)std::round(scale * float(x1 - x0 + 1)) + 2 * sdf_radius_px;
+                    int(std::round(scale * float(x1 - x0 + 1))) + 2 * sdf_radius_px;
                 glyph_res_act[1] =
-                    (int)std::round(scale * float(y1 - y0 + 1)) + 2 * sdf_radius_px;
+                    int(std::round(scale * float(y1 - y0 + 1))) + 2 * sdf_radius_px;
 
                 glyph_res[0] = glyph_res_act[0] + 2 * padding;
                 glyph_res[1] = glyph_res_act[1] + 2 * padding;
@@ -136,9 +136,9 @@ bool SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file,
             out_glyph.pos[1] = glyph_pos[1] + padding;
             out_glyph.res[0] = glyph_res_act[0];
             out_glyph.res[1] = glyph_res_act[1];
-            out_glyph.off[0] = (int)std::round(scale * float(x0));
-            out_glyph.off[1] = (int)std::round(scale * float(y0));
-            out_glyph.adv[0] = (int)std::round(scale * float(advance_width));
+            out_glyph.off[0] = int(std::round(scale * float(x0)));
+            out_glyph.off[1] = int(std::round(scale * float(y0)));
+            out_glyph.adv[0] = int(std::round(scale * float(advance_width)));
             out_glyph.adv[1] = 0;
 
             if (!is_drawable)
@@ -153,8 +153,8 @@ bool SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file,
                     stbtt_GetGlyphShape(&font, glyph_index, &vertices);
 
                 { // transform input data
-                    const auto pos_offset = Vec2d{(double)(padding + sdf_radius_px),
-                                                  (double)(padding + sdf_radius_px)};
+                    const auto pos_offset = Vec2d{double(padding + sdf_radius_px),
+                                                  double(padding + sdf_radius_px)};
 
                     Vec2i cur_p;
 
@@ -280,7 +280,7 @@ bool SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file,
                                                                 Vec3i{255, 255, 0},
                                                                 Vec3i{0, 255, 255}};
 
-                            for (int i = 0; i < (int)sh.size(); i++) {
+                            for (int i = 0; i < int(sh.size()); i++) {
                                 const Gui::bezier_seg_t &seg = sh[i];
                                 const Gui::dist_result_t result =
                                     Gui::BezierSegmentDistance(seg, p);

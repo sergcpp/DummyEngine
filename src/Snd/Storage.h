@@ -5,7 +5,7 @@
 
 namespace Snd {
 template<typename T>
-class StorageRef;
+class StrongRef;
 
 template<typename T>
 class Storage : public SparseArray<T> {
@@ -16,7 +16,7 @@ public:
     Storage(const Storage &rhs) = delete;
 
     template<class... Args>
-    StorageRef<T> Add(Args &&... args) {
+    StrongRef<T> Add(Args &&... args) {
         uint32_t index = SparseArray<T>::emplace(args...);
 
         bool res = items_by_name_.Insert(SparseArray<T>::at(index).name(), index);
@@ -34,7 +34,7 @@ public:
         SparseArray<T>::erase(i);
     }
 
-    StorageRef<T> FindByName(const char *name) {
+    StrongRef<T> FindByName(const char *name) {
         uint32_t *p_index = items_by_name_.Find(name);
         if (p_index) {
             return { this, *p_index };
@@ -48,7 +48,7 @@ class RefCounter {
 public:
     unsigned ref_count() const { return counter_; }
 protected:
-    template<class T> friend class StorageRef;
+    template<class T> friend class StrongRef;
 
     void add_ref() {
         ++counter_;
@@ -79,22 +79,22 @@ private:
 };
 
 template <class T>
-class StorageRef {
+class StrongRef {
     Storage<T>  *storage_;
     uint32_t    index_;
 public:
-    StorageRef() : storage_(nullptr), index_(0) {}
-    StorageRef(Storage<T> *storage, uint32_t index) : storage_(storage), index_(index) {
+    StrongRef() : storage_(nullptr), index_(0) {}
+    StrongRef(Storage<T> *storage, uint32_t index) : storage_(storage), index_(index) {
         if (storage_) {
             T &p = storage_->at(index_);
             p.add_ref();
         }
     }
-    ~StorageRef() {
+    ~StrongRef() {
         Release();
     }
 
-    StorageRef(const StorageRef &rhs) {
+    StrongRef(const StrongRef &rhs) {
         storage_ = rhs.storage_;
         index_ = rhs.index_;
 
@@ -104,14 +104,14 @@ public:
         }
     }
 
-    StorageRef(StorageRef &&rhs) noexcept {
+    StrongRef(StrongRef &&rhs) noexcept {
         storage_ = rhs.storage_;
         rhs.storage_ = nullptr;
         index_ = rhs.index_;
         rhs.index_ = 0;
     }
 
-    StorageRef &operator=(const StorageRef &rhs) {
+    StrongRef &operator=(const StrongRef &rhs) {
         if (this == &rhs) return *this;
 
         Release();
@@ -127,7 +127,7 @@ public:
         return *this;
     }
 
-    StorageRef &operator=(StorageRef &&rhs) noexcept {
+    StrongRef &operator=(StrongRef &&rhs) noexcept {
         Release();
 
         storage_ = rhs.storage_;
@@ -176,7 +176,7 @@ public:
         return index_;
     }
 
-    bool operator==(const StorageRef &rhs) {
+    bool operator==(const StrongRef &rhs) {
         return storage_ == rhs.storage_ && index_ == rhs.index_;
     }
 

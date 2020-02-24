@@ -15,7 +15,7 @@ template <typename T, int N> class Vec {
   public:
     explicit Vec(eUninitialized) noexcept {}
     Vec() noexcept : data_{(T)0} {}
-    explicit Vec(T v) noexcept {
+    explicit Vec(const T v) noexcept {
         for (int i = 0; i < N; i++) {
             data_[i] = v;
         }
@@ -42,8 +42,8 @@ template <typename T, int N> class Vec {
         }
     }
 
-    T &operator[](int i) { return data_[i]; }
-    const T &operator[](int i) const { return data_[i]; }
+    T &operator[](const int i) { return data_[i]; }
+    const T &operator[](const int i) const { return data_[i]; }
 
     friend bool operator==(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
         bool res = true;
@@ -84,14 +84,14 @@ template <typename T, int N> class Vec {
         return *this;
     }
 
-    Vec<T, N> &operator*=(T rhs) {
+    Vec<T, N> &operator*=(const T rhs) {
         for (int i = 0; i < N; i++) {
             data_[i] *= rhs;
         }
         return *this;
     }
 
-    Vec<T, N> &operator/=(T rhs) {
+    Vec<T, N> &operator/=(const T rhs) {
         for (int i = 0; i < N; i++) {
             data_[i] /= rhs;
         }
@@ -138,7 +138,7 @@ template <typename T, int N> class Vec {
         return res;
     }
 
-    friend Vec<T, N> operator*(T lhs, const Vec<T, N> &rhs) {
+    friend Vec<T, N> operator*(const T lhs, const Vec<T, N> &rhs) {
         auto res = Vec<T, N>{Uninitialize};
         for (int i = 0; i < N; i++) {
             res.data_[i] = lhs * rhs.data_[i];
@@ -146,7 +146,7 @@ template <typename T, int N> class Vec {
         return res;
     }
 
-    friend Vec<T, N> operator/(T lhs, const Vec<T, N> &rhs) {
+    friend Vec<T, N> operator/(const T lhs, const Vec<T, N> &rhs) {
         auto res = Vec<T, N>{Uninitialize};
         for (int i = 0; i < N; i++) {
             res.data_[i] = lhs / rhs.data_[i];

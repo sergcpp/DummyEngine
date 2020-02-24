@@ -43,6 +43,7 @@ class Camera {
   protected:
     Mat4f view_matrix_;
     Mat4f proj_matrix_;
+    mutable Mat4f proj_matrix_offset_;
 
     Vec3f world_position_;
     uint32_t render_mask_ = 0xffffffff;
@@ -50,7 +51,8 @@ class Camera {
     Frustum frustum_;
     bool is_orthographic_ = false;
 
-    float angle_ = 0.0f, aspect_  = 1.0f, near_ = 0.0f, far_ = 0.0f;
+    float angle_ = 0.0f, aspect_ = 1.0f, near_ = 0.0f, far_ = 0.0f;
+    mutable Vec2f px_offset_;
 
   public:
     float max_exposure = 1000.0f;
@@ -63,15 +65,17 @@ class Camera {
 
     const Mat4f &view_matrix() const { return view_matrix_; }
     const Mat4f &proj_matrix() const { return proj_matrix_; }
+    const Mat4f &proj_matrix_offset() const { return proj_matrix_offset_; }
 
     const Vec3f &world_position() const { return world_position_; }
+    Vec2f px_offset() const { return px_offset_; }
 
     Vec3f fwd() const {
-        return Vec3f{ -view_matrix_[0][2], -view_matrix_[1][2], -view_matrix_[2][2] };
+        return Vec3f{-view_matrix_[0][2], -view_matrix_[1][2], -view_matrix_[2][2]};
     }
 
     Vec3f up() const {
-        return Vec3f{ view_matrix_[0][1], view_matrix_[1][1], view_matrix_[2][1] };
+        return Vec3f{view_matrix_[0][1], view_matrix_[1][1], view_matrix_[2][1]};
     }
 
     uint32_t render_mask() const { return render_mask_; }
@@ -79,6 +83,10 @@ class Camera {
 
     Vec3f view_dir() const {
         return Vec3f{view_matrix_[0][2], view_matrix_[1][2], view_matrix_[2][2]};
+    }
+
+    Vec4f clip_info() const {
+        return Ren::Vec4f{ near_ * far_, near_, far_, std::log2(1.0f + far_ / near_) };
     }
 
     float angle() const { return angle_; }
@@ -96,13 +104,13 @@ class Camera {
                       float far);
 
     void SetupView(const Vec3f &center, const Vec3f &target, const Vec3f &up);
+    void SetPxOffset(Vec2f px_offset) const;
 
     void UpdatePlanes();
 
     eVisResult CheckFrustumVisibility(const Vec3f &point) const;
     eVisResult CheckFrustumVisibility(const float bbox[8][3]) const;
-    eVisResult CheckFrustumVisibility(const Vec3f &bbox_min,
-                                             const Vec3f &bbox_max) const;
+    eVisResult CheckFrustumVisibility(const Vec3f &bbox_min, const Vec3f &bbox_max) const;
 
     // returns radius
     float GetBoundingSphere(Vec3f &out_center) const;

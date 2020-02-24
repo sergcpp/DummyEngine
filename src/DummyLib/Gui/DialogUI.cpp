@@ -60,13 +60,14 @@ void DialogUI::Hover(const Ren::Vec2f &p) {
 }
 
 void DialogUI::IterateChoices(
-    std::function<bool(int i, const Ren::Vec2f &pos, const Ren::Vec2f &size)> callback) {
+    const std::function<bool(int i, const Ren::Vec2f &pos, const Ren::Vec2f &size)>
+        &callback) {
     const float font_height = font_.height(this);
     float y_coord = -0.5f;
 
     for (int i = 0; i < choices_count_; i++) {
         const float width = font_.GetWidth(choices_[i].text, -1, this);
-        if (!callback(i, Ren::Vec2f{-0.5f * width + 0.5f * choices_->off, y_coord},
+        if (!callback(i, Ren::Vec2f{-0.5f * width + 0.5f * float(choices_->off), y_coord},
                       Ren::Vec2f{width, font_height})) {
             break;
         }
@@ -75,6 +76,6 @@ void DialogUI::IterateChoices(
 }
 
 void DialogUI::OnPushChoice(const char *key, const char *text, int off) {
-    choices_[choices_count_] = { key, text, off };
+    choices_[choices_count_] = {key, text, off};
     ++choices_count_;
 }

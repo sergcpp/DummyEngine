@@ -13,7 +13,7 @@ static_assert(sizeof(g_bytes_per_sample) / sizeof(g_bytes_per_sample[0]) ==
               "!");
 } // namespace Snd
 
-Snd::Buffer::Buffer(const char *name, const void *data, uint32_t size,
+Snd::Buffer::Buffer(const char *name, const void *data, const uint32_t size,
                     const BufParams &params, eBufLoadStatus *load_status, ILog *log)
     : name_(name), size_(size) {
     Init(data, size_, params, load_status, log);
@@ -49,7 +49,7 @@ Snd::Buffer &Snd::Buffer::operator=(Buffer &&rhs) noexcept {
     return *this;
 }
 
-void Snd::Buffer::Init(const void *data, uint32_t size, const BufParams &params,
+void Snd::Buffer::Init(const void *data, const uint32_t size, const BufParams &params,
                        eBufLoadStatus *load_status, ILog *log) {
     if (buf_id_ == 0xffffffff) {
         ALuint buf_id;
@@ -75,7 +75,7 @@ float Snd::Buffer::GetDurationS() const {
            float(params_.samples_per_sec);
 }
 
-void Snd::Buffer::SetData(const void *data, uint32_t size, const BufParams &params) {
+void Snd::Buffer::SetData(const void *data, const uint32_t size, const BufParams &params) {
     assert(buf_id_ != 0xffffffff);
 
     alBufferData(ALuint(buf_id_), g_al_formats[(int)params.format], data, size,
