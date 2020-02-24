@@ -7,6 +7,7 @@
 #include <Eng/Renderer/Renderer.h>
 #include <Eng/Scene/SceneManager.h>
 #include <Eng/Utils/Cmdline.h>
+#include <Eng/Gui/EditBox.h>
 #include <Eng/Gui/Image.h>
 #include <Eng/Gui/Image9Patch.h>
 #include <Eng/Gui/Renderer.h>
@@ -35,11 +36,29 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 
 GSUITest2::GSUITest2(GameBase *game) : GSBaseState(game) {
     const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
-    dialog_font_ = fonts->FindFont("dialog_font");
-    dialog_font_->set_scale(1.5f);
+    dialog_font_ = fonts->FindFont("book_main_font");
+    //dialog_font_->set_scale(1.5f);
 
     dict_ = game->GetComponent<Dictionary>(DICT_KEY);
+
+    const float font_height = dialog_font_->height(ui_root_.get());
+
+    Gui::Image9Patch edit_box_frame {
+            *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Ren::Vec2f{ 8.0f, 8.0f },
+            1.0f, Ren::Vec2f{ -1.0f, -1.0f }, Ren::Vec2f{ 2.0f, 2.0f }, ui_root_.get()
+    };
+    edit_box_.reset(new Gui::EditBox{
+        edit_box_frame, dialog_font_.get(), Ren::Vec2f{ -0.5f, 0.75f },
+        Ren::Vec2f{ 1.0f, 0.75f * font_height },ui_root_.get() });
+    edit_box_->set_flag(Gui::Multiline, false);
+
+    results_frame_.reset(new Gui::Image9Patch{
+        *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Ren::Vec2f{ 8.0f, 8.0f },
+        1.0f, Ren::Vec2f{ -0.5f, -0.75f }, Ren::Vec2f{ 1.0f, 1.5f }, ui_root_.get()
+    });
 }
+
+GSUITest2::~GSUITest2() = default;
 
 void GSUITest2::Enter() {
     using namespace GSUITest2Internal;
@@ -47,16 +66,23 @@ void GSUITest2::Enter() {
     GSBaseState::Enter();
 
     log_->Info("GSUITest: Loading scene!");
-    GSBaseState::LoadScene(SCENE_NAME);
+    //GSBaseState::LoadScene(SCENE_NAME);
 
     {
         std::ifstream dict_file("assets_pc/scenes/test/test_dict/de-en.dict", std::ios::binary);
         dict_->Load(dict_file, log_.get());
 
+        const uint64_t t1_us = Sys::GetTimeUs();
+
         Dictionary::dict_entry_res_t result = {};
-        if (dict_->Lookup("Gehilfe", result)) {
+        if (dict_->Lookup("Apfel", result)) {
             volatile int ii = 0;
         }
+
+        const uint64_t t2_us = Sys::GetTimeUs();
+
+        const double t_diff_ms = double(t2_us - t1_us) / 1000.0;
+        volatile int ii = 0;
     }
 
     zenith_index_ = scene_manager_->FindObject("zenith");
@@ -153,7 +179,151 @@ void GSUITest2::Exit() {
 void GSUITest2::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     using namespace GSUITest2Internal;
 
-    GSBaseState::DrawUI(r, root);
+    //GSBaseState::DrawUI(r, root);
+
+    edit_box_->Draw(r);
+    results_frame_->Draw(r);
+
+    static const uint8_t color_white[] = { 255, 255, 255, 255 };
+    const float font_height = dialog_font_->height(root);
+
+    {   // draw results
+        float cur_y = 0.75f - font_height;
+
+        for (const std::string &result_line : results_lines_) {
+            dialog_font_->DrawText(r, result_line.c_str(), Ren::Vec2f{ -0.49f, cur_y }, color_white, root);
+            cur_y -= font_height;
+        }
+    }
+}
+
+void GSUITest2::UpdateHint() {
+    const std::string &line = edit_box_->line_text(0);
+
+    results_lines_.clear();
+
+    auto lookup_word = [this](const char *word, int mutation_cost) {
+        Dictionary::dict_entry_res_t result = {};
+        if (dict_->Lookup(word, result)) {
+            log_->Info("Result %s", result.trans[0]);
+
+            std::string line = result.orth;
+            if (result.pos == Noun) {
+                line += " (noun";
+
+                if (result.num == Singular) {
+                    line += ", singular";
+
+                    if (result.gen == Masculine) {
+                        line += ", masculine)";
+                    } else if (result.gen == Feminine) {
+                        line += ", feminine)";
+                    } else {
+                        line += ", neutral)";
+                    }
+                } else {
+                    line += ", plural)";
+                }
+            } else if (result.pos == Verb) {
+                line += " (verb)";
+            } else if (result.pos == Adjective) {
+                line += " (adjective)";
+            }
+
+            results_lines_.emplace_back(std::move(line));
+
+            int trans_index = 0;
+            while (result.trans[trans_index]) {
+                results_lines_.emplace_back("    ");
+                results_lines_.back() += result.trans[trans_index];
+                trans_index++;
+            }
+        }
+    };
+
+    lookup_word(line.c_str(), 0);
+
+    MutateWord(line.c_str(), lookup_word);
+}
+
+void GSUITest2::MutateWord(const char *in_word, const std::function<void(const char *, int)> &callback) {
+    uint32_t unicode_word[128] = {};
+    int unicode_word_len = 0;
+
+    int word_pos = 0;
+    while (in_word[word_pos]) {
+        uint32_t unicode;
+        word_pos += Gui::ConvChar_UTF8_to_Unicode(&in_word[word_pos], unicode);
+        unicode_word[unicode_word_len++] = unicode;
+    }
+
+    struct mutation_ctx_t {
+        std::function<void(mutation_ctx_t &ctx, uint32_t *, int)> mutation_chain[8];
+        int mutation_index = 0;
+    } ctx;
+
+    auto split_word_in_two = [](mutation_ctx_t &ctx, uint32_t *unicode_word, int mutation_cost) {
+        const auto &next_mutation = ctx.mutation_chain[++ctx.mutation_index];
+
+        int i = 0;
+        while (unicode_word[i]) {
+            // first part
+            if (i != 0) {
+                uint32_t temp_char = unicode_word[i];
+                unicode_word[i] = 0;
+
+                next_mutation(ctx, unicode_word, mutation_cost + 1);
+                unicode_word[i] = temp_char;
+            }
+
+            // second part
+            next_mutation(ctx, &unicode_word[i], mutation_cost + 1);
+
+            i++;
+        }
+
+        ctx.mutation_index--;
+    };
+
+    auto swap_character_pairs = [](mutation_ctx_t &ctx, uint32_t *unicode_word, int mutation_cost) {
+        const auto &next_mutation = ctx.mutation_chain[++ctx.mutation_index];
+
+        int i = 0;
+        while (unicode_word[i]) {
+            // swap chars
+            std::swap(unicode_word[i], unicode_word[i + 1]);
+
+            next_mutation(ctx, unicode_word, mutation_cost + 1);
+
+            // revert back
+            std::swap(unicode_word[i], unicode_word[i + 1]);
+
+            i++;
+        }
+
+        ctx.mutation_index--;
+    };
+
+    auto output_utf8 = [&callback](mutation_ctx_t &ctx, uint32_t *unicode_word, int mutation_cost) {
+        char utf8_word[512];
+        int utf8_word_len = 0;
+
+        int j = 0;
+        while (unicode_word[j]) {
+            utf8_word_len += Gui::ConvChar_Unicode_to_UTF8(unicode_word[j], &utf8_word[utf8_word_len]);
+            j++;
+        }
+        utf8_word[utf8_word_len] = '\0';
+
+        callback(utf8_word, mutation_cost);
+    };
+
+    ctx.mutation_index = 0;
+    ctx.mutation_chain[0] = split_word_in_two;
+    ctx.mutation_chain[1] = swap_character_pairs;
+    ctx.mutation_chain[2] = output_utf8;
+
+    ctx.mutation_chain[0](ctx, unicode_word, 0);
 }
 
 bool GSUITest2::HandleInput(const InputManager::Event &evt) {
@@ -184,6 +354,7 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP1Down: {
         Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{ (int)evt.point.x, (int)evt.point.y }, Ren::Vec2i{ ctx_->w(), ctx_->h() });
         //text_printer_->Press(p, true);
+        edit_box_->Press(p, true);
     } break;
     case RawInputEvent::EvP2Down: {
         
@@ -193,6 +364,7 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
 
         Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{ (int)evt.point.x, (int)evt.point.y }, Ren::Vec2i{ ctx_->w(), ctx_->h() });
         //text_printer_->Press(p, false);
+        edit_box_->Press(p, false);
 
         is_visible_ = !is_visible_;
     } break;
@@ -208,6 +380,34 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEvent::EvKeyDown: {
         input_processed = false;
+
+        if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
+        } else if (evt.key_code == KeyReturn) {
+            edit_box_->InsertLine({});
+        } else if (evt.key_code == KeyLeft) {
+            edit_box_->MoveCursorH(-1);
+        } else if (evt.key_code == KeyRight) {
+            edit_box_->MoveCursorH(1);
+        } else if (evt.key_code == KeyUp) {
+            edit_box_->MoveCursorV(-1);
+        } else if (evt.key_code == KeyDown) {
+            edit_box_->MoveCursorV(
+                    1);
+        } else if (evt.key_code == KeyDelete) {
+            edit_box_->DeleteBck();
+        } else if (evt.key_code == KeyDeleteForward) {
+            edit_box_->DeleteFwd();
+        } else {
+            char ch = InputManager::CharFromKeycode(evt.key_code);
+            if (shift_down_) {
+                if (ch == '-') ch = '_';
+                else ch = (char) std::toupper(ch);
+            }
+
+            edit_box_->AddChar(ch);
+        }
+
+        UpdateHint();
     } break;
     case RawInputEvent::EvKeyUp: {
         if (evt.key_code == KeyUp || (evt.key_code == KeyW && !cmdline_enabled_)) {
@@ -217,7 +417,7 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
         }
     } break;
     case RawInputEvent::EvResize:
-        //text_printer_->Resize(ui_root_.get());
+        edit_box_->Resize(ui_root_.get());
         break;
     default:
         break;

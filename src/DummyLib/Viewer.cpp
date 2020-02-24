@@ -205,32 +205,39 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
             }
 
             // init defaults
-            entry.pos = Noun;
+            entry.pos = Adjective;
             entry.num = Singular;
-            entry.gen = Feminine;
+            entry.gen = Masculine;
 
-            if (js_form.Has("gramGrp")) {
-                const JsObject &js_gram_grp = js_form.at("gramGrp").as_obj();
+            if (js_entry.Has("gramGrp")) {
+                const JsObject &js_gram_grp = js_entry.at("gramGrp").as_obj();
                 if (js_gram_grp.Has("pos")) {
                     const JsString &js_gram_grp_pos = js_gram_grp.at("pos").as_str();
-                    if (js_gram_grp_pos.val == "v") {
+                    if (js_gram_grp_pos.val == "n") {
+                        entry.pos = Noun;
+                    } else if (js_gram_grp_pos.val == "v") {
                         entry.pos = Verb;
                     } else if (js_gram_grp_pos.val == "a") {
                         entry.pos = Adjective;
                     }
                 }
                 if (js_gram_grp.Has("num")) {
-                    const JsString &js_gram_grp_num = js_form.at("num").as_str();
-                    if (js_gram_grp_num.val == "p") {
-                        entry.num = Plural;
+                    if (js_gram_grp.at("num").type() == JS_TYPE_STRING) {
+                        const JsString &js_gram_grp_num = js_gram_grp.at("num").as_str();
+                        if (js_gram_grp_num.val == "p") {
+                            entry.num = Plural;
+                        }
                     }
                 }
                 if (js_gram_grp.Has("gen")) {
-                    const JsString &js_gram_grp_gen = js_form.at("gen").as_str();
-                    if (js_gram_grp_gen.val == "m") {
-                        entry.gen = Masculine;
-                    } else if (js_gram_grp_gen.val == "n") {
-                        entry.gen = Neutral;
+                    if (js_gram_grp.at("gen").type() == JS_TYPE_STRING) {
+
+                        const JsString &js_gram_grp_gen = js_gram_grp.at("gen").as_str();
+                        if (js_gram_grp_gen.val == "f") {
+                            entry.gen = Feminine;
+                        } else if (js_gram_grp_gen.val == "n") {
+                            entry.gen = Neutral;
+                        }
                     }
                 }
             }
@@ -330,7 +337,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
         std::vector<Dictionary::dict_entry_compact_t> entries_compact;
 
         int translations_processed = 0;
-        int translations_count = translations.size();
+        const int translations_count = (int)translations.size();
 
         int links_count = 0;
 
@@ -340,7 +347,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
             const size_t key_len = it->key.length();
             memcpy(&comb_str_buf[comb_str_buf_ndx1], it->key.c_str(), key_len + 1);
             const char *key = &comb_str_buf[comb_str_buf_ndx1];
-            uint32_t key_str_offset = comb_str_buf_ndx1;
+            const auto key_str_offset = (uint32_t)comb_str_buf_ndx1;
             comb_str_buf_ndx1 += key_len + 1;
 
             links_compact.emplace_back();
@@ -364,25 +371,25 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
                 {   // correct word writing
                     const size_t len = src_entry.orth.length();
                     memcpy(&comb_str_buf[comb_str_buf_ndx1], src_entry.orth.c_str(), len + 1);
-                    dst_entry.orth_str_off = comb_str_buf_ndx1;
+                    dst_entry.orth_str_off = (uint32_t)comb_str_buf_ndx1;
                     comb_str_buf_ndx1 += len + 1;
                 }
 
                 if (!src_entry.pron.empty()) { // word pronunciation
                     const size_t len = src_entry.pron.length();
                     memcpy(&comb_str_buf[comb_str_buf_ndx1], src_entry.pron.c_str(), len + 1);
-                    dst_entry.pron_str_off = comb_str_buf_ndx1;
+                    dst_entry.pron_str_off = (uint32_t)comb_str_buf_ndx1;
                     comb_str_buf_ndx1 += len + 1;
                 } else {
                     dst_entry.pron_str_off = 0xffffffff;
                 }
 
-                for (int j = src_entry.trans_index; j < src_entry.trans_index + src_entry.trans_count; j++) {
+                for (uint32_t j = src_entry.trans_index; j < src_entry.trans_index + src_entry.trans_count; j++) {
                     const size_t len = translations[j].length();
                     memcpy(&comb_str_buf[comb_str_buf_ndx2], translations[j].c_str(), len + 1);
 
                     if (j == src_entry.trans_index) {
-                        dst_entry.trans_str_off = comb_str_buf_ndx2;
+                        dst_entry.trans_str_off = (uint32_t)comb_str_buf_ndx2;
                     }
 
                     comb_str_buf_ndx2 += len + 1;
@@ -429,7 +436,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
             const uint32_t
                     link_data_chunk_id = (uint32_t)Dictionary::DictChLinks,
                     link_data_offset = data_offset,
-                    link_data_size = sizeof(Dictionary::dict_link_compact_t) * links_compact.size();
+                    link_data_size = uint32_t(sizeof(Dictionary::dict_link_compact_t) * links_compact.size());
             out_stream.write((const char *)&link_data_chunk_id, sizeof(uint32_t));
             out_stream.write((const char *)&link_data_offset, sizeof(uint32_t));
             out_stream.write((const char *)&link_data_size, sizeof(uint32_t));
@@ -441,7 +448,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
             const uint32_t
                     entry_data_chunk_id = (uint32_t)Dictionary::DictChEntries,
                     entry_data_offset = data_offset,
-                    entry_data_size = sizeof(Dictionary::dict_entry_compact_t) * entries_compact.size();
+                    entry_data_size = uint32_t(sizeof(Dictionary::dict_entry_compact_t) * entries_compact.size());
             out_stream.write((const char *)&entry_data_chunk_id, sizeof(uint32_t));
             out_stream.write((const char *)&entry_data_offset, sizeof(uint32_t));
             out_stream.write((const char *)&entry_data_size, sizeof(uint32_t));
@@ -453,7 +460,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
             const uint32_t
                     string_data_chunk_id = (uint32_t)Dictionary::DictChStrings,
                     string_data_offset = data_offset,
-                    string_data_size = str_mem_req;
+                    string_data_size = (uint32_t)str_mem_req;
             out_stream.write((const char *)&string_data_chunk_id, sizeof(uint32_t));
             out_stream.write((const char *)&string_data_offset, sizeof(uint32_t));
             out_stream.write((const char *)&string_data_size, sizeof(uint32_t));

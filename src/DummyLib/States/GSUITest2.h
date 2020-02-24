@@ -1,13 +1,8 @@
 #pragma once
 
-#include <condition_variable>
-#include <mutex>
-#include <thread>
-
 #include <Eng/GameBase.h>
 #include <Eng/GameState.h>
 #include <Eng/Gui/BaseElement.h>
-#include <Eng/Gui/BitmapFont.h>
 #include <Ren/Camera.h>
 #include <Ren/Mesh.h>
 #include <Ren/MVec.h>
@@ -33,9 +28,14 @@ class GSUITest2 : public GSBaseState {
 
     std::shared_ptr<Gui::BitmapFont> dialog_font_;
     float test_time_counter_s = 0.0f;
-    bool                                 is_visible_ = false;
+    bool                                is_visible_ = false;
 
-    std::shared_ptr<Dictionary>     dict_;
+    std::shared_ptr<Dictionary>         dict_;
+
+    std::unique_ptr<Gui::EditBox>       edit_box_;
+    std::unique_ptr<Gui::Image9Patch>   results_frame_;
+
+    std::vector<std::string>            results_lines_;
 
     uint32_t zenith_index_          = 0xffffffff;
 
@@ -44,9 +44,12 @@ class GSUITest2 : public GSBaseState {
     void OnUpdateScene() override;
 
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
+
+    void UpdateHint();
+    static void MutateWord(const char *in_word, const std::function<void(const char *, int)> &callback);
 public:
     explicit GSUITest2(GameBase *game);
-    ~GSUITest2() final = default;
+    ~GSUITest2() final;
 
     void Enter() override;
     void Exit() override;

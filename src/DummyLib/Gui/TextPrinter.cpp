@@ -406,7 +406,7 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
                 // null terminate
                 portion_buf[portion_buf_size] = '\0';
 
-                const float width = font_->GetWidth(portion_buf, parent_);
+                const float width = font_->GetWidth(portion_buf, -1, parent_);
 
                 rect_t &rect = options_rects_.back();
                 rect.dims[1] = Ren::Vec2f{ width, font_height };
@@ -439,7 +439,7 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
                 // null terminate
                 portion_buf[portion_buf_size] = '\0';
 
-                const float width = font_->GetWidth(portion_buf, parent_);
+                const float width = font_->GetWidth(portion_buf, -1, parent_);
 
                 rect_t &rect = hint_rects_.back();
                 rect.dims[1] = Gui::Vec2f{ width, font_height };
@@ -488,7 +488,7 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
             // null terminate
             portion_buf[portion_buf_size] = '\0';
 
-            const float width = x_offset + font_->GetWidth(portion_buf, parent_);
+            const float width = x_offset + font_->GetWidth(portion_buf, -1, parent_);
             if (width > 1.0f - side_offset) {
                 new_line = true;
             }
@@ -535,7 +535,7 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
         for (int i = 0; i < opt.var_count; i++) {
             const std::string &var = option_variants_[opt.var_start + i];
 
-            float width = font_->GetWidth(var.c_str(), parent_);
+            float width = font_->GetWidth(var.c_str(), -1, parent_);
             exp_back_size[0] = std::max(exp_back_size[0], width);
             exp_back_size[1] += font_height;
         }
@@ -565,7 +565,7 @@ void TextPrinter::DrawTextBuffer(Gui::Renderer *r) {
         const HintData &opt = text_hints_[data_pos_][expanded_hint];
         assert(opt.is_hover);
 
-        float width = font_->GetWidth(hint_strings_[opt.str_index].c_str(), parent_);
+        float width = font_->GetWidth(hint_strings_[opt.str_index].c_str(), -1, parent_);
 
         expanded_hint_y += font_height;
 

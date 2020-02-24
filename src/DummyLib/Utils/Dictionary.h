@@ -27,7 +27,7 @@ public:
         eGramGrpNum num;
         eGramGrpGen gen;
         const char *orth, *pron;
-        const char *trans[32];
+        const char *trans[16];
     };
 
     bool Lookup(const char *key, dict_entry_res_t &result);

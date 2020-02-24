@@ -40,9 +40,11 @@ bool Dictionary::Load(std::istream &in_data, Ren::ILog *log) {
     uint32_t header_size;
     in_data.read((char *)&header_size, sizeof(uint32_t));
 
+    const int chunks_count = int(header_size - sizeof(uint32_t) - 4) / int(3 * sizeof(uint32_t));
+
     std::unique_ptr<dict_link_compact_t[]> temp_links;
 
-    for (int i = 0; i < DictChCount; i++) {
+    for (int i = 0; i < chunks_count; i++) {
         uint32_t chunk_id, chunk_offset, chunk_size;
         in_data.read((char *)&chunk_id, sizeof(uint32_t));
         in_data.read((char *)&chunk_offset, sizeof(uint32_t));

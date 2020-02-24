@@ -178,7 +178,7 @@ void PagedReader::DrawHint(Gui::Renderer *r, const Ren::Vec2f &pos, const Gui::B
         portion_buf[portion_buf_size] = '\0';
 
         const float
-            width = main_font_->GetWidth(portion_buf, parent),
+            width = main_font_->GetWidth(portion_buf, -1, parent),
             height = main_font_->height(parent);
 
         background_small_->Resize(pos - Ren::Vec2f{ 0.025f, 0.025f }, Ren::Vec2f{ width + 0.05f, height + 0.05f }, parent);
@@ -403,7 +403,7 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
                 // null terminate
                 portion_buf[portion_buf_size] = '\0';
 
-                const float x_end = x_offset + main_font_->GetWidth(portion_buf, parent_);
+                const float x_end = x_offset + main_font_->GetWidth(portion_buf, -1, parent_);
                 if (x_end > x_limit) {
                     new_line = true;
                 }
@@ -590,7 +590,7 @@ void PagedReader::UpdatePages() {
                         // null terminate
                         portion_buf[portion_buf_size] = '\0';
 
-                        const float x_end = x_offset + main_font_->GetWidth(portion_buf, parent_);
+                        const float x_end = x_offset + main_font_->GetWidth(portion_buf, -1, parent_);
                         if (x_end > x_limit) {
                             new_line = true;
                         }
@@ -603,11 +603,11 @@ void PagedReader::UpdatePages() {
                         // null terminate
                         portion_buf[portion_buf_size] = '\0';
 
-                        const float text_width = main_font_->GetWidth(portion_buf, parent_);
+                        const float text_width = main_font_->GetWidth(portion_buf, -1, parent_);
 
                         const rect_t text_rect = {
-                                Ren::Vec2f{x_offset, y_offset},
-                                Ren::Vec2f{text_width, main_font_height}
+                            Ren::Vec2f{ x_offset, y_offset },
+                            Ren::Vec2f{ text_width, main_font_height }
                         };
 
                         chapter.sentence_rects.push_back(text_rect);
