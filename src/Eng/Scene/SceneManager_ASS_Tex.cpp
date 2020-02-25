@@ -535,10 +535,11 @@ void SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file, co
         src_stream.read((char *)&compressed_size, sizeof(int));
         src_stream.read((char *)&compressed_buf[0], compressed_size);
 
+        mipmaps[i].reset(new uint8_t[orig_size]);
+
         const int decompressed_size = Net::DecompressLZO(&compressed_buf[0], compressed_size, &mipmaps[i][0], orig_size);
         assert(decompressed_size == orig_size);
 
-        mipmaps[i].reset(new uint8_t[orig_size]);
         _mipmaps[i] = mipmaps[i].get();
         widths[i] = heights[i] = mip_res;
 
@@ -649,7 +650,7 @@ void SceneManager::InitASTCCodec() {
 }
 
 int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, int height, int channels, float bitrate, std::unique_ptr<uint8_t[]> &out_buf) {
-    int padding = channels == 4 ? 1 : 0;
+    const int padding = channels == 4 ? 1 : 0;
 
     astc_codec_image *src_image = allocate_image(8, width, height, 1, padding);
 

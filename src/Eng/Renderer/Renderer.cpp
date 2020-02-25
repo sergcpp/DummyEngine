@@ -164,8 +164,8 @@ Ren::Vec2f IntegrateBRDF(float NdotV, float roughness) {
     (min)[0], (max)[1], (max)[2],     \
     (max)[0], (max)[1], (max)[2]
 
-Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
-    : ctx_(ctx), threads_(threads), shadow_splitter_(RendererInternal::SHADOWMAP_WIDTH, RendererInternal::SHADOWMAP_HEIGHT) {
+Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
+    : ctx_(ctx), threads_(std::move(threads)), shadow_splitter_(RendererInternal::SHADOWMAP_WIDTH, RendererInternal::SHADOWMAP_HEIGHT) {
     using namespace RendererInternal;
 
     {
@@ -180,7 +180,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     }
 
     {   // aux buffer which gathers frame luminance
-        FrameBuf::ColorAttachmentDesc desc;
+        FrameBuf::ColorAttachmentDesc desc; // NOLINT
         desc.format = Ren::RawR16F;
         desc.filter = Ren::BilinearNoMipmap;
         desc.repeat = Ren::ClampToEdge;
@@ -188,7 +188,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> &threads)
     }
 
     {   // buffer used to sample probes
-        FrameBuf::ColorAttachmentDesc desc;
+        FrameBuf::ColorAttachmentDesc desc; // NOLINT
         desc.format = Ren::RawRGBA32F;
         desc.filter = Ren::NoFilter;
         desc.repeat = Ren::ClampToEdge;
@@ -344,7 +344,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
 #endif
 
         {   // Buffer that holds resolved color
-            FrameBuf::ColorAttachmentDesc desc;
+            FrameBuf::ColorAttachmentDesc desc; // NOLINT
             desc.format = Ren::RawRG11F_B10F;
             desc.filter = Ren::NoFilter;
             desc.repeat = Ren::ClampToEdge;
@@ -352,7 +352,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         }
 
         {   // Buffer that holds downsampled linear depth
-            FrameBuf::ColorAttachmentDesc desc;
+            FrameBuf::ColorAttachmentDesc desc; // NOLINT
             desc.format = Ren::RawR32F;
             desc.filter = Ren::NoFilter;
             desc.repeat = Ren::ClampToEdge;
@@ -360,14 +360,14 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         }
 
         {   // Buffer that holds tonemapped ldr frame before fxaa applied
-            FrameBuf::ColorAttachmentDesc desc;
+            FrameBuf::ColorAttachmentDesc desc; // NOLINT
             desc.format = Ren::RawRGB888;
             desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;
             combined_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::DepthNone }, 1, log);
         }
         {   // Buffer for SSAO
-            FrameBuf::ColorAttachmentDesc desc;
+            FrameBuf::ColorAttachmentDesc desc; // NOLINT
             desc.format = Ren::RawR8;
             desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;
@@ -375,7 +375,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             ssao_buf2_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, log);
         }
         {   // Auxilary buffer for reflections (rg - uvs, b - influence)
-            FrameBuf::ColorAttachmentDesc desc;
+            FrameBuf::ColorAttachmentDesc desc; // NOLINT
             desc.format = Ren::RawRGB10_A2;
             desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;
@@ -383,14 +383,14 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             ssr_buf2_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, log);
         }
         {   // Buffer that holds previous frame (used for SSR)
-            FrameBuf::ColorAttachmentDesc desc;
+            FrameBuf::ColorAttachmentDesc desc; // NOLINT
             desc.format = Ren::RawRG11F_B10F;
             desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;
             down_buf_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, { FrameBuf::DepthNone }, 1, log);
         }
         {   // Auxilary buffers for bloom effect
-            FrameBuf::ColorAttachmentDesc desc;
+            FrameBuf::ColorAttachmentDesc desc; // NOLINT
             desc.format = Ren::RawRG11F_B10F;
             desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;

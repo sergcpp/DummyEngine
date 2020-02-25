@@ -66,7 +66,7 @@ struct DepthDrawBatch {
 };
 static_assert(offsetof(DepthDrawBatch, indices_count) == 4, "!");
 
-struct MainDrawBatch {
+struct MainDrawBatch {  // NOLINT
     union {
         struct {
             uint32_t _pad1              : 4;
@@ -86,7 +86,7 @@ struct MainDrawBatch {
 };
 static_assert(offsetof(MainDrawBatch, indices_count) == 8, "!");
 
-struct ShadowList {
+struct ShadowList { // NOLINT
     int shadow_map_pos[2], shadow_map_size[2];
     int scissor_test_pos[2], scissor_test_size[2];
     uint32_t shadow_batch_start, shadow_batch_count;

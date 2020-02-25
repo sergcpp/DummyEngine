@@ -2,15 +2,15 @@
 
 #include <algorithm>
 
-Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
-                                    eMeshLoadStatus *load_status) {
+Ren::MeshRef Ren::Context::LoadMesh(
+        const char *name, std::istream *data, const material_load_callback &on_mat_load, eMeshLoadStatus *load_status) {
     return LoadMesh(name, data, on_mat_load, default_vertex_buf1_, default_vertex_buf2_,
             default_indices_buf_, default_skin_vertex_buf_, load_status);
 }
 
-Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
-                                    BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
-                                    eMeshLoadStatus *load_status) {
+Ren::MeshRef Ren::Context::LoadMesh(
+        const char *name, std::istream *data, const material_load_callback &on_mat_load, BufferRef &vertex_buf1,
+        BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf, eMeshLoadStatus *load_status) {
     MeshRef ref = meshes_.FindByName(name);
     if (!ref) {
         ref = meshes_.Add(name, data, on_mat_load, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf, load_status, log_);
@@ -25,7 +25,8 @@ Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data, const 
     return ref;
 }
 
-Ren::MaterialRef Ren::Context::LoadMaterial(const char *name, const char *mat_src, eMatLoadStatus *status, const program_load_callback &on_prog_load,
+Ren::MaterialRef Ren::Context::LoadMaterial(
+        const char *name, const char *mat_src, eMatLoadStatus *status, const program_load_callback &on_prog_load,
         const texture_load_callback &on_tex_load) {
     MaterialRef ref = materials_.FindByName(name);
     if (!ref) {

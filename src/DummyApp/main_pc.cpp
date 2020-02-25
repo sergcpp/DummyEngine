@@ -7,9 +7,10 @@ int main(int argc, char *argv[]) {
 
 // TODO:
 // fix freeze on early exit
+// refactor file read on android
 // fix decals (use compressed 16x16 blocks)
 // start with scene editing
-// use direct access extension
+// use direct state access extension
 // add assetstream
 // get rid of SDL in Modl app
 // make full screen quad passes differently

@@ -5,7 +5,8 @@
 #include <Ren/Fwd.h>
 #include <Ren/GL.h>
 
-FrameBuf::FrameBuf(int _w, int _h, const ColorAttachmentDesc *_attachments, int _attachments_count,
+FrameBuf::FrameBuf(
+        int _w, int _h, const ColorAttachmentDesc *_attachments, int _attachments_count,
         const DepthAttachmentDesc &depth_att, int _msaa, Ren::ILog *log)
     : w(_w), h(_h), sample_count(_msaa) {
 

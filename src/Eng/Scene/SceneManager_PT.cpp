@@ -41,9 +41,9 @@ const float *SceneManager::Draw_PT(int *w, int *h) {
             const int TILE_SIZE = 64;
 
 #if defined(__ANDROID__)
-            int pt_res_w = 640, pt_res_h = 360;
+            const int pt_res_w = 640, pt_res_h = 360;
 #else
-            int pt_res_w = ctx_.w(), pt_res_h = ctx_.h();
+            const int pt_res_w = ctx_.w(), pt_res_h = ctx_.h();
 #endif
 
             for (int y = 0; y < pt_res_h + TILE_SIZE - 1; y += TILE_SIZE) {

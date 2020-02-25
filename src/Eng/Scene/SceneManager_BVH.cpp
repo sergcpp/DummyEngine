@@ -87,7 +87,7 @@ void SceneManager::RebuildBVH() {
     struct prims_coll_t {
         std::vector<uint32_t> indices;
         Ren::Vec3f min = Ren::Vec3f{ std::numeric_limits<float>::max() }, max = Ren::Vec3f{ std::numeric_limits<float>::lowest() };
-        prims_coll_t() {}
+        prims_coll_t() = default;
         prims_coll_t(std::vector<uint32_t> &&_indices, const Ren::Vec3f &_min, const Ren::Vec3f &_max)
             : indices(std::move(_indices)), min(_min), max(_max) {
         }
@@ -313,7 +313,7 @@ void SceneManager::UpdateObjects() {
             candidates.push({ best_candidate, best_cost });
 
             while (!candidates.empty()) {
-                insert_candidate_t c;
+                insert_candidate_t c;   // NOLINT
                 candidates.extract_top(c);
 
                 float inherited_cost = 0.0f;

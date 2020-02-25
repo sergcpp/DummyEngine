@@ -245,7 +245,10 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, Ren::ILog *log
     CloseHandle(out_h);
 #else
     struct stat st1 = {}, st2 = {};
-    if (stat(in_file, &st1) != -1 && stat(out_file, &st2) != -1) {
+    const int
+        res1 = stat(in_file, &st1),
+        res2 = stat(out_file, &st2);
+    if (res1 != -1 && res2 != -1) {
         struct tm tm1 = {}, tm2 = {};
         localtime_r(&st1.st_ctime, &tm1);
         localtime_r(&st2.st_ctime, &tm2);
@@ -256,6 +259,8 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, Ren::ILog *log
         if (diff_s < 0) {
             return true;
         }
+    } else if (res1 == -1) {
+        log->Info("[PrepareAssets] Failed to open input file %s!", in_file);
     }
     
 #endif
@@ -522,7 +527,7 @@ void SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file, c
 
     std::string base_path = in_file;
     {   // extract base part of file path
-        size_t n = base_path.find_last_of('/');
+        const size_t n = base_path.find_last_of('/');
         if (n != std::string::npos) {
             base_path = base_path.substr(0, n + 1);
         }

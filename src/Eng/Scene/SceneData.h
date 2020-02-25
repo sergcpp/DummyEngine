@@ -50,7 +50,7 @@ struct SceneObject {
     uint32_t    components[MAX_COMPONENT_TYPES];
     Ren::String name;
 
-    SceneObject() : comp_mask(0), change_mask(0), last_change_mask(0) {}
+    SceneObject() : comp_mask(0), change_mask(0), last_change_mask(0) {}    // NOLINT
     SceneObject(const SceneObject &rhs) = delete;
     SceneObject(SceneObject &&rhs) noexcept = default;
 
@@ -59,7 +59,7 @@ struct SceneObject {
 };
 //static_assert(sizeof(SceneObject) == 156 + 4, "!");
 
-struct bvh_node_t {
+struct bvh_node_t { // NOLINT
     uint32_t prim_index, prim_count,
              left_child, right_child;
     Ren::Vec3f bbox_min;
@@ -88,7 +88,7 @@ struct BBox {
 
 class CompStorage {
 public:
-    virtual ~CompStorage() {}
+    virtual ~CompStorage() = default;
     virtual const char *name() const = 0;
 
     virtual uint32_t Create() = 0;

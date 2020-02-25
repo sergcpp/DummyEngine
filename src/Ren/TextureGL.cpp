@@ -114,14 +114,14 @@ uint32_t g_gl_wrap_mode[] = {
 static_assert(sizeof(g_gl_wrap_mode) / sizeof(g_gl_wrap_mode[0]) == WrapModesCount, "!");
 }
 
-Ren::Texture2D::Texture2D(const char *name, const void *data, int size,
-                          const Texture2DParams &p, eTexLoadStatus *load_status, ILog *log) {
+Ren::Texture2D::Texture2D(
+        const char *name, const void *data, int size, const Texture2DParams &p, eTexLoadStatus *load_status, ILog *log) {
     name_ = String{ name };
     Init(data, size, p, load_status, log);
 }
 
-Ren::Texture2D::Texture2D(const char *name, const void *data[6], const int size[6],
-                          const Texture2DParams &p, eTexLoadStatus *load_status, ILog *log) {
+Ren::Texture2D::Texture2D(
+        const char *name, const void *data[6], const int size[6], const Texture2DParams &p, eTexLoadStatus *load_status, ILog *log) {
     name_ = String{ name };
     Init(data, size, p, load_status, log);
 }
@@ -240,9 +240,9 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Texture2DParams &p,
         internal_format = (GLenum)GLInternalFormatFromTexFormat(p.format),
         type = (GLenum)GLTypeFromTexFormat(p.format);
 
-    if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
-        auto mip_count = (GLsizei)CalcMipCount(p.w, p.h, 1, p.filter);
+    auto mip_count = (GLsizei)CalcMipCount(p.w, p.h, 1, p.filter);
 
+    if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
         // allocate all mip levels
         ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format, (GLsizei)p.w, (GLsizei)p.h);
         // update first level
@@ -258,7 +258,7 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Texture2DParams &p,
     ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_S, g_gl_wrap_mode[p.repeat]);
     ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_T, g_gl_wrap_mode[p.repeat]);
 
-    if (p.filter == Trilinear || p.filter == Bilinear) {
+    if (mip_count > 1 && (p.filter == Trilinear || p.filter == Bilinear)) {
         ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, tex_id);
     }
 

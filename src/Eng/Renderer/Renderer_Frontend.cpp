@@ -323,13 +323,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             } else {
                 const SceneObject &obj = scene.objects[n->prim_index];
 
-                if ((obj.comp_mask & CompTransformBit) && (obj.comp_mask & (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit))) {
+                if ((obj.comp_mask & CompTransformBit) && (obj.comp_mask & (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit))) { // NOLINT
                     const Transform &tr = transforms[obj.components[CompTransform]];
 
                     if (!skip_check) {
                         const float bbox_points[8][3] = { BBOX_POINTS(tr.bbox_min_ws, tr.bbox_max_ws) };
 
-                        // Node has slightly enlarged bounds, so we need to check object'grp bounding box here
+                        // Node has slightly enlarged bounds, so we need to check object's bounding box here
                         if (list.draw_cam.CheckFrustumVisibility(bbox_points) == Ren::Invisible) continue;
 
                         if (culling_enabled) {
@@ -474,7 +474,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             memcpy(&ls.pos[0], &pos[0], 3 * sizeof(float));
                             ls.radius = light.radius;
                             memcpy(&ls.col[0], &light.col[0], 3 * sizeof(float));
-                            ls.shadowreg_index = 0xffffffff;
+                            ls.shadowreg_index = -1;
                             memcpy(&ls.dir[0], &dir[0], 3 * sizeof(float));
                             ls.spot = light.spot;
                         }
@@ -515,9 +515,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 int in_count = 8;
 
                                 for (int k = 0; k < 8; k++) {
-                                    float dist = plane.n[0] * bbox_points[k][0] +
-                                                    plane.n[1] * bbox_points[k][1] +
-                                                    plane.n[2] * bbox_points[k][2] + plane.d;
+                                    const float dist =
+                                            plane.n[0] * bbox_points[k][0] +
+                                            plane.n[1] * bbox_points[k][1] +
+                                            plane.n[2] * bbox_points[k][2] + plane.d;
                                     if (dist < 0.0f) {
                                         in_count--;
                                     }
@@ -817,7 +818,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             // discard cached cascade if view change was significant
             sun_shadow_cache_[casc].valid &= (cached_dist < 1.0f && cached_dir_dist < 0.1f);
 
-            const uint8_t pattern_bit = (1 << (frame_counter_ % 8));
+            const uint8_t pattern_bit = (1u << uint8_t(frame_counter_ % 8));
             const bool should_update = (pattern_bit & SunShadowUpdatePattern[casc]) != 0;
 
             if (sun_shadow_cache_[casc].valid && !should_update) {
@@ -1072,7 +1073,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
             bool light_sees_dynamic_objects = false;
 
-            const uint32_t skip_check_bit = (1u << 31);
+            const uint32_t skip_check_bit = (1u << 31u);
             const uint32_t index_bits = ~skip_check_bit;
 
             stack_size = 0;
@@ -1352,12 +1353,15 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         std::atomic_int a_items_count = {};
 
         for (int i = 0; i < REN_GRID_RES_Z; i++) {
-            futures[i] = threads_->enqueue(GatherItemsForZSlice_Job, i, temp_sub_frustums_.data, list.light_sources.data, list.light_sources.count, list.decals.data, list.decals.count, decals_boxes_.data,
-                                           list.probes.data, list.probes.count, litem_to_lsource_.data, list.cells.data, list.items.data, std::ref(a_items_count));
+            futures[i] = threads_->enqueue(
+                    GatherItemsForZSlice_Job, i, temp_sub_frustums_.data, list.light_sources.data,
+                    list.light_sources.count, list.decals.data, list.decals.count, decals_boxes_.data,
+                    list.probes.data, list.probes.count, litem_to_lsource_.data, list.cells.data, list.items.data,
+                    std::ref(a_items_count));
         }
 
-        for (int i = 0; i < REN_GRID_RES_Z; i++) {
-            futures[i].wait();
+        for (std::future<void> &fut : futures) {
+            fut.wait();
         }
 
         list.items.count = std::min(a_items_count.load(), REN_MAX_ITEMS_TOTAL);
@@ -1489,9 +1493,9 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                         l.pos[2] - influence * l.dir[2] - cap_radius * m[2]
                     };
 
-                    float val = p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d;
+                    const float val = p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d;
 
-                    if (dist < -radius && p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d < -epsilon) {
+                    if (dist < -radius && val < -epsilon) {
                         visible_to_line = Ren::Invisible;
                     }
                 }
@@ -1552,10 +1556,11 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
         for (int k = Ren::NearPlane; k <= Ren::FarPlane; k++) {
             int in_count = 8;
 
-            for (int i = 0; i < 8; i++) {
-                float dist = first_sf->planes[k].n[0] * bbox_points[i][0] +
-                             first_sf->planes[k].n[1] * bbox_points[i][1] +
-                             first_sf->planes[k].n[2] * bbox_points[i][2] + first_sf->planes[k].d;
+            for (int i = 0; i < 8; i++) {   // NOLINT
+                const float dist =
+                        first_sf->planes[k].n[0] * bbox_points[i][0] +
+                        first_sf->planes[k].n[1] * bbox_points[i][1] +
+                        first_sf->planes[k].n[2] * bbox_points[i][2] + first_sf->planes[k].d;
                 if (dist < 0.0f) {
                     in_count--;
                 }
@@ -1579,10 +1584,11 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
             for (int k = Ren::TopPlane; k <= Ren::BottomPlane; k++) {
                 int in_count = 8;
 
-                for (int i = 0; i < 8; i++) {
-                    float dist = first_line_sf->planes[k].n[0] * bbox_points[i][0] +
-                                 first_line_sf->planes[k].n[1] * bbox_points[i][1] +
-                                 first_line_sf->planes[k].n[2] * bbox_points[i][2] + first_line_sf->planes[k].d;
+                for (int i = 0; i < 8; i++) {   // NOLINT
+                    const float dist =
+                            first_line_sf->planes[k].n[0] * bbox_points[i][0] +
+                            first_line_sf->planes[k].n[1] * bbox_points[i][1] +
+                            first_line_sf->planes[k].n[2] * bbox_points[i][2] + first_line_sf->planes[k].d;
                     if (dist < 0.0f) {
                         in_count--;
                     }
@@ -1606,10 +1612,11 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 for (int k = Ren::LeftPlane; k <= Ren::RightPlane; k++) {
                     int in_count = 8;
 
-                    for (int i = 0; i < 8; i++) {
-                        float dist = sf->planes[k].n[0] * bbox_points[i][0] +
-                                     sf->planes[k].n[1] * bbox_points[i][1] +
-                                     sf->planes[k].n[2] * bbox_points[i][2] + sf->planes[k].d;
+                    for (int i = 0; i < 8; i++) {   // NOLINT
+                        const float dist =
+                                sf->planes[k].n[0] * bbox_points[i][0] +
+                                sf->planes[k].n[1] * bbox_points[i][1] +
+                                sf->planes[k].n[2] * bbox_points[i][2] + sf->planes[k].d;
                         if (dist < 0.0f) {
                             in_count--;
                         }
@@ -1726,7 +1733,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_offset, const uint32_t obj_index, const AnimState &as, const Ren::Mesh *mesh, DrawList &list) {
     const Ren::Skeleton *skel = mesh->skel();
 
-    const uint16_t palette_start = (uint16_t)list.skin_transforms.count;
+    const auto palette_start = (uint16_t)list.skin_transforms.count;
     SkinTransform *matr_palette = &list.skin_transforms.data[list.skin_transforms.count];
     list.skin_transforms.count += (uint32_t)skel->bones.size();
 
@@ -1744,7 +1751,7 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
     const uint32_t base_vertex = skinned_buf_vtx_offset + list.skin_vertices_count;
 
     for (uint32_t i = vertex_beg; i < vertex_end; i += REN_SKIN_REGION_SIZE) {
-        const uint16_t count = (uint16_t)_MIN(vertex_end - i, REN_SKIN_REGION_SIZE);
+        const auto count = (uint16_t)_MIN(vertex_end - i, REN_SKIN_REGION_SIZE);
         const uint32_t out_offset = skinned_buf_vtx_offset + list.skin_vertices_count;
         list.skin_regions.data[list.skin_regions.count++] = { i, out_offset, palette_start, count };
         list.skin_vertices_count += count;
@@ -1763,7 +1770,7 @@ uint32_t RendererInternal::__push_vegetation_mesh(const uint32_t vege_buf_vtx_of
 
     const uint32_t base_vertex = vege_buf_vtx_offset + list.vege_vertices_count;
 
-    union {
+    union { // NOLINT
         int16_t     in[2];
         uint32_t    out;
     } wind_vec_packed;
@@ -1776,7 +1783,7 @@ uint32_t RendererInternal::__push_vegetation_mesh(const uint32_t vege_buf_vtx_of
     (void)integral_part;
 
     for (uint32_t i = vertex_beg; i < vertex_end; i += REN_VEGE_REGION_SIZE) {
-        const uint16_t count = (uint16_t)_MIN(vertex_end - i, REN_VEGE_REGION_SIZE);
+        const auto count = (uint16_t)_MIN(vertex_end - i, REN_VEGE_REGION_SIZE);
         const uint32_t out_offset = vege_buf_vtx_offset + list.vege_vertices_count;
         list.vege_regions.data[list.vege_regions.count++] = { i, out_offset, wind_vec_packed.out, obj_phase, count };
         list.vege_vertices_count += count;

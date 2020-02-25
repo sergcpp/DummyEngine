@@ -65,7 +65,7 @@ Sys::AssetFile::AssetFile(const char *file_name, int mode) : mode_(mode), name_(
             file_name = full_path.c_str();
         }
 
-        asset_file_ = AAssetManager_open(asset_manager_, file_name, AASSET_MODE_BUFFER);
+        asset_file_ = AAssetManager_open(asset_manager_, file_name, AASSET_MODE_STREAMING);
         if (asset_file_) {
             size_ = AAsset_getLength(asset_file_);
         } else {

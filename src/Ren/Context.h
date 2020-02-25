@@ -70,13 +70,14 @@ public:
 
     /*** Mesh ***/
     MeshRef LoadMesh(const char *name, std::istream *data, const material_load_callback &on_mat_load, eMeshLoadStatus *load_status);
-    MeshRef LoadMesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
-                     BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
-                     eMeshLoadStatus *load_status);
+    MeshRef LoadMesh(
+            const char *name, std::istream *data, const material_load_callback &on_mat_load, BufferRef &vertex_buf1,
+            BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf, eMeshLoadStatus *load_status);
 
     /*** Material ***/
-    MaterialRef LoadMaterial(const char *name, const char *mat_src, eMatLoadStatus *status, const program_load_callback &on_prog_load,
-                             const texture_load_callback &on_tex_load);
+    MaterialRef LoadMaterial(
+            const char *name, const char *mat_src, eMatLoadStatus *status, const program_load_callback &on_prog_load,
+            const texture_load_callback &on_tex_load);
     MaterialRef GetMaterial(uint32_t index);
     int NumMaterialsNotReady();
     void ReleaseMaterials();
@@ -86,8 +87,9 @@ public:
     ProgramRef LoadProgramGLSL(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *load_status);
     ProgramRef LoadProgramGLSL(const char *name, const char *cs_source, eProgLoadStatus *load_status);
 #ifndef __ANDROID__
-    ProgramRef LoadProgramSPIRV(const char *name, const uint8_t *vs_data, int vs_data_size,
-                                                  const uint8_t *fs_data, int fs_data_size, eProgLoadStatus *load_status);
+    ProgramRef LoadProgramSPIRV(
+            const char *name, const uint8_t *vs_data, int vs_data_size, const uint8_t *fs_data, int fs_data_size,
+            eProgLoadStatus *load_status);
     ProgramRef LoadProgramSPIRV(const char *name, const uint8_t *cs_data, int cs_data_size, eProgLoadStatus *load_status);
 #endif
 #elif defined(USE_SW_RENDER)
@@ -122,11 +124,10 @@ public:
     void ReleaseAll();
 
 #if defined(USE_GL_RENDER)
-    struct {
+    struct {    // NOLINT
         float max_anisotropy = 0.0f;
         int max_uniform_vec4 = 0;
-        int max_vertex_input = 0,
-            max_vertex_output = 0;
+        int max_vertex_input = 0, max_vertex_output = 0;
         bool gl_spirv = false;
         int max_compute_work_group_size[3];
     } capabilities;

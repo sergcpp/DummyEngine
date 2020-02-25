@@ -73,7 +73,7 @@ struct DrawList {
 
     // for debugging only, backend does not require nodes for drawing
     std::vector<bvh_node_t>     temp_nodes;
-    uint32_t                    root_index;
+    uint32_t                    root_index = 0xffffffff;
 
     DrawList();
 };

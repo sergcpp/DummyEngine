@@ -30,7 +30,7 @@ struct FrameBuf {
     ColorAttachment attachments[4];
     uint32_t        attachments_count = 0;
 #endif
-    FrameBuf() :  w(-1), h(-1), fb(0xffffffff), attachments_count(0) {}
+    FrameBuf() :  w(-1), h(-1), fb(0xffffffff), attachments_count(0) {} // NOLINT
     FrameBuf(int w, int h, const ColorAttachmentDesc *attachments, int attachments_count,
             const DepthAttachmentDesc &depth_att, int sample_count, Ren::ILog *log);
     ~FrameBuf();
