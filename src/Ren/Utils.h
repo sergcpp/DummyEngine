@@ -26,7 +26,7 @@ uint16_t f32_to_f16(float value);
 void ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint32_t> &new_vtx_indices,
                          const uint32_t *indices, size_t indices_count);
 
-struct KTXHeader {
+struct KTXHeader {  // NOLINT
     char identifier[12] = { '\xAB', 'K', 'T', 'X', ' ', '1', '1', '\xBB', '\r', '\n', '\x1A', '\n' };
     uint32_t endianness = 0x04030201;
     uint32_t gl_type;
@@ -85,4 +85,7 @@ extern const uint8_t _blank_ASTC_block_4x4[];
 extern const int _blank_ASTC_block_4x4_len;
 
 int CalcMipCount(int w, int h, int min_res, eTexFilter filter);
+
+float PerlinNoise(const Ren::Vec4f &P);
+float PerlinNoise(const Ren::Vec4f &P, const Ren::Vec4f &rep);
 }

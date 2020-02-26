@@ -39,7 +39,7 @@ uniform SharedDataBlock {
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
     vec4 uResAndFRes, uTranspParamsAndTime;
-	vec4 uWindParams;
+	vec4 uWindScroll;
     ProbeItem uProbes[$MaxProbes];
 };
 
@@ -62,6 +62,8 @@ out mediump vec3 aVertexTangent_;
 #ifdef VULKAN
     #define gl_InstanceID gl_InstanceIndex
 #endif
+
+invariant gl_Position;
 
 void main(void) {
     int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];

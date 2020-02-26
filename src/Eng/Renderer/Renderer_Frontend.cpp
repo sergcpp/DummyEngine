@@ -65,12 +65,18 @@ int16_t f32_to_s16(float value) {
     return int16_t(value * 32767);
 }
 
-/*uint16_t f32_to_u16(float value) {
+uint16_t f32_to_u16(float value) {
     return uint16_t(value * 65535);
-}*/
+}
+
+uint8_t f32_to_u8(float value) {
+    return uint8_t(value * 255);
+}
 
 uint32_t __push_skeletal_mesh(uint32_t skinned_buf_vtx_offset, uint32_t obj_index, const AnimState &as, const Ren::Mesh *mesh, DrawList &list);
 uint32_t __push_vegetation_mesh(uint32_t vege_buf_vtx_offset, uint32_t obj_index, const Ren::Mesh *mesh, const Ren::Vec4f &wind_vec, DrawList &list);
+
+void __init_wind_params(const VegState &vs, const Environment &env, const Ren::Mat4f &object_from_world, InstanceData &instance);
 }
 
 #define REN_UNINITIALIZE_X2(t)  t{ Ren::Uninitialize }, t{ Ren::Uninitialize }
@@ -168,6 +174,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     const auto *decals     = (Decal *)scene.comp_store[CompDecal]->Get(0);
     const auto *probes     = (LightProbe *)scene.comp_store[CompProbe]->Get(0);
     const auto *anims      = (AnimState *)scene.comp_store[CompAnimState]->Get(0);
+    const auto *vegs       = (VegState *)scene.comp_store[CompVegState]->Get(0);
 
     // make sure we can access components by index
     assert(scene.comp_store[CompTransform]->IsSequential());
@@ -178,6 +185,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     assert(scene.comp_store[CompDecal]->IsSequential());
     assert(scene.comp_store[CompProbe]->IsSequential());
     assert(scene.comp_store[CompAnimState]->IsSequential());
+    assert(scene.comp_store[CompVegState]->IsSequential());
 
     const uint32_t
         skinned_buf_vtx_offset = skinned_buf1_vtx_offset_ / 16,
@@ -358,7 +366,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         }
                     }
 
-                    const Ren::Mat4f &world_from_object = tr.mat;
+                    const Ren::Mat4f
+                        &world_from_object = tr.mat,
+                        &object_from_world = tr.inv_mat;
                     const Ren::Mat4f world_from_object_trans = Ren::Transpose(world_from_object);
 
                     proc_objects_.data[n->prim_index].instance_index = list.instances.count;
@@ -369,6 +379,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     if (obj.comp_mask & CompLightmapBit) {
                         const Lightmap &lm = lightmaps[obj.components[CompLightmap]];
                         memcpy(&instance.lmap_transform[0], Ren::ValuePtr(lm.xform), 4 * sizeof(float));
+                    } else if (obj.comp_mask & CompVegStateBit) {
+                        const VegState &vs = vegs[obj.components[CompVegState]];
+                        __init_wind_params(vs, list.env, object_from_world, instance);
                     }
 
                     const Ren::Mat4f view_from_object = view_from_world * world_from_object,
@@ -389,9 +402,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             const AnimState& as = anims[obj.components[CompAnimState]];
                             base_vertex = __push_skeletal_mesh(skinned_buf_vtx_offset, n->prim_index, as, mesh, list);
                             proc_objects_.data[n->prim_index].base_vertex = base_vertex;
-                        } else if (mesh->type() == Ren::MeshColored) {
+                        } else if (obj.comp_mask & CompVegStateBit) {
+                            assert(mesh->type() == Ren::MeshColored);
                             if (pretransform_vegetation && animate_vegetation) {
-                                const Ren::Mat4f object_from_world = Ren::Inverse(world_from_object);
                                 Ren::Vec4f wind_vec_object = object_from_world * Ren::Vec4f{ list.env.wind_vec[0], list.env.wind_vec[1], list.env.wind_vec[2], 0.0f };
 
                                 const Ren::Vec3f obj_pos_ws = 0.5f * (tr.bbox_min_ws + tr.bbox_max_ws);
@@ -426,7 +439,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 DepthDrawBatch &zfill_batch = list.zfill_batches.data[list.zfill_batches.count++];
 
                                 zfill_batch.alpha_test_bit = (mat_flags & Ren::AlphaTest) ? 1 : 0;
-                                zfill_batch.vegetation_bit = animate_vegetation && !pretransform_vegetation && (mesh->type() == Ren::MeshColored);
+                                zfill_batch.vegetation_bit = animate_vegetation && !pretransform_vegetation && (obj.comp_mask & CompVegStateBit);
                                 zfill_batch.mat_id = (mat_flags & Ren::AlphaTest) ? main_batch.mat_id : 0;
                                 zfill_batch.indices_offset = main_batch.indices_offset;
                                 zfill_batch.base_vertex = base_vertex;
@@ -481,8 +494,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     }
 
                     if (decals_enabled && (obj.comp_mask & CompDecalBit)) {
-                        const Ren::Mat4f object_from_world = Ren::Inverse(world_from_object);
-
                         const Decal &decal = decals[obj.components[CompDecal]];
 
                         const Ren::Mat4f &view_from_object = decal.view,
@@ -911,7 +922,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             (tr.bbox_max_ws[1] - tr.bbox_min_ws[1]) < object_dim_thres &&
                             (tr.bbox_max_ws[2] - tr.bbox_min_ws[2]) < object_dim_thres) continue;
 
-                        const Ren::Mat4f &world_from_object = tr.mat;
+                        const Ren::Mat4f 
+                            &world_from_object = tr.mat,
+                            &object_from_world = tr.inv_mat;
                         const Ren::Mesh *mesh = dr.mesh.get();
 
                         if (proc_objects_.data[n->prim_index].instance_index == 0xffffffff) {
@@ -921,6 +934,12 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                             InstanceData &instance = list.instances.data[list.instances.count++];
                             memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
+
+                            if (obj.comp_mask & CompVegStateBit) {
+                                const VegState &vs = vegs[obj.components[CompVegState]];
+                                const Ren::Mat4f object_from_world = Ren::Inverse(world_from_object);
+                                __init_wind_params(vs, list.env, object_from_world, instance);
+                            }
                         }
 
                         if (proc_objects_.data[n->prim_index].base_vertex == 0xffffffff) {
@@ -929,9 +948,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             if (obj.comp_mask & CompAnimStateBit) {
                                 const AnimState &as = anims[obj.components[CompAnimState]];
                                 proc_objects_.data[n->prim_index].base_vertex = __push_skeletal_mesh(skinned_buf_vtx_offset, n->prim_index, as, mesh, list);
-                            } else if (mesh->type() == Ren::MeshColored) {
+                            } else if (obj.comp_mask & CompVegStateBit) {
+                                assert(mesh->type() == Ren::MeshColored);
                                 if (pretransform_vegetation && animate_vegetation) {
-                                    const Ren::Mat4f object_from_world = Ren::Inverse(world_from_object);
                                     Ren::Vec4f wind_vec_object = object_from_world * Ren::Vec4f{ list.env.wind_vec[0], list.env.wind_vec[1], list.env.wind_vec[2], 0.0f };
 
                                     const Ren::Vec3f obj_pos_ws = 0.5f * (tr.bbox_min_ws + tr.bbox_max_ws);
@@ -950,7 +969,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                                 batch.mat_id = (mat->flags() & Ren::AlphaTest) ? (uint32_t)s->mat.index() : 0;
                                 batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
-                                batch.vegetation_bit = animate_vegetation && !pretransform_vegetation && (mesh->type() == Ren::MeshColored);
+                                batch.vegetation_bit = animate_vegetation && !pretransform_vegetation && (obj.comp_mask & CompVegStateBit);
                                 batch.indices_offset = mesh->indices_buf().offset + s->offset;
                                 batch.base_vertex = proc_objects_.data[n->prim_index].base_vertex;
                                 batch.indices_count = s->num_indices;
@@ -1101,7 +1120,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         if (!skip_check &&
                             shadow_cam.CheckFrustumVisibility(tr.bbox_min_ws, tr.bbox_max_ws) == Ren::Invisible) continue;
 
-                        const Ren::Mat4f &world_from_object = tr.mat;
+                        const Ren::Mat4f
+                            &world_from_object = tr.mat,
+                            &object_from_world = tr.inv_mat;
                         const Drawable &dr = drawables[obj.components[CompDrawable]];
                         if ((dr.vis_mask & Drawable::VisShadow) == 0) continue;
 
@@ -1114,6 +1135,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                             InstanceData &instance = list.instances.data[list.instances.count++];
                             memcpy(&instance.model_matrix[0][0], Ren::ValuePtr(world_from_object_trans), 12 * sizeof(float));
+
+                            if (obj.comp_mask & CompVegStateBit) {
+                                const VegState &vs = vegs[obj.components[CompVegState]];
+                                __init_wind_params(vs, list.env, object_from_world, instance);
+                            }
                         }
 
                         if (proc_objects_.data[n->prim_index].base_vertex == 0xffffffff) {
@@ -1122,9 +1148,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             if (obj.comp_mask & CompAnimStateBit) {
                                 const AnimState &as = anims[obj.components[CompAnimState]];
                                 proc_objects_.data[n->prim_index].base_vertex = __push_skeletal_mesh(skinned_buf_vtx_offset, n->prim_index, as, mesh, list);
-                            } else if (mesh->type() == Ren::MeshColored) {
+                            } else if (obj.comp_mask & CompVegStateBit) {
+                                assert(mesh->type() == Ren::MeshColored);
                                 if (pretransform_vegetation && animate_vegetation) {
-                                    const Ren::Mat4f object_from_world = Ren::Inverse(world_from_object);
                                     Ren::Vec4f wind_vec_object = object_from_world * Ren::Vec4f{ list.env.wind_vec[0], list.env.wind_vec[1], list.env.wind_vec[2], 0.0f };
 
                                     const Ren::Vec3f obj_pos_ws = 0.5f * (tr.bbox_min_ws + tr.bbox_max_ws);
@@ -1143,7 +1169,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                                 batch.mat_id = (mat->flags() & Ren::AlphaTest) ? (uint32_t)s->mat.index() : 0;
                                 batch.alpha_test_bit = (mat->flags() & Ren::AlphaTest) ? 1 : 0;
-                                batch.vegetation_bit = animate_vegetation && !pretransform_vegetation && (mesh->type() == Ren::MeshColored);
+                                batch.vegetation_bit = animate_vegetation && !pretransform_vegetation && (obj.comp_mask & CompVegStateBit);
                                 batch.indices_offset = mesh->indices_buf().offset + s->offset;
                                 batch.base_vertex = proc_objects_.data[n->prim_index].base_vertex;
                                 batch.indices_count = s->num_indices;
@@ -1791,6 +1817,21 @@ uint32_t RendererInternal::__push_vegetation_mesh(const uint32_t vege_buf_vtx_of
 
     assert(list.vege_vertices_count <= REN_MAX_VEGE_VERTICES_TOTAL);
     return base_vertex;
+}
+
+void RendererInternal::__init_wind_params(const VegState &vs, const Environment &env, const Ren::Mat4f &object_from_world, InstanceData &instance) {
+    instance.movement_scale = f32_to_u8(vs.movement_scale);
+    instance.tree_mode = f32_to_u8(vs.tree_mode);
+    instance.bend_scale = f32_to_u8(vs.bend_scale);
+    instance.stretch = f32_to_u8(vs.stretch);
+    
+    const auto wind_vec_ws = Ren::Vec4f{ env.wind_vec[0], env.wind_vec[1], env.wind_vec[2], 0.0f };
+    const Ren::Vec4f wind_vec_ls = object_from_world * wind_vec_ws;
+    
+    instance.wind_dir_ls[0] = Ren::f32_to_f16(wind_vec_ls[0]);
+    instance.wind_dir_ls[1] = Ren::f32_to_f16(wind_vec_ls[1]);
+    instance.wind_dir_ls[2] = Ren::f32_to_f16(wind_vec_ls[2]);
+    instance.wind_turb = Ren::f32_to_f16(env.wind_turbulence);
 }
 
 #undef BBOX_POINTS

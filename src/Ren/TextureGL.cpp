@@ -19,6 +19,7 @@ uint32_t g_gl_formats[] = {
     0xffffffff,     // Undefined
     GL_RGB,         // RawRGB888
     GL_RGBA,        // RawRGBA8888
+    GL_RGBA,        // RawSignedRGBA8888
     GL_LUMINANCE,   // RawLUM8
     GL_RED,         // RawR32F
     GL_RED,         // RawR16F
@@ -44,6 +45,7 @@ uint32_t g_gl_internal_formats[] = {
     0xffffffff,     // Undefined
     GL_RGB8,        // RawRGB888
     GL_RGBA8,       // RawRGBA8888
+    GL_RGBA8_SNORM, // RawSignedRGBA8888
     GL_LUMINANCE,   // RawLUM8
     GL_R32F,        // RawR32F
     GL_R16F,        // RawR16F
@@ -69,6 +71,7 @@ uint32_t g_gl_types[] = {
     0xffffffff,         // Undefined
     GL_UNSIGNED_BYTE,   // RawRGB888
     GL_UNSIGNED_BYTE,   // RawRGBA8888
+    GL_BYTE,            // RawSignedRGBA8888
     GL_UNSIGNED_BYTE,   // RawLUM8
     GL_FLOAT,           // RawR32F
     GL_HALF_FLOAT,      // RawR16F
@@ -366,7 +369,7 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, int size, const Texture2D
     params_ = p;
     params_.format = Compressed;
 
-    unsigned res = SOIL_load_OGL_texture_from_memory((unsigned char *)data, size, SOIL_LOAD_AUTO, tex_id, SOIL_FLAG_INVERT_Y | SOIL_FLAG_GL_MIPMAPS);
+    const unsigned res = SOIL_load_OGL_texture_from_memory((unsigned char *)data, size, SOIL_LOAD_AUTO, tex_id, SOIL_FLAG_INVERT_Y | SOIL_FLAG_GL_MIPMAPS);
     assert(res == tex_id);
 
     GLint w, h;

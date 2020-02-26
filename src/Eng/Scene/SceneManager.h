@@ -119,6 +119,7 @@ private:
     static Ren::HashMap32<std::string, Handler> g_asset_handlers;
 
     static void InitASTCCodec();
+    static void WriteCommonShaderIncludes(const char *in_folder);
 
     static void HSkip(assets_context_t &ctx, const char *in_file, const char *out_file);
     static void HCopy(assets_context_t &ctx, const char *in_file, const char *out_file);

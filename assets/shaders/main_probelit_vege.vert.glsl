@@ -5,6 +5,8 @@
 
 $ModifyWarning
 
+#include "common_vs.glsl
+
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
@@ -40,13 +42,14 @@ uniform SharedDataBlock {
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
     vec4 uResAndFRes, uTranspParamsAndTime;
-	vec4 uWindParams;
+	vec4 uWindScroll;
     ProbeItem uProbes[$MaxProbes];
 };
 
 layout (location = $uInstancesLoc) uniform ivec4 uInstanceIndices[$MaxBatchSize / 4];
 
 layout(binding = $InstanceBufSlot) uniform highp samplerBuffer instances_buffer;
+layout(binding = $NoiseTexSlot) uniform sampler2D noise_texture;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) out highp vec3 aVertexPos_;
@@ -66,17 +69,7 @@ out highp vec3 aVertexShUVs_[4];
     #define gl_InstanceID gl_InstanceIndex
 #endif
 
-vec4 SmoothCurve(vec4 x) {
-    return x * x * (3.0 - 2.0 * x);
-}
-
-vec4 TriangleWave(vec4 x) {
-    return abs(fract(x + 0.5) * 2.0 - 1.0);
-}
-
-vec4 SmoothTriangleWave(vec4 x) {
-    return SmoothCurve(TriangleWave(x));
-}
+invariant gl_Position;
 
 void main(void) {
     int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
@@ -90,46 +83,22 @@ void main(void) {
 
     MMatrix = transpose(MMatrix);
 
-    vec3 vtx_pos_ws = (MMatrix * vec4(aVertexPosition, 1.0)).xyz;
+	// load vegetation properties
+    vec4 veg_params = texelFetch(instances_buffer, instance * 4 + 3);
+
+	vec3 vtx_pos_ls = aVertexPosition;
+	vec4 vtx_color = unpackUnorm4x8(aVertexColorPacked);
+	
+	vec3 obj_pos_ws = MMatrix[3].xyz;
+    vec4 wind_scroll = uWindScroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
+	vec4 wind_params = unpackUnorm4x8(floatBitsToUint(veg_params.x));
+	vec4 wind_vec_ls = vec4(unpackHalf2x16(floatBitsToUint(veg_params.y)), unpackHalf2x16(floatBitsToUint(veg_params.z)));
+	
+	vtx_pos_ls = TransformVegetation(vtx_pos_ls, vtx_color, wind_scroll, wind_params, wind_vec_ls, noise_texture);
+	
+	vec3 vtx_pos_ws = (MMatrix * vec4(vtx_pos_ls, 1.0)).xyz;
     vec3 vtx_nor_ws = normalize((MMatrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
     vec3 vtx_tan_ws = normalize((MMatrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
-
-	// temp
-    vec2 wind_vec = uWindParams.xz;
-    float wind_phase = 0.0;//dot(MMatrix[3].xyz, vec3(1.0));
-	
-	vec3 vtx_color = unpackUnorm4x8(aVertexColorPacked).xyz;
-
-    {   // Main bending
-        const highp float bend_scale = 0.035;
-        highp float bend_factor = vtx_pos_ws.y * bend_scale;
-        // smooth bending factor and increase its nearby height limit
-        bend_factor += 1.0;
-        bend_factor *= bend_factor;
-        bend_factor = bend_factor * bend_factor - bend_factor;
-        // displace position
-        highp vec3 new_pos = vtx_pos_ws.xyz;
-        new_pos.xz += wind_vec * bend_factor;
-        // rescale
-        vtx_pos_ws.xyz = normalize(new_pos) * length(vtx_pos_ws.xyz);
-    }
-
-    {   // Branch/detail bending
-        highp float branch_atten = vtx_color.r;
-        highp float edge_atten = vtx_color.g;
-
-        highp float branch_phase = wind_phase + vtx_color.b;
-        highp float vtx_phase = dot(vtx_pos_ws.xyz, vec3(branch_phase));
-
-        highp vec2 _waves = vec2(uTranspParamsAndTime.w) + vec2(vtx_phase, branch_phase);
-
-        const highp float speed = 0.006;
-        highp vec4 waves = (fract(_waves.xxyy * vec4(1.975, 0.793, 0.375, 0.193)) * vec4(2.0) - vec4(1.0)) * speed;
-        waves = SmoothTriangleWave(waves);
-
-        highp vec2 waves_sum = waves.xz + waves.yw;
-        vtx_pos_ws.xyz += 64.0 * waves_sum.xyx * vec3(1.0 * edge_atten * vtx_nor_ws.x, branch_atten, 1.0 * edge_atten * vtx_nor_ws.z);
-    }
 
     aVertexPos_ = vtx_pos_ws;
     aVertexNormal_ = vtx_nor_ws;

@@ -21,6 +21,10 @@ void Transform::UpdateBBox() {
     }
 }
 
+void Transform::UpdateInvMatrix() {
+    inv_mat = Ren::Inverse(mat);
+}
+
 void Transform::Read(const JsObject &js_in, Transform &tr) {
     if (js_in.Has("pos")) {
         const JsArray &js_pos = js_in.at("pos").as_arr();
@@ -51,6 +55,8 @@ void Transform::Read(const JsObject &js_in, Transform &tr) {
         Ren::Mat4f rot_all = rot_y * rot_x * rot_z;
         tr.mat = tr.mat * rot_all;
     }
+
+    tr.UpdateInvMatrix();
 }
 
 void Transform::Write(const Transform &tr, JsObject &js_out) {

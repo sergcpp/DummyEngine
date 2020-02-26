@@ -259,7 +259,7 @@ void SceneManager::UpdateObjects() {
 
         if (obj.change_mask & CompTransformBit) {
             Transform &tr = transforms[obj.components[CompTransform]];
-            tr.UpdateBBox();
+            tr.UpdateTemporaryData();
             if (tr.node_index != 0xffffffff) {
                 const bvh_node_t &node = nodes[tr.node_index];
 

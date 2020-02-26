@@ -216,7 +216,8 @@ void ReadAllFiles_MT_r(assets_context_t &ctx, const char *in_folder, const std::
 }
 
 bool CheckCanSkipAsset(const char *in_file, const char *out_file, Ren::ILog *log) {
-#if !defined(NDEBUG) && 0
+#if !defined(NDEBUG) && 1
+    log->Info("Warning: glsl is forced to be not skipped!");
     if (strstr(in_file, ".glsl")) return false;
 #endif
 
@@ -396,6 +397,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         InitASTCCodec();
         g_astc_initialized = true;
     }
+
+    WriteCommonShaderIncludes(in_folder);
 
     g_asset_handlers["bff"]         = { "bff",          HCopy               };
     g_asset_handlers["mesh"]        = { "mesh",         HCopy               };

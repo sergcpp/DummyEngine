@@ -26,12 +26,12 @@ namespace GSDrawTestInternal {
 #endif
         //"font_test.json";
         //"skin_test.json";
-        "living_room_gumroad.json";
+        //"living_room_gumroad.json";
         //"bistro.json";
         //"pbr_test.json";
         //"zenith.json";
         //"corridor.json";
-        //"vegetation_test2.json";
+        "vegetation_test2.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {
@@ -49,7 +49,7 @@ void GSDrawTest::Enter() {
 void GSDrawTest::OnPreloadScene(JsObject &js_scene) {
     GSBaseState::OnPreloadScene(js_scene);
 
-#if 1
+#if 0
     JsArray &js_objects = js_scene.at("objects").as_arr();
     if (js_objects.elements.size() < 2) return;
 
@@ -237,6 +237,7 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
 
     zenith_index_ = scene_manager_->FindObject("zenith");
     palm_index_ = scene_manager_->FindObject("palm");
+    leaf_tree_index_ = scene_manager_->FindObject("leaf_tree");
 }
 
 void GSDrawTest::Exit() {
@@ -376,10 +377,11 @@ void GSDrawTest::Update(uint64_t dt_us) {
         wind_update_time_ = 0;
         // update wind vector
         const float next_wind_strength = 0.15f * random_->GetNormalizedFloat();
-        wind_vector_goal_ = next_wind_strength * random_->GetUnitVec3();
+        //wind_vector_goal_ = next_wind_strength * random_->GetUnitVec3();
     }
 
     scene.env.wind_vec = 0.99f * scene.env.wind_vec + 0.01f * wind_vector_goal_;
+    scene.env.wind_turbulence = (1.0f / 32.0f) * Ren::Length(scene.env.wind_vec);
 }
 
 bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
@@ -493,7 +495,7 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
         } else if (evt.key_code == KeyRight || (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = max_fwd_speed_;
         } else if (evt.key_code == KeySpace) {
-            
+            wind_vector_goal_ = Ren::Vec3f{ 1.0f, 0.0f, 0.0f };
         } else if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
             shift_down_ = true;
         } else {
@@ -510,6 +512,8 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
             side_press_speed_ = 0;
         } else if (evt.key_code == KeyRight || (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = 0;
+        } else if (evt.key_code == KeySpace) {
+            wind_vector_goal_ = Ren::Vec3f{ 0.0f };
         } else {
             input_processed = false;
         }
@@ -584,7 +588,7 @@ void GSDrawTest::SaveScene(JsObject &js_scene) {
 }
 
 void GSDrawTest::TestUpdateAnims(float delta_time_s) {
-    const SceneData &scene = scene_manager_->scene_data();
+    SceneData &scene = scene_manager_->scene_data();
 
     if (wolf_indices_[0] != 0xffffffff) {
         for (uint32_t wolf_index : wolf_indices_) {
@@ -746,4 +750,23 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
             skel->UpdateBones(as->matr_palette);
         }
     }
+
+    /*if (leaf_tree_index_ != 0xffffffff) {
+        SceneObject *leaf_tree = scene_manager_->GetObject(leaf_tree_index_);
+
+        uint32_t mask = CompDrawableBit | CompTransformBit;
+        if ((leaf_tree->comp_mask & mask) == mask) {
+            auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(leaf_tree->components[CompTransform]);
+
+            Ren::Mat4f rot_mat;
+            rot_mat = Ren::Rotate(rot_mat, 1.0f * delta_time_s, Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+
+            tr->mat = rot_mat * tr->mat;
+            scene_manager_->InvalidateObjects(&leaf_tree_index_, 1, CompTransformBit);
+        }
+    }*/
+
+    const auto wind_scroll_dir = Ren::Vec2f{ scene.env.wind_vec[0], scene.env.wind_vec[2] };
+    scene.env.wind_scroll_lf = Ren::Fract(scene.env.wind_scroll_lf - (1.0f / 128.0f) * delta_time_s * wind_scroll_dir);
+    scene.env.wind_scroll_hf = Ren::Fract(scene.env.wind_scroll_hf - (1.0f / 16.0f) * delta_time_s * wind_scroll_dir);
 }

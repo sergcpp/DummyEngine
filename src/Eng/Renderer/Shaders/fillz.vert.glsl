@@ -35,6 +35,8 @@ layout(location = )" AS_STR(REN_U_INSTANCES_LOC) R"() uniform ivec4 uInstanceInd
 out vec2 aVertexUVs1_;
 #endif
 
+invariant gl_Position;
+
 void main() {
     int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
 

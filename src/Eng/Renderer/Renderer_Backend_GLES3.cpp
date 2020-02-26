@@ -16,7 +16,7 @@ namespace RendererInternal {
         Ren::Vec4f uSunDir, uSunCol;
         Ren::Vec4f uClipInfo, uCamPosAndGamma;
         Ren::Vec4f uResAndFRes, uTranspParamsAndTime;
-        Ren::Vec4f uWindParams;
+        Ren::Vec4f uWindScroll;
         ProbeItem uProbes[REN_MAX_PROBES_TOTAL] = {};
     };
     static_assert(sizeof(SharedDataBlock) == 5680, "!");
@@ -548,7 +548,7 @@ void Renderer::InitRendererInternal() {
         sphere_ndx_offset_ = ndx_buf->Alloc(sizeof(__sphere_indices), __sphere_indices);
 
         // Allocate quad vertices
-        uint32_t mem_required = sizeof(fs_quad_positions) + sizeof(fs_quad_norm_uvs);
+        const uint32_t mem_required = sizeof(fs_quad_positions) + sizeof(fs_quad_norm_uvs);
         quad_vtx1_offset_ = vtx_buf1->Alloc(mem_required + (16 - mem_required % 16), nullptr);
         quad_vtx2_offset_ = vtx_buf2->Alloc(mem_required + (16 - mem_required % 16), nullptr);
         assert(quad_vtx1_offset_ == quad_vtx2_offset_ && "Offsets do not match!");
@@ -836,9 +836,6 @@ void Renderer::CheckInitVAOs() {
             {   // Setup attributes from buffer 2
                 glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf2);
 
-                glEnableVertexAttribArray(REN_VTX_NOR_LOC);
-                glVertexAttribPointer(REN_VTX_NOR_LOC, 3, GL_SHORT, GL_TRUE, buf2_stride, (void*)0);    // NOLINT
-
                 glEnableVertexAttribArray(REN_VTX_AUX_LOC);
                 glVertexAttribIPointer(REN_VTX_AUX_LOC, 1, GL_UNSIGNED_INT, buf2_stride, (void*)(6 * sizeof(uint16_t)));
             }
@@ -884,9 +881,6 @@ void Renderer::CheckInitVAOs() {
 
             {   // Setup attributes from buffer 2
                 glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf2);
-
-                glEnableVertexAttribArray(REN_VTX_NOR_LOC);
-                glVertexAttribPointer(REN_VTX_NOR_LOC, 3, GL_SHORT, GL_TRUE, buf2_stride, (void*)0);    // NOLINT
 
                 glEnableVertexAttribArray(REN_VTX_AUX_LOC);
                 glVertexAttribIPointer(REN_VTX_AUX_LOC, 1, GL_UNSIGNED_INT, buf2_stride, (void*)(6 * sizeof(uint16_t)));
@@ -1427,7 +1421,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         const Ren::Vec3f &pos = list.draw_cam.world_position();
         shrd_data.uCamPosAndGamma = Ren::Vec4f{ pos[0], pos[1], pos[2], 2.2f };
-        shrd_data.uWindParams = Ren::Vec4f{ list.env.wind_vec[0], list.env.wind_vec[1], list.env.wind_vec[2], 0.0f };
+        shrd_data.uWindScroll = Ren::Vec4f{
+            list.env.wind_scroll_lf[0], list.env.wind_scroll_lf[1],
+            list.env.wind_scroll_hf[0], list.env.wind_scroll_hf[1]
+        };
 
         if (list.probes.count) {
             assert(list.probes.count <= REN_MAX_PROBES_TOTAL);
@@ -1777,6 +1774,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_DECAL_BUF_SLOT, decals_tbo_[cur_buf_chunk_]);
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
+
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_NOISE_TEX_SLOT, noise_tex_->tex_id());
 
     //
     // Depth-fill pass (draw opaque surfaces -> draw alpha-tested surfaces)

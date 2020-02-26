@@ -83,6 +83,18 @@ namespace Ren {
         0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
     const int _blank_ASTC_block_4x4_len = sizeof(_blank_ASTC_block_4x4);
+
+    Ren::Vec4f permute(const Ren::Vec4f& x) {
+        return Ren::Mod(((x * 34.0) + Ren::Vec4f{ 1.0 }) * x, Ren::Vec4f{ 289.0 });
+    }
+
+    Ren::Vec4f taylor_inv_sqrt(const Ren::Vec4f& r) {
+        return Ren::Vec4f{ 1.79284291400159f } - 0.85373472095314f * r;
+    }
+
+    Ren::Vec4f fade(const Ren::Vec4f& t) {
+        return t * t * t * (t * (t * 6.0f - Ren::Vec4f{ 15.0f }) + Ren::Vec4f{ 10.0f });
+    }
 }
 
 std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eTexColorFormat &format) {
@@ -744,4 +756,272 @@ int Ren::CalcMipCount(int w, int h, int min_res, eTexFilter filter) {
         mip_count = 1;
     }
     return mip_count;
+}
+
+//	Classic Perlin 3D Noise
+//	by Stefan Gustavson
+//
+float Ren::PerlinNoise(const Ren::Vec4f &P) {
+    Vec4f Pi0 = Floor(P);             // Integer part for indexing
+    Vec4f Pi1 = Pi0 + Vec4f{ 1.0f };  // Integer part + 1
+    Pi0 = Mod(Pi0, Vec4f{ 289.0f });
+    Pi1 = Mod(Pi1, Vec4f{ 289.0f });
+    Vec4f Pf0 = Fract(P);             // Fractional part for interpolation
+    Vec4f Pf1 = Pf0 - Vec4f{ 1.0 };   // Fractional part - 1.0
+    auto ix = Vec4f{ Pi0[0], Pi1[0], Pi0[0], Pi1[0] };
+    auto iy = Vec4f{ Pi0[1], Pi0[1], Pi1[1], Pi1[1] };
+    auto iz0 = Vec4f{ Pi0[2] };
+    auto iz1 = Vec4f{ Pi1[2] };
+    auto iw0 = Vec4f{ Pi0[3] };
+    auto iw1 = Vec4f{ Pi1[3] };
+
+    Vec4f ixy = permute(permute(ix) + iy);
+    Vec4f ixy0 = permute(ixy + iz0);
+    Vec4f ixy1 = permute(ixy + iz1);
+    Vec4f ixy00 = permute(ixy0 + iw0);
+    Vec4f ixy01 = permute(ixy0 + iw1);
+    Vec4f ixy10 = permute(ixy1 + iw0);
+    Vec4f ixy11 = permute(ixy1 + iw1);
+
+    Vec4f gx00 = ixy00 / 7.0f;
+    Vec4f gy00 = Floor(gx00) / 7.0;
+    Vec4f gz00 = Floor(gy00) / 6.0;
+    gx00 = Fract(gx00) - Vec4f{ 0.5f };
+    gy00 = Fract(gy00) - Vec4f{ 0.5f };
+    gz00 = Fract(gz00) - Vec4f{ 0.5f };
+    Vec4f gw00 = Vec4f{ 0.75 } -Abs(gx00) - Abs(gy00) - Abs(gz00);
+    Vec4f sw00 = Step(gw00, Vec4f{ 0.0f });
+    gx00 -= sw00 * (Step(Vec4f{ 0.0f }, gx00) - Vec4f{ 0.5f });
+    gy00 -= sw00 * (Step(Vec4f{ 0.0f }, gy00) - Vec4f{ 0.5f });
+
+    Vec4f gx01 = ixy01 / 7.0f;
+    Vec4f gy01 = Floor(gx01) / 7.0f;
+    Vec4f gz01 = Floor(gy01) / 6.0f;
+    gx01 = Fract(gx01) - Vec4f{ 0.5 };
+    gy01 = Fract(gy01) - Vec4f{ 0.5 };
+    gz01 = Fract(gz01) - Vec4f{ 0.5 };
+    Vec4f gw01 = Vec4f{ 0.75f } -Abs(gx01) - Abs(gy01) - Abs(gz01);
+    Vec4f sw01 = Step(gw01, Vec4f{ 0.0f });
+    gx01 -= sw01 * (Step(Vec4f{ 0.0f }, gx01) - Vec4f{ 0.5f });
+    gy01 -= sw01 * (Step(Vec4f{ 0.0f }, gy01) - Vec4f{ 0.5f });
+
+    Vec4f gx10 = ixy10 / 7.0f;
+    Vec4f gy10 = Floor(gx10) / 7.0f;
+    Vec4f gz10 = Floor(gy10) / 6.0f;
+    gx10 = Fract(gx10) - Vec4f{ 0.5 };
+    gy10 = Fract(gy10) - Vec4f{ 0.5 };
+    gz10 = Fract(gz10) - Vec4f{ 0.5 };
+    Vec4f gw10 = Vec4f{ 0.75f } -Abs(gx10) - Abs(gy10) - Abs(gz10);
+    Vec4f sw10 = Step(gw10, Vec4f{ 0.0f });
+    gx10 -= sw10 * (Step(Vec4f{ 0.0 }, gx10) - Vec4f{ 0.5 });
+    gy10 -= sw10 * (Step(Vec4f{ 0.0 }, gy10) - Vec4f{ 0.5 });
+
+    Vec4f gx11 = ixy11 / 7.0f;
+    Vec4f gy11 = Floor(gx11) / 7.0f;
+    Vec4f gz11 = Floor(gy11) / 6.0f;
+    gx11 = Fract(gx11) - Vec4f{ 0.5f };
+    gy11 = Fract(gy11) - Vec4f{ 0.5f };
+    gz11 = Fract(gz11) - Vec4f{ 0.5f };
+    Vec4f gw11 = Vec4f{ 0.75f } -Abs(gx11) - Abs(gy11) - Abs(gz11);
+    Vec4f sw11 = Step(gw11, Vec4f{ 0.0f });
+    gx11 -= sw11 * (Step(Vec4f{ 0.0f }, gx11) - Vec4f{ 0.5f });
+    gy11 -= sw11 * (Step(Vec4f{ 0.0f }, gy11) - Vec4f{ 0.5f });
+
+    auto g0000 = Vec4f{ gx00[0], gy00[0], gz00[0], gw00[0] };
+    auto g1000 = Vec4f{ gx00[1], gy00[1], gz00[1], gw00[1] };
+    auto g0100 = Vec4f{ gx00[2], gy00[2], gz00[2], gw00[2] };
+    auto g1100 = Vec4f{ gx00[3], gy00[3], gz00[3], gw00[3] };
+    auto g0010 = Vec4f{ gx10[0], gy10[0], gz10[0], gw10[0] };
+    auto g1010 = Vec4f{ gx10[1], gy10[1], gz10[1], gw10[1] };
+    auto g0110 = Vec4f{ gx10[2], gy10[2], gz10[2], gw10[2] };
+    auto g1110 = Vec4f{ gx10[3], gy10[3], gz10[3], gw10[3] };
+    auto g0001 = Vec4f{ gx01[0], gy01[0], gz01[0], gw01[0] };
+    auto g1001 = Vec4f{ gx01[1], gy01[1], gz01[1], gw01[1] };
+    auto g0101 = Vec4f{ gx01[2], gy01[2], gz01[2], gw01[2] };
+    auto g1101 = Vec4f{ gx01[3], gy01[3], gz01[3], gw01[3] };
+    auto g0011 = Vec4f{ gx11[0], gy11[0], gz11[0], gw11[0] };
+    auto g1011 = Vec4f{ gx11[1], gy11[1], gz11[1], gw11[1] };
+    auto g0111 = Vec4f{ gx11[2], gy11[2], gz11[2], gw11[2] };
+    auto g1111 = Vec4f{ gx11[3], gy11[3], gz11[3], gw11[3] };
+
+    Vec4f norm00 = taylor_inv_sqrt(Vec4f{Dot(g0000, g0000), Dot(g0100, g0100), Dot(g1000, g1000), Dot(g1100, g1100)});
+    g0000 *= norm00[0];
+    g0100 *= norm00[1];
+    g1000 *= norm00[2];
+    g1100 *= norm00[3];
+
+    Vec4f norm01 = taylor_inv_sqrt(Vec4f{Dot(g0001, g0001), Dot(g0101, g0101), Dot(g1001, g1001), Dot(g1101, g1101)});
+    g0001 *= norm01[0];
+    g0101 *= norm01[1];
+    g1001 *= norm01[2];
+    g1101 *= norm01[3];
+
+    Vec4f norm10 = taylor_inv_sqrt(Vec4f{Dot(g0010, g0010), Dot(g0110, g0110), Dot(g1010, g1010), Dot(g1110, g1110)});
+    g0010 *= norm10[0];
+    g0110 *= norm10[1];
+    g1010 *= norm10[2];
+    g1110 *= norm10[3];
+
+    Vec4f norm11 = taylor_inv_sqrt(Vec4f{Dot(g0011, g0011), Dot(g0111, g0111), Dot(g1011, g1011), Dot(g1111, g1111)});
+    g0011 *= norm11[0];
+    g0111 *= norm11[1];
+    g1011 *= norm11[2];
+    g1111 *= norm11[3];
+
+    float n0000 = Dot(g0000, Pf0);
+    float n1000 = Dot(g1000, Vec4f{ Pf1[0], Pf0[1], Pf0[2], Pf0[3] });
+    float n0100 = Dot(g0100, Vec4f{ Pf0[0], Pf1[1], Pf0[2], Pf0[3] });
+    float n1100 = Dot(g1100, Vec4f{ Pf1[0], Pf1[1], Pf0[2], Pf0[3] });
+    float n0010 = Dot(g0010, Vec4f{ Pf0[0], Pf0[1], Pf1[2], Pf0[3] });
+    float n1010 = Dot(g1010, Vec4f{ Pf1[0], Pf0[1], Pf1[2], Pf0[3] });
+    float n0110 = Dot(g0110, Vec4f{ Pf0[0], Pf1[1], Pf1[2], Pf0[3] });
+    float n1110 = Dot(g1110, Vec4f{ Pf1[0], Pf1[1], Pf1[2], Pf0[3] });
+    float n0001 = Dot(g0001, Vec4f{ Pf0[0], Pf0[1], Pf0[2], Pf1[3] });
+    float n1001 = Dot(g1001, Vec4f{ Pf1[0], Pf0[1], Pf0[2], Pf1[3] });
+    float n0101 = Dot(g0101, Vec4f{ Pf0[0], Pf1[1], Pf0[2], Pf1[3] });
+    float n1101 = Dot(g1101, Vec4f{ Pf1[0], Pf1[1], Pf0[2], Pf1[3] });
+    float n0011 = Dot(g0011, Vec4f{ Pf0[0], Pf0[1], Pf1[2], Pf1[3] });
+    float n1011 = Dot(g1011, Vec4f{ Pf1[0], Pf0[1], Pf1[2], Pf1[3] });
+    float n0111 = Dot(g0111, Vec4f{ Pf0[0], Pf1[1], Pf1[2], Pf1[3] });
+    float n1111 = Dot(g1111, Pf1);
+
+    Vec4f fade_xyzw = fade(Pf0);
+    Vec4f n_0w = Mix(Vec4f{ n0000, n1000, n0100, n1100 }, Vec4f{ n0001, n1001, n0101, n1101 }, fade_xyzw[3]);
+    Vec4f n_1w = Mix(Vec4f{ n0010, n1010, n0110, n1110 }, Vec4f{ n0011, n1011, n0111, n1111 }, fade_xyzw[3]);
+    Vec4f n_zw = Mix(n_0w, n_1w, fade_xyzw[2]);
+    Vec2f n_yzw = Mix(Vec2f{ n_zw[0], n_zw[1] }, Vec2f{ n_zw[2], n_zw[3] }, fade_xyzw[1]);
+    float n_xyzw = Mix(n_yzw[0], n_yzw[1], fade_xyzw[0]);
+    return 2.2f * n_xyzw;
+}
+
+// Classic Perlin noise, periodic version
+float Ren::PerlinNoise(const Ren::Vec4f &P, const Ren::Vec4f &rep) {
+    Vec4f Pi0 = Mod(Floor(P), rep); // Integer part modulo rep
+    Vec4f Pi1 = Mod(Pi0 + Vec4f{ 1.0f }, rep); // Integer part + 1 mod rep
+    Vec4f Pf0 = Fract(P); // Fractional part for interpolation
+    Vec4f Pf1 = Pf0 - Vec4f{ 1.0f }; // Fractional part - 1.0
+    Vec4f ix = Vec4f{ Pi0[0], Pi1[0], Pi0[0], Pi1[0] };
+    Vec4f iy = Vec4f{ Pi0[1], Pi0[1], Pi1[1], Pi1[1] };
+    Vec4f iz0 = Vec4f{ Pi0[2] };
+    Vec4f iz1 = Vec4f{ Pi1[2] };
+    Vec4f iw0 = Vec4f{ Pi0[3] };
+    Vec4f iw1 = Vec4f{ Pi1[3] };
+
+    Vec4f ixy = permute(permute(ix) + iy);
+    Vec4f ixy0 = permute(ixy + iz0);
+    Vec4f ixy1 = permute(ixy + iz1);
+    Vec4f ixy00 = permute(ixy0 + iw0);
+    Vec4f ixy01 = permute(ixy0 + iw1);
+    Vec4f ixy10 = permute(ixy1 + iw0);
+    Vec4f ixy11 = permute(ixy1 + iw1);
+
+    Vec4f gx00 = ixy00 / 7.0f;
+    Vec4f gy00 = Floor(gx00) / 7.0f;
+    Vec4f gz00 = Floor(gy00) / 6.0f;
+    gx00 = Fract(gx00) - Vec4f{ 0.5f };
+    gy00 = Fract(gy00) - Vec4f{ 0.5f };
+    gz00 = Fract(gz00) - Vec4f{ 0.5f };
+    Vec4f gw00 = Vec4f{ 0.75f } - Abs(gx00) - Abs(gy00) - Abs(gz00);
+    Vec4f sw00 = Step(gw00, Vec4f{ 0.0f });
+    gx00 -= sw00 * (Step(Vec4f{ 0.0f }, gx00) - Vec4f{ 0.5f });
+    gy00 -= sw00 * (Step(Vec4f{ 0.0f }, gy00) - Vec4f{ 0.5f });
+
+    Vec4f gx01 = ixy01 / 7.0f;
+    Vec4f gy01 = Floor(gx01) / 7.0f;
+    Vec4f gz01 = Floor(gy01) / 6.0f;
+    gx01 = Fract(gx01) - Vec4f{ 0.5f };
+    gy01 = Fract(gy01) - Vec4f{ 0.5f };
+    gz01 = Fract(gz01) - Vec4f{ 0.5f };
+    Vec4f gw01 = Vec4f{ 0.75f } - Abs(gx01) - Abs(gy01) - Abs(gz01);
+    Vec4f sw01 = Step(gw01, Vec4f{ 0.0f });
+    gx01 -= sw01 * (Step(Vec4f{ 0.0f }, gx01) - Vec4f{ 0.5f });
+    gy01 -= sw01 * (Step(Vec4f{ 0.0f }, gy01) - Vec4f{ 0.5f });
+
+    Vec4f gx10 = ixy10 / 7.0f;
+    Vec4f gy10 = Floor(gx10) / 7.0f;
+    Vec4f gz10 = Floor(gy10) / 6.0f;
+    gx10 = Fract(gx10) - Vec4f{ 0.5f };
+    gy10 = Fract(gy10) - Vec4f{ 0.5f };
+    gz10 = Fract(gz10) - Vec4f{ 0.5f };
+    Vec4f gw10 = Vec4f{ 0.75f } - Abs(gx10) - Abs(gy10) - Abs(gz10);
+    Vec4f sw10 = Step(gw10, Vec4f{ 0.0f });
+    gx10 -= sw10 * (Step(Vec4f{ 0.0f }, gx10) - Vec4f{ 0.5 });
+    gy10 -= sw10 * (Step(Vec4f{ 0.0f }, gy10) - Vec4f{ 0.5 });
+
+    Vec4f gx11 = ixy11 / 7.0f;
+    Vec4f gy11 = Floor(gx11) / 7.0f;
+    Vec4f gz11 = Floor(gy11) / 6.0f;
+    gx11 = Fract(gx11) - Vec4f{ 0.5f };
+    gy11 = Fract(gy11) - Vec4f{ 0.5f };
+    gz11 = Fract(gz11) - Vec4f{ 0.5f };
+    Vec4f gw11 = Vec4f{ 0.75f } - Abs(gx11) - Abs(gy11) - Abs(gz11);
+    Vec4f sw11 = Step(gw11, Vec4f{ 0.0f });
+    gx11 -= sw11 * (Step(Vec4f{ 0.0f }, gx11) - Vec4f{ 0.5f });
+    gy11 -= sw11 * (Step(Vec4f{ 0.0f }, gy11) - Vec4f{ 0.5f });
+
+    auto g0000 = Vec4f(gx00[0],gy00[0],gz00[0],gw00[0]);
+    auto g1000 = Vec4f(gx00[1],gy00[1],gz00[1],gw00[1]);
+    auto g0100 = Vec4f(gx00[2],gy00[2],gz00[2],gw00[2]);
+    auto g1100 = Vec4f(gx00[3],gy00[3],gz00[3],gw00[3]);
+    auto g0010 = Vec4f(gx10[0],gy10[0],gz10[0],gw10[0]);
+    auto g1010 = Vec4f(gx10[1],gy10[1],gz10[1],gw10[1]);
+    auto g0110 = Vec4f(gx10[2],gy10[2],gz10[2],gw10[2]);
+    auto g1110 = Vec4f(gx10[3],gy10[3],gz10[3],gw10[3]);
+    auto g0001 = Vec4f(gx01[0],gy01[0],gz01[0],gw01[0]);
+    auto g1001 = Vec4f(gx01[1],gy01[1],gz01[1],gw01[1]);
+    auto g0101 = Vec4f(gx01[2],gy01[2],gz01[2],gw01[2]);
+    auto g1101 = Vec4f(gx01[3],gy01[3],gz01[3],gw01[3]);
+    auto g0011 = Vec4f(gx11[0],gy11[0],gz11[0],gw11[0]);
+    auto g1011 = Vec4f(gx11[1],gy11[1],gz11[1],gw11[1]);
+    auto g0111 = Vec4f(gx11[2],gy11[2],gz11[2],gw11[2]);
+    auto g1111 = Vec4f(gx11[3],gy11[3],gz11[3],gw11[3]);
+
+    Vec4f norm00 = taylor_inv_sqrt(Vec4f{Dot(g0000, g0000), Dot(g0100, g0100), Dot(g1000, g1000), Dot(g1100, g1100)});
+    g0000 *= norm00[0];
+    g0100 *= norm00[1];
+    g1000 *= norm00[2];
+    g1100 *= norm00[3];
+
+    Vec4f norm01 = taylor_inv_sqrt(Vec4f{Dot(g0001, g0001), Dot(g0101, g0101), Dot(g1001, g1001), Dot(g1101, g1101)});
+    g0001 *= norm01[0];
+    g0101 *= norm01[1];
+    g1001 *= norm01[2];
+    g1101 *= norm01[3];
+
+    Vec4f norm10 = taylor_inv_sqrt(Vec4f{Dot(g0010, g0010), Dot(g0110, g0110), Dot(g1010, g1010), Dot(g1110, g1110)});
+    g0010 *= norm10[0];
+    g0110 *= norm10[1];
+    g1010 *= norm10[2];
+    g1110 *= norm10[3];
+
+    Vec4f norm11 = taylor_inv_sqrt(Vec4f{Dot(g0011, g0011), Dot(g0111, g0111), Dot(g1011, g1011), Dot(g1111, g1111)});
+    g0011 *= norm11[0];
+    g0111 *= norm11[1];
+    g1011 *= norm11[2];
+    g1111 *= norm11[3];
+
+    float n0000 = Dot(g0000, Pf0);
+    float n1000 = Dot(g1000, Vec4f{ Pf1[0], Pf0[1], Pf0[2], Pf0[3] });
+    float n0100 = Dot(g0100, Vec4f{ Pf0[0], Pf1[1], Pf0[2], Pf0[3] });
+    float n1100 = Dot(g1100, Vec4f{ Pf1[0], Pf1[1], Pf0[2], Pf0[3] });
+    float n0010 = Dot(g0010, Vec4f{ Pf0[0], Pf0[1], Pf1[2], Pf0[3] });
+    float n1010 = Dot(g1010, Vec4f{ Pf1[0], Pf0[1], Pf1[2], Pf0[3] });
+    float n0110 = Dot(g0110, Vec4f{ Pf0[0], Pf1[1], Pf1[2], Pf0[3] });
+    float n1110 = Dot(g1110, Vec4f{ Pf1[0], Pf1[1], Pf1[2], Pf0[3] });
+    float n0001 = Dot(g0001, Vec4f{ Pf0[0], Pf0[1], Pf0[2], Pf1[3] });
+    float n1001 = Dot(g1001, Vec4f{ Pf1[0], Pf0[1], Pf0[2], Pf1[3] });
+    float n0101 = Dot(g0101, Vec4f{ Pf0[0], Pf1[1], Pf0[2], Pf1[3] });
+    float n1101 = Dot(g1101, Vec4f{ Pf1[0], Pf1[1], Pf0[2], Pf1[3] });
+    float n0011 = Dot(g0011, Vec4f{ Pf0[0], Pf0[1], Pf1[2], Pf1[3] });
+    float n1011 = Dot(g1011, Vec4f{ Pf1[0], Pf0[1], Pf1[2], Pf1[3] });
+    float n0111 = Dot(g0111, Vec4f{ Pf0[0], Pf1[1], Pf1[2], Pf1[3] });
+    float n1111 = Dot(g1111, Pf1);
+
+    Vec4f fade_xyzw = fade(Pf0);
+    Vec4f n_0w = Mix(Vec4f{ n0000, n1000, n0100, n1100 }, Vec4f{ n0001, n1001, n0101, n1101 }, fade_xyzw[3]);
+    Vec4f n_1w = Mix(Vec4f{ n0010, n1010, n0110, n1110 }, Vec4f{ n0011, n1011, n0111, n1111 }, fade_xyzw[3]);
+    Vec4f n_zw = Mix(n_0w, n_1w, fade_xyzw[2]);
+    Vec2f n_yzw = Mix(Vec2f{ n_zw[0], n_zw[1] }, Vec2f{ n_zw[2], n_zw[3] }, fade_xyzw[1]);
+    float n_xyzw = Mix(n_yzw[0], n_yzw[1], fade_xyzw[0]);
+    return 2.2f * n_xyzw;
 }

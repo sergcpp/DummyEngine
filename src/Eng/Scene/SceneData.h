@@ -18,6 +18,7 @@
 #include "Comp/LightSource.h"
 #include "Comp/Occluder.h"
 #include "Comp/Transform.h"
+#include "Comp/VegState.h"
 
 enum eObjectComp {
     CompTransform   = 0,
@@ -27,18 +28,20 @@ enum eObjectComp {
     CompLightSource = 4,
     CompDecal       = 5,
     CompProbe       = 6,
-    CompAnimState   = 7
+    CompAnimState   = 7,
+    CompVegState    = 8
 };
 
 enum eObjectCompBit {
-    CompTransformBit    = (1 << CompTransform),
-    CompDrawableBit     = (1 << CompDrawable),
-    CompOccluderBit     = (1 << CompOccluder),
-    CompLightmapBit     = (1 << CompLightmap),
-    CompLightSourceBit  = (1 << CompLightSource),
-    CompDecalBit        = (1 << CompDecal),
-    CompProbeBit        = (1 << CompProbe),
-    CompAnimStateBit    = (1 << CompAnimState)
+    CompTransformBit    = (1u << CompTransform),
+    CompDrawableBit     = (1u << CompDrawable),
+    CompOccluderBit     = (1u << CompOccluder),
+    CompLightmapBit     = (1u << CompLightmap),
+    CompLightSourceBit  = (1u << CompLightSource),
+    CompDecalBit        = (1u << CompDecal),
+    CompProbeBit        = (1u << CompProbe),
+    CompAnimStateBit    = (1u << CompAnimState),
+    CompVegStateBit     = (1u << CompVegState)
 };
 
 const int MAX_COMPONENT_TYPES = 32;
@@ -75,6 +78,8 @@ struct Environment {
     Ren::Vec3f          sun_dir, sun_col;
     float               sun_softness = 0.0f;
     Ren::Vec3f          wind_vec;
+    float               wind_turbulence = 0.0f;
+    Ren::Vec2f          wind_scroll_lf, wind_scroll_hf;
     Ren::Texture2DRef   env_map;
     Ren::Texture2DRef   lm_direct, lm_indir,
                         lm_indir_sh[4];

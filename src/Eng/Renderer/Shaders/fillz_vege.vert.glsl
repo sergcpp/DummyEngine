@@ -3,6 +3,10 @@ R"(#version 310 es
 
 )" __ADDITIONAL_DEFINES_STR__ R"(
 
+)"
+#include "_vs_common.glsl"
+R"(
+
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
@@ -12,7 +16,7 @@ layout(location = )" AS_STR(REN_VTX_POS_LOC) R"() in vec3 aVertexPosition;
 #ifdef TRANSPARENT_PERM
 layout(location = )" AS_STR(REN_VTX_UV1_LOC) R"() in vec2 aVertexUVs1;
 #endif
-layout(location = )" AS_STR(REN_VTX_NOR_LOC) R"() in vec3 aVertexNormal;
+//layout(location = )" AS_STR(REN_VTX_NOR_LOC) R"() in vec3 aVertexNormal;
 layout(location = )" AS_STR(REN_VTX_AUX_LOC) R"() in uint aVertexColorPacked;
 
 struct ShadowMapRegion {
@@ -27,31 +31,23 @@ layout (std140) uniform SharedDataBlock {
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
     vec4 uResAndFRes, uTranspParamsAndTime;
-    vec4 uWindParams;
+    vec4 uWindScroll;
 };
 
 layout(binding = )" AS_STR(REN_INST_BUF_SLOT) R"() uniform mediump samplerBuffer instances_buffer;
+layout(binding = )" AS_STR(REN_NOISE_TEX_SLOT) R"() uniform sampler2D noise_texture;
 layout(location = )" AS_STR(REN_U_INSTANCES_LOC) R"() uniform ivec4 uInstanceIndices[)" AS_STR(REN_MAX_BATCH_SIZE) R"( / 4];
 
 #ifdef TRANSPARENT_PERM
 out vec2 aVertexUVs1_;
 #endif
 
-vec4 SmoothCurve(vec4 x) {
-    return x * x * (3.0 - 2.0 * x);
-}
-
-vec4 TriangleWave(vec4 x) {
-    return abs(fract(x + 0.5) * 2.0 - 1.0);
-}
-
-vec4 SmoothTriangleWave(vec4 x) {
-    return SmoothCurve(TriangleWave(x));
-}
+invariant gl_Position;
 
 void main() {
     int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
 
+    // load model matrix
     mat4 MMatrix;
     MMatrix[0] = texelFetch(instances_buffer, instance * 4 + 0);
     MMatrix[1] = texelFetch(instances_buffer, instance * 4 + 1);
@@ -60,49 +56,24 @@ void main() {
 
     MMatrix = transpose(MMatrix);
 
+    // load vegetation properties
+    vec4 veg_params = texelFetch(instances_buffer, instance * 4 + 3);
+
+	vec3 vtx_pos_ls = aVertexPosition;
+	vec4 vtx_color = unpackUnorm4x8(aVertexColorPacked);
+
+    vec3 obj_pos_ws = MMatrix[3].xyz;
+    vec4 wind_scroll = uWindScroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
+	vec4 wind_params = unpackUnorm4x8(floatBitsToUint(veg_params.x));
+	vec4 wind_vec_ls = vec4(unpackHalf2x16(floatBitsToUint(veg_params.y)), unpackHalf2x16(floatBitsToUint(veg_params.z)));
+
+    vtx_pos_ls = TransformVegetation(vtx_pos_ls, vtx_color, wind_scroll, wind_params, wind_vec_ls, noise_texture);
+
+    vec3 vtx_pos_ws = (MMatrix * vec4(vtx_pos_ls, 1.0)).xyz;
+
 #ifdef TRANSPARENT_PERM
     aVertexUVs1_ = aVertexUVs1;
 #endif
-
-    vec3 vtx_pos_ws = (MMatrix * vec4(aVertexPosition, 1.0)).xyz;
-    vec3 vtx_nor_ws = normalize((MMatrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
-
-    // temp
-    vec2 wind_vec = uWindParams.xz;
-    float wind_phase = 0.0;//dot(MMatrix[3].xyz, vec3(1.0));
-
-    vec3 vtx_color = unpackUnorm4x8(aVertexColorPacked).xyz;
-
-    {   // Main bending
-        const highp float bend_scale = 0.035;
-        highp float bend_factor = vtx_pos_ws.y * bend_scale;
-        // smooth bending factor and increase its nearby height limit
-        bend_factor += 1.0;
-        bend_factor *= bend_factor;
-        bend_factor = bend_factor * bend_factor - bend_factor;
-        // displace position
-        highp vec3 new_pos = vtx_pos_ws;
-        new_pos.xz += wind_vec * bend_factor;
-        // rescale
-        vtx_pos_ws = normalize(new_pos) * length(vtx_pos_ws);
-    }
-
-    {   // Branch/detail bending
-        highp float branch_atten = vtx_color.r;
-        highp float edge_atten = vtx_color.g;
-
-        highp float branch_phase = wind_phase + vtx_color.b;
-        highp float vtx_phase = dot(vtx_pos_ws, vec3(branch_phase));
-
-        highp vec2 _waves = vec2(uTranspParamsAndTime.w) + vec2(vtx_phase, branch_phase);
-
-        const highp float speed = 0.006;
-        highp vec4 waves = (fract(_waves.xxyy * vec4(1.975, 0.793, 0.375, 0.193)) * vec4(2.0) - vec4(1.0)) * speed;
-        waves = SmoothTriangleWave(waves);
-
-        highp vec2 waves_sum = waves.xz + waves.yw;
-        vtx_pos_ws += 64.0 * waves_sum.xyx * vec3(1.0 * edge_atten * vtx_nor_ws.x, branch_atten, 1.0 * edge_atten * vtx_nor_ws.z);
-    }
 
     gl_Position = uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
 } 

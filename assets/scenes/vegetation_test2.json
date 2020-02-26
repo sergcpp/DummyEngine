@@ -20,7 +20,7 @@
 			"name" : "leaf_tree",
 			"transform" : {
 				"pos" : [
-					0, 
+					0,
 					0, 
 					0
 				], 
@@ -33,24 +33,27 @@
 			"drawable" : {
 				"mesh_file" : "vegetation/leaf_tree.mesh", 
 				"visible_to_probes" : false
+			},
+			"veg_state" : {
+
 			}
 		},
 		{
 			"name" : "palm_tree",
 			"transform" : {
 				"pos" : [
-					5, 
+					500,
 					0, 
 					0
 				], 
 				"rot" : [
 					0, 
-					90, 
+					0, 
 					0
 				]
 			}, 
 			"drawable" : {
-				"mesh_file" : "vegetation/palm_tree.mesh", 
+				"mesh_file" : "vegetation/palm_tree.mesh",
 				"visible_to_probes" : false
 			}
 		},
@@ -69,7 +72,8 @@
 			}, 
 			"drawable" : {
 				"mesh_file" : "ground_plane_200x200.mesh",
-				"material_override" : [ "checker_glossy.txt" ]
+				"material_override" : [ "checker_glossy.txt" ],
+				"material_override2" : [ "_wind_debug.txt" ]
 			}
 		}, 
 		{
@@ -119,16 +123,12 @@
 	], 
 	"camera" : {
 		"view_origin" : [
-			-92.702736,
-			10.797370,
-			93.197014
+			2.294942, 7.756365, 13.617617
 		], 
 		"view_dir" : [
-			0.634198,
-			-0.183808,
-			-0.733962
+			0.012581, -0.138751, -0.977384
 		], 
-		"fwd_speed" : 0.25, 
+		"fwd_speed" : 0.75, 
 		"fov" : 45, 
 		"max_exposure" : 1000
 	}

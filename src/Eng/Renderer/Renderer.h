@@ -56,7 +56,7 @@ private:
         blit_ao_prog_, blit_multiply_prog_, blit_multiply_ms_prog_, blit_debug_bvh_prog_, blit_debug_bvh_ms_prog_, blit_depth_prog_,
         blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_, blit_project_sh_prog_, blit_fxaa_prog_,
         blit_transparent_compose_prog_, blit_transparent_compose_ms_prog_, blit_transparent_init_prog_, probe_prog_, skinning_prog_, vegetation_prog_;
-    Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_, brdf_lut_;
+    Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_, brdf_lut_, noise_tex_;
 
     FrameBuf clean_buf_, resolved_or_transparent_buf_, ssr_buf1_, ssr_buf2_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf1_, ssao_buf2_, probe_sample_buf_, combined_buf_, down_depth_;
 #if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)

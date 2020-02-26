@@ -232,7 +232,7 @@ void Write_KTX_ASTC_Mips(
         const int channels, const char *out_file) {
 
     int quality = 0;
-    if (strstr(out_file, "_norm")) {
+    if (strstr(out_file, "_norm") || strstr(out_file, "/env/")) {
         quality = 1;
     } else if (strstr(out_file, "lightmaps") || strstr(out_file, "probes_cache")) {
         quality = 2;

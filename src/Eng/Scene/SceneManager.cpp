@@ -144,6 +144,9 @@ SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, S
 
         default_comp_storage_[CompAnimState].reset(new DefaultCompStorage<AnimState>);
         RegisterComponent(CompAnimState, default_comp_storage_[CompAnimState].get(), nullptr);
+
+        default_comp_storage_[CompVegState].reset(new DefaultCompStorage<VegState>);
+        RegisterComponent(CompVegState, default_comp_storage_[CompVegState].get(), nullptr);
     }
 }
 

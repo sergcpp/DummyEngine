@@ -45,11 +45,23 @@ static_assert(sizeof(ItemData) == 4, "!");
 
 struct InstanceData {
     float model_matrix[3][4];
-    float lmap_transform[4];
+    union {
+        float lmap_transform[4];
+        struct {
+            // float 0
+            uint8_t movement_scale;
+            uint8_t tree_mode;
+            uint8_t bend_scale;
+            uint8_t stretch;
+            // float 1, 2
+            uint16_t wind_dir_ls[3];
+            uint16_t wind_turb;
+        };
+    };
 };
 static_assert(sizeof(InstanceData) == 64, "!");
 
-struct DepthDrawBatch {
+struct DepthDrawBatch { // NOLINT
     union {
         struct {
             uint32_t _pad1 : 2;

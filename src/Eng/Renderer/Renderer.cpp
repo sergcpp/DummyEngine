@@ -1,157 +1,165 @@
 #include "Renderer.h"
 
 #include <Ren/Context.h>
+#include <Ren/Utils.h>
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 
 namespace RendererInternal {
-bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]);
+    bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]);
 
-extern const uint8_t bbox_indices[];
+    extern const uint8_t bbox_indices[];
 
 #if defined(__ANDROID__)
-const int SHADOWMAP_WIDTH = REN_SHAD_RES_ANDROID;
+    const int SHADOWMAP_WIDTH = REN_SHAD_RES_ANDROID;
 #else
-const int SHADOWMAP_WIDTH = REN_SHAD_RES_PC;
+    const int SHADOWMAP_WIDTH = REN_SHAD_RES_PC;
 #endif
-const int SHADOWMAP_HEIGHT = SHADOWMAP_WIDTH / 2;
+    const int SHADOWMAP_HEIGHT = SHADOWMAP_WIDTH / 2;
 
-// Sun shadow occupies half of atlas
-const int SUN_SHADOW_RES = SHADOWMAP_WIDTH / 2;
+    // Sun shadow occupies half of atlas
+    const int SUN_SHADOW_RES = SHADOWMAP_WIDTH / 2;
 
-int upper_power_of_two(int v) {
-    int res = 1;
-    while (res < v) {
-        res *= 2;
-    }
-    return res;
-}
-
-const Ren::Vec2f HaltonSeq23[] = {
-    Ren::Vec2f{ 0.0000000000f, 0.0000000000f }, Ren::Vec2f{ 0.5000000000f, 0.3333333430f },
-    Ren::Vec2f{ 0.2500000000f, 0.6666666870f }, Ren::Vec2f{ 0.7500000000f, 0.1111111190f },
-    Ren::Vec2f{ 0.1250000000f, 0.4444444780f }, Ren::Vec2f{ 0.6250000000f, 0.7777778510f },
-    Ren::Vec2f{ 0.3750000000f, 0.2222222390f }, Ren::Vec2f{ 0.8750000000f, 0.5555555820f },
-    Ren::Vec2f{ 0.0625000000f, 0.8888889550f }, Ren::Vec2f{ 0.5625000000f, 0.0370370410f },
-    Ren::Vec2f{ 0.3125000000f, 0.3703704180f }, Ren::Vec2f{ 0.8125000000f, 0.7037037610f },
-    Ren::Vec2f{ 0.1875000000f, 0.1481481640f }, Ren::Vec2f{ 0.6875000000f, 0.4814815220f },
-    Ren::Vec2f{ 0.4375000000f, 0.8148149250f }, Ren::Vec2f{ 0.9375000000f, 0.2592592840f },
-    Ren::Vec2f{ 0.0312500000f, 0.5925926570f }, Ren::Vec2f{ 0.5312500000f, 0.9259260300f },
-    Ren::Vec2f{ 0.2812500000f, 0.0740740821f }, Ren::Vec2f{ 0.7812500000f, 0.4074074630f },
-    Ren::Vec2f{ 0.1562500000f, 0.7407408360f }, Ren::Vec2f{ 0.6562500000f, 0.1851852090f },
-    Ren::Vec2f{ 0.4062500000f, 0.5185185670f }, Ren::Vec2f{ 0.9062500000f, 0.8518519400f },
-    Ren::Vec2f{ 0.0937500000f, 0.2962963280f }, Ren::Vec2f{ 0.5937500000f, 0.6296296720f },
-    Ren::Vec2f{ 0.3437500000f, 0.9629630450f }, Ren::Vec2f{ 0.8437500000f, 0.0123456810f },
-    Ren::Vec2f{ 0.2187500000f, 0.3456790750f }, Ren::Vec2f{ 0.7187500000f, 0.6790124770f },
-    Ren::Vec2f{ 0.4687500000f, 0.1234568060f }, Ren::Vec2f{ 0.9687500000f, 0.4567902090f },
-    Ren::Vec2f{ 0.0156250000f, 0.7901235820f }, Ren::Vec2f{ 0.5156250000f, 0.2345679400f },
-    Ren::Vec2f{ 0.2656250000f, 0.5679013130f }, Ren::Vec2f{ 0.7656250000f, 0.9012346860f },
-    Ren::Vec2f{ 0.1406250000f, 0.0493827239f }, Ren::Vec2f{ 0.6406250000f, 0.3827161190f },
-    Ren::Vec2f{ 0.3906250000f, 0.7160494920f }, Ren::Vec2f{ 0.8906250000f, 0.1604938510f },
-    Ren::Vec2f{ 0.0781250000f, 0.4938272240f }, Ren::Vec2f{ 0.5781250000f, 0.8271605970f },
-    Ren::Vec2f{ 0.3281250000f, 0.2716049850f }, Ren::Vec2f{ 0.8281250000f, 0.6049383880f },
-    Ren::Vec2f{ 0.2031250000f, 0.9382717610f }, Ren::Vec2f{ 0.7031250000f, 0.0864197686f },
-    Ren::Vec2f{ 0.4531250000f, 0.4197531640f }, Ren::Vec2f{ 0.9531250000f, 0.7530865670f },
-    Ren::Vec2f{ 0.0468750000f, 0.1975308950f }, Ren::Vec2f{ 0.5468750000f, 0.5308642980f },
-    Ren::Vec2f{ 0.2968750000f, 0.8641976710f }, Ren::Vec2f{ 0.7968750000f, 0.3086420300f },
-    Ren::Vec2f{ 0.1718750000f, 0.6419754030f }, Ren::Vec2f{ 0.6718750000f, 0.9753087760f },
-    Ren::Vec2f{ 0.4218750000f, 0.0246913619f }, Ren::Vec2f{ 0.9218750000f, 0.3580247460f },
-    Ren::Vec2f{ 0.1093750000f, 0.6913581490f }, Ren::Vec2f{ 0.6093750000f, 0.1358024920f },
-    Ren::Vec2f{ 0.3593750000f, 0.4691358800f }, Ren::Vec2f{ 0.8593750000f, 0.8024692540f },
-    Ren::Vec2f{ 0.2343750000f, 0.2469136120f }, Ren::Vec2f{ 0.7343750000f, 0.5802469850f },
-    Ren::Vec2f{ 0.4843750000f, 0.9135804180f }, Ren::Vec2f{ 0.9843750000f, 0.0617284030f }
-};
-
-float RadicalInverse_VdC(uint32_t bits) {
-    bits = (bits << 16u) | (bits >> 16u);
-    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
-    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
-    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
-    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-
-    return float(bits) * 2.3283064365386963e-10f; // / 0x100000000
-}
-
-Ren::Vec2f Hammersley2D(int i, int N) {
-    return Ren::Vec2f{ float(i) / float(N), RadicalInverse_VdC((uint32_t)i) };
-}
-
-Ren::Vec3f ImportanceSampleGGX(const Ren::Vec2f &Xi, float roughness, const Ren::Vec3f &N) {
-    float a = roughness * roughness;
-
-    float Phi = 2.0f * Ren::Pi<float>() * Xi[0];
-    float CosTheta = std::sqrt((1.0f - Xi[1]) / (1.0f + (a * a - 1.0f) * Xi[1]));
-    float SinTheta = std::sqrt(1.0f - CosTheta * CosTheta);
-
-    auto H = Ren::Vec3f{ SinTheta * std::cos(Phi), SinTheta * std::sin(Phi), CosTheta };
-
-    Ren::Vec3f up = std::abs(N[1]) < 0.999f ? Ren::Vec3f{ 0.0, 1.0, 0.0 } : Ren::Vec3f{ 1.0, 0.0, 0.0 };
-    Ren::Vec3f TangentX = Ren::Normalize(Ren::Cross(up, N));
-    Ren::Vec3f TangentY = Ren::Cross(N, TangentX);
-    // Tangent to world space
-    return TangentX * H[0] + TangentY * H[1] + N * H[2];
-}
-
-float GeometrySchlickGGX(float NdotV, float k) {
-    float nom = NdotV;
-    float denom = NdotV * (1.0f - k) + k;
-
-    return nom / denom;
-}
-
-float GeometrySmith(const Ren::Vec3f &N, const Ren::Vec3f &V, const Ren::Vec3f &L, float k) {
-    const float NdotV = std::max(Ren::Dot(N, V), 0.0f);
-    const float NdotL = std::max(Ren::Dot(N, L), 0.0f);
-    const float ggx1 = GeometrySchlickGGX(NdotV, k);
-    const float ggx2 = GeometrySchlickGGX(NdotL, k);
-
-    return ggx1 * ggx2;
-}
-
-float G1V_Epic(float roughness, float n_dot_v) {
-    const float k = roughness * roughness;
-    return n_dot_v / (n_dot_v * (1.0f - k) + k);
-}
-
-float G_Smith(float roughness, float n_dot_v, float n_dot_l) {
-    return G1V_Epic(roughness, n_dot_v) * G1V_Epic(roughness, n_dot_v);
-}
-
-Ren::Vec2f IntegrateBRDF(float NdotV, float roughness) {
-    Ren::Vec3f V;
-    V[0] = std::sqrt(1.0f - NdotV * NdotV);
-    V[1] = 0.0f;
-    V[2] = NdotV;
-
-    float A = 0.0f;
-    float B = 0.0f;
-
-    auto N = Ren::Vec3f{ 0.0f, 0.0f, 1.0f };
-
-    const int SampleCount = 1024;
-    for (int i = 0; i < SampleCount; ++i) {
-        const Ren::Vec2f Xi = Hammersley2D(i, SampleCount);
-        const Ren::Vec3f H = ImportanceSampleGGX(Xi, roughness, N);
-        const Ren::Vec3f L = Ren::Normalize(2.0f * Ren::Dot(V, H) * H - V);
-
-        const float NdotL = std::max(L[2], 0.0f);
-        const float NdotH = std::max(H[2], 0.0f);
-        const float VdotH = std::max(Ren::Dot(V, H), 0.0f);
-
-        if (NdotL > 0.0f) {
-            const float G = G1V_Epic(roughness, NdotV);
-            const float G_Vis = (G * VdotH) / (NdotH * NdotV);
-            const float Fc = std::pow(1.0f - VdotH, 5.0f);
-
-            A += (1.0f - Fc) * G_Vis;
-            B += Fc * G_Vis;
+    int upper_power_of_two(int v) {
+        int res = 1;
+        while (res < v)
+        {
+            res *= 2;
         }
+        return res;
     }
 
-    return Ren::Vec2f{ A, B } / float(SampleCount);
-}
+    const Ren::Vec2f HaltonSeq23[] = {
+        Ren::Vec2f{ 0.0000000000f, 0.0000000000f }, Ren::Vec2f{ 0.5000000000f, 0.3333333430f },
+        Ren::Vec2f{ 0.2500000000f, 0.6666666870f }, Ren::Vec2f{ 0.7500000000f, 0.1111111190f },
+        Ren::Vec2f{ 0.1250000000f, 0.4444444780f }, Ren::Vec2f{ 0.6250000000f, 0.7777778510f },
+        Ren::Vec2f{ 0.3750000000f, 0.2222222390f }, Ren::Vec2f{ 0.8750000000f, 0.5555555820f },
+        Ren::Vec2f{ 0.0625000000f, 0.8888889550f }, Ren::Vec2f{ 0.5625000000f, 0.0370370410f },
+        Ren::Vec2f{ 0.3125000000f, 0.3703704180f }, Ren::Vec2f{ 0.8125000000f, 0.7037037610f },
+        Ren::Vec2f{ 0.1875000000f, 0.1481481640f }, Ren::Vec2f{ 0.6875000000f, 0.4814815220f },
+        Ren::Vec2f{ 0.4375000000f, 0.8148149250f }, Ren::Vec2f{ 0.9375000000f, 0.2592592840f },
+        Ren::Vec2f{ 0.0312500000f, 0.5925926570f }, Ren::Vec2f{ 0.5312500000f, 0.9259260300f },
+        Ren::Vec2f{ 0.2812500000f, 0.0740740821f }, Ren::Vec2f{ 0.7812500000f, 0.4074074630f },
+        Ren::Vec2f{ 0.1562500000f, 0.7407408360f }, Ren::Vec2f{ 0.6562500000f, 0.1851852090f },
+        Ren::Vec2f{ 0.4062500000f, 0.5185185670f }, Ren::Vec2f{ 0.9062500000f, 0.8518519400f },
+        Ren::Vec2f{ 0.0937500000f, 0.2962963280f }, Ren::Vec2f{ 0.5937500000f, 0.6296296720f },
+        Ren::Vec2f{ 0.3437500000f, 0.9629630450f }, Ren::Vec2f{ 0.8437500000f, 0.0123456810f },
+        Ren::Vec2f{ 0.2187500000f, 0.3456790750f }, Ren::Vec2f{ 0.7187500000f, 0.6790124770f },
+        Ren::Vec2f{ 0.4687500000f, 0.1234568060f }, Ren::Vec2f{ 0.9687500000f, 0.4567902090f },
+        Ren::Vec2f{ 0.0156250000f, 0.7901235820f }, Ren::Vec2f{ 0.5156250000f, 0.2345679400f },
+        Ren::Vec2f{ 0.2656250000f, 0.5679013130f }, Ren::Vec2f{ 0.7656250000f, 0.9012346860f },
+        Ren::Vec2f{ 0.1406250000f, 0.0493827239f }, Ren::Vec2f{ 0.6406250000f, 0.3827161190f },
+        Ren::Vec2f{ 0.3906250000f, 0.7160494920f }, Ren::Vec2f{ 0.8906250000f, 0.1604938510f },
+        Ren::Vec2f{ 0.0781250000f, 0.4938272240f }, Ren::Vec2f{ 0.5781250000f, 0.8271605970f },
+        Ren::Vec2f{ 0.3281250000f, 0.2716049850f }, Ren::Vec2f{ 0.8281250000f, 0.6049383880f },
+        Ren::Vec2f{ 0.2031250000f, 0.9382717610f }, Ren::Vec2f{ 0.7031250000f, 0.0864197686f },
+        Ren::Vec2f{ 0.4531250000f, 0.4197531640f }, Ren::Vec2f{ 0.9531250000f, 0.7530865670f },
+        Ren::Vec2f{ 0.0468750000f, 0.1975308950f }, Ren::Vec2f{ 0.5468750000f, 0.5308642980f },
+        Ren::Vec2f{ 0.2968750000f, 0.8641976710f }, Ren::Vec2f{ 0.7968750000f, 0.3086420300f },
+        Ren::Vec2f{ 0.1718750000f, 0.6419754030f }, Ren::Vec2f{ 0.6718750000f, 0.9753087760f },
+        Ren::Vec2f{ 0.4218750000f, 0.0246913619f }, Ren::Vec2f{ 0.9218750000f, 0.3580247460f },
+        Ren::Vec2f{ 0.1093750000f, 0.6913581490f }, Ren::Vec2f{ 0.6093750000f, 0.1358024920f },
+        Ren::Vec2f{ 0.3593750000f, 0.4691358800f }, Ren::Vec2f{ 0.8593750000f, 0.8024692540f },
+        Ren::Vec2f{ 0.2343750000f, 0.2469136120f }, Ren::Vec2f{ 0.7343750000f, 0.5802469850f },
+        Ren::Vec2f{ 0.4843750000f, 0.9135804180f }, Ren::Vec2f{ 0.9843750000f, 0.0617284030f }
+    };
+
+    float RadicalInverse_VdC(uint32_t bits) {
+        bits = (bits << 16u) | (bits >> 16u);
+        bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+        bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+        bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+        bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+
+        return float(bits) * 2.3283064365386963e-10f; // / 0x100000000
+    }
+
+    Ren::Vec2f Hammersley2D(int i, int N) {
+        return Ren::Vec2f{ float(i) / float(N), RadicalInverse_VdC((uint32_t)i) };
+    }
+
+    Ren::Vec3f ImportanceSampleGGX(const Ren::Vec2f& Xi, float roughness, const Ren::Vec3f& N) {
+        float a = roughness * roughness;
+
+        float Phi = 2.0f * Ren::Pi<float>() * Xi[0];
+        float CosTheta = std::sqrt((1.0f - Xi[1]) / (1.0f + (a * a - 1.0f) * Xi[1]));
+        float SinTheta = std::sqrt(1.0f - CosTheta * CosTheta);
+
+        auto H = Ren::Vec3f{ SinTheta * std::cos(Phi), SinTheta * std::sin(Phi), CosTheta };
+
+        Ren::Vec3f up = std::abs(N[1]) < 0.999f ? Ren::Vec3f{ 0.0, 1.0, 0.0 } : Ren::Vec3f{ 1.0, 0.0, 0.0 };
+        Ren::Vec3f TangentX = Ren::Normalize(Ren::Cross(up, N));
+        Ren::Vec3f TangentY = Ren::Cross(N, TangentX);
+        // Tangent to world space
+        return TangentX * H[0] + TangentY * H[1] + N * H[2];
+    }
+
+    float GeometrySchlickGGX(float NdotV, float k) {
+        float nom = NdotV;
+        float denom = NdotV * (1.0f - k) + k;
+
+        return nom / denom;
+    }
+
+    float GeometrySmith(const Ren::Vec3f& N, const Ren::Vec3f& V, const Ren::Vec3f& L, float k) {
+        const float NdotV = std::max(Ren::Dot(N, V), 0.0f);
+        const float NdotL = std::max(Ren::Dot(N, L), 0.0f);
+        const float ggx1 = GeometrySchlickGGX(NdotV, k);
+        const float ggx2 = GeometrySchlickGGX(NdotL, k);
+
+        return ggx1 * ggx2;
+    }
+
+    float G1V_Epic(float roughness, float n_dot_v) {
+        const float k = roughness * roughness;
+        return n_dot_v / (n_dot_v * (1.0f - k) + k);
+    }
+
+    float G_Smith(float roughness, float n_dot_v, float n_dot_l) {
+        return G1V_Epic(roughness, n_dot_v) * G1V_Epic(roughness, n_dot_v);
+    }
+
+    Ren::Vec2f IntegrateBRDF(float NdotV, float roughness) {
+        Ren::Vec3f V;
+        V[0] = std::sqrt(1.0f - NdotV * NdotV);
+        V[1] = 0.0f;
+        V[2] = NdotV;
+
+        float A = 0.0f;
+        float B = 0.0f;
+
+        auto N = Ren::Vec3f{ 0.0f, 0.0f, 1.0f };
+
+        const int SampleCount = 1024;
+        for (int i = 0; i < SampleCount; ++i) {
+            const Ren::Vec2f Xi = Hammersley2D(i, SampleCount);
+            const Ren::Vec3f H = ImportanceSampleGGX(Xi, roughness, N);
+            const Ren::Vec3f L = Ren::Normalize(2.0f * Ren::Dot(V, H) * H - V);
+
+            const float NdotL = std::max(L[2], 0.0f);
+            const float NdotH = std::max(H[2], 0.0f);
+            const float VdotH = std::max(Ren::Dot(V, H), 0.0f);
+
+            if (NdotL > 0.0f) {
+                const float G = G1V_Epic(roughness, NdotV);
+                const float G_Vis = (G * VdotH) / (NdotH * NdotV);
+                const float Fc = std::pow(1.0f - VdotH, 5.0f);
+
+                A += (1.0f - Fc) * G_Vis;
+                B += Fc * G_Vis;
+            }
+        }
+
+        return Ren::Vec2f{ A, B } / float(SampleCount);
+    }
 
 #include "__brdf_lut.inl"
+#include "__noise.inl"
+}
+
+// remove this coupling!!!
+namespace SceneManagerInternal {
+    int WriteImage(const uint8_t* out_data, int w, int h, int channels, const char* name);
 }
 
 #define BBOX_POINTS(min, max) \
@@ -247,6 +255,84 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
         p.format = Ren::RawRG16U;
         p.filter = Ren::BilinearNoMipmap;
         brdf_lut_ = ctx_.LoadTexture2D("brdf_lut", &RendererInternal::__brdf_lut[0], sizeof(__brdf_lut), p, &status);
+        assert(status == Ren::TexCreatedFromData);
+    }
+
+    {
+#if 0
+        const int res = 64;
+
+        std::unique_ptr<int8_t[]> img_data(new int8_t[res * res * 4]);
+
+        for (int y = 0; y < res; y++) {
+            for (int x = 0; x < res; x++) {
+                const float norm_x = float(x) / float(res), norm_y = float(y) / float(res);
+
+                for (int i = 0; i < 4; i++) {
+                    const float scale = 4.0f;
+                    auto coord = Ren::Vec4f{ norm_x * scale, i * 1.0f, norm_y * scale, 1.0f };
+
+                    float fval = 0.0f;
+
+#if 1
+                    fval += 0.33f * (0.5f + 0.5f * Ren::PerlinNoise(0.25f * coord, Ren::Vec4f{ 0.25f * scale }));
+                    fval += 0.66f * (0.5f + 0.5f * Ren::PerlinNoise(0.5f * coord, Ren::Vec4f{ 0.25f * scale }));
+                    fval += 1.0f * (0.5f + 0.5f * Ren::PerlinNoise(coord, Ren::Vec4f{ scale }));
+                    fval += 0.66f * (0.5f + 0.5f * Ren::PerlinNoise(2.0f * coord, Ren::Vec4f{ 2.0f * scale }));
+                    fval += 0.33f * (0.5f + 0.5f * Ren::PerlinNoise(4.0f * coord, Ren::Vec4f{ 4.0f * scale }));
+
+                    fval /= (1.0f + 2.0f * 0.66f + 2.0f * 0.33f);
+#elif 0
+                    fval += 0.25f * (0.5f + 0.5f * Ren::PerlinNoise(0.125f * coord, Ren::Vec4f{ 0.125f * scale }));
+                    fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise(0.25f * coord, Ren::Vec4f{ 0.25f * scale }));
+                    fval += 0.75f * (0.5f + 0.5f * Ren::PerlinNoise(0.5f * coord, Ren::Vec4f{ 0.5f * scale }));
+                    fval += 1.0f * (0.5f + 0.5f * Ren::PerlinNoise(coord, Ren::Vec4f{ scale }));
+                    fval += 0.75f * (0.5f + 0.5f * Ren::PerlinNoise(2.0f * coord, Ren::Vec4f{ 2.0f * scale }));
+                    fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise(4.0f * coord, Ren::Vec4f{ 4.0f * scale }));
+                    fval += 0.25f * (0.5f + 0.5f * Ren::PerlinNoise(8.0f * coord, Ren::Vec4f{ 8.0f * scale }));
+
+                    fval /= (1.0f + 2.0f * 0.75f + 2.0f * 0.5f + 2.0f * 0.25f);
+#else
+                    fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise(0.5f * coord, Ren::Vec4f{ 0.5f * scale }));
+                    fval += 1.0f * (0.5f + 0.5f * Ren::PerlinNoise(coord, Ren::Vec4f{ scale }));
+                    fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise(2.0f * coord, Ren::Vec4f{ 2.0f * scale }));
+
+                    fval /= (1.0f + 2.0f * 0.5f);
+#endif
+                    img_data[4 * (y * res + x) + i] = (int8_t)std::min(std::max(int((2.0f * fval - 1.0f) * 127.0f), -128), 127);
+                }
+            }
+        }
+
+#if 0
+        std::string str;
+
+        str += "static const uint32_t __noise_res = " + std::to_string(res) + ";\n";
+        str += "static const uint8_t __noise[] = {\n";
+
+        for (int y = 0; y < res; y++) {
+            str += '\t';
+            for (int x = 0; x < res; x++) {
+                str +=
+                    std::to_string(img_data[4 * (y * res + x) + 0]) + ", " +
+                    std::to_string(img_data[4 * (y * res + x) + 1]) + ", " +
+                    std::to_string(img_data[4 * (y * res + x) + 2]) + ", " +
+                    std::to_string(img_data[4 * (y * res + x) + 3]) + ", ";
+            }
+            str += '\n';
+        }
+
+        str += "};\n";
+#endif
+
+        SceneManagerInternal::WriteImage((const uint8_t*)&img_data[0], res, res, 4, "test1.png");
+#endif
+
+        p.w = p.h = __noise_res;
+        p.format = Ren::RawRGBA8888Snorm;
+        p.filter = Ren::BilinearNoMipmap;
+        p.repeat = Ren::Repeat;
+        noise_tex_ = ctx_.LoadTexture2D("noise", &__noise[0], __noise_res * __noise_res * 4, p, &status);
         assert(status == Ren::TexCreatedFromData);
     }
 

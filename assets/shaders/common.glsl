@@ -254,3 +254,13 @@ float TransparentDepthWeight(float z, float alpha) {
     //return alpha * clamp(0.1 * (1e-5 + 0.04 * z * z + pow6(0.005 * z)), 1e-2, 3e3);
     return alpha * max(3e3 * pow3(1.0 - z), 1e-2);
 }
+
+/*vec3 WindLargeScale(vec3 obj_pos, float scroll) {
+	return vec3(
+		2.0 * sin(1.0 * (obj_pos.x + obj_pos.y + obj_pos.z + scroll)) + 1.0,
+		0.0,
+		1.0 * sin(2.0 * (obj_pos.x + obj_pos.y + obj_pos.z + scroll)) + 0.5
+	);
+}
+
+float WindSmallScale(*/

@@ -78,6 +78,7 @@ set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/Renderer_Frontend.cpp
                         Renderer/Renderer_Structs.h
                         Renderer/__brdf_lut.inl
+                        Renderer/__noise.inl
                         Renderer/__skydome_mesh.inl
                         Renderer/__sphere_mesh.inl)
 
@@ -106,7 +107,8 @@ elseif(${RENDERER} STREQUAL "SW")
                         Renderer/RendererSW.cpp)
 endif()
 
-set(SHADERS_SOURCES Renderer/Shaders/blit.frag.glsl
+set(SHADERS_SOURCES Renderer/Shaders/_vs_common.glsl
+                    Renderer/Shaders/blit.frag.glsl
                     Renderer/Shaders/blit.vert.glsl
                     Renderer/Shaders/blit_bilateral.frag.glsl
                     Renderer/Shaders/blit_combine.frag.glsl
@@ -147,23 +149,26 @@ set(SHADERS_SOURCES Renderer/Shaders/blit.frag.glsl
                     Renderer/Shaders/skydome.frag.glsl
                     Renderer/Shaders/skydome.vert.glsl)
 
-set(SCENE_COMP_SOURCES   Scene/Comp/Common.h
-                         Scene/Comp/AnimState.h
-                         Scene/Comp/AnimState.cpp
-                         Scene/Comp/Decal.h
-                         Scene/Comp/Decal.cpp
-                         Scene/Comp/Drawable.h
-                         Scene/Comp/Drawable.cpp
-                         Scene/Comp/Lightmap.h
-                         Scene/Comp/Lightmap.cpp
-                         Scene/Comp/LightProbe.h
-                         Scene/Comp/LightProbe.cpp
-                         Scene/Comp/LightSource.h
-                         Scene/Comp/LightSource.cpp
-                         Scene/Comp/Occluder.h
-                         Scene/Comp/Occluder.cpp
-                         Scene/Comp/Transform.h
-                         Scene/Comp/Transform.cpp)
+set(SCENE_COMP_SOURCES
+        Scene/Comp/Common.h
+        Scene/Comp/AnimState.h
+        Scene/Comp/AnimState.cpp
+        Scene/Comp/Decal.h
+        Scene/Comp/Decal.cpp
+        Scene/Comp/Drawable.h
+        Scene/Comp/Drawable.cpp
+        Scene/Comp/Lightmap.h
+        Scene/Comp/Lightmap.cpp
+        Scene/Comp/LightProbe.h
+        Scene/Comp/LightProbe.cpp
+        Scene/Comp/LightSource.h
+        Scene/Comp/LightSource.cpp
+        Scene/Comp/Occluder.h
+        Scene/Comp/Occluder.cpp
+        Scene/Comp/Transform.h
+        Scene/Comp/Transform.cpp
+        Scene/Comp/VegState.h
+        Scene/Comp/VegState.cpp)
 
 set(UTILS_SOURCES Utils/BVHSplit.h
                   Utils/BVHSplit.cpp

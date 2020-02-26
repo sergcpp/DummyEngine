@@ -341,6 +341,8 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_RG32UI               0x823C
 
 // _EXT prefix is added for compatibility with opengl es
+#define GL_RGB8_SNORM           0x8F96
+#define GL_RGBA8_SNORM          0x8F97
 #define GL_RG16_EXT             0x822C
 #define GL_RG16_SNORM_EXT       0x8F99
 

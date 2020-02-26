@@ -20,6 +20,7 @@
 #include "Scene/Comp/LightSource.cpp"
 #include "Scene/Comp/Occluder.cpp"
 #include "Scene/Comp/Transform.cpp"
+#include "Scene/Comp/VegState.cpp"
 
 #if defined(USE_GL_RENDER)
 #include "Scene/ProbeStorageGL.cpp"

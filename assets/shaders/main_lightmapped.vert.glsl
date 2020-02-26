@@ -39,7 +39,7 @@ uniform SharedDataBlock {
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
     vec4 uResAndFRes, uTranspParamsAndTime;
-	vec4 uWindParams;
+	vec4 uWindScroll;
     ProbeItem uProbes[$MaxProbes];
 };
 

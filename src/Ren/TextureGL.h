@@ -14,7 +14,7 @@
 namespace Ren {
 class ILog;
 
-enum eTexColorFormat { Undefined, RawRGB888, RawRGBA8888, RawLUM8, RawR32F, RawR16F, RawR8, RawRG88, RawRGB32F, RawRGBA32F, RawRGBE8888, RawRGB16F, RawRGBA16F, RawRG16, RawRG16U, RawRG16F, RawRG32F, RawRGB10_A2, RawRG11F_B10F, Compressed, None, FormatCount };
+enum eTexColorFormat { Undefined, RawRGB888, RawRGBA8888, RawRGBA8888Snorm, RawLUM8, RawR32F, RawR16F, RawR8, RawRG88, RawRGB32F, RawRGBA32F, RawRGBE8888, RawRGB16F, RawRGBA16F, RawRG16, RawRG16U, RawRG16F, RawRG32F, RawRGB10_A2, RawRG11F_B10F, Compressed, None, FormatCount };
 enum eTexFilter { NoFilter, Bilinear, Trilinear, BilinearNoMipmap, FilterCount };
 enum eTexRepeat { Repeat, ClampToEdge, ClampToBorder, WrapModesCount };
 
