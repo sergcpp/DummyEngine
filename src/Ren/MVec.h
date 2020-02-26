@@ -308,6 +308,49 @@ T Mix(const T &x, const T &y, const S &a) {
 }
 
 template <typename T, int N>
+Vec<T, N> Floor(const Vec<T, N> &v) {
+    Vec<T, N> ret;
+    for (int i = 0; i < N; i++) {
+        ret[i] = std::floor(v[i]);
+    }
+    return ret;
+}
+
+template <typename T, int N>
+Vec<T, N> Ceil(const Vec<T, N> &v) {
+    Vec<T, N> ret;
+    for (int i = 0; i < N; i++) {
+        ret[i] = std::ceil(v[i]);
+    }
+    return ret;
+}
+
+template <typename T, int N>
+Vec<T, N> Fract(const Vec<T, N> &v) {
+    Vec<T, N> ret;
+    for (int i = 0; i < N; i++) {
+        float integral_part;
+        ret[i] = std::modf(v[i], &integral_part);
+        (void)integral_part;
+    }
+    return ret;
+}
+
+template <typename T, int N>
+Vec<T, N> Mod(const Vec<T, N> &x, const Vec<T, N> &y) {
+    return x - y * Ren::Floor(x / y);
+}
+
+template <typename T, int N>
+Vec<T, N> Step(const Vec<T, N> &x, const Vec<T, N> &edge) {
+    Vec<T, N> ret;
+    for (int i = 0; i < N; i++) {
+        ret[i] = x[i] < edge[i] ? 0.0f : 1.0f;
+    }
+    return ret;
+}
+
+template <typename T, int N>
 const T *ValuePtr(const Vec<T, N> &v) {
     return &v[0];
 }
