@@ -24,8 +24,8 @@ namespace GSDrawTestInternal {
 #else
     const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-        //"skin_test.json";
-        "living_room_gumroad.json";
+        "skin_test.json";
+        //"living_room_gumroad.json";
         //"bistro.json";
         //"pbr_test.json";
         //"zenith.json";

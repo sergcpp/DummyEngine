@@ -155,6 +155,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         g_app->AddEvent(EvKeyUp, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
         break;
     }
+    case WM_MOUSEWHEEL: {
+        WORD _delta = HIWORD(wParam);
+        auto delta = reinterpret_cast<const short &>(_delta);
+        const float wheel_motion = float(delta / WHEEL_DELTA);
+        g_app->AddEvent(EvMouseWheel, 0, 0.0f, 0.0f, wheel_motion, 0.0f);
+        break;
+    }
     case WM_SIZE: {
         const int w = LOWORD(lParam), h = HIWORD(lParam);
         g_app->Resize(w, h);

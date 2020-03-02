@@ -749,7 +749,7 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp, Ren
 
         for (const auto &js_anim : js_anims.elements) {
             const JsString &js_anim_name = js_anim.as_str();
-            std::string anim_path = std::string(MODELS_PATH) + js_anim_name.val;
+            const std::string anim_path = std::string(MODELS_PATH) + js_anim_name.val;
 
             Sys::AssetFile in_file(anim_path.c_str());
             size_t in_file_size = in_file.size();

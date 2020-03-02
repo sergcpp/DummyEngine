@@ -224,7 +224,7 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, Ren::ILog *log
 #ifdef _WIN32
     HANDLE in_h = CreateFile(in_file, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL);
     if (in_h == INVALID_HANDLE_VALUE) {
-        log->Info("[PrepareAssets] Failed to open file!");
+        log->Info("[PrepareAssets] Failed to open file %s", in_file);
         CloseHandle(in_h);
         return true;
     }

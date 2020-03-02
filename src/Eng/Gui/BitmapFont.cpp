@@ -20,7 +20,7 @@ Gui::BitmapFont::BitmapFont(const char *name, Ren::Context *ctx) : info_{}, scal
 }
 
 float Gui::BitmapFont::height(const BaseElement *parent) const {
-    return scale_ * float(info_.line_height) * parent->size()[1] / parent->size_px()[1];
+    return 2.0f * scale_ * float(info_.line_height) / parent->size_px()[1];
 }
 
 bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {

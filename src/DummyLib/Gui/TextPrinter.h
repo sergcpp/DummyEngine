@@ -41,7 +41,8 @@ class TextPrinter : public Gui::BaseElement {
     void UpdateTextBuffer();
     void DrawTextBuffer(Gui::Renderer *r);
 public:
-    TextPrinter(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent, const std::shared_ptr<Gui::BitmapFont> &font);
+    TextPrinter(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
+                const std::shared_ptr<Gui::BitmapFont> &font);
 
     void restart() { progress_ = 0; }
     void skip() { progress_ = max_progress_; }
