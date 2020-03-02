@@ -46,3 +46,12 @@ void Gui::Image::Draw(Renderer *r) {
 
     r->DrawImageQuad(eDrawMode::DrPassthrough, tex_layer, pos, uvs_px_);
 }
+
+void Gui::Image::ResizeToContent(const Vec2f &pos, const BaseElement *parent) {
+    const Ren::Texture2DParams &p = tex_->params();
+    const Vec2i parent_size_px = parent->size_px();
+
+    BaseElement::Resize(pos,
+        Vec2f{ 2.0f * float(p.w) / float(parent_size_px[0]),
+               2.0f * float(p.h) / float(parent_size_px[1]) }, parent);
+}

@@ -10,6 +10,7 @@
 #include "Gui/Image.cpp"
 #include "Gui/Image9Patch.cpp"
 #include "Gui/LinearLayout.cpp"
+#include "Gui/Renderer.cpp"
 #include "Gui/TypeMesh.cpp"
 #include "Gui/Utils.cpp"
 

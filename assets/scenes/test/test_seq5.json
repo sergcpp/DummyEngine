@@ -1,0 +1,20 @@
+{
+	"name" : "test_seq1",
+	"tracks" : [
+		{
+			"name" : "camera_track",
+			"type" : "camera",
+			"target" : "main_camera",
+			"actions" : [
+				{
+					"time_beg" : 0.0,
+					"time_end" : 2.0,
+					"type" : "look"
+				}
+			]
+		}
+	],
+    "ending" : {
+        "time_point" : 8.0,
+    }
+}

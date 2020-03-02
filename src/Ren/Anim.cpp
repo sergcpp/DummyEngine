@@ -185,6 +185,11 @@ void Ren::Skeleton::UpdateBones(Ren::Mat4f *matr_palette) {
 }
 
 int Ren::Skeleton::AddAnimSequence(const AnimSeqRef &ref) {
+    for (int i = 0; i < (int)anims.size(); i++) {
+        if (anims[i].anim == ref) {
+            return i;
+        }
+    }
     anims.emplace_back();
     AnimLink &a = anims.back();
     a.anim = ref;

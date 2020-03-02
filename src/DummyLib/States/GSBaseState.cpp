@@ -284,8 +284,20 @@ void GSBaseState::Enter() {
                         const std::string
                             name1 = "assets/scenes/" + name_str + ".json" + std::to_string(i),
                             name2 = "assets/scenes/" + name_str + ".json" + std::to_string(i + 1);
+                        if (!std::ifstream(name1).good()) {
+                            continue;
+                        }
 
-                        int ret = std::rename(name1.c_str(), name2.c_str());
+                        if (i == 7 && std::ifstream(name2).good()) {
+                            const int ret = std::remove(name2.c_str());
+                            if (ret) {
+                                shrd_this->ctx_->log()->Error("Failed to remove file %s",
+                                                   name2.c_str());
+                                return false;
+                            }
+                        }
+
+                        const int ret = std::rename(name1.c_str(), name2.c_str());
                         if (ret) {
                             shrd_this->ctx_->log()->Error("Failed to rename file %s", name1.c_str());
                             return false;
@@ -298,7 +310,7 @@ void GSBaseState::Enter() {
                         name1 = "assets/scenes/" + name_str + ".json",
                         name2 = "assets/scenes/" + name_str + ".json1";
 
-                    int ret = std::rename(name1.c_str(), name2.c_str());
+                    const int ret = std::rename(name1.c_str(), name2.c_str());
                     if (ret) {
                         shrd_this->ctx_->log()->Error("Failed to rename file %s", name1.c_str());
                         return false;
