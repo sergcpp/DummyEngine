@@ -9,6 +9,7 @@
 #include "GSUITest.cpp"
 #include "GSUITest2.cpp"
 #include "GSUITest3.cpp"
+#include "GSUITest4.cpp"
 
 #if defined(USE_GL_RENDER)
 #include "GSUITest3GL.cpp"

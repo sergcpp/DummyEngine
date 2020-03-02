@@ -49,6 +49,9 @@ force_inline uint16_t f32_to_u16(float value) {
     return uint16_t(value * 65535);
 }
 
+extern const uint8_t ColorWhite[4];
+extern const uint8_t ColorCyan[4];
+
 class Renderer {
 public:
     Renderer(Ren::Context &ctx, const JsObject &config);
@@ -78,7 +81,9 @@ public:
     void SubmitVertexData(int vertex_count, int index_count, bool force_new_buffer);
 
     void DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2f pos[2], const Vec2f uvs_px[2]);
-private:
+    void DrawLine(eDrawMode draw_mode, int tex_layer, const Vec2f pos[2], const Vec2f &thickness, const Vec2f uvs_px[2]);
+
+  private:
     static const int FrameSyncWindow = 2;
     static const int BuffersCount = 8;
 

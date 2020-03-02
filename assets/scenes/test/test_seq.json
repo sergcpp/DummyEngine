@@ -1,0 +1,72 @@
+{
+	"name" : "test_seq0",
+	"tracks" : [
+		{
+			"name" : "wolf_test0",
+			"type" : "actor",
+			"target" : "wolf00",
+			"actions" : [
+				{
+					"time_beg" : 0.0,
+					"time_end" : 2.0,
+					"type" : "play",
+                    "anim" : "wolf_run.anim"
+				},
+				{
+					"time_beg" : 2.5,
+					"time_end" : 6.0,
+					"type" : "play",
+                    "anim" : "wolf_walk.anim"
+				}
+			]
+		},
+        {
+			"name" : "wolf_test1",
+			"type" : "actor",
+			"target" : "wolf01",
+			"actions" : [
+				{
+					"time_beg" : 0.0,
+					"time_end" : 2.0,
+					"type" : "play",
+                    "anim" : "wolf_run.anim",
+                    "caption" : "I'm running"
+				},
+				{
+					"time_beg" : 2.5,
+					"time_end" : 6.0,
+					"type" : "play",
+                    "anim" : "wolf_walk.anim",
+                    "caption" : "I'm walking now :)"
+				}
+			]
+		},
+		{
+			"name" : "camera_track",
+			"type" : "camera",
+			"target" : "main_camera",
+			"actions" : [
+				{
+					"time_beg" : 0.0,
+					"time_end" : 2.0,
+					"type" : "look"
+				}
+			]
+		}
+	],
+    "ending" : {
+        "time_point" : 10.0,
+        "choices" : [
+            {
+                "key" : "ch1",
+                "text" : "Choice 1",
+                "sequence" : "test/test_seq1.json"
+            },
+            {
+                "key" : "ch2",
+                "text" : "Choice 2",
+                "sequence" : "test/test_seq2.json"
+            }
+        ]
+    }
+}

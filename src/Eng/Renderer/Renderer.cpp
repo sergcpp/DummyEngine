@@ -199,6 +199,63 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
     }
 
     proc_objects_.realloc(REN_MAX_OBJ_COUNT);
+
+#if 0
+    const float light_radius = 1.0f;
+
+    /*for (float angle = 0.5f; angle < Ren::Pi<float>(); angle = std::nextafter(angle, 100.0f)) {
+        const float spot_angle = 0.5f * angle;
+        float s_cone, s_cyli, s_hemi;
+
+        { // cone
+            const float cone_height = light_radius;
+            const float cone_radius = light_radius * std::tan(spot_angle);
+            s_cone = (1.0f / 3.0f) * Ren::Pi<float>() * cone_radius * cone_radius * cone_height;
+        }
+
+        { // cylinder
+            const float cyli_height = light_radius;
+            const float cyli_radius = light_radius * std::sin(spot_angle);
+            s_cyli = Ren::Pi<float>() * cyli_radius * cyli_radius * cyli_height;
+        }
+
+        { // hemisphere
+            const float sph_radius = light_radius;
+            s_hemi = (2.0f / 3.0f) * Ren::Pi<float>() * sph_radius * sph_radius * sph_radius;
+        }
+
+        if (s_cone > s_cyli) {
+            const float angle_grad = angle * 180.0f / Ren::Pi<float>();
+            volatile int ii = 0;
+        }
+
+        if (s_cyli > s_hemi) {
+            const float angle_grad = angle * 180.0f / Ren::Pi<float>();
+            volatile int ii = 0;
+        }
+    }*/
+
+    for (float angle = Ren::Pi<float>(); angle < 2.0f * Ren::Pi<float>(); angle = std::nextafter(angle, 100.0f)) {
+        const float spot_angle = 0.5f * angle;
+        float s_cyli, s_sphere;
+
+        { // cylinder
+            const float cyli_height = light_radius + light_radius * std::sin(spot_angle - 0.5f * Ren::Pi<float>());
+            const float cyli_radius = light_radius;
+            s_cyli = Ren::Pi<float>() * cyli_radius * cyli_radius * cyli_height;
+        }
+
+        { // sphere
+            const float sph_radius = light_radius;
+            s_sphere = (4.0f / 3.0f) * Ren::Pi<float>() * sph_radius * sph_radius * sph_radius;
+        }
+
+        if (s_cyli > s_sphere) {
+            const float angle_grad = angle * 180.0f / Ren::Pi<float>();
+            volatile int ii = 0;
+        }
+    }
+#endif
 }
 
 Renderer::~Renderer() {

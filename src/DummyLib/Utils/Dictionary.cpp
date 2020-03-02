@@ -87,7 +87,7 @@ bool Dictionary::Load(std::istream &in_data, Ren::ILog *log) {
     hashmap_.clear();
     hashmap_.reserve(info_.keys_count);
 
-    for (int i = 0; i < info_.keys_count; i++) {
+    for (uint32_t i = 0; i < info_.keys_count; i++) {
         const dict_link_compact_t &link = temp_links[i];
 
         const char *key = &comb_str_buf_[link.key_str_off];

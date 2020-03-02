@@ -4,13 +4,25 @@ project(DummyLib)
 set(SOURCE_FILES    Viewer.h
                     Viewer.cpp)
 
-set(GUI_SOURCES Gui/DebugInfoUI.h
-                Gui/DebugInfoUI.cpp 
+set(GUI_SOURCES Gui/CaptionsUI.h
+                Gui/CaptionsUI.cpp
+                Gui/DebugInfoUI.h
+                Gui/DebugInfoUI.cpp
+                Gui/DialogEditUI.h
+                Gui/DialogEditUI.cpp
+				Gui/DialogUI.h
+				Gui/DialogUI.cpp
                 Gui/FontStorage.h
                 Gui/PagedReader.h
                 Gui/PagedReader.cpp
+                Gui/SeqCanvasUI.h
+                Gui/SeqCanvasUI.cpp
+				Gui/SeqEditUI.h
+				Gui/SeqEditUI.cpp
                 Gui/TextPrinter.h
-                Gui/TextPrinter.cpp)
+                Gui/TextPrinter.cpp
+                Gui/TimelineUI.h
+                Gui/TimelineUI.cpp)
 
 set(STATES_SOURCES  States/GSCreate.h
                     States/GSCreate.cpp
@@ -24,6 +36,8 @@ set(STATES_SOURCES  States/GSCreate.h
                     States/GSUITest2.cpp
                     States/GSUITest3.h
                     States/GSUITest3.cpp
+                    States/GSUITest4.h
+                    States/GSUITest4.cpp
                     )
 
 set(UTILS_SOURCES   Utils/Dictionary.h
