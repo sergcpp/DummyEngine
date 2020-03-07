@@ -22,8 +22,7 @@ namespace RendererInternal {
 
     int upper_power_of_two(int v) {
         int res = 1;
-        while (res < v)
-        {
+        while (res < v) {
             res *= 2;
         }
         return res;
@@ -79,11 +78,11 @@ namespace RendererInternal {
     }
 
     Ren::Vec3f ImportanceSampleGGX(const Ren::Vec2f& Xi, float roughness, const Ren::Vec3f& N) {
-        float a = roughness * roughness;
+        const float a = roughness * roughness;
 
-        float Phi = 2.0f * Ren::Pi<float>() * Xi[0];
-        float CosTheta = std::sqrt((1.0f - Xi[1]) / (1.0f + (a * a - 1.0f) * Xi[1]));
-        float SinTheta = std::sqrt(1.0f - CosTheta * CosTheta);
+        const float Phi = 2.0f * Ren::Pi<float>() * Xi[0];
+        const float CosTheta = std::sqrt((1.0f - Xi[1]) / (1.0f + (a * a - 1.0f) * Xi[1]));
+        const float SinTheta = std::sqrt(1.0f - CosTheta * CosTheta);
 
         auto H = Ren::Vec3f{ SinTheta * std::cos(Phi), SinTheta * std::sin(Phi), CosTheta };
 
@@ -95,8 +94,8 @@ namespace RendererInternal {
     }
 
     float GeometrySchlickGGX(float NdotV, float k) {
-        float nom = NdotV;
-        float denom = NdotV * (1.0f - k) + k;
+        const float nom = NdotV;
+        const float denom = NdotV * (1.0f - k) + k;
 
         return nom / denom;
     }
@@ -120,15 +119,14 @@ namespace RendererInternal {
     }
 
     Ren::Vec2f IntegrateBRDF(float NdotV, float roughness) {
-        Ren::Vec3f V;
-        V[0] = std::sqrt(1.0f - NdotV * NdotV);
-        V[1] = 0.0f;
-        V[2] = NdotV;
+        const auto V = Ren::Vec3f{
+            std::sqrt(1.0f - NdotV * NdotV), 0.0f, NdotV
+        };
 
         float A = 0.0f;
         float B = 0.0f;
 
-        auto N = Ren::Vec3f{ 0.0f, 0.0f, 1.0f };
+        const auto N = Ren::Vec3f{ 0.0f, 0.0f, 1.0f };
 
         const int SampleCount = 1024;
         for (int i = 0; i < SampleCount; ++i) {
@@ -260,7 +258,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
 
     {
 #if 0
-        const int res = 64;
+        const int res = 128;
 
         std::unique_ptr<int8_t[]> img_data(new int8_t[res * res * 4]);
 
@@ -269,7 +267,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
                 const float norm_x = float(x) / float(res), norm_y = float(y) / float(res);
 
                 for (int i = 0; i < 4; i++) {
-                    const float scale = 4.0f;
+                    const float scale = 8.0f;
                     auto coord = Ren::Vec4f{ norm_x * scale, i * 1.0f, norm_y * scale, 1.0f };
 
                     float fval = 0.0f;
@@ -304,11 +302,11 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
             }
         }
 
-#if 0
+#if 1
         std::string str;
 
         str += "static const uint32_t __noise_res = " + std::to_string(res) + ";\n";
-        str += "static const uint8_t __noise[] = {\n";
+        str += "static const int8_t __noise[] = {\n";
 
         for (int y = 0; y < res; y++) {
             str += '\t';
@@ -452,6 +450,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             desc.repeat = Ren::ClampToEdge;
             combined_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::DepthNone }, 1, log);
         }
+        
         {   // Buffer for SSAO
             FrameBuf::ColorAttachmentDesc desc; // NOLINT
             desc.format = Ren::RawR8;

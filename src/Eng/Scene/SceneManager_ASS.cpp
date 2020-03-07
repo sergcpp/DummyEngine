@@ -216,7 +216,7 @@ void ReadAllFiles_MT_r(assets_context_t &ctx, const char *in_folder, const std::
 }
 
 bool CheckCanSkipAsset(const char *in_file, const char *out_file, Ren::ILog *log) {
-#if !defined(NDEBUG) && 1
+#if !defined(NDEBUG) && 0
     log->Info("Warning: glsl is forced to be not skipped!");
     if (strstr(in_file, ".glsl")) return false;
 #endif

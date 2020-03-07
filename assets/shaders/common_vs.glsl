@@ -4,8 +4,8 @@
 #define VEGE_MAX_BRANCH_AMPLITUDE 1.0
 #define VEGE_MAX_LEAVES_AMPLITUDE 0.2
 
-#define VEGE_NOISE_SCALE_LF (1.0 / 128.0)
-#define VEGE_NOISE_SCALE_HF (1.0 / 4.0)
+#define VEGE_NOISE_SCALE_LF (1.0 / 256.0)
+#define VEGE_NOISE_SCALE_HF (1.0 / 8.0)
 
 vec3 TransformVegetation(in vec3 vtx_pos_ls, vec4 vtx_color, vec4 wind_scroll, vec4 wind_params, vec4 wind_vec_ls, sampler2D _noise_texture) {
 	{	// Branch/detail bending

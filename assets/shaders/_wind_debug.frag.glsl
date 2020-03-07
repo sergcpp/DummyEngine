@@ -73,8 +73,10 @@ layout(location = $OutSpecIndex) out vec4 outSpecular;
 #include "common.glsl"
 
 void main(void) {
-	vec3 lo_freq_bend_dir = texture(noise_texture, uWindScroll.xy + (1.0 / 128.0) * vec2(aVertexPos_.xz)).rgb;
-	vec3 hi_freq_bend_dir = texture(noise_texture, uWindScroll.zw + (1.0 / 4.0) * vec2(aVertexPos_.xz)).rgb;
+	vec3 lo_freq_bend_dir = 0.5 * texture(noise_texture, uWindScroll.xy + (1.0 / 256.0) * vec2(aVertexPos_.xz)).rgb + vec3(0.5);
+	vec3 hi_freq_bend_dir = 0.5 * texture(noise_texture, uWindScroll.zw + (1.0 / 8.0) * vec2(aVertexPos_.xz)).rgb + vec3(0.5);
 
-    outColor = vec4(pow(0.25 * (vec3(2.0) + lo_freq_bend_dir + hi_freq_bend_dir), vec3(2.2)), 1.0);
+    outColor = vec4(pow(lo_freq_bend_dir + hi_freq_bend_dir, vec3(2.2)), 1.0);
+    outNormal = vec4(0.0);
+    outSpecular = vec4(0.0);
 }

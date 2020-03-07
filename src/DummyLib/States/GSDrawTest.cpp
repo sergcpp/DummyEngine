@@ -26,12 +26,12 @@ namespace GSDrawTestInternal {
 #endif
         //"font_test.json";
         //"skin_test.json";
-        //"living_room_gumroad.json";
+        "living_room_gumroad.json";
         //"bistro.json";
         //"pbr_test.json";
         //"zenith.json";
         //"corridor.json";
-        "vegetation_test.json";
+        //"vegetation_test.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {
@@ -767,6 +767,6 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
     }*/
 
     const auto wind_scroll_dir = Ren::Vec2f{ scene.env.wind_vec[0], scene.env.wind_vec[2] };
-    scene.env.wind_scroll_lf = Ren::Fract(scene.env.wind_scroll_lf - (1.0f / 128.0f) * delta_time_s * wind_scroll_dir);
-    scene.env.wind_scroll_hf = Ren::Fract(scene.env.wind_scroll_hf - (1.0f / 16.0f) * delta_time_s * wind_scroll_dir);
+    scene.env.wind_scroll_lf = Ren::Fract(scene.env.wind_scroll_lf - (1.0f / 256.0f) * delta_time_s * wind_scroll_dir);
+    scene.env.wind_scroll_hf = Ren::Fract(scene.env.wind_scroll_hf - (1.0f / 32.0f) * delta_time_s * wind_scroll_dir);
 }

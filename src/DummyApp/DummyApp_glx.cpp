@@ -77,7 +77,7 @@ int DummyApp::Init(int w, int h) {
         return -1;
     }
 
-    static int attribute_list[] = {
+    static const int attribute_list[] = {
             GLX_X_RENDERABLE    , True,
             GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
             GLX_RENDER_TYPE     , GLX_RGBA_BIT,
