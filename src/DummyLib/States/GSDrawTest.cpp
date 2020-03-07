@@ -31,7 +31,7 @@ namespace GSDrawTestInternal {
         //"pbr_test.json";
         //"zenith.json";
         //"corridor.json";
-        "vegetation_test2.json";
+        "vegetation_test.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {

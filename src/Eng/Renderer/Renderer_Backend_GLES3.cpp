@@ -76,7 +76,6 @@ namespace RendererInternal {
 
     const size_t SkinTransformsBufChunkSize = sizeof(SkinTransform) * REN_MAX_SKIN_XFORMS_TOTAL;
     const size_t SkinRegionsBufChunkSize    = sizeof(SkinRegion) * REN_MAX_SKIN_REGIONS_TOTAL;
-    const size_t VegeRegionsBufChunkSize    = sizeof(VegeRegion) * REN_MAX_VEGE_REGIONS_TOTAL;
     const size_t InstanceDataBufChunkSize   = sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL;
     const size_t LightsBufChunkSize         = sizeof(LightSourceItem) * REN_MAX_LIGHTS_TOTAL;
     const size_t DecalsBufChunkSize         = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
@@ -202,8 +201,6 @@ void Renderer::InitRendererInternal() {
     assert(status == Ren::ProgCreatedFromData);
     skinning_prog_ = ctx_.LoadProgramGLSL("skinning_prog", skinning_cs, &status);
     assert(status == Ren::ProgCreatedFromData);
-    vegetation_prog_ = ctx_.LoadProgramGLSL("vegetation_prog", vegetation_cs, &status);
-    assert(status == Ren::ProgCreatedFromData);
 
     GLint tex_buf_offset_alignment;
     glGetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT, &tex_buf_offset_alignment);
@@ -293,29 +290,6 @@ void Renderer::InitRendererInternal() {
     }
 
     Ren::CheckError("[InitRendererInternal]: skin transforms TBO", ctx_.log());
-
-    {   // Create buffer that holds offsets for vegetation shader invocation
-        GLuint vege_regions_buf;
-
-        glGenBuffers(1, &vege_regions_buf);
-        glBindBuffer(GL_TEXTURE_BUFFER, vege_regions_buf);
-        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * VegeRegionsBufChunkSize, nullptr, GL_DYNAMIC_COPY);
-        glBindBuffer(GL_TEXTURE_BUFFER, 0);
-
-        vege_regions_buf_ = (uint32_t)vege_regions_buf;
-
-        GLuint vege_regions_tbo;
-
-        glGenTextures(1, &vege_regions_tbo);
-        glBindTexture(GL_TEXTURE_BUFFER, vege_regions_tbo);
-
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, vege_regions_buf);
-        glBindTexture(GL_TEXTURE_BUFFER, 0);
-
-        vege_regions_tbo_ = (uint32_t)vege_regions_tbo;
-    }
-
-    Ren::CheckError("[InitRendererInternal]: vege regions TBO", ctx_.log());
 
     {   // Create buffer for lights information
         GLuint lights_buf;
@@ -529,11 +503,6 @@ void Renderer::InitRendererInternal() {
         skinned_buf1_vtx_offset_ = vtx_buf1->Alloc(REN_MAX_SKIN_VERTICES_TOTAL * 16);
         skinned_buf2_vtx_offset_ = vtx_buf2->Alloc(REN_MAX_SKIN_VERTICES_TOTAL * 16);
         assert(skinned_buf1_vtx_offset_ == skinned_buf2_vtx_offset_ && "Offsets do not match!");
-
-        // Allocate buffer for vegetation vertices
-        vegetation_buf1_vtx_offset_ = vtx_buf1->Alloc(REN_MAX_VEGE_VERTICES_TOTAL * 16);
-        vegetation_buf2_vtx_offset_ = vtx_buf2->Alloc(REN_MAX_VEGE_VERTICES_TOTAL * 16);
-        assert(vegetation_buf1_vtx_offset_ == vegetation_buf2_vtx_offset_ && "Offsets do not match!");
 
         // Allocate skydome vertices
         skydome_vtx1_offset_ = vtx_buf1->Alloc(sizeof(__skydome_positions) + (16 - sizeof(__skydome_positions) % 16), __skydome_positions);
@@ -1029,14 +998,6 @@ void Renderer::DestroyRendererInternal() {
     }
 
     {
-        auto vege_regions_tbo = (GLuint)vege_regions_tbo_;
-        glDeleteTextures(1, &vege_regions_tbo);
-
-        auto vege_regions_buf = (GLuint)vege_regions_buf_;
-        glDeleteBuffers(1, &vege_regions_buf);
-    }
-
-    {
         glDeleteTextures(FrameSyncWindow, lights_tbo_);
 
         auto lights_buf = (GLuint)lights_buf_;
@@ -1199,8 +1160,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     assert(list.skin_transforms.count < REN_MAX_SKIN_XFORMS_TOTAL);
     assert(list.skin_regions.count < REN_MAX_SKIN_REGIONS_TOTAL);
     assert(list.skin_vertices_count < REN_MAX_SKIN_VERTICES_TOTAL);
-    assert(list.vege_regions.count < REN_MAX_VEGE_REGIONS_TOTAL);
-    assert(list.vege_vertices_count < REN_MAX_VEGE_VERTICES_TOTAL);
     assert(list.light_sources.count < REN_MAX_LIGHTS_TOTAL);
     assert(list.decals.count < REN_MAX_DECALS_TOTAL);
     assert(list.probes.count < REN_MAX_PROBES_TOTAL);
@@ -1260,22 +1219,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
             } else {
                 log->Error("[Renderer::DrawObjectsInternal]: Failed to map skin regions buffer!");
-            }
-
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-        }
-
-        if (list.vege_regions.count) {
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)vege_regions_buf_);
-
-            void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, cur_buf_chunk_ * VegeRegionsBufChunkSize, VegeRegionsBufChunkSize, BufferRangeBindFlags);
-            if (pinned_mem) {
-                size_t vege_regions_mem_size = list.vege_regions.count * sizeof(VegeRegion);
-                memcpy(pinned_mem, list.vege_regions.data, vege_regions_mem_size);
-                glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0, vege_regions_mem_size);
-                glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-            } else {
-                log->Error("[Renderer::DrawObjectsInternal]: Failed to map vege regions buffer!");
             }
 
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -1457,8 +1400,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeSkinningStart], GL_TIMESTAMP);
     }
 
-    bool insert_vtx_attrib_barrier = false;
-
     if (list.skin_regions.count) {
         DebugMarker _("SKINNING");
 
@@ -1472,29 +1413,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, (GLuint)ctx_.default_vertex_buf2()->buf_id());
 
         glDispatchCompute(list.skin_regions.count, 1, 1);
-        insert_vtx_attrib_barrier = true;
-    }
-
-    if (list.render_flags & EnableTimers) {
-        glQueryCounter(queries_[cur_query_][TimeVegetationStart], GL_TIMESTAMP);
-    }
-
-    if (list.vege_regions.count) {
-        DebugMarker _("VEGETATION");
-
-        const Ren::Program *p = vegetation_prog_.get();
-
-        glUseProgram(p->prog_id());
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, (GLuint)ctx_.default_vertex_buf1()->buf_id());
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)ctx_.default_vertex_buf2()->buf_id());
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)vege_regions_buf_, cur_buf_chunk_ * VegeRegionsBufChunkSize, VegeRegionsBufChunkSize);
-
-        assert(list.vege_regions.count < (uint32_t)ctx_.capabilities.max_compute_work_group_size[0]);
-        glDispatchCompute(list.vege_regions.count, 1, 1);
-        insert_vtx_attrib_barrier = true;
-    }
-
-    if (insert_vtx_attrib_barrier) {
         glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
     }
 
@@ -3072,7 +2990,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         GLuint64 time_draw_start,
                  time_skinning_start,
-                 time_vegetation_start,
                  time_shadow_start,
                  time_depth_opaque_start,
                  time_ao_start,
@@ -3087,7 +3004,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glGetQueryObjectui64v(queries_[cur_query_][TimeDrawStart], GL_QUERY_RESULT, &time_draw_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeSkinningStart], GL_QUERY_RESULT, &time_skinning_start);
-        glGetQueryObjectui64v(queries_[cur_query_][TimeVegetationStart], GL_QUERY_RESULT, &time_vegetation_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeShadowMapStart], GL_QUERY_RESULT, &time_shadow_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeDepthOpaqueStart], GL_QUERY_RESULT, &time_depth_opaque_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeAOPassStart], GL_QUERY_RESULT, &time_ao_start);
@@ -3106,8 +3022,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         backend_info_.gpu_start_timepoint_us = uint64_t(time_draw_start / 1000);
         backend_info_.gpu_end_timepoint_us = uint64_t(time_draw_end / 1000);
 
-        backend_info_.skinning_time_us = uint32_t((time_vegetation_start - time_skinning_start) / 1000);
-        backend_info_.vegetation_time_us = uint32_t((time_shadow_start - time_vegetation_start) / 1000);
+        backend_info_.skinning_time_us = uint32_t((time_shadow_start - time_skinning_start) / 1000);
         backend_info_.shadow_time_us = uint32_t((time_depth_opaque_start - time_shadow_start) / 1000);
         backend_info_.depth_opaque_pass_time_us = uint32_t((time_ao_start - time_depth_opaque_start) / 1000);
         backend_info_.ao_pass_time_us = uint32_t((time_opaque_start - time_ao_start) / 1000);

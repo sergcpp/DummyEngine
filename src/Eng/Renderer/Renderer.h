@@ -55,7 +55,7 @@ private:
         blit_ssr_prog_, blit_ssr_ms_prog_, blit_ssr_compose_prog_, blit_ssr_compose_ms_prog_, blit_ssr_dilate_prog_, blit_ms_resolve_prog_,
         blit_ao_prog_, blit_multiply_prog_, blit_multiply_ms_prog_, blit_debug_bvh_prog_, blit_debug_bvh_ms_prog_, blit_depth_prog_,
         blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_, blit_project_sh_prog_, blit_fxaa_prog_,
-        blit_transparent_compose_prog_, blit_transparent_compose_ms_prog_, blit_transparent_init_prog_, probe_prog_, skinning_prog_, vegetation_prog_;
+        blit_transparent_compose_prog_, blit_transparent_compose_ms_prog_, blit_transparent_init_prog_, probe_prog_, skinning_prog_;
     Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_, brdf_lut_, noise_tex_;
 
     FrameBuf clean_buf_, resolved_or_transparent_buf_, ssr_buf1_, ssr_buf2_, down_buf_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf1_, ssao_buf2_, probe_sample_buf_, combined_buf_, down_depth_;
@@ -112,22 +112,23 @@ private:
     Ren::eTexColorFormat temp_tex_format_;
     int temp_tex_w_ = 0, temp_tex_h_ = 0;
 
-    uint32_t temp_framebuf_, skydome_framebuf_ = 0, depth_fill_framebuf_ = 0, refl_comb_framebuf_ = 0,
+    uint32_t
+        temp_framebuf_, skydome_framebuf_ = 0, depth_fill_framebuf_ = 0, refl_comb_framebuf_ = 0,
         transparent_comb_framebuf_ = 0, clean_buf_color_only_ = 0, clean_buf_transparent_ = 0;
 
     uint32_t unif_shared_data_block_[FrameSyncWindow];
     uint32_t temp_vao_, fs_quad_vao_, depth_pass_solid_vao_, depth_pass_vege_solid_vao_, depth_pass_transp_vao_, depth_pass_vege_transp_vao_, draw_pass_vao_, skydome_vao_, sphere_vao_;
-    uint32_t temp_buf1_vtx_offset_, temp_buf2_vtx_offset_, temp_buf_ndx_offset_,
-             skydome_vtx1_offset_, skydome_vtx2_offset_, skydome_ndx_offset_,
-             sphere_vtx1_offset_, sphere_vtx2_offset_, sphere_ndx_offset_,
-             quad_vtx1_offset_, quad_vtx2_offset_, quad_ndx_offset_,
-             skinned_buf1_vtx_offset_, skinned_buf2_vtx_offset_,
-             vegetation_buf1_vtx_offset_, vegetation_buf2_vtx_offset_;
+    uint32_t
+        temp_buf1_vtx_offset_, temp_buf2_vtx_offset_, temp_buf_ndx_offset_,
+        skydome_vtx1_offset_, skydome_vtx2_offset_, skydome_ndx_offset_,
+        sphere_vtx1_offset_, sphere_vtx2_offset_, sphere_ndx_offset_,
+        quad_vtx1_offset_, quad_vtx2_offset_, quad_ndx_offset_,
+        skinned_buf1_vtx_offset_, skinned_buf2_vtx_offset_;
     uint32_t last_vertex_buf1_ = 0, last_vertex_buf2_ = 0, last_index_buffer_ = 0;
-    uint32_t instances_buf_, instances_tbo_[FrameSyncWindow],
-             skin_transforms_buf_, skin_transforms_tbo_,
-             skin_regions_buf_, skin_regions_tbo_,
-             vege_regions_buf_, vege_regions_tbo_;
+    uint32_t
+        instances_buf_, instances_tbo_[FrameSyncWindow],
+        skin_transforms_buf_, skin_transforms_tbo_,
+        skin_regions_buf_, skin_regions_tbo_;
     uint32_t lights_buf_, lights_tbo_[FrameSyncWindow],
              decals_buf_, decals_tbo_[FrameSyncWindow],
              cells_buf_, cells_tbo_[FrameSyncWindow],
@@ -137,7 +138,7 @@ private:
 
     uint32_t nodes_buf_ = 0, nodes_tbo_ = 0;
 
-    enum { TimeDrawStart, TimeSkinningStart, TimeVegetationStart, TimeShadowMapStart, TimeDepthOpaqueStart,
+    enum { TimeDrawStart, TimeSkinningStart, TimeShadowMapStart, TimeDepthOpaqueStart,
            TimeAOPassStart, TimeOpaqueStart, TimeTranspStart, TimeReflStart, TimeBlurStart,
            TimeBlitStart, TimeDrawEnd, TimersCount };
     uint32_t queries_[FrameSyncWindow][TimersCount];

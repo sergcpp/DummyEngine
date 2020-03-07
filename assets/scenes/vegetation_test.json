@@ -1,5 +1,5 @@
 {
-	"name" : "vegetation_test", 
+	"name" : "vegetation_test2", 
 	"environment" : {
 		"sun_dir" : [
 			0.57735, 
@@ -17,10 +17,10 @@
 	}, 
 	"objects" : [
 		{
-			"name" : "palm",
+			"name" : "leaf_tree",
 			"transform" : {
 				"pos" : [
-					10, 
+					0,
 					0, 
 					0
 				], 
@@ -31,19 +31,18 @@
 				]
 			}, 
 			"drawable" : {
-				"mesh_file" : "vegetation/palm.mesh",
-				"visible_to_probes" : false,
-				"anims" : [
-					"vegetation/palm_idle.anim"
-				]
+				"mesh_file" : "vegetation/leaf_tree.mesh", 
+				"visible_to_probes" : false
 			},
-			"anim_state" : {}
+			"veg_state" : {
+
+			}
 		},
 		{
-			"name" : "palm_new",
+			"name" : "palm_tree",
 			"transform" : {
 				"pos" : [
-					0, 
+					500,
 					0, 
 					0
 				], 
@@ -54,7 +53,7 @@
 				]
 			}, 
 			"drawable" : {
-				"mesh_file" : "vegetation/palm_new.mesh",
+				"mesh_file" : "vegetation/palm_tree.mesh",
 				"visible_to_probes" : false
 			}
 		},
@@ -72,7 +71,9 @@
 				]
 			}, 
 			"drawable" : {
-				"mesh_file" : "ground_plane_200x200.mesh"
+				"mesh_file" : "ground_plane_200x200.mesh",
+				"material_override" : [ "checker_glossy.txt" ],
+				"material_override2" : [ "_wind_debug.txt" ]
 			}
 		}, 
 		{
@@ -94,27 +95,27 @@
 					0, 
 					0
 				], 
-				"radius" : 100, 
+				"radius" : 150, 
 				"sh_coeffs" : [
 					[
-						0.228231, 
-						0.242044, 
-						0.266643
+						0.272625, 
+						0.312099, 
+						0.367528
 					], 
 					[
-						-0.16587, 
-						-0.155331, 
-						-0.0989288
+						-0.173, 
+						-0.156751, 
+						-0.115521
 					], 
 					[
-						0.00900161, 
-						0.0115595, 
-						0.0206241
+						-0.00510703, 
+						-0.00450024, 
+						-0.00095875
 					], 
 					[
-						-0.0215879, 
-						-0.0255891, 
-						-0.0395529
+						-0.0153097, 
+						-0.0176838, 
+						-0.0191808
 					]
 				]
 			}
@@ -122,16 +123,12 @@
 	], 
 	"camera" : {
 		"view_origin" : [
-			5, 
-			10, 
-			35
+			2.294942, 7.756365, 13.617617
 		], 
 		"view_dir" : [
-			0, 
-			0, 
-			-1
+			0.012581, -0.138751, -0.977384
 		], 
-		"fwd_speed" : 0.25, 
+		"fwd_speed" : 0.75, 
 		"fov" : 45, 
 		"max_exposure" : 1000
 	}

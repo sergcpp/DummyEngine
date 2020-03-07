@@ -138,13 +138,6 @@ struct SkinRegion {
 };
 static_assert(sizeof(SkinRegion) == 12, "!");
 
-struct VegeRegion {
-    uint32_t in_vtx_offset, out_vtx_offset;
-    uint32_t wind_vec_packed;
-    uint16_t wind_phase, vertex_count;
-};
-static_assert(sizeof(VegeRegion) == 16, "!");
-
 enum eRenderFlags : uint32_t {
     EnableZFill     = (1u << 0u),
     EnableCulling   = (1u << 1u),
@@ -190,7 +183,6 @@ struct BackendInfo {
     uint64_t gpu_start_timepoint_us = 0,
              gpu_end_timepoint_us = 0;
     uint32_t skinning_time_us = 0,
-             vegetation_time_us = 0,
              shadow_time_us = 0,
              depth_opaque_pass_time_us = 0,
              ao_pass_time_us = 0,

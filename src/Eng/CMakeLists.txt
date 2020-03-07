@@ -145,7 +145,6 @@ set(SHADERS_SOURCES Renderer/Shaders/_vs_common.glsl
                     Renderer/Shaders/shadow_vege.vert.glsl
                     Renderer/Shaders/shadow.frag.glsl
                     Renderer/Shaders/skinning.comp.glsl
-                    Renderer/Shaders/vegetation.comp.glsl
                     Renderer/Shaders/skydome.frag.glsl
                     Renderer/Shaders/skydome.vert.glsl)
 

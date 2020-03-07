@@ -268,7 +268,3 @@ static const char probe_fs[] =
 static const char skinning_cs[] =
 #include "Shaders/skinning.comp.glsl"
 ;
-
-static const char vegetation_cs[] =
-#include "Shaders/vegetation.comp.glsl"
-;

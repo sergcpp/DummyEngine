@@ -58,9 +58,7 @@ struct DrawList {
     DynArray<uint32_t>          main_batch_indices;
     DynArray<SkinTransform>     skin_transforms;
     DynArray<SkinRegion>        skin_regions;
-    DynArray<VegeRegion>        vege_regions;
     uint32_t                    skin_vertices_count = 0;
-    uint32_t                    vege_vertices_count = 0;
     DynArray<LightSourceItem>   light_sources;
     DynArray<DecalItem>         decals;
     DynArray<ProbeItem>         probes;
