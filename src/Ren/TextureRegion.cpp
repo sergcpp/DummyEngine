@@ -25,6 +25,8 @@ Ren::TextureRegion &Ren::TextureRegion::operator=(TextureRegion &&rhs) noexcept 
     atlas_ = rhs.atlas_;
     rhs.atlas_ = nullptr;
     memcpy(texture_pos_, rhs.texture_pos_, 3 * sizeof(int));
+    params_ = rhs.params_;
+    ready_ = rhs.ready_;
 
     RefCounter::operator=(std::move(rhs));
     return (*this);
