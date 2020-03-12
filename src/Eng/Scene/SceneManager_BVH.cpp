@@ -114,12 +114,13 @@ void SceneManager::RebuildBVH() {
     s.node_traversal_cost = 0.0f;
 
     while (!prim_lists.empty()) {
-        split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices.data(), (uint32_t)prim_lists.back().indices.size(),
-                                                      prim_lists.back().min, prim_lists.back().max, root_min, root_max, s);
+        split_data_t split_data = SplitPrimitives_SAH(
+            &primitives[0], prim_lists.back().indices.data(), (uint32_t)prim_lists.back().indices.size(),
+            prim_lists.back().min, prim_lists.back().max, root_min, root_max, s);
         prim_lists.pop_back();
 
-        uint32_t leaf_index = (uint32_t)scene_data_.nodes.size(),
-                 parent_index = 0xffffffff;
+        const uint32_t leaf_index = (uint32_t)scene_data_.nodes.size();
+        uint32_t parent_index = 0xffffffff;
 
         if (leaf_index) {
             // skip bound checks in debug mode
@@ -263,12 +264,13 @@ void SceneManager::UpdateObjects() {
             if (tr.node_index != 0xffffffff) {
                 const bvh_node_t &node = nodes[tr.node_index];
 
-                bool is_fully_inside = tr.bbox_min_ws[0] >= node.bbox_min[0] &&
-                                       tr.bbox_min_ws[1] >= node.bbox_min[1] &&
-                                       tr.bbox_min_ws[2] >= node.bbox_min[2] &&
-                                       tr.bbox_max_ws[0] <= node.bbox_max[0] &&
-                                       tr.bbox_max_ws[1] <= node.bbox_max[1] &&
-                                       tr.bbox_max_ws[2] <= node.bbox_max[2];
+                const bool is_fully_inside =
+                    tr.bbox_min_ws[0] >= node.bbox_min[0] &&
+                    tr.bbox_min_ws[1] >= node.bbox_min[1] &&
+                    tr.bbox_min_ws[2] >= node.bbox_min[2] &&
+                    tr.bbox_max_ws[0] <= node.bbox_max[0] &&
+                    tr.bbox_max_ws[1] <= node.bbox_max[1] &&
+                    tr.bbox_max_ws[2] <= node.bbox_max[2];
 
                 if (is_fully_inside) {
                     // Update is not needed (object is inside of node bounds)

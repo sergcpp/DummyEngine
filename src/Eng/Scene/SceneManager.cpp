@@ -734,7 +734,8 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp, Ren
         int index = 0;
         for (const JsElement &js_mat_el : js_materials.elements) {
             if (js_mat_el.type() == JS_TYPE_STRING) {
-                dr->mesh->group(index).mat = OnLoadMaterial(js_mat_el.as_str().val.c_str());
+                Ren::TriGroup &grp = dr->mesh->group(index);
+                grp.mat = OnLoadMaterial(js_mat_el.as_str().val.c_str());
             }
             index++;
         }
@@ -1050,19 +1051,19 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
     Ren::eTexLoadStatus status;
     Ren::Texture2DRef ret = ctx_.LoadTexture2D(name_buf, nullptr, 0, {}, &status);
     if (status == Ren::TexCreatedDefault) {
-        const char* tex_name_persistent = ret->name().c_str();
-
         scene_texture_load_counter_++;
 
         std::weak_ptr<SceneManager> _self = shared_from_this();
-        Sys::LoadAssetComplete(tex_name_persistent,
-        [_self, tex_name_persistent, flags](void *data, int size) {
+        Sys::LoadAssetComplete(ret->name().c_str(),
+        [_self, ret, flags](void *data, int size) {
             std::shared_ptr<SceneManager> self = _self.lock();
             if (!self) return;
 
-            self->ctx_.ProcessSingleTask([&self, tex_name_persistent, data, size, flags]() {
+            self->ctx_.ProcessSingleTask([&self, ret, data, size, flags]() mutable {
+                const char *tex_name = ret->name().c_str();
+
                 Ren::Texture2DParams p;
-                if (strstr(tex_name_persistent, ".tga_rgbe")) {
+                if (strstr(tex_name, ".tga_rgbe")) {
                     p.filter = Ren::BilinearNoMipmap;
                     p.repeat = Ren::ClampToEdge;
                 } else {
@@ -1070,16 +1071,18 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
                     p.repeat = Ren::Repeat;
                 }
                 p.flags = flags;
-                (void)self->ctx_.LoadTexture2D(tex_name_persistent, data, size, p, nullptr);
-                int count = --(self->scene_texture_load_counter_);
-                self->ctx_.log()->Info("Texture %s loaded (%i left)", tex_name_persistent, count);
+
+                ret->Init(data, size, p, nullptr, self->ctx_.log());
+
+                const int count = --(self->scene_texture_load_counter_);
+                self->ctx_.log()->Info("Texture %s loaded (%i left)", tex_name, count);
                 self.reset();
             });
-        }, [_self, tex_name_persistent]() {
+        }, [_self, ret]() {
             std::shared_ptr<SceneManager> self = _self.lock();
             if (!self) return;
 
-            self->ctx_.log()->Error("Error loading %s", tex_name_persistent);
+            self->ctx_.log()->Error("Error loading %s", ret->name().c_str());
         });
     }
 
