@@ -20,25 +20,26 @@
 #define REN_MAT_TEX0_SLOT   0
 #define REN_MAT_TEX1_SLOT   1
 #define REN_MAT_TEX2_SLOT   2
-#define REN_SHAD_TEX_SLOT   3
-#define REN_LMAP_SH_SLOT    4
-#define REN_DECAL_TEX_SLOT  8
-#define REN_SSAO_TEX_SLOT   9
-#define REN_BRDF_TEX_SLOT   10
-#define REN_LIGHT_BUF_SLOT  11
-#define REN_DECAL_BUF_SLOT  12
-#define REN_CELLS_BUF_SLOT  13
-#define REN_ITEMS_BUF_SLOT  14
-#define REN_INST_BUF_SLOT   15
-#define REN_ENV_TEX_SLOT    16
-#define REN_MOMENTS0_TEX_SLOT 4 // shares slot with lightmap 0
-#define REN_MOMENTS1_TEX_SLOT 5 // shares slot with lightmap 1
-#define REN_MOMENTS2_TEX_SLOT 6 // shares slot with lightmap 2
-#define REN_MOMENTS0_MS_TEX_SLOT 7 // shares slot with lightmap 3
-#define REN_MOMENTS1_MS_TEX_SLOT 9 // shares slot with ssao texture
-#define REN_MOMENTS2_MS_TEX_SLOT 17
-#define REN_NOISE_TEX_SLOT 17
-#define REN_CONE_RT_LUT_SLOT 18
+#define REN_MAT_TEX3_SLOT   3
+#define REN_SHAD_TEX_SLOT   4
+#define REN_LMAP_SH_SLOT    5
+#define REN_DECAL_TEX_SLOT  9
+#define REN_SSAO_TEX_SLOT   10
+#define REN_BRDF_TEX_SLOT   11
+#define REN_LIGHT_BUF_SLOT  12
+#define REN_DECAL_BUF_SLOT  13
+#define REN_CELLS_BUF_SLOT  14
+#define REN_ITEMS_BUF_SLOT  15
+#define REN_INST_BUF_SLOT   16
+#define REN_ENV_TEX_SLOT    17
+#define REN_MOMENTS0_TEX_SLOT 5 // shares slot with lightmap 0
+#define REN_MOMENTS1_TEX_SLOT 6 // shares slot with lightmap 1
+#define REN_MOMENTS2_TEX_SLOT 7 // shares slot with lightmap 2
+#define REN_MOMENTS0_MS_TEX_SLOT 8 // shares slot with lightmap 3
+#define REN_MOMENTS1_MS_TEX_SLOT 10 // shares slot with ssao texture
+#define REN_MOMENTS2_MS_TEX_SLOT 18
+#define REN_NOISE_TEX_SLOT 18
+#define REN_CONE_RT_LUT_SLOT 19
 
 #define REN_ALPHATEST_TEX_SLOT 0
 

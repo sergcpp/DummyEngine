@@ -1,0 +1,134 @@
+{
+	"name" : "sss_test", 
+	"environment" : {
+		"sun_dir" : [
+			-0.707, 
+			-0.707, 
+			-0.0
+		], 
+		"sun_col" : [
+			5, 
+			5, 
+			4.5
+		], 
+		"sun_softness" : 0.1, 
+		"env_map" : "env/clear", 
+		"env_map_pt" : "env/noon_grass_2k.hdr"
+	}, 
+	"objects" : [
+		{
+			"transform" : {
+				"pos" : [
+					-0.15,
+					0,
+					0
+				], 
+				"rot" : [
+					0,
+					0,
+					0
+				]
+			}, 
+			"drawable" : {
+				"mesh_name" : "head_diffuse", 
+				"mesh_file" : "test_head.mesh",
+				"material_override" : [ "grey.txt" ],
+				"visible_to_probes" : false
+			}
+		},
+		{
+			"transform" : {
+				"pos" : [
+					0.15,
+					0,
+					0
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"drawable" : {
+				"mesh_name" : "head_sss", 
+				"mesh_file" : "test_head.mesh",
+				"material_override" : [ "grey_sss.txt" ],
+				"visible_to_probes" : false
+			}
+		},
+		{
+			"transform" : {
+				"pos" : [
+					0, 
+					0, 
+					0
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"drawable" : {
+				"mesh_file" : "ground_plane_200x200.mesh",
+				"material_override" : [ "checker_glossy.txt" ],
+				"material_override2" : [ "_wind_debug.txt" ]
+			}
+		}, 
+		{
+			"transform" : {
+				"pos" : [
+					0, 
+					10, 
+					0
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"probe" : {
+				"offset" : [
+					0, 
+					0, 
+					0
+				], 
+				"radius" : 150, 
+				"sh_coeffs" : [
+					[
+						0.0, 
+						0.0, 
+						0.0
+					], 
+					[
+						-0.0, 
+						-0.0, 
+						-0.0
+					], 
+					[
+						-0.0, 
+						-0.0, 
+						-0.0
+					], 
+					[
+						-0.0, 
+						-0.0, 
+						-0.0
+					]
+				]
+			}
+		}
+	], 
+	"camera" : {
+		"view_origin" : [
+			0.0, 0.4, 0.5
+		], 
+		"view_dir" : [
+			0.0, -1.0, -3.0
+		], 
+		"fwd_speed" : 0.005, 
+		"fov" : 45, 
+		"max_exposure" : 1000
+	}
+}

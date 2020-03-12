@@ -163,10 +163,10 @@ void SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file, co
                             const int order = (v.type == STBTT_vline) ? 1 : ((v.type == STBTT_vcurve) ? 2 : 3);
 
                             shapes.back().push_back({
-                                                            order, false /* is_closed */, false /* is_hard */,
-                                                            p0, p1,
-                                                            c0, c1
-                                                    });
+                                order, false /* is_closed */, false /* is_hard */,
+                                p0, p1,
+                                c0, c1
+                            });
                         }
 
                         cur_p = Vec2i{ v.x, v.y };
@@ -300,13 +300,13 @@ void SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file, co
                         for (int j = 0; j < 3; j++) {
                             uint8_t out_val = 0;
                             if (min_result[j].sdist != std::numeric_limits<double>::max()) {
-                                min_result[j].pseudodist = Clamp(0.5 + (min_result[j].pseudodist / (2 * sdf_radius_px)), 0.0, 1.0);
+                                min_result[j].pseudodist = Clamp(0.5 + (min_result[j].pseudodist / (2.0 * sdf_radius_px)), 0.0, 1.0);
                                 out_val = (uint8_t)std::max(std::min(int(255 * min_result[j].pseudodist), 255), 0);
                             }
                             out_pixel[j] = out_val;
                         }
 
-                        min_sdf_sdist = Clamp(0.5 + (min_sdf_sdist / (2 * sdf_radius_px)), 0.0, 1.0);
+                        min_sdf_sdist = Clamp(0.5 + (min_sdf_sdist / (2.0 * sdf_radius_px)), 0.0, 1.0);
                         out_pixel[3] = (uint8_t)std::max(std::min(int(255 * min_sdf_sdist), 255), 0);
                     }
                 }

@@ -25,7 +25,7 @@ namespace GSDrawTestInternal {
     const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
         //"skin_test.json";
-        "living_room_gumroad.json";
+        //"living_room_gumroad.json";
         //"bistro.json";
         //"pbr_test.json";
         //"zenith.json";
@@ -34,6 +34,7 @@ namespace GSDrawTestInternal {
         //"test_decals.json";
         //"courtroom.json";
         //"lmap_test.json";
+        "sss_test.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {
@@ -508,12 +509,11 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
             side_press_speed_ = 0;
         } else if (evt.key_code == KeyRight || (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = 0;
-        } else if (evt.key_code == KeySpace) {
-            wind_vector_goal_ = Ren::Vec3f{ 0.0f };
         } else {
             input_processed = false;
         }
     }
+    break;
     case RawInputEvent::EvResize:
         break;
     default:

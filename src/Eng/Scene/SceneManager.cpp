@@ -1025,6 +1025,7 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
     }
 
     Ren::eTexLoadStatus status;
+
     Ren::Texture2DRef ret = ctx_.LoadTexture2D(name_buf, nullptr, 0, p, &status);
     if (status == Ren::eTexLoadStatus::TexCreatedDefault) {
         requested_textures_.emplace_back(ret);

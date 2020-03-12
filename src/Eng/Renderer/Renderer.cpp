@@ -230,8 +230,8 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
         assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
     }
 
-    {
-        /*const int res = 128;
+    /*{
+        const int res = 128;
 
         // taken from old GPU-Gems article
         const float gauss_variances[] = {
@@ -250,8 +250,8 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
         const std::unique_ptr<uint8_t[]> img_data = Generate_SSSProfile_LUT(res, 6,
         gauss_variances, diffusion_weights);
         SceneManagerInternal::WriteImage(&img_data[0], res, res, 4, false,
-        "assets/textures/skin_diffusion.uncompressed.png");*/
-    }
+        "assets/textures/skin_diffusion.uncompressed.png");
+    }*/
 
     // Compile built-in shaders etc.
     InitRendererInternal();

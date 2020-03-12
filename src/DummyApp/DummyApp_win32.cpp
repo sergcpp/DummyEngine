@@ -405,7 +405,7 @@ int DummyApp::Run(int argc, char *argv[]) {
 #ifndef RELEASE_FINAL
     __itt_thread_set_name("Main Thread");
 
-    __itt_domain* pFrameDomain = __itt_domain_create("Frame domain");
+    __itt_domain *pFrameDomain = __itt_domain_create("Frame domain");
     pFrameDomain->flags = 1;
 #endif
 
