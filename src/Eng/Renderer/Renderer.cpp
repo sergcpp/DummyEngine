@@ -63,94 +63,6 @@ namespace RendererInternal {
         Ren::Vec2f{ 0.4843750000f, 0.9135804180f }, Ren::Vec2f{ 0.9843750000f, 0.0617284030f }
     };
 
-    float RadicalInverse_VdC(uint32_t bits) {
-        bits = (bits << 16u) | (bits >> 16u);
-        bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
-        bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
-        bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
-        bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-
-        return float(bits) * 2.3283064365386963e-10f; // / 0x100000000
-    }
-
-    Ren::Vec2f Hammersley2D(int i, int N) {
-        return Ren::Vec2f{ float(i) / float(N), RadicalInverse_VdC((uint32_t)i) };
-    }
-
-    Ren::Vec3f ImportanceSampleGGX(const Ren::Vec2f& Xi, float roughness, const Ren::Vec3f& N) {
-        const float a = roughness * roughness;
-
-        const float Phi = 2.0f * Ren::Pi<float>() * Xi[0];
-        const float CosTheta = std::sqrt((1.0f - Xi[1]) / (1.0f + (a * a - 1.0f) * Xi[1]));
-        const float SinTheta = std::sqrt(1.0f - CosTheta * CosTheta);
-
-        auto H = Ren::Vec3f{ SinTheta * std::cos(Phi), SinTheta * std::sin(Phi), CosTheta };
-
-        Ren::Vec3f up = std::abs(N[1]) < 0.999f ? Ren::Vec3f{ 0.0, 1.0, 0.0 } : Ren::Vec3f{ 1.0, 0.0, 0.0 };
-        Ren::Vec3f TangentX = Ren::Normalize(Ren::Cross(up, N));
-        Ren::Vec3f TangentY = Ren::Cross(N, TangentX);
-        // Tangent to world space
-        return TangentX * H[0] + TangentY * H[1] + N * H[2];
-    }
-
-    float GeometrySchlickGGX(float NdotV, float k) {
-        const float nom = NdotV;
-        const float denom = NdotV * (1.0f - k) + k;
-
-        return nom / denom;
-    }
-
-    float GeometrySmith(const Ren::Vec3f& N, const Ren::Vec3f& V, const Ren::Vec3f& L, float k) {
-        const float NdotV = std::max(Ren::Dot(N, V), 0.0f);
-        const float NdotL = std::max(Ren::Dot(N, L), 0.0f);
-        const float ggx1 = GeometrySchlickGGX(NdotV, k);
-        const float ggx2 = GeometrySchlickGGX(NdotL, k);
-
-        return ggx1 * ggx2;
-    }
-
-    float G1V_Epic(float roughness, float n_dot_v) {
-        const float k = roughness * roughness;
-        return n_dot_v / (n_dot_v * (1.0f - k) + k);
-    }
-
-    float G_Smith(float roughness, float n_dot_v, float n_dot_l) {
-        return G1V_Epic(roughness, n_dot_v) * G1V_Epic(roughness, n_dot_v);
-    }
-
-    Ren::Vec2f IntegrateBRDF(float NdotV, float roughness) {
-        const auto V = Ren::Vec3f{
-            std::sqrt(1.0f - NdotV * NdotV), 0.0f, NdotV
-        };
-
-        float A = 0.0f;
-        float B = 0.0f;
-
-        const auto N = Ren::Vec3f{ 0.0f, 0.0f, 1.0f };
-
-        const int SampleCount = 1024;
-        for (int i = 0; i < SampleCount; ++i) {
-            const Ren::Vec2f Xi = Hammersley2D(i, SampleCount);
-            const Ren::Vec3f H = ImportanceSampleGGX(Xi, roughness, N);
-            const Ren::Vec3f L = Ren::Normalize(2.0f * Ren::Dot(V, H) * H - V);
-
-            const float NdotL = std::max(L[2], 0.0f);
-            const float NdotH = std::max(H[2], 0.0f);
-            const float VdotH = std::max(Ren::Dot(V, H), 0.0f);
-
-            if (NdotL > 0.0f) {
-                const float G = G1V_Epic(roughness, NdotV);
-                const float G_Vis = (G * VdotH) / (NdotH * NdotV);
-                const float Fc = std::pow(1.0f - VdotH, 5.0f);
-
-                A += (1.0f - Fc) * G_Vis;
-                B += Fc * G_Vis;
-            }
-        }
-
-        return Ren::Vec2f{ A, B } / float(SampleCount);
-    }
-
 #include "__brdf_lut.inl"
 #include "__noise.inl"
 }
@@ -222,32 +134,9 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
     rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", &HaltonSeq23[0], sizeof(HaltonSeq23), p, &status);
     assert(status == Ren::TexCreatedFromData);
 
-    {   
-#if 0
-        const int res = 256;
-        std::string str;
-
-        str += "static const uint32_t __brdf_lut_res = " + std::to_string(res) + ";\n";
-        str += "static const uint16_t __brdf_lut[] = {\n";
-
-        for (int j = 0; j < res; j++) {
-            str += '\t';
-            for (int i = 0; i < res; i++) {
-                Ren::Vec2f val = IntegrateBRDF((float(i) + 0.5f) / res, (float(j) + 0.5f) / res);
-
-                uint16_t r = (uint16_t)std::min(std::max(int(val[0] * 65535), 0), 65535);
-                uint16_t g = (uint16_t)std::min(std::max(int(val[1] * 65535), 0), 65535);
-
-                //uint8_t r = (uint8_t)std::min(std::max(int(val[0] * 255), 0), 255);
-                //uint8_t g = (uint8_t)std::min(std::max(int(val[1] * 255), 0), 255);
-
-                str += std::to_string(r) + ", " + std::to_string(g) + ", ";
-            }
-            str += '\n';
-        }
-
-        str += "};\n";
-#endif
+    {
+        //std::string c_header;
+        //const std::unique_ptr<uint16_t[]> img_data_rg16 = Generate_BRDF_LUT(256, c_header);
 
         p.w = p.h = RendererInternal::__brdf_lut_res;
         p.format = Ren::RawRG16U;
@@ -257,74 +146,10 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
     }
 
     {
-#if 0
-        const int res = 128;
-
-        std::unique_ptr<int8_t[]> img_data(new int8_t[res * res * 4]);
-
-        for (int y = 0; y < res; y++) {
-            for (int x = 0; x < res; x++) {
-                const float norm_x = float(x) / float(res), norm_y = float(y) / float(res);
-
-                for (int i = 0; i < 4; i++) {
-                    const float scale = 8.0f;
-                    auto coord = Ren::Vec4f{ norm_x * scale, i * 1.0f, norm_y * scale, 1.0f };
-
-                    float fval = 0.0f;
-
-#if 1
-                    fval += 0.33f * (0.5f + 0.5f * Ren::PerlinNoise(0.25f * coord, Ren::Vec4f{ 0.25f * scale }));
-                    fval += 0.66f * (0.5f + 0.5f * Ren::PerlinNoise(0.5f * coord, Ren::Vec4f{ 0.25f * scale }));
-                    fval += 1.0f * (0.5f + 0.5f * Ren::PerlinNoise(coord, Ren::Vec4f{ scale }));
-                    fval += 0.66f * (0.5f + 0.5f * Ren::PerlinNoise(2.0f * coord, Ren::Vec4f{ 2.0f * scale }));
-                    fval += 0.33f * (0.5f + 0.5f * Ren::PerlinNoise(4.0f * coord, Ren::Vec4f{ 4.0f * scale }));
-
-                    fval /= (1.0f + 2.0f * 0.66f + 2.0f * 0.33f);
-#elif 0
-                    fval += 0.25f * (0.5f + 0.5f * Ren::PerlinNoise(0.125f * coord, Ren::Vec4f{ 0.125f * scale }));
-                    fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise(0.25f * coord, Ren::Vec4f{ 0.25f * scale }));
-                    fval += 0.75f * (0.5f + 0.5f * Ren::PerlinNoise(0.5f * coord, Ren::Vec4f{ 0.5f * scale }));
-                    fval += 1.0f * (0.5f + 0.5f * Ren::PerlinNoise(coord, Ren::Vec4f{ scale }));
-                    fval += 0.75f * (0.5f + 0.5f * Ren::PerlinNoise(2.0f * coord, Ren::Vec4f{ 2.0f * scale }));
-                    fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise(4.0f * coord, Ren::Vec4f{ 4.0f * scale }));
-                    fval += 0.25f * (0.5f + 0.5f * Ren::PerlinNoise(8.0f * coord, Ren::Vec4f{ 8.0f * scale }));
-
-                    fval /= (1.0f + 2.0f * 0.75f + 2.0f * 0.5f + 2.0f * 0.25f);
-#else
-                    fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise(0.5f * coord, Ren::Vec4f{ 0.5f * scale }));
-                    fval += 1.0f * (0.5f + 0.5f * Ren::PerlinNoise(coord, Ren::Vec4f{ scale }));
-                    fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise(2.0f * coord, Ren::Vec4f{ 2.0f * scale }));
-
-                    fval /= (1.0f + 2.0f * 0.5f);
-#endif
-                    img_data[4 * (y * res + x) + i] = (int8_t)std::min(std::max(int((2.0f * fval - 1.0f) * 127.0f), -128), 127);
-                }
-            }
-        }
-
-#if 1
-        std::string str;
-
-        str += "static const uint32_t __noise_res = " + std::to_string(res) + ";\n";
-        str += "static const int8_t __noise[] = {\n";
-
-        for (int y = 0; y < res; y++) {
-            str += '\t';
-            for (int x = 0; x < res; x++) {
-                str +=
-                    std::to_string(img_data[4 * (y * res + x) + 0]) + ", " +
-                    std::to_string(img_data[4 * (y * res + x) + 1]) + ", " +
-                    std::to_string(img_data[4 * (y * res + x) + 2]) + ", " +
-                    std::to_string(img_data[4 * (y * res + x) + 3]) + ", ";
-            }
-            str += '\n';
-        }
-
-        str += "};\n";
-#endif
-
-        SceneManagerInternal::WriteImage((const uint8_t*)&img_data[0], res, res, 4, "test1.png");
-#endif
+        /*const int res = 128;
+        std::string c_header;
+        const std::unique_ptr<int8_t[]> img_data = Generate_PeriodicPerlin(res, c_header);
+        SceneManagerInternal::WriteImage((const uint8_t*)&img_data[0], res, res, 4, "test1.png");*/
 
         p.w = p.h = __noise_res;
         p.format = Ren::RawRGBA8888Snorm;
@@ -332,6 +157,27 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
         p.repeat = Ren::Repeat;
         noise_tex_ = ctx_.LoadTexture2D("noise", &__noise[0], __noise_res * __noise_res * 4, p, &status);
         assert(status == Ren::TexCreatedFromData);
+    }
+
+    {
+        const int res = 128;
+
+        // taken from old GPU-Gems article
+        const float gauss_variances[] = {
+            0.0064f, 0.0484f, 0.187f, 0.567f, 1.99f, 7.41f
+        };
+
+        const Ren::Vec3f diffusion_weights[] = {
+            Ren::Vec3f{ 0.233f, 0.455f, 0.649f },
+            Ren::Vec3f{ 0.100f, 0.336f, 0.344f },
+            Ren::Vec3f{ 0.118f, 0.198f, 0.0f },
+            Ren::Vec3f{ 0.113f, 0.007f, 0.007f },
+            Ren::Vec3f{ 0.358f, 0.004f, 0.0f },
+            Ren::Vec3f{ 0.078f, 0.0f, 0.0f }
+        };
+
+        const std::unique_ptr<uint8_t[]> img_data = Generate_SSSProfile_LUT(res, 6, gauss_variances, diffusion_weights);
+        SceneManagerInternal::WriteImage(&img_data[0], res, res, 4, "assets/textures/skin_diffusion.uncompressed.png");
     }
 
     // Compile built-in shaders etc.

@@ -6,6 +6,7 @@
 #include "Renderer/Renderer.cpp"
 #include "Renderer/Renderer_DrawList.cpp"
 #include "Renderer/Renderer_Frontend.cpp"
+#include "Renderer/Renderer_Gen.cpp"
 
 #if defined(USE_GL_RENDER)
 #include "Renderer/FrameBufGL.cpp"

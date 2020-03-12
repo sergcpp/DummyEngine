@@ -168,4 +168,9 @@ private:
     static void GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,
                                          const DecalItem *decals, int decals_count, const BBox *decals_boxes, const ProbeItem *probes, int probes_count,
                                          const LightSource * const *litem_to_lsource, CellData *cells, ItemData *items, std::atomic_int &items_count);
+
+    // Generate auxiliary textures
+    static std::unique_ptr<uint16_t[]> Generate_BRDF_LUT(int res, std::string &out_c_header);
+    static std::unique_ptr<int8_t[]> Generate_PeriodicPerlin(int res, std::string& out_c_header);
+    static std::unique_ptr<uint8_t[]> Generate_SSSProfile_LUT(int res, int gauss_count, const float gauss_variances[], const Ren::Vec3f diffusion_weights[]);
 };
