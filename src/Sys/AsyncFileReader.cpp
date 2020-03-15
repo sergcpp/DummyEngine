@@ -2,11 +2,11 @@
 
 #include <algorithm>
 
-#ifdef _WIN32
+#if defined(_WIN32)
 #include <Windows.h>
 #undef min
 #undef max
-#else
+#elif defined(__linux__)
 #include <fcntl.h>
 #include <unistd.h>
 #include <linux/aio_abi.h>
@@ -14,7 +14,7 @@
 #endif
 
 namespace Sys {
-#ifdef _WIN32
+#if defined(_WIN32)
     class AsyncFileReaderImpl {
         static const int SimultaniousRequestsCount = 16;
 
@@ -113,7 +113,7 @@ namespace Sys {
             return true;
         }
     };
-#else
+#elif defined(__linux__)
     class AsyncFileReaderImpl {
         static const int SimultaniousRequestsCount = 16;
 
@@ -224,6 +224,13 @@ namespace Sys {
     };
 
     const int AsyncFileReaderImpl::SimultaniousRequestsCount;
+#else
+    class AsyncFileReaderImpl {
+    public:
+        bool ReadFile(const char *file_path, size_t max_size, void *out_data, size_t &out_size) {
+            return false;
+        }
+    };
 #endif
 }
 

@@ -12,7 +12,7 @@
     #include <ws2ipdef.h>
     #include <Ws2tcpip.h>
 #endif
-#if defined(__linux__) || defined(__EMSCRIPTEN__)
+#if defined(__linux__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)
     #include <fcntl.h>
     #include <netdb.h>
     #include <unistd.h>

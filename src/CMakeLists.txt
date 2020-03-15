@@ -37,7 +37,7 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
 
         # allow to inline some functions in debug mode
         #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-functions-called-once -finline-functions")
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-limit=10")
+        #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-limit=10")
 
         if(APPLE)
             set(SDL2_INCLUDE_DIRS /usr/local/include)

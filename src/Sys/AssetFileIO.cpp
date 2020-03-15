@@ -32,7 +32,7 @@ void Sys::LoadAssetComplete(const char *url, void *arg, onload_func onload, oner
 
         size_t file_size = 0;
         bool success = false;
-#if !defined(__ANDROID__)
+#if !defined(__ANDROID__) && !defined(__APPLE__)
         success = g_file_reader.ReadFile(url_str.c_str(), g_file_read_buffer_size, &g_file_read_buffer[0], file_size);
 #else
         AssetFile in_file(url_str.c_str(), AssetFile::FileIn);
@@ -53,7 +53,7 @@ void Sys::LoadAssetComplete(const char *url, void *arg, onload_func onload, oner
                 g_file_read_buffer_size *= 2;
             }
             g_file_read_buffer.reset(new char[g_file_read_buffer_size]);
-#if !defined(__ANDROID__)
+#if !defined(__ANDROID__) && !defined(__APPLE__)
             success = g_file_reader.ReadFile(url_str.c_str(), g_file_read_buffer_size, &g_file_read_buffer[0], file_size);
 #else
             success = in_file.Read(&g_file_read_buffer[0], file_size);

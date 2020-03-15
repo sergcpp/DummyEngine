@@ -470,7 +470,10 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #include <GL/GL.h>
 #else
 #if defined(__APPLE__)
-#include <OpenGL/gl.h>
+#define GL_SILENCE_DEPRECATION
+#include <OpenGL/gl3.h>
+#include <OpenGL/gl3ext.h>
+#define APIENTRY
 #else
 #include <GL/gl.h>
 #endif
@@ -524,9 +527,7 @@ typedef void (APIENTRY *PFNGLCOMPILESHADERPROC)(GLuint shader);
 typedef void (APIENTRY *PFNGLSPECIALIZESHADERPROC)(GLuint shader, const GLchar *pEntryPoint, GLuint numSpecializationConstants, const GLuint *pConstantIndex, const GLuint *pConstantValue);
 typedef void (APIENTRY *PFNGLGETSHADERIVPROC)(GLuint shader, GLenum pname, GLint *params);
 typedef void (APIENTRY *PFNGLGETSHADERINFOLOGPROC)(GLuint shader, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
-#endif
 
-#if !defined(__APPLE__)
 #if !defined(__linux__)
 typedef void (APIENTRY *PFNGLACTIVETEXTUREPROC)(GLenum texture);
 #endif
@@ -688,6 +689,7 @@ typedef void (APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
 
 typedef void (APIENTRY *PFNGLBLENDFUNCI)(GLuint buf, GLenum sfactor, GLenum dfactor);
 typedef void (APIENTRY *PFNGLCLEARBUFFERFV)(GLenum buffer, GLint drawbuffer, const GLfloat * value);
+#endif
 
 //
 // direct state access
@@ -748,7 +750,7 @@ typedef void (APIENTRY *PFNGLGENERATETEXTUREMIPMAPCOMPPROC)(GLenum target, GLuin
 typedef void (APIENTRY *PFNGLBINDTEXTUREUNITPROC)(GLuint unit, GLuint texture);
 typedef void (APIENTRY *PFNGLBINDTEXTUREUNITCOMPPROC)(GLenum target, GLuint unit, GLuint texture);
 
-#endif
+#if !defined(__APPLE__)
 
 #define glCreateProgram             ren_glCreateProgram
 #define glDeleteProgram             ren_glDeleteProgram
@@ -909,6 +911,7 @@ typedef void (APIENTRY *PFNGLBINDTEXTUREUNITCOMPPROC)(GLenum target, GLuint unit
 
 #define glBlendFunci                ren_glBlendFunci
 #define glClearBufferfv             ren_glClearBufferfv
+#endif
 
 //
 // direct state access
@@ -935,6 +938,7 @@ typedef void (APIENTRY *PFNGLBINDTEXTUREUNITCOMPPROC)(GLenum target, GLuint unit
 
 #define glBindTextureUnit           ren_glBindTextureUnit
 
+#if !defined(__APPLE__)
 EXTERN_FUNC PFNGLCREATEPROGRAMPROC              ren_glCreateProgram;
 EXTERN_FUNC PFNGLDELETEPROGRAMPROC              ren_glDeleteProgram;
 EXTERN_FUNC PFNGLUSEPROGRAMPROC                 ren_glUseProgram;
@@ -961,6 +965,7 @@ EXTERN_FUNC PFNGLCOMPILESHADERPROC              ren_glCompileShader;
 EXTERN_FUNC PFNGLSPECIALIZESHADERPROC           ren_glSpecializeShader;
 EXTERN_FUNC PFNGLGETSHADERIVPROC                ren_glGetShaderiv;
 EXTERN_FUNC PFNGLGETSHADERINFOLOGPROC           ren_glGetShaderInfoLog;
+
 #if !defined(__linux__)
 EXTERN_FUNC PFNGLACTIVETEXTUREPROC              ren_glActiveTexture;
 #endif
@@ -1095,6 +1100,7 @@ EXTERN_FUNC PFNGLDELETESYNCPROC                 ren_glDeleteSync;
 
 EXTERN_FUNC PFNGLBLENDFUNCI                     ren_glBlendFunci;
 EXTERN_FUNC PFNGLCLEARBUFFERFV                  ren_glClearBufferfv;
+#endif
 
 //
 // direct state access

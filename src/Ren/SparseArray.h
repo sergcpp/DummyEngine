@@ -82,8 +82,6 @@ public:
         uint8_t *old_ctrl = ctrl_;
         T *old_data = data_;
 
-        size_t __aaa = alignof(T);
-
         size_t mem_size = (new_capacity + 7) / 8;
         if (mem_size % alignof(T)) {
             mem_size += alignof(T)-(mem_size % alignof(T));

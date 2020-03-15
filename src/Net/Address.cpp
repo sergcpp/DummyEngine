@@ -6,7 +6,7 @@
 #ifdef _WIN32
     #include <winsock2.h>
 #endif
-#if defined(__linux__) || defined(EMSCRIPTEN)
+#if defined(__linux__) || defined(__APPLE__) || defined(EMSCRIPTEN)
     #include <fcntl.h>
     #include <netdb.h>
     #include <unistd.h>

@@ -83,7 +83,7 @@ void Ren::Context::Init(int w, int h, ILog *log) {
 
     log_->Info("===========================================");
 
-#if !defined(NDEBUG)
+#if !defined(NDEBUG) && !defined(__APPLE__)
     if (IsExtensionSupported("GL_KHR_debug") || IsExtensionSupported("ARB_debug_output") ||
         IsExtensionSupported("AMD_debug_output")) {
 

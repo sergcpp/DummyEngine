@@ -10,6 +10,8 @@
 #include <Windows.h>
 #elif defined(__linux__)
 #include <GL/glx.h>
+#elif defined(__APPLE__)
+//#include <OpenGL/OpenGL.h>
 #endif
 #endif
 
@@ -65,8 +67,11 @@ bool Ren::InitGLExtentions() {
     }
 #elif defined(__linux__)
 #define GetProcAddress(name) glXGetProcAddress((const GLubyte *) #name);
+#elif defined(__APPLE__)
+#define GetProcAddress(name) nullptr;
 #endif
 
+#if !defined(__APPLE__)
     ren_glCreateProgram             = (PFNGLCREATEPROGRAMPROC)GetProcAddress(glCreateProgram);
     ren_glDeleteProgram             = (PFNGLDELETEPROGRAMPROC)GetProcAddress(glDeleteProgram);
     ren_glUseProgram                = (PFNGLUSEPROGRAMPROC)GetProcAddress(glUseProgram);
@@ -230,12 +235,13 @@ bool Ren::InitGLExtentions() {
 
     ren_glBlendFunci                = (PFNGLBLENDFUNCI)GetProcAddress(glBlendFunci);
     ren_glClearBufferfv             = (PFNGLCLEARBUFFERFV)GetProcAddress(glClearBufferfv);
-
+#endif
+    
     //
     // direct state access
     //
 
-#ifndef GL_DISABLE_DSA
+#if !defined(GL_DISABLE_DSA) && !defined(__APPLE__)
     ren_glCreateTextures            = (PFNGLCREATETEXTURESPROC)GetProcAddress(glCreateTextures);
     if (!ren_glCreateTextures) ren_glCreateTextures = ren_glCreateTextures_emu;
 

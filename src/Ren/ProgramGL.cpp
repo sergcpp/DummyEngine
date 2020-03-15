@@ -299,7 +299,7 @@ void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *sta
 
     assert(!ready_);
 
-    GLuint program;
+    GLuint program = 0;
     if (shaders.vs_data && shaders.fs_data) {
         GLuint v_shader = LoadShader(GL_VERTEX_SHADER, shaders.vs_data, shaders.vs_data_size, log);
         if (!v_shader) {
@@ -422,7 +422,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const char *source, ILog *log) {
     return shader;
 }
 
-#ifndef __ANDROID__
+#if !defined(__ANDROID__) && !defined(__APPLE__)
 GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_size, ILog *log) {
     GLuint shader = glCreateShader(shader_type);
     if (shader) {
@@ -471,7 +471,6 @@ void Ren::ParseGLSLBindings(const char *shader_str, Binding *attr_bindings, int 
     const char *delims = " \r\n\t";
     const char *p = strstr(shader_str, "/*");
     const char *q = p ? strpbrk(p + 2, delims) : nullptr;
-    int pass = 0;
 
     Binding *cur_bind_target = nullptr;
     int *cur_bind_count = nullptr;

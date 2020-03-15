@@ -20,7 +20,7 @@ inline uint32_t _lua_hash(void const *v, uint32_t l) {
 inline uint32_t _str_hash(const char *s) {
     const uint32_t A = 54059;
     const uint32_t B = 76963;
-    const uint32_t C = 86969;
+    //const uint32_t C = 86969;
     const uint32_t FIRSTH = 37;
 
     uint32_t h = FIRSTH;
@@ -34,7 +34,7 @@ inline uint32_t _str_hash(const char *s) {
 inline uint32_t _str_hash_len(const char *s, size_t len) {
     const uint32_t A = 54059;
     const uint32_t B = 76963;
-    const uint32_t C = 86969;
+    //const uint32_t C = 86969;
     const uint32_t FIRSTH = 37;
 
     uint32_t h = FIRSTH;
