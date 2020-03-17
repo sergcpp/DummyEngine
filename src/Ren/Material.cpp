@@ -130,15 +130,15 @@ void Ren::Material::InitFromTXT(
 
                 std::string flag = std::string(_p, _q);
                 if (flag == "signed") {
-                    texture_flags |= Signed;
+                    texture_flags |= TexSigned;
                     p = _p;
                     q = _q;
                 } else if (flag == "srgb") {
-                    texture_flags |= SRGB;
+                    texture_flags |= TexSRGB;
                     p = _p;
                     q = _q;
                 } else if (flag == "norepeat") {
-                    texture_flags |= NoRepeat;
+                    texture_flags |= TexNoRepeat;
                     p = _p;
                     q = _q;
                 } else {

@@ -19,7 +19,12 @@ enum eTexFilter { NoFilter, Bilinear, Trilinear, BilinearNoMipmap, FilterCount }
 enum eTexRepeat { Repeat, ClampToEdge, ClampToBorder, WrapModesCount };
 
 enum eTexFlags {
-    TexNoOwnership = (1u << 0u)
+    TexNoOwnership = (1u << 0u),
+    TexSigned      = (1u << 1u),
+    TexSRGB        = (1u << 2u),
+    TexNoRepeat    = (1u << 3u),
+    TexUsageScene  = (1u << 4u),
+    TexUsageUI     = (1u << 5u)
 };
 
 struct Texture2DParams {
@@ -80,6 +85,9 @@ public:
         return tex_id_;
     }
     const Texture2DParams &params() const {
+        return params_;
+    }
+    Texture2DParams &params() {
         return params_;
     }
     bool ready() const {

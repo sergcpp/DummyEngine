@@ -153,7 +153,7 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
 void Ren::Texture2D::Init(const void *data, int size, const Texture2DParams &p, eTexLoadStatus *load_status, ILog *log) {
     if (!data) {
         const uint8_t cyan[3] = { 0, 255, 255 };
-        Texture2DParams _p;
+        Texture2DParams _p = p;
         _p.w = _p.h = 1;
         _p.format = RawRGB888;
         _p.filter = NoFilter;
@@ -185,7 +185,7 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6], const Texture2
     if (!data) {
         const unsigned char cyan[3] = { 0, 255, 255 };
         const void *_data[6] = { cyan, cyan, cyan, cyan, cyan, cyan };
-        Texture2DParams _p;
+        Texture2DParams _p = p;
         _p.w = _p.h = 1;
         _p.format = RawRGB888;
         _p.filter = NoFilter;
@@ -315,15 +315,15 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2D
     const int px_format = int(header.sPixelFormat.dwFourCC >> 24u) - '0';
     switch (px_format) {
     case 1:
-        internal_format = (p.flags & SRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT : GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+        internal_format = (p.flags & TexSRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT : GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
         block_size = 8;
         break;
     case 3:
-        internal_format = (p.flags & SRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT : GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+        internal_format = (p.flags & TexSRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT : GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
         block_size = 16;
         break;
     case 5:
-        internal_format = (p.flags & SRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+        internal_format = (p.flags & TexSRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         block_size = 16;
         break;
     default:
@@ -395,7 +395,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2D
 
     auto internal_format = (GLenum)header.gl_internal_format;
 
-    if ((p.flags & SRGB) &&
+    if ((p.flags & TexSRGB) &&
         internal_format >= GL_COMPRESSED_RGBA_ASTC_4x4_KHR && internal_format <= GL_COMPRESSED_RGBA_ASTC_12x12_KHR) {
         internal_format = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR + (internal_format - GL_COMPRESSED_RGBA_ASTC_4x4_KHR);
     }

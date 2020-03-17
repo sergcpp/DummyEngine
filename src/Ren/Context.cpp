@@ -115,6 +115,14 @@ Ren::Texture2DRef Ren::Context::LoadTextureCube(const char *name, const void *da
     return ref;
 }
 
+void Ren::Context::VisitTextures(uint32_t mask, const std::function<void(Texture2D &tex)> &callback) {
+    for (Texture2D &tex : textures_) {
+        if (tex.params().flags & mask) {
+            callback(tex);
+        }
+    }
+}    
+
 int Ren::Context::NumTexturesNotReady() {
     return (int)std::count_if(textures_.begin(), textures_.end(), [](const Texture2D &t) {
         return !t.ready();

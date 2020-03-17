@@ -292,6 +292,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 
 #define GL_DEPTH_COMPONENT16                0x81A5
 #define GL_DEPTH_COMPONENT24                0x81A6
+#define GL_DEPTH24_STENCIL8                 0x88F0
 
 #define GL_COLOR_ATTACHMENT0                0x8CE0
 #define GL_COLOR_ATTACHMENT1                0x8CE1
@@ -299,6 +300,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_COLOR_ATTACHMENT3                0x8CE3
 #define GL_DEPTH_ATTACHMENT                 0x8D00
 #define GL_STENCIL_ATTACHMENT               0x8D20
+#define GL_DEPTH_STENCIL_ATTACHMENT         0x821a
 
 #define GL_FRAMEBUFFER                      0x8D40
 #define GL_RENDERBUFFER                     0x8D41
