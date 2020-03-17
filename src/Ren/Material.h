@@ -22,7 +22,8 @@ enum eMaterialFlags {
 
 enum eTextureFlags {
     Signed  = (1u << 0u),
-    SRGB    = (1u << 1u)
+    SRGB    = (1u << 1u),
+    NoRepeat= (1u << 2u)
 };
 
 const int MaxMaterialProgramCount = 4;

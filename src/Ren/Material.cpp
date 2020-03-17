@@ -137,6 +137,10 @@ void Ren::Material::InitFromTXT(
                     texture_flags |= SRGB;
                     p = _p;
                     q = _q;
+                } else if (flag == "norepeat") {
+                    texture_flags |= NoRepeat;
+                    p = _p;
+                    q = _q;
                 } else {
                     break;
                 }
