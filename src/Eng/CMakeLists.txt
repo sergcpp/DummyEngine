@@ -76,6 +76,7 @@ set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/Renderer_DrawList.h
                         Renderer/Renderer_DrawList.cpp
                         Renderer/Renderer_Frontend.cpp
+                        Renderer/Renderer_Gen.cpp
                         Renderer/Renderer_Structs.h
                         Renderer/__brdf_lut.inl
                         Renderer/__noise.inl
