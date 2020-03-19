@@ -67,7 +67,7 @@ public:
         return name_;
     }
 
-    void ChangeFilter(eTexFilter f, eTexRepeat r);
+    void SetFilter(eTexFilter f, eTexRepeat r);
 };
 
 typedef StorageRef<Texture2D> Texture2DRef;

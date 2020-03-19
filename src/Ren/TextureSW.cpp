@@ -150,7 +150,7 @@ void Ren::Texture2D::InitFromTEXFile(const void *data, const Texture2DParams &p)
     }
 }
 
-void Ren::Texture2D::ChangeFilter(eTexFilter f, eTexRepeat r) {
+void Ren::Texture2D::SetFilter(eTexFilter f, eTexRepeat r) {
     ((void)f);
     ((void)r);
 }

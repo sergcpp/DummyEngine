@@ -27,6 +27,7 @@ struct Texture2DParams {
     eTexColorFormat     format = Undefined;
     eTexFilter          filter = NoFilter;
     eTexRepeat          repeat = Repeat;
+    float               lod_bias = 0.0f;
     uint32_t            flags = 0;
 };
 
@@ -88,7 +89,7 @@ public:
         return name_;
     }
 
-    void ChangeFilter(eTexFilter f, eTexRepeat r);
+    void SetFilter(eTexFilter f, eTexRepeat r, float lod_bias);
 
     void ReadTextureData(eTexColorFormat format, void *out_data) const;
 };

@@ -353,7 +353,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, int size, const Texture2D
         h = std::max(h / 2, 1);
     }
 
-    ChangeFilter(p.filter, p.repeat);
+    SetFilter(p.filter, p.repeat, p.lod_bias);
 }
 
 void Ren::Texture2D::InitFromPNGFile(const void *data, int size, const Texture2DParams &p, ILog *log) {
@@ -377,7 +377,7 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, int size, const Texture2D
     params_.w = (int)w;
     params_.h = (int)h;
 
-    ChangeFilter(p.filter, p.repeat);
+    SetFilter(p.filter, p.repeat, p.lod_bias);
 }
 
 void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2DParams &p, ILog *log) {
@@ -437,7 +437,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, int size, const Texture2D
         data_offset += pad;
     }
 
-    ChangeFilter(p.filter, p.repeat);
+    SetFilter(p.filter, p.repeat, p.lod_bias);
 }
 
 void Ren::Texture2D::InitFromRAWData(const void *data[6], const Texture2DParams &p, ILog *log) {
@@ -567,7 +567,7 @@ void Ren::Texture2D::InitFromPNGFile(const void *data[6], const int size[6], con
     params_.h = (int)h;
     params_.cube = 1;
 
-    ChangeFilter(p.filter, p.repeat);
+    SetFilter(p.filter, p.repeat, p.lod_bias);
 }
 
 void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], const Texture2DParams &p, ILog *log) {
@@ -629,7 +629,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], con
 
     params_.cube = 1;
 
-    ChangeFilter(p.filter, p.repeat);
+    SetFilter(p.filter, p.repeat, p.lod_bias);
 }
 
 void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], const Texture2DParams &p, ILog *log) {
@@ -697,10 +697,10 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], con
         }
     }
 
-    ChangeFilter(p.filter, p.repeat);
+    SetFilter(p.filter, p.repeat, p.lod_bias);
 }
 
-void Ren::Texture2D::ChangeFilter(eTexFilter f, eTexRepeat r) {
+void Ren::Texture2D::SetFilter(eTexFilter f, eTexRepeat r, float lod_bias) {
     auto tex_id = (GLuint)tex_id_;
 
     if (!params_.cube) {
@@ -709,6 +709,8 @@ void Ren::Texture2D::ChangeFilter(eTexFilter f, eTexRepeat r) {
 
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_S, g_gl_wrap_mode[r]);
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_T, g_gl_wrap_mode[r]);
+
+        ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_LOD_BIAS, lod_bias);
 
         if (params_.format != Compressed && (f == Trilinear || f == Bilinear)) {
             ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, tex_id);
