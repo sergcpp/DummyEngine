@@ -656,7 +656,8 @@ bool Renderer::InitFramebuffersInternal() {
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
-    {   // Attach textures from clean framebuffer to depth-fill framebuffer (only depth and velocity are drawn)
+    if (clean_buf_.attachments_count > 3) {
+        // Attach textures from clean framebuffer to depth-fill framebuffer (only depth and velocity are drawn)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_vel_);
 
         const auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
@@ -758,7 +759,8 @@ bool Renderer::InitFramebuffersInternal() {
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
-    {   // Attach velocity and stencil from clean buffer
+    if (clean_buf_.attachments_count > 3) {
+        // Attach velocity and stencil from clean buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)clean_buf_vel_only_);
 
         const auto
@@ -804,7 +806,8 @@ bool Renderer::InitFramebuffersInternal() {
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
-    {   // Attach color from resolved and history buffers
+    if (history_buf_.attachments_count) {
+        // Attach color from resolved and history buffers
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)temporal_resolve_framebuf_);
 
         const auto
