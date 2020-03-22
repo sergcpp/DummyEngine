@@ -46,6 +46,8 @@ void DebugInfoUI::UpdateInfo(const FrontendInfo &frontend_info, const BackendInf
     back_info_smooth_.transp_pass_time_ms       += k * us_to_ms(backend_info.transp_pass_time_us);
     back_info_smooth_.refl_pass_time_ms         *= alpha;
     back_info_smooth_.refl_pass_time_ms         += k * us_to_ms(backend_info.refl_pass_time_us);
+    back_info_smooth_.taa_pass_time_ms          *= alpha;
+    back_info_smooth_.taa_pass_time_ms          += k * us_to_ms(backend_info.taa_pass_time_us);
     back_info_smooth_.blur_pass_time_ms         *= alpha;
     back_info_smooth_.blur_pass_time_ms         += k * us_to_ms(backend_info.blur_pass_time_us);
     back_info_smooth_.blit_pass_time_ms         *= alpha;
@@ -177,6 +179,10 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
 
         vertical_offset -= font_height;
         sprintf(text_buffer, "  refl_pass: %.3f ms", back_info_smooth_.refl_pass_time_ms);
+        font_->DrawText(r, text_buffer, Ren::Vec2f{ -1.0f, vertical_offset }, text_color, parent_);
+
+        vertical_offset -= font_height;
+        sprintf(text_buffer, "   taa_pass: %.3f ms", back_info_smooth_.taa_pass_time_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{ -1.0f, vertical_offset }, text_color, parent_);
 
         vertical_offset -= font_height;

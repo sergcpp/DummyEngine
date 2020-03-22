@@ -23,13 +23,14 @@ in vec2 aVertexUVs_;
 out vec4 outColor;
 
 vec3 Unch2Tonemap(vec3 x) {
-    const highp float A = 0.15;
-    const highp float B = 0.50;
-    const highp float C = 0.10;
-    const highp float D = 0.20;
-    const highp float E = 0.02;
-    const highp float F = 0.30;
-    const highp float W = 11.2;
+    const highp float A = 0.22; // shoulder strength
+    const highp float B = 0.30; // linear strength
+    const highp float C = 0.10; // linear angle
+    const highp float D = 0.20; // toe strength
+    const highp float E = 0.02; // toe numerator
+    const highp float F = 0.30; // toe denominator
+    // E / F = toe angle
+    const highp float W = 11.2; // linear white point
 
     return ((x * (A * x + vec3(C * B)) + vec3(D * E)) / (x * ( A * x + vec3(B)) + vec3(D * F))) - vec3(E / F);
 }
@@ -83,18 +84,20 @@ void main() {
 
     col = 0.25 * (c0 + c1 + c2 + c3) + 0.1 * c4;
 #else
-    col = BilinearTexelFetch(s_texture, uvs) + 0.1 * texture(s_blured_texture, norm_uvs).xyz;
+    col = 4.0 * (BilinearTexelFetch(s_texture, uvs) + 0.0 * 0.1 * texture(s_blured_texture, norm_uvs).xyz);
 #endif
 
     if (tonemap > 0.5) {
         col = Unch2Tonemap(exposure * col);
 
         const highp float W = 11.2;
-        vec3 white = 1.0 / Unch2Tonemap(vec3(W));
+        vec3 white = Unch2Tonemap(vec3(W));
+
+        // white is vec3(0.834032297)
 
         vec3 inv_gamma = vec3(1.0 / gamma);
 
-        col = pow(col * white, inv_gamma);
+        col = pow(col / white, inv_gamma);
     }
 
     outColor = vec4(col, 1.0);

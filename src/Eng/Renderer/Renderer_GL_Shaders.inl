@@ -3,9 +3,11 @@ static const char skydome_vs[] =
 #include "Shaders/skydome.vert.glsl"
 ;
 
+#define __ADDITIONAL_DEFINES_STR__ ""
 static const char skydome_fs[] =
 #include "Shaders/skydome.frag.glsl"
 ;
+#undef __ADDITIONAL_DEFINES_STR__
 
 #define __ADDITIONAL_DEFINES_STR__ ""
 static const char fillz_solid_vs[] =
@@ -25,14 +27,35 @@ static const char fillz_transp_fs[] =
 ;
 #undef __ADDITIONAL_DEFINES_STR__
 
+#define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM\n#define OUTPUT_VELOCITY"
+static const char fillz_transp_vel_fs[] =
+#include "Shaders/fillz.frag.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
 #define __ADDITIONAL_DEFINES_STR__ ""
 static const char fillz_vege_solid_vs[] =
 #include "Shaders/fillz_vege.vert.glsl"
 ;
 #undef __ADDITIONAL_DEFINES_STR__
 
+#define __ADDITIONAL_DEFINES_STR__ "#define OUTPUT_VELOCITY"
+static const char fillz_vege_solid_vel_vs[] =
+#include "Shaders/fillz_vege.vert.glsl"
+;
+static const char fillz_solid_vel_fs[] =
+#include "Shaders/fillz.frag.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
 #define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM"
 static const char fillz_vege_transp_vs[] =
+#include "Shaders/fillz_vege.vert.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM\n#define OUTPUT_VELOCITY"
+static const char fillz_vege_transp_vel_vs[] =
 #include "Shaders/fillz_vege.vert.glsl"
 ;
 #undef __ADDITIONAL_DEFINES_STR__
@@ -60,6 +83,7 @@ static const char shadow_vege_solid_vs[] =
 #include "Shaders/shadow_vege.vert.glsl"
 ;
 #undef __ADDITIONAL_DEFINES_STR__
+
 #define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM"
 static const char shadow_vege_transp_vs[] =
 #include "Shaders/shadow_vege.vert.glsl"
@@ -233,6 +257,14 @@ static const char blit_project_sh_fs[] =
 
 static const char blit_fxaa_fs[] =
 #include "Shaders/blit_fxaa.frag.glsl"
+;
+
+static const char blit_taa_fs[] =
+#include "Shaders/blit_taa.frag.glsl"
+;
+
+static const char blit_static_vel_fs[] =
+#include "Shaders/blit_static_vel.frag.glsl"
 ;
 
 #define __ADDITIONAL_DEFINES_STR__ ""

@@ -22,6 +22,8 @@ FrameBuf::FrameBuf(
 
     glActiveTexture(GL_TEXTURE0);
 
+    int enabled_attachements_count = 0;
+
     for (int i = 0; i < _attachments_count; i++) {
         const ColorAttachmentDesc &att = _attachments[i];
 
@@ -31,9 +33,10 @@ FrameBuf::FrameBuf(
 
         Ren::CheckError("[Renderer]: create framebuffer 1", log);
 
-        GLenum format = Ren::GLFormatFromTexFormat(att.format),
-               internal_format = Ren::GLInternalFormatFromTexFormat(att.format),
-               type = Ren::GLTypeFromTexFormat(att.format);
+        const GLenum
+            format = Ren::GLFormatFromTexFormat(att.format),
+            internal_format = Ren::GLInternalFormatFromTexFormat(att.format),
+            type = Ren::GLTypeFromTexFormat(att.format);
         if (format == 0xffffffff || internal_format == 0xffffffff) {
             throw std::invalid_argument("Wrong format!");
         }
@@ -41,7 +44,11 @@ FrameBuf::FrameBuf(
         if (sample_count > 1) {
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, _col_tex);
             glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, sample_count, internal_format, w, h, GL_TRUE);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, _col_tex, 0);
+
+            if (att.attached) {
+                ++enabled_attachements_count;
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, _col_tex, 0);
+            }
         } else {
             glBindTexture(GL_TEXTURE_2D, _col_tex);
 
@@ -73,15 +80,18 @@ FrameBuf::FrameBuf(
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
             }
 
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _col_tex, 0);
+            if (att.attached) {
+                ++enabled_attachements_count;
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _col_tex, 0);
+            }
         }
 
         attachments[attachments_count++] = { att, _col_tex };
     }
 
-    if (attachments_count) {
+    if (enabled_attachements_count) {
         GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-        glDrawBuffers(attachments_count, bufs);
+        glDrawBuffers(enabled_attachements_count, bufs);
 
         glClear(GL_COLOR_BUFFER_BIT);
     } else {
@@ -102,8 +112,8 @@ FrameBuf::FrameBuf(
 
         if (depth_att.format == Depth16) {
             internal_format = GL_DEPTH_COMPONENT16;
-        } else if (depth_att.format == Depth24) {
-            internal_format = GL_DEPTH_COMPONENT24;
+        } else if (depth_att.format == Depth24Stencil8) {
+            internal_format = GL_DEPTH24_STENCIL8;
         } else {
             throw std::invalid_argument("Wrong format!");
         }
@@ -116,7 +126,7 @@ FrameBuf::FrameBuf(
 
         Ren::CheckError("[Renderer]: create framebuffer 3", log);
 
-        // multisample textures does not support sampler state
+        // multisample textures do not support sampler state
         if (sample_count == 1) {
             if (depth_att.filter == Ren::NoFilter) {
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -130,7 +140,11 @@ FrameBuf::FrameBuf(
             glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
         }
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, _depth_tex, 0);
+        if (depth_att.format == Depth24Stencil8) {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, target, _depth_tex, 0);
+        } else {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, _depth_tex, 0);
+        }
 
         depth_tex = _depth_tex;
 
@@ -143,7 +157,7 @@ FrameBuf::FrameBuf(
             throw std::runtime_error("Framebuffer error!");
         }
 
-        glClear(GL_DEPTH_BUFFER_BIT);
+        glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);

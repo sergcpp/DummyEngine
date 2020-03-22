@@ -1048,21 +1048,23 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
     strcpy(name_buf, TEXTURES_PATH);
     strcat(name_buf, name);
 
+    Ren::Texture2DParams p;
+    p.flags = flags | Ren::TexUsageScene;
     Ren::eTexLoadStatus status;
-    Ren::Texture2DRef ret = ctx_.LoadTexture2D(name_buf, nullptr, 0, {}, &status);
+    Ren::Texture2DRef ret = ctx_.LoadTexture2D(name_buf, nullptr, 0, p, &status);
     if (status == Ren::TexCreatedDefault) {
         scene_texture_load_counter_++;
 
         std::weak_ptr<SceneManager> _self = shared_from_this();
         Sys::LoadAssetComplete(ret->name().c_str(),
-        [_self, ret, flags](void *data, int size) {
+        [_self, ret, flags](void *data, int size) mutable {
             std::shared_ptr<SceneManager> self = _self.lock();
             if (!self) return;
 
             self->ctx_.ProcessSingleTask([&self, ret, data, size, flags]() mutable {
                 const char *tex_name = ret->name().c_str();
 
-                Ren::Texture2DParams p;
+                Ren::Texture2DParams p = ret->params();
                 if (strstr(tex_name, ".tga_rgbe")) {
                     p.filter = Ren::BilinearNoMipmap;
                     p.repeat = Ren::ClampToEdge;
@@ -1070,7 +1072,6 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
                     p.filter = Ren::Trilinear;
                     p.repeat = Ren::Repeat;
                 }
-                p.flags = flags;
 
                 ret->Init(data, size, p, nullptr, self->ctx_.log());
 
@@ -1079,7 +1080,7 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
                 self.reset();
             });
         }, [_self, ret]() {
-            std::shared_ptr<SceneManager> self = _self.lock();
+            const std::shared_ptr<SceneManager> self = _self.lock();
             if (!self) return;
 
             self->ctx_.log()->Error("Error loading %s", ret->name().c_str());

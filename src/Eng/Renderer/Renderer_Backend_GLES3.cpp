@@ -10,16 +10,16 @@ namespace RendererInternal {
 #include "__sphere_mesh.inl"
 
     struct SharedDataBlock {
-        Ren::Mat4f uViewMatrix, uProjMatrix, uViewProjMatrix;
+        Ren::Mat4f uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
         Ren::Mat4f uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
         ShadowMapRegion uShadowMapRegions[REN_MAX_SHADOWMAPS_TOTAL];
         Ren::Vec4f uSunDir, uSunCol;
         Ren::Vec4f uClipInfo, uCamPosAndGamma;
         Ren::Vec4f uResAndFRes, uTranspParamsAndTime;
-        Ren::Vec4f uWindScroll;
+        Ren::Vec4f uWindScroll, uWindScrollPrev;
         ProbeItem uProbes[REN_MAX_PROBES_TOTAL] = {};
     };
-    static_assert(sizeof(SharedDataBlock) == 5680, "!");
+    static_assert(sizeof(SharedDataBlock) == 5760, "!");
 
     const Ren::Vec2f poisson_disk[] = {
         Ren::Vec2f{ -0.705374f, -0.668203f }, Ren::Vec2f{ -0.780145f, 0.486251f  }, Ren::Vec2f{ 0.566637f, 0.605213f   }, Ren::Vec2f{ 0.488876f, -0.783441f  },
@@ -39,6 +39,8 @@ namespace RendererInternal {
         Ren::Vec2f{ -0.772454f, -0.090976f }, Ren::Vec2f{ 0.504440f, 0.372295f   }, Ren::Vec2f{ 0.155736f, 0.065157f   }, Ren::Vec2f{ 0.391522f, 0.849605f   },
         Ren::Vec2f{ -0.620106f, -0.328104f }, Ren::Vec2f{ 0.789239f, -0.419965f  }, Ren::Vec2f{ -0.545396f, 0.538133f  }, Ren::Vec2f{ -0.178564f, -0.596057f }
     };
+
+    extern const Ren::Vec2f HaltonSeq23[];
 
     //const GLuint A_INDICES = 3;
     //const GLuint A_WEIGHTS = 4;
@@ -82,6 +84,8 @@ namespace RendererInternal {
     const size_t CellsBufChunkSize          = sizeof(CellData) * REN_CELLS_COUNT;
     const size_t ItemsBufChunkSize          = sizeof(ItemData) * REN_MAX_ITEMS_TOTAL;
 
+    const int TaaSampleCount = 8;
+
     struct DebugMarker {
         explicit DebugMarker(const char *name) {
 #ifndef DISABLE_MARKERS
@@ -109,9 +113,14 @@ void Renderer::InitRendererInternal() {
     assert(status == Ren::ProgCreatedFromData);
     fillz_vege_solid_prog_ = ctx_.LoadProgramGLSL("fillz_vege_solid", fillz_vege_solid_vs, fillz_solid_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
+    fillz_vege_solid_vel_prog_ = ctx_.LoadProgramGLSL("fillz_vege_solid_vel", fillz_vege_solid_vel_vs, fillz_solid_vel_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
     fillz_transp_prog_ = ctx_.LoadProgramGLSL("fillz_transp", fillz_transp_vs, fillz_transp_fs, &status);
+
     assert(status == Ren::ProgCreatedFromData);
     fillz_vege_transp_prog_ = ctx_.LoadProgramGLSL("fillz_vege_transp", fillz_vege_transp_vs, fillz_transp_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    fillz_vege_transp_vel_prog_ = ctx_.LoadProgramGLSL("fillz_vege_transp_vel", fillz_vege_transp_vel_vs, fillz_transp_vel_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     shadow_solid_prog_ = ctx_.LoadProgramGLSL("shadow_solid", shadow_solid_vs, shadow_solid_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
@@ -190,6 +199,10 @@ void Renderer::InitRendererInternal() {
     blit_project_sh_prog_ = ctx_.LoadProgramGLSL("blit_project_sh_prog", blit_vs, blit_project_sh_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     blit_fxaa_prog_ = ctx_.LoadProgramGLSL("blit_fxaa_prog", blit_vs, blit_fxaa_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    blit_taa_prog_ = ctx_.LoadProgramGLSL("blit_taa_prog", blit_vs, blit_taa_fs, &status);
+    assert(status == Ren::ProgCreatedFromData);
+    blit_static_vel_prog_ = ctx_.LoadProgramGLSL("blit_static_vel_prog", blit_vs, blit_static_vel_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
     blit_transparent_compose_prog_ = ctx_.LoadProgramGLSL("blit_transparent_compose_prog", blit_vs, blit_transparent_compose_fs, &status);
     assert(status == Ren::ProgCreatedFromData);
@@ -548,6 +561,12 @@ bool Renderer::InitFramebuffersInternal() {
         depth_fill_framebuf_ = (uint32_t)new_framebuf;
     }
 
+    if (!depth_fill_framebuf_vel_) {
+        GLuint new_framebuf;
+        glGenFramebuffers(1, &new_framebuf);
+        depth_fill_framebuf_vel_ = (uint32_t)new_framebuf;
+    }
+
     if (!refl_comb_framebuf_) {
         GLuint new_framebuf;
         glGenFramebuffers(1, &new_framebuf);
@@ -566,10 +585,22 @@ bool Renderer::InitFramebuffersInternal() {
         clean_buf_color_only_ = (uint32_t)new_framebuf;
     }
 
+    if (!clean_buf_vel_only_) {
+        GLuint new_framebuf;
+        glGenFramebuffers(1, &new_framebuf);
+        clean_buf_vel_only_ = (uint32_t)new_framebuf;
+    }
+
     if (!clean_buf_transparent_) {
         GLuint new_framebuf;
         glGenFramebuffers(1, &new_framebuf);
         clean_buf_transparent_ = (uint32_t)new_framebuf;
+    }
+
+    if (!temporal_resolve_framebuf_) {
+        GLuint new_framebuf;
+        glGenFramebuffers(1, &new_framebuf);
+        temporal_resolve_framebuf_ = (uint32_t)new_framebuf;
     }
 
     GLint framebuf_before;
@@ -580,65 +611,85 @@ bool Renderer::InitFramebuffersInternal() {
     {   // Attach textures from clean framebuffer to skydome framebuffer (only color, specular and depth are drawn)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)skydome_framebuf_);
 
-        auto col_tex = (GLuint)clean_buf_.attachments[0].tex;
+        const auto col_tex = (GLuint)clean_buf_.attachments[0].tex;
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
         } else {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
         }
 
-        auto spec_tex = (GLuint)clean_buf_.attachments[2].tex;
+        const auto spec_tex = (GLuint)clean_buf_.attachments[2].tex;
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D_MULTISAMPLE, spec_tex, 0);
         } else {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, spec_tex, 0);
         }
 
-        auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        const auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
         if (clean_buf_.sample_count > 1) {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
         }
 
-        GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_NONE, GL_COLOR_ATTACHMENT2 };
+        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_NONE, GL_COLOR_ATTACHMENT2 };
         glDrawBuffers(3, bufs);
 
-        GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
     {   // Attach textures from clean framebuffer to depth-fill framebuffer (only depth is drawn)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
 
-        auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        const auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
         if (clean_buf_.sample_count > 1) {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
         }
 
-        GLenum bufs[] = { GL_NONE };
+        const GLenum bufs[] = { GL_NONE };
         glDrawBuffers(1, bufs);
 
-        GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        result &= (s == GL_FRAMEBUFFER_COMPLETE);
+    }
+
+    {   // Attach textures from clean framebuffer to depth-fill framebuffer (only depth and velocity are drawn)
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_vel_);
+
+        const auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        const auto vel_tex = (GLuint)clean_buf_.attachments[3].tex;
+        if (clean_buf_.sample_count > 1) {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, vel_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+        } else {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, vel_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+        }
+
+        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
+        glDrawBuffers(1, bufs);
+
+        const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
     {   // Attach textures from clean framebuffer to refl comb framebuffer (only color is drawn)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)refl_comb_framebuf_);
 
-        auto col_tex = (GLuint)clean_buf_.attachments[0].tex;
+        const auto col_tex = (GLuint)clean_buf_.attachments[0].tex;
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
         } else {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
         }
 
-        GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
+        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
         glDrawBuffers(1, bufs);
 
-        GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
@@ -646,25 +697,25 @@ bool Renderer::InitFramebuffersInternal() {
     {   // Attach depth from clean buffer to moments buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)moments_buf_.fb);
 
-        GLuint depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        const auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
         if (clean_buf_.sample_count > 1) {
             assert(moments_buf_.sample_count == clean_buf_.sample_count);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
         }
 
-        GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
     if (clean_buf_.sample_count == 1) {
         // Attach depth from clean buffer to transparent buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)resolved_or_transparent_buf_.fb);
 
-        GLuint depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+        const auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
 
-        GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 #endif
@@ -672,61 +723,101 @@ bool Renderer::InitFramebuffersInternal() {
     {   // Attach color from clean buffer to transparent comb buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)transparent_comb_framebuf_);
 
-        auto col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex;
+        const auto col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex;
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
         } else {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
         }
 
-        GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
+        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
         glDrawBuffers(1, bufs);
 
-        GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
     {   // Attach color and depth from clean buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)clean_buf_color_only_);
 
-        auto col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex,
-             depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        const auto
+            col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex,
+            depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
         }
 
-        GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
+        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
         glDrawBuffers(1, bufs);
 
-        GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        result &= (s == GL_FRAMEBUFFER_COMPLETE);
+    }
+
+    {   // Attach velocity and stencil from clean buffer
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)clean_buf_vel_only_);
+
+        const auto
+            vel_tex = (GLuint)clean_buf_.attachments[3].tex,
+            depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        if (clean_buf_.sample_count > 1) {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, vel_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+        } else {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, vel_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+        }
+
+        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
+        glDrawBuffers(1, bufs);
+
+        const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
     {   // Attach accum and revealage textures from clean buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)clean_buf_transparent_);
 
-        auto col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex,
-             norm_tex = (GLuint)clean_buf_.attachments[REN_OUT_NORM_INDEX].tex,
-             depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        const auto
+            col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex,
+            norm_tex = (GLuint)clean_buf_.attachments[REN_OUT_NORM_INDEX].tex,
+            depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
 
         if (clean_buf_.sample_count > 1) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D_MULTISAMPLE, norm_tex, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, norm_tex, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
         }
 
-        GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
         glDrawBuffers(2, bufs);
 
-        GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        result &= (s == GL_FRAMEBUFFER_COMPLETE);
+    }
+
+    {   // Attach color from resolved and history buffers
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)temporal_resolve_framebuf_);
+
+        const auto
+            col_tex1 = (GLuint)resolved_or_transparent_buf_.attachments[0].tex,
+            col_tex2 = (GLuint)history_buf_.attachments[0].tex;
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex1, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, col_tex2, 0);
+
+        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+        glDrawBuffers(2, bufs);
+
+        const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
@@ -1063,6 +1154,11 @@ void Renderer::DestroyRendererInternal() {
         glDeleteFramebuffers(1, &framebuf);
     }
 
+    if (depth_fill_framebuf_vel_) {
+        auto framebuf = (GLuint)depth_fill_framebuf_vel_;
+        glDeleteFramebuffers(1, &framebuf);
+    }
+
     if (refl_comb_framebuf_) {
         auto framebuf = (GLuint)refl_comb_framebuf_;
         glDeleteFramebuffers(1, &framebuf);
@@ -1080,6 +1176,11 @@ void Renderer::DestroyRendererInternal() {
 
     if (clean_buf_transparent_) {
         auto framebuf = (GLuint)clean_buf_transparent_;
+        glDeleteFramebuffers(1, &framebuf);
+    }
+
+    if (temporal_resolve_framebuf_) {
+        auto framebuf = (GLuint)temporal_resolve_framebuf_;
         glDeleteFramebuffers(1, &framebuf);
     }
 
@@ -1319,7 +1420,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     {   // Prepare data that is shared for all instances
         shrd_data.uViewMatrix = list.draw_cam.view_matrix();
         shrd_data.uProjMatrix = list.draw_cam.proj_matrix();
+
+        if ((list.render_flags & EnableTaa) != 0) {
+            // apply jitter to projection (assumed always perspective)
+            Ren::Vec2f jitter = RendererInternal::HaltonSeq23[frame_counter_ % TaaSampleCount];
+            jitter = (jitter * 2.0f - Ren::Vec2f{ 1.0f }) / Ren::Vec2f{ float(act_w_), float(act_h_) };
+            
+            shrd_data.uProjMatrix[2][0] += jitter[0];
+            shrd_data.uProjMatrix[2][1] += jitter[1];
+        }
+
         shrd_data.uViewProjMatrix = shrd_data.uProjMatrix * shrd_data.uViewMatrix;
+        shrd_data.uViewProjPrevMatrix = prev_clip_from_world_;
         shrd_data.uInvViewMatrix = Ren::Inverse(shrd_data.uViewMatrix);
         shrd_data.uInvProjMatrix = Ren::Inverse(shrd_data.uProjMatrix);
         shrd_data.uInvViewProjMatrix = Ren::Inverse(shrd_data.uViewProjMatrix);
@@ -1368,6 +1480,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             list.env.wind_scroll_lf[0], list.env.wind_scroll_lf[1],
             list.env.wind_scroll_hf[0], list.env.wind_scroll_hf[1]
         };
+        shrd_data.uWindScrollPrev = prev_wind_scroll_;
+        prev_wind_scroll_ = shrd_data.uWindScroll;
 
         if (list.probes.count) {
             assert(list.probes.count <= REN_MAX_PROBES_TOTAL);
@@ -1625,11 +1739,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 #else
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)skydome_framebuf_);
 #endif
+        glUseProgram(skydome_prog_->prog_id());
+
+        glEnable(GL_STENCIL_TEST);
+        glStencilMask(0xff);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
         // Draw skydome (and clear depth with it)
         glDepthFunc(GL_ALWAYS);
-
-        glUseProgram(skydome_prog_->prog_id());
 
         glBindVertexArray(skydome_vao_);
 
@@ -1649,6 +1767,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glDrawElements(GL_TRIANGLES, (GLsizei)__skydome_indices_count, GL_UNSIGNED_SHORT, (void *)uintptr_t(skydome_ndx_offset_));
 
         glDepthFunc(GL_LESS);
+
+        glDisable(GL_STENCIL_TEST);
     } else {
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)skydome_framebuf_);
         glClear(GLbitfield(GL_DEPTH_BUFFER_BIT) | GLbitfield(GL_COLOR_BUFFER_BIT));
@@ -1726,21 +1846,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             backend_info_.depth_fill_draw_calls_count++;
         }
 
-        // draw solid vegetation
-        glBindVertexArray(depth_pass_vege_solid_vao_);
-        glUseProgram(fillz_vege_solid_prog_->prog_id());
-
-        for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const DepthDrawBatch& batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || batch.alpha_test_bit || !batch.vegetation_bit) continue;
-
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
-
-            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid*)uintptr_t(batch.indices_offset),
-                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
-            backend_info_.depth_fill_draw_calls_count++;
-        }
-
         // draw alpha-tested objects
         glBindVertexArray(depth_pass_transp_vao_);
         glUseProgram(fillz_transp_prog_->prog_id());
@@ -1766,9 +1871,46 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             backend_info_.depth_fill_draw_calls_count++;
         }
 
+        if ((list.render_flags & EnableTaa) != 0) {
+            // Write depth and velocity
+            glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_vel_);
+
+            glClear(GL_STENCIL_BUFFER_BIT);
+            
+            glEnable(GL_STENCIL_TEST);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        } else {
+            // Write depth only
+            glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
+        }
+
+        // draw solid vegetation
+        glBindVertexArray(depth_pass_vege_solid_vao_);
+        if ((list.render_flags & EnableTaa) != 0) {
+            glUseProgram(fillz_vege_solid_vel_prog_->prog_id());
+        } else {
+            glUseProgram(fillz_vege_solid_prog_->prog_id());
+        }
+
+        for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
+            const DepthDrawBatch& batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+            if (!batch.instance_count || batch.alpha_test_bit || !batch.vegetation_bit) continue;
+
+            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+
+            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid*)uintptr_t(batch.indices_offset),
+                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+            backend_info_.depth_fill_draw_calls_count++;
+        }
+
         // draw alpha-tested vegetation
         glBindVertexArray(depth_pass_vege_transp_vao_);
-        glUseProgram(fillz_vege_transp_prog_->prog_id());
+        if ((list.render_flags & EnableTaa) != 0) {
+            glUseProgram(fillz_vege_transp_vel_prog_->prog_id());
+        } else {
+            glUseProgram(fillz_vege_transp_prog_->prog_id());
+        }
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT, dummy_white_->tex_id());
 
@@ -1790,6 +1932,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                                               (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
+
+        glDisable(GL_STENCIL_TEST);
 
         glBindVertexArray(0);
 
@@ -2344,10 +2488,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_PREV_TEX_SLOT, down_buf_.attachments[0].tex);
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_BRDF_TEX_SLOT, brdf_lut_->tex_id());
 
-        if (list.probe_storage) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT, list.probe_storage->tex_id());
-        }
-
         ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
         ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
 
@@ -2404,6 +2544,71 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     }
 #endif
     
+    if (list.render_flags & EnableTimers) {
+        glQueryCounter(queries_[cur_query_][TimeTaaStart], GL_TIMESTAMP);
+    }
+
+    if (list.render_flags & EnableTaa) {
+        DebugMarker _("TEMPORAL AA");
+
+        glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_vel_only_);
+        glViewport(0, 0, act_w_, act_h_);
+
+        {   // Init static objects velocities
+            glEnable(GL_STENCIL_TEST);
+            glStencilMask(0x00);
+            glStencilFunc(GL_EQUAL, 0, 0xFF);
+
+            const Ren::Program *blit_prog = blit_static_vel_prog_.get();
+            glUseProgram(blit_prog->prog_id());
+
+            glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
+
+            assert(clean_buf_.sample_count == 1);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, clean_buf_.depth_tex.GetValue());
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+
+            glDisable(GL_STENCIL_TEST);
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)temporal_resolve_framebuf_);
+        glViewport(0, 0, act_w_, act_h_);
+
+        {   // Blit taa
+            const Ren::Program *blit_prog = blit_taa_prog_.get();
+            glUseProgram(blit_prog->prog_id());
+
+            glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
+
+            assert(clean_buf_.sample_count == 1);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, clean_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 1, history_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 2, clean_buf_.depth_tex.GetValue());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 3, clean_buf_.attachments[3].tex);
+
+            glUniform2f(13, float(act_w_), float(act_h_));
+
+            Ren::Vec2f jitter_curr = RendererInternal::HaltonSeq23[frame_counter_ % TaaSampleCount];
+            jitter_curr = (jitter_curr * 2.0f - Ren::Vec2f{ 1.0f }) / Ren::Vec2f{ float(act_w_), float(act_h_) };
+
+            Ren::Vec2f jitter_prev = RendererInternal::HaltonSeq23[std::max(frame_counter_ - 1, 0) % TaaSampleCount];
+            jitter_prev = (jitter_prev * 2.0f - Ren::Vec2f{ 1.0f }) / Ren::Vec2f{ float(act_w_), float(act_h_) };
+
+            const Ren::Vec2f unjitter = 0.5f * (jitter_curr - jitter_prev);
+            glUniform2f(14, unjitter[0], unjitter[1]);
+
+            // exposure from previous frame
+            float exposure = reduced_average_ > std::numeric_limits<float>::epsilon() ? (0.95f / reduced_average_) : 1.0f;
+            exposure = std::min(exposure, list.draw_cam.max_exposure());
+
+            glUniform1f(15, (list.render_flags & DebugLights) ? 1.0f : 2.2f);
+            glUniform1f(16, exposure);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        }
+    }
+
     if (list.render_flags & DebugProbes) {
         glBindVertexArray(sphere_vao_);
 
@@ -2457,11 +2662,12 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glDepthMask(GL_FALSE);
     glDepthFunc(GL_LESS);
 
+    // store matrix to use it in next frame
+    down_buf_view_from_world_ = shrd_data.uViewMatrix;
+    prev_clip_from_world_ = shrd_data.uViewProjMatrix;
+
     if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap)) && ((list.render_flags & DebugWireframe) == 0)) {
         DebugMarker _("BLUR PASS");
-        
-        // store matrix to use it in next frame
-        down_buf_view_from_world_ = shrd_data.uViewMatrix;
 
         // prepare blured buffer
         glBindFramebuffer(GL_FRAMEBUFFER, down_buf_.fb);
@@ -2472,7 +2678,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
-        if (clean_buf_.sample_count > 1) {
+        if (clean_buf_.sample_count > 1 || ((list.render_flags & EnableTaa) != 0)) {
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
         } else {
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
@@ -2509,6 +2715,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     assert(!buf_range_fences_[cur_buf_chunk_]);
     buf_range_fences_[cur_buf_chunk_] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
+    
     if (list.render_flags & EnableTonemap) {
         // draw to small framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
@@ -2565,6 +2772,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         reduced_average_ = alpha * cur_average + (1.0f - alpha) * reduced_average_;
     }
 
+    float exposure = reduced_average_ > std::numeric_limits<float>::epsilon() ? (0.95f / reduced_average_) : 1.0f;
+    exposure = std::min(exposure, list.draw_cam.max_exposure());
+
     //
     // Blit pass (tonemap buffer / apply fxaa / blit to backbuffer)
     //
@@ -2572,8 +2782,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     if (list.render_flags & EnableTimers) {
         glQueryCounter(queries_[cur_query_][TimeBlitStart], GL_TIMESTAMP);
     }
+
     
-    if ((list.render_flags & EnableFxaa) && !(list.render_flags & DebugWireframe)) {
+    if ((list.render_flags & (EnableFxaa /*| EnableTaa*/)) && !(list.render_flags & DebugWireframe)) {
         glBindFramebuffer(GL_FRAMEBUFFER, combined_buf_.fb);
         glViewport(0, 0, act_w_, act_h_);
     } else {
@@ -2597,13 +2808,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform2f(13, float(act_w_), float(act_h_));
 
         glUniform1f(U_GAMMA, (list.render_flags & DebugLights) ? 1.0f : 2.2f);
-
-        float exposure = reduced_average_ > std::numeric_limits<float>::epsilon() ? (0.95f / reduced_average_) : 1.0f;
-        exposure = std::min(exposure, list.draw_cam.max_exposure());
-
         glUniform1f(U_EXPOSURE, exposure);
 
-        if (clean_buf_.sample_count > 1) {
+        if (clean_buf_.sample_count > 1 || ((list.render_flags & EnableTaa) != 0)) {
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
         } else {
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
@@ -2996,6 +3203,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                  time_opaque_start,
                  time_transp_start,
                  time_refl_start,
+                 time_taa_start,
                  time_blur_start,
                  time_blit_start,
                  time_draw_end;
@@ -3010,6 +3218,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glGetQueryObjectui64v(queries_[cur_query_][TimeOpaqueStart], GL_QUERY_RESULT, &time_opaque_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeTranspStart], GL_QUERY_RESULT, &time_transp_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeReflStart], GL_QUERY_RESULT, &time_refl_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeTaaStart], GL_QUERY_RESULT, &time_taa_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeBlurStart], GL_QUERY_RESULT, &time_blur_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeBlitStart], GL_QUERY_RESULT, &time_blit_start);
         glGetQueryObjectui64v(queries_[cur_query_][TimeDrawEnd], GL_QUERY_RESULT, &time_draw_end);
@@ -3028,7 +3237,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         backend_info_.ao_pass_time_us = uint32_t((time_opaque_start - time_ao_start) / 1000);
         backend_info_.opaque_pass_time_us = uint32_t((time_transp_start - time_opaque_start) / 1000);
         backend_info_.transp_pass_time_us = uint32_t((time_refl_start - time_transp_start) / 1000);
-        backend_info_.refl_pass_time_us = uint32_t((time_blur_start - time_refl_start) / 1000);
+        backend_info_.refl_pass_time_us = uint32_t((time_taa_start - time_refl_start) / 1000);
+        backend_info_.taa_pass_time_us = uint32_t((time_blur_start - time_taa_start) / 1000);
         backend_info_.blur_pass_time_us = uint32_t((time_blit_start - time_blur_start) / 1000);
         backend_info_.blit_pass_time_us = uint32_t((time_draw_end - time_blit_start) / 1000);
     }
@@ -3216,6 +3426,8 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, scr_w_, scr_h_);
 
+
+    
     {   
         const Ren::Program *cur_program = blit_combine_prog_.get();
         glUseProgram(cur_program->prog_id());
@@ -3241,6 +3453,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         glUniform1f(12, 1.0f);
         glUniform2f(13, float(w), float(h));
         glUniform1f(U_GAMMA, 2.2f);
+
 
         float exposure = 0.95f / reduced_average_;
         exposure = std::min(exposure, 1000.0f);

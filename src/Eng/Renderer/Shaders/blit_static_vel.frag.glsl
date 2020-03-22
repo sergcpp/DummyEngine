@@ -1,11 +1,13 @@
 R"(#version 310 es
 
+#ifdef GL_ES
+	precision mediump float;
+#endif
+
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
 */
-
-layout(location = )" AS_STR(REN_VTX_POS_LOC) R"() in vec3 aVertexPosition;
 
 struct ShadowMapRegion {
     vec4 transform;
@@ -25,18 +27,28 @@ layout (std140) uniform SharedDataBlock {
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
     vec4 uResAndFRes, uTranspParamsAndTime;
-    vec4 uWindScroll, uWindScrollPrev;
-    ProbeItem uProbes[)" AS_STR(REN_MAX_PROBES_TOTAL) R"(];
 };
 
-layout(location = )" AS_STR(REN_U_M_MATRIX_LOC) R"() uniform mat4 uMMatrix;
+layout(binding = 0) uniform mediump sampler2D depth_texture;
 
-out vec3 aVertexPos_;
+in vec2 aVertexUVs_;
+
+out vec2 outVelocity;
 
 void main() {
-    vec3 vertex_position_ws = (uMMatrix * vec4(aVertexPosition, 1.0)).xyz;
-    aVertexPos_ = vertex_position_ws;
+    ivec2 pix_uvs = ivec2(aVertexUVs_);
 
-    gl_Position = uViewProjMatrix * uMMatrix * vec4(aVertexPosition, 1.0);
-} 
+    float depth = texelFetch(depth_texture, pix_uvs, 0).r;
+
+    vec4 point_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, depth, 1.0);
+    point_cs.xyz = 2.0 * point_cs.xyz - vec3(1.0);
+
+    vec4 point_ws = uInvViewProjMatrix * point_cs;
+    point_ws /= point_ws.w;
+
+    vec4 point_prev_cs = uViewProjPrevMatrix * point_ws;
+    point_prev_cs /= point_prev_cs.w;
+
+    outVelocity = point_cs.xy - point_prev_cs.xy;
+}
 )"

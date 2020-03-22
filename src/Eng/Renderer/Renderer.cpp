@@ -67,7 +67,7 @@ namespace RendererInternal {
 #include "__noise.inl"
 }
 
-// remove this coupling!!!
+// TODO: remove this coupling!!!
 namespace SceneManagerInternal {
     int WriteImage(const uint8_t* out_data, int w, int h, int channels, const char* name);
 }
@@ -160,7 +160,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
     }
 
     {
-        const int res = 128;
+        /*const int res = 128;
 
         // taken from old GPU-Gems article
         const float gauss_variances[] = {
@@ -177,7 +177,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
         };
 
         const std::unique_ptr<uint8_t[]> img_data = Generate_SSSProfile_LUT(res, 6, gauss_variances, diffusion_weights);
-        SceneManagerInternal::WriteImage(&img_data[0], res, res, 4, "assets/textures/skin_diffusion.uncompressed.png");
+        SceneManagerInternal::WriteImage(&img_data[0], res, res, 4, "assets/textures/skin_diffusion.uncompressed.png");*/
     }
 
     // Compile built-in shaders etc.
@@ -219,15 +219,19 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         return;
     }
 
+    const bool cur_msaa_enabled = (list.render_flags & EnableMsaa) != 0;
+    const bool cur_taa_enabled = (list.render_flags & EnableTaa) != 0;
+
     uint64_t gpu_draw_start = 0;
     if (list.render_flags & DebugTimings) {
         gpu_draw_start = GetGpuTimeBlockingUs();
     }
     const uint64_t cpu_draw_start_us = Sys::GetTimeUs();
     
-    if (cur_scr_w != scr_w_ || cur_scr_h != scr_h_) {
+    if (cur_scr_w != scr_w_ || cur_scr_h != scr_h_ || cur_msaa_enabled != msaa_enabled_ || cur_taa_enabled != taa_enabled_) {
         {   // Main buffer for raw frame before tonemapping
-            FrameBuf::ColorAttachmentDesc desc[3];
+            FrameBuf::ColorAttachmentDesc desc[4];
+            int desc_count = 0;
             {   // Main color
 #if (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED) || (REN_OIT_MODE == REN_OIT_MOMENT_BASED && REN_OIT_MOMENT_RENORMALIZE)
                 // renormalization requires buffer with alpha channel
@@ -237,18 +241,29 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
 #endif
                 desc[0].filter = Ren::NoFilter;
                 desc[0].repeat = Ren::ClampToEdge;
+                ++desc_count;
             }
             {   // 4-component world-space normal (alpha is 'ssr' flag)
                 desc[1].format = Ren::RawRGB10_A2;
                 desc[1].filter = Ren::NoFilter;
                 desc[1].repeat = Ren::ClampToEdge;
+                ++desc_count;
             }
             {   // 4-component specular (alpha is roughness)
                 desc[2].format = Ren::RawRGBA8888;
                 desc[2].filter = Ren::NoFilter;
                 desc[2].repeat = Ren::ClampToEdge;
+                ++desc_count;
             }
-            clean_buf_ = FrameBuf(cur_scr_w, cur_scr_h, desc, 3, { FrameBuf::Depth24, Ren::NoFilter }, 4, log);
+            if (cur_taa_enabled) {
+                // 2-component velocity
+                desc[3].format = Ren::RawRG16;
+                desc[3].filter = Ren::NoFilter;
+                desc[3].repeat = Ren::ClampToEdge;
+                desc[3].attached = false;
+                ++desc_count;
+            }
+            clean_buf_ = FrameBuf(cur_scr_w, cur_scr_h, desc, desc_count, { FrameBuf::Depth24Stencil8, Ren::NoFilter }, cur_msaa_enabled ? 4 : 1, log);
         }
 
 #if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
@@ -295,6 +310,44 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             desc.filter = Ren::BilinearNoMipmap;
             desc.repeat = Ren::ClampToEdge;
             combined_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::DepthNone }, 1, log);
+        }
+
+        if (cur_taa_enabled) {
+            FrameBuf::ColorAttachmentDesc desc; // NOLINT
+            desc.format = Ren::RawRG11F_B10F;
+            desc.filter = Ren::BilinearNoMipmap;
+            desc.repeat = Ren::ClampToEdge;
+            history_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::DepthNone }, 1, log);
+
+            log->Info("Setting texture lod bias to -1.0");
+
+            int counter = 0;
+            ctx_.VisitTextures(Ren::TexUsageScene, [&counter](Ren::Texture2D &tex) {
+                    Ren::Texture2DParams &p = tex.params();
+                    if (p.lod_bias > -1.0f) {
+                        p.lod_bias = -1.0f;
+                        tex.SetFilter(p.filter, p.repeat, p.lod_bias);
+                        ++counter;
+                    }
+                });
+
+            log->Info("Textures processed: %i", counter);
+        } else {
+            history_buf_ = {};
+
+            log->Info("Setting texture lod bias to 0.0");
+
+            int counter = 0;
+            ctx_.VisitTextures(Ren::TexUsageScene, [&counter](Ren::Texture2D &tex) {
+                    Ren::Texture2DParams &p = tex.params();
+                    if (p.lod_bias < 0.0f) {
+                        p.lod_bias = 0.0f;
+                        tex.SetFilter(p.filter, p.repeat, p.lod_bias);
+                        ++counter;
+                    }
+                });
+            
+            log->Info("Textures processed: %i", counter);
         }
         
         {   // Buffer for SSAO
@@ -346,7 +399,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         if (init_success) {
             scr_w_ = cur_scr_w;
             scr_h_ = cur_scr_h;
-            log->Info("Successfully resized to %ix%i", scr_w_, scr_h_);
+            msaa_enabled_ = cur_msaa_enabled;
+            taa_enabled_ = cur_taa_enabled;
+            log->Info("Successfully initialized framebuffers %ix%i", scr_w_, scr_h_);
         } else {
             log->Error("InitFramebuffersInternal failed, frame will not be drawn!");
             return;

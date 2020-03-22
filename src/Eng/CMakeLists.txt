@@ -134,6 +134,8 @@ set(SHADERS_SOURCES Renderer/Shaders/_vs_common.glsl
                     Renderer/Shaders/blit_ssr.frag.glsl
                     Renderer/Shaders/blit_ssr_compose.frag.glsl
                     Renderer/Shaders/blit_ssr_dilate.frag.glsl
+                    Renderer/Shaders/blit_static_vel.frag.glsl
+                    Renderer/Shaders/blit_taa.frag.glsl
                     Renderer/Shaders/blit_transparent_compose.frag.glsl
                     Renderer/Shaders/blit_transparent_init.frag.glsl
                     Renderer/Shaders/blit_upscale.frag.glsl

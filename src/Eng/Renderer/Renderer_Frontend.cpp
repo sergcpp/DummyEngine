@@ -1402,9 +1402,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     }
 }
 
-void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,
-                                        const DecalItem *decals, int decals_count, const BBox *decals_boxes, const ProbeItem *probes, int probes_count,
-                                        const LightSource * const*litem_to_lsource, CellData *cells, ItemData *items, std::atomic_int &items_count) {
+void Renderer::GatherItemsForZSlice_Job(
+        int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights, int lights_count,
+        const DecalItem *decals, int decals_count, const BBox *decals_boxes, const ProbeItem *probes, int probes_count,
+        const LightSource * const * litem_to_lsource, CellData *cells, ItemData *items, std::atomic_int &items_count) {
     using namespace RendererInternal;
 
     const float epsilon = 0.001f;

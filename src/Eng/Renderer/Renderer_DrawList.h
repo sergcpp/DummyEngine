@@ -43,7 +43,7 @@ struct ShadReg {
 };
 
 struct DrawList {
-    uint32_t                    render_flags = 0xffffffff;
+    uint32_t                    render_flags = 0;
     Ren::Camera                 draw_cam;
     Environment                 env;
     FrontendInfo                frontend_info;

@@ -121,9 +121,10 @@ void GSUITest3::Enter() {
     }
 
     {   // init page framebuffer
-        const FrameBuf::ColorAttachmentDesc attachment = {
-            Ren::RawRGB888, Ren::BilinearNoMipmap, Ren::ClampToEdge
-        };
+        FrameBuf::ColorAttachmentDesc attachment;
+        attachment.format = Ren::RawRGB888;
+        attachment.filter = Ren::BilinearNoMipmap;
+        attachment.repeat = Ren::ClampToEdge;
 
         page_buf_ = FrameBuf{ 3072, 3072, &attachment, 1, { FrameBuf::DepthNone }, 1, log_.get() };
     }

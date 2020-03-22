@@ -61,6 +61,7 @@ extern "C" {
 
 #if !defined(__ANDROID__)
 typedef GLXContext (*GLXCREATECONTEXTATTIBSARBPROC)(Display *, GLXFBConfig, GLXContext, Bool, const int *);
+typedef void (*GLXSWAPINTERVALEXTPROC)(Display *dpy, GLXDrawable drawable, int interval);
 #endif
 
 DummyApp::DummyApp() {
@@ -139,6 +140,13 @@ int DummyApp::Init(int w, int h) {
     if (!ctx_) {
         fprintf(stderr, "ctx is null\n");
         return -1;
+    }
+
+    printf("Extensions: %s \n\n\n", glXQueryExtensionsString(dpy_, DefaultScreen(dpy_)));
+
+    auto glXSwapIntervalEXT = (GLXSWAPINTERVALEXTPROC)glXGetProcAddress((const GLubyte *)"glXSwapIntervalEXT");
+    if (glXSwapIntervalEXT) {
+        glXSwapIntervalEXT(dpy_, glXGetCurrentDrawable(), 1);
     }
 
     glXMakeCurrent(dpy_, win_, ctx_);

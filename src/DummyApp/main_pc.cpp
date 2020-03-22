@@ -6,6 +6,9 @@ int main(int argc, char *argv[]) {
 }
 
 // TODO:
+// skinned meshes velocities
+// use GL_EXT_shader_group_vote
+// refactor msaa (resolve once, remove permutations)
 // fix freeze on early exit
 // refactor file read on android
 // fix decals (use compressed 16x16 blocks)

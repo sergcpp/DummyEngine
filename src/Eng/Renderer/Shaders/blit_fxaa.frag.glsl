@@ -4,6 +4,11 @@ R"(#version 310 es
     precision mediump float;
 #endif
 
+/*
+UNIFORM_BLOCKS
+    SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
+*/
+
 struct ShadowMapRegion {
     vec4 transform;
     mat4 clip_from_world;
@@ -16,14 +21,12 @@ struct ProbeItem {
 };
 
 layout (std140) uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
+    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
     vec4 uResAndFRes, uTranspParamsAndTime;
-    vec4 uWindParams;
-    ProbeItem uProbes[)" AS_STR(REN_MAX_PROBES_TOTAL) R"(];
 };
         
 layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform sampler2D s_texture;

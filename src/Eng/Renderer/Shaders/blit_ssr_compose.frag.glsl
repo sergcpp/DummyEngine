@@ -29,13 +29,13 @@ struct ProbeItem {
 };
 
 layout (std140) uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
+    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
     vec4 uResAndFRes, uTranspParamsAndTime;
-    vec4 uWindParams;
+    vec4 uWindScroll, uWindScrollPrev;
     ProbeItem uProbes[)" AS_STR(REN_MAX_PROBES_TOTAL) R"(];
 };
 
@@ -45,7 +45,7 @@ layout(binding = )" AS_STR(REN_REFL_DEPTH_TEX_SLOT) R"() uniform mediump sampler
 layout(binding = )" AS_STR(REN_REFL_NORM_TEX_SLOT) R"() uniform mediump sampler2DMS s_norm_texture;
 #else
 layout(binding = )" AS_STR(REN_REFL_SPEC_TEX_SLOT) R"() uniform mediump sampler2D s_spec_texture;
-layout(binding = )" AS_STR(REN_REFL_DEPTH_TEX_SLOT) R"() uniform mediump sampler2DMS s_depth_texture;
+layout(binding = )" AS_STR(REN_REFL_DEPTH_TEX_SLOT) R"() uniform mediump sampler2D s_depth_texture;
 layout(binding = )" AS_STR(REN_REFL_NORM_TEX_SLOT) R"() uniform mediump sampler2D s_norm_texture;
 #endif
 layout(binding = )" AS_STR(REN_REFL_DEPTH_LOW_TEX_SLOT) R"() uniform mediump sampler2D depth_low_texture;
@@ -53,7 +53,7 @@ layout(binding = )" AS_STR(REN_REFL_SSR_TEX_SLOT) R"() uniform mediump sampler2D
 
 layout(binding = )" AS_STR(REN_REFL_PREV_TEX_SLOT) R"() uniform mediump sampler2D prev_texture;
 layout(binding = )" AS_STR(REN_REFL_BRDF_TEX_SLOT) R"() uniform sampler2D brdf_lut_texture;
-layout(binding = )" AS_STR(REN_ENV_TEX_SLOT) R"() uniform mediump samplerCubeArray env_texture;
+layout(binding = )" AS_STR(REN_ENV_TEX_SLOT) R"() uniform mediump samplerCubeArray probe_textures;
 layout(binding = )" AS_STR(REN_CELLS_BUF_SLOT) R"() uniform highp usamplerBuffer cells_buffer;
 layout(binding = )" AS_STR(REN_ITEMS_BUF_SLOT) R"() uniform highp usamplerBuffer items_buffer;
 
@@ -157,7 +157,7 @@ void main() {
 
             float dist = distance(uProbes[pi].pos_and_radius.xyz, ray_origin_ws.xyz);
             float fade = 1.0 - smoothstep(0.9, 1.0, dist / uProbes[pi].pos_and_radius.w);
-            c0 += fade * RGBMDecode(textureLod(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), tex_lod));
+            c0 += fade * RGBMDecode(textureLod(probe_textures, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), tex_lod));
             total_fade += fade;
         }
 

@@ -36,6 +36,7 @@ class DebugInfoUI : public Gui::BaseElement {
               opaque_pass_time_ms       = 0.0f,
               transp_pass_time_ms       = 0.0f,
               refl_pass_time_ms         = 0.0f,
+              taa_pass_time_ms          = 0.0f,
               blur_pass_time_ms         = 0.0f,
               blit_pass_time_ms         = 0.0f;
 

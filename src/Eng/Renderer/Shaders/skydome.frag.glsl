@@ -4,6 +4,8 @@ R"(#version 310 es
     precision mediump float;
 #endif
 
+)" __ADDITIONAL_DEFINES_STR__ R"(
+
 layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform samplerCube env_texture;
 
 struct ShadowMapRegion {
@@ -12,13 +14,13 @@ struct ShadowMapRegion {
 };
 
 layout (std140) uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix;
+    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
     vec4 uSunDir, uSunCol;
     vec4 uClipInfo, uCamPosAndGamma;
     vec4 uResAndFRes, uTranspParamsAndTime;
-    vec4 uWindParams;
+    vec4 uWindScroll, uWindScrollPrev;
 };
 
 in vec3 aVertexPos_;

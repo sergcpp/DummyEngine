@@ -10,9 +10,10 @@ struct FrameBuf {
         Ren::eTexColorFormat format;
         Ren::eTexFilter filter;
         Ren::eTexRepeat repeat;
+        bool attached = true;
     };
 
-    enum eDepthFormat { DepthNone, Depth16, Depth24 };
+    enum eDepthFormat { DepthNone, Depth16, Depth24Stencil8 };
 
     struct DepthAttachmentDesc {
         eDepthFormat format;

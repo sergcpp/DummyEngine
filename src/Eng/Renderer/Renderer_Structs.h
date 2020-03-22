@@ -151,20 +151,22 @@ enum eRenderFlags : uint32_t {
     EnableOIT       = (1u << 9u),
     EnableTonemap   = (1u << 10u),
     EnableBloom     = (1u << 11u),
-    EnableFxaa      = (1u << 12u),
-    EnableTimers    = (1u << 13u),
-    DebugWireframe  = (1u << 14u),
-    DebugCulling    = (1u << 15u),
-    DebugShadow     = (1u << 16u),
-    DebugReduce     = (1u << 17u),
-    DebugLights     = (1u << 18u),
-    DebugDeferred   = (1u << 19u),
-    DebugBlur       = (1u << 20u),
-    DebugDecals     = (1u << 21u),
-    DebugSSAO       = (1u << 22u),
-    DebugTimings    = (1u << 23u),
-    DebugBVH        = (1u << 24u),
-    DebugProbes     = (1u << 25u)
+    EnableMsaa      = (1u << 12u),
+    EnableTaa       = (1u << 13u),
+    EnableFxaa      = (1u << 14u),
+    EnableTimers    = (1u << 15u),
+    DebugWireframe  = (1u << 16u),
+    DebugCulling    = (1u << 17u),
+    DebugShadow     = (1u << 18u),
+    DebugReduce     = (1u << 19u),
+    DebugLights     = (1u << 20u),
+    DebugDeferred   = (1u << 21u),
+    DebugBlur       = (1u << 22u),
+    DebugDecals     = (1u << 23u),
+    DebugSSAO       = (1u << 24u),
+    DebugTimings    = (1u << 25u),
+    DebugBVH        = (1u << 26u),
+    DebugProbes     = (1u << 27u)
 };
 
 struct FrontendInfo {
@@ -189,6 +191,7 @@ struct BackendInfo {
              opaque_pass_time_us = 0,
              transp_pass_time_us = 0,
              refl_pass_time_us = 0,
+             taa_pass_time_us = 0,
              blur_pass_time_us = 0,
              blit_pass_time_us = 0;
     int64_t gpu_cpu_time_diff_us = 0;

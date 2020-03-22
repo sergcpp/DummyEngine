@@ -143,11 +143,34 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("msaa", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= EnableMsaa;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+    });
+
     cmdline_->RegisterCommand("fxaa", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint32_t flags = shrd_this->renderer_->render_flags();
             flags ^= EnableFxaa;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+    });
+
+    cmdline_->RegisterCommand("taa", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= EnableTaa;
+            if (flags & EnableTaa) {
+                flags &= ~(EnableMsaa | EnableFxaa);
+            }
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;

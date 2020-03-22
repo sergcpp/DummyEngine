@@ -66,6 +66,7 @@ extern "C" {
 
 typedef BOOL (WINAPI * PFNWGLCHOOSEPIXELFORMATARBPROC) (HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
 typedef HGLRC (WINAPI * PFNWGLCREATECONTEXTATTRIBSARBPROC) (HDC hDC, HGLRC hShareContext, const int *attribList);
+typedef BOOL (WINAPI* PFNWGLSWAPINTERVALEXTPROC) (int interval);
 
 #define WGL_DRAW_TO_WINDOW_ARB            0x2001
 #define WGL_ACCELERATION_ARB              0x2003
@@ -248,6 +249,9 @@ int DummyApp::Init(int w, int h) {
         return -1;
     }
 
+    PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = nullptr;
+    wglSwapIntervalEXT = reinterpret_cast<PFNWGLSWAPINTERVALEXTPROC>(wglGetProcAddress("wglSwapIntervalEXT"));
+
     window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View",
                                       WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                                       CW_USEDEFAULT, CW_USEDEFAULT,
@@ -310,6 +314,10 @@ int DummyApp::Init(int w, int h) {
     if (!wglMakeCurrent(device_context_, gl_ctx_)) {
         std::cerr << "wglMakeCurrent() failed\n";
         return -1;
+    }
+
+    if (wglSwapIntervalEXT) {
+        wglSwapIntervalEXT(0);
     }
 
     try {
