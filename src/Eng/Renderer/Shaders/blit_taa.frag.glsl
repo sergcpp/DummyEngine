@@ -11,9 +11,7 @@ layout(binding = 2) uniform mediump sampler2D s_depth;
 layout(binding = 3) uniform mediump sampler2D s_velocity;
 
 layout(location = 13) uniform vec2 uTexSize;
-layout(location = 14) uniform vec2 uUnjitter;
-layout(location = 15) uniform float uGamma;
-layout(location = 16) uniform float uExposure;
+layout(location = 14) uniform float uExposure;
 
 in vec2 aVertexUVs_;
 
@@ -101,7 +99,7 @@ void main() {
     vec3 col_max = col_avg + sigma;
 
     vec2 vel = texelFetch(s_velocity, uvs_px + closest_frag, 0).rg;
-    vec3 col_hist = Tonemap(textureLod(s_color_hist, norm_uvs - 0.5 * vel - uUnjitter, 0.0).rgb);
+    vec3 col_hist = Tonemap(textureLod(s_color_hist, norm_uvs - 0.5 * vel, 0.0).rgb);
 
     //col_hist = clip_aabb(col_min, col_max, col_curr, col_hist);
     col_hist = clamp(col_hist, col_min, col_max);

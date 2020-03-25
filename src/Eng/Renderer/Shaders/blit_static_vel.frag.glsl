@@ -24,7 +24,7 @@ layout (std140) uniform SharedDataBlock {
     mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
-    vec4 uSunDir, uSunCol;
+    vec4 uSunDir, uSunCol, uTaaInfo;
     vec4 uClipInfo, uCamPosAndGamma;
     vec4 uResAndFRes, uTranspParamsAndTime;
 };
@@ -49,6 +49,6 @@ void main() {
     vec4 point_prev_cs = uViewProjPrevMatrix * point_ws;
     point_prev_cs /= point_prev_cs.w;
 
-    outVelocity = point_cs.xy - point_prev_cs.xy;
+    outVelocity = point_cs.xy + uTaaInfo.xy - point_prev_cs.xy;
 }
 )"

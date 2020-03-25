@@ -13,13 +13,13 @@ namespace RendererInternal {
         Ren::Mat4f uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
         Ren::Mat4f uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
         ShadowMapRegion uShadowMapRegions[REN_MAX_SHADOWMAPS_TOTAL];
-        Ren::Vec4f uSunDir, uSunCol;
+        Ren::Vec4f uSunDir, uSunCol, uTaaInfo;
         Ren::Vec4f uClipInfo, uCamPosAndGamma;
         Ren::Vec4f uResAndFRes, uTranspParamsAndTime;
         Ren::Vec4f uWindScroll, uWindScrollPrev;
         ProbeItem uProbes[REN_MAX_PROBES_TOTAL] = {};
     };
-    static_assert(sizeof(SharedDataBlock) == 5760, "!");
+    static_assert(sizeof(SharedDataBlock) == 5776, "!");
 
     const Ren::Vec2f poisson_disk[] = {
         Ren::Vec2f{ -0.705374f, -0.668203f }, Ren::Vec2f{ -0.780145f, 0.486251f  }, Ren::Vec2f{ 0.566637f, 0.605213f   }, Ren::Vec2f{ 0.488876f, -0.783441f  },
@@ -1419,16 +1419,22 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     //
 
     SharedDataBlock shrd_data;
+    Ren::Mat4f clip_from_world_unjittered;
 
     {   // Prepare data that is shared for all instances
         shrd_data.uViewMatrix = list.draw_cam.view_matrix();
         shrd_data.uProjMatrix = list.draw_cam.proj_matrix();
+
+        clip_from_world_unjittered = shrd_data.uProjMatrix * shrd_data.uViewMatrix;
 
         if ((list.render_flags & EnableTaa) != 0) {
             // apply jitter to projection (assumed always perspective)
             Ren::Vec2f jitter = RendererInternal::HaltonSeq23[frame_counter_ % TaaSampleCount];
             jitter = (jitter * 2.0f - Ren::Vec2f{ 1.0f }) / Ren::Vec2f{ float(act_w_), float(act_h_) };
             
+            shrd_data.uTaaInfo[0] = jitter[0];
+            shrd_data.uTaaInfo[1] = jitter[1];
+
             shrd_data.uProjMatrix[2][0] += jitter[0];
             shrd_data.uProjMatrix[2][1] += jitter[1];
         }
@@ -2592,21 +2598,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUniform2f(13, float(act_w_), float(act_h_));
 
-            Ren::Vec2f jitter_curr = RendererInternal::HaltonSeq23[frame_counter_ % TaaSampleCount];
-            jitter_curr = (jitter_curr * 2.0f - Ren::Vec2f{ 1.0f }) / Ren::Vec2f{ float(act_w_), float(act_h_) };
-
-            Ren::Vec2f jitter_prev = RendererInternal::HaltonSeq23[std::max(frame_counter_ - 1, 0) % TaaSampleCount];
-            jitter_prev = (jitter_prev * 2.0f - Ren::Vec2f{ 1.0f }) / Ren::Vec2f{ float(act_w_), float(act_h_) };
-
-            const Ren::Vec2f unjitter = 0.5f * (jitter_curr - jitter_prev);
-            glUniform2f(14, unjitter[0], unjitter[1]);
-
             // exposure from previous frame
             float exposure = reduced_average_ > std::numeric_limits<float>::epsilon() ? (0.95f / reduced_average_) : 1.0f;
             exposure = std::min(exposure, list.draw_cam.max_exposure());
 
-            glUniform1f(15, (list.render_flags & DebugLights) ? 1.0f : 2.2f);
-            glUniform1f(16, exposure);
+            glUniform1f(14, exposure);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
@@ -2667,7 +2663,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     // store matrix to use it in next frame
     down_buf_view_from_world_ = shrd_data.uViewMatrix;
-    prev_clip_from_world_ = shrd_data.uViewProjMatrix;
+    prev_clip_from_world_ = clip_from_world_unjittered;
 
     if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap)) && ((list.render_flags & DebugWireframe) == 0)) {
         DebugMarker _("BLUR PASS");

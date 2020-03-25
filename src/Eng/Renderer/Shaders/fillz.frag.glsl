@@ -6,6 +6,21 @@ R"(#version 310 es
 
 )" __ADDITIONAL_DEFINES_STR__ R"(
 
+struct ShadowMapRegion {
+    vec4 transform;
+    mat4 clip_from_world;
+};
+
+layout (std140) uniform SharedDataBlock {
+    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
+    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
+    ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
+    vec4 uSunDir, uSunCol, uTaaInfo;
+    vec4 uClipInfo, uCamPosAndGamma;
+    vec4 uResAndFRes, uTranspParamsAndTime;
+    vec4 uWindScroll, uWindScrollPrev;
+};
+
 #ifdef TRANSPARENT_PERM
 layout(binding = )" AS_STR(REN_ALPHATEST_TEX_SLOT) R"() uniform sampler2D alphatest_texture;
 
@@ -28,7 +43,7 @@ void main() {
 #ifdef OUTPUT_VELOCITY
     vec2 curr = aVertexCSCurr_.xy / aVertexCSCurr_.z;
     vec2 prev = aVertexCSPrev_.xy / aVertexCSPrev_.z;
-    outVelocity = curr - prev;
+    outVelocity = curr + uTaaInfo.xy - prev;
 #endif
 }
 )"
