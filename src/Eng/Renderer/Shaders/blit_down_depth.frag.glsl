@@ -7,38 +7,28 @@ R"(#version 310 es
 
 )" __ADDITIONAL_DEFINES_STR__ R"(
 
+)"
+#include "_fs_common.glsl"
+R"(
+
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
 */
 
-struct ShadowMapRegion {
-    vec4 transform;
-    mat4 clip_from_world;
-};
-
 layout (std140) uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
-    vec4 uSunDir, uSunCol, uTaaInfo;
-    vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspParamsAndTime;
+    SharedData shrd_data;
 };
 
 #if defined(MSAA_4)
-layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform highp sampler2DMS depth_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform highp sampler2DMS depth_texture;
 #else
-layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform highp sampler2D depth_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform highp sampler2D depth_texture;
 #endif
 
 in vec2 aVertexUVs_;
 
 out float outColor;
-
-float LinearizeDepth(float depth) {
-    return uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
-}
 
 void main() {
     highp ivec2 coord = ivec2(aVertexUVs_);
@@ -49,6 +39,6 @@ void main() {
     highp float d4 = texelFetch(depth_texture, coord + ivec2(1, 0), 0).r;
 
     highp float max_depth = max(max(d1, d2), max(d3, d4));
-    outColor = LinearizeDepth(max_depth);
+    outColor = LinearizeDepth(max_depth, shrd_data.uClipInfo);
 }
 )"

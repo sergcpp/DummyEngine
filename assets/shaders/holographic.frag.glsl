@@ -10,42 +10,27 @@ $ModifyWarning
     precision mediump sampler2DShadow;
 #endif
 
-layout(binding = $MatTex0Slot) uniform sampler2D diffuse_texture;
-layout(binding = $MatTex1Slot) uniform sampler2D normals_texture;
-layout(binding = $MatTex2Slot) uniform sampler2D specular_texture;
-layout(binding = $SSAOTexSlot) uniform sampler2D ao_texture;
-layout(binding = $EnvTexSlot) uniform mediump samplerCubeArray env_texture;
-layout(binding = $LightBufSlot) uniform mediump samplerBuffer lights_buffer;
-layout(binding = $DecalBufSlot) uniform mediump samplerBuffer decals_buffer;
-layout(binding = $CellsBufSlot) uniform highp usamplerBuffer cells_buffer;
-layout(binding = $ItemsBufSlot) uniform highp usamplerBuffer items_buffer;
-layout(binding = $Moments0TexSlot) uniform mediump sampler2D moments0_texture;
-layout(binding = $Moments1TexSlot) uniform mediump sampler2D moments1_texture;
-layout(binding = $Moments2TexSlot) uniform mediump sampler2D moments2_texture;
-layout(binding = $Moments0MsTexSlot) uniform mediump sampler2DMS moments0_texture_ms;
-layout(binding = $Moments1MsTexSlot) uniform mediump sampler2DMS moments1_texture_ms;
-layout(binding = $Moments2MsTexSlot) uniform mediump sampler2DMS moments2_texture_ms;
+#include "common_fs.glsl"
+#include "common.glsl"
 
-struct ShadowMapRegion {
-    vec4 transform;
-    mat4 clip_from_world;
-};
-
-struct ProbeItem {
-    vec4 pos_and_radius;
-    vec4 unused_and_layer;
-    vec4 sh_coeffs[3];
-};
+layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D diffuse_texture;
+layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D normals_texture;
+layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D specular_texture;
+layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D ao_texture;
+layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray env_texture;
+layout(binding = REN_LIGHT_BUF_SLOT) uniform mediump samplerBuffer lights_buffer;
+layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer decals_buffer;
+layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer cells_buffer;
+layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer items_buffer;
+layout(binding = REN_MOMENTS0_TEX_SLOT) uniform mediump sampler2D moments0_texture;
+layout(binding = REN_MOMENTS1_TEX_SLOT) uniform mediump sampler2D moments1_texture;
+layout(binding = REN_MOMENTS2_TEX_SLOT) uniform mediump sampler2D moments2_texture;
+layout(binding = REN_MOMENTS0_MS_TEX_SLOT) uniform mediump sampler2DMS moments0_texture_ms;
+layout(binding = REN_MOMENTS1_MS_TEX_SLOT) uniform mediump sampler2DMS moments1_texture_ms;
+layout(binding = REN_MOMENTS2_MS_TEX_SLOT) uniform mediump sampler2DMS moments2_texture_ms;
 
 layout (std140) uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
-    vec4 uSunDir, uSunCol, uTaaInfo;
-    vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspParamsAndTime;
-	vec4 uWindScroll, uWindScrollPrev;
-    ProbeItem uProbes[$MaxProbes];
+    SharedData shrd_data;
 };
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -60,37 +45,35 @@ in mediump vec3 aVertexNormal_;
 in mediump vec3 aVertexTangent_;
 #endif
 
-layout(location = $OutColorIndex) out vec4 outColor;
-layout(location = $OutNormIndex) out vec4 outNormal;
-layout(location = $OutSpecIndex) out vec4 outSpecular;
-
-#include "common.glsl"
+layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
+layout(location = REN_OUT_NORM_INDEX) out vec4 outNormal;
+layout(location = REN_OUT_SPEC_INDEX) out vec4 outSpecular;
 
 void main(void) {
-    highp float lin_depth = uClipInfo[0] / (gl_FragCoord.z * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
+    highp float lin_depth = shrd_data.uClipInfo[0] / (gl_FragCoord.z * (shrd_data.uClipInfo[1] - shrd_data.uClipInfo[2]) + shrd_data.uClipInfo[2]);
     
     // remapped depth in [-1; 1] range used for moments calculation
     highp float transp_z =
-        2.0 * (log(lin_depth) - uTranspParamsAndTime[0]) / uTranspParamsAndTime[1] - 1.0;
+        2.0 * (log(lin_depth) - shrd_data.uTranspParamsAndTime[0]) / shrd_data.uTranspParamsAndTime[1] - 1.0;
     
     vec3 normal_color = texture(normals_texture, aVertexUVs_).wyz;
         
     vec3 normal = normal_color * 2.0 - 1.0;
     normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_), aVertexNormal_) * normal);
     
-    vec3 view_ray_ws = normalize(aVertexPos_ - uCamPosAndGamma.xyz);
+    vec3 view_ray_ws = normalize(aVertexPos_ - shrd_data.uCamPosAndGamma.xyz);
     
-    float val = uTranspParamsAndTime[3] + aVertexPos_.y * 10.0;
+    float val = shrd_data.uTranspParamsAndTime[3] + aVertexPos_.y * 10.0;
     float kk = 0.75 + 0.25 * step(val - floor(val), 0.5);
     
     float tr = 0.75 * clamp(1.2 - dot(normal, -view_ray_ws), 0.0, 1.0);
     
-    if (uTranspParamsAndTime[2] < 1.5 || uTranspParamsAndTime[2] > 2.5) {
-        highp float k = log2(lin_depth / uClipInfo[1]) / uClipInfo[3];
-        int slice = int(floor(k * $ItemGridResZ.0));
+    if (shrd_data.uTranspParamsAndTime[2] < 1.5 || shrd_data.uTranspParamsAndTime[2] > 2.5) {
+        highp float k = log2(lin_depth / shrd_data.uClipInfo[1]) / shrd_data.uClipInfo[3];
+        int slice = int(floor(k * float(REN_GRID_RES_Z)));
         
         int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-        int cell_index = slice * $ItemGridResX * $ItemGridResY + (iy * $ItemGridResY / int(uResAndFRes.y)) * $ItemGridResX + ix * $ItemGridResX / int(uResAndFRes.x);
+        int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(shrd_data.uResAndFRes.y)) * REN_GRID_RES_X + ix * REN_GRID_RES_X / int(shrd_data.uResAndFRes.x);
         
         highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
         highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
@@ -108,10 +91,10 @@ void main(void) {
             highp uint item_data = texelFetch(items_buffer, int(i)).x;
             int pi = int(bitfieldExtract(item_data, 24, 8));
             
-            float dist = distance(uProbes[pi].pos_and_radius.xyz, aVertexPos_);
-            float fade = 1.0 - smoothstep(0.9, 1.0, dist / uProbes[pi].pos_and_radius.w);
+            float dist = distance(shrd_data.uProbes[pi].pos_and_radius.xyz, aVertexPos_);
+            float fade = 1.0 - smoothstep(0.9, 1.0, dist / shrd_data.uProbes[pi].pos_and_radius.w);
             
-            reflected_color += fade * RGBMDecode(textureLod(env_texture, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), 0.0));
+            reflected_color += fade * RGBMDecode(textureLod(env_texture, vec4(refl_ray_ws, shrd_data.uProbes[pi].unused_and_layer.w), 0.0));
             total_fade += fade;
         }
         
@@ -121,16 +104,16 @@ void main(void) {
         
         float alpha = tr * kk;
         
-        if (uTranspParamsAndTime[2] < 0.5) {
+        if (shrd_data.uTranspParamsAndTime[2] < 0.5) {
             outColor = vec4(diffuse_color, alpha);
-        } else if (uTranspParamsAndTime[2] < 1.5) {
+        } else if (shrd_data.uTranspParamsAndTime[2] < 1.5) {
             outColor = vec4(diffuse_color, alpha) * TransparentDepthWeight(gl_FragCoord.z, alpha);
             outNormal = vec4(alpha);
         } else {
             float b_0;
             vec4 b_1234;
                                
-            if (uTranspParamsAndTime[2] < 3.5) {
+            if (shrd_data.uTranspParamsAndTime[2] < 3.5) {
                 b_0 = texelFetch(moments0_texture, ivec2(ix, iy), 0).x;
                 b_1234 = vec4(texelFetch(moments1_texture, ivec2(ix, iy), 0).xy,
                               texelFetch(moments2_texture, ivec2(ix, iy), 0).xy);

@@ -4,32 +4,20 @@ R"(#version 310 es
     precision mediump float;
 #endif
 
+)"
+#include "_fs_common.glsl"
+R"(
+
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
 */
 
-struct ShadowMapRegion {
-    vec4 transform;
-    mat4 clip_from_world;
-};
-
-struct ProbeItem {
-    vec4 pos_and_radius;
-    vec4 unused_and_layer;
-    vec4 sh_coeffs[3];
-};
-
 layout (std140) uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
-    vec4 uSunDir, uSunCol, uTaaInfo;
-    vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspParamsAndTime;
+    SharedData shrd_data;
 };
-        
-layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform sampler2D s_texture;
+ 
+layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D s_texture;
 layout(location = 12) uniform vec2 texcoord_offset;
 
 in vec2 aVertexUVs_;
@@ -223,7 +211,7 @@ vec4 FxaaPixelShader(vec2 pos,
 }
 
 void main() {
-    outColor = FxaaPixelShader(aVertexUVs_ * uResAndFRes.xy / uResAndFRes.zw, s_texture, texcoord_offset, 0.75, 0.125, 0.0625);
+    outColor = FxaaPixelShader(aVertexUVs_ * shrd_data.uResAndFRes.xy / shrd_data.uResAndFRes.zw, s_texture, texcoord_offset, 0.75, 0.125, 0.0625);
     outColor.a = 1.0;
 }
 )"

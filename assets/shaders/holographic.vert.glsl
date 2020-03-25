@@ -5,43 +5,26 @@
 
 $ModifyWarning
 
+#include "common_vs.glsl"
+
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
-    BatchDataBlock : $ubBatchDataLoc
 */
 
-layout(location = $VtxPosLoc) in vec3 aVertexPosition;
-layout(location = $VtxNorLoc) in vec4 aVertexNormal;
-layout(location = $VtxTanLoc) in vec2 aVertexTangent;
-layout(location = $VtxUV1Loc) in vec2 aVertexUVs1;
-layout(location = $VtxAUXLoc) in uint aVertexUnused;
-
-struct ShadowMapRegion {
-    vec4 transform;
-    mat4 clip_from_world;
-};
-
-struct ProbeItem {
-    vec4 pos_and_radius;
-    vec4 unused_and_layer;
-    vec4 sh_coeffs[3];
-};
+layout(location = REN_VTX_POS_LOC) in vec3 aVertexPosition;
+layout(location = REN_VTX_NOR_LOC) in vec4 aVertexNormal;
+layout(location = REN_VTX_TAN_LOC) in vec2 aVertexTangent;
+layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs1;
+layout(location = REN_VTX_AUX_LOC) in uint aVertexUnused;
 
 layout (std140) uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
-    vec4 uSunDir, uSunCol, uTaaInfo;
-    vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspParamsAndTime;
-	vec4 uWindScroll, uWindScrollPrev;
-    ProbeItem uProbes[$MaxProbes];
+    SharedData shrd_data;
 };
 
-layout (location = $uInstancesLoc) uniform ivec4 uInstanceIndices[$MaxBatchSize / 4];
+layout (location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
 
-layout(binding = $InstanceBufSlot) uniform mediump samplerBuffer instances_buffer;
+layout(binding = REN_INST_BUF_SLOT) uniform mediump samplerBuffer instances_buffer;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) out highp vec3 aVertexPos_;
@@ -82,5 +65,5 @@ void main(void) {
     aVertexTangent_ = vertex_tangent_ws;
     aVertexUVs_ = aVertexUVs1;
     
-    gl_Position = uViewProjMatrix * MMatrix * vec4(aVertexPosition, 1.0);
+    gl_Position = shrd_data.uViewProjMatrix * MMatrix * vec4(aVertexPosition, 1.0);
 } 

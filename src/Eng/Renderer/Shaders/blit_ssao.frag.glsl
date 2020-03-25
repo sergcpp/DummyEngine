@@ -9,21 +9,15 @@ UNIFORM_BLOCKS
     SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
 */
 
-struct ShadowMapRegion {
-    vec4 transform;
-    mat4 clip_from_world;
-};
+)"
+#include "_fs_common.glsl"
+R"(
 
 layout (std140) uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
-    vec4 uSunDir, uSunCol, uTaaInfo;
-    vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspParamsAndTime;
+    SharedData shrd_data;
 };
 
-layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform mediump sampler2D depth_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2D depth_texture;
 
 in vec2 aVertexUVs_;
 
@@ -84,7 +78,7 @@ void main() {
         mat2 transform = mat2(_transforms_4x4[c], vec2(-_transforms_4x4[c].y, _transforms_4x4[c].x));
         vec2 sample_point = transform * sample_points[i];
 
-        vec2 coord_offset = 0.5 * ss_radius * sample_point * uResAndFRes.xy;
+        vec2 coord_offset = 0.5 * ss_radius * sample_point * shrd_data.uResAndFRes.xy;
 
         vec2 depth_values = vec2(SampleDepthTexel(aVertexUVs_ + coord_offset),
                                  SampleDepthTexel(aVertexUVs_ - coord_offset));

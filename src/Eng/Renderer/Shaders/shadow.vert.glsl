@@ -3,15 +3,19 @@ R"(#version 310 es
 
 )" __ADDITIONAL_DEFINES_STR__ R"(
 
-layout(location = )" AS_STR(REN_VTX_POS_LOC) R"() in vec3 aVertexPosition;
+)"
+#include "_vs_common.glsl"
+R"(
+
+layout(location = REN_VTX_POS_LOC) in vec3 aVertexPosition;
 #ifdef TRANSPARENT_PERM
-layout(location = )" AS_STR(REN_VTX_UV1_LOC) R"() in vec2 aVertexUVs1;
+layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs1;
 #endif
 
-layout(binding = )" AS_STR(REN_INST_BUF_SLOT) R"() uniform highp samplerBuffer instances_buffer;
+layout(binding = REN_INST_BUF_SLOT) uniform highp samplerBuffer instances_buffer;
 
-layout(location = )" AS_STR(REN_U_M_MATRIX_LOC) R"() uniform mat4 uShadowViewProjMatrix;
-layout(location = )" AS_STR(REN_U_INSTANCES_LOC) R"() uniform ivec4 uInstanceIndices[)" AS_STR(REN_MAX_BATCH_SIZE) R"( / 4];
+layout(location = REN_U_M_MATRIX_LOC) uniform mat4 uShadowViewProjMatrix;
+layout(location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
 
 #ifdef TRANSPARENT_PERM
 out vec2 aVertexUVs1_;

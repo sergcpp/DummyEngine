@@ -6,19 +6,19 @@ R"(#version 310 es
     precision mediump float;
 #endif
 
-)" __ADDITIONAL_DEFINES_STR__ R"(
+)"
+#include "_fs_common.glsl"
+R"(
 
-#define GRID_RES_X )" AS_STR(REN_GRID_RES_X) R"(
-#define GRID_RES_Y )" AS_STR(REN_GRID_RES_Y) R"(
-#define GRID_RES_Z )" AS_STR(REN_GRID_RES_Z) R"(
-        
+)" __ADDITIONAL_DEFINES_STR__ R"(
+  
 #if defined(MSAA_4)
-layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform mediump sampler2DMS s_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2DMS s_texture;
 #else
-layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform mediump sampler2D s_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2D s_texture;
 #endif
-layout(binding = )" AS_STR(REN_CELLS_BUF_SLOT) R"() uniform highp usamplerBuffer cells_buffer;
-layout(binding = )" AS_STR(REN_ITEMS_BUF_SLOT) R"() uniform highp usamplerBuffer items_buffer;
+layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer cells_buffer;
+layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer items_buffer;
 
 layout(location = 15) uniform ivec2 res;
 layout(location = 16) uniform int mode;
@@ -28,20 +28,15 @@ in vec2 aVertexUVs_;
 
 out vec4 outColor;
 
-vec3 heatmap(float t) {
-    vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
-    return vec3(1.0) - r * r;
-}
-
 void main() {
     float depth = texelFetch(s_texture, ivec2(aVertexUVs_), 0).r;
     depth = uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
     
     float k = log2(depth / uClipInfo[1]) / uClipInfo[3];
-    int slice = int(floor(k * float(GRID_RES_Z)));
+    int slice = int(floor(k * float(REN_GRID_RES_Z)));
     
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-    int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy * GRID_RES_Y / res.y) * GRID_RES_X + (ix * GRID_RES_X / res.x);
+    int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / res.y) * REN_GRID_RES_X + (ix * REN_GRID_RES_X / res.x);
     
     highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
@@ -53,9 +48,9 @@ void main() {
         outColor = vec4(heatmap(float(dcount_and_pcount.x) * (1.0 / 8.0)), 0.85);
     }
 
-    int xy_cell = (iy * GRID_RES_Y / res.y) * GRID_RES_X + ix * GRID_RES_X / res.x;
-    int xy_cell_right = (iy * GRID_RES_Y / res.y) * GRID_RES_X + (ix + 1) * GRID_RES_X / res.x;
-    int xy_cell_up = ((iy + 1) * GRID_RES_Y / res.y) * GRID_RES_X + ix * GRID_RES_X / res.x;
+    int xy_cell = (iy * REN_GRID_RES_Y / res.y) * REN_GRID_RES_X + ix * REN_GRID_RES_X / res.x;
+    int xy_cell_right = (iy * REN_GRID_RES_Y / res.y) * REN_GRID_RES_X + (ix + 1) * REN_GRID_RES_X / res.x;
+    int xy_cell_up = ((iy + 1) * REN_GRID_RES_Y / res.y) * REN_GRID_RES_X + ix * REN_GRID_RES_X / res.x;
 
     // mark cell border
     if (xy_cell_right != xy_cell || xy_cell_up != xy_cell) {

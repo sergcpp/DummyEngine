@@ -1,3 +1,4 @@
+#include "_common.glsl"
 R"(
 
 #define VEGE_MAX_MOVEMENT 8.0

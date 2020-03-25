@@ -1,3 +1,8 @@
+#include "_common.glsl"
+R"(
+
+#define LinearizeDepth(z, clip_info) \
+    ((clip_info)[0] / ((z) * ((clip_info)[1] - (clip_info)[2]) + (clip_info)[2]))
 
 vec3 heatmap(float t) {
     vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
@@ -59,7 +64,7 @@ const vec2 poisson_disk[16] = vec2[16](
 float SampleShadowPCF5x5(sampler2DShadow shadow_texture, highp vec3 shadow_coord) {
     // http://the-witness.net/news/2013/09/shadow-mapping-summary-part-1/
 
-    const highp vec2 shadow_size = vec2($ShadRes.0, $ShadRes.0 / 2.0);
+    const highp vec2 shadow_size = vec2(float(REN_SHAD_RES), float(REN_SHAD_RES) / 2.0);
     const highp vec2 shadow_size_inv = vec2(1.0) / shadow_size;
     
     float z = shadow_coord.z;
@@ -117,43 +122,43 @@ float SampleShadowPCF5x5(sampler2DShadow shadow_texture, highp vec3 shadow_coord
 float GetSunVisibility(float frag_depth, sampler2DShadow shadow_texture, in highp vec3 aVertexShUVs[4]) {
     float visibility = 0.0;
     
-    /*[[branch]]*/ if (frag_depth < $ShadCasc0Dist) {
+    /*[[branch]]*/ if (frag_depth < REN_SHAD_CASCADE0_DIST) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[0]);
         
-#if $ShadCascSoft
-        /*[[branch]]*/ if (frag_depth > 0.9 * $ShadCasc0Dist) {
+#if REN_SHAD_CASCADE_SOFT
+        /*[[branch]]*/ if (frag_depth > 0.9 * REN_SHAD_CASCADE0_DIST) {
             float v2 = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[1]);
             
-            float k = 10.0 * (frag_depth / $ShadCasc0Dist - 0.9);
+            float k = 10.0 * (frag_depth / REN_SHAD_CASCADE0_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
-    } else /*[[branch]]*/ if (frag_depth < $ShadCasc1Dist) {
+    } else /*[[branch]]*/ if (frag_depth < REN_SHAD_CASCADE1_DIST) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[1]);
         
-#if $ShadCascSoft
-        /*[[branch]]*/ if (frag_depth > 0.9 * $ShadCasc1Dist) {
+#if REN_SHAD_CASCADE_SOFT
+        /*[[branch]]*/ if (frag_depth > 0.9 * REN_SHAD_CASCADE1_DIST) {
             float v2 = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[2]);
             
-            float k = 10.0 * (frag_depth / $ShadCasc1Dist - 0.9);
+            float k = 10.0 * (frag_depth / REN_SHAD_CASCADE1_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
-    } else /*[[branch]]*/ if (frag_depth < $ShadCasc2Dist) {
+    } else /*[[branch]]*/ if (frag_depth < REN_SHAD_CASCADE2_DIST) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[2]);
         
-#if $ShadCascSoft
-        /*[[branch]]*/ if (frag_depth > 0.9 * $ShadCasc2Dist) {
+#if REN_SHAD_CASCADE_SOFT
+        /*[[branch]]*/ if (frag_depth > 0.9 * REN_SHAD_CASCADE2_DIST) {
             float v2 = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[3]);
             
-            float k = 10.0 * (frag_depth / $ShadCasc2Dist - 0.9);
+            float k = 10.0 * (frag_depth / REN_SHAD_CASCADE2_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
-    } else /*[[branch]]*/ if (frag_depth < $ShadCasc3Dist) {
+    } else /*[[branch]]*/ if (frag_depth < REN_SHAD_CASCADE3_DIST) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[3]);
         
-        float t = smoothstep(0.95 * $ShadCasc3Dist, $ShadCasc3Dist, frag_depth);
+        float t = smoothstep(0.95 * REN_SHAD_CASCADE3_DIST, REN_SHAD_CASCADE3_DIST, frag_depth);
         visibility = mix(visibility, 1.0, t);
     } else {
         // use direct sun lightmap?
@@ -255,12 +260,4 @@ float TransparentDepthWeight(float z, float alpha) {
     return alpha * max(3e3 * pow3(1.0 - z), 1e-2);
 }
 
-/*vec3 WindLargeScale(vec3 obj_pos, float scroll) {
-	return vec3(
-		2.0 * sin(1.0 * (obj_pos.x + obj_pos.y + obj_pos.z + scroll)) + 1.0,
-		0.0,
-		1.0 * sin(2.0 * (obj_pos.x + obj_pos.y + obj_pos.z + scroll)) + 0.5
-	);
-}
-
-float WindSmallScale(*/
+)"

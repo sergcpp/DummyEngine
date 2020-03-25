@@ -5,28 +5,18 @@
 
 $ModifyWarning
 
+#include "common_vs.glsl"
+
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
-    BatchDataBlock : $ubBatchDataLoc
 */
 
-layout(location = $VtxPosLoc) in vec3 aVertexPosition;
-layout(location = $VtxNorLoc) in vec4 aVertexNormal;
-layout(location = $VtxTanLoc) in vec2 aVertexTangent;
-layout(location = $VtxUV1Loc) in vec2 aVertexUVs1;
-layout(location = $VtxAUXLoc) in vec2 aVertexUnused;
-
-struct ShadowMapRegion {
-    vec4 transform;
-    mat4 clip_from_world;
-};
-
-struct ProbeItem {
-    vec4 pos_and_radius;
-    vec4 unused_and_layer;
-    vec4 sh_coeffs[3];
-};
+layout(location = REN_VTX_POS_LOC) in vec3 aVertexPosition;
+layout(location = REN_VTX_NOR_LOC) in vec4 aVertexNormal;
+layout(location = REN_VTX_TAN_LOC) in vec2 aVertexTangent;
+layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs1;
+layout(location = REN_VTX_AUX_LOC) in vec2 aVertexUnused;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = 0, std140)
@@ -34,19 +24,12 @@ layout (binding = 0, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
-    vec4 uSunDir, uSunCol, uTaaInfo;
-    vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspParamsAndTime;
-	vec4 uWindScroll, uWindScrollPrev;
-    ProbeItem uProbes[$MaxProbes];
+    SharedData shrd_data;
 };
 
-layout (location = $uInstancesLoc) uniform ivec4 uInstanceIndices[$MaxBatchSize / 4];
+layout (location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
 
-layout(binding = $InstanceBufSlot) uniform highp samplerBuffer instances_buffer;
+layout(binding = REN_INST_BUF_SLOT) uniform highp samplerBuffer instances_buffer;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) out highp vec3 aVertexPos_;
@@ -97,11 +80,11 @@ void main(void) {
     );
     
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
-        aVertexShUVs_[i] = (uShadowMapRegions[i].clip_from_world * vec4(vertex_position_ws, 1.0)).xyz;
+        aVertexShUVs_[i] = (shrd_data.uShadowMapRegions[i].clip_from_world * vec4(vertex_position_ws, 1.0)).xyz;
         aVertexShUVs_[i] = 0.5 * aVertexShUVs_[i] + 0.5;
         aVertexShUVs_[i].xy *= vec2(0.25, 0.5);
         aVertexShUVs_[i].xy += offsets[i];
     }
     
-    gl_Position = uViewProjMatrix * vec4(vertex_position_ws, 1.0);
+    gl_Position = shrd_data.uViewProjMatrix * vec4(vertex_position_ws, 1.0);
 } 

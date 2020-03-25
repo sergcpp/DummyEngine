@@ -3,8 +3,12 @@ R"(#version 310 es
 #ifdef GL_ES
     precision mediump float;
 #endif
+
+)"
+#include "_fs_common.glsl"
+R"(
         
-layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform lowp sampler2D source_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform lowp sampler2D source_texture;
 
 in vec2 aVertexUVs_;
 

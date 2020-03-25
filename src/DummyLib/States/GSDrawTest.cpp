@@ -24,14 +24,13 @@ namespace GSDrawTestInternal {
 #else
     const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-        //"font_test.json";
         //"skin_test.json";
-        //"living_room_gumroad.json";
+        "living_room_gumroad.json";
         //"bistro.json";
         //"pbr_test.json";
         //"zenith.json";
         //"corridor.json";
-        "vegetation_test.json";
+        //"vegetation_test.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {
@@ -190,13 +189,6 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
                 }
             }
         }
-    }
-
-    {
-        font_meshes_[0] = scene_manager_->FindObject("font_mesh0");
-        font_meshes_[1] = scene_manager_->FindObject("font_mesh1");
-        font_meshes_[2] = scene_manager_->FindObject("font_mesh2");
-        font_meshes_[3] = scene_manager_->FindObject("font_mesh3");
     }
 
     {
@@ -600,27 +592,6 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
             if ((wolf->comp_mask & mask) == mask) {
                 auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(wolf->components[CompDrawable]);
                 auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
-
-                as->anim_time_s += delta_time_s;
-
-                Ren::Mesh *mesh = dr->mesh.get();
-                Ren::Skeleton *skel = mesh->skel();
-
-                skel->UpdateAnim(0, as->anim_time_s);
-                skel->ApplyAnim(0);
-                skel->UpdateBones(as->matr_palette);
-            }
-        }
-    }
-
-    if (font_meshes_[0] != 0xffffffff) {
-        for (uint32_t font_mesh : font_meshes_) {
-            SceneObject *font = scene_manager_->GetObject(font_mesh);
-
-            uint32_t mask = CompDrawableBit | CompAnimStateBit;
-            if ((font->comp_mask & mask) == mask) {
-                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(font->components[CompDrawable]);
-                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(font->components[CompAnimState]);
 
                 as->anim_time_s += delta_time_s;
 

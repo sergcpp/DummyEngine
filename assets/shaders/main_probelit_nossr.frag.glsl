@@ -11,29 +11,20 @@ $ModifyWarning
     precision mediump sampler2DShadow;
 #endif
 
+#include "common_fs.glsl"
+
 #define LIGHT_ATTEN_CUTOFF 0.004
 
-layout(binding = $MatTex0Slot) uniform sampler2D diffuse_texture;
-layout(binding = $MatTex1Slot) uniform sampler2D normals_texture;
-layout(binding = $MatTex2Slot) uniform sampler2D specular_texture;
-layout(binding = $ShadTexSlot) uniform sampler2DShadow shadow_texture;
-layout(binding = $DecalTexSlot) uniform sampler2D decals_texture;
-layout(binding = $SSAOTexSlot) uniform sampler2D ao_texture;
-layout(binding = $LightBufSlot) uniform mediump samplerBuffer lights_buffer;
-layout(binding = $DecalBufSlot) uniform mediump samplerBuffer decals_buffer;
-layout(binding = $CellsBufSlot) uniform highp usamplerBuffer cells_buffer;
-layout(binding = $ItemsBufSlot) uniform highp usamplerBuffer items_buffer;
-
-struct ShadowMapRegion {
-    vec4 transform;
-    mat4 clip_from_world;
-};
-
-struct ProbeItem {
-    vec4 pos_and_radius;
-    vec4 unused_and_layer;
-    vec4 sh_coeffs[3];
-};
+layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D diffuse_texture;
+layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D normals_texture;
+layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D specular_texture;
+layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow shadow_texture;
+layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D decals_texture;
+layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D ao_texture;
+layout(binding = REN_LIGHT_BUF_SLOT) uniform mediump samplerBuffer lights_buffer;
+layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer decals_buffer;
+layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer cells_buffer;
+layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer items_buffer;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = 0, std140)
@@ -41,14 +32,7 @@ layout (binding = 0, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
-    vec4 uSunDir, uSunCol, uTaaInfo;
-    vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspParamsAndTime;
-	vec4 uWindScroll, uWindScrollPrev;
-    ProbeItem uProbes[$MaxProbes];
+    SharedData shrd_data;
 };
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -65,19 +49,19 @@ in mediump vec3 aVertexTangent_;
 in highp vec3 aVertexShUVs_[4];
 #endif
 
-layout(location = $OutColorIndex) out vec4 outColor;
-layout(location = $OutNormIndex) out vec4 outNormal;
-layout(location = $OutSpecIndex) out vec4 outSpecular;
+layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
+layout(location = REN_OUT_NORM_INDEX) out vec4 outNormal;
+layout(location = REN_OUT_SPEC_INDEX) out vec4 outSpecular;
 
 #include "common.glsl"
 
 void main(void) {
-    highp float lin_depth = uClipInfo[0] / (gl_FragCoord.z * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
-    highp float k = log2(lin_depth / uClipInfo[1]) / uClipInfo[3];
-    int slice = int(floor(k * $ItemGridResZ.0));
+    highp float lin_depth = shrd_data.uClipInfo[0] / (gl_FragCoord.z * (shrd_data.uClipInfo[1] - shrd_data.uClipInfo[2]) + shrd_data.uClipInfo[2]);
+    highp float k = log2(lin_depth / shrd_data.uClipInfo[1]) / shrd_data.uClipInfo[3];
+    int slice = int(floor(k * float(REN_GRID_RES_Z)));
     
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-    int cell_index = slice * $ItemGridResX * $ItemGridResY + (iy * $ItemGridResY / int(uResAndFRes.y)) * $ItemGridResX + ix * $ItemGridResX / int(uResAndFRes.x);
+    int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(shrd_data.uResAndFRes.y)) * REN_GRID_RES_X + ix * REN_GRID_RES_X / int(shrd_data.uResAndFRes.x);
     
     highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
@@ -184,12 +168,12 @@ void main(void) {
         float _dot2 = dot(L, dir_and_spot.xyz);
         
         atten = _dot1 * atten;
-        if (_dot2 > dir_and_spot.w && (brightness * atten) > $FltEps) {
+        if (_dot2 > dir_and_spot.w && (brightness * atten) > FLT_EPS) {
             int shadowreg_index = floatBitsToInt(col_and_index.w);
             if (shadowreg_index != -1) {
-                vec4 reg_tr = uShadowMapRegions[shadowreg_index].transform;
+                vec4 reg_tr = shrd_data.uShadowMapRegions[shadowreg_index].transform;
                 
-                highp vec4 pp = uShadowMapRegions[shadowreg_index].clip_from_world * vec4(aVertexPos_, 1.0);
+                highp vec4 pp = shrd_data.uShadowMapRegions[shadowreg_index].clip_from_world * vec4(aVertexPos_, 1.0);
                 pp /= pp.w;
                 pp.xyz = pp.xyz * 0.5 + vec3(0.5);
                 pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
@@ -211,30 +195,30 @@ void main(void) {
         const float SH_A0 = 0.886226952; // PI / sqrt(4.0f * Pi)
         const float SH_A1 = 1.02332675;  // sqrt(PI / 3.0f)
         
-        float dist = distance(uProbes[pi].pos_and_radius.xyz, aVertexPos_);
-        float fade = 1.0 - smoothstep(0.9, 1.0, dist / uProbes[pi].pos_and_radius.w);
+        float dist = distance(shrd_data.uProbes[pi].pos_and_radius.xyz, aVertexPos_);
+        float fade = 1.0 - smoothstep(0.9, 1.0, dist / shrd_data.uProbes[pi].pos_and_radius.w);
         vec4 vv = fade * vec4(SH_A0, SH_A1 * normal.yzx);
 
-        indirect_col.r += dot(uProbes[pi].sh_coeffs[0], vv);
-        indirect_col.g += dot(uProbes[pi].sh_coeffs[1], vv);
-        indirect_col.b += dot(uProbes[pi].sh_coeffs[2], vv);
+        indirect_col.r += dot(shrd_data.uProbes[pi].sh_coeffs[0], vv);
+        indirect_col.g += dot(shrd_data.uProbes[pi].sh_coeffs[1], vv);
+        indirect_col.b += dot(shrd_data.uProbes[pi].sh_coeffs[2], vv);
         total_fade += fade;
     }
     
     indirect_col /= max(total_fade, 1.0);
     indirect_col = max(4.0 * indirect_col, vec3(0.0));
     
-    float lambert = clamp(dot(normal, uSunDir.xyz), 0.0, 1.0);
+    float lambert = clamp(dot(normal, shrd_data.uSunDir.xyz), 0.0, 1.0);
     float visibility = 0.0;
     if (lambert > 0.00001) {
         visibility = GetSunVisibility(lin_depth, shadow_texture, aVertexShUVs_);
     }
     
-    vec2 ao_uvs = vec2(ix, iy) / uResAndFRes.zw;
+    vec2 ao_uvs = vec2(ix, iy) / shrd_data.uResAndFRes.zw;
     float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;
-    vec3 diffuse_color = albedo_color * (uSunCol.xyz * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
+    vec3 diffuse_color = albedo_color * (shrd_data.uSunCol.xyz * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
     
-    vec3 view_ray_ws = normalize(uCamPosAndGamma.xyz - aVertexPos_);
+    vec3 view_ray_ws = normalize(shrd_data.uCamPosAndGamma.xyz - aVertexPos_);
     float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);
     
     vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, specular_color.xyz, specular_color.a);

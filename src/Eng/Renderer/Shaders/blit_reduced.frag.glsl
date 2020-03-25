@@ -3,7 +3,11 @@ R"(#version 310 es
     precision mediump float;
 #endif
 
-layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform sampler2D s_texture;
+)"
+#include "_fs_common.glsl"
+R"(
+
+layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D s_texture;
 layout(location = 4) uniform vec2 uOffset;
 
 in vec2 aVertexUVs_;

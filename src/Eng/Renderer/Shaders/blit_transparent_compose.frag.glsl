@@ -6,20 +6,16 @@ R"(#version 310 es
 
 )" __ADDITIONAL_DEFINES_STR__ R"(
 
-#define REN_OIT_DISABLED            )" AS_STR(REN_OIT_DISABLED) R"(
-#define REN_OIT_MOMENT_BASED        )" AS_STR(REN_OIT_MOMENT_BASED) R"(
-#define REN_OIT_WEIGHTED_BLENDED    )" AS_STR(REN_OIT_WEIGHTED_BLENDED) R"(
-
-#define REN_OIT_MOMENT_RENORMALIZE  )" AS_STR(REN_OIT_MOMENT_RENORMALIZE) R"(
-
-#define REN_OIT_MODE )" AS_STR(REN_OIT_MODE) R"(
+)"
+#include "_fs_common.glsl"
+R"(
 
 #if defined(MSAA_4)
-layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform mediump sampler2DMS s_accum_texture;
-layout(binding = )" AS_STR(REN_BASE1_TEX_SLOT) R"() uniform mediump sampler2DMS s_additional_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2DMS s_accum_texture;
+layout(binding = REN_BASE1_TEX_SLOT) uniform mediump sampler2DMS s_additional_texture;
 #else
-layout(binding = )" AS_STR(REN_BASE0_TEX_SLOT) R"() uniform mediump sampler2D s_accum_texture;
-layout(binding = )" AS_STR(REN_BASE1_TEX_SLOT) R"() uniform mediump sampler2D s_additional_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2D s_accum_texture;
+layout(binding = REN_BASE1_TEX_SLOT) uniform mediump sampler2D s_additional_texture;
 #endif
 
 in vec2 aVertexUVs_;

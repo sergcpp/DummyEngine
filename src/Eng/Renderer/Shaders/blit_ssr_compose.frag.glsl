@@ -2,9 +2,14 @@ R"(#version 310 es
 #extension GL_ARB_texture_multisample : enable
 #extension GL_EXT_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
+
 #ifdef GL_ES
     precision mediump float;
 #endif
+
+)"
+#include "_fs_common.glsl"
+R"(
 
 /*
 UNIFORM_BLOCKS
@@ -13,69 +18,31 @@ UNIFORM_BLOCKS
 
 )" __ADDITIONAL_DEFINES_STR__ R"(
 
-#define GRID_RES_X )" AS_STR(REN_GRID_RES_X) R"(
-#define GRID_RES_Y )" AS_STR(REN_GRID_RES_Y) R"(
-#define GRID_RES_Z )" AS_STR(REN_GRID_RES_Z) R"(
-
-struct ShadowMapRegion {
-    vec4 transform;
-    mat4 clip_from_world;
-};
-
-struct ProbeItem {
-    vec4 pos_and_radius;
-    vec4 unused_and_layer;
-    vec4 sh_coeffs[3];
-};
-
 layout (std140) uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
-    vec4 uSunDir, uSunCol, uTaaInfo;
-    vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspParamsAndTime;
-    vec4 uWindScroll, uWindScrollPrev;
-    ProbeItem uProbes[)" AS_STR(REN_MAX_PROBES_TOTAL) R"(];
+    SharedData shrd_data;
 };
 
 #if defined(MSAA_4)
-layout(binding = )" AS_STR(REN_REFL_SPEC_TEX_SLOT) R"() uniform mediump sampler2DMS s_spec_texture;
-layout(binding = )" AS_STR(REN_REFL_DEPTH_TEX_SLOT) R"() uniform mediump sampler2DMS s_depth_texture;
-layout(binding = )" AS_STR(REN_REFL_NORM_TEX_SLOT) R"() uniform mediump sampler2DMS s_norm_texture;
+layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2DMS s_spec_texture;
+layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform mediump sampler2DMS s_depth_texture;
+layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2DMS s_norm_texture;
 #else
-layout(binding = )" AS_STR(REN_REFL_SPEC_TEX_SLOT) R"() uniform mediump sampler2D s_spec_texture;
-layout(binding = )" AS_STR(REN_REFL_DEPTH_TEX_SLOT) R"() uniform mediump sampler2D s_depth_texture;
-layout(binding = )" AS_STR(REN_REFL_NORM_TEX_SLOT) R"() uniform mediump sampler2D s_norm_texture;
+layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2D s_spec_texture;
+layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform mediump sampler2D s_depth_texture;
+layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2D s_norm_texture;
 #endif
-layout(binding = )" AS_STR(REN_REFL_DEPTH_LOW_TEX_SLOT) R"() uniform mediump sampler2D depth_low_texture;
-layout(binding = )" AS_STR(REN_REFL_SSR_TEX_SLOT) R"() uniform mediump sampler2D source_texture;
+layout(binding = REN_REFL_DEPTH_LOW_TEX_SLOT) uniform mediump sampler2D depth_low_texture;
+layout(binding = REN_REFL_SSR_TEX_SLOT) uniform mediump sampler2D source_texture;
 
-layout(binding = )" AS_STR(REN_REFL_PREV_TEX_SLOT) R"() uniform mediump sampler2D prev_texture;
-layout(binding = )" AS_STR(REN_REFL_BRDF_TEX_SLOT) R"() uniform sampler2D brdf_lut_texture;
-layout(binding = )" AS_STR(REN_ENV_TEX_SLOT) R"() uniform mediump samplerCubeArray probe_textures;
-layout(binding = )" AS_STR(REN_CELLS_BUF_SLOT) R"() uniform highp usamplerBuffer cells_buffer;
-layout(binding = )" AS_STR(REN_ITEMS_BUF_SLOT) R"() uniform highp usamplerBuffer items_buffer;
+layout(binding = REN_REFL_PREV_TEX_SLOT) uniform mediump sampler2D prev_texture;
+layout(binding = REN_REFL_BRDF_TEX_SLOT) uniform sampler2D brdf_lut_texture;
+layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray probe_textures;
+layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer cells_buffer;
+layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer items_buffer;
 
 in vec2 aVertexUVs_;
 
 out vec4 outColor;
-
-float LinearizeDepth(float depth) {
-    return uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
-}
-
-vec3 RGBMDecode(vec4 rgbm) {
-    return 4.0 * rgbm.rgb * rgbm.a;
-}
-
-float pow5(float x) {
-    return (x * x) * (x * x) * x;
-}
-
-vec3 FresnelSchlickRoughness(float cos_theta, vec3 F0, float roughness) {
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - cos_theta);
-}
 
 void main() {
     outColor = vec4(0.0);
@@ -94,7 +61,7 @@ void main() {
     if ((specular.r + specular.g + specular.b) < 0.0001) return;
 
     float depth = texelFetch(s_depth_texture, icoord, 0).r;
-    float d0 = LinearizeDepth(depth);
+    float d0 = LinearizeDepth(depth, shrd_data.uClipInfo);
  
     float d1 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(0, 0), 0).r);
     float d2 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(0, 1), 0).r);
@@ -106,7 +73,7 @@ void main() {
     vec3 ssr_uvs;
 
     if (dmin < 0.05) {
-        ssr_uvs = texture(source_texture, aVertexUVs_ * uResAndFRes.xy / uResAndFRes.zw).rgb;
+        ssr_uvs = texture(source_texture, aVertexUVs_ * shrd_data.uResAndFRes.xy / shrd_data.uResAndFRes.zw).rgb;
     } else {
         if (dmin == d1) {
             ssr_uvs = texelFetch(source_texture, icoord_low + ivec2(0, 0), 0).rgb;
@@ -130,20 +97,20 @@ void main() {
     {   // apply cubemap contribution
         vec4 ray_origin_cs = vec4(2.0 * vec3(aVertexUVs_.xy, depth) - 1.0, 1.0);
 
-        vec4 ray_origin_vs = uInvProjMatrix * ray_origin_cs;
+        vec4 ray_origin_vs = shrd_data.uInvProjMatrix * ray_origin_cs;
         ray_origin_vs /= ray_origin_vs.w;
 
-        vec3 view_ray_ws = normalize((uInvViewMatrix * vec4(ray_origin_vs.xyz, 0.0)).xyz);
+        vec3 view_ray_ws = normalize((shrd_data.uInvViewMatrix * vec4(ray_origin_vs.xyz, 0.0)).xyz);
         vec3 refl_ray_ws = reflect(view_ray_ws, normal);
 
-        vec4 ray_origin_ws = uInvViewMatrix * ray_origin_vs;
+        vec4 ray_origin_ws = shrd_data.uInvViewMatrix * ray_origin_vs;
         ray_origin_ws /= ray_origin_ws.w;
 
-        highp float k = log2(d0 / uClipInfo[1]) / uClipInfo[3];
-        int slice = int(floor(k * float(GRID_RES_Z)));
+        highp float k = log2(d0 / shrd_data.uClipInfo[1]) / shrd_data.uClipInfo[3];
+        int slice = int(floor(k * float(REN_GRID_RES_Z)));
     
         int ix = icoord.x, iy = icoord.y;
-        int cell_index = slice * GRID_RES_X * GRID_RES_Y + (iy * GRID_RES_Y / int(uResAndFRes.y)) * GRID_RES_X + (ix * GRID_RES_X / int(uResAndFRes.x));
+        int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(shrd_data.uResAndFRes.y)) * REN_GRID_RES_X + (ix * REN_GRID_RES_X / int(shrd_data.uResAndFRes.x));
         
         highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
         highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
@@ -155,9 +122,9 @@ void main() {
             highp uint item_data = texelFetch(items_buffer, int(i)).x;
             int pi = int(bitfieldExtract(item_data, 24, 8));
 
-            float dist = distance(uProbes[pi].pos_and_radius.xyz, ray_origin_ws.xyz);
-            float fade = 1.0 - smoothstep(0.9, 1.0, dist / uProbes[pi].pos_and_radius.w);
-            c0 += fade * RGBMDecode(textureLod(probe_textures, vec4(refl_ray_ws, uProbes[pi].unused_and_layer.w), tex_lod));
+            float dist = distance(shrd_data.uProbes[pi].pos_and_radius.xyz, ray_origin_ws.xyz);
+            float fade = 1.0 - smoothstep(0.9, 1.0, dist / shrd_data.uProbes[pi].pos_and_radius.w);
+            c0 += fade * RGBMDecode(textureLod(probe_textures, vec4(refl_ray_ws, shrd_data.uProbes[pi].unused_and_layer.w), tex_lod));
             total_fade += fade;
         }
 

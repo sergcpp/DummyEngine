@@ -6,6 +6,10 @@ R"(#version 310 es
 	precision mediump float;
 #endif
 
+)"
+#include "_fs_common.glsl"
+R"(
+
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
@@ -13,41 +17,21 @@ UNIFORM_BLOCKS
 
 )" __ADDITIONAL_DEFINES_STR__ R"(
 
-#define GRID_RES_X )" AS_STR(REN_GRID_RES_X) R"(
-#define GRID_RES_Y )" AS_STR(REN_GRID_RES_Y) R"(
-#define GRID_RES_Z )" AS_STR(REN_GRID_RES_Z) R"(
-
 #define STRIDE 0.0125
 #define MAX_STEPS 48.0
 #define BSEARCH_STEPS 4
 
-struct ShadowMapRegion {
-    vec4 transform;
-    mat4 clip_from_world;
-};
-
-struct ProbeItem {
-    vec4 pos_and_radius;
-    vec4 unused_and_layer;
-    vec4 sh_coeffs[3];
-};
-
 layout (std140) uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
-    vec4 uSunDir, uSunCol, uTaaInfo;
-    vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspParamsAndTime;
+    SharedData shrd_data;
 };
 
-layout(binding = )" AS_STR(REN_REFL_DEPTH_TEX_SLOT) R"() uniform mediump sampler2D depth_texture;
+layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform mediump sampler2D depth_texture;
 #if defined(MSAA_4)
-layout(binding = )" AS_STR(REN_REFL_NORM_TEX_SLOT) R"() uniform mediump sampler2DMS norm_texture;
-layout(binding = )" AS_STR(REN_REFL_SPEC_TEX_SLOT) R"() uniform mediump sampler2DMS spec_texture;
+layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2DMS norm_texture;
+layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2DMS spec_texture;
 #else
-layout(binding = )" AS_STR(REN_REFL_NORM_TEX_SLOT) R"() uniform mediump sampler2D norm_texture;
-layout(binding = )" AS_STR(REN_REFL_SPEC_TEX_SLOT) R"() uniform mediump sampler2D spec_texture;
+layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2D norm_texture;
+layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2D spec_texture;
 #endif
 
 in vec2 aVertexUVs_;
@@ -59,17 +43,9 @@ float distance2(in vec2 P0, in vec2 P1) {
     return d.x * d.x + d.y * d.y;
 }
 
-float rand(vec2 co) {
-    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
-}
-
-vec3 RGBMDecode(vec4 rgbm) {
-    return 4.0 * rgbm.rgb * rgbm.a;
-}
-
 float LinearDepthTexelFetch(ivec2 hit_pixel) {
     float depth = texelFetch(depth_texture, hit_pixel / 2, 0).r;
-    return depth; //uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
+    return depth; //shrd_data.uClipInfo[0] / (depth * (shrd_data.uClipInfo[1] - shrd_data.uClipInfo[2]) + shrd_data.uClipInfo[2]);
 }
 
 bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel, out vec3 hit_point) {
@@ -78,15 +54,15 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     // from "Efficient GPU Screen-Space Ray Tracing"
 
     // Clip ray length to camera near plane
-    float ray_length = (ray_origin_vs.z + ray_dir_vs.z * max_dist) > -uClipInfo[1] ?
-                       (-ray_origin_vs.z - uClipInfo[1]) / ray_dir_vs.z :
+    float ray_length = (ray_origin_vs.z + ray_dir_vs.z * max_dist) > - shrd_data.uClipInfo[1] ?
+                       (-ray_origin_vs.z - shrd_data.uClipInfo[1]) / ray_dir_vs.z :
                        max_dist;
 
     vec3 ray_end_vs = ray_origin_vs + ray_length * ray_dir_vs;
 
     // Project into screen space
-    vec4 H0 = uProjMatrix * vec4(ray_origin_vs, 1.0),
-         H1 = uProjMatrix * vec4(ray_end_vs, 1.0);
+    vec4 H0 = shrd_data.uProjMatrix * vec4(ray_origin_vs, 1.0),
+         H1 = shrd_data.uProjMatrix * vec4(ray_end_vs, 1.0);
     float k0 = 1.0 / H0.w, k1 = 1.0 / H1.w;
 
     vec3 Q0 = ray_origin_vs * k0,
@@ -100,8 +76,8 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     P0 = 0.5 * P0 + 0.5;
     P1 = 0.5 * P1 + 0.5;
 
-    P0 *= uResAndFRes.xy;
-    P1 *= uResAndFRes.xy;
+    P0 *= shrd_data.uResAndFRes.xy;
+    P1 *= shrd_data.uResAndFRes.xy;
 
     vec2 delta = P1 - P0;
 
@@ -120,7 +96,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     vec3 dQ = (Q1 - Q0) * inv_dx;
     float dk = (k1 - k0) * inv_dx;
 
-    float stride = STRIDE * uResAndFRes.x;
+    float stride = STRIDE * shrd_data.uResAndFRes.x;
     dP *= stride;
     dQ *= stride;
     dk *= stride;
@@ -168,7 +144,7 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     }
 
     vec2 test_pixel = permute ? hit_pixel.yx : hit_pixel;
-    bool res = all(lessThanEqual(abs(test_pixel - (uResAndFRes.xy * 0.5)), uResAndFRes.xy * 0.5));
+    bool res = all(lessThanEqual(abs(test_pixel - (shrd_data.uResAndFRes.xy * 0.5)), shrd_data.uResAndFRes.xy * 0.5));
 
 #if BSEARCH_STEPS != 0
     if (res) {
@@ -219,15 +195,15 @@ void main() {
     if (normal_tex.w < 0.0001) return;
 
     float depth = texelFetch(depth_texture, pix_uvs / 2, 0).r;
-    depth = (uClipInfo[0] / depth - uClipInfo[2]) / (uClipInfo[1] - uClipInfo[2]);
+    depth = (shrd_data.uClipInfo[0] / depth - shrd_data.uClipInfo[2]) / (shrd_data.uClipInfo[1] - shrd_data.uClipInfo[2]);
 
     vec3 normal_ws = 2.0 * normal_tex.xyz - 1.0;
-    vec3 normal_vs = (uViewMatrix * vec4(normal_ws, 0.0)).xyz;
+    vec3 normal_vs = (shrd_data.uViewMatrix * vec4(normal_ws, 0.0)).xyz;
 
-    vec4 ray_origin_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, 2.0 * depth - 1.0, 1.0);
+    vec4 ray_origin_cs = vec4(aVertexUVs_.xy / shrd_data.uResAndFRes.xy, 2.0 * depth - 1.0, 1.0);
     ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
 
-    vec4 ray_origin_vs = uInvProjMatrix * ray_origin_cs;
+    vec4 ray_origin_vs = shrd_data.uInvProjMatrix * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
 
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
@@ -237,11 +213,11 @@ void main() {
     vec3 hit_point;
     
     if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, hit_pixel, hit_point)) {
-        hit_pixel /= uResAndFRes.xy;
+        hit_pixel /= shrd_data.uResAndFRes.xy;
 
         // reproject hitpoint into a view space of previous frame
-        vec4 hit_prev = uDeltaMatrix * vec4(hit_point, 1.0);
-        hit_prev = uProjMatrix * hit_prev;
+        vec4 hit_prev = shrd_data.uDeltaMatrix * vec4(hit_point, 1.0);
+        hit_prev = shrd_data.uProjMatrix * hit_prev;
         hit_prev /= hit_prev.w;
         hit_prev.xy = 0.5 * hit_prev.xy + 0.5;
 

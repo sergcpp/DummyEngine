@@ -57,7 +57,6 @@
 #define REN_U_INSTANCES_LOC 1
 
 #define REN_UB_SHARED_DATA_LOC  0
-#define REN_UB_BATCH_DATA_LOC   1
 
 // Shader output location
 #define REN_OUT_COLOR_INDEX 0

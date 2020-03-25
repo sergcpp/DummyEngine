@@ -1,32 +1,5 @@
 R"(#version )" GLSL_VERSION_STR R"(
 
-/*
-UNIFORM_BLOCKS
-    SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
-*/
-
-struct ShadowMapRegion {
-    vec4 transform;
-    mat4 clip_from_world;
-};
-
-struct ProbeItem {
-    vec4 pos_and_radius;
-    vec4 unused_and_layer;
-    vec4 sh_coeffs[3];
-};
-
-layout (std140) uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
-    vec4 uSunDir, uSunCol, uTaaInfo;
-    vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspParamsAndTime;
-    vec4 uWindScroll, uWindScrollPrev;
-    ProbeItem uProbes[)" AS_STR(REN_MAX_PROBES_TOTAL) R"(];
-};
-
 struct InVertex {
     highp vec4 p_and_nxy;
     highp uvec2 nz_and_b;

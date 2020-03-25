@@ -11,20 +11,11 @@ $ModifyWarning
     precision mediump sampler2DShadow;
 #endif
 
+#include "common_fs.glsl"
+
 #define LIGHT_ATTEN_CUTOFF 0.004
 
-layout(binding = $MatTex0Slot) uniform sampler2D diffuse_texture;
-
-struct ShadowMapRegion {
-    vec4 transform;
-    mat4 clip_from_world;
-};
-
-struct ProbeItem {
-    vec4 pos_and_radius;
-    vec4 unused_and_layer;
-    vec4 sh_coeffs[3];
-};
+layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D diffuse_texture;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = 0, std140)
@@ -32,14 +23,7 @@ layout (binding = 0, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
-    vec4 uSunDir, uSunCol, uTaaInfo;
-    vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspParamsAndTime;
-	vec4 uWindScroll, uWindScrollPrev;
-    ProbeItem uProbes[$MaxProbes];
+    SharedData shrd_data;
 };
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -48,8 +32,8 @@ layout(location = 4) in vec2 aVertexUVs1_;
 in vec2 aVertexUVs1_;
 #endif
 
-layout(location = $OutColorIndex) out vec4 outColor;
-layout(location = $OutNormIndex) out vec4 outNormal;
+layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
+layout(location = REN_OUT_NORM_INDEX) out vec4 outNormal;
 
 void main(void) {
     vec3 albedo_color = texture(diffuse_texture, aVertexUVs1_).rgb;

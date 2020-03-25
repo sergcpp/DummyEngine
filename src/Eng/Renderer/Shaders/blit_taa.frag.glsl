@@ -37,7 +37,6 @@ vec3 clip_aabb(vec3 aabb_min, vec3 aabb_max, vec3 p, vec3 q) {
 float max3(float x, float y, float z) { return max(x, max(y, z)); }
 float rcp(float x) { return 1.0 / x; }
 
-#if 1
 vec3 Tonemap(in vec3 c) {
 	c *= uExposure;
 	return c * rcp(max3(c.r, c.g, c.b) + 1.0);
@@ -45,18 +44,6 @@ vec3 Tonemap(in vec3 c) {
 vec3 TonemapInvert(in vec3 c) {
 	return (1.0 / uExposure) * c * rcp(1.0 - max3(c.r, c.g, c.b));
 }
-#else
-vec3 Tonemap(in vec3 x) {
-    const highp float C = 0.10; // linear angle
-	x *= uExposure;
-    return sqrt(x * C);
-}
-
-vec3 TonemapInvert(vec3 x) {
-    const highp float C = 0.10; // linear angle
-    return x * x / (uExposure * C);
-}
-#endif
 
 float luma(vec3 col) {
     return dot(col, vec3(0.2125, 0.7154, 0.0721));

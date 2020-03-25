@@ -54,7 +54,6 @@ class GSDrawTest : public GSBaseState {
     uint32_t wolf_indices_[32]      = { 0xffffffff };
     uint32_t scooter_indices_[16]   = { 0xffffffff };
     uint32_t sophia_indices_[2]     = { 0xffffffff }, eric_indices_[2] = { 0xffffffff };
-    uint32_t font_meshes_[4]        = { 0xffffffff };
     uint32_t zenith_index_          = 0xffffffff;
     uint32_t palm_index_            = 0xffffffff;
     uint32_t leaf_tree_index_       = 0xffffffff;

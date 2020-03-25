@@ -108,7 +108,9 @@ elseif(${RENDERER} STREQUAL "SW")
                         Renderer/RendererSW.cpp)
 endif()
 
-set(SHADERS_SOURCES Renderer/Shaders/_vs_common.glsl
+set(SHADERS_SOURCES Renderer/Shaders/_common.glsl
+                    Renderer/Shaders/_fs_common.glsl
+                    Renderer/Shaders/_vs_common.glsl
                     Renderer/Shaders/blit.frag.glsl
                     Renderer/Shaders/blit.vert.glsl
                     Renderer/Shaders/blit_bilateral.frag.glsl

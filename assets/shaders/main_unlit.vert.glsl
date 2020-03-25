@@ -5,25 +5,15 @@
 
 $ModifyWarning
 
+#include "common_vs.glsl"
+
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
-    BatchDataBlock : $ubBatchDataLoc
 */
 
-layout(location = $VtxPosLoc) in vec3 aVertexPosition;
-layout(location = $VtxUV1Loc) in vec2 aVertexUVs1;
-
-struct ShadowMapRegion {
-    vec4 transform;
-    mat4 clip_from_world;
-};
-
-struct ProbeItem {
-    vec4 pos_and_radius;
-    vec4 unused_and_layer;
-    vec4 sh_coeffs[3];
-};
+layout(location = REN_VTX_POS_LOC) in vec3 aVertexPosition;
+layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs1;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = 0, std140)
@@ -31,19 +21,12 @@ layout (binding = 0, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[$MaxShadowMaps];
-    vec4 uSunDir, uSunCol, uTaaInfo;
-    vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspParamsAndTime;
-	vec4 uWindScroll, uWindScrollPrev;
-    ProbeItem uProbes[$MaxProbes];
+    SharedData shrd_data;
 };
 
-layout (location = $uInstancesLoc) uniform ivec4 uInstanceIndices[$MaxBatchSize / 4];
+layout (location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
 
-layout(binding = $InstanceBufSlot) uniform highp samplerBuffer instances_buffer;
+layout(binding = REN_INST_BUF_SLOT) uniform highp samplerBuffer instances_buffer;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 4) out vec2 aVertexUVs1_;
@@ -72,5 +55,5 @@ void main(void) {
     aVertexUVs1_ = aVertexUVs1;
     
 	vec3 vertex_pos_ws = (MMatrix * vec4(aVertexPosition, 1.0)).xyz;
-    gl_Position = uViewProjMatrix * vec4(vertex_pos_ws, 1.0);
+    gl_Position = shrd_data.uViewProjMatrix * vec4(vertex_pos_ws, 1.0);
 } 

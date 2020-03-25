@@ -5,8 +5,12 @@ R"(#version 310 es
 
 )" __ADDITIONAL_DEFINES_STR__ R"(
 
+)"
+#include "_fs_common.glsl"
+R"(
+
 #ifdef TRANSPARENT_PERM
-layout(binding = )" AS_STR(REN_ALPHATEST_TEX_SLOT) R"() uniform sampler2D alphatest_texture;
+layout(binding = REN_ALPHATEST_TEX_SLOT) uniform sampler2D alphatest_texture;
 
 in vec2 aVertexUVs1_;
 #endif

@@ -4,6 +4,10 @@ R"(#version 310 es
     precision highp float;
 #endif
 
+)"
+#include "_fs_common.glsl"
+R"(
+
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
@@ -11,18 +15,8 @@ UNIFORM_BLOCKS
         
 )" __ADDITIONAL_DEFINES_STR__ R"(
 
-struct ShadowMapRegion {
-    vec4 transform;
-    mat4 clip_from_world;
-};
-
 layout (std140) uniform SharedDataBlock {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[)" AS_STR(REN_MAX_SHADOWMAPS_TOTAL) R"(];
-    vec4 uSunDir, uSunCol, uTaaInfo;
-    vec4 uClipInfo, uCamPosAndGamma;
-    vec4 uResAndFRes, uTranspParamsAndTime;
+    SharedData shrd_data;
 };
 
 #if defined(MSAA_4)
@@ -57,27 +51,22 @@ bool _bbox_test(vec3 o, vec3 inv_d, float t, vec3 bbox_min, vec3 bbox_max) {
     return tmin <= tmax && tmin <= t && tmax > 0.0;
 }
 
-vec3 heatmap(float t) {
-    vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
-    return vec3(1.0) - r * r;
-}
-
 void main() {
-    vec2 norm_uvs = aVertexUVs_ / uResAndFRes.xy;
+    vec2 norm_uvs = aVertexUVs_ / shrd_data.uResAndFRes.xy;
 
     float depth = texelFetch(depth_texture, ivec2(aVertexUVs_), 0).r;
     depth = 2.0 * depth - 1.0;
 
-    vec4 ray_start_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, 0.0, 1.0);
+    vec4 ray_start_cs = vec4(aVertexUVs_.xy / shrd_data.uResAndFRes.xy, 0.0, 1.0);
     ray_start_cs.xy = 2.0 * ray_start_cs.xy - 1.0;
 
-    vec4 ray_end_cs = vec4(aVertexUVs_.xy / uResAndFRes.xy, depth, 1.0);
+    vec4 ray_end_cs = vec4(aVertexUVs_.xy / shrd_data.uResAndFRes.xy, depth, 1.0);
     ray_end_cs.xy = 2.0 * ray_end_cs.xy - 1.0;
 
-    vec4 ray_start_ws = uInvViewProjMatrix * ray_start_cs;
+    vec4 ray_start_ws = shrd_data.uInvViewProjMatrix * ray_start_cs;
     ray_start_ws /= ray_start_ws.w;
 
-    vec4 ray_end_ws = uInvViewProjMatrix * ray_end_cs;
+    vec4 ray_end_ws = shrd_data.uInvViewProjMatrix * ray_end_cs;
     ray_end_ws /= ray_end_ws.w;
 
     vec3 ray_dir_ws = ray_end_ws.xyz - ray_start_ws.xyz;
