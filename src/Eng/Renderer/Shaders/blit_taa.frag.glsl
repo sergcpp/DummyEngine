@@ -41,6 +41,7 @@ vec3 Tonemap(in vec3 c) {
 	c *= uExposure;
 	return c * rcp(max3(c.r, c.g, c.b) + 1.0);
 }
+
 vec3 TonemapInvert(in vec3 c) {
 	return (1.0 / uExposure) * c * rcp(1.0 - max3(c.r, c.g, c.b));
 }
@@ -82,16 +83,16 @@ void main() {
     col_var /= 9.0;
 
     vec3 sigma = sqrt(max(col_var - col_avg * col_avg, vec3(0.0)));
-    vec3 col_min = col_avg - sigma;
-    vec3 col_max = col_avg + sigma;
+    vec3 col_min = col_avg - 1.25 * sigma;
+    vec3 col_max = col_avg + 1.25 * sigma;
 
     vec2 vel = texelFetch(s_velocity, uvs_px + closest_frag, 0).rg;
-    vec3 col_hist = Tonemap(textureLod(s_color_hist, norm_uvs - 0.5 * vel, 0.0).rgb);
+    vec3 col_hist = Tonemap(textureLod(s_color_hist, norm_uvs - vel, 0.0).rgb);
 
     //col_hist = clip_aabb(col_min, col_max, col_curr, col_hist);
     col_hist = clamp(col_hist, col_min, col_max);
 
-    float weight = 0.1; //1.0 - 1.0 / (1.0 + luma(col_curr));
+    float weight = 0.04; //1.0 - 1.0 / (1.0 + luma(col_curr));
     vec3 col = mix(col_hist, col_curr, weight);
     outColor = TonemapInvert(col);
 	outHistory = outColor;

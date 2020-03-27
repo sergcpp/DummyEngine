@@ -92,7 +92,7 @@ private:
     uint64_t backend_cpu_start_ = 0, backend_cpu_end_ = 0;
     int64_t backend_time_diff_;
     float reduced_average_ = 0.0f;
-    Ren::Mat4f down_buf_view_from_world_, prev_clip_from_world_;
+    Ren::Mat4f down_buf_view_from_world_, prev_clip_from_world_, prev_clip_from_view_;
     Ren::Vec4f prev_wind_scroll_;
 
     DynArray<Ren::Frustum> temp_sub_frustums_;

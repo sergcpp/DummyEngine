@@ -73,7 +73,7 @@ void main() {
     vec3 ssr_uvs;
 
     if (dmin < 0.05) {
-        ssr_uvs = texture(source_texture, aVertexUVs_ * shrd_data.uResAndFRes.xy / shrd_data.uResAndFRes.zw).rgb;
+        ssr_uvs = textureLod(source_texture, aVertexUVs_ * shrd_data.uResAndFRes.xy / shrd_data.uResAndFRes.zw, 0.0).rgb;
     } else {
         if (dmin == d1) {
             ssr_uvs = texelFetch(source_texture, icoord_low + ivec2(0, 0), 0).rgb;

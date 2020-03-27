@@ -36,7 +36,7 @@ void main() {
 #ifdef OUTPUT_VELOCITY
     vec2 curr = aVertexCSCurr_.xy / aVertexCSCurr_.z;
     vec2 prev = aVertexCSPrev_.xy / aVertexCSPrev_.z;
-    outVelocity = curr + shrd_data.uTaaInfo.xy - prev;
+    outVelocity = 0.5 * (curr + shrd_data.uTaaInfo.xy - prev);
 #endif
 }
 )"

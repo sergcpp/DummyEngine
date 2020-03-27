@@ -1429,6 +1429,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         if ((list.render_flags & EnableTaa) != 0) {
             // apply jitter to projection (assumed always perspective)
+            assert(!list.draw_cam.is_orthographic());
             Ren::Vec2f jitter = RendererInternal::HaltonSeq23[frame_counter_ % TaaSampleCount];
             jitter = (jitter * 2.0f - Ren::Vec2f{ 1.0f }) / Ren::Vec2f{ float(act_w_), float(act_h_) };
             
@@ -1445,7 +1446,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         shrd_data.uInvProjMatrix = Ren::Inverse(shrd_data.uProjMatrix);
         shrd_data.uInvViewProjMatrix = Ren::Inverse(shrd_data.uViewProjMatrix);
         // delta matrix between current and previous frame
-        shrd_data.uDeltaMatrix = down_buf_view_from_world_ * shrd_data.uInvViewMatrix;
+        shrd_data.uDeltaMatrix = prev_clip_from_view_ * (down_buf_view_from_world_ * shrd_data.uInvViewMatrix);
 
         if (list.shadow_regions.count) {
             assert(list.shadow_regions.count <= REN_MAX_SHADOWMAPS_TOTAL);
@@ -1464,7 +1465,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         shrd_data.uResAndFRes = Ren::Vec4f{ float(act_w_), float(act_h_), float(clean_buf_.w), float(clean_buf_.h) };
 
         const float near = list.draw_cam.near(), far = list.draw_cam.far();
-        const float time = 0.001f * Sys::GetTimeMs();
+        const float time_s = 0.001f * Sys::GetTimeMs();
         const float transparent_near = near;
         const float transparent_far = 16.0f;
         const int transparent_mode =
@@ -1479,7 +1480,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         shrd_data.uTranspParamsAndTime = Ren::Vec4f{
                 std::log(transparent_near),
                 std::log(transparent_far) - std::log(transparent_near),
-                float(transparent_mode), time
+                float(transparent_mode), time_s
         };
         shrd_data.uClipInfo = Ren::Vec4f{ near * far, near, far, std::log2(1.0f + far / near) };
 
@@ -2438,13 +2439,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_DEPTH_TEX_SLOT, down_depth_.attachments[0].tex);
 
-        if (clean_buf_.sample_count > 1) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
-        } else {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
-        }
+        const GLenum clean_buf_bind_target = (clean_buf_.sample_count > 1) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
+        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
@@ -2481,15 +2478,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUseProgram(blit_ssr_compose_prog->prog_id());
         glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
-        if (clean_buf_.sample_count > 1) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
-        } else {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
-        }
+        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_DEPTH_LOW_TEX_SLOT, down_depth_.attachments[0].tex);
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_SSR_TEX_SLOT, ssr_buf2_.attachments[0].tex);
@@ -2664,6 +2655,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     // store matrix to use it in next frame
     down_buf_view_from_world_ = shrd_data.uViewMatrix;
     prev_clip_from_world_ = clip_from_world_unjittered;
+    prev_clip_from_view_ = shrd_data.uProjMatrix;
 
     if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap)) && ((list.render_flags & DebugWireframe) == 0)) {
         DebugMarker _("BLUR PASS");
@@ -2714,7 +2706,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     assert(!buf_range_fences_[cur_buf_chunk_]);
     buf_range_fences_[cur_buf_chunk_] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
-    
     if (list.render_flags & EnableTonemap) {
         // draw to small framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
