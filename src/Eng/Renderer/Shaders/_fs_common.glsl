@@ -2,7 +2,10 @@
 R"(
 
 #define LinearizeDepth(z, clip_info) \
-    ((clip_info)[0] / ((z) * ((clip_info)[1] - (clip_info)[2]) + (clip_info)[2]))
+    (((clip_info)[0] / ((z) * ((clip_info)[1] - (clip_info)[2]) + (clip_info)[2])))
+
+#define DelinearizeDepth(z, clip_info) \
+    (((clip_info)[0] / (z) - (clip_info)[2]) / ((clip_info)[1] - (clip_info)[2]))
 
 vec3 heatmap(float t) {
     vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);

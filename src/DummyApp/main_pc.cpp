@@ -6,6 +6,7 @@ int main(int argc, char *argv[]) {
 }
 
 // TODO:
+// use stencil to distinguich ssr/nossr regions
 // skinned meshes velocities
 // use GL_EXT_shader_group_vote
 // refactor msaa (resolve once, remove permutations)

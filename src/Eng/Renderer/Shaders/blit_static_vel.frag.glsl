@@ -37,6 +37,6 @@ void main() {
     vec4 point_prev_cs = shrd_data.uViewProjPrevMatrix * point_ws;
     point_prev_cs /= point_prev_cs.w;
 
-    outVelocity = point_cs.xy + shrd_data.uTaaInfo.xy - point_prev_cs.xy;
+    outVelocity = 0.5 * (point_cs.xy + shrd_data.uTaaInfo.xy - point_prev_cs.xy);
 }
 )"

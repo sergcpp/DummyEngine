@@ -17,6 +17,7 @@ UNIFORM_BLOCKS
 
 )" __ADDITIONAL_DEFINES_STR__ R"(
 
+#define Z_THICKNESS 0.05
 #define STRIDE 0.0125
 #define MAX_STEPS 48.0
 #define BSEARCH_STEPS 4
@@ -38,17 +39,16 @@ in vec2 aVertexUVs_;
 
 out vec4 outColor;
 
-float distance2(in vec2 P0, in vec2 P1) {
+float distance2(vec2 P0, vec2 P1) {
     vec2 d = P1 - P0;
     return d.x * d.x + d.y * d.y;
 }
 
 float LinearDepthTexelFetch(ivec2 hit_pixel) {
-    float depth = texelFetch(depth_texture, hit_pixel / 2, 0).r;
-    return depth; //shrd_data.uClipInfo[0] / (depth * (shrd_data.uClipInfo[1] - shrd_data.uClipInfo[2]) + shrd_data.uClipInfo[2]);
+    return texelFetch(depth_texture, hit_pixel / 2, 0).r;
 }
 
-bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel, out vec3 hit_point) {
+bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hit_pixel, out vec3 hit_point) {
     const float max_dist = 100.0;
 
     // from "Efficient GPU Screen-Space Ray Tracing"
@@ -101,9 +101,6 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
     dQ *= stride;
     dk *= stride;
 
-    ivec2 c = ivec2(gl_FragCoord.xy);
-    float jitter = float((c.x + c.y) & 1) * 0.5;    
-
     P0 += dP * (1.0 + jitter);
     Q0 += dQ * (1.0 + jitter);
     k0 += dk * (1.0 + jitter);
@@ -130,12 +127,10 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
             float temp = ray_zmin; ray_zmin = ray_zmax; ray_zmax = temp;
         }
 
-        const float z_thickness = 0.05;
-
         vec2 pixel = permute ? P.yx : P;
 
         float scene_zmax = -LinearDepthTexelFetch(ivec2(pixel));
-        float scene_zmin = scene_zmax - z_thickness;
+        float scene_zmin = scene_zmax - Z_THICKNESS;
 
         if ((ray_zmax >= scene_zmin) && (ray_zmin <= scene_zmax)) {
             hit_pixel = P;
@@ -189,19 +184,19 @@ bool IntersectRay(in vec3 ray_origin_vs, in vec3 ray_dir_vs, out vec2 hit_pixel,
 void main() {
     outColor = vec4(0.0);
 
-    ivec2 pix_uvs = ivec2(aVertexUVs_ - vec2(0.5));
+    ivec2 pix_uvs = ivec2(aVertexUVs_ + vec2(0.5));
+    vec2 norm_uvs = aVertexUVs_.xy / shrd_data.uResAndFRes.xy;
 
-    vec4 normal_tex = texelFetch(norm_texture, pix_uvs, 0);
+    vec4 normal_tex = texelFetch(norm_texture, pix_uvs + ivec2(0, 0), 0);
     if (normal_tex.w < 0.0001) return;
 
-    float depth = texelFetch(depth_texture, pix_uvs / 2, 0).r;
-    depth = (shrd_data.uClipInfo[0] / depth - shrd_data.uClipInfo[2]) / (shrd_data.uClipInfo[1] - shrd_data.uClipInfo[2]);
+    float depth = DelinearizeDepth(texelFetch(depth_texture, pix_uvs / 2, 0).r, shrd_data.uClipInfo);
 
     vec3 normal_ws = 2.0 * normal_tex.xyz - 1.0;
     vec3 normal_vs = (shrd_data.uViewMatrix * vec4(normal_ws, 0.0)).xyz;
 
-    vec4 ray_origin_cs = vec4(aVertexUVs_.xy / shrd_data.uResAndFRes.xy, 2.0 * depth - 1.0, 1.0);
-    ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
+    vec4 ray_origin_cs = vec4(norm_uvs, depth, 1.0);
+    ray_origin_cs.xyz = 2.0 * ray_origin_cs.xyz - vec3(1.0);
 
     vec4 ray_origin_vs = shrd_data.uInvProjMatrix * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
@@ -209,15 +204,17 @@ void main() {
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
     vec3 refl_ray_vs = reflect(view_ray_vs, normal_vs);
 
+    ivec2 c = ivec2(gl_FragCoord.xy);
+    float jitter = float((c.x + c.y) & 1) * 0.5;    
+
     vec2 hit_pixel;
     vec3 hit_point;
     
-    if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, hit_pixel, hit_point)) {
+    if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, jitter, hit_pixel, hit_point)) {
         hit_pixel /= shrd_data.uResAndFRes.xy;
 
-        // reproject hitpoint into a view space of previous frame
+        // reproject hitpoint into a clip space of previous frame
         vec4 hit_prev = shrd_data.uDeltaMatrix * vec4(hit_point, 1.0);
-        hit_prev = shrd_data.uProjMatrix * hit_prev;
         hit_prev /= hit_prev.w;
         hit_prev.xy = 0.5 * hit_prev.xy + 0.5;
 

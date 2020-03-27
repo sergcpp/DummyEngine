@@ -131,6 +131,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
     p.w = p.h = 8;
     p.format = Ren::RawRG32F;
     p.filter = Ren::NoFilter;
+    p.repeat = Ren::Repeat;
     rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", &HaltonSeq23[0], sizeof(HaltonSeq23), p, &status);
     assert(status == Ren::TexCreatedFromData);
 
@@ -141,6 +142,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
         p.w = p.h = RendererInternal::__brdf_lut_res;
         p.format = Ren::RawRG16U;
         p.filter = Ren::BilinearNoMipmap;
+        p.repeat = Ren::ClampToEdge;
         brdf_lut_ = ctx_.LoadTexture2D("brdf_lut", &RendererInternal::__brdf_lut[0], sizeof(__brdf_lut), p, &status);
         assert(status == Ren::TexCreatedFromData);
     }
