@@ -1140,7 +1140,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         }
                     }
 
-                    if (obj.last_change_mask & CompTransformBit) {
+                    if ((obj.last_change_mask & CompTransformBit) || (obj.comp_mask & CompVegStateBit)) {
                         light_sees_dynamic_objects = true;
                     }
                 }
