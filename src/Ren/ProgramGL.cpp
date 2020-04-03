@@ -21,6 +21,7 @@ struct Binding {
 void ParseGLSLBindings(const char *shader_str, Binding *attr_bindings, int &attr_bindings_count,
     Binding *uniform_bindings, int &uniform_bindings_count,
     Binding *uniform_block_bindings, int &uniform_block_bindings_count, ILog *log);
+bool IsMainThread();
 }
 
 Ren::Program::Program(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status, ILog *log) {
@@ -48,6 +49,7 @@ Ren::Program::Program(const char *name, const uint8_t *cs_data, const int cs_dat
 
 Ren::Program::~Program() {
     if (prog_id_) {
+        assert(IsMainThread());
         auto prog = (GLuint)prog_id_;
         glDeleteProgram(prog);
     }
@@ -55,6 +57,7 @@ Ren::Program::~Program() {
 
 Ren::Program &Ren::Program::operator=(Program &&rhs) noexcept {
     if (prog_id_) {
+        assert(IsMainThread());
         auto prog = (GLuint)prog_id_;
         glDeleteProgram(prog);
     }
@@ -74,20 +77,24 @@ Ren::Program &Ren::Program::operator=(Program &&rhs) noexcept {
 }
 
 void Ren::Program::Init(const char *vs_source, const char *fs_source, eProgLoadStatus *status, ILog *log) {
+    assert(IsMainThread());
     InitFromGLSL({ vs_source, fs_source, nullptr }, status, log);
 }
 
 void Ren::Program::Init(const char *cs_source, eProgLoadStatus *status, ILog *log) {
+    assert(IsMainThread());
     InitFromGLSL({ nullptr, nullptr, cs_source }, status, log);
 }
 
 #ifndef __ANDROID__
 void Ren::Program::Init(const uint8_t *vs_data, const int vs_data_size,
                         const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status, ILog *log) {
+    assert(IsMainThread());
     InitFromSPIRV({ vs_data, vs_data_size, fs_data, fs_data_size, nullptr, 0 }, status, log);
 }
 
 void Ren::Program::Init(const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *status, ILog *log) {
+    assert(IsMainThread());
     InitFromSPIRV({ nullptr, 0, nullptr, 0, cs_data, cs_data_size }, status, log);
 }
 #endif

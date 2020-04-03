@@ -112,6 +112,8 @@ uint32_t g_gl_wrap_mode[] = {
     GL_CLAMP_TO_BORDER,         // ClampToBorder
 };
 static_assert(sizeof(g_gl_wrap_mode) / sizeof(g_gl_wrap_mode[0]) == (size_t)eTexRepeat::WrapModesCount, "!");
+
+bool IsMainThread();
 }
 
 Ren::Texture2D::Texture2D(
@@ -151,6 +153,7 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
 }
 
 void Ren::Texture2D::Init(const void *data, int size, const Texture2DParams &p, eTexLoadStatus *load_status, ILog *log) {
+    assert(IsMainThread());
     if (!data) {
         const uint8_t cyan[3] = { 0, 255, 255 };
         Texture2DParams _p = p;
@@ -182,6 +185,7 @@ void Ren::Texture2D::Init(const void *data, int size, const Texture2DParams &p, 
 }
 
 void Ren::Texture2D::Init(const void *data[6], const int size[6], const Texture2DParams &p, eTexLoadStatus *load_status, ILog *log) {
+    assert(IsMainThread());
     if (!data) {
         const unsigned char cyan[3] = { 0, 255, 255 };
         const void *_data[6] = { cyan, cyan, cyan, cyan, cyan, cyan };
@@ -220,6 +224,7 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6], const Texture2
 
 void Ren::Texture2D::Free() {
     if (params_.format != eTexFormat::Undefined && !(params_.flags & TexNoOwnership)) {
+        assert(IsMainThread());
         auto tex_id = (GLuint)tex_id_;
         glDeleteTextures(1, &tex_id);
         tex_id_ = 0;

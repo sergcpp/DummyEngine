@@ -13,6 +13,7 @@ Ren::Context::~Context() {
 
 void Ren::Context::Init(int w, int h, ILog *log) {
     InitGLExtentions();
+    RegisterAsMainThread();
 
     w_ = w;
     h_ = h;

@@ -2,6 +2,10 @@
 
 #include <thread>
 
+namespace Ren {
+    std::thread::id g_main_thread_id;
+}
+
 Ren::TaskList::TaskList() {
     done_event = std::make_shared<std::atomic_bool>();
     *(std::atomic_bool*)done_event.get() = false;
@@ -68,4 +72,12 @@ bool Ren::RenderThread::ProcessTasks() {
 #else
     return false;
 #endif
+}
+
+void Ren::RegisterAsMainThread() {
+    g_main_thread_id = std::this_thread::get_id();
+}
+
+bool Ren::IsMainThread() {
+    return std::this_thread::get_id() == g_main_thread_id;
 }

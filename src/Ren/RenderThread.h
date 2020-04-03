@@ -48,4 +48,7 @@ public:
 
     bool ProcessTasks();
 };
+
+void RegisterAsMainThread();
+bool IsMainThread();
 }
