@@ -45,6 +45,8 @@ public:
 };
 
 class RefCounter {
+public:
+    unsigned ref_count() const { return counter_; }
 protected:
     template<class T> friend class StorageRef;
 

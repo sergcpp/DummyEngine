@@ -7,6 +7,10 @@
 #pragma warning(disable : 4996)
 #endif
 
+namespace Ren {
+bool IsMainThread();
+}
+
 Ren::Material::Material(
         const char *name, const char *mat_src, eMatLoadStatus *status,
         const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log) {
@@ -20,6 +24,7 @@ Ren::Material::Material(const char *name, uint32_t flags, ProgramRef programs[],
 }
 
 Ren::Material &Ren::Material::operator=(Material &&rhs) noexcept {
+    assert(IsMainThread());
     flags_ = rhs.flags_;
     ready_ = rhs.ready_;
     name_ = std::move(rhs.name_);
@@ -37,6 +42,7 @@ Ren::Material &Ren::Material::operator=(Material &&rhs) noexcept {
 }
 
 void Ren::Material::Init(uint32_t flags, ProgramRef programs[], Texture2DRef textures[], const Vec4f params[], ILog *log) {
+    assert(IsMainThread());
     flags_ = flags;
     ready_ = true;
     for (int i = 0; i < MaxMaterialProgramCount; i++) {
