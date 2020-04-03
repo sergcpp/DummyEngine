@@ -3,7 +3,7 @@
 #include <Ren/GL.h>
 
 ProbeStorage::ProbeStorage()
-        : format_(Ren::Undefined), res_(0), size_(0), capacity_(0), max_level_(0), reserved_temp_layer_(-1) {
+        : format_(Ren::eTexFormat::Undefined), res_(0), size_(0), capacity_(0), max_level_(0), reserved_temp_layer_(-1) {
 }
 
 ProbeStorage::~ProbeStorage() {
@@ -35,7 +35,7 @@ void ProbeStorage::Free(int i) {
     }
 }
 
-void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity, Ren::ILog *log) {
+void ProbeStorage::Resize(Ren::eTexFormat format, int res, int capacity, Ren::ILog *log) {
     if (tex_id_) {
         auto tex_id = (GLuint)tex_id_;
         glDeleteTextures(1, &tex_id);
@@ -51,10 +51,10 @@ void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity, Re
         GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
 #endif
 
-    const int mip_count = Ren::CalcMipCount(res, res, 16, Ren::Bilinear);
+    const int mip_count = Ren::CalcMipCount(res, res, 16, Ren::eTexFilter::Bilinear);
 
     // allocate all mip levels
-    if (format != Ren::Compressed) {
+    if (format != Ren::eTexFormat::Compressed) {
         ren_glTextureStorage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, mip_count, Ren::GLInternalFormatFromTexFormat(format), res, res, capacity * 6);
     } else {
         ren_glTextureStorage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, mip_count, compressed_tex_format, res, res, capacity * 6);
@@ -62,7 +62,7 @@ void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity, Re
 
     const int blank_block_res = 64;
     uint8_t blank_block[blank_block_res * blank_block_res * 4] = {};
-    if (format == Ren::Compressed) {
+    if (format == Ren::eTexFormat::Compressed) {
         for (int i = 0; i < (blank_block_res / 4) * (blank_block_res / 4) * 16; ) {
 #if defined(__ANDROID__)
             memcpy(&blank_block[i], Ren::_blank_ASTC_block_4x4, Ren::_blank_ASTC_block_4x4_len);
@@ -91,7 +91,7 @@ void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity, Re
 #endif
 
                     for (int x_off = 0; x_off < _res; x_off += blank_block_res) {
-                        if (format != Ren::Compressed) {
+                        if (format != Ren::eTexFormat::Compressed) {
                             ren_glTextureSubImage3D_Comp(
                                     GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, level, x_off, y_off, (layer * 6 + face), _init_res, _init_res, 1,
                                     Ren::GLFormatFromTexFormat(format), GL_UNSIGNED_BYTE, blank_block);
@@ -127,7 +127,7 @@ void ProbeStorage::Resize(Ren::eTexColorFormat format, int res, int capacity, Re
 }
 
 bool ProbeStorage::SetPixelData(
-        const int level, const int layer, const int face, const Ren::eTexColorFormat format,
+        const int level, const int layer, const int face, const Ren::eTexFormat format,
         const uint8_t *data, const int data_len, Ren::ILog *log) {
     if (format_ != format) return false;
 
@@ -140,7 +140,7 @@ bool ProbeStorage::SetPixelData(
 
     const int _res = int((unsigned)res_ >> (unsigned)level);
 
-    if (format == Ren::Compressed) {
+    if (format == Ren::eTexFormat::Compressed) {
         ren_glCompressedTextureSubImage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, (GLuint)tex_id_, level, 0, 0, (layer * 6 + face), _res, _res, 1, tex_format, data_len, data);
 
 #if !defined(NDEBUG) && !defined(__ANDROID__) && 0

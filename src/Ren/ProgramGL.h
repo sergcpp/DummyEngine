@@ -28,7 +28,7 @@ typedef Descr Attribute;
 typedef Descr Uniform;
 typedef Descr UniformBlock;
 
-enum eProgLoadStatus { ProgFound, ProgSetToDefault, ProgCreatedFromData };
+enum class eProgLoadStatus { Found, SetToDefault, CreatedFromData };
 
 class Program : public RefCounter {
     uint32_t    prog_id_ = 0;

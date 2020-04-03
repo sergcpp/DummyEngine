@@ -108,112 +108,111 @@ void Renderer::InitRendererInternal() {
 
     Ren::eProgLoadStatus status;
     skydome_prog_ = ctx_.LoadProgramGLSL("skydome", skydome_vs, skydome_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     fillz_solid_prog_ = ctx_.LoadProgramGLSL("fillz_solid", fillz_solid_vs, fillz_solid_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     fillz_vege_solid_prog_ = ctx_.LoadProgramGLSL("fillz_vege_solid", fillz_vege_solid_vs, fillz_solid_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     fillz_vege_solid_vel_prog_ = ctx_.LoadProgramGLSL("fillz_vege_solid_vel", fillz_vege_solid_vel_vs, fillz_solid_vel_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     fillz_transp_prog_ = ctx_.LoadProgramGLSL("fillz_transp", fillz_transp_vs, fillz_transp_fs, &status);
-
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     fillz_vege_transp_prog_ = ctx_.LoadProgramGLSL("fillz_vege_transp", fillz_vege_transp_vs, fillz_transp_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     fillz_vege_transp_vel_prog_ = ctx_.LoadProgramGLSL("fillz_vege_transp_vel", fillz_vege_transp_vel_vs, fillz_transp_vel_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     shadow_solid_prog_ = ctx_.LoadProgramGLSL("shadow_solid", shadow_solid_vs, shadow_solid_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     shadow_vege_solid_prog_ = ctx_.LoadProgramGLSL("shadow_vege_solid", shadow_vege_solid_vs, shadow_solid_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     shadow_transp_prog_ = ctx_.LoadProgramGLSL("shadow_transp", shadow_transp_vs, shadow_transp_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     shadow_vege_transp_prog_ = ctx_.LoadProgramGLSL("shadow_vege_transp", shadow_vege_transp_vs, shadow_transp_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_prog_ = ctx_.LoadProgramGLSL("blit", blit_vs, blit_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_combine_prog_ = ctx_.LoadProgramGLSL("blit_combine", blit_vs, blit_combine_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_combine_ms_prog_ = ctx_.LoadProgramGLSL("blit_combine_ms", blit_vs, blit_combine_ms_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_ms_prog_ = ctx_.LoadProgramGLSL("blit_ms", blit_vs, blit_ms_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_red_prog_ = ctx_.LoadProgramGLSL("blit_red", blit_vs, blit_reduced_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_down_prog_ = ctx_.LoadProgramGLSL("blit_down", blit_vs, blit_down_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_down_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_ms", blit_vs, blit_down_ms_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_down_depth_prog_ = ctx_.LoadProgramGLSL("blit_down_depth", blit_vs, blit_down_depth_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_down_depth_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_depth_ms", blit_vs, blit_down_depth_ms_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_gauss_prog_ = ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_gauss_sep_prog_ = ctx_.LoadProgramGLSL("blit_gauss_sep", blit_vs, blit_gauss_sep_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_bilateral_prog_ = ctx_.LoadProgramGLSL("blit_bilateral", blit_vs, blit_bilateral_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_upscale_prog_ = ctx_.LoadProgramGLSL("blit_upscale", blit_vs, blit_upscale_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_upscale_ms_prog_ = ctx_.LoadProgramGLSL("blit_upscale_ms", blit_vs, blit_upscale_ms_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_debug_prog_ = ctx_.LoadProgramGLSL("blit_debug", blit_vs, blit_debug_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_debug_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug_ms", blit_vs, blit_debug_ms_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
 
     {   // ssr related
         blit_ssr_prog_ = ctx_.LoadProgramGLSL("blit_ssr", blit_vs, blit_ssr_fs, &status);
-        assert(status == Ren::ProgCreatedFromData);
+        assert(status == Ren::eProgLoadStatus::CreatedFromData);
         blit_ssr_ms_prog_ = ctx_.LoadProgramGLSL("blit_ssr_ms", blit_vs, blit_ssr_ms_fs, &status);
-        assert(status == Ren::ProgCreatedFromData);
+        assert(status == Ren::eProgLoadStatus::CreatedFromData);
         blit_ssr_compose_prog_ = ctx_.LoadProgramGLSL("blit_ssr_compose", blit_vs, blit_ssr_compose_fs, &status);
-        assert(status == Ren::ProgCreatedFromData);
+        assert(status == Ren::eProgLoadStatus::CreatedFromData);
         blit_ssr_compose_ms_prog_ = ctx_.LoadProgramGLSL("blit_ssr_compose_ms", blit_vs, blit_ssr_compose_ms_fs, &status);
-        assert(status == Ren::ProgCreatedFromData);
+        assert(status == Ren::eProgLoadStatus::CreatedFromData);
         blit_ssr_dilate_prog_ = ctx_.LoadProgramGLSL("blit_ssr_dilate", blit_vs, blit_ssr_dilate_fs, &status);
-        assert(status == Ren::ProgCreatedFromData);
+        assert(status == Ren::eProgLoadStatus::CreatedFromData);
     }
 
     blit_ms_resolve_prog_ = ctx_.LoadProgramGLSL("blit_ms_resolve", blit_vs, blit_ms_resolve_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_ao_prog_ = ctx_.LoadProgramGLSL("blit_ao", blit_vs, blit_ssao_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_multiply_prog_ = ctx_.LoadProgramGLSL("blit_multiply", blit_vs, blit_multiply_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_multiply_ms_prog_ = ctx_.LoadProgramGLSL("blit_multiply_ms", blit_vs, blit_multiply_ms_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_debug_bvh_prog_ = ctx_.LoadProgramGLSL("blit_debug_bvh", blit_vs, blit_debug_bvh_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_debug_bvh_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug_bvh_ms", blit_vs, blit_debug_bvh_ms_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_depth_prog_ = ctx_.LoadProgramGLSL("blit_depth", blit_vs, blit_depth_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_rgbm_prog_ = ctx_.LoadProgramGLSL("blit_rgbm", blit_vs, blit_rgbm_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_mipmap_prog_ = ctx_.LoadProgramGLSL("blit_mipmap", blit_vs, blit_mipmap_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_prefilter_prog_ = ctx_.LoadProgramGLSL("blit_prefilter", blit_vs, blit_prefilter_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_project_sh_prog_ = ctx_.LoadProgramGLSL("blit_project_sh_prog", blit_vs, blit_project_sh_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_fxaa_prog_ = ctx_.LoadProgramGLSL("blit_fxaa_prog", blit_vs, blit_fxaa_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_taa_prog_ = ctx_.LoadProgramGLSL("blit_taa_prog", blit_vs, blit_taa_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_static_vel_prog_ = ctx_.LoadProgramGLSL("blit_static_vel_prog", blit_vs, blit_static_vel_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_transparent_compose_prog_ = ctx_.LoadProgramGLSL("blit_transparent_compose_prog", blit_vs, blit_transparent_compose_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_transparent_compose_ms_prog_ = ctx_.LoadProgramGLSL("blit_transparent_compose_ms_prog", blit_vs, blit_transparent_compose_ms_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_transparent_init_prog_ = ctx_.LoadProgramGLSL("blit_transparent_init_prog", blit_vs, blit_transparent_init_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     probe_prog_ = ctx_.LoadProgramGLSL("probe_prog", probe_vs, probe_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     skinning_prog_ = ctx_.LoadProgramGLSL("skinning_prog", skinning_cs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
 
     GLint tex_buf_offset_alignment;
     glGetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT, &tex_buf_offset_alignment);
@@ -474,7 +473,7 @@ void Renderer::InitRendererInternal() {
         temp_tex_ = (uint32_t)temp_tex;
         temp_tex_w_ = 256;
         temp_tex_h_ = 128;
-        temp_tex_format_ = Ren::RawRGBA8888;
+        temp_tex_format_ = Ren::eTexFormat::RawRGBA8888;
     }
 
     Ren::CheckError("[InitRendererInternal]: temp texture", ctx_.log());
@@ -3244,7 +3243,7 @@ uint64_t Renderer::GetGpuTimeBlockingUs() {
     return (uint64_t)(time / 1000);
 }
 
-void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFormat format) {
+void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexFormat format) {
     using namespace RendererInternal;
 
     if (temp_tex_w_ != w || temp_tex_h_ != h || temp_tex_format_ != format) {
@@ -3258,7 +3257,7 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, new_tex);
 
-        if (format == Ren::RawRGBA32F) {
+        if (format == Ren::eTexFormat::RawRGBA32F) {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, w, h, 0, GL_RGBA, GL_FLOAT, data);
         }
 
@@ -3275,7 +3274,7 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, temp_tex_);
 
-        if (format == Ren::RawRGBA32F) {
+        if (format == Ren::eTexFormat::RawRGBA32F) {
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_FLOAT, data);
         }
     }
@@ -3293,7 +3292,7 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexColorFo
     glBindVertexArray(0);
 }
 
-void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTexColorFormat format) {
+void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTexFormat format) {
     using namespace RendererInternal;
 
     if (temp_tex_w_ != w || temp_tex_h_ != h || temp_tex_format_ != format) {
@@ -3307,7 +3306,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, new_tex);
 
-        if (format == Ren::RawRGBA32F) {
+        if (format == Ren::eTexFormat::RawRGBA32F) {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, w, h, 0, GL_RGBA, GL_FLOAT, data);
         }
 
@@ -3324,12 +3323,12 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, temp_tex_);
 
-        if (format == Ren::RawRGBA32F) {
+        if (format == Ren::eTexFormat::RawRGBA32F) {
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_FLOAT, data);
         }
     }
 
-    assert(format == Ren::RawRGBA32F);
+    assert(format == Ren::eTexFormat::RawRGBA32F);
 
     float avarage_color[3] = {};
     int sample_count = 0;

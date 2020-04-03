@@ -130,7 +130,7 @@ public:
         int max_uniform_vec4 = 0;
         int max_vertex_input = 0, max_vertex_output = 0;
         bool gl_spirv = false;
-        int max_compute_work_group_size[3];
+        int max_compute_work_group_size[3] = {};
     } capabilities;
     
     static bool IsExtensionSupported(const char *ext);

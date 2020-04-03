@@ -34,12 +34,14 @@ namespace {
 
     static_assert(sizeof(WsHeader) == 2, "WsHeader should be 16 bits long, deal with your compiler");
 
-    enum eOpCode { WS_CONTINUATION      = 0x0,
-                   WS_TEXT_MESSAGE      = 0x1,
-                   WS_BINARY_MESSAGE    = 0x2,
-                   WS_CONNECTION_CLOSE  = 0x8,
-                   WS_PING              = 0x9,
-                   WS_PONG              = 0xA};
+    enum class eOpCode {
+        WS_CONTINUATION      = 0x0,
+        WS_TEXT_MESSAGE      = 0x1,
+        WS_BINARY_MESSAGE    = 0x2,
+        WS_CONNECTION_CLOSE  = 0x8,
+        WS_PING              = 0x9,
+        WS_PONG              = 0xA
+    };
 }
 
 Net::WsConnection::WsConnection(TCPSocket &&conn, const HTTPRequest &upgrade_req, bool should_mask)
@@ -77,13 +79,13 @@ int Net::WsConnection::Receive(void *data, int size) {
     if (received >= sizeof(WsHeader)) {
         auto *header = (WsHeader *)data;
         if (header->fin) {
-            if (header->opcode == WS_CONTINUATION) {
+            if (header->opcode == uint8_t(eOpCode::WS_CONTINUATION)) {
                 fprintf(stderr, "Continuation received\n");
                 return 0;
-            } else if (header->opcode == WS_TEXT_MESSAGE) {
+            } else if (header->opcode == uint8_t(eOpCode::WS_TEXT_MESSAGE)) {
                 fprintf(stderr, "Text message received\n");
                 return 0;
-            } else if (header->opcode == WS_BINARY_MESSAGE) {
+            } else if (header->opcode == uint8_t(eOpCode::WS_BINARY_MESSAGE)) {
                 void *payload = (void *)(uintptr_t(data) + sizeof(WsHeader));
                 int payload_len = header->payload_len;
                 if (payload_len == 126) {
@@ -102,14 +104,14 @@ int Net::WsConnection::Receive(void *data, int size) {
                 memmove(data, payload, (size_t)payload_len);
                 //LOGI("Binary message received");
                 return payload_len;
-            } else if (header->opcode == WS_CONNECTION_CLOSE) {
+            } else if (header->opcode == uint8_t(eOpCode::WS_CONNECTION_CLOSE)) {
                 printf("Connection close received\n");
                 if (on_connection_close) {
                     on_connection_close(this);
                 }
                 return 0;
-            } else if (header->opcode == WS_PING) {
-                header->opcode = WS_PONG;
+            } else if (header->opcode == uint8_t(eOpCode::WS_PING)) {
+                header->opcode = uint8_t(eOpCode::WS_PONG);
                 Send(data, received);
                 return 0;
             } else {
@@ -130,7 +132,7 @@ bool Net::WsConnection::Send(const void *data, int size) {
     uint8_t buf[2048];
     uint8_t *payload = buf + sizeof(WsHeader);
     auto *header = (WsHeader *)buf;
-    header->opcode      = WS_BINARY_MESSAGE;
+    header->opcode      = uint8_t(eOpCode::WS_BINARY_MESSAGE);
     header->reserved    = 0;
     header->fin         = 1;
     if (size < 126) {

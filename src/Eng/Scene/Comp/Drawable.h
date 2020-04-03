@@ -5,11 +5,11 @@
 #include "Common.h"
 
 struct Drawable {
-    enum eDrFlags {
+    enum class eDrFlags {
         DrMaterialOverride  = (1 << 0)
     };
 
-    enum eDrVisibility {
+    enum class eDrVisibility {
         VisShadow = (1 << 0),
         VisProbes = (1 << 1)
     };

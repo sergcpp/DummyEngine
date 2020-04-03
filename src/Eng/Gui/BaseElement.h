@@ -21,7 +21,7 @@ class TypeMesh;
 using Ren::Vec2f;
 using Ren::Vec2i;
 
-enum eFlags {
+enum class eFlags {
     Visible,
     Resizable
 };
@@ -38,17 +38,17 @@ public:
     ~BaseElement() {}
 
     bool visible() const {
-        return flags_[Visible];
+        return flags_[int(eFlags::Visible)];
     }
     bool resizable() const {
-        return flags_[Resizable];
+        return flags_[int(eFlags::Resizable)];
     }
 
     void set_visible(bool v) {
-        flags_[Visible] = v;
+        flags_[int(eFlags::Visible)] = v;
     }
     void set_resizable(bool v) {
-        flags_[Resizable] = v;
+        flags_[int(eFlags::Resizable)] = v;
     }
 
     const Vec2f &rel_pos() const {

@@ -9,14 +9,14 @@ void Drawable::Read(const JsObject &js_in, Drawable &dr) {
     if (js_in.Has("visible_to_shadow")) {
         JsLiteral v = js_in.at("visible_to_shadow").as_lit();
         if (v.val == JS_FALSE) {
-            dr.vis_mask &= ~VisShadow;
+            dr.vis_mask &= ~uint32_t(eDrVisibility::VisShadow);
         }
     }
 
     if (js_in.Has("visible_to_probes")) {
         JsLiteral v = js_in.at("visible_to_probes").as_lit();
         if (v.val == JS_FALSE) {
-            dr.vis_mask &= ~VisProbes;
+            dr.vis_mask &= ~uint32_t(eDrVisibility::VisProbes);
         }
     }
 
@@ -26,7 +26,7 @@ void Drawable::Read(const JsObject &js_in, Drawable &dr) {
     }
 
     if (js_in.Has("material_override")) {
-        dr.flags |= DrMaterialOverride;
+        dr.flags |= uint32_t(eDrFlags::DrMaterialOverride);
     }
 }
 
@@ -40,7 +40,7 @@ void Drawable::Write(const Drawable &dr, JsObject &js_out) {
         js_out.Push("mesh_file", JsString{ dr.mesh_file.empty() ? mesh_name.c_str() : dr.mesh_file.c_str() });
     }
 
-    if (dr.flags & DrMaterialOverride) {
+    if (dr.flags & uint32_t(eDrFlags::DrMaterialOverride)) {
         JsArray js_material_override;
 
         const Ren::Mesh *mesh = dr.mesh.get();
@@ -55,10 +55,10 @@ void Drawable::Write(const Drawable &dr, JsObject &js_out) {
     }
 
     {   // write visibility
-        if (!(dr.vis_mask & VisShadow)) {
+        if (!(dr.vis_mask & uint32_t(eDrVisibility::VisShadow))) {
             js_out.Push("visible_to_shadow", JsLiteral(JS_FALSE));
         }
-        if (!(dr.vis_mask & VisProbes)) {
+        if (!(dr.vis_mask & uint32_t(eDrVisibility::VisProbes))) {
             js_out.Push("visible_to_probes", JsLiteral(JS_FALSE));
         }
     }

@@ -20,7 +20,7 @@ namespace Net {
     };
     class ContentType : public HTTPField {
     public:
-        enum eType { TextHTML = 0, TextCSS, ImageIcon, ImagePNG, Unknown };
+        enum class eType { TextHTML = 0, TextCSS, ImageIcon, ImagePNG, Unknown };
         struct StrType {
             eType t;
             char ext[8], str[32];
@@ -28,14 +28,14 @@ namespace Net {
                 strcpy(ext, e); strcpy(str, s);
             }
         };
-        enum Charset { UTF_8 };
+        enum class Charset { UTF_8 };
         eType type;
         Charset charset;
-        ContentType() : HTTPField("Content-Type"), type(TextHTML), charset(UTF_8) {}
+        ContentType() : HTTPField("Content-Type"), type(eType::TextHTML), charset(Charset::UTF_8) {}
         std::string str() const override {
             std::string ret;
             ret += TypeString(type) + "; ";
-            if (type == TextHTML && charset == UTF_8) {
+            if (type == eType::TextHTML && charset == Charset::UTF_8) {
                 ret += "charset=UTF-8";
             } else {
                 ret += "charset=ISO-8859-4\r\n";

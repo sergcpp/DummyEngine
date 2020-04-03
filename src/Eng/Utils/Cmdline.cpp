@@ -55,11 +55,11 @@ bool Cmdline::Parse(const char *str, ArgData *out_argv, int &out_argc) {
             arg.str.str++;
             arg.str.len -= 2;
 
-            arg.type = ArgString;
+            arg.type = eArgType::ArgString;
         } else if (std::isalpha(arg.str.str[0])) {
-            arg.type = ArgString;
+            arg.type = eArgType::ArgString;
         } else {
-            arg.type = ArgNumber;
+            arg.type = eArgType::ArgNumber;
 
             char temp_buf[128];
             memcpy(temp_buf, arg.str.str, arg.str.len);
@@ -69,5 +69,5 @@ bool Cmdline::Parse(const char *str, ArgData *out_argv, int &out_argc) {
         }
     }
 
-    return out_argc && out_argv[0].type == ArgString;
+    return out_argc && out_argv[0].type == eArgType::ArgString;
 }

@@ -7,7 +7,7 @@
 #include "TypeMesh.h"
 
 namespace Gui {
-enum eEditBoxFlags {
+enum class eEditBoxFlags {
     Integers,
     Chars,
     Floats,
@@ -47,7 +47,7 @@ public:
     }
 
     void set_flag(eEditBoxFlags flag, bool enabled) {
-        edit_flags_.set(flag, enabled);
+        edit_flags_.set(size_t(flag), enabled);
     }
 
     void Resize(const BaseElement *parent) override;

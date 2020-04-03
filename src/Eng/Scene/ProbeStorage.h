@@ -13,7 +13,7 @@ public:
     int Allocate();
     void Free(int i);
 
-    Ren::eTexColorFormat format() const { return format_; }
+    Ren::eTexFormat format() const { return format_; }
     int res() const { return res_; }
     int size() const { return size_; }
     int capacity() const { return capacity_; }
@@ -24,13 +24,13 @@ public:
     uint32_t tex_id() const { return tex_id_; }
 #endif
 
-    void Resize(Ren::eTexColorFormat format, int res, int capacity, Ren::ILog *log);
+    void Resize(Ren::eTexFormat format, int res, int capacity, Ren::ILog *log);
 
-    bool SetPixelData(int level, int layer, int face, Ren::eTexColorFormat format,
+    bool SetPixelData(int level, int layer, int face, Ren::eTexFormat format,
             const uint8_t *data, int data_len, Ren::ILog *log);
     bool GetPixelData(int level, int layer, int face, int buf_size, uint8_t *out_pixels, Ren::ILog *log) const;
 private:
-    Ren::eTexColorFormat format_;
+    Ren::eTexFormat format_;
     int res_, size_, capacity_, max_level_;
     int reserved_temp_layer_;
     std::vector<int> free_indices_;

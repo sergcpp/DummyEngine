@@ -94,7 +94,7 @@ void Ren::Program::Init(const uint8_t *cs_data, const int cs_data_size, eProgLoa
 
 void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *status, ILog *log) {
     if ((!shaders.vs_source || !shaders.fs_source) && !shaders.cs_source) {
-        if (status) *status = ProgSetToDefault;
+        if (status) *status = eProgLoadStatus::SetToDefault;
         return;
     }
 
@@ -287,13 +287,13 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
 
     prog_id_ = (uint32_t)program;
     ready_ = true;
-    if (status) *status = ProgCreatedFromData;
+    if (status) *status = eProgLoadStatus::CreatedFromData;
 }
 
 #ifndef __ANDROID__
 void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *status, ILog *log) {
     if ((!shaders.vs_data || !shaders.fs_data) && !shaders.cs_data) {
-        if (status) *status = ProgSetToDefault;
+        if (status) *status = eProgLoadStatus::SetToDefault;
         return;
     }
 
@@ -378,7 +378,7 @@ void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *sta
 
     prog_id_ = (uint32_t)program;
     ready_ = true;
-    if (status) *status = ProgCreatedFromData;
+    if (status) *status = eProgLoadStatus::CreatedFromData;
 }
 #endif
 

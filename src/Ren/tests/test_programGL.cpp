@@ -163,14 +163,14 @@ void main(void) {
         Ren::eProgLoadStatus status;
         Ren::ProgramRef p = test.LoadProgramGLSL("constant", nullptr, nullptr, &status);
 
-        require(status == Ren::ProgSetToDefault);
+        require(status == Ren::eProgLoadStatus::SetToDefault);
         require(p->name() == "constant");
         require(p->prog_id() == 0); // not initialized
         require(p->ready() == false);
 
         test.LoadProgramGLSL("constant", vs_src, fs_src, &status);
 
-        require(status == Ren::ProgCreatedFromData);
+        require(status == Ren::eProgLoadStatus::CreatedFromData);
 
         require(p->name() == "constant");
 
@@ -467,7 +467,7 @@ void main() {
             Ren::eProgLoadStatus status;
             Ren::ProgramRef p = test.LoadProgramSPIRV("simple", vert_spv, vert_spv_size, frag_spv, frag_spv_size, &status);
 
-            require(status == Ren::ProgCreatedFromData);
+            require(status == Ren::eProgLoadStatus::CreatedFromData);
 
             require(p->name() == "simple");
             require(p->ready() == true);

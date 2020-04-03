@@ -37,13 +37,13 @@ void Ren::TextureRegion::Init(const void *data, int size, const Texture2DParams 
         unsigned char cyan[4] = { 0, 255, 255, 255 };
         Texture2DParams _p;
         _p.w = _p.h = 1;
-        _p.format = RawRGBA8888;
-        _p.filter = NoFilter;
-        _p.repeat = Repeat;
+        _p.format = eTexFormat::RawRGBA8888;
+        _p.filter = eTexFilter::NoFilter;
+        _p.repeat = eTexRepeat::Repeat;
         InitFromRAWData(cyan, 4, _p, atlas);
         // mark it as not ready
         ready_ = false;
-        if (load_status) *load_status = TexCreatedDefault;
+        if (load_status) *load_status = eTexLoadStatus::TexCreatedDefault;
     } else {
         if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
             InitFromTGAFile(data, size, p, atlas);
@@ -53,7 +53,7 @@ void Ren::TextureRegion::Init(const void *data, int size, const Texture2DParams 
             InitFromRAWData(data, size, p, atlas);
         }
         ready_ = true;
-        if (load_status) *load_status = TexCreatedFromData;
+        if (load_status) *load_status = eTexLoadStatus::TexCreatedFromData;
     }
 }
 
@@ -68,7 +68,7 @@ void Ren::TextureRegion::InitFromRAWData(const void *data, int size, const Textu
 
 void Ren::TextureRegion::InitFromTGAFile(const void *data, int size, const Texture2DParams &p, Ren::TextureAtlasArray *atlas) {
     int w = 0, h = 0;
-    eTexColorFormat format = Undefined;
+    eTexFormat format = eTexFormat::Undefined;
     std::unique_ptr<uint8_t[]> image_data = ReadTGAFile(data, w, h, format);
 
     Texture2DParams _p = p;
@@ -86,7 +86,7 @@ void Ren::TextureRegion::InitFromPNGFile(const void *data, int size, const Textu
         Texture2DParams _p = p;
         _p.w = w;
         _p.h = h;
-        _p.format = RawRGBA8888;
+        _p.format = eTexFormat::RawRGBA8888;
 
         InitFromRAWData(image_data, 0, _p, atlas);
 

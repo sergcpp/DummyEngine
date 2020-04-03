@@ -40,7 +40,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
         return false;
     }
 
-    const uint32_t expected_chunks_size = int(Gui::FontChCount) * 3 * sizeof(uint32_t);
+    const uint32_t expected_chunks_size = uint32_t(Gui::eFontFileChunk::FontChCount) * 3 * sizeof(uint32_t);
     const uint32_t chunks_size = header_size - 4 - sizeof(uint32_t);
     if (chunks_size != expected_chunks_size) return false;
 
@@ -55,11 +55,11 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
         const size_t old_pos = in_file.pos();
         in_file.Seek(chunk_off);
 
-        if (chunk_id == Gui::FontChTypoData) {
+        if (chunk_id == uint32_t(Gui::eFontFileChunk::FontChTypoData)) {
             if (!in_file.Read((char *)&info_, sizeof(typgraph_info_t))) {
                 return false;
             }
-        } else if (chunk_id == Gui::FontChImageData) {
+        } else if (chunk_id == uint32_t(Gui::eFontFileChunk::FontChImageData)) {
             uint16_t img_data_w, img_data_h;
             if (!in_file.Read((char *)&img_data_w, sizeof(uint16_t)) ||
                 !in_file.Read((char *)&img_data_h, sizeof(uint16_t))) {
@@ -88,12 +88,12 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
             Ren::Texture2DParams p;
             p.w = img_data_w;
             p.h = img_data_h;
-            p.filter = draw_mode_ == DrPassthrough ? Ren::NoFilter : Ren::BilinearNoMipmap;
-            p.repeat = Ren::ClampToBorder;
-            p.format = Ren::RawRGBA8888;
+            p.filter = draw_mode_ == eDrawMode::DrPassthrough ? Ren::eTexFilter::NoFilter : Ren::eTexFilter::BilinearNoMipmap;
+            p.repeat = Ren::eTexRepeat::ClampToBorder;
+            p.format = Ren::eTexFormat::RawRGBA8888;
 
             tex_ = ctx.LoadTextureRegion(fname, img_data.get(), img_data_size, p, nullptr);
-        } else if (chunk_id == Gui::FontChGlyphData) {
+        } else if (chunk_id == uint32_t(Gui::eFontFileChunk::FontChGlyphData)) {
             if (!in_file.Read((char *)&glyph_range_count_, sizeof(uint32_t))) {
                 return false;
             }
@@ -211,7 +211,7 @@ float Gui::BitmapFont::PrepareVertexData(
             cur_vtx->uvs[0] = f32_to_u16(uvs_scale[0] * float(uvs_offset[0] + glyph.pos[0] - 1));
             cur_vtx->uvs[1] = f32_to_u16(uvs_scale[1] * float(uvs_offset[1] + glyph.pos[1] + glyph.res[1] + 1));
             cur_vtx->uvs[2] = tex_layer;
-            cur_vtx->uvs[3] = draw_mode_ == DrDistanceField ? 65535 : 0;
+            cur_vtx->uvs[3] = draw_mode_ == eDrawMode::DrDistanceField ? 65535 : 0;
             ++cur_vtx;
 
             cur_vtx->pos[0] = p[0] + float(cur_x + glyph.off[0] + glyph.res[0] + 1) * m[0];
@@ -221,7 +221,7 @@ float Gui::BitmapFont::PrepareVertexData(
             cur_vtx->uvs[0] = f32_to_u16(uvs_scale[0] * float(uvs_offset[0] + glyph.pos[0] + glyph.res[0] + 1));
             cur_vtx->uvs[1] = f32_to_u16(uvs_scale[1] * float(uvs_offset[1] + glyph.pos[1] + glyph.res[1] + 1));
             cur_vtx->uvs[2] = tex_layer;
-            cur_vtx->uvs[3] = draw_mode_ == DrDistanceField ? 65535 : 0;
+            cur_vtx->uvs[3] = draw_mode_ == eDrawMode::DrDistanceField ? 65535 : 0;
             ++cur_vtx;
 
             cur_vtx->pos[0] = p[0] + float(cur_x + glyph.off[0] + glyph.res[0] + 1) * m[0];
@@ -231,7 +231,7 @@ float Gui::BitmapFont::PrepareVertexData(
             cur_vtx->uvs[0] = f32_to_u16(uvs_scale[0] * float(uvs_offset[0] + glyph.pos[0] + glyph.res[0] + 1));
             cur_vtx->uvs[1] = f32_to_u16(uvs_scale[1] * float(uvs_offset[1] + glyph.pos[1] - 1));
             cur_vtx->uvs[2] = tex_layer;
-            cur_vtx->uvs[3] = draw_mode_ == DrDistanceField ? 65535 : 0;
+            cur_vtx->uvs[3] = draw_mode_ == eDrawMode::DrDistanceField ? 65535 : 0;
             ++cur_vtx;
 
             cur_vtx->pos[0] = p[0] + float(cur_x + glyph.off[0] - 1) * m[0];
@@ -241,7 +241,7 @@ float Gui::BitmapFont::PrepareVertexData(
             cur_vtx->uvs[0] = f32_to_u16(uvs_scale[0] * float(uvs_offset[0] + glyph.pos[0] - 1));
             cur_vtx->uvs[1] = f32_to_u16(uvs_scale[1] * float(uvs_offset[1] + glyph.pos[1] - 1));
             cur_vtx->uvs[2] = tex_layer;
-            cur_vtx->uvs[3] = draw_mode_ == DrDistanceField ? 65535 : 0;
+            cur_vtx->uvs[3] = draw_mode_ == eDrawMode::DrDistanceField ? 65535 : 0;
             ++cur_vtx;
 
             (*cur_ndx++) = ndx_offset + 0;
@@ -276,9 +276,9 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
         tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_->pos(2)));
 
     uint16_t u16_draw_mode = 0;
-    if (draw_mode_ == DrDistanceField) {
+    if (draw_mode_ == eDrawMode::DrDistanceField) {
         u16_draw_mode = 32727;
-    } else if (draw_mode_ == DrBlitDistanceField) {
+    } else if (draw_mode_ == eDrawMode::DrBlitDistanceField) {
         u16_draw_mode = 65535;
     }
 

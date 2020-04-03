@@ -1,6 +1,6 @@
 #include "Renderer.h"
 
-Gui::TextureDataRef Gui::Renderer::LoadTexture(const char *name, const void *data, const int res[2], Ren::eTexColorFormat format) {
+Gui::TextureDataRef Gui::Renderer::LoadTexture(const char *name, const void *data, const int res[2], Ren::eTexFormat format) {
     TextureDataRef ref = tex_storage_.FindByName(name);
     if (!ref) {
         int pos[3];

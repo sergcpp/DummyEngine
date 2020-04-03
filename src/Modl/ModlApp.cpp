@@ -76,7 +76,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
     using namespace std;
     using namespace std::placeholders;
 
-    enum eInputFileType { IN_NONE, IN_MESH, IN_ANIM } in_file_type = IN_NONE;
+    enum class eInputFileType { None, Mesh, Anim } in_file_type = eInputFileType::None;
     string in_file_name, out_file_name, view_file_name, anim_file_name;
 
     if (args.size() < 2) {
@@ -117,16 +117,16 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         string line;
         getline(in_file, line);
         if (line == "ANIM_SEQUENCE") {
-            in_file_type = IN_ANIM;
+            in_file_type = eInputFileType::Anim;
         } else {
-            in_file_type = IN_MESH;
+            in_file_type = eInputFileType::Mesh;
         }
     }
 
     if (out_file_name == "$") {
         size_t p = in_file_name.find_last_of('.');
         if (p != string::npos) {
-            out_file_name = in_file_name.substr(0, p) + ((in_file_type == IN_MESH) ? ".mesh" : ".anim");
+            out_file_name = in_file_name.substr(0, p) + ((in_file_type == eInputFileType::Mesh) ? ".mesh" : ".anim");
         }
     }
 
@@ -143,12 +143,12 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         std::cerr << "Failed to update assets" << std::endl;
     }
 
-    if (in_file_type == IN_ANIM) {
-        const int comp_res = CompileAnim(in_file_name, out_file_name);
-        return (comp_res == RES_SUCCESS) ? 0 : -1;
-    } else if (in_file_type == IN_MESH) {
-        const int comp_res = CompileModel(in_file_name, out_file_name, optimize_mesh);
-        if (comp_res != RES_SUCCESS) {
+    if (in_file_type == eInputFileType::Anim) {
+        const eCompileResult comp_res = CompileAnim(in_file_name, out_file_name);
+        return (comp_res == eCompileResult::RES_SUCCESS) ? 0 : -1;
+    } else if (in_file_type == eInputFileType::Mesh) {
+        const eCompileResult comp_res = CompileModel(in_file_name, out_file_name, optimize_mesh);
+        if (comp_res != eCompileResult::RES_SUCCESS) {
             return -1;
         }
     }
@@ -261,9 +261,9 @@ int ModlApp::Init(int w, int h) {
 
         Ren::Texture2DParams p;
         p.w = p.h = checker_res;
-        p.format = Ren::RawRGB888;
-        p.filter = Ren::NoFilter;
-        p.repeat = Ren::Repeat;
+        p.format = Ren::eTexFormat::RawRGB888;
+        p.filter = Ren::eTexFilter::NoFilter;
+        p.repeat = Ren::eTexRepeat::Repeat;
 
         checker_tex_ = ctx_.LoadTexture2D("__diag_checker", &checker_data[0], (int)checker_data.size(), p, nullptr);
     }
@@ -366,7 +366,7 @@ void ModlApp::Destroy() {
     SDL_Quit();
 }
 
-int ModlApp::CompileModel(const std::string &in_file_name, const std::string &out_file_name, bool optimize) {
+ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, const std::string &out_file_name, bool optimize) {
     using namespace std;
     using namespace std::placeholders;
 
@@ -409,7 +409,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
     ifstream in_file(in_file_name);
     if (!in_file) {
         cerr << "File " << in_file_name << " not found!" << endl;
-        return RES_FILE_NOT_FOUND;
+        return eCompileResult::RES_FILE_NOT_FOUND;
     }
 
     string toks[64];
@@ -423,7 +423,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
 
         {
             const int toks_count = Tokenize(str, " ", toks);
-            if (!toks_count) return RES_PARSE_ERROR;
+            if (!toks_count) return eCompileResult::RES_PARSE_ERROR;
             str = toks[0];
         }
 
@@ -435,7 +435,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
             mesh_type = eModelType::M_SKEL;
         } else {
             cerr << "Unknown mesh type" << endl;
-            return RES_PARSE_ERROR;
+            return eCompileResult::RES_PARSE_ERROR;
         }
     }
 
@@ -469,7 +469,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                     (mesh_type == eModelType::M_COLORED && toks_count != 12) ||
                     (mesh_type == eModelType::M_SKEL && toks_count < 10)) {
                 cerr << "Wrong number of tokens!" << endl;
-                return RES_PARSE_ERROR;
+                return eCompileResult::RES_PARSE_ERROR;
             }
 
             // parse vertex positions
@@ -565,7 +565,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 indices.emplace_back();
             } else {
                 const int toks_count = Tokenize(str, " \t", toks);
-                if (toks_count != 3) return RES_PARSE_ERROR;
+                if (toks_count != 3) return eCompileResult::RES_PARSE_ERROR;
                 for (int j : { 0, 1, 2 }) {
                     indices.back().push_back((uint32_t)stoi(toks[j]));
                 }
@@ -584,12 +584,12 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 getline(in_file, str);
                 while (str.find("}") == string::npos) {
                     const int toks_count = Tokenize(str, " \t\"", toks);
-                    if (toks_count != 3) return RES_PARSE_ERROR;
+                    if (toks_count != 3) return eCompileResult::RES_PARSE_ERROR;
                     out_bones.emplace_back();
                     out_bones.back().id = stoi(toks[0]);
                     if (toks[1].length() >= sizeof(OutBone().name)) {
                         cerr << "Bone name is too long" << endl;
-                        return RES_PARSE_ERROR;
+                        return eCompileResult::RES_PARSE_ERROR;
                     }
                     strcpy(out_bones.back().name, toks[1].c_str());
                     out_bones.back().parent_id = stoi(toks[2]);
@@ -600,7 +600,7 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
                 getline(in_file, str);
                 while(str.find("}") == string::npos) {
                     const int toks_count = Tokenize(str, " \t()", toks);
-                    if (toks_count != 8) return RES_PARSE_ERROR;
+                    if (toks_count != 8) return eCompileResult::RES_PARSE_ERROR;
                     int bone_index = stoi(toks[0]);
                     for (int j : { 0, 1, 2 }) {
                         out_bones[bone_index].bind_pos[j] = stof(toks[1 + j]);
@@ -853,16 +853,16 @@ int ModlApp::CompileModel(const std::string &in_file_name, const std::string &ou
         }
     }
 
-    return RES_SUCCESS;
+    return eCompileResult::RES_SUCCESS;
 }
 
-int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out_file_name) {
+ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out_file_name) {
     using namespace std;
 
     ifstream in_file(in_file_name);
     if (!in_file) {
         cerr << "File " << in_file_name << " not exists" << endl;
-        return RES_FILE_NOT_FOUND;
+        return eCompileResult::RES_FILE_NOT_FOUND;
     }
 
     streampos file_size = in_file.tellg();
@@ -875,12 +875,12 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
         getline(in_file, str);
         if (str != "ANIM_SEQUENCE") {
             cerr << "Wrong file type" << endl;
-            return -1;
+            return eCompileResult::RES_PARSE_ERROR;
         }
         in_file.ignore(file_size, '\t');
     }
 
-    enum eAnimType { ANIM_R, ANIM_RT };
+    enum class eAnimType { Rotation, RotationTranslation };
 
     struct OutAnimBone {
         char name[64];
@@ -911,13 +911,13 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
         getline(in_file, str);
         while (str.find("}") == string::npos) {
             const int toks_count = Tokenize(str, " \"", toks);
-            if (toks_count < 3) return -1;
+            if (toks_count < 3) return eCompileResult::RES_PARSE_ERROR;
             OutAnimBone b;
             if (toks[1] == "RT") {
-                b.anim_type = ANIM_RT;
+                b.anim_type = int32_t(eAnimType::RotationTranslation);
                 frame_size += 7;
             } else if (toks[1] == "R") {
-                b.anim_type = ANIM_R;
+                b.anim_type = int32_t(eAnimType::Rotation);
                 frame_size += 3;
             }
             strcpy(b.name, toks[2].c_str());
@@ -935,7 +935,7 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
         string str;
         getline(in_file, str);
         const int toks_count = Tokenize(str, " []/", toks);
-        if (toks_count != 3) return -1;
+        if (toks_count != 3) return eCompileResult::RES_PARSE_ERROR;
         strcpy(anim_info.name, toks[0].c_str());
         anim_info.len = stoi(toks[1]);
         anim_info.fps = stoi(toks[2]);
@@ -950,7 +950,7 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
             for (int j = 0; j < (int)out_bones.size(); j++) {
                 getline(in_file, str);
                 Tokenize(str, " ", toks);
-                for (int k = 1; k < ((out_bones[j].anim_type == ANIM_RT) ? 8 : 5); k++) {
+                for (int k = 1; k < ((out_bones[j].anim_type == int32_t(eAnimType::RotationTranslation)) ? 8 : 5); k++) {
                     frames.push_back(stof(toks[k]));
                 }
             }
@@ -1006,7 +1006,7 @@ int ModlApp::CompileAnim(const std::string &in_file_name, const std::string &out
     cout << "Name:\t" << anim_info.name << endl;
     cout << "Bones:\t" << out_bones.size() << endl;
 
-    return RES_SUCCESS;
+    return eCompileResult::RES_SUCCESS;
 }
 
 Ren::Texture2DRef ModlApp::OnTextureNeeded(const char *name) {
@@ -1019,8 +1019,8 @@ Ren::Texture2DRef ModlApp::OnTextureNeeded(const char *name) {
 
             ctx_.ProcessSingleTask([this, tex_name, data, size]() {
                 Ren::Texture2DParams p;
-                p.filter = Ren::Trilinear;
-                p.repeat = Ren::Repeat;
+                p.filter = Ren::eTexFilter::Trilinear;
+                p.repeat = Ren::eTexRepeat::Repeat;
                 ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, nullptr);
                 LOGI("Texture %s loaded", tex_name.c_str());
             });
@@ -1057,7 +1057,7 @@ Ren::ProgramRef ModlApp::OnProgramNeeded(const char *name, const char *vs_shader
         fs_file.Read((char *)fs_src.data(), fs_size);
 
         ret = ctx_.LoadProgramGLSL(name, vs_src.c_str(), fs_src.c_str(), &status);
-        assert(status == Ren::ProgCreatedFromData);
+        assert(status == Ren::eProgLoadStatus::CreatedFromData);
     }
     return ret;
 #elif defined(USE_SW_RENDER)

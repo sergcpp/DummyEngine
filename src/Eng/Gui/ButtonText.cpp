@@ -22,11 +22,11 @@ void Gui::ButtonText::Move(const Vec2f &pos, const BaseElement *parent) {
 void Gui::ButtonText::Draw(Renderer *r) {
     /*const Renderer::DrawParams &cur = r->GetParams();
 
-    if (state_ == ST_NORMAL) {
+    if (state_ == Normal) {
         r->EmplaceParams(Vec4f(0.9f, 0.9f, 0.9f, 0.0f), cur.z_val(), cur.blend_mode(), cur.scissor_test());
-    } else if (state_ == ST_FOCUSED) {
+    } else if (state_ == Focused) {
         r->EmplaceParams(Vec4f(1.0f, 1.0f, 1.0f, 0.0f), cur.z_val(), cur.blend_mode(), cur.scissor_test());
-    } else { // state_ == ST_PRESSED
+    } else { // state_ == Pressed
         r->EmplaceParams(Vec4f(0.5f, 0.5f, 0.5f, 0.0f), cur.z_val(), cur.blend_mode(), cur.scissor_test());
     }
     type_mesh_.Draw(r);

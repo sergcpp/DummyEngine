@@ -27,11 +27,11 @@ void Gui::ButtonImage::Resize(const BaseElement *parent) {
 }
 
 void Gui::ButtonImage::Draw(Renderer *r) {
-    if (state_ == ST_NORMAL) {
+    if (state_ == eState::Normal) {
         image_normal_.Draw(r);
-    } else if (state_ == ST_FOCUSED) {
+    } else if (state_ == eState::Focused) {
         image_focused_.Draw(r);
-    } else if (state_ == ST_PRESSED) {
+    } else if (state_ == eState::Pressed) {
         image_pressed_.Draw(r);
     }
 

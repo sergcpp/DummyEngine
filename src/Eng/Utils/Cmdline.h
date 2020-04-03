@@ -8,7 +8,7 @@ class Cmdline {
 public:
     Cmdline();
 
-    enum eArgType { ArgNumber, ArgString };
+    enum class eArgType { ArgNumber, ArgString };
 
     struct ArgData {
         eArgType        type;

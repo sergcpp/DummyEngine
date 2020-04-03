@@ -50,7 +50,7 @@ void Ren::AnimSequence::Init(std::istream &data) {
         data.read(bones_[i].parent_name, 64);
         int has_translate_anim = 0;
         data.read((char *)&has_translate_anim, 4);
-        if (has_translate_anim) bones_[i].flags |= AnimHasTranslate;
+        if (has_translate_anim) bones_[i].flags |= uint32_t(eAnimBoneFlags::AnimHasTranslate);
         bones_[i].offset = offset;
         if (has_translate_anim) {
             offset += 7;
@@ -116,7 +116,7 @@ void Ren::AnimSequence::Update(float time) {
 void Ren::AnimSequence::InterpolateFrames(int fr_0, int fr_1, float t) {
     for (AnimBone &bone : bones_) {
         int offset = bone.offset;
-        if (bone.flags & AnimHasTranslate) {
+        if (bone.flags & uint32_t(eAnimBoneFlags::AnimHasTranslate)) {
             Vec3f p1 = MakeVec3(&frames_[fr_0 * frame_size_ + offset]);
             Vec3f p2 = MakeVec3(&frames_[fr_1 * frame_size_ + offset]);
             bone.cur_pos = Mix(p1, p2, t);
@@ -204,7 +204,7 @@ void Ren::Skeleton::ApplyAnim(int id) {
     for (size_t i = 0; i < bones.size(); i++) {
         if (anims[id].anim_bones[i]) {
             Mat4f m = Mat4f{ 1.0f };
-            if (anims[id].anim_bones[i]->flags & AnimHasTranslate) {
+            if (anims[id].anim_bones[i]->flags & uint32_t(eAnimBoneFlags::AnimHasTranslate)) {
                 m = Translate(m, anims[id].anim_bones[i]->cur_pos);
             } else {
                 m = Translate(m, bones[i].head_pos);
@@ -224,7 +224,7 @@ void Ren::Skeleton::ApplyAnim(int anim_id1, int anim_id2, float t) {
             Vec3f pos;
             Quatf orient;
             if (anims[anim_id1].anim_bones[i]) {
-                if (anims[anim_id1].anim_bones[i]->flags & AnimHasTranslate) {
+                if (anims[anim_id1].anim_bones[i]->flags & uint32_t(eAnimBoneFlags::AnimHasTranslate)) {
                     pos = anims[anim_id1].anim_bones[i]->cur_pos;
                 } else {
                     pos = bones[i].head_pos;
@@ -232,7 +232,7 @@ void Ren::Skeleton::ApplyAnim(int anim_id1, int anim_id2, float t) {
                 orient = anims[anim_id1].anim_bones[i]->cur_rot;
             }
             if (anims[anim_id2].anim_bones[i]) {
-                if (anims[anim_id2].anim_bones[i]->flags & AnimHasTranslate) {
+                if (anims[anim_id2].anim_bones[i]->flags & uint32_t(eAnimBoneFlags::AnimHasTranslate)) {
                     pos = Mix(pos, anims[anim_id2].anim_bones[i]->cur_pos, t);
                 }
                 orient = Slerp(orient, anims[anim_id2].anim_bones[i]->cur_rot, t);

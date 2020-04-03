@@ -43,20 +43,20 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
     std::vector<char> in_file_data(in_file_size);
     in_file.Read(&in_file_data[0], in_file_size);
 
-    Ren::eTexColorFormat format;
+    Ren::eTexFormat format;
     int _w, _h;
     std::unique_ptr<uint8_t[]> pixels = Ren::ReadTGAFile(&in_file_data[0], _w, _h, format);
 
     if (_w != w || _h != h) return;
 
-    if (format == Ren::RawRGB888) {
+    if (format == Ren::eTexFormat::RawRGB888) {
         int i = 0;
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 out_data[i++] = { pixels[3 * (y * w + x)], pixels[3 * (y * w + x) + 1], pixels[3 * (y * w + x) + 2], 255 };
             }
         }
-    } else if (format == Ren::RawRGBA8888) {
+    } else if (format == Ren::eTexFormat::RawRGBA8888) {
         int i = 0;
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
@@ -147,7 +147,7 @@ std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &t
     Sys::AssetFile in_file((std::string("assets/textures/") + tex_ref->name().c_str()).c_str());
     SceneManagerInternal::LoadTGA(in_file, params.w, params.h, &tex_data[0]);
 #else
-    tex_ref->ReadTextureData(Ren::RawRGBA8888, (void *)&tex_data[0]);
+    tex_ref->ReadTextureData(Ren::eTexFormat::RawRGBA8888, (void *)&tex_data[0]);
 #endif
 
     return tex_data;
@@ -594,6 +594,7 @@ void SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file, c
                     std::string html_body = ExtractHTMLData(ctx, html_file_path.c_str(), caption);
 
                     caption = std::regex_replace(caption, std::regex("\n"), "");
+                    caption = std::regex_replace(caption, std::regex("\r"), "");
                     caption = std::regex_replace(caption, std::regex("\'"), "&apos;");
                     caption = std::regex_replace(caption, std::regex("\""), "&quot;");
                     caption = std::regex_replace(caption, std::regex("<h1>"), "");

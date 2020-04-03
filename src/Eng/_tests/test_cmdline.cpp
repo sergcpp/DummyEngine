@@ -10,8 +10,8 @@ void test_cmdline() {
     cmdline.RegisterCommand("add",
                             [&result](int argc, Cmdline::ArgData *argv) -> bool {
                                 require(argc == 3);
-                                require(argv[1].type == Cmdline::ArgNumber);
-                                require(argv[2].type == Cmdline::ArgNumber);
+                                require(argv[1].type == Cmdline::eArgType::ArgNumber);
+                                require(argv[2].type == Cmdline::eArgType::ArgNumber);
 
                                 result = argv[1].val + argv[2].val;
 

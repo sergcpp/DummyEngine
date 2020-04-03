@@ -44,9 +44,9 @@ public:
         return quit_;
     }
 private:
-    enum eCompileResult { RES_SUCCESS = 0, RES_PARSE_ERROR, RES_FILE_NOT_FOUND };
-    int CompileModel(const std::string &in_file_name, const std::string &out_file_name, bool optimize);
-    int CompileAnim(const std::string &in_file_name, const std::string &out_file_name);
+    enum class eCompileResult { RES_SUCCESS = 0, RES_PARSE_ERROR, RES_FILE_NOT_FOUND };
+    eCompileResult CompileModel(const std::string &in_file_name, const std::string &out_file_name, bool optimize);
+    eCompileResult CompileAnim(const std::string &in_file_name, const std::string &out_file_name);
 
     bool quit_;
     SDL_Window *window_ = nullptr;
@@ -74,9 +74,9 @@ private:
     float view_dist_ = 10.0f;
     bool mouse_grabbed_ = false;
 
-    enum eViewMode {
+    enum class eViewMode {
         Diffuse, DiagNormals1, DiagNormals2, DiagUVs1, DiagUVs2, DiagVtxColor
-    } view_mode_ = DiagNormals1;
+    } view_mode_ = eViewMode::DiagNormals1;
 
     void InitInternal();
     void DestroyInternal();
