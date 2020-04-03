@@ -63,8 +63,12 @@ uint32_t Ray::Ref::Scene::AddTexture(const tex_desc_t &_t) {
     uint32_t tex_index = (uint32_t)textures_.size();
 
     texture_t t;
-    t.size[0] = (uint16_t)_t.w;
-    t.size[1] = (uint16_t)_t.h;
+    t.width = (uint16_t)_t.w;
+    t.height = (uint16_t)_t.h;
+
+    if (_t.is_srgb) {
+        t.width |= TEXTURE_SRGB_BIT;
+    }
 
     int mip = 0;
     int res[2] = { _t.w, _t.h };
@@ -153,11 +157,12 @@ uint32_t Ray::Ref::Scene::AddMesh(const mesh_desc_t &_m) {
     meshes_.emplace_back();
     mesh_t &m = meshes_.back();
     
-    uint32_t tris_start = (uint32_t)tris_.size();
+    const uint32_t tris_start = (uint32_t)tris_.size();
+    //const uint32_t tri_index_start = (uint32_t)tri_indices_.size();
 
     bvh_settings_t s;
-    s.node_traversal_cost = use_wide_bvh_ ? 0.0025f : 0.025f;
-    s.oversplit_threshold = use_wide_bvh_ ? 0.999f : 0.95f;
+    s.node_traversal_cost = 0.025f;
+    s.oversplit_threshold = 0.95f;
     s.allow_spatial_splits = _m.allow_spatial_splits;
     s.use_fast_bvh_build = _m.use_fast_bvh_build;
 
@@ -165,16 +170,17 @@ uint32_t Ray::Ref::Scene::AddMesh(const mesh_desc_t &_m) {
     m.node_count = PreprocessMesh(_m.vtx_attrs, _m.vtx_indices, _m.vtx_indices_count, _m.layout, _m.base_vertex, s, nodes_, tris_, tri_indices_);
 
     if (use_wide_bvh_) {
-        uint32_t before_count = (uint32_t)oct_nodes_.size();
-        uint32_t new_root = FlattenBVH_Recursive(nodes_.data(), m.node_index, 0xffffffff, oct_nodes_);
+        uint32_t before_count = (uint32_t)mnodes_.size();
+        uint32_t new_root = FlattenBVH_Recursive(nodes_.data(), m.node_index, 0xffffffff, mnodes_);
 
         m.node_index = new_root;
-        m.node_count = (uint32_t)(oct_nodes_.size() - before_count);
+        m.node_count = (uint32_t)(mnodes_.size() - before_count);
 
         // nodes_ is treated as temporary storage
         nodes_.clear();
     }
 
+    // init triangle materials
     for (const shape_desc_t &s : _m.shapes) {
         bool is_solid = true;
 
@@ -248,7 +254,7 @@ uint32_t Ray::Ref::Scene::AddMesh(const mesh_desc_t &_m) {
     }
 
     if (_m.layout == PxyzNxyzTuv || _m.layout == PxyzNxyzTuvTuv) {
-        ComputeTextureBasis(0, new_vertices_start, vertices_, new_vtx_indices, &new_vtx_indices[0], new_vtx_indices.size());
+        ComputeTangentBasis(0, new_vertices_start, vertices_, new_vtx_indices, &new_vtx_indices[0], new_vtx_indices.size());
     }
 
     vtx_indices_.insert(vtx_indices_.end(), new_vtx_indices.begin(), new_vtx_indices.end());
@@ -374,7 +380,7 @@ void Ray::Ref::Scene::SetMeshInstanceTransform(uint32_t mi_index, const float *x
         const bvh_node_t &n = nodes_[m.node_index];
         TransformBoundingBox(n.bbox_min, n.bbox_max, xform, mi.bbox_min, mi.bbox_max);
     } else {
-        const bvh_node8_t &n = oct_nodes_[m.node_index];
+        const mbvh_node_t &n = mnodes_[m.node_index];
 
         float bbox_min[3] = { MAX_DIST, MAX_DIST, MAX_DIST },
               bbox_max[3] = { -MAX_DIST, -MAX_DIST, -MAX_DIST };
@@ -435,11 +441,11 @@ void Ray::Ref::Scene::RemoveNodes(uint32_t node_index, uint32_t node_count) {
         nodes_.erase(std::next(nodes_.begin(), node_index),
                      std::next(nodes_.begin(), node_index + node_count));
     } else {
-        oct_nodes_.erase(std::next(oct_nodes_.begin(), node_index),
-                         std::next(oct_nodes_.begin(), node_index + node_count));
+        mnodes_.erase(std::next(mnodes_.begin(), node_index),
+                         std::next(mnodes_.begin(), node_index + node_count));
     }
 
-    if ((!use_wide_bvh_ && node_index != nodes_.size()) || (use_wide_bvh_ && node_index != oct_nodes_.size())) {
+    if ((!use_wide_bvh_ && node_index != nodes_.size()) || (use_wide_bvh_ && node_index != mnodes_.size())) {
         for (mesh_t &m : meshes_) {
             if (m.node_index > node_index) {
                 m.node_index -= node_count;
@@ -458,8 +464,8 @@ void Ray::Ref::Scene::RemoveNodes(uint32_t node_index, uint32_t node_count) {
             }
         }
 
-        for (uint32_t i = node_index; i < oct_nodes_.size(); i++) {
-            bvh_node8_t &n = oct_nodes_[i];
+        for (uint32_t i = node_index; i < mnodes_.size(); i++) {
+            mbvh_node_t &n = mnodes_[i];
 
             if ((n.child[0] & LEAF_NODE_BIT) == 0) {
                 if (n.child[0] > node_index) n.child[0] -= node_count;
@@ -498,11 +504,11 @@ void Ray::Ref::Scene::RebuildMacroBVH() {
     macro_nodes_count_ = PreprocessPrims_SAH(&primitives[0], primitives.size(), nullptr, 0, {}, nodes_, mi_indices_);
 
     if (use_wide_bvh_) {
-        uint32_t before_count = static_cast<uint32_t>(oct_nodes_.size());
-        uint32_t new_root = FlattenBVH_Recursive(nodes_.data(), macro_nodes_root_, 0xffffffff, oct_nodes_);
+        uint32_t before_count = static_cast<uint32_t>(mnodes_.size());
+        uint32_t new_root = FlattenBVH_Recursive(nodes_.data(), macro_nodes_root_, 0xffffffff, mnodes_);
 
         macro_nodes_root_ = new_root;
-        macro_nodes_count_ = static_cast<uint32_t>(oct_nodes_.size() - before_count);
+        macro_nodes_count_ = static_cast<uint32_t>(mnodes_.size() - before_count);
 
         // nodes_ is temporary storage when wide BVH is used
         nodes_.clear();
@@ -569,11 +575,11 @@ void Ray::Ref::Scene::RebuildLightBVH() {
     light_nodes_count_ = PreprocessPrims_SAH(&primitives[0], primitives.size(), nullptr, 0, {}, nodes_, li_indices_);
 
     if (use_wide_bvh_) {
-        uint32_t before_count = static_cast<uint32_t>(oct_nodes_.size());
-        uint32_t new_root = FlattenBVH_Recursive(nodes_.data(), light_nodes_root_, 0xffffffff, oct_nodes_);
+        uint32_t before_count = static_cast<uint32_t>(mnodes_.size());
+        uint32_t new_root = FlattenBVH_Recursive(nodes_.data(), light_nodes_root_, 0xffffffff, mnodes_);
 
         light_nodes_root_ = new_root;
-        light_nodes_count_ = static_cast<uint32_t>(oct_nodes_.size() - before_count);
+        light_nodes_count_ = static_cast<uint32_t>(mnodes_.size() - before_count);
 
         // nodes_ is temporary storage when wide BVH is used
         nodes_.clear();

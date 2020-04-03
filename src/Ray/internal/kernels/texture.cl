@@ -9,6 +9,36 @@ float4 rgbe_to_rgb(float4 rgbe) {
     return (float4)(rgbe.xyz * f, 1.0f);
 }
 
+float4 srgb_to_rgb(float4 col) {
+    return (float4)(
+        (col.x > 0.04045f) ? (native_powr((col.x + 0.055f) / 1.055f, 2.4f)) : (col.x / 12.92f),
+        (col.y > 0.04045f) ? (native_powr((col.y + 0.055f) / 1.055f, 2.4f)) : (col.y / 12.92f),
+        (col.z > 0.04045f) ? (native_powr((col.z + 0.055f) / 1.055f, 2.4f)) : (col.z / 12.92f),
+        col.w);
+}
+
+float4 rgb_to_srgb(float4 col) {
+    return (float4)(
+            (col.x > 0.0031308f) ? (native_powr(1.055f * col.x, (1.0f / 2.4f)) - 0.055f) : (12.92f * col.x),
+            (col.y > 0.0031308f) ? (native_powr(1.055f * col.y, (1.0f / 2.4f)) - 0.055f) : (12.92f * col.y),
+            (col.z > 0.0031308f) ? (native_powr(1.055f * col.z, (1.0f / 2.4f)) - 0.055f) : (12.92f * col.z),
+            col.w);
+}
+
+float get_texture_lod(__global const texture_t *texture, const float2 duv_dx, const float2 duv_dy) {
+    const float2 _duv_dx = duv_dx * (float2)(texture->width & TEXTURE_WIDTH_BITS, texture->height),
+                 _duv_dy = duv_dy * (float2)(texture->width & TEXTURE_WIDTH_BITS, texture->height);
+
+    const float2 _diagonal = _duv_dx + _duv_dy;
+
+    const float dim = fmin(fmin(dot(_duv_dx, _duv_dx), dot(_duv_dy, _duv_dy)), dot(_diagonal, _diagonal));
+
+    float lod = native_log2(dim);
+    lod = clamp(0.5f * lod - 1.0f, 0.0f, (float)MAX_MIP_LEVEL);
+
+    return lod;
+}
+
 float4 SampleTextureBilinear(__read_only image2d_array_t texture_atlas, __global const texture_t *texture,
                               const float2 uvs, int lod) {
     const float2 uvs1 = TransformUVs(uvs, tex_atlas_size, texture, lod);
@@ -37,8 +67,8 @@ float4 SampleTextureTrilinear(__read_only image2d_array_t texture_atlas, __globa
 
 float4 SampleTextureAnisotropic(__read_only image2d_array_t texture_atlas, __global const texture_t *texture,
                                 const float2 uvs, const float2 duv_dx, const float2 duv_dy) {
-    float2 _duv_dx = fabs(duv_dx * (float2)(texture->size[0], texture->size[1]));
-    float2 _duv_dy = fabs(duv_dy * (float2)(texture->size[0], texture->size[1]));
+    float2 _duv_dx = fabs(duv_dx * (float2)(texture->width & TEXTURE_WIDTH_BITS, texture->height));
+    float2 _duv_dy = fabs(duv_dy * (float2)(texture->width & TEXTURE_WIDTH_BITS, texture->height));
 
     float l1 = fast_length(_duv_dx);
     float l2 = fast_length(_duv_dy);
@@ -73,11 +103,11 @@ float4 SampleTextureAnisotropic(__read_only image2d_array_t texture_atlas, __glo
     int page2 = texture->page[lod2];
 
     float2 pos1 = (float2)((float)texture->pos[lod1][0] + 0.5f, (float)texture->pos[lod1][1] + 0.5f);
-    float2 size1 = (float2)((float)(texture->size[0] >> lod1), (float)(texture->size[1] >> lod1));
+    float2 size1 = (float2)((float)((texture->width & TEXTURE_WIDTH_BITS) >> lod1), (float)(texture->height >> lod1));
     float4 coord1 = (float4)(0.0f, 0.0f, (float)page1, 0);
 
     float2 pos2 = (float2)((float)texture->pos[lod2][0] + 0.5f, (float)texture->pos[lod2][1] + 0.5f);
-    float2 size2 = (float2)((float)(texture->size[0] >> lod2), (float)(texture->size[1] >> lod2));
+    float2 size2 = (float2)((float)((texture->width & TEXTURE_WIDTH_BITS) >> lod2), (float)(texture->height >> lod2));
     float4 coord2 = (float4)(0.0f, 0.0f, (float)page2, 0);
 
     const float kz = lod - floor(lod);
@@ -108,7 +138,7 @@ float4 SampleTextureLatlong_RGBE(__read_only image2d_array_t texture_atlas, __gl
     if (dir.z < 0) u = 1.0f - u;
 
     float2 pos = (float2)((float)t->pos[0][0], (float)t->pos[0][1]);
-    float2 size = (float2)((float)t->size[0], (float)t->size[1]);
+    float2 size = (float2)((float)(t->width & TEXTURE_WIDTH_BITS), (float)t->height);
 
     float2 uvs = pos + (float2)(u, theta) * size + (float2)(1.0f, 1.0f);
     const float kx = uvs.x - floor(uvs.x), ky = uvs.y - floor(uvs.y);
