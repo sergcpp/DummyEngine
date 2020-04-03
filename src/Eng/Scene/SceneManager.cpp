@@ -1073,17 +1073,28 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
                     p.repeat = Ren::eTexRepeat::Repeat;
                 }
 
-                ret->Init(data, size, p, nullptr, self->ctx_.log());
+                if (ret->ref_count() > 1) {
+                    ret->Init(data, size, p, nullptr, self->ctx_.log());
+                } else {
+                    // texture user is no longer alive
+                    ret = {};
+                }
 
                 const int count = --(self->scene_texture_load_counter_);
                 self->ctx_.log()->Info("Texture %s loaded (%i left)", tex_name, count);
+                // reset while we are in main thread
                 self.reset();
             });
-        }, [_self, ret]() {
-            const std::shared_ptr<SceneManager> self = _self.lock();
+        }, [_self, ret]() mutable {
+            std::shared_ptr<SceneManager> self = _self.lock();
             if (!self) return;
 
-            self->ctx_.log()->Error("Error loading %s", ret->name().c_str());
+            self->ctx_.ProcessSingleTask([&self, &ret]() mutable {
+                self->ctx_.log()->Error("Error loading %s", ret->name().c_str());
+                // reset while we are in main thread
+                ret = {};
+                self.reset();
+            });
         });
     }
 
