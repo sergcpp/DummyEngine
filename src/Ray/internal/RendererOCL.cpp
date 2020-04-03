@@ -125,11 +125,12 @@ Ray::Ocl::Renderer::Renderer(int w, int h, int platform_index, int device_index)
         s << "#define TRI_INV_NORMAL_BIT "      << int(TRI_INV_NORMAL_BIT) << "\n";
         s << "#define HIT_BIAS "                << HIT_BIAS << "f\n";
         s << "#define TEXTURE_ATLAS_SIZE "      << TEXTURE_ATLAS_SIZE << "\n";
+        s << "#define TEXTURE_SRGB_BIT "        << TEXTURE_SRGB_BIT << "\n";
+        s << "#define TEXTURE_WIDTH_BITS "      << TEXTURE_WIDTH_BITS << "\n";
 
         s << "#define HIT_EPS "                 << HIT_EPS << "f\n";
         s << "#define FLT_EPS "                 << FLT_EPS << "f\n";
         s << "#define PI "                      << PI << "f\n";
-        s << "#define RAY_TERM_THRES "          << RAY_TERM_THRES << "f\n";
         s << "#define HALTON_SEQ_LEN "          << HALTON_SEQ_LEN << "\n";
         s << "#define HALTON_COUNT "            << HALTON_COUNT << "\n";
         s << "#define MAX_MIP_LEVEL "           << MAX_MIP_LEVEL << "\n";
@@ -187,7 +188,7 @@ Ray::Ocl::Renderer::Renderer(int w, int h, int platform_index, int device_index)
         if (error != CL_SUCCESS) throw std::runtime_error("Cannot create OpenCL renderer!");
 
         //std::string build_opts = "-Werror -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math ";// = "-cl-opt-disable ";
-        std::string build_opts = "-cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math ";// = "-cl-opt-disable ";
+        std::string build_opts = "-cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math ";// = "-cl-opt-disable ";
 
         struct stat info = { 0 };
         if (stat("./.dumps", &info) == 0 && info.st_mode & S_IFDIR) {
@@ -204,7 +205,7 @@ Ray::Ocl::Renderer::Renderer(int w, int h, int platform_index, int device_index)
         }
 
         if (error != CL_SUCCESS) {
-            std::string build_log = program_.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device_);
+            const std::string build_log = program_.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device_);
 #if defined(_MSC_VER)
             __debugbreak();
 #endif
@@ -436,9 +437,9 @@ void Ray::Ocl::Renderer::RenderScene(const std::shared_ptr<SceneBase> &_s, Regio
         s->nodes_.Get(macro_tree_root, root_node);
     }
 
-    cl_float3 root_min = { root_node.bbox_min[0], root_node.bbox_min[1], root_node.bbox_min[2] },
-              root_max = { root_node.bbox_max[0], root_node.bbox_max[1], root_node.bbox_max[2] };
-    cl_float3 cell_size = { (root_max.s[0] - root_min.s[0]) / 255, (root_max.s[1] - root_min.s[1]) / 255, (root_max.s[2] - root_min.s[2]) / 255 };
+    cl_float3 root_min = { { root_node.bbox_min[0], root_node.bbox_min[1], root_node.bbox_min[2] } },
+    root_max = { { root_node.bbox_max[0], root_node.bbox_max[1], root_node.bbox_max[2] } };
+    cl_float3 cell_size = { { (root_max.s[0] - root_min.s[0]) / 255, (root_max.s[1] - root_min.s[1]) / 255, (root_max.s[2] - root_min.s[2]) / 255 } };
 
     region.iteration++;
     if (!region.halton_seq || region.iteration % HALTON_SEQ_LEN == 0) {
@@ -627,8 +628,8 @@ void Ray::Ocl::Renderer::RenderScene(const std::shared_ptr<SceneBase> &_s, Regio
         if (!kernel_MixSHData(sh_data_temp_, (cl_int)(w_ * h_), mix_factor, sh_data_clean_)) return;
     }
 
-    cl_int _clamp = (cam.pass_settings.flags & Clamp) ? 1 : 0;
-    if (!kernel_Postprocess(clean_buf_, w_, h_, (cl_float)(1.0f / cam.gamma), _clamp, final_buf_)) return;
+    cl_int _clamp = (cam.pass_settings.flags & Clamp) ? 1 : 0, _srgb = (cam.dtype == SRGB) ? 1 : 0;
+    if (!kernel_Postprocess(clean_buf_, w_, h_, (cl_float)(1.0f / cam.gamma), _clamp, _srgb, final_buf_)) return;
 
     error = queue_.enqueueReadImage(final_buf_, CL_TRUE, {}, { (size_t)w_, (size_t)h_, 1 }, 0, 0, &frame_pixels_[0]);
     if (error != CL_SUCCESS) return;
@@ -1165,13 +1166,14 @@ bool Ray::Ocl::Renderer::kernel_MixIncremental(const cl::Image2D &fbuf1, const c
     return queue_.enqueueNDRangeKernel(mix_incremental_kernel_, cl::NullRange, global, local) == CL_SUCCESS;
 }
 
-bool Ray::Ocl::Renderer::kernel_Postprocess(const cl::Image2D &frame_buf, cl_int w, cl_int h, cl_float inv_gamma, cl_int clamp, const cl::Image2D &out_pixels) {
+bool Ray::Ocl::Renderer::kernel_Postprocess(const cl::Image2D &frame_buf, cl_int w, cl_int h, cl_float inv_gamma, cl_int clamp, cl_int srgb, const cl::Image2D &out_pixels) {
     cl_uint argc = 0;
     if (post_process_kernel_.setArg(argc++, frame_buf) != CL_SUCCESS ||
             post_process_kernel_.setArg(argc++, w) != CL_SUCCESS ||
             post_process_kernel_.setArg(argc++, h) != CL_SUCCESS ||
             post_process_kernel_.setArg(argc++, inv_gamma) != CL_SUCCESS ||
             post_process_kernel_.setArg(argc++, clamp) != CL_SUCCESS ||
+            post_process_kernel_.setArg(argc++, srgb) != CL_SUCCESS ||
             post_process_kernel_.setArg(argc++, out_pixels) != CL_SUCCESS) {
         return false;
     }

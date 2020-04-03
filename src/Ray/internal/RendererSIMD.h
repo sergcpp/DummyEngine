@@ -101,7 +101,7 @@ public:
 #include "SceneRef.h"
 
 template <int DimX, int DimY>
-Ray::NS::RendererSIMD<DimX, DimY>::RendererSIMD(const settings_t &s) : use_wide_bvh_(s.use_wide_bvh), clean_buf_(s.w, s.h), final_buf_(s.w, s.h), temp_buf_(s.w, s.h) {
+Ray::NS::RendererSIMD<DimX, DimY>::RendererSIMD(const settings_t &s) : clean_buf_(s.w, s.h), final_buf_(s.w, s.h), temp_buf_(s.w, s.h), use_wide_bvh_(s.use_wide_bvh) {
     auto rand_func = std::bind(std::uniform_int_distribution<int>(), std::mt19937(0));
     permutations_ = Ray::ComputeRadicalInversePermutations(g_primes, PrimesCount, rand_func);
 }
@@ -130,7 +130,7 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const std::shared_ptr<SceneB
     sc_data.vtx_indices = s->vtx_indices_.empty() ? nullptr : &s->vtx_indices_[0];
     sc_data.vertices = s->vertices_.empty() ? nullptr : &s->vertices_[0];
     sc_data.nodes = s->nodes_.empty() ? nullptr : &s->nodes_[0];
-    sc_data.oct_nodes = s->oct_nodes_.empty() ? nullptr : &s->oct_nodes_[0];
+    sc_data.mnodes = s->mnodes_.empty() ? nullptr : &s->mnodes_[0];
     sc_data.tris = s->tris_.empty() ? nullptr : &s->tris_[0];
     sc_data.tri_indices = s->tri_indices_.empty() ? nullptr : &s->tri_indices_[0];
     sc_data.materials = s->materials_.empty() ? nullptr : &s->materials_[0];
@@ -147,8 +147,8 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const std::shared_ptr<SceneB
     if (macro_tree_root != 0xffffffff) {
         float root_max[3];
 
-        if (sc_data.oct_nodes) {
-            const bvh_node8_t &root_node = sc_data.oct_nodes[macro_tree_root];
+        if (sc_data.mnodes) {
+            const mbvh_node_t &root_node = sc_data.mnodes[macro_tree_root];
 
             root_min[0] = root_min[1] = root_min[2] = MAX_DIST;
             root_max[0] = root_max[1] = root_max[2] = -MAX_DIST;
@@ -228,8 +228,8 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const std::shared_ptr<SceneB
             inter.xy = r.xy;
 
             if (macro_tree_root != 0xffffffff) {
-                if (sc_data.oct_nodes) {
-                    NS::Traverse_MacroTree_WithStack_ClosestHit(r, { -1 }, sc_data.oct_nodes, macro_tree_root, sc_data.mesh_instances, sc_data.mi_indices,
+                if (sc_data.mnodes) {
+                    NS::Traverse_MacroTree_WithStack_ClosestHit(r, { -1 }, sc_data.mnodes, macro_tree_root, sc_data.mesh_instances, sc_data.mi_indices,
                                                                 sc_data.meshes, sc_data.transforms, sc_data.tris, sc_data.tri_indices, inter);
                 } else {
                     NS::Traverse_MacroTree_WithStack_ClosestHit(r, { -1 }, sc_data.nodes, macro_tree_root, sc_data.mesh_instances, sc_data.mi_indices,
@@ -324,8 +324,8 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const std::shared_ptr<SceneB
             inter = {};
             inter.xy = r.xy;
 
-            if (sc_data.oct_nodes) {
-                NS::Traverse_MacroTree_WithStack_ClosestHit(r, p.secondary_masks[i], sc_data.oct_nodes, macro_tree_root, sc_data.mesh_instances, sc_data.mi_indices,
+            if (sc_data.mnodes) {
+                NS::Traverse_MacroTree_WithStack_ClosestHit(r, p.secondary_masks[i], sc_data.mnodes, macro_tree_root, sc_data.mesh_instances, sc_data.mi_indices,
                                                             sc_data.meshes, sc_data.transforms, sc_data.tris, sc_data.tri_indices, inter);
             } else {
                 NS::Traverse_MacroTree_WithStack_ClosestHit(r, p.secondary_masks[i], sc_data.nodes, macro_tree_root, sc_data.mesh_instances, sc_data.mi_indices,
@@ -400,8 +400,22 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const std::shared_ptr<SceneB
     }
 
     auto clamp_and_gamma_correct = [&cam](const pixel_color_t &p) {
-        auto c = simd_fvec4(&p.r);
-        c = pow(c, simd_fvec4{ 1.0f / cam.gamma });
+        auto c = simd_fvec4{ &p.r };
+
+        if (cam.dtype == SRGB) {
+            ITERATE_3({
+                if (c[i] > 0.0031308f) {
+                    c[i] = std::pow(1.055f * c[i], (1.0f / 2.4f)) - 0.055f;
+                } else {
+                    c[i] = 12.92f * c[i];
+                }
+            })
+        }
+
+        if (cam.gamma != 1.0f) {
+            c = pow(c, simd_fvec4{ 1.0f / cam.gamma });
+        }
+
         if (cam.pass_settings.flags & Clamp) {
             c = clamp(c, 0.0f, 1.0f);
         }
