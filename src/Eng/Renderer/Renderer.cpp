@@ -94,57 +94,57 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
     }
 
     {   // shadow map buffer
-        shadow_buf_ = FrameBuf(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, nullptr, 0, { FrameBuf::Depth16, Ren::BilinearNoMipmap }, 1, ctx.log());
+        shadow_buf_ = FrameBuf(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, nullptr, 0, { FrameBuf::eDepthFormat::Depth16, Ren::eTexFilter::BilinearNoMipmap }, 1, ctx.log());
     }
 
     {   // aux buffer which gathers frame luminance
         FrameBuf::ColorAttachmentDesc desc; // NOLINT
-        desc.format = Ren::RawR16F;
-        desc.filter = Ren::BilinearNoMipmap;
-        desc.repeat = Ren::ClampToEdge;
-        reduced_buf_ = FrameBuf(16, 8, &desc, 1, { FrameBuf::DepthNone }, 1, ctx.log());
+        desc.format = Ren::eTexFormat::RawR16F;
+        desc.filter = Ren::eTexFilter::BilinearNoMipmap;
+        desc.repeat = Ren::eTexRepeat::ClampToEdge;
+        reduced_buf_ = FrameBuf(16, 8, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, ctx.log());
     }
 
     {   // buffer used to sample probes
         FrameBuf::ColorAttachmentDesc desc; // NOLINT
-        desc.format = Ren::RawRGBA32F;
-        desc.filter = Ren::NoFilter;
-        desc.repeat = Ren::ClampToEdge;
-        probe_sample_buf_ = FrameBuf(24, 8, &desc, 1, { FrameBuf::DepthNone }, 1, ctx.log());
+        desc.format = Ren::eTexFormat::RawRGBA32F;
+        desc.filter = Ren::eTexFilter::NoFilter;
+        desc.repeat = Ren::eTexRepeat::ClampToEdge;
+        probe_sample_buf_ = FrameBuf(24, 8, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, ctx.log());
     }
 
     static const uint8_t black[] = { 0, 0, 0, 0 }, white[] = { 255, 255, 255, 255 };
 
     Ren::Texture2DParams p;
     p.w = p.h = 1;
-    p.format = Ren::RawRGBA8888;
-    p.filter = Ren::Bilinear;
-    p.repeat = Ren::ClampToEdge;
+    p.format = Ren::eTexFormat::RawRGBA8888;
+    p.filter = Ren::eTexFilter::Bilinear;
+    p.repeat = Ren::eTexRepeat::ClampToEdge;
 
     Ren::eTexLoadStatus status;
     dummy_black_ = ctx_.LoadTexture2D("dummy_black", black, sizeof(black), p, &status);
-    assert(status == Ren::TexCreatedFromData);
+    assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
 
     dummy_white_ = ctx_.LoadTexture2D("dummy_white", white, sizeof(white), p, &status);
-    assert(status == Ren::TexCreatedFromData);
+    assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
 
     p.w = p.h = 8;
-    p.format = Ren::RawRG32F;
-    p.filter = Ren::NoFilter;
-    p.repeat = Ren::Repeat;
+    p.format = Ren::eTexFormat::RawRG32F;
+    p.filter = Ren::eTexFilter::NoFilter;
+    p.repeat = Ren::eTexRepeat::Repeat;
     rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", &HaltonSeq23[0], sizeof(HaltonSeq23), p, &status);
-    assert(status == Ren::TexCreatedFromData);
+    assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
 
     {
         //std::string c_header;
         //const std::unique_ptr<uint16_t[]> img_data_rg16 = Generate_BRDF_LUT(256, c_header);
 
         p.w = p.h = RendererInternal::__brdf_lut_res;
-        p.format = Ren::RawRG16U;
-        p.filter = Ren::BilinearNoMipmap;
-        p.repeat = Ren::ClampToEdge;
+        p.format = Ren::eTexFormat::RawRG16U;
+        p.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.repeat = Ren::eTexRepeat::ClampToEdge;
         brdf_lut_ = ctx_.LoadTexture2D("brdf_lut", &RendererInternal::__brdf_lut[0], sizeof(__brdf_lut), p, &status);
-        assert(status == Ren::TexCreatedFromData);
+        assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
     }
 
     {
@@ -154,11 +154,11 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
         SceneManagerInternal::WriteImage((const uint8_t*)&img_data[0], res, res, 4, "test1.png");*/
 
         p.w = p.h = __noise_res;
-        p.format = Ren::RawRGBA8888Snorm;
-        p.filter = Ren::BilinearNoMipmap;
-        p.repeat = Ren::Repeat;
+        p.format = Ren::eTexFormat::RawRGBA8888Snorm;
+        p.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.repeat = Ren::eTexRepeat::Repeat;
         noise_tex_ = ctx_.LoadTexture2D("noise", &__noise[0], __noise_res * __noise_res * 4, p, &status);
-        assert(status == Ren::TexCreatedFromData);
+        assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
     }
 
     {
@@ -239,33 +239,33 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
                 // renormalization requires buffer with alpha channel
                 desc[0].format = Ren::RawRGBA16F;
 #else
-                desc[0].format = Ren::RawRG11F_B10F;
+                desc[0].format = Ren::eTexFormat::RawRG11F_B10F;
 #endif
-                desc[0].filter = Ren::NoFilter;
-                desc[0].repeat = Ren::ClampToEdge;
+                desc[0].filter = Ren::eTexFilter::NoFilter;
+                desc[0].repeat = Ren::eTexRepeat::ClampToEdge;
                 ++desc_count;
             }
             {   // 4-component world-space normal (alpha is 'ssr' flag)
-                desc[1].format = Ren::RawRGB10_A2;
-                desc[1].filter = Ren::NoFilter;
-                desc[1].repeat = Ren::ClampToEdge;
+                desc[1].format = Ren::eTexFormat::RawRGB10_A2;
+                desc[1].filter = Ren::eTexFilter::NoFilter;
+                desc[1].repeat = Ren::eTexRepeat::ClampToEdge;
                 ++desc_count;
             }
             {   // 4-component specular (alpha is roughness)
-                desc[2].format = Ren::RawRGBA8888;
-                desc[2].filter = Ren::NoFilter;
-                desc[2].repeat = Ren::ClampToEdge;
+                desc[2].format = Ren::eTexFormat::RawRGBA8888;
+                desc[2].filter = Ren::eTexFilter::NoFilter;
+                desc[2].repeat = Ren::eTexRepeat::ClampToEdge;
                 ++desc_count;
             }
             if (cur_taa_enabled) {
                 // 2-component velocity
-                desc[3].format = Ren::RawRG16;
-                desc[3].filter = Ren::NoFilter;
-                desc[3].repeat = Ren::ClampToEdge;
+                desc[3].format = Ren::eTexFormat::RawRG16;
+                desc[3].filter = Ren::eTexFilter::NoFilter;
+                desc[3].repeat = Ren::eTexRepeat::ClampToEdge;
                 desc[3].attached = false;
                 ++desc_count;
             }
-            clean_buf_ = FrameBuf(cur_scr_w, cur_scr_h, desc, desc_count, { FrameBuf::Depth24Stencil8, Ren::NoFilter }, cur_msaa_enabled ? 4 : 1, log);
+            clean_buf_ = FrameBuf(cur_scr_w, cur_scr_h, desc, desc_count, { FrameBuf::eDepthFormat::Depth24Stencil8, Ren::eTexFilter::NoFilter }, cur_msaa_enabled ? 4 : 1, log);
         }
 
 #if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
@@ -292,34 +292,34 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
 
         {   // Buffer that holds resolved color
             FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::RawRG11F_B10F;
-            desc.filter = Ren::NoFilter;
-            desc.repeat = Ren::ClampToEdge;
-            resolved_or_transparent_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::DepthNone }, 1, log);
+            desc.format = Ren::eTexFormat::RawRG11F_B10F;
+            desc.filter = Ren::eTexFilter::NoFilter;
+            desc.repeat = Ren::eTexRepeat::ClampToEdge;
+            resolved_or_transparent_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, log);
         }
 
         {   // Buffer that holds downsampled linear depth
             FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::RawR32F;
-            desc.filter = Ren::NoFilter;
-            desc.repeat = Ren::ClampToEdge;
-            down_depth_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, log);
+            desc.format = Ren::eTexFormat::RawR32F;
+            desc.filter = Ren::eTexFilter::NoFilter;
+            desc.repeat = Ren::eTexRepeat::ClampToEdge;
+            down_depth_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, log);
         }
 
         {   // Buffer that holds tonemapped ldr frame before fxaa applied
             FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::RawRGB888;
-            desc.filter = Ren::BilinearNoMipmap;
-            desc.repeat = Ren::ClampToEdge;
-            combined_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::DepthNone }, 1, log);
+            desc.format = Ren::eTexFormat::RawRGB888;
+            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
+            desc.repeat = Ren::eTexRepeat::ClampToEdge;
+            combined_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, log);
         }
 
         if (cur_taa_enabled) {
             FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::RawRG11F_B10F;
-            desc.filter = Ren::BilinearNoMipmap;
-            desc.repeat = Ren::ClampToEdge;
-            history_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::DepthNone }, 1, log);
+            desc.format = Ren::eTexFormat::RawRG11F_B10F;
+            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
+            desc.repeat = Ren::eTexRepeat::ClampToEdge;
+            history_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, log);
 
             log->Info("Setting texture lod bias to -1.0");
 
@@ -354,34 +354,34 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         
         {   // Buffer for SSAO
             FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::RawR8;
-            desc.filter = Ren::BilinearNoMipmap;
-            desc.repeat = Ren::ClampToEdge;
-            ssao_buf1_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, log);
-            ssao_buf2_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, log);
+            desc.format = Ren::eTexFormat::RawR8;
+            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
+            desc.repeat = Ren::eTexRepeat::ClampToEdge;
+            ssao_buf1_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, log);
+            ssao_buf2_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, log);
         }
         {   // Auxilary buffer for reflections (rg - uvs, b - influence)
             FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::RawRGB10_A2;
-            desc.filter = Ren::BilinearNoMipmap;
-            desc.repeat = Ren::ClampToEdge;
-            ssr_buf1_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, log);
-            ssr_buf2_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::DepthNone }, 1, log);
+            desc.format = Ren::eTexFormat::RawRGB10_A2;
+            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
+            desc.repeat = Ren::eTexRepeat::ClampToEdge;
+            ssr_buf1_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, log);
+            ssr_buf2_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, log);
         }
         {   // Buffer that holds previous frame (used for SSR)
             FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::RawRG11F_B10F;
-            desc.filter = Ren::BilinearNoMipmap;
-            desc.repeat = Ren::ClampToEdge;
-            down_buf_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, { FrameBuf::DepthNone }, 1, log);
+            desc.format = Ren::eTexFormat::RawRG11F_B10F;
+            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
+            desc.repeat = Ren::eTexRepeat::ClampToEdge;
+            down_buf_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, log);
         }
         {   // Auxilary buffers for bloom effect
             FrameBuf::ColorAttachmentDesc desc; // NOLINT
-            desc.format = Ren::RawRG11F_B10F;
-            desc.filter = Ren::BilinearNoMipmap;
-            desc.repeat = Ren::ClampToEdge;
-            blur_buf1_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, { FrameBuf::DepthNone }, 1, log);
-            blur_buf2_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, { FrameBuf::DepthNone }, 1, log);
+            desc.format = Ren::eTexFormat::RawRG11F_B10F;
+            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
+            desc.repeat = Ren::eTexRepeat::ClampToEdge;
+            blur_buf1_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, log);
+            blur_buf2_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, log);
         }
 
         // Memory consumption for FullHD frame (except clean_buf_):

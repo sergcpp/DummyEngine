@@ -43,7 +43,7 @@ void Ren::Program::Init(const char *name, void *vs_shader, void *fs_shader, int 
                         const Attribute *attrs, const Uniform *unifs, eProgLoadStatus *status) {
     strcpy(name_, name);
     if (!vs_shader || !fs_shader || !attrs || !unifs) {
-        if (status) *status = ProgSetToDefault;
+        if (status) *status = SetToDefault;
         return;
     }
 
@@ -63,7 +63,7 @@ void Ren::Program::Init(const char *name, void *vs_shader, void *fs_shader, int 
 
 void Ren::Program::InitFromFuncs(void *vs_shader, void *fs_shader, int num_fvars, eProgLoadStatus *status) {
     if (!vs_shader || !fs_shader) {
-        if (status) *status = ProgSetToDefault;
+        if (status) *status = SetToDefault;
         return;
     }
 
@@ -76,7 +76,7 @@ void Ren::Program::InitFromFuncs(void *vs_shader, void *fs_shader, int num_fvars
     prog_id_ = (uint32_t)prog_id;
     ready_ = true;
 
-    if (status) *status = ProgCreatedFromData;
+    if (status) *status = CreatedFromData;
 }
 
 #ifdef _MSC_VER

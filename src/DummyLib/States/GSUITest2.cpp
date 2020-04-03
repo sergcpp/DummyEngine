@@ -50,7 +50,7 @@ GSUITest2::GSUITest2(GameBase *game) : GSBaseState(game) {
     edit_box_.reset(new Gui::EditBox{
         edit_box_frame, dialog_font_.get(), Ren::Vec2f{ -0.5f, 0.75f },
         Ren::Vec2f{ 1.0f, 0.75f * font_height },ui_root_.get() });
-    edit_box_->set_flag(Gui::Multiline, false);
+    edit_box_->set_flag(Gui::eEditBoxFlags::Multiline, false);
 
     results_frame_.reset(new Gui::Image9Patch{
         *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Ren::Vec2f{ 8.0f, 8.0f },
@@ -208,15 +208,15 @@ void GSUITest2::UpdateHint() {
             log_->Info("Result %s", result.trans[0]);
 
             std::string line = result.orth;
-            if (result.pos == Noun) {
+            if (result.pos == eGramGrpPos::Noun) {
                 line += " (noun";
 
-                if (result.num == Singular) {
+                if (result.num == eGramGrpNum::Singular) {
                     line += ", singular";
 
-                    if (result.gen == Masculine) {
+                    if (result.gen == eGramGrpGen::Masculine) {
                         line += ", masculine)";
-                    } else if (result.gen == Feminine) {
+                    } else if (result.gen == eGramGrpGen::Feminine) {
                         line += ", feminine)";
                     } else {
                         line += ", neutral)";
@@ -224,9 +224,9 @@ void GSUITest2::UpdateHint() {
                 } else {
                     line += ", plural)";
                 }
-            } else if (result.pos == Verb) {
+            } else if (result.pos == eGramGrpPos::Verb) {
                 line += " (verb)";
-            } else if (result.pos == Adjective) {
+            } else if (result.pos == eGramGrpPos::Adjective) {
                 line += " (adjective)";
             }
 

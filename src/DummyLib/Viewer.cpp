@@ -116,7 +116,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     AddComponent(SWAP_TIMER_KEY, swap_interval);
 
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
-    state_manager->Push(GSCreate(GS_DRAW_TEST, this));
+    state_manager->Push(GSCreate(eGameState::GS_DRAW_TEST, this));
 }
 
 void Viewer::Resize(int w, int h) {
@@ -205,27 +205,27 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
             }
 
             // init defaults
-            entry.pos = Adjective;
-            entry.num = Singular;
-            entry.gen = Masculine;
+            entry.pos = eGramGrpPos::Adjective;
+            entry.num = eGramGrpNum::Singular;
+            entry.gen = eGramGrpGen::Masculine;
 
             if (js_entry.Has("gramGrp")) {
                 const JsObject &js_gram_grp = js_entry.at("gramGrp").as_obj();
                 if (js_gram_grp.Has("pos")) {
                     const JsString &js_gram_grp_pos = js_gram_grp.at("pos").as_str();
                     if (js_gram_grp_pos.val == "n") {
-                        entry.pos = Noun;
+                        entry.pos = eGramGrpPos::Noun;
                     } else if (js_gram_grp_pos.val == "v") {
-                        entry.pos = Verb;
+                        entry.pos = eGramGrpPos::Verb;
                     } else if (js_gram_grp_pos.val == "a") {
-                        entry.pos = Adjective;
+                        entry.pos = eGramGrpPos::Adjective;
                     }
                 }
                 if (js_gram_grp.Has("num")) {
                     if (js_gram_grp.at("num").type() == JS_TYPE_STRING) {
                         const JsString &js_gram_grp_num = js_gram_grp.at("num").as_str();
                         if (js_gram_grp_num.val == "p") {
-                            entry.num = Plural;
+                            entry.num = eGramGrpNum::Plural;
                         }
                     }
                 }
@@ -234,9 +234,9 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
 
                         const JsString &js_gram_grp_gen = js_gram_grp.at("gen").as_str();
                         if (js_gram_grp_gen.val == "f") {
-                            entry.gen = Feminine;
+                            entry.gen = eGramGrpGen::Feminine;
                         } else if (js_gram_grp_gen.val == "n") {
-                            entry.gen = Neutral;
+                            entry.gen = eGramGrpGen::Neutral;
                         }
                     }
                 }
@@ -364,9 +364,9 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
                 entries_compact.emplace_back();
                 Dictionary::dict_entry_compact_t &dst_entry = entries_compact.back();
 
-                dst_entry.pos = src_entry.pos;
-                dst_entry.num = src_entry.num;
-                dst_entry.gen = src_entry.gen;
+                dst_entry.pos = (uint8_t)src_entry.pos;
+                dst_entry.num = (uint8_t)src_entry.num;
+                dst_entry.gen = (uint8_t)src_entry.gen;
 
                 {   // correct word writing
                     const size_t len = src_entry.orth.length();
@@ -406,7 +406,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
         assert(links_count == dict_entries.size() && "Links count is wrong!");
 
         std::ofstream out_stream(out_file, std::ios::binary);
-        const uint32_t header_size = 4 + sizeof(uint32_t) + int(Dictionary::DictChCount) * 3 * sizeof(uint32_t);
+        const uint32_t header_size = 4 + sizeof(uint32_t) + int(Dictionary::eDictChunks::DictChCount) * 3 * sizeof(uint32_t);
         uint32_t hdr_offset = 0, data_offset = header_size;
 
         {   // File format string
@@ -422,7 +422,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
 
         {   // Info data offsets
             const uint32_t
-                    info_data_chunk_id = (uint32_t)Dictionary::DictChInfo,
+                    info_data_chunk_id = uint32_t(Dictionary::eDictChunks::DictChInfo),
                     info_data_offset = data_offset,
                     info_data_size = sizeof(Dictionary::dict_info_t);
             out_stream.write((const char *)&info_data_chunk_id, sizeof(uint32_t));
@@ -434,7 +434,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
 
         {   // Link data offsets
             const uint32_t
-                    link_data_chunk_id = (uint32_t)Dictionary::DictChLinks,
+                    link_data_chunk_id = uint32_t(Dictionary::eDictChunks::DictChLinks),
                     link_data_offset = data_offset,
                     link_data_size = uint32_t(sizeof(Dictionary::dict_link_compact_t) * links_compact.size());
             out_stream.write((const char *)&link_data_chunk_id, sizeof(uint32_t));
@@ -446,7 +446,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
 
         {   // Entry data offsets
             const uint32_t
-                    entry_data_chunk_id = (uint32_t)Dictionary::DictChEntries,
+                    entry_data_chunk_id = uint32_t(Dictionary::eDictChunks::DictChEntries),
                     entry_data_offset = data_offset,
                     entry_data_size = uint32_t(sizeof(Dictionary::dict_entry_compact_t) * entries_compact.size());
             out_stream.write((const char *)&entry_data_chunk_id, sizeof(uint32_t));
@@ -458,7 +458,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
 
         {   // String data offsets
             const uint32_t
-                    string_data_chunk_id = (uint32_t)Dictionary::DictChStrings,
+                    string_data_chunk_id = uint32_t(Dictionary::eDictChunks::DictChStrings),
                     string_data_offset = data_offset,
                     string_data_size = (uint32_t)str_mem_req;
             out_stream.write((const char *)&string_data_chunk_id, sizeof(uint32_t));

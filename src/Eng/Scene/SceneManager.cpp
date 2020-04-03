@@ -104,8 +104,8 @@ SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, S
     using namespace SceneManagerInternal;
 
     {   // Alloc texture for decals atlas        
-        Ren::eTexColorFormat formats[] = { Ren::RawRGBA8888, Ren::Undefined };
-        scene_data_.decals_atlas = Ren::TextureAtlas{ DECALS_ATLAS_RESX, DECALS_ATLAS_RESY, formats, Ren::Trilinear };
+        Ren::eTexFormat formats[] = { Ren::eTexFormat::RawRGBA8888, Ren::eTexFormat::Undefined };
+        scene_data_.decals_atlas = Ren::TextureAtlas{ DECALS_ATLAS_RESX, DECALS_ATLAS_RESY, formats, Ren::eTexFilter::Trilinear };
     }
 
     {   // Create splitter for lightmap atlas
@@ -115,7 +115,7 @@ SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer, S
     }
 
     {   // Allocate cubemap array
-        scene_data_.probe_storage.Resize(Ren::Compressed, PROBE_RES, PROBE_COUNT, ctx_.log());
+        scene_data_.probe_storage.Resize(Ren::eTexFormat::Compressed, PROBE_RES, PROBE_COUNT, ctx_.log());
     }
 
     {   // Register default components
@@ -300,7 +300,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 #endif
 
         const void *data[] = { (const void *)&image_data[0], nullptr };
-        const Ren::eTexColorFormat formats[] = { Ren::RawRGBA8888, Ren::Undefined };
+        const Ren::eTexFormat formats[] = { Ren::eTexFormat::RawRGBA8888, Ren::eTexFormat::Undefined };
 
         int pos[2];
         int rc = scene_data_.decals_atlas.Allocate(data, formats, res, pos, 4);
@@ -445,9 +445,9 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             }
 
             Ren::Texture2DParams p;
-            p.format = Ren::Compressed;
-            p.filter = Ren::Bilinear;
-            p.repeat = Ren::ClampToEdge;
+            p.format = Ren::eTexFormat::Compressed;
+            p.filter = Ren::eTexFilter::Bilinear;
+            p.repeat = Ren::eTexRepeat::ClampToEdge;
             p.w = res;
             p.h = res;
 
@@ -556,9 +556,9 @@ void SceneManager::LoadProbeCache() {
         res = scene_data_.probe_storage.res(),
         capacity = scene_data_.probe_storage.capacity();
 
-    if (scene_data_.probe_storage.format() != Ren::Compressed) {
+    if (scene_data_.probe_storage.format() != Ren::eTexFormat::Compressed) {
         // switch to compressed texture format
-        scene_data_.probe_storage.Resize(Ren::Compressed, res, capacity, ctx_.log());
+        scene_data_.probe_storage.Resize(Ren::eTexFormat::Compressed, res, capacity, ctx_.log());
     }
 
     CompStorage *probe_storage = scene_data_.comp_store[CompProbe];
@@ -615,7 +615,7 @@ void SceneManager::LoadProbeCache() {
 
                         if (len > data_len ||
                             !self->scene_data_.probe_storage.SetPixelData(level, lprobe->layer_index, face_index,
-                            Ren::Compressed, p_data, len, self->ctx_.log())) {
+                            Ren::eTexFormat::Compressed, p_data, len, self->ctx_.log())) {
                             log->Error("Failed to load probe texture!");
                         }
 
@@ -1008,7 +1008,7 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
             fs_file.Read((char *)fs_data.get(), fs_size);
 
             ret = ctx_.LoadProgramSPIRV(name, vs_data.get(), (int)vs_size, fs_data.get(), (int)fs_size, &status);
-            assert(status == Ren::ProgCreatedFromData);
+            assert(status == Ren::CreatedFromData);
 #endif
         } else {
             Sys::AssetFile
@@ -1031,7 +1031,7 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
 
             ctx_.log()->Info("Compiling program %s", name);
             ret = ctx_.LoadProgramGLSL(name, vs_src.c_str(), fs_src.c_str(), &status);
-            assert(status == Ren::ProgCreatedFromData);
+            assert(status == Ren::eProgLoadStatus::CreatedFromData);
         }
     }
     return ret;
@@ -1052,7 +1052,7 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
     p.flags = flags | Ren::TexUsageScene;
     Ren::eTexLoadStatus status;
     Ren::Texture2DRef ret = ctx_.LoadTexture2D(name_buf, nullptr, 0, p, &status);
-    if (status == Ren::TexCreatedDefault) {
+    if (status == Ren::eTexLoadStatus::TexCreatedDefault) {
         scene_texture_load_counter_++;
 
         std::weak_ptr<SceneManager> _self = shared_from_this();
@@ -1066,11 +1066,11 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
 
                 Ren::Texture2DParams p = ret->params();
                 if (strstr(tex_name, ".tga_rgbe")) {
-                    p.filter = Ren::BilinearNoMipmap;
-                    p.repeat = Ren::ClampToEdge;
+                    p.filter = Ren::eTexFilter::BilinearNoMipmap;
+                    p.repeat = Ren::eTexRepeat::ClampToEdge;
                 } else {
-                    p.filter = Ren::Trilinear;
-                    p.repeat = Ren::Repeat;
+                    p.filter = Ren::eTexFilter::Trilinear;
+                    p.repeat = Ren::eTexRepeat::Repeat;
                 }
 
                 ret->Init(data, size, p, nullptr, self->ctx_.log());

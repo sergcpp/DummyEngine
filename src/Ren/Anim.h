@@ -13,7 +13,7 @@
 #include "String.h"
 
 namespace Ren {
-enum eAnimBoneFlags { AnimHasTranslate = 1 };
+enum class eAnimBoneFlags { AnimHasTranslate = 1 };
 
 struct AnimBone {
     char        name[64];

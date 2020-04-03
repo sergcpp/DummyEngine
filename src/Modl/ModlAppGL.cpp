@@ -67,7 +67,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     while (s->offset != -1) {
         const Ren::Material *mat = s->mat.get();
 
-        if (view_mode_ == DiagUVs1 || view_mode_ == DiagUVs2) {
+        if (view_mode_ == eViewMode::DiagUVs1 || view_mode_ == eViewMode::DiagUVs2) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
         } else {
             BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
@@ -121,9 +121,9 @@ void ModlApp::DrawMeshColored(Ren::MeshRef& ref) {
     while (s->offset != -1) {
         const Ren::Material *mat = s->mat.get();
 
-        if (view_mode_ == DiagUVs1) {
+        if (view_mode_ == eViewMode::DiagUVs1) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
-        } else if (view_mode_ == DiagVtxColor) {
+        } else if (view_mode_ == eViewMode::DiagVtxColor) {
         } else {
             BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
         }
@@ -254,7 +254,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     while (s->offset != -1) {
         const Ren::Material *mat = s->mat.get();
 
-        if (view_mode_ == DiagUVs1 || view_mode_ == DiagUVs2) {
+        if (view_mode_ == eViewMode::DiagUVs1 || view_mode_ == eViewMode::DiagUVs2) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
         } else {
             BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
@@ -523,11 +523,11 @@ void main(void) {
 
     Ren::eProgLoadStatus status;
     diag_prog_ = ctx_.LoadProgramGLSL("__diag", diag_vs, diag_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     diag_colored_prog_ = ctx_.LoadProgramGLSL("__diag_colored", diag_colored_vs, diag_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     diag_skinned_prog_ = ctx_.LoadProgramGLSL("__diag_skinned", diag_skinned_vs, diag_fs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
 
     static const char skinning_cs[] = R"(
             #version 430
@@ -619,7 +619,7 @@ void main(void) {
         )";
 
     skinning_prog_ = ctx_.LoadProgramGLSL("__skin", skinning_cs, &status);
-    assert(status == Ren::ProgCreatedFromData);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
 }
 
 void ModlApp::DestroyInternal() {

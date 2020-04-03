@@ -7,13 +7,13 @@ struct FrameBuf {
     int w = -1, h = -1, sample_count = 0;
 
     struct ColorAttachmentDesc {
-        Ren::eTexColorFormat format;
+        Ren::eTexFormat format;
         Ren::eTexFilter filter;
         Ren::eTexRepeat repeat;
         bool attached = true;
     };
 
-    enum eDepthFormat { DepthNone, Depth16, Depth24Stencil8 };
+    enum class eDepthFormat { DepthNone, Depth16, Depth24Stencil8 };
 
     struct DepthAttachmentDesc {
         eDepthFormat format;

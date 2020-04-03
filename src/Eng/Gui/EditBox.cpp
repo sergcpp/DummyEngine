@@ -2,16 +2,18 @@
 
 #include "Renderer.h"
 
+namespace Gui {
 namespace EditBoxConstants {
 const uint32_t default_flags =
-    (1u << Gui::Integers) |
-    (1u << Gui::Chars) |
-    (1u << Gui::Floats) |
-    (1u << Gui::Signed) |
-    (1u << Gui::Multiline);
+    (1u << uint32_t(eEditBoxFlags::Integers)) |
+    (1u << uint32_t(eEditBoxFlags::Chars)) |
+    (1u << uint32_t(eEditBoxFlags::Floats)) |
+    (1u << uint32_t(eEditBoxFlags::Signed)) |
+    (1u << uint32_t(eEditBoxFlags::Multiline));
 
 const int padding = 10;
 const int cursor_offset = 12;
+}
 }
 
 Gui::EditBox::EditBox(Ren::Context &ctx, const char *frame_tex_name, const Vec2f &frame_offsets,
@@ -94,7 +96,7 @@ void Gui::EditBox::Draw(Renderer *r) {
 }
 
 int Gui::EditBox::AddLine(std::string text) {
-    if (!edit_flags_[Multiline] && !lines_.empty()) return -1;
+    if (!edit_flags_[int(eEditBoxFlags::Multiline)] && !lines_.empty()) return -1;
 
     lines_.emplace_back(std::move(text));
 
@@ -102,7 +104,7 @@ int Gui::EditBox::AddLine(std::string text) {
 }
 
 int Gui::EditBox::InsertLine(std::string text) {
-    if (!edit_flags_[Multiline]) return -1;
+    if (!edit_flags_[int(eEditBoxFlags::Multiline)]) return -1;
 
     lines_.insert(lines_.begin() + current_line_ + 1, std::move(text));
     current_line_++;

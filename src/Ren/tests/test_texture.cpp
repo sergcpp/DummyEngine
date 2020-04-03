@@ -123,26 +123,26 @@ void test_texture() {
         Ren::eTexLoadStatus status;
         Ren::Texture2DParams p;
         Ren::Texture2DRef t_ref = test.LoadTexture2D("checker.tga", nullptr, 0, p, &status);
-        require(status == Ren::TexCreatedDefault);
+        require(status == Ren::eTexLoadStatus::TexCreatedDefault);
 
         require(t_ref->name() == "checker.tga");
         require(t_ref->params().w == 1);
         require(t_ref->params().h == 1);
-        require(t_ref->params().format == Ren::RawRGB888);
+        require(t_ref->params().format == Ren::eTexFormat::RawRGB888);
         require(!t_ref->ready());
 
         {
             Ren::Texture2DRef t_ref2 = test.LoadTexture2D("checker.tga", nullptr, 0, p, &status);
-            require(status == Ren::TexFound);
+            require(status == Ren::eTexLoadStatus::TexFound);
             require(!t_ref2->ready());
         }
 
         {
             Ren::Texture2DRef t_ref3 = test.LoadTexture2D("checker.tga", test_tga_img, (int)sizeof(test_tga_img), p, &status);
-            require(status == Ren::TexCreatedFromData);
+            require(status == Ren::eTexLoadStatus::TexCreatedFromData);
             require(t_ref3->params().w == 2);
             require(t_ref3->params().h == 2);
-            require(t_ref3->params().format == Ren::RawRGB888);
+            require(t_ref3->params().format == Ren::eTexFormat::RawRGB888);
             require(t_ref3->ready());
         }
     }

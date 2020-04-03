@@ -4,12 +4,12 @@
 #include "GL.h"
 #endif
 
-Ren::TextureAtlas::TextureAtlas(int w, int h, const eTexColorFormat *formats, eTexFilter filter)
+Ren::TextureAtlas::TextureAtlas(int w, int h, const eTexFormat *formats, eTexFilter filter)
         : splitter_(w, h) {
     filter_ = filter;
 
     for (int i = 0; i < MaxTextureCount; i++) {
-        if (formats[i] == Undefined) break;
+        if (formats[i] == eTexFormat::Undefined) break;
 
         formats_[i] = formats[i];
 
@@ -26,16 +26,16 @@ Ren::TextureAtlas::TextureAtlas(int w, int h, const eTexColorFormat *formats, eT
         const float anisotropy = 4.0f;
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 
-        if (filter_ == NoFilter) {
+        if (filter_ == eTexFilter::NoFilter) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        } else if (filter_ == Bilinear) {
+        } else if (filter_ == eTexFilter::Bilinear) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        } else if (filter_ == Trilinear) {
+        } else if (filter_ == eTexFilter::Trilinear) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        } else if (filter_ == BilinearNoMipmap) {
+        } else if (filter_ == eTexFilter::BilinearNoMipmap) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
@@ -63,7 +63,7 @@ Ren::TextureAtlas::TextureAtlas(TextureAtlas &&rhs) noexcept
         : splitter_(std::move(rhs.splitter_)), filter_(rhs.filter_) {
     for (int i = 0; i < MaxTextureCount; i++) {
         formats_[i] = rhs.formats_[i];
-        rhs.formats_[i] = Undefined;
+        rhs.formats_[i] = eTexFormat::Undefined;
 
 #if defined(USE_GL_RENDER)
         tex_ids_[i] = rhs.tex_ids_[i];
@@ -77,7 +77,7 @@ Ren::TextureAtlas &Ren::TextureAtlas::operator=(TextureAtlas &&rhs) noexcept {
 
     for (int i = 0; i < MaxTextureCount; i++) {
         formats_[i] = rhs.formats_[i];
-        rhs.formats_[i] = Undefined;
+        rhs.formats_[i] = eTexFormat::Undefined;
 
 #if defined(USE_GL_RENDER)
         if (tex_ids_[i] != 0xffffffff) {
@@ -93,7 +93,7 @@ Ren::TextureAtlas &Ren::TextureAtlas::operator=(TextureAtlas &&rhs) noexcept {
     return (*this);
 }
 
-int Ren::TextureAtlas::Allocate(const void **data, const eTexColorFormat *format, const int res[2], int out_pos[2], int border) {
+int Ren::TextureAtlas::Allocate(const void **data, const eTexFormat *format, const int res[2], int out_pos[2], int border) {
     const int alloc_res[] = {
         res[0] < splitter_.resx() ? res[0] + border : res[0],
         res[1] < splitter_.resy() ? res[1] + border : res[1]
@@ -120,9 +120,9 @@ bool Ren::TextureAtlas::Free(const int pos[2]) {
 }
 
 void Ren::TextureAtlas::Finalize() {
-    if (filter_ == Trilinear || filter_ == Bilinear) {
+    if (filter_ == eTexFilter::Trilinear || filter_ == eTexFilter::Bilinear) {
         for (int i = 0; i < MaxTextureCount; i++) {
-            if (formats_[i] == Undefined) break;
+            if (formats_[i] == eTexFormat::Undefined) break;
 
 #if defined(USE_GL_RENDER)
             glActiveTexture(GL_TEXTURE0);
@@ -137,7 +137,7 @@ void Ren::TextureAtlas::Finalize() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::TextureAtlasArray::TextureAtlasArray(int w, int h, int layer_count, const eTexColorFormat format, eTexFilter filter)
+Ren::TextureAtlasArray::TextureAtlasArray(int w, int h, int layer_count, const eTexFormat format, eTexFilter filter)
         : layer_count_(layer_count), format_(format), filter_(filter) {
 #if defined(USE_GL_RENDER)
     GLuint tex_id;
@@ -149,16 +149,16 @@ Ren::TextureAtlasArray::TextureAtlasArray(int w, int h, int layer_count, const e
     glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GLInternalFormatFromTexFormat(format), w, h, layer_count,
                  0, GLFormatFromTexFormat(format), GLTypeFromTexFormat(format), nullptr);
 
-    if (filter_ == NoFilter) {
+    if (filter_ == eTexFilter::NoFilter) {
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    } else if (filter_ == Bilinear) {
+    } else if (filter_ == eTexFilter::Bilinear) {
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    } else if (filter_ == Trilinear) {
+    } else if (filter_ == eTexFilter::Trilinear) {
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    } else if (filter_ == BilinearNoMipmap) {
+    } else if (filter_ == eTexFilter::BilinearNoMipmap) {
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
@@ -188,7 +188,7 @@ Ren::TextureAtlasArray::TextureAtlasArray(TextureAtlasArray &&rhs) noexcept {
     rhs.layer_count_ = 0;
 
     format_ = rhs.format_;
-    rhs.format_ = Undefined;
+    rhs.format_ = eTexFormat::Undefined;
 
     filter_ = rhs.filter_;
 
@@ -207,7 +207,7 @@ Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rh
     rhs.layer_count_ = 0;
 
     format_ = rhs.format_;
-    rhs.format_ = Undefined;
+    rhs.format_ = eTexFormat::Undefined;
 
     filter_ = rhs.filter_;
 
@@ -228,7 +228,7 @@ Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rh
     return (*this);
 }
 
-int Ren::TextureAtlasArray::Allocate(const void *data, const eTexColorFormat format, const int res[2], int out_pos[3], int border) {
+int Ren::TextureAtlasArray::Allocate(const void *data, const eTexFormat format, const int res[2], int out_pos[3], int border) {
     const int alloc_res[] = {
          res[0] < splitters_[0].resx() ? res[0] + border : res[0],
          res[1] < splitters_[1].resy() ? res[1] + border : res[1]

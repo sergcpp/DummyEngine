@@ -74,7 +74,7 @@ Ren::ProgramRef Ren::Context::LoadProgramSW(const char *name, void *vs_shader, v
         ref = programs_.Add(name, vs_shader, fs_shader, num_fvars, attrs, unifs, load_status);
     } else {
         if (ref->ready()) {
-            if (load_status) *load_status = ProgFound;
+            if (load_status) *load_status = Found;
         } else if (!ref->ready() && vs_shader && fs_shader) {
             ref->Init(name, vs_shader, fs_shader, num_fvars, attrs, unifs, load_status);
         }

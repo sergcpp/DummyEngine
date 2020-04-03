@@ -51,13 +51,13 @@ class GSUITest3 : public GSBaseState {
     Sys::Optional<Ren::Vec2f>           hit_point_screen_, hit_point_ndc_;
     Sys::Optional<Ren::Vec2f>           hint_pos_;
 
-    enum eBookState {
+    enum class eBookState {
         BkClosed,
         BkOpening,
         BkOpened,
         BkTurningFwd,
         BkTurningBck
-    } book_state_ = BkClosed;
+    } book_state_ = eBookState::BkClosed;
 
     uint32_t book_index_                = 0xffffffff;
 

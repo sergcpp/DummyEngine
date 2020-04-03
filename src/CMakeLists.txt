@@ -110,7 +110,7 @@ set_target_properties(SOIL2
                       astc PROPERTIES FOLDER _)
 
 add_test(DummyLibTest   DummyLib/tests/test_DummyLib)
-add_test(EngTest        Eng/tests/test_Eng)
+add_test(EngTest        Eng/_tests/test_Eng)
 add_test(NetTest        Net/tests/test_Net)
 add_test(RayTest        Ray/tests/test_Ray)
 add_test(RenTest        Ren/tests/test_Ren)

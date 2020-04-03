@@ -342,7 +342,7 @@ void SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file, co
     }*/
 
     std::ofstream out_stream(out_file, std::ios::binary);
-    const uint32_t header_size = 4 + sizeof(uint32_t) + int(Gui::FontChCount) * 3 * sizeof(uint32_t);
+    const uint32_t header_size = 4 + sizeof(uint32_t) + uint32_t(Gui::eFontFileChunk::FontChCount) * 3 * sizeof(uint32_t);
     uint32_t hdr_offset = 0, data_offset = header_size;
 
     {   // File format string
@@ -358,7 +358,7 @@ void SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file, co
 
     {   // Typograph data offsets
         const uint32_t
-                typo_data_chunk_id = (uint32_t)Gui::FontChTypoData,
+                typo_data_chunk_id = uint32_t(Gui::eFontFileChunk::FontChTypoData),
                 typo_data_offset = data_offset,
                 typo_data_size = sizeof(Gui::typgraph_info_t);
         out_stream.write((const char *)&typo_data_chunk_id, sizeof(uint32_t));
@@ -370,7 +370,7 @@ void SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file, co
 
     {   // Image data offsets
         const uint32_t
-                img_data_chunk_id = (uint32_t)Gui::FontChImageData,
+                img_data_chunk_id = uint32_t(Gui::eFontFileChunk::FontChImageData),
                 img_data_offset = data_offset,
                 img_data_size = 2 * sizeof(uint16_t) + 2 * sizeof(uint16_t) + 4 * temp_bitmap_res[0] * temp_bitmap_res[1];
         out_stream.write((const char *)&img_data_chunk_id, sizeof(uint32_t));
@@ -382,7 +382,7 @@ void SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file, co
 
     {   // Glyph data offsets
         const uint32_t
-                glyph_data_chunk_id = (uint32_t)Gui::FontChGlyphData,
+                glyph_data_chunk_id = uint32_t(Gui::eFontFileChunk::FontChGlyphData),
                 glyph_data_offset = data_offset,
                 glyph_data_size = sizeof(uint32_t) + sizeof(glyph_ranges) + total_glyph_count * sizeof(Gui::glyph_info_t);
         out_stream.write((const char *)&glyph_data_chunk_id, sizeof(uint32_t));
@@ -407,8 +407,8 @@ void SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file, co
         out_stream.write((const char *)&img_data_h, sizeof(uint16_t));
 
         const uint16_t
-                draw_mode = is_sdf_font ? Gui::DrDistanceField : Gui::DrPassthrough,
-                blend_mode = Gui::BlAlpha;
+                draw_mode = is_sdf_font ? uint16_t(Gui::eDrawMode::DrDistanceField) : uint16_t(Gui::eDrawMode::DrPassthrough),
+                blend_mode = uint16_t(Gui::eBlendMode::BlAlpha);
         out_stream.write((const char *)&draw_mode, sizeof(uint16_t));
         out_stream.write((const char *)&blend_mode, sizeof(uint16_t));
 

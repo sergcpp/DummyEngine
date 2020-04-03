@@ -90,7 +90,7 @@ Ren::Texture2DRef Ren::Context::LoadTexture2D(const char *name, const void *data
     if (!ref) {
         ref = textures_.Add(name, data, size, p, load_status, log_);
     } else {
-        if (load_status) *load_status = TexFound;
+        if (load_status) *load_status = eTexLoadStatus::TexFound;
         if (!ref->ready() && data) {
             ref->Init(data, size, p, load_status, log_);
         }
@@ -106,7 +106,7 @@ Ren::Texture2DRef Ren::Context::LoadTextureCube(const char *name, const void *da
         ref = textures_.Add(name, data, size, p, load_status, log_);
     } else {
         if (ref->ready()) {
-            if (load_status) *load_status = TexFound;
+            if (load_status) *load_status = eTexLoadStatus::TexFound;
         } else if (data) {
             ref->Init(data, size, p, load_status, log_);
         }
@@ -147,7 +147,7 @@ Ren::TextureRegionRef Ren::Context::LoadTextureRegion(
         ref = texture_regions_.Add(name, data, size, p, &texture_atlas_, load_status);
     } else {
         if (ref->ready()) {
-            if (load_status) *load_status = TexFound;
+            if (load_status) *load_status = eTexLoadStatus::TexFound;
         } else {
             ref->Init(data, size, p, &texture_atlas_, load_status);
         }

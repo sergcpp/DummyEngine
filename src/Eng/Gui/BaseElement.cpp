@@ -2,7 +2,7 @@
 
 namespace Gui {
 namespace BaseElementConstants {
-const unsigned default_flags = (1u << Visible) | (1u << Resizable);
+const unsigned default_flags = (1u << unsigned(eFlags::Visible)) | (1u << unsigned(eFlags::Resizable));
 }
 }
 

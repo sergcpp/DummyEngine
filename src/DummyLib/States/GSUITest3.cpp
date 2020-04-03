@@ -122,11 +122,11 @@ void GSUITest3::Enter() {
 
     {   // init page framebuffer
         FrameBuf::ColorAttachmentDesc attachment;
-        attachment.format = Ren::RawRGB888;
-        attachment.filter = Ren::BilinearNoMipmap;
-        attachment.repeat = Ren::ClampToEdge;
+        attachment.format = Ren::eTexFormat::RawRGB888;
+        attachment.filter = Ren::eTexFilter::BilinearNoMipmap;
+        attachment.repeat = Ren::eTexRepeat::ClampToEdge;
 
-        page_buf_ = FrameBuf{ 3072, 3072, &attachment, 1, { FrameBuf::DepthNone }, 1, log_.get() };
+        page_buf_ = FrameBuf{ 3072, 3072, &attachment, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, log_.get() };
     }
 
     InitBookMaterials();
@@ -225,28 +225,28 @@ void GSUITest3::OnUpdateScene() {
                 cur_page = paged_reader_->cur_page(),
                 page_count = paged_reader_->page_count();
 
-            if (book_state_ == BkClosed) {
+            if (book_state_ == eBookState::BkClosed) {
                 view_offset_ = 0.5f;
-            } else if (book_state_ == BkOpening) {
+            } else if (book_state_ == eBookState::BkOpening) {
                 if (as->anim_time_s > 1.925f) {
                     view_offset_ = 0.0f;
-                    book_state_ = BkOpened;
+                    book_state_ = eBookState::BkOpened;
                 } else {
                     view_offset_ = 0.5f - 0.25f * as->anim_time_s;
                 }
-            } else if (book_state_ == BkTurningFwd) {
+            } else if (book_state_ == eBookState::BkTurningFwd) {
                 if (as->anim_time_s > 0.925f) {
                     if (cur_page < page_count - 2) {
                         paged_reader_->set_cur_page(cur_page + 2);
                     }
-                    book_state_ = BkOpened;
+                    book_state_ = eBookState::BkOpened;
                 }
-            } else if (book_state_ == BkTurningBck) {
+            } else if (book_state_ == eBookState::BkTurningBck) {
                 if (as->anim_time_s > 0.925f) {
                     if (cur_page >= 2) {
                         paged_reader_->set_cur_page(cur_page - 2);
                     }
-                    book_state_ = BkOpened;
+                    book_state_ = eBookState::BkOpened;
                 }
             }
 
@@ -281,14 +281,14 @@ void GSUITest3::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
 void GSUITest3::Draw(uint64_t dt_us) {
     using namespace GSUITest3Internal;
 
-    if (book_state_ != BkClosed) {
-        if (book_state_ == BkOpened) {
+    if (book_state_ != eBookState::BkClosed) {
+        if (book_state_ == eBookState::BkOpened) {
             if (hit_point_ndc_.initialized()) {
                 auto page_root = Gui::RootElement{ Ren::Vec2i{ page_buf_.w, page_buf_.h } };
 
                 const int page_base = paged_reader_->cur_page();
                 for (int i = 0; i < 2; i++) {
-                    paged_reader_->set_cur_page(page_base + page_order_indices[book_state_][i]);
+                    paged_reader_->set_cur_page(page_base + page_order_indices[(size_t)book_state_][i]);
 
                     paged_reader_->Resize(2.0f * page_corners_uvs[i * 2] - Ren::Vec2f{ 1.0f }, 2.0f * (page_corners_uvs[i * 2 + 1] - page_corners_uvs[i * 2]), &page_root);
                     paged_reader_->Press(hit_point_ndc_.GetValue(), true);
@@ -296,7 +296,7 @@ void GSUITest3::Draw(uint64_t dt_us) {
                         break;
                     }
                 }
-                paged_reader_->set_cur_page(page_base + page_order_indices[book_state_][0]);
+                paged_reader_->set_cur_page(page_base + page_order_indices[(size_t)book_state_][0]);
 
                 hit_point_ndc_.destroy();
             }
@@ -344,7 +344,7 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
     switch (evt.type) {
     case RawInputEvent::EvP1Down: {
         const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{ (int)evt.point.x, (int)evt.point.y }, Ren::Vec2i{ ctx_->w(), ctx_->h() });
-        if (book_state_ == BkOpened) {
+        if (book_state_ == eBookState::BkOpened) {
 
         }
     } break;
@@ -356,7 +356,7 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
 
         bool blocked = false;
 
-        if (book_state_ == BkOpened) {
+        if (book_state_ == eBookState::BkOpened) {
             const int
                 cur_page = paged_reader_->cur_page(),
                 page_count = paged_reader_->page_count();
@@ -384,14 +384,14 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
 
         if (!blocked) {
             bool reset_anim_time = false;
-            if (book_state_ == BkClosed) {
-                book_state_ = BkOpening;
+            if (book_state_ == eBookState::BkClosed) {
+                book_state_ = eBookState::BkOpening;
                 reset_anim_time = true;
-            } else if (book_state_ == BkOpened) {
+            } else if (book_state_ == eBookState::BkOpened) {
                 if (p[0] >= 0.0f) {
-                    book_state_ = BkTurningFwd;
+                    book_state_ = eBookState::BkTurningFwd;
                 } else {
-                    book_state_ = BkTurningBck;
+                    book_state_ = eBookState::BkTurningBck;
                 }
                 reset_anim_time = true;
             }

@@ -97,7 +97,7 @@ namespace Ren {
     }
 }
 
-std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eTexColorFormat &format) {
+std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eTexFormat &format) {
     uint8_t tga_header[12] = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     const auto *tga_compare = (const uint8_t *)data;
     const uint8_t *img_header = (const uint8_t *)data + sizeof(tga_header);
@@ -183,9 +183,9 @@ std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eT
     }
 
     if (bpp == 32) {
-        format = RawRGBA8888;
+        format = eTexFormat::RawRGBA8888;
     } else if (bpp == 24) {
-        format = RawRGB888;
+        format = eTexFormat::RawRGB888;
     }
 
     return image_ret;
@@ -747,7 +747,7 @@ void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint3
 
 int Ren::CalcMipCount(int w, int h, int min_res, eTexFilter filter) {
     int mip_count = 0;
-    if (filter == Trilinear || filter == Bilinear) {
+    if (filter == eTexFilter::Trilinear || filter == eTexFilter::Bilinear) {
         int max_dim = std::max(w, h);
         do {
             mip_count++;

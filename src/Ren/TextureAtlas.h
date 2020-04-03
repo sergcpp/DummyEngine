@@ -9,7 +9,7 @@ public:
     static const int MaxTextureCount = 8;
 
     TextureAtlas() : splitter_(0, 0) {}
-    TextureAtlas(int w, int h, const eTexColorFormat *formats, eTexFilter filter);
+    TextureAtlas(int w, int h, const eTexFormat *formats, eTexFilter filter);
     ~TextureAtlas();
 
     TextureAtlas(const TextureAtlas &rhs) = delete;
@@ -22,18 +22,18 @@ public:
     int resy() const { return splitter_.resy(); }
     uint32_t tex_id(int i) const { return tex_ids_[i]; }
 
-    int Allocate(const void **data, const eTexColorFormat *format, const int res[2], int out_pos[2], int border);
+    int Allocate(const void **data, const eTexFormat *format, const int res[2], int out_pos[2], int border);
     bool Free(const int pos[2]);
 
     // create mipmaps, compress etc.
     void Finalize();
 
 private:
-    eTexColorFormat formats_[MaxTextureCount] = {
-        Undefined, Undefined, Undefined, Undefined,
-        Undefined, Undefined, Undefined, Undefined
+    eTexFormat formats_[MaxTextureCount] = {
+        eTexFormat::Undefined, eTexFormat::Undefined, eTexFormat::Undefined, eTexFormat::Undefined,
+        eTexFormat::Undefined, eTexFormat::Undefined, eTexFormat::Undefined, eTexFormat::Undefined
     };
-    eTexFilter filter_ = NoFilter;
+    eTexFilter filter_ = eTexFilter::NoFilter;
 #if defined(USE_GL_RENDER)
     uint32_t tex_ids_[MaxTextureCount] = {
         0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
@@ -49,7 +49,7 @@ public:
     static const int MaxTextureCount = 8;
 
     TextureAtlasArray() = default;
-    TextureAtlasArray(int w, int h, int layer_count, eTexColorFormat format, eTexFilter filter);
+    TextureAtlasArray(int w, int h, int layer_count, eTexFormat format, eTexFilter filter);
     ~TextureAtlasArray();
 
     TextureAtlasArray(const TextureAtlasArray &rhs) = delete;
@@ -62,13 +62,13 @@ public:
     int resy() const { return splitters_[0].resy(); }
     uint32_t tex_id() const { return tex_id_; }
 
-    int Allocate(const void *data, eTexColorFormat format, const int res[2], int out_pos[3], int border);
+    int Allocate(const void *data, eTexFormat format, const int res[2], int out_pos[3], int border);
     bool Free(const int pos[3]);
 
 private:
     int             layer_count_ = 0;
-    eTexColorFormat format_ = Undefined;
-    eTexFilter      filter_ = NoFilter;
+    eTexFormat format_ = eTexFormat::Undefined;
+    eTexFilter      filter_ = eTexFilter::NoFilter;
 #if defined(USE_GL_RENDER)
     uint32_t tex_id_        = 0xffffffff;
 #endif

@@ -53,29 +53,29 @@ FrameBuf::FrameBuf(
             glBindTexture(GL_TEXTURE_2D, _col_tex);
 
             int mip_count = 1;
-            if (att.filter == Ren::Bilinear) {
+            if (att.filter == Ren::eTexFilter::Bilinear) {
                 mip_count = (int)std::floor(std::log2(std::max(w, h))) + 1;
             }
 
             glTexStorage2D(GL_TEXTURE_2D, mip_count, internal_format, w, h);
 
-            if (att.filter == Ren::NoFilter) {
+            if (att.filter == Ren::eTexFilter::NoFilter) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            } else if (att.filter == Ren::Bilinear) {
+            } else if (att.filter == Ren::eTexFilter::Bilinear) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 
                 glGenerateMipmap(GL_TEXTURE_2D);
-            } else if (att.filter == Ren::BilinearNoMipmap) {
+            } else if (att.filter == Ren::eTexFilter::BilinearNoMipmap) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             }
 
-            if (att.repeat == Ren::ClampToEdge) {
+            if (att.repeat == Ren::eTexRepeat::ClampToEdge) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            } else if (att.repeat == Ren::Repeat) {
+            } else if (att.repeat == Ren::eTexRepeat::Repeat) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
             }
@@ -100,7 +100,7 @@ FrameBuf::FrameBuf(
     }
     Ren::CheckError("[Renderer]: create framebuffer 2", log);
 
-    if (depth_att.format != DepthNone) {
+    if (depth_att.format != eDepthFormat::DepthNone) {
         GLuint _depth_tex;
 
         GLenum target = sample_count > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
@@ -110,9 +110,9 @@ FrameBuf::FrameBuf(
 
         GLenum internal_format;
 
-        if (depth_att.format == Depth16) {
+        if (depth_att.format == eDepthFormat::Depth16) {
             internal_format = GL_DEPTH_COMPONENT16;
-        } else if (depth_att.format == Depth24Stencil8) {
+        } else if (depth_att.format == eDepthFormat::Depth24Stencil8) {
             internal_format = GL_DEPTH24_STENCIL8;
         } else {
             throw std::invalid_argument("Wrong format!");
@@ -128,10 +128,10 @@ FrameBuf::FrameBuf(
 
         // multisample textures do not support sampler state
         if (sample_count == 1) {
-            if (depth_att.filter == Ren::NoFilter) {
+            if (depth_att.filter == Ren::eTexFilter::NoFilter) {
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            } else if (depth_att.filter == Ren::Bilinear || depth_att.filter == Ren::BilinearNoMipmap) {
+            } else if (depth_att.filter == Ren::eTexFilter::Bilinear || depth_att.filter == Ren::eTexFilter::BilinearNoMipmap) {
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             }
@@ -140,7 +140,7 @@ FrameBuf::FrameBuf(
             glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
         }
 
-        if (depth_att.format == Depth24Stencil8) {
+        if (depth_att.format == eDepthFormat::Depth24Stencil8) {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, target, _depth_tex, 0);
         } else {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, _depth_tex, 0);
@@ -174,7 +174,7 @@ FrameBuf::FrameBuf(FrameBuf &&rhs) noexcept {
 FrameBuf &FrameBuf::operator=(FrameBuf &&rhs) noexcept {
     for (uint32_t i = 0; i < rhs.attachments_count; i++) {
         attachments[i] = rhs.attachments[i];
-        rhs.attachments[i].desc.format = Ren::Undefined;
+        rhs.attachments[i].desc.format = Ren::eTexFormat::Undefined;
         rhs.attachments[i].tex = 0xffffffff;
     }
     attachments_count = rhs.attachments_count;

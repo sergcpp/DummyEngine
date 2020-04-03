@@ -37,8 +37,8 @@ public:
     void PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
     void ExecuteDrawList(const DrawList &list, const FrameBuf *target = nullptr);
 
-    void BlitPixels(const void *data, int w, int h, Ren::eTexColorFormat format);
-    void BlitPixelsTonemap(const void *data, int w, int h, Ren::eTexColorFormat format);
+    void BlitPixels(const void *data, int w, int h, Ren::eTexFormat format);
+    void BlitPixelsTonemap(const void *data, int w, int h, Ren::eTexFormat format);
     void BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf, int first_att, int att_count, float multiplier = 1.0f);
     void BlitTexture(float px, float py, float sx, float sy, uint32_t tex_id, int resx, int resy, bool is_ms = false);
 
@@ -112,7 +112,7 @@ private:
     static const int FrameSyncWindow = 2;
 
     uint32_t temp_tex_;
-    Ren::eTexColorFormat temp_tex_format_;
+    Ren::eTexFormat temp_tex_format_;
     int temp_tex_w_ = 0, temp_tex_h_ = 0;
 
     uint32_t

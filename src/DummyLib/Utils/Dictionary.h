@@ -6,15 +6,15 @@
 #include <Ren/HashMap32.h>
 #include <Ren/Log.h>
 
-enum eGramGrpPos {
+enum class eGramGrpPos {
     Noun, Verb, Adjective
 };
 
-enum eGramGrpNum {
+enum class eGramGrpNum {
     Singular, Plural
 };
 
-enum eGramGrpGen {
+enum class eGramGrpGen {
     Masculine, Feminine, Neutral
 };
 
@@ -55,7 +55,7 @@ public:
     };
     static_assert(sizeof(dict_entry_compact_t) == 16, "!");
 
-    enum eDictChunks {
+    enum class eDictChunks {
         DictChInfo,
         DictChLinks,
         DictChEntries,

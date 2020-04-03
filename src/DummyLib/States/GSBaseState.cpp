@@ -58,7 +58,7 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
 
     // Prepare cam for probes updating
     temp_probe_cam_.Perspective(90.0f, 1.0f, 0.1f, 10000.0f);
-    temp_probe_cam_.set_render_mask(Drawable::VisProbes);
+    temp_probe_cam_.set_render_mask(uint32_t(Drawable::eDrVisibility::VisProbes));
 }
 
 void GSBaseState::Enter() {
@@ -70,12 +70,12 @@ void GSBaseState::Enter() {
 
     {   // Create temporary buffer to update probes
         FrameBuf::ColorAttachmentDesc desc;
-        desc.format = Ren::RawRGB16F;
-        desc.filter = Ren::NoFilter;
-        desc.repeat = Ren::ClampToEdge;
+        desc.format = Ren::eTexFormat::RawRGB16F;
+        desc.filter = Ren::eTexFilter::NoFilter;
+        desc.repeat = Ren::eTexRepeat::ClampToEdge;
 
         const int res = scene_manager_->scene_data().probe_storage.res();
-        temp_probe_buf_ = FrameBuf(res, res, &desc, 1, { FrameBuf::DepthNone }, 1, ctx_->log());
+        temp_probe_buf_ = FrameBuf(res, res, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, ctx_->log());
     }
 
     cmdline_history_.resize(MAX_CMD_LINES, "~");
@@ -230,7 +230,7 @@ void GSBaseState::Enter() {
             const int
                     res = scene_data.probe_storage.res(),
                     capacity = scene_data.probe_storage.capacity();
-            scene_data.probe_storage.Resize(Ren::RawRGBA8888, res, capacity, shrd_this->ctx_->log());
+            scene_data.probe_storage.Resize(Ren::eTexFormat::RawRGBA8888, res, capacity, shrd_this->ctx_->log());
 
             shrd_this->update_all_probes_ = true;
         }
@@ -253,7 +253,7 @@ void GSBaseState::Enter() {
     });
 
     cmdline_->RegisterCommand("load", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
-        if (argc != 2 || argv[1].type != Cmdline::ArgString) return false;
+        if (argc != 2 || argv[1].type != Cmdline::eArgType::ArgString) return false;
 
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
@@ -578,7 +578,7 @@ void GSBaseState::Draw(uint64_t dt_us) {
                 const float *preview_pixels = nullptr;
                 if (scene_manager_->PrepareLightmaps_PT(&preview_pixels, &w, &h)) {
                     if (preview_pixels) {
-                        renderer_->BlitPixels(preview_pixels, w, h, Ren::RawRGBA32F);
+                        renderer_->BlitPixels(preview_pixels, w, h, Ren::eTexFormat::RawRGBA32F);
                     }
                 } else {
                     // Lightmap creation finished, convert textures
@@ -600,7 +600,7 @@ void GSBaseState::Draw(uint64_t dt_us) {
                 int w, h;
                 const float *preview_pixels = scene_manager_->Draw_PT(&w, &h);
                 if (preview_pixels) {
-                    renderer_->BlitPixelsTonemap(preview_pixels, w, h, Ren::RawRGBA32F);
+                    renderer_->BlitPixelsTonemap(preview_pixels, w, h, Ren::eTexFormat::RawRGBA32F);
                 }
 
                 back_list = -1;

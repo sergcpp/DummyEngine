@@ -498,7 +498,7 @@ void SceneManager::InitScene_PT(bool _override) {
         const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
             const auto *dr = (Drawable *)scene_data_.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
-            if (!(dr->vis_mask & Drawable::VisShadow)) continue;
+            if (!(dr->vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow))) continue;
 
             const Ren::Mesh *mesh = dr->mesh.get();
             const char *mesh_name = mesh->name().c_str();

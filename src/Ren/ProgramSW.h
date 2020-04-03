@@ -27,7 +27,7 @@ struct Descr {
 typedef Descr Uniform;
 typedef Descr Attribute;
 
-enum eProgLoadStatus { ProgFound, ProgSetToDefault, ProgCreatedFromData };
+enum eProgLoadStatus { Found, SetToDefault, CreatedFromData };
 
 class Program : public RefCounter {
     uint32_t    prog_id_ = 0;

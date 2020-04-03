@@ -104,7 +104,7 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config)
     {   // Load main shader
         Ren::eProgLoadStatus status;
         ui_program2_ = ctx_.LoadProgramGLSL(UI_PROGRAM2_NAME, vs_source2, fs_source2, &status);
-        assert(status == Ren::ProgCreatedFromData || status == Ren::ProgFound);
+        assert(status == Ren::eProgLoadStatus::CreatedFromData || status == Ren::eProgLoadStatus::Found);
     }
 
     cur_range_index_ = 0;
@@ -342,7 +342,7 @@ void Gui::Renderer::DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2
     cur_vtx->uvs[0] = f32_to_u16(uvs[0][0]);
     cur_vtx->uvs[1] = f32_to_u16(uvs[1][1]);
     cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = u16_draw_mode[draw_mode];
+    cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
     ++cur_vtx;
 
     cur_vtx->pos[0] = pos[1][0];
@@ -352,7 +352,7 @@ void Gui::Renderer::DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2
     cur_vtx->uvs[0] = f32_to_u16(uvs[1][0]);
     cur_vtx->uvs[1] = f32_to_u16(uvs[1][1]);
     cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = u16_draw_mode[draw_mode];
+    cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
     ++cur_vtx;
 
     cur_vtx->pos[0] = pos[1][0];
@@ -362,7 +362,7 @@ void Gui::Renderer::DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2
     cur_vtx->uvs[0] = f32_to_u16(uvs[1][0]);
     cur_vtx->uvs[1] = f32_to_u16(uvs[0][1]);
     cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = u16_draw_mode[draw_mode];
+    cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
     ++cur_vtx;
 
     cur_vtx->pos[0] = pos[0][0];
@@ -372,7 +372,7 @@ void Gui::Renderer::DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2
     cur_vtx->uvs[0] = f32_to_u16(uvs[0][0]);
     cur_vtx->uvs[1] = f32_to_u16(uvs[0][1]);
     cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = u16_draw_mode[draw_mode];
+    cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
     ++cur_vtx;
 
     (*cur_ndx++) = ndx_offset + 0;

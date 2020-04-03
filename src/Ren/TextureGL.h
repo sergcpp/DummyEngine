@@ -14,9 +14,9 @@
 namespace Ren {
 class ILog;
 
-enum eTexColorFormat { Undefined, RawRGB888, RawRGBA8888, RawRGBA8888Snorm, RawR32F, RawR16F, RawR8, RawRG88, RawRGB32F, RawRGBA32F, RawRGBE8888, RawRGB16F, RawRGBA16F, RawRG16, RawRG16U, RawRG16F, RawRG32F, RawRGB10_A2, RawRG11F_B10F, Compressed, None, FormatCount };
-enum eTexFilter { NoFilter, Bilinear, Trilinear, BilinearNoMipmap, FilterCount };
-enum eTexRepeat { Repeat, ClampToEdge, ClampToBorder, WrapModesCount };
+enum class eTexFormat { Undefined, RawRGB888, RawRGBA8888, RawRGBA8888Snorm, RawR32F, RawR16F, RawR8, RawRG88, RawRGB32F, RawRGBA32F, RawRGBE8888, RawRGB16F, RawRGBA16F, RawRG16, RawRG16U, RawRG16F, RawRG32F, RawRGB10_A2, RawRG11F_B10F, Compressed, None, FormatCount };
+enum class eTexFilter { NoFilter, Bilinear, Trilinear, BilinearNoMipmap, FilterCount };
+enum class eTexRepeat { Repeat, ClampToEdge, ClampToBorder, WrapModesCount };
 
 enum eTexFlags {
     TexNoOwnership = (1u << 0u),
@@ -28,15 +28,15 @@ enum eTexFlags {
 };
 
 struct Texture2DParams {
-    int                 w = 0, h = 0, cube = 0;
-    eTexColorFormat     format = Undefined;
-    eTexFilter          filter = NoFilter;
-    eTexRepeat          repeat = Repeat;
-    float               lod_bias = 0.0f;
-    uint32_t            flags = 0;
+    int         w = 0, h = 0, cube = 0;
+    eTexFormat  format = eTexFormat::Undefined;
+    eTexFilter  filter = eTexFilter::NoFilter;
+    eTexRepeat  repeat = eTexRepeat::Repeat;
+    float       lod_bias = 0.0f;
+    uint32_t    flags = 0;
 };
 
-enum eTexLoadStatus { TexFound, TexCreatedDefault, TexCreatedFromData };
+enum class eTexLoadStatus { TexFound, TexCreatedDefault, TexCreatedFromData };
 
 class Texture2D : public RefCounter {
     uint32_t        tex_id_ = 0;
@@ -99,12 +99,12 @@ public:
 
     void SetFilter(eTexFilter f, eTexRepeat r, float lod_bias);
 
-    void ReadTextureData(eTexColorFormat format, void *out_data) const;
+    void ReadTextureData(eTexFormat format, void *out_data) const;
 };
 
-uint32_t GLFormatFromTexFormat(eTexColorFormat format);
-uint32_t GLInternalFormatFromTexFormat(eTexColorFormat format);
-uint32_t GLTypeFromTexFormat(eTexColorFormat format);
+uint32_t GLFormatFromTexFormat(eTexFormat format);
+uint32_t GLInternalFormatFromTexFormat(eTexFormat format);
+uint32_t GLTypeFromTexFormat(eTexFormat format);
 
 typedef StorageRef<Texture2D> Texture2DRef;
 typedef Storage<Texture2D> Texture2DStorage;

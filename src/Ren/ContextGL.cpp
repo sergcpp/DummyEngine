@@ -117,7 +117,7 @@ void Ren::Context::Init(int w, int h, ILog *log) {
     default_skin_vertex_buf_    = buffers_.Add("default_skin_vtx_buf", 64 * 1024 * 1024);
     default_indices_buf_        = buffers_.Add("default_ndx_buf2", 64 * 1024 * 1024);
 
-    texture_atlas_ = TextureAtlasArray{ TextureAtlasWidth, TextureAtlasHeight, TextureAtlasLayers, RawRGBA8888, BilinearNoMipmap };
+    texture_atlas_ = TextureAtlasArray{ TextureAtlasWidth, TextureAtlasHeight, TextureAtlasLayers, eTexFormat::RawRGBA8888, eTexFilter::BilinearNoMipmap };
 }
 
 void Ren::Context::Resize(int w, int h) {
@@ -133,7 +133,7 @@ Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *vs_s
         ref = programs_.Add(name, vs_source, fs_source, load_status, log_);
     } else {
         if (ref->ready()) {
-            if (load_status) *load_status = ProgFound;
+            if (load_status) *load_status = eProgLoadStatus::Found;
         } else if (!ref->ready() && vs_source && fs_source) {
             ref->Init(vs_source, fs_source, load_status, log_);
         }
@@ -149,7 +149,7 @@ Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *cs_s
         ref = programs_.Add(name, cs_source, load_status, log_);
     } else {
         if (ref->ready()) {
-            if (load_status) *load_status = ProgFound;
+            if (load_status) *load_status = eProgLoadStatus::Found;
         } else if (!ref->ready() && cs_source) {
             ref->Init(cs_source, load_status, log_);
         }
@@ -169,7 +169,7 @@ Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *
         ref = programs_.Add(name, vs_data, vs_data_size, fs_data, fs_data_size, load_status, log_);
     } else {
         if (ref->ready()) {
-            if (load_status) *load_status = ProgFound;
+            if (load_status) *load_status = eProgLoadStatus::Found;
         } else if (!ref->ready() && vs_data && fs_data) {
             ref->Init(vs_data, vs_data_size, fs_data, fs_data_size, load_status, log_);
         }
@@ -187,7 +187,7 @@ Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *
         ref = programs_.Add(name, cs_data, cs_data_size, load_status, log_);
     } else {
         if (ref->ready()) {
-            if (load_status) *load_status = ProgFound;
+            if (load_status) *load_status = eProgLoadStatus::Found;
         } else if (!ref->ready() && cs_data) {
             ref->Init(cs_data, cs_data_size, load_status, log_);
         }

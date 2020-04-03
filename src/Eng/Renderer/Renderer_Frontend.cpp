@@ -893,7 +893,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     if ((obj.comp_mask & drawable_flags) == drawable_flags) {
                         const Transform &tr = transforms[obj.components[CompTransform]];
                         const Drawable &dr = drawables[obj.components[CompDrawable]];
-                        if ((dr.vis_mask & Drawable::VisShadow) == 0) continue;
+                        if ((dr.vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) continue;
 
                         if (!skip_check &&
                             sh_clip_frustum.CheckVisibility(tr.bbox_min_ws, tr.bbox_max_ws) == Ren::Invisible) continue;
@@ -1094,7 +1094,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             &world_from_object = tr.mat,
                             &object_from_world = tr.inv_mat;
                         const Drawable &dr = drawables[obj.components[CompDrawable]];
-                        if ((dr.vis_mask & Drawable::VisShadow) == 0) continue;
+                        if ((dr.vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) continue;
 
                         const Ren::Mesh *mesh = dr.mesh.get();
 

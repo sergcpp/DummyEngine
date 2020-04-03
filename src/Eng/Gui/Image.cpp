@@ -20,14 +20,14 @@ Gui::Image::Image(Ren::Context &ctx, const char *tex_name, const Vec2f &pos, con
 
     Ren::eTexLoadStatus status;
     tex_ = ctx.LoadTextureRegion(tex_name, nullptr, 0, {}, &status);
-    if (status == Ren::TexCreatedDefault) {
+    if (status == Ren::eTexLoadStatus::TexCreatedDefault) {
         Sys::AssetFile in_file(tex_name, Sys::AssetFile::FileIn);
         size_t in_file_size = in_file.size();
         std::unique_ptr<char[]> data(new char[in_file_size]);
         in_file.Read(data.get(), in_file_size);
 
         tex_ = ctx.LoadTextureRegion(tex_name, data.get(), (int)in_file_size, {}, &status);
-        assert(status == Ren::TexCreatedFromData);
+        assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
 
         const Ren::Texture2DParams &p = tex_->params();
         uvs_px_[0] = Vec2f{ (float)(tex_->pos(0)),        (float)(tex_->pos(1)) };
@@ -44,5 +44,5 @@ void Gui::Image::Draw(Renderer *r) {
     const Ren::Texture2DParams &p = tex_->params();
     const int tex_layer = tex_->pos(2);
 
-    r->DrawImageQuad(DrPassthrough, tex_layer, pos, uvs_px_);
+    r->DrawImageQuad(eDrawMode::DrPassthrough, tex_layer, pos, uvs_px_);
 }
