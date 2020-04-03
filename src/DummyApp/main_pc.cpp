@@ -6,11 +6,11 @@ int main(int argc, char *argv[]) {
 }
 
 // TODO:
+// texture streaming
 // use stencil to distinguich ssr/nossr regions
 // velocities for skinned meshes
 // use GL_EXT_shader_group_vote
 // refactor msaa (resolve once, remove permutations)
-// fix freeze on early exit
 // refactor file read on android
 // fix decals (use compressed 16x16 blocks)
 // start with scene editing

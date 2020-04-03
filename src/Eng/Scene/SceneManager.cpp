@@ -1082,7 +1082,7 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
 
                 const int count = --(self->scene_texture_load_counter_);
                 self->ctx_.log()->Info("Texture %s loaded (%i left)", tex_name, count);
-                // reset while we are in main thread
+                // release reference while we are in main thread
                 self.reset();
             });
         }, [_self, ret]() mutable {
@@ -1090,8 +1090,9 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
             if (!self) return;
 
             self->ctx_.ProcessSingleTask([&self, &ret]() mutable {
+                const int count = --(self->scene_texture_load_counter_);
                 self->ctx_.log()->Error("Error loading %s", ret->name().c_str());
-                // reset while we are in main thread
+                // release references while we are in main thread
                 ret = {};
                 self.reset();
             });

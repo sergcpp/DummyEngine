@@ -63,10 +63,11 @@ GameBase::GameBase(int w, int h, const char * /*local_dir*/) : width(w), height(
 GameBase::~GameBase() {
     // context should be deleted last
     auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
+    // finish file IO tasks
+    while (!Sys::StopWorker()) ctx->ProcessTasks();
+    // finish remaining tasks in queue
     while (ctx->ProcessTasks());
     components_.clear();
-
-    Sys::StopWorker();
 }
 
 void GameBase::Resize(int w, int h) {
