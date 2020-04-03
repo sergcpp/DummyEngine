@@ -12,8 +12,9 @@ namespace Sys {
 class ThreadWorker {
 public:
     ThreadWorker();
-
     virtual ~ThreadWorker();
+
+    bool Stop();
 
     template<class F, class... Args>
     auto AddTask(F &&f, Args &&... args)
@@ -26,10 +27,10 @@ private:
 
     std::mutex queue_mtx_;
     std::condition_variable cnd_;
-    bool stop_;
+    bool stop_, stopped_;
 };
 
-inline ThreadWorker::ThreadWorker() : stop_(false) {
+inline ThreadWorker::ThreadWorker() : stop_(false), stopped_(false) {
     worker_ = std::thread(
     [this] {
         for (; ;) {
@@ -38,16 +39,28 @@ inline ThreadWorker::ThreadWorker() : stop_(false) {
             {
                 std::unique_lock<std::mutex> lock(this->queue_mtx_);
                 this->cnd_.wait(lock, [this] { return this->stop_ || !this->tasks_.empty(); });
-                if (this->stop_ && this->tasks_.empty())
+                if (this->stop_ && this->tasks_.empty()) {
+                    this->stopped_ = true;
                     return;
+                }
                 task = std::move(this->tasks_.front());
                 this->tasks_.pop();
             }
 
             task();
         }
+    });
+}
+
+bool ThreadWorker::Stop() {
+    bool ret;
+    {
+        std::unique_lock<std::mutex> lock(queue_mtx_);
+        stop_ = true;
+        ret = stopped_;
     }
-              );
+    cnd_.notify_all();
+    return ret;
 }
 
 template<class F, class... Args>

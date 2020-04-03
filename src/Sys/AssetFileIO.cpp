@@ -78,9 +78,13 @@ void Sys::InitWorker() {
     g_file_read_buffer.reset(new char[g_file_read_buffer_size]);
 }
 
-void Sys::StopWorker() {
-    g_worker.reset();
-    g_file_read_buffer.reset();
+bool Sys::StopWorker() {
+    if (g_worker->Stop()) {
+        g_worker.reset();
+        g_file_read_buffer.reset();
+        return true;
+    }
+    return false;
 }
 
 #endif
