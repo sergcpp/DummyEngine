@@ -424,6 +424,9 @@ void GSBaseState::Enter() {
         }
         return true;
     });
+
+    // Initialize first draw list
+    UpdateFrame(0);
 }
 
 bool GSBaseState::LoadScene(const char *name) {
