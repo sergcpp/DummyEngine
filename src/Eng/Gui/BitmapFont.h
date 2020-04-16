@@ -55,9 +55,6 @@ public:
     bool Load(const char *name, Ren::Context &ctx);
 
     float GetWidth(const char *text, int text_len, const BaseElement *parent) const;
-    float PrepareVertexData(
-            const char *text, const Vec2f &pos, const uint8_t col[4], const BaseElement *parent,
-            std::vector<vertex_t> &vtx_data, std::vector<uint16_t> &ndx_data) const;
     float DrawText(Renderer *r, const char *text, const Vec2f &pos, const uint8_t col[4], const BaseElement *parent) const;
     int CheckText(
             const char *text, const Vec2f &pos, const Vec2f &press_pos, float &out_char_offset,

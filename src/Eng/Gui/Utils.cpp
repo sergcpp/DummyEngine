@@ -1,5 +1,7 @@
 #include "Utils.h"
 
+#include <cassert>
+
 #define _abs(x) (((x) < 0.0) ? -(x) : (x))
 
 namespace GuiInternal {
@@ -51,10 +53,13 @@ static int solve_cubic(double a, double b, double c, double x[3]) {
     double A, B;
     if (r2 <= (q3 + eps)) {
         double t = r / std::sqrt(q3);
-        if (t < -1.0) t = -1.0;
-        if (t > 1.0) t = 1.0;
+        if (t < -1.0)
+            t = -1.0;
+        if (t > 1.0)
+            t = 1.0;
         t = std::acos(t);
-        a /= 3.0; q = -2.0 * std::sqrt(q);
+        a /= 3.0;
+        q = -2.0 * std::sqrt(q);
         x[0] = q * std::cos(t / 3.0) - a;
         x[1] = q * std::cos((t + TwoPi) / 3.0) - a;
         x[2] = q * std::cos((t - TwoPi) / 3.0) - a;
@@ -70,12 +75,15 @@ static int solve_cubic(double a, double b, double c, double x[3]) {
         x[0] = (A + B) - a;
         x[1] = -0.5 * (A + B) - a;
         x[2] = 0.5 * std::sqrt(3.0) * (A - B);
-        if (_abs(x[2]) < eps) { x[2] = x[1]; return 2; }
+        if (_abs(x[2]) < eps) {
+            x[2] = x[1];
+            return 2;
+        }
         return 1;
     }
 }
 
-static double cross2(const Ren::Vec2d &v1, const Ren::Vec2d &v2) {
+static double cross2(const Gui::Vec2d &v1, const Gui::Vec2d &v2) {
     return v1[0] * v2[1] - v1[1] * v2[0];
 }
 
@@ -83,10 +91,87 @@ static uint8_t median(uint8_t r, uint8_t g, uint8_t b) {
     return std::max(std::min(r, g), std::min(std::max(r, g), b));
 }
 
+static int sutherland_hodgman(const Gui::Vec4f *input, int in_count, Gui::Vec4f *output,
+                              int axis, float split_pos, bool is_minimum) {
+    if (in_count < 3)
+        return 0;
+
+    Gui::Vec4f cur = input[0];
+    float sign = is_minimum ? 1.0f : -1.0f;
+    float distance = sign * (cur[axis] - split_pos);
+    bool cur_is_inside = (distance >= 0);
+    int out_count = 0;
+
+    for (int i = 0; i < in_count; ++i) {
+        int nextIdx = i + 1;
+        if (nextIdx == in_count) {
+            nextIdx = 0;
+        }
+        const Gui::Vec4f &next = input[nextIdx];
+        distance = sign * (next[axis] - split_pos);
+        const bool next_is_inside = (distance >= 0);
+
+        if (cur_is_inside && next_is_inside) {
+            // Both this and the next vertex are inside, add to the list
+            output[out_count++] = next;
+        } else if (cur_is_inside && !next_is_inside) {
+            // Going outside -- add the intersection
+            const float t = (split_pos - cur[axis]) / (next[axis] - cur[axis]);
+            Gui::Vec4f p = cur + (next - cur) * t;
+            p[axis] = split_pos; // Avoid roundoff errors
+            output[out_count++] = p;
+        } else if (!cur_is_inside && next_is_inside) {
+            // Coming back inside -- add the intersection + next vertex
+            float t = (split_pos - cur[axis]) / (next[axis] - cur[axis]);
+            Gui::Vec4f &p = output[out_count++];
+            p = cur + (next - cur) * t;
+            p[axis] = split_pos; // Avoid roundoff errors
+            output[out_count++] = next;
+        } else {
+            // Entirely outside - do not add anything
+        }
+        cur = next;
+        cur_is_inside = next_is_inside;
+    }
+    return out_count;
 }
 
-Ren::Vec2f Gui::MapPointToScreen(const Vec2i &p, const Vec2i &res) {
-    return (2.0f * Vec2f((float)p[0], (float)res[1] - p[1])) / Vec2f{ res } + Vec2f(-1, -1);
+} // namespace GuiInternal
+
+Gui::Vec2f Gui::MapPointToScreen(const Vec2i &p, const Vec2i &res) {
+    return (2.0f * Vec2f((float)p[0], (float)res[1] - p[1])) / Vec2f{res} + Vec2f(-1, -1);
+}
+
+bool Gui::ClipQuadToArea(Vec4f pos[2], const Vec2f clip[2]) {
+    if (pos[1][0] < clip[0][0] || pos[1][1] < clip[0][1] || pos[0][0] > clip[1][0] ||
+        pos[0][1] > clip[1][1]) {
+        return false;
+    }
+
+    const Vec2f clipped_p0 = Max(Vec2f{pos[0]}, clip[0]);
+    const Vec2f clipped_p1 = Min(Vec2f{pos[1]}, clip[1]);
+
+    const Vec4f delta = pos[1] - pos[0];
+    const Vec2f t0 = (clipped_p0 - Vec2f{pos[0]}) / Vec2f{delta};
+    const Vec2f t1 = (clipped_p1 - Vec2f{pos[0]}) / Vec2f{delta};
+
+    pos[1] = pos[0] + Vec4f{t1[0], t1[1], t1[0], t1[1]} * delta;
+    pos[0] = pos[0] + Vec4f{t0[0], t0[1], t0[0], t0[1]} * delta;
+
+    return true;
+}
+
+int Gui::ClipPolyToArea(Vec4f *vertices, int vertex_count, const Vec2f clip[2]) {
+    using namespace GuiInternal;
+
+    Vec4f temp[16];
+
+    for (int axis = 0; axis < 2; axis++) {
+        vertex_count = sutherland_hodgman(vertices, vertex_count, temp, axis, clip[0][axis], true);
+        vertex_count = sutherland_hodgman(temp, vertex_count, vertices, axis, clip[1][axis], false);
+    }
+
+    return vertex_count;
 }
 
 int Gui::ConvChar_UTF8_to_Unicode(const char *utf8, uint32_t &out_unicode) {
@@ -172,7 +257,7 @@ int Gui::ConvChar_Unicode_to_UTF8(uint32_t unicode, char *out_utf8) {
         out_utf8[4] = char(0x80u | (unicode & 0x3fu));
         return 5;
     } else if (0x4000000 <= unicode && unicode <= 0x7fffffff) {
-        out_utf8[0] = char(0xfcu | (unicode >> 30u) );
+        out_utf8[0] = char(0xfcu | (unicode >> 30u));
         out_utf8[1] = char(0x80u | ((unicode >> 24u) & 0x3fu));
         out_utf8[2] = char(0x80u | ((unicode >> 18u) & 0x3fu));
         out_utf8[3] = char(0x80u | ((unicode >> 12u) & 0x3fu));
@@ -193,8 +278,9 @@ int Gui::CalcUTF8Length(const char *utf8) {
     return char_len;
 }
 
-void Gui::DrawBezier1ToBitmap(const Ren::Vec2d &p0, const Ren::Vec2d &p1, int stride, int channels, uint8_t *out_rgba) {
-    auto p0i = Ren::Vec2i{ p0 }, p1i = Ren::Vec2i{ p1 };
+void Gui::DrawBezier1ToBitmap(const Vec2d &p0, const Vec2d &p1, int stride, int channels,
+                              uint8_t *out_rgba) {
+    auto p0i = Vec2i{p0}, p1i = Vec2i{p1};
 
     const int dx = _abs(p1i[0] - p0i[0]), sx = p0i[0] < p1i[0] ? 1 : -1;
     const int dy = _abs(p1i[1] - p0i[1]), sy = p0i[1] < p1i[1] ? 1 : -1;
@@ -212,67 +298,65 @@ void Gui::DrawBezier1ToBitmap(const Ren::Vec2d &p0, const Ren::Vec2d &p1, int st
             out_rgba[3 * (p0i[1] * stride + p0i[0]) + 2] = 0xff;
         }
 
-        if (p0i[0] == p1i[0] && p0i[1] == p1i[1]) break;
+        if (p0i[0] == p1i[0] && p0i[1] == p1i[1])
+            break;
         e2 = err;
-        if (e2 > -dx) { err -= dy; p0i[0] += sx; }
-        if (e2 < dy) { err += dx; p0i[1] += sy; }
+        if (e2 > -dx) {
+            err -= dy;
+            p0i[0] += sx;
+        }
+        if (e2 < dy) {
+            err += dx;
+            p0i[1] += sy;
+        }
     }
 }
 
-void Gui::DrawBezier2ToBitmap(const Ren::Vec2d &p0, const Ren::Vec2d &p1, const Ren::Vec2d &p2, int stride, int channels, uint8_t *out_rgba) {
-    const Ren::Vec2d
-        pmin = Min(p0, Min(p1, p2)),
-        pmax = Max(p0, Max(p1, p2));
+void Gui::DrawBezier2ToBitmap(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2,
+                              int stride, int channels, uint8_t *out_rgba) {
+    const Vec2d pmin = Min(p0, Min(p1, p2)), pmax = Max(p0, Max(p1, p2));
 
     if ((pmax[0] - pmin[0]) < 4 && (pmax[1] - pmin[1]) < 4) {
         DrawBezier1ToBitmap(p0, p2, stride, channels, out_rgba);
     } else {
-        const Ren::Vec2d
-            p01 = (p0 + p1) / 2.0,
-            p12 = (p1 + p2) / 2.0;
-        const Ren::Vec2d p012 = (p01 + p12) / 2.0;
+        const Vec2d p01 = (p0 + p1) / 2.0, p12 = (p1 + p2) / 2.0;
+        const Vec2d p012 = (p01 + p12) / 2.0;
 
         DrawBezier2ToBitmap(p0, p01, p012, stride, channels, out_rgba);
         DrawBezier2ToBitmap(p012, p12, p2, stride, channels, out_rgba);
     }
 }
 
-void Gui::DrawBezier3ToBitmap(const Ren::Vec2d &p0, const Ren::Vec2d &p1, const Ren::Vec2d &p2, const Ren::Vec2d &p3, int stride, int channels, uint8_t *out_rgba) {
-    const Ren::Vec2d
-        pmin = Min(p0, Min(p1, p2)),
-        pmax = Max(p0, Max(p1, p2));
+void Gui::DrawBezier3ToBitmap(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2,
+                              const Vec2d &p3, int stride, int channels,
+                              uint8_t *out_rgba) {
+    const Vec2d pmin = Min(p0, Min(p1, p2)), pmax = Max(p0, Max(p1, p2));
 
     if ((pmax[0] - pmin[0]) < 4 && (pmax[1] - pmin[1]) < 4) {
         DrawBezier1ToBitmap(p0, p3, stride, channels, out_rgba);
     } else {
-        const Ren::Vec2d
-            p01 = (p0 + p1) / 2.0,
-            p12 = (p1 + p2) / 2.0,
-            p23 = (p2 + p3) / 2.0;
+        const Vec2d p01 = (p0 + p1) / 2.0, p12 = (p1 + p2) / 2.0, p23 = (p2 + p3) / 2.0;
 
-        const Ren::Vec2d
-            p012 = (p01 + p12) / 2.0,
-            p123 = (p12 + p23) / 2.0;
+        const Vec2d p012 = (p01 + p12) / 2.0, p123 = (p12 + p23) / 2.0;
 
-        const Ren::Vec2d p0123 = (p012 + p123) / 2.0;
+        const Vec2d p0123 = (p012 + p123) / 2.0;
 
         DrawBezier3ToBitmap(p0, p01, p012, p0123, stride, channels, out_rgba);
         DrawBezier3ToBitmap(p0123, p123, p23, p3, stride, channels, out_rgba);
     }
 }
 
-Gui::dist_result_t Gui::Bezier1Distance(const Ren::Vec2d &p0, const Ren::Vec2d &p1, const Ren::Vec2d &p) {
+Gui::dist_result_t Gui::Bezier1Distance(const Vec2d &p0, const Vec2d &p1,
+                                        const Vec2d &p) {
     using namespace GuiInternal;
     using namespace Ren;
 
-    const Vec2d
-        pp0 = p - p0,
-        p10 = p1 - p0;
+    const Vec2d pp0 = p - p0, p10 = p1 - p0;
     const double t_unclumped = Dot(pp0, p10) / Dot(p10, p10);
     const double t = Clamp(t_unclumped, 0.0, 1.0);
 
-    //const Vec2d to_closest = (t_unclumped < 0.5) ? p0 : p1;
-    //const double to_closest_dist = Length(to_closest);
+    // const Vec2d to_closest = (t_unclumped < 0.5) ? p0 : p1;
+    // const double to_closest_dist = Length(to_closest);
 
     if (t_unclumped > 0.0 && t_unclumped < 1.0) {
         /*const double p10_len = Length(p10);
@@ -283,38 +367,31 @@ Gui::dist_result_t Gui::Bezier1Distance(const Ren::Vec2d &p0, const Ren::Vec2d &
             return { ortho_dist, sign * Distance(_pp1, p), _abs(orthogonality), t, 0.0 };
         }*/
 
-        const Vec2d
-            _pp0 = p0 + t * p10,
-            _pp1 = p0 + t_unclumped * p10;
+        const Vec2d _pp0 = p0 + t * p10, _pp1 = p0 + t_unclumped * p10;
         const double sign = cross2(p10, _pp0 - p) >= 0.0 ? 1.0 : -1.0;
         const double orthogonality = cross2(Normalize(p10), Normalize(p - _pp1));
-        return { sign * Distance(_pp0, p), sign * Distance(_pp1, p), _abs(orthogonality), t, 0.0 };
+        return {sign * Distance(_pp0, p), sign * Distance(_pp1, p), _abs(orthogonality),
+                t, 0.0};
     } else {
-        const Vec2d
-            _pp0 = (t_unclumped < 0.5) ? p0 : p1,
-            _pp1 = p0 + t_unclumped * p10;
+        const Vec2d _pp0 = (t_unclumped < 0.5) ? p0 : p1, _pp1 = p0 + t_unclumped * p10;
         const double sign = cross2(p10, _pp0 - p) >= 0.0 ? 1.0 : -1.0;
         const double orthogonality = cross2(Normalize(p10), Normalize(p - _pp1));
-        return { sign * Distance(_pp0, p), sign * Distance(_pp1, p), _abs(orthogonality), t, _abs(Dot(Normalize(p10), Normalize(_pp0 - p))) };
+        return {sign * Distance(_pp0, p), sign * Distance(_pp1, p), _abs(orthogonality),
+                t, _abs(Dot(Normalize(p10), Normalize(_pp0 - p)))};
     }
 }
 
-Gui::dist_result_t Gui::Bezier2Distance(const Ren::Vec2d &p0, const Ren::Vec2d &p1, const Ren::Vec2d &p2, const Ren::Vec2d &p) {
+Gui::dist_result_t Gui::Bezier2Distance(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2,
+                                        const Vec2d &p) {
     using namespace GuiInternal;
     using namespace Ren;
 
-    const Vec2d
-        _p = p - p0,
-        _p1 = p1 - p0,
-        _p2 = p0 - 2 * p1 + p2;
+    const Vec2d _p = p - p0, _p1 = p1 - p0, _p2 = p0 - 2 * p1 + p2;
 
-    const double
-        a = Dot(_p2, _p2),
-        b = 3.0 * Dot(_p1, _p2) / a,
-        c = (2.0 * Dot(_p1, _p1) - Dot(_p, _p2)) / a,
-        d = -Dot(_p, _p1) / a;
+    const double a = Dot(_p2, _p2), b = 3.0 * Dot(_p1, _p2) / a,
+                 c = (2.0 * Dot(_p1, _p1) - Dot(_p, _p2)) / a, d = -Dot(_p, _p1) / a;
 
-    double roots[5] = { 0.0, 1.0 };
+    double roots[5] = {0.0, 1.0};
     const int count = solve_cubic(b, c, d, &roots[2]);
     assert(count);
 
@@ -322,7 +399,8 @@ Gui::dist_result_t Gui::Bezier2Distance(const Ren::Vec2d &p0, const Ren::Vec2d &
     double res_pseudodist, res_orthogonality, res_t;
 
     for (int i = 0; i < 2 + count; i++) {
-        if (roots[i] < 0.0 || roots[i] > 1.0) continue;
+        if (roots[i] < 0.0 || roots[i] > 1.0)
+            continue;
 
         const double t1 = roots[i];
 
@@ -342,44 +420,48 @@ Gui::dist_result_t Gui::Bezier2Distance(const Ren::Vec2d &p0, const Ren::Vec2d &
 #if 1
     double res_dot = 0.0;
 
-    if (res_t == 0.0) {   // Extend start of curve
+    if (res_t == 0.0) { // Extend start of curve
         const Vec2d der0 = p0 - p1;
         const dist_result_t res0 = Bezier1Distance(p0 + der0 * 10000.0, p0, p);
         if (res0.t <= 1.0 /*&& _abs(res0.sdist) < _abs(min_sdist)*/) {
-            //min_sdist = res0.sdist;
+            // min_sdist = res0.sdist;
             res_pseudodist = res0.pseudodist;
             res_orthogonality = res0.ortho;
-            //res_t = res0.t;
+            // res_t = res0.t;
         }
 
         res_dot = Dot(Normalize(_p1), Normalize(-_p));
-    } else if (res_t == 1.0) {   // Extend end of curve
+    } else if (res_t == 1.0) { // Extend end of curve
         const Vec2d der1 = p2 - p1;
         const dist_result_t res1 = Bezier1Distance(p2, p2 + der1 * 10000.0, p);
         if (res1.t >= 0.0 /*&& _abs(res1.sdist) < _abs(min_sdist)*/) {
-            //min_sdist = res1.sdist;
+            // min_sdist = res1.sdist;
             res_pseudodist = res1.pseudodist;
             res_orthogonality = res1.ortho;
-            //res_t = res1.t;
+            // res_t = res1.t;
         }
 
         res_dot = Dot(Normalize(p2 - p1), Normalize(p2 - p));
     }
 #endif
 
-    return { min_sdist, res_pseudodist, _abs(res_orthogonality), res_t, _abs(res_dot) };
+    return {min_sdist, res_pseudodist, _abs(res_orthogonality), res_t, _abs(res_dot)};
 }
 
-Gui::dist_result_t Gui::Bezier3Distance(const Ren::Vec2d &p0, const Ren::Vec2d &p1, const Ren::Vec2d &p2, const Ren::Vec2d &p3, const Ren::Vec2d &p) {
+Gui::dist_result_t Gui::Bezier3Distance(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2,
+                                        const Vec2d &p3, const Vec2d &p) {
     assert(false && "Not implemented!");
     return {};
 }
 
-void Gui::PreprocessBezierShape(bezier_seg_t *segs, int count, const double max_soft_angle_rad) {
+void Gui::PreprocessBezierShape(bezier_seg_t *segs, int count,
+                                const double max_soft_angle_rad) {
     using namespace Ren;
-    if (count == 1) return;
+    if (count == 1)
+        return;
 
-    if (Distance(segs[0].p0, segs[count - 1].p1) < std::numeric_limits<double>::epsilon()) {
+    if (Distance(segs[0].p0, segs[count - 1].p1) <
+        std::numeric_limits<double>::epsilon()) {
         segs[0].is_closed = true;
     }
 
@@ -430,7 +512,7 @@ void Gui::PreprocessBezierShape(bezier_seg_t *segs, int count, const double max_
     }
 }
 
-Gui::dist_result_t Gui::BezierSegmentDistance(const bezier_seg_t &seg, const Ren::Vec2d &p) {
+Gui::dist_result_t Gui::BezierSegmentDistance(const bezier_seg_t &seg, const Vec2d &p) {
     assert(seg.order >= 1 && seg.order <= 3);
     if (seg.order == 1) {
         return Bezier1Distance(seg.p0, seg.p1, p);
@@ -456,23 +538,26 @@ int Gui::FixSDFCollisions(uint8_t *img_data, int w, int h, int channels, int thr
             const uint8_t *p0 = &img_data[px_index];
 
             // pixel neighborhood
-            const uint8_t
-                *p0_e = &img_data[channels * ((y + 0) * w + (x - 1))],
-                *p0_w = &img_data[channels * ((y + 0) * w + (x + 1))],
-                *p0_n = &img_data[channels * ((y + 1) * w + (x + 0))],
-                *p0_s = &img_data[channels * ((y - 1) * w + (x + 0))],
-                *p0_se = &img_data[channels * ((y - 1) * w + (x - 1))],
-                *p0_sw = &img_data[channels * ((y - 1) * w + (x + 1))],
-                *p0_ne = &img_data[channels * ((y + 1) * w + (x - 1))],
-                *p0_nw = &img_data[channels * ((y + 1) * w + (x + 1))];
+            const uint8_t *p0_e = &img_data[channels * ((y + 0) * w + (x - 1))],
+                          *p0_w = &img_data[channels * ((y + 0) * w + (x + 1))],
+                          *p0_n = &img_data[channels * ((y + 1) * w + (x + 0))],
+                          *p0_s = &img_data[channels * ((y - 1) * w + (x + 0))],
+                          *p0_se = &img_data[channels * ((y - 1) * w + (x - 1))],
+                          *p0_sw = &img_data[channels * ((y - 1) * w + (x + 1))],
+                          *p0_ne = &img_data[channels * ((y + 1) * w + (x - 1))],
+                          *p0_nw = &img_data[channels * ((y + 1) * w + (x + 1))];
 
             int ch_count = 0;
 
             for (int i = 0; i < 3; i++) {
-                if (_abs(int(p0[i]) - p0_e[i]) > threshold || _abs(int(p0[i]) - p0_w[i]) > threshold ||
-                    _abs(int(p0[i]) - p0_n[i]) > threshold || _abs(int(p0[i]) - p0_s[i]) > threshold ||
-                    _abs(int(p0[i]) - p0_se[i]) > threshold || _abs(int(p0[i]) - p0_sw[i]) > threshold ||
-                    _abs(int(p0[i]) - p0_ne[i]) > threshold || _abs(int(p0[i]) - p0_nw[i]) > threshold) {
+                if (_abs(int(p0[i]) - p0_e[i]) > threshold ||
+                    _abs(int(p0[i]) - p0_w[i]) > threshold ||
+                    _abs(int(p0[i]) - p0_n[i]) > threshold ||
+                    _abs(int(p0[i]) - p0_s[i]) > threshold ||
+                    _abs(int(p0[i]) - p0_se[i]) > threshold ||
+                    _abs(int(p0[i]) - p0_sw[i]) > threshold ||
+                    _abs(int(p0[i]) - p0_ne[i]) > threshold ||
+                    _abs(int(p0[i]) - p0_nw[i]) > threshold) {
                     ch_count++;
                 }
             }

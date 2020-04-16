@@ -3,6 +3,11 @@
 #include <Eng/Utils/ScriptedDialog.h>
 #include <Eng/Utils/ScriptedSequence.h>
 
+namespace DialogEditUIInternal {
+const Ren::Vec2f ElementSizePx = Ren::Vec2f{96.0f, 128.0f};
+const Ren::Vec2f ElementSpacingPx = Ren::Vec2f{300.0f, 160.0f};
+} // namespace DialogEditUIInternal
+
 DialogEditUI::DialogEditUI(Ren::Context &ctx, const Gui::BitmapFont &font,
                            const Ren::Vec2f &pos, const Ren::Vec2f &size,
                            Gui::BaseElement *parent)
@@ -21,13 +26,13 @@ DialogEditUI::DialogEditUI(Ren::Context &ctx, const Gui::BitmapFont &font,
                 Ren::Vec2f{}, this) {}
 
 void DialogEditUI::Draw(Gui::Renderer *r) {
+    using namespace DialogEditUIInternal;
+
     back_.Draw(r);
 
     if (dialog_) {
-        const Ren::Vec2f elem_size =
-            2.0f * Ren::Vec2f{96.0f, 128.0f} / Ren::Vec2f{size_px()};
-        const Ren::Vec2f spacing =
-            2.0f * Ren::Vec2f{200.0f, 160.0f} / Ren::Vec2f{size_px()};
+        const Ren::Vec2f elem_size = 2.0f * ElementSizePx / Ren::Vec2f{size_px()};
+        const Ren::Vec2f spacing = 2.0f * ElementSpacingPx / Ren::Vec2f{size_px()};
 
         const Ren::TextureRegionRef &line_tex = line_img_.tex();
 
@@ -39,6 +44,8 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
 
         const Ren::Vec2f elem_border = 8.0f / Ren::Vec2f{size_px()};
         const float font_height = font_.height(this);
+
+        r->PushClipArea(dims_);
 
         IterateElements([&](const ScriptedSequence *seq, const ScriptedSequence *parent,
                             const int depth, const int ndx, const int parent_ndx) {
@@ -86,6 +93,8 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
 
             return true;
         });
+
+        r->PopClipArea();
     }
 }
 
@@ -155,11 +164,11 @@ void DialogEditUI::IterateElements(
 }
 
 void DialogEditUI::Press(const Ren::Vec2f &p, bool push) {
+    using namespace DialogEditUIInternal;
+
     if (push && Check(p)) {
-        const Ren::Vec2f elem_size =
-            2.0f * Ren::Vec2f{96.0f, 128.0f} / Ren::Vec2f{size_px()};
-        const Ren::Vec2f spacing =
-            2.0f * Ren::Vec2f{200.0f, 160.0f} / Ren::Vec2f{size_px()};
+        const Ren::Vec2f elem_size = 2.0f * ElementSizePx / Ren::Vec2f{size_px()};
+        const Ren::Vec2f spacing = 2.0f * ElementSpacingPx / Ren::Vec2f{size_px()};
 
         selected_element_ = -1;
 

@@ -4,7 +4,7 @@ Gui::ButtonBase::ButtonBase(const Vec2f &pos, const Vec2f &size, const BaseEleme
     : BaseElement(pos, size, parent), state_(eState::Normal) {
 }
 
-void Gui::ButtonBase::Focus(const Vec2i &p) {
+void Gui::ButtonBase::Hover(const Vec2i &p) {
     if (state_ != eState::Pressed) {
         if (Check(p)) {
             state_ = eState::Focused;
@@ -14,7 +14,7 @@ void Gui::ButtonBase::Focus(const Vec2i &p) {
     }
 }
 
-void Gui::ButtonBase::Focus(const Vec2f &p) {
+void Gui::ButtonBase::Hover(const Vec2f &p) {
     if (state_ != eState::Pressed) {
         if (Check(p)) {
             state_ = eState::Focused;
