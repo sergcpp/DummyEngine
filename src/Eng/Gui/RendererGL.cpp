@@ -102,7 +102,7 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config) : ctx_(ctx) {
 
     { // Load main shader
         Ren::eProgLoadStatus status;
-        ui_program2_ =
+        ui_program_ =
             ctx_.LoadProgramGLSL(UI_PROGRAM2_NAME, vs_source2, fs_source2, &status);
         assert(status == Ren::eProgLoadStatus::CreatedFromData ||
                status == Ren::eProgLoadStatus::Found);
@@ -175,7 +175,7 @@ void Gui::Renderer::BeginDraw() {
     glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "UI DRAW");
 #endif
     glBindVertexArray(0);
-    glUseProgram(ui_program2_->prog_id());
+    glUseProgram(ui_program_->prog_id());
 
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -214,6 +214,31 @@ void Gui::Renderer::EndDraw() {
 
     assert(!buf_range_fences_[cur_range_index_]);
     buf_range_fences_[cur_range_index_] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+
+    assert(clip_area_stack_size_ == 0);
+}
+
+void Gui::Renderer::PushClipArea(const Vec2f dims[2]) {
+    clip_area_stack_[clip_area_stack_size_][0] = dims[0];
+    clip_area_stack_[clip_area_stack_size_][1] = dims[0] + dims[1];
+    if (clip_area_stack_size_) {
+        clip_area_stack_[clip_area_stack_size_][0] =
+            Max(clip_area_stack_[clip_area_stack_size_ - 1][0],
+                clip_area_stack_[clip_area_stack_size_][0]);
+        clip_area_stack_[clip_area_stack_size_][1] =
+            Min(clip_area_stack_[clip_area_stack_size_ - 1][1],
+                clip_area_stack_[clip_area_stack_size_][1]);
+    }
+    ++clip_area_stack_size_;
+}
+
+void Gui::Renderer::PopClipArea() { --clip_area_stack_size_; }
+
+const Gui::Vec2f *Gui::Renderer::GetClipArea() const {
+    if (clip_area_stack_size_) {
+        return clip_area_stack_[clip_area_stack_size_ - 1];
+    }
+    return nullptr;
 }
 
 int Gui::Renderer::AcquireVertexData(vertex_t **vertex_data, int *vertex_avail,
@@ -314,7 +339,7 @@ void Gui::Renderer::DrawCurrentBuffer() {
 
     glBindVertexArray(vao_[cur_buffer_index_]);
 
-    glUseProgram(ui_program2_->prog_id());
+    glUseProgram(ui_program_->prog_id());
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, (GLuint)ctx_.texture_atlas().tex_id());
@@ -335,7 +360,10 @@ void Gui::Renderer::DrawImageQuad(const eDrawMode draw_mode, const int tex_layer
                                   const Vec2f pos[2], const Vec2f uvs_px[2]) {
     const Vec2f uvs_scale =
         1.0f / Vec2f{(float)Ren::TextureAtlasWidth, (float)Ren::TextureAtlasHeight};
-    const Vec2f uvs[2] = {uvs_px[0] * uvs_scale, uvs_px[1] * uvs_scale};
+    Vec4f pos_uvs[2] = {Vec4f{pos[0][0], pos[0][1], uvs_px[0][0] * uvs_scale[0],
+                              uvs_px[0][1] * uvs_scale[1]},
+                        Vec4f{pos[1][0], pos[1][1], uvs_px[1][0] * uvs_scale[0],
+                              uvs_px[1][1] * uvs_scale[1]}};
 
     vertex_t *vtx_data;
     int vtx_avail;
@@ -354,42 +382,47 @@ void Gui::Renderer::DrawImageQuad(const eDrawMode draw_mode, const int tex_layer
 
     static const uint16_t u16_draw_mode[] = {0, 32767, 65535};
 
-    cur_vtx->pos[0] = pos[0][0];
-    cur_vtx->pos[1] = pos[0][1];
+    if (clip_area_stack_size_ &&
+        !ClipQuadToArea(pos_uvs, clip_area_stack_[clip_area_stack_size_ - 1])) {
+        return;
+    }
+
+    cur_vtx->pos[0] = pos_uvs[0][0];
+    cur_vtx->pos[1] = pos_uvs[0][1];
     cur_vtx->pos[2] = 0.0f;
     cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
-    cur_vtx->uvs[0] = f32_to_u16(uvs[0][0]);
-    cur_vtx->uvs[1] = f32_to_u16(uvs[0][1]);
+    cur_vtx->uvs[0] = f32_to_u16(pos_uvs[0][2]);
+    cur_vtx->uvs[1] = f32_to_u16(pos_uvs[0][3]);
     cur_vtx->uvs[2] = u16_tex_layer;
     cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
     ++cur_vtx;
 
-    cur_vtx->pos[0] = pos[1][0];
-    cur_vtx->pos[1] = pos[0][1];
+    cur_vtx->pos[0] = pos_uvs[1][0];
+    cur_vtx->pos[1] = pos_uvs[0][1];
     cur_vtx->pos[2] = 0.0f;
     cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
-    cur_vtx->uvs[0] = f32_to_u16(uvs[1][0]);
-    cur_vtx->uvs[1] = f32_to_u16(uvs[0][1]);
+    cur_vtx->uvs[0] = f32_to_u16(pos_uvs[1][2]);
+    cur_vtx->uvs[1] = f32_to_u16(pos_uvs[0][3]);
     cur_vtx->uvs[2] = u16_tex_layer;
     cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
     ++cur_vtx;
 
-    cur_vtx->pos[0] = pos[1][0];
-    cur_vtx->pos[1] = pos[1][1];
+    cur_vtx->pos[0] = pos_uvs[1][0];
+    cur_vtx->pos[1] = pos_uvs[1][1];
     cur_vtx->pos[2] = 0.0f;
     cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
-    cur_vtx->uvs[0] = f32_to_u16(uvs[1][0]);
-    cur_vtx->uvs[1] = f32_to_u16(uvs[1][1]);
+    cur_vtx->uvs[0] = f32_to_u16(pos_uvs[1][2]);
+    cur_vtx->uvs[1] = f32_to_u16(pos_uvs[1][3]);
     cur_vtx->uvs[2] = u16_tex_layer;
     cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
     ++cur_vtx;
 
-    cur_vtx->pos[0] = pos[0][0];
-    cur_vtx->pos[1] = pos[1][1];
+    cur_vtx->pos[0] = pos_uvs[0][0];
+    cur_vtx->pos[1] = pos_uvs[1][1];
     cur_vtx->pos[2] = 0.0f;
     cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
-    cur_vtx->uvs[0] = f32_to_u16(uvs[0][0]);
-    cur_vtx->uvs[1] = f32_to_u16(uvs[1][1]);
+    cur_vtx->uvs[0] = f32_to_u16(pos_uvs[0][2]);
+    cur_vtx->uvs[1] = f32_to_u16(pos_uvs[1][3]);
     cur_vtx->uvs[2] = u16_tex_layer;
     cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
     ++cur_vtx;
@@ -405,18 +438,41 @@ void Gui::Renderer::DrawImageQuad(const eDrawMode draw_mode, const int tex_layer
     SubmitVertexData(int(cur_vtx - vtx_data), int(cur_ndx - ndx_data), false);
 }
 
-void Gui::Renderer::DrawLine(eDrawMode draw_mode, int tex_layer, const Vec2f pos[2],
+void Gui::Renderer::DrawLine(eDrawMode draw_mode, int tex_layer, const Vec2f _pos[2],
                              const Vec2f &thickness, const Vec2f uvs_px[2]) {
     const Vec2f uvs_scale =
         1.0f / Vec2f{(float)Ren::TextureAtlasWidth, (float)Ren::TextureAtlasHeight};
-    const Vec2f uvs[2] = {uvs_px[0] * uvs_scale, uvs_px[1] * uvs_scale};
+
+    uint16_t u16_tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_layer));
+
+    static const uint16_t u16_draw_mode[] = {0, 32767, 65535};
+
+    const Vec2f dir = Normalize(_pos[1] - _pos[0]);
+    const Vec2f perp = thickness * Vec2f{-dir[1], dir[0]};
+
+    Vec4f pos_uvs[8] = {Vec4f{_pos[0][0] - perp[0], _pos[0][1] - perp[1],
+                              uvs_px[0][0] * uvs_scale[0], uvs_px[0][1] * uvs_scale[1]},
+                        Vec4f{_pos[1][0] - perp[0], _pos[1][1] - perp[1],
+                              uvs_px[0][0] * uvs_scale[0], uvs_px[1][1] * uvs_scale[1]},
+                        Vec4f{_pos[1][0] + perp[0], _pos[1][1] + perp[1],
+                              uvs_px[1][0] * uvs_scale[0], uvs_px[1][1] * uvs_scale[1]},
+                        Vec4f{_pos[0][0] + perp[0], _pos[0][1] + perp[1],
+                              uvs_px[1][0] * uvs_scale[0], uvs_px[0][1] * uvs_scale[1]}};
+    int vertex_count = 4;
+
+    if (clip_area_stack_size_ &&
+        !(vertex_count = ClipPolyToArea(pos_uvs, vertex_count,
+                                        clip_area_stack_[clip_area_stack_size_ - 1]))) {
+        return;
+    }
+    assert(vertex_count < 8);
 
     vertex_t *vtx_data;
     int vtx_avail;
     uint16_t *ndx_data;
     int ndx_avail;
     int ndx_offset = AcquireVertexData(&vtx_data, &vtx_avail, &ndx_data, &ndx_avail);
-    if (vtx_avail < 4 || ndx_avail < 6) {
+    if (vtx_avail < vertex_count || ndx_avail < 3 * (vertex_count - 2)) {
         SubmitVertexData(0, 0, true);
         ndx_offset = AcquireVertexData(&vtx_data, &vtx_avail, &ndx_data, &ndx_avail);
     }
@@ -424,60 +480,23 @@ void Gui::Renderer::DrawLine(eDrawMode draw_mode, int tex_layer, const Vec2f pos
     vertex_t *cur_vtx = vtx_data;
     uint16_t *cur_ndx = ndx_data;
 
-    uint16_t u16_tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_layer));
+    for (int i = 0; i < vertex_count; i++) {
+        cur_vtx->pos[0] = pos_uvs[i][0];
+        cur_vtx->pos[1] = pos_uvs[i][1];
+        cur_vtx->pos[2] = 0.0f;
+        cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
+        cur_vtx->uvs[0] = f32_to_u16(pos_uvs[i][2]);
+        cur_vtx->uvs[1] = f32_to_u16(pos_uvs[i][3]);
+        cur_vtx->uvs[2] = u16_tex_layer;
+        cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
+        ++cur_vtx;
+    }
 
-    static const uint16_t u16_draw_mode[] = {0, 32767, 65535};
-
-    const Vec2f dir = Normalize(pos[1] - pos[0]);
-    const Vec2f perp = thickness * Vec2f{-dir[1], dir[0]};
-
-    cur_vtx->pos[0] = pos[0][0] - perp[0];
-    cur_vtx->pos[1] = pos[0][1] - perp[1];
-    cur_vtx->pos[2] = 0.0f;
-    cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
-    cur_vtx->uvs[0] = f32_to_u16(uvs[0][0]);
-    cur_vtx->uvs[1] = f32_to_u16(uvs[0][1]);
-    cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
-    ++cur_vtx;
-
-    cur_vtx->pos[0] = pos[1][0] - perp[0];
-    cur_vtx->pos[1] = pos[1][1] - perp[1];
-    cur_vtx->pos[2] = 0.0f;
-    cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
-    cur_vtx->uvs[0] = f32_to_u16(uvs[1][0]);
-    cur_vtx->uvs[1] = f32_to_u16(uvs[0][1]);
-    cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
-    ++cur_vtx;
-
-    cur_vtx->pos[0] = pos[1][0] + perp[0];
-    cur_vtx->pos[1] = pos[1][1] + perp[1];
-    cur_vtx->pos[2] = 0.0f;
-    cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
-    cur_vtx->uvs[0] = f32_to_u16(uvs[1][0]);
-    cur_vtx->uvs[1] = f32_to_u16(uvs[1][1]);
-    cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
-    ++cur_vtx;
-
-    cur_vtx->pos[0] = pos[0][0] + perp[0];
-    cur_vtx->pos[1] = pos[0][1] + perp[1];
-    cur_vtx->pos[2] = 0.0f;
-    cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
-    cur_vtx->uvs[0] = f32_to_u16(uvs[0][0]);
-    cur_vtx->uvs[1] = f32_to_u16(uvs[1][1]);
-    cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
-    ++cur_vtx;
-
-    (*cur_ndx++) = ndx_offset + 0;
-    (*cur_ndx++) = ndx_offset + 1;
-    (*cur_ndx++) = ndx_offset + 2;
-
-    (*cur_ndx++) = ndx_offset + 0;
-    (*cur_ndx++) = ndx_offset + 2;
-    (*cur_ndx++) = ndx_offset + 3;
+    for (int i = 0; i < vertex_count - 2; i++) {
+        (*cur_ndx++) = ndx_offset + 0;
+        (*cur_ndx++) = ndx_offset + i + 1;
+        (*cur_ndx++) = ndx_offset + i + 2;
+    }
 
     SubmitVertexData(int(cur_vtx - vtx_data), int(cur_ndx - ndx_data), false);
 }
