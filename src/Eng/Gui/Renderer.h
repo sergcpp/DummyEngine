@@ -60,7 +60,7 @@ public:
     Renderer(const Renderer &rhs) = delete;
     Renderer &operator=(const Renderer &rhs) = delete;
 
-    Ren::ProgramRef program() const { return ui_program2_; }
+    Ren::ProgramRef program() const { return ui_program_; }
 
     void BeginDraw();
     void ForceDraw() {
@@ -76,6 +76,10 @@ public:
     }
     void EndDraw();
 
+    void PushClipArea(const Ren::Vec2f dims[2]);
+    void PopClipArea();
+    const Vec2f *GetClipArea() const;
+
     // Returns pointers to mapped vertex buffer. Do NOT read from it, it is write-combined memory and will result in terrible latency!
     int AcquireVertexData(vertex_t **vertex_data, int *vertex_avail, uint16_t **index_data, int *index_avail);
     void SubmitVertexData(int vertex_count, int index_count, bool force_new_buffer);
@@ -86,6 +90,7 @@ public:
   private:
     static const int FrameSyncWindow = 2;
     static const int BuffersCount = 8;
+    static const int MaxClipStackSize = 8;
 
     Ren::Context &ctx_;
 
@@ -94,7 +99,7 @@ public:
     int cur_buffer_index_, cur_range_index_;
     int cur_vertex_count_, cur_index_count_;
 
-    Ren::ProgramRef ui_program2_;
+    Ren::ProgramRef ui_program_;
 #if defined(USE_GL_RENDER)
     uint32_t vao_[BuffersCount];
     uint32_t vertex_buf_id_[BuffersCount], index_buf_id_[BuffersCount];
@@ -103,6 +108,9 @@ public:
     uint16_t *cur_mapped_ndx_data_ = nullptr;
 
     void *buf_range_fences_[FrameSyncWindow] = {};
+
+    Ren::Vec2f clip_area_stack_[MaxClipStackSize][2];
+    int clip_area_stack_size_ = 0;
 
     void DrawCurrentBuffer();
 };

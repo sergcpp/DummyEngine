@@ -65,6 +65,10 @@ public:
         return dims_[1];
     }
 
+    const float aspect() const {
+        return dims_[1][1] / dims_[1][0];
+    }
+
     const Vec2i &pos_px() const {
         return dims_px_[0];
     }
@@ -78,8 +82,8 @@ public:
     virtual bool Check(const Vec2i &p) const;
     virtual bool Check(const Vec2f &p) const;
 
-    virtual void Focus(const Vec2i &/*p*/) {}
-    virtual void Focus(const Vec2f &/*p*/) {}
+    virtual void Hover(const Vec2i &/*p*/) {}
+    virtual void Hover(const Vec2f &/*p*/) {}
 
     virtual void Press(const Vec2i &/*p*/, bool /*push*/) {}
     virtual void Press(const Vec2f &/*p*/, bool /*push*/) {}

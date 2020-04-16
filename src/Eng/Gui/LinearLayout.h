@@ -53,8 +53,8 @@ public:
     bool Check(const Vec2i &p) const override;
     bool Check(const Vec2f &p) const override;
 
-    void Focus(const Vec2i &p) override;
-    void Focus(const Vec2f &p) override;
+    void Hover(const Vec2i &p) override;
+    void Hover(const Vec2f &p) override;
 
     void Press(const Vec2i &p, bool push) override;
     void Press(const Vec2f &p, bool push) override;

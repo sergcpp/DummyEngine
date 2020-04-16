@@ -12,8 +12,8 @@ protected:
 public:
     ButtonBase(const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
 
-    void Focus(const Vec2i &p) override;
-    void Focus(const Vec2f &p) override;
+    void Hover(const Vec2i &p) override;
+    void Hover(const Vec2f &p) override;
 
     void Press(const Vec2i &p, bool push) override;
     void Press(const Vec2f &p, bool push) override;

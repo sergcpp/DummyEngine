@@ -75,14 +75,14 @@ bool Gui::LinearLayout::Check(const Vec2f &p) const {
     return false;
 }
 
-void Gui::LinearLayout::Focus(const Vec2i &p) {
+void Gui::LinearLayout::Hover(const Vec2i &p) {
     for (BaseElement *el : elements_) {
-        el->Focus(p);
+        el->Hover(p);
     }
 }
-void Gui::LinearLayout::Focus(const Vec2f &p) {
+void Gui::LinearLayout::Hover(const Vec2f &p) {
     for (BaseElement *el : elements_) {
-        el->Focus(p);
+        el->Hover(p);
     }
 }
 
