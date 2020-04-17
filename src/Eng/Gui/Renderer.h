@@ -41,19 +41,15 @@ struct vertex_t {
 };
 static_assert(sizeof(vertex_t) == 24, "!");
 
-force_inline uint8_t f32_to_u8(float value) {
-    return uint8_t(value * 255);
-}
+force_inline uint8_t f32_to_u8(float value) { return uint8_t(value * 255); }
 
-force_inline uint16_t f32_to_u16(float value) {
-    return uint16_t(value * 65535);
-}
+force_inline uint16_t f32_to_u16(float value) { return uint16_t(value * 65535); }
 
 extern const uint8_t ColorWhite[4];
 extern const uint8_t ColorCyan[4];
 
 class Renderer {
-public:
+  public:
     Renderer(Ren::Context &ctx, const JsObject &config);
     ~Renderer();
 
@@ -80,12 +76,18 @@ public:
     void PopClipArea();
     const Vec2f *GetClipArea() const;
 
-    // Returns pointers to mapped vertex buffer. Do NOT read from it, it is write-combined memory and will result in terrible latency!
-    int AcquireVertexData(vertex_t **vertex_data, int *vertex_avail, uint16_t **index_data, int *index_avail);
+    // Returns pointers to mapped vertex buffer. Do NOT read from it, it is write-combined
+    // memory and will result in terrible latency!
+    int AcquireVertexData(vertex_t **vertex_data, int *vertex_avail,
+                          uint16_t **index_data, int *index_avail);
     void SubmitVertexData(int vertex_count, int index_count, bool force_new_buffer);
 
-    void DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2f pos[2], const Vec2f uvs_px[2]);
-    void DrawLine(eDrawMode draw_mode, int tex_layer, const Vec2f pos[2], const Vec2f &thickness, const Vec2f uvs_px[2]);
+    void DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2f pos[2],
+                       const Vec2f uvs_px[2]);
+    void DrawLine(eDrawMode draw_mode, int tex_layer, const Vec4f &p0, const Vec4f &p1,
+                  const Vec4f &thickness);
+    void DrawCurve(eDrawMode draw_mode, int tex_layer, const Vec4f &p0, const Vec4f &p1,
+                   const Vec4f &p2, const Vec4f &p3, const Vec4f &thickness);
 
   private:
     static const int FrameSyncWindow = 2;
@@ -114,5 +116,4 @@ public:
 
     void DrawCurrentBuffer();
 };
-}
-
+} // namespace Gui

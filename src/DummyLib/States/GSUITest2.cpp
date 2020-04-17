@@ -373,7 +373,7 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEvent::EvP1Move: {
         Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{ (int)evt.point.x, (int)evt.point.y }, Ren::Vec2i{ ctx_->w(), ctx_->h() });
-        //text_printer_->Focus(p);
+        //text_printer_->Hover(p);
     } break;
     case RawInputEvent::EvP2Move: {
 

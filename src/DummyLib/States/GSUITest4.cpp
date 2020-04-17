@@ -383,9 +383,9 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
                                   Ren::Vec2i{ctx_->w(), ctx_->h()});
         if (dial_edit_mode_ == 0) {
-            seq_edit_ui_->Focus(p);
+            seq_edit_ui_->Hover(p);
         } else if (dial_edit_mode_ == 1) {
-            dialog_edit_ui_->Focus(p);
+            dialog_edit_ui_->Hover(p);
         }
     } break;
     case RawInputEvent::EvP2Move: {

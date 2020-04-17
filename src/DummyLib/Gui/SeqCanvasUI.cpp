@@ -161,7 +161,7 @@ void SeqCanvasUI::Press(const Ren::Vec2f &p, bool push) {
     }
 }
 
-void SeqCanvasUI::Focus(const Ren::Vec2f &p) {
+void SeqCanvasUI::Hover(const Ren::Vec2f &p) {
     using namespace SeqCanvasUIInternal;
 
     if (selected_index_ != Ren::Vec2i{-1, -1}) {
