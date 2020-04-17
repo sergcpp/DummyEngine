@@ -40,7 +40,7 @@ class SeqCanvasUI : public Gui::BaseElement {
     using BaseElement::Resize;
 
     void Press(const Ren::Vec2f &p, bool push) override;
-    void Focus(const Ren::Vec2f &p) override;
+    void Hover(const Ren::Vec2f &p) override;
 
     void OnCurTimeChange(float time_cur, float time_range_beg, float time_range_end);
 };

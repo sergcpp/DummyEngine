@@ -412,7 +412,7 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEvent::EvP1Move: {
         Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{ (int)evt.point.x, (int)evt.point.y }, Ren::Vec2i{ ctx_->w(), ctx_->h() });
-        paged_reader_->Focus(p);
+        paged_reader_->Hover(p);
 
         hit_point_screen_.destroy();
     } break;

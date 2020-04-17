@@ -43,7 +43,7 @@ class TimelineUI : public Gui::BaseElement {
     using BaseElement::Resize;
 
     void Press(const Ren::Vec2f &p, bool push) override;
-    void Focus(const Ren::Vec2f &p) override;
+    void Hover(const Ren::Vec2f &p) override;
 
     void PressRMB(const Ren::Vec2f &p, bool push);
 

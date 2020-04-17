@@ -22,12 +22,15 @@ class DialogEditUI : public Gui::BaseElement {
     int selected_element_ = -1;
 
     Ren::Vec2f SnapToPixels(const Ren::Vec2f &p) const;
-    void DrawLineLocal(Gui::Renderer *r, const Ren::Vec2f line[2],
+    void DrawLineLocal(Gui::Renderer *r, const Ren::Vec2f &p0, const Ren::Vec2f &p1,
                        const Ren::Vec2f &line_width) const;
+    void DrawCurveLocal(Gui::Renderer *r, const Ren::Vec2f &p0, const Ren::Vec2f &p1,
+                        const Ren::Vec2f &p2, const Ren::Vec2f &p3,
+                        const Ren::Vec2f &line_width) const;
 
     void IterateElements(
         std::function<bool(const ScriptedSequence *seq, const ScriptedSequence *parent,
-                           int depth, int ndx, int parent_ndx)>
+                           int depth, int ndx, int parent_ndx, int choice_ndx)>
             callback);
 
   public:
@@ -42,7 +45,7 @@ class DialogEditUI : public Gui::BaseElement {
     using BaseElement::Resize;
 
     void Press(const Ren::Vec2f &p, bool push) override;
-    void Focus(const Ren::Vec2f &p) override;
+    void Hover(const Ren::Vec2f &p) override;
 
     void PressRMB(const Ren::Vec2f &p, bool push);
 
