@@ -172,7 +172,7 @@ void TimelineUI::Press(const Ren::Vec2f &p, bool push) {
     }
 }
 
-void TimelineUI::Focus(const Ren::Vec2f &p) {
+void TimelineUI::Hover(const Ren::Vec2f &p) {
     if (grabbed_ /*&& Check(p)*/) {
         SetCurTimeFromPoint(p[0]);
     } else if (grabbed_rmb_) {

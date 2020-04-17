@@ -41,9 +41,9 @@ void SeqEditUI::Press(const Ren::Vec2f &p, bool push) {
     canvas_.Press(p, push);
 }
 
-void SeqEditUI::Focus(const Ren::Vec2f &p) {
-    timeline_.Focus(p);
-    canvas_.Focus(p);
+void SeqEditUI::Hover(const Ren::Vec2f &p) {
+    timeline_.Hover(p);
+    canvas_.Hover(p);
 }
 
 void SeqEditUI::PressRMB(const Ren::Vec2f &p, bool push) { timeline_.PressRMB(p, push); }

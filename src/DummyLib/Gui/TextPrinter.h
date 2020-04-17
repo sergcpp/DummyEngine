@@ -54,8 +54,8 @@ public:
 
     void Draw(Gui::Renderer *r) override;
 
-    //void Focus(const Gui::Vec2i &p) override;
-    void Focus(const Gui::Vec2f &p) override;
+    //void Hover(const Gui::Vec2i &p) override;
+    void Hover(const Gui::Vec2f &p) override;
 
     //void Press(const Vec2i &/*p*/, bool /*push*/) override;
     void Press(const Gui::Vec2f &p, bool push) override;

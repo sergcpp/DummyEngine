@@ -173,8 +173,8 @@ void TextPrinter::Draw(Gui::Renderer *r) {
     DrawTextBuffer(r);
 }
 
-void TextPrinter::Focus(const Gui::Vec2f &p) {
-    BaseElement::Focus(p);
+void TextPrinter::Hover(const Gui::Vec2f &p) {
+    BaseElement::Hover(p);
 
     for (OptionData &opt : text_options_[data_pos_]) {
         opt.is_hover = false;
