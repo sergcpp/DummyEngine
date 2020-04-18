@@ -19,7 +19,7 @@ class CaptionsUI : public Gui::BaseElement {
     int captions_count_ = 0;
 
   public:
-    CaptionsUI(Ren::Vec2f &pos, Ren::Vec2f &size, Gui::BaseElement *parent,
+    CaptionsUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, Gui::BaseElement *parent,
                Gui::BitmapFont &font);
 
     void Draw(Gui::Renderer *r) override;
