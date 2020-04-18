@@ -438,8 +438,9 @@ void Gui::Renderer::DrawImageQuad(const eDrawMode draw_mode, const int tex_layer
     SubmitVertexData(int(cur_vtx - vtx_data), int(cur_ndx - ndx_data), false);
 }
 
-void Gui::Renderer::DrawLine(eDrawMode draw_mode, int tex_layer, const Vec4f &p0,
-                             const Vec4f &p1, const Vec4f &thickness) {
+void Gui::Renderer::DrawLine(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
+                             const Vec4f &p0, const Vec4f &p1, const Vec2f &d0,
+                             const Vec2f &d1, const Vec4f &thickness) {
     const Vec2f uvs_scale =
         1.0f / Vec2f{(float)Ren::TextureAtlasWidth, (float)Ren::TextureAtlasHeight};
 
@@ -447,13 +448,10 @@ void Gui::Renderer::DrawLine(eDrawMode draw_mode, int tex_layer, const Vec4f &p0
 
     static const uint16_t u16_draw_mode[] = {0, 32767, 65535};
 
-    const Vec2f dir = Normalize(Vec2f{p1} - Vec2f{p0});
-    const Vec4f perp = Vec4f{thickness} * Vec4f{-dir[1], dir[0], 1.0f, 0.0f};
+    const Vec4f perp[2] = {Vec4f{thickness} * Vec4f{-d0[1], d0[0], 1.0f, 0.0f},
+                           Vec4f{thickness} * Vec4f{-d1[1], d1[0], 1.0f, 0.0f}};
 
-    Vec4f pos_uvs[8] = {p0 - perp,
-                        p1 - perp,
-                        p1 + perp,
-                        p0 + perp};
+    Vec4f pos_uvs[8] = {p0 - perp[0], p1 - perp[1], p1 + perp[1], p0 + perp[0]};
     int vertex_count = 4;
 
     for (int i = 0; i < vertex_count; i++) {
@@ -485,7 +483,7 @@ void Gui::Renderer::DrawLine(eDrawMode draw_mode, int tex_layer, const Vec4f &p0
         cur_vtx->pos[0] = pos_uvs[i][0];
         cur_vtx->pos[1] = pos_uvs[i][1];
         cur_vtx->pos[2] = 0.0f;
-        cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
+        memcpy(cur_vtx->col, color, 4);
         cur_vtx->uvs[0] = f32_to_u16(pos_uvs[i][2]);
         cur_vtx->uvs[1] = f32_to_u16(pos_uvs[i][3]);
         cur_vtx->uvs[2] = u16_tex_layer;
@@ -502,10 +500,10 @@ void Gui::Renderer::DrawLine(eDrawMode draw_mode, int tex_layer, const Vec4f &p0
     SubmitVertexData(int(cur_vtx - vtx_data), int(cur_ndx - ndx_data), false);
 }
 
-void Gui::Renderer::DrawCurve(eDrawMode draw_mode, int tex_layer, const Vec4f &p0,
-                              const Vec4f &p1, const Vec4f &p2, const Vec4f &p3,
-                              const Vec4f &thickness) {
-    const float tolerance = 0.001f;
+void Gui::Renderer::DrawCurve(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
+                              const Vec4f &p0, const Vec4f &p1, const Vec4f &p2,
+                              const Vec4f &p3, const Vec4f &thickness) {
+    const float tolerance = 0.000001f;
 
     const Vec4f p01 = 0.5f * (p0 + p1), p12 = 0.5f * (p1 + p2), p23 = 0.5f * (p2 + p3),
                 p012 = 0.5f * (p01 + p12), p123 = 0.5f * (p12 + p23),
@@ -516,10 +514,11 @@ void Gui::Renderer::DrawCurve(eDrawMode draw_mode, int tex_layer, const Vec4f &p
                 d3 = std::abs((p2[0] - p3[0]) * d[1] - (p2[1] - p3[1]) * d[0]);
 
     if ((d2 + d3) * (d2 + d3) < tolerance * (d[0] * d[0] + d[1] * d[1])) {
-        DrawLine(draw_mode, tex_layer, p0, p3, thickness);
+        DrawLine(draw_mode, tex_layer, color, p0, p3, Normalize(Vec2f{p1 - p0}),
+                 Normalize(Vec2f{p3 - p2}), thickness);
     } else {
-        DrawCurve(draw_mode, tex_layer, p0, p01, p012, p0123, thickness);
-        DrawCurve(draw_mode, tex_layer, p0123, p123, p23, p3, thickness);
+        DrawCurve(draw_mode, tex_layer, color, p0, p01, p012, p0123, thickness);
+        DrawCurve(draw_mode, tex_layer, color, p0123, p123, p23, p3, thickness);
     }
 }
 
