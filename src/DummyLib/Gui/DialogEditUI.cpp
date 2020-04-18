@@ -6,6 +6,8 @@
 namespace DialogEditUIInternal {
 const Ren::Vec2f ElementSizePx = Ren::Vec2f{96.0f, 128.0f};
 const Ren::Vec2f ElementSpacingPx = Ren::Vec2f{300.0f, 160.0f};
+
+const uint8_t ColorOrange[4] = {251, 126, 20, 255};
 } // namespace DialogEditUIInternal
 
 DialogEditUI::DialogEditUI(Ren::Context &ctx, const Gui::BitmapFont &font,
@@ -51,6 +53,8 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
         IterateElements([&](const ScriptedSequence *seq, const ScriptedSequence *parent,
                             const int depth, const int ndx, const int parent_ndx,
                             const int choice_ndx) {
+            const int elem_index = int(seq - dialog_->GetSequence(0));
+
             if (parent_ndx != -1) {
                 // draw connection curve
                 const Ren::Vec2f p0 =
@@ -61,17 +65,18 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
                 const Ren::Vec2f p3 =
                     view_offset_ + Ren::Vec2f{spacing[0] * depth,
                                               -spacing[1] * ndx + 0.5f * elem_size[1]};
-                const Ren::Vec2f p1 = p0 + Ren::Vec2f{0.05f, 0.0f};
-                const Ren::Vec2f p2 = p3 - Ren::Vec2f{0.05f, 0.0f};
+                const Ren::Vec2f p1 = p0 + Ren::Vec2f{0.1f, 0.0f};
+                const Ren::Vec2f p2 = p3 - Ren::Vec2f{0.1f, 0.0f};
 
-                DrawCurveLocal(r, p0, p1, p2, p3, 10.0f * line_width);
-                //DrawLineLocal(r, p1, p2, line_width);
+                const uint8_t *color =
+                    (elem_index == selected_element_) ? ColorOrange : Gui::ColorBlack;
+
+                DrawCurveLocal(r, p0, p1, p2, p3, line_width, color);
             }
 
             const Ren::Vec2f elem_pos = SnapToPixels(
                 view_offset_ + Ren::Vec2f{spacing[0] * depth, -spacing[1] * ndx});
 
-            const int elem_index = int(seq - dialog_->GetSequence(0));
             Gui::Image9Patch *el =
                 elem_index == selected_element_ ? &element_highlighted_ : &element_;
             const uint8_t *col =
@@ -119,8 +124,7 @@ Ren::Vec2f DialogEditUI::SnapToPixels(const Ren::Vec2f &p) const {
 }
 
 void DialogEditUI::DrawLineLocal(Gui::Renderer *r, const Ren::Vec2f &_p0,
-                                 const Ren::Vec2f &_p1,
-                                 const Ren::Vec2f &line_width) const {
+                                 const Ren::Vec2f &_p1, const Ren::Vec2f &width) const {
     const Ren::TextureRegionRef &line_tex = line_img_.tex();
     const Ren::Vec2f *_uvs = line_img_.uvs_px();
 
@@ -130,15 +134,16 @@ void DialogEditUI::DrawLineLocal(Gui::Renderer *r, const Ren::Vec2f &_p0,
     const auto p1 = Ren::Vec4f{dims_[0][0] + 0.5f * (_p1[0] + 1.0f) * dims_[1][0],
                                dims_[0][1] + 0.5f * (_p1[1] + 1.0f) * dims_[1][1],
                                _uvs[1][0] - 2.0f, _uvs[1][1] - 0.5f};
+    const auto dp = Normalize(Ren::Vec2f{p1 - p0});
 
-    r->DrawLine(Gui::eDrawMode::DrPassthrough, line_tex->pos(2), p0, p1,
-                Ren::Vec4f{line_width[0], line_width[1], 2.0f, 0.0f});
+    r->DrawLine(Gui::eDrawMode::DrPassthrough, line_tex->pos(2), Gui::ColorBlack, p0, p1,
+                dp, dp, Ren::Vec4f{width[0], width[1], 2.0f, 0.0f});
 }
 
 void DialogEditUI::DrawCurveLocal(Gui::Renderer *r, const Ren::Vec2f &_p0,
                                   const Ren::Vec2f &_p1, const Ren::Vec2f &_p2,
-                                  const Ren::Vec2f &_p3,
-                                  const Ren::Vec2f &line_width) const {
+                                  const Ren::Vec2f &_p3, const Ren::Vec2f &width,
+                                  const uint8_t color[4]) const {
     const Ren::TextureRegionRef &line_tex = line_img_.tex();
     const Ren::Vec2f *_uvs = line_img_.uvs_px();
 
@@ -150,15 +155,13 @@ void DialogEditUI::DrawCurveLocal(Gui::Renderer *r, const Ren::Vec2f &_p0,
                                _uvs[0][0] + 2.0f, _uvs[0][1] + 0.0f};
     const auto p2 = Ren::Vec4f{dims_[0][0] + 0.5f * (_p2[0] + 1.0f) * dims_[1][0],
                                dims_[0][1] + 0.5f * (_p2[1] + 1.0f) * dims_[1][1],
-                               _uvs[1][0] - 2.0f, _uvs[1][1] - 0.5f };
+                               _uvs[1][0] - 2.0f, _uvs[1][1] - 0.5f};
     const auto p3 = Ren::Vec4f{dims_[0][0] + 0.5f * (_p3[0] + 1.0f) * dims_[1][0],
                                dims_[0][1] + 0.5f * (_p3[1] + 1.0f) * dims_[1][1],
-                               _uvs[1][0] - 2.0f, _uvs[1][1] - 0.5f };
+                               _uvs[1][0] - 2.0f, _uvs[1][1] - 0.5f};
 
-    r->DrawCurve(Gui::eDrawMode::DrPassthrough, line_tex->pos(2), p0, p1, p2, p3,
-        Ren::Vec4f{ line_width[0], line_width[1], 2.0f, 0.0f });
-    //r->DrawLine(Gui::eDrawMode::DrPassthrough, line_tex->pos(2), p0, p1,
-    //            Ren::Vec4f{line_width[0], line_width[1], 2.0f, 0.0f});
+    r->DrawCurve(Gui::eDrawMode::DrPassthrough, line_tex->pos(2), color, p0, p1, p2, p3,
+                 Ren::Vec4f{width[0], width[1], 2.0f, 0.0f});
 }
 
 void DialogEditUI::IterateElements(

@@ -23,10 +23,10 @@ class DialogEditUI : public Gui::BaseElement {
 
     Ren::Vec2f SnapToPixels(const Ren::Vec2f &p) const;
     void DrawLineLocal(Gui::Renderer *r, const Ren::Vec2f &p0, const Ren::Vec2f &p1,
-                       const Ren::Vec2f &line_width) const;
+                       const Ren::Vec2f &width) const;
     void DrawCurveLocal(Gui::Renderer *r, const Ren::Vec2f &p0, const Ren::Vec2f &p1,
                         const Ren::Vec2f &p2, const Ren::Vec2f &p3,
-                        const Ren::Vec2f &line_width) const;
+                        const Ren::Vec2f &width, const uint8_t color[4]) const;
 
     void IterateElements(
         std::function<bool(const ScriptedSequence *seq, const ScriptedSequence *parent,
