@@ -46,6 +46,8 @@ force_inline uint8_t f32_to_u8(float value) { return uint8_t(value * 255); }
 force_inline uint16_t f32_to_u16(float value) { return uint16_t(value * 65535); }
 
 extern const uint8_t ColorWhite[4];
+extern const uint8_t ColorGrey[4];
+extern const uint8_t ColorBlack[4];
 extern const uint8_t ColorCyan[4];
 
 class Renderer {
@@ -82,12 +84,15 @@ class Renderer {
                           uint16_t **index_data, int *index_avail);
     void SubmitVertexData(int vertex_count, int index_count, bool force_new_buffer);
 
+    // Simple drawing functions
     void DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2f pos[2],
                        const Vec2f uvs_px[2]);
-    void DrawLine(eDrawMode draw_mode, int tex_layer, const Vec4f &p0, const Vec4f &p1,
+    void DrawLine(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
+                  const Vec4f &p0, const Vec4f &p1, const Vec2f &d0, const Vec2f &d1,
                   const Vec4f &thickness);
-    void DrawCurve(eDrawMode draw_mode, int tex_layer, const Vec4f &p0, const Vec4f &p1,
-                   const Vec4f &p2, const Vec4f &p3, const Vec4f &thickness);
+    void DrawCurve(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
+                   const Vec4f &p0, const Vec4f &p1, const Vec4f &p2, const Vec4f &p3,
+                   const Vec4f &thickness);
 
   private:
     static const int FrameSyncWindow = 2;
