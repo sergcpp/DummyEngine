@@ -41,6 +41,20 @@
 				}
 			]
 		},
+        {
+			"name" : "sophia_test0",
+			"type" : "actor",
+			"target" : "sophia",
+			"actions" : [
+				{
+					"time_beg" : 0.0,
+					"time_end" : 12.0,
+					"type" : "play",
+                    "anim" : "sophia_idle.anim",
+                    "caption" : "I'm standing"
+				}
+			]
+		},
 		{
 			"name" : "camera_track",
 			"type" : "camera",
@@ -55,7 +69,7 @@
 		}
 	],
     "ending" : {
-        "time_point" : 10.0,
+        "time_point" : 12.0,
         "choices" : [
             {
                 "key" : "ch1",

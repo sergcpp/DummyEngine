@@ -23,7 +23,7 @@ class SeqEditUI : public Gui::BaseElement {
     bool timeline_grabbed() const { return timeline_.grabbed(); }
 
     float GetTime() const { return timeline_.time_cur(); }
-    void SetTime(float time_s) { timeline_.set_time_cur(time_s); }
+    void SetTime(const float time_s) { timeline_.set_time_cur(time_s); }
 
     void Draw(Gui::Renderer *r) override;
 

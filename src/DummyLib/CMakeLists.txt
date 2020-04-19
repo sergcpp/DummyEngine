@@ -30,6 +30,8 @@ set(STATES_SOURCES  States/GSCreate.h
                     States/GSBaseState.cpp
                     States/GSDrawTest.h
                     States/GSDrawTest.cpp
+                    States/GSPlayTest.h
+                    States/GSPlayTest.cpp
                     States/GSUITest.h
                     States/GSUITest.cpp
                     States/GSUITest2.h
@@ -40,7 +42,9 @@ set(STATES_SOURCES  States/GSCreate.h
                     States/GSUITest4.cpp
                     )
 
-set(UTILS_SOURCES   Utils/Dictionary.h
+set(UTILS_SOURCES   Utils/DialogController.h
+                    Utils/DialogController.cpp
+                    Utils/Dictionary.h
                     Utils/Dictionary.cpp)
 
 

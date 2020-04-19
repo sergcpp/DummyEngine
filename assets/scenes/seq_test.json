@@ -77,6 +77,18 @@
             "anim_state" : {}
         },
         {
+            "name" : "sophia",
+            "transform" : {
+                "pos" : [ -6.5, 0.25, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "sophia.mesh",
+                "anims" : [
+                ]
+            },
+            "anim_state" : {}
+        },
+        {
             "transform" : {
                 "pos" : [ 0.0, 2.0, 0.0 ]
             },

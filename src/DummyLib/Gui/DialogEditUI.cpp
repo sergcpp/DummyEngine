@@ -72,6 +72,17 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
                     (elem_index == selected_element_) ? ColorOrange : Gui::ColorBlack;
 
                 DrawCurveLocal(r, p0, p1, p2, p3, line_width, color);
+
+                // draw choice id
+                const SeqChoice *choice = parent->GetChoice(choice_ndx);
+                assert(choice);
+
+                const float width = font_.GetWidth(choice->key.c_str(), -1, this);
+
+                font_.DrawText(
+                    r, choice->key.c_str(),
+                    p0 + Ren::Vec2f{-width - elem_border[0], 0.0f},
+                    Gui::ColorBlack, this);
             }
 
             const Ren::Vec2f elem_pos = SnapToPixels(
@@ -222,6 +233,10 @@ void DialogEditUI::Press(const Ren::Vec2f &p, bool push) {
             if (element_.Check(p)) {
                 selected_element_ = int(seq - dialog_->GetSequence(0));
                 set_cur_sequence_signal.FireN(selected_element_);
+                if (Sys::GetTimeMs() - selected_timestamp_ < 300) {
+                    edit_cur_seq_signal.FireN(selected_element_);
+                }
+                selected_timestamp_ = Sys::GetTimeMs();
                 return false;
             }
             return true;
@@ -247,4 +262,8 @@ void DialogEditUI::PressRMB(const Ren::Vec2f &p, bool push) {
     if (!push) {
         grabbed_rmb_ = false;
     }
+}
+
+void DialogEditUI::OnSwitchSequence(int id) {
+    selected_element_ = id;
 }
