@@ -23,3 +23,8 @@ uint64_t Sys::GetTimeNs() {
     auto tt = std::chrono::duration_cast<std::chrono::nanoseconds>(t);
     return (uint64_t)tt.count();
 }
+
+double Sys::GetTimeS() {
+    std::chrono::duration<double> t = (std::chrono::steady_clock::now() - init_time);
+    return (double)t.count();
+}

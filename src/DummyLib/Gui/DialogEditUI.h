@@ -20,6 +20,7 @@ class DialogEditUI : public Gui::BaseElement {
     ScriptedDialog *dialog_ = nullptr;
 
     int selected_element_ = -1;
+    uint32_t selected_timestamp_ = 0;
 
     Ren::Vec2f SnapToPixels(const Ren::Vec2f &p) const;
     void DrawLineLocal(Gui::Renderer *r, const Ren::Vec2f &p0, const Ren::Vec2f &p1,
@@ -49,5 +50,8 @@ class DialogEditUI : public Gui::BaseElement {
 
     void PressRMB(const Ren::Vec2f &p, bool push);
 
+    void OnSwitchSequence(int id);
+
     Sys::Signal<void(int id)> set_cur_sequence_signal;
+    Sys::Signal<void(int id)> edit_cur_seq_signal;
 };

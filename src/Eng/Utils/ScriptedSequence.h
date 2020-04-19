@@ -108,6 +108,13 @@ class ScriptedSequence {
         return nullptr;
     }
 
+    const SeqChoice *GetChoice(int i) const {
+        if (i < choices_count_) {
+            return &choices_[i];
+        }
+        return nullptr;
+    }
+
     SeqChoice *GetChoice(const char *key) {
         for (int i = 0; i < choices_count_; i++) {
             if (choices_[i].key == key) {

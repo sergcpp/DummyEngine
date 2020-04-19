@@ -4,13 +4,13 @@
 #include <memory>
 
 #include <Eng/GameStateManager.h>
-#include <Eng/Renderer/Renderer.h>
-#include <Eng/Scene/SceneManager.h>
-#include <Eng/Utils/Cmdline.h>
 #include <Eng/Gui/Image.h>
 #include <Eng/Gui/Image9Patch.h>
 #include <Eng/Gui/Renderer.h>
 #include <Eng/Gui/Utils.h>
+#include <Eng/Renderer/Renderer.h>
+#include <Eng/Scene/SceneManager.h>
+#include <Eng/Utils/Cmdline.h>
 #include <Ren/Context.h>
 #include <Ren/GL.h>
 #include <Ren/Utils.h>
@@ -29,13 +29,18 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-    "corridor.json";
-}
+                          "corridor.json";
+} // namespace GSUITestInternal
 
 GSUITest::GSUITest(GameBase *game) : GSBaseState(game) {
-    const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
+    const std::shared_ptr<FontStorage> fonts =
+        game->GetComponent<FontStorage>(UI_FONTS_KEY);
     dialog_font_ = fonts->FindFont("dialog_font");
     dialog_font_->set_scale(1.5f);
+
+    text_printer_.reset(new TextPrinter{*ctx_, Ren::Vec2f{-0.995f, -0.995f},
+                                        Ren::Vec2f{1.99f, 1.1f}, ui_root_.get(),
+                                        dialog_font_});
 }
 
 void GSUITest::Enter() {
@@ -46,18 +51,6 @@ void GSUITest::Enter() {
     log_->Info("GSUITest: Loading scene!");
     GSBaseState::LoadScene(SCENE_NAME);
 
-    /*test_image_.reset(new Gui::Image{
-        *ctx_, "assets_pc/textures/test_image.uncompressed.png", Ren::Vec2f{ -0.5f, -0.5f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
-    });
-
-    test_frame_.reset(new Gui::Image9Patch{
-        *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Ren::Vec2f{ 2.0f, 2.0f }, 1.0f, Ren::Vec2f{ 0.0f, 0.1f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
-    });*/
-
-    text_printer_.reset(new TextPrinter{
-        *ctx_, Ren::Vec2f{ -0.995f, -0.995f }, Ren::Vec2f{ 1.99f, 1.1f }, ui_root_.get(), dialog_font_
-    });
-
 #if defined(__ANDROID__)
     const char *dialog_name = "assets/scenes/test/test_dialog.json";
 #else
@@ -65,7 +58,7 @@ void GSUITest::Enter() {
 #endif
     JsObject js_script;
 
-    {   // Load dialog data from file
+    { // Load dialog data from file
         Sys::AssetFile in_scene(dialog_name);
         if (!in_scene) {
             log_->Error("Can not open dialog file %s", dialog_name);
@@ -92,7 +85,7 @@ void GSUITest::OnPostloadScene(JsObject &js_scene) {
 
     GSBaseState::OnPostloadScene(js_scene);
 
-    Ren::Vec3f view_origin, view_dir = Ren::Vec3f{ 0.0f, 0.0f, 1.0f };
+    Ren::Vec3f view_origin, view_dir = Ren::Vec3f{0.0f, 0.0f, 1.0f};
     float view_fov = 45.0f, max_exposure = 1000.0f;
 
     if (js_scene.Has("camera")) {
@@ -127,9 +120,8 @@ void GSUITest::OnPostloadScene(JsObject &js_scene) {
         }
     }
 
-    scene_manager_->SetupView(
-            view_origin, (view_origin + view_dir), Ren::Vec3f{ 0.0f, 1.0f, 0.0f },
-            view_fov, max_exposure);
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir),
+                              Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, max_exposure);
 
     {
         char sophia_name[] = "sophia_00";
@@ -162,14 +154,17 @@ void GSUITest::OnUpdateScene() {
 
     if (sophia_indices_[0] != 0xffffffff) {
         for (int i = 0; i < 2; i++) {
-            if (sophia_indices_[i] == 0xffffffff) break;
+            if (sophia_indices_[i] == 0xffffffff)
+                break;
 
             SceneObject *sophia = scene_manager_->GetObject(sophia_indices_[i]);
 
             uint32_t mask = CompDrawableBit | CompAnimStateBit;
             if ((sophia->comp_mask & mask) == mask) {
-                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(sophia->components[CompDrawable]);
-                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(sophia->components[CompAnimState]);
+                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(
+                    sophia->components[CompDrawable]);
+                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(
+                    sophia->components[CompAnimState]);
 
                 as->anim_time_s += delta_time_s;
 
@@ -186,9 +181,7 @@ void GSUITest::OnUpdateScene() {
     }
 }
 
-void GSUITest::Exit() {
-    GSBaseState::Exit();
-}
+void GSUITest::Exit() { GSBaseState::Exit(); }
 
 void GSUITest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     using namespace GSUITestInternal;
@@ -198,9 +191,6 @@ void GSUITest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     dialog_font_->set_scale(std::max(root->size_px()[0] / 1024.0f, 1.0f));
 
     text_printer_->Draw(r);
-
-    //test_image_->Draw(r);
-    //test_frame_->Draw(r);
 }
 
 bool GSUITest::HandleInput(const InputManager::Event &evt) {
@@ -209,7 +199,8 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
-        if (evt.point.x > (float)ctx_->w() * 0.9f && evt.point.y < (float)ctx_->h() * 0.1f) {
+        if (evt.point.x > (float)ctx_->w() * 0.9f &&
+            evt.point.y < (float)ctx_->h() * 0.1f) {
             uint32_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -229,23 +220,29 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
 
     switch (evt.type) {
     case RawInputEvent::EvP1Down: {
-        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{ (int)evt.point.x, (int)evt.point.y }, Ren::Vec2i{ ctx_->w(), ctx_->h() });
+        Ren::Vec2f p =
+            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
         text_printer_->Press(p, true);
     } break;
     case RawInputEvent::EvP2Down: {
-        
+
     } break;
     case RawInputEvent::EvP1Up: {
         text_printer_->skip();
 
-        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{ (int)evt.point.x, (int)evt.point.y }, Ren::Vec2i{ ctx_->w(), ctx_->h() });
+        Ren::Vec2f p =
+            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
         text_printer_->Press(p, false);
     } break;
     case RawInputEvent::EvP2Up: {
 
     } break;
     case RawInputEvent::EvP1Move: {
-        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{ (int)evt.point.x, (int)evt.point.y }, Ren::Vec2i{ ctx_->w(), ctx_->h() });
+        Ren::Vec2f p =
+            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
         text_printer_->Hover(p);
     } break;
     case RawInputEvent::EvP2Move: {
