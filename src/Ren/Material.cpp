@@ -29,13 +29,13 @@ Ren::Material &Ren::Material::operator=(Material &&rhs) noexcept {
     ready_ = rhs.ready_;
     name_ = std::move(rhs.name_);
     for (int i = 0; i < MaxMaterialProgramCount; i++) {
-        programs_[i] = std::move(rhs.programs_[i]);
+        programs[i] = std::move(rhs.programs[i]);
     }
     for (int i = 0; i < MaxMaterialTextureCount; i++) {
-        textures_[i] = std::move(rhs.textures_[i]);
+        textures[i] = std::move(rhs.textures[i]);
     }
     for (int i = 0; i < MaxMaterialParamCount; i++) {
-        params_[i] = rhs.params_[i];
+        params[i] = rhs.params[i];
     }
     RefCounter::operator=(std::move(rhs));
     return *this;
@@ -46,13 +46,13 @@ void Ren::Material::Init(uint32_t flags, ProgramRef programs[], Texture2DRef tex
     flags_ = flags;
     ready_ = true;
     for (int i = 0; i < MaxMaterialProgramCount; i++) {
-        programs_[i] = programs[i];
+        this->programs[i] = programs[i];
     }
     for (int i = 0; i < MaxMaterialTextureCount; i++) {
-        textures_[i] = textures[i];
+        this->textures[i] = textures[i];
     }
     for (int i = 0; i < MaxMaterialParamCount; i++) {
-        params_[i] = params[i];
+        this->params[i] = params[i];
     }
 }
 
@@ -98,7 +98,7 @@ void Ren::Material::InitFromTXT(
             q = strpbrk(p, delims);
             std::string f_shader_name = std::string(p, q);
 
-            programs_[num_programs] = on_prog_load(program_name.c_str(), v_shader_name.c_str(), f_shader_name.c_str());
+            programs[num_programs] = on_prog_load(program_name.c_str(), v_shader_name.c_str(), f_shader_name.c_str());
             num_programs++;
 #endif
         } else if (item == "sw_program:") {
@@ -154,10 +154,10 @@ void Ren::Material::InitFromTXT(
                 _p = _q + 1;
             }
 
-            textures_[num_textures] = on_tex_load(texture_name.c_str(), texture_flags);
+            textures[num_textures] = on_tex_load(texture_name.c_str(), texture_flags);
             num_textures++;
         } else if (item == "param:") {
-            Vec4f &par = params_[num_params++];
+            Vec4f &par = params[num_params++];
             p = q + 1;
             q = strpbrk(p, delims);
             par[0] = (float)atof(p);

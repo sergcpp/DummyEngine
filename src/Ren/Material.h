@@ -32,15 +32,15 @@ typedef std::function<ProgramRef(const char *name, const char *arg1, const char 
 class Material : public RefCounter {
     uint32_t        flags_ = 0;
     bool            ready_ = false;
-    ProgramRef      programs_[MaxMaterialProgramCount];
-    Texture2DRef    textures_[MaxMaterialTextureCount];
-    Vec4f           params_[MaxMaterialParamCount];
-
     String          name_;
 
     void InitFromTXT(const char *mat_src, eMatLoadStatus *status, const program_load_callback &on_prog_load,
                      const texture_load_callback &on_tex_load, ILog *log);
 public:
+    ProgramRef      programs[MaxMaterialProgramCount];
+    Texture2DRef    textures[MaxMaterialTextureCount];
+    Vec4f           params[MaxMaterialParamCount];
+
     Material() = default;
     Material(
         const char *name, const char *mat_src, eMatLoadStatus *status,
@@ -63,15 +63,6 @@ public:
     }
     const String &name() const {
         return name_;
-    }
-    const ProgramRef &program(int i) const {
-        return programs_[i];
-    }
-    const Texture2DRef &texture(int i) const {
-        return textures_[i];
-    }
-    const Vec4f &param(int i) const {
-        return params_[i];
     }
 
     void Init(uint32_t flags, ProgramRef programs[], Texture2DRef textures[], const Vec4f params[], ILog *log);
