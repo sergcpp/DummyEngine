@@ -15,7 +15,7 @@ namespace UIRendererConstants {
 #define _AS_STR(x) #x
 #define AS_STR(x) _AS_STR(x)
 
-const char vs_source2[] =
+const char vs_source[] =
     R"(#version 310 es
 
 layout(location = )" AS_STR(VTX_POS_LOC) R"() in vec3 aVertexPosition;
@@ -34,7 +34,7 @@ void main(void) {
 }
 )";
 
-const char fs_source2[] =
+const char fs_source[] =
     R"(#version 310 es
 #ifdef GL_ES
 	precision mediump float;
@@ -103,7 +103,7 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config) : ctx_(ctx) {
     { // Load main shader
         Ren::eProgLoadStatus status;
         ui_program_ =
-            ctx_.LoadProgramGLSL(UI_PROGRAM2_NAME, vs_source2, fs_source2, &status);
+            ctx_.LoadProgramGLSL(UI_PROGRAM2_NAME, vs_source, fs_source, &status);
         assert(status == Ren::eProgLoadStatus::CreatedFromData ||
                status == Ren::eProgLoadStatus::Found);
     }
