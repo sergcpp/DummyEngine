@@ -34,12 +34,12 @@ void GSUITest3::InitBookMaterials() {
 
         Ren::ProgramRef programs[Ren::MaxMaterialProgramCount];
         for (int i = 0; i < Ren::MaxMaterialProgramCount; i++) {
-            programs[i] = orig_page_mat_->program(i);
+            programs[i] = orig_page_mat_->programs[i];
         }
 
         Ren::Texture2DRef textures[Ren::MaxMaterialTextureCount];
         for (int i = 0; i < Ren::MaxMaterialTextureCount; i++) {
-            textures[i] = orig_page_mat_->texture(i);
+            textures[i] = orig_page_mat_->textures[i];
         }
 
         // replace texture
@@ -47,7 +47,7 @@ void GSUITest3::InitBookMaterials() {
 
         Ren::Vec4f params[Ren::MaxMaterialParamCount];
         for (int i = 0; i < Ren::MaxMaterialParamCount; i++) {
-            params[i] = orig_page_mat_->param(i);
+            params[i] = orig_page_mat_->params[i];
         }
 
         page_mat_ = ctx_->materials().Add("__book_page_material__", orig_page_mat_->flags(), programs, textures, params, log_.get());

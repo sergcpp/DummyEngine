@@ -32,7 +32,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
 
     Mesh *m		    = ref.get();
     Material *mat   = m->group(0).mat.get();
-    ProgramRef p    = mat->program(0);
+    ProgramRef p    = mat->programs[0];
 
     glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
@@ -70,9 +70,9 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
         if (view_mode_ == eViewMode::DiagUVs1 || view_mode_ == eViewMode::DiagUVs2) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
         } else {
-            BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
+            BindTexture(DIFFUSEMAP_SLOT, mat->textures[0]->tex_id());
         }
-        BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
+        BindTexture(NORMALMAP_SLOT, mat->textures[1]->tex_id());
 
         glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset));
         ++s;
@@ -86,7 +86,7 @@ void ModlApp::DrawMeshColored(Ren::MeshRef& ref) {
 
     Mesh *m = ref.get();
     Material *mat = m->group(0).mat.get();
-    ProgramRef p = mat->program(0);
+    ProgramRef p = mat->programs[0];
 
     glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
@@ -125,9 +125,9 @@ void ModlApp::DrawMeshColored(Ren::MeshRef& ref) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
         } else if (view_mode_ == eViewMode::DiagVtxColor) {
         } else {
-            BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
+            BindTexture(DIFFUSEMAP_SLOT, mat->textures[0]->tex_id());
         }
-        BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
+        BindTexture(NORMALMAP_SLOT, mat->textures[1]->tex_id());
 
         glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void*)uintptr_t(s->offset));
         ++s;
@@ -257,9 +257,9 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
         if (view_mode_ == eViewMode::DiagUVs1 || view_mode_ == eViewMode::DiagUVs2) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
         } else {
-            BindTexture(DIFFUSEMAP_SLOT, mat->texture(0)->tex_id());
+            BindTexture(DIFFUSEMAP_SLOT, mat->textures[0]->tex_id());
         }
-        BindTexture(NORMALMAP_SLOT, mat->texture(1)->tex_id());
+        BindTexture(NORMALMAP_SLOT, mat->textures[1]->tex_id());
 
         glDrawElementsBaseVertex(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset), (GLint)0);
         ++s;
