@@ -48,6 +48,7 @@ force_inline uint16_t f32_to_u16(float value) { return uint16_t(value * 65535); 
 extern const uint8_t ColorWhite[4];
 extern const uint8_t ColorGrey[4];
 extern const uint8_t ColorBlack[4];
+extern const uint8_t ColorRed[4];
 extern const uint8_t ColorCyan[4];
 
 class Renderer {
