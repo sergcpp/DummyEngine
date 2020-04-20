@@ -1664,7 +1664,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
                 if (batch.mat_id != cur_mat_id) {
                     const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, mat->texture(0)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, mat->textures[0]->tex_id());
                     cur_mat_id = batch.mat_id;
                 }
 
@@ -1708,7 +1708,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
                 if (batch.mat_id != cur_mat_id) {
                     const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, mat->texture(0)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, mat->textures[0]->tex_id());
                     cur_mat_id = batch.mat_id;
                 }
 
@@ -1869,7 +1869,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             if (batch.mat_id != cur_mat_id) {
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT, mat->texture(0)->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT, mat->textures[0]->tex_id());
                 cur_mat_id = batch.mat_id;
             }
 
@@ -1931,7 +1931,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             if (batch.mat_id != cur_mat_id) {
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT, mat->texture(0)->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT, mat->textures[0]->tex_id());
                 cur_mat_id = batch.mat_id;
             }
 
@@ -2114,9 +2114,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             }
 
             if (cur_mat != mat) {
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT, mat->textures[0]->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT, mat->textures[1]->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT, mat->textures[2]->tex_id());
                 cur_mat = mat;
             }
 
@@ -2358,9 +2358,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             }
 
             if (cur_mat != mat) {
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT, mat->textures[0]->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT, mat->textures[1]->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT, mat->textures[2]->tex_id());
                 cur_mat = mat;
             }
 

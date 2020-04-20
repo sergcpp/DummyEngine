@@ -531,7 +531,7 @@ void SceneManager::InitScene_PT(bool _override) {
                         //    tex_ref = mat->texture(0);
                         //} else {
                             mat_desc.type = Ray::DiffuseMaterial;
-                            tex_ref = mat->texture(0);
+                            tex_ref = mat->textures[0];
                         //}
 
                         if (tex_ref) {

@@ -404,7 +404,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             
                             MainDrawBatch &main_batch = list.main_batches.data[list.main_batches.count++];
 
-                            main_batch.prog_id = (uint32_t)mat->program(program_index).index();
+                            main_batch.prog_id = (uint32_t)mat->programs[program_index].index();
                             main_batch.alpha_test_bit = (mat_flags & Ren::AlphaTest) ? 1 : 0;
                             main_batch.alpha_blend_bit = (mat_flags & Ren::AlphaBlend) ? 1 : 0;
                             main_batch.mat_id = (uint32_t)grp->mat.index();

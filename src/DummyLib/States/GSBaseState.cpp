@@ -579,6 +579,8 @@ void GSBaseState::Draw(uint64_t dt_us) {
         cmdline_input_.clear();
     }
 
+    scene_manager_->Serve();
+
     {
         int back_list;
 
