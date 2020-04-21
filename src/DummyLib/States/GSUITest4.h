@@ -25,9 +25,9 @@ class SceneManager;
 class ScriptedDialog;
 class ScriptedSequence;
 class SeqEditUI;
-class TextPrinter;
+class WordPuzzleUI;
 
-class GSUITest4 : public GSBaseState {
+class GSUITest4 final : public GSBaseState {
     uint64_t last_frame_time_ = 0;
     double cur_fps_ = 0.0;
 
@@ -41,6 +41,7 @@ class GSUITest4 : public GSBaseState {
 
     std::unique_ptr<ScriptedDialog> test_dialog_;
     std::unique_ptr<DialogUI> dialog_ui_;
+    std::unique_ptr<WordPuzzleUI> word_puzzle_;
 
     int dial_edit_mode_ = 0;
     std::unique_ptr<SeqEditUI> seq_edit_ui_;
@@ -57,6 +58,7 @@ class GSUITest4 : public GSBaseState {
     bool SaveSequence(const char *seq_name);
 
     void OnEditSequence(int id);
+    void OnStartPuzzle(const char *puzzle_name);
 
   public:
     explicit GSUITest4(GameBase *game);

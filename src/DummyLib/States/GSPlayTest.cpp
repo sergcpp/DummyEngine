@@ -28,7 +28,7 @@
 #include "../Gui/DialogUI.h"
 #include "../Gui/FontStorage.h"
 #include "../Gui/SeqEditUI.h"
-#include "../Gui/TextPrinter.h"
+#include "../Gui/WordPuzzleUI.h"
 #include "../Utils/Dictionary.h"
 #include "../Viewer.h"
 

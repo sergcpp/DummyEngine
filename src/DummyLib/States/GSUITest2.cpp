@@ -21,7 +21,6 @@
 #include <Sys/Time_.h>
 
 #include "../Gui/FontStorage.h"
-#include "../Gui/TextPrinter.h"
 #include "../Utils/Dictionary.h"
 #include "../Viewer.h"
 

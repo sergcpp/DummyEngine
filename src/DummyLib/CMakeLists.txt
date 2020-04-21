@@ -19,10 +19,10 @@ set(GUI_SOURCES Gui/CaptionsUI.h
                 Gui/SeqCanvasUI.cpp
 				Gui/SeqEditUI.h
 				Gui/SeqEditUI.cpp
-                Gui/TextPrinter.h
-                Gui/TextPrinter.cpp
                 Gui/TimelineUI.h
-                Gui/TimelineUI.cpp)
+                Gui/TimelineUI.cpp
+                Gui/WordPuzzleUI.h
+                Gui/WordPuzzleUI.cpp)
 
 set(STATES_SOURCES  States/GSCreate.h
                     States/GSCreate.cpp

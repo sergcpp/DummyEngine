@@ -6,20 +6,14 @@
 #include <Ren/HashMap32.h>
 #include <Ren/Log.h>
 
-enum class eGramGrpPos {
-    Noun, Verb, Adjective
-};
+enum class eGramGrpPos { Noun, Verb, Adjective };
 
-enum class eGramGrpNum {
-    Singular, Plural
-};
+enum class eGramGrpNum { Singular, Plural };
 
-enum class eGramGrpGen {
-    Masculine, Feminine, Neutral
-};
+enum class eGramGrpGen { Masculine, Feminine, Neutral };
 
 class Dictionary {
-public:
+  public:
     bool Load(std::istream &in_data, Ren::ILog *log);
 
     struct dict_entry_res_t {
@@ -68,9 +62,10 @@ public:
         uint32_t keys_count, entries_count;
     };
     static_assert(sizeof(dict_info_t) == 12, "!");
-private:
-    dict_info_t                                     info_;
-    std::unique_ptr<dict_entry_compact_t[]>         entries_;
-    std::unique_ptr<char[]>                         comb_str_buf_;
+
+  private:
+    dict_info_t info_;
+    std::unique_ptr<dict_entry_compact_t[]> entries_;
+    std::unique_ptr<char[]> comb_str_buf_;
     Ren::HashMap32<const char *, dict_link_nokey_t> hashmap_;
 };

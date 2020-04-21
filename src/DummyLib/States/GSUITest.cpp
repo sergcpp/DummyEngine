@@ -20,7 +20,7 @@
 #include <Sys/Time_.h>
 
 #include "../Gui/FontStorage.h"
-#include "../Gui/TextPrinter.h"
+#include "../Gui/WordPuzzleUI.h"
 #include "../Viewer.h"
 
 namespace GSUITestInternal {
@@ -38,9 +38,9 @@ GSUITest::GSUITest(GameBase *game) : GSBaseState(game) {
     dialog_font_ = fonts->FindFont("dialog_font");
     dialog_font_->set_scale(1.5f);
 
-    text_printer_.reset(new TextPrinter{*ctx_, Ren::Vec2f{-0.995f, -0.995f},
+    word_puzzle_.reset(new WordPuzzleUI{*ctx_, Ren::Vec2f{-0.995f, -0.995f},
                                         Ren::Vec2f{1.99f, 1.1f}, ui_root_.get(),
-                                        dialog_font_});
+                                        *dialog_font_});
 }
 
 void GSUITest::Enter() {
@@ -49,12 +49,12 @@ void GSUITest::Enter() {
     GSBaseState::Enter();
 
     log_->Info("GSUITest: Loading scene!");
-    GSBaseState::LoadScene(SCENE_NAME);
+    //GSBaseState::LoadScene(SCENE_NAME);
 
 #if defined(__ANDROID__)
-    const char *dialog_name = "assets/scenes/test/test_dialog.json";
+    const char *dialog_name = "assets/scenes/test/test_puzzle.json";
 #else
-    const char *dialog_name = "assets_pc/scenes/test/test_dialog.json";
+    const char *dialog_name = "assets_pc/scenes/test/test_puzzle.json";
 #endif
     JsObject js_script;
 
@@ -77,7 +77,8 @@ void GSUITest::Enter() {
         }
     }
 
-    text_printer_->LoadScript(js_script);
+    word_puzzle_->Load(js_script);
+    word_puzzle_->Restart();
 }
 
 void GSUITest::OnPostloadScene(JsObject &js_scene) {
@@ -146,7 +147,7 @@ void GSUITest::OnUpdateScene() {
     const float char_period_s = 0.025f;
 
     while (test_time_counter_s > char_period_s) {
-        text_printer_->incr_progress();
+        //word_puzzle_->incr_progress();
         test_time_counter_s -= char_period_s;
     }
 
@@ -190,7 +191,7 @@ void GSUITest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
 
     dialog_font_->set_scale(std::max(root->size_px()[0] / 1024.0f, 1.0f));
 
-    text_printer_->Draw(r);
+    word_puzzle_->Draw(r);
 }
 
 bool GSUITest::HandleInput(const InputManager::Event &evt) {
@@ -223,18 +224,18 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
         Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
                                   Ren::Vec2i{ctx_->w(), ctx_->h()});
-        text_printer_->Press(p, true);
+        word_puzzle_->Press(p, true);
     } break;
     case RawInputEvent::EvP2Down: {
 
     } break;
     case RawInputEvent::EvP1Up: {
-        text_printer_->skip();
+        //word_puzzle_->skip();
 
         Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
                                   Ren::Vec2i{ctx_->w(), ctx_->h()});
-        text_printer_->Press(p, false);
+        word_puzzle_->Press(p, false);
     } break;
     case RawInputEvent::EvP2Up: {
 
@@ -243,7 +244,7 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
         Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
                                   Ren::Vec2i{ctx_->w(), ctx_->h()});
-        text_printer_->Hover(p);
+        word_puzzle_->Hover(p);
     } break;
     case RawInputEvent::EvP2Move: {
 
@@ -253,13 +254,13 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEvent::EvKeyUp: {
         if (evt.key_code == KeyUp || (evt.key_code == KeyW && !cmdline_enabled_)) {
-            text_printer_->restart();
+            //word_puzzle_->restart();
         } else {
             input_processed = false;
         }
     } break;
     case RawInputEvent::EvResize:
-        text_printer_->Resize(ui_root_.get());
+        word_puzzle_->Resize(ui_root_.get());
         break;
     default:
         break;

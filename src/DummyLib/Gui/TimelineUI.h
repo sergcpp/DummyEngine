@@ -47,5 +47,5 @@ class TimelineUI : public Gui::BaseElement {
 
     void PressRMB(const Ren::Vec2f &p, bool push);
 
-    Sys::Signal<void(float, float, float)> time_changed_signal;
+    Sys::SignalN<void(float, float, float)> time_changed_signal;
 };

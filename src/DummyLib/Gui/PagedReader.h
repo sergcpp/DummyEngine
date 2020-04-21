@@ -6,16 +6,16 @@
 #include <Ren/Fwd.h>
 
 namespace Gui {
-    class BitmapFont;
+class BitmapFont;
 }
 
 struct JsObject;
 
 class PagedReader : public Gui::BaseElement {
-    const Gui::BaseElement              *parent_;
-    Ren::ILog                           *log_;
-    std::shared_ptr<Gui::BitmapFont>    main_font_, emph_font_, caption_font_;
-    std::unique_ptr<Gui::Image9Patch>   background_small_;
+    const Gui::BaseElement *parent_;
+    Ren::ILog *log_;
+    std::shared_ptr<Gui::BitmapFont> main_font_, emph_font_, caption_font_;
+    std::unique_ptr<Gui::Image9Patch> background_small_;
 
     struct PageData {
         int start_pos, end_pos;
@@ -32,29 +32,30 @@ class PagedReader : public Gui::BaseElement {
     };
 
     struct ChapterData {
-        std::string                 caption;
-        std::string                 text_data;
-        std::vector<PageData>       pages;
-        std::vector<SentenceData>   sentences;
-        std::vector<rect_t>         sentence_rects;
+        std::string caption;
+        std::string text_data;
+        std::vector<PageData> pages;
+        std::vector<SentenceData> sentences;
+        std::vector<rect_t> sentence_rects;
     };
 
-    std::string                         title_[2];
-    std::vector<ChapterData>            chapters_[2];
+    std::string title_[2];
+    std::vector<ChapterData> chapters_[2];
 
-    int                                 cur_chapter_, cur_page_;
-    //std::string                         cur_text_data_;
+    int cur_chapter_, cur_page_;
+    // std::string                         cur_text_data_;
 
-    int                                 sentence_to_translate_ = -1;
-    Ren::Vec2f                          debug_point_;
+    int sentence_to_translate_ = -1;
+    Ren::Vec2f debug_point_;
 
     void UpdatePages();
     void DrawCurrentPage(Gui::Renderer *r) const;
-public:
-    PagedReader(
-            Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
-            std::shared_ptr<Gui::BitmapFont> main_font, std::shared_ptr<Gui::BitmapFont> emph_font,
-            std::shared_ptr<Gui::BitmapFont> caption_font);
+
+  public:
+    PagedReader(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size,
+                const BaseElement *parent, std::shared_ptr<Gui::BitmapFont> main_font,
+                std::shared_ptr<Gui::BitmapFont> emph_font,
+                std::shared_ptr<Gui::BitmapFont> caption_font);
 
     int cur_page() const { return cur_page_; }
     void set_cur_page(int page) { cur_page_ = page; }
@@ -69,7 +70,8 @@ public:
     void Resize(const BaseElement *parent) override;
 
     void Draw(Gui::Renderer *r) override;
-    void DrawHint(Gui::Renderer *r, const Ren::Vec2f &pos, const Gui::BaseElement *parent);
+    void DrawHint(Gui::Renderer *r, const Ren::Vec2f &pos,
+                  const Gui::BaseElement *parent);
 
     void Press(const Gui::Vec2f &p, bool push) override;
 };

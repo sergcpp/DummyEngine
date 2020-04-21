@@ -18,7 +18,7 @@ class Dictionary;
 class GameStateManager;
 class FontStorage;
 class SceneManager;
-class TextPrinter;
+class WordPuzzleUI;
 
 class GSUITest2 : public GSBaseState {
     uint64_t last_frame_time_ = 0;

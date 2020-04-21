@@ -293,12 +293,12 @@ void DummyApp::PollEvents() {
 
             evt.type = RawInputEvent::EvKeyUp;
             evt.key_code = key_code;
-        } else if (xev.type == ButtonPress) {
-            evt.type = RawInputEvent::EvP1Down;
-            evt.point.x = (float)xev.xbutton.x;
-            evt.point.y = (float)xev.xbutton.y;
-        } else if (xev.type == ButtonRelease) {
-            evt.type = RawInputEvent::EvP1Up;
+        } else if (xev.type == ButtonPress && (xev.xbutton.button == 1 || xev.xbutton.button == 3)) {
+            evt.type = (xev.xbutton.button == 1) ? RawInputEvent::EvP1Down : RawInputEvent::EvP2Down;
+            evt.point.x = (float) xev.xbutton.x;
+            evt.point.y = (float) xev.xbutton.y;
+        } else if (xev.type == ButtonRelease && (xev.xbutton.button == 1 || xev.xbutton.button == 3)) {
+            evt.type = (xev.xbutton.button == 1) ? RawInputEvent::EvP1Up : RawInputEvent::EvP2Up;
             evt.point.x = (float)xev.xbutton.x;
             evt.point.y = (float)xev.xbutton.y;
         } else if (xev.type == MotionNotify) {

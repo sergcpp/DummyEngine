@@ -151,7 +151,7 @@ void SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
         int res = system(compile_cmd.c_str());
         if (res != 0) {
             ctx.log->Error("[PrepareAssets] Failed to compile %s", spv_file.c_str());
-#ifndef NDEBUG
+#if !defined(NDEBUG) && defined(_WIN32)
             __debugbreak();
 #endif
         }
@@ -203,7 +203,7 @@ void SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
         res = system(optimize_cmd.c_str());
         if (res != 0) {
             ctx.log->Error("[PrepareAssets] Failed to optimize %s", spv_file.c_str());
-#ifndef NDEBUG
+#if !defined(NDEBUG) && defined(_WIN32)
             __debugbreak();
 #endif
         }
@@ -226,7 +226,7 @@ void SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
         res = system(cross_cmd.c_str());
         if (res != 0) {
             ctx.log->Error("[PrepareAssets] Failed to cross-compile %s", spv_file.c_str());
-#ifndef NDEBUG
+#if !defined(NDEBUG) && defined(_WIN32)
             __debugbreak();
 #endif
         }

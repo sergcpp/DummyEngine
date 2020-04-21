@@ -10,5 +10,5 @@
 #include "PagedReader.cpp"
 #include "SeqCanvasUI.cpp"
 #include "SeqEditUI.cpp"
-#include "TextPrinter.cpp"
 #include "TimelineUI.cpp"
+#include "WordPuzzleUI.cpp"
