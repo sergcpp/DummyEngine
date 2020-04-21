@@ -1,8 +1,8 @@
 #include "DialogUI.h"
 
 DialogUI::DialogUI(const Gui::Vec2f &pos, const Gui::Vec2f &size,
-                   const BaseElement *parent, Gui::BitmapFont &font)
-    : Gui::BaseElement(pos, size, parent), font_(font) {}
+                   const BaseElement *parent, Gui::BitmapFont &font, bool debug)
+    : Gui::BaseElement(pos, size, parent), font_(font), debug_(debug) {}
 
 void DialogUI::Draw(Gui::Renderer *r) {
     IterateChoices([&](int i, const Ren::Vec2f &pos, const Ren::Vec2f &size) {
@@ -10,7 +10,13 @@ void DialogUI::Draw(Gui::Renderer *r) {
         if (i == clicked_choice_) {
             col = Gui::ColorRed;
         }
-        font_.DrawText(r, choices_[i].text, pos, col, this);
+        if (!debug_) {
+            font_.DrawText(r, choices_[i].text, pos, col, this);
+        } else {
+            char buf[256];
+            sprintf(buf, "%s [%s]", choices_[i].text, choices_[i].key);
+            font_.DrawText(r, buf, pos, col, this);
+        }
         return true;
     });
 }
@@ -66,10 +72,6 @@ void DialogUI::IterateChoices(
         }
         y_coord -= font_height;
     }
-}
-
-Ren::Vec2f DialogUI::ToLocal(const Ren::Vec2f &p) {
-    return 2.0f * (p - dims_[0]) / dims_[1] - Ren::Vec2f{1.0f, 1.0f};
 }
 
 void DialogUI::OnPushChoice(const char *key, const char *text) {

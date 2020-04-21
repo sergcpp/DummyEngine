@@ -9,7 +9,7 @@ class ScriptedSequence;
 
 class DialogController {
   public:
-    enum class eState { Paused, Sequence, ChoicePlaying, ChoicePaused };
+    enum class eState { Paused, Sequence, ChoicePlaying, ChoicePaused, ChoicePuzzle, ChoiceTransition };
 
     DialogController();
 
@@ -21,18 +21,20 @@ class DialogController {
     void Pause();
     void Update(double cur_time_s);
 
-    double GetPlayTime();
+    double GetPlayTime() const { return play_time_s_; }
     void SetPlayTime(double cur_time_s, double play_time_s);
 
     ScriptedSequence *GetCurSequence() { return cur_seq_; }
     void SetCurSequence(int id);
 
     void MakeChoice(const char *key);
+    void ContinueChoice();
 
-    Sys::Signal<void(const char *text, const uint8_t color[4])> push_caption_signal;
-    Sys::Signal<void(const char *key, const char *text)> push_choice_signal;
+    Sys::SignalN<void(const char *text, const uint8_t color[4])> push_caption_signal;
+    Sys::SignalN<void(const char *key, const char *text)> push_choice_signal;
 
-    Sys::Signal<void(int id)> switch_sequence_signal;
+    Sys::SignalN<void(int id)> switch_sequence_signal;
+    Sys::SignalN<void(const char *puzzle)> start_puzzle_signal;
 
   private:
     ScriptedDialog *dialog_ = nullptr;

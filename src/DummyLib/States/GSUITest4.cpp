@@ -28,10 +28,8 @@
 #include "../Gui/DialogUI.h"
 #include "../Gui/FontStorage.h"
 #include "../Gui/SeqEditUI.h"
-#include "../Gui/TextPrinter.h"
+#include "../Gui/WordPuzzleUI.h"
 #include "../Utils/DialogController.h"
-#include "../Utils/Dictionary.h"
-#include "../Viewer.h"
 
 namespace GSUITest4Internal {
 #if defined(__ANDROID__)
@@ -58,7 +56,7 @@ GSUITest4::GSUITest4(GameBase *game) : GSBaseState(game) {
     test_dialog_.reset(new ScriptedDialog{*ctx_, *scene_manager_});
 
     dialog_ui_.reset(new DialogUI{Gui::Vec2f{-1.0f, 0.0f}, Gui::Vec2f{2.0f, 1.0f},
-                                  ui_root_.get(), *dialog_font_});
+                                  ui_root_.get(), *dialog_font_, true /* debug */});
     dialog_ui_->make_choice_signal
         .Connect<DialogController, &DialogController::MakeChoice>(dial_ctrl_.get());
 
@@ -84,6 +82,13 @@ GSUITest4::GSUITest4(GameBase *game) : GSBaseState(game) {
         dialog_ui_.get());
     dial_ctrl_->switch_sequence_signal
         .Connect<DialogEditUI, &DialogEditUI::OnSwitchSequence>(dialog_edit_ui_.get());
+    dial_ctrl_->start_puzzle_signal.Connect<GSUITest4, &GSUITest4::OnStartPuzzle>(this);
+
+    word_puzzle_.reset(new WordPuzzleUI(*ctx_, Ren::Vec2f{-1.0f, -1.0f},
+                                        Ren::Vec2f{2.0f, 1.0f}, ui_root_.get(),
+                                        *dialog_font_));
+    word_puzzle_->puzzle_solved_signal
+        .Connect<DialogController, &DialogController::ContinueChoice>(dial_ctrl_.get());
 }
 
 GSUITest4::~GSUITest4() = default;
@@ -196,6 +201,37 @@ void GSUITest4::OnEditSequence(int id) {
     dial_edit_mode_ = 1;
 }
 
+void GSUITest4::OnStartPuzzle(const char *puzzle_name) {
+#if defined(__ANDROID__)
+    const std::string file_name = std::string("assets/scenes/") + puzzle_name;
+#else
+    const std::string file_name = std::string("assets_pc/scenes/") + puzzle_name;
+#endif
+
+    Sys::AssetFile in_puzzle(file_name);
+    if (!in_puzzle) {
+        ctx_->log()->Error("Failed to load %s", file_name.c_str());
+        return;
+    }
+
+    const size_t puzzle_size = in_puzzle.size();
+
+    std::unique_ptr<uint8_t[]> puzzle_data(new uint8_t[puzzle_size]);
+    in_puzzle.Read((char *)&puzzle_data[0], puzzle_size);
+
+    Sys::MemBuf mem(&puzzle_data[0], puzzle_size);
+    std::istream in_stream(&mem);
+
+    JsObject js_puzzle;
+    if (!js_puzzle.Read(in_stream)) {
+        ctx_->log()->Error("Failed to parse %s", file_name.c_str());
+        return;
+    }
+
+    word_puzzle_->Load(js_puzzle);
+    word_puzzle_->Restart();
+}
+
 void GSUITest4::OnPostloadScene(JsObject &js_scene) {
     using namespace GSUITest4Internal;
 
@@ -218,8 +254,7 @@ void GSUITest4::OnPostloadScene(JsObject &js_scene) {
         }
 
         if (js_cam.Has("fwd_speed")) {
-            const JsNumber &js_fwd_speed =
-                (const JsNumber &)js_cam.at("fwd_speed").as_num();
+            const JsNumber &js_fwd_speed = js_cam.at("fwd_speed").as_num();
             cam_ctrl_->max_fwd_speed = (float)js_fwd_speed.val;
         }
 
@@ -285,6 +320,7 @@ void GSUITest4::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         seq_edit_ui_->Draw(r);
     }
     seq_cap_ui_->Draw(r);
+    word_puzzle_->Draw(r);
 }
 
 bool GSUITest4::HandleInput(const InputManager::Event &evt) {
@@ -326,6 +362,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
         } else if (dialog_ui_->Check(p)) {
             dialog_ui_->Press(p, true);
         }
+        word_puzzle_->Press(p, true);
     } break;
     case RawInputEvent::EvP2Down: {
         const Ren::Vec2f p =
@@ -353,6 +390,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
             input_processed = seq_edit_ui_->Check(p);
         }
         dialog_ui_->Press(p, false);
+        word_puzzle_->Press(p, false);
         cam_ctrl_->HandleInput(evt);
     } break;
     case RawInputEvent::EvP2Up: {
@@ -377,6 +415,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
             seq_edit_ui_->Hover(p);
         }
         dialog_ui_->Hover(p);
+        word_puzzle_->Hover(p);
     } break;
     case RawInputEvent::EvP2Move: {
 
@@ -448,6 +487,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
         dialog_edit_ui_->Resize(ui_root_.get());
         seq_edit_ui_->Resize(ui_root_.get());
         seq_cap_ui_->Resize(ui_root_.get());
+        word_puzzle_->Resize(ui_root_.get());
         break;
     default:
         break;

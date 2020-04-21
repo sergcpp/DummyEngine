@@ -144,6 +144,11 @@ bool ScriptedSequence::Load(const JsObject &js_seq) {
                 choice.key = js_choice_key.val;
                 choice.text = js_choice_text.val;
                 choice.seq_name = js_choice_seq.val;
+
+                if (js_choice.Has("puzzle")) {
+                    const JsString &js_choice_puz = js_choice.at("puzzle").as_str();
+                    choice.puzzle_name = js_choice_puz.val;
+                }
             }
         }
     }
@@ -207,7 +212,10 @@ void ScriptedSequence::Save(JsObject &js_seq) {
             JsObject js_choice;
             js_choice.Push("key", JsString{choice.key});
             js_choice.Push("text", JsString{choice.text});
-            js_choice.Push("seq_name", JsString{choice.seq_name});
+            js_choice.Push("sequence", JsString{choice.seq_name});
+            if (!choice.puzzle_name.empty()) {
+                js_choice.Push("puzzle", JsString{choice.puzzle_name});
+            }
 
             js_choices.Push(std::move(js_choice));
         }

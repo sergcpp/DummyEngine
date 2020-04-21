@@ -22,9 +22,9 @@ class DebugInfoUI;
 class GameStateManager;
 class FontStorage;
 class SceneManager;
-class TextPrinter;
+class WordPuzzleUI;
 
-class GSUITest : public GSBaseState {
+class GSUITest final : public GSBaseState {
     uint64_t last_frame_time_ = 0;
     double cur_fps_ = 0.0;
 
@@ -35,7 +35,7 @@ class GSUITest : public GSBaseState {
 
     std::unique_ptr<Gui::Image>         test_image_;
     std::unique_ptr<Gui::Image9Patch>   test_frame_;
-    std::unique_ptr<TextPrinter>        text_printer_;
+    std::unique_ptr<WordPuzzleUI>       word_puzzle_;
 
     uint32_t sophia_indices_[2]     = { 0xffffffff };
 

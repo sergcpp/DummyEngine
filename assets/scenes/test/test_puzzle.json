@@ -1,0 +1,20 @@
+{
+	"text" : "<split>Als Caroline </split><split><option>lernen</option> </split><split>ich </split><split>eine </split><split><option>wichtig</option> </split><split><hint>Lektion</hint> </split>",
+	"options" : [
+		{
+			"variants" : [
+				"lernte", "gelernt", "lerne"
+			]
+		},
+		{
+			"variants" : [
+				"wichtige", "wichtiges", "wichtiger"
+			]
+		}
+	],
+	"hints" : [
+		{
+			"en" : "lesson"
+		}
+	]
+}

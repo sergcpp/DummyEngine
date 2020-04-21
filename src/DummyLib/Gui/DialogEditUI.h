@@ -52,6 +52,6 @@ class DialogEditUI : public Gui::BaseElement {
 
     void OnSwitchSequence(int id);
 
-    Sys::Signal<void(int id)> set_cur_sequence_signal;
-    Sys::Signal<void(int id)> edit_cur_seq_signal;
+    Sys::SignalN<void(int id)> set_cur_sequence_signal;
+    Sys::SignalN<void(int id)> edit_cur_seq_signal;
 };

@@ -5,6 +5,7 @@
 
 class DialogUI : public Gui::BaseElement {
     Gui::BitmapFont &font_;
+    bool debug_;
 
     struct {
         const char *key;
@@ -18,11 +19,9 @@ class DialogUI : public Gui::BaseElement {
         std::function<bool(int i, const Ren::Vec2f &pos, const Ren::Vec2f &size)>
             callback);
 
-    Ren::Vec2f ToLocal(const Ren::Vec2f &p);
-
   public:
     DialogUI(const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
-             Gui::BitmapFont &font);
+             Gui::BitmapFont &font, bool debug = false);
 
     void Draw(Gui::Renderer *r) override;
 
@@ -36,5 +35,5 @@ class DialogUI : public Gui::BaseElement {
 
     void OnPushChoice(const char *key, const char *text);
 
-    Sys::Signal<void(const char *key)> make_choice_signal;
+    Sys::SignalN<void(const char *key)> make_choice_signal;
 };

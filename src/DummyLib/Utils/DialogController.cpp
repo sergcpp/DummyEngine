@@ -3,7 +3,7 @@
 #include <Eng/Utils/ScriptedDialog.h>
 #include <Eng/Utils/ScriptedSequence.h>
 
-DialogController::DialogController() {}
+DialogController::DialogController() = default;
 
 void DialogController::SetDialog(ScriptedDialog *dialog) {
     dialog_ = dialog;
@@ -52,32 +52,38 @@ void DialogController::Update(const double cur_time_s) {
     } else if (state_ == eState::ChoicePlaying || state_ == eState::ChoicePaused) {
         const int choices_count = cur_seq_->GetChoicesCount();
         for (int i = 0; i < choices_count; i++) {
-            SeqChoice *ch = cur_seq_->GetChoice(i);
+            const SeqChoice *ch = cur_seq_->GetChoice(i);
             push_choice_signal.FireN(ch->key.c_str(), ch->text.c_str());
         }
 
         const double end_time_s = cur_seq_->duration();
         play_time_s_ = cur_time_s - play_started_time_s_;
 
+        const eState next_state =
+            (state_ == eState::ChoicePlaying) ? eState::Sequence : eState::Paused;
+
         if (play_time_s_ < end_time_s) {
             // go back to playing
-            state_ = eState::Sequence;
+            state_ = next_state;
         } else {
             play_time_s_ = end_time_s;
 
             if (next_seq_id_ != -1) {
-                state_ =
-                    (state_ == eState::ChoicePlaying) ? eState::Sequence : eState::Paused;
-                SetCurSequence(next_seq_id_);
+                //state_ = next_state;
+                state_ = eState::ChoicePuzzle;
+                /*SetCurSequence(next_seq_id_);
                 switch_sequence_signal.FireN(next_seq_id_);
                 SetPlayTime(cur_time_s, 0.0);
-                next_seq_id_ = -1;
+                next_seq_id_ = -1;*/
             }
         }
+    } else if (state_ == eState::ChoicePuzzle) {
+
+    } else if (state_ == eState::ChoiceTransition) {
+        state_ = eState::Sequence;
+        SetPlayTime(cur_time_s, 0.0);
     }
 }
-
-double DialogController::GetPlayTime() { return play_time_s_; }
 
 void DialogController::SetPlayTime(const double cur_time_s, const double play_time_s) {
     play_time_s_ = play_time_s;
@@ -98,6 +104,16 @@ void DialogController::MakeChoice(const char *key) {
     if (cur_seq_) {
         SeqChoice *ch = cur_seq_->GetChoice(key);
         next_seq_id_ = ch->seq_id;
+        start_puzzle_signal.FireN(ch->puzzle_name.c_str());
+    }
+}
+
+void DialogController::ContinueChoice() {
+    if (next_seq_id_ != -1) {
+        state_ = eState::ChoiceTransition;
+        SetCurSequence(next_seq_id_);
+        switch_sequence_signal.FireN(next_seq_id_);
+        next_seq_id_ = -1;
     }
 }
 

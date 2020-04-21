@@ -24,7 +24,7 @@ class SceneManager;
 class ScriptedDialog;
 class ScriptedSequence;
 class SeqEditUI;
-class TextPrinter;
+class WordPuzzleUI;
 
 class GSPlayTest : public GSBaseState {
     uint64_t last_frame_time_ = 0;

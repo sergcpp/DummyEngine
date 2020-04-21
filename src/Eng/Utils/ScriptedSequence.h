@@ -33,6 +33,7 @@ struct SeqChoice {
     std::string key;
     std::string text;
     std::string seq_name;
+    std::string puzzle_name;
 
     // temp data
     int seq_id;

@@ -20,12 +20,14 @@
             {
                 "key" : "ch1",
                 "text" : "Choice 1",
-                "sequence" : "test/test_seq3.json"
+                "sequence" : "test/test_seq3.json",
+				"puzzle" : "test/test_puzzle.json"
             },
             {
                 "key" : "ch2",
                 "text" : "Choice 2",
-                "sequence" : "test/test_seq4.json"
+                "sequence" : "test/test_seq4.json",
+				"puzzle" : "test/test_puzzle.json"
             }
         ]
     }
