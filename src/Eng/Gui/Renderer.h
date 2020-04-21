@@ -49,7 +49,11 @@ extern const uint8_t ColorWhite[4];
 extern const uint8_t ColorGrey[4];
 extern const uint8_t ColorBlack[4];
 extern const uint8_t ColorRed[4];
+extern const uint8_t ColorGreen[4];
+extern const uint8_t ColorBlue[4];
 extern const uint8_t ColorCyan[4];
+extern const uint8_t ColorMagenta[4];
+extern const uint8_t ColorYellow[4];
 
 class Renderer {
   public:
