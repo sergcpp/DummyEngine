@@ -660,7 +660,7 @@ void SceneManager::LoadProbeCache() {
                             if ((int)len > data_len ||
                                 !self->scene_data_.probe_storage.SetPixelData(
                                     level, lprobe->layer_index, face_index,
-                                    Ren::Compressed, &p_data[data_offset], len,
+                                    Ren::eTexFormat::Compressed, &p_data[data_offset], len,
                                     self->ctx_.log())) {
                                 log->Error("Failed to load probe texture!");
                             }

@@ -715,7 +715,9 @@ void Ren::Texture2D::SetFilter(eTexFilter f, eTexRepeat r, float lod_bias) {
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_S, g_gl_wrap_mode[(size_t)r]);
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_T, g_gl_wrap_mode[(size_t)r]);
 
+#ifndef __ANDROID__
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_LOD_BIAS, lod_bias);
+#endif
 
         if (params_.format != eTexFormat::Compressed && (f == eTexFilter::Trilinear || f == eTexFilter::Bilinear)) {
             ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, tex_id);
