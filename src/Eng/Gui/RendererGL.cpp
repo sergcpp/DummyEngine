@@ -91,8 +91,8 @@ inline void BindTexture(int slot, uint32_t tex) {
     glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
 }
 
-const int MaxVerticesPerBuf = 8 * 1024;
-const int MaxIndicesPerBuf = 16 * 1024;
+const int MaxVerticesPerRange = 64 * 1024;
+const int MaxIndicesPerRange = 128 * 1024;
 } // namespace UIRendererConstants
 
 Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config) : ctx_(ctx) {
@@ -108,114 +108,62 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config) : ctx_(ctx) {
                status == Ren::eProgLoadStatus::Found);
     }
 
-    cur_range_index_ = 0;
+    vtx_data_.reset(new vertex_t[MaxVerticesPerRange * FrameSyncWindow]);
+    vertex_count_[0] = vertex_count_[1] = 0;
+    ndx_data_.reset(new uint16_t[MaxIndicesPerRange * FrameSyncWindow]);
+    index_count_[0] = index_count_[1] = 0;
 
-    for (int i = 0; i < BuffersCount; i++) {
-        vertex_count_[i] = 0;
-        index_count_[i] = 0;
+    GLuint vtx_buf_id;
+    glGenBuffers(1, &vtx_buf_id);
+    glBindBuffer(GL_ARRAY_BUFFER, vtx_buf_id);
+    glBufferData(GL_ARRAY_BUFFER,
+                 FrameSyncWindow * MaxVerticesPerRange * sizeof(vertex_t), nullptr,
+                 GL_DYNAMIC_DRAW);
 
-        GLuint vtx_buf_id;
-        glGenBuffers(1, &vtx_buf_id);
-        glBindBuffer(GL_ARRAY_BUFFER, vtx_buf_id);
-        glBufferData(GL_ARRAY_BUFFER,
-                     FrameSyncWindow * MaxVerticesPerBuf * sizeof(vertex_t), nullptr,
-                     GL_DYNAMIC_DRAW);
+    GLuint ndx_buf_id;
+    glGenBuffers(1, &ndx_buf_id);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ndx_buf_id);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 FrameSyncWindow * MaxIndicesPerRange * sizeof(uint16_t), nullptr,
+                 GL_DYNAMIC_DRAW);
 
-        GLuint ndx_buf_id;
-        glGenBuffers(1, &ndx_buf_id);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ndx_buf_id);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                     FrameSyncWindow * MaxIndicesPerBuf * sizeof(uint16_t), nullptr,
-                     GL_DYNAMIC_DRAW);
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
 
-        GLuint vao;
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vtx_buf_id);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ndx_buf_id);
 
-        glBindBuffer(GL_ARRAY_BUFFER, vtx_buf_id);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ndx_buf_id);
+    glEnableVertexAttribArray(VTX_POS_LOC);
+    glVertexAttribPointer(VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                          (void *)uintptr_t(offsetof(vertex_t, pos)));
 
-        glEnableVertexAttribArray(VTX_POS_LOC);
-        glVertexAttribPointer(VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-                              (void *)uintptr_t(offsetof(vertex_t, pos)));
+    glEnableVertexAttribArray(VTX_COL_LOC);
+    glVertexAttribPointer(VTX_COL_LOC, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(vertex_t),
+                          (void *)uintptr_t(offsetof(vertex_t, col)));
 
-        glEnableVertexAttribArray(VTX_COL_LOC);
-        glVertexAttribPointer(VTX_COL_LOC, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(vertex_t),
-                              (void *)uintptr_t(offsetof(vertex_t, col)));
+    glEnableVertexAttribArray(VTX_UVS_LOC);
+    glVertexAttribPointer(VTX_UVS_LOC, 4, GL_UNSIGNED_SHORT, GL_TRUE, sizeof(vertex_t),
+                          (void *)uintptr_t(offsetof(vertex_t, uvs)));
 
-        glEnableVertexAttribArray(VTX_UVS_LOC);
-        glVertexAttribPointer(VTX_UVS_LOC, 4, GL_UNSIGNED_SHORT, GL_TRUE,
-                              sizeof(vertex_t),
-                              (void *)uintptr_t(offsetof(vertex_t, uvs)));
+    glBindVertexArray(0);
 
-        glBindVertexArray(0);
+    vao_ = (uint32_t)vao;
 
-        vao_[i] = (uint32_t)vao;
-        vertex_buf_id_[i] = (uint32_t)vtx_buf_id;
-        index_buf_id_[i] = (uint32_t)ndx_buf_id;
-    }
+    vertex_buf_id_ = (uint32_t)vtx_buf_id;
+    index_buf_id_ = (uint32_t)ndx_buf_id;
+
+    fill_range_index_ = 0;
 }
 
 Gui::Renderer::~Renderer() {
-    for (int i = 0; i < BuffersCount; i++) {
-        auto buf_id = (GLuint)vao_[i];
-        glDeleteVertexArrays(1, &buf_id);
+    auto buf_id = (GLuint)vao_;
+    glDeleteVertexArrays(1, &buf_id);
 
-        buf_id = (GLuint)vertex_buf_id_[i];
-        glDeleteBuffers(1, &buf_id);
-        buf_id = (GLuint)index_buf_id_[i];
-        glDeleteBuffers(1, &buf_id);
-    }
-}
-
-void Gui::Renderer::BeginDraw() {
-    using namespace UIRendererConstants;
-
-#ifndef DISABLE_MARKERS
-    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "UI DRAW");
-#endif
-    glBindVertexArray(0);
-    glUseProgram(ui_program_->prog_id());
-
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-#if !defined(__ANDROID__)
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-#endif
-
-    cur_range_index_ = (cur_range_index_ + 1) % FrameSyncWindow;
-    if (buf_range_fences_[cur_range_index_]) {
-        auto sync = reinterpret_cast<GLsync>(buf_range_fences_[cur_range_index_]);
-        GLenum res = glClientWaitSync(sync, 0, 1000000000);
-        if (res != GL_ALREADY_SIGNALED && res != GL_CONDITION_SATISFIED) {
-            ctx_.log()->Error("[Gui::Renderer::BeginDraw2]: Wait failed!");
-        }
-        glDeleteSync(sync);
-        buf_range_fences_[cur_range_index_] = nullptr;
-    }
-    cur_buffer_index_ = 0;
-
-    cur_mapped_vtx_data_ = nullptr;
-    cur_mapped_ndx_data_ = nullptr;
-
-    cur_vertex_count_ = 0;
-    cur_index_count_ = 0;
-}
-
-void Gui::Renderer::EndDraw() {
-    if (cur_mapped_vtx_data_ && cur_mapped_ndx_data_) {
-        SubmitVertexData(0, 0, true);
-    }
-
-#ifndef DISABLE_MARKERS
-    glPopDebugGroup();
-#endif
-
-    assert(!buf_range_fences_[cur_range_index_]);
-    buf_range_fences_[cur_range_index_] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-
-    assert(clip_area_stack_size_ == 0);
+    buf_id = (GLuint)vertex_buf_id_;
+    glDeleteBuffers(1, &buf_id);
+    buf_id = (GLuint)index_buf_id_;
+    glDeleteBuffers(1, &buf_id);
 }
 
 void Gui::Renderer::PushClipArea(const Vec2f dims[2]) {
@@ -245,118 +193,125 @@ int Gui::Renderer::AcquireVertexData(vertex_t **vertex_data, int *vertex_avail,
                                      uint16_t **index_data, int *index_avail) {
     using namespace UIRendererConstants;
 
-    if (!cur_mapped_vtx_data_) {
-        assert(!cur_mapped_ndx_data_);
+    (*vertex_data) = vtx_data_.get() + fill_range_index_ * MaxVerticesPerRange +
+                     vertex_count_[fill_range_index_];
+    (*vertex_avail) = MaxVerticesPerRange - vertex_count_[fill_range_index_];
 
-        // Map next gl buffers
-        const size_t vertex_buf_mem_offset =
-                         (cur_range_index_ * MaxVerticesPerBuf) * sizeof(vertex_t),
-                     vertex_buf_mem_size = MaxVerticesPerBuf * sizeof(vertex_t),
-                     index_buf_mem_offset =
-                         (cur_range_index_ * MaxIndicesPerBuf) * sizeof(uint16_t),
-                     index_buf_mem_size = MaxIndicesPerBuf * sizeof(uint16_t);
+    (*index_data) = ndx_data_.get() + fill_range_index_ * MaxIndicesPerRange +
+                    index_count_[fill_range_index_];
+    (*index_avail) = MaxIndicesPerRange - index_count_[fill_range_index_];
 
-        const GLbitfield BufferRangeBindFlags =
-            GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
-            GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buf_id_[cur_buffer_index_]);
-        cur_mapped_vtx_data_ =
-            (vertex_t *)glMapBufferRange(GL_ARRAY_BUFFER, vertex_buf_mem_offset,
-                                         vertex_buf_mem_size, BufferRangeBindFlags);
-        cur_vertex_count_ = 0;
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buf_id_[cur_buffer_index_]);
-        cur_mapped_ndx_data_ =
-            (uint16_t *)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, index_buf_mem_offset,
-                                         index_buf_mem_size, BufferRangeBindFlags);
-        cur_index_count_ = 0;
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
-
-    assert(cur_mapped_vtx_data_ && cur_mapped_ndx_data_);
-
-    (*vertex_data) = cur_mapped_vtx_data_ + cur_vertex_count_;
-    (*vertex_avail) = MaxVerticesPerBuf - cur_vertex_count_;
-
-    (*index_data) = cur_mapped_ndx_data_ + cur_index_count_;
-    (*index_avail) = MaxIndicesPerBuf - cur_index_count_;
-
-    return cur_vertex_count_;
+    return vertex_count_[fill_range_index_];
 }
 
-void Gui::Renderer::SubmitVertexData(const int vertex_count, const int index_count,
-                                     const bool force_new_buffer) {
+void Gui::Renderer::SubmitVertexData(const int vertex_count, const int index_count) {
     using namespace UIRendererConstants;
 
-    assert((cur_vertex_count_ + vertex_count) <= MaxVerticesPerBuf &&
-           (cur_index_count_ + index_count) <= MaxIndicesPerBuf);
+    assert((vertex_count_[fill_range_index_] + vertex_count) <= MaxVerticesPerRange &&
+           (index_count_[fill_range_index_] + index_count) <= MaxIndicesPerRange);
 
-    cur_vertex_count_ += vertex_count;
-    cur_index_count_ += index_count;
+    vertex_count_[fill_range_index_] += vertex_count;
+    index_count_[fill_range_index_] += index_count;
+}
 
-    if (cur_vertex_count_ == MaxVerticesPerBuf || cur_index_count_ == MaxIndicesPerBuf ||
-        force_new_buffer) {
-        assert(cur_mapped_vtx_data_ && cur_mapped_ndx_data_);
+void Gui::Renderer::SwapBuffers() {
+    draw_range_index_ = fill_range_index_;
+    fill_range_index_ = (fill_range_index_ + 1) % FrameSyncWindow;
+}
 
-        { // flush mapped buffers
-            const size_t vertex_buf_mem_size = cur_vertex_count_ * sizeof(vertex_t),
-                         index_buf_mem_size = cur_index_count_ * sizeof(uint16_t);
+void Gui::Renderer::Draw() {
+    using namespace UIRendererConstants;
 
-            glBindBuffer(GL_ARRAY_BUFFER, vertex_buf_id_[cur_buffer_index_]);
-            if (vertex_buf_mem_size) {
-                glFlushMappedBufferRange(GL_ARRAY_BUFFER, 0, vertex_buf_mem_size);
-            }
-            glUnmapBuffer(GL_ARRAY_BUFFER);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
+    /* Synchronize with previous draw */
 
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buf_id_[cur_buffer_index_]);
-            if (index_buf_mem_size) {
-                glFlushMappedBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, index_buf_mem_size);
-            }
-            glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    if (buf_range_fences_[draw_range_index_]) {
+        auto sync = reinterpret_cast<GLsync>(buf_range_fences_[draw_range_index_]);
+        GLenum res = glClientWaitSync(sync, 0, 1000000000);
+        if (res != GL_ALREADY_SIGNALED && res != GL_CONDITION_SATISFIED) {
+            ctx_.log()->Error("[Gui::Renderer::BeginDraw2]: Wait failed!");
         }
-
-        // make a draw call
-        DrawCurrentBuffer();
-
-        // start new buffer
-        cur_buffer_index_++;
-        assert(cur_buffer_index_ < BuffersCount);
-
-        cur_mapped_vtx_data_ = nullptr;
-        cur_mapped_ndx_data_ = nullptr;
+        glDeleteSync(sync);
+        buf_range_fences_[draw_range_index_] = nullptr;
     }
-}
 
-void Gui::Renderer::DrawCurrentBuffer() {
-    using namespace UIRendererConstants;
+    /* Update buffers */
 
-    if (!cur_index_count_)
-        return;
+    const size_t index_buf_mem_size = index_count_[draw_range_index_] * sizeof(uint16_t);
 
-    glBindVertexArray(vao_[cur_buffer_index_]);
+    const GLbitfield BufferRangeBindFlags =
+        GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
+        GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
 
+    if (vertex_count_[draw_range_index_]) {
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buf_id_);
+
+        void *pinned_mem = glMapBufferRange(
+            GL_ARRAY_BUFFER, draw_range_index_ * MaxVerticesPerRange * sizeof(vertex_t),
+            MaxVerticesPerRange * sizeof(vertex_t), BufferRangeBindFlags);
+        if (pinned_mem) {
+            const size_t vertex_buf_mem_size =
+                vertex_count_[draw_range_index_] * sizeof(vertex_t);
+            memcpy(pinned_mem, vtx_data_.get() + draw_range_index_ * MaxVerticesPerRange,
+                   vertex_buf_mem_size);
+            glFlushMappedBufferRange(GL_ARRAY_BUFFER, 0, vertex_buf_mem_size);
+            glUnmapBuffer(GL_ARRAY_BUFFER);
+        } else {
+            ctx_.log()->Error(
+                "[Gui::Renderer::SwapBuffers]: Failed to map vertex buffer!");
+        }
+    }
+
+    if (index_count_[draw_range_index_]) {
+        glBindBuffer(GL_ARRAY_BUFFER, index_buf_id_);
+
+        void *pinned_mem = glMapBufferRange(
+            GL_ARRAY_BUFFER, draw_range_index_ * MaxIndicesPerRange * sizeof(uint16_t),
+            MaxIndicesPerRange * sizeof(uint16_t), BufferRangeBindFlags);
+        if (pinned_mem) {
+            const size_t index_buf_mem_size =
+                index_count_[draw_range_index_] * sizeof(uint16_t);
+            memcpy(pinned_mem, ndx_data_.get() + draw_range_index_ * MaxIndicesPerRange, index_buf_mem_size);
+            glFlushMappedBufferRange(GL_ARRAY_BUFFER, 0, index_buf_mem_size);
+            glUnmapBuffer(GL_ARRAY_BUFFER);
+        } else {
+            ctx_.log()->Error(
+                "[Gui::Renderer::SwapBuffers]: Failed to map index buffer!");
+        }
+    }
+
+    /* Submit draw call */
+
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+#if !defined(__ANDROID__)
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
+
+    glBindVertexArray(vao_);
     glUseProgram(ui_program_->prog_id());
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, (GLuint)ctx_.texture_atlas().tex_id());
 
-    const size_t index_buf_mem_offset =
-        (cur_range_index_ * MaxIndicesPerBuf) * sizeof(uint16_t);
+    const size_t index_buf_mem_offset = 0;
 
     glDrawElementsBaseVertex(
-        GL_TRIANGLES, cur_index_count_, GL_UNSIGNED_SHORT,
+        GL_TRIANGLES, index_count_[draw_range_index_], GL_UNSIGNED_SHORT,
         reinterpret_cast<const GLvoid *>(uintptr_t(index_buf_mem_offset)),
-        (cur_range_index_ * MaxVerticesPerBuf));
+        (draw_range_index_ * MaxVerticesPerRange));
 
     glBindVertexArray(0);
     glUseProgram(0);
+
+    vertex_count_[draw_range_index_] = 0;
+    index_count_[draw_range_index_] = 0;
+
+    assert(!buf_range_fences_[draw_range_index_]);
+    buf_range_fences_[draw_range_index_] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 }
 
-void Gui::Renderer::DrawImageQuad(const eDrawMode draw_mode, const int tex_layer,
+void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer,
                                   const Vec2f pos[2], const Vec2f uvs_px[2]) {
     const Vec2f uvs_scale =
         1.0f / Vec2f{(float)Ren::TextureAtlasWidth, (float)Ren::TextureAtlasHeight};
@@ -370,10 +325,7 @@ void Gui::Renderer::DrawImageQuad(const eDrawMode draw_mode, const int tex_layer
     uint16_t *ndx_data;
     int ndx_avail;
     int ndx_offset = AcquireVertexData(&vtx_data, &vtx_avail, &ndx_data, &ndx_avail);
-    if (vtx_avail < 4 || ndx_avail < 6) {
-        SubmitVertexData(0, 0, true);
-        ndx_offset = AcquireVertexData(&vtx_data, &vtx_avail, &ndx_data, &ndx_avail);
-    }
+    assert(vtx_avail >= 4 && ndx_avail >= 6);
 
     vertex_t *cur_vtx = vtx_data;
     uint16_t *cur_ndx = ndx_data;
@@ -435,10 +387,10 @@ void Gui::Renderer::DrawImageQuad(const eDrawMode draw_mode, const int tex_layer
     (*cur_ndx++) = ndx_offset + 2;
     (*cur_ndx++) = ndx_offset + 3;
 
-    SubmitVertexData(int(cur_vtx - vtx_data), int(cur_ndx - ndx_data), false);
+    SubmitVertexData(int(cur_vtx - vtx_data), int(cur_ndx - ndx_data));
 }
 
-void Gui::Renderer::DrawLine(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
+void Gui::Renderer::PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
                              const Vec4f &p0, const Vec4f &p1, const Vec2f &d0,
                              const Vec2f &d1, const Vec4f &thickness) {
     const Vec2f uvs_scale =
@@ -471,10 +423,7 @@ void Gui::Renderer::DrawLine(eDrawMode draw_mode, int tex_layer, const uint8_t c
     uint16_t *ndx_data;
     int ndx_avail;
     int ndx_offset = AcquireVertexData(&vtx_data, &vtx_avail, &ndx_data, &ndx_avail);
-    if (vtx_avail < vertex_count || ndx_avail < 3 * (vertex_count - 2)) {
-        SubmitVertexData(0, 0, true);
-        ndx_offset = AcquireVertexData(&vtx_data, &vtx_avail, &ndx_data, &ndx_avail);
-    }
+    assert(vtx_avail >= vertex_count && ndx_avail >= 3 * (vertex_count - 2));
 
     vertex_t *cur_vtx = vtx_data;
     uint16_t *cur_ndx = ndx_data;
@@ -497,10 +446,10 @@ void Gui::Renderer::DrawLine(eDrawMode draw_mode, int tex_layer, const uint8_t c
         (*cur_ndx++) = ndx_offset + i + 2;
     }
 
-    SubmitVertexData(int(cur_vtx - vtx_data), int(cur_ndx - ndx_data), false);
+    SubmitVertexData(int(cur_vtx - vtx_data), int(cur_ndx - ndx_data));
 }
 
-void Gui::Renderer::DrawCurve(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
+void Gui::Renderer::pushCurve(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
                               const Vec4f &p0, const Vec4f &p1, const Vec4f &p2,
                               const Vec4f &p3, const Vec4f &thickness) {
     const float tolerance = 0.000001f;
@@ -514,11 +463,11 @@ void Gui::Renderer::DrawCurve(eDrawMode draw_mode, int tex_layer, const uint8_t 
                 d3 = std::abs((p2[0] - p3[0]) * d[1] - (p2[1] - p3[1]) * d[0]);
 
     if ((d2 + d3) * (d2 + d3) < tolerance * (d[0] * d[0] + d[1] * d[1])) {
-        DrawLine(draw_mode, tex_layer, color, p0, p3, Normalize(Vec2f{p1 - p0}),
+        PushLine(draw_mode, tex_layer, color, p0, p3, Normalize(Vec2f{p1 - p0}),
                  Normalize(Vec2f{p3 - p2}), thickness);
     } else {
-        DrawCurve(draw_mode, tex_layer, color, p0, p01, p012, p0123, thickness);
-        DrawCurve(draw_mode, tex_layer, color, p0123, p123, p23, p3, thickness);
+        pushCurve(draw_mode, tex_layer, color, p0, p01, p012, p0123, thickness);
+        pushCurve(draw_mode, tex_layer, color, p0123, p123, p23, p3, thickness);
     }
 }
 

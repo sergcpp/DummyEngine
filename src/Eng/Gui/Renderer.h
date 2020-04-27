@@ -64,19 +64,8 @@ class Renderer {
 
     Ren::ProgramRef program() const { return ui_program_; }
 
-    void BeginDraw();
-    void ForceDraw() {
-        // make a draw call
-        DrawCurrentBuffer();
-
-        // start new buffer
-        cur_buffer_index_++;
-        assert(cur_buffer_index_ < BuffersCount);
-
-        cur_mapped_vtx_data_ = nullptr;
-        cur_mapped_ndx_data_ = nullptr;
-    }
-    void EndDraw();
+    void SwapBuffers();
+    void Draw();
 
     void PushClipArea(const Ren::Vec2f dims[2]);
     void PopClipArea();
@@ -86,43 +75,40 @@ class Renderer {
     // memory and will result in terrible latency!
     int AcquireVertexData(vertex_t **vertex_data, int *vertex_avail,
                           uint16_t **index_data, int *index_avail);
-    void SubmitVertexData(int vertex_count, int index_count, bool force_new_buffer);
+    void SubmitVertexData(int vertex_count, int index_count);
 
     // Simple drawing functions
-    void DrawImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2f pos[2],
+    void PushImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2f pos[2],
                        const Vec2f uvs_px[2]);
-    void DrawLine(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
+    void PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
                   const Vec4f &p0, const Vec4f &p1, const Vec2f &d0, const Vec2f &d1,
                   const Vec4f &thickness);
-    void DrawCurve(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
+    void pushCurve(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
                    const Vec4f &p0, const Vec4f &p1, const Vec4f &p2, const Vec4f &p3,
                    const Vec4f &thickness);
 
   private:
     static const int FrameSyncWindow = 2;
-    static const int BuffersCount = 8;
     static const int MaxClipStackSize = 8;
 
     Ren::Context &ctx_;
 
-    int vertex_count_[BuffersCount];
-    int index_count_[BuffersCount];
-    int cur_buffer_index_, cur_range_index_;
-    int cur_vertex_count_, cur_index_count_;
+    int vertex_count_[FrameSyncWindow];
+    int index_count_[FrameSyncWindow];
+    int fill_range_index_, draw_range_index_;
 
     Ren::ProgramRef ui_program_;
 #if defined(USE_GL_RENDER)
-    uint32_t vao_[BuffersCount];
-    uint32_t vertex_buf_id_[BuffersCount], index_buf_id_[BuffersCount];
+    uint32_t vao_;
+    uint32_t vertex_buf_id_, index_buf_id_;
 #endif
-    vertex_t *cur_mapped_vtx_data_ = nullptr;
-    uint16_t *cur_mapped_ndx_data_ = nullptr;
+    // TODO: Replace with buffer mapping
+    std::unique_ptr<vertex_t> vtx_data_;
+    std::unique_ptr<uint16_t> ndx_data_;
 
     void *buf_range_fences_[FrameSyncWindow] = {};
 
     Ren::Vec2f clip_area_stack_[MaxClipStackSize][2];
     int clip_area_stack_size_ = 0;
-
-    void DrawCurrentBuffer();
 };
 } // namespace Gui

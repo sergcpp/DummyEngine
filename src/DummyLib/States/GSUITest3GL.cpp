@@ -75,7 +75,7 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    r->BeginDraw();
+    r->SwapBuffers();
 
     // just blit sdf into a buffer ignoring alpha
     //glDisable(GL_BLEND);
@@ -105,7 +105,7 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
     book_emph_font_->set_draw_mode(Gui::eDrawMode::DrDistanceField);
     book_caption_font_->set_draw_mode(Gui::eDrawMode::DrDistanceField);
 
-    r->EndDraw();
+    r->Draw();
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

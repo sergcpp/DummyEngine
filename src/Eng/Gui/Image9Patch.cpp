@@ -54,21 +54,21 @@ void Gui::Image9Patch::Draw(Gui::Renderer *r) {
         const Vec2f
             _pos[2] = { pos[0], pos[2] },
             _uvs[2] = { Vec2f{ uvs[0][0], uvs[0][1] }, Vec2f{ uvs[2][0], uvs[2][1] } };
-        r->DrawImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
     }
 
     {   // 2
         const Vec2f
             _pos[2] = { Vec2f{ pos[2][0], pos[0][1] }, Vec2f{ pos[3][0], pos[2][1] } },
             _uvs[2] = { Vec2f{ uvs[2][0], uvs[0][1] }, Vec2f{ uvs[3][0], uvs[2][1] } };
-        r->DrawImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
     }
 
     {   // 3
         const Vec2f
             _pos[2] = { Vec2f{ pos[3][0], pos[0][1] }, Vec2f{ pos[1][0], pos[2][1] } },
             _uvs[2] = { Vec2f{ uvs[3][0], uvs[0][1] }, Vec2f{ uvs[1][0], uvs[2][1] } };
-        r->DrawImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
     }
 
     // middle part
@@ -77,21 +77,21 @@ void Gui::Image9Patch::Draw(Gui::Renderer *r) {
         const Vec2f
             _pos[2] = { Vec2f{ pos[0][0], pos[2][1] }, Vec2f{ pos[2][0], pos[3][1] } },
             _uvs[2] = { Vec2f{ uvs[0][0], uvs[2][1] }, Vec2f{ uvs[2][0], uvs[3][1] } };
-        r->DrawImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
     }
 
     {   // 5
         const Vec2f
             _pos[2] = { pos[2], pos[3] },
             _uvs[2] = { uvs[2], uvs[3] };
-        r->DrawImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
     }
 
     {   // 6
         const Vec2f
             _pos[2] = { Vec2f{ pos[3][0], pos[2][1] }, Vec2f{ pos[1][0], pos[3][1] } },
             _uvs[2] = { Vec2f{ uvs[3][0], uvs[2][1] }, Vec2f{ uvs[1][0], uvs[3][1] } };
-        r->DrawImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
     }
 
     // top part
@@ -100,20 +100,20 @@ void Gui::Image9Patch::Draw(Gui::Renderer *r) {
         const Vec2f
             _pos[2] = { Vec2f{ pos[0][0], pos[3][1] }, Vec2f{ pos[2][0], pos[1][1] } },
             _uvs[2] = { Vec2f{ uvs[0][0], uvs[3][1] }, Vec2f{ uvs[2][0], uvs[1][1] } };
-        r->DrawImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
     }
 
     {   // 8
         const Vec2f
             _pos[2] = { Vec2f{ pos[2][0], pos[3][1] }, Vec2f{ pos[3][0], pos[1][1] } },
             _uvs[2] = { Vec2f{ uvs[2][0], uvs[3][1] }, Vec2f{ uvs[3][0], uvs[1][1] } };
-        r->DrawImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
     }
 
     {   // 9
         const Vec2f
             _pos[2] = { pos[3], pos[1] },
             _uvs[2] = { Vec2f{ uvs[3][0], uvs[3][1] }, Vec2f{ uvs[1][0], uvs[1][1] } };
-        r->DrawImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::DrPassthrough, tex_layer, _pos, _uvs);
     }
 }

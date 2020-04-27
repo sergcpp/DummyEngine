@@ -54,7 +54,7 @@ class GSUITest4 final : public GSBaseState {
 
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
-    void LoadSequence(const char *seq_name);
+    void LoadDialog(const char *seq_name);
     bool SaveSequence(const char *seq_name);
 
     void OnEditSequence(int id);

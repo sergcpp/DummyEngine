@@ -179,7 +179,7 @@ bool WordPuzzleUI::Load(const JsObject &js_puzzle) {
         sd.slot_index = i;
     }
 
-    return false;
+    return true;
 }
 
 void WordPuzzleUI::Resize(const BaseElement *parent) {

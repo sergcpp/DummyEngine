@@ -659,12 +659,15 @@ void GSBaseState::Draw(uint64_t dt_us) {
                 }
             }
 
+            ui_renderer_->SwapBuffers();
+
             notified_ = true;
             thr_notify_.notify_one();
         } else {
             //scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
             // Gather drawables for list 0
             UpdateFrame(0);
+            ui_renderer_->SwapBuffers();
             back_list = 0;
         }
 
@@ -674,13 +677,7 @@ void GSBaseState::Draw(uint64_t dt_us) {
         }
     }
 
-    {
-        ui_renderer_->BeginDraw();
-
-        DrawUI(ui_renderer_.get(), ui_root_.get());
-
-        ui_renderer_->EndDraw();
-    }
+    ui_renderer_->Draw();
 
     ctx_->ProcessTasks();
 }
@@ -906,4 +903,6 @@ void GSBaseState::UpdateFrame(int list_index) {
 
         renderer_->PrepareDrawList(scene_manager_->scene_data(), scene_manager_->main_cam(), main_view_lists_[list_index]);
     }
+
+    DrawUI(ui_renderer_.get(), ui_root_.get());
 }

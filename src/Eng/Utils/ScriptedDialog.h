@@ -20,9 +20,13 @@ class ScriptedDialog {
   public:
     ScriptedDialog(Ren::Context &ctx, SceneManager &scene_manager);
 
+    bool empty() const { return sequences_.empty(); }
+
     int GetSequencesCount() const { return (int)sequences_.size(); }
 
-    ScriptedSequence *GetSequence(int i) { return &sequences_[i]; }
+    ScriptedSequence *GetSequence(int i) {
+        return &sequences_[i];
+    }
 
     void Clear();
 
