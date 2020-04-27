@@ -237,16 +237,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
 
             vtx_avail -= 4;
             ndx_avail -= 6;
-            if (vtx_avail < 0 || ndx_avail < 0) {
-                r->SubmitVertexData(int(cur_vtx - vtx_data), int(cur_ndx - ndx_data),
-                                    true);
-                // acquire new buffer
-                ndx_offset =
-                    r->AcquireVertexData(&vtx_data, &vtx_avail, &ndx_data, &ndx_avail);
-
-                cur_vtx = vtx_data;
-                cur_ndx = ndx_data;
-            }
+            assert(vtx_avail > 0 && ndx_avail > 0);
 
             cur_vtx->pos[0] = pos_uvs[0][0];
             cur_vtx->pos[1] = pos_uvs[0][1];
@@ -302,7 +293,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
         cur_x += glyph.adv[0];
     }
 
-    r->SubmitVertexData(int(cur_vtx - vtx_data), int(cur_ndx - ndx_data), false);
+    r->SubmitVertexData(int(cur_vtx - vtx_data), int(cur_ndx - ndx_data));
 
     return float(cur_x) * m[0];
 }

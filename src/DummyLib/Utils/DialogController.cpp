@@ -7,7 +7,7 @@ DialogController::DialogController() = default;
 
 void DialogController::SetDialog(ScriptedDialog *dialog) {
     dialog_ = dialog;
-    cur_seq_ = dialog_->GetSequence(0);
+    SetCurSequence(0);
 }
 
 void DialogController::Play(const double cur_time_s) {

@@ -36,7 +36,7 @@ bool ScriptedSequence::Load(const JsObject &js_seq) {
     Clear();
 
     if (js_seq.Has("name")) {
-        const JsString& js_name = js_seq.at("name").as_str();
+        const JsString &js_name = js_seq.at("name").as_str();
         name_ = js_name.val;
     }
 
@@ -162,7 +162,7 @@ void ScriptedSequence::Save(JsObject &js_seq) {
     using namespace ScriptedSequenceInternal;
 
     { // write name
-        js_seq.Push("name", JsString{ name_ });
+        js_seq.Push("name", JsString{name_});
     }
 
     { // write tracks
@@ -171,6 +171,7 @@ void ScriptedSequence::Save(JsObject &js_seq) {
             JsObject js_track;
             js_track.Push("name", JsString{track.name});
             js_track.Push("type", JsString{TrackTypeNames[(int)track.type]});
+            js_track.Push("target", JsString{track.target});
 
             { // write actions
                 JsArray js_actions;

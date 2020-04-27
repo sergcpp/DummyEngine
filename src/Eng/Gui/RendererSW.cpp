@@ -103,7 +103,7 @@ void Gui::Renderer::EndDraw() {
     this->PopParams();
 }
 
-void Gui::Renderer::DrawImageQuad(const Ren::Texture2DRef &tex, const Ren::Vec2f dims[2], const Ren::Vec2f uvs[2]) {
+void Gui::Renderer::PushImageQuad(const Ren::Texture2DRef &tex, const Ren::Vec2f dims[2], const Ren::Vec2f uvs[2]) {
     using namespace UIRendererConstants;
 
     const float vertices[] = { dims[0][0], dims[0][1], 0,

@@ -101,12 +101,10 @@ void GSUITest4::Enter() {
     log_->Info("GSUITest: Loading scene!");
     GSBaseState::LoadScene(SCENE_NAME);
 
-    LoadSequence(SEQ_NAME);
-
-    dial_ctrl_->SetDialog(test_dialog_.get());
+    LoadDialog(SEQ_NAME);
 }
 
-void GSUITest4::LoadSequence(const char *seq_name) {
+void GSUITest4::LoadDialog(const char *seq_name) {
     auto read_sequence = [](const char *seq_name, JsObject &js_seq) {
 #if defined(__ANDROID__)
         const std::string file_name = std::string("assets/scenes/") + seq_name;
@@ -142,6 +140,8 @@ void GSUITest4::LoadSequence(const char *seq_name) {
         return;
     }
 
+    dial_ctrl_->SetDialog(test_dialog_.get());
+    dialog_edit_ui_->set_dialog(test_dialog_.get());
     seq_edit_ui_->set_sequence(dial_ctrl_->GetCurSequence());
 }
 
@@ -285,6 +285,7 @@ void GSUITest4::OnUpdateScene() {
 
     seq_cap_ui_->Clear();
     dialog_ui_->Clear();
+
     if (dial_ctrl_) {
         dial_ctrl_->Update(Sys::GetTimeS());
     }
@@ -465,7 +466,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
                 dial_ctrl_->Play(Sys::GetTimeS());
             }
         } else if (evt.key_code == KeyF5) {
-            LoadSequence(SEQ_NAME);
+            LoadDialog(SEQ_NAME);
         } else if (evt.key_code == KeyF6) {
             SaveSequence(SEQ_NAME);
         } else {
