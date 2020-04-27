@@ -46,7 +46,7 @@ GSUITest4::GSUITest4(GameBase *game) : GSBaseState(game) {
     const std::shared_ptr<FontStorage> fonts =
         game->GetComponent<FontStorage>(UI_FONTS_KEY);
     dialog_font_ = fonts->FindFont("book_main_font");
-    // dialog_font_->set_scale(1.5f);
+    dialog_font_->set_scale(1.5f);
 
     const float font_height = dialog_font_->height(ui_root_.get());
 

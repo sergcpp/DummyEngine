@@ -6,6 +6,9 @@ int main(int argc, char *argv[]) {
 }
 
 // TODO:
+// refactor probe cache loading
+// fix exposure flicker
+// use texture array for lightmaps
 // texture streaming
 // use stencil to distinguich ssr/nossr regions
 // velocities for skinned meshes

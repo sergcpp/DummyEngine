@@ -1,0 +1,116 @@
+{
+    "name" : "test_decals", 
+    "environment" : {
+	"sun_dir" : [
+	    0.57735, 
+	    -0.57735, 
+	    -0.57735
+	], 
+	"sun_col" : [
+	    1, 
+	    1, 
+	    1
+	], 
+	"sun_softness" : 0.1, 
+	"env_map" : "env/clear", 
+	"env_map_pt" : "env/noon_grass_2k.hdr"
+    }, 
+    "objects" : [
+        {
+            "name" : "decal",
+			"transform" : {
+				"pos" : [
+					0, 
+					0.5, 
+					0
+				], 
+				"rot" : [
+					-90, 
+					0, 
+					0
+				]
+			},
+			"decal" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ],
+                "dim" : [ 8.0, 8.0, 1.0 ],
+                "diff" : "test_decal.png"
+			}
+		},
+		{
+            "name" : "decal",
+			"transform" : {
+				"pos" : [
+					0, 
+					0.5, 
+					8
+				], 
+				"rot" : [
+					-90, 
+					0, 
+					0
+				]
+			},
+			"decal" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ],
+                "dim" : [ 8.0, 8.0, 1.0 ],
+                "diff" : "test_decal.png"
+			}
+		},
+		{
+            "name" : "decal",
+			"transform" : {
+				"pos" : [
+					8, 
+					0.5, 
+					0
+				], 
+				"rot" : [
+					-90, 
+					0, 
+					0
+				]
+			},
+			"decal" : {
+                "pos" : [ 0.0, 0.0, 0.0 ],
+                "rot" : [ 0.0, 0.0, 0.0 ],
+                "dim" : [ 8.0, 8.0, 1.0 ],
+                "diff" : "test_decal.png"
+			}
+		},
+		{
+			"transform" : {
+			"pos" : [
+				0, 
+				0, 
+				0
+			], 
+			"rot" : [
+				0, 
+				0, 
+				0
+			]
+			}, 
+			"drawable" : {
+				"mesh_file" : "ground_plane_200x200.mesh",
+				"material_override1" : [ "checker_glossy.txt" ],
+				"material_override2" : [ "_wind_debug.txt" ]
+			}
+		}
+    ], 
+    "camera" : {
+		"view_origin" : [
+			10.0, 10.0, 10.0
+		],
+		"view_dir" : [
+			-0.571, -0.7, -0.57
+		],
+		"view_dir1" : [
+			-0.180052, -1.037130, -0.181330
+		],
+		"fwd_speed" : 0.5, 
+		"fov" : 45, 
+		"max_exposure" : 1000
+    }
+}

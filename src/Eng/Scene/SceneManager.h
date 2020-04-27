@@ -102,6 +102,8 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     Ren::ProgramRef OnLoadProgram(const char *name, const char *arg1, const char *arg2);
     Ren::Texture2DRef OnLoadTexture(const char *name, uint32_t flags);
 
+    Ren::Vec4f LoadDecalTexture(const char *name);
+
     void RebuildBVH();
     void RemoveNode(uint32_t node_index);
 
@@ -123,7 +125,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     struct TextureRequest {
         Ren::Texture2DRef ref;
-        const void * data;
+        const void *data;
         int data_size;
     };
     std::deque<Ren::Texture2DRef> requested_textures_;

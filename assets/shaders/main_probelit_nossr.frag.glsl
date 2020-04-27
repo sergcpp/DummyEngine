@@ -108,7 +108,7 @@ void main(void) {
             
                 vec4 decal_diff = textureGrad(decals_texture, diff_uvs, _duv_dx, _duv_dy);
                 decal_influence = decal_diff.a;
-                albedo_color = mix(albedo_color, decal_diff.rgb, decal_influence);
+                albedo_color = mix(albedo_color, SRGBToLinear(decal_diff.rgb), decal_influence);
             }
             
             vec4 norm_uvs_tr = texelFetch(decals_buffer, di * 6 + 4);

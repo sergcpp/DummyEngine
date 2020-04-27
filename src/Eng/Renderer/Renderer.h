@@ -81,7 +81,7 @@ class Renderer {
 #if !defined(__ANDROID__)
         (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap |
          EnableLights | EnableDecals | EnableShadows /*| EnableOIT*/ | EnableTonemap |
-         EnableBloom | EnableMsaa | EnableFxaa | EnableTimers);
+         EnableBloom | EnableMsaa | EnableFxaa | EnableTimers /*| DebugDecals*/);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights |
          EnableDecals | EnableShadows | EnableTonemap | EnableTimers);
