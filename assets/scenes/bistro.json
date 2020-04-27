@@ -39,254 +39,6 @@
             [ 14.2545, 2.0, -37.95 ],
         ]
     },
-    "meshes" : {
-        "street_6225" : {
-            "mesh_file" : "bistro/street_6225.mesh"
-        },
-        "street_6185" : {
-            "mesh_file" : "bistro/street_6185.mesh"
-        },
-        "street_14" : {
-            "mesh_file" : "bistro/street_14.mesh"
-        },
-        "street_6253" : {
-            "mesh_file" : "bistro/street_6253.mesh"
-        },
-        "street_6255" : {
-            "mesh_file" : "bistro/street_6255.mesh"
-        },
-        "street_13" : {
-            "mesh_file" : "bistro/street_13.mesh"
-        },
-        "street_6195" : {
-            "mesh_file" : "bistro/street_6195.mesh"
-        },
-        "street_6183" : {
-            "mesh_file" : "bistro/street_6183.mesh"
-        },
-        "street_6231" : {
-            "mesh_file" : "bistro/street_6231.mesh"
-        },
-        "street_6251" : {
-            "mesh_file" : "bistro/street_6251.mesh"
-        },
-        "street_6227" : {
-            "mesh_file" : "bistro/street_6227.mesh"
-        },
-        "street_6235" : {
-            "mesh_file" : "bistro/street_6235.mesh"
-        },
-        "street_6181" : {
-            "mesh_file" : "bistro/street_6181.mesh"
-        },
-        "street_6179" : {
-            "mesh_file" : "bistro/street_6179.mesh"
-        },
-        "Linde_Tree_Large_4051" : {
-            "mesh_file" : "bistro/Linde_Tree_Large_4051.mesh"
-        },
-        "bux_hedge_box_bend_3987" : {
-            "mesh_file" : "bistro/bux_hedge_box_bend_3987.mesh"
-        },
-        "bux_hedge_cylinder_low_4007" : {
-            "mesh_file" : "bistro/bux_hedge_cylinder_low_4007.mesh"
-        },
-        "bux_hedge_box_low_3975" : {
-            "mesh_file" : "bistro/bux_hedge_box_low_3975.mesh"
-        },
-        "bux_hedge_box_high_3957" : {
-            "mesh_file" : "bistro/bux_hedge_box_high_3957.mesh"
-        },
-        "building_03" : {
-            "mesh_file" : "bistro/building_03.mesh"
-        },
-        "building_5317" : {
-            "mesh_file" : "bistro/building_5317.mesh"
-        },
-        "building_5351" : {
-            "mesh_file" : "bistro/building_5351.mesh"
-        },
-        "building_5523" : {
-            "mesh_file" : "bistro/building_5523.mesh"
-        },
-        "building_5195" : {
-            "mesh_file" : "bistro/building_5195.mesh"
-        },
-        "building_4027" : {
-            "mesh_file" : "bistro/building_4027.mesh"
-        },
-        "building_5891" : {
-            "mesh_file" : "bistro/building_5891.mesh"
-        },
-        "building_5313" : {
-            "mesh_file" : "bistro/building_5313.mesh"
-        },
-        "building_5987" : {
-            "mesh_file" : "bistro/building_5987.mesh"
-        },
-        "building_3a3b" : {
-            "mesh_file" : "bistro/building_3a3b.mesh"
-        },
-        "building_4957" : {
-            "mesh_file" : "bistro/building_4957.mesh"
-        },
-        "building_5439" : {
-            "mesh_file" : "bistro/building_5439.mesh"
-        },
-        "building_5471" : {
-            "mesh_file" : "bistro/building_5471.mesh"
-        },
-        "building_df3c" : {
-            "mesh_file" : "bistro/building_df3c.mesh"
-        },
-        "building_5027" : {
-            "mesh_file" : "bistro/building_5027.mesh"
-        },
-        "building_10ca" : {
-            "mesh_file" : "bistro/building_10ca.mesh"
-        },
-        "Paris_StreetPivot_01" : {
-            "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
-        },
-        "Bollard_4135" : {
-            "mesh_file" : "bistro/Bollard_4135.mesh"
-        },
-        "Manhole" : {
-            "mesh_file" : "bistro/Manhole.mesh"
-        },
-        "bux_hedge_box_long_high_3961" : {
-            "mesh_file" : "bistro/bux_hedge_box_long_high_3961.mesh"
-        },
-        "tree_01" : {
-            "mesh_file" : "bistro/tree_01.mesh"
-        },
-        "bush_01" : {
-            "mesh_file" : "bistro/bush_01.mesh"
-        },
-        "bush_02" : {
-            "mesh_file" : "bistro/bush_02.mesh"
-        },
-        "trashcan_6515" : {
-            "mesh_file" : "bistro/trashcan_6515.mesh"
-        },
-        "streetlight_01a" : {
-            "mesh_file" : "bistro/streetlight_01a.mesh"
-        },
-        "table_01" : {
-            "mesh_file" : "bistro/table_01.mesh"
-        },
-        "plantpot_01" : {
-            "mesh_file" : "bistro/plantpot_01.mesh"
-        },
-        "plantpot_02" : {
-            "mesh_file" : "bistro/plantpot_02.mesh"
-        },
-        "sidewalk_barrier" : {
-            "mesh_file" : "bistro/sidewalk_barrier.mesh"
-        },
-        "menu_sign_01" : {
-            "mesh_file" : "bistro/menu_sign_01.mesh"
-        },
-        "stringlight_wind" : {
-            "mesh_file" : "bistro/stringlight_wind.mesh"
-        },
-        "stringlight_wind" : {
-            "mesh_file" : "bistro/stringlight_wind.mesh"
-        },
-        "stringlight_wind_14" : {
-            "mesh_file" : "bistro/stringlight_wind_14.mesh"
-        },
-        "stringlight_wind_15" : {
-            "mesh_file" : "bistro/stringlight_wind_15.mesh"
-        },
-        "stringlight_wind_16" : {
-            "mesh_file" : "bistro/stringlight_wind_16.mesh"
-        },
-        "stringlight_wind_17" : {
-            "mesh_file" : "bistro/stringlight_wind_17.mesh"
-        },
-        "stringlight_wind_18" : {
-            "mesh_file" : "bistro/stringlight_wind_18.mesh"
-        },
-        "stringlight_wind_19" : {
-            "mesh_file" : "bistro/stringlight_wind_19.mesh"
-        },
-        "stringlight_wind_20" : {
-            "mesh_file" : "bistro/stringlight_wind_20.mesh"
-        },
-        "Lantern_Wind" : {
-            "mesh_file" : "bistro/Lantern_Wind.mesh"
-        },
-        "Vespa_static" : {
-            "mesh_file" : "bistro/Vespa_static.mesh"
-        },
-        "occ_10ca" : {
-            "mesh_file" : "bistro/occluders/occ_10ca.mesh"
-        },
-        "occ_5027" : {
-            "mesh_file" : "bistro/occluders/occ_5027.mesh"
-        },
-        "occ_5195" : {
-            "mesh_file" : "bistro/occluders/occ_5195.mesh"
-        },
-        "occ_df3c" : {
-            "mesh_file" : "bistro/occluders/occ_df3c.mesh"
-        },
-        "occ_5471" : {
-            "mesh_file" : "bistro/occluders/occ_5471.mesh"
-        },
-        "occ_5439" : {
-            "mesh_file" : "bistro/occluders/occ_5439.mesh"
-        },
-        "occ_4957" : {
-            "mesh_file" : "bistro/occluders/occ_4957.mesh"
-        },
-        "occ_3a3b" : {
-            "mesh_file" : "bistro/occluders/occ_3a3b.mesh"
-        },
-        "occ_5351" : {
-            "mesh_file" : "bistro/occluders/occ_5351.mesh"
-        },
-        "occ_5987" : {
-            "mesh_file" : "bistro/occluders/occ_5987.mesh"
-        },
-        "occ_5891" : {
-            "mesh_file" : "bistro/occluders/occ_5891.mesh"
-        },
-        "occ_4027" : {
-            "mesh_file" : "bistro/occluders/occ_4027.mesh"
-        },
-        "occ_5523" : {
-            "mesh_file" : "bistro/occluders/occ_5523.mesh"
-        },
-        "occ_03" : {
-            "mesh_file" : "bistro/occluders/occ_03.mesh"
-        },
-        "occ_6255" : {
-            "mesh_file" : "bistro/occluders/occ_6255.mesh"
-        },
-        "scooter" : {
-            "mesh_file" : "bistro/scooter_skinned.mesh",
-            "anims" : [
-                "bistro/scooter_idle.anim",
-                "bistro/scooter_move_straight.anim",
-                "bistro/scooter_move_left.anim",
-                "bistro/scooter_move_right.anim"
-            ]
-        },
-        "sophia" : {
-            "mesh_file" : "sophia.mesh",
-            "anims" : [
-                "sophia_idle.anim"
-            ]
-        },
-        "eric" : {
-            "mesh_file" : "eric.mesh",
-            "anims" : [
-                "eric_idle.anim"
-            ]
-        }
-    },
     "decals" : {
     },
     "objects" : [
@@ -295,7 +47,7 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "street_6225"
+                "mesh_file" : "bistro/street_6225.mesh"
             },
             "decal" : {
                 "pos" : [ -7.52863, 0.0, -3.09351 ],
@@ -444,7 +196,7 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "street_6185"
+                "mesh_file" : "bistro/street_6185.mesh"
             }
         },
         {
@@ -452,7 +204,7 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "street_14"
+                "mesh_file" : "bistro/street_14.mesh"
             }
         },
         {
@@ -460,7 +212,7 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "street_6253"
+                "mesh_file" : "bistro/street_6253.mesh"
             }
         },
         {
@@ -468,10 +220,10 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "street_6255"
+                "mesh_file" : "bistro/street_6255.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_6255"
+                "mesh_file" : "bistro/occluders/occ_6255.mesh"
             }
         },
         {
@@ -479,7 +231,7 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "street_13"
+                "mesh_file" : "bistro/street_13.mesh"
             }
         },
         {
@@ -487,7 +239,7 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "street_6195"
+                "mesh_file" : "bistro/street_6195.mesh"
             }
         },
         {
@@ -495,7 +247,7 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "street_6183"
+                "mesh_file" : "bistro/street_6183.mesh"
             }
         },
         {
@@ -503,7 +255,7 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "street_6231"
+                "mesh_file" : "bistro/street_6231.mesh"
             }
         },
         {
@@ -511,7 +263,7 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "street_6251"
+                "mesh_file" : "bistro/street_6251.mesh"
             }
         },
         {
@@ -519,7 +271,7 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "street_6227"
+                "mesh_file" : "bistro/street_6227.mesh"
             }
         },
         {
@@ -527,7 +279,7 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "street_6235"
+                "mesh_file" : "bistro/street_6235.mesh"
             }
         },
         {
@@ -535,7 +287,7 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "street_6181"
+                "mesh_file" : "bistro/street_6181.mesh"
             }
         },
         {
@@ -543,7 +295,7 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "street_6179"
+                "mesh_file" : "bistro/street_6179.mesh"
             }
         },
         {
@@ -551,7 +303,7 @@
                 "pos" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Linde_Tree_Large_4051"
+                "mesh_file" : "bistro/Linde_Tree_Large_4051.mesh"
             }
         },
         {
@@ -560,7 +312,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bux_hedge_box_bend_3987"
+                "mesh_file" : "bistro/bux_hedge_box_bend_3987.mesh"
             }
         },
         {
@@ -569,7 +321,7 @@
                 "rot" : [ 0.0, 72.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bux_hedge_box_bend_3987"
+                "mesh_file" : "bistro/bux_hedge_box_bend_3987.mesh"
             }
         },
         {
@@ -578,7 +330,7 @@
                 "rot" : [ 0.0, 144.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bux_hedge_box_bend_3987"
+                "mesh_file" : "bistro/bux_hedge_box_bend_3987.mesh"
             }
         },
         {
@@ -587,7 +339,7 @@
                 "rot" : [ 0.0, 216.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bux_hedge_box_bend_3987"
+                "mesh_file" : "bistro/bux_hedge_box_bend_3987.mesh"
             }
         },
         {
@@ -596,7 +348,7 @@
                 "rot" : [ 0.0, 288.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bux_hedge_box_bend_3987"
+                "mesh_file" : "bistro/bux_hedge_box_bend_3987.mesh"
             }
         },
         {
@@ -605,7 +357,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bux_hedge_cylinder_low_4007"
+                "mesh_file" : "bistro/bux_hedge_cylinder_low_4007.mesh"
             }
         },
         {
@@ -614,7 +366,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bux_hedge_cylinder_low_4007"
+                "mesh_file" : "bistro/bux_hedge_cylinder_low_4007.mesh"
             }
         },
         {
@@ -623,7 +375,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bux_hedge_box_high_3957"
+                "mesh_file" : "bistro/bux_hedge_box_high_3957.mesh"
             }
         },
         {
@@ -632,10 +384,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_03"
+                "mesh_file" : "bistro/building_03.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_03"
+                "mesh_file" : "bistro/occluders/occ_03.mesh"
             }
         },
         {
@@ -644,7 +396,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_5317"
+                "mesh_file" : "bistro/building_5317.mesh"
             }
         },
         {
@@ -653,10 +405,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_5351"
+                "mesh_file" : "bistro/building_5351.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_5351"
+                "mesh_file" : "bistro/occluders/occ_5351.mesh"
             }
         },
         {
@@ -665,10 +417,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_5523"
+                "mesh_file" : "bistro/building_5523.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_5523"
+                "mesh_file" : "bistro/occluders/occ_5523.mesh"
             }
         },
         {
@@ -677,10 +429,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_5195"
+                "mesh_file" : "bistro/building_5195.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_5195"
+                "mesh_file" : "bistro/occluders/occ_5195.mesh"
             }
         },
         {
@@ -689,10 +441,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_4027"
+                "mesh_file" : "bistro/building_4027.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_4027"
+                "mesh_file" : "bistro/occluders/occ_4027.mesh"
             }
         },
         {
@@ -701,10 +453,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_5891"
+                "mesh_file" : "bistro/building_5891.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_5891"
+                "mesh_file" : "bistro/occluders/occ_5891.mesh"
             }
         },
         {
@@ -713,7 +465,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_5313"
+                "mesh_file" : "bistro/building_5313.mesh"
             }
         },
         {
@@ -722,10 +474,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_5987"
+                "mesh_file" : "bistro/building_5987.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_5987"
+                "mesh_file" : "bistro/occluders/occ_5987.mesh"
             }
         },
         {
@@ -734,10 +486,10 @@
                 "rot" : [ 0.0, -120.195, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_5351"
+                "mesh_file" : "bistro/building_5351.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_5351"
+                "mesh_file" : "bistro/occluders/occ_5351.mesh"
             }
         },
         {
@@ -746,10 +498,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_3a3b"
+                "mesh_file" : "bistro/building_3a3b.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_3a3b"
+                "mesh_file" : "bistro/occluders/occ_3a3b.mesh"
             }
         },
         {
@@ -758,10 +510,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_4957"
+                "mesh_file" : "bistro/building_4957.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_4957"
+                "mesh_file" : "bistro/occluders/occ_4957.mesh"
             }
         },
         {
@@ -770,10 +522,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_5439"
+                "mesh_file" : "bistro/building_5439.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_5439"
+                "mesh_file" : "bistro/occluders/occ_5439.mesh"
             }
         },
         {
@@ -782,10 +534,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_5471"
+                "mesh_file" : "bistro/building_5471.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_5471"
+                "mesh_file" : "bistro/occluders/occ_5471.mesh"
             }
         },
         {
@@ -794,10 +546,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_df3c"
+                "mesh_file" : "bistro/building_df3c.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_df3c"
+                "mesh_file" : "bistro/occluders/occ_df3c.mesh"
             }
         },
         {
@@ -806,10 +558,10 @@
                 "rot" : [ 0.0, -98.5553, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_5195"
+                "mesh_file" : "bistro/building_5195.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_5195"
+                "mesh_file" : "bistro/occluders/occ_5195.mesh"
             }
         },
         {
@@ -818,10 +570,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_5027"
+                "mesh_file" : "bistro/building_5027.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_5027"
+                "mesh_file" : "bistro/occluders/occ_5027.mesh"
             }
         },
         {
@@ -830,10 +582,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "building_10ca"
+                "mesh_file" : "bistro/building_10ca.mesh"
             },
             "occluder" : {
-                "mesh" : "occ_10ca"
+                "mesh_file" : "bistro/occluders/occ_10ca.mesh"
             }
         },
         {
@@ -842,7 +594,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bux_hedge_box_low_3975"
+                "mesh_file" : "bistro/bux_hedge_box_low_3975.mesh"
             }
         },
         {
@@ -851,7 +603,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bux_hedge_box_low_3975"
+                "mesh_file" : "bistro/bux_hedge_box_low_3975.mesh"
             }
         },
         {
@@ -860,7 +612,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bux_hedge_box_low_3975"
+                "mesh_file" : "bistro/bux_hedge_box_low_3975.mesh"
             }
         },
         {
@@ -869,7 +621,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bux_hedge_box_low_3975"
+                "mesh_file" : "bistro/bux_hedge_box_low_3975.mesh"
             }
         },
         {
@@ -878,7 +630,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -887,7 +639,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -896,7 +648,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -905,7 +657,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -914,7 +666,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -923,7 +675,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -932,7 +684,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -941,7 +693,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -950,7 +702,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -959,7 +711,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -968,7 +720,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -977,7 +729,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -986,7 +738,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -995,7 +747,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1004,7 +756,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1013,7 +765,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1022,7 +774,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1031,7 +783,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1040,7 +792,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1049,7 +801,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1058,7 +810,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1067,7 +819,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1076,7 +828,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1085,7 +837,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1094,7 +846,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1103,7 +855,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1112,7 +864,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1121,7 +873,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1130,7 +882,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1139,7 +891,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1148,7 +900,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1157,7 +909,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1166,7 +918,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1175,7 +927,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1184,7 +936,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1193,7 +945,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1202,7 +954,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1211,7 +963,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1220,7 +972,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1229,7 +981,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1238,7 +990,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1247,7 +999,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1256,7 +1008,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1265,7 +1017,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1274,7 +1026,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1283,7 +1035,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1292,7 +1044,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1301,7 +1053,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1310,7 +1062,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1319,7 +1071,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Paris_StreetPivot_01"
+                "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
             }
         },
         {
@@ -1328,7 +1080,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Bollard_4135"
+                "mesh_file" : "bistro/Bollard_4135.mesh"
             }
         },
         {
@@ -1337,7 +1089,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Bollard_4135"
+                "mesh_file" : "bistro/Bollard_4135.mesh"
             }
         },
         {
@@ -1346,7 +1098,7 @@
                 "rot" : [ 0.0, 73.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Manhole"
+                "mesh_file" : "bistro/Manhole.mesh"
             }
         },
         {
@@ -1355,7 +1107,7 @@
                 "rot" : [ 0.0, 109.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Manhole"
+                "mesh_file" : "bistro/Manhole.mesh"
             }
         },
         {
@@ -1364,7 +1116,7 @@
                 "rot" : [ 0.0, -51.9, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Manhole"
+                "mesh_file" : "bistro/Manhole.mesh"
             }
         },
         {
@@ -1373,7 +1125,7 @@
                 "rot" : [ 0.0, 175.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Manhole"
+                "mesh_file" : "bistro/Manhole.mesh"
             }
         },
         {
@@ -1382,7 +1134,7 @@
                 "rot" : [ 0.0, -130.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Manhole"
+                "mesh_file" : "bistro/Manhole.mesh"
             }
         },
         {
@@ -1391,7 +1143,7 @@
                 "rot" : [ 0.0, 7.36, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Manhole"
+                "mesh_file" : "bistro/Manhole.mesh"
             }
         },
         {
@@ -1400,7 +1152,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bux_hedge_box_long_high_3961"
+                "mesh_file" : "bistro/bux_hedge_box_long_high_3961.mesh"
             }
         },
         {
@@ -1409,7 +1161,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "tree_01"
+                "mesh_file" : "bistro/tree_01.mesh"
             }
         },
         {
@@ -1418,7 +1170,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "tree_01"
+                "mesh_file" : "bistro/tree_01.mesh"
             }
         },
         {
@@ -1427,7 +1179,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "tree_01"
+                "mesh_file" : "bistro/tree_01.mesh"
             }
         },
         {
@@ -1436,7 +1188,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "tree_01"
+                "mesh_file" : "bistro/tree_01.mesh"
             }
         },
         {
@@ -1445,7 +1197,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "tree_01"
+                "mesh_file" : "bistro/tree_01.mesh"
             }
         },
         {
@@ -1454,7 +1206,7 @@
                 "rot" : [ 0.0, -112.581, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bush_01"
+                "mesh_file" : "bistro/bush_01.mesh"
             }
         },
         {
@@ -1463,7 +1215,7 @@
                 "rot" : [ 0.0, -22.581, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bush_01"
+                "mesh_file" : "bistro/bush_01.mesh"
             }
         },
         {
@@ -1472,7 +1224,7 @@
                 "rot" : [ 0.0, -22.581, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bush_01"
+                "mesh_file" : "bistro/bush_01.mesh"
             }
         },
         {
@@ -1481,7 +1233,7 @@
                 "rot" : [ 0.0, -22.581, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bush_01"
+                "mesh_file" : "bistro/bush_01.mesh"
             }
         },
         {
@@ -1490,7 +1242,7 @@
                 "rot" : [ 0.0, -22.581, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bush_01"
+                "mesh_file" : "bistro/bush_01.mesh"
             }
         },
         {
@@ -1499,7 +1251,7 @@
                 "rot" : [ 0.0, -114.842, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bush_01"
+                "mesh_file" : "bistro/bush_01.mesh"
             }
         },
         {
@@ -1508,7 +1260,7 @@
                 "rot" : [ 0.0, -114.842, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bush_01"
+                "mesh_file" : "bistro/bush_01.mesh"
             }
         },
         {
@@ -1517,7 +1269,7 @@
                 "rot" : [ 0.0, -114.842, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bush_01"
+                "mesh_file" : "bistro/bush_01.mesh"
             }
         },
         {
@@ -1526,7 +1278,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "bush_02"
+                "mesh_file" : "bistro/bush_02.mesh"
             }
         },
         {
@@ -1535,7 +1287,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "trashcan_6515"
+                "mesh_file" : "bistro/trashcan_6515.mesh"
             }
         },
         {
@@ -1544,7 +1296,7 @@
                 "rot" : [ 0.0, -21.8545, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Bollard_4135"
+                "mesh_file" : "bistro/Bollard_4135.mesh"
             }
         },
         {
@@ -1553,7 +1305,7 @@
                 "rot" : [ 0.0, -21.8545, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Bollard_4135"
+                "mesh_file" : "bistro/Bollard_4135.mesh"
             }
         },
         {
@@ -1562,7 +1314,7 @@
                 "rot" : [ 0.0, 58.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "streetlight_01a"
+                "mesh_file" : "bistro/streetlight_01a.mesh"
             }
         },
         {
@@ -1571,7 +1323,7 @@
                 "rot" : [ 0.0, 38.8329, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "streetlight_01a"
+                "mesh_file" : "bistro/streetlight_01a.mesh"
             }
         },
         {
@@ -1580,7 +1332,7 @@
                 "rot" : [ 0.0, 123.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "streetlight_01a"
+                "mesh_file" : "bistro/streetlight_01a.mesh"
             }
         },
         {
@@ -1589,7 +1341,7 @@
                 "rot" : [ 0.0, 95.7767, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "streetlight_01a"
+                "mesh_file" : "bistro/streetlight_01a.mesh"
             }
         },
         {
@@ -1598,7 +1350,7 @@
                 "rot" : [ 0.0, 72.7592, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "streetlight_01a"
+                "mesh_file" : "bistro/streetlight_01a.mesh"
             }
         },
         {
@@ -1607,7 +1359,7 @@
                 "rot" : [ 0.0, 70.5844, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "streetlight_01a"
+                "mesh_file" : "bistro/streetlight_01a.mesh"
             }
         },
         {
@@ -1616,7 +1368,7 @@
                 "rot" : [ 0.0, 70.5844, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "streetlight_01a"
+                "mesh_file" : "bistro/streetlight_01a.mesh"
             }
         },
         {
@@ -1625,7 +1377,7 @@
                 "rot" : [ 0.0, 70.5844, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "streetlight_01a"
+                "mesh_file" : "bistro/streetlight_01a.mesh"
             }
         },
         {
@@ -1634,7 +1386,7 @@
                 "rot" : [ 0.0, 19.8058, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "streetlight_01a"
+                "mesh_file" : "bistro/streetlight_01a.mesh"
             }
         },
         {
@@ -1643,7 +1395,7 @@
                 "rot" : [ 0.0, -36.9879, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "streetlight_01a"
+                "mesh_file" : "bistro/streetlight_01a.mesh"
             }
         },
         {
@@ -1652,7 +1404,7 @@
                 "rot" : [ 0.0, -21.672, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "table_01"
+                "mesh_file" : "bistro/table_01.mesh"
             }
         },
         {
@@ -1661,7 +1413,7 @@
                 "rot" : [ 0.0, -21.672, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "table_01"
+                "mesh_file" : "bistro/table_01.mesh"
             }
         },
         {
@@ -1670,7 +1422,7 @@
                 "rot" : [ 0.0, -21.672, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "table_01"
+                "mesh_file" : "bistro/table_01.mesh"
             }
         },
         {
@@ -1679,7 +1431,7 @@
                 "rot" : [ 0.0, 158.328, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "table_01"
+                "mesh_file" : "bistro/table_01.mesh"
             }
         },
         {
@@ -1688,7 +1440,7 @@
                 "rot" : [ 0.0, 158.328, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "table_01"
+                "mesh_file" : "bistro/table_01.mesh"
             }
         },
         {
@@ -1697,7 +1449,7 @@
                 "rot" : [ 0.0, 158.328, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "table_01"
+                "mesh_file" : "bistro/table_01.mesh"
             }
         },
         {
@@ -1706,7 +1458,7 @@
                 "rot" : [ 0.0, 158.328, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "table_01"
+                "mesh_file" : "bistro/table_01.mesh"
             }
         },
         {
@@ -1715,7 +1467,7 @@
                 "rot" : [ 0.0, -117.873, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "table_01"
+                "mesh_file" : "bistro/table_01.mesh"
             }
         },
         {
@@ -1724,7 +1476,7 @@
                 "rot" : [ 0.0, -117.873, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "table_01"
+                "mesh_file" : "bistro/table_01.mesh"
             }
         },
         {
@@ -1733,7 +1485,7 @@
                 "rot" : [ 0.0, -117.873, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "table_01"
+                "mesh_file" : "bistro/table_01.mesh"
             }
         },
         {
@@ -1742,7 +1494,7 @@
                 "rot" : [ 0.0, -125.4, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "table_01"
+                "mesh_file" : "bistro/table_01.mesh"
             }
         },
         {
@@ -1751,7 +1503,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "plantpot_01"
+                "mesh_file" : "bistro/plantpot_01.mesh"
             }
         },
         {
@@ -1760,7 +1512,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "plantpot_01"
+                "mesh_file" : "bistro/plantpot_01.mesh"
             }
         },
         {
@@ -1769,7 +1521,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "plantpot_01"
+                "mesh_file" : "bistro/plantpot_01.mesh"
             }
         },
         {
@@ -1778,7 +1530,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "plantpot_02"
+                "mesh_file" : "bistro/plantpot_02.mesh"
             }
         },
         {
@@ -1787,7 +1539,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "plantpot_02"
+                "mesh_file" : "bistro/plantpot_02.mesh"
             }
         },
         {
@@ -1796,7 +1548,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "plantpot_02"
+                "mesh_file" : "bistro/plantpot_02.mesh"
             }
         },
         {
@@ -1805,7 +1557,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "plantpot_02"
+                "mesh_file" : "bistro/plantpot_02.mesh"
             }
         },
         {
@@ -1814,7 +1566,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "plantpot_02"
+                "mesh_file" : "bistro/plantpot_02.mesh"
             }
         },
         {
@@ -1823,7 +1575,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "plantpot_02"
+                "mesh_file" : "bistro/plantpot_02.mesh"
             }
         },
         {
@@ -1832,7 +1584,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk_barrier"
+                "mesh_file" : "bistro/sidewalk_barrier.mesh"
             }
         },
         {
@@ -1841,7 +1593,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk_barrier"
+                "mesh_file" : "bistro/sidewalk_barrier.mesh"
             }
         },
         {
@@ -1850,7 +1602,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk_barrier"
+                "mesh_file" : "bistro/sidewalk_barrier.mesh"
             }
         },
         {
@@ -1859,7 +1611,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk_barrier"
+                "mesh_file" : "bistro/sidewalk_barrier.mesh"
             }
         },
         {
@@ -1868,7 +1620,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "sidewalk_barrier"
+                "mesh_file" : "bistro/sidewalk_barrier.mesh"
             }
         },
         {
@@ -1877,7 +1629,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "menu_sign_01"
+                "mesh_file" : "bistro/menu_sign_01.mesh"
             }
         },
         {
@@ -1886,7 +1638,7 @@
                 "rot" : [ 0.0, 69.5, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "menu_sign_01"
+                "mesh_file" : "bistro/menu_sign_01.mesh"
             }
         },
         {
@@ -1895,7 +1647,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "stringlight_wind"
+                "mesh_file" : "bistro/stringlight_wind.mesh"
             }
         },
         {
@@ -1904,7 +1656,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "stringlight_wind_14"
+                "mesh_file" : "bistro/stringlight_wind_14.mesh"
             }
         },
         {
@@ -1913,7 +1665,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "stringlight_wind_15"
+                "mesh_file" : "bistro/stringlight_wind_15.mesh"
             }
         },
         {
@@ -1922,7 +1674,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "stringlight_wind_16"
+                "mesh_file" : "bistro/stringlight_wind_16.mesh"
             }
         },
         {
@@ -1931,7 +1683,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "stringlight_wind_17"
+                "mesh_file" : "bistro/stringlight_wind_17.mesh"
             }
         },
         {
@@ -1940,7 +1692,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "stringlight_wind_18"
+                "mesh_file" : "bistro/stringlight_wind_18.mesh"
             }
         },
         {
@@ -1949,7 +1701,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "stringlight_wind_19"
+                "mesh_file" : "bistro/stringlight_wind_19.mesh"
             }
         },
         {
@@ -1958,7 +1710,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "stringlight_wind_20"
+                "mesh_file" : "bistro/stringlight_wind_20.mesh"
             }
         },
         {
@@ -1967,7 +1719,7 @@
                 "rot" : [ 0.0, -22.2714, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Lantern_Wind"
+                "mesh_file" : "bistro/Lantern_Wind.mesh"
             }
         },
         {
@@ -1976,7 +1728,7 @@
                 "rot" : [ 0.0, -22.2714, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Lantern_Wind"
+                "mesh_file" : "bistro/Lantern_Wind.mesh"
             }
         },
         {
@@ -1985,7 +1737,7 @@
                 "rot" : [ 0.0, -22.2714, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Lantern_Wind"
+                "mesh_file" : "bistro/Lantern_Wind.mesh"
             }
         },
         {
@@ -1994,7 +1746,7 @@
                 "rot" : [ 0.0, 61.4374, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Lantern_Wind"
+                "mesh_file" : "bistro/Lantern_Wind.mesh"
             }
         },
         {
@@ -2003,7 +1755,7 @@
                 "rot" : [ 0.0, 61.4374, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Lantern_Wind"
+                "mesh_file" : "bistro/Lantern_Wind.mesh"
             }
         },
         {
@@ -2012,7 +1764,7 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "Vespa_static"
+                "mesh_file" : "bistro/Vespa_static.mesh"
             }
         },
         {
@@ -2022,7 +1774,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2033,7 +1791,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2044,7 +1808,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2055,7 +1825,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2066,7 +1842,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2077,7 +1859,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2088,7 +1876,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2099,7 +1893,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2110,7 +1910,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2121,7 +1927,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2132,7 +1944,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2143,7 +1961,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2154,7 +1978,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2165,7 +1995,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2176,7 +2012,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2187,7 +2029,13 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "scooter"
+                "mesh_file" : "bistro/scooter_skinned.mesh",
+				"anims" : [
+					"bistro/scooter_idle.anim",
+					"bistro/scooter_move_straight.anim",
+					"bistro/scooter_move_left.anim",
+					"bistro/scooter_move_right.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2198,7 +2046,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "sophia"
+                "mesh_file" : "sophia.mesh",
+				"anims" : [
+					"sophia_idle.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2209,7 +2060,10 @@
                 "rot" : [ 0.0, 180.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "sophia"
+                "mesh_file" : "sophia.mesh",
+				"anims" : [
+					"sophia_idle.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2220,7 +2074,10 @@
                 "rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "eric"
+                "mesh_file" : "eric.mesh",
+				"anims" : [
+					"eric_idle.anim"
+				]
             },
             "anim_state" : {}
         },
@@ -2231,101 +2088,452 @@
                 "rot" : [ 0.0, -90.0, 0.0 ]
             },
             "drawable" : {
-                "mesh" : "eric"
+                "mesh_file" : "eric.mesh",
+				"anims" : [
+					"eric_idle.anim"
+				]
             },
             "anim_state" : {}
-        },
-        
-        
-        {
-            "transform" : {
-                "pos" : [ 15.0868, 2.0, -36.1392 ]
-            },
-            "probe" : {
-                "offset" : [ 0.0, 0.0, 0.0 ],
-                "radius" : 30.0
-            }
-        },
-        {
-            "transform" : {
-                "pos" : [ 7.48615, 2.0, -22.5299 ]
-            },
-            "probe" : {
-                "offset" : [ 0.0, 0.0, 0.0 ],
-                "radius" : 30.0
-            }
-        },
-        {
-            "transform" : {
-                "pos" : [ -3.76081, 2.0, -9.43412 ]
-            },
-            "probe" : {
-                "offset" : [ 0.0, 0.0, 0.0 ],
-                "radius" : 30.0
-            }
-        },
-        {
-            "transform" : {
-                "pos" : [ -18.9841, 2.0, -10.7051 ]
-            },
-            "probe" : {
-                "offset" : [ 0.0, 0.0, 0.0 ],
-                "radius" : 30.0
-            }
-        },
-        {
-            "transform" : {
-                "pos" : [ -7.27465, 2.0, 1.21576 ]
-            },
-            "probe" : {
-                "offset" : [ 0.0, 0.0, 0.0 ],
-                "radius" : 30.0
-            }
-        },
-        {
-            "transform" : {
-                "pos" : [ 2.98379, 2.0, 9.39157 ]
-            },
-            "probe" : {
-                "offset" : [ 0.0, 0.0, 0.0 ],
-                "radius" : 30.0
-            }
-        },
-        {
-            "transform" : {
-                "pos" : [ 13.9366, 2.0, 13.3216 ]
-            },
-            "probe" : {
-                "offset" : [ 0.0, 0.0, 0.0 ],
-                "radius" : 30.0
-            }
-        },
-        {
-            "transform" : {
-                "pos" : [ 26.0566, 2.0, 18.2004 ]
-            },
-            "probe" : {
-                "offset" : [ 0.0, 0.0, 0.0 ],
-                "radius" : 30.0
-            }
-        },
-        {
-            "transform" : {
-                "pos" : [ 47.6775, 2.0, 17.3787 ]
-            },
-            "probe" : {
-                "offset" : [ 0.0, 0.0, 0.0 ],
-                "radius" : 30.0
-            }
-        },
-        {
-            "transform" : {
-                "pos" : [ 42.4905, 2.0, 32.3233 ]
-            },
-            "probe" : {
-                "offset" : [ 0.0, 0.0, 0.0 ],
-                "radius" : 30.0
-            }
-        }
+        }, 
+		{
+			"transform" : {
+				"pos" : [
+					15.0868, 
+					2, 
+					-36.1392
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"probe" : {
+				"offset" : [
+					0, 
+					0, 
+					0
+				], 
+				"radius" : 30, 
+				"sh_coeffs" : [
+					[
+						0.620308, 
+						0.627254, 
+						0.585453
+					], 
+					[
+						-0.028838, 
+						0.00987698, 
+						0.0746459
+					], 
+					[
+						-0.0155476, 
+						-0.031699, 
+						-0.0545293
+					], 
+					[
+						0.164229, 
+						0.158769, 
+						0.11697
+					]
+				]
+			}
+		}, 
+		{
+			"transform" : {
+				"pos" : [
+					7.48615, 
+					2, 
+					-22.5299
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"probe" : {
+				"offset" : [
+					0, 
+					0, 
+					0
+				], 
+				"radius" : 30, 
+				"sh_coeffs" : [
+					[
+						0.478207, 
+						0.475998, 
+						0.440232
+					], 
+					[
+						-0.159026, 
+						-0.123379, 
+						-0.047813
+					], 
+					[
+						0.0206351, 
+						0.0238119, 
+						0.0222227
+					], 
+					[
+						-0.0155409, 
+						-0.0247165, 
+						-0.0323247
+					]
+				]
+			}
+		}, 
+		{
+			"transform" : {
+				"pos" : [
+					-3.76081, 
+					2, 
+					-9.43412
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"probe" : {
+				"offset" : [
+					0, 
+					0, 
+					0
+				], 
+				"radius" : 30, 
+				"sh_coeffs" : [
+					[
+						0.40387, 
+						0.405338, 
+						0.391108
+					], 
+					[
+						-0.144515, 
+						-0.10168, 
+						-0.0128746
+					], 
+					[
+						0.00765319, 
+						0.0127186, 
+						0.022745
+					], 
+					[
+						0.0306394, 
+						0.0266043, 
+						0.0153842
+					]
+				]
+			}
+		}, 
+		{
+			"transform" : {
+				"pos" : [
+					-18.9841, 
+					2, 
+					-10.7051
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"probe" : {
+				"offset" : [
+					0, 
+					0, 
+					0
+				], 
+				"radius" : 30, 
+				"sh_coeffs" : [
+					[
+						0.1384, 
+						0.143416, 
+						0.165424
+					], 
+					[
+						0.079663, 
+						0.0941194, 
+						0.120485
+					], 
+					[
+						-0.018037, 
+						0.00294727, 
+						0.00822391
+					], 
+					[
+						0.0304267, 
+						0.0327027, 
+						0.032811
+					]
+				]
+			}
+		}, 
+		{
+			"transform" : {
+				"pos" : [
+					-7.27465, 
+					2, 
+					1.21576
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"probe" : {
+				"offset" : [
+					0, 
+					0, 
+					0
+				], 
+				"radius" : 30, 
+				"sh_coeffs" : [
+					[
+						0.156524, 
+						0.173772, 
+						0.201102
+					], 
+					[
+						0.0752284, 
+						0.0986622, 
+						0.150353
+					], 
+					[
+						-0.0162588, 
+						-0.0162163, 
+						-0.0146698
+					], 
+					[
+						0.0584316, 
+						0.0635513, 
+						0.0604716
+					]
+				]
+			}
+		}, 
+		{
+			"transform" : {
+				"pos" : [
+					2.98379, 
+					2, 
+					9.39157
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"probe" : {
+				"offset" : [
+					0, 
+					0, 
+					0
+				], 
+				"radius" : 30, 
+				"sh_coeffs" : [
+					[
+						0.258243, 
+						0.255033, 
+						0.252993
+					], 
+					[
+						0.021945, 
+						0.0471224, 
+						0.0957035
+					], 
+					[
+						-0.107146, 
+						-0.0850324, 
+						-0.0717428
+					], 
+					[
+						-0.015719, 
+						-0.0213056, 
+						-0.0280322
+					]
+				]
+			}
+		}, 
+		{
+			"transform" : {
+				"pos" : [
+					13.9366, 
+					2, 
+					13.3216
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"probe" : {
+				"offset" : [
+					0, 
+					0, 
+					0
+				], 
+				"radius" : 30, 
+				"sh_coeffs" : [
+					[
+						0.0920437, 
+						0.0986584, 
+						0.10375
+					], 
+					[
+						0.0135363, 
+						0.0169376, 
+						0.0195985
+					], 
+					[
+						0.0175397, 
+						0.015148, 
+						0.0104664
+					], 
+					[
+						0.00579641, 
+						0.00469879, 
+						0.00702531
+					]
+				]
+			}
+		}, 
+		{
+			"transform" : {
+				"pos" : [
+					26.0566, 
+					2, 
+					18.2004
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"probe" : {
+				"offset" : [
+					0, 
+					0, 
+					0
+				], 
+				"radius" : 30, 
+				"sh_coeffs" : [
+					[
+						0.243579, 
+						0.258418, 
+						0.285058
+					], 
+					[
+						0.0845608, 
+						0.102166, 
+						0.144539
+					], 
+					[
+						-0.0581969, 
+						-0.0522408, 
+						-0.0279388
+					], 
+					[
+						0.0994774, 
+						0.106231, 
+						0.116775
+					]
+				]
+			}
+		}, 
+		{
+			"transform" : {
+				"pos" : [
+					47.6775, 
+					2, 
+					17.3787
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"probe" : {
+				"offset" : [
+					0, 
+					0, 
+					0
+				], 
+				"radius" : 30, 
+				"sh_coeffs" : [
+					[
+						0.303043, 
+						0.308313, 
+						0.337907
+					], 
+					[
+						0.0294055, 
+						0.0587907, 
+						0.125298
+					], 
+					[
+						-0.0532196, 
+						-0.0497691, 
+						-0.0792227
+					], 
+					[
+						0.0314015, 
+						0.0234554, 
+						0.0277642
+					]
+				]
+			}
+		}, 
+		{
+			"transform" : {
+				"pos" : [
+					42.4905, 
+					2, 
+					32.3233
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"probe" : {
+				"offset" : [
+					0, 
+					0, 
+					0
+				], 
+				"radius" : 30, 
+				"sh_coeffs" : [
+					[
+						0.39363, 
+						0.398919, 
+						0.396505
+					], 
+					[
+						-0.112523, 
+						-0.0587165, 
+						0.0479281
+					], 
+					[
+						0.0458939, 
+						0.05815, 
+						0.0680701
+					], 
+					[
+						-0.0267303, 
+						-0.0344913, 
+						-0.0442912
+					]
+				]
+			}
+		}
     ]
 }

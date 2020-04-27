@@ -94,10 +94,12 @@ SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer,
     using namespace SceneManagerInternal;
 
     { // Alloc texture for decals atlas
-        Ren::eTexFormat formats[] = {Ren::eTexFormat::RawRGBA8888,
-                                     Ren::eTexFormat::Undefined};
-        scene_data_.decals_atlas = Ren::TextureAtlas{DECALS_ATLAS_RESX, DECALS_ATLAS_RESY,
-                                                     formats, Ren::eTexFilter::Trilinear};
+        const Ren::eTexFormat formats[] = {Ren::eTexFormat::Compressed,
+                                           Ren::eTexFormat::Undefined};
+        const uint32_t flags[] = {0};
+        scene_data_.decals_atlas = Ren::TextureAtlas{
+            DECALS_ATLAS_RESX,          DECALS_ATLAS_RESY, formats, flags,
+            Ren::eTexFilter::Trilinear, ctx_.log()};
     }
 
     { // Create splitter for lightmap atlas
@@ -214,118 +216,6 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 OnLoadTexture(lm_indir_sh_tex_name[sh_l].c_str(), 0);
         }
     }
-
-    /*if (js_scene.Has("meshes")) {
-        const JsObject &js_meshes = (const JsObject &) js_scene.at("meshes");
-        for (const auto &js_elem : js_meshes.elements) {
-            const std::string &name = js_elem.first;
-
-            const auto &js_mesh = (const JsObject &) js_elem.second;
-            const auto &js_mesh_file = (const JsString &) js_mesh.at("mesh_file");
-
-            Ren::MeshRef mesh_ref;
-
-            {   // load mesh file
-                std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file.val;
-
-                Sys::AssetFile in_file(mesh_path.c_str());
-                const size_t in_file_size = in_file.size();
-
-                std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
-                in_file.Read((char *) &in_file_data[0], in_file_size);
-
-                Sys::MemBuf mem = {&in_file_data[0], in_file_size};
-                std::istream in_file_stream(&mem);
-
-                using namespace std::placeholders;
-
-                Ren::eMeshLoadStatus status;
-                mesh_ref = ctx_.LoadMesh(name.c_str(), &in_file_stream,
-                                         std::bind(&SceneManager::OnLoadMaterial, this,
-    _1), &status);
-            }
-
-            all_meshes[name] = mesh_ref;
-
-            if (js_mesh.Has("material_override")) {
-                const auto &js_materials = (const JsArray &)
-    js_mesh.at("material_override");
-
-                int index = 0;
-                for (const auto &js_mat : js_materials.elements) {
-                    if (js_mat.type() == JS_TYPE_STRING) {
-                        mesh_ref->group(index).mat = OnLoadMaterial(((const JsString &)
-    js_mat).val.c_str());
-                    }
-                    index++;
-                }
-            }
-
-            if (js_mesh.Has("anims")) {
-                const JsArray &js_anims = (const JsArray &) js_mesh.at("anims");
-
-                assert(mesh_ref->type() == Ren::MeshSkeletal);
-                Ren::Skeleton *skel = mesh_ref->skel();
-
-                for (const auto &js_anim : js_anims.elements) {
-                    const auto &js_anim_name = (const JsString &) js_anim;
-                    std::string anim_path = std::string(MODELS_PATH) + js_anim_name.val;
-
-                    Sys::AssetFile in_file(anim_path.c_str());
-                    size_t in_file_size = in_file.size();
-
-                    std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
-                    in_file.Read((char *) &in_file_data[0], in_file_size);
-
-                    Sys::MemBuf mem = {&in_file_data[0], in_file_size};
-                    std::istream in_file_stream(&mem);
-
-                    Ren::AnimSeqRef anim_ref =
-    ctx_.LoadAnimSequence(js_anim_name.val.c_str(), in_file_stream);
-                    skel->AddAnimSequence(anim_ref);
-                }
-            }
-        }
-    }*/
-
-    auto load_decal_texture = [this](const std::string &name) {
-        std::string file_name = TEXTURES_PATH + name;
-
-        Sys::AssetFile in_file(file_name, Sys::AssetFile::FileIn);
-        size_t in_file_size = in_file.size();
-
-        std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
-        in_file.Read((char *)&in_file_data[0], in_file_size);
-
-        int res[2];
-#if !defined(__ANDROID__)
-        int channels;
-        uint8_t *image_data = SOIL_load_image_from_memory(
-            &in_file_data[0], (int)in_file_size, &res[0], &res[1], &channels, 4);
-        assert(channels == 4);
-#else
-        std::unique_ptr<uint8_t[]> image_data = SceneManagerInternal::Decode_KTX_ASTC(
-            &in_file_data[0], in_file_size, res[0], res[1]);
-
-#endif
-
-        const void *data[] = {(const void *)&image_data[0], nullptr};
-        const Ren::eTexFormat formats[] = {Ren::eTexFormat::RawRGBA8888,
-                                           Ren::eTexFormat::Undefined};
-
-        int pos[2];
-        int rc = scene_data_.decals_atlas.Allocate(data, formats, res, pos, 4);
-        if (rc == -1)
-            throw std::runtime_error("Cannot allocate decal!");
-
-#if !defined(__ANDROID__)
-        SOIL_free_image_data(image_data);
-#endif
-
-        return Ren::Vec4f{
-            float(pos[0]) / DECALS_ATLAS_RESX, float(pos[1]) / DECALS_ATLAS_RESY,
-            float(res[0]) / DECALS_ATLAS_RESX, float(res[1]) / DECALS_ATLAS_RESY};
-    };
 
     const JsArray &js_objects = js_scene.at("objects").as_arr();
     for (const JsElement &js_elem : js_objects.elements) {
@@ -605,8 +495,9 @@ void SceneManager::LoadProbeCache() {
                 file_path.c_str(),
                 [_self, probe_id, face_index](void *data, int size) {
                     std::shared_ptr<SceneManager> self = _self.lock();
-                    if (!self)
+                    if (!self) {
                         return;
+                    }
 
                     self->ctx_.ProcessSingleTask([&self, probe_id, face_index, data,
                                                   size]() {
@@ -660,8 +551,8 @@ void SceneManager::LoadProbeCache() {
                             if ((int)len > data_len ||
                                 !self->scene_data_.probe_storage.SetPixelData(
                                     level, lprobe->layer_index, face_index,
-                                    Ren::eTexFormat::Compressed, &p_data[data_offset], len,
-                                    self->ctx_.log())) {
+                                    Ren::eTexFormat::Compressed, &p_data[data_offset],
+                                    len, self->ctx_.log())) {
                                 log->Error("Failed to load probe texture!");
                             }
 
@@ -747,13 +638,6 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp,
         }
     } else {
         assert(false && "Not supported anymore, update scene file!");
-
-        /*const JsString &js_mesh_name = (const JsString &)js_comp_obj.at("mesh");
-
-        const auto it = all_meshes.find(js_mesh_name.val);
-        if (it == all_meshes.end()) throw std::runtime_error("Cannot find mesh!");
-
-        dr->mesh = it->second;*/
     }
 
     if (js_comp_obj.Has("material_override")) {
@@ -909,67 +793,64 @@ void SceneManager::PostloadLightSource(const JsObject &js_comp_obj, void *comp,
 
 void SceneManager::PostloadDecal(const JsObject &js_comp_obj, void *comp,
                                  Ren::Vec3f obj_bbox[2]) {
-    assert(false && "Temporary broken!");
-
-    /*auto *de = (Decal *)comp;
+    auto *de = (Decal *)comp;
 
     if (js_comp_obj.Has("diff")) {
-        const JsString &js_diff = (const JsString &)js_comp_obj.at("diff");
+        const JsString &js_diff = js_comp_obj.at("diff").as_str();
 
-        auto it = decals_textures.find(js_diff.val);
-
-        if (it == decals_textures.end()) {
-            de->diff = load_decal_texture(js_diff.val);
-            decals_textures[js_diff.val] = de->diff;
+        const Ren::Vec4f *diff_tr = scene_data_.decals_textures.Find(js_diff.val.c_str());
+        if (!diff_tr) {
+            de->diff = LoadDecalTexture(js_diff.val.c_str());
+            scene_data_.decals_textures.Insert(Ren::String{js_diff.val.c_str()},
+                                               de->diff);
         } else {
-            de->diff = decals_textures[js_diff.val];
+            de->diff = *diff_tr;
         }
     }
 
     if (js_comp_obj.Has("norm")) {
-        const JsString &js_norm = (const JsString &)js_comp_obj.at("norm");
+        const JsString &js_norm = js_comp_obj.at("norm").as_str();
 
-        auto it = decals_textures.find(js_norm.val);
-
-        if (it == decals_textures.end()) {
-            de->norm = load_decal_texture(js_norm.val);
-            decals_textures[js_norm.val] = de->norm;
+        const Ren::Vec4f *norm_tr = scene_data_.decals_textures.Find(js_norm.val.c_str());
+        if (!norm_tr) {
+            de->norm = LoadDecalTexture(js_norm.val.c_str());
+            scene_data_.decals_textures.Insert(Ren::String{js_norm.val.c_str()},
+                                               de->norm);
         } else {
-            de->norm = decals_textures[js_norm.val];
+            de->norm = *norm_tr;
         }
     }
 
     if (js_comp_obj.Has("spec")) {
-        const JsString &js_spec = (const JsString &)js_comp_obj.at("spec");
+        const JsString &js_spec = js_comp_obj.at("spec").as_str();
 
-        auto it = decals_textures.find(js_spec.val);
-
-        if (it == decals_textures.end()) {
-            de->spec = load_decal_texture(js_spec.val);
-            decals_textures[js_spec.val] = de->spec;
+        const Ren::Vec4f *spec_tr = scene_data_.decals_textures.Find(js_spec.val.c_str());
+        if (!spec_tr) {
+            de->spec = LoadDecalTexture(js_spec.val.c_str());
+            scene_data_.decals_textures.Insert(Ren::String{js_spec.val.c_str()},
+                                               de->spec);
         } else {
-            de->spec = decals_textures[js_spec.val];
+            de->spec = *spec_tr;
         }
     }
 
+    const Ren::Mat4f world_from_clip = Ren::Inverse(de->proj * de->view);
+
     Ren::Vec4f points[] = {
-        Ren::Vec4f{ -1.0f, -1.0f, -1.0f, 1.0f }, Ren::Vec4f{ -1.0f, 1.0f, -1.0f, 1.0f },
-        Ren::Vec4f{ 1.0f, 1.0f, -1.0f, 1.0f }, Ren::Vec4f{ 1.0f, -1.0f, -1.0f, 1.0f },
+        Ren::Vec4f{-1.0f, -1.0f, -1.0f, 1.0f}, Ren::Vec4f{-1.0f, 1.0f, -1.0f, 1.0f},
+        Ren::Vec4f{1.0f, 1.0f, -1.0f, 1.0f},   Ren::Vec4f{1.0f, -1.0f, -1.0f, 1.0f},
 
-        Ren::Vec4f{ -1.0f, -1.0f, 1.0f, 1.0f }, Ren::Vec4f{ -1.0f, 1.0f, 1.0f, 1.0f },
-        Ren::Vec4f{ 1.0f, 1.0f, 1.0f, 1.0f }, Ren::Vec4f{ 1.0f, -1.0f, 1.0f, 1.0f }
-    };
-
-    Ren::Mat4f world_from_clip = Ren::Inverse(de->proj * de->view);
+        Ren::Vec4f{-1.0f, -1.0f, 1.0f, 1.0f},  Ren::Vec4f{-1.0f, 1.0f, 1.0f, 1.0f},
+        Ren::Vec4f{1.0f, 1.0f, 1.0f, 1.0f},    Ren::Vec4f{1.0f, -1.0f, 1.0f, 1.0f}};
 
     for (Ren::Vec4f &point : points) {
         point = world_from_clip * point;
         point /= point[3];
 
         // Combine decals's bounding box with object's
-        obj_bbox[0] = Ren::Min(obj_bbox[0], Ren::Vec3f{ point });
-        obj_bbox[1] = Ren::Max(obj_bbox[1], Ren::Vec3f{ point });
-    }*/
+        obj_bbox[0] = Ren::Min(obj_bbox[0], Ren::Vec3f{point});
+        obj_bbox[1] = Ren::Max(obj_bbox[1], Ren::Vec3f{point});
+    }
 }
 
 void SceneManager::PostloadLightProbe(const JsObject &js_comp_obj, void *comp,
@@ -1094,9 +975,122 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
     return ret;
 }
 
+Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
+    using namespace SceneManagerConstants;
+
+    const std::string file_name = TEXTURES_PATH + std::string(name);
+
+    Sys::AssetFile in_file(file_name, Sys::AssetFile::FileIn);
+    size_t in_file_size = in_file.size();
+
+    std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+    in_file.Read((char *)&in_file_data[0], in_file_size);
+
+    int res[2];
+#if !defined(__ANDROID__)
+    Ren::DDSHeader header;
+    memcpy(&header, in_file_data.get(), sizeof(Ren::DDSHeader));
+
+    const int px_format = int(header.sPixelFormat.dwFourCC >> 24u) - '0';
+    assert(px_format == 5);
+
+    res[0] = (int)header.dwWidth;
+    res[1] = (int)header.dwHeight;
+
+    const uint8_t *p_data = (uint8_t *)in_file_data.get() + sizeof(Ren::DDSHeader);
+    int data_len = int(in_file_size) - int(sizeof(Ren::DDSHeader));
+
+    int pos[2];
+    const int rc = scene_data_.decals_atlas.AllocateRegion(res, pos);
+    if (rc == -1) {
+        ctx_.log()->Error("Failed to allocate decal texture!");
+        return Ren::Vec4f{};
+    }
+
+    int _pos[2] = {pos[0], pos[1]};
+    int _res[2] = {res[0], res[1]};
+    int level = 0;
+
+    while (_res[0] >= 16 && _res[1] >= 16) {
+        const int len = ((_res[0] + 3) / 4) * ((_res[1] + 3) / 4) * 16;
+
+        if (len > data_len) {
+            ctx_.log()->Error("Invalid data count!");
+            break;
+        }
+
+        scene_data_.decals_atlas.InitRegion(p_data, len, Ren::eTexFormat::Compressed, 0,
+                                            0, level, _pos, _res, ctx_.log());
+
+        p_data += len;
+        data_len -= len;
+
+        _pos[0] = _pos[0] / 2;
+        _pos[1] = _pos[1] / 2;
+        _res[0] = _res[0] / 2;
+        _res[1] = _res[1] / 2;
+        level++;
+    }
+#else
+    Ren::KTXHeader header;
+    memcpy(&header, in_file_data.get(), sizeof(Ren::KTXHeader));
+
+    assert(header.gl_internal_format == 0x93B0 /* GL_COMPRESSED_RGBA_ASTC_4x4_KHR */);
+
+    res[0] = (int)header.pixel_width;
+    res[1] = (int)header.pixel_height;
+
+    int pos[2];
+    const int rc = scene_data_.decals_atlas.AllocateRegion(res, pos);
+    if (rc == -1) {
+        ctx_.log()->Error("Failed to allocate decal texture!");
+        return Ren::Vec4f{};
+    }
+
+    const uint8_t *p_data = (uint8_t *)in_file_data.get();
+    int data_offset = sizeof(Ren::KTXHeader);
+    int data_len = int(in_file_size) - int(sizeof(Ren::KTXHeader));
+
+    int _pos[2] = {pos[0], pos[1]};
+    int _res[2] = {res[0], res[0]};
+    int level = 0;
+
+    while (_res[0] >= 16 && _res[1] >= 16) {
+        uint32_t len;
+        memcpy(&len, &p_data[data_offset], sizeof(uint32_t));
+        data_offset += sizeof(uint32_t);
+        data_len -= sizeof(uint32_t);
+
+        if (int(len) > data_len) {
+            ctx_.log()->Error("Invalid data count!");
+            break;
+        }
+
+        scene_data_.decals_atlas.InitRegion(p_data, len, Ren::eTexFormat::Compressed, 0,
+                                            0, level, _pos, _res, ctx_.log());
+
+        data_offset += len;
+        data_len -= len;
+
+        const int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
+        data_offset += pad;
+
+        _pos[0] = _pos[0] / 2;
+        _pos[1] = _pos[1] / 2;
+        _res[0] = _res[0] / 2;
+        _res[1] = _res[1] / 2;
+        level++;
+    }
+#endif
+
+    return Ren::Vec4f{
+        float(pos[0]) / DECALS_ATLAS_RESX, float(pos[1]) / DECALS_ATLAS_RESY,
+        float(res[0]) / DECALS_ATLAS_RESX, float(res[1]) / DECALS_ATLAS_RESY};
+}
+
 void SceneManager::OnTextureDataLoaded(void *arg, void *data, int size) {
     auto *self = reinterpret_cast<SceneManager *>(arg);
-    
+
     TextureRequest req;
     const bool result = self->loading_textures_.Pop(req);
     assert(result);
@@ -1109,7 +1103,7 @@ void SceneManager::OnTextureDataLoaded(void *arg, void *data, int size) {
 }
 
 void SceneManager::OnTextureDataFailed(void *arg) {
-    auto* self = reinterpret_cast<SceneManager*>(arg);
+    auto *self = reinterpret_cast<SceneManager *>(arg);
 
     TextureRequest req;
     const bool result = self->loading_textures_.Pop(req);
@@ -1147,7 +1141,8 @@ void SceneManager::Serve(const int texture_budget) {
         Ren::Texture2DRef ref = requested_textures_.front();
         requested_textures_.pop_front();
 
-        loading_textures_.Push({ ref, nullptr, 0 });
-        Sys::LoadAssetComplete(ref->name().c_str(), this, OnTextureDataLoaded, OnTextureDataFailed);
+        loading_textures_.Push({ref, nullptr, 0});
+        Sys::LoadAssetComplete(ref->name().c_str(), this, OnTextureDataLoaded,
+                               OnTextureDataFailed);
     }
 }

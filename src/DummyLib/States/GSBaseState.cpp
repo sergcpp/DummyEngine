@@ -690,14 +690,14 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
 
     if (cmdline_enabled_) {
         int ifont_height = (int)(0.5f * font_->height(root) * (float)game_->height);
-#if defined(USE_GL_RENDER)
+/*#if defined(USE_GL_RENDER)
         glEnable(GL_SCISSOR_TEST);
         glScissor(0, game_->height - MAX_CMD_LINES * ifont_height - 2, game_->width, MAX_CMD_LINES * ifont_height + 2);
 
         glClearColor(0, 0.5f, 0.5f, 1);
         glClear(GL_COLOR_BUFFER_BIT);
         glDisable(GL_SCISSOR_TEST);
-#endif
+#endif*/
         float cur_y = 1.0f - font_->height(root);
 
         for (const std::string &cmd : cmdline_history_) {
