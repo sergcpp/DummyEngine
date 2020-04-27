@@ -238,9 +238,8 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
                 rect.dims[0] =
                     Ren::Vec2f{draw_offset[0], draw_offset[1] - 0.125f * font_height};
 
-                int expanded_option = -1;
                 draw_offset = DrawTextBuffer(r, &text_data_[sd.pos], sd.len, draw_offset,
-                                             options_rects_, expanded_option, hint_rects_,
+                                             options_rects_, sd.option_start, hint_rects_,
                                              sd.hint_start);
 
                 rect.dims[1] =
