@@ -449,7 +449,7 @@ void Gui::Renderer::PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t c
     SubmitVertexData(int(cur_vtx - vtx_data), int(cur_ndx - ndx_data));
 }
 
-void Gui::Renderer::pushCurve(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
+void Gui::Renderer::PushCurve(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
                               const Vec4f &p0, const Vec4f &p1, const Vec4f &p2,
                               const Vec4f &p3, const Vec4f &thickness) {
     const float tolerance = 0.000001f;
@@ -466,8 +466,8 @@ void Gui::Renderer::pushCurve(eDrawMode draw_mode, int tex_layer, const uint8_t 
         PushLine(draw_mode, tex_layer, color, p0, p3, Normalize(Vec2f{p1 - p0}),
                  Normalize(Vec2f{p3 - p2}), thickness);
     } else {
-        pushCurve(draw_mode, tex_layer, color, p0, p01, p012, p0123, thickness);
-        pushCurve(draw_mode, tex_layer, color, p0123, p123, p23, p3, thickness);
+        PushCurve(draw_mode, tex_layer, color, p0, p01, p012, p0123, thickness);
+        PushCurve(draw_mode, tex_layer, color, p0123, p123, p23, p3, thickness);
     }
 }
 

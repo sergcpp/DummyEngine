@@ -171,7 +171,7 @@ void DialogEditUI::DrawCurveLocal(Gui::Renderer *r, const Ren::Vec2f &_p0,
                                dims_[0][1] + 0.5f * (_p3[1] + 1.0f) * dims_[1][1],
                                _uvs[1][0] - 2.0f, _uvs[1][1] - 0.5f};
 
-    r->pushCurve(Gui::eDrawMode::DrPassthrough, line_tex->pos(2), color, p0, p1, p2, p3,
+    r->PushCurve(Gui::eDrawMode::DrPassthrough, line_tex->pos(2), color, p0, p1, p2, p3,
                  Ren::Vec4f{width[0], width[1], 2.0f, 0.0f});
 }
 

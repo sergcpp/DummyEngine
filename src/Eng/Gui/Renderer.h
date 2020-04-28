@@ -83,7 +83,7 @@ class Renderer {
     void PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
                   const Vec4f &p0, const Vec4f &p1, const Vec2f &d0, const Vec2f &d1,
                   const Vec4f &thickness);
-    void pushCurve(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
+    void PushCurve(eDrawMode draw_mode, int tex_layer, const uint8_t color[4],
                    const Vec4f &p0, const Vec4f &p1, const Vec4f &p2, const Vec4f &p3,
                    const Vec4f &thickness);
 
