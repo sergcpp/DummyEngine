@@ -9,6 +9,7 @@ extern "C" {
 #include "ContextGL.cpp"
 #include "ProgramGL.cpp"
 #include "TextureGL.cpp"
+#include "TextureAtlasGL.cpp"
 #elif defined(USE_SW_RENDER)
 #include "ContextSW.cpp"
 #include "ProgramSW.cpp"
@@ -22,7 +23,6 @@ extern "C" {
 #include "Material.cpp"
 #include "Mesh.cpp"
 #include "RenderThread.cpp"
-#include "TextureAtlas.cpp"
 #include "TextureRegion.cpp"
 #include "TextureSplitter.cpp"
 #include "Utils.cpp"

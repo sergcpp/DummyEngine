@@ -45,7 +45,6 @@ set(SOURCE_FILES Anim.h
                  String.h
                  Texture.h
                  TextureAtlas.h
-                 TextureAtlas.cpp
                  TextureRegion.h
                  TextureRegion.cpp
                  TextureSplitter.h
@@ -64,7 +63,8 @@ if(${RENDERER} STREQUAL "GL")
                      ProgramGL.h
                      ProgramGL.cpp
                      TextureGL.h
-                     TextureGL.cpp)
+                     TextureGL.cpp
+                     TextureAtlasGL.cpp)
 
     if(WIN32)
         if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
