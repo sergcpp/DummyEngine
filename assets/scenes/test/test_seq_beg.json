@@ -1,0 +1,56 @@
+{
+	"name" : "test_seq0", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 4, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Das Gericht befasst sich nun mit denm Verfahren gegen Hr. Smiths."
+				}
+			]
+		}, 
+		{
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 4.1, 
+					"time_end" : 7, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Die Anklage is bereit, Euer Ehren."
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 2
+				}
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 12, 
+		"choices" : [
+			{
+				"key" : "-", 
+				"text" : "Ja", 
+				"sequence" : "test/test_seq_inconv.json", 
+				"puzzle" : "test/test_puzzle_inconv.json"
+			}
+		]
+	}
+}

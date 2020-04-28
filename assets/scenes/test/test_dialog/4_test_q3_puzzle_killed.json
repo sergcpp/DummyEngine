@@ -1,0 +1,12 @@
+{
+	"text" : "<split>Sie </split><split><option>werden</option> </split><split>erschlagen</split><split>.</split>",
+	"options" : [
+		{
+			"variants" : [
+				"wurde", "wird", "werdet"
+			],
+		}
+	],
+	"hints" : [
+	]
+}

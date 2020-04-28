@@ -137,7 +137,7 @@ void GSPlayTest::LoadSequence(const char *seq_name) {
     }
 
     test_dialog_->Clear();
-    if (!test_dialog_->Load(js_seq, read_sequence)) {
+    if (!test_dialog_->Load(seq_name, js_seq, read_sequence)) {
         log_->Error("Failed to load dialog");
         return;
     }

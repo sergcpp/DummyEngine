@@ -1,0 +1,75 @@
+{
+	"name" : "q3", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 1.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Korrekt."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 2.0, 
+					"time_end" : 4.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Sagen Sie mir jetzt, was die Todesursache war."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 4.6, 
+					"time_end" : 6.6, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Sie starb, weil sie...?"
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 7.0,
+        "choices" : [
+			{
+				"key" : "poisoned",
+				"text" : "Vergiftet wurde",
+				"sequence" : "test/test_dialog/5_test_q3_poisoned.json"
+			},
+			{
+				"key" : "killed",
+				"text" : "Ershlagen wurde",
+                "puzzle" : "test/test_dialog/4_test_q3_puzzle_killed.json",
+				"sequence" : "test/test_dialog/5_test_q3_killed.json"
+			},
+			{
+				"key" : "choked", 
+				"text" : "Erdrosselt wurde",	
+				"sequence" : "test/test_dialog/5_test_q3_choked.json"
+			}
+		]
+	}
+}

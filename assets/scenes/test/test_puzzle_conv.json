@@ -1,0 +1,25 @@
+{
+	"text" : "<split>Nein, </split><split><option>das</option> </split><split><option>sein</option> </split><split>nicht </split><split><option>meine</option> </split><split>erstes Mal </split><split>vor <hint>Gericht</hint>.</split>",
+	"options" : [
+		{
+			"variants" : [
+				"dies", "das", "es"
+			]
+		},
+		{
+			"variants" : [
+				"ist", "bist", "sind"
+			]
+		},
+		{
+			"variants" : [
+				"mein", "meinen", "meine"
+			]
+		}
+	],
+	"hints" : [
+		{
+			"en" : "court"
+		}
+	]
+}

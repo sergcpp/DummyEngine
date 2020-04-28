@@ -76,13 +76,79 @@
             },
             "anim_state" : {}
         },
-        {
-            "name" : "sophia",
+		{
+            "name" : "judge",
             "transform" : {
-                "pos" : [ -6.5, 0.25, 0.0 ]
+                "pos" : [ -4.0, 0.25, 0.0 ],
+				"rot" : [ 0.0, -90.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "eric.mesh",
+                "anims" : [
+                ]
+            },
+            "anim_state" : {}
+        },
+		{
+            "name" : "lawyer",
+            "transform" : {
+                "pos" : [ -5.5, 0.25, 1.0 ],
+				"rot" : [ 0.0, 180.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "eric.mesh",
+                "anims" : [
+                ]
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "assist",
+            "transform" : {
+                "pos" : [ -6.5, 0.25, 1.0 ],
+				"rot" : [ 0.0, 180.0, 0.0 ]
             },
             "drawable" : {
                 "mesh_file" : "sophia.mesh",
+                "anims" : [
+                ]
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "accused",
+            "transform" : {
+                "pos" : [ -4.5, 0.25, 1.0 ],
+				"rot" : [ 0.0, 180.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "eric.mesh",
+                "anims" : [
+                ]
+            },
+            "anim_state" : {}
+        },
+        {
+            "name" : "witness",
+            "transform" : {
+                "pos" : [ -4.5, 2.25, 1.0 ],
+				"rot" : [ 0.0, 180.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "eric.mesh",
+                "anims" : [
+                ]
+            },
+            "anim_state" : {}
+        },
+		{
+            "name" : "prosec",
+            "transform" : {
+                "pos" : [ -5.5, 0.25, -1.0 ],
+				"rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "eric.mesh",
                 "anims" : [
                 ]
             },

@@ -1,0 +1,22 @@
+{
+	"text" : "<split>Ich </split><split><option>möchten</option> </split><split><option>den/dem</option> </split><split>Tatort </split><split>persönlich </split><split><option>inspizier_</option></split><split>.</split>",
+	"options" : [
+		{
+			"variants" : [
+				"möchte", "möchtet", "möchtest"
+			]
+		},
+        {
+			"variants" : [
+				"den", "dem", "der"
+			]
+		},
+        {
+			"variants" : [
+				"inspizieren", "inspiziert", "inspizierst"
+			]
+		}
+	],
+	"hints" : [
+	]
+}

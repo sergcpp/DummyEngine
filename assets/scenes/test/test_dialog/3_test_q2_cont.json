@@ -1,0 +1,82 @@
+{
+	"name" : "q2_cont", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 9.0, 
+					"time_end" : 12.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Wie lautet Ihre Antwort? Wie heißt das Opfer in diesem Fall?"
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 2.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Natürlich weiß ich den Namen des Opfer!"
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 3.0, 
+					"time_end" : 6.0, 
+					"anim" : "sophia_idle.anim", 
+					"caption" : "Siehst du, der Name des Opfers steht in der Gerichtsakte."
+				},
+				{
+					"type" : "play", 
+					"time_beg" : 6.5, 
+					"time_end" : 8.5, 
+					"anim" : "sophia_idle.anim", 
+					"caption" : "Du solltest sie öfter überprüfen. Ich bitte dich."
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 13.0,
+        "choices" : [
+			{
+				"key" : "alex",
+				"text" : "Alex Smiths",
+				"sequence" : "test/test_dialog/4_test_q2_alex.json"
+			},
+			{
+				"key" : "maria",
+				"text" : "Maria Sneider",
+                "puzzle" : "test/test_dialog/3_test_q2_puzzle_maria.json",
+				"sequence" : "test/test_dialog/4_test_q2_maria.json"
+			},
+			{
+				"key" : "stephan", 
+				"text" : "Stephan Lier",	
+				"sequence" : "test/test_dialog/4_test_q2_stephan.json"
+			}
+		]
+	}
+}

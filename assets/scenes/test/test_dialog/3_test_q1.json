@@ -1,0 +1,75 @@
+{
+	"name" : "q1", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 1.5, 
+					"time_end" : 5.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Der Test besteht aus ein paar einfachen Fragen. Beantworten Sie sie klar und deutlich."
+				},
+				{
+					"type" : "play", 
+					"time_beg" : 6.5, 
+					"time_end" : 10.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Nennen Sie bitte den Namen des Angeklagten in diesem Prozess."
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 1.25, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ja, Eurer Ehren."
+				},
+				{
+					"type" : "play", 
+					"time_beg" : 10.75, 
+					"time_end" : 12.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Der Angeklagte?"
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 12.0,
+		"choices" : [
+			{
+				"key" : "alex",
+				"text" : "Alex Smiths",
+                "puzzle" : "test/test_dialog/3_test_q1_puzzle_alex.json",
+				"sequence" : "test/test_dialog/3_test_q1_alex.json"
+			},
+			{
+				"key" : "maria",
+				"text" : "Maria Sneider",				
+				"sequence" : "test/test_dialog/3_test_q1_maria.json"
+			},
+			{
+				"key" : "stephan", 
+				"text" : "Stephan Lier",	
+				"sequence" : "test/test_dialog/3_test_q1_stephan.json"
+			}
+		]
+	}
+}

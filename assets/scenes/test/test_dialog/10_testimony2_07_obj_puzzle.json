@@ -1,0 +1,25 @@
+{
+	"text" : "<split><option>Der/Die/Das</option> </split><split><hint>Krankenwagen</hint> </split><split><option>kommen</option> </split><split><option>an/um/am</option> </split><split>10:00 </split><split>Uhr </split><split>an</split><split>.</split>",
+	"options" : [
+		{
+			"variants" : [
+				"Der", "Das", "Die"
+			]
+		},
+        {
+			"variants" : [
+				"kam", "gekommen"
+			]
+		},
+        {
+			"variants" : [
+				"um", "an", "am"
+			]
+		}
+	],
+	"hints" : [
+		{
+			"en" : "ambulance"
+		}
+	]
+}

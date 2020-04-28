@@ -1,0 +1,238 @@
+{
+	"name" : "testimony", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 34.0, 
+					"time_end" : 35.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ruhe!"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 35.25, 
+					"time_end" : 36.25, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Hr. Smiths?"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 42.8, 
+					"time_end" : 43.8, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Er lügt?"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 47.1, 
+					"time_end" : 48.6, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Nun, das macht die Sache einfacher. Wer ist Ihr Zeuge?"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 55.5, 
+					"time_end" : 57.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ruhe! Ruhe im Gerichtssaal!"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 57.5, 
+					"time_end" : 60.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Hr. Schuld, die Anklage darf ihren Zeugen aufrufen."
+				}
+			]
+		}, 
+        {
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 15.0, 
+					"time_end" : 18.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Herr Smiths, stimmt es, dass Sie am Tag des Mordes zum Opfer gekommen sind?"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 40.7, 
+					"time_end" : 42.7, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Euer Ehren, der Angeklagte lügt."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 44.0, 
+					"time_end" : 45.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Die Anklage würde gerne einen Zeugen aufrufen,"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 45.5, 
+					"time_end" : 47.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "der beweisen kann, dass Hr. Smiths lügt."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 48.7, 
+					"time_end" : 50.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Der Mann, der die Leiche des Opfers gefunden hat."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 50.0, 
+					"time_end" : 52.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Kurz bevor er den grausamen Fund machte..."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 52.0, 
+					"time_end" : 54.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "hat er gesehen, wie der Angeklagte vom Tatort geflohen ist!"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 60.1, 
+					"time_end" : 61.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ja, Euer Ehren."
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 3.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Was sollen wir jetzt machen?"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 21.0, 
+					"time_end" : 24.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Du warst dort...?"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 26.1, 
+					"time_end" : 28.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Sag die Wahrheit!"
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 3.1, 
+					"time_end" : 7.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Passen wir gut auf. Uns darf nichts entgehen, was unserem Mandanten helfen könnte."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 7.1, 
+					"time_end" : 10.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Du hast dir Möglichkeit, später auf die Anklage zu reagieren. Mach dich bereit."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 10.1, 
+					"time_end" : 13.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Hoffentlich sagt er nichts.. Unglückliches."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 24.1, 
+					"time_end" : 26.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Was jetzt?"
+				}
+			]
+		}, 
+		{
+			"name" : "accused_speech", 
+			"type" : "actor", 
+			"target" : "accused", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 18.1, 
+					"time_end" : 21.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Vielleicht..."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 28.6, 
+					"time_end" : 31.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ah... Ja! Ja! Ich war da!"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 31.0, 
+					"time_end" : 33.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ich bin hingegangen!"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 36.5, 
+					"time_end" : 38.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Sie war nicht da, Mann..."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 38.5, 
+					"time_end" : 40.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Also hab ich sie auch nicht gesehen."
+				}
+			]
+		},
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 61.5,
+        "choices" : [
+			{
+				"key" : "pass", 
+				"sequence" : "test/test_dialog/9_testimony2.json"
+			}
+		]
+	}
+}

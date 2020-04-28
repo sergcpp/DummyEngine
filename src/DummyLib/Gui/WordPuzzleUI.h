@@ -65,6 +65,9 @@ class WordPuzzleUI : public Gui::BaseElement {
     WordPuzzleUI(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size,
                  const BaseElement *parent, const Gui::BitmapFont &font);
 
+    bool active() const { return state_ != eState::Solved; }
+
+    void Cancel();
     void Restart();
 
     bool Load(const JsObject &js_puzzle);

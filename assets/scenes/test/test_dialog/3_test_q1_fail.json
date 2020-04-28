@@ -1,0 +1,38 @@
+{
+	"name" : "fail", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 6.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Sie haben die Überprüfung fälschlicherweise nicht bestanden und können nicht zu Verhandlung zugelassen werden."
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 6.0,
+		"choices" : [
+		]
+	}
+}

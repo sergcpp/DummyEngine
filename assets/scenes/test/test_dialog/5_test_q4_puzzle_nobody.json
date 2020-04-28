@@ -1,0 +1,22 @@
+{
+	"text" : "<split>Niemand </split><split><option>haben</option> </split><split><option>ein/einen/einem</option> </split><split>Krankenwagen </split><split><option>rufen</option></split><split>.</split>",
+	"options" : [
+		{
+			"variants" : [
+				"hat", "hatte", "hast"
+			],
+		},
+        {
+			"variants" : [
+				"einen", "ein", "eine"
+			],
+		},
+        {
+			"variants" : [
+				"gerufen", "ruft", "geruft"
+			],
+		}
+	],
+	"hints" : [
+	]
+}

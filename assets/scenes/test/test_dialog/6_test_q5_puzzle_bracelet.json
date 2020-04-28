@@ -1,0 +1,37 @@
+{
+	"text" : "<split><option>Der/Die/Das</option> </split><split>Fitnessarmband </split><split><option>dem/den/des</option> </split><split>Opfers </split><split><option>erkennen</option> </split><split><option>ein_</option> </split><split>Herzstillstand </split><split>und </split><split><option>geben</option> </split><split><option>eine</option> </split><split>Signal</split><split>.</split>",
+	"options" : [
+		{
+			"variants" : [
+				"Das", "Der", "Die"
+			],
+		},
+        {
+			"variants" : [
+				"des", "den", "dem"
+			],
+		},
+        {
+			"variants" : [
+				"erkannte", "ergekannt", "erkennt"
+			],
+		},
+        {
+			"variants" : [
+				"einen", "ein", "eine"
+			],
+		},
+        {
+			"variants" : [
+				"gab", "gegeben"
+			],
+		},
+        {
+			"variants" : [
+				"ein", "einen", "eine"
+			],
+		}
+	],
+	"hints" : [
+	]
+}

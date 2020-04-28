@@ -1,0 +1,64 @@
+{
+	"name" : "test fin", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 1.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Richtig."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 1.6, 
+					"time_end" : 5.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Sie haben alle meine Fragen beantwortet."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 5.1, 
+					"time_end" : 8.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Es gibt keinen Grund, nicht fortzufahren."
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 8.5, 
+		"choices" : [
+			{
+				"key" : "pass", 
+				"sequence" : "test/test_dialog/8_accusation.json", 
+				"puzzle" : "test/test_dialog/1_thanks_puzzle.json"
+			}
+		]
+	}
+}

@@ -39,7 +39,7 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
                           "seq_test.json";
 
-const char SEQ_NAME[] = "test/test_seq.json";
+const char SEQ_NAME[] = "test/test_dialog/0_intro.json";
 } // namespace GSUITest4Internal
 
 GSUITest4::GSUITest4(GameBase *game) : GSBaseState(game) {
@@ -135,7 +135,7 @@ void GSUITest4::LoadDialog(const char *seq_name) {
     }
 
     test_dialog_->Clear();
-    if (!test_dialog_->Load(js_seq, read_sequence)) {
+    if (!test_dialog_->Load(seq_name, js_seq, read_sequence)) {
         log_->Error("Failed to load dialog");
         return;
     }
@@ -436,7 +436,10 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
         } else if (evt.key_code == KeyDown) {
 
         } else if (evt.key_code == KeyDelete) {
-            if (dial_edit_mode_ == 1) {
+            if (word_puzzle_->active()) {
+                word_puzzle_->Cancel();
+                dial_ctrl_->ContinueChoice();
+            } else if (dial_edit_mode_ == 1) {
                 dial_edit_mode_ = 0;
             }
         } else if (evt.key_code == KeyDeleteForward) {
@@ -466,6 +469,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
                 dial_ctrl_->Play(Sys::GetTimeS());
             }
         } else if (evt.key_code == KeyF5) {
+            Viewer::PrepareAssets("pc");
             LoadDialog(SEQ_NAME);
         } else if (evt.key_code == KeyF6) {
             SaveSequence(SEQ_NAME);

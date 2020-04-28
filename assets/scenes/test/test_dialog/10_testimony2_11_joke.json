@@ -1,0 +1,85 @@
+{
+	"name" : "testimony2_11_joke", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 3.0, 
+					"time_end" : 5.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Sehr lustig. Wir sind nicht im Kino."
+				}
+			]
+		}, 
+        {
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 5.6, 
+					"time_end" : 8.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ich frage nochmal was wollen Sie?"
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 3.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ich verlange ein Götterurteil durch Zweikampf."
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "witness_speech", 
+			"type" : "actor", 
+			"target" : "witness", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 8.0,
+        "choices" : [
+            {
+				"key" : "inspect",
+                "text" : "Den Tatort inspizieren",
+                "puzzle" : "test/test_dialog/10_testimony2_12_puzzle.json",
+				"sequence" : "test/test_dialog/10_testimony2_12.json"
+			},
+            {
+				"key" : "combat",
+                "text" : "Zweikampf",
+				"sequence" : "test/test_dialog/10_testimony2_11_blank.json"
+			}
+		]
+	}
+}

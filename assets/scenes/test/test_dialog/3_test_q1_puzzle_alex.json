@@ -1,0 +1,17 @@
+{
+	"text" : "<split>Nun, </split><split><option>der/die/das</option> </split><split><option>sein</option> </split><split>Alex Smiths, </split><split>Euer </split><split>Ehren</split><split>.</split>",
+	"options" : [
+		{
+			"variants" : [
+				"das", "der", "die"
+			]
+		},
+		{
+			"variants" : [
+				"ist", "bist", "sind"
+			]
+		}
+	],
+	"hints" : [
+	]
+}

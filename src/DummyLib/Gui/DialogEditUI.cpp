@@ -52,7 +52,7 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
 
         IterateElements([&](const ScriptedSequence *seq, const ScriptedSequence *parent,
                             const int depth, const int ndx, const int parent_ndx,
-                            const int choice_ndx) {
+                            const int choice_ndx, const bool visited) {
             const int elem_index = int(seq - dialog_->GetSequence(0));
 
             if (parent_ndx != -1) {
@@ -60,7 +60,7 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
                 const Ren::Vec2f p0 =
                     view_offset_ +
                     Ren::Vec2f{spacing[0] * (depth - 1) + elem_size[0],
-                               -spacing[1] * parent_ndx + 0.9f * elem_size[1] -
+                               -spacing[1] * parent_ndx + 0.75f * elem_size[1] -
                                    0.1f * elem_size[1] * float(choice_ndx)};
                 const Ren::Vec2f p3 =
                     view_offset_ + Ren::Vec2f{spacing[0] * depth,
@@ -68,51 +68,57 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
                 const Ren::Vec2f p1 = p0 + Ren::Vec2f{0.1f, 0.0f};
                 const Ren::Vec2f p2 = p3 - Ren::Vec2f{0.1f, 0.0f};
 
-                const uint8_t *color =
+                const uint8_t *curve_color =
                     (elem_index == selected_element_) ? ColorOrange : Gui::ColorBlack;
 
-                DrawCurveLocal(r, p0, p1, p2, p3, line_width, color);
+                DrawCurveLocal(r, p0, p1, p2, p3, line_width, curve_color);
 
                 // draw choice id
                 const SeqChoice *choice = parent->GetChoice(choice_ndx);
                 assert(choice);
 
+                const uint8_t *text_color =
+                    (elem_index == selected_element_) ? Gui::ColorWhite : Gui::ColorBlack;
+
                 const float width = font_.GetWidth(choice->key.c_str(), -1, this);
 
                 font_.DrawText(
                     r, choice->key.c_str(),
-                    p0 + Ren::Vec2f{-width - elem_border[0], 0.0f},
-                    Gui::ColorBlack, this);
+                    SnapToPixels(p0 + Ren::Vec2f{-width - elem_border[0], 0.0f}),
+                    text_color, this);
             }
 
-            const Ren::Vec2f elem_pos = SnapToPixels(
-                view_offset_ + Ren::Vec2f{spacing[0] * depth, -spacing[1] * ndx});
+            if (!visited) {
+                const Ren::Vec2f elem_pos = SnapToPixels(
+                    view_offset_ + Ren::Vec2f{spacing[0] * depth, -spacing[1] * ndx});
 
-            Gui::Image9Patch *el =
-                elem_index == selected_element_ ? &element_highlighted_ : &element_;
-            const uint8_t *col =
-                (elem_index == selected_element_) ? Gui::ColorCyan : Gui::ColorWhite;
+                Gui::Image9Patch *el =
+                    elem_index == selected_element_ ? &element_highlighted_ : &element_;
+                const uint8_t *col =
+                    (elem_index == selected_element_) ? Gui::ColorCyan : Gui::ColorWhite;
 
-            el->Resize(elem_pos, elem_size, this);
-            el->Draw(r);
+                el->Resize(elem_pos, elem_size, this);
+                el->Draw(r);
 
-            { // draw info
-                Ren::Vec2f text_pos =
-                    elem_pos + Ren::Vec2f{elem_border[0],
-                                          elem_size[1] - elem_border[1] - font_height};
+                { // draw info
+                    Ren::Vec2f text_pos =
+                        elem_pos +
+                        Ren::Vec2f{elem_border[0],
+                                   elem_size[1] - elem_border[1] - font_height};
 
-                const char *seq_name = seq->name();
-                if (seq_name) {
-                    font_.DrawText(r, seq_name, text_pos, col, this);
+                    const char *seq_name = seq->name();
+                    if (seq_name) {
+                        font_.DrawText(r, seq_name, text_pos, col, this);
+                    }
+                    text_pos[1] -= font_height;
+
+                    const double duration = seq->duration();
+
+                    char buf[16];
+                    sprintf(buf, "%.1fs", duration);
+
+                    font_.DrawText(r, buf, text_pos, col, this);
                 }
-                text_pos[1] -= font_height;
-
-                const double duration = seq->duration();
-
-                char buf[16];
-                sprintf(buf, "%.1fs", duration);
-
-                font_.DrawText(r, buf, text_pos, col, this);
             }
 
             return true;
@@ -177,7 +183,7 @@ void DialogEditUI::DrawCurveLocal(Gui::Renderer *r, const Ren::Vec2f &_p0,
 
 void DialogEditUI::IterateElements(
     std::function<bool(const ScriptedSequence *seq, const ScriptedSequence *parent,
-                       int depth, int ndx, int parent_ndx, int choice_ndx)>
+                       int depth, int ndx, int parent_ndx, int choice_ndx, bool visited)>
         callback) {
     if (!dialog_ || dialog_->empty()) {
         return;
@@ -187,32 +193,47 @@ void DialogEditUI::IterateElements(
         int id, parent_id;
         int depth;
         int ndx, parent_ndx, choice_ndx;
-    } queue[128];
-    int queue_size = 0;
+        bool visited;
+    } queue[256];
+    int queue_head = 0, queue_tail = 0;
 
-    queue[queue_size++] = {0, 0, 0, 0, -1, -1};
-    int levels[32] = {};
+    queue[queue_tail++] = {0, 0, 0, 0, -1, -1, false};
+    int seq_ids[256][16] = {};
+    std::fill(&seq_ids[0][0], &seq_ids[0][0] + sizeof(seq_ids) / sizeof(int), -1);
 
-    while (queue_size--) {
-        const entry_t e = queue[0];
-        memmove(&queue[0], &queue[1], queue_size * sizeof(queue[0]));
+    while (queue_head != queue_tail) {
+        const entry_t e = queue[queue_head];
+        queue_head = (queue_head + 1) % 128;
 
-        ScriptedSequence *seq = dialog_->GetSequence(e.id);
+        const ScriptedSequence *seq = dialog_->GetSequence(e.id);
         assert(seq);
-        ScriptedSequence *parent = dialog_->GetSequence(e.parent_id);
+        const ScriptedSequence *parent = dialog_->GetSequence(e.parent_id);
         assert(parent);
 
-        if (!callback(seq, parent, e.depth, e.ndx, e.parent_ndx, e.choice_ndx)) {
+        if (!callback(seq, parent, e.depth, e.ndx, e.parent_ndx, e.choice_ndx,
+                      e.visited)) {
             break;
         }
 
         const int choices_count = seq->GetChoicesCount();
         const int child_depth = e.depth + 1;
-        for (int i = 0; i < choices_count; i++) {
+        for (int i = 0; i < choices_count && !e.visited; i++) {
             const SeqChoice *choice = seq->GetChoice(i);
-            queue[queue_size++] = {choice->seq_id,      e.id,  child_depth,
-                                   levels[child_depth], e.ndx, i};
-            levels[child_depth]++;
+
+            int level = 0;
+            bool visited = false;
+            while (seq_ids[child_depth][level] != -1) {
+                if (seq_ids[child_depth][level] == choice->seq_id) {
+                    visited = true;
+                    break;
+                }
+                ++level;
+            }
+
+            queue[queue_tail] = {choice->seq_id, e.id, child_depth, level,
+                                 e.ndx,          i,    visited};
+            queue_tail = (queue_tail + 1) % 128;
+            seq_ids[child_depth][level] = choice->seq_id;
         }
     }
 }
@@ -228,7 +249,10 @@ void DialogEditUI::Press(const Ren::Vec2f &p, bool push) {
 
         IterateElements([&](const ScriptedSequence *seq, const ScriptedSequence *parent,
                             const int depth, const int ndx, const int parent_ndx,
-                            const int choice_ndx) -> bool {
+                            const int choice_ndx, const bool visited) -> bool {
+            if (visited) {
+                return true;
+            }
             const Ren::Vec2f elem_pos = SnapToPixels(
                 view_offset_ + Ren::Vec2f{spacing[0] * depth, -spacing[1] * ndx});
 
@@ -268,6 +292,4 @@ void DialogEditUI::PressRMB(const Ren::Vec2f &p, bool push) {
     }
 }
 
-void DialogEditUI::OnSwitchSequence(int id) {
-    selected_element_ = id;
-}
+void DialogEditUI::OnSwitchSequence(int id) { selected_element_ = id; }

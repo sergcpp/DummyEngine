@@ -1,88 +1,69 @@
 {
-	"name" : "test_seq0",
+	"name" : "test_seq0", 
 	"tracks" : [
 		{
-			"name" : "wolf_test0",
-			"type" : "actor",
-			"target" : "wolf00",
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
 			"actions" : [
 				{
-					"time_beg" : 0.0,
-					"time_end" : 2.0,
-					"type" : "play",
-                    "anim" : "wolf_run.anim"
-				},
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 4, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Das Gericht befasst sich nun mit denm Verfahren gegen Hr. Smiths."
+				}, 
 				{
-					"time_beg" : 2.5,
-					"time_end" : 6.0,
-					"type" : "play",
-                    "anim" : "wolf_walk.anim"
+					"type" : "play", 
+					"time_beg" : 6, 
+					"time_end" : 11.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Na dann. Herr 0, das ist Ihr erstes Geschäft, nicht wahr?"
 				}
 			]
-		},
-        {
-			"name" : "wolf_test1",
-			"type" : "actor",
-			"target" : "wolf01",
-			"actions" : [
-				{
-					"time_beg" : 0.0,
-					"time_end" : 2.0,
-					"type" : "play",
-                    "anim" : "wolf_run.anim",
-                    "caption" : "I'm running"
-				},
-				{
-					"time_beg" : 2.5,
-					"time_end" : 6.0,
-					"type" : "play",
-                    "anim" : "wolf_walk.anim",
-                    "caption" : "I'm walking now :)"
-				}
-			]
-		},
-        {
-			"name" : "sophia_test0",
-			"type" : "actor",
-			"target" : "sophia",
-			"actions" : [
-				{
-					"time_beg" : 0.0,
-					"time_end" : 12.0,
-					"type" : "play",
-                    "anim" : "sophia_idle.anim",
-                    "caption" : "I'm standing"
-				}
-			]
-		},
+		}, 
 		{
-			"name" : "camera_track",
-			"type" : "camera",
-			"target" : "main_camera",
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
 			"actions" : [
 				{
-					"time_beg" : 0.0,
-					"time_end" : 2.0,
-					"type" : "look"
+					"type" : "play", 
+					"time_beg" : 4.1, 
+					"time_end" : 7, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Die Anklage is bereit, Euer Ehren."
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 2
 				}
 			]
 		}
-	],
-    "ending" : {
-        "time_point" : 12.0,
-        "choices" : [
-            {
-                "key" : "ch1",
-                "text" : "Choice 1",
-                "sequence" : "test/test_seq1.json",
-				"puzzle" : "test/test_puzzle.json"
-            },
-            {
-                "key" : "ch2",
-                "text" : "Choice 2",
-                "sequence" : "test/test_seq2.json",
-				"puzzle" : "test/test_puzzle.json"
-            }
-        ]
-    }
+	], 
+	"ending" : {
+		"time_point" : 12, 
+		"choices" : [
+			{
+				"key" : "yes", 
+				"text" : "Ja", 
+				"sequence" : "test/test_seq_inconv.json", 
+				"puzzle" : "test/test_puzzle_inconv.json"
+			}, 
+			{
+				"key" : "no", 
+				"text" : "Nein", 
+				"sequence" : "test/test_seq_conv.json", 
+				"puzzle" : "test/test_puzzle_conv.json"
+			}
+		]
+	}
 }

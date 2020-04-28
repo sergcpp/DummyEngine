@@ -4,7 +4,7 @@
 #include <Eng/Gui/Image.h>
 
 namespace SeqCanvasUIInternal {
-const int TrackCount = 6;
+const int TrackCount = 8;
 const int ElementCropRegionPx = 12;
 const float ElementMoveStep = 0.1f;
 const float ElementDurationMin = 0.3f;
@@ -69,7 +69,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
                 sprintf(str_buf, "%s|%s", name, target);
                 font_.DrawText(r, str_buf,
                                Ren::Vec2f{-1.0f + border_width, y_coord + font_height},
-                               Gui::ColorWhite, this);
+                               Gui::ColorBlack, this);
             }
 
             const int actions_count = sequence_->GetActionsCount(track);
@@ -78,6 +78,19 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
 
                 const float x_beg = GetPointFromTime((float)seq_action->time_beg);
                 const float x_end = GetPointFromTime((float)seq_action->time_end);
+
+                // text clip area in relative coordinates
+                Ren::Vec2f text_clip[2] = {
+                    SnapToPixels(
+                        Ren::Vec2f{x_beg + crop_region_width, y_coord + border_height}),
+                    Ren::Vec2f{x_end - x_beg - 2.0f * crop_region_width,
+                               track_height - 2.0f * border_height}};
+                // convert to absolute coordinates
+                text_clip[0] =
+                    pos() + 0.5f * (text_clip[0] + Ren::Vec2f(1, 1)) * size();
+                text_clip[1] = 0.5f * text_clip[1] * size();
+
+                r->PushClipArea(text_clip);
 
                 const char *type_name =
                     ScriptedSequence::ActionTypeNames[(int)seq_action->type];
@@ -100,6 +113,8 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
                                    Gui::ColorWhite, this);
                 }
 
+                r->PopClipArea();
+                
                 Gui::Image9Patch *el =
                     (track == selected_index_[0] && action == selected_index_[1])
                         ? &element_highlighted_
@@ -108,6 +123,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
                 el->Resize(SnapToPixels(Ren::Vec2f{x_beg, y_coord + border_height}),
                            Ren::Vec2f{x_end - x_beg, track_height - 2.0f * border_height},
                            this);
+
                 el->Draw(r);
             }
         }
@@ -137,6 +153,13 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
             end_.Resize(Ren::Vec2f{xpos, -1.0f}, Ren::Vec2f{20.0f / dims_px_[1][0], 2.0f},
                         this);
             end_.Draw(r);
+        }
+
+        const char *lookup_name = sequence_->lookup_name();
+        if (lookup_name) {
+            const float width = font_.GetWidth(lookup_name, -1, this);
+            font_.DrawText(r, lookup_name, Ren::Vec2f{1.0f - width, -1.0f + font_height},
+                           Gui::ColorWhite, this);
         }
     }
 }

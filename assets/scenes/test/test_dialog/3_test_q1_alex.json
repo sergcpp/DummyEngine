@@ -1,0 +1,42 @@
+{
+	"name" : "alex", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 4.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Nun, das ist Alex Smiths, Euer Ehren."
+				},
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 5.0,
+		"choices" : [
+			{
+				"key" : "pass", 
+				"sequence" : "test/test_dialog/3_test_q2.json"
+			}
+		]
+	}
+}

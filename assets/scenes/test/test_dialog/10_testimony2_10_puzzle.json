@@ -1,0 +1,32 @@
+{
+	"text" : "<split><option>Der/Die/Das</option> </split><split>Opfer </split><split><option>kommen</option> </split><split>aus </split><split><option>der</option> Urlaub. </split><split>Ihre Uhr </split><split><option>sollen</option> </split><split>2 <option>Stunden</option> </split><split>im Voraus </split><split>eingestellt </split><split>worden </split><split>sein.</split>",
+	"options" : [
+		{
+			"variants" : [
+				"Das", "Der", "Die"
+			],
+		},
+        {
+			"variants" : [
+				"kam", "gekommen", "kommen"
+			],
+		},
+        {
+			"variants" : [
+				"dem", "der", "den"
+			],
+		},
+        {
+			"variants" : [
+				"sollte", "soll", "sollen"
+			],
+		},
+        {
+			"variants" : [
+				"Stunden", "Stunde"
+			],
+		},
+	],
+	"hints" : [
+	]
+}

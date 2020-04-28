@@ -1,0 +1,20 @@
+{
+	"text" : "<split>Ich </split><split><option>verlangen</option> </split><split><option>ein_</option> </split><split>Götterurteil </split><split>durch </split><split><hint>Zweikampf</hint></split><split>.</split>",
+	"options" : [
+		{
+			"variants" : [
+				"verlange", "verlangst", "verlangt"
+			]
+		},
+        {
+			"variants" : [
+				"ein", "eine", "einen"
+			]
+		}
+	],
+	"hints" : [
+        {
+			"en" : "duel"
+		}
+	]
+}

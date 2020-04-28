@@ -30,10 +30,14 @@ void ScriptedSequence::Clear() {
     choices_count_ = 0;
 }
 
-bool ScriptedSequence::Load(const JsObject &js_seq) {
+bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
     using namespace ScriptedSequenceInternal;
 
     Clear();
+
+    if (lookup_name) {
+        lookup_name_ = lookup_name;
+    }
 
     if (js_seq.Has("name")) {
         const JsString &js_name = js_seq.at("name").as_str();
@@ -136,14 +140,16 @@ bool ScriptedSequence::Load(const JsObject &js_seq) {
             const JsArray &js_choices = js_ending.at("choices").as_arr();
             for (const JsElement &js_choice_el : js_choices.elements) {
                 const JsObject &js_choice = js_choice_el.as_obj();
-                const JsString &js_choice_key = js_choice.at("key").as_str();
-                const JsString &js_choice_text = js_choice.at("text").as_str();
-                const JsString &js_choice_seq = js_choice.at("sequence").as_str();
 
                 SeqChoice &choice = choices_[choices_count_++];
-                choice.key = js_choice_key.val;
-                choice.text = js_choice_text.val;
-                choice.seq_name = js_choice_seq.val;
+
+                choice.key = js_choice.at("key").as_str().val;
+
+                if (js_choice.Has("text")) {
+                    choice.text = js_choice.at("text").as_str().val;
+                }
+
+                choice.seq_name = js_choice.at("sequence").as_str().val;
 
                 if (js_choice.Has("puzzle")) {
                     const JsString &js_choice_puz = js_choice.at("puzzle").as_str();
@@ -212,7 +218,9 @@ void ScriptedSequence::Save(JsObject &js_seq) {
 
             JsObject js_choice;
             js_choice.Push("key", JsString{choice.key});
-            js_choice.Push("text", JsString{choice.text});
+            if (!choice.text.empty()) {
+                js_choice.Push("text", JsString{ choice.text });
+            }
             js_choice.Push("sequence", JsString{choice.seq_name});
             if (!choice.puzzle_name.empty()) {
                 js_choice.Push("puzzle", JsString{choice.puzzle_name});

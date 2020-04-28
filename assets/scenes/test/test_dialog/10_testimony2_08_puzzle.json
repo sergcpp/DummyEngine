@@ -1,0 +1,22 @@
+{
+	"text" : "<split><option>Der/Die/Das</option> </split><split>Zeuge </split><split><option>sein</option> </split><split>in </split><split><option>der/die/das</option> </split><split>Wohnung</split><split>.</split>",
+	"options" : [
+		{
+			"variants" : [
+				"Der", "Das", "Die"
+			]
+		},
+        {
+			"variants" : [
+				"war", "ist", "sind"
+			]
+		},
+        {
+			"variants" : [
+				"der", "die", "das"
+			]
+		}
+	],
+	"hints" : [
+	]
+}

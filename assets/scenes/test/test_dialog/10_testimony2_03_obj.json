@@ -1,0 +1,73 @@
+{
+	"name" : "testimony2_03_obj", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				
+			]
+		}, 
+        {
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 3.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Sie können nicht sicher sein, dass er es war."
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "witness_speech", 
+			"type" : "actor", 
+			"target" : "witness", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 3.1, 
+					"time_end" : 6.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ich habe es gut untersucht, er war es."
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 6.1,
+        "choices" : [
+			{
+				"key" : "pass",
+				"sequence" : "test/test_dialog/10_testimony2_04.json"
+			}
+		]
+	}
+}

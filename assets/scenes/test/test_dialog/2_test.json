@@ -1,0 +1,57 @@
+{
+	"name" : "test", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 1.0, 
+					"time_end" : 2.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "In jeder Fall."
+				},
+				{
+					"type" : "play", 
+					"time_beg" : 2.25, 
+					"time_end" : 7.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Möchte ich einen kleinen Test mit Ihnen machen, um zu sehen, ob Sie wirklich bereit sind."
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 1.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Danke, Euer Ehren."
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 7.5,
+		"choices" : [
+			{
+				"key" : "pass", 
+				"sequence" : "test/test_dialog/3_test_q1.json",
+				"puzzle" : "test/test_dialog/2_test_puzzle.json"
+			}
+		]
+	}
+}

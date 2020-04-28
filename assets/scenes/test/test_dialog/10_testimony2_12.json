@@ -1,0 +1,80 @@
+{
+	"name" : "testimony2_12", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 3.5, 
+					"time_end" : 4.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ruhe!"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 4.2, 
+					"time_end" : 6.2, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Nun, das ist eine faire Forderung."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 6.5, 
+					"time_end" : 9.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Wir geben Ihnen 15 Minuten vor Ort. Das Gericht wird vertagt."
+				}
+			]
+		}, 
+        {
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 3.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ich möchte den Tatort persönlich inspizieren."
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "witness_speech", 
+			"type" : "actor", 
+			"target" : "witness", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 9.5
+	}
+}

@@ -1,0 +1,42 @@
+{
+	"name" : "nobody", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 4.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Niemand hat einen Krankenwagen gerufen."
+				},
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 5.0,
+		"choices" : [
+			{
+				"key" : "pass", 
+				"sequence" : "test/test_dialog/6_test_q5.json"
+			}
+		]
+	}
+}

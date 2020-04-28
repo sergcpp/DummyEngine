@@ -40,6 +40,10 @@ WordPuzzleUI::WordPuzzleUI(Ren::Context &ctx, const Gui::Vec2f &pos,
     log_ = ctx.log();
 }
 
+void WordPuzzleUI::Cancel() {
+    state_ = eState::Solved;
+}
+
 void WordPuzzleUI::Restart() {
     state_ = eState::AnimIntro;
     anim_started_time_s_ = Sys::GetTimeS();
@@ -256,9 +260,9 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
                        draw_offset_right =
                            Ren::Vec2f{0.333f, -1.0f + bottom_margin + anim_y_off};
 
-            assert(avail_splits_.size() <= 9);
-            Ren::Vec2f draw_offsets[9];
-            for (int i = 0; i < 9; i++) {
+            assert(avail_splits_.size() <= 12);
+            Ren::Vec2f draw_offsets[12];
+            for (int i = 0; i < 12; i++) {
                 if (i % 3 == 0) {
                     draw_offsets[i] =
                         draw_offset_left +

@@ -2,6 +2,20 @@
 	"name" : "test_seq1",
 	"tracks" : [
 		{
+			"name" : "lawyer_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 4, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ja, Euer Ehre. Ich bin ein bisschen besorgt."
+				}
+			]
+		},
+		{
 			"name" : "camera_track",
 			"type" : "camera",
 			"target" : "main_camera",
@@ -15,7 +29,7 @@
 		}
 	],
     "ending" : {
-        "time_point" : 8.0,
+        "time_point" : 5.0,
 		"choices" : [
             {
                 "key" : "ch1",

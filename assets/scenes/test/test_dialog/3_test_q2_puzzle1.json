@@ -1,0 +1,30 @@
+{
+	"text" : "<split>Natürlich </split><split><option>wissen</option> </split><split>ich </split><split><option>der</option> </split><split><option>Name</option> </split><split><option>das</option> </split><split><hint>Opfer</hint>!</split>",
+	"options" : [
+		{
+			"variants" : [
+				"weiß", "wisst", "weißt"
+			],
+		},
+		{
+			"variants" : [
+				"den", "dem", "des"
+			],
+		},
+		{
+			"variants" : [
+				"Namen", "Name"
+			],
+		},
+		{
+			"variants" : [
+				"des", "dem", "den"
+			],
+		}
+	],
+	"hints" : [
+		{
+			"en" : "victim"
+		}
+	]
+}

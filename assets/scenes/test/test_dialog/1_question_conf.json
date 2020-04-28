@@ -1,0 +1,54 @@
+{
+	"name" : "conf",
+	"tracks" : [
+		{
+			"name" : "lawyer_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 4, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Nein, dies ist nicht mein erstes Mal vor Gericht."
+				}
+			]
+		},
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 4.5, 
+					"time_end" : 9.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Großartig, dann wage ich es nicht, den Prozess zu verzögern."
+				}
+			]
+		},
+		{
+			"name" : "camera_track",
+			"type" : "camera",
+			"target" : "main_camera",
+			"actions" : [
+				{
+					"time_beg" : 0.0,
+					"time_end" : 2.0,
+					"type" : "look"
+				}
+			]
+		}
+	],
+    "ending" : {
+        "time_point" : 9.0, 
+		"choices" : [
+			{
+				"key" : "pass", 
+				"sequence" : "test/test_dialog/2_test.json"
+			}
+		]
+    }
+}

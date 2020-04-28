@@ -1,0 +1,80 @@
+{
+	"name" : "testimony2_07", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				
+			]
+		}, 
+        {
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "witness_speech", 
+			"type" : "actor", 
+			"target" : "witness", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 2.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Aber ich sah, dass der Krankenwagen bereits angekommen war."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 2.5, 
+					"time_end" : 4.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Es war genau 12:00 Uhr."
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 5.0,
+        "choices" : [
+            {
+				"key" : "objection",
+                "text" : "[Einspruch]",
+				"sequence" : "test/test_dialog/10_testimony2_07_obj.json"
+			},
+            {
+				"key" : "repeat",
+                "text" : "[Noch mal]",
+				"sequence" : "test/test_dialog/10_testimony2_07_obj.json"
+			}
+		]
+	}
+}

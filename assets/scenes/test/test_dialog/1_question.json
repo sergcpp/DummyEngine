@@ -1,0 +1,62 @@
+{
+	"name" : "first time?", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 3.5, 
+					"time_end" : 7.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Herr 0? Dies ist Ihre erste Verhandlung, nicht wahr?"
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 3.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Die Verteidigung is bereit, Euer Ehren."
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 2
+				}
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 7.5, 
+		"choices" : [
+			{
+				"key" : "yes", 
+				"text" : "Ja", 
+				"sequence" : "test/test_dialog/1_question_nonconf.json", 
+				"puzzle" : "test/test_dialog/1_question_puzzle_nonconf.json"
+			}, 
+			{
+				"key" : "no", 
+				"text" : "Nein", 
+				"sequence" : "test/test_dialog/1_question_conf.json", 
+				"puzzle" : "test/test_dialog/1_question_puzzle_conf.json"
+			}
+		]
+	}
+}

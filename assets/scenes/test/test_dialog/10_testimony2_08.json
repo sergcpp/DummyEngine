@@ -1,0 +1,73 @@
+{
+	"name" : "testimony2_08", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 3.2, 
+					"time_end" : 6.2, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ja. Was bedeutet das?"
+				}
+			]
+		}, 
+        {
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 3.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Der Krankenwagen kam um 10:00 Uhr an."
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "witness_speech", 
+			"type" : "actor", 
+			"target" : "witness", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 6.2,
+        "choices" : [
+            {
+				"key" : "pass",
+				"sequence" : "test/test_dialog/10_testimony2_09.json",
+                "puzzle" : "test/test_dialog/10_testimony2_08_puzzle.json"
+			}
+		]
+	}
+}

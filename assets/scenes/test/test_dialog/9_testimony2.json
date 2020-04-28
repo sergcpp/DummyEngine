@@ -1,0 +1,107 @@
+{
+	"name" : "testimony2", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 10.0, 
+					"time_end" : 12.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Hr. Lügner, machen Sie Ihre Aussage."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 12.5, 
+					"time_end" : 15.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Bitte sagen Sie dem Gericht, was Sie am Tag des Mordes gesegen haben."
+				}
+			]
+		}, 
+        {
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 2.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Mein Zeuge hat dem Opfer am Tag des Mordes ein Paket übergeben."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 2.5, 
+					"time_end" : 4.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Holen Sie bitte Hr. Lügner in den Zeugenstand!"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 4.5, 
+					"time_end" : 7.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Hr. Lügner, Sie liefern Pakete, stimmt das?"
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "witness_speech", 
+			"type" : "actor", 
+			"target" : "witness", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 7.1, 
+					"time_end" : 7.6, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Oh, ja!"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 7.6, 
+					"time_end" : 9.6, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Pakete, klar!"
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 15.5,
+        "choices" : [
+			{
+				"key" : "pass", 
+				"sequence" : "test/test_dialog/10_testimony2_01.json"
+			}
+		]
+	}
+}

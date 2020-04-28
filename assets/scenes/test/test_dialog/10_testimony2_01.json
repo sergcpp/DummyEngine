@@ -1,0 +1,73 @@
+{
+	"name" : "testimony2_01", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				
+			]
+		}, 
+        {
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "witness_speech", 
+			"type" : "actor", 
+			"target" : "witness", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 2.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ich habe die Post wie gewohnt zugestellt."
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 2.5,
+        "choices" : [
+			{
+				"key" : "continue",
+                "text" : "[Weiter]",
+				"sequence" : "test/test_dialog/10_testimony2_02.json"
+			},
+            {
+				"key" : "objection",
+                "text" : "[Einspruch]",
+				"sequence" : "test/test_dialog/10_testimony2_01_obj.json"
+			},
+		]
+	}
+}

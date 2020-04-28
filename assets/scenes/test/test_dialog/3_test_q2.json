@@ -1,0 +1,92 @@
+{
+	"name" : "q2", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 1.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Korrekt."
+				},
+				{
+					"type" : "play", 
+					"time_beg" : 1.1, 
+					"time_end" : 5.1, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Versuchen Sie einfach, einen klaren Kopf zu behalten. Dann wird das schon."
+				},
+				{
+					"type" : "play", 
+					"time_beg" : 5.5, 
+					"time_end" : 6.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Nächste Frage."
+				},
+				{
+					"type" : "play", 
+					"time_beg" : 6.6, 
+					"time_end" : 11.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Dies is ein Mordprozess. Können Sie mir den Namen des Opfers nennen?"
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 12.0, 
+					"time_end" : 13.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Das Opfer?"
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 15.0, 
+					"time_end" : 18.0, 
+					"anim" : "sophia_idle.anim", 
+					"caption" : "Bist du dich wirklich sicher, dass du sas schaffst?"
+				},
+				{
+					"type" : "play", 
+					"time_beg" : 18.5, 
+					"time_end" : 21.5, 
+					"anim" : "sophia_idle.anim", 
+					"caption" : "Du kennst nicht mal den Namen des Opfers!?"
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 22.0,
+		"choices" : [
+			{
+				"key" : "pass", 
+				"sequence" : "test/test_dialog/3_test_q2_cont.json",
+				"puzzle" : "test/test_dialog/3_test_q2_puzzle1.json"
+			}
+		]
+	}
+}

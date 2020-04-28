@@ -1,0 +1,80 @@
+{
+	"name" : "testimony2_09", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 5.0, 
+					"time_end" : 5.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ruhe!"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 5.5, 
+					"time_end" : 8.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Erkläre ihre Idee."
+				}
+			]
+		}, 
+        {
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 3.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Der Zeuge war in der Wohnung."
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+                
+			]
+		}, 
+		{
+			"name" : "witness_speech", 
+			"type" : "actor", 
+			"target" : "witness", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 8.0,
+        "choices" : [
+            {
+				"key" : "pass",
+                "puzzle" : "test/test_dialog/10_testimony2_10_puzzle.json",
+				"sequence" : "test/test_dialog/10_testimony2_10.json"
+			}
+		]
+	}
+}

@@ -1,0 +1,20 @@
+{
+	"text" : "<split>Ja, </split><split><option>deine</option> </split><split>Ehre.</split><split> Ich </split><split><option>sein</option> </split><split>ein bisschen </split><split>besorgt.</split>",
+	"options" : [
+		{
+			"variants" : [
+				"Euer", "deine", "Euere"
+			]
+		},
+		{
+			"variants" : [
+				"bin", "bist", "ist"
+			]
+		}
+	],
+	"hints" : [
+		{
+			"en" : "lesson"
+		}
+	]
+}

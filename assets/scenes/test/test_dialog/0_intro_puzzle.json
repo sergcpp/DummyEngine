@@ -1,0 +1,15 @@
+{
+	"text" : "<split><hint>Die Verteidigung</hint> </split><split><option>sein</option> </split><split>bereit</split><split>, </split><split>Euer Ehren</split><split>.</split>",
+	"options" : [
+		{
+			"variants" : [
+				"ist", "bin", "bist"
+			]
+		}
+	],
+	"hints" : [
+		{
+			"en" : "The defence"
+		}
+	]
+}

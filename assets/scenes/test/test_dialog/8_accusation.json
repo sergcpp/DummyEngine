@@ -1,0 +1,147 @@
+{
+	"name" : "accusation", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 2.0, 
+					"time_end" : 3.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Gut, dann..."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 3.6, 
+					"time_end" : 6.6, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Zuerst eine Frage an die Anklage."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 8.2, 
+					"time_end" : 10.2, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Hr. Schuld, wie der Anwalt sagte, wurde das Opfer mit einem stumpfen Gegenstand niedergeschlagen."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 10.5, 
+					"time_end" : 14.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Können Sie dem Gericht erklären, was das fur ein 'Gegenstand' war."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 23.4, 
+					"time_end" : 27.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ich verstehe... das Gericht nimmt er als Beweisstuck auf."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 34.5, 
+					"time_end" : 37.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Hr. Schuld, die Anklage darf ihren ersten Zeugen aufrufen."
+				}
+			]
+		}, 
+        {
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 6.8, 
+					"time_end" : 8.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ja, Euer Ehren?"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 14.2, 
+					"time_end" : 18.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Bei der Mordwaffe handelt es sich um der Hammer."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 18.1, 
+					"time_end" : 21.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Er wurde neben dem Opfer auf dem Boden gefunden."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 21.1, 
+					"time_end" : 23.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Sie ist gerade aus dem Urlaub zurückgekehrt."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 37.0, 
+					"time_end" : 42.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Die Anklage ruft den Angeklagten Hr. Smiths in den Zeugenstand."
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 1.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Danke, Eurer Ehren."
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 27.1, 
+					"time_end" : 31.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Wir müssen auf alle Beweise achten, die während des Prozesses hinzukommen."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 31.2, 
+					"time_end" : 34.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Diese Beweise sind unsere einzige Waffe im Gerichtssaal."
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 42.0,
+        "choices" : [
+			{
+				"key" : "pass", 
+				"sequence" : "test/test_dialog/8_testimony.json"
+			}
+		]
+	}
+}

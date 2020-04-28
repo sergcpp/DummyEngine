@@ -53,7 +53,7 @@ class ScriptedSequence {
 
     Ren::Context &ctx_;
     SceneManager &scene_manager_;
-    std::string name_;
+    std::string lookup_name_, name_;
     std::vector<Track> tracks_;
     std::vector<SeqAction> actions_;
 
@@ -68,6 +68,9 @@ class ScriptedSequence {
   public:
     ScriptedSequence(Ren::Context &ctx_, SceneManager &scene_manager);
 
+    const char *lookup_name() const {
+        return lookup_name_.empty() ? nullptr : lookup_name_.c_str();
+    }
     const char *name() const { return name_.empty() ? nullptr : name_.c_str(); }
 
     double duration() const { return end_time_; }
@@ -135,7 +138,7 @@ class ScriptedSequence {
     }
 
     void Clear();
-    bool Load(const JsObject &js_seq);
+    bool Load(const char *lookup_name, const JsObject &js_seq);
     void Save(JsObject &js_seq);
 
     void Reset();

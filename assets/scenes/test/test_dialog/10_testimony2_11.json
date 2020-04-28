@@ -1,0 +1,93 @@
+{
+	"name" : "testimony2_11", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				
+			]
+		}, 
+        {
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 8.1, 
+					"time_end" : 10.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Angenommen, das ist wahr. Was wollen Sie?"
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 4.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Der Zeuge sah wahrscheinlich die Zeit auf dem Armband des Opfers."
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+                {
+					"type" : "play", 
+					"time_beg" : 4.1, 
+					"time_end" : 6.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Aber er wusste nicht, dass die Zeit falsch war."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 6.1, 
+					"time_end" : 8.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Aufgrund des Zeitunterschieds."
+				}
+			]
+		}, 
+		{
+			"name" : "witness_speech", 
+			"type" : "actor", 
+			"target" : "witness", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 10.0,
+        "choices" : [
+            {
+				"key" : "inspect",
+                "text" : "Den Tatort inspizieren",
+                "puzzle" : "test/test_dialog/10_testimony2_12_puzzle.json",
+				"sequence" : "test/test_dialog/10_testimony2_12.json"
+			},
+            {
+				"key" : "combat",
+                "text" : "Zweikampf",
+                "puzzle" : "test/test_dialog/10_testimony2_11_joke_puzzle.json",
+				"sequence" : "test/test_dialog/10_testimony2_11_joke.json"
+			}
+		]
+	}
+}

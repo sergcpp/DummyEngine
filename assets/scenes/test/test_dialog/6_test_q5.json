@@ -1,0 +1,68 @@
+{
+	"name" : "q5", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 1.5, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Richtig."
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 1.6, 
+					"time_end" : 5.0, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Aber warum kamen dann die Ärzte zur Szene?"
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 5.5,
+        "choices" : [
+			{
+				"key" : "bracelet",
+				"text" : "Der Armband",
+                "puzzle" : "test/test_dialog/6_test_q5_puzzle_bracelet.json",
+                "sequence" : "test/test_dialog/6_test_q5_bracelet.json"
+			},
+			{
+				"key" : "accidentally",
+				"text" : "Versehentlich",
+                "sequence" : "test/test_dialog/6_test_q5_accidentally.json"
+			},
+			{
+				"key" : "they didnt", 
+				"text" : "Nicht gekommen",
+                "sequence" : "test/test_dialog/6_test_q5_didnt.json"
+			}
+		]
+	}
+}
