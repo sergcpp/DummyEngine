@@ -82,23 +82,29 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                Ray::pixel_color_t in_p = _temp_pixels1[y * width + x];
+                const Ray::pixel_color_t &in_p = _temp_pixels1[y * width + x];
                 Ray::pixel_color_t &out_p = _temp_pixels2[y * width + x];
 
-                float mul = 1.0f;
-                if (in_p.a < invalid_threshold) {
+                if (in_p.a >= invalid_threshold) {
+                    const float mul = 1.0f / in_p.a;
+
+                    out_p.r = in_p.r * mul;
+                    out_p.g = in_p.g * mul;
+                    out_p.b = in_p.b * mul;
+                    out_p.a = in_p.a * mul;
+                } else {
                     has_invalid = true;
 
                     Ray::pixel_color_t new_p = { 0 };
                     int count = 0;
 
-                    int _ys[] = { y - 1, y, y + 1 },
-                        _xs[] = { x - 1, x, x + 1 };
-                    for (int _y : _ys) {
+                    const int _ys[] = { y - 1, y, y + 1 };
+                    const int _xs[] = { x - 1, x, x + 1 };
+                    for (const int _y : _ys) {
                         if (_y < 0 || _y > height - 1) continue;
 
-                        for (int _x : _xs) {
-                            if (_x < 0 || _x > width - 1) continue;
+                        for (const int _x : _xs) {
+                            if ((_x == x && _y == y) || _x < 0 || _x > width - 1) continue;
 
                             const Ray::pixel_color_t &p = _temp_pixels1[_y * width + _x];
                             if (p.a >= invalid_threshold) {
@@ -106,29 +112,18 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
                                 new_p.g += p.g;
                                 new_p.b += p.b;
                                 new_p.a += p.a;
-
-                                count++;
+                                ++count;
                             }
                         }
                     }
 
-                    if (count) {
-                        const float inv_c = 1.0f / float(count);
-                        new_p.r *= inv_c;
-                        new_p.g *= inv_c;
-                        new_p.b *= inv_c;
-                        new_p.a *= inv_c;
+                    const float mul = count ? (1.0f / float(count)) : 1.0f;
 
-                        in_p = new_p;
-                    }
-                } else {
-                    mul = 1.0f / in_p.a;
+                    out_p.r = new_p.r * mul;
+                    out_p.g = new_p.g * mul;
+                    out_p.b = new_p.b * mul;
+                    out_p.a = new_p.a * mul;
                 }
-
-                out_p.r = in_p.r * mul;
-                out_p.g = in_p.g * mul;
-                out_p.b = in_p.b * mul;
-                out_p.a = in_p.a * mul;
             }
         }
 

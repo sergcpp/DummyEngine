@@ -608,8 +608,10 @@ void GSBaseState::Draw(uint64_t dt_us) {
 
                 back_list = -1;
             } else if (use_pt_) {
-                // TODO: fix pt view setup (use current camera)
-                //scene_manager_->SetupView_PT(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
+                const Ren::Camera &cam = scene_manager_->main_cam();
+                scene_manager_->SetupView_PT(cam.world_position(),
+                                             (cam.world_position() - cam.view_dir()),
+                                             Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam.angle());
                 if (invalidate_view_) {
                     scene_manager_->Clear_PT();
                     invalidate_view_ = false;

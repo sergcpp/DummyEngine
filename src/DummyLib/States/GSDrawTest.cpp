@@ -25,13 +25,14 @@ namespace GSDrawTestInternal {
     const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
         //"skin_test.json";
-        "living_room_gumroad.json";
+        //"living_room_gumroad.json";
         //"bistro.json";
         //"pbr_test.json";
         //"zenith.json";
         //"corridor.json";
         //"vegetation_test_night.json";
         //"test_decals.json";
+        "courtroom.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {

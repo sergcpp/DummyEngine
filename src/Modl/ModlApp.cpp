@@ -739,7 +739,8 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
     if (generate_occlusion) {
         std::cout << "Generating occlusion... ";
 
-        vector<Ren::Vec4f> occlusion = GenerateOcclusion(positions, normals, tangents, reordered_indices);
+        vector<Ren::Vec4f> occlusion =
+            GenerateOcclusion(positions, normals, tangents, reordered_indices);
         assert(occlusion.size() == positions.size() / 3);
 
         vtx_colors.resize(4 * occlusion.size());
@@ -1378,14 +1379,18 @@ ModlApp::GenerateOcclusion(const std::vector<float> &positions,
 
             if (trace_occ_ray(orig + bias * dir, dir, 0.25f)) {
                 ++occ_count;
+            } else {
+                unoccluded_dir += dir;
             }
-
-            unoccluded_dir += dir;
         }
 
         unoccluded_dir = Normalize(unoccluded_dir);
 
-        occlusion.emplace_back(unoccluded_dir[0], unoccluded_dir[1], unoccluded_dir[2],
+        const float x = Dot(unoccluded_dir, T);
+        const float y = Dot(unoccluded_dir, B);
+        const float z = Dot(unoccluded_dir, N);
+
+        occlusion.emplace_back(x, y, z,
                                float(SampleCount - occ_count) / float(SampleCount));
     }
 

@@ -37,7 +37,7 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-                          "seq_test.json";
+                          "courtroom.json";
 
 const char SEQ_NAME[] = "test/test_dialog/0_intro.json";
 } // namespace GSUITest4Internal

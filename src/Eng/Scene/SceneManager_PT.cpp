@@ -6,6 +6,7 @@
 #include <Sys/AssetFile.h>
 #include <Sys/Log.h>
 #include <Sys/ThreadPool.h>
+#include <Sys/Time_.h>
 
 #include "../Renderer/Renderer.h"
 
@@ -123,16 +124,16 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
     const int LmSamplesDirect =
 #ifdef NDEBUG
-        4096;
+        16;
 #else
-        32;
+        1;
 #endif
 
     const int LmSamplesIndirect =
 #ifdef NDEBUG
-        16 * 4096;
+        4096; // 16 * 4096;
 #else
-        32;
+        1;
 #endif
     const int LmSamplesPerPass = 16;
     const int TileSizeCPU = 64;
@@ -328,10 +329,13 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                 const int FilterSize = 32;
 
                 { // Save direct lightmap
+                    ctx_.log()->Info("Flushing seams...");
+                    const double t1 = Sys::GetTimeS();
                     std::vector<Ray::pixel_color_t> out_pixels =
                         SceneManagerInternal::FlushSeams(
                             &pt_lm_direct_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY,
                             InvalidThreshold, FilterSize);
+                    ctx_.log()->Info("                 done (%fs)", Sys::GetTimeS() - t1);
 
                     std::string out_file_name = "./assets/textures/lightmaps/";
                     out_file_name += scene_data_.name.c_str();
@@ -343,10 +347,13 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                 }
 
                 { // Save indirect lightmap
+                    ctx_.log()->Info("Flushing seams...");
+                    const double t1 = Sys::GetTimeS();
                     std::vector<Ray::pixel_color_t> out_pixels =
                         SceneManagerInternal::FlushSeams(
                             &pt_lm_indir_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY,
                             InvalidThreshold, FilterSize);
+                    ctx_.log()->Info("                 done (%fs)", Sys::GetTimeS() - t1);
 
                     std::string out_file_name = "./assets/textures/lightmaps/";
                     out_file_name += scene_data_.name.c_str();
@@ -359,10 +366,14 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
                 { // Save indirect SH-lightmap
                     for (int sh_l = 0; sh_l < 4; sh_l++) {
+                        ctx_.log()->Info("Flushing seams...");
+                        const double t1 = Sys::GetTimeS();
                         std::vector<Ray::pixel_color_t> out_pixels =
                             SceneManagerInternal::FlushSeams(
                                 &pt_lm_indir_sh_[sh_l][0], LIGHTMAP_ATLAS_RESX,
                                 LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
+                        ctx_.log()->Info("                 done (%fs)",
+                                         Sys::GetTimeS() - t1);
 
                         std::string out_file_name = "./assets/textures/lightmaps/";
                         out_file_name += scene_data_.name.c_str();
@@ -561,17 +572,20 @@ void SceneManager::InitScene_PT(bool _override) {
         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
             const auto *dr = (Drawable *)scene_data_.comp_store[CompDrawable]->Get(
                 obj.components[CompDrawable]);
-            if (!(dr->vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)))
+            const Ren::Mesh *mesh = dr->pt_mesh ? dr->pt_mesh.get() : dr->mesh.get();
+            if (!(dr->vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) ||
+                (mesh->type() != Ren::MeshSimple && mesh->type() != Ren::MeshColored)) {
                 continue;
+            }
 
-            const Ren::Mesh *mesh = dr->mesh.get();
             const char *mesh_name = mesh->name().c_str();
-
             auto mesh_it = loaded_meshes.find(mesh_name);
             if (mesh_it == loaded_meshes.end()) {
                 Ray::mesh_desc_t mesh_desc;
                 mesh_desc.prim_type = Ray::TriangleList;
-                mesh_desc.layout = Ray::PxyzNxyzBxyzTuvTuv;
+                mesh_desc.layout = (mesh->type() == Ren::MeshColored)
+                                       ? Ray::PxyzNxyzBxyzTuvX
+                                       : Ray::PxyzNxyzBxyzTuvTuv;
                 mesh_desc.vtx_attrs = (const float *)mesh->attribs();
                 mesh_desc.vtx_attrs_count = (uint32_t)(mesh->attribs_buf1().size / 16);
                 mesh_desc.vtx_indices = (const uint32_t *)mesh->indices();
@@ -579,9 +593,17 @@ void SceneManager::InitScene_PT(bool _override) {
                     (uint32_t)(mesh->indices_buf().size / sizeof(uint32_t));
                 mesh_desc.base_vertex = 0;
 
+                bool is_sparse = false;
+
                 const Ren::TriGroup *s = &mesh->group(0);
                 while (s->offset != -1) {
                     const Ren::Material *mat = s->mat.get();
+                    if (mat->flags() & (Ren::AlphaBlend | Ren::AlphaTest)) {
+                        // TODO: Properly support transparent objects
+                        is_sparse = true;
+                        ++s;
+                        continue;
+                    }
                     const char *mat_name = mat->name().c_str();
 
                     auto mat_it = loaded_materials.find(mat_name);
@@ -634,15 +656,37 @@ void SceneManager::InitScene_PT(bool _override) {
                     ++s;
                 }
 
-                const uint32_t new_mesh = ray_scene_->AddMesh(mesh_desc);
-                mesh_it = loaded_meshes.emplace(mesh_name, new_mesh).first;
+                if (!mesh_desc.shapes.empty()) {
+                    std::unique_ptr<uint32_t[]> compacted_indices;
+                    if (is_sparse) {
+                        compacted_indices.reset(
+                            new uint32_t[mesh_desc.vtx_indices_count]);
+
+                        mesh_desc.vtx_indices_count = 0;
+                        for (Ray::shape_desc_t &s : mesh_desc.shapes) {
+                            memcpy(&compacted_indices[mesh_desc.vtx_indices_count],
+                                   &mesh_desc.vtx_indices[s.vtx_start],
+                                   s.vtx_count * sizeof(uint32_t));
+                            s.vtx_start = mesh_desc.vtx_indices_count;
+                            mesh_desc.vtx_indices_count += s.vtx_count;
+                        }
+
+                        mesh_desc.vtx_indices = compacted_indices.get();
+                    }
+
+                    if (mesh_desc.vtx_indices_count) {
+                        const uint32_t new_mesh = ray_scene_->AddMesh(mesh_desc);
+                        mesh_it = loaded_meshes.emplace(mesh_name, new_mesh).first;
+                    }
+                }
             }
 
-            auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(
-                obj.components[CompTransform]);
-
-            tr->pt_mi =
-                ray_scene_->AddMeshInstance(mesh_it->second, Ren::ValuePtr(tr->mat));
+            if (mesh_it != loaded_meshes.end()) {
+                auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(
+                    obj.components[CompTransform]);
+                tr->pt_mi =
+                    ray_scene_->AddMeshInstance(mesh_it->second, Ren::ValuePtr(tr->mat));
+            }
         }
     }
 
@@ -678,6 +722,7 @@ void SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &targ
 
     memcpy(&cam_desc.origin[0], Ren::ValuePtr(origin), 3 * sizeof(float));
     memcpy(&cam_desc.fwd[0], Ren::ValuePtr(fwd), 3 * sizeof(float));
+    memcpy(&cam_desc.up[0], Ren::ValuePtr(up), 3 * sizeof(float));
 
     cam_desc.fov = fov;
 

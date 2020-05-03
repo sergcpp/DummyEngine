@@ -1,0 +1,6 @@
+gl_program: main_probelit_nossr_occ main_probelit_occ.vert.glsl main_probelit_nossr_occ.frag.glsl
+gl_program: main_probelit_nossr_occ main_probelit_occ.vert.glsl main_probelit_nossr_occ.frag.glsl
+sw_program: main
+texture: grey.png
+texture: default_normalmap.png
+texture: default_specular.png

@@ -83,7 +83,13 @@ class ModlApp {
     bool mouse_grabbed_ = false;
 
     enum class eViewMode {
-        Diffuse, DiagNormals1, DiagNormals2, DiagUVs1, DiagUVs2, DiagVtxColor
+        Diffuse,
+        DiagNormals1,
+        DiagTangent,
+        DiagNormals2,
+        DiagUVs1,
+        DiagUVs2,
+        DiagVtxColor
     } view_mode_ = eViewMode::DiagNormals1;
 
     void InitInternal();

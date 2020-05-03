@@ -40,6 +40,11 @@ void Drawable::Write(const Drawable &dr, JsObject &js_out) {
         js_out.Push("mesh_file", JsString{ dr.mesh_file.empty() ? mesh_name.c_str() : dr.mesh_file.c_str() });
     }
 
+    if (dr.pt_mesh) {
+        const Ren::String& mesh_name = dr.pt_mesh->name();
+        js_out.Push("pt_mesh_file", JsString{ mesh_name.c_str() });
+    }
+
     if (dr.flags & uint32_t(eDrFlags::DrMaterialOverride)) {
         JsArray js_material_override;
 

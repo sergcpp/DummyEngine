@@ -206,7 +206,7 @@ void main(void) {
 
     vec2 ao_uvs = vec2(ix, iy) / shrd_data.uResAndFRes.zw;
     float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;
-    vec3 diffuse_color = albedo_color * (shrd_data.uSunCol.xyz * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
+    vec3 diffuse_color = albedo_color * (shrd_data.uSunCol.xyz * lambert * visibility + ambient_occlusion * ambient_occlusion * indirect_col + additional_light);
     
     vec3 view_ray_ws = normalize(shrd_data.uCamPosAndGamma.xyz - aVertexPos_);
     float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);

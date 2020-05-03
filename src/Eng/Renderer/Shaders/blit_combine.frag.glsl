@@ -84,7 +84,7 @@ void main() {
 
     col = 0.25 * (c0 + c1 + c2 + c3) + 0.1 * c4;
 #else
-    col = 4.0 * (BilinearTexelFetch(s_texture, uvs) + 0.0 * 0.1 * texture(s_blured_texture, norm_uvs).xyz);
+    col = BilinearTexelFetch(s_texture, uvs) + 0.1 * texture(s_blured_texture, norm_uvs).xyz;
 #endif
 
     if (tonemap > 0.5) {
