@@ -41,6 +41,9 @@ class BaseElement {
     void set_visible(bool v) { flags_[int(eFlags::Visible)] = v; }
     void set_resizable(bool v) { flags_[int(eFlags::Resizable)] = v; }
 
+    const Vec2f *dims() const { return dims_; }
+    const Vec2f *rel_dims() const { return rel_dims_; }
+
     const Vec2f &rel_pos() const { return rel_dims_[0]; }
     const Vec2f &rel_size() const { return rel_dims_[1]; }
 

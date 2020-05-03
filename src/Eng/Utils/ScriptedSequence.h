@@ -102,6 +102,13 @@ class ScriptedSequence {
 
     int GetChoicesCount() const { return choices_count_; }
 
+    const SeqChoice *GetChoice(int i) const {
+        if (i < choices_count_) {
+            return &choices_[i];
+        }
+        return nullptr;
+    }
+
     SeqChoice *GetChoice(int i) {
         if (i < choices_count_) {
             return &choices_[i];
@@ -109,9 +116,11 @@ class ScriptedSequence {
         return nullptr;
     }
 
-    const SeqChoice *GetChoice(int i) const {
-        if (i < choices_count_) {
-            return &choices_[i];
+    const SeqChoice *GetChoice(const char *key) const {
+        for (int i = 0; i < choices_count_; i++) {
+            if (choices_[i].key == key) {
+                return &choices_[i];
+            }
         }
         return nullptr;
     }

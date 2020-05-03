@@ -157,6 +157,18 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config) : ctx_(ctx) {
 }
 
 Gui::Renderer::~Renderer() {
+    for (int i = 0; i < FrameSyncWindow; i++) {
+        if (buf_range_fences_[draw_range_index_]) {
+            auto sync = reinterpret_cast<GLsync>(buf_range_fences_[draw_range_index_]);
+            GLenum res = glClientWaitSync(sync, 0, 1000000000);
+            if (res != GL_ALREADY_SIGNALED && res != GL_CONDITION_SATISFIED) {
+                ctx_.log()->Error("[Gui::Renderer::~Renderer]: Wait failed!");
+            }
+            glDeleteSync(sync);
+            buf_range_fences_[draw_range_index_] = nullptr;
+        }
+    }
+
     auto buf_id = (GLuint)vao_;
     glDeleteVertexArrays(1, &buf_id);
 
@@ -236,8 +248,6 @@ void Gui::Renderer::Draw() {
 
     /* Update buffers */
 
-    const size_t index_buf_mem_size = index_count_[draw_range_index_] * sizeof(uint16_t);
-
     const GLbitfield BufferRangeBindFlags =
         GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
         GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
@@ -270,7 +280,8 @@ void Gui::Renderer::Draw() {
         if (pinned_mem) {
             const size_t index_buf_mem_size =
                 index_count_[draw_range_index_] * sizeof(uint16_t);
-            memcpy(pinned_mem, ndx_data_.get() + draw_range_index_ * MaxIndicesPerRange, index_buf_mem_size);
+            memcpy(pinned_mem, ndx_data_.get() + draw_range_index_ * MaxIndicesPerRange,
+                   index_buf_mem_size);
             glFlushMappedBufferRange(GL_ARRAY_BUFFER, 0, index_buf_mem_size);
             glUnmapBuffer(GL_ARRAY_BUFFER);
         } else {
@@ -294,7 +305,8 @@ void Gui::Renderer::Draw() {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, (GLuint)ctx_.texture_atlas().tex_id());
 
-    const size_t index_buf_mem_offset = 0;
+    const size_t index_buf_mem_offset =
+        draw_range_index_ * MaxIndicesPerRange * sizeof(uint16_t);
 
     glDrawElementsBaseVertex(
         GL_TRIANGLES, index_count_[draw_range_index_], GL_UNSIGNED_SHORT,
