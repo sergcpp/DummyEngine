@@ -3415,8 +3415,6 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, scr_w_, scr_h_);
 
-
-    
     {   
         const Ren::Program *cur_program = blit_combine_prog_.get();
         glUseProgram(cur_program->prog_id());
@@ -3442,7 +3440,6 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         glUniform1f(12, 1.0f);
         glUniform2f(13, float(w), float(h));
         glUniform1f(U_GAMMA, 2.2f);
-
 
         float exposure = 0.95f / reduced_average_;
         exposure = std::min(exposure, 1000.0f);

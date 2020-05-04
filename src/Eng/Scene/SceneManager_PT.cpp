@@ -15,9 +15,8 @@ extern const char *TEXTURES_PATH;
 extern const char *MATERIALS_PATH;
 extern const char *SHADERS_PATH;
 
-extern const int LIGHTMAP_ATLAS_RESX,
-                 LIGHTMAP_ATLAS_RESY;
-}
+extern const int LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY;
+} // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {
 void Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *name);
@@ -26,17 +25,20 @@ void Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *na
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data);
 
-std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int width, int height, float invalid_threshold, int filter_size);
+std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int width,
+                                           int height, float invalid_threshold,
+                                           int filter_size);
 
 std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &tex_ref);
-}
+} // namespace SceneManagerInternal
 
 const float *SceneManager::Draw_PT(int *w, int *h) {
-    if (!ray_scene_) return nullptr;
+    if (!ray_scene_)
+        return nullptr;
 
     if (ray_reg_ctx_.empty()) {
         if (ray_renderer_.type() == Ray::RendererOCL) {
-            ray_reg_ctx_.emplace_back(Ray::rect_t{ 0, 0, ctx_.w(), ctx_.h() });
+            ray_reg_ctx_.emplace_back(Ray::rect_t{0, 0, ctx_.w(), ctx_.h()});
         } else {
             const int TILE_SIZE = 64;
 
@@ -48,7 +50,8 @@ const float *SceneManager::Draw_PT(int *w, int *h) {
 
             for (int y = 0; y < pt_res_h + TILE_SIZE - 1; y += TILE_SIZE) {
                 for (int x = 0; x < pt_res_w + TILE_SIZE - 1; x += TILE_SIZE) {
-                    auto rect = Ray::rect_t{ x, y, std::min(TILE_SIZE, pt_res_w - x), std::min(TILE_SIZE, pt_res_h - y) };
+                    auto rect = Ray::rect_t{x, y, std::min(TILE_SIZE, pt_res_w - x),
+                                            std::min(TILE_SIZE, pt_res_h - y)};
                     if (rect.w > 0 && rect.h > 0) {
                         ray_reg_ctx_.emplace_back(rect);
                     }
@@ -65,7 +68,9 @@ const float *SceneManager::Draw_PT(int *w, int *h) {
     if (ray_renderer_.type() == Ray::RendererOCL) {
         ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[0]);
     } else {
-        auto render_task = [this](int i) { ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[i]); };
+        auto render_task = [this](int i) {
+            ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[i]);
+        };
         std::vector<std::future<void>> ev(ray_reg_ctx_.size());
         for (int i = 0; i < (int)ray_reg_ctx_.size(); i++) {
             ev[i] = threads_.enqueue(render_task, i);
@@ -82,15 +87,18 @@ const float *SceneManager::Draw_PT(int *w, int *h) {
 }
 
 void SceneManager::ResetLightmaps_PT() {
-    if (!ray_scene_) return;
+    if (!ray_scene_)
+        return;
 
     Ray::camera_desc_t cam_desc;
     ray_scene_->GetCamera(1, cam_desc);
 
     for (uint32_t i = 0; i < (uint32_t)scene_data_.objects.size(); i++) {
         if (scene_data_.objects[i].comp_mask & CompLightmapBit) {
-            const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(scene_data_.objects[i].components[CompTransform]);
-            const auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(scene_data_.objects[i].components[CompLightmap]);
+            const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(
+                scene_data_.objects[i].components[CompTransform]);
+            const auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(
+                scene_data_.objects[i].components[CompLightmap]);
 
             cur_lm_obj_ = i;
             cam_desc.mi_index = tr->pt_mi;
@@ -109,29 +117,40 @@ void SceneManager::ResetLightmaps_PT() {
 bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int *h) {
     using namespace SceneManagerConstants;
 
-    if (!ray_scene_) return false;
+    if (!ray_scene_) {
+        return false;
+    }
 
-    const int LM_SAMPLES_TOTAL =
+    const int LmSamplesDirect =
+#ifdef NDEBUG
+        4096;
+#else
+        32;
+#endif
+
+    const int LmSamplesIndirect =
 #ifdef NDEBUG
         16 * 4096;
 #else
         32;
 #endif
-    const int LM_SAMPLES_PER_PASS = 16;
-    const int TILE_SIZE = 64;
+    const int LmSamplesPerPass = 16;
+    const int TileSizeCPU = 64;
 
     const SceneObject &cur_obj = scene_data_.objects[cur_lm_obj_];
-    const auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(cur_obj.components[CompLightmap]);
+    const auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(
+        cur_obj.components[CompLightmap]);
     const int res = lm->size[0];
 
     if (ray_reg_ctx_.empty()) {
         if (ray_renderer_.type() == Ray::RendererOCL) {
-            ray_reg_ctx_.emplace_back(Ray::rect_t{ 0, 0, res, res });
+            ray_reg_ctx_.emplace_back(Ray::rect_t{0, 0, res, res});
             ray_renderer_.Resize(res, res);
         } else {
-            for (int y = 0; y < res + TILE_SIZE - 1; y += TILE_SIZE) {
-                for (int x = 0; x < res + TILE_SIZE - 1; x += TILE_SIZE) {
-                    auto rect = Ray::rect_t{ x, y, std::min(TILE_SIZE, res - x), std::min(TILE_SIZE, res - y) };
+            for (int y = 0; y < res + TileSizeCPU - 1; y += TileSizeCPU) {
+                for (int x = 0; x < res + TileSizeCPU - 1; x += TileSizeCPU) {
+                    auto rect = Ray::rect_t{x, y, std::min(TileSizeCPU, res - x),
+                                            std::min(TileSizeCPU, res - y)};
                     if (rect.w > 0 && rect.h > 0) {
                         ray_reg_ctx_.emplace_back(rect);
                     }
@@ -144,13 +163,14 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
     if (cur_size.first != res || cur_size.second != res) {
         if (ray_renderer_.type() == Ray::RendererOCL) {
-            ray_reg_ctx_[0] = Ray::RegionContext{ { 0, 0, res, res } };
+            ray_reg_ctx_[0] = Ray::RegionContext{{0, 0, res, res}};
         } else {
             ray_reg_ctx_.clear();
 
-            for (int y = 0; y < res + TILE_SIZE - 1; y += TILE_SIZE) {
-                for (int x = 0; x < res + TILE_SIZE - 1; x += TILE_SIZE) {
-                    auto rect = Ray::rect_t{ x, y, std::min(TILE_SIZE, res - x), std::min(TILE_SIZE, res - y) };
+            for (int y = 0; y < res + TileSizeCPU - 1; y += TileSizeCPU) {
+                for (int x = 0; x < res + TileSizeCPU - 1; x += TileSizeCPU) {
+                    auto rect = Ray::rect_t{x, y, std::min(TileSizeCPU, res - x),
+                                            std::min(TileSizeCPU, res - y)};
                     if (rect.w > 0 && rect.h > 0) {
                         ray_reg_ctx_.emplace_back(rect);
                     }
@@ -165,26 +185,27 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
     const float InvalidThreshold = 0.5f;
 
-    if (ray_reg_ctx_[0].iteration >= LM_SAMPLES_TOTAL) {
-        {   // Save lightmap to file
+    if ((!cur_lm_indir_ && ray_reg_ctx_[0].iteration >= LmSamplesDirect) ||
+        (cur_lm_indir_ && ray_reg_ctx_[0].iteration >= LmSamplesIndirect)) {
+        { // Save lightmap to file
             const Ray::pixel_color_t *pixels = ray_renderer_.get_pixels_ref();
 
             int xpos = lm->pos[0], ypos = lm->pos[1];
 
             // Copy image to lightmap atlas
-            if (!cur_lm_indir_) {
-                for (int j = 0; j < res; j++) {
-                    memcpy(&pt_lm_direct_[(ypos + j) * LIGHTMAP_ATLAS_RESX + xpos], &pixels[(res - j - 1) * res], res * sizeof(Ray::pixel_color_t));
-                }
-            } else {
-                for (int j = 0; j < res; j++) {
-                    memcpy(&pt_lm_indir_[(ypos + j) * LIGHTMAP_ATLAS_RESX + xpos], &pixels[(res - j - 1) * res], res * sizeof(Ray::pixel_color_t));
-                }
+            Ray::pixel_color_t *pt_lm_target =
+                cur_lm_indir_ ? pt_lm_indir_.data() : pt_lm_direct_.data();
+            for (int j = 0; j < res; j++) {
+                memcpy(&pt_lm_target[(ypos + j) * LIGHTMAP_ATLAS_RESX + xpos],
+                       &pixels[(res - j - 1) * res], res * sizeof(Ray::pixel_color_t));
             }
 
             if (cur_lm_indir_) {
-                std::vector<Ray::shl1_data_t> sh_data(ray_renderer_.get_sh_data_ref(), ray_renderer_.get_sh_data_ref() + res * res);
-                std::vector<Ray::pixel_color_t> temp_pixels1(res * res, Ray::pixel_color_t{ 0.0f, 0.0f, 0.0f, 1.0f });
+                std::vector<Ray::shl1_data_t> sh_data(ray_renderer_.get_sh_data_ref(),
+                                                      ray_renderer_.get_sh_data_ref() +
+                                                          res * res);
+                std::vector<Ray::pixel_color_t> temp_pixels1(
+                    res * res, Ray::pixel_color_t{0.0f, 0.0f, 0.0f, 1.0f});
 
                 const float SH_Y0 = 0.282094806f; // sqrt(1.0f / (4.0f * PI))
                 const float SH_Y1 = 0.488602519f; // sqrt(3.0f / (4.0f * PI))
@@ -196,7 +217,8 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                 const float SH_AY1 = 0.5f;  // SH_A1 * SH_Y1
 
                 const float inv_pi = 1.0f / Ren::Pi<float>();
-                const float mult[] = { SH_A0 * inv_pi, SH_A1 * inv_pi, SH_A1 * inv_pi, SH_A1 * inv_pi };
+                const float mult[] = {SH_A0 * inv_pi, SH_A1 * inv_pi, SH_A1 * inv_pi,
+                                      SH_A1 * inv_pi};
 
                 for (int i = 0; i < res * res; i++) {
                     for (int sh_l = 0; sh_l < 4; sh_l++) {
@@ -208,7 +230,8 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
                 for (int i = 0; i < res * res; i++) {
                     const float coverage = pixels[i].a;
-                    if (coverage < InvalidThreshold) continue;
+                    if (coverage < InvalidThreshold)
+                        continue;
 
                     sh_data[i].coeff_r[0] /= coverage;
                     sh_data[i].coeff_g[0] /= coverage;
@@ -219,23 +242,32 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                         sh_data[i].coeff_g[sh_l] /= coverage;
                         sh_data[i].coeff_b[sh_l] /= coverage;
 
-                        if (sh_data[i].coeff_r[0] > std::numeric_limits<float>::epsilon()) {
+                        if (sh_data[i].coeff_r[0] >
+                            std::numeric_limits<float>::epsilon()) {
                             sh_data[i].coeff_r[sh_l] /= sh_data[i].coeff_r[0];
                         }
-                        if (sh_data[i].coeff_g[0] > std::numeric_limits<float>::epsilon()) {
+                        if (sh_data[i].coeff_g[0] >
+                            std::numeric_limits<float>::epsilon()) {
                             sh_data[i].coeff_g[sh_l] /= sh_data[i].coeff_g[0];
                         }
-                        if (sh_data[i].coeff_b[0] > std::numeric_limits<float>::epsilon()) {
+                        if (sh_data[i].coeff_b[0] >
+                            std::numeric_limits<float>::epsilon()) {
                             sh_data[i].coeff_b[sh_l] /= sh_data[i].coeff_b[0];
                         }
 
-                        sh_data[i].coeff_r[sh_l] = 0.25f * sh_data[i].coeff_r[sh_l] + 0.5f;
-                        sh_data[i].coeff_g[sh_l] = 0.25f * sh_data[i].coeff_g[sh_l] + 0.5f;
-                        sh_data[i].coeff_b[sh_l] = 0.25f * sh_data[i].coeff_b[sh_l] + 0.5f;
+                        sh_data[i].coeff_r[sh_l] =
+                            0.25f * sh_data[i].coeff_r[sh_l] + 0.5f;
+                        sh_data[i].coeff_g[sh_l] =
+                            0.25f * sh_data[i].coeff_g[sh_l] + 0.5f;
+                        sh_data[i].coeff_b[sh_l] =
+                            0.25f * sh_data[i].coeff_b[sh_l] + 0.5f;
 
-                        sh_data[i].coeff_r[sh_l] = Ren::Clamp(sh_data[i].coeff_r[sh_l], 0.0f, 1.0f);
-                        sh_data[i].coeff_g[sh_l] = Ren::Clamp(sh_data[i].coeff_g[sh_l], 0.0f, 1.0f);
-                        sh_data[i].coeff_b[sh_l] = Ren::Clamp(sh_data[i].coeff_b[sh_l], 0.0f, 1.0f);
+                        sh_data[i].coeff_r[sh_l] =
+                            Ren::Clamp(sh_data[i].coeff_r[sh_l], 0.0f, 1.0f);
+                        sh_data[i].coeff_g[sh_l] =
+                            Ren::Clamp(sh_data[i].coeff_g[sh_l], 0.0f, 1.0f);
+                        sh_data[i].coeff_b[sh_l] =
+                            Ren::Clamp(sh_data[i].coeff_b[sh_l], 0.0f, 1.0f);
                     }
                 }
 
@@ -253,9 +285,13 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                         }
                     }
 
-                    {   // Add image to atlas
+                    { // Add image to atlas
                         for (int j = 0; j < res; j++) {
-                            memcpy(&pt_lm_indir_sh_[sh_l][(ypos + j) * LIGHTMAP_ATLAS_RESX + xpos], &temp_pixels1[(res - j - 1) * res], res * sizeof(Ray::pixel_color_t));
+                            memcpy(
+                                &pt_lm_indir_sh_[sh_l]
+                                                [(ypos + j) * LIGHTMAP_ATLAS_RESX + xpos],
+                                &temp_pixels1[(res - j - 1) * res],
+                                res * sizeof(Ray::pixel_color_t));
                         }
                     }
                 }
@@ -274,9 +310,12 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
         } else {
             bool found = false;
 
-            for (uint32_t i = cur_lm_obj_ + 1; i < (uint32_t)scene_data_.objects.size(); i++) {
+            for (uint32_t i = cur_lm_obj_ + 1; i < (uint32_t)scene_data_.objects.size();
+                 i++) {
                 if (scene_data_.objects[i].comp_mask & CompLightmapBit) {
-                    const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(scene_data_.objects[i].components[CompTransform]);
+                    const auto *tr =
+                        (Transform *)scene_data_.comp_store[CompTransform]->Get(
+                            scene_data_.objects[i].components[CompTransform]);
 
                     cur_lm_obj_ = i;
                     cam_desc.mi_index = tr->pt_mi;
@@ -288,29 +327,42 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
             if (!found) {
                 const int FilterSize = 32;
 
-                {   // Save direct lightmap
-                    std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_direct_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
+                { // Save direct lightmap
+                    std::vector<Ray::pixel_color_t> out_pixels =
+                        SceneManagerInternal::FlushSeams(
+                            &pt_lm_direct_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY,
+                            InvalidThreshold, FilterSize);
 
                     std::string out_file_name = "./assets/textures/lightmaps/";
                     out_file_name += scene_data_.name.c_str();
                     out_file_name += "_lm_direct.png";
 
-                    SceneManagerInternal::Write_RGBM(&out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4, out_file_name.c_str());
+                    SceneManagerInternal::Write_RGBM(
+                        &out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4,
+                        out_file_name.c_str());
                 }
 
-                {   // Save indirect lightmap
-                    std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_indir_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
+                { // Save indirect lightmap
+                    std::vector<Ray::pixel_color_t> out_pixels =
+                        SceneManagerInternal::FlushSeams(
+                            &pt_lm_indir_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY,
+                            InvalidThreshold, FilterSize);
 
                     std::string out_file_name = "./assets/textures/lightmaps/";
                     out_file_name += scene_data_.name.c_str();
                     out_file_name += "_lm_indirect.png";
 
-                    SceneManagerInternal::Write_RGBM(&out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4, out_file_name.c_str());
+                    SceneManagerInternal::Write_RGBM(
+                        &out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4,
+                        out_file_name.c_str());
                 }
 
-                {   // Save indirect SH-lightmap
+                { // Save indirect SH-lightmap
                     for (int sh_l = 0; sh_l < 4; sh_l++) {
-                        std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(&pt_lm_indir_sh_[sh_l][0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
+                        std::vector<Ray::pixel_color_t> out_pixels =
+                            SceneManagerInternal::FlushSeams(
+                                &pt_lm_indir_sh_[sh_l][0], LIGHTMAP_ATLAS_RESX,
+                                LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
 
                         std::string out_file_name = "./assets/textures/lightmaps/";
                         out_file_name += scene_data_.name.c_str();
@@ -320,10 +372,14 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
                         if (sh_l == 0) {
                             // Save first band as HDR
-                            SceneManagerInternal::Write_RGBM(&out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4, out_file_name.c_str());
+                            SceneManagerInternal::Write_RGBM(
+                                &out_pixels[0].r, LIGHTMAP_ATLAS_RESX,
+                                LIGHTMAP_ATLAS_RESY, 4, out_file_name.c_str());
                         } else {
                             // Save rest as LDR
-                            SceneManagerInternal::Write_RGB(&out_pixels[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, out_file_name.c_str());
+                            SceneManagerInternal::Write_RGB(
+                                &out_pixels[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY,
+                                out_file_name.c_str());
                         }
                     }
                 }
@@ -352,11 +408,13 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
         }
     }
 
-    for (int i = 0; i < LM_SAMPLES_PER_PASS; i++) {
+    for (int i = 0; i < LmSamplesPerPass; i++) {
         if (ray_renderer_.type() == Ray::RendererOCL) {
             ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[0]);
         } else {
-            auto render_task = [this](int i) { ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[i]); };
+            auto render_task = [this](int i) {
+                ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[i]);
+            };
             std::vector<std::future<void>> ev(ray_reg_ctx_.size());
             for (int i = 0; i < (int)ray_reg_ctx_.size(); i++) {
                 ev[i] = threads_.enqueue(render_task, i);
@@ -367,7 +425,8 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
         }
     }
 
-    ctx_.log()->Info("Lightmap: %i %i/%i", int(cur_lm_obj_), ray_reg_ctx_[0].iteration, LM_SAMPLES_TOTAL);
+    ctx_.log()->Info("Lightmap: %i %i/%i", int(cur_lm_obj_), ray_reg_ctx_[0].iteration,
+                     cur_lm_indir_ ? LmSamplesIndirect : LmSamplesDirect);
 
     const Ray::pixel_color_t *pixels = ray_renderer_.get_pixels_ref();
     *preview_pixels = &pixels[0].r;
@@ -391,7 +450,7 @@ void SceneManager::InitScene_PT(bool _override) {
     ray_scene_ = ray_renderer_.CreateScene();
     ray_reg_ctx_.clear();
 
-    {   // Setup environment
+    { // Setup environment
         Ray::environment_desc_t env_desc;
         env_desc.env_col[0] = env_desc.env_col[1] = env_desc.env_col[2] = 1.0f;
 
@@ -400,7 +459,7 @@ void SceneManager::InitScene_PT(bool _override) {
             env_map_path += scene_data_.env.env_map_name_pt.c_str();
 
             int w, h;
-            std::vector<uint8_t> tex_data = LoadHDR(env_map_path.c_str(), w, h);
+            const std::vector<uint8_t> tex_data = LoadHDR(env_map_path.c_str(), w, h);
 
             Ray::tex_desc_t tex_desc;
             tex_desc.data = (const Ray::pixel_color8_t *)&tex_data[0];
@@ -415,9 +474,10 @@ void SceneManager::InitScene_PT(bool _override) {
         ray_scene_->SetEnvironment(env_desc);
     }
 
-    {   // Add main camera
+    { // Add main camera
         Ray::camera_desc_t cam_desc;
         cam_desc.type = Ray::Persp;
+        cam_desc.dtype = Ray::None;
         cam_desc.filter = Ray::Tent;
         cam_desc.origin[0] = cam_desc.origin[1] = cam_desc.origin[2] = 0.0f;
         cam_desc.fwd[0] = cam_desc.fwd[1] = 0.0f;
@@ -430,14 +490,15 @@ void SceneManager::InitScene_PT(bool _override) {
         ray_scene_->AddCamera(cam_desc);
     }
 
-    {   // Add camera for lightmapping
+    { // Add camera for lightmapping
         Ray::camera_desc_t cam_desc;
         cam_desc.type = Ray::Geo;
+        cam_desc.dtype = Ray::None;
         cam_desc.filter = Ray::Box;
         cam_desc.gamma = 1.0f;
         cam_desc.lighting_only = true;
         cam_desc.skip_direct_lighting = true;
-        //cam_desc.skip_indirect_lighting = true;
+        // cam_desc.skip_indirect_lighting = true;
         cam_desc.no_background = true;
         cam_desc.uv_index = 1;
         cam_desc.mi_index = 0;
@@ -448,7 +509,8 @@ void SceneManager::InitScene_PT(bool _override) {
     }
 
     // Add sun lamp
-    if (Ren::Dot(scene_data_.env.sun_dir, scene_data_.env.sun_dir) > 0.00001f && Ren::Dot(scene_data_.env.sun_col, scene_data_.env.sun_col) > 0.00001f) {
+    if (Ren::Dot(scene_data_.env.sun_dir, scene_data_.env.sun_dir) > 0.00001f &&
+        Ren::Dot(scene_data_.env.sun_col, scene_data_.env.sun_col) > 0.00001f) {
         Ray::light_desc_t sun_desc;
         sun_desc.type = Ray::DirectionalLight;
 
@@ -467,8 +529,8 @@ void SceneManager::InitScene_PT(bool _override) {
 
     uint32_t default_white_tex;
 
-    {   //  Add default white texture
-        Ray::pixel_color8_t white = { 255, 255, 255, 255 };
+    { //  Add default white texture
+        Ray::pixel_color8_t white = {255, 255, 255, 255};
 
         Ray::tex_desc_t tex_desc;
         tex_desc.data = &white;
@@ -477,7 +539,7 @@ void SceneManager::InitScene_PT(bool _override) {
 
         default_white_tex = ray_scene_->AddTexture(tex_desc);
     }
-    
+
     (void)default_white_tex;
 
     /*uint32_t default_glow_mat;
@@ -497,8 +559,10 @@ void SceneManager::InitScene_PT(bool _override) {
     for (SceneObject &obj : scene_data_.objects) {
         const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
-            const auto *dr = (Drawable *)scene_data_.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
-            if (!(dr->vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow))) continue;
+            const auto *dr = (Drawable *)scene_data_.comp_store[CompDrawable]->Get(
+                obj.components[CompDrawable]);
+            if (!(dr->vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)))
+                continue;
 
             const Ren::Mesh *mesh = dr->mesh.get();
             const char *mesh_name = mesh->name().c_str();
@@ -511,7 +575,8 @@ void SceneManager::InitScene_PT(bool _override) {
                 mesh_desc.vtx_attrs = (const float *)mesh->attribs();
                 mesh_desc.vtx_attrs_count = (uint32_t)(mesh->attribs_buf1().size / 16);
                 mesh_desc.vtx_indices = (const uint32_t *)mesh->indices();
-                mesh_desc.vtx_indices_count = (uint32_t)(mesh->indices_buf().size / sizeof(uint32_t));
+                mesh_desc.vtx_indices_count =
+                    (uint32_t)(mesh->indices_buf().size / sizeof(uint32_t));
                 mesh_desc.base_vertex = 0;
 
                 const Ren::TriGroup *s = &mesh->group(0);
@@ -522,16 +587,17 @@ void SceneManager::InitScene_PT(bool _override) {
                     auto mat_it = loaded_materials.find(mat_name);
                     if (mat_it == loaded_materials.end()) {
                         Ray::mat_desc_t mat_desc;
-                        mat_desc.main_color[0] = mat_desc.main_color[1] = mat_desc.main_color[2] = 1.0f;
+                        mat_desc.main_color[0] = mat_desc.main_color[1] =
+                            mat_desc.main_color[2] = 1.0f;
 
                         Ren::Texture2DRef tex_ref;
 
-                        //if (mat->flags() & Ren::AlphaBlend) {
+                        // if (mat->flags() & Ren::AlphaBlend) {
                         //    mat_desc.type = Ray::TransparentMaterial;
                         //    tex_ref = mat->texture(0);
                         //} else {
-                            mat_desc.type = Ray::DiffuseMaterial;
-                            tex_ref = mat->textures[0];
+                        mat_desc.type = Ray::DiffuseMaterial;
+                        tex_ref = mat->textures[0];
                         //}
 
                         if (tex_ref) {
@@ -539,38 +605,44 @@ void SceneManager::InitScene_PT(bool _override) {
 
                             auto tex_it = loaded_textures.find(tex_name);
                             if (tex_it == loaded_textures.end()) {
-                                std::unique_ptr<Ray::pixel_color8_t[]> tex_data = SceneManagerInternal::GetTextureData(tex_ref);
+                                std::unique_ptr<Ray::pixel_color8_t[]> tex_data =
+                                    SceneManagerInternal::GetTextureData(tex_ref);
 
-                                auto params = tex_ref->params();
+                                const Ren::Texture2DParams &params = tex_ref->params();
 
                                 Ray::tex_desc_t tex_desc;
                                 tex_desc.w = params.w;
                                 tex_desc.h = params.h;
                                 tex_desc.data = &tex_data[0];
                                 tex_desc.generate_mipmaps = true;
+                                tex_desc.is_srgb = (params.flags & Ren::TexSRGB) != 0;
 
-                                uint32_t new_tex = ray_scene_->AddTexture(tex_desc);
+                                const uint32_t new_tex = ray_scene_->AddTexture(tex_desc);
                                 tex_it = loaded_textures.emplace(tex_name, new_tex).first;
                             }
 
                             mat_desc.main_texture = tex_it->second;
                         }
 
-                        uint32_t new_mat = ray_scene_->AddMaterial(mat_desc);
+                        const uint32_t new_mat = ray_scene_->AddMaterial(mat_desc);
                         mat_it = loaded_materials.emplace(mat_name, new_mat).first;
                     }
 
-                    mesh_desc.shapes.emplace_back(mat_it->second, 0xffffffff/*default_glow_mat*/, (size_t)(s->offset / sizeof(uint32_t)), (size_t)s->num_indices);
+                    mesh_desc.shapes.emplace_back(
+                        mat_it->second, 0xffffffff /*default_glow_mat*/,
+                        (size_t)(s->offset / sizeof(uint32_t)), (size_t)s->num_indices);
                     ++s;
                 }
 
-                uint32_t new_mesh = ray_scene_->AddMesh(mesh_desc);
+                const uint32_t new_mesh = ray_scene_->AddMesh(mesh_desc);
                 mesh_it = loaded_meshes.emplace(mesh_name, new_mesh).first;
             }
 
-            auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
+            auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(
+                obj.components[CompTransform]);
 
-            tr->pt_mi = ray_scene_->AddMeshInstance(mesh_it->second, Ren::ValuePtr(tr->mat));
+            tr->pt_mi =
+                ray_scene_->AddMeshInstance(mesh_it->second, Ren::ValuePtr(tr->mat));
         }
     }
 
@@ -584,17 +656,20 @@ void SceneManager::InitScene_PT(bool _override) {
         for (int i = 0; i < LIGHTMAP_ATLAS_RESX; i++) {
             int ndx = j * LIGHTMAP_ATLAS_RESX + i;
 
-            pt_lm_direct_[ndx] = { 0.0f, 0.0f, 0.0f, 0.0f };
-            pt_lm_indir_[ndx] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            pt_lm_direct_[ndx] = {0.0f, 0.0f, 0.0f, 0.0f};
+            pt_lm_indir_[ndx] = {0.0f, 0.0f, 0.0f, 0.0f};
             for (int i = 0; i < 4; i++) {
-                pt_lm_indir_sh_[i][ndx] = { 0.0f, 0.0f, 0.0f, 0.0f };
+                pt_lm_indir_sh_[i][ndx] = {0.0f, 0.0f, 0.0f, 0.0f};
             }
         }
     }
 }
 
-void SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov) {
-    if (!ray_scene_) return;
+void SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target,
+                                const Ren::Vec3f &up, float fov) {
+    if (!ray_scene_) {
+        return;
+    }
 
     Ray::camera_desc_t cam_desc;
     ray_scene_->GetCamera(0, cam_desc);
@@ -610,7 +685,9 @@ void SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &targ
 }
 
 void SceneManager::Clear_PT() {
-    if (!ray_scene_) return;
+    if (!ray_scene_) {
+        return;
+    }
 
     for (Ray::RegionContext &c : ray_reg_ctx_) {
         c.Clear();
