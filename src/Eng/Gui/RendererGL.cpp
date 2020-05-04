@@ -158,14 +158,14 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config) : ctx_(ctx) {
 
 Gui::Renderer::~Renderer() {
     for (int i = 0; i < FrameSyncWindow; i++) {
-        if (buf_range_fences_[draw_range_index_]) {
-            auto sync = reinterpret_cast<GLsync>(buf_range_fences_[draw_range_index_]);
-            GLenum res = glClientWaitSync(sync, 0, 1000000000);
+        if (buf_range_fences_[i]) {
+            auto sync = reinterpret_cast<GLsync>(buf_range_fences_[i]);
+            const GLenum res = glClientWaitSync(sync, 0, 1000000000);
             if (res != GL_ALREADY_SIGNALED && res != GL_CONDITION_SATISFIED) {
                 ctx_.log()->Error("[Gui::Renderer::~Renderer]: Wait failed!");
             }
             glDeleteSync(sync);
-            buf_range_fences_[draw_range_index_] = nullptr;
+            buf_range_fences_[i] = nullptr;
         }
     }
 
@@ -238,7 +238,7 @@ void Gui::Renderer::Draw() {
 
     if (buf_range_fences_[draw_range_index_]) {
         auto sync = reinterpret_cast<GLsync>(buf_range_fences_[draw_range_index_]);
-        GLenum res = glClientWaitSync(sync, 0, 1000000000);
+        const GLenum res = glClientWaitSync(sync, 0, 1000000000);
         if (res != GL_ALREADY_SIGNALED && res != GL_CONDITION_SATISFIED) {
             ctx_.log()->Error("[Gui::Renderer::BeginDraw2]: Wait failed!");
         }
