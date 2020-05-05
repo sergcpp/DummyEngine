@@ -29,6 +29,7 @@ enum eVertexLayout {
     PxyzNxyzTuvTuv,     ///< [ P.x, P.y, P.z, N.x, N.y, N.z, T.x, T.y, T.x, T.y ]
     PxyzNxyzBxyzTuv,    ///< [ P.x, P.y, P.z, N.x, N.y, N.z, B.x, B.y, B.z, T.x, T.y ]
     PxyzNxyzBxyzTuvTuv, ///< [ P.x, P.y, P.z, N.x, N.y, N.z, B.x, B.y, B.z, T.x, T.y, T.x, T.y ]
+    PxyzNxyzBxyzTuvX,   ///< [ P.x, P.y, P.z, N.x, N.y, N.z, B.x, B.y, B.z, T.x, T.y, unused ]
 };
 
 /** Vertex attribute stride value.
@@ -39,6 +40,7 @@ const size_t AttrStrides[] = {
     10, ///< PxyzNxyzTuvTuv
     11, ///< PxyzNxyzBxyzTuv
     13, ///< PxyzNxyzBxyzTuvTuv
+    12, ///< PxyzNxyzBxyzTuvX
 };
 
 /// Mesh region material type
