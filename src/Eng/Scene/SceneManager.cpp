@@ -98,7 +98,7 @@ SceneManager::SceneManager(Ren::Context &ctx, Ray::RendererBase &ray_renderer,
                                            Ren::eTexFormat::Undefined};
         const uint32_t flags[] = {0};
         scene_data_.decals_atlas = Ren::TextureAtlas{
-            DECALS_ATLAS_RESX,          DECALS_ATLAS_RESY, formats, flags,
+            DECALS_ATLAS_RESX,          DECALS_ATLAS_RESY, 64, formats, flags,
             Ren::eTexFilter::Trilinear, ctx_.log()};
     }
 

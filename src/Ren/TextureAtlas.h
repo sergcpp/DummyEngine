@@ -9,8 +9,8 @@ class TextureAtlas {
     static const int MaxTextureCount = 8;
 
     TextureAtlas() : splitter_(0, 0) {}
-    TextureAtlas(int w, int h, const eTexFormat *formats, const uint32_t *flags,
-                 eTexFilter filter, ILog *log);
+    TextureAtlas(int w, int h, int min_res, const eTexFormat *formats,
+                 const uint32_t *flags, eTexFilter filter, ILog *log);
     ~TextureAtlas();
 
     TextureAtlas(const TextureAtlas &rhs) = delete;

@@ -3,12 +3,12 @@
 #include "GL.h"
 #include "Utils.h"
 
-Ren::TextureAtlas::TextureAtlas(int w, int h, const eTexFormat *formats,
+Ren::TextureAtlas::TextureAtlas(int w, int h, int min_res, const eTexFormat *formats,
                                 const uint32_t *flags, eTexFilter filter, ILog *log)
     : splitter_(w, h) {
     filter_ = filter;
 
-    const int mip_count = CalcMipCount(w, h, 1, filter);
+    const int mip_count = CalcMipCount(w, h, min_res, filter);
 
     for (int i = 0; i < MaxTextureCount; i++) {
         if (formats[i] == eTexFormat::Undefined) {
