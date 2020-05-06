@@ -12,7 +12,7 @@
 struct SDL_Window;
 
 class LogStdout : public Ren::ILog {
-public:
+  public:
     void Info(const char *fmt, ...) override {
         va_list vl;
         va_start(vl, fmt);
@@ -30,7 +30,7 @@ public:
 };
 
 class ModlApp {
-public:
+  public:
     ModlApp();
 
     int Run(const std::vector<std::string> &args);
@@ -40,13 +40,21 @@ public:
     void PollEvents();
     void Destroy();
 
-    bool terminated() const {
-        return quit_;
-    }
-private:
+    bool terminated() const { return quit_; }
+
+  private:
     enum class eCompileResult { RES_SUCCESS = 0, RES_PARSE_ERROR, RES_FILE_NOT_FOUND };
-    eCompileResult CompileModel(const std::string &in_file_name, const std::string &out_file_name, bool optimize);
-    eCompileResult CompileAnim(const std::string &in_file_name, const std::string &out_file_name);
+    eCompileResult CompileModel(const std::string &in_file_name,
+                                const std::string &out_file_name, bool optimize,
+                                bool generate_occlusion);
+    eCompileResult CompileAnim(const std::string &in_file_name,
+                               const std::string &out_file_name);
+
+    std::vector<Ren::Vec4f>
+    GenerateOcclusion(const std::vector<float> &positions,
+                      const std::vector<float> &normals,
+                      const std::vector<float> &tangents,
+                      const std::vector<std::vector<uint32_t>> &indices) const;
 
     bool quit_;
     SDL_Window *window_ = nullptr;
@@ -87,7 +95,8 @@ private:
     void PrintUsage();
 
     Ren::Texture2DRef OnTextureNeeded(const char *name);
-    Ren::ProgramRef OnProgramNeeded(const char *name, const char *vs_shader, const char *fs_shader);
+    Ren::ProgramRef OnProgramNeeded(const char *name, const char *vs_shader,
+                                    const char *fs_shader);
     Ren::MaterialRef OnMaterialNeeded(const char *name);
 
     void ClearColorAndDepth(float r, float g, float b, float a);
