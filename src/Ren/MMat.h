@@ -3,14 +3,10 @@
 #include "MVec.h"
 
 namespace Ren {
-template <typename T>
-T Pi() {
-    return T(3.1415926535897932384626433832795);
-}
+template <typename T> T Pi() { return T(3.1415926535897932384626433832795); }
 
-template <typename T, int M, int N>
-class Mat : public Vec<Vec<T, N>, M> {
-public:
+template <typename T, int M, int N> class Mat : public Vec<Vec<T, N>, M> {
+  public:
     explicit Mat(eUninitialized) noexcept {}
     Mat() noexcept : Mat(T(1)) {}
     explicit Mat(T v) noexcept {
@@ -37,16 +33,12 @@ public:
     }
 
     template <typename... Tail>
-    explicit Mat(typename std::enable_if<sizeof...(Tail)+1 == M, Vec<T, N>>::type head, Tail... tail) noexcept
-        : Vec<Vec<T, N>, M> { head, tail... } {
-    }
+    explicit Mat(typename std::enable_if<sizeof...(Tail) + 1 == M, Vec<T, N>>::type head,
+                 Tail... tail) noexcept
+        : Vec<Vec<T, N>, M>{head, tail...} {}
 
-    Vec<T, N> &operator[](int i) {
-        return this->data_[i];
-    }
-    const Vec<T, N> &operator[](int i) const {
-        return this->data_[i];
-    }
+    Vec<T, N> &operator[](int i) { return this->data_[i]; }
+    const Vec<T, N> &operator[](int i) const { return this->data_[i]; }
 
     friend bool operator==(const Mat<T, M, N> &lhs, const Mat<T, M, N> &rhs) {
         bool res = true;
@@ -100,7 +92,7 @@ public:
     }
 
     friend Mat<T, M, N> operator-(const Mat<T, M, N> &v) {
-        Mat<T, M, N> res = { Uninitialize };
+        Mat<T, M, N> res = {Uninitialize};
         for (int i = 0; i < M; i++) {
             res.data_[i] = -v.data_[i];
         }
@@ -108,7 +100,7 @@ public:
     }
 
     friend Mat<T, M, N> operator+(const Mat<T, M, N> &lhs, const Mat<T, M, N> &rhs) {
-        auto res = Mat<T, M, N>{ Uninitialize };
+        auto res = Mat<T, M, N>{Uninitialize};
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs.data_[i] + rhs.data_[i];
         }
@@ -116,7 +108,7 @@ public:
     }
 
     friend Mat<T, M, N> operator-(const Mat<T, M, N> &lhs, const Mat<T, M, N> &rhs) {
-        auto res = Mat<T, M, N>{ Uninitialize };
+        auto res = Mat<T, M, N>{Uninitialize};
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs.data_[i] - rhs.data_[i];
         }
@@ -124,7 +116,7 @@ public:
     }
 
     friend Mat<T, M, N> operator/(const Mat<T, M, N> &lhs, const Mat<T, M, N> &rhs) {
-        auto res = Mat<T, M, N>{ Uninitialize };
+        auto res = Mat<T, M, N>{Uninitialize};
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs.data_[i] / rhs.data_[i];
         }
@@ -132,7 +124,7 @@ public:
     }
 
     friend Mat<T, M, N> operator*(T lhs, const Mat<T, M, N> &rhs) {
-        auto res = Mat<T, M, N>{ Uninitialize };
+        auto res = Mat<T, M, N>{Uninitialize};
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs * rhs.data_[i];
         }
@@ -140,7 +132,7 @@ public:
     }
 
     friend Mat<T, M, N> operator/(T lhs, const Mat<T, M, N> &rhs) {
-        auto res = Mat<T, M, N>{ Uninitialize };
+        auto res = Mat<T, M, N>{Uninitialize};
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs / rhs.data_[i];
         }
@@ -148,7 +140,7 @@ public:
     }
 
     friend Mat<T, M, N> operator*(const Mat<T, M, N> &lhs, const T &rhs) {
-        auto res = Mat<T, M, N>{ Uninitialize };
+        auto res = Mat<T, M, N>{Uninitialize};
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs.data_[i] * rhs;
         }
@@ -156,7 +148,7 @@ public:
     }
 
     friend Mat<T, M, N> operator/(const Mat<T, M, N> &lhs, const T &rhs) {
-        auto res = Mat<T, M, N>{ Uninitialize };
+        auto res = Mat<T, M, N>{Uninitialize};
         for (int i = 0; i < M; i++) {
             res.data_[i] = lhs.data_[i] / rhs;
         }
@@ -177,7 +169,7 @@ using Mat3x4d = Mat<double, 3, 4>;
 
 template <typename T, int M, int N>
 Vec<T, M> operator*(const Vec<T, M> &lhs, const Mat<T, M, N> &rhs) {
-    auto res = Vec<T, M>{ Uninitialize };
+    auto res = Vec<T, M>{Uninitialize};
     for (int m = 0; m < M; m++) {
         res[m] = Dot(lhs, rhs[m]);
     }
@@ -186,7 +178,7 @@ Vec<T, M> operator*(const Vec<T, M> &lhs, const Mat<T, M, N> &rhs) {
 
 template <typename T, int M, int N>
 Vec<T, M> operator*(const Mat<T, M, N> &lhs, const Vec<T, M> &rhs) {
-    auto res = Vec<T, M>{ Uninitialize };
+    auto res = Vec<T, M>{Uninitialize};
     for (int n = 0; n < N; n++) {
         T sum = (T)0;
         for (int m = 0; m < M; m++) {
@@ -199,7 +191,7 @@ Vec<T, M> operator*(const Mat<T, M, N> &lhs, const Vec<T, M> &rhs) {
 
 template <typename T, int M, int N, int P>
 Mat<T, M, P> operator*(const Mat<T, M, N> &lhs, const Mat<T, N, P> &rhs) {
-    auto res = Mat<T, M, P>{ Uninitialize };
+    auto res = Mat<T, M, P>{Uninitialize};
     for (int m = 0; m < M; m++) {
         for (int p = 0; p < P; p++) {
             T sum = (T)0;
@@ -212,9 +204,8 @@ Mat<T, M, P> operator*(const Mat<T, M, N> &lhs, const Mat<T, N, P> &rhs) {
     return res;
 }
 
-template <typename T, int M, int N>
-Mat<T, N, M> Transpose(const Mat<T, M, N> &mat) {
-    auto res = Mat<T, N, M>{ Uninitialize };
+template <typename T, int M, int N> Mat<T, N, M> Transpose(const Mat<T, M, N> &mat) {
+    auto res = Mat<T, N, M>{Uninitialize};
     for (int m = 0; m < M; m++) {
         for (int n = 0; n < N; n++) {
             res[n][m] = mat[m][n];
@@ -223,19 +214,19 @@ Mat<T, N, M> Transpose(const Mat<T, M, N> &mat) {
     return res;
 }
 
-template <typename T, int N>
-T Det(const Mat<T, N, N> &mat);
+template <typename T, int N> T Det(const Mat<T, N, N> &mat);
 
-template <typename T, int N>
-T Minor(const Mat<T, N, N> &mat, int row, int col) {
-    auto res = Mat<T, N - 1, N - 1>{ Uninitialize };
+template <typename T, int N> T Minor(const Mat<T, N, N> &mat, int row, int col) {
+    auto res = Mat<T, N - 1, N - 1>{Uninitialize};
     int dst_row, dst_col;
     dst_row = 0;
     for (int src_row = 0; src_row < N; src_row++) {
-        if (src_row == row) continue;
+        if (src_row == row)
+            continue;
         dst_col = 0;
         for (int src_col = 0; src_col < N; src_col++) {
-            if (src_col == col) continue;
+            if (src_col == col)
+                continue;
             res[dst_row][dst_col] = mat[src_row][src_col];
             dst_col++;
         }
@@ -244,8 +235,7 @@ T Minor(const Mat<T, N, N> &mat, int row, int col) {
     return Det(res);
 }
 
-template <typename T, int N>
-T Det(const Mat<T, N, N> &mat) {
+template <typename T, int N> T Det(const Mat<T, N, N> &mat) {
     T sum = (T)0;
     for (unsigned n = 0; n < N; n++) {
         T minor = Minor(mat, n, 0);
@@ -255,26 +245,19 @@ T Det(const Mat<T, N, N> &mat) {
     return sum;
 }
 
-template <typename T>
-T Det(const Mat<T, 1, 1> &mat) {
-    return mat[0][0];
-}
+template <typename T> T Det(const Mat<T, 1, 1> &mat) { return mat[0][0]; }
 
-template <typename T>
-T Det(const Mat<T, 2, 2> &mat) {
+template <typename T> T Det(const Mat<T, 2, 2> &mat) {
     return mat[0][0] * mat[1][1] - mat[1][0] * mat[0][1];
 }
 
-template <typename T>
-T Det(const Mat<T, 3, 3> &mat) {
-    return
-        mat[0][0] * (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2]) -
-        mat[1][0] * (mat[0][1] * mat[2][2] - mat[2][1] * mat[0][2]) +
-        mat[2][0] * (mat[0][1] * mat[1][2] - mat[1][1] * mat[0][2]);
+template <typename T> T Det(const Mat<T, 3, 3> &mat) {
+    return mat[0][0] * (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2]) -
+           mat[1][0] * (mat[0][1] * mat[2][2] - mat[2][1] * mat[0][2]) +
+           mat[2][0] * (mat[0][1] * mat[1][2] - mat[1][1] * mat[0][2]);
 }
 
-template <typename T>
-T Det(const Mat<T, 4, 4> &mat) {
+template <typename T> T Det(const Mat<T, 4, 4> &mat) {
     T r0r1 = mat[0][2] * mat[1][3] - mat[1][2] * mat[0][3];
     T r0r2 = mat[0][2] * mat[2][3] - mat[2][2] * mat[0][3];
     T r0r3 = mat[0][2] * mat[3][3] - mat[3][2] * mat[0][3];
@@ -287,12 +270,12 @@ T Det(const Mat<T, 4, 4> &mat) {
     T minor2 = mat[0][1] * r1r3 - mat[1][1] * r0r3 + mat[3][1] * r0r1;
     T minor3 = mat[0][1] * r1r2 - mat[1][1] * r0r2 + mat[2][1] * r0r1;
 
-    return mat[0][0] * minor0 - mat[1][0] * minor1 + mat[2][0] * minor2 - mat[3][0] * minor3;
+    return mat[0][0] * minor0 - mat[1][0] * minor1 + mat[2][0] * minor2 -
+           mat[3][0] * minor3;
 }
 
-template <typename T, int N>
-Mat<T, N, N> Adj(const Mat<T, N, N> &mat) {
-    Mat<T, N, N> res = { Uninitialize };
+template <typename T, int N> Mat<T, N, N> Adj(const Mat<T, N, N> &mat) {
+    Mat<T, N, N> res = {Uninitialize};
     for (unsigned row = 0; row < N; row++) {
         for (unsigned col = 0; col < N; col++) {
             T minor = Minor(mat, row, col);
@@ -303,17 +286,15 @@ Mat<T, N, N> Adj(const Mat<T, N, N> &mat) {
     return res;
 }
 
-template <typename T, int N>
-Mat<T, N, N> Inverse(const Mat<T, N, N> &mat) {
+template <typename T, int N> Mat<T, N, N> Inverse(const Mat<T, N, N> &mat) {
     T det = Det(mat);
     return (T(1) / det) * Adj(mat);
 }
 
-template <typename T>
-Mat<T, 2, 2> Inverse(const Mat<T, 2, 2> &mat) {
+template <typename T> Mat<T, 2, 2> Inverse(const Mat<T, 2, 2> &mat) {
     T det = Det(mat);
     T inv_det = T(1) / det;
-    auto res = Mat<T, 2, 2>{ Uninitialize };
+    auto res = Mat<T, 2, 2>{Uninitialize};
     res[0][0] = inv_det * mat[1][1];
     res[0][1] = inv_det * -mat[0][1];
     res[1][0] = inv_det * -mat[1][0];
@@ -321,8 +302,7 @@ Mat<T, 2, 2> Inverse(const Mat<T, 2, 2> &mat) {
     return res;
 }
 
-template <typename T>
-Mat<T, 3, 3> Inverse(const Mat<T, 3, 3> &mat) {
+template <typename T> Mat<T, 3, 3> Inverse(const Mat<T, 3, 3> &mat) {
     T minor0 = mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2];
     T minor1 = mat[0][1] * mat[2][2] - mat[2][1] * mat[0][2];
     T minor2 = mat[0][1] * mat[1][2] - mat[1][1] * mat[0][2];
@@ -330,7 +310,7 @@ Mat<T, 3, 3> Inverse(const Mat<T, 3, 3> &mat) {
     T det = mat[0][0] * minor0 - mat[1][0] * minor1 + mat[2][0] * minor2;
     T inv_det = T(1) / det;
 
-    auto res = Mat<T, 3, 3>{ Uninitialize };
+    auto res = Mat<T, 3, 3>{Uninitialize};
     res[0][0] = inv_det * minor0;
     res[0][1] = inv_det * -minor1;
     res[0][2] = inv_det * minor2;
@@ -343,8 +323,7 @@ Mat<T, 3, 3> Inverse(const Mat<T, 3, 3> &mat) {
     return res;
 }
 
-template <typename T>
-Mat<T, 4, 4> Inverse(const Mat<T, 4, 4> &mat) {
+template <typename T> Mat<T, 4, 4> Inverse(const Mat<T, 4, 4> &mat) {
     T r0r1 = mat[0][2] * mat[1][3] - mat[1][2] * mat[0][3];
     T r0r2 = mat[0][2] * mat[2][3] - mat[2][2] * mat[0][3];
     T r0r3 = mat[0][2] * mat[3][3] - mat[3][2] * mat[0][3];
@@ -356,10 +335,11 @@ Mat<T, 4, 4> Inverse(const Mat<T, 4, 4> &mat) {
     T minor1 = mat[0][1] * r2r3 - mat[2][1] * r0r3 + mat[3][1] * r0r2;
     T minor2 = mat[0][1] * r1r3 - mat[1][1] * r0r3 + mat[3][1] * r0r1;
     T minor3 = mat[0][1] * r1r2 - mat[1][1] * r0r2 + mat[2][1] * r0r1;
-    T det = mat[0][0] * minor0 - mat[1][0] * minor1 + mat[2][0] * minor2 - mat[3][0] * minor3;
+    T det =
+        mat[0][0] * minor0 - mat[1][0] * minor1 + mat[2][0] * minor2 - mat[3][0] * minor3;
     T inv_det = T(1) / det;
 
-    auto res = Mat<T, 4, 4>{ Uninitialize };
+    auto res = Mat<T, 4, 4>{Uninitialize};
     res[0][0] = inv_det * minor0;
     res[0][1] = inv_det * -minor1;
     res[0][2] = inv_det * minor2;
@@ -402,8 +382,7 @@ Mat<T, 4, 4> Inverse(const Mat<T, 4, 4> &mat) {
     return res;
 }
 
-template <typename T>
-Mat<T, 4, 4> Translate(const Mat<T, 4, 4> &m, const Vec<T, 3> &v) {
+template <typename T> Mat<T, 4, 4> Translate(const Mat<T, 4, 4> &m, const Vec<T, 3> &v) {
     Mat<T, 4, 4> res = m;
     res[3] += m[0] * v[0] + m[1] * v[1] + m[2] * v[2];
     return res;
@@ -440,8 +419,7 @@ Mat<T, 4, 4> Rotate(const Mat<T, 4, 4> &m, T angle_rad, const Vec<T, 3> &_axis) 
     return res;
 }
 
-template <typename T>
-Mat<T, 4, 4> Scale(const Mat<T, 4, 4> &m, const Vec<T, 3> &v) {
+template <typename T> Mat<T, 4, 4> Scale(const Mat<T, 4, 4> &m, const Vec<T, 3> &v) {
     Mat<T, 4, 4> res(Uninitialize);
     res[0] = m[0] * v[0];
     res[1] = m[1] * v[1];
@@ -450,13 +428,11 @@ Mat<T, 4, 4> Scale(const Mat<T, 4, 4> &m, const Vec<T, 3> &v) {
     return res;
 }
 
-template <typename T, int M, int N>
-const T *ValuePtr(const Mat<T, M, N> &v) {
+template <typename T, int M, int N> const T *ValuePtr(const Mat<T, M, N> &v) {
     return &v[0][0];
 }
 
-template <typename T, int M, int N>
-const T *ValuePtr(const Mat<T, M, N> *v) {
+template <typename T, int M, int N> const T *ValuePtr(const Mat<T, M, N> *v) {
     return &(*v)[0][0];
 }
 
@@ -476,7 +452,8 @@ Mat<T, 4, 4> MakeMat4(T v) {
 }*/
 
 template <typename T>
-void LookAt(Mat<T, 4, 4> &m, const Vec<T, 3> &src, const Vec<T, 3> &trg, const Vec<T, 3> &up) {
+void LookAt(Mat<T, 4, 4> &m, const Vec<T, 3> &src, const Vec<T, 3> &trg,
+            const Vec<T, 3> &up) {
     Vec<T, 3> f = Normalize(trg - src);
     Vec<T, 3> s = Normalize(Cross(f, up));
     Vec<T, 3> u = Cross(s, f);
@@ -534,7 +511,8 @@ void PerspectiveProjection(Mat<T, 4, 4> &m, T fov, T aspect, T znear, T zfar) {
 }
 
 template <typename T>
-void OrthographicProjection(Mat<T, 4, 4> &m, T left, T right, T bottom, T top, T nnear, T ffar) {
+void OrthographicProjection(Mat<T, 4, 4> &m, T left, T right, T bottom, T top, T nnear,
+                            T ffar) {
     /*T r_width = T(1) / (right - left);
     T r_height = T(1) / (top - bottom);
     T r_depth = T(1) / (nnear - ffar);
@@ -559,7 +537,7 @@ void OrthographicProjection(Mat<T, 4, 4> &m, T left, T right, T bottom, T top, T
     T r_height = T(1) / (top - bottom);
     T r_depth = T(1) / (ffar - nnear);
 
-    m = Mat<T, 4, 4> { T(0) };
+    m = Mat<T, 4, 4>{T(0)};
 
     m[0][0] = T(2) * r_width;
     m[1][1] = T(2) * r_height;
@@ -569,4 +547,4 @@ void OrthographicProjection(Mat<T, 4, 4> &m, T left, T right, T bottom, T top, T
     m[3][2] = -(ffar + nnear) * r_depth;
     m[3][3] = T(1);
 }
-}
+} // namespace Ren

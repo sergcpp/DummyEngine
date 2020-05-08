@@ -6,8 +6,8 @@ namespace Ren {
 enum ePointPos { Front, Back, OnPlane };
 
 struct Plane {
-    Vec3f   n;
-    float   d;
+    Vec3f n;
+    float d;
 
     Plane() : d(0.0f) {}
     Plane(const Ren::Vec3f &v0, const Ren::Vec3f &v1, const Ren::Vec3f &v2);
@@ -16,17 +16,22 @@ struct Plane {
     int ClassifyPoint(const float point[3]) const;
 };
 
-enum eCamPlane {
-    LeftPlane, RightPlane, TopPlane, BottomPlane, NearPlane, FarPlane
+enum class eCamPlane {
+    LeftPlane,
+    RightPlane,
+    TopPlane,
+    BottomPlane,
+    NearPlane,
+    FarPlane
 };
 
-enum eVisibilityResult { Invisible, FullyVisible, PartiallyVisible };
+enum class eVisibilityResult { Invisible, FullyVisible, PartiallyVisible };
 
 struct Frustum {
-    Ren::Plane planes[8] = { Ren::Plane{ Ren::Uninitialize }, Ren::Plane{ Ren::Uninitialize },
-                             Ren::Plane{ Ren::Uninitialize }, Ren::Plane{ Ren::Uninitialize },
-                             Ren::Plane{ Ren::Uninitialize }, Ren::Plane{ Ren::Uninitialize },
-                             Ren::Plane{ Ren::Uninitialize }, Ren::Plane{ Ren::Uninitialize } };
+    Plane planes[8] = {Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize},
+                       Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize},
+                       Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize},
+                       Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize}};
     int planes_count = 6;
 
     eVisibilityResult CheckVisibility(const Vec3f &point) const;
@@ -35,7 +40,7 @@ struct Frustum {
 };
 
 class Camera {
-protected:
+  protected:
     Mat4f view_matrix_;
     Mat4f proj_matrix_;
 
@@ -47,59 +52,41 @@ protected:
 
     float angle_, aspect_, near_, far_;
     float max_exposure_;
-public:
+
+  public:
     Camera() = default;
     Camera(const Vec3f &center, const Vec3f &target, const Vec3f &up);
 
-    const Mat4f &view_matrix() const {
-        return view_matrix_;
-    }
-    const Mat4f &proj_matrix() const {
-        return proj_matrix_;
-    }
+    const Mat4f &view_matrix() const { return view_matrix_; }
+    const Mat4f &proj_matrix() const { return proj_matrix_; }
 
-    const Vec3f &world_position() const {
-        return world_position_;
-    }
+    const Vec3f &world_position() const { return world_position_; }
 
     uint32_t render_mask() const { return render_mask_; }
     void set_render_mask(uint32_t mask) { render_mask_ = mask; }
 
     Vec3f view_dir() const {
-        return Vec3f{ view_matrix_[0][2], view_matrix_[1][2], view_matrix_[2][2] };
+        return Vec3f{view_matrix_[0][2], view_matrix_[1][2], view_matrix_[2][2]};
     }
 
-    float angle() const {
-        return angle_;
-    }
-    float aspect() const {
-        return aspect_;
-    }
-    float near() const {
-        return near_;
-    }
-    float far() const {
-        return far_;
-    }
+    float angle() const { return angle_; }
+    float aspect() const { return aspect_; }
+    float near() const { return near_; }
+    float far() const { return far_; }
 
-    float max_exposure() const {
-        return max_exposure_;
-    }
+    float max_exposure() const { return max_exposure_; }
 
-    void set_max_exposure(float val) {
-        max_exposure_ = val;
-    }
+    void set_max_exposure(float val) { max_exposure_ = val; }
 
-    const Plane &frustum_plane(int i) const {
-        return frustum_.planes[i];
-    }
+    const Plane &frustum_plane(int i) const { return frustum_.planes[i]; }
 
-    bool is_orthographic() const {
-        return is_orthographic_;
-    }
+    const Plane &frustum_plane(eCamPlane i) const { return frustum_.planes[int(i)]; }
+
+    bool is_orthographic() const { return is_orthographic_; }
 
     void Perspective(float angle, float aspect, float near, float far);
-    void Orthographic(float left, float right, float top, float down, float near, float far);
+    void Orthographic(float left, float right, float top, float down, float near,
+                      float far);
 
     void SetupView(const Vec3f &center, const Vec3f &target, const Vec3f &up);
 
@@ -107,7 +94,8 @@ public:
 
     eVisibilityResult CheckFrustumVisibility(const Vec3f &point) const;
     eVisibilityResult CheckFrustumVisibility(const float bbox[8][3]) const;
-    eVisibilityResult CheckFrustumVisibility(const Vec3f &bbox_min, const Vec3f &bbox_max) const;
+    eVisibilityResult CheckFrustumVisibility(const Vec3f &bbox_min,
+                                             const Vec3f &bbox_max) const;
 
     // returns radius
     float GetBoundingSphere(Vec3f &out_center) const;
@@ -117,4 +105,4 @@ public:
     void Move(const Vec3f &v, float delta_time);
     void Rotate(float rx, float ry, float delta_time);
 };
-}
+} // namespace Ren
