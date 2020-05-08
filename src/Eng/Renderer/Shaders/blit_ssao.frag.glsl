@@ -18,6 +18,7 @@ layout (std140) uniform SharedDataBlock {
 };
 
 layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2D depth_texture;
+layout(binding = REN_BASE1_TEX_SLOT) uniform mediump sampler2D rand_texture;
 
 in vec2 aVertexUVs_;
 
@@ -29,25 +30,6 @@ float SampleDepthTexel(vec2 texcoord) {
 }
 
 void main() {
-    const mediump vec2 _transforms_4x4[16] = vec2[16](
-        vec2(0.0,     1.0),     // 4
-        vec2(0.9238,  0.3826),  // 1
-        vec2(0.3826,  0.9238),  // 3
-        vec2(-0.9238, 0.3826),  // 7
-        vec2(-1.0,    0.0),     // 8
-        vec2(-0.3826, -0.9238), // 11
-        vec2(0.9238,  -0.3826), // 15
-        vec2(-0.7071, 0.7071),  // 6
-        vec2(-0.7071, -0.7071), // 10
-        vec2(0.7071,  0.7071),  // 2
-        vec2(0.7071,  -0.7071), // 14
-        vec2(-0.3826, 0.9238),  // 5
-        vec2(1.0,     0.0),     // 0
-        vec2(0.3826,  -0.9238), // 13
-        vec2(0.0,     -1.0),    // 12
-        vec2(-0.9238, -0.3826)  // 9
-    );
-
     const vec2 sample_points[3] = vec2[3](
         vec2(-0.0625, 0.1082),  // 1.0/8.0
         vec2(-0.1875, -0.3247), // 3.0/8.0
@@ -73,9 +55,13 @@ void main() {
     const float sample_weight = 1.0 / 7.0;
     float occlusion = 0.5 * sample_weight;
 
+    ivec2 icoords = ivec2(gl_FragCoord.xy) % ivec2(4);
+
     for (int i = 0; i < 3; i++) {
-        int c = 4 * (int(gl_FragCoord.y) % 4) + (int(gl_FragCoord.x) % 4);
-        mat2 transform = mat2(_transforms_4x4[c], vec2(-_transforms_4x4[c].y, _transforms_4x4[c].x));
+        mat2 transform;
+        transform[0] = texelFetch(rand_texture, icoords, 0).xy;
+        transform[1] = vec2(-transform[0].y, transform[0].x);
+
         vec2 sample_point = transform * sample_points[i];
 
         vec2 coord_offset = 0.5 * ss_radius * sample_point * shrd_data.uResAndFRes.xy;

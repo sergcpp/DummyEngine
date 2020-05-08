@@ -2011,6 +2011,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniform4f(0, 0.0f, 0.0f, float(ssao_res[0]), float(ssao_res[1]));
 
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, down_depth_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT, rand2d_dirs_4x4_->tex_id());
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }

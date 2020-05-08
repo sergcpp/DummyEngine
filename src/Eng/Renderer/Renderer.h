@@ -62,7 +62,8 @@ class Renderer {
         blit_project_sh_prog_, blit_fxaa_prog_, blit_taa_prog_, blit_static_vel_prog_,
         blit_transparent_compose_prog_, blit_transparent_compose_ms_prog_,
         blit_transparent_init_prog_, probe_prog_, skinning_prog_;
-    Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_, brdf_lut_, noise_tex_;
+    Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_,
+        brdf_lut_, noise_tex_;
 
     FrameBuf clean_buf_, resolved_or_transparent_buf_, ssr_buf1_, ssr_buf2_, down_buf_,
         blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf1_, ssao_buf2_,
@@ -208,4 +209,6 @@ class Renderer {
     static std::unique_ptr<uint8_t[]>
     Generate_SSSProfile_LUT(int res, int gauss_count, const float gauss_variances[],
                             const Ren::Vec3f diffusion_weights[]);
+    static std::unique_ptr<int16_t[]> Generate_RandDirs(int res,
+                                                        std::string &out_c_header);
 };
