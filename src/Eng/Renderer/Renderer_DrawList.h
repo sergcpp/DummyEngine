@@ -62,6 +62,7 @@ struct DrawList {
     DynArray<LightSourceItem>   light_sources;
     DynArray<DecalItem>         decals;
     DynArray<ProbeItem>         probes;
+    DynArray<EllipsItem>        ellipsoids;
     DynArray<CellData>          cells;
     DynArray<ItemData>          items;
     const Ren::TextureAtlas     *decals_atlas = nullptr;

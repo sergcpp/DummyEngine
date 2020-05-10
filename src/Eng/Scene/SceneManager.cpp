@@ -706,6 +706,22 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp,
         }
     }
 
+    if (dr->mesh->type() == Ren::MeshSkeletal) {
+        const Ren::Skeleton *skel = dr->mesh->skel();
+
+        // Attach ellipsoids to bones
+        for (int i = 0; i < dr->ellipsoids_count; i++) {
+            Drawable::Ellipsoid &e = dr->ellipsoids[i];
+
+            for (int j = 0; j < (int)skel->bones.size(); j++) {
+                if (e.bone_name == skel->bones[j].name) {
+                    e.bone_index = j;
+                    break;
+                }
+            }
+        }
+    }
+
     obj_bbox[0] = Ren::Min(obj_bbox[0], dr->mesh->bbox_min());
     obj_bbox[1] = Ren::Max(obj_bbox[1], dr->mesh->bbox_max());
 }

@@ -61,9 +61,9 @@ class Renderer {
         blit_depth_prog_, blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_,
         blit_project_sh_prog_, blit_fxaa_prog_, blit_taa_prog_, blit_static_vel_prog_,
         blit_transparent_compose_prog_, blit_transparent_compose_ms_prog_,
-        blit_transparent_init_prog_, probe_prog_, skinning_prog_;
+        blit_transparent_init_prog_, probe_prog_, ellipsoid_prog_, skinning_prog_;
     Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_,
-        brdf_lut_, noise_tex_;
+        brdf_lut_, cone_rt_lut_, noise_tex_;
 
     FrameBuf clean_buf_, resolved_or_transparent_buf_, ssr_buf1_, ssr_buf2_, down_buf_,
         blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf1_, ssao_buf2_,
@@ -82,7 +82,8 @@ class Renderer {
 #if !defined(__ANDROID__)
         (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap |
          EnableLights | EnableDecals | EnableShadows /*| EnableOIT*/ | EnableTonemap |
-         EnableBloom | EnableMsaa | EnableFxaa | EnableTimers /*| DebugDecals*/);
+         EnableBloom | EnableMsaa | EnableFxaa | EnableTimers |
+         DebugEllipsoids /*| DebugDecals*/);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights |
          EnableDecals | EnableShadows | EnableTonemap | EnableTimers);
@@ -192,14 +193,13 @@ class Renderer {
     static uint64_t GetGpuTimeBlockingUs();
 
     // Parallel Jobs
-    static void GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums,
-                                         const LightSourceItem *lights, int lights_count,
-                                         const DecalItem *decals, int decals_count,
-                                         const BBox *decals_boxes,
-                                         const ProbeItem *probes, int probes_count,
-                                         const LightSource *const *litem_to_lsource,
-                                         CellData *cells, ItemData *items,
-                                         std::atomic_int &items_count);
+    static void GatherItemsForZSlice_Job(
+        int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights,
+        int lights_count, const DecalItem *decals, int decals_count,
+        const BBox *decals_boxes, const ProbeItem *probes, int probes_count,
+        const EllipsItem *ellipsoids, int ellipsoids_count,
+        const LightSource *const *litem_to_lsource, CellData *cells, ItemData *items,
+        std::atomic_int &items_count);
 
     // Generate auxiliary textures
     static std::unique_ptr<uint16_t[]> Generate_BRDF_LUT(int res,
@@ -211,4 +211,7 @@ class Renderer {
                             const Ren::Vec3f diffusion_weights[]);
     static std::unique_ptr<int16_t[]> Generate_RandDirs(int res,
                                                         std::string &out_c_header);
+    static std::unique_ptr<uint8_t[]> Generate_ConeTraceLUT(int resx, int resy,
+                                                            const float cone_angles[4],
+                                                            std::string &out_c_header);
 };

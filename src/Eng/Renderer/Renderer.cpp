@@ -63,6 +63,7 @@ const Ren::Vec2f HaltonSeq23[64] = {
     Ren::Vec2f{0.4843750000f, 0.9135804180f}, Ren::Vec2f{0.9843750000f, 0.0617284030f}};
 
 #include "__brdf_lut.inl"
+#include "__cone_rt_lut.inl"
 #include "__noise.inl"
 } // namespace RendererInternal
 
@@ -97,7 +98,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
                      1, ctx.log());
     }
 
-    { // aux buffer which gathers frame luminance
+    {                                       // aux buffer which gathers frame luminance
         FrameBuf::ColorAttachmentDesc desc; // NOLINT
         desc.format = Ren::eTexFormat::RawR16F;
         desc.filter = Ren::eTexFilter::BilinearNoMipmap;
@@ -106,7 +107,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
             FrameBuf(16, 8, &desc, 1, {FrameBuf::eDepthFormat::DepthNone}, 1, ctx.log());
     }
 
-    { // buffer used to sample probes
+    {                                       // buffer used to sample probes
         FrameBuf::ColorAttachmentDesc desc; // NOLINT
         desc.format = Ren::eTexFormat::RawRGBA32F;
         desc.filter = Ren::eTexFilter::NoFilter;
@@ -158,6 +159,37 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
         rand2d_dirs_4x4_ = ctx_.LoadTexture2D("rand2d_dirs_4x4", &__rand_dirs[0],
                                               sizeof(__rand_dirs), p, &status);
         assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
+    }
+
+    { // cone/sphere intersection LUT
+        const int resx = 128, resy = 128;
+
+        const float cone_angles[] = {
+            8.0f * Ren::Pi<float>() / 180.0f, 30.0f * Ren::Pi<float>() / 180.0f,
+            45.0f * Ren::Pi<float>() / 180.0f, 60.0f * Ren::Pi<float>() / 180.0f};
+
+        std::string str;
+        std::unique_ptr<uint8_t[]> occ_data =
+            Generate_ConeTraceLUT(resx, resy, cone_angles, str);
+
+        SceneManagerInternal::WriteImage(&occ_data[0], resx, resy, 4,
+                                         "cone_lut.uncompressed.png");
+        //std::exit(0);
+
+        Ren::Texture2DParams p;
+        p.w = resx;
+        p.h = resy;
+        p.format = Ren::eTexFormat::RawRGBA8888;
+        p.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.repeat = Ren::eTexRepeat::ClampToEdge;
+
+        Ren::eTexLoadStatus status;
+        //cone_rt_lut_ =
+        //    ctx_.LoadTexture2D("cone_rt_lut", &__cone_rt_lut[0],
+        //                       4 * __cone_rt_lut_res * __cone_rt_lut_res, p, &status);
+
+        cone_rt_lut_ =
+            ctx_.LoadTexture2D("cone_rt_lut", &occ_data[0], 4 * resx * resy, p, &status);
     }
 
     {

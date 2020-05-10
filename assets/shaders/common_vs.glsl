@@ -34,11 +34,13 @@
 #define REN_MOMENTS1_MS_TEX_SLOT 9
 #define REN_MOMENTS2_MS_TEX_SLOT 17
 #define REN_NOISE_TEX_SLOT 17
+#define REN_CONE_RT_LUT_SLOT 18
 
 #define REN_ALPHATEST_TEX_SLOT 0
 
 #define REN_BASE0_TEX_SLOT 0
 #define REN_BASE1_TEX_SLOT 1
+#define REN_BASE2_TEX_SLOT 2
 
 #define REN_REFL_DEPTH_TEX_SLOT 0
 #define REN_REFL_NORM_TEX_SLOT  1
@@ -83,6 +85,7 @@
 #define REN_MAX_INSTANCES_TOTAL     262144
 #define REN_MAX_SHADOWMAPS_TOTAL    32
 #define REN_MAX_PROBES_TOTAL        32
+#define REN_MAX_ELLIPSES_TOTAL      64
 #define REN_SKIN_REGION_SIZE        256
 #define REN_MAX_SKIN_XFORMS_TOTAL   65536
 #define REN_MAX_SKIN_REGIONS_TOTAL  262144
@@ -96,6 +99,7 @@
 #define REN_MAX_LIGHTS_PER_CELL 255
 #define REN_MAX_DECALS_PER_CELL 255
 #define REN_MAX_PROBES_PER_CELL 8
+#define REN_MAX_ELLIPSES_PER_CELL 16
 #define REN_MAX_ITEMS_PER_CELL  255
 
 #define REN_MAX_LIGHTS_TOTAL 4096
@@ -123,6 +127,11 @@ struct ProbeItem {
     vec4 sh_coeffs[3];
 };
 
+struct EllipsItem {
+    vec4 pos_and_radius;
+    vec4 axis_and_perp;
+};
+
 struct SharedData {
     mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
     mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
@@ -132,6 +141,7 @@ struct SharedData {
     vec4 uResAndFRes, uTranspParamsAndTime;
     vec4 uWindScroll, uWindScrollPrev;
     ProbeItem uProbes[REN_MAX_PROBES_TOTAL];
+    EllipsItem uEllipsoids[REN_MAX_ELLIPSES_TOTAL];
 };
 
 

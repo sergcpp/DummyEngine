@@ -79,6 +79,7 @@ set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/Renderer_Gen.cpp
                         Renderer/Renderer_Structs.h
                         Renderer/__brdf_lut.inl
+                        Renderer/__cone_rt_lut.inl
                         Renderer/__noise.inl
                         Renderer/__skydome_mesh.inl
                         Renderer/__sphere_mesh.inl)
@@ -141,6 +142,8 @@ set(SHADERS_SOURCES Renderer/Shaders/_common.glsl
                     Renderer/Shaders/blit_transparent_compose.frag.glsl
                     Renderer/Shaders/blit_transparent_init.frag.glsl
                     Renderer/Shaders/blit_upscale.frag.glsl
+                    Renderer/Shaders/ellipsoid.vert.glsl
+                    Renderer/Shaders/ellipsoid.frag.glsl
                     Renderer/Shaders/fillz.vert.glsl
                     Renderer/Shaders/fillz_vege.vert.glsl
                     Renderer/Shaders/fillz.frag.glsl

@@ -27,12 +27,19 @@ struct ProbeItem {
 };
 static_assert(sizeof(ProbeItem) == 20 * sizeof(float), "!");
 
+struct EllipsItem {
+    float position[3], radius;
+    float axis[3]; uint32_t perp;
+};
+static_assert(sizeof(EllipsItem) == 8 * sizeof(float), "!");
+
 struct CellData {
     uint32_t item_offset : 24;
     uint32_t light_count : 8;
     uint32_t decal_count : 8;
     uint32_t probe_count : 8;
-    uint32_t _unused : 16;
+    uint32_t ellips_count : 8;
+    uint32_t _unused : 8;
 };
 static_assert(sizeof(CellData) == 8, "!");
 
@@ -40,8 +47,10 @@ struct ItemData {
     uint32_t light_index : 12;
     uint32_t decal_index : 12;
     uint32_t probe_index : 8;
+    uint32_t ellips_index : 8;
+    uint32_t _unused : 24;
 };
-static_assert(sizeof(ItemData) == 4, "!");
+static_assert(sizeof(ItemData) == 8, "!");
 
 struct InstanceData {
     float model_matrix[3][4];
@@ -147,26 +156,28 @@ enum eRenderFlags : uint32_t {
     EnableLights    = (1u << 5u),
     EnableDecals    = (1u << 6u),
     EnableProbes    = (1u << 7u),
-    EnableShadows   = (1u << 8u),
-    EnableOIT       = (1u << 9u),
-    EnableTonemap   = (1u << 10u),
-    EnableBloom     = (1u << 11u),
-    EnableMsaa      = (1u << 12u),
-    EnableTaa       = (1u << 13u),
-    EnableFxaa      = (1u << 14u),
-    EnableTimers    = (1u << 15u),
-    DebugWireframe  = (1u << 16u),
-    DebugCulling    = (1u << 17u),
-    DebugShadow     = (1u << 18u),
-    DebugReduce     = (1u << 19u),
-    DebugLights     = (1u << 20u),
-    DebugDeferred   = (1u << 21u),
-    DebugBlur       = (1u << 22u),
-    DebugDecals     = (1u << 23u),
-    DebugSSAO       = (1u << 24u),
-    DebugTimings    = (1u << 25u),
-    DebugBVH        = (1u << 26u),
-    DebugProbes     = (1u << 27u)
+    EnableConeRT    = (1u << 8u),
+    EnableShadows   = (1u << 9u),
+    EnableOIT       = (1u << 10u),
+    EnableTonemap   = (1u << 11u),
+    EnableBloom     = (1u << 12u),
+    EnableMsaa      = (1u << 13u),
+    EnableTaa       = (1u << 14u),
+    EnableFxaa      = (1u << 15u),
+    EnableTimers    = (1u << 16u),
+    DebugWireframe  = (1u << 17u),
+    DebugCulling    = (1u << 18u),
+    DebugShadow     = (1u << 19u),
+    DebugReduce     = (1u << 20u),
+    DebugLights     = (1u << 21u),
+    DebugDeferred   = (1u << 22u),
+    DebugBlur       = (1u << 23u),
+    DebugDecals     = (1u << 24u),
+    DebugSSAO       = (1u << 25u),
+    DebugTimings    = (1u << 26u),
+    DebugBVH        = (1u << 27u),
+    DebugProbes     = (1u << 28u),
+    DebugEllipsoids = (1u << 29u)
 };
 
 struct FrontendInfo {

@@ -291,6 +291,14 @@ static const char probe_fs[] =
 #include "Shaders/probe.frag.glsl"
 ;
 
+static const char ellipsoid_vs[] =
+#include "Shaders/ellipsoid.vert.glsl"
+    ;
+
+static const char ellipsoid_fs[] =
+#include "Shaders/ellipsoid.frag.glsl"
+    ;
+
 #ifndef __ANDROID__
 #define GLSL_VERSION_STR "430"
 #else

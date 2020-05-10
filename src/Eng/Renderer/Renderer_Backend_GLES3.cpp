@@ -9,131 +9,154 @@ namespace RendererInternal {
 #include "__skydome_mesh.inl"
 #include "__sphere_mesh.inl"
 
-    struct SharedDataBlock {
-        Ren::Mat4f uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-        Ren::Mat4f uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-        ShadowMapRegion uShadowMapRegions[REN_MAX_SHADOWMAPS_TOTAL];
-        Ren::Vec4f uSunDir, uSunCol, uTaaInfo;
-        Ren::Vec4f uClipInfo, uCamPosAndGamma;
-        Ren::Vec4f uResAndFRes, uTranspParamsAndTime;
-        Ren::Vec4f uWindScroll, uWindScrollPrev;
-        ProbeItem uProbes[REN_MAX_PROBES_TOTAL] = {};
-    };
-    static_assert(sizeof(SharedDataBlock) == 5776, "!");
+struct SharedDataBlock {
+    Ren::Mat4f uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
+    Ren::Mat4f uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
+    ShadowMapRegion uShadowMapRegions[REN_MAX_SHADOWMAPS_TOTAL];
+    Ren::Vec4f uSunDir, uSunCol, uTaaInfo;
+    Ren::Vec4f uClipInfo, uCamPosAndGamma;
+    Ren::Vec4f uResAndFRes, uTranspParamsAndTime;
+    Ren::Vec4f uWindScroll, uWindScrollPrev;
+    ProbeItem uProbes[REN_MAX_PROBES_TOTAL] = {};
+    EllipsItem uEllipsoids[REN_MAX_ELLIPSES_TOTAL] = {};
+};
+static_assert(sizeof(SharedDataBlock) == 7824, "!");
 
-    const Ren::Vec2f poisson_disk[] = {
-        Ren::Vec2f{ -0.705374f, -0.668203f }, Ren::Vec2f{ -0.780145f, 0.486251f  }, Ren::Vec2f{ 0.566637f, 0.605213f   }, Ren::Vec2f{ 0.488876f, -0.783441f  },
-        Ren::Vec2f{ -0.613392f, 0.617481f  }, Ren::Vec2f{ 0.170019f, -0.040254f  }, Ren::Vec2f{ -0.299417f, 0.791925f  }, Ren::Vec2f{ 0.645680f, 0.493210f   },
-        Ren::Vec2f{ -0.651784f, 0.717887f  }, Ren::Vec2f{ 0.421003f, 0.027070f   }, Ren::Vec2f{ -0.817194f, -0.271096f }, Ren::Vec2f{ 0.977050f, -0.108615f  },
-        Ren::Vec2f{ 0.063326f, 0.142369f   }, Ren::Vec2f{ 0.203528f, 0.214331f   }, Ren::Vec2f{ -0.667531f, 0.326090f  }, Ren::Vec2f{ -0.098422f, -0.295755f },
-        Ren::Vec2f{ -0.885922f, 0.215369f  }, Ren::Vec2f{ 0.039766f, -0.396100f  }, Ren::Vec2f{ 0.751946f, 0.453352f   }, Ren::Vec2f{ 0.078707f, -0.715323f  },
-        Ren::Vec2f{ -0.075838f, -0.529344f }, Ren::Vec2f{ 0.724479f, -0.580798f  }, Ren::Vec2f{ 0.222999f, -0.215125f  }, Ren::Vec2f{ -0.467574f, -0.405438f },
-        Ren::Vec2f{ -0.248268f, -0.814753f }, Ren::Vec2f{ 0.354411f, -0.887570f  }, Ren::Vec2f{ 0.175817f, 0.382366f   }, Ren::Vec2f{ 0.487472f, -0.063082f  },
-        Ren::Vec2f{ -0.084078f, 0.898312f  }, Ren::Vec2f{ 0.470016f, 0.217933f   }, Ren::Vec2f{ -0.696890f, -0.549791f }, Ren::Vec2f{ -0.149693f, 0.605762f  },
-        Ren::Vec2f{ 0.034211f, 0.979980f   }, Ren::Vec2f{ 0.503098f, -0.308878f  }, Ren::Vec2f{ -0.016205f, -0.872921f }, Ren::Vec2f{ 0.385784f, -0.393902f  },
-        Ren::Vec2f{ -0.146886f, -0.859249f }, Ren::Vec2f{ 0.643361f, 0.164098f   }, Ren::Vec2f{ 0.634388f, -0.049471f  }, Ren::Vec2f{ -0.688894f, 0.007843f  },
-        Ren::Vec2f{ 0.464034f, -0.188818f  }, Ren::Vec2f{ -0.440840f, 0.137486f  }, Ren::Vec2f{ 0.364483f, 0.511704f   }, Ren::Vec2f{ 0.034028f, 0.325968f   },
-        Ren::Vec2f{ 0.099094f, -0.308023f  }, Ren::Vec2f{ 0.693960f, -0.366253f  }, Ren::Vec2f{ 0.678884f, -0.204688f  }, Ren::Vec2f{ 0.001801f, 0.780328f   },
-        Ren::Vec2f{ 0.145177f, -0.898984f  }, Ren::Vec2f{ 0.062655f, -0.611866f  }, Ren::Vec2f{ 0.315226f, -0.604297f  }, Ren::Vec2f{ -0.371868f, 0.882138f  },
-        Ren::Vec2f{ 0.200476f, 0.494430f   }, Ren::Vec2f{ -0.494552f, -0.711051f }, Ren::Vec2f{ 0.612476f, 0.705252f   }, Ren::Vec2f{ -0.578845f, -0.768792f },
-        Ren::Vec2f{ -0.772454f, -0.090976f }, Ren::Vec2f{ 0.504440f, 0.372295f   }, Ren::Vec2f{ 0.155736f, 0.065157f   }, Ren::Vec2f{ 0.391522f, 0.849605f   },
-        Ren::Vec2f{ -0.620106f, -0.328104f }, Ren::Vec2f{ 0.789239f, -0.419965f  }, Ren::Vec2f{ -0.545396f, 0.538133f  }, Ren::Vec2f{ -0.178564f, -0.596057f }
-    };
+const Ren::Vec2f poisson_disk[] = {
+    Ren::Vec2f{-0.705374f, -0.668203f}, Ren::Vec2f{-0.780145f, 0.486251f},
+    Ren::Vec2f{0.566637f, 0.605213f},   Ren::Vec2f{0.488876f, -0.783441f},
+    Ren::Vec2f{-0.613392f, 0.617481f},  Ren::Vec2f{0.170019f, -0.040254f},
+    Ren::Vec2f{-0.299417f, 0.791925f},  Ren::Vec2f{0.645680f, 0.493210f},
+    Ren::Vec2f{-0.651784f, 0.717887f},  Ren::Vec2f{0.421003f, 0.027070f},
+    Ren::Vec2f{-0.817194f, -0.271096f}, Ren::Vec2f{0.977050f, -0.108615f},
+    Ren::Vec2f{0.063326f, 0.142369f},   Ren::Vec2f{0.203528f, 0.214331f},
+    Ren::Vec2f{-0.667531f, 0.326090f},  Ren::Vec2f{-0.098422f, -0.295755f},
+    Ren::Vec2f{-0.885922f, 0.215369f},  Ren::Vec2f{0.039766f, -0.396100f},
+    Ren::Vec2f{0.751946f, 0.453352f},   Ren::Vec2f{0.078707f, -0.715323f},
+    Ren::Vec2f{-0.075838f, -0.529344f}, Ren::Vec2f{0.724479f, -0.580798f},
+    Ren::Vec2f{0.222999f, -0.215125f},  Ren::Vec2f{-0.467574f, -0.405438f},
+    Ren::Vec2f{-0.248268f, -0.814753f}, Ren::Vec2f{0.354411f, -0.887570f},
+    Ren::Vec2f{0.175817f, 0.382366f},   Ren::Vec2f{0.487472f, -0.063082f},
+    Ren::Vec2f{-0.084078f, 0.898312f},  Ren::Vec2f{0.470016f, 0.217933f},
+    Ren::Vec2f{-0.696890f, -0.549791f}, Ren::Vec2f{-0.149693f, 0.605762f},
+    Ren::Vec2f{0.034211f, 0.979980f},   Ren::Vec2f{0.503098f, -0.308878f},
+    Ren::Vec2f{-0.016205f, -0.872921f}, Ren::Vec2f{0.385784f, -0.393902f},
+    Ren::Vec2f{-0.146886f, -0.859249f}, Ren::Vec2f{0.643361f, 0.164098f},
+    Ren::Vec2f{0.634388f, -0.049471f},  Ren::Vec2f{-0.688894f, 0.007843f},
+    Ren::Vec2f{0.464034f, -0.188818f},  Ren::Vec2f{-0.440840f, 0.137486f},
+    Ren::Vec2f{0.364483f, 0.511704f},   Ren::Vec2f{0.034028f, 0.325968f},
+    Ren::Vec2f{0.099094f, -0.308023f},  Ren::Vec2f{0.693960f, -0.366253f},
+    Ren::Vec2f{0.678884f, -0.204688f},  Ren::Vec2f{0.001801f, 0.780328f},
+    Ren::Vec2f{0.145177f, -0.898984f},  Ren::Vec2f{0.062655f, -0.611866f},
+    Ren::Vec2f{0.315226f, -0.604297f},  Ren::Vec2f{-0.371868f, 0.882138f},
+    Ren::Vec2f{0.200476f, 0.494430f},   Ren::Vec2f{-0.494552f, -0.711051f},
+    Ren::Vec2f{0.612476f, 0.705252f},   Ren::Vec2f{-0.578845f, -0.768792f},
+    Ren::Vec2f{-0.772454f, -0.090976f}, Ren::Vec2f{0.504440f, 0.372295f},
+    Ren::Vec2f{0.155736f, 0.065157f},   Ren::Vec2f{0.391522f, 0.849605f},
+    Ren::Vec2f{-0.620106f, -0.328104f}, Ren::Vec2f{0.789239f, -0.419965f},
+    Ren::Vec2f{-0.545396f, 0.538133f},  Ren::Vec2f{-0.178564f, -0.596057f}};
 
-    extern const Ren::Vec2f HaltonSeq23[];
+extern const Ren::Vec2f HaltonSeq23[];
 
-    //const GLuint A_INDICES = 3;
-    //const GLuint A_WEIGHTS = 4;
+// const GLuint A_INDICES = 3;
+// const GLuint A_WEIGHTS = 4;
 
-    const int U_MVP_MATR = 0;
-    //const int U_MV_MATR = 1;
+const int U_MVP_MATR = 0;
+// const int U_MV_MATR = 1;
 
-    //const int U_SH_MVP_MATR = 2;
+// const int U_SH_MVP_MATR = 2;
 
-    //const int U_TEX = 3;
+// const int U_TEX = 3;
 
-    const int U_GAMMA = 14;
+const int U_GAMMA = 14;
 
-    const int U_EXPOSURE = 15;
+const int U_EXPOSURE = 15;
 
-    const int U_RES = 15;
-    
-    //const int U_LM_TRANSFORM = 16;
+const int U_RES = 15;
 
-    //const int LIGHTS_BUFFER_BINDING = 0;
+// const int U_LM_TRANSFORM = 16;
 
-    const int TEMP_BUF_SIZE = 256;
+// const int LIGHTS_BUFFER_BINDING = 0;
 
-    const float fs_quad_positions[] = {
-        -1.0f, -1.0f,   1.0f, -1.0f,
-        1.0f, 1.0f,    -1.0f, 1.0f
-    };
+const int TEMP_BUF_SIZE = 256;
 
-    const float fs_quad_norm_uvs[] = {
-        0.0f, 0.0f,     1.0f, 0.0f,
-        1.0f, 1.0f,     0.0f, 1.0f
-    };
+const float fs_quad_positions[] = {-1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f};
 
-    const uint16_t fs_quad_indices[] = { 0, 1, 2,    0, 2, 3 };
+const float fs_quad_norm_uvs[] = {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f};
 
-    const size_t SkinTransformsBufChunkSize = sizeof(SkinTransform) * REN_MAX_SKIN_XFORMS_TOTAL;
-    const size_t SkinRegionsBufChunkSize    = sizeof(SkinRegion) * REN_MAX_SKIN_REGIONS_TOTAL;
-    const size_t InstanceDataBufChunkSize   = sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL;
-    const size_t LightsBufChunkSize         = sizeof(LightSourceItem) * REN_MAX_LIGHTS_TOTAL;
-    const size_t DecalsBufChunkSize         = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
-    const size_t CellsBufChunkSize          = sizeof(CellData) * REN_CELLS_COUNT;
-    const size_t ItemsBufChunkSize          = sizeof(ItemData) * REN_MAX_ITEMS_TOTAL;
+const uint16_t fs_quad_indices[] = {0, 1, 2, 0, 2, 3};
 
-    const int TaaSampleCount = 8;
+const size_t SkinTransformsBufChunkSize =
+    sizeof(SkinTransform) * REN_MAX_SKIN_XFORMS_TOTAL;
+const size_t SkinRegionsBufChunkSize = sizeof(SkinRegion) * REN_MAX_SKIN_REGIONS_TOTAL;
+const size_t InstanceDataBufChunkSize = sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL;
+const size_t LightsBufChunkSize = sizeof(LightSourceItem) * REN_MAX_LIGHTS_TOTAL;
+const size_t DecalsBufChunkSize = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
+const size_t CellsBufChunkSize = sizeof(CellData) * REN_CELLS_COUNT;
+const size_t ItemsBufChunkSize = sizeof(ItemData) * REN_MAX_ITEMS_TOTAL;
 
-    struct DebugMarker {
-        explicit DebugMarker(const char *name) {
+const int TaaSampleCount = 8;
+
+struct DebugMarker {
+    explicit DebugMarker(const char *name) {
 #ifndef DISABLE_MARKERS
-            glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name);
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name);
 #endif
-        }
+    }
 
-        ~DebugMarker() {
+    ~DebugMarker() {
 #ifndef DISABLE_MARKERS
-            glPopDebugGroup();
+        glPopDebugGroup();
 #endif
-        }
-    };
-}
+    }
+};
+} // namespace RendererInternal
 
 void Renderer::InitRendererInternal() {
     using namespace RendererInternal;
 
-    //Ren::ILog *log = ctx_.log();
+    // Ren::ILog *log = ctx_.log();
 
     Ren::eProgLoadStatus status;
     skydome_prog_ = ctx_.LoadProgramGLSL("skydome", skydome_vs, skydome_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_solid_prog_ = ctx_.LoadProgramGLSL("fillz_solid", fillz_solid_vs, fillz_solid_fs, &status);
+    fillz_solid_prog_ =
+        ctx_.LoadProgramGLSL("fillz_solid", fillz_solid_vs, fillz_solid_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_vege_solid_prog_ = ctx_.LoadProgramGLSL("fillz_vege_solid", fillz_vege_solid_vs, fillz_solid_fs, &status);
+    fillz_vege_solid_prog_ = ctx_.LoadProgramGLSL("fillz_vege_solid", fillz_vege_solid_vs,
+                                                  fillz_solid_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_vege_solid_vel_prog_ = ctx_.LoadProgramGLSL("fillz_vege_solid_vel", fillz_vege_solid_vel_vs, fillz_solid_vel_fs, &status);
+    fillz_vege_solid_vel_prog_ = ctx_.LoadProgramGLSL(
+        "fillz_vege_solid_vel", fillz_vege_solid_vel_vs, fillz_solid_vel_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_transp_prog_ = ctx_.LoadProgramGLSL("fillz_transp", fillz_transp_vs, fillz_transp_fs, &status);
+    fillz_transp_prog_ =
+        ctx_.LoadProgramGLSL("fillz_transp", fillz_transp_vs, fillz_transp_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_vege_transp_prog_ = ctx_.LoadProgramGLSL("fillz_vege_transp", fillz_vege_transp_vs, fillz_transp_fs, &status);
+    fillz_vege_transp_prog_ = ctx_.LoadProgramGLSL(
+        "fillz_vege_transp", fillz_vege_transp_vs, fillz_transp_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_vege_transp_vel_prog_ = ctx_.LoadProgramGLSL("fillz_vege_transp_vel", fillz_vege_transp_vel_vs, fillz_transp_vel_fs, &status);
+    fillz_vege_transp_vel_prog_ = ctx_.LoadProgramGLSL(
+        "fillz_vege_transp_vel", fillz_vege_transp_vel_vs, fillz_transp_vel_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    shadow_solid_prog_ = ctx_.LoadProgramGLSL("shadow_solid", shadow_solid_vs, shadow_solid_fs, &status);
+    shadow_solid_prog_ =
+        ctx_.LoadProgramGLSL("shadow_solid", shadow_solid_vs, shadow_solid_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    shadow_vege_solid_prog_ = ctx_.LoadProgramGLSL("shadow_vege_solid", shadow_vege_solid_vs, shadow_solid_fs, &status);
+    shadow_vege_solid_prog_ = ctx_.LoadProgramGLSL(
+        "shadow_vege_solid", shadow_vege_solid_vs, shadow_solid_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    shadow_transp_prog_ = ctx_.LoadProgramGLSL("shadow_transp", shadow_transp_vs, shadow_transp_fs, &status);
+    shadow_transp_prog_ = ctx_.LoadProgramGLSL("shadow_transp", shadow_transp_vs,
+                                               shadow_transp_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    shadow_vege_transp_prog_ = ctx_.LoadProgramGLSL("shadow_vege_transp", shadow_vege_transp_vs, shadow_transp_fs, &status);
+    shadow_vege_transp_prog_ = ctx_.LoadProgramGLSL(
+        "shadow_vege_transp", shadow_vege_transp_vs, shadow_transp_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_prog_ = ctx_.LoadProgramGLSL("blit", blit_vs, blit_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_combine_prog_ = ctx_.LoadProgramGLSL("blit_combine", blit_vs, blit_combine_fs, &status);
+    blit_combine_prog_ =
+        ctx_.LoadProgramGLSL("blit_combine", blit_vs, blit_combine_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_combine_ms_prog_ = ctx_.LoadProgramGLSL("blit_combine_ms", blit_vs, blit_combine_ms_fs, &status);
+    blit_combine_ms_prog_ =
+        ctx_.LoadProgramGLSL("blit_combine_ms", blit_vs, blit_combine_ms_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_ms_prog_ = ctx_.LoadProgramGLSL("blit_ms", blit_vs, blit_ms_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
@@ -141,75 +164,107 @@ void Renderer::InitRendererInternal() {
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_down_prog_ = ctx_.LoadProgramGLSL("blit_down", blit_vs, blit_down_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_down_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_ms", blit_vs, blit_down_ms_fs, &status);
+    blit_down_ms_prog_ =
+        ctx_.LoadProgramGLSL("blit_down_ms", blit_vs, blit_down_ms_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_down_depth_prog_ = ctx_.LoadProgramGLSL("blit_down_depth", blit_vs, blit_down_depth_fs, &status);
+    blit_down_depth_prog_ =
+        ctx_.LoadProgramGLSL("blit_down_depth", blit_vs, blit_down_depth_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_down_depth_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_depth_ms", blit_vs, blit_down_depth_ms_fs, &status);
+    blit_down_depth_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_depth_ms", blit_vs,
+                                                    blit_down_depth_ms_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_gauss_prog_ = ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
+    blit_gauss_prog_ =
+        ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_gauss_sep_prog_ = ctx_.LoadProgramGLSL("blit_gauss_sep", blit_vs, blit_gauss_sep_fs, &status);
+    blit_gauss_sep_prog_ =
+        ctx_.LoadProgramGLSL("blit_gauss_sep", blit_vs, blit_gauss_sep_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_bilateral_prog_ = ctx_.LoadProgramGLSL("blit_bilateral", blit_vs, blit_bilateral_fs, &status);
+    blit_bilateral_prog_ =
+        ctx_.LoadProgramGLSL("blit_bilateral", blit_vs, blit_bilateral_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_upscale_prog_ = ctx_.LoadProgramGLSL("blit_upscale", blit_vs, blit_upscale_fs, &status);
+    blit_upscale_prog_ =
+        ctx_.LoadProgramGLSL("blit_upscale", blit_vs, blit_upscale_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_upscale_ms_prog_ = ctx_.LoadProgramGLSL("blit_upscale_ms", blit_vs, blit_upscale_ms_fs, &status);
+    blit_upscale_ms_prog_ =
+        ctx_.LoadProgramGLSL("blit_upscale_ms", blit_vs, blit_upscale_ms_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_debug_prog_ = ctx_.LoadProgramGLSL("blit_debug", blit_vs, blit_debug_fs, &status);
+    blit_debug_prog_ =
+        ctx_.LoadProgramGLSL("blit_debug", blit_vs, blit_debug_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_debug_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug_ms", blit_vs, blit_debug_ms_fs, &status);
+    blit_debug_ms_prog_ =
+        ctx_.LoadProgramGLSL("blit_debug_ms", blit_vs, blit_debug_ms_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
 
-    {   // ssr related
+    { // ssr related
         blit_ssr_prog_ = ctx_.LoadProgramGLSL("blit_ssr", blit_vs, blit_ssr_fs, &status);
         assert(status == Ren::eProgLoadStatus::CreatedFromData);
-        blit_ssr_ms_prog_ = ctx_.LoadProgramGLSL("blit_ssr_ms", blit_vs, blit_ssr_ms_fs, &status);
+        blit_ssr_ms_prog_ =
+            ctx_.LoadProgramGLSL("blit_ssr_ms", blit_vs, blit_ssr_ms_fs, &status);
         assert(status == Ren::eProgLoadStatus::CreatedFromData);
-        blit_ssr_compose_prog_ = ctx_.LoadProgramGLSL("blit_ssr_compose", blit_vs, blit_ssr_compose_fs, &status);
+        blit_ssr_compose_prog_ = ctx_.LoadProgramGLSL("blit_ssr_compose", blit_vs,
+                                                      blit_ssr_compose_fs, &status);
         assert(status == Ren::eProgLoadStatus::CreatedFromData);
-        blit_ssr_compose_ms_prog_ = ctx_.LoadProgramGLSL("blit_ssr_compose_ms", blit_vs, blit_ssr_compose_ms_fs, &status);
+        blit_ssr_compose_ms_prog_ = ctx_.LoadProgramGLSL("blit_ssr_compose_ms", blit_vs,
+                                                         blit_ssr_compose_ms_fs, &status);
         assert(status == Ren::eProgLoadStatus::CreatedFromData);
-        blit_ssr_dilate_prog_ = ctx_.LoadProgramGLSL("blit_ssr_dilate", blit_vs, blit_ssr_dilate_fs, &status);
+        blit_ssr_dilate_prog_ =
+            ctx_.LoadProgramGLSL("blit_ssr_dilate", blit_vs, blit_ssr_dilate_fs, &status);
         assert(status == Ren::eProgLoadStatus::CreatedFromData);
     }
 
-    blit_ms_resolve_prog_ = ctx_.LoadProgramGLSL("blit_ms_resolve", blit_vs, blit_ms_resolve_fs, &status);
+    blit_ms_resolve_prog_ =
+        ctx_.LoadProgramGLSL("blit_ms_resolve", blit_vs, blit_ms_resolve_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_ao_prog_ = ctx_.LoadProgramGLSL("blit_ao", blit_vs, blit_ssao_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_multiply_prog_ = ctx_.LoadProgramGLSL("blit_multiply", blit_vs, blit_multiply_fs, &status);
+    blit_multiply_prog_ =
+        ctx_.LoadProgramGLSL("blit_multiply", blit_vs, blit_multiply_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_multiply_ms_prog_ = ctx_.LoadProgramGLSL("blit_multiply_ms", blit_vs, blit_multiply_ms_fs, &status);
+    blit_multiply_ms_prog_ =
+        ctx_.LoadProgramGLSL("blit_multiply_ms", blit_vs, blit_multiply_ms_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_debug_bvh_prog_ = ctx_.LoadProgramGLSL("blit_debug_bvh", blit_vs, blit_debug_bvh_fs, &status);
+    blit_debug_bvh_prog_ =
+        ctx_.LoadProgramGLSL("blit_debug_bvh", blit_vs, blit_debug_bvh_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_debug_bvh_ms_prog_ = ctx_.LoadProgramGLSL("blit_debug_bvh_ms", blit_vs, blit_debug_bvh_ms_fs, &status);
+    blit_debug_bvh_ms_prog_ =
+        ctx_.LoadProgramGLSL("blit_debug_bvh_ms", blit_vs, blit_debug_bvh_ms_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_depth_prog_ = ctx_.LoadProgramGLSL("blit_depth", blit_vs, blit_depth_fs, &status);
+    blit_depth_prog_ =
+        ctx_.LoadProgramGLSL("blit_depth", blit_vs, blit_depth_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_rgbm_prog_ = ctx_.LoadProgramGLSL("blit_rgbm", blit_vs, blit_rgbm_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_mipmap_prog_ = ctx_.LoadProgramGLSL("blit_mipmap", blit_vs, blit_mipmap_fs, &status);
+    blit_mipmap_prog_ =
+        ctx_.LoadProgramGLSL("blit_mipmap", blit_vs, blit_mipmap_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_prefilter_prog_ = ctx_.LoadProgramGLSL("blit_prefilter", blit_vs, blit_prefilter_fs, &status);
+    blit_prefilter_prog_ =
+        ctx_.LoadProgramGLSL("blit_prefilter", blit_vs, blit_prefilter_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_project_sh_prog_ = ctx_.LoadProgramGLSL("blit_project_sh_prog", blit_vs, blit_project_sh_fs, &status);
+    blit_project_sh_prog_ = ctx_.LoadProgramGLSL("blit_project_sh_prog", blit_vs,
+                                                 blit_project_sh_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_fxaa_prog_ = ctx_.LoadProgramGLSL("blit_fxaa_prog", blit_vs, blit_fxaa_fs, &status);
+    blit_fxaa_prog_ =
+        ctx_.LoadProgramGLSL("blit_fxaa_prog", blit_vs, blit_fxaa_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_taa_prog_ = ctx_.LoadProgramGLSL("blit_taa_prog", blit_vs, blit_taa_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_static_vel_prog_ = ctx_.LoadProgramGLSL("blit_static_vel_prog", blit_vs, blit_static_vel_fs, &status);
+    blit_static_vel_prog_ = ctx_.LoadProgramGLSL("blit_static_vel_prog", blit_vs,
+                                                 blit_static_vel_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_transparent_compose_prog_ = ctx_.LoadProgramGLSL("blit_transparent_compose_prog", blit_vs, blit_transparent_compose_fs, &status);
+    blit_transparent_compose_prog_ = ctx_.LoadProgramGLSL(
+        "blit_transparent_compose_prog", blit_vs, blit_transparent_compose_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_transparent_compose_ms_prog_ = ctx_.LoadProgramGLSL("blit_transparent_compose_ms_prog", blit_vs, blit_transparent_compose_ms_fs, &status);
+    blit_transparent_compose_ms_prog_ =
+        ctx_.LoadProgramGLSL("blit_transparent_compose_ms_prog", blit_vs,
+                             blit_transparent_compose_ms_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_transparent_init_prog_ = ctx_.LoadProgramGLSL("blit_transparent_init_prog", blit_vs, blit_transparent_init_fs, &status);
+    blit_transparent_init_prog_ = ctx_.LoadProgramGLSL(
+        "blit_transparent_init_prog", blit_vs, blit_transparent_init_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
     probe_prog_ = ctx_.LoadProgramGLSL("probe_prog", probe_vs, probe_fs, &status);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    ellipsoid_prog_ =
+        ctx_.LoadProgramGLSL("ellipsoid_prog", ellipsoid_vs, ellipsoid_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
     skinning_prog_ = ctx_.LoadProgramGLSL("skinning_prog", skinning_cs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
@@ -222,7 +277,8 @@ void Renderer::InitRendererInternal() {
 
         glGenBuffers(1, &shared_data_ubo);
         glBindBuffer(GL_UNIFORM_BUFFER, shared_data_ubo);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedDataBlock), nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(SharedDataBlock), nullptr,
+                     GL_DYNAMIC_COPY);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
         ubo = (uint32_t)shared_data_ubo;
@@ -230,12 +286,13 @@ void Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: UBO creation", ctx_.log());
 
-    {   // Create buffer that holds per-instance transform matrices
+    { // Create buffer that holds per-instance transform matrices
         GLuint instances_buf;
 
         glGenBuffers(1, &instances_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, instances_buf);
-        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * InstanceDataBufChunkSize, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * InstanceDataBufChunkSize,
+                     nullptr, GL_DYNAMIC_COPY);
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
         instances_buf_ = (uint32_t)instances_buf;
@@ -247,8 +304,10 @@ void Renderer::InitRendererInternal() {
             glBindTexture(GL_TEXTURE_BUFFER, instances_tbo);
 
             const GLuint offset = i * InstanceDataBufChunkSize;
-            assert((offset % tex_buf_offset_alignment == 0) && "Offset is not properly aligned!");
-            glTexBufferRange(GL_TEXTURE_BUFFER, GL_RGBA32F, instances_buf, offset, InstanceDataBufChunkSize);
+            assert((offset % tex_buf_offset_alignment == 0) &&
+                   "Offset is not properly aligned!");
+            glTexBufferRange(GL_TEXTURE_BUFFER, GL_RGBA32F, instances_buf, offset,
+                             InstanceDataBufChunkSize);
             glBindTexture(GL_TEXTURE_BUFFER, 0);
 
             instances_tbo_[i] = (uint32_t)instances_tbo;
@@ -257,12 +316,13 @@ void Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: instances TBO", ctx_.log());
 
-    {   // Create buffer that holds offsets for skinning shader invocation
+    { // Create buffer that holds offsets for skinning shader invocation
         GLuint skin_regions_buf;
 
         glGenBuffers(1, &skin_regions_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, skin_regions_buf);
-        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * SkinRegionsBufChunkSize, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * SkinRegionsBufChunkSize,
+                     nullptr, GL_DYNAMIC_COPY);
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
         skin_regions_buf_ = (uint32_t)skin_regions_buf;
@@ -280,12 +340,13 @@ void Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: skin regions TBO", ctx_.log());
 
-    {   // Create buffer that holds bones transformation matrices
+    { // Create buffer that holds bones transformation matrices
         GLuint skin_transforms_buf;
 
         glGenBuffers(1, &skin_transforms_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, skin_transforms_buf);
-        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * SkinTransformsBufChunkSize, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * SkinTransformsBufChunkSize,
+                     nullptr, GL_DYNAMIC_COPY);
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
         skin_transforms_buf_ = (uint32_t)skin_transforms_buf;
@@ -303,12 +364,13 @@ void Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: skin transforms TBO", ctx_.log());
 
-    {   // Create buffer for lights information
+    { // Create buffer for lights information
         GLuint lights_buf;
 
         glGenBuffers(1, &lights_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, lights_buf);
-        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * LightsBufChunkSize, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * LightsBufChunkSize, nullptr,
+                     GL_DYNAMIC_COPY);
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
         lights_buf_ = (uint32_t)lights_buf;
@@ -320,8 +382,10 @@ void Renderer::InitRendererInternal() {
             glBindTexture(GL_TEXTURE_BUFFER, lights_tbo);
 
             GLuint offset = i * LightsBufChunkSize;
-            assert((offset % tex_buf_offset_alignment == 0) && "Offset is not properly aligned!");
-            glTexBufferRange(GL_TEXTURE_BUFFER, GL_RGBA32F, lights_buf, offset, LightsBufChunkSize);
+            assert((offset % tex_buf_offset_alignment == 0) &&
+                   "Offset is not properly aligned!");
+            glTexBufferRange(GL_TEXTURE_BUFFER, GL_RGBA32F, lights_buf, offset,
+                             LightsBufChunkSize);
             glBindTexture(GL_TEXTURE_BUFFER, 0);
 
             lights_tbo_[i] = (uint32_t)lights_tbo;
@@ -330,12 +394,13 @@ void Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: lights TBO", ctx_.log());
 
-    {   // Create buffer for decals
+    { // Create buffer for decals
         GLuint decals_buf;
 
         glGenBuffers(1, &decals_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, decals_buf);
-        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * DecalsBufChunkSize, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * DecalsBufChunkSize, nullptr,
+                     GL_DYNAMIC_COPY);
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
         decals_buf_ = (uint32_t)decals_buf;
@@ -347,8 +412,10 @@ void Renderer::InitRendererInternal() {
             glBindTexture(GL_TEXTURE_BUFFER, decals_tbo);
 
             const GLuint offset = i * DecalsBufChunkSize;
-            assert((offset % tex_buf_offset_alignment == 0) && "Offset is not properly aligned!");
-            glTexBufferRange(GL_TEXTURE_BUFFER, GL_RGBA32F, decals_buf, offset, DecalsBufChunkSize);
+            assert((offset % tex_buf_offset_alignment == 0) &&
+                   "Offset is not properly aligned!");
+            glTexBufferRange(GL_TEXTURE_BUFFER, GL_RGBA32F, decals_buf, offset,
+                             DecalsBufChunkSize);
             glBindTexture(GL_TEXTURE_BUFFER, 0);
 
             decals_tbo_[i] = (uint32_t)decals_tbo;
@@ -357,12 +424,13 @@ void Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: decals TBO", ctx_.log());
 
-    {   // Create buffer for fructum cells
+    { // Create buffer for fructum cells
         GLuint cells_buf;
 
         glGenBuffers(1, &cells_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, cells_buf);
-        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * CellsBufChunkSize, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * CellsBufChunkSize, nullptr,
+                     GL_DYNAMIC_COPY);
 
         const GLuint CellsZSliceSize = sizeof(CellData) * REN_GRID_RES_X * REN_GRID_RES_Y;
 
@@ -371,7 +439,9 @@ void Renderer::InitRendererInternal() {
 
         for (int i = 0; i < FrameSyncWindow; i++) {
             for (int j = 0; j < REN_GRID_RES_Z; j++) {
-                glBufferSubData(GL_TEXTURE_BUFFER, i * CellsBufChunkSize + j * CellsZSliceSize, CellsZSliceSize, &dummy[0]);
+                glBufferSubData(GL_TEXTURE_BUFFER,
+                                i * CellsBufChunkSize + j * CellsZSliceSize,
+                                CellsZSliceSize, &dummy[0]);
             }
         }
 
@@ -386,8 +456,10 @@ void Renderer::InitRendererInternal() {
             glBindTexture(GL_TEXTURE_BUFFER, cells_tbo);
 
             const GLuint offset = i * CellsBufChunkSize;
-            assert((offset % tex_buf_offset_alignment == 0) && "Offset is not properly aligned!");
-            glTexBufferRange(GL_TEXTURE_BUFFER, GL_RG32UI, cells_buf, offset, CellsBufChunkSize);
+            assert((offset % tex_buf_offset_alignment == 0) &&
+                   "Offset is not properly aligned!");
+            glTexBufferRange(GL_TEXTURE_BUFFER, GL_RG32UI, cells_buf, offset,
+                             CellsBufChunkSize);
             glBindTexture(GL_TEXTURE_BUFFER, 0);
 
             cells_tbo_[i] = (uint32_t)cells_tbo;
@@ -396,18 +468,20 @@ void Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: cells TBO", ctx_.log());
 
-    {   // Create buffer for item offsets
+    { // Create buffer for item offsets
         GLuint items_buf;
 
         glGenBuffers(1, &items_buf);
         glBindBuffer(GL_TEXTURE_BUFFER, items_buf);
-        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * ItemsBufChunkSize, nullptr, GL_DYNAMIC_COPY);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * ItemsBufChunkSize, nullptr,
+                     GL_DYNAMIC_COPY);
 
         // fill first entry with zeroes
         ItemData dummy = {};
 
         for (int i = 0; i < FrameSyncWindow; i++) {
-            glBufferSubData(GL_TEXTURE_BUFFER, i * ItemsBufChunkSize, sizeof(ItemData), &dummy);
+            glBufferSubData(GL_TEXTURE_BUFFER, i * ItemsBufChunkSize, sizeof(ItemData),
+                            &dummy);
         }
 
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
@@ -421,8 +495,10 @@ void Renderer::InitRendererInternal() {
             glBindTexture(GL_TEXTURE_BUFFER, items_tbo);
 
             const GLuint offset = i * ItemsBufChunkSize;
-            assert((offset % tex_buf_offset_alignment == 0) && "Offset is not properly aligned!");
-            glTexBufferRange(GL_TEXTURE_BUFFER, GL_R32UI, items_buf, offset, ItemsBufChunkSize);
+            assert((offset % tex_buf_offset_alignment == 0) &&
+                   "Offset is not properly aligned!");
+            glTexBufferRange(GL_TEXTURE_BUFFER, GL_RG32UI, items_buf, offset,
+                             ItemsBufChunkSize);
             glBindTexture(GL_TEXTURE_BUFFER, 0);
 
             items_tbo_[i] = (uint32_t)items_tbo;
@@ -431,12 +507,14 @@ void Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: items TBO", ctx_.log());
 
-    {   // Create pbo for reading back frame brightness
+    { // Create pbo for reading back frame brightness
         for (uint32_t &pbo : reduce_pbo_) {
             GLuint reduce_pbo;
             glGenBuffers(1, &reduce_pbo);
             glBindBuffer(GL_PIXEL_PACK_BUFFER, reduce_pbo);
-            glBufferData(GL_PIXEL_PACK_BUFFER, GLsizeiptr(4 * reduced_buf_.w * reduced_buf_.h * sizeof(float)), nullptr, GL_DYNAMIC_READ);
+            glBufferData(GL_PIXEL_PACK_BUFFER,
+                         GLsizeiptr(4 * reduced_buf_.w * reduced_buf_.h * sizeof(float)),
+                         nullptr, GL_DYNAMIC_READ);
 
             glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
             pbo = (uint32_t)reduce_pbo;
@@ -449,7 +527,10 @@ void Renderer::InitRendererInternal() {
         GLuint probe_sample_pbo;
         glGenBuffers(1, &probe_sample_pbo);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, probe_sample_pbo);
-        glBufferData(GL_PIXEL_PACK_BUFFER, GLsizeiptr(4 * probe_sample_buf_.w * probe_sample_buf_.h * sizeof(float)), nullptr, GL_DYNAMIC_READ);
+        glBufferData(
+            GL_PIXEL_PACK_BUFFER,
+            GLsizeiptr(4 * probe_sample_buf_.w * probe_sample_buf_.h * sizeof(float)),
+            nullptr, GL_DYNAMIC_READ);
 
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         probe_sample_pbo_ = (uint32_t)probe_sample_pbo;
@@ -462,7 +543,8 @@ void Renderer::InitRendererInternal() {
         glGenTextures(1, &temp_tex);
         glBindTexture(GL_TEXTURE_2D, temp_tex);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                     nullptr);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -487,10 +569,10 @@ void Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: temp framebuffer", ctx_.log());
 
-    {   // Create timer queries
+    {                                               // Create timer queries
         for (int i = 0; i < FrameSyncWindow; i++) { // NOLINT
             glGenQueries(TimersCount, queries_[i]);
-            
+
             for (int j = 0; j < TimersCount; j++) {
                 glQueryCounter(queries_[i][j], GL_TIMESTAMP);
             }
@@ -500,10 +582,9 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: timer queries", ctx_.log());
 
     {
-        Ren::BufferRef
-            vtx_buf1 = ctx_.default_vertex_buf1(),
-            vtx_buf2 = ctx_.default_vertex_buf2(),
-            ndx_buf = ctx_.default_indices_buf();
+        Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
+                       vtx_buf2 = ctx_.default_vertex_buf2(),
+                       ndx_buf = ctx_.default_indices_buf();
 
         // Allocate temporary buffer
         temp_buf1_vtx_offset_ = vtx_buf1->Alloc(TEMP_BUF_SIZE);
@@ -514,34 +595,48 @@ void Renderer::InitRendererInternal() {
         // Allocate buffer for skinned vertices
         skinned_buf1_vtx_offset_ = vtx_buf1->Alloc(REN_MAX_SKIN_VERTICES_TOTAL * 16);
         skinned_buf2_vtx_offset_ = vtx_buf2->Alloc(REN_MAX_SKIN_VERTICES_TOTAL * 16);
-        assert(skinned_buf1_vtx_offset_ == skinned_buf2_vtx_offset_ && "Offsets do not match!");
+        assert(skinned_buf1_vtx_offset_ == skinned_buf2_vtx_offset_ &&
+               "Offsets do not match!");
 
         // Allocate skydome vertices
-        skydome_vtx1_offset_ = vtx_buf1->Alloc(sizeof(__skydome_positions) + (16 - sizeof(__skydome_positions) % 16), __skydome_positions);
-        skydome_vtx2_offset_ = vtx_buf2->Alloc(sizeof(__skydome_positions) + (16 - sizeof(__skydome_positions) % 16), nullptr);
+        skydome_vtx1_offset_ = vtx_buf1->Alloc(
+            sizeof(__skydome_positions) + (16 - sizeof(__skydome_positions) % 16),
+            __skydome_positions);
+        skydome_vtx2_offset_ = vtx_buf2->Alloc(
+            sizeof(__skydome_positions) + (16 - sizeof(__skydome_positions) % 16),
+            nullptr);
         assert(skydome_vtx1_offset_ == skydome_vtx2_offset_ && "Offsets do not match!");
-        skydome_ndx_offset_ = ndx_buf->Alloc(sizeof(__skydome_indices), __skydome_indices);
+        skydome_ndx_offset_ =
+            ndx_buf->Alloc(sizeof(__skydome_indices), __skydome_indices);
 
         // Allocate sphere vertices
-        sphere_vtx1_offset_ = vtx_buf1->Alloc(sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16), __sphere_positions);
-        sphere_vtx2_offset_ = vtx_buf2->Alloc(sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16), nullptr);
+        sphere_vtx1_offset_ = vtx_buf1->Alloc(sizeof(__sphere_positions) +
+                                                  (16 - sizeof(__sphere_positions) % 16),
+                                              __sphere_positions);
+        sphere_vtx2_offset_ = vtx_buf2->Alloc(
+            sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16), nullptr);
         assert(sphere_vtx1_offset_ == sphere_vtx2_offset_ && "Offsets do not match!");
         sphere_ndx_offset_ = ndx_buf->Alloc(sizeof(__sphere_indices), __sphere_indices);
 
         // Allocate quad vertices
-        const uint32_t mem_required = sizeof(fs_quad_positions) + sizeof(fs_quad_norm_uvs);
-        quad_vtx1_offset_ = vtx_buf1->Alloc(mem_required + (16 - mem_required % 16), nullptr);
-        quad_vtx2_offset_ = vtx_buf2->Alloc(mem_required + (16 - mem_required % 16), nullptr);
+        const uint32_t mem_required =
+            sizeof(fs_quad_positions) + sizeof(fs_quad_norm_uvs);
+        quad_vtx1_offset_ =
+            vtx_buf1->Alloc(mem_required + (16 - mem_required % 16), nullptr);
+        quad_vtx2_offset_ =
+            vtx_buf2->Alloc(mem_required + (16 - mem_required % 16), nullptr);
         assert(quad_vtx1_offset_ == quad_vtx2_offset_ && "Offsets do not match!");
         quad_ndx_offset_ = ndx_buf->Alloc(sizeof(fs_quad_indices), fs_quad_indices);
     }
 
     Ren::CheckError("[InitRendererInternal]: additional data allocation", ctx_.log());
 
-    {   // Set shadowmap compare mode
+    { // Set shadowmap compare mode
         const uint32_t shad_tex = shadow_buf_.depth_tex.GetValue();
-        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, shad_tex, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, shad_tex, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, shad_tex, GL_TEXTURE_COMPARE_MODE,
+                                     GL_COMPARE_REF_TO_TEXTURE);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, shad_tex, GL_TEXTURE_COMPARE_FUNC,
+                                     GL_LEQUAL);
     }
 
     Ren::CheckError("[InitRendererInternal]: shadowmap compare mode setup", ctx_.log());
@@ -607,48 +702,58 @@ bool Renderer::InitFramebuffersInternal() {
 
     bool result = true;
 
-    {   // Attach textures from clean framebuffer to skydome framebuffer (only color, specular and depth are drawn)
+    { // Attach textures from clean framebuffer to skydome framebuffer (only color,
+      // specular and depth are drawn)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)skydome_framebuf_);
 
         const auto col_tex = (GLuint)clean_buf_.attachments[0].tex;
         if (clean_buf_.sample_count > 1) {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
         } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                                   col_tex, 0);
         }
 
         const auto spec_tex = (GLuint)clean_buf_.attachments[2].tex;
         if (clean_buf_.sample_count > 1) {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D_MULTISAMPLE, spec_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2,
+                                   GL_TEXTURE_2D_MULTISAMPLE, spec_tex, 0);
         } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, spec_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
+                                   spec_tex, 0);
         }
 
         const auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
         if (clean_buf_.sample_count > 1) {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                                   GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                                   GL_TEXTURE_2D, depth_tex, 0);
         }
 
-        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_NONE, GL_COLOR_ATTACHMENT2 };
+        const GLenum bufs[] = {GL_COLOR_ATTACHMENT0, GL_NONE, GL_COLOR_ATTACHMENT2};
         glDrawBuffers(3, bufs);
 
         const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
-    {   // Attach textures from clean framebuffer to depth-fill framebuffer (only depth is drawn)
+    { // Attach textures from clean framebuffer to depth-fill framebuffer (only depth is
+      // drawn)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
 
         const auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
         if (clean_buf_.sample_count > 1) {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                                   GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                                   GL_TEXTURE_2D, depth_tex, 0);
         }
 
-        const GLenum bufs[] = { GL_NONE };
+        const GLenum bufs[] = {GL_NONE};
         glDrawBuffers(1, bufs);
 
         const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -656,37 +761,45 @@ bool Renderer::InitFramebuffersInternal() {
     }
 
     if (clean_buf_.attachments_count > 3) {
-        // Attach textures from clean framebuffer to depth-fill framebuffer (only depth and velocity are drawn)
+        // Attach textures from clean framebuffer to depth-fill framebuffer (only depth
+        // and velocity are drawn)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_vel_);
 
         const auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
         const auto vel_tex = (GLuint)clean_buf_.attachments[3].tex;
         if (clean_buf_.sample_count > 1) {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, vel_tex, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_2D_MULTISAMPLE, vel_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                                   GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, vel_tex, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                                   vel_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                                   GL_TEXTURE_2D, depth_tex, 0);
         }
 
-        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
+        const GLenum bufs[] = {GL_COLOR_ATTACHMENT0};
         glDrawBuffers(1, bufs);
 
         const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
-    {   // Attach textures from clean framebuffer to refl comb framebuffer (only color is drawn)
+    { // Attach textures from clean framebuffer to refl comb framebuffer (only color is
+      // drawn)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)refl_comb_framebuf_);
 
         const auto col_tex = (GLuint)clean_buf_.attachments[0].tex;
         if (clean_buf_.sample_count > 1) {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
         } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                                   col_tex, 0);
         }
 
-        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
+        const GLenum bufs[] = {GL_COLOR_ATTACHMENT0};
         glDrawBuffers(1, bufs);
 
         const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -694,15 +807,17 @@ bool Renderer::InitFramebuffersInternal() {
     }
 
 #if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
-    {   // Attach depth from clean buffer to moments buffer
+    { // Attach depth from clean buffer to moments buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)moments_buf_.fb);
 
         const auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
         if (clean_buf_.sample_count > 1) {
             assert(moments_buf_.sample_count == clean_buf_.sample_count);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                                   GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                                   GL_TEXTURE_2D, depth_tex, 0);
         }
 
         const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -713,45 +828,51 @@ bool Renderer::InitFramebuffersInternal() {
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)resolved_or_transparent_buf_.fb);
 
         const auto depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D,
+                               depth_tex, 0);
 
         const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 #endif
 
-    {   // Attach color from clean buffer to transparent comb buffer
+    { // Attach color from clean buffer to transparent comb buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)transparent_comb_framebuf_);
 
         const auto col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex;
         if (clean_buf_.sample_count > 1) {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
         } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                                   col_tex, 0);
         }
 
-        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
+        const GLenum bufs[] = {GL_COLOR_ATTACHMENT0};
         glDrawBuffers(1, bufs);
 
         const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
-    {   // Attach color and depth from clean buffer
+    { // Attach color and depth from clean buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)clean_buf_color_only_);
 
-        const auto
-            col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex,
-            depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        const auto col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex,
+                   depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
         if (clean_buf_.sample_count > 1) {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                                   GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                                   col_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                                   GL_TEXTURE_2D, depth_tex, 0);
         }
 
-        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
+        const GLenum bufs[] = {GL_COLOR_ATTACHMENT0};
         glDrawBuffers(1, bufs);
 
         const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -762,43 +883,51 @@ bool Renderer::InitFramebuffersInternal() {
         // Attach velocity and stencil from clean buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)clean_buf_vel_only_);
 
-        const auto
-            vel_tex = (GLuint)clean_buf_.attachments[3].tex,
-            depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        const auto vel_tex = (GLuint)clean_buf_.attachments[3].tex,
+                   depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
         if (clean_buf_.sample_count > 1) {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, vel_tex, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_2D_MULTISAMPLE, vel_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+                                   GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, vel_tex, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                                   vel_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D,
+                                   depth_tex, 0);
         }
 
-        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0 };
+        const GLenum bufs[] = {GL_COLOR_ATTACHMENT0};
         glDrawBuffers(1, bufs);
 
         const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         result &= (s == GL_FRAMEBUFFER_COMPLETE);
     }
 
-    {   // Attach accum and revealage textures from clean buffer
+    { // Attach accum and revealage textures from clean buffer
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)clean_buf_transparent_);
 
-        const auto
-            col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex,
-            norm_tex = (GLuint)clean_buf_.attachments[REN_OUT_NORM_INDEX].tex,
-            depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
+        const auto col_tex = (GLuint)clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex,
+                   norm_tex = (GLuint)clean_buf_.attachments[REN_OUT_NORM_INDEX].tex,
+                   depth_tex = (GLuint)clean_buf_.depth_tex.GetValue();
 
         if (clean_buf_.sample_count > 1) {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D_MULTISAMPLE, norm_tex, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_2D_MULTISAMPLE, col_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
+                                   GL_TEXTURE_2D_MULTISAMPLE, norm_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                                   GL_TEXTURE_2D_MULTISAMPLE, depth_tex, 0);
         } else {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, norm_tex, 0);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                                   col_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+                                   norm_tex, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                                   GL_TEXTURE_2D, depth_tex, 0);
         }
 
-        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+        const GLenum bufs[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
         glDrawBuffers(2, bufs);
 
         const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -809,14 +938,15 @@ bool Renderer::InitFramebuffersInternal() {
         // Attach color from resolved and history buffers
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)temporal_resolve_framebuf_);
 
-        const auto
-            col_tex1 = (GLuint)resolved_or_transparent_buf_.attachments[0].tex,
-            col_tex2 = (GLuint)history_buf_.attachments[0].tex;
+        const auto col_tex1 = (GLuint)resolved_or_transparent_buf_.attachments[0].tex,
+                   col_tex2 = (GLuint)history_buf_.attachments[0].tex;
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, col_tex1, 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, col_tex2, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                               col_tex1, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+                               col_tex2, 0);
 
-        const GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+        const GLenum bufs[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
         glDrawBuffers(2, bufs);
 
         const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -838,7 +968,8 @@ void Renderer::CheckInitVAOs() {
          gl_vertex_buf2 = (GLuint)vtx_buf2->buf_id(),
          gl_indices_buf = (GLuint)ndx_buf->buf_id();
 
-    if (gl_vertex_buf1 != last_vertex_buf1_ || gl_vertex_buf2 != last_vertex_buf2_ || gl_indices_buf != last_index_buffer_) {
+    if (gl_vertex_buf1 != last_vertex_buf1_ || gl_vertex_buf2 != last_vertex_buf2_ ||
+        gl_indices_buf != last_index_buffer_) {
         // buffers were reallocated, recreate vertex arrays
 
         if (last_vertex_buf1_) {
@@ -866,7 +997,7 @@ void Renderer::CheckInitVAOs() {
 
         const int buf1_stride = 16, buf2_stride = 16;
 
-        {   // VAO for shadow and depth-fill passes (solid, uses position attribute only)
+        { // VAO for shadow and depth-fill passes (solid, uses position attribute only)
             GLuint depth_pass_solid_vao;
             glGenVertexArrays(1, &depth_pass_solid_vao);
             glBindVertexArray(depth_pass_solid_vao);
@@ -875,38 +1006,43 @@ void Renderer::CheckInitVAOs() {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);  // NOLINT
+            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride,
+                                  (void *)0); // NOLINT
 
             glBindVertexArray(0);
             depth_pass_solid_vao_ = (uint32_t)depth_pass_solid_vao;
         }
 
-        {   // VAO for shadow and depth-fill passes of vegetation (solid, uses position and color attributes only)
+        { // VAO for shadow and depth-fill passes of vegetation (solid, uses position and
+          // color attributes only)
             GLuint depth_pass_vege_solid_vao;
             glGenVertexArrays(1, &depth_pass_vege_solid_vao);
             glBindVertexArray(depth_pass_vege_solid_vao);
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
-            {   // Setup attributes from buffer 1
+            { // Setup attributes from buffer 1
                 glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
 
                 glEnableVertexAttribArray(REN_VTX_POS_LOC);
-                glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void*)0);   // NOLINT
+                glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride,
+                                      (void *)0); // NOLINT
             }
 
-            {   // Setup attributes from buffer 2
+            { // Setup attributes from buffer 2
                 glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf2);
 
                 glEnableVertexAttribArray(REN_VTX_AUX_LOC);
-                glVertexAttribIPointer(REN_VTX_AUX_LOC, 1, GL_UNSIGNED_INT, buf2_stride, (void*)(6 * sizeof(uint16_t)));
+                glVertexAttribIPointer(REN_VTX_AUX_LOC, 1, GL_UNSIGNED_INT, buf2_stride,
+                                       (void *)(6 * sizeof(uint16_t)));
             }
 
             glBindVertexArray(0);
             depth_pass_vege_solid_vao_ = (uint32_t)depth_pass_vege_solid_vao;
         }
 
-        {   // VAO for shadow and depth-fill passes (alpha-tested, uses position and uv attributes)
+        { // VAO for shadow and depth-fill passes (alpha-tested, uses position and uv
+          // attributes)
             GLuint depth_pass_transp_vao;
             glGenVertexArrays(1, &depth_pass_transp_vao);
             glBindVertexArray(depth_pass_transp_vao);
@@ -915,85 +1051,96 @@ void Renderer::CheckInitVAOs() {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);  // NOLINT
+            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride,
+                                  (void *)0); // NOLINT
 
             glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride, (void *)(3 * sizeof(float)));
+            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE,
+                                  buf1_stride, (void *)(3 * sizeof(float)));
 
             glBindVertexArray(0);
             depth_pass_transp_vao_ = (uint32_t)depth_pass_transp_vao;
         }
 
-        {   // VAO for shadow and depth-fill passes of vegetation (solid, uses position and color attributes only)
+        { // VAO for shadow and depth-fill passes of vegetation (solid, uses position and
+          // color attributes only)
             GLuint depth_pass_vege_transp_vao;
             glGenVertexArrays(1, &depth_pass_vege_transp_vao);
             glBindVertexArray(depth_pass_vege_transp_vao);
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
-            {   // Setup attributes from buffer 1
+            { // Setup attributes from buffer 1
                 glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
 
                 glEnableVertexAttribArray(REN_VTX_POS_LOC);
-                glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void*)0);   // NOLINT
+                glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride,
+                                      (void *)0); // NOLINT
 
                 glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-                glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride, (void*)(3 * sizeof(float)));
+                glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE,
+                                      buf1_stride, (void *)(3 * sizeof(float)));
             }
 
-            {   // Setup attributes from buffer 2
+            { // Setup attributes from buffer 2
                 glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf2);
 
                 glEnableVertexAttribArray(REN_VTX_AUX_LOC);
-                glVertexAttribIPointer(REN_VTX_AUX_LOC, 1, GL_UNSIGNED_INT, buf2_stride, (void*)(6 * sizeof(uint16_t)));
+                glVertexAttribIPointer(REN_VTX_AUX_LOC, 1, GL_UNSIGNED_INT, buf2_stride,
+                                       (void *)(6 * sizeof(uint16_t)));
             }
 
             glBindVertexArray(0);
             depth_pass_vege_transp_vao_ = (uint32_t)depth_pass_vege_transp_vao;
         }
 
-        {   // VAO for main drawing (uses all attributes)
+        { // VAO for main drawing (uses all attributes)
             GLuint draw_pass_vao;
             glGenVertexArrays(1, &draw_pass_vao);
             glBindVertexArray(draw_pass_vao);
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
-            {   // Setup attributes from buffer 1
+            { // Setup attributes from buffer 1
                 glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
 
                 glEnableVertexAttribArray(REN_VTX_POS_LOC);
-                glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);  // NOLINT
+                glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, buf1_stride,
+                                      (void *)0); // NOLINT
 
                 glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-                glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride, (void *)(3 * sizeof(float)));
+                glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_HALF_FLOAT, GL_FALSE,
+                                      buf1_stride, (void *)(3 * sizeof(float)));
             }
 
-            {   // Setup attributes from buffer 2
+            { // Setup attributes from buffer 2
                 glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf2);
 
                 glEnableVertexAttribArray(REN_VTX_NOR_LOC);
-                glVertexAttribPointer(REN_VTX_NOR_LOC, 4, GL_SHORT, GL_TRUE, buf2_stride, (void *)0);   // NOLINT
+                glVertexAttribPointer(REN_VTX_NOR_LOC, 4, GL_SHORT, GL_TRUE, buf2_stride,
+                                      (void *)0); // NOLINT
 
                 glEnableVertexAttribArray(REN_VTX_TAN_LOC);
-                glVertexAttribPointer(REN_VTX_TAN_LOC, 2, GL_SHORT, GL_TRUE, buf2_stride, (void *)(4 * sizeof(uint16_t)));
+                glVertexAttribPointer(REN_VTX_TAN_LOC, 2, GL_SHORT, GL_TRUE, buf2_stride,
+                                      (void *)(4 * sizeof(uint16_t)));
 
                 glEnableVertexAttribArray(REN_VTX_AUX_LOC);
-                glVertexAttribIPointer(REN_VTX_AUX_LOC, 1, GL_UNSIGNED_INT, buf2_stride, (void *)(6 * sizeof(uint16_t)));
+                glVertexAttribIPointer(REN_VTX_AUX_LOC, 1, GL_UNSIGNED_INT, buf2_stride,
+                                       (void *)(6 * sizeof(uint16_t)));
             }
 
             glBindVertexArray(0);
             draw_pass_vao_ = (uint32_t)draw_pass_vao;
         }
 
-        {   // Create vao for temporary buffer
+        { // Create vao for temporary buffer
             GLuint temp_vao;
             glGenVertexArrays(1, &temp_vao);
 
             temp_vao_ = (uint32_t)temp_vao;
         }
 
-        {   // Allocate vao for quad vertices
+        { // Allocate vao for quad vertices
             GLuint fs_quad_vao;
             glGenVertexArrays(1, &fs_quad_vao);
             glBindVertexArray(fs_quad_vao);
@@ -1001,21 +1148,28 @@ void Renderer::CheckInitVAOs() {
             glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)quad_vtx1_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(quad_vtx1_offset_ + sizeof(fs_quad_positions)), sizeof(fs_quad_norm_uvs), fs_quad_norm_uvs);
-            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)quad_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)quad_vtx1_offset_,
+                            sizeof(fs_quad_positions), fs_quad_positions);
+            glBufferSubData(GL_ARRAY_BUFFER,
+                            (GLintptr)(quad_vtx1_offset_ + sizeof(fs_quad_positions)),
+                            sizeof(fs_quad_norm_uvs), fs_quad_norm_uvs);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)quad_ndx_offset_,
+                            sizeof(fs_quad_indices), fs_quad_indices);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(quad_vtx1_offset_));
+            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+                                  (const GLvoid *)uintptr_t(quad_vtx1_offset_));
 
             glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(quad_vtx1_offset_ + sizeof(fs_quad_positions)));
+            glVertexAttribPointer(
+                REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+                (const GLvoid *)uintptr_t(quad_vtx1_offset_ + sizeof(fs_quad_positions)));
 
             glBindVertexArray(0);
             fs_quad_vao_ = (uint32_t)fs_quad_vao;
         }
 
-        {   // Allocate vao for skydome vertices
+        { // Allocate vao for skydome vertices
             GLuint skydome_vao;
             glGenVertexArrays(1, &skydome_vao);
             glBindVertexArray(skydome_vao);
@@ -1024,13 +1178,14 @@ void Renderer::CheckInitVAOs() {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, 0, (void *)uintptr_t(skydome_vtx1_offset_));
+            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, 0,
+                                  (void *)uintptr_t(skydome_vtx1_offset_));
 
             glBindVertexArray(0);
             skydome_vao_ = (uint32_t)skydome_vao;
         }
 
-        {   // Allocate vao for sphere vertices
+        { // Allocate vao for sphere vertices
             GLuint sphere_vao;
             glGenVertexArrays(1, &sphere_vao);
             glBindVertexArray(sphere_vao);
@@ -1039,7 +1194,8 @@ void Renderer::CheckInitVAOs() {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_indices_buf);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, 0, (void *)uintptr_t(sphere_vtx1_offset_));
+            glVertexAttribPointer(REN_VTX_POS_LOC, 3, GL_FLOAT, GL_FALSE, 0,
+                                  (void *)uintptr_t(sphere_vtx1_offset_));
 
             glBindVertexArray(0);
             sphere_vao_ = (uint32_t)sphere_vao;
@@ -1266,6 +1422,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     assert(list.light_sources.count < REN_MAX_LIGHTS_TOTAL);
     assert(list.decals.count < REN_MAX_DECALS_TOTAL);
     assert(list.probes.count < REN_MAX_PROBES_TOTAL);
+    assert(list.ellipsoids.count < REN_MAX_ELLIPSES_TOTAL);
     assert(list.items.count < REN_MAX_ITEMS_TOTAL);
 
     backend_info_.shadow_draw_calls_count = 0;
@@ -1274,7 +1431,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     backend_info_.triangles_rendered = 0;
 
-    {   // Update buffers
+    { // Update buffers
         DebugMarker _("UPDATE BUFFERS");
 
         // TODO: try to use persistently mapped buffers
@@ -1298,14 +1455,19 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         if (list.skin_transforms.count) {
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)skin_transforms_buf_);
 
-            void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, cur_buf_chunk_ * SkinTransformsBufChunkSize, SkinTransformsBufChunkSize, BufferRangeBindFlags);
+            void *pinned_mem = glMapBufferRange(
+                GL_SHADER_STORAGE_BUFFER, cur_buf_chunk_ * SkinTransformsBufChunkSize,
+                SkinTransformsBufChunkSize, BufferRangeBindFlags);
             if (pinned_mem) {
-                const size_t skin_transforms_mem_size = list.skin_transforms.count * sizeof(SkinTransform);
+                const size_t skin_transforms_mem_size =
+                    list.skin_transforms.count * sizeof(SkinTransform);
                 memcpy(pinned_mem, list.skin_transforms.data, skin_transforms_mem_size);
-                glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0, skin_transforms_mem_size);
+                glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0,
+                                         skin_transforms_mem_size);
                 glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
             } else {
-                log->Error("[Renderer::DrawObjectsInternal]: Failed to map skin transforms buffer!");
+                log->Error("[Renderer::DrawObjectsInternal]: Failed to map skin "
+                           "transforms buffer!");
             }
 
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -1314,14 +1476,19 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         if (list.skin_regions.count) {
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)skin_regions_buf_);
 
-            void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, cur_buf_chunk_ * SkinRegionsBufChunkSize, SkinRegionsBufChunkSize, BufferRangeBindFlags);
+            void *pinned_mem = glMapBufferRange(
+                GL_SHADER_STORAGE_BUFFER, cur_buf_chunk_ * SkinRegionsBufChunkSize,
+                SkinRegionsBufChunkSize, BufferRangeBindFlags);
             if (pinned_mem) {
-                const size_t skin_regions_mem_size = list.skin_regions.count * sizeof(SkinRegion);
+                const size_t skin_regions_mem_size =
+                    list.skin_regions.count * sizeof(SkinRegion);
                 memcpy(pinned_mem, list.skin_regions.data, skin_regions_mem_size);
-                glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0, skin_regions_mem_size);
+                glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0,
+                                         skin_regions_mem_size);
                 glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
             } else {
-                log->Error("[Renderer::DrawObjectsInternal]: Failed to map skin regions buffer!");
+                log->Error("[Renderer::DrawObjectsInternal]: Failed to map skin regions "
+                           "buffer!");
             }
 
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -1331,14 +1498,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         if (list.instances.count) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)instances_buf_);
 
-            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * InstanceDataBufChunkSize, InstanceDataBufChunkSize, BufferRangeBindFlags);
+            void *pinned_mem = glMapBufferRange(
+                GL_TEXTURE_BUFFER, cur_buf_chunk_ * InstanceDataBufChunkSize,
+                InstanceDataBufChunkSize, BufferRangeBindFlags);
             if (pinned_mem) {
-                const size_t instance_mem_size = list.instances.count * sizeof(InstanceData);
+                const size_t instance_mem_size =
+                    list.instances.count * sizeof(InstanceData);
                 memcpy(pinned_mem, list.instances.data, instance_mem_size);
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, instance_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
-                log->Error("[Renderer::DrawObjectsInternal]: Failed to map instance buffer!");
+                log->Error(
+                    "[Renderer::DrawObjectsInternal]: Failed to map instance buffer!");
             }
 
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
@@ -1348,14 +1519,17 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         if (list.cells.count) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)cells_buf_);
 
-            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * CellsBufChunkSize, CellsBufChunkSize, BufferRangeBindFlags);
+            void *pinned_mem =
+                glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * CellsBufChunkSize,
+                                 CellsBufChunkSize, BufferRangeBindFlags);
             if (pinned_mem) {
                 const size_t cells_mem_size = list.cells.count * sizeof(CellData);
                 memcpy(pinned_mem, list.cells.data, cells_mem_size);
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, cells_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
-                log->Error("[Renderer::DrawObjectsInternal]: Failed to map cells buffer!");
+                log->Error(
+                    "[Renderer::DrawObjectsInternal]: Failed to map cells buffer!");
             }
 
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
@@ -1365,14 +1539,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         if (list.light_sources.count) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)lights_buf_);
 
-            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * LightsBufChunkSize, LightsBufChunkSize, BufferRangeBindFlags);
+            void *pinned_mem =
+                glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * LightsBufChunkSize,
+                                 LightsBufChunkSize, BufferRangeBindFlags);
             if (pinned_mem) {
-                const size_t lights_mem_size = list.light_sources.count * sizeof(LightSourceItem);
+                const size_t lights_mem_size =
+                    list.light_sources.count * sizeof(LightSourceItem);
                 memcpy(pinned_mem, list.light_sources.data, lights_mem_size);
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, lights_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
-                log->Error("[Renderer::DrawObjectsInternal]: Failed to map lights buffer!");
+                log->Error(
+                    "[Renderer::DrawObjectsInternal]: Failed to map lights buffer!");
             }
 
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
@@ -1382,14 +1560,17 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         if (list.decals.count) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)decals_buf_);
 
-            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * DecalsBufChunkSize, DecalsBufChunkSize, BufferRangeBindFlags);
+            void *pinned_mem =
+                glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * DecalsBufChunkSize,
+                                 DecalsBufChunkSize, BufferRangeBindFlags);
             if (pinned_mem) {
                 const size_t decals_mem_size = list.decals.count * sizeof(DecalItem);
                 memcpy(pinned_mem, list.decals.data, decals_mem_size);
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, decals_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
-                log->Error("[Renderer::DrawObjectsInternal]: Failed to map decals buffer!");
+                log->Error(
+                    "[Renderer::DrawObjectsInternal]: Failed to map decals buffer!");
             }
 
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
@@ -1399,14 +1580,17 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         if (list.items.count) {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)items_buf_);
 
-            void *pinned_mem = glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * ItemsBufChunkSize, ItemsBufChunkSize, BufferRangeBindFlags);
+            void *pinned_mem =
+                glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * ItemsBufChunkSize,
+                                 ItemsBufChunkSize, BufferRangeBindFlags);
             if (pinned_mem) {
                 const size_t items_mem_size = list.items.count * sizeof(ItemData);
                 memcpy(pinned_mem, list.items.data, items_mem_size);
                 glFlushMappedBufferRange(GL_TEXTURE_BUFFER, 0, items_mem_size);
                 glUnmapBuffer(GL_TEXTURE_BUFFER);
             } else {
-                log->Error("[Renderer::DrawObjectsInternal]: Failed to map items buffer!");
+                log->Error(
+                    "[Renderer::DrawObjectsInternal]: Failed to map items buffer!");
             }
 
             glBindBuffer(GL_TEXTURE_BUFFER, 0);
@@ -1420,7 +1604,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     SharedDataBlock shrd_data;
     Ren::Mat4f clip_from_world_unjittered;
 
-    {   // Prepare data that is shared for all instances
+    { // Prepare data that is shared for all instances
         shrd_data.uViewMatrix = list.draw_cam.view_matrix();
         shrd_data.uProjMatrix = list.draw_cam.proj_matrix();
 
@@ -1429,9 +1613,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         if ((list.render_flags & EnableTaa) != 0) {
             // apply jitter to projection (assumed always perspective)
             assert(!list.draw_cam.is_orthographic());
-            Ren::Vec2f jitter = RendererInternal::HaltonSeq23[frame_counter_ % TaaSampleCount];
-            jitter = (jitter * 2.0f - Ren::Vec2f{ 1.0f }) / Ren::Vec2f{ float(act_w_), float(act_h_) };
-            
+            Ren::Vec2f jitter =
+                RendererInternal::HaltonSeq23[frame_counter_ % TaaSampleCount];
+            jitter = (jitter * 2.0f - Ren::Vec2f{1.0f}) /
+                     Ren::Vec2f{float(act_w_), float(act_h_)};
+
             shrd_data.uTaaInfo[0] = jitter[0];
             shrd_data.uTaaInfo[1] = jitter[1];
 
@@ -1445,23 +1631,28 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         shrd_data.uInvProjMatrix = Ren::Inverse(shrd_data.uProjMatrix);
         shrd_data.uInvViewProjMatrix = Ren::Inverse(shrd_data.uViewProjMatrix);
         // delta matrix between current and previous frame
-        shrd_data.uDeltaMatrix = prev_clip_from_view_ * (down_buf_view_from_world_ * shrd_data.uInvViewMatrix);
+        shrd_data.uDeltaMatrix =
+            prev_clip_from_view_ * (down_buf_view_from_world_ * shrd_data.uInvViewMatrix);
 
         if (list.shadow_regions.count) {
             assert(list.shadow_regions.count <= REN_MAX_SHADOWMAPS_TOTAL);
-            memcpy(&shrd_data.uShadowMapRegions[0], &list.shadow_regions.data[0], sizeof(ShadowMapRegion) * list.shadow_regions.count);
+            memcpy(&shrd_data.uShadowMapRegions[0], &list.shadow_regions.data[0],
+                   sizeof(ShadowMapRegion) * list.shadow_regions.count);
         }
 
         if (list.render_flags & EnableLights) {
-            shrd_data.uSunDir = Ren::Vec4f{ list.env.sun_dir[0], list.env.sun_dir[1], list.env.sun_dir[2], 0.0f };
-            shrd_data.uSunCol = Ren::Vec4f{ list.env.sun_col[0], list.env.sun_col[1], list.env.sun_col[2], 0.0f };
+            shrd_data.uSunDir = Ren::Vec4f{list.env.sun_dir[0], list.env.sun_dir[1],
+                                           list.env.sun_dir[2], 0.0f};
+            shrd_data.uSunCol = Ren::Vec4f{list.env.sun_col[0], list.env.sun_col[1],
+                                           list.env.sun_col[2], 0.0f};
         } else {
             shrd_data.uSunDir = {};
             shrd_data.uSunCol = {};
         }
 
         // actual resolution and full resolution
-        shrd_data.uResAndFRes = Ren::Vec4f{ float(act_w_), float(act_h_), float(clean_buf_.w), float(clean_buf_.h) };
+        shrd_data.uResAndFRes = Ren::Vec4f{float(act_w_), float(act_h_),
+                                           float(clean_buf_.w), float(clean_buf_.h)};
 
         const float near = list.draw_cam.near(), far = list.draw_cam.far();
         const float time_s = 0.001f * Sys::GetTimeMs();
@@ -1475,35 +1666,35 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 #else
             0;
 #endif
-        
-        shrd_data.uTranspParamsAndTime = Ren::Vec4f{
-                std::log(transparent_near),
-                std::log(transparent_far) - std::log(transparent_near),
-                float(transparent_mode), time_s
-        };
-        shrd_data.uClipInfo = Ren::Vec4f{ near * far, near, far, std::log2(1.0f + far / near) };
+
+        shrd_data.uTranspParamsAndTime =
+            Ren::Vec4f{std::log(transparent_near),
+                       std::log(transparent_far) - std::log(transparent_near),
+                       float(transparent_mode), time_s};
+        shrd_data.uClipInfo =
+            Ren::Vec4f{near * far, near, far, std::log2(1.0f + far / near)};
 
         const Ren::Vec3f &pos = list.draw_cam.world_position();
-        shrd_data.uCamPosAndGamma = Ren::Vec4f{ pos[0], pos[1], pos[2], 2.2f };
-        shrd_data.uWindScroll = Ren::Vec4f{
-            list.env.wind_scroll_lf[0], list.env.wind_scroll_lf[1],
-            list.env.wind_scroll_hf[0], list.env.wind_scroll_hf[1]
-        };
+        shrd_data.uCamPosAndGamma = Ren::Vec4f{pos[0], pos[1], pos[2], 2.2f};
+        shrd_data.uWindScroll =
+            Ren::Vec4f{list.env.wind_scroll_lf[0], list.env.wind_scroll_lf[1],
+                       list.env.wind_scroll_hf[0], list.env.wind_scroll_hf[1]};
         shrd_data.uWindScrollPrev = prev_wind_scroll_;
         prev_wind_scroll_ = shrd_data.uWindScroll;
 
-        if (list.probes.count) {
-            assert(list.probes.count <= REN_MAX_PROBES_TOTAL);
-            memcpy(&shrd_data.uProbes[0], list.probes.data, sizeof(ProbeItem) * list.probes.count);
-        }
+        memcpy(&shrd_data.uProbes[0], list.probes.data,
+               sizeof(ProbeItem) * list.probes.count);
+        memcpy(&shrd_data.uEllipsoids[0], list.ellipsoids.data,
+               sizeof(EllipsItem) * list.ellipsoids.count);
 
         glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_shared_data_block_[cur_buf_chunk_]);
 
         const GLbitfield BufferRangeBindFlags =
-                GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
-                GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
+            GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
+            GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
 
-        void *pinned_mem = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(SharedDataBlock), BufferRangeBindFlags);
+        void *pinned_mem = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(SharedDataBlock),
+                                            BufferRangeBindFlags);
         if (pinned_mem) {
             memcpy(pinned_mem, &shrd_data, sizeof(SharedDataBlock));
             glFlushMappedBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(SharedDataBlock));
@@ -1513,7 +1704,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC, (GLuint)unif_shared_data_block_[cur_buf_chunk_]);
+    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
+                     (GLuint)unif_shared_data_block_[cur_buf_chunk_]);
 
     //
     // Update vertex buffer for skinned meshes
@@ -1529,17 +1721,24 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const Ren::Program *p = skinning_prog_.get();
 
         glUseProgram(p->prog_id());
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, (GLuint)ctx_.default_skin_vertex_buf()->buf_id());
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)skin_transforms_buf_, cur_buf_chunk_ * SkinTransformsBufChunkSize, SkinTransformsBufChunkSize);
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)skin_regions_buf_, cur_buf_chunk_ * SkinRegionsBufChunkSize, SkinRegionsBufChunkSize);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, (GLuint)ctx_.default_vertex_buf1()->buf_id());
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, (GLuint)ctx_.default_vertex_buf2()->buf_id());
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0,
+                         (GLuint)ctx_.default_skin_vertex_buf()->buf_id());
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)skin_transforms_buf_,
+                          cur_buf_chunk_ * SkinTransformsBufChunkSize,
+                          SkinTransformsBufChunkSize);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)skin_regions_buf_,
+                          cur_buf_chunk_ * SkinRegionsBufChunkSize,
+                          SkinRegionsBufChunkSize);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3,
+                         (GLuint)ctx_.default_vertex_buf1()->buf_id());
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4,
+                         (GLuint)ctx_.default_vertex_buf2()->buf_id());
 
         glDispatchCompute(list.skin_regions.count, 1, 1);
         glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
     }
 
-    // 
+    //
     // Update shadow maps
     //
 
@@ -1547,9 +1746,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeShadowMapStart], GL_TIMESTAMP);
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT, instances_tbo_[cur_buf_chunk_]);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT,
+                               instances_tbo_[cur_buf_chunk_]);
 
-    {   // draw shadow map
+    { // draw shadow map
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
 
         glEnable(GL_POLYGON_OFFSET_FILL);
@@ -1566,32 +1766,37 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         for (int i = 0; i < (int)list.shadow_lists.count; i++) {
             const ShadowList &sh_list = list.shadow_lists.data[i];
-            if (!sh_list.shadow_batch_count) continue;
+            if (!sh_list.shadow_batch_count)
+                continue;
 
-            glViewport(
-                sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
-                sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]
-            );
-            glScissor(
-                sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
-                sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]
-            );
+            glViewport(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
+                       sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
+            glScissor(sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
+                      sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]);
 
-            {   // clear buffer region
+            { // clear buffer region
                 glClear(GL_DEPTH_BUFFER_BIT);
                 region_cleared[i] = true;
             }
 
-            glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
+            glUniformMatrix4fv(
+                REN_U_M_MATRIX_LOC, 1, GL_FALSE,
+                Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
 
-            for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
-                const DepthDrawBatch &batch = list.shadow_batches.data[list.shadow_batch_indices.data[j]];
-                if (!batch.instance_count || batch.alpha_test_bit || batch.vegetation_bit) continue;
+            for (uint32_t j = sh_list.shadow_batch_start;
+                 j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
+                const DepthDrawBatch &batch =
+                    list.shadow_batches.data[list.shadow_batch_indices.data[j]];
+                if (!batch.instance_count || batch.alpha_test_bit || batch.vegetation_bit)
+                    continue;
 
-                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                             &batch.instance_indices[0]);
 
-                glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                                  (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+                glDrawElementsInstancedBaseVertex(
+                    GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                    (const GLvoid *)uintptr_t(batch.indices_offset),
+                    (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
                 backend_info_.shadow_draw_calls_count++;
             }
         }
@@ -1601,32 +1806,38 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUseProgram(shadow_vege_solid_prog_->prog_id());
 
         for (int i = 0; i < (int)list.shadow_lists.count; i++) {
-            const ShadowList& sh_list = list.shadow_lists.data[i];
-            if (!sh_list.shadow_batch_count) continue;
+            const ShadowList &sh_list = list.shadow_lists.data[i];
+            if (!sh_list.shadow_batch_count)
+                continue;
 
-            glViewport(
-                sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
-                sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]
-            );
-            glScissor(
-                sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
-                sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]
-            );
+            glViewport(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
+                       sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
+            glScissor(sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
+                      sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]);
 
             if (!region_cleared[i]) {
                 glClear(GL_DEPTH_BUFFER_BIT);
                 region_cleared[i] = true;
             }
 
-            glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
+            glUniformMatrix4fv(
+                REN_U_M_MATRIX_LOC, 1, GL_FALSE,
+                Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
 
-            for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
-                const DepthDrawBatch& batch = list.shadow_batches.data[list.shadow_batch_indices.data[j]];
-                if (!batch.instance_count || batch.alpha_test_bit || !batch.vegetation_bit) continue;
+            for (uint32_t j = sh_list.shadow_batch_start;
+                 j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
+                const DepthDrawBatch &batch =
+                    list.shadow_batches.data[list.shadow_batch_indices.data[j]];
+                if (!batch.instance_count || batch.alpha_test_bit ||
+                    !batch.vegetation_bit)
+                    continue;
 
-                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                             &batch.instance_indices[0]);
 
-                glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid*)uintptr_t(batch.indices_offset),
+                glDrawElementsInstancedBaseVertex(
+                    GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                    (const GLvoid *)uintptr_t(batch.indices_offset),
                     (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
                 backend_info_.shadow_draw_calls_count++;
             }
@@ -1638,40 +1849,47 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         for (int i = 0; i < (int)list.shadow_lists.count; i++) {
             const ShadowList &sh_list = list.shadow_lists.data[i];
-            if (!sh_list.shadow_batch_count) continue;
+            if (!sh_list.shadow_batch_count)
+                continue;
 
-            glViewport(
-                sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
-                sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]
-            );
-            glScissor(
-                sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
-                sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]
-            );
+            glViewport(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
+                       sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
+            glScissor(sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
+                      sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]);
 
             if (!region_cleared[i]) {
                 glClear(GL_DEPTH_BUFFER_BIT);
                 region_cleared[i] = true;
             }
 
-            glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
+            glUniformMatrix4fv(
+                REN_U_M_MATRIX_LOC, 1, GL_FALSE,
+                Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
 
             uint32_t cur_mat_id = 0xffffffff;
 
-            for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
-                const DepthDrawBatch &batch = list.shadow_batches.data[list.shadow_batch_indices.data[j]];
-                if (!batch.instance_count || !batch.alpha_test_bit || batch.vegetation_bit) continue;
+            for (uint32_t j = sh_list.shadow_batch_start;
+                 j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
+                const DepthDrawBatch &batch =
+                    list.shadow_batches.data[list.shadow_batch_indices.data[j]];
+                if (!batch.instance_count || !batch.alpha_test_bit ||
+                    batch.vegetation_bit)
+                    continue;
 
                 if (batch.mat_id != cur_mat_id) {
                     const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, mat->textures[0]->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0,
+                                               mat->textures[0]->tex_id());
                     cur_mat_id = batch.mat_id;
                 }
 
-                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                             &batch.instance_indices[0]);
 
-                glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                                  (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+                glDrawElementsInstancedBaseVertex(
+                    GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                    (const GLvoid *)uintptr_t(batch.indices_offset),
+                    (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
                 backend_info_.shadow_draw_calls_count++;
             }
         }
@@ -1682,40 +1900,47 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         for (int i = 0; i < (int)list.shadow_lists.count; i++) {
             const ShadowList &sh_list = list.shadow_lists.data[i];
-            if (!sh_list.shadow_batch_count) continue;
+            if (!sh_list.shadow_batch_count)
+                continue;
 
-            glViewport(
-                sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
-                sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]
-            );
-            glScissor(
-                sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
-                sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]
-            );
+            glViewport(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
+                       sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
+            glScissor(sh_list.scissor_test_pos[0], sh_list.scissor_test_pos[1],
+                      sh_list.scissor_test_size[0], sh_list.scissor_test_size[1]);
 
             if (!region_cleared[i]) {
                 glClear(GL_DEPTH_BUFFER_BIT);
                 region_cleared[i] = true;
             }
 
-            glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
+            glUniformMatrix4fv(
+                REN_U_M_MATRIX_LOC, 1, GL_FALSE,
+                Ren::ValuePtr(list.shadow_regions.data[i].clip_from_world));
 
             uint32_t cur_mat_id = 0xffffffff;
 
-            for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
-                const DepthDrawBatch &batch = list.shadow_batches.data[list.shadow_batch_indices.data[j]];
-                if (!batch.instance_count || !batch.alpha_test_bit || !batch.vegetation_bit) continue;
+            for (uint32_t j = sh_list.shadow_batch_start;
+                 j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
+                const DepthDrawBatch &batch =
+                    list.shadow_batches.data[list.shadow_batch_indices.data[j]];
+                if (!batch.instance_count || !batch.alpha_test_bit ||
+                    !batch.vegetation_bit)
+                    continue;
 
                 if (batch.mat_id != cur_mat_id) {
                     const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, mat->textures[0]->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0,
+                                               mat->textures[0]->tex_id());
                     cur_mat_id = batch.mat_id;
                 }
 
-                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                             &batch.instance_indices[0]);
 
-                glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                                  (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+                glDrawElementsInstancedBaseVertex(
+                    GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                    (const GLvoid *)uintptr_t(batch.indices_offset),
+                    (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
                 backend_info_.shadow_draw_calls_count++;
             }
         }
@@ -1761,19 +1986,23 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindVertexArray(skydome_vao_);
 
         Ren::Mat4f translate_matrix;
-        translate_matrix = Ren::Translate(translate_matrix, Ren::Vec3f{ shrd_data.uCamPosAndGamma });
+        translate_matrix =
+            Ren::Translate(translate_matrix, Ren::Vec3f{shrd_data.uCamPosAndGamma});
 
         Ren::Mat4f scale_matrix;
-        scale_matrix = Ren::Scale(scale_matrix, Ren::Vec3f{ 5000.0f, 5000.0f, 5000.0f });
+        scale_matrix = Ren::Scale(scale_matrix, Ren::Vec3f{5000.0f, 5000.0f, 5000.0f});
 
         Ren::Mat4f world_from_object = translate_matrix * scale_matrix;
-        glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(world_from_object));
+        glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE,
+                           Ren::ValuePtr(world_from_object));
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP, REN_BASE0_TEX_SLOT, list.env.env_map->tex_id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP, REN_BASE0_TEX_SLOT,
+                                   list.env.env_map->tex_id());
 
         DebugMarker _("DRAW SKYDOME");
 
-        glDrawElements(GL_TRIANGLES, (GLsizei)__skydome_indices_count, GL_UNSIGNED_SHORT, (void *)uintptr_t(skydome_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, (GLsizei)__skydome_indices_count, GL_UNSIGNED_SHORT,
+                       (void *)uintptr_t(skydome_ndx_offset_));
 
         glDepthFunc(GL_LESS);
 
@@ -1789,40 +2018,53 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     // Bind persistent resources (shadow atlas, lightmap, cells item data)
     //
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT,
+                               shadow_buf_.depth_tex.GetValue());
 
     if (list.decals_atlas) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_DECAL_TEX_SLOT, list.decals_atlas->tex_id(0));
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_DECAL_TEX_SLOT,
+                                   list.decals_atlas->tex_id(0));
     }
 
     if (list.render_flags & EnableSSAO) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, combined_buf_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT,
+                                   combined_buf_.attachments[0].tex);
     } else {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, dummy_white_->tex_id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT,
+                                   dummy_white_->tex_id());
     }
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BRDF_TEX_SLOT, brdf_lut_->tex_id());
 
     if ((list.render_flags & EnableLightmap) && list.env.lm_direct) {
         for (int sh_l = 0; sh_l < 4; sh_l++) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_LMAP_SH_SLOT + sh_l, list.env.lm_indir_sh[sh_l]->tex_id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_LMAP_SH_SLOT + sh_l,
+                                       list.env.lm_indir_sh[sh_l]->tex_id());
         }
     } else {
         for (int sh_l = 0; sh_l < 4; sh_l++) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_LMAP_SH_SLOT + sh_l, dummy_black_->tex_id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_LMAP_SH_SLOT + sh_l,
+                                       dummy_black_->tex_id());
         }
     }
 
     if (list.probe_storage) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT, list.probe_storage->tex_id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT,
+                                   list.probe_storage->tex_id());
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_LIGHT_BUF_SLOT, lights_tbo_[cur_buf_chunk_]);
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_DECAL_BUF_SLOT, decals_tbo_[cur_buf_chunk_]);
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_LIGHT_BUF_SLOT,
+                               lights_tbo_[cur_buf_chunk_]);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_DECAL_BUF_SLOT,
+                               decals_tbo_[cur_buf_chunk_]);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT,
+                               cells_tbo_[cur_buf_chunk_]);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT,
+                               items_tbo_[cur_buf_chunk_]);
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_NOISE_TEX_SLOT, noise_tex_->tex_id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_CONE_RT_LUT_SLOT,
+                               cone_rt_lut_->tex_id());
 
     //
     // Depth-fill pass (draw opaque surfaces -> draw alpha-tested surfaces)
@@ -1832,7 +2074,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeDepthOpaqueStart], GL_TIMESTAMP);
     }
 
-    if ((list.render_flags & EnableZFill) && ((list.render_flags & DebugWireframe) == 0)) {
+    if ((list.render_flags & EnableZFill) &&
+        ((list.render_flags & DebugWireframe) == 0)) {
         // Write depth only
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
 
@@ -1845,13 +2088,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUseProgram(fillz_solid_prog_->prog_id());
 
         for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const DepthDrawBatch &batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || batch.alpha_test_bit || batch.vegetation_bit) continue;
+            const DepthDrawBatch &batch =
+                list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+            if (!batch.instance_count || batch.alpha_test_bit || batch.vegetation_bit)
+                continue;
 
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                         &batch.instance_indices[0]);
 
-            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                              (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+            glDrawElementsInstancedBaseVertex(
+                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
 
@@ -1859,24 +2107,31 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindVertexArray(depth_pass_transp_vao_);
         glUseProgram(fillz_transp_prog_->prog_id());
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT, dummy_white_->tex_id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT,
+                                   dummy_white_->tex_id());
 
         uint32_t cur_mat_id = 0xffffffff;
 
         for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const DepthDrawBatch &batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || !batch.alpha_test_bit || batch.vegetation_bit) continue;
+            const DepthDrawBatch &batch =
+                list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+            if (!batch.instance_count || !batch.alpha_test_bit || batch.vegetation_bit)
+                continue;
 
             if (batch.mat_id != cur_mat_id) {
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT, mat->textures[0]->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT,
+                                           mat->textures[0]->tex_id());
                 cur_mat_id = batch.mat_id;
             }
 
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                         &batch.instance_indices[0]);
 
-            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                              (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+            glDrawElementsInstancedBaseVertex(
+                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
 
@@ -1885,7 +2140,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_vel_);
 
             glClear(GL_STENCIL_BUFFER_BIT);
-            
+
             glEnable(GL_STENCIL_TEST);
             glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
             glStencilFunc(GL_ALWAYS, 1, 0xFF);
@@ -1903,12 +2158,17 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const DepthDrawBatch& batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || batch.alpha_test_bit || !batch.vegetation_bit) continue;
+            const DepthDrawBatch &batch =
+                list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+            if (!batch.instance_count || batch.alpha_test_bit || !batch.vegetation_bit)
+                continue;
 
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                         &batch.instance_indices[0]);
 
-            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid*)uintptr_t(batch.indices_offset),
+            glDrawElementsInstancedBaseVertex(
+                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                (const GLvoid *)uintptr_t(batch.indices_offset),
                 (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
@@ -1921,24 +2181,31 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUseProgram(fillz_vege_transp_prog_->prog_id());
         }
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT, dummy_white_->tex_id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT,
+                                   dummy_white_->tex_id());
 
         cur_mat_id = 0xffffffff;
 
         for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const DepthDrawBatch &batch = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || !batch.alpha_test_bit || !batch.vegetation_bit) continue;
+            const DepthDrawBatch &batch =
+                list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+            if (!batch.instance_count || !batch.alpha_test_bit || !batch.vegetation_bit)
+                continue;
 
             if (batch.mat_id != cur_mat_id) {
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT, mat->textures[0]->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_ALPHATEST_TEX_SLOT,
+                                           mat->textures[0]->tex_id());
                 cur_mat_id = batch.mat_id;
             }
 
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                         &batch.instance_indices[0]);
 
-            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                              (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+            glDrawElementsInstancedBaseVertex(
+                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
 
@@ -1959,8 +2226,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     glBindVertexArray((GLuint)fs_quad_vao_);
 
-    //const uint32_t use_down_depth_mask = (EnableZFill | EnableSSAO | EnableSSR);
-    if ((list.render_flags & EnableZFill) && (list.render_flags & (EnableSSAO | EnableSSR)) && ((list.render_flags & DebugWireframe) == 0)) {
+    // const uint32_t use_down_depth_mask = (EnableZFill | EnableSSAO | EnableSSR);
+    if ((list.render_flags & EnableZFill) &&
+        (list.render_flags & (EnableSSAO | EnableSSR)) &&
+        ((list.render_flags & DebugWireframe) == 0)) {
         DebugMarker _("DOWNSAMPLE DEPTH");
 
         // Setup viewport once for all ssao passes
@@ -1982,12 +2251,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
         if (clean_buf_.sample_count > 1) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT,
+                                       clean_buf_.depth_tex.GetValue());
         } else {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       clean_buf_.depth_tex.GetValue());
         }
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
     }
 
     const uint32_t use_ssao_mask = (EnableZFill | EnableSSAO | DebugWireframe);
@@ -1998,25 +2270,30 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         assert(down_depth_.w == ssao_buf1_.w && down_depth_.w == ssao_buf2_.w &&
                down_depth_.h == ssao_buf1_.h && down_depth_.h == ssao_buf2_.h);
 
-        const int ssao_res[] = { act_w_ / 2, act_h_ / 2 };
+        const int ssao_res[] = {act_w_ / 2, act_h_ / 2};
 
         // Setup viewport once for all ssao passes
         glViewport(0, 0, ssao_res[0], ssao_res[1]);
 
-        {   // prepare ao buffer
+        { // prepare ao buffer
             glBindFramebuffer(GL_FRAMEBUFFER, ssao_buf1_.fb);
 
             glUseProgram(blit_ao_prog_->prog_id());
 
             glUniform4f(0, 0.0f, 0.0f, float(ssao_res[0]), float(ssao_res[1]));
 
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, down_depth_.attachments[0].tex);
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT, rand2d_dirs_4x4_->tex_id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       down_depth_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT,
+                                       rand2d_dirs_4x4_->tex_id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE2_TEX_SLOT,
+                                       cone_rt_lut_->tex_id());
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
 
-        {   // blur ao buffer
+        { // blur ao buffer
             glBindFramebuffer(GL_FRAMEBUFFER, ssao_buf2_.fb);
 
             glUseProgram(blit_bilateral_prog_->prog_id());
@@ -2027,7 +2304,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniform4f(0, 0.0f, 0.0f, float(ssao_res[0]), float(ssao_res[1]));
             glUniform1f(3, 0.0f);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
             glBindFramebuffer(GL_FRAMEBUFFER, ssao_buf1_.fb);
 
@@ -2038,10 +2316,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniform4f(0, 0.0f, 0.0f, float(ssao_res[0]), float(ssao_res[1]));
             glUniform1f(3, 1.0f);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
 
-        {   // upsample ao
+        { // upsample ao
             glBindFramebuffer(GL_FRAMEBUFFER, combined_buf_.fb);
             glViewport(0, 0, act_w_, act_h_);
 
@@ -2049,12 +2328,14 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             if (clean_buf_.sample_count > 1) {
                 blit_upscale_prog = blit_upscale_ms_prog_.get();
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, 0, clean_buf_.depth_tex.GetValue());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, 0,
+                                           clean_buf_.depth_tex.GetValue());
             } else {
                 blit_upscale_prog = blit_upscale_prog_.get();
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, clean_buf_.depth_tex.GetValue());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0,
+                                           clean_buf_.depth_tex.GetValue());
             }
-            
+
             glUseProgram(blit_upscale_prog->prog_id());
 
             glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
@@ -2062,7 +2343,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 1, down_depth_.attachments[0].tex);
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 2, ssao_buf1_.attachments[0].tex);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
     }
 
@@ -2095,16 +2377,19 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     glBindVertexArray((GLuint)draw_pass_vao_);
 
-    {   // actual drawing
+    { // actual drawing
         DebugMarker _("OPAQUE PASS");
 
         const Ren::Program *cur_program = nullptr;
         const Ren::Material *cur_mat = nullptr;
 
         for (uint32_t i = 0; i < list.main_batch_indices.count; i++) {
-            const MainDrawBatch &batch = list.main_batches.data[list.main_batch_indices.data[i]];
-            if (!batch.instance_count) continue;
-            if (batch.alpha_blend_bit) break;
+            const MainDrawBatch &batch =
+                list.main_batches.data[list.main_batch_indices.data[i]];
+            if (!batch.instance_count)
+                continue;
+            if (batch.alpha_blend_bit)
+                break;
 
             const Ren::Program *p = ctx_.GetProgram(batch.prog_id).get();
             const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
@@ -2115,18 +2400,25 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             }
 
             if (cur_mat != mat) {
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT, mat->textures[0]->tex_id());
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT, mat->textures[1]->tex_id());
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT, mat->textures[2]->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
+                                           mat->textures[0]->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT,
+                                           mat->textures[1]->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT,
+                                           mat->textures[2]->tex_id());
                 cur_mat = mat;
             }
 
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                         &batch.instance_indices[0]);
 
-            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                              (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+            glDrawElementsInstancedBaseVertex(
+                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.opaque_draw_calls_count++;
-            backend_info_.triangles_rendered += (batch.indices_count / 3) * batch.instance_count;
+            backend_info_.triangles_rendered +=
+                (batch.indices_count / 3) * batch.instance_count;
         }
     }
 
@@ -2146,9 +2438,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUseProgram(blit_ms_resolve_prog_->prog_id());
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT,
+                                   clean_buf_.attachments[0].tex);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
     }
 #endif
 
@@ -2173,16 +2467,19 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_FALSE);
 
-        {   // Draw alpha-blended surfaces
+        { // Draw alpha-blended surfaces
             DebugMarker _("MOMENTS GENERATION PASS");
 
             const Ren::Program *cur_program = nullptr;
             const Ren::Material *cur_mat = nullptr;
 
             for (int j = (int)list.main_batch_indices.count - 1; j >= 0; j--) {
-                const MainDrawBatch &batch = list.main_batches.data[list.main_batch_indices.data[j]];
-                if (!batch.instance_count) continue;
-                if (!batch.alpha_blend_bit) break;
+                const MainDrawBatch &batch =
+                    list.main_batches.data[list.main_batch_indices.data[j]];
+                if (!batch.instance_count)
+                    continue;
+                if (!batch.alpha_blend_bit)
+                    break;
 
                 const Ren::Program *p = ctx_.GetProgram(batch.prog_id).get();
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
@@ -2193,54 +2490,76 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 }
 
                 if (cur_mat != mat) {
-                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
+                                               mat->texture(0)->tex_id());
                     cur_mat = mat;
                 }
 
-                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                             &batch.instance_indices[0]);
 
-                glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
+                glDrawElementsInstancedBaseVertex(
+                    GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                    (const GLvoid *)uintptr_t(batch.indices_offset),
                     (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
                 backend_info_.opaque_draw_calls_count += 2;
-                backend_info_.triangles_rendered += (batch.indices_count / 3) * batch.instance_count;
+                backend_info_.triangles_rendered +=
+                    (batch.indices_count / 3) * batch.instance_count;
             }
         }
 
-        {   // Change transparency draw mode
-            glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_shared_data_block_[cur_buf_chunk_]);
+        { // Change transparency draw mode
+            glBindBuffer(GL_UNIFORM_BUFFER,
+                         (GLuint)unif_shared_data_block_[cur_buf_chunk_]);
             const float transp_mode = clean_buf_.sample_count > 1 ? 4.0f : 3.0f;
-            glBufferSubData(GL_UNIFORM_BUFFER, offsetof(SharedDataBlock, uTranspParamsAndTime) + 2 * sizeof(float), sizeof(float), &transp_mode);
+            glBufferSubData(GL_UNIFORM_BUFFER,
+                            offsetof(SharedDataBlock, uTranspParamsAndTime) +
+                                2 * sizeof(float),
+                            sizeof(float), &transp_mode);
         }
 
-        uint32_t target_framebuf =
-            (clean_buf_.sample_count > 1) ? clean_buf_color_only_ : resolved_or_transparent_buf_.fb;
+        uint32_t target_framebuf = (clean_buf_.sample_count > 1)
+                                       ? clean_buf_color_only_
+                                       : resolved_or_transparent_buf_.fb;
 
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)target_framebuf);
-        
+
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         if (moments_buf_.sample_count > 1) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_MOMENTS0_MS_TEX_SLOT, moments_buf_.attachments[0].tex);
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_MOMENTS1_MS_TEX_SLOT, moments_buf_.attachments[1].tex);
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_MOMENTS2_MS_TEX_SLOT, moments_buf_.attachments[2].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE,
+                                       REN_MOMENTS0_MS_TEX_SLOT,
+                                       moments_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE,
+                                       REN_MOMENTS1_MS_TEX_SLOT,
+                                       moments_buf_.attachments[1].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE,
+                                       REN_MOMENTS2_MS_TEX_SLOT,
+                                       moments_buf_.attachments[2].tex);
         } else {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MOMENTS0_TEX_SLOT, moments_buf_.attachments[0].tex);
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MOMENTS1_TEX_SLOT, moments_buf_.attachments[1].tex);
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MOMENTS2_TEX_SLOT, moments_buf_.attachments[2].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MOMENTS0_TEX_SLOT,
+                                       moments_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MOMENTS1_TEX_SLOT,
+                                       moments_buf_.attachments[1].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MOMENTS2_TEX_SLOT,
+                                       moments_buf_.attachments[2].tex);
         }
 
-        {   // Draw alpha-blended surfaces
+        { // Draw alpha-blended surfaces
             DebugMarker _("TRANSPARENT PASS");
 
             const Ren::Program *cur_program = nullptr;
             const Ren::Material *cur_mat = nullptr;
 
             for (int j = (int)list.main_batch_indices.count - 1; j >= 0; j--) {
-                const MainDrawBatch &batch = list.main_batches.data[list.main_batch_indices.data[j]];
-                if (!batch.instance_count) continue;
-                if (!batch.alpha_blend_bit) break;
+                const MainDrawBatch &batch =
+                    list.main_batches.data[list.main_batch_indices.data[j]];
+                if (!batch.instance_count)
+                    continue;
+                if (!batch.alpha_blend_bit)
+                    break;
 
                 const Ren::Program *p = ctx_.GetProgram(batch.prog_id).get();
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
@@ -2251,19 +2570,26 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 }
 
                 if (cur_mat != mat) {
-                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
-                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
-                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
+                                               mat->texture(0)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT,
+                                               mat->texture(1)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT,
+                                               mat->texture(2)->tex_id());
                     cur_mat = mat;
                 }
 
-                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                             &batch.instance_indices[0]);
 
-                glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
+                glDrawElementsInstancedBaseVertex(
+                    GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                    (const GLvoid *)uintptr_t(batch.indices_offset),
                     (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
                 backend_info_.opaque_draw_calls_count += 2;
-                backend_info_.triangles_rendered += (batch.indices_count / 3) * batch.instance_count;
+                backend_info_.triangles_rendered +=
+                    (batch.indices_count / 3) * batch.instance_count;
             }
         }
 
@@ -2271,19 +2597,22 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 #elif (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED)
         glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_transparent_);
 
-        {   DebugMarker _("INIT TRANSPARENT BUF");
+        {
+            DebugMarker _("INIT TRANSPARENT BUF");
 
             glBindVertexArray((GLuint)fs_quad_vao_);
-            
+
             glDisable(GL_DEPTH_TEST);
 
             glUseProgram(blit_transparent_init_prog_->prog_id());
             glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
 
-        {   DebugMarker _("TRANSPARENT PASS");
+        {
+            DebugMarker _("TRANSPARENT PASS");
 
             glBindVertexArray((GLuint)draw_pass_vao_);
             glEnable(GL_DEPTH_TEST);
@@ -2299,9 +2628,12 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             const Ren::Material *cur_mat = nullptr;
 
             for (int j = (int)list.main_batch_indices.count - 1; j >= 0; j--) {
-                const MainDrawBatch &batch = list.main_batches.data[list.main_batch_indices.data[j]];
-                if (!batch.instance_count) continue;
-                if (!batch.alpha_blend_bit) break;
+                const MainDrawBatch &batch =
+                    list.main_batches.data[list.main_batch_indices.data[j]];
+                if (!batch.instance_count)
+                    continue;
+                if (!batch.alpha_blend_bit)
+                    break;
 
                 const Ren::Program *p = ctx_.GetProgram(batch.prog_id).get();
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
@@ -2312,19 +2644,26 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 }
 
                 if (cur_mat != mat) {
-                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT, mat->texture(0)->tex_id());
-                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT, mat->texture(1)->tex_id());
-                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT, mat->texture(2)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
+                                               mat->texture(0)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT,
+                                               mat->texture(1)->tex_id());
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT,
+                                               mat->texture(2)->tex_id());
                     cur_mat = mat;
                 }
 
-                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+                glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                             &batch.instance_indices[0]);
 
-                glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
+                glDrawElementsInstancedBaseVertex(
+                    GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                    (const GLvoid *)uintptr_t(batch.indices_offset),
                     (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
                 backend_info_.opaque_draw_calls_count++;
-                backend_info_.triangles_rendered += (batch.indices_count / 3) * batch.instance_count;
+                backend_info_.triangles_rendered +=
+                    (batch.indices_count / 3) * batch.instance_count;
             }
         }
 
@@ -2346,9 +2685,12 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const Ren::Material *cur_mat = nullptr;
 
         for (int j = (int)list.main_batch_indices.count - 1; j >= 0; j--) {
-            const MainDrawBatch &batch = list.main_batches.data[list.main_batch_indices.data[j]];
-            if (!batch.instance_count) continue;
-            if (!batch.alpha_blend_bit) break;
+            const MainDrawBatch &batch =
+                list.main_batches.data[list.main_batch_indices.data[j]];
+            if (!batch.instance_count)
+                continue;
+            if (!batch.alpha_blend_bit)
+                break;
 
             const Ren::Program *p = ctx_.GetProgram(batch.prog_id).get();
             const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
@@ -2359,28 +2701,37 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             }
 
             if (cur_mat != mat) {
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT, mat->textures[0]->tex_id());
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT, mat->textures[1]->tex_id());
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT, mat->textures[2]->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
+                                           mat->textures[0]->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT,
+                                           mat->textures[1]->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT,
+                                           mat->textures[2]->tex_id());
                 cur_mat = mat;
             }
 
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4, &batch.instance_indices[0]);
+            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                         &batch.instance_indices[0]);
 
             glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
             glDepthFunc(GL_LEQUAL);
 
-            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                              (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+            glDrawElementsInstancedBaseVertex(
+                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
             glDepthFunc(GL_EQUAL);
 
-            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT, (const GLvoid *)uintptr_t(batch.indices_offset),
-                                              (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+            glDrawElementsInstancedBaseVertex(
+                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
             backend_info_.opaque_draw_calls_count += 2;
-            backend_info_.triangles_rendered += (batch.indices_count / 3) * batch.instance_count;
+            backend_info_.triangles_rendered +=
+                (batch.indices_count / 3) * batch.instance_count;
         }
 
 #if !defined(REN_DIRECT_DRAWING)
@@ -2393,9 +2744,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUseProgram(blit_ms_resolve_prog_->prog_id());
             glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT,
+                                       clean_buf_.attachments[0].tex);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
 #endif
 
@@ -2410,7 +2763,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glDepthFunc(GL_LESS);
 
     //
-    // Reflections pass (calc ssr buffer -> dilate -> combine with cubemap reflections -> blend on top of color buffer)
+    // Reflections pass (calc ssr buffer -> dilate -> combine with cubemap reflections ->
+    // blend on top of color buffer)
     //
 
     if (list.render_flags & EnableTimers) {
@@ -2437,15 +2791,20 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_DEPTH_TEX_SLOT, down_depth_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_DEPTH_TEX_SLOT,
+                                   down_depth_.attachments[0].tex);
 
-        const GLenum clean_buf_bind_target = (clean_buf_.sample_count > 1) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
-        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
-        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+        const GLenum clean_buf_bind_target =
+            (clean_buf_.sample_count > 1) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
+        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_NORM_TEX_SLOT,
+                                   clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_SPEC_TEX_SLOT,
+                                   clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
-        {   // dilate ssr buffer
+        { // dilate ssr buffer
             const Ren::Program *dilate_prog = blit_ssr_dilate_prog_.get();
             glUseProgram(dilate_prog->prog_id());
 
@@ -2453,9 +2812,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glBindFramebuffer(GL_FRAMEBUFFER, ssr_buf2_.fb);
 
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, ssr_buf1_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       ssr_buf1_.attachments[0].tex);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
 
         // Compose reflections on top of clean buffer
@@ -2478,20 +2839,30 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUseProgram(blit_ssr_compose_prog->prog_id());
         glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
-        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_SPEC_TEX_SLOT, clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
-        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_DEPTH_TEX_SLOT, clean_buf_.depth_tex.GetValue());
-        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_NORM_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_SPEC_TEX_SLOT,
+                                   clean_buf_.attachments[REN_OUT_SPEC_INDEX].tex);
+        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_DEPTH_TEX_SLOT,
+                                   clean_buf_.depth_tex.GetValue());
+        ren_glBindTextureUnit_Comp(clean_buf_bind_target, REN_REFL_NORM_TEX_SLOT,
+                                   clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_DEPTH_LOW_TEX_SLOT, down_depth_.attachments[0].tex);
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_SSR_TEX_SLOT, ssr_buf2_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_DEPTH_LOW_TEX_SLOT,
+                                   down_depth_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_SSR_TEX_SLOT,
+                                   ssr_buf2_.attachments[0].tex);
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_PREV_TEX_SLOT, down_buf_.attachments[0].tex);
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_BRDF_TEX_SLOT, brdf_lut_->tex_id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_PREV_TEX_SLOT,
+                                   down_buf_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_BRDF_TEX_SLOT,
+                                   brdf_lut_->tex_id());
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT,
+                                   cells_tbo_[cur_buf_chunk_]);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT,
+                                   items_tbo_[cur_buf_chunk_]);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
         glDisable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -2502,19 +2873,20 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         DebugMarker _("COMPOSE TRANSPARENT");
 
         glEnable(GL_BLEND);
-#if (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED) || (REN_OIT_MODE == REN_OIT_MOMENT_BASED && REN_OIT_MOMENT_RENORMALIZE)
+#if (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED) ||                                        \
+    (REN_OIT_MODE == REN_OIT_MOMENT_BASED && REN_OIT_MOMENT_RENORMALIZE)
         glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
 #else
         glBlendFunc(GL_ONE, GL_SRC_ALPHA);
 #endif
 
-        const Ren::Program *blit_transparent_compose = 
+        const Ren::Program *blit_transparent_compose =
             (clean_buf_.sample_count > 1) ? blit_transparent_compose_ms_prog_.get()
                                           : blit_transparent_compose_prog_.get();
 
-        const uint32_t target_framebuffer =
-            (clean_buf_.sample_count > 1) ? resolved_or_transparent_buf_.fb
-                                          : transparent_comb_framebuf_;
+        const uint32_t target_framebuffer = (clean_buf_.sample_count > 1)
+                                                ? resolved_or_transparent_buf_.fb
+                                                : transparent_comb_framebuf_;
 
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)target_framebuffer);
         glViewport(0, 0, act_w_, act_h_);
@@ -2523,27 +2895,34 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
         if (clean_buf_.sample_count > 1) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT,
+                                       clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
 #if REN_OIT_MODE == REN_OIT_MOMENT_BASED
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE1_TEX_SLOT, moments_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE1_TEX_SLOT,
+                                       moments_buf_.attachments[0].tex);
 #elif REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE1_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE1_TEX_SLOT,
+                                       clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
 #endif
         } else {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       resolved_or_transparent_buf_.attachments[0].tex);
 #if REN_OIT_MODE == REN_OIT_MOMENT_BASED
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT, moments_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT,
+                                       moments_buf_.attachments[0].tex);
 #elif REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT, clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT,
+                                       clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
 #endif
         }
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
         glDisable(GL_BLEND);
     }
 #endif
-    
+
     if (list.render_flags & EnableTimers) {
         glQueryCounter(queries_[cur_query_][TimeTaaStart], GL_TIMESTAMP);
     }
@@ -2554,7 +2933,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_vel_only_);
         glViewport(0, 0, act_w_, act_h_);
 
-        {   // Init static objects velocities
+        { // Init static objects velocities
             glEnable(GL_STENCIL_TEST);
             glStencilMask(0x00);
             glStencilFunc(GL_EQUAL, 0, 0xFF);
@@ -2567,7 +2946,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             assert(clean_buf_.sample_count == 1);
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, clean_buf_.depth_tex.GetValue());
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
             glDisable(GL_STENCIL_TEST);
         }
@@ -2575,7 +2955,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)temporal_resolve_framebuf_);
         glViewport(0, 0, act_w_, act_h_);
 
-        {   // Blit taa
+        { // Blit taa
             const Ren::Program *blit_prog = blit_taa_prog_.get();
             glUseProgram(blit_prog->prog_id());
 
@@ -2590,12 +2970,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniform2f(13, float(act_w_), float(act_h_));
 
             // exposure from previous frame
-            float exposure = reduced_average_ > std::numeric_limits<float>::epsilon() ? (0.95f / reduced_average_) : 1.0f;
+            float exposure = reduced_average_ > std::numeric_limits<float>::epsilon()
+                                 ? (0.95f / reduced_average_)
+                                 : 1.0f;
             exposure = std::min(exposure, list.draw_cam.max_exposure());
 
             glUniform1f(14, exposure);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
     }
 
@@ -2620,7 +3003,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         if (list.probe_storage) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_BASE0_TEX_SLOT, list.probe_storage->tex_id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_BASE0_TEX_SLOT,
+                                       list.probe_storage->tex_id());
         }
 
         for (int i = 0; i < (int)list.probes.count; i++) {
@@ -2629,11 +3013,69 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniform1i(2, i);
 
             Ren::Mat4f world_from_object;
-            world_from_object = Ren::Translate(world_from_object, Ren::Vec3f{ pr.position[0], pr.position[1], pr.position[2] });
-            glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(world_from_object));
+            world_from_object = Ren::Translate(
+                world_from_object,
+                Ren::Vec3f{pr.position[0], pr.position[1], pr.position[2]});
+            glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE,
+                               Ren::ValuePtr(world_from_object));
 
-            glDrawElements(GL_TRIANGLES, (GLsizei)__sphere_indices_count, GL_UNSIGNED_SHORT, (void *)uintptr_t(sphere_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, (GLsizei)__sphere_indices_count,
+                           GL_UNSIGNED_SHORT, (void *)uintptr_t(sphere_ndx_offset_));
         }
+    }
+
+    if (list.render_flags & DebugEllipsoids) {
+        glBindVertexArray(sphere_vao_);
+
+        glDisable(GL_DEPTH_TEST);
+#if !defined(__ANDROID__)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+#endif
+
+        // Write to color
+        if (clean_buf_.sample_count > 1) {
+            glBindFramebuffer(GL_FRAMEBUFFER, resolved_or_transparent_buf_.fb);
+        } else {
+            glBindFramebuffer(GL_FRAMEBUFFER, refl_comb_framebuf_);
+        }
+
+        glUseProgram(ellipsoid_prog_->prog_id());
+
+        for (int i = 0; i < (int)list.ellipsoids.count; i++) {
+            const EllipsItem &e = list.ellipsoids.data[i];
+
+            Ren::Mat4f world_from_object;
+            world_from_object =
+                Ren::Translate(world_from_object,
+                               Ren::Vec3f{e.position[0], e.position[1], e.position[2]});
+
+            auto sph_ls = Ren::Mat3f{Ren::Uninitialize};
+            sph_ls[0] = Ren::Vec3f{0.0f};
+            sph_ls[0][e.perp] = 1.0f;
+            sph_ls[1] = Ren::MakeVec3(e.axis);
+            sph_ls[2] = Ren::Normalize(Ren::Cross(sph_ls[0], sph_ls[1]));
+            sph_ls[0] = Ren::Normalize(Ren::Cross(sph_ls[1], sph_ls[2]));
+            // sph_ls = Ren::Transpose(sph_ls);
+
+            //const float l = Ren::Length(sph_ls[1]);
+            //sph_ls[1] = Ren::Normalize(sph_ls[1]) / l;
+
+            sph_ls *= e.radius;
+
+            world_from_object[0] = Ren::Vec4f{sph_ls[0]};
+            world_from_object[1] = Ren::Vec4f{sph_ls[1]};
+            world_from_object[2] = Ren::Vec4f{sph_ls[2]};
+
+            glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE,
+                               Ren::ValuePtr(world_from_object));
+
+            glDrawElements(GL_TRIANGLES, (GLsizei)__sphere_indices_count,
+                           GL_UNSIGNED_SHORT, (void *)uintptr_t(sphere_ndx_offset_));
+        }
+
+#if !defined(__ANDROID__)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
     }
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT, 0);
@@ -2657,7 +3099,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     prev_clip_from_world_ = clip_from_world_unjittered;
     prev_clip_from_view_ = shrd_data.uProjMatrix;
 
-    if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap)) && ((list.render_flags & DebugWireframe) == 0)) {
+    if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap)) &&
+        ((list.render_flags & DebugWireframe) == 0)) {
         DebugMarker _("BLUR PASS");
 
         // prepare blured buffer
@@ -2670,12 +3113,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
         if (clean_buf_.sample_count > 1 || ((list.render_flags & EnableTaa) != 0)) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       resolved_or_transparent_buf_.attachments[0].tex);
         } else {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, clean_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       clean_buf_.attachments[0].tex);
         }
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
         if (list.render_flags & EnableBloom) {
             glBindFramebuffer(GL_FRAMEBUFFER, blur_buf2_.fb);
@@ -2687,9 +3133,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniform4f(0, 0.0f, 0.0f, float(down_buf_.w), float(down_buf_.h));
             glUniform1f(4, 0.0f);
 
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, down_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       down_buf_.attachments[0].tex);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
             glBindFramebuffer(GL_FRAMEBUFFER, blur_buf1_.fb);
             glViewport(0, 0, blur_buf1_.w, blur_buf1_.h);
@@ -2697,9 +3145,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniform4f(0, 0.0f, 0.0f, float(blur_buf2_.w), float(blur_buf2_.h));
             glUniform1f(4, 1.0f);
 
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, blur_buf2_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       blur_buf2_.attachments[0].tex);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
     }
 
@@ -2725,25 +3175,30 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
-        const auto offset_step = Ren::Vec2f{ 1.0f / float(reduced_buf_.w), 1.0f / float(reduced_buf_.h) };
+        const auto offset_step =
+            Ren::Vec2f{1.0f / float(reduced_buf_.w), 1.0f / float(reduced_buf_.h)};
 
         static int cur_offset = 0;
         glUniform2f(4, 0.5f * poisson_disk[cur_offset][0] * offset_step[0],
-                       0.5f * poisson_disk[cur_offset][1] * offset_step[1]);
+                    0.5f * poisson_disk[cur_offset][1] * offset_step[1]);
         cur_offset = cur_offset >= 63 ? 0 : (cur_offset + 1);
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, buf_to_sample->attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                   buf_to_sample->attachments[0].tex);
 
         DebugMarker _("SAMPLE FRAME BRIGHTNESS");
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
         const float max_value = 64.0f;
         float lum = 0.0f;
 
-        {   // Retrieve result of glReadPixels call from previous frame
+        { // Retrieve result of glReadPixels call from previous frame
             glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)reduce_pbo_[cur_reduce_pbo_]);
-            auto *reduced_pixels = (float *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, 4 * reduced_buf_.w * reduced_buf_.h * sizeof(float), GL_MAP_READ_BIT);
+            auto *reduced_pixels = (float *)glMapBufferRange(
+                GL_PIXEL_PACK_BUFFER, 0,
+                4 * reduced_buf_.w * reduced_buf_.h * sizeof(float), GL_MAP_READ_BIT);
             if (reduced_pixels) {
                 for (int i = 0; i < 4 * reduced_buf_.w * reduced_buf_.h; i += 4) {
                     if (!std::isnan(reduced_pixels[i])) {
@@ -2758,10 +3213,12 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         lum /= float(reduced_buf_.w * reduced_buf_.h);
 
         const float alpha = 1.0f / 64;
-        reduced_average_ = alpha* lum + (1.0f - alpha) * reduced_average_;
+        reduced_average_ = alpha * lum + (1.0f - alpha) * reduced_average_;
     }
 
-    float exposure = reduced_average_ > std::numeric_limits<float>::epsilon() ? (4.0f / reduced_average_) : 1.0f;
+    float exposure = reduced_average_ > std::numeric_limits<float>::epsilon()
+                         ? (4.0f / reduced_average_)
+                         : 1.0f;
     exposure = std::min(exposure, list.draw_cam.max_exposure());
 
     //
@@ -2772,8 +3229,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeBlitStart], GL_TIMESTAMP);
     }
 
-    
-    if ((list.render_flags & (EnableFxaa /*| EnableTaa*/)) && !(list.render_flags & DebugWireframe)) {
+    if ((list.render_flags & (EnableFxaa /*| EnableTaa*/)) &&
+        !(list.render_flags & DebugWireframe)) {
         glBindFramebuffer(GL_FRAMEBUFFER, combined_buf_.fb);
         glViewport(0, 0, act_w_, act_h_);
     } else {
@@ -2787,7 +3244,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     }
 
 #if !defined(REN_DIRECT_DRAWING)
-    {   // Blit main framebuffer
+    { // Blit main framebuffer
         const Ren::Program *blit_prog = blit_combine_prog_.get();
         glUseProgram(blit_prog->prog_id());
 
@@ -2800,22 +3257,27 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform1f(U_EXPOSURE, exposure);
 
         if (clean_buf_.sample_count > 1 || ((list.render_flags & EnableTaa) != 0)) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, resolved_or_transparent_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       resolved_or_transparent_buf_.attachments[0].tex);
         } else {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
         }
 
         if ((list.render_flags & EnableBloom) && !(list.render_flags & DebugWireframe)) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT, blur_buf1_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT,
+                                       blur_buf1_.attachments[0].tex);
         } else {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT, dummy_black_->tex_id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT,
+                                       dummy_black_->tex_id());
         }
 
 #ifndef DISABLE_MARKERS
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "FINAL BLIT");
 #endif
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
     }
 
     if ((list.render_flags & EnableFxaa) && !(list.render_flags & DebugWireframe)) {
@@ -2827,17 +3289,19 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glViewport(0, 0, target->w, target->h);
         }
 
-        {   // Blit fxaa
+        { // Blit fxaa
             const Ren::Program *blit_prog = blit_fxaa_prog_.get();
             glUseProgram(blit_prog->prog_id());
 
             glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, combined_buf_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       combined_buf_.attachments[0].tex);
 
             glUniform2f(12, 1.0f / float(scr_w_), 1.0f / float(scr_h_));
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
         }
     }
 
@@ -2845,7 +3309,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glPopDebugGroup();
 #endif
 #endif // !defined(REN_DIRECT_DRAWING)
-    
+
     if (list.render_flags & EnableTonemap) {
         // Start asynchronous memory read from framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, reduced_buf_.fb);
@@ -2891,27 +3355,34 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4fv(17, 1, Ren::ValuePtr(shrd_data.uClipInfo));
 
         if (clean_buf_.sample_count > 1) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT,
+                                       clean_buf_.depth_tex.GetValue());
         } else {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, clean_buf_.depth_tex.GetValue());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       clean_buf_.depth_tex.GetValue());
         }
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT, cells_tbo_[cur_buf_chunk_]);
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT, items_tbo_[cur_buf_chunk_]);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT,
+                                   cells_tbo_[cur_buf_chunk_]);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT,
+                                   items_tbo_[cur_buf_chunk_]);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
         glDisable(GL_BLEND);
     }
 
-    if (((list.render_flags & (EnableCulling | DebugCulling)) == (EnableCulling | DebugCulling)) && !depth_pixels_[0].empty()) {
+    if (((list.render_flags & (EnableCulling | DebugCulling)) ==
+         (EnableCulling | DebugCulling)) &&
+        !depth_pixels_[0].empty()) {
         glUseProgram(blit_prog_->prog_id());
 
         glUniform4f(0, 0.0f, 0.0f, 256.0f, 128.0f);
 
         const float sx = 2 * 256.0f / float(scr_w_), sy = 2 * 128.0f / float(scr_h_);
 
-        //const float positions[] = {
+        // const float positions[] = {
         //    -1.0f, -1.0f,               -1.0f + sx, -1.0f,
         //    -1.0f + sx, -1.0f + sy,     -1.0f, -1.0f + sy
         //};
@@ -2919,22 +3390,26 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform1f(4, 1.0f);
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, temp_tex_);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, &depth_pixels_[0][0]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                     &depth_pixels_[0][0]);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
         /////
 
-        const float positions2[] = {
-            -1.0f + sx, -1.0f,               -1.0f + sx + sx, -1.0f,
-            -1.0f + sx + sx, -1.0f + sy,     -1.0f + sx, -1.0f + sy
-        };
+        const float positions2[] = {-1.0f + sx, -1.0f,           -1.0f + sx + sx,
+                                    -1.0f,      -1.0f + sx + sx, -1.0f + sy,
+                                    -1.0f + sx, -1.0f + sy};
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions2), positions2);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_,
+                        sizeof(positions2), positions2);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, &depth_tiles_[0][0]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                     &depth_tiles_[0][0]);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
@@ -2951,19 +3426,25 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
+        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+                              (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + 8 * sizeof(float)));
+        glVertexAttribPointer(
+            REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+            (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + 8 * sizeof(float)));
 
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_,
+                        sizeof(fs_quad_indices), fs_quad_indices);
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, shadow_buf_.depth_tex.GetValue());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                   shadow_buf_.depth_tex.GetValue());
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
-        const float k = (float(shadow_buf_.h) / float(shadow_buf_.w)) * (float(scr_w_) / float(scr_h_));
+        const float k = (float(shadow_buf_.h) / float(shadow_buf_.w)) *
+                        (float(scr_w_) / float(scr_h_));
 
-        {   // Clear region
+        { // Clear region
             glEnable(GL_SCISSOR_TEST);
 
             glScissor(0, 0, scr_w_ / 2, int(k * float(scr_h_) / 2));
@@ -2977,23 +3458,31 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             const ShadowList &sh_list = list.shadow_lists.data[i];
             const ShadowMapRegion &reg = list.shadow_regions.data[i];
 
-            const float positions[] = {
-                -1.0f + reg.transform[0],                       -1.0f + reg.transform[1] * k,
-                -1.0f + reg.transform[0] + reg.transform[2],    -1.0f + reg.transform[1] * k,
-                -1.0f + reg.transform[0] + reg.transform[2],    -1.0f + (reg.transform[1] + reg.transform[3]) * k,
-                -1.0f + reg.transform[0],                       -1.0f + (reg.transform[1] + reg.transform[3]) * k
-            };
+            const float positions[] = {-1.0f + reg.transform[0],
+                                       -1.0f + reg.transform[1] * k,
+                                       -1.0f + reg.transform[0] + reg.transform[2],
+                                       -1.0f + reg.transform[1] * k,
+                                       -1.0f + reg.transform[0] + reg.transform[2],
+                                       -1.0f + (reg.transform[1] + reg.transform[3]) * k,
+                                       -1.0f + reg.transform[0],
+                                       -1.0f + (reg.transform[1] + reg.transform[3]) * k};
 
             const float uvs[] = {
-                float(sh_list.shadow_map_pos[0]),                                 float(sh_list.shadow_map_pos[1]),
-                float(sh_list.shadow_map_pos[0] + sh_list.shadow_map_size[0]),    float(sh_list.shadow_map_pos[1]),
-                float(sh_list.shadow_map_pos[0] + sh_list.shadow_map_size[0]),    float(sh_list.shadow_map_pos[1] + sh_list.shadow_map_size[1]),
-                float(sh_list.shadow_map_pos[0]),                                 float(sh_list.shadow_map_pos[1] + sh_list.shadow_map_size[1])
-            };
+                float(sh_list.shadow_map_pos[0]),
+                float(sh_list.shadow_map_pos[1]),
+                float(sh_list.shadow_map_pos[0] + sh_list.shadow_map_size[0]),
+                float(sh_list.shadow_map_pos[1]),
+                float(sh_list.shadow_map_pos[0] + sh_list.shadow_map_size[0]),
+                float(sh_list.shadow_map_pos[1] + sh_list.shadow_map_size[1]),
+                float(sh_list.shadow_map_pos[0]),
+                float(sh_list.shadow_map_pos[1] + sh_list.shadow_map_size[1])};
 
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
-            
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_,
+                            sizeof(positions), positions);
+            glBufferSubData(GL_ARRAY_BUFFER,
+                            (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)),
+                            sizeof(uvs), uvs);
+
             glUniform1f(1, sh_list.cam_near);
             glUniform1f(2, sh_list.cam_far);
 
@@ -3005,7 +3494,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glUniform3f(3, 0.5f, 1.0f, 0.5f);
             }
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
         }
 
         // Draw invisible cached shadow regions
@@ -3013,21 +3503,29 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             const ShadReg &r = list.cached_shadow_regions.data[i];
 
             const float positions[] = {
-                -1.0f + float(r.pos[0]) / SHADOWMAP_WIDTH,                       -1.0f + k * float(r.pos[1]) / SHADOWMAP_HEIGHT,
-                -1.0f + float(r.pos[0] + r.size[0]) / SHADOWMAP_WIDTH,           -1.0f + k * float(r.pos[1]) / SHADOWMAP_HEIGHT,
-                -1.0f + float(r.pos[0] + r.size[0]) / SHADOWMAP_WIDTH,           -1.0f + k * float(r.pos[1] + r.size[1]) / SHADOWMAP_HEIGHT,
-                -1.0f + float(r.pos[0]) / SHADOWMAP_WIDTH,                       -1.0f + k * float(r.pos[1] + r.size[1]) / SHADOWMAP_HEIGHT
-            };
+                -1.0f + float(r.pos[0]) / SHADOWMAP_WIDTH,
+                -1.0f + k * float(r.pos[1]) / SHADOWMAP_HEIGHT,
+                -1.0f + float(r.pos[0] + r.size[0]) / SHADOWMAP_WIDTH,
+                -1.0f + k * float(r.pos[1]) / SHADOWMAP_HEIGHT,
+                -1.0f + float(r.pos[0] + r.size[0]) / SHADOWMAP_WIDTH,
+                -1.0f + k * float(r.pos[1] + r.size[1]) / SHADOWMAP_HEIGHT,
+                -1.0f + float(r.pos[0]) / SHADOWMAP_WIDTH,
+                -1.0f + k * float(r.pos[1] + r.size[1]) / SHADOWMAP_HEIGHT};
 
-            const float uvs[] = {
-                float(r.pos[0]),                  float(r.pos[1]),
-                float(r.pos[0] + r.size[0]),      float(r.pos[1]),
-                float(r.pos[0] + r.size[0]),      float(r.pos[1] + r.size[1]),
-                float(r.pos[0]),                  float(r.pos[1] + r.size[1])
-            };
+            const float uvs[] = {float(r.pos[0]),
+                                 float(r.pos[1]),
+                                 float(r.pos[0] + r.size[0]),
+                                 float(r.pos[1]),
+                                 float(r.pos[0] + r.size[0]),
+                                 float(r.pos[1] + r.size[1]),
+                                 float(r.pos[0]),
+                                 float(r.pos[1] + r.size[1])};
 
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_,
+                            sizeof(positions), positions);
+            glBufferSubData(GL_ARRAY_BUFFER,
+                            (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)),
+                            sizeof(uvs), uvs);
 
             glUniform1f(1, r.cam_near);
             glUniform1f(2, r.cam_far);
@@ -3035,7 +3533,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             // mark cached region with blue
             glUniform3f(3, 0.5f, 0.5f, 1.0f);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
         }
 
         // Draw view frustum edges
@@ -3043,26 +3542,36 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             const ShadowList &sh_list = list.shadow_lists.data[i];
             const ShadowMapRegion &reg = list.shadow_regions.data[i];
 
-            if (!sh_list.view_frustum_outline_count) continue;
+            if (!sh_list.view_frustum_outline_count)
+                continue;
 
             for (int j = 0; j < sh_list.view_frustum_outline_count; j += 2) {
                 const Ren::Vec2f &p1 = sh_list.view_frustum_outline[j],
                                  &p2 = sh_list.view_frustum_outline[j + 1];
 
-                const float positions[] = { -1.0f + reg.transform[0] + (p1[0] * 0.5f + 0.5f) * reg.transform[2],    -1.0f + (reg.transform[1] + (p1[1] * 0.5f + 0.5f) * reg.transform[3]) * k,
-                                            -1.0f + reg.transform[0] + (p2[0] * 0.5f + 0.5f) * reg.transform[2],    -1.0f + (reg.transform[1] + (p2[1] * 0.5f + 0.5f) * reg.transform[3]) * k, };
+                const float positions[] = {
+                    -1.0f + reg.transform[0] + (p1[0] * 0.5f + 0.5f) * reg.transform[2],
+                    -1.0f +
+                        (reg.transform[1] + (p1[1] * 0.5f + 0.5f) * reg.transform[3]) * k,
+                    -1.0f + reg.transform[0] + (p2[0] * 0.5f + 0.5f) * reg.transform[2],
+                    -1.0f +
+                        (reg.transform[1] + (p2[1] * 0.5f + 0.5f) * reg.transform[3]) * k,
+                };
 
-                glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
+                glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_,
+                                sizeof(positions), positions);
 
                 // draw line with black color
                 glUniform3f(3, 0.0f, 0.0f, 0.0f);
 
-                glDrawElements(GL_LINES, 2, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+                glDrawElements(GL_LINES, 2, GL_UNSIGNED_SHORT,
+                               (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
             }
         }
 
         // Restore compare mode
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
+                        GL_COMPARE_REF_TO_TEXTURE);
 
         glDisableVertexAttribArray(REN_VTX_POS_LOC);
         glDisableVertexAttribArray(REN_VTX_UV1_LOC);
@@ -3077,7 +3586,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     if (list.render_flags & DebugDeferred) {
         BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, clean_buf_, 1, 2);
 
-        float exposure = reduced_average_ > std::numeric_limits<float>::epsilon() ? (0.95f / reduced_average_) : 1.0f;
+        float exposure = reduced_average_ > std::numeric_limits<float>::epsilon()
+                             ? (0.95f / reduced_average_)
+                             : 1.0f;
         exposure = std::min(exposure, list.draw_cam.max_exposure());
         BlitBuffer(0.0f, -1.0f, 0.5f, 0.5f, down_buf_, 0, 1, exposure);
     }
@@ -3091,13 +3602,13 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     }
 
     if ((list.render_flags & DebugDecals) && list.decals_atlas) {
-        int resx = list.decals_atlas->resx(),
-            resy = list.decals_atlas->resy();
+        int resx = list.decals_atlas->resx(), resy = list.decals_atlas->resy();
 
         float k = float(scr_w_) / float(scr_h_);
         k *= float(resy) / float(resx);
 
-        BlitTexture(-1.0f, -1.0f, 1.0f, 1.0f * k, list.decals_atlas->tex_id(0), resx, resy);
+        BlitTexture(-1.0f, -1.0f, 1.0f, 1.0f * k, list.decals_atlas->tex_id(0), resx,
+                    resy);
     }
 
     if (list.render_flags & DebugBVH) {
@@ -3106,7 +3617,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glGenBuffers(1, &nodes_buf);
 
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)nodes_buf);
-            glBufferData(GL_TEXTURE_BUFFER, list.temp_nodes.size() * sizeof(bvh_node_t), list.temp_nodes.data(), GL_DYNAMIC_DRAW);
+            glBufferData(GL_TEXTURE_BUFFER, list.temp_nodes.size() * sizeof(bvh_node_t),
+                         list.temp_nodes.data(), GL_DYNAMIC_DRAW);
 
             nodes_buf_ = (uint32_t)nodes_buf;
 
@@ -3121,7 +3633,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             nodes_tbo_ = (uint32_t)nodes_tbo;
         } else {
             glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)nodes_buf_);
-            glBufferData(GL_TEXTURE_BUFFER, list.temp_nodes.size() * sizeof(bvh_node_t), list.temp_nodes.data(), GL_DYNAMIC_DRAW);
+            glBufferData(GL_TEXTURE_BUFFER, list.temp_nodes.size() * sizeof(bvh_node_t),
+                         list.temp_nodes.data(), GL_DYNAMIC_DRAW);
         }
 
         {
@@ -3135,29 +3648,38 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
-            const float uvs[] = { 0.0f, 0.0f,                       float(scr_w_), 0.0f,
-                                  float(scr_w_), float(scr_h_),     0.0f, float(scr_h_) };
+            const float uvs[] = {0.0f,          0.0f, float(scr_w_), 0.0f, float(scr_w_),
+                                 float(scr_h_), 0.0f, float(scr_h_)};
 
             glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
-            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
+            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_,
+                            sizeof(fs_quad_positions), fs_quad_positions);
+            glBufferSubData(GL_ARRAY_BUFFER,
+                            (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)),
+                            sizeof(uvs), uvs);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_,
+                            sizeof(fs_quad_indices), fs_quad_indices);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
+            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+                                  (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
             glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
+            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+                                  (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ +
+                                                            sizeof(fs_quad_positions)));
 
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, 0, clean_buf_.depth_tex.GetValue());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, 0,
+                                       clean_buf_.depth_tex.GetValue());
 
             ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, 1, nodes_tbo_);
 
             glUniform1i(debug_bvh_prog->uniform("uRootIndex").loc, list.root_index);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
             glDisableVertexAttribArray(REN_VTX_POS_LOC);
             glDisableVertexAttribArray(REN_VTX_UV1_LOC);
@@ -3184,33 +3706,37 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     if (list.render_flags & EnableTimers) {
         // Get timer queries result (for previous frame)
 
-        GLuint64 time_draw_start,
-                 time_skinning_start,
-                 time_shadow_start,
-                 time_depth_opaque_start,
-                 time_ao_start,
-                 time_opaque_start,
-                 time_transp_start,
-                 time_refl_start,
-                 time_taa_start,
-                 time_blur_start,
-                 time_blit_start,
-                 time_draw_end;
+        GLuint64 time_draw_start, time_skinning_start, time_shadow_start,
+            time_depth_opaque_start, time_ao_start, time_opaque_start, time_transp_start,
+            time_refl_start, time_taa_start, time_blur_start, time_blit_start,
+            time_draw_end;
 
         cur_query_ = (cur_query_ + 1) % FrameSyncWindow;
 
-        glGetQueryObjectui64v(queries_[cur_query_][TimeDrawStart], GL_QUERY_RESULT, &time_draw_start);
-        glGetQueryObjectui64v(queries_[cur_query_][TimeSkinningStart], GL_QUERY_RESULT, &time_skinning_start);
-        glGetQueryObjectui64v(queries_[cur_query_][TimeShadowMapStart], GL_QUERY_RESULT, &time_shadow_start);
-        glGetQueryObjectui64v(queries_[cur_query_][TimeDepthOpaqueStart], GL_QUERY_RESULT, &time_depth_opaque_start);
-        glGetQueryObjectui64v(queries_[cur_query_][TimeAOPassStart], GL_QUERY_RESULT, &time_ao_start);
-        glGetQueryObjectui64v(queries_[cur_query_][TimeOpaqueStart], GL_QUERY_RESULT, &time_opaque_start);
-        glGetQueryObjectui64v(queries_[cur_query_][TimeTranspStart], GL_QUERY_RESULT, &time_transp_start);
-        glGetQueryObjectui64v(queries_[cur_query_][TimeReflStart], GL_QUERY_RESULT, &time_refl_start);
-        glGetQueryObjectui64v(queries_[cur_query_][TimeTaaStart], GL_QUERY_RESULT, &time_taa_start);
-        glGetQueryObjectui64v(queries_[cur_query_][TimeBlurStart], GL_QUERY_RESULT, &time_blur_start);
-        glGetQueryObjectui64v(queries_[cur_query_][TimeBlitStart], GL_QUERY_RESULT, &time_blit_start);
-        glGetQueryObjectui64v(queries_[cur_query_][TimeDrawEnd], GL_QUERY_RESULT, &time_draw_end);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeDrawStart], GL_QUERY_RESULT,
+                              &time_draw_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeSkinningStart], GL_QUERY_RESULT,
+                              &time_skinning_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeShadowMapStart], GL_QUERY_RESULT,
+                              &time_shadow_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeDepthOpaqueStart], GL_QUERY_RESULT,
+                              &time_depth_opaque_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeAOPassStart], GL_QUERY_RESULT,
+                              &time_ao_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeOpaqueStart], GL_QUERY_RESULT,
+                              &time_opaque_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeTranspStart], GL_QUERY_RESULT,
+                              &time_transp_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeReflStart], GL_QUERY_RESULT,
+                              &time_refl_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeTaaStart], GL_QUERY_RESULT,
+                              &time_taa_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeBlurStart], GL_QUERY_RESULT,
+                              &time_blur_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeBlitStart], GL_QUERY_RESULT,
+                              &time_blit_start);
+        glGetQueryObjectui64v(queries_[cur_query_][TimeDrawEnd], GL_QUERY_RESULT,
+                              &time_draw_end);
 
         // assign values from previous frame
         backend_info_.cpu_start_timepoint_us = backend_cpu_start_;
@@ -3220,16 +3746,26 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         backend_info_.gpu_start_timepoint_us = uint64_t(time_draw_start / 1000);
         backend_info_.gpu_end_timepoint_us = uint64_t(time_draw_end / 1000);
 
-        backend_info_.skinning_time_us = uint32_t((time_shadow_start - time_skinning_start) / 1000);
-        backend_info_.shadow_time_us = uint32_t((time_depth_opaque_start - time_shadow_start) / 1000);
-        backend_info_.depth_opaque_pass_time_us = uint32_t((time_ao_start - time_depth_opaque_start) / 1000);
-        backend_info_.ao_pass_time_us = uint32_t((time_opaque_start - time_ao_start) / 1000);
-        backend_info_.opaque_pass_time_us = uint32_t((time_transp_start - time_opaque_start) / 1000);
-        backend_info_.transp_pass_time_us = uint32_t((time_refl_start - time_transp_start) / 1000);
-        backend_info_.refl_pass_time_us = uint32_t((time_taa_start - time_refl_start) / 1000);
-        backend_info_.taa_pass_time_us = uint32_t((time_blur_start - time_taa_start) / 1000);
-        backend_info_.blur_pass_time_us = uint32_t((time_blit_start - time_blur_start) / 1000);
-        backend_info_.blit_pass_time_us = uint32_t((time_draw_end - time_blit_start) / 1000);
+        backend_info_.skinning_time_us =
+            uint32_t((time_shadow_start - time_skinning_start) / 1000);
+        backend_info_.shadow_time_us =
+            uint32_t((time_depth_opaque_start - time_shadow_start) / 1000);
+        backend_info_.depth_opaque_pass_time_us =
+            uint32_t((time_ao_start - time_depth_opaque_start) / 1000);
+        backend_info_.ao_pass_time_us =
+            uint32_t((time_opaque_start - time_ao_start) / 1000);
+        backend_info_.opaque_pass_time_us =
+            uint32_t((time_transp_start - time_opaque_start) / 1000);
+        backend_info_.transp_pass_time_us =
+            uint32_t((time_refl_start - time_transp_start) / 1000);
+        backend_info_.refl_pass_time_us =
+            uint32_t((time_taa_start - time_refl_start) / 1000);
+        backend_info_.taa_pass_time_us =
+            uint32_t((time_blur_start - time_taa_start) / 1000);
+        backend_info_.blur_pass_time_us =
+            uint32_t((time_blit_start - time_blur_start) / 1000);
+        backend_info_.blit_pass_time_us =
+            uint32_t((time_draw_end - time_blit_start) / 1000);
     }
 
 #if 0
@@ -3292,7 +3828,8 @@ void Renderer::BlitPixels(const void *data, int w, int h, const Ren::eTexFormat 
     glBindVertexArray(0);
 }
 
-void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTexFormat format) {
+void Renderer::BlitPixelsTonemap(const void *data, int w, int h,
+                                 const Ren::eTexFormat format) {
     using namespace RendererInternal;
 
     if (temp_tex_w_ != w || temp_tex_h_ != h || temp_tex_format_ != format) {
@@ -3333,7 +3870,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
     Ren::Vec3f avarage_color;
     int sample_count = 0;
     const auto *_data = (const float *)data;
-    
+
     for (int y = 0; y < h; y += 100) {
         for (int x = 0; x < w; x += 100) {
             int i = y * w + x;
@@ -3344,7 +3881,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
 
     avarage_color /= float(sample_count);
 
-    const float lum = Dot(avarage_color, Ren::Vec3f{ 0.299f, 0.587f, 0.114f });
+    const float lum = Dot(avarage_color, Ren::Vec3f{0.299f, 0.587f, 0.114f});
 
     const float alpha = 0.25f;
     reduced_average_ = alpha * lum + (1.0f - alpha) * reduced_average_;
@@ -3358,14 +3895,15 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         glBindFramebuffer(GL_FRAMEBUFFER, down_buf_.fb);
         glViewport(0, 0, down_buf_.w, down_buf_.h);
 
-        const Ren::Program* cur_program = blit_down_prog_.get();
+        const Ren::Program *cur_program = blit_down_prog_.get();
         glUseProgram(cur_program->prog_id());
 
         glUniform4f(0, 0.0f, 0.0f, float(w), float(h));
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, temp_tex_);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid*)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
     }
 
     { // prepare blurred buffer
@@ -3380,9 +3918,11 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         glUniform4f(0, 0.0f, 0.0f, float(blur_buf2_.w), float(blur_buf2_.h));
         glUniform1f(4, 0.0f);
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, down_buf_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                   down_buf_.attachments[0].tex);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
         glUniform4f(0, 0.0f, 0.0f, float(blur_buf2_.w), float(blur_buf2_.h));
         glUniform1f(4, 1.0f);
@@ -3390,9 +3930,11 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         glBindFramebuffer(GL_FRAMEBUFFER, blur_buf1_.fb);
         glViewport(0, 0, blur_buf1_.w, blur_buf1_.h);
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, blur_buf2_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                   blur_buf2_.attachments[0].tex);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -3414,15 +3956,18 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h, const Ren::eTex
         glUniform1f(U_EXPOSURE, exposure);
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, temp_tex_);
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT, blur_buf1_.attachments[0].tex);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT,
+                                   blur_buf1_.attachments[0].tex);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(quad_ndx_offset_));
     }
 
     glBindVertexArray(0);
 }
 
-void Renderer::BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf, int first_att, int att_count, float multiplier) {
+void Renderer::BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf,
+                          int first_att, int att_count, float multiplier) {
     using namespace RendererInternal;
 
     glBindVertexArray(temp_vao_);
@@ -3439,46 +3984,57 @@ void Renderer::BlitBuffer(float px, float py, float sx, float sy, const FrameBuf
     glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
     for (int i = first_att; i < first_att + att_count; i++) {
-        const float positions[] = { px + float(i - first_att) * sx, py,              px + float(i - first_att + 1) * sx, py,
-                                    px + float(i - first_att + 1) * sx, py + sy,     px + float(i - first_att) * sx, py + sy };
+        const float positions[] = {px + float(i - first_att) * sx,     py,
+                                   px + float(i - first_att + 1) * sx, py,
+                                   px + float(i - first_att + 1) * sx, py + sy,
+                                   px + float(i - first_att) * sx,     py + sy};
 
         if (i == first_att) {
-            const float uvs[] = {
-                0.0f, 0.0f,                 (float)buf.w, 0.0f,
-                (float)buf.w, (float)buf.h,  0.0f, (float)buf.h
-            };
+            const float uvs[] = {0.0f,         0.0f,         (float)buf.w, 0.0f,
+                                 (float)buf.w, (float)buf.h, 0.0f,         (float)buf.h};
 
             glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
-            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
+            glBufferSubData(GL_ARRAY_BUFFER,
+                            (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)),
+                            sizeof(uvs), uvs);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_,
+                            sizeof(fs_quad_indices), fs_quad_indices);
 
             glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
+            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+                                  (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
             glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(positions)));
+            glVertexAttribPointer(
+                REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+                (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(positions)));
 
             glUniform1f(4, multiplier);
         }
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_,
+                        sizeof(positions), positions);
 
         if (buf.sample_count > 1) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, buf.attachments[i].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT,
+                                       buf.attachments[i].tex);
         } else {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, buf.attachments[i].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       buf.attachments[i].tex);
         }
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
     }
 
     glDisableVertexAttribArray(REN_VTX_POS_LOC);
     glDisableVertexAttribArray(REN_VTX_UV1_LOC);
 }
 
-void Renderer::BlitTexture(float px, float py, float sx, float sy, uint32_t tex_id, int resx, int resy, bool is_ms) {
+void Renderer::BlitTexture(float px, float py, float sx, float sy, uint32_t tex_id,
+                           int resx, int resy, bool is_ms) {
     using namespace RendererInternal;
 
     Ren::Program *cur_program = nullptr;
@@ -3493,15 +4049,12 @@ void Renderer::BlitTexture(float px, float py, float sx, float sy, uint32_t tex_
     glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
     {
-        const float positions[] = { px, py,               px + sx, py,
-                                    px + sx, py + sy,     px, py + sy };
+        const float positions[] = {px, py, px + sx, py, px + sx, py + sy, px, py + sy};
 
-        const float uvs[] = {
-            0.0f, 0.0f,                 (float)resx, 0.0f,
-            (float)resx, (float)resy,   0.0f, (float)resy
-        };
+        const float uvs[] = {0.0f,        0.0f,        (float)resx, 0.0f,
+                             (float)resx, (float)resy, 0.0f,        (float)resy};
 
-        uint16_t indices[] = { 0, 1, 2,    0, 2, 3 };
+        uint16_t indices[] = {0, 1, 2, 0, 2, 3};
 
         if (sy < 0.0f) {
             // keep counter-clockwise winding order
@@ -3512,32 +4065,42 @@ void Renderer::BlitTexture(float px, float py, float sx, float sy, uint32_t tex_
         glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(positions), positions);
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(indices), indices);
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_,
+                        sizeof(positions), positions);
+        glBufferSubData(GL_ARRAY_BUFFER,
+                        (GLintptr)(temp_buf1_vtx_offset_ + sizeof(positions)),
+                        sizeof(uvs), uvs);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_,
+                        sizeof(indices), indices);
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
+        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+                              (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(positions)));
+        glVertexAttribPointer(
+            REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+            (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(positions)));
 
         glUniform1f(4, 1.0f);
 
         if (is_ms) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, tex_id);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT,
+                                       tex_id);
         } else {
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, tex_id);
         }
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
     }
 
     glDisableVertexAttribArray(REN_VTX_POS_LOC);
     glDisableVertexAttribArray(REN_VTX_UV1_LOC);
 }
 
-void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &dst_store, int face) {
+void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &dst_store,
+                                   int face) {
     using namespace RendererInternal;
 
     GLint framebuf_before;
@@ -3552,7 +4115,8 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &
     int temp_probe_index = dst_store.reserved_temp_layer();
 
     auto cube_array = (GLuint)dst_store.tex_id();
-    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cube_array, 0, (GLint)(temp_probe_index * 6 + face));
+    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cube_array, 0,
+                              (GLint)(temp_probe_index * 6 + face));
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
     glViewport(0, 0, (GLint)dst_store.res(), (GLint)dst_store.res());
@@ -3565,33 +4129,45 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
     glEnableVertexAttribArray(REN_VTX_POS_LOC);
-    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
+    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+                          (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
     glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-    glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
+    glVertexAttribPointer(
+        REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+        (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
-    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
+    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_,
+                    sizeof(fs_quad_positions), fs_quad_positions);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_,
+                    sizeof(fs_quad_indices), fs_quad_indices);
 
-    {   // Update first mip level of a cubemap
+    { // Update first mip level of a cubemap
         Ren::Program *prog = blit_rgbm_prog_.get();
         glUseProgram(prog->prog_id());
 
         glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
-        const float uvs[] = {
-            0.0f, 0.0f,                             (float)src_buf.w, 0.0f,
-            (float)src_buf.w, (float)src_buf.h,     0.0f, (float)src_buf.h
-        };
+        const float uvs[] = {0.0f,
+                             0.0f,
+                             (float)src_buf.w,
+                             0.0f,
+                             (float)src_buf.w,
+                             (float)src_buf.h,
+                             0.0f,
+                             (float)src_buf.h};
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
+        glBufferSubData(GL_ARRAY_BUFFER,
+                        (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)),
+                        sizeof(uvs), uvs);
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, src_buf.attachments[0].tex);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                       (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
     }
 
-    {   // Update rest of mipmaps
+    { // Update rest of mipmaps
         Ren::Program *prog = blit_mipmap_prog_.get();
         glUseProgram(prog->prog_id());
 
@@ -3600,12 +4176,11 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &
         glUniform1f(1, float(temp_probe_index));
         glUniform1i(2, face);
 
-        const float uvs[] = {
-            -1.0f, 1.0f,   -1.0, -1.0f,
-            1.0f, -1.0f,   1.0f, 1.0f
-        };
+        const float uvs[] = {-1.0f, 1.0f, -1.0, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f};
 
-        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
+        glBufferSubData(GL_ARRAY_BUFFER,
+                        (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)),
+                        sizeof(uvs), uvs);
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, 0, cube_array);
 
@@ -3613,14 +4188,16 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &
         int level = 1;
 
         while (level <= dst_store.max_level()) {
-            glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cube_array, level, (GLint)(temp_probe_index * 6 + face));
+            glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cube_array,
+                                      level, (GLint)(temp_probe_index * 6 + face));
             assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
             glViewport(0, 0, res, res);
 
             glUniform1f(3, float(level - 1));
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
             res /= 2;
             level++;
@@ -3633,7 +4210,8 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &
     glBindVertexArray(0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
-    glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
+    glViewport(viewport_before[0], viewport_before[1], viewport_before[2],
+               viewport_before[3]);
 }
 
 void Renderer::BlitPrefilterFromTemp(const ProbeStorage &dst_store, int probe_index) {
@@ -3660,20 +4238,24 @@ void Renderer::BlitPrefilterFromTemp(const ProbeStorage &dst_store, int probe_in
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
     glEnableVertexAttribArray(REN_VTX_POS_LOC);
-    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
+    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+                          (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
     glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-    glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
+    glVertexAttribPointer(
+        REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+        (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
-    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
+    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_,
+                    sizeof(fs_quad_positions), fs_quad_positions);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_,
+                    sizeof(fs_quad_indices), fs_quad_indices);
 
-    const float uvs[] = {
-        -1.0f, 1.0f,   -1.0, -1.0f,
-        1.0f, -1.0f,   1.0f, 1.0f
-    };
+    const float uvs[] = {-1.0f, 1.0f, -1.0, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f};
 
-    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
+    glBufferSubData(GL_ARRAY_BUFFER,
+                    (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)),
+                    sizeof(uvs), uvs);
 
     Ren::Program *prog = blit_prefilter_prog_.get();
     glUseProgram(prog->prog_id());
@@ -3695,10 +4277,12 @@ void Renderer::BlitPrefilterFromTemp(const ProbeStorage &dst_store, int probe_in
         for (int face = 0; face < 6; face++) {
             glUniform1i(2, face);
 
-            glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cube_array, level, (GLint)(probe_index * 6 + face));
+            glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cube_array,
+                                      level, (GLint)(probe_index * 6 + face));
             assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
         }
 
         res /= 2;
@@ -3711,10 +4295,12 @@ void Renderer::BlitPrefilterFromTemp(const ProbeStorage &dst_store, int probe_in
     glBindVertexArray(0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
-    glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
+    glViewport(viewport_before[0], viewport_before[1], viewport_before[2],
+               viewport_before[3]);
 }
 
-bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int iteration, LightProbe &probe) {
+bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int iteration,
+                             LightProbe &probe) {
     using namespace RendererInternal;
 
     GLint framebuf_before;
@@ -3735,27 +4321,41 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
     glEnableVertexAttribArray(REN_VTX_POS_LOC);
-    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
+    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+                          (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
     glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-    glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
+    glVertexAttribPointer(
+        REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+        (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)));
 
-    const float uvs[] = {
-            0.0f, 0.0f,                                                 (float)probe_sample_buf_.w, 0.0f,
-            (float)probe_sample_buf_.w, (float)probe_sample_buf_.h,     0.0f, (float)probe_sample_buf_.h
-    };
+    const float uvs[] = {0.0f,
+                         0.0f,
+                         (float)probe_sample_buf_.w,
+                         0.0f,
+                         (float)probe_sample_buf_.w,
+                         (float)probe_sample_buf_.h,
+                         0.0f,
+                         (float)probe_sample_buf_.h};
 
-    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_, sizeof(fs_quad_positions), fs_quad_positions);
-    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)), sizeof(uvs), uvs);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_, sizeof(fs_quad_indices), fs_quad_indices);
+    glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)temp_buf1_vtx_offset_,
+                    sizeof(fs_quad_positions), fs_quad_positions);
+    glBufferSubData(GL_ARRAY_BUFFER,
+                    (GLintptr)(temp_buf1_vtx_offset_ + sizeof(fs_quad_positions)),
+                    sizeof(uvs), uvs);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_,
+                    sizeof(fs_quad_indices), fs_quad_indices);
 
     if (iteration != 0) {
         // Retrieve result of previous read
         glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)probe_sample_pbo_);
-        
+
         Ren::Vec3f sh_coeffs[4];
-        
-        auto *pixels = (float *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, 4 * probe_sample_buf_.w * probe_sample_buf_.h * sizeof(float), GL_MAP_READ_BIT);
+
+        auto *pixels = (float *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0,
+                                                 4 * probe_sample_buf_.w *
+                                                     probe_sample_buf_.h * sizeof(float),
+                                                 GL_MAP_READ_BIT);
         if (pixels) {
             for (int y = 0; y < probe_sample_buf_.h; y++) {
                 for (int x = 0; x < probe_sample_buf_.w; x++) {
@@ -3771,7 +4371,8 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
         }
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
-        const float inv_weight = 4.0f * Ren::Pi<float>() / float(probe_sample_buf_.w * probe_sample_buf_.w);
+        const float inv_weight =
+            4.0f * Ren::Pi<float>() / float(probe_sample_buf_.w * probe_sample_buf_.w);
         for (Ren::Vec3f &sh_coeff : sh_coeffs) {
             sh_coeff *= inv_weight;
         }
@@ -3784,7 +4385,7 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
     }
 
     if (iteration < 64) {
-        {   // Sample cubemap and project on sh basis
+        { // Sample cubemap and project on sh basis
             Ren::Program *prog = blit_project_sh_prog_.get();
             glUseProgram(prog->prog_id());
 
@@ -3797,14 +4398,17 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
             glUniform1f(1, float(probe_index));
             glUniform1i(2, iteration);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
         }
 
-        {   // Start readback from buffer (result will be retrieved at the start of next iteration)
+        { // Start readback from buffer (result will be retrieved at the start of next
+          // iteration)
             glReadBuffer(GL_COLOR_ATTACHMENT0);
             glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)probe_sample_pbo_);
 
-            glReadPixels(0, 0, probe_sample_buf_.w, probe_sample_buf_.h, GL_RGBA, GL_FLOAT, nullptr);
+            glReadPixels(0, 0, probe_sample_buf_.w, probe_sample_buf_.h, GL_RGBA,
+                         GL_FLOAT, nullptr);
 
             glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         }
@@ -3816,7 +4420,8 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
     glBindVertexArray(0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
-    glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
+    glViewport(viewport_before[0], viewport_before[1], viewport_before[2],
+               viewport_before[3]);
 
     return iteration == 64;
 }

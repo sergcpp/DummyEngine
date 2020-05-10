@@ -13,11 +13,11 @@ float RadicalInverse_VdC(uint32_t bits) {
     return float(bits) * 2.3283064365386963e-10f; // / 0x100000000
 }
 
-Ren::Vec2f Hammersley2D(int i, int N) {
+Ren::Vec2f Hammersley2D(const int i, const int N) {
     return Ren::Vec2f{float(i) / float(N), RadicalInverse_VdC((uint32_t)i)};
 }
 
-Ren::Vec3f ImportanceSampleGGX(const Ren::Vec2f &Xi, float roughness,
+Ren::Vec3f ImportanceSampleGGX(const Ren::Vec2f &Xi, const float roughness,
                                const Ren::Vec3f &N) {
     const float a = roughness * roughness;
 
@@ -36,7 +36,7 @@ Ren::Vec3f ImportanceSampleGGX(const Ren::Vec2f &Xi, float roughness,
     return TangentX * H[0] + TangentY * H[1] + N * H[2];
 }
 
-float GeometrySchlickGGX(float NdotV, float k) {
+float GeometrySchlickGGX(const float NdotV, const float k) {
     const float nom = NdotV;
     const float denom = NdotV * (1.0f - k) + k;
 
@@ -44,7 +44,7 @@ float GeometrySchlickGGX(float NdotV, float k) {
 }
 
 float GeometrySmith(const Ren::Vec3f &N, const Ren::Vec3f &V, const Ren::Vec3f &L,
-                    float k) {
+                    const float k) {
     const float NdotV = std::max(Ren::Dot(N, V), 0.0f);
     const float NdotL = std::max(Ren::Dot(N, L), 0.0f);
     const float ggx1 = GeometrySchlickGGX(NdotV, k);
@@ -53,16 +53,16 @@ float GeometrySmith(const Ren::Vec3f &N, const Ren::Vec3f &V, const Ren::Vec3f &
     return ggx1 * ggx2;
 }
 
-float G1V_Epic(float roughness, float n_dot_v) {
+float G1V_Epic(const float roughness, const float n_dot_v) {
     const float k = roughness * roughness;
     return n_dot_v / (n_dot_v * (1.0f - k) + k);
 }
 
-float G_Smith(float roughness, float n_dot_v, float n_dot_l) {
+float G_Smith(const float roughness, const float n_dot_v, const float n_dot_l) {
     return G1V_Epic(roughness, n_dot_v) * G1V_Epic(roughness, n_dot_v);
 }
 
-Ren::Vec2f IntegrateBRDF(float NdotV, float roughness) {
+Ren::Vec2f IntegrateBRDF(const float NdotV, const float roughness) {
     const auto V = Ren::Vec3f{std::sqrt(1.0f - NdotV * NdotV), 0.0f, NdotV};
 
     float A = 0.0f;
@@ -293,7 +293,7 @@ Renderer::Generate_SSSProfile_LUT(const int res, const int gauss_count,
     return img_data;
 }
 
-std::unique_ptr<int16_t[]> Renderer::Generate_RandDirs(int res,
+std::unique_ptr<int16_t[]> Renderer::Generate_RandDirs(const int res,
                                                        std::string &out_c_header) {
     using namespace RendererInternal;
 
@@ -309,7 +309,8 @@ std::unique_ptr<int16_t[]> Renderer::Generate_RandDirs(int res,
 
     std::unique_ptr<int16_t[]> out_data_rg16(new int16_t[2 * res * res]);
 
-    out_c_header += "static const uint32_t __rand_dirs_res = " + std::to_string(res) + ";\n";
+    out_c_header +=
+        "static const uint32_t __rand_dirs_res = " + std::to_string(res) + ";\n";
     out_c_header += "static const int16_t __rand_dirs[] = {\n";
 
     for (int i = 0; i < res * res; i++) {
@@ -319,10 +320,120 @@ std::unique_ptr<int16_t[]> Renderer::Generate_RandDirs(int res,
         out_data_rg16[2 * i + 1] = f32_to_s16(std::sin(ra));
 
         out_c_header += std::to_string(out_data_rg16[2 * i + 0]) + ", " +
-               std::to_string(out_data_rg16[2 * i + 1]) + ",\n";
+                        std::to_string(out_data_rg16[2 * i + 1]) + ",\n";
     }
 
     out_c_header += "};";
 
     return out_data_rg16;
+}
+
+std::unique_ptr<uint8_t[]> Renderer::Generate_ConeTraceLUT(const int resx, const int resy,
+                                                           const float cone_angles[4],
+                                                           std::string &out_c_header) {
+    using namespace RendererInternal;
+
+    std::unique_ptr<uint8_t[]> out_data(new uint8_t[4 * resx * resy]);
+
+    const auto B = Ren::Vec3f{1.0f, 0.0f, 0.0f};
+
+    auto intersect_sphere = [](const Ren::Vec3f &sph_pos, const float radius,
+                               const Ren::Vec3f &o, const Ren::Vec3f &d) {
+        const Ren::Vec3f L = sph_pos - o;
+        const float tca = Ren::Dot(L, d);
+        // if (tca < 0) return false;
+        const float d2 = Ren::Dot(L, L) - tca * tca;
+        if (d2 > radius * radius) {
+            return false;
+        }
+        const float thc = std::sqrt(radius * radius - d2);
+
+        float t0 = tca - thc;
+        float t1 = tca + thc;
+
+        if (t0 > t1) {
+            std::swap(t0, t1);
+        }
+
+        if (t0 < 0.0f) {
+            t0 = t1; // if t0 is negative, let's use t1 instead
+            if (t0 < 0.0f) {
+                return false; // both t0 and t1 are negative
+            }
+        }
+
+        // t = t0;
+
+        return true;
+    };
+
+    assert(resx == resy);
+    out_c_header +=
+        "static const uint32_t __cone_rt_lut_res = " + std::to_string(resx) + ";\n";
+    out_c_header += "static const uint8_t __cone_rt_lut[] = {\n";
+
+    for (int y = 0; y < resy; y++) {
+        const float sin_omega =
+            /*std::sin(45.0f * Ren::Pi<float>() / 180.0f) */ float(y) / float(resy - 1);
+        const float tan_omega = (float)std::tan(std::asin((double)sin_omega));
+        const float sph_dist = (y == 0) ? -1.5f : (/*sph_radius*/ 1.0f / tan_omega);
+
+        //const float _sin_omega = 1.0f / std::sqrt(1.0f + sph_dist * sph_dist);
+
+        for (int x = 0; x < resx; x++) {
+            const float cos_phi = float(x) / float(resx - 1);
+            const float phi = (float)std::acos((double)cos_phi);
+
+            const Ren::Mat4f rot_matrix = Ren::Rotate(Ren::Mat4f{}, phi, B);
+
+            auto cone_dir = Ren::Vec3f{0.0f, 1.0f, 0.0f};
+            cone_dir = Ren::Vec3f{
+                rot_matrix * Ren::Vec4f{cone_dir[0], cone_dir[1], cone_dir[2], 0.0f}};
+
+            const Ren::Vec3f T = Ren::Cross(Ren::Vec3f{cone_dir}, B);
+
+            out_c_header += '\t';
+
+            for (int j = 0; j < 4; j++) {
+                const float cone_angle = cone_angles[j];
+
+                int occluded_rays = 0;
+
+                const int SampleCount = 1024;
+                for (int i = 0; i < SampleCount; i++) {
+                    const Ren::Vec2f rnd = Hammersley2D(i, SampleCount);
+
+                    const float z = rnd[0] * (1.0f - std::cos(cone_angle));
+                    const float dir = std::sqrt(z);
+
+                    const float cos_angle = std::cos(2.0f * Ren::Pi<float>() * rnd[1]);
+                    const float sin_angle = std::sin(2.0f * Ren::Pi<float>() * rnd[1]);
+
+                    const Ren::Vec3f ray_dir = dir *sin_angle *B +
+                        std::sqrt(1.0f - dir) * cone_dir +
+                        dir * cos_angle * T;
+
+                    if (intersect_sphere(Ren::Vec3f{ 0.0f, sph_dist, 0.0f }, 1.0f,
+                        Ren::Vec3f{ 0.0f, 0.0f, 0.0f }, ray_dir)) {
+                        occluded_rays++;
+                    }
+                }
+
+                const float occlusion =
+                    float(SampleCount - occluded_rays) / float(SampleCount);
+
+                out_data[4 * (y * resx + x) + j] = uint8_t(255 * occlusion);
+
+                out_c_header += ' ';
+                out_c_header += std::to_string(uint8_t(255 * occlusion));
+                out_c_header += ',';
+            }
+        }
+
+        out_c_header += '\n';
+    }
+
+    out_c_header += "};";
+
+    return out_data;
 }

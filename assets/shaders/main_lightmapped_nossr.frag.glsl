@@ -29,6 +29,7 @@ layout(binding = REN_LIGHT_BUF_SLOT) uniform mediump samplerBuffer lights_buffer
 layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer decals_buffer;
 layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer cells_buffer;
 layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer items_buffer;
+layout(binding = REN_CONE_RT_LUT_SLOT) uniform lowp sampler2D cone_rt_lut;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = 0, std140)
@@ -186,6 +187,56 @@ void main(void) {
             additional_light += col_and_index.xyz * atten * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
         }
     }
+    
+    highp uint ecount = bitfieldExtract(cell_data.y, 16, 8);
+    
+    vec3 cone_origin_ws = aVertexPos_;
+    vec3 cone_dir_ws = normalize(vec3(-1.0, 1.0, 0.0));
+    
+    float cone_occlusion = 1.0;
+
+    for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + ecount; i++) {
+        highp uint item_data = texelFetch(items_buffer, int(i)).y;
+        int ei = int(bitfieldExtract(item_data, 0, 8));
+
+        vec4 pos_and_radius = shrd_data.uEllipsoids[ei].pos_and_radius;
+        vec4 axis_and_perp = shrd_data.uEllipsoids[ei].axis_and_perp;
+
+#if 1
+        float axis_len = length(axis_and_perp.xyz);
+
+        mat3 sph_ls;
+        sph_ls[0] = vec3(0.0);
+        sph_ls[0][floatBitsToInt(axis_and_perp.w)] = 1.0;
+        sph_ls[1] = axis_and_perp.xyz / axis_len;
+        sph_ls[2] = normalize(cross(sph_ls[0], sph_ls[1]));
+        sph_ls[0] = normalize(cross(sph_ls[1], sph_ls[2]));
+        sph_ls = transpose(sph_ls);
+
+        vec3 cone_origin_ls = sph_ls * (cone_origin_ws.xyz - pos_and_radius.xyz);
+        vec3 cone_dir_ls = sph_ls * cone_dir_ws;
+        
+        cone_origin_ls[1] /= axis_len;
+        cone_dir_ls[1] /= axis_len;
+        cone_dir_ls = normalize(cone_dir_ls);
+
+        vec3 dir = -cone_origin_ls;
+        float dist = length(dir);
+
+        float sin_omega = pos_and_radius.w / sqrt(pos_and_radius.w * pos_and_radius.w + dist * dist);
+        float cos_phi = dot(dir, cone_dir_ls) / dist;
+
+        cone_occlusion *= textureLod(cone_rt_lut, vec2(cos_phi, sin_omega), 0.0).r;
+#else
+        vec3 dir = pos_and_radius.xyz - cone_origin_ws;
+        float dist = length(dir);
+
+        float sin_omega = pos_and_radius.w / sqrt(pos_and_radius.w * pos_and_radius.w + dist * dist);
+        float cos_phi = dot(dir, cone_dir_ws) / dist;
+        
+        cone_occlusion *= textureLod(cone_rt_lut, vec2(cos_phi, sin_omega + 0.0 / 128.0), 0.0).r;
+#endif
+    }
 
     vec3 sh_l_00 = RGBMDecode(texture(lm_indirect_sh_texture[0], aVertexUVs_.zw));
     vec3 sh_l_10 = texture(lm_indirect_sh_texture[1], aVertexUVs_.zw).rgb;
@@ -206,7 +257,7 @@ void main(void) {
 
     vec2 ao_uvs = vec2(ix, iy) / shrd_data.uResAndFRes.zw;
     float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;
-    vec3 diffuse_color = albedo_color * (shrd_data.uSunCol.xyz * lambert * visibility + ambient_occlusion * ambient_occlusion * indirect_col + additional_light);
+    vec3 diffuse_color = albedo_color * (shrd_data.uSunCol.xyz * lambert * visibility + cone_occlusion * cone_occlusion * ambient_occlusion * ambient_occlusion * indirect_col + additional_light);
     
     vec3 view_ray_ws = normalize(shrd_data.uCamPosAndGamma.xyz - aVertexPos_);
     float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);
@@ -216,4 +267,6 @@ void main(void) {
     outColor = vec4(diffuse_color * kD, 1.0);
     outNormal = vec4(normal * 0.5 + 0.5, 0.0);
     outSpecular = specular_color;
+    
+    //outColor.rgb = 0.000001 * outColor.rgb + vec3(cone_occlusion);
 }

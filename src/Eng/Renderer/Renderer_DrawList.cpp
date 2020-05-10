@@ -15,6 +15,7 @@ DrawList::DrawList() {
     light_sources.realloc(REN_MAX_LIGHTS_TOTAL);
     decals.realloc(REN_MAX_DECALS_TOTAL);
     probes.realloc(REN_MAX_PROBES_TOTAL);
+    ellipsoids.realloc(REN_MAX_ELLIPSES_TOTAL);
 
     cells.realloc(REN_CELLS_COUNT);
     cells.count = REN_CELLS_COUNT;

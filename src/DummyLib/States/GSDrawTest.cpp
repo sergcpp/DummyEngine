@@ -216,6 +216,10 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
             uint32_t sophia_index = scene_manager_->FindObject(sophia_name);
             sophia_indices_[i] = sophia_index;
         }
+
+        if (sophia_indices_[0] == 0xffffffff) {
+            sophia_indices_[0] = scene_manager_->FindObject("assist");
+        }
     }
 
     {

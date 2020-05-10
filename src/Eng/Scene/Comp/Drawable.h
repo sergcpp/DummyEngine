@@ -18,6 +18,16 @@ struct Drawable {
     Ren::MeshRef        mesh, pt_mesh;
     Ren::String         mesh_file;
 
+    // TODO: allocate this dynamically (from pool)
+    struct Ellipsoid {
+        Ren::Vec3f offset;
+        float radius;
+        Ren::Vec3f axis;
+        uint32_t bone_index;
+        Ren::String bone_name;
+    } ellipsoids[16];
+    int ellipsoids_count = 0;
+
     static void Read(const JsObject &js_in, Drawable &dr);
     static void Write(const Drawable &dr, JsObject &js_out);
 
