@@ -34,6 +34,7 @@ struct Texture2DParams {
     eTexRepeat  repeat = eTexRepeat::Repeat;
     float       lod_bias = 0.0f;
     uint32_t    flags = 0;
+    uint8_t     fallback_color[4] = { 0, 255, 255, 255 };
 };
 
 enum class eTexLoadStatus { TexFound, TexCreatedDefault, TexCreatedFromData };
