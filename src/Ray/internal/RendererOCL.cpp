@@ -128,6 +128,9 @@ Ray::Ocl::Renderer::Renderer(int w, int h, int platform_index, int device_index)
         s << "#define TEXTURE_SRGB_BIT "        << TEXTURE_SRGB_BIT << "\n";
         s << "#define TEXTURE_WIDTH_BITS "      << TEXTURE_WIDTH_BITS << "\n";
 
+        s << "#define InvalidNodeIndex "        << InvalidNodeIndex << "\n";
+        s << "#define InvalidMNodeIndex"        << InvalidMNodeIndex << "\n";
+
         s << "#define HIT_EPS "                 << HIT_EPS << "f\n";
         s << "#define FLT_EPS "                 << FLT_EPS << "f\n";
         s << "#define PI "                      << PI << "f\n";

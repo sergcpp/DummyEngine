@@ -91,6 +91,9 @@ struct alignas(32) mbvh_node_t {
 };
 static_assert(sizeof(mbvh_node_t) == 224, "!");
 
+const uint32_t InvalidNodeIndex = 0xffffffff;
+const uint32_t InvalidMNodeIndex = 0xfffffffb;
+
 const int NUM_MIP_LEVELS = 14;
 const int MAX_MIP_LEVEL = NUM_MIP_LEVELS - 1;
 const int MAX_TEXTURE_SIZE = (1 << MAX_MIP_LEVEL);

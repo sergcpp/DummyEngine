@@ -1612,7 +1612,7 @@ bool Ray::NS::Traverse_MacroTree_Stackless_CPU(const ray_packet_t<S> &r, const s
 
         switch (src) {
         case FromChild:
-            if (cur == root_index || cur == 0xffffffff) {
+            if (cur == root_index || cur == InvalidNodeIndex) {
                 st.index++;
                 continue;
             }
@@ -1733,7 +1733,7 @@ bool Ray::NS::Traverse_MicroTree_Stackless_CPU(const ray_packet_t<S> &r, const s
 
         switch (src) {
         case FromChild:
-            if (cur == root_index || cur == 0xffffffff) {
+            if (cur == root_index || cur == InvalidNodeIndex) {
                 st.index++;
                 continue;
             }
@@ -2981,7 +2981,7 @@ void Ray::NS::ComputeDirectLighting(const simd_fvec<S> I[3], const simd_fvec<S> 
             uint32_t stack[MAX_STACK_SIZE];
             uint32_t stack_size = 0;
 
-            if (light_node_index != 0xffffffff) {
+            if (light_node_index != InvalidMNodeIndex) {
                 stack[stack_size++] = light_node_index;
             }
 
@@ -3091,7 +3091,7 @@ void Ray::NS::ComputeDirectLighting(const simd_fvec<S> I[3], const simd_fvec<S> 
         st.queue[0].mask = ray_mask;
         st.queue[0].stack_size = 0;
 
-        if (light_node_index != 0xffffffff) {
+        if (light_node_index != InvalidNodeIndex) {
             st.queue[0].stack[st.queue[0].stack_size++] = light_node_index;
         }
 
