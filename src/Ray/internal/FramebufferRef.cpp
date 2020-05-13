@@ -61,7 +61,7 @@ void Ray::Ref::Framebuffer::ComputeSHData(const rect_t &rect) {
 
             shl1_data_t &sh_data = sh_data_[i];
             const float *sh_coeff = sh_data.coeff_r;
-            const float inv_weight = sh_data.coeff_g[0] > FLT_EPS ? (2.0f * PI / sh_data.coeff_g[0]) : 0.0f;
+            const float inv_weight = sh_data.coeff_g[0] > FLT_EPS ? (1.0f / sh_data.coeff_g[0]) : 0.0f;
 
             pixel_color_t p = pixels_[i];
             p.r *= inv_weight;
@@ -85,7 +85,7 @@ void Ray::Ref::Framebuffer::MixWith(const Framebuffer &f2, const rect_t &rect, f
     }
 }
 
-void Ray::Ref::Framebuffer::MixWith_SH(const Framebuffer &f2, const rect_t &rect, float k) {
+void Ray::Ref::Framebuffer::MixSHWith(const Framebuffer &f2, const rect_t &rect, float k) {
     for (int y = rect.y; y < rect.y + rect.h; y++) {
         for (int x = rect.x; x < rect.x + rect.w; x++) {
             this->MixSHData(x, y, f2.GetSHData(x, y), k);

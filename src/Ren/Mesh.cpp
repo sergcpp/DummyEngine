@@ -103,9 +103,9 @@ namespace Ren {
         out_v.byz[0] = f32_to_s16(in_v.b[1]);
         out_v.byz[1] = f32_to_s16(in_v.b[2]);
         out_v.t0[0] = f32_to_f16(in_v.t0[0]);
-        out_v.t0[1] = f32_to_f16(in_v.t0[1]);
+        out_v.t0[1] = f32_to_f16(1.0f - in_v.t0[1]);
         out_v.t1[0] = f32_to_f16(in_v.t1[0]);
-        out_v.t1[1] = f32_to_f16(in_v.t1[1]);
+        out_v.t1[1] = f32_to_f16(1.0f - in_v.t1[1]);
     }
 
     void pack_vertex_data1(const orig_vertex_t &in_v, packed_vertex_data1_t &out_v) {
@@ -113,7 +113,7 @@ namespace Ren {
         out_v.p[1] = in_v.p[1];
         out_v.p[2] = in_v.p[2];
         out_v.t0[0] = f32_to_f16(in_v.t0[0]);
-        out_v.t0[1] = f32_to_f16(in_v.t0[1]);
+        out_v.t0[1] = f32_to_f16(1.0f - in_v.t0[1]);
     }
 
     void pack_vertex_data2(const orig_vertex_t &in_v, packed_vertex_data2_t &out_v) {
@@ -124,7 +124,7 @@ namespace Ren {
         out_v.byz[0] = f32_to_s16(in_v.b[1]);
         out_v.byz[1] = f32_to_s16(in_v.b[2]);
         out_v.t1[0] = f32_to_f16(in_v.t1[0]);
-        out_v.t1[1] = f32_to_f16(in_v.t1[1]);
+        out_v.t1[1] = f32_to_f16(1.0f - in_v.t1[1]);
     }
 
     void pack_vertex(const orig_vertex_skinned_t &in_v, packed_vertex_skinned_t &out_v) {

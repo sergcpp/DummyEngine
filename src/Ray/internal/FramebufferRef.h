@@ -69,14 +69,11 @@ public:
     force_inline void SetSampleDir(int x, int y, float dir_x, float dir_y, float dir_z) {
         int i = y * w_ + x;
 
-        const float SH_Y0 = 0.282094806f; // sqrt(1.0f / (4.0f * PI))
-        const float SH_Y1 = 0.488602519f; // sqrt(3.0f / (4.0f * PI))
-
         // temporary store sh coefficients in place of red channel
-        sh_data_[i].coeff_r[0] = SH_Y0;
-        sh_data_[i].coeff_r[1] = SH_Y1 * dir_y;
-        sh_data_[i].coeff_r[2] = SH_Y1 * dir_z;
-        sh_data_[i].coeff_r[3] = SH_Y1 * dir_x;
+        sh_data_[i].coeff_r[0] = 1.0f;
+        sh_data_[i].coeff_r[1] = dir_y;
+        sh_data_[i].coeff_r[2] = dir_z;
+        sh_data_[i].coeff_r[3] = dir_x;
     }
 
     force_inline void SetSampleWeight(int x, int y, const float weight) {
@@ -111,7 +108,7 @@ public:
     }
 
     void MixWith(const Framebuffer &f2, const rect_t &rect, float k);
-    void MixWith_SH(const Framebuffer &f2, const rect_t &rect, float k);
+    void MixSHWith(const Framebuffer &f2, const rect_t &rect, float k);
 
     template <typename F>
     void CopyFrom(const Framebuffer &f2, const rect_t &rect, F &&filter) {

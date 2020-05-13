@@ -396,7 +396,7 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const std::shared_ptr<SceneB
     clean_buf_.MixWith(temp_buf_, rect, mix_factor);
     if (cam.pass_settings.flags & OutputSH) {
         temp_buf_.ComputeSHData(rect);
-        clean_buf_.MixWith_SH(temp_buf_, rect, mix_factor);
+        clean_buf_.MixSHWith(temp_buf_, rect, mix_factor);
     }
 
     auto clamp_and_gamma_correct = [&cam](const pixel_color_t &p) {
