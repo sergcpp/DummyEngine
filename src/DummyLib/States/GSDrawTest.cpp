@@ -33,6 +33,7 @@ namespace GSDrawTestInternal {
         //"vegetation_test_night.json";
         //"test_decals.json";
         "courtroom.json";
+        //"lmap_test.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {
@@ -103,9 +104,6 @@ void GSDrawTest::OnPreloadScene(JsObject &js_scene) {
             js_objects.elements.push_back(js_palm_tree);
         }
     }
-
-    //std::ofstream test_out_file("C:\\repos\\DummyEngine\\assets\\scenes\\veg_test.json", std::ios::binary);
-    //js_scene.Write(test_out_file);
 #endif
 }
 

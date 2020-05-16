@@ -48,6 +48,52 @@ vec3 SRGBToLinear(vec3 sRGB) {
     return mix(higher, lower, cutoff);
 }
 
+vec3 EvalSHIrradiance(vec3 normal, vec3 sh_l_00, vec3 sh_l_10, vec3 sh_l_11,
+                      vec3 sh_l_12) {
+    return max((0.5 + (sh_l_10 * normal.y + sh_l_11 * normal.z + 
+                       sh_l_12 * normal.x)) * sh_l_00 * 2.0, vec3(0.0));
+}
+
+vec3 EvalSHIrradiance_NonLinear(vec3 normal, vec3 sh_l_00, vec3 sh_l_10, vec3 sh_l_11,
+                                vec3 sh_l_12) {
+    vec3 l = sqrt(sh_l_10 * sh_l_10 + sh_l_11 * sh_l_11 + sh_l_12 * sh_l_12);
+    vec3 inv_l = vec3(1.0) / l;
+    //if (l.x < 0.00001) inv_l.x = 0.0;
+    //if (l.y < 0.00001) inv_l.y = 0.0;
+    //if (l.z < 0.00001) inv_l.z = 0.0;
+
+    vec3 q = 0.5 * (vec3(1.0) + (sh_l_10 * normal.y + sh_l_11 * normal.z +
+                                 sh_l_12 * normal.x) / l);
+    vec3 p = vec3(1.0) + 2.0 * l;
+    vec3 a = (vec3(1.0) - l) / (vec3(1.0) + l);
+
+    if (l[0] > 1.01 || l[1] > 1.01 || l[2] > 1.01) {
+        return vec3(0.0, 0.0, 100000.0);
+    }
+
+    if (q[0] < 0.0 || q[1] < 0.0 || q[2] < 0.0) {
+        return vec3(10000.0, 0.0, 0.0);
+    }
+
+    if (a[0] < 0.0 || a[1] < 0.0 || a[2] < 0.0) {
+        return vec3(0.0, 10000.0, 0.0);
+    }
+
+    return sh_l_00 * (a + (vec3(1.0) - a) * (p + vec3(1.0)) * pow(q, p));
+}
+
+vec3 EvalSHIrradiance_NonLinear(vec3 dir, vec4 sh_r, vec4 sh_g, vec4 sh_b) {
+    vec3 R1_len = vec3(length(sh_r.yzw), length(sh_g.yzw), length(sh_b.yzw));
+    vec3 R0 = vec3(sh_r.x, sh_g.x, sh_b.x);
+
+    vec3 q = 0.5 * (vec3(1.0) + vec3(dot(dir.yzx, sh_r.yzw), dot(dir.yzx, sh_g.yzw),
+                                     dot(dir.yzx, sh_b.yzw)) / max(R1_len, 0.001));
+    vec3 p = vec3(1.0) + 2.0 * R1_len / R0;
+    vec3 a = (vec3(1.0) - R1_len / R0) / (vec3(1.0) + R1_len / R0);
+
+    return R0 * (a + (vec3(1.0) - a) * (p + vec3(1.0)) * pow(q, p));
+}
+
 const vec2 poisson_disk[16] = vec2[16](
     vec2(-0.5, 0.0),
     vec2(0.0, 0.5),

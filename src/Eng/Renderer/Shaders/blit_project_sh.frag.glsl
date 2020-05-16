@@ -33,15 +33,12 @@ void main() {
 
     vec3 rand_vec = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
 
-    const float Y0 = 0.282094806; // sqrt(1.0 / (4.0 * PI))
-    const float Y1 = 0.488602519; // sqrt(3.0 / (4.0 * PI))
-
     vec4 sh;
 
-    sh.x = Y0;
-    sh.y = Y1 * rand_vec.y;
-    sh.z = Y1 * rand_vec.z;
-    sh.w = Y1 * rand_vec.x;
+    sh.x = 1.0;
+    sh.y = rand_vec.y;
+    sh.z = rand_vec.z;
+    sh.w = rand_vec.x;
 
     vec3 color = RGBMDecode(textureLod(s_texture, vec4(rand_vec, src_layer), 0.0));
 

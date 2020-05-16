@@ -21,7 +21,8 @@ extern const int LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY;
 
 namespace SceneManagerInternal {
 void Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *name);
-void Write_RGBM(const float *out_data, int w, int h, int channels, const char *name);
+void Write_RGBM(const float *out_data, int w, int h, int channels, bool flip_y,
+                const char *name);
 void Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name);
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data);
@@ -30,7 +31,8 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
                                            int height, float invalid_threshold,
                                            int filter_size);
 
-std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &tex_ref);
+std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &tex_ref,
+                                                      bool flip_y);
 } // namespace SceneManagerInternal
 
 const float *SceneManager::Draw_PT(int *w, int *h) {
@@ -126,14 +128,14 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 #ifdef NDEBUG
         16;
 #else
-        1;
+        16;
 #endif
 
     const int LmSamplesIndirect =
 #ifdef NDEBUG
-        4096; // 16 * 4096;
+        256; // 16 * 4096;
 #else
-        1;
+        64;
 #endif
     const int LmSamplesPerPass = 16;
     const int TileSizeCPU = 64;
@@ -191,14 +193,14 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
         { // Save lightmap to file
             const Ray::pixel_color_t *pixels = ray_renderer_.get_pixels_ref();
 
-            int xpos = lm->pos[0], ypos = lm->pos[1];
+            const int xpos = lm->pos[0], ypos = lm->pos[1];
 
             // Copy image to lightmap atlas
             Ray::pixel_color_t *pt_lm_target =
                 cur_lm_indir_ ? pt_lm_indir_.data() : pt_lm_direct_.data();
             for (int j = 0; j < res; j++) {
                 memcpy(&pt_lm_target[(ypos + j) * LIGHTMAP_ATLAS_RESX + xpos],
-                       &pixels[(res - j - 1) * res], res * sizeof(Ray::pixel_color_t));
+                       &pixels[j * res], res * sizeof(Ray::pixel_color_t));
             }
 
             if (cur_lm_indir_) {
@@ -208,40 +210,20 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                 std::vector<Ray::pixel_color_t> temp_pixels1(
                     res * res, Ray::pixel_color_t{0.0f, 0.0f, 0.0f, 1.0f});
 
-                const float SH_Y0 = 0.282094806f; // sqrt(1.0f / (4.0f * PI))
-                const float SH_Y1 = 0.488602519f; // sqrt(3.0f / (4.0f * PI))
-
-                const float SH_A0 = 0.886226952f; // PI / sqrt(4.0f * Pi)
-                const float SH_A1 = 1.02332675f;  // sqrt(PI / 3.0f)
-
-                const float SH_AY0 = 0.25f; // SH_A0 * SH_Y0
-                const float SH_AY1 = 0.5f;  // SH_A1 * SH_Y1
-
-                const float inv_pi = 1.0f / Ren::Pi<float>();
-                const float mult[] = {SH_A0 * inv_pi, SH_A1 * inv_pi, SH_A1 * inv_pi,
-                                      SH_A1 * inv_pi};
-
-                for (int i = 0; i < res * res; i++) {
-                    for (int sh_l = 0; sh_l < 4; sh_l++) {
-                        sh_data[i].coeff_r[sh_l] *= mult[sh_l];
-                        sh_data[i].coeff_g[sh_l] *= mult[sh_l];
-                        sh_data[i].coeff_b[sh_l] *= mult[sh_l];
-                    }
-                }
-
                 for (int i = 0; i < res * res; i++) {
                     const float coverage = pixels[i].a;
-                    if (coverage < InvalidThreshold)
+                    if (coverage < InvalidThreshold) {
                         continue;
+                    }
 
-                    sh_data[i].coeff_r[0] /= coverage;
-                    sh_data[i].coeff_g[0] /= coverage;
-                    sh_data[i].coeff_b[0] /= coverage;
+                    sh_data[i].coeff_r[0] /= 2.0f * coverage;
+                    sh_data[i].coeff_g[0] /= 2.0f * coverage;
+                    sh_data[i].coeff_b[0] /= 2.0f * coverage;
 
                     for (int sh_l = 1; sh_l < 4; sh_l++) {
-                        sh_data[i].coeff_r[sh_l] /= coverage;
-                        sh_data[i].coeff_g[sh_l] /= coverage;
-                        sh_data[i].coeff_b[sh_l] /= coverage;
+                        sh_data[i].coeff_r[sh_l] /= 2.0f * coverage;
+                        sh_data[i].coeff_g[sh_l] /= 2.0f * coverage;
+                        sh_data[i].coeff_b[sh_l] /= 2.0f * coverage;
 
                         if (sh_data[i].coeff_r[0] >
                             std::numeric_limits<float>::epsilon()) {
@@ -256,12 +238,9 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                             sh_data[i].coeff_b[sh_l] /= sh_data[i].coeff_b[0];
                         }
 
-                        sh_data[i].coeff_r[sh_l] =
-                            0.25f * sh_data[i].coeff_r[sh_l] + 0.5f;
-                        sh_data[i].coeff_g[sh_l] =
-                            0.25f * sh_data[i].coeff_g[sh_l] + 0.5f;
-                        sh_data[i].coeff_b[sh_l] =
-                            0.25f * sh_data[i].coeff_b[sh_l] + 0.5f;
+                        sh_data[i].coeff_r[sh_l] = 0.5f * sh_data[i].coeff_r[sh_l] + 0.5f;
+                        sh_data[i].coeff_g[sh_l] = 0.5f * sh_data[i].coeff_g[sh_l] + 0.5f;
+                        sh_data[i].coeff_b[sh_l] = 0.5f * sh_data[i].coeff_b[sh_l] + 0.5f;
 
                         sh_data[i].coeff_r[sh_l] =
                             Ren::Clamp(sh_data[i].coeff_r[sh_l], 0.0f, 1.0f);
@@ -272,28 +251,29 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                     }
                 }
 
+                // Fill alpha channel with pixel 'validity'
+                for (int i = 0; i < res * res; i++) {
+                    // Coverage division is already applied in previous step
+                    if (pixels[i].a > InvalidThreshold) {
+                        temp_pixels1[i].a = 1.0f;
+                    } else {
+                        // Mark pixel as invalid, so it is be processed during dilate
+                        temp_pixels1[i].a = 0.0f;
+                    }
+                }
+
                 for (int sh_l = 0; sh_l < 4; sh_l++) {
                     for (int i = 0; i < res * res; i++) {
                         temp_pixels1[i].r = sh_data[i].coeff_r[sh_l];
                         temp_pixels1[i].g = sh_data[i].coeff_g[sh_l];
                         temp_pixels1[i].b = sh_data[i].coeff_b[sh_l];
-
-                        // Coverage division is already applied in previous step
-                        if (pixels[i].a > InvalidThreshold) {
-                            temp_pixels1[i].a = 1.0f;
-                        } else {
-                            temp_pixels1[i].a = 0.0f;
-                        }
                     }
 
-                    { // Add image to atlas
-                        for (int j = 0; j < res; j++) {
-                            memcpy(
-                                &pt_lm_indir_sh_[sh_l]
-                                                [(ypos + j) * LIGHTMAP_ATLAS_RESX + xpos],
-                                &temp_pixels1[(res - j - 1) * res],
-                                res * sizeof(Ray::pixel_color_t));
-                        }
+                    // Add image to atlas
+                    for (int j = 0; j < res; j++) {
+                        memcpy(&pt_lm_indir_sh_[sh_l]
+                                               [(ypos + j) * LIGHTMAP_ATLAS_RESX + xpos],
+                               &temp_pixels1[j * res], res * sizeof(Ray::pixel_color_t));
                     }
                 }
             }
@@ -343,7 +323,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
                     SceneManagerInternal::Write_RGBM(
                         &out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4,
-                        out_file_name.c_str());
+                        false /* flip_y */, out_file_name.c_str());
                 }
 
                 { // Save indirect lightmap
@@ -361,7 +341,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
                     SceneManagerInternal::Write_RGBM(
                         &out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4,
-                        out_file_name.c_str());
+                        false /* flip_y */, out_file_name.c_str());
                 }
 
                 { // Save indirect SH-lightmap
@@ -385,7 +365,8 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                             // Save first band as HDR
                             SceneManagerInternal::Write_RGBM(
                                 &out_pixels[0].r, LIGHTMAP_ATLAS_RESX,
-                                LIGHTMAP_ATLAS_RESY, 4, out_file_name.c_str());
+                                LIGHTMAP_ATLAS_RESY, 4, false /* flip_y */,
+                                out_file_name.c_str());
                         } else {
                             // Save rest as LDR
                             SceneManagerInternal::Write_RGB(
@@ -628,7 +609,8 @@ void SceneManager::InitScene_PT(bool _override) {
                             auto tex_it = loaded_textures.find(tex_name);
                             if (tex_it == loaded_textures.end()) {
                                 std::unique_ptr<Ray::pixel_color8_t[]> tex_data =
-                                    SceneManagerInternal::GetTextureData(tex_ref);
+                                    SceneManagerInternal::GetTextureData(
+                                        tex_ref, true /* flip_y */);
 
                                 const Ren::Texture2DParams &params = tex_ref->params();
 

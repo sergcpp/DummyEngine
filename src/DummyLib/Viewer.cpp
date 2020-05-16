@@ -31,7 +31,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         Sys::AssetFile config_file("assets_pc/config.json", Sys::AssetFile::FileIn);
 #endif
         size_t config_file_size = config_file.size();
-        
+
         std::unique_ptr<char[]> buf(new char[config_file_size]);
         config_file.Read(buf.get(), config_file_size);
 
@@ -45,14 +45,13 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
 
     const JsObject &ui_settings = main_config.at("ui_settings").as_obj();
 
-    {   // load fonts
+    { // load fonts
         auto font_storage = std::make_shared<FontStorage>();
         AddComponent(UI_FONTS_KEY, font_storage);
 
         const JsObject &fonts = ui_settings.at("fonts").as_obj();
         for (const auto &el : fonts.elements) {
             const std::string &name = el.first;
-            
 
 #if defined(__ANDROID__)
             std::string file_name = std::string("assets/");
@@ -61,20 +60,23 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
 #endif
             file_name += el.second.as_str().val;
 
-            std::shared_ptr<Gui::BitmapFont> loaded_font = font_storage->LoadFont(name, file_name, ctx.get());
+            std::shared_ptr<Gui::BitmapFont> loaded_font =
+                font_storage->LoadFont(name, file_name, ctx.get());
             (void)loaded_font;
         }
     }
 
-    {   // create commnadline
+    { // create commnadline
         auto cmdline = std::make_shared<Cmdline>();
         AddComponent(CMDLINE_KEY, cmdline);
     }
 
-    {   // create UI for performance debugging
+    { // create UI for performance debugging
         auto font_storage = GetComponent<FontStorage>(UI_FONTS_KEY);
         auto ui_root = GetComponent<Gui::BaseElement>(UI_ROOT_KEY);
-        auto debug_ui = std::make_shared<DebugInfoUI>(Ren::Vec2f{ -1.0f, -1.0f }, Ren::Vec2f{ 2.0f, 2.0f }, ui_root.get(), font_storage->FindFont("main_font"));
+        auto debug_ui = std::make_shared<DebugInfoUI>(
+            Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, ui_root.get(),
+            font_storage->FindFont("main_font"));
         AddComponent(UI_DEBUG_KEY, debug_ui);
     }
 
@@ -87,10 +89,13 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         s.w = w;
         s.h = h;
 
-        auto ray_renderer = Ray::CreateRenderer(s, Ray::RendererSSE2 | Ray::RendererAVX | Ray::RendererAVX2 | Ray::RendererOCL);
+        auto ray_renderer = Ray::CreateRenderer(
+            s, Ray::RendererRef | Ray::RendererSSE2 | Ray::RendererAVX |
+                   Ray::RendererAVX2 | Ray::RendererOCL);
         AddComponent(RAY_RENDERER_KEY, ray_renderer);
 
-        auto scene_manager = std::make_shared<SceneManager>(*ctx, *ray_renderer, *threads);
+        auto scene_manager =
+            std::make_shared<SceneManager>(*ctx, *ray_renderer, *threads);
         AddComponent(SCENE_MANAGER_KEY, scene_manager);
     }
 
@@ -119,9 +124,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     state_manager->Push(GSCreate(eGameState::GS_DRAW_TEST, this));
 }
 
-void Viewer::Resize(int w, int h) {
-    GameBase::Resize(w, h);
-}
+void Viewer::Resize(int w, int h) { GameBase::Resize(w, h); }
 
 void Viewer::Frame() {
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
@@ -140,12 +143,14 @@ void Viewer::PrepareAssets(const char *platform) {
     } else {
         std::string out_folder = "assets_";
         out_folder += platform;
-        SceneManager::PrepareAssets("assets", out_folder.c_str(), platform, nullptr, &log);
+        SceneManager::PrepareAssets("assets", out_folder.c_str(), platform, nullptr,
+                                    &log);
     }
 #endif
 }
 
-void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const char *out_file) {
+void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
+                            const char *out_file) {
     ctx.log->Info("[PrepareAssets] Prep %s", out_file);
 
     struct dict_link_t {
@@ -165,10 +170,10 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
     std::vector<dict_entry_t> dict_entries;
     std::vector<std::string> translations;
 
-    {   // parse file and fill dictionary data structures
+    { // parse file and fill dictionary data structures
         JsObject js_root;
 
-        {   // read json file
+        { // read json file
             std::ifstream src_stream(in_file, std::ios::binary);
 
             if (!js_root.Read(src_stream)) {
@@ -186,13 +191,14 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
         int index = 0;
         for (JsElement &js_entry_el : js_entries.elements) {
             JsObject &js_entry = js_entry_el.as_obj();
-            if (!js_entry.Has("sense")) continue;
+            if (!js_entry.Has("sense"))
+                continue;
 
             JsObject &js_form = js_entry.at("form").as_obj();
             JsString &js_orth = js_form.at("orth").as_str();
 
             dict_link_t &link = dictionary_hashmap[Ren::String{js_orth.val.c_str()}];
-            link.entries[link.entries_count++] = (uint32_t) dict_entries.size();
+            link.entries[link.entries_count++] = (uint32_t)dict_entries.size();
 
             dict_entries.emplace_back();
             dict_entry_t &entry = dict_entries.back();
@@ -242,7 +248,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
                 }
             }
 
-            entry.trans_index = (uint32_t) translations.size();
+            entry.trans_index = (uint32_t)translations.size();
             entry.trans_count = 0;
 
             if (js_entry.at("sense").type() == JS_TYPE_OBJECT) {
@@ -306,9 +312,10 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
         }
     }
 
-    {   // compact data structures and write output file
+    { // compact data structures and write output file
         size_t str_mem_req = 0;
-        for (auto it = dictionary_hashmap.cbegin(); it < dictionary_hashmap.cend(); ++it) {
+        for (auto it = dictionary_hashmap.cbegin(); it < dictionary_hashmap.cend();
+             ++it) {
             str_mem_req += it->key.length() + 1;
 
             const dict_link_t &src_link = it->val;
@@ -332,7 +339,8 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
         std::unique_ptr<char[]> comb_str_buf(new char[str_mem_req]);
         size_t comb_str_buf_ndx1 = 0, comb_str_buf_ndx2 = str_mem_trans_off;
 
-        //Ren::HashMap32<const char *, Dictionary::dict_link_compact_t> dictionary_hashmap_compact;
+        // Ren::HashMap32<const char *, Dictionary::dict_link_compact_t>
+        // dictionary_hashmap_compact;
         std::vector<Dictionary::dict_link_compact_t> links_compact;
         std::vector<Dictionary::dict_entry_compact_t> entries_compact;
 
@@ -341,7 +349,8 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
 
         int links_count = 0;
 
-        for (auto it = dictionary_hashmap.cbegin(); it < dictionary_hashmap.cend(); ++it) {
+        for (auto it = dictionary_hashmap.cbegin(); it < dictionary_hashmap.cend();
+             ++it) {
             const dict_link_t &src_link = it->val;
 
             const size_t key_len = it->key.length();
@@ -351,9 +360,10 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
             comb_str_buf_ndx1 += key_len + 1;
 
             links_compact.emplace_back();
-            Dictionary::dict_link_compact_t &link = links_compact.back(); //dictionary_hashmap_compact[key];
+            Dictionary::dict_link_compact_t &link =
+                links_compact.back(); // dictionary_hashmap_compact[key];
             link.key_str_off = key_str_offset;
-            link.entry_index = (uint32_t) entries_compact.size();
+            link.entry_index = (uint32_t)entries_compact.size();
             link.entry_count = src_link.entries_count;
 
             links_count += link.entry_count;
@@ -368,25 +378,29 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
                 dst_entry.num = (uint8_t)src_entry.num;
                 dst_entry.gen = (uint8_t)src_entry.gen;
 
-                {   // correct word writing
+                { // correct word writing
                     const size_t len = src_entry.orth.length();
-                    memcpy(&comb_str_buf[comb_str_buf_ndx1], src_entry.orth.c_str(), len + 1);
+                    memcpy(&comb_str_buf[comb_str_buf_ndx1], src_entry.orth.c_str(),
+                           len + 1);
                     dst_entry.orth_str_off = (uint32_t)comb_str_buf_ndx1;
                     comb_str_buf_ndx1 += len + 1;
                 }
 
                 if (!src_entry.pron.empty()) { // word pronunciation
                     const size_t len = src_entry.pron.length();
-                    memcpy(&comb_str_buf[comb_str_buf_ndx1], src_entry.pron.c_str(), len + 1);
+                    memcpy(&comb_str_buf[comb_str_buf_ndx1], src_entry.pron.c_str(),
+                           len + 1);
                     dst_entry.pron_str_off = (uint32_t)comb_str_buf_ndx1;
                     comb_str_buf_ndx1 += len + 1;
                 } else {
                     dst_entry.pron_str_off = 0xffffffff;
                 }
 
-                for (uint32_t j = src_entry.trans_index; j < src_entry.trans_index + src_entry.trans_count; j++) {
+                for (uint32_t j = src_entry.trans_index;
+                     j < src_entry.trans_index + src_entry.trans_count; j++) {
                     const size_t len = translations[j].length();
-                    memcpy(&comb_str_buf[comb_str_buf_ndx2], translations[j].c_str(), len + 1);
+                    memcpy(&comb_str_buf[comb_str_buf_ndx2], translations[j].c_str(),
+                           len + 1);
 
                     if (j == src_entry.trans_index) {
                         dst_entry.trans_str_off = (uint32_t)comb_str_buf_ndx2;
@@ -400,31 +414,35 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
             }
         }
 
-        assert(comb_str_buf_ndx1 == str_mem_trans_off && "Translations start is not right!");
+        assert(comb_str_buf_ndx1 == str_mem_trans_off &&
+               "Translations start is not right!");
         assert(comb_str_buf_ndx2 == str_mem_req && "Buffer end is not right!");
-        assert(translations_processed == translations_count && "Translations count does not match!");
+        assert(translations_processed == translations_count &&
+               "Translations count does not match!");
         assert(links_count == dict_entries.size() && "Links count is wrong!");
 
         std::ofstream out_stream(out_file, std::ios::binary);
-        const uint32_t header_size = 4 + sizeof(uint32_t) + int(Dictionary::eDictChunks::DictChCount) * 3 * sizeof(uint32_t);
+        const uint32_t header_size =
+            4 + sizeof(uint32_t) +
+            int(Dictionary::eDictChunks::DictChCount) * 3 * sizeof(uint32_t);
         uint32_t hdr_offset = 0, data_offset = header_size;
 
-        {   // File format string
-            const char signature[] = { 'D', 'I', 'C', 'T' };
+        { // File format string
+            const char signature[] = {'D', 'I', 'C', 'T'};
             out_stream.write(signature, 4);
             hdr_offset += 4;
         }
 
-        {   // Header size
+        { // Header size
             out_stream.write((const char *)&header_size, sizeof(uint32_t));
             hdr_offset += sizeof(uint32_t);
         }
 
-        {   // Info data offsets
-            const uint32_t
-                    info_data_chunk_id = uint32_t(Dictionary::eDictChunks::DictChInfo),
-                    info_data_offset = data_offset,
-                    info_data_size = sizeof(Dictionary::dict_info_t);
+        { // Info data offsets
+            const uint32_t info_data_chunk_id =
+                               uint32_t(Dictionary::eDictChunks::DictChInfo),
+                           info_data_offset = data_offset,
+                           info_data_size = sizeof(Dictionary::dict_info_t);
             out_stream.write((const char *)&info_data_chunk_id, sizeof(uint32_t));
             out_stream.write((const char *)&info_data_offset, sizeof(uint32_t));
             out_stream.write((const char *)&info_data_size, sizeof(uint32_t));
@@ -432,11 +450,13 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
             data_offset += info_data_size;
         }
 
-        {   // Link data offsets
-            const uint32_t
-                    link_data_chunk_id = uint32_t(Dictionary::eDictChunks::DictChLinks),
-                    link_data_offset = data_offset,
-                    link_data_size = uint32_t(sizeof(Dictionary::dict_link_compact_t) * links_compact.size());
+        { // Link data offsets
+            const uint32_t link_data_chunk_id =
+                               uint32_t(Dictionary::eDictChunks::DictChLinks),
+                           link_data_offset = data_offset,
+                           link_data_size =
+                               uint32_t(sizeof(Dictionary::dict_link_compact_t) *
+                                        links_compact.size());
             out_stream.write((const char *)&link_data_chunk_id, sizeof(uint32_t));
             out_stream.write((const char *)&link_data_offset, sizeof(uint32_t));
             out_stream.write((const char *)&link_data_size, sizeof(uint32_t));
@@ -444,11 +464,13 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
             data_offset += link_data_size;
         }
 
-        {   // Entry data offsets
-            const uint32_t
-                    entry_data_chunk_id = uint32_t(Dictionary::eDictChunks::DictChEntries),
-                    entry_data_offset = data_offset,
-                    entry_data_size = uint32_t(sizeof(Dictionary::dict_entry_compact_t) * entries_compact.size());
+        { // Entry data offsets
+            const uint32_t entry_data_chunk_id =
+                               uint32_t(Dictionary::eDictChunks::DictChEntries),
+                           entry_data_offset = data_offset,
+                           entry_data_size =
+                               uint32_t(sizeof(Dictionary::dict_entry_compact_t) *
+                                        entries_compact.size());
             out_stream.write((const char *)&entry_data_chunk_id, sizeof(uint32_t));
             out_stream.write((const char *)&entry_data_offset, sizeof(uint32_t));
             out_stream.write((const char *)&entry_data_size, sizeof(uint32_t));
@@ -456,11 +478,11 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
             data_offset += entry_data_size;
         }
 
-        {   // String data offsets
-            const uint32_t
-                    string_data_chunk_id = uint32_t(Dictionary::eDictChunks::DictChStrings),
-                    string_data_offset = data_offset,
-                    string_data_size = (uint32_t)str_mem_req;
+        { // String data offsets
+            const uint32_t string_data_chunk_id =
+                               uint32_t(Dictionary::eDictChunks::DictChStrings),
+                           string_data_offset = data_offset,
+                           string_data_size = (uint32_t)str_mem_req;
             out_stream.write((const char *)&string_data_chunk_id, sizeof(uint32_t));
             out_stream.write((const char *)&string_data_offset, sizeof(uint32_t));
             out_stream.write((const char *)&string_data_size, sizeof(uint32_t));
@@ -470,7 +492,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
 
         assert(hdr_offset == header_size);
 
-        {   // Info data
+        { // Info data
             Dictionary::dict_info_t info;
             info.src_lang[0] = 'e';
             info.src_lang[1] = 'n';
@@ -483,13 +505,15 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const ch
         }
 
         // Link data
-        out_stream.write((const char *)links_compact.data(), sizeof(Dictionary::dict_link_compact_t) * links_compact.size());
+        out_stream.write((const char *)links_compact.data(),
+                         sizeof(Dictionary::dict_link_compact_t) * links_compact.size());
 
         // Entry data
-        out_stream.write((const char *)entries_compact.data(), sizeof(Dictionary::dict_entry_compact_t) * entries_compact.size());
+        out_stream.write((const char *)entries_compact.data(),
+                         sizeof(Dictionary::dict_entry_compact_t) *
+                             entries_compact.size());
 
         // String data
         out_stream.write(comb_str_buf.get(), str_mem_req);
     }
 }
-

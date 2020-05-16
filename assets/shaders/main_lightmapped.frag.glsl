@@ -184,15 +184,11 @@ void main(void) {
     }
     
     vec3 sh_l_00 = RGBMDecode(texture(lm_indirect_sh_texture[0], aVertexUVs_.zw));
-    vec3 sh_l_10 = texture(lm_indirect_sh_texture[1], aVertexUVs_.zw).rgb;
-    vec3 sh_l_11 = texture(lm_indirect_sh_texture[2], aVertexUVs_.zw).rgb;
-    vec3 sh_l_12 = texture(lm_indirect_sh_texture[3], aVertexUVs_.zw).rgb;
+    vec3 sh_l_10 = 2.0 * texture(lm_indirect_sh_texture[1], aVertexUVs_.zw).rgb - vec3(1.0);
+    vec3 sh_l_11 = 2.0 * texture(lm_indirect_sh_texture[2], aVertexUVs_.zw).rgb - vec3(1.0);
+    vec3 sh_l_12 = 2.0 * texture(lm_indirect_sh_texture[3], aVertexUVs_.zw).rgb - vec3(1.0);
     
-    //indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
-    vec3 indirect_col = (0.5 + (sh_l_10 - vec3(0.5)) * normal.y +
-                               (sh_l_11 - vec3(0.5)) * normal.z +
-                               (sh_l_12 - vec3(0.5)) * normal.x) * sh_l_00 * 2.0;
-    indirect_col = max(indirect_col, vec3(0.0));
+    vec3 indirect_col = EvalSHIrradiance_NonLinear(normal, sh_l_00, sh_l_10, sh_l_11, sh_l_12);
     
     float lambert = clamp(dot(normal, shrd_data.uSunDir.xyz), 0.0, 1.0);
     float visibility = 0.0;

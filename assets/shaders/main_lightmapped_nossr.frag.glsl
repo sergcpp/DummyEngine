@@ -141,7 +141,7 @@ void main(void) {
     }
     
     vec3 normal = normal_color * 2.0 - 1.0;
-    normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_), aVertexNormal_) * normal);
+    normal = normalize(mat3(cross(aVertexTangent_, aVertexNormal_), aVertexTangent_, aVertexNormal_) * normal);
     
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
 
@@ -208,16 +208,16 @@ void main(void) {
         mat3 sph_ls;
         sph_ls[0] = vec3(0.0);
         sph_ls[0][floatBitsToInt(axis_and_perp.w)] = 1.0;
-        sph_ls[1] = axis_and_perp.xyz / axis_len;
+        sph_ls[1] = axis_and_perp.xyz;// / axis_len;
         sph_ls[2] = normalize(cross(sph_ls[0], sph_ls[1]));
         sph_ls[0] = normalize(cross(sph_ls[1], sph_ls[2]));
-        sph_ls = transpose(sph_ls);
+        sph_ls = inverse(sph_ls);
 
         vec3 cone_origin_ls = sph_ls * (cone_origin_ws.xyz - pos_and_radius.xyz);
         vec3 cone_dir_ls = sph_ls * cone_dir_ws;
         
-        cone_origin_ls[1] /= axis_len;
-        cone_dir_ls[1] /= axis_len;
+        //cone_origin_ls[1] /= axis_len;
+        //cone_dir_ls[1] /= axis_len;
         cone_dir_ls = normalize(cone_dir_ls);
 
         vec3 dir = -cone_origin_ls;
@@ -226,7 +226,7 @@ void main(void) {
         float sin_omega = pos_and_radius.w / sqrt(pos_and_radius.w * pos_and_radius.w + dist * dist);
         float cos_phi = dot(dir, cone_dir_ls) / dist;
 
-        cone_occlusion *= textureLod(cone_rt_lut, vec2(cos_phi, sin_omega), 0.0).r;
+        //cone_occlusion *= textureLod(cone_rt_lut, vec2(cos_phi, sin_omega), 0.0).r;
 #else
         vec3 dir = pos_and_radius.xyz - cone_origin_ws;
         float dist = length(dir);
@@ -239,15 +239,11 @@ void main(void) {
     }
 
     vec3 sh_l_00 = RGBMDecode(texture(lm_indirect_sh_texture[0], aVertexUVs_.zw));
-    vec3 sh_l_10 = texture(lm_indirect_sh_texture[1], aVertexUVs_.zw).rgb;
-    vec3 sh_l_11 = texture(lm_indirect_sh_texture[2], aVertexUVs_.zw).rgb;
-    vec3 sh_l_12 = texture(lm_indirect_sh_texture[3], aVertexUVs_.zw).rgb;
+    vec3 sh_l_10 = 2.0 * texture(lm_indirect_sh_texture[1], aVertexUVs_.zw).rgb - vec3(1.0);
+    vec3 sh_l_11 = 2.0 * texture(lm_indirect_sh_texture[2], aVertexUVs_.zw).rgb - vec3(1.0);
+    vec3 sh_l_12 = 2.0 * texture(lm_indirect_sh_texture[3], aVertexUVs_.zw).rgb - vec3(1.0);
     
-    //indirect_col += sh_l_00 + sh_l_10 * normal.y + sh_l_11 * normal.z + sh_l_12 * normal.x;
-    vec3 indirect_col = (0.5 + (sh_l_10 - vec3(0.5)) * normal.y +
-                               (sh_l_11 - vec3(0.5)) * normal.z +
-                               (sh_l_12 - vec3(0.5)) * normal.x) * sh_l_00 * 2.0;
-    indirect_col = max(indirect_col, vec3(0.0));
+    vec3 indirect_col = EvalSHIrradiance_NonLinear(normal, sh_l_00, sh_l_10, sh_l_11, sh_l_12);
     
     float lambert = clamp(dot(normal, shrd_data.uSunDir.xyz), 0.0, 1.0);
     float visibility = 0.0;
@@ -268,5 +264,5 @@ void main(void) {
     outNormal = vec4(normal * 0.5 + 0.5, 0.0);
     outSpecular = specular_color;
     
-    //outColor.rgb = 0.000001 * outColor.rgb + vec3(cone_occlusion);
+    //outColor.rgb = 0.000001 * outColor.rgb + vec3(0.5 * normal.z + 0.5);
 }

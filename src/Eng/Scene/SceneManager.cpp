@@ -201,19 +201,16 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         lm_indir_tex_name += "_lm_indirect";
         lm_indir_tex_name += tex_ext;
 
-        std::string lm_indir_sh_tex_name[4] = {lm_base_tex_name, lm_base_tex_name,
-                                               lm_base_tex_name, lm_base_tex_name};
-        for (int sh_l = 0; sh_l < 4; sh_l++) {
-            lm_indir_sh_tex_name[sh_l] += "_lm_sh_";
-            lm_indir_sh_tex_name[sh_l] += std::to_string(sh_l);
-            lm_indir_sh_tex_name[sh_l] += tex_ext;
-        }
-
         scene_data_.env.lm_direct = OnLoadTexture(lm_direct_tex_name.c_str(), 0);
         // scene_data_.env.lm_indir = OnLoadTexture(lm_indir_tex_name.c_str(), 0);
         for (int sh_l = 0; sh_l < 4; sh_l++) {
+            std::string lm_indir_sh_tex_name = lm_base_tex_name;
+            lm_indir_sh_tex_name += "_lm_sh_";
+            lm_indir_sh_tex_name += std::to_string(sh_l);
+            lm_indir_sh_tex_name += tex_ext;
+
             scene_data_.env.lm_indir_sh[sh_l] =
-                OnLoadTexture(lm_indir_sh_tex_name[sh_l].c_str(), 0);
+                OnLoadTexture(lm_indir_sh_tex_name.c_str(), 0);
         }
     }
 
@@ -773,9 +770,9 @@ void SceneManager::PostloadLightmap(const JsObject &js_comp_obj, void *comp,
 
     lm->xform = Ren::Vec4f{
         float(lm->pos[0]) / LIGHTMAP_ATLAS_RESX,
-        1.0f - float(lm->pos[1]) / LIGHTMAP_ATLAS_RESY,
+        float(lm->pos[1]) / LIGHTMAP_ATLAS_RESY,
         float(lm->size[0]) / LIGHTMAP_ATLAS_RESX,
-        -float(lm->size[1]) / LIGHTMAP_ATLAS_RESY,
+        float(lm->size[1]) / LIGHTMAP_ATLAS_RESY,
     };
 }
 
@@ -1010,6 +1007,19 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
 
     Ren::Texture2DParams p;
     p.flags = flags | Ren::TexUsageScene;
+
+    if (strstr(name_buf, "lm_sh_0")) {
+        p.fallback_color[0] = 255;
+        p.fallback_color[1] = 255;
+        p.fallback_color[2] = 255;
+        p.repeat = Ren::eTexRepeat::ClampToEdge;
+    } else if (strstr(name_buf, "lm_sh_")) {
+        p.fallback_color[0] = 200;
+        p.fallback_color[1] = 200;
+        p.fallback_color[2] = 200;
+        p.repeat = Ren::eTexRepeat::ClampToEdge;
+    }
+
     Ren::eTexLoadStatus status;
     Ren::Texture2DRef ret = ctx_.LoadTexture2D(name_buf, nullptr, 0, p, &status);
     if (status == Ren::eTexLoadStatus::TexCreatedDefault) {

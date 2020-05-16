@@ -1964,7 +1964,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     glDisable(GL_MULTISAMPLE);
 
     //
-    // Skydome drawing + depth/specular clear
+    // Skydome drawing + implicit depth/specular clear
     //
 
     if ((list.render_flags & DebugWireframe) == 0 && list.env.env_map) {
@@ -3057,8 +3057,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             sph_ls[0] = Ren::Normalize(Ren::Cross(sph_ls[1], sph_ls[2]));
             // sph_ls = Ren::Transpose(sph_ls);
 
-            //const float l = Ren::Length(sph_ls[1]);
-            //sph_ls[1] = Ren::Normalize(sph_ls[1]) / l;
+            // const float l = Ren::Length(sph_ls[1]);
+            // sph_ls[1] = Ren::Normalize(sph_ls[1]) / l;
 
             sph_ls *= e.radius;
 
@@ -4371,8 +4371,7 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, int probe_index, int ite
         }
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
-        const float inv_weight =
-            4.0f * Ren::Pi<float>() / float(probe_sample_buf_.w * probe_sample_buf_.w);
+        const float inv_weight = 1.0f / float(probe_sample_buf_.h * probe_sample_buf_.h);
         for (Ren::Vec3f &sh_coeff : sh_coeffs) {
             sh_coeff *= inv_weight;
         }

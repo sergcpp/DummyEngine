@@ -338,7 +338,7 @@ void SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file, co
     assert(out_glyph_count == total_glyph_count);
 
     /*if (strstr(in_file, "Roboto-Regular_16px")) {
-        WriteImage(temp_bitmap.get(), temp_bitmap_res[0], temp_bitmap_res[1], 4, "test.png");
+        WriteImage(temp_bitmap.get(), temp_bitmap_res[0], temp_bitmap_res[1], 4, false, "test.png");
     }*/
 
     std::ofstream out_stream(out_file, std::ios::binary);

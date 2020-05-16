@@ -45,22 +45,27 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
 
     Ren::eTexFormat format;
     int _w, _h;
-    std::unique_ptr<uint8_t[]> pixels = Ren::ReadTGAFile(&in_file_data[0], _w, _h, format);
+    std::unique_ptr<uint8_t[]> pixels =
+        Ren::ReadTGAFile(&in_file_data[0], _w, _h, format);
 
-    if (_w != w || _h != h) return;
+    if (_w != w || _h != h)
+        return;
 
     if (format == Ren::eTexFormat::RawRGB888) {
         int i = 0;
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
-                out_data[i++] = { pixels[3 * (y * w + x)], pixels[3 * (y * w + x) + 1], pixels[3 * (y * w + x) + 2], 255 };
+                out_data[i++] = {pixels[3 * (y * w + x)], pixels[3 * (y * w + x) + 1],
+                                 pixels[3 * (y * w + x) + 2], 255};
             }
         }
     } else if (format == Ren::eTexFormat::RawRGBA8888) {
         int i = 0;
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
-                out_data[i++] = { pixels[4 * (y * w + x)], pixels[4 * (y * w + x) + 1], pixels[4 * (y * w + x) + 2], pixels[4 * (y * w + x) + 3] };
+                out_data[i++] = {pixels[4 * (y * w + x)], pixels[4 * (y * w + x) + 1],
+                                 pixels[4 * (y * w + x) + 2],
+                                 pixels[4 * (y * w + x) + 3]};
             }
         }
     } else {
@@ -68,9 +73,11 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
     }
 }
 
-std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int width, int height, float invalid_threshold, int filter_size) {
-    std::vector<Ray::pixel_color_t> temp_pixels1{ pixels, pixels + width * height },
-                                    temp_pixels2{ (size_t)width * height };
+std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int width,
+                                           int height, float invalid_threshold,
+                                           int filter_size) {
+    std::vector<Ray::pixel_color_t> temp_pixels1{pixels, pixels + width * height},
+        temp_pixels2{(size_t)width * height};
 
     // Avoid bound checks in debug
     Ray::pixel_color_t *_temp_pixels1 = temp_pixels1.data(),
@@ -95,16 +102,18 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
                 } else {
                     has_invalid = true;
 
-                    Ray::pixel_color_t new_p = { 0 };
+                    Ray::pixel_color_t new_p = {0};
                     int count = 0;
 
-                    const int _ys[] = { y - 1, y, y + 1 };
-                    const int _xs[] = { x - 1, x, x + 1 };
+                    const int _ys[] = {y - 1, y, y + 1};
+                    const int _xs[] = {x - 1, x, x + 1};
                     for (const int _y : _ys) {
-                        if (_y < 0 || _y > height - 1) continue;
+                        if (_y < 0 || _y > height - 1)
+                            continue;
 
                         for (const int _x : _xs) {
-                            if ((_x == x && _y == y) || _x < 0 || _x > width - 1) continue;
+                            if ((_x == x && _y == y) || _x < 0 || _x > width - 1)
+                                continue;
 
                             const Ray::pixel_color_t &p = _temp_pixels1[_y * width + _x];
                             if (p.a >= invalid_threshold) {
@@ -128,27 +137,40 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
         }
 
         std::swap(_temp_pixels1, _temp_pixels2);
-        if (!has_invalid) break;
+        if (!has_invalid)
+            break;
     }
 
     return temp_pixels1;
 }
 
-std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &tex_ref) {
+std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Texture2DRef &tex_ref,
+                                                      const bool flip_y) {
     const Ren::Texture2DParams &params = tex_ref->params();
 
-    std::unique_ptr<Ray::pixel_color8_t[]> tex_data(new Ray::pixel_color8_t[params.w * params.h]);
+    std::unique_ptr<Ray::pixel_color8_t[]> tex_data(
+        new Ray::pixel_color8_t[params.w * params.h]);
 #if defined(__ANDROID__)
-    Sys::AssetFile in_file((std::string("assets/textures/") + tex_ref->name().c_str()).c_str());
+    Sys::AssetFile in_file(
+        (std::string("assets/textures/") + tex_ref->name().c_str()).c_str());
     SceneManagerInternal::LoadTGA(in_file, params.w, params.h, &tex_data[0]);
 #else
     tex_ref->ReadTextureData(Ren::eTexFormat::RawRGBA8888, (void *)&tex_data[0]);
 #endif
 
+    if (flip_y) {
+        for (int y = 0; y < params.h / 2; y++) {
+            std::swap_ranges(&tex_data[y * params.w], &tex_data[(y + 1) * params.w],
+                             &tex_data[(params.h - y - 1) * params.w]);
+        }
+    }
+
     return tex_data;
 }
 
-void ReadAllFiles_r(assets_context_t &ctx, const char *in_folder, const std::function<void(assets_context_t &ctx, const char *)> &callback) {
+void ReadAllFiles_r(
+    assets_context_t &ctx, const char *in_folder,
+    const std::function<void(assets_context_t &ctx, const char *)> &callback) {
     DIR *in_dir = opendir(in_folder);
     if (!in_dir) {
         ctx.log->Error("Cannot open folder %s", in_folder);
@@ -178,7 +200,10 @@ void ReadAllFiles_r(assets_context_t &ctx, const char *in_folder, const std::fun
     closedir(in_dir);
 }
 
-void ReadAllFiles_MT_r(assets_context_t &ctx, const char *in_folder, const std::function<void(assets_context_t &ctx, const char *)> &callback, Sys::ThreadPool *threads, std::vector<std::future<void>> &events) {
+void ReadAllFiles_MT_r(
+    assets_context_t &ctx, const char *in_folder,
+    const std::function<void(assets_context_t &ctx, const char *)> &callback,
+    Sys::ThreadPool *threads, std::vector<std::future<void>> &events) {
     DIR *in_dir = opendir(in_folder);
     if (!in_dir) {
         ctx.log->Error("Cannot open folder %s", in_folder);
@@ -201,9 +226,8 @@ void ReadAllFiles_MT_r(assets_context_t &ctx, const char *in_folder, const std::
             path += '/';
             path += in_ent->d_name;
 
-            events.push_back(threads->enqueue([path, &ctx, &callback]() {
-                callback(ctx, path.c_str());
-            }));
+            events.push_back(threads->enqueue(
+                [path, &ctx, &callback]() { callback(ctx, path.c_str()); }));
         }
     }
 
@@ -213,7 +237,8 @@ void ReadAllFiles_MT_r(assets_context_t &ctx, const char *in_folder, const std::
 bool CheckCanSkipAsset(const char *in_file, const char *out_file, Ren::ILog *log) {
 #if !defined(NDEBUG) && 0
     log->Info("Warning: glsl is forced to be not skipped!");
-    if (strstr(in_file, ".glsl")) return false;
+    if (strstr(in_file, ".glsl"))
+        return false;
 #endif
 
 #ifdef _WIN32
@@ -225,7 +250,8 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, Ren::ILog *log
     }
     HANDLE out_h = CreateFile(out_file, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL);
     LARGE_INTEGER out_size = {};
-    if (out_h != INVALID_HANDLE_VALUE && GetFileSizeEx(out_h, &out_size) && out_size.QuadPart) {
+    if (out_h != INVALID_HANDLE_VALUE && GetFileSizeEx(out_h, &out_size) &&
+        out_size.QuadPart) {
         FILETIME in_t, out_t;
         GetFileTime(in_h, NULL, NULL, &in_t);
         GetFileTime(out_h, NULL, NULL, &out_t);
@@ -241,14 +267,12 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, Ren::ILog *log
     CloseHandle(out_h);
 #else
     struct stat st1 = {}, st2 = {};
-    const int
-        res1 = stat(in_file, &st1),
-        res2 = stat(out_file, &st2);
+    const int res1 = stat(in_file, &st1), res2 = stat(out_file, &st2);
     if (res1 != -1 && res2 != -1) {
         struct tm tm1 = {}, tm2 = {};
         localtime_r(&st1.st_ctime, &tm1);
         localtime_r(&st2.st_ctime, &tm2);
-        
+
         time_t t1 = mktime(&tm1), t2 = mktime(&tm2);
 
         double diff_s = difftime(t1, t2);
@@ -258,7 +282,7 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, Ren::ILog *log
     } else if (res1 == -1) {
         log->Info("[PrepareAssets] Failed to open input file %s!", in_file);
     }
-    
+
 #endif
     return false;
 }
@@ -309,7 +333,8 @@ void ReplaceTextureExtension(const char *platform, std::string &tex) {
     }
 }
 
-std::string ExtractHTMLData(assets_context_t &ctx, const char *in_file, std::string &out_caption) {
+std::string ExtractHTMLData(assets_context_t &ctx, const char *in_file,
+                            std::string &out_caption) {
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
     int file_size = (int)src_stream.tellg();
     src_stream.seekg(0, std::ios::beg);
@@ -374,17 +399,20 @@ std::string ExtractHTMLData(assets_context_t &ctx, const char *in_file, std::str
     return out_str;
 }
 
-}
+} // namespace SceneManagerInternal
 
 Ren::HashMap32<std::string, SceneManager::Handler> SceneManager::g_asset_handlers;
 
 bool g_astc_initialized = false;
 
-void SceneManager::RegisterAsset(const char *in_ext, const char *out_ext, const ConvertAssetFunc &convert_func) {
-    g_asset_handlers[in_ext] = { out_ext, convert_func };
+void SceneManager::RegisterAsset(const char *in_ext, const char *out_ext,
+                                 const ConvertAssetFunc &convert_func) {
+    g_asset_handlers[in_ext] = {out_ext, convert_func};
 }
 
-bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, const char *platform, Sys::ThreadPool *p_threads, Ren::ILog *log) {
+bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
+                                 const char *platform, Sys::ThreadPool *p_threads,
+                                 Ren::ILog *log) {
     using namespace SceneManagerInternal;
 
     // for astc codec
@@ -395,38 +423,40 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
     WriteCommonShaderIncludes(in_folder);
 
-    g_asset_handlers["bff"]         = { "bff",          HCopy               };
-    g_asset_handlers["mesh"]        = { "mesh",         HCopy               };
-    g_asset_handlers["anim"]        = { "anim",         HCopy               };
-    g_asset_handlers["vert.glsl"]   = { "vert.glsl",    HPreprocessShader   };
-    g_asset_handlers["frag.glsl"]   = { "frag.glsl",    HPreprocessShader   };
-    g_asset_handlers["comp.glsl"]   = { "comp.glsl",    HPreprocessShader   };
-    g_asset_handlers["ttf"]         = { "font",         HConvTTFToFont      };
+    g_asset_handlers["bff"] = {"bff", HCopy};
+    g_asset_handlers["mesh"] = {"mesh", HCopy};
+    g_asset_handlers["anim"] = {"anim", HCopy};
+    g_asset_handlers["vert.glsl"] = {"vert.glsl", HPreprocessShader};
+    g_asset_handlers["frag.glsl"] = {"frag.glsl", HPreprocessShader};
+    g_asset_handlers["comp.glsl"] = {"comp.glsl", HPreprocessShader};
+    g_asset_handlers["ttf"] = {"font", HConvTTFToFont};
 
     if (strcmp(platform, "pc") == 0) {
-        g_asset_handlers["json"]    = { "json",         HPreprocessJson     };
-        g_asset_handlers["txt"]     = { "txt",          HPreprocessMaterial };
-        g_asset_handlers["tga"]     = { "dds",          HConvToDDS          };
-        g_asset_handlers["hdr"]     = { "dds",          HConvHDRToRGBM      };
-        g_asset_handlers["png"]     = { "dds",          HConvToDDS          };
-        g_asset_handlers["img"]     = { "dds",          HConvImgToDDS       };
+        g_asset_handlers["json"] = {"json", HPreprocessJson};
+        g_asset_handlers["txt"] = {"txt", HPreprocessMaterial};
+        g_asset_handlers["tga"] = {"dds", HConvToDDS};
+        g_asset_handlers["hdr"] = {"dds", HConvHDRToRGBM};
+        g_asset_handlers["png"] = {"dds", HConvToDDS};
+        g_asset_handlers["img"] = {"dds", HConvImgToDDS};
     } else if (strcmp(platform, "android") == 0) {
-        g_asset_handlers["json"]    = { "json",         HPreprocessJson     };
-        g_asset_handlers["txt"]     = { "txt",          HPreprocessMaterial };
-        g_asset_handlers["tga"]     = { "ktx",          HConvToASTC         };
-        g_asset_handlers["hdr"]     = { "ktx",          HConvHDRToRGBM      };
-        g_asset_handlers["png"]     = { "ktx",          HConvToASTC         };
-        g_asset_handlers["img"]     = { "ktx",          HConvImgToASTC      };
+        g_asset_handlers["json"] = {"json", HPreprocessJson};
+        g_asset_handlers["txt"] = {"txt", HPreprocessMaterial};
+        g_asset_handlers["tga"] = {"ktx", HConvToASTC};
+        g_asset_handlers["hdr"] = {"ktx", HConvHDRToRGBM};
+        g_asset_handlers["png"] = {"ktx", HConvToASTC};
+        g_asset_handlers["img"] = {"ktx", HConvImgToASTC};
     }
 
-    g_asset_handlers["uncompressed.tga"] = { "uncompressed.tga",  HCopy };
-    g_asset_handlers["uncompressed.png"] = { "uncompressed.png",  HCopy };
+    g_asset_handlers["uncompressed.tga"] = {"uncompressed.tga", HCopy};
+    g_asset_handlers["uncompressed.png"] = {"uncompressed.png", HCopy};
 
     auto convert_file = [out_folder](assets_context_t &ctx, const char *in_file) {
         const char *base_path = strchr(in_file, '/');
-        if (!base_path) return;
+        if (!base_path)
+            return;
         const char *ext = strchr(in_file, '.');
-        if (!ext) return;
+        if (!ext)
+            return;
 
         ext++;
 
@@ -437,8 +467,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
 
         const std::string out_file =
-            out_folder +
-            std::string(base_path, strlen(base_path) - strlen(ext)) +
+            out_folder + std::string(base_path, strlen(base_path) - strlen(ext)) +
             handler->ext;
 
         if (CheckCanSkipAsset(in_file, out_file.c_str(), ctx.log)) {
@@ -446,7 +475,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
 
         if (!CreateFolders(out_file.c_str(), ctx.log)) {
-            ctx.log->Info("[PrepareAssets] Failed to create directories for %s", out_file.c_str());
+            ctx.log->Info("[PrepareAssets] Failed to create directories for %s",
+                          out_file.c_str());
             return;
         }
 
@@ -462,10 +492,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     }
 #endif
 
-    assets_context_t ctx = {
-        platform,
-        log
-    };
+    assets_context_t ctx = {platform, log};
 
     /*if (p_threads) {
         std::vector<std::future<void>> events;
@@ -475,17 +502,19 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             e.wait();
         }
     } else {*/
-        ReadAllFiles_r(ctx, in_folder, convert_file);
+    ReadAllFiles_r(ctx, in_folder, convert_file);
     //}
 
     return true;
 }
 
-void SceneManager::HSkip(assets_context_t &ctx, const char *in_file, const char *out_file) {
+void SceneManager::HSkip(assets_context_t &ctx, const char *in_file,
+                         const char *out_file) {
     ctx.log->Info("[PrepareAssets] Skip %s", out_file);
 }
 
-void SceneManager::HCopy(assets_context_t &ctx, const char *in_file, const char *out_file) {
+void SceneManager::HCopy(assets_context_t &ctx, const char *in_file,
+                         const char *out_file) {
     ctx.log->Info("[PrepareAssets] Copy %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary);
@@ -497,7 +526,8 @@ void SceneManager::HCopy(assets_context_t &ctx, const char *in_file, const char 
     std::copy(src_beg, src_end, dst_beg);
 }
 
-void SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_file, const char *out_file) {
+void SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_file,
+                                       const char *out_file) {
     ctx.log->Info("[PrepareAssets] Prep %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary);
@@ -510,7 +540,8 @@ void SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_fil
     }
 }
 
-void SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file, const char *out_file) {
+void SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file,
+                                   const char *out_file) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Prep %s", out_file);
@@ -524,7 +555,7 @@ void SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file, c
     }
 
     std::string base_path = in_file;
-    {   // extract base part of file path
+    { // extract base part of file path
         const size_t n = base_path.find_last_of('/');
         if (n != std::string::npos) {
             base_path = base_path.substr(0, n + 1);
@@ -540,15 +571,18 @@ void SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file, c
                 JsObject &js_decal = js_obj.at("decal").as_obj();
                 if (js_decal.Has("diff")) {
                     JsString &js_diff_tex = js_decal.at("diff").as_str();
-                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_diff_tex.val);
+                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform,
+                                                                  js_diff_tex.val);
                 }
                 if (js_decal.Has("norm")) {
                     JsString &js_norm_tex = js_decal.at("norm").as_str();
-                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_norm_tex.val);
+                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform,
+                                                                  js_norm_tex.val);
                 }
                 if (js_decal.Has("spec")) {
                     JsString &js_spec_tex = js_decal.at("spec").as_str();
-                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_spec_tex.val);
+                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform,
+                                                                  js_spec_tex.val);
                 }
             }
         }
@@ -579,14 +613,14 @@ void SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file, c
             if (js_chapter.Has("html_src")) {
                 JsObject &js_html_src = js_chapter.at("html_src").as_obj();
                 for (auto &js_src_pair : js_html_src.elements) {
-                    const std::string
-                            &js_lang = js_src_pair.first,
-                            &js_file_path = js_src_pair.second.as_str().val;
+                    const std::string &js_lang = js_src_pair.first,
+                                      &js_file_path = js_src_pair.second.as_str().val;
 
                     const std::string html_file_path = base_path + js_file_path;
 
                     std::string caption;
-                    std::string html_body = ExtractHTMLData(ctx, html_file_path.c_str(), caption);
+                    std::string html_body =
+                        ExtractHTMLData(ctx, html_file_path.c_str(), caption);
 
                     caption = std::regex_replace(caption, std::regex("\n"), "");
                     caption = std::regex_replace(caption, std::regex("\r"), "");
@@ -602,21 +636,24 @@ void SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file, c
                     // remove spaces
                     if (!caption.empty()) {
                         int n = 0;
-                        while (n < (int)caption.length() && caption[n] == ' ') n++;
+                        while (n < (int)caption.length() && caption[n] == ' ')
+                            n++;
                         caption.erase(0, n);
-                        while (caption.back() == ' ') caption.pop_back();
+                        while (caption.back() == ' ')
+                            caption.pop_back();
                     }
 
                     if (!html_body.empty()) {
                         int n = 0;
-                        while (n < (int)html_body.length() && html_body[n] == ' ') n++;
+                        while (n < (int)html_body.length() && html_body[n] == ' ')
+                            n++;
                         html_body.erase(0, n);
-                        while (html_body.back() == ' ') html_body.pop_back();
+                        while (html_body.back() == ' ')
+                            html_body.pop_back();
                     }
 
-                    js_caption[js_lang] = JsString{ caption };
-                    js_text_data[js_lang
-                    ] = JsString{ html_body };
+                    js_caption[js_lang] = JsString{caption};
+                    js_text_data[js_lang] = JsString{html_body};
                 }
             }
 

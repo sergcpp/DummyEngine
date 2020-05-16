@@ -15,7 +15,6 @@ int main(int argc, char *argv[]) {
 // use GL_EXT_shader_group_vote
 // refactor msaa (resolve once, remove permutations)
 // refactor file read on android
-// fix decals (use compressed 16x16 blocks)
 // start with scene editing
 // use direct state access extension
 // add assetstream

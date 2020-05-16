@@ -29,17 +29,10 @@ void main() {
         // debug environment map
         outColor.rgb = RGBMDecode(textureLod(env_texture, vec4(view_dir_ws, shrd_data.uProbes[probe_index].unused_and_layer.w), mip_level));
     } else {
-        const float SH_A0 = 0.886226952; // PI / sqrt(4.0f * Pi)
-        const float SH_A1 = 1.02332675;  // sqrt(PI / 3.0f)
-
-        // debug sh coeffs
-        vec4 vv = vec4(SH_A0, SH_A1 * view_dir_ws.yzx);
-
-        outColor.r = dot(shrd_data.uProbes[probe_index].sh_coeffs[0], vv);
-        outColor.g = dot(shrd_data.uProbes[probe_index].sh_coeffs[1], vv);
-        outColor.b = dot(shrd_data.uProbes[probe_index].sh_coeffs[2], vv);
-
-        outColor.rgb = max(outColor.rgb, vec3(0.0));
+        outColor.rgb = EvalSHIrradiance_NonLinear(view_dir_ws,
+                                                  shrd_data.uProbes[probe_index].sh_coeffs[0],
+                                                  shrd_data.uProbes[probe_index].sh_coeffs[1],
+                                                  shrd_data.uProbes[probe_index].sh_coeffs[2]);
     }
 
     outColor.a = 1.0;

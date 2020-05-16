@@ -201,9 +201,12 @@ void main(void) {
         float fade = 1.0 - smoothstep(0.9, 1.0, dist / shrd_data.uProbes[pi].pos_and_radius.w);
         vec4 vv = fade * vec4(SH_A0, SH_A1 * aVertexOcclusion_.yzx);
 
-        indirect_col.r += dot(shrd_data.uProbes[pi].sh_coeffs[0], vv);
-        indirect_col.g += dot(shrd_data.uProbes[pi].sh_coeffs[1], vv);
-        indirect_col.b += dot(shrd_data.uProbes[pi].sh_coeffs[2], vv);
+        //indirect_col.r += dot(shrd_data.uProbes[pi].sh_coeffs[0], vv);
+        //indirect_col.g += dot(shrd_data.uProbes[pi].sh_coeffs[1], vv);
+        //indirect_col.b += dot(shrd_data.uProbes[pi].sh_coeffs[2], vv);
+        
+        indirect_col += EvalSHIrradiance_NonLinear(aVertexOcclusion_.xyz, shrd_data.uProbes[pi].sh_coeffs[0],
+                                                   shrd_data.uProbes[pi].sh_coeffs[1], shrd_data.uProbes[pi].sh_coeffs[2]);
         total_fade += fade;
     }
     

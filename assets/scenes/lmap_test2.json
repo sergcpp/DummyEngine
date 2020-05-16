@@ -1,0 +1,54 @@
+{
+    "name" : "lmap_test2",
+    "environment" : {
+        "sun_dir" : [ 0.54, -0.54, -0.54 ],
+        "sun_col" : [ 0.0, 0.0, 0.0 ],
+        "sun_softness" : 0.1,
+        "env_map" : "env/studio_small_03",
+        "env_map_pt" : "env/studio_small_03_2k.hdr"
+    },
+    "camera" : {
+        "view_origin" : [ 0.0, 1.0, 0.0 ],
+        "view_dir" : [ 0.0, 0.0, -1.0 ],
+        "fwd_speed" : 0.1
+    },
+    "decals" : {
+    },
+    "objects" : [
+        {
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "lmap_test2/floor.mesh"
+            },
+            "lightmap" : {
+                "res" : 512
+            }
+        },
+		{
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "lmap_test2/hydrant0_hi.mesh",
+				"pt_mesh_file" : "lmap_test2/hydrant0.mesh"
+            },
+            "lightmap" : {
+                "res" : 512
+            }
+        },
+		{
+            "transform" : {
+                "pos" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "lmap_test2/hydrant1_hi.mesh",
+				"pt_mesh_file" : "lmap_test2/hydrant1.mesh"
+            },
+            "lightmap" : {
+                "res" : 256
+            }
+        }
+    ]
+}

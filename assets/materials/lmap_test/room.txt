@@ -1,0 +1,6 @@
+gl_program: main_lightmapped_nossr main_lightmapped.vert.glsl main_lightmapped_nossr.frag.glsl
+gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
+sw_program: main
+texture: grey.png
+texture: nmap_norm.png
+texture: default_specular.png

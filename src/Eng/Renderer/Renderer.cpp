@@ -69,7 +69,7 @@ const Ren::Vec2f HaltonSeq23[64] = {
 
 // TODO: remove this coupling!!!
 namespace SceneManagerInternal {
-int WriteImage(const uint8_t *out_data, int w, int h, int channels, const char *name);
+int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y, const char *name);
 }
 
 #define BBOX_POINTS(min, max)                                                            \
@@ -162,18 +162,18 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
     }
 
     { // cone/sphere intersection LUT
-        const int resx = 128, resy = 128;
+        const int resx = 8, resy = 8;
 
         const float cone_angles[] = {
             8.0f * Ren::Pi<float>() / 180.0f, 30.0f * Ren::Pi<float>() / 180.0f,
             45.0f * Ren::Pi<float>() / 180.0f, 60.0f * Ren::Pi<float>() / 180.0f};
 
         std::string str;
-        std::unique_ptr<uint8_t[]> occ_data =
+        const std::unique_ptr<uint8_t[]> occ_data =
             Generate_ConeTraceLUT(resx, resy, cone_angles, str);
 
         SceneManagerInternal::WriteImage(&occ_data[0], resx, resy, 4,
-                                         "cone_lut.uncompressed.png");
+                                         false, "cone_lut.uncompressed.png");
         //std::exit(0);
 
         Ren::Texture2DParams p;
@@ -214,7 +214,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
         std::string c_header;
         const std::unique_ptr<int8_t[]> img_data = Generate_PeriodicPerlin(res, c_header);
         SceneManagerInternal::WriteImage((const uint8_t*)&img_data[0], res, res, 4,
-        "test1.png");*/
+        false, "test1.png");*/
 
         Ren::Texture2DParams p;
         p.w = p.h = __noise_res;
@@ -247,7 +247,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
 
         const std::unique_ptr<uint8_t[]> img_data = Generate_SSSProfile_LUT(res, 6,
         gauss_variances, diffusion_weights);
-        SceneManagerInternal::WriteImage(&img_data[0], res, res, 4,
+        SceneManagerInternal::WriteImage(&img_data[0], res, res, 4, false,
         "assets/textures/skin_diffusion.uncompressed.png");*/
     }
 
