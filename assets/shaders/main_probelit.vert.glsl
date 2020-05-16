@@ -80,7 +80,8 @@ void main(void) {
     );
     
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
-        aVertexShUVs_[i] = (shrd_data.uShadowMapRegions[i].clip_from_world * vec4(vertex_position_ws, 1.0)).xyz;
+        aVertexShUVs_[i] = (shrd_data.uShadowMapRegions[i].clip_from_world *
+                            vec4(vertex_position_ws, 1.0)).xyz;
         aVertexShUVs_[i] = 0.5 * aVertexShUVs_[i] + 0.5;
         aVertexShUVs_[i].xy *= vec2(0.25, 0.5);
         aVertexShUVs_[i].xy += offsets[i];

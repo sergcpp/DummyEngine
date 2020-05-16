@@ -58,16 +58,18 @@ layout(location = REN_OUT_SPEC_INDEX) out vec4 outSpecular;
 #include "common.glsl"
 
 void main(void) {
-    highp float lin_depth = shrd_data.uClipInfo[0] / (gl_FragCoord.z * (shrd_data.uClipInfo[1] - shrd_data.uClipInfo[2]) + shrd_data.uClipInfo[2]);
+    highp float lin_depth = LinearizeDepth(gl_FragCoord.z, shrd_data.uClipInfo);
     highp float k = log2(lin_depth / shrd_data.uClipInfo[1]) / shrd_data.uClipInfo[3];
     int slice = int(floor(k * float(REN_GRID_RES_Z)));
     
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-    int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(shrd_data.uResAndFRes.y)) * REN_GRID_RES_X + ix * REN_GRID_RES_X / int(shrd_data.uResAndFRes.x);
+    int cell_index = GetCellIndex(ix, iy, slice, shrd_data.uResAndFRes.xy);
     
     highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
-    highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
-    highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
+    highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
+                                          bitfieldExtract(cell_data.x, 24, 8));
+    highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
+                                          bitfieldExtract(cell_data.y, 8, 8));
     
     vec3 albedo_color = texture(diffuse_texture, aVertexUVs_).rgb;
     
@@ -140,7 +142,8 @@ void main(void) {
     }
 
     vec3 normal = normal_color * 2.0 - 1.0;
-    normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_), aVertexNormal_) * normal);
+    normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_),
+                            aVertexNormal_) * normal);
     
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
     
@@ -183,30 +186,26 @@ void main(void) {
                 atten *= SampleShadowPCF5x5(shadow_texture, pp.xyz);
             }
             
-            additional_light += col_and_index.xyz * atten * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
+            additional_light += col_and_index.xyz * atten *
+                                smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
         }
     }
     
     vec3 indirect_col = vec3(0.0);
+	vec3 indirect_dir = normalize(aVertexOcclusion_.xyz);
     float total_fade = 0.0;
     
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
         highp uint item_data = texelFetch(items_buffer, int(i)).x;
         int pi = int(bitfieldExtract(item_data, 24, 8));
         
-        const float SH_A0 = 0.886226952; // PI / sqrt(4.0f * Pi)
-        const float SH_A1 = 1.02332675;  // sqrt(PI / 3.0f)
-        
         float dist = distance(shrd_data.uProbes[pi].pos_and_radius.xyz, aVertexPos_);
         float fade = 1.0 - smoothstep(0.9, 1.0, dist / shrd_data.uProbes[pi].pos_and_radius.w);
-        vec4 vv = fade * vec4(SH_A0, SH_A1 * aVertexOcclusion_.yzx);
-
-        //indirect_col.r += dot(shrd_data.uProbes[pi].sh_coeffs[0], vv);
-        //indirect_col.g += dot(shrd_data.uProbes[pi].sh_coeffs[1], vv);
-        //indirect_col.b += dot(shrd_data.uProbes[pi].sh_coeffs[2], vv);
         
-        indirect_col += EvalSHIrradiance_NonLinear(aVertexOcclusion_.xyz, shrd_data.uProbes[pi].sh_coeffs[0],
-                                                   shrd_data.uProbes[pi].sh_coeffs[1], shrd_data.uProbes[pi].sh_coeffs[2]);
+        indirect_col += fade * EvalSHIrradiance_NonLinear(indirect_dir,
+                                                          shrd_data.uProbes[pi].sh_coeffs[0],
+                                                          shrd_data.uProbes[pi].sh_coeffs[1],
+                                                          shrd_data.uProbes[pi].sh_coeffs[2]);
         total_fade += fade;
     }
     
@@ -222,7 +221,8 @@ void main(void) {
     vec2 ao_uvs = vec2(ix, iy) / shrd_data.uResAndFRes.zw;
     float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;
 	ambient_occlusion *= ambient_occlusion * aVertexOcclusion_.a /* dot(normal, aVertexOcclusion_.xyz)*/;
-    vec3 diffuse_color = albedo_color * (shrd_data.uSunCol.xyz * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
+    vec3 diffuse_color = albedo_color * (shrd_data.uSunCol.xyz * lambert * visibility +
+                                         ambient_occlusion * indirect_col + additional_light);
     
     vec3 view_ray_ws = normalize(shrd_data.uCamPosAndGamma.xyz - aVertexPos_);
     float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);

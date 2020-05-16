@@ -71,11 +71,14 @@ void main(void) {
 	vec4 vtx_color = unpackUnorm4x8(aVertexColorPacked);
 	
 	vec3 obj_pos_ws = MMatrix[3].xyz;
-    vec4 wind_scroll = shrd_data.uWindScroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
+    vec4 wind_scroll = shrd_data.uWindScroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz,
+                                                    VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
 	vec4 wind_params = unpackUnorm4x8(floatBitsToUint(veg_params.x));
-	vec4 wind_vec_ls = vec4(unpackHalf2x16(floatBitsToUint(veg_params.y)), unpackHalf2x16(floatBitsToUint(veg_params.z)));
+	vec4 wind_vec_ls = vec4(unpackHalf2x16(floatBitsToUint(veg_params.y)),
+                            unpackHalf2x16(floatBitsToUint(veg_params.z)));
 	
-	vtx_pos_ls = TransformVegetation(vtx_pos_ls, vtx_color, wind_scroll, wind_params, wind_vec_ls, noise_texture);
+	vtx_pos_ls = TransformVegetation(vtx_pos_ls, vtx_color, wind_scroll, wind_params,
+                                     wind_vec_ls, noise_texture);
 	
 	vec3 vtx_pos_ws = (MMatrix * vec4(vtx_pos_ls, 1.0)).xyz;
     vec3 vtx_nor_ws = normalize((MMatrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
@@ -94,7 +97,8 @@ void main(void) {
     );
     
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
-        aVertexShUVs_[i] = (shrd_data.uShadowMapRegions[i].clip_from_world * vec4(vtx_pos_ws, 1.0)).xyz;
+        aVertexShUVs_[i] = (shrd_data.uShadowMapRegions[i].clip_from_world *
+                            vec4(vtx_pos_ws, 1.0)).xyz;
         aVertexShUVs_[i] = 0.5 * aVertexShUVs_[i] + 0.5;
         aVertexShUVs_[i].xy *= vec2(0.25, 0.5);
         aVertexShUVs_[i].xy += offsets[i];

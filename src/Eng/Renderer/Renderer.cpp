@@ -162,7 +162,7 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
     }
 
     { // cone/sphere intersection LUT
-        const int resx = 8, resy = 8;
+        /*const int resx = 8, resy = 8;
 
         const float cone_angles[] = {
             8.0f * Ren::Pi<float>() / 180.0f, 30.0f * Ren::Pi<float>() / 180.0f,
@@ -173,23 +173,23 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
             Generate_ConeTraceLUT(resx, resy, cone_angles, str);
 
         SceneManagerInternal::WriteImage(&occ_data[0], resx, resy, 4,
-                                         false, "cone_lut.uncompressed.png");
+                                         false, "cone_lut.uncompressed.png");*/
         //std::exit(0);
 
         Ren::Texture2DParams p;
-        p.w = resx;
-        p.h = resy;
+        p.w = __cone_rt_lut_res;
+        p.h = __cone_rt_lut_res;
         p.format = Ren::eTexFormat::RawRGBA8888;
         p.filter = Ren::eTexFilter::BilinearNoMipmap;
         p.repeat = Ren::eTexRepeat::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        //cone_rt_lut_ =
-        //    ctx_.LoadTexture2D("cone_rt_lut", &__cone_rt_lut[0],
-        //                       4 * __cone_rt_lut_res * __cone_rt_lut_res, p, &status);
-
         cone_rt_lut_ =
-            ctx_.LoadTexture2D("cone_rt_lut", &occ_data[0], 4 * resx * resy, p, &status);
+            ctx_.LoadTexture2D("cone_rt_lut", &__cone_rt_lut[0],
+                               4 * __cone_rt_lut_res * __cone_rt_lut_res, p, &status);
+
+        //cone_rt_lut_ =
+        //    ctx_.LoadTexture2D("cone_rt_lut", &occ_data[0], 4 * resx * resy, p, &status);
     }
 
     {

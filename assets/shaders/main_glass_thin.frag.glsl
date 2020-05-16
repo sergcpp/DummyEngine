@@ -56,16 +56,17 @@ layout(location = REN_OUT_SPEC_INDEX) out vec4 outSpecular;
 #include "common.glsl"
 
 void main(void) {
-    highp float lin_depth = shrd_data.uClipInfo[0] / (gl_FragCoord.z * (shrd_data.uClipInfo[1] - shrd_data.uClipInfo[2]) + shrd_data.uClipInfo[2]);
+    highp float lin_depth = LinearizeDepth(gl_FragCoord.z, shrd_data.uClipInfo);
     
     // remapped depth in [-1; 1] range used for moments calculation
-    highp float transp_z =
-        2.0 * (log(lin_depth) - shrd_data.uTranspParamsAndTime[0]) / shrd_data.uTranspParamsAndTime[1] - 1.0;
+    highp float transp_z = 2.0 * (log(lin_depth) - shrd_data.uTranspParamsAndTime[0]) /
+                           shrd_data.uTranspParamsAndTime[1] - 1.0;
     
     vec3 normal_color = texture(normals_texture, aVertexUVs_).wyz;
     
     vec3 normal = normal_color * 2.0 - 1.0;
-    normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_), aVertexNormal_) * normal);
+    normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_),
+                            aVertexNormal_) * normal);
     
     vec3 view_ray_ws = normalize(aVertexPos_ - shrd_data.uCamPosAndGamma.xyz);
     
@@ -78,7 +79,7 @@ void main(void) {
         int slice = int(floor(k * float(REN_GRID_RES_X)));
         
         int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-        int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(shrd_data.uResAndFRes.y)) * REN_GRID_RES_X + ix * REN_GRID_RES_X / int(shrd_data.uResAndFRes.x);
+        int cell_index = GetCellIndex(ix, iy, slice, shrd_data.uResAndFRes.xy);
         
         highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
         highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
@@ -95,9 +96,12 @@ void main(void) {
             int pi = int(bitfieldExtract(item_data, 24, 8));
             
             float dist = distance(shrd_data.uProbes[pi].pos_and_radius.xyz, aVertexPos_);
-            float fade = 1.0 - smoothstep(0.9, 1.0, dist / shrd_data.uProbes[pi].pos_and_radius.w);
+            float fade = 1.0 - smoothstep(0.9, 1.0,
+                                          dist / shrd_data.uProbes[pi].pos_and_radius.w);
             
-            reflected_color += fade * RGBMDecode(textureLod(env_texture, vec4(refl_ray_ws, shrd_data.uProbes[pi].unused_and_layer.w), 0.0));
+            reflected_color += fade * RGBMDecode(
+                textureLod(env_texture, vec4(refl_ray_ws,
+                                             shrd_data.uProbes[pi].unused_and_layer.w), 0.0));
             total_fade += fade;
         }
         
@@ -108,7 +112,8 @@ void main(void) {
         if (shrd_data.uTranspParamsAndTime[2] < 0.5) {
             outColor = vec4(reflected_color * specular_color.rgb, fresnel);
         } else if (shrd_data.uTranspParamsAndTime[2] < 1.5) {
-            outColor = vec4(reflected_color * specular_color.rgb, fresnel) * TransparentDepthWeight(gl_FragCoord.z, fresnel);
+            outColor = vec4(reflected_color * specular_color.rgb, fresnel) *
+                            TransparentDepthWeight(gl_FragCoord.z, fresnel);
             outNormal = vec4(fresnel);
         } else {
             float b_0;
@@ -128,7 +133,8 @@ void main(void) {
             float total_transmittance;
             ResolveMoments(transp_z, b_0, b_1234, transmittance_at_depth, total_transmittance);
             
-            outColor = vec4(fresnel * transmittance_at_depth * reflected_color * specular_color.rgb, fresnel * transmittance_at_depth);
+            outColor = vec4(fresnel * transmittance_at_depth * reflected_color *
+                            specular_color.rgb, fresnel * transmittance_at_depth);
         }
     } else {
         float b_0;

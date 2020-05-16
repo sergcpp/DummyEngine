@@ -61,11 +61,13 @@ void main(void) {
     int slice = int(floor(k * float(REN_GRID_RES_Z)));
     
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-    int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(shrd_data.uResAndFRes.y)) * REN_GRID_RES_X + ix * REN_GRID_RES_X / int(shrd_data.uResAndFRes.x);
+    int cell_index = GetCellIndex(ix, iy, slice, shrd_data.uResAndFRes.xy);
     
     highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
-    highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
-    highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
+    highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
+                                          bitfieldExtract(cell_data.x, 24, 8));
+    highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
+                                          bitfieldExtract(cell_data.y, 8, 8));
     
     vec3 albedo_color = texture(diffuse_texture, aVertexUVs_.xy).rgb;
     vec3 normal_color = texture(normals_texture, aVertexUVs_.xy).wyz;
@@ -136,7 +138,8 @@ void main(void) {
     }
     
     vec3 normal = normal_color * 2.0 - 1.0;
-    normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_), aVertexNormal_) * normal);
+    normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_),
+                            aVertexNormal_) * normal);
     
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
     
@@ -171,7 +174,8 @@ void main(void) {
             /*[[branch]]*/ if (shadowreg_index != -1) {
                 vec4 reg_tr = shrd_data.uShadowMapRegions[shadowreg_index].transform;
                 
-                highp vec4 pp = shrd_data.uShadowMapRegions[shadowreg_index].clip_from_world * vec4(aVertexPos_, 1.0);
+                highp vec4 pp = shrd_data.uShadowMapRegions[shadowreg_index].clip_from_world *
+                                    vec4(aVertexPos_, 1.0);
                 pp /= pp.w;
                 pp.xyz = pp.xyz * 0.5 + vec3(0.5);
                 pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
@@ -179,7 +183,8 @@ void main(void) {
                 atten *= SampleShadowPCF5x5(shadow_texture, pp.xyz);
             }
             
-            additional_light += col_and_index.xyz * atten * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
+            additional_light += col_and_index.xyz * atten *
+                                smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
         }
     }
     
@@ -188,7 +193,7 @@ void main(void) {
     vec3 sh_l_11 = 2.0 * texture(lm_indirect_sh_texture[2], aVertexUVs_.zw).rgb - vec3(1.0);
     vec3 sh_l_12 = 2.0 * texture(lm_indirect_sh_texture[3], aVertexUVs_.zw).rgb - vec3(1.0);
     
-    vec3 indirect_col = EvalSHIrradiance_NonLinear(normal, sh_l_00, sh_l_10, sh_l_11, sh_l_12);
+    vec3 indirect_col = EvalSHIrradiance(normal, sh_l_00, sh_l_10, sh_l_11, sh_l_12);
     
     float lambert = clamp(dot(normal, shrd_data.uSunDir.xyz), 0.0, 1.0);
     float visibility = 0.0;
@@ -198,7 +203,8 @@ void main(void) {
     
     vec2 ao_uvs = vec2(ix, iy) / shrd_data.uResAndFRes.zw;
     float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;
-    vec3 diffuse_color = albedo_color * (shrd_data.uSunCol.xyz * lambert * visibility + ambient_occlusion * indirect_col + additional_light);
+    vec3 diffuse_color = albedo_color * (shrd_data.uSunCol.xyz * lambert * visibility +
+                                         ambient_occlusion * indirect_col + additional_light);
     
     vec3 view_ray_ws = normalize(shrd_data.uCamPosAndGamma.xyz - aVertexPos_);
     float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);

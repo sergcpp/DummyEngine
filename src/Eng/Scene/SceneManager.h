@@ -141,6 +141,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     // PT temp data
     std::vector<Ray::pixel_color_t> pt_lm_direct_, pt_lm_indir_, pt_lm_indir_sh_[4];
+    double pt_lm_started_time_s_ = 0.0;
 
     // static data for assets conversion
     struct Handler {

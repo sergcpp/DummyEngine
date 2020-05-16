@@ -76,7 +76,9 @@ void main(void) {
     
     aVertexOcclusion_ = unpackUnorm4x8(aVertexOcclusion);
     aVertexOcclusion_.xyz = 2.0 * aVertexOcclusion_.xyz - vec3(1.0);
-    aVertexOcclusion_.xyz = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_), aVertexNormal_) * aVertexOcclusion_.xyz);
+    aVertexOcclusion_.xyz = normalize(mat3(aVertexTangent_,
+                                           cross(aVertexNormal_, aVertexTangent_),
+                                           aVertexNormal_) * aVertexOcclusion_.xyz);
     
     const vec2 offsets[4] = vec2[4](
         vec2(0.0, 0.0),
@@ -86,7 +88,8 @@ void main(void) {
     );
     
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
-        aVertexShUVs_[i] = (shrd_data.uShadowMapRegions[i].clip_from_world * vec4(vertex_position_ws, 1.0)).xyz;
+        aVertexShUVs_[i] = (shrd_data.uShadowMapRegions[i].clip_from_world *
+                            vec4(vertex_position_ws, 1.0)).xyz;
         aVertexShUVs_[i] = 0.5 * aVertexShUVs_[i] + 0.5;
         aVertexShUVs_[i].xy *= vec2(0.25, 0.5);
         aVertexShUVs_[i].xy += offsets[i];

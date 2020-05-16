@@ -16,6 +16,6 @@ out vec4 outColor;
 
 void main() {
     vec3 c0 = texture(s_texture, aVertexUVs_ + uOffset).xyz;
-    outColor.r = 4.0 * (0.299 * c0.r + 0.587 * c0.g + 0.114 * c0.b);
+    outColor.r = dot(c0, vec3(0.299, 0.587, 0.114));
 }
 )"

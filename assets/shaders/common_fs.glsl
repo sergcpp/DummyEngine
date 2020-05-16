@@ -146,6 +146,9 @@ struct SharedData {
 
 
 
+#define GetCellIndex(ix, iy, slice, res) \
+    (slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(res.y)) * REN_GRID_RES_X + ix * REN_GRID_RES_X / int(res.x))
+
 #define LinearizeDepth(z, clip_info) \
     (((clip_info)[0] / ((z) * ((clip_info)[1] - (clip_info)[2]) + (clip_info)[2])))
 
@@ -202,37 +205,23 @@ vec3 EvalSHIrradiance(vec3 normal, vec3 sh_l_00, vec3 sh_l_10, vec3 sh_l_11,
 vec3 EvalSHIrradiance_NonLinear(vec3 normal, vec3 sh_l_00, vec3 sh_l_10, vec3 sh_l_11,
                                 vec3 sh_l_12) {
     vec3 l = sqrt(sh_l_10 * sh_l_10 + sh_l_11 * sh_l_11 + sh_l_12 * sh_l_12);
-    vec3 inv_l = vec3(1.0) / l;
-    //if (l.x < 0.00001) inv_l.x = 0.0;
-    //if (l.y < 0.00001) inv_l.y = 0.0;
-    //if (l.z < 0.00001) inv_l.z = 0.0;
+    vec3 inv_l = mix(vec3(0.0), vec3(1.0) / l, step(l, vec3(FLT_EPS)));
 
     vec3 q = 0.5 * (vec3(1.0) + (sh_l_10 * normal.y + sh_l_11 * normal.z +
-                                 sh_l_12 * normal.x) / l);
+                                 sh_l_12 * normal.x) * inv_l);
     vec3 p = vec3(1.0) + 2.0 * l;
     vec3 a = (vec3(1.0) - l) / (vec3(1.0) + l);
-
-    if (l[0] > 1.01 || l[1] > 1.01 || l[2] > 1.01) {
-        return vec3(0.0, 0.0, 100000.0);
-    }
-
-    if (q[0] < 0.0 || q[1] < 0.0 || q[2] < 0.0) {
-        return vec3(10000.0, 0.0, 0.0);
-    }
-
-    if (a[0] < 0.0 || a[1] < 0.0 || a[2] < 0.0) {
-        return vec3(0.0, 10000.0, 0.0);
-    }
 
     return sh_l_00 * (a + (vec3(1.0) - a) * (p + vec3(1.0)) * pow(q, p));
 }
 
 vec3 EvalSHIrradiance_NonLinear(vec3 dir, vec4 sh_r, vec4 sh_g, vec4 sh_b) {
     vec3 R1_len = vec3(length(sh_r.yzw), length(sh_g.yzw), length(sh_b.yzw));
+    vec3 R1_inv_len = mix(vec3(0.0), vec3(1.0) / R1_len, step(vec3(FLT_EPS), R1_len));
     vec3 R0 = vec3(sh_r.x, sh_g.x, sh_b.x);
 
     vec3 q = 0.5 * (vec3(1.0) + vec3(dot(dir.yzx, sh_r.yzw), dot(dir.yzx, sh_g.yzw),
-                                     dot(dir.yzx, sh_b.yzw)) / max(R1_len, 0.001));
+                                     dot(dir.yzx, sh_b.yzw)) * R1_inv_len);
     vec3 p = vec3(1.0) + 2.0 * R1_len / R0;
     vec3 a = (vec3(1.0) - R1_len / R0) / (vec3(1.0) + R1_len / R0);
 

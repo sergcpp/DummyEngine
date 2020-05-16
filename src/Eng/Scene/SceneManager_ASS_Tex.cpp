@@ -12,12 +12,13 @@ extern "C" {
 #include <Sys/Json.h>
 
 namespace SceneManagerInternal {
-int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y, const char *name);
+int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y,
+               bool is_rgbm, const char *name);
 
 void Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
     std::unique_ptr<uint8_t[]> u8_data =
         Ren::ConvertRGB32F_to_RGBE(&out_data[0].r, w, h, 4);
-    WriteImage(&u8_data[0], w, h, 4, false /* flip_y */, name);
+    WriteImage(&u8_data[0], w, h, 4, false /* flip_y */, false /* is_rgbm */, name);
 }
 
 void Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
@@ -33,14 +34,14 @@ void Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *nam
         }
     }
 
-    WriteImage(&u8_data[0], w, h, 3, false /* flip_y */, name);
+    WriteImage(&u8_data[0], w, h, 3, false /* flip_y */, false /* is_rgbm */, name);
 }
 
 void Write_RGBM(const float *out_data, const int w, const int h, const int channels,
                 const bool flip_y, const char *name) {
-    std::unique_ptr<uint8_t[]> u8_data =
+    const std::unique_ptr<uint8_t[]> u8_data =
         Ren::ConvertRGB32F_to_RGBM(out_data, w, h, channels);
-    WriteImage(&u8_data[0], w, h, 4, flip_y, name);
+    WriteImage(&u8_data[0], w, h, 4, flip_y, true /* is_rgbm */, name);
 }
 
 void Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int *heights,
@@ -101,8 +102,8 @@ void Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
 }
 
 void Write_DDS(const uint8_t *image_data, const int w, const int h, const int channels,
-               const bool flip_y, const char *out_file) {
-    // Check if power of two
+               const bool flip_y, const bool is_rgbm, const char *out_file) {
+    // Check if resolution is power of two
     const bool store_mipmaps =
         (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
 
@@ -123,7 +124,12 @@ void Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
     int mip_count;
 
     if (store_mipmaps) {
-        mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
+        if (is_rgbm) {
+            assert(channels == 4);
+            mip_count = Ren::InitMipMapsRGBM(mipmaps, widths, heights);
+        } else {
+            mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
+        }
     } else {
         mip_count = 1;
     }
@@ -137,7 +143,7 @@ void Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
 }
 
 void Write_KTX_DXT(const uint8_t *image_data, const int w, const int h,
-                   const int channels, const char *out_file) {
+                   const int channels, const bool is_rgbm, const char *out_file) {
     // Check if power of two
     bool store_mipmaps = (w & (w - 1)) == 0 && (h & (h - 1)) == 0;
 
@@ -155,7 +161,12 @@ void Write_KTX_DXT(const uint8_t *image_data, const int w, const int h,
     int mip_count;
 
     if (store_mipmaps) {
-        mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
+        if (is_rgbm) {
+            assert(channels == 4);
+            mip_count = Ren::InitMipMapsRGBM(mipmaps, widths, heights);
+        } else {
+            mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
+        }
     } else {
         mip_count = 1;
     }
@@ -320,7 +331,8 @@ void Write_KTX_ASTC_Mips(const uint8_t *const *mipmaps, const int *widths,
 }
 
 void Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h,
-                    const int channels, const bool flip_y, const char *out_file) {
+                    const int channels, const bool flip_y, const bool is_rgbm,
+                    const char *out_file) {
     // Check if power of two
     const bool store_mipmaps =
         (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
@@ -342,7 +354,12 @@ void Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h,
     int mip_count;
 
     if (store_mipmaps) {
-        mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
+        if (is_rgbm) {
+            assert(channels == 4);
+            mip_count = Ren::InitMipMapsRGBM(mipmaps, widths, heights);
+        } else {
+            mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
+        }
     } else {
         mip_count = 1;
     }
@@ -356,7 +373,7 @@ void Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h,
 }
 
 int WriteImage(const uint8_t *out_data, const int w, const int h, const int channels,
-               const bool flip_y, const char *name) {
+               const bool flip_y, const bool is_rgbm, const char *name) {
     int res = 0;
     if (strstr(name, ".tga")) {
         res = SOIL_save_image(name, SOIL_SAVE_TYPE_TGA, w, h, channels, out_data);
@@ -364,10 +381,10 @@ int WriteImage(const uint8_t *out_data, const int w, const int h, const int chan
         res = SOIL_save_image(name, SOIL_SAVE_TYPE_PNG, w, h, channels, out_data);
     } else if (strstr(name, ".dds")) {
         res = 1;
-        Write_DDS(out_data, w, h, channels, flip_y, name);
+        Write_DDS(out_data, w, h, channels, flip_y, is_rgbm, name);
     } else if (strstr(name, ".ktx")) {
         res = 1;
-        Write_KTX_ASTC(out_data, w, h, channels, flip_y, name);
+        Write_KTX_ASTC(out_data, w, h, channels, flip_y, is_rgbm, name);
     }
     return res;
 }
@@ -407,10 +424,13 @@ void SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
             }
         }
 
-        Write_DDS(temp_data.get(), width, height, 4, false /* flip_y */, out_file);
+        Write_DDS(temp_data.get(), width, height, 4, false /* flip_y */,
+                  false /* is_rgbm */, out_file);
         SOIL_free_image_data(image_data);
     } else {
-        Write_DDS(image_data, width, height, channels, false /* flip_y */, out_file);
+        const bool is_rgbm = channels == 4 && strstr(in_file, "lightmaps") != nullptr;
+        Write_DDS(image_data, width, height, channels, false /* flip_y */,
+                  is_rgbm /* is_rgbm */, out_file);
         SOIL_free_image_data(image_data);
     }
 }
@@ -446,10 +466,12 @@ void SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
             }
         }
 
-        Write_KTX_ASTC(temp_data.get(), width, height, 4, false /* flip_y */, out_file);
+        Write_KTX_ASTC(temp_data.get(), width, height, 4, false /* flip_y */,
+                       false /* is_rgbm */, out_file);
         SOIL_free_image_data(image_data);
     } else {
-        Write_KTX_ASTC(image_data, width, height, channels, false /* flip_y */, out_file);
+        Write_KTX_ASTC(image_data, width, height, channels, false /* flip_y */,
+                       false /* is_rgbm */, out_file);
         SOIL_free_image_data(image_data);
     }
 }
@@ -462,20 +484,10 @@ void SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file,
 
     int width, height;
     const std::vector<uint8_t> image_rgbe = LoadHDR(in_file, width, height);
-    std::unique_ptr<float[]> image_f32 =
+    const std::unique_ptr<float[]> image_f32 =
         Ren::ConvertRGBE_to_RGB32F(&image_rgbe[0], width, height);
 
-    std::unique_ptr<float[]> temp(new float[width * 3]);
-    for (int j = 0; j < height / 2; j++) {
-        int j1 = j, j2 = height - j - 1;
-        memcpy(&temp[0], &image_f32[j1 * width * 3], width * 3 * sizeof(float));
-        memcpy(&image_f32[j1 * width * 3], &image_f32[j2 * width * 3],
-               width * 3 * sizeof(float));
-        memcpy(&image_f32[j2 * width * 3], &temp[0], width * 3 * sizeof(float));
-    }
-
-    const bool flip_y = strstr(in_file, "/env/") || strstr(in_file, "\\env\\");
-    Write_RGBM(&image_f32[0], width, height, 3, flip_y, out_file);
+    Write_RGBM(&image_f32[0], width, height, 3, false /* flip_y */, out_file);
 }
 
 void SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file,

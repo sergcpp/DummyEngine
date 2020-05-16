@@ -2971,7 +2971,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             // exposure from previous frame
             float exposure = reduced_average_ > std::numeric_limits<float>::epsilon()
-                                 ? (0.95f / reduced_average_)
+                                 ? (1.0f / reduced_average_)
                                  : 1.0f;
             exposure = std::min(exposure, list.draw_cam.max_exposure());
 
@@ -3181,7 +3181,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         static int cur_offset = 0;
         glUniform2f(4, 0.5f * poisson_disk[cur_offset][0] * offset_step[0],
                     0.5f * poisson_disk[cur_offset][1] * offset_step[1]);
-        cur_offset = cur_offset >= 63 ? 0 : (cur_offset + 1);
+        cur_offset = (cur_offset + 1) % 64;
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
                                    buf_to_sample->attachments[0].tex);
@@ -3217,7 +3217,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     }
 
     float exposure = reduced_average_ > std::numeric_limits<float>::epsilon()
-                         ? (4.0f / reduced_average_)
+                         ? (1.0f / reduced_average_)
                          : 1.0f;
     exposure = std::min(exposure, list.draw_cam.max_exposure());
 
@@ -3587,7 +3587,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, clean_buf_, 1, 2);
 
         float exposure = reduced_average_ > std::numeric_limits<float>::epsilon()
-                             ? (0.95f / reduced_average_)
+                             ? (1.0f / reduced_average_)
                              : 1.0f;
         exposure = std::min(exposure, list.draw_cam.max_exposure());
         BlitBuffer(0.0f, -1.0f, 0.5f, 0.5f, down_buf_, 0, 1, exposure);
@@ -3950,7 +3950,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h,
         glUniform2f(13, float(w), float(h));
         glUniform1f(U_GAMMA, 2.2f);
 
-        float exposure = 4.0f / reduced_average_;
+        float exposure = 1.0f / reduced_average_;
         exposure = std::min(exposure, 1000.0f);
 
         glUniform1f(U_EXPOSURE, exposure);

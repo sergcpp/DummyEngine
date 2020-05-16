@@ -126,14 +126,14 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
     const int LmSamplesDirect =
 #ifdef NDEBUG
-        16;
+        64;
 #else
         16;
 #endif
 
     const int LmSamplesIndirect =
 #ifdef NDEBUG
-        256; // 16 * 4096;
+        16 * 4096;
 #else
         64;
 #endif
@@ -311,7 +311,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                 { // Save direct lightmap
                     ctx_.log()->Info("Flushing seams...");
                     const double t1 = Sys::GetTimeS();
-                    std::vector<Ray::pixel_color_t> out_pixels =
+                    const std::vector<Ray::pixel_color_t> out_pixels =
                         SceneManagerInternal::FlushSeams(
                             &pt_lm_direct_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY,
                             InvalidThreshold, FilterSize);
@@ -329,7 +329,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                 { // Save indirect lightmap
                     ctx_.log()->Info("Flushing seams...");
                     const double t1 = Sys::GetTimeS();
-                    std::vector<Ray::pixel_color_t> out_pixels =
+                    const std::vector<Ray::pixel_color_t> out_pixels =
                         SceneManagerInternal::FlushSeams(
                             &pt_lm_indir_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY,
                             InvalidThreshold, FilterSize);
@@ -400,6 +400,11 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
         }
     }
 
+    if (!ray_reg_ctx_[0].iteration) {
+        // This is first iteration
+        pt_lm_started_time_s_ = Sys::GetTimeS();
+    }
+
     for (int i = 0; i < LmSamplesPerPass; i++) {
         if (ray_renderer_.type() == Ray::RendererOCL) {
             ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[0]);
@@ -417,8 +422,14 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
         }
     }
 
-    ctx_.log()->Info("Lightmap: %i %i/%i", int(cur_lm_obj_), ray_reg_ctx_[0].iteration,
-                     cur_lm_indir_ ? LmSamplesIndirect : LmSamplesDirect);
+    const double seconds_per_iteration =
+        (Sys::GetTimeS() - pt_lm_started_time_s_) / double(ray_reg_ctx_[0].iteration);
+
+    const int SamplesDone = ray_reg_ctx_[0].iteration;
+    const int SamplesTotal = cur_lm_indir_ ? LmSamplesIndirect : LmSamplesDirect;
+
+    ctx_.log()->Info("Lightmap: %i %i/%i (%.1fs left)", int(cur_lm_obj_), SamplesDone,
+                     SamplesTotal, seconds_per_iteration * (SamplesTotal - SamplesDone));
 
     const Ray::pixel_color_t *pixels = ray_renderer_.get_pixels_ref();
     *preview_pixels = &pixels[0].r;
@@ -495,7 +506,7 @@ void SceneManager::InitScene_PT(bool _override) {
         cam_desc.uv_index = 1;
         cam_desc.mi_index = 0;
         cam_desc.output_sh = true;
-        cam_desc.use_coherent_sampling = true;
+        //cam_desc.use_coherent_sampling = true;
 
         ray_scene_->AddCamera(cam_desc);
     }
