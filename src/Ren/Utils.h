@@ -6,6 +6,9 @@ namespace Ren {
 enum class eTexFormat;
 std::unique_ptr<uint8_t[]> ReadTGAFile(const void *data, int &w, int &h, eTexFormat &format);
 
+void RGBMDecode(const uint8_t rgbm[4], float out_rgb[3]);
+void RGBMEncode(const float rgb[3], uint8_t out_rgbm[4]);
+
 std::unique_ptr<float[]> ConvertRGBE_to_RGB32F(const uint8_t *image_data, int w, int h);
 std::unique_ptr<uint16_t[]> ConvertRGBE_to_RGB16F(const uint8_t *image_data, int w, int h);
 
@@ -13,6 +16,7 @@ std::unique_ptr<uint8_t[]> ConvertRGB32F_to_RGBE(const float *image_data, int w,
 std::unique_ptr<uint8_t[]> ConvertRGB32F_to_RGBM(const float *image_data, int w, int h, int channels);
 
 int InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int heights[16], int channels);
+int InitMipMapsRGBM(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int heights[16]);
 
 void ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count, uint32_t vtx_count, uint32_t *out_indices);
 
