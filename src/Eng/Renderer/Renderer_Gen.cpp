@@ -373,24 +373,21 @@ std::unique_ptr<uint8_t[]> Renderer::Generate_ConeTraceLUT(const int resx, const
     out_c_header += "static const uint8_t __cone_rt_lut[] = {\n";
 
     for (int y = 0; y < resy; y++) {
-        const float sin_omega =
-            /*std::sin(45.0f * Ren::Pi<float>() / 180.0f) */ float(y) / float(resy - 1);
+        const float sin_omega = (float(y) + 0.5f) / float(resy - 0);
         const float tan_omega = (float)std::tan(std::asin((double)sin_omega));
         const float sph_dist = (y == 0) ? -1.5f : (/*sph_radius*/ 1.0f / tan_omega);
 
-        //const float _sin_omega = 1.0f / std::sqrt(1.0f + sph_dist * sph_dist);
-
         for (int x = 0; x < resx; x++) {
-            const float cos_phi = float(x) / float(resx - 1);
+            const float cos_phi = (float(x) + 0.5f) / float(resx - 0);
             const float phi = (float)std::acos((double)cos_phi);
 
             const Ren::Mat4f rot_matrix = Ren::Rotate(Ren::Mat4f{}, phi, B);
 
             auto cone_dir = Ren::Vec3f{0.0f, 1.0f, 0.0f};
-            cone_dir = Ren::Vec3f{
-                rot_matrix * Ren::Vec4f{cone_dir[0], cone_dir[1], cone_dir[2], 0.0f}};
+            cone_dir = Ren::Normalize(Ren::Vec3f{
+                rot_matrix * Ren::Vec4f{cone_dir[0], cone_dir[1], cone_dir[2], 0.0f}});
 
-            const Ren::Vec3f T = Ren::Cross(Ren::Vec3f{cone_dir}, B);
+            const Ren::Vec3f T = Ren::Normalize(Ren::Cross(Ren::Vec3f{cone_dir}, B));
 
             out_c_header += '\t';
 
@@ -409,9 +406,9 @@ std::unique_ptr<uint8_t[]> Renderer::Generate_ConeTraceLUT(const int resx, const
                     const float cos_angle = std::cos(2.0f * Ren::Pi<float>() * rnd[1]);
                     const float sin_angle = std::sin(2.0f * Ren::Pi<float>() * rnd[1]);
 
-                    const Ren::Vec3f ray_dir = dir *sin_angle *B +
+                    const Ren::Vec3f ray_dir = Ren::Normalize(dir *sin_angle *B +
                         std::sqrt(1.0f - dir) * cone_dir +
-                        dir * cos_angle * T;
+                        dir * cos_angle * T);
 
                     if (intersect_sphere(Ren::Vec3f{ 0.0f, sph_dist, 0.0f }, 1.0f,
                         Ren::Vec3f{ 0.0f, 0.0f, 0.0f }, ray_dir)) {

@@ -709,6 +709,10 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp,
         // Attach ellipsoids to bones
         for (int i = 0; i < dr->ellipsoids_count; i++) {
             Drawable::Ellipsoid &e = dr->ellipsoids[i];
+            if (e.bone_name.empty()) {
+                e.bone_index = -1;
+                continue;
+            }
 
             for (int j = 0; j < (int)skel->bones.size(); j++) {
                 if (e.bone_name == skel->bones[j].name) {

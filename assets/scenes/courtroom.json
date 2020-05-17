@@ -945,7 +945,29 @@
                 "anims" : [
                     "sophia_idle.anim"
                 ],
-                "ellipsoids" : [
+                "ellipsoids3" : [
+                    {
+						"offset" : [ -1.0, 0.125, 0.5 ],
+						"radius" : 0.125,
+						"axis" : [ 3.0, 0.0, 0.0 ]
+					},
+                    {
+						"offset" : [ -1.0, 0.375, 0.5 ],
+						"radius" : 0.125,
+						"axis" : [ 3.0, 0.0, 0.0 ]
+					},
+                    {
+						"offset" : [ -1.0, 0.625, 0.5 ],
+						"radius" : 0.125,
+						"axis" : [ 3.0, 0.0, 0.0 ]
+					},
+                    {
+						"offset" : [ -1.0, 0.875, 0.5 ],
+						"radius" : 0.125,
+						"axis" : [ 3.0, 0.0, 0.0 ]
+					}
+                ],
+                "ellipsoids2" : [
                     {
 						"offset" : [ 0.0, 0.0, -0.18 ],
 						"radius" : 0.1,
@@ -983,18 +1005,12 @@
 						"bone" : "rp_sophia_animated_003_idling_foot_r"
 					}
                 ],
-                "ellipsoids1" : [
+                "ellipsoids" : [
 					{
 						"offset" : [ -0.02, 0.0, -0.09 ],
 						"radius" : 0.1,
 						"axis" : [ 0.0, 0.0, 1.2 ],
 						"bone" : "rp_sophia_animated_003_idling_head"
-					},
-                    {
-						"offset" : [ 0.0, 0.0, -0.025 ],
-						"radius" : 0.05,
-						"axis" : [ 0.0, 0.0, 1.2 ],
-						"bone" : "rp_sophia_animated_003_idling_neck"
 					},
                     {
 						"offset" : [ 0.0, 0.0, 0.0 ],
@@ -1170,10 +1186,10 @@
 	], 
 	"camera" : {
 		"view_origin" : [
-			1.502909, 1.426579, 6.323522
+			3.728192, 1.155713, -0.223932
 		], 
 		"view_dir" : [
-			-0.264499, -0.040549, -0.963528
+			0.762165, -0.192307, -0.618149
 		], 
 		"fwd_speed" : 0.1, 
 		"fov" : 60, 

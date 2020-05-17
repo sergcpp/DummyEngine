@@ -69,7 +69,7 @@ const Ren::Vec2f HaltonSeq23[64] = {
 
 // TODO: remove this coupling!!!
 namespace SceneManagerInternal {
-int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y, const char *name);
+int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y, bool is_rgbm, const char *name);
 }
 
 #define BBOX_POINTS(min, max)                                                            \
@@ -162,19 +162,19 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
     }
 
     { // cone/sphere intersection LUT
-        /*const int resx = 8, resy = 8;
+        /*const int resx = 128, resy = 128;
 
         const float cone_angles[] = {
-            8.0f * Ren::Pi<float>() / 180.0f, 30.0f * Ren::Pi<float>() / 180.0f,
-            45.0f * Ren::Pi<float>() / 180.0f, 60.0f * Ren::Pi<float>() / 180.0f};
+            16.0f * Ren::Pi<float>() / 180.0f, 32.0f * Ren::Pi<float>() / 180.0f,
+            48.0f * Ren::Pi<float>() / 180.0f, 64.0f * Ren::Pi<float>() / 180.0f};
 
         std::string str;
         const std::unique_ptr<uint8_t[]> occ_data =
             Generate_ConeTraceLUT(resx, resy, cone_angles, str);
 
         SceneManagerInternal::WriteImage(&occ_data[0], resx, resy, 4,
-                                         false, "cone_lut.uncompressed.png");*/
-        //std::exit(0);
+                                         false, false, "cone_lut.uncompressed.png");
+        //std::exit(0);*/
 
         Ren::Texture2DParams p;
         p.w = __cone_rt_lut_res;

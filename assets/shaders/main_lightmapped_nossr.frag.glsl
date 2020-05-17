@@ -192,14 +192,21 @@ void main(void) {
         }
     }
     
-    highp uint ecount = bitfieldExtract(cell_data.y, 16, 8);
+    vec3 sh_l_00 = RGBMDecode(texture(lm_indirect_sh_texture[0], aVertexUVs_.zw));
+    vec3 sh_l_10 = 2.0 * texture(lm_indirect_sh_texture[1], aVertexUVs_.zw).rgb - vec3(1.0);
+    vec3 sh_l_11 = 2.0 * texture(lm_indirect_sh_texture[2], aVertexUVs_.zw).rgb - vec3(1.0);
+    vec3 sh_l_12 = 2.0 * texture(lm_indirect_sh_texture[3], aVertexUVs_.zw).rgb - vec3(1.0);
     
     vec3 cone_origin_ws = aVertexPos_;
-    vec3 cone_dir_ws = normalize(vec3(-1.0, 1.0, 0.0));
+    // use green channel of L1 band as cone tracing direction
+    vec3 cone_dir_ws = normalize(vec3(sh_l_12.g, sh_l_10.g, sh_l_11.g));
     
     float cone_occlusion = 1.0;
+    float sph_occlusion = 1.0;
 
-    /*for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + ecount; i++) {
+    highp uint ecount = bitfieldExtract(cell_data.y, 16, 8);
+
+    for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + ecount; i++) {
         highp uint item_data = texelFetch(items_buffer, int(i)).y;
         int ei = int(bitfieldExtract(item_data, 0, 8));
 
@@ -230,7 +237,8 @@ void main(void) {
         float sin_omega = pos_and_radius.w / sqrt(pos_and_radius.w * pos_and_radius.w + dist * dist);
         float cos_phi = dot(dir, cone_dir_ls) / dist;
 
-        //cone_occlusion *= textureLod(cone_rt_lut, vec2(cos_phi, sin_omega), 0.0).r;
+        cone_occlusion *= textureLod(cone_rt_lut, vec2(cos_phi, sin_omega), 0.0).r;
+        sph_occlusion *= clamp(1.0 - (pos_and_radius.w / dist) * (pos_and_radius.w / dist), 0.0, 1.0);
 #else
         vec3 dir = pos_and_radius.xyz - cone_origin_ws;
         float dist = length(dir);
@@ -239,16 +247,15 @@ void main(void) {
                                                   dist * dist);
         float cos_phi = dot(dir, cone_dir_ws) / dist;
         
-        cone_occlusion *= textureLod(cone_rt_lut, vec2(cos_phi, sin_omega + 0.0 / 128.0), 0.0).r;
+        cone_occlusion *= textureLod(cone_rt_lut, vec2(cos_phi, sin_omega), 0.0).g;
+        sph_occlusion *= clamp(1.0 - (pos_and_radius.w / dist) * (pos_and_radius.w / dist), 0.0, 1.0);
 #endif
-    }*/
-
-    vec3 sh_l_00 = RGBMDecode(texture(lm_indirect_sh_texture[0], aVertexUVs_.zw));
-    vec3 sh_l_10 = 2.0 * texture(lm_indirect_sh_texture[1], aVertexUVs_.zw).rgb - vec3(1.0);
-    vec3 sh_l_11 = 2.0 * texture(lm_indirect_sh_texture[2], aVertexUVs_.zw).rgb - vec3(1.0);
-    vec3 sh_l_12 = 2.0 * texture(lm_indirect_sh_texture[3], aVertexUVs_.zw).rgb - vec3(1.0);
+    }
     
-    vec3 indirect_col = EvalSHIrradiance(normal, sh_l_00, sh_l_10, sh_l_11, sh_l_12);
+    // squared to compensate gamma
+    cone_occlusion *= cone_occlusion;
+    
+    vec3 indirect_col = sph_occlusion * EvalSHIrradiance(cone_occlusion * normal, sh_l_00, sh_l_10, sh_l_11, sh_l_12);
     
     float lambert = clamp(dot(normal, shrd_data.uSunDir.xyz), 0.0, 1.0);
     float visibility = 0.0;
@@ -259,7 +266,7 @@ void main(void) {
     vec2 ao_uvs = vec2(ix, iy) / shrd_data.uResAndFRes.zw;
     float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;
     vec3 diffuse_color = albedo_color * (shrd_data.uSunCol.xyz * lambert * visibility +
-                                         cone_occlusion * cone_occlusion * ambient_occlusion * ambient_occlusion * indirect_col +
+                                         ambient_occlusion * ambient_occlusion * indirect_col +
                                          additional_light);
     
     vec3 view_ray_ws = normalize(shrd_data.uCamPosAndGamma.xyz - aVertexPos_);
@@ -270,6 +277,4 @@ void main(void) {
     outColor = vec4(diffuse_color * kD, 1.0);
     outNormal = vec4(normal * 0.5 + 0.5, 0.0);
     outSpecular = specular_color;
-    
-    //outColor.rgb = 0.000001 * outColor.rgb + vec3(0.5 * normal.z + 0.5);
 }
