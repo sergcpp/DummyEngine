@@ -7,8 +7,8 @@ void Transform::UpdateBBox() {
 
     for (int j = 0; j < 3; j++) {
         for (int i = 0; i < 3; i++) {
-            float a = mat[i][j] * bbox_min[i];
-            float b = mat[i][j] * bbox_max[i];
+            const float a = mat[i][j] * bbox_min[i];
+            const float b = mat[i][j] * bbox_max[i];
 
             if (a < b) {
                 bbox_min_ws[j] += a;

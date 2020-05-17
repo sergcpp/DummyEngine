@@ -107,9 +107,52 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
                     return false;
                 }
 
+                if (js_action.Has("pos_beg")) {
+                    const JsArray &js_pos_beg = js_action.at("pos_beg").as_arr();
+
+                    action.pos_beg[0] = (float)js_pos_beg[0].as_num();
+                    action.pos_beg[1] = (float)js_pos_beg[1].as_num();
+                    action.pos_beg[2] = (float)js_pos_beg[2].as_num();
+
+                    if (js_action.Has("pos_end")) {
+                        const JsArray &js_pos_end = js_action.at("pos_end").as_arr();
+
+                        action.pos_end[0] = (float)js_pos_end[0].as_num();
+                        action.pos_end[1] = (float)js_pos_end[1].as_num();
+                        action.pos_end[2] = (float)js_pos_end[2].as_num();
+                    } else {
+                        memcpy(action.pos_end, action.pos_beg, 3 * sizeof(float));
+                    }
+                } else {
+                    action.pos_beg[0] = action.pos_beg[1] = action.pos_beg[2] = 0.0f;
+                    memcpy(action.pos_end, action.pos_beg, 3 * sizeof(float));
+                }
+
+                if (js_action.Has("rot_beg")) {
+                    const JsArray &js_rot_beg = js_action.at("rot_beg").as_arr();
+
+                    action.rot_beg[0] = (float)js_rot_beg[0].as_num();
+                    action.rot_beg[1] = (float)js_rot_beg[1].as_num();
+                    action.rot_beg[2] = (float)js_rot_beg[2].as_num();
+
+                    if (js_action.Has("rot_end")) {
+                        const JsArray &js_rot_end = js_action.at("rot_end").as_arr();
+
+                        action.rot_end[0] = (float)js_rot_end[0].as_num();
+                        action.rot_end[1] = (float)js_rot_end[1].as_num();
+                        action.rot_end[2] = (float)js_rot_end[2].as_num();
+                    } else {
+                        memcpy(action.rot_end, action.rot_beg, 3 * sizeof(float));
+                    }
+                } else {
+                    action.rot_beg[0] = action.rot_beg[1] = action.rot_beg[2] = 0.0f;
+                    memcpy(action.rot_end, action.rot_beg, 3 * sizeof(float));
+                }
+
                 if (js_action.Has("anim")) {
                     const JsString &js_action_anim = js_action.at("anim").as_str();
-                    std::string anim_path = std::string(MODELS_PATH) + js_action_anim.val;
+                    const std::string anim_path =
+                        std::string(MODELS_PATH) + js_action_anim.val;
 
                     Sys::AssetFile in_file(anim_path.c_str());
                     size_t in_file_size = in_file.size();
@@ -190,6 +233,38 @@ void ScriptedSequence::Save(JsObject &js_seq) {
                     js_action.Push("type", JsString{ActionTypeNames[(int)action.type]});
                     js_action.Push("time_beg", JsNumber{action.time_beg});
                     js_action.Push("time_end", JsNumber{action.time_end});
+                    { // write start pos
+                        JsArray js_pos_beg;
+                        js_pos_beg.Push(JsNumber{(double)action.pos_beg[0]});
+                        js_pos_beg.Push(JsNumber{(double)action.pos_beg[1]});
+                        js_pos_beg.Push(JsNumber{(double)action.pos_beg[2]});
+                        js_action.Push("pos_beg", std::move(js_pos_beg));
+                    }
+                    if (action.pos_end[0] != action.pos_beg[0] ||
+                        action.pos_end[1] != action.pos_beg[1] ||
+                        action.pos_end[2] != action.pos_beg[2]) {
+                        JsArray js_pos_end;
+                        js_pos_end.Push(JsNumber{(double)action.pos_end[0]});
+                        js_pos_end.Push(JsNumber{(double)action.pos_end[1]});
+                        js_pos_end.Push(JsNumber{(double)action.pos_end[2]});
+                        js_action.Push("pos_end", std::move(js_pos_end));
+                    }
+                    { // write start rot
+                        JsArray js_rot_beg;
+                        js_rot_beg.Push(JsNumber{(double)action.rot_beg[0]});
+                        js_rot_beg.Push(JsNumber{(double)action.rot_beg[1]});
+                        js_rot_beg.Push(JsNumber{(double)action.rot_beg[2]});
+                        js_action.Push("rot_beg", std::move(js_rot_beg));
+                    }
+                    if (action.rot_end[0] != action.rot_beg[0] ||
+                        action.rot_end[1] != action.rot_beg[1] ||
+                        action.rot_end[2] != action.rot_beg[2]) {
+                        JsArray js_rot_end;
+                        js_rot_end.Push(JsNumber{(double)action.rot_end[0]});
+                        js_rot_end.Push(JsNumber{(double)action.rot_end[1]});
+                        js_rot_end.Push(JsNumber{(double)action.rot_end[2]});
+                        js_action.Push("rot_end", std::move(js_rot_end));
+                    }
                     if (action.anim_ref) {
                         js_action.Push("anim", JsString{action.anim_ref->name().c_str()});
                     }
@@ -219,7 +294,7 @@ void ScriptedSequence::Save(JsObject &js_seq) {
             JsObject js_choice;
             js_choice.Push("key", JsString{choice.key});
             if (!choice.text.empty()) {
-                js_choice.Push("text", JsString{ choice.text });
+                js_choice.Push("text", JsString{choice.text});
             }
             js_choice.Push("sequence", JsString{choice.seq_name});
             if (!choice.puzzle_name.empty()) {
@@ -237,8 +312,8 @@ void ScriptedSequence::Save(JsObject &js_seq) {
 void ScriptedSequence::Reset() {
     const SceneData &scene = scene_manager_.scene_data();
 
-    const auto *transforms = (Transform *)scene.comp_store[CompTransform]->Get(0);
-    const auto *drawables = (Drawable *)scene.comp_store[CompDrawable]->Get(0);
+    // auto *transforms = (Transform *)scene.comp_store[CompTransform]->Get(0);
+    auto *drawables = (Drawable *)scene.comp_store[CompDrawable]->Get(0);
 
     assert(scene.comp_store[CompTransform]->IsSequential());
     assert(scene.comp_store[CompDrawable]->IsSequential());
@@ -247,17 +322,17 @@ void ScriptedSequence::Reset() {
         track.active_count = 0;
         track.time_beg = std::numeric_limits<double>::max();
         track.time_end = 0.0;
-        track.target_actor = FindActor(track.target.c_str());
+        track.target_actor = scene_manager_.FindObject(track.target.c_str());
 
         for (int i = track.action_start; i < track.action_start + track.action_count;
              i++) {
             SeqAction &action = actions_[i];
 
             action.is_active = false;
-            if (track.target_actor && action.anim_ref) {
-                auto *target_drawable =
-                    (Drawable *)&drawables[track.target_actor->components[CompDrawable]];
-                Ren::Mesh *target_mesh = target_drawable->mesh.get();
+            if (track.target_actor != 0xffffffff && action.anim_ref) {
+                SceneObject *actor = scene_manager_.GetObject(track.target_actor);
+                Drawable &target_drawable = drawables[actor->components[CompDrawable]];
+                Ren::Mesh *target_mesh = target_drawable.mesh.get();
                 Ren::Skeleton *target_skel = target_mesh->skel();
                 action.anim_id = target_skel->AddAnimSequence(action.anim_ref);
             }
@@ -301,40 +376,56 @@ void ScriptedSequence::Update(const double cur_time_s) {
     }
 }
 
-SceneObject *ScriptedSequence::FindActor(const char *name) const {
-    uint32_t obj_id = scene_manager_.FindObject(name);
-    if (obj_id == 0xffffffff) {
-        return nullptr;
-    }
-    return scene_manager_.GetObject(obj_id);
-}
-
-void ScriptedSequence::UpdateAction(SceneObject *target_actor, SeqAction &action,
+void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &action,
                                     double time_cur_s) {
     const SceneData &scene = scene_manager_.scene_data();
 
-    const auto *transforms = (Transform *)scene.comp_store[CompTransform]->Get(0);
-    const auto *drawables = (Drawable *)scene.comp_store[CompDrawable]->Get(0);
-    const auto *anim_states = (AnimState *)scene.comp_store[CompAnimState]->Get(0);
+    auto *transforms = (Transform *)scene.comp_store[CompTransform]->Get(0);
+    auto *drawables = (Drawable *)scene.comp_store[CompDrawable]->Get(0);
+    auto *anim_states = (AnimState *)scene.comp_store[CompAnimState]->Get(0);
 
     assert(scene.comp_store[CompTransform]->IsSequential());
     assert(scene.comp_store[CompDrawable]->IsSequential());
     assert(scene.comp_store[CompAnimState]->IsSequential());
 
     if (action.type == eActionType::Play) {
+        SceneObject* actor_obj = scene_manager_.GetObject(target_actor);
+
+        const float t = float(time_cur_s - action.time_beg);
+        const float t_norm = t / float(action.time_end - action.time_beg);
+
+        { // update position
+            Transform &tr = transforms[actor_obj->components[CompTransform]];
+
+            const Ren::Vec3f new_rot =
+                Mix(Ren::MakeVec3(action.rot_beg), Ren::MakeVec3(action.rot_end), t_norm);
+
+            tr.mat = Ren::Mat4f{1.0f};
+            tr.mat = Ren::Rotate(tr.mat, new_rot[2] * Ren::Pi<float>() / 180.0f,
+                                 Ren::Vec3f{0.0f, 0.0f, 1.0f});
+            tr.mat = Ren::Rotate(tr.mat, new_rot[0] * Ren::Pi<float>() / 180.0f,
+                                 Ren::Vec3f{1.0f, 0.0f, 0.0f});
+            tr.mat = Ren::Rotate(tr.mat, new_rot[1] * Ren::Pi<float>() / 180.0f,
+                                 Ren::Vec3f{0.0f, 1.0f, 0.0f});
+
+            const Ren::Vec3f new_pos =
+                Mix(Ren::MakeVec3(action.pos_beg), Ren::MakeVec3(action.pos_end), t_norm);
+            memcpy(&tr.mat[3][0], ValuePtr(new_pos), 3 * sizeof(float));
+        }
+
         { // update skeleton
-            auto *dr = (Drawable *)&drawables[target_actor->components[CompDrawable]];
-            auto *as = (AnimState *)&anim_states[target_actor->components[CompAnimState]];
-            Ren::Mesh *target_mesh = dr->mesh.get();
+            Drawable &dr = drawables[actor_obj->components[CompDrawable]];
+            AnimState &as = anim_states[actor_obj->components[CompAnimState]];
+            Ren::Mesh *target_mesh = dr.mesh.get();
             Ren::Skeleton *target_skel = target_mesh->skel();
 
-            const float t = float(time_cur_s - action.time_beg);
             target_skel->UpdateAnim(action.anim_id, t);
             target_skel->ApplyAnim(action.anim_id);
-            target_skel->UpdateBones(as->matr_palette);
-
-            target_actor->change_mask |= CompDrawableBit;
+            target_skel->UpdateBones(as.matr_palette);
         }
+
+        scene_manager_.InvalidateObjects(&target_actor, 1,
+                                         CompTransformBit | CompDrawableBit);
 
         if (!action.caption.empty()) {
             const double vis0 =

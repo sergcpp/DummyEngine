@@ -5,34 +5,41 @@
 #include <Ren/MMat.h>
 
 namespace {
-const int A_POS     = 0;
-const int A_NORMAL  = 1;
+#define _AS_STR(x) #x
+#define AS_STR(x) _AS_STR(x)
+
+const int A_POS = 0;
+const int A_NORMAL = 1;
 const int A_TANGENT = 2;
-const int A_UVS1    = 3;
-const int A_ATTRIB  = 4;
+const int A_UVS1 = 3;
+const int A_ATTRIB = 4;
 const int A_INDICES = 5;
 const int A_WEIGHTS = 6;
 
-const int U_MVP_MATR    = 0;
-const int U_M_MATR      = 1;
-const int U_MODE        = 2;
-const int U_M_PALETTE   = 3;
+const int U_MVP_MATR = 0;
+const int U_M_MATR = 1;
+const int U_MODE = 2;
+const int U_M_PALETTE = 3;
 
-const int DIFFUSEMAP_SLOT   = 0;
-const int NORMALMAP_SLOT    = 1;
+const int DIFFUSEMAP_SLOT = 0;
+const int NORMALMAP_SLOT = 1;
+
+const int BONE_MATRICES_UBO = 0;
+
+const int UniformBufferSize = 16 * 1024;
 
 inline void BindTexture(int slot, uint32_t tex) {
     glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
     glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
 }
-}
+} // namespace
 
 void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     using namespace Ren;
 
-    Mesh *m		    = ref.get();
-    Material *mat   = m->group(0).mat.get();
-    ProgramRef p    = mat->programs[0];
+    Mesh *m = ref.get();
+    Material *mat = m->group(0).mat.get();
+    ProgramRef p = mat->programs[0];
 
     glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
@@ -46,13 +53,12 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
 
     glUseProgram(p->prog_id());
 
-    Mat4f world_from_object = Mat4f{ 1.0f };
+    Mat4f world_from_object = Mat4f{1.0f};
 
-    world_from_object = Rotate(world_from_object, angle_x_, Vec3f{ 1, 0, 0 });
-    world_from_object = Rotate(world_from_object, angle_y_, Vec3f{ 0, 1, 0 });
+    world_from_object = Rotate(world_from_object, angle_x_, Vec3f{1, 0, 0});
+    world_from_object = Rotate(world_from_object, angle_y_, Vec3f{0, 1, 0});
 
-    Mat4f view_from_world = cam_.view_matrix(),
-          proj_from_view = cam_.proj_matrix();
+    Mat4f view_from_world = cam_.view_matrix(), proj_from_view = cam_.proj_matrix();
 
     Mat4f view_from_object = view_from_world * world_from_object,
           proj_from_object = proj_from_view * view_from_object;
@@ -74,14 +80,15 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
         }
         BindTexture(NORMALMAP_SLOT, mat->textures[1]->tex_id());
 
-        glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset));
+        glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT,
+                       (void *)uintptr_t(s->offset));
         ++s;
     }
 
     Ren::CheckError("", &log_);
 }
 
-void ModlApp::DrawMeshColored(Ren::MeshRef& ref) {
+void ModlApp::DrawMeshColored(Ren::MeshRef &ref) {
     using namespace Ren;
 
     Mesh *m = ref.get();
@@ -100,16 +107,15 @@ void ModlApp::DrawMeshColored(Ren::MeshRef& ref) {
 
     glUseProgram(p->prog_id());
 
-    Mat4f world_from_object = Mat4f{ 1.0f };
+    Mat4f world_from_object = Mat4f{1.0f};
 
-    world_from_object = Rotate(world_from_object, angle_x_, Vec3f{ 1, 0, 0 });
-    world_from_object = Rotate(world_from_object, angle_y_, Vec3f{ 0, 1, 0 });
+    world_from_object = Rotate(world_from_object, angle_x_, Vec3f{1, 0, 0});
+    world_from_object = Rotate(world_from_object, angle_y_, Vec3f{0, 1, 0});
 
-    Mat4f view_from_world = cam_.view_matrix(),
-        proj_from_view = cam_.proj_matrix();
+    Mat4f view_from_world = cam_.view_matrix(), proj_from_view = cam_.proj_matrix();
 
     Mat4f view_from_object = view_from_world * world_from_object,
-        proj_from_object = proj_from_view * view_from_object;
+          proj_from_object = proj_from_view * view_from_object;
 
     glUniformMatrix4fv(U_MVP_MATR, 1, GL_FALSE, ValuePtr(proj_from_object));
     glUniformMatrix4fv(U_M_MATR, 1, GL_FALSE, ValuePtr(world_from_object));
@@ -129,7 +135,8 @@ void ModlApp::DrawMeshColored(Ren::MeshRef& ref) {
         }
         BindTexture(NORMALMAP_SLOT, mat->textures[1]->tex_id());
 
-        glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void*)uintptr_t(s->offset));
+        glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT,
+                       (void *)uintptr_t(s->offset));
         ++s;
     }
 
@@ -139,8 +146,8 @@ void ModlApp::DrawMeshColored(Ren::MeshRef& ref) {
 void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     using namespace Ren;
 
-    Ren::Mesh *m	    = ref.get();
-    Ren::Material *mat	= m->group(0).mat.get();
+    Ren::Mesh *m = ref.get();
+    Ren::Material *mat = m->group(0).mat.get();
 
     anim_time_ += dt_s;
 
@@ -200,28 +207,43 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     Ren::CheckError("", &log_);
 #else
 
-    {   // transform vertices
+    { // update matrices buffer
+        const size_t num_bones = skel->bones.size();
+
+        Mat3x4f _matr_palette[256];
+        for (size_t i = 0; i < num_bones; i++) {
+            const Mat4f tr_mat = Ren::Transpose(matr_palette_[i]);
+            memcpy(&_matr_palette[i][0][0], ValuePtr(tr_mat), 12 * sizeof(float));
+        }
+
+        glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)uniform_buf_);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, UniformBufferSize, ValuePtr(_matr_palette));
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+
+    { // transform vertices
         const Ren::Program *p = skinning_prog_.get();
 
         glUseProgram(p->prog_id());
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, (GLuint)last_skin_vertex_buffer_);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)last_vertex_buf1_);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)last_vertex_buf2_);
+        glBindBufferBase(GL_UNIFORM_BUFFER, BONE_MATRICES_UBO, (GLuint)uniform_buf_);
 
         int vertex_offset = m->sk_attribs_buf().offset / 48,
             vertex_count = m->sk_attribs_buf().size / 48;
 
         glUniform2i(0, vertex_offset, 0);
 
-        const size_t num_bones = skel->bones.size();
+        /*const size_t num_bones = skel->bones.size();
 
-        Mat3x4f _matr_palette[160];
+        Mat3x4f _matr_palette[256];
         for (size_t i = 0; i < num_bones; i++) {
             const Mat4f tr_mat = Ren::Transpose(matr_palette_[i]);
             memcpy(&_matr_palette[i][0][0], ValuePtr(tr_mat), 12 * sizeof(float));
         }
 
-        glUniformMatrix3x4fv(2, (GLsizei)num_bones, GL_FALSE, ValuePtr(_matr_palette[0]));
+        glUniformMatrix3x4fv(2, (GLsizei)num_bones, GL_FALSE, ValuePtr(_matr_palette[0]));*/
 
         glDispatchCompute(vertex_count, 1, 1);
     }
@@ -233,13 +255,12 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
     glUniform1f(U_MODE, (float)view_mode_);
 
-    Mat4f world_from_object = Mat4f{ 1.0f };
+    Mat4f world_from_object = Mat4f{1.0f};
 
-    //world_from_object = Rotate(world_from_object, angle_x_, { 1, 0, 0 });
-    world_from_object = Rotate(world_from_object, angle_y_, Vec3f{ 0, 1, 0 });
+    // world_from_object = Rotate(world_from_object, angle_x_, { 1, 0, 0 });
+    world_from_object = Rotate(world_from_object, angle_y_, Vec3f{0, 1, 0});
 
-    Mat4f view_from_world = cam_.view_matrix(),
-          proj_from_view = cam_.proj_matrix();
+    Mat4f view_from_world = cam_.view_matrix(), proj_from_view = cam_.proj_matrix();
 
     Mat4f view_from_object = view_from_world * world_from_object,
           proj_from_object = proj_from_view * view_from_object;
@@ -261,7 +282,8 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
         }
         BindTexture(NORMALMAP_SLOT, mat->textures[1]->tex_id());
 
-        glDrawElementsBaseVertex(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT, (void *)uintptr_t(s->offset), (GLint)0);
+        glDrawElementsBaseVertex(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT,
+                                 (void *)uintptr_t(s->offset), (GLint)0);
         ++s;
     }
 
@@ -280,14 +302,14 @@ void ModlApp::CheckInitVAOs() {
     Ren::BufferRef skin_vtx_buf = ctx_.default_skin_vertex_buf();
     Ren::BufferRef ndx_buf = ctx_.default_indices_buf();
 
-    const auto
-        gl_vertex_buf1 = (GLuint)vtx_buf1->buf_id(),
-        gl_vertex_buf2 = (GLuint)vtx_buf2->buf_id(),
-        gl_skin_vertex_buf = (GLuint)skin_vtx_buf->buf_id(),
-        gl_indices_buf = (GLuint)ndx_buf->buf_id();
+    const auto gl_vertex_buf1 = (GLuint)vtx_buf1->buf_id(),
+               gl_vertex_buf2 = (GLuint)vtx_buf2->buf_id(),
+               gl_skin_vertex_buf = (GLuint)skin_vtx_buf->buf_id(),
+               gl_indices_buf = (GLuint)ndx_buf->buf_id();
 
     if (gl_vertex_buf1 != last_vertex_buf1_ || gl_vertex_buf2 != last_vertex_buf2_ ||
-        gl_skin_vertex_buf != last_skin_vertex_buffer_ || gl_indices_buf != last_index_buffer_) {
+        gl_skin_vertex_buf != last_skin_vertex_buffer_ ||
+        gl_indices_buf != last_index_buffer_) {
 
         if (last_vertex_buf1_) {
             auto simple_mesh_vao = (GLuint)simple_vao_;
@@ -306,27 +328,30 @@ void ModlApp::CheckInitVAOs() {
 
         const int buf1_stride = 16, buf2_stride = 16;
 
-        {   // Assign attributes from buf1
+        { // Assign attributes from buf1
             glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf1);
 
             glEnableVertexAttribArray(A_POS);
             glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);
 
             glEnableVertexAttribArray(A_UVS1);
-            glVertexAttribPointer(A_UVS1, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride, (void *)(3 * sizeof(float)));
+            glVertexAttribPointer(A_UVS1, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride,
+                                  (void *)(3 * sizeof(float)));
         }
 
-        {   // Assign attributes from buf2
+        { // Assign attributes from buf2
             glBindBuffer(GL_ARRAY_BUFFER, gl_vertex_buf2);
 
             glEnableVertexAttribArray(A_NORMAL);
             glVertexAttribPointer(A_NORMAL, 4, GL_SHORT, GL_TRUE, buf2_stride, (void *)0);
 
             glEnableVertexAttribArray(A_TANGENT);
-            glVertexAttribPointer(A_TANGENT, 2, GL_SHORT, GL_TRUE, buf2_stride, (void *)(4 * sizeof(uint16_t)));
+            glVertexAttribPointer(A_TANGENT, 2, GL_SHORT, GL_TRUE, buf2_stride,
+                                  (void *)(4 * sizeof(uint16_t)));
 
             glEnableVertexAttribArray(A_ATTRIB);
-            glVertexAttribIPointer(A_ATTRIB, 1, GL_UNSIGNED_INT, buf2_stride, (void *)(6 * sizeof(uint16_t)));
+            glVertexAttribIPointer(A_ATTRIB, 1, GL_UNSIGNED_INT, buf2_stride,
+                                   (void *)(6 * sizeof(uint16_t)));
         }
 
         glBindVertexArray(0);
@@ -345,22 +370,30 @@ void ModlApp::CheckInitVAOs() {
         glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride_skin_buf, (void *)0);
 
         glEnableVertexAttribArray(A_NORMAL);
-        glVertexAttribPointer(A_NORMAL, 4, GL_SHORT, GL_TRUE, stride_skin_buf, (void *)(3 * sizeof(float)));
+        glVertexAttribPointer(A_NORMAL, 4, GL_SHORT, GL_TRUE, stride_skin_buf,
+                              (void *)(3 * sizeof(float)));
 
         glEnableVertexAttribArray(A_TANGENT);
-        glVertexAttribPointer(A_TANGENT, 2, GL_SHORT, GL_TRUE, stride_skin_buf, (void *)(3 * sizeof(float) + 4 * sizeof(int16_t)));
+        glVertexAttribPointer(A_TANGENT, 2, GL_SHORT, GL_TRUE, stride_skin_buf,
+                              (void *)(3 * sizeof(float) + 4 * sizeof(int16_t)));
 
         glEnableVertexAttribArray(A_UVS1);
-        glVertexAttribPointer(A_UVS1, 2, GL_HALF_FLOAT, GL_FALSE, stride_skin_buf, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t)));
+        glVertexAttribPointer(A_UVS1, 2, GL_HALF_FLOAT, GL_FALSE, stride_skin_buf,
+                              (void *)(3 * sizeof(float) + 6 * sizeof(int16_t)));
 
         glEnableVertexAttribArray(A_ATTRIB);
-        glVertexAttribIPointer(A_ATTRIB, 1, GL_UNSIGNED_INT, buf2_stride, (void*)(6 * sizeof(uint16_t)));
+        glVertexAttribIPointer(A_ATTRIB, 1, GL_UNSIGNED_INT, buf2_stride,
+                               (void *)(6 * sizeof(uint16_t)));
 
         glEnableVertexAttribArray(A_INDICES);
-        glVertexAttribPointer(A_INDICES, 4, GL_UNSIGNED_SHORT, GL_FALSE, stride_skin_buf, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 4 * sizeof(uint16_t)));
+        glVertexAttribPointer(
+            A_INDICES, 4, GL_UNSIGNED_SHORT, GL_FALSE, stride_skin_buf,
+            (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 4 * sizeof(uint16_t)));
 
         glEnableVertexAttribArray(A_WEIGHTS);
-        glVertexAttribPointer(A_WEIGHTS, 4, GL_UNSIGNED_SHORT, GL_TRUE, stride_skin_buf, (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 8 * sizeof(uint16_t)));
+        glVertexAttribPointer(
+            A_WEIGHTS, 4, GL_UNSIGNED_SHORT, GL_TRUE, stride_skin_buf,
+            (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 8 * sizeof(uint16_t)));
 
         glBindVertexArray(0);
 
@@ -375,7 +408,7 @@ void ModlApp::CheckInitVAOs() {
 
 void ModlApp::InitInternal() {
     static const char diag_vs[] =
-R"(#version 430
+        R"(#version 430
 
 layout(location = 0) in vec3 aVertexPosition;
 layout(location = 1) in vec4 aVertexNormal;
@@ -403,7 +436,7 @@ void main(void) {
 )";
 
     static const char diag_colored_vs[] =
-R"(#version 430
+        R"(#version 430
 
 layout(location = 0) in vec3 aVertexPosition;
 layout(location = 1) in vec4 aVertexNormal;
@@ -431,7 +464,7 @@ void main(void) {
 )";
 
     static const char diag_skinned_vs[] =
-R"(#version 430
+        R"(#version 430
 
 layout(location = 0) in vec3 aVertexPosition;
 layout(location = 1) in mediump vec4 aVertexNormal;
@@ -443,7 +476,7 @@ layout(location = 6) in mediump vec4 aVertexWeights;
 
 layout(location = 0) uniform mat4 uMVPMatrix;
 layout(location = 1) uniform mat4 uMMatrix;
-layout(location = 3) uniform mat4 uMPalette[64];
+layout(location = 3) uniform mat4 uMPalette[160];
 
 out mat3 aVertexTBN_;
 out vec2 aVertexUVs1_;
@@ -467,7 +500,8 @@ void main(void) {
     vec3 vertex_normal_ws = normalize((mat * vec4(aVertexNormal.xyz, 0.0)).xyz);
     vec3 vertex_tangent_ws = normalize((mat * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
 
-    aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws), vertex_normal_ws);
+    aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws),
+                       vertex_normal_ws);
     aVertexUVs1_ = aVertexUVs1;
     aVertexAttrib_ = vec4(unpackHalf2x16(aVertexUVs2Packed), 0.0, 0.0);
 
@@ -476,7 +510,7 @@ void main(void) {
 )";
 
     static const char diag_fs[] =
-R"(#version 430
+        R"(#version 430
 
 #ifdef GL_ES
     precision mediump float;
@@ -524,13 +558,24 @@ void main(void) {
     Ren::eProgLoadStatus status;
     diag_prog_ = ctx_.LoadProgramGLSL("__diag", diag_vs, diag_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    diag_colored_prog_ = ctx_.LoadProgramGLSL("__diag_colored", diag_colored_vs, diag_fs, &status);
+    diag_colored_prog_ =
+        ctx_.LoadProgramGLSL("__diag_colored", diag_colored_vs, diag_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    diag_skinned_prog_ = ctx_.LoadProgramGLSL("__diag_skinned", diag_skinned_vs, diag_fs, &status);
+    diag_skinned_prog_ =
+        ctx_.LoadProgramGLSL("__diag_skinned", diag_skinned_vs, diag_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
 
     static const char skinning_cs[] = R"(
             #version 430
+
+            /*
+            UNIFORM_BLOCKS
+                SharedDataBlock : )" AS_STR(BONE_MATRICES_UBO) R"(
+            */
+
+            layout (std140) uniform BoneMatricesBlock {
+                mat3x4 bone_matrices[256];
+            };
 
             struct InVertex {
                 highp vec4 p_and_nxy;
@@ -562,7 +607,6 @@ void main(void) {
             } out_data1;
 
             layout(location = 0) uniform ivec2 uOffsets;
-            layout(location = 2) uniform mat3x4 uMPalette[160];
             
             layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
@@ -583,18 +627,20 @@ void main(void) {
                 highp vec3 n = vec3(nxy, nz_and_bx.x),
                            b = vec3(nz_and_bx.y, byz);
 
-                mediump uvec4 vtx_indices = uvec4(bitfieldExtract(in_data.vertices[i].bone_indices.x, 0, 16),
-                                                  bitfieldExtract(in_data.vertices[i].bone_indices.x, 16, 16),
-                                                  bitfieldExtract(in_data.vertices[i].bone_indices.y, 0, 16),
-                                                  bitfieldExtract(in_data.vertices[i].bone_indices.y, 16, 16));
-                mediump vec4 vtx_weights = vec4(unpackUnorm2x16(in_data.vertices[i].bone_weights.x),
-                                                unpackUnorm2x16(in_data.vertices[i].bone_weights.y));
+                mediump uvec4 vtx_indices =
+                    uvec4(bitfieldExtract(in_data.vertices[i].bone_indices.x, 0, 16),
+                          bitfieldExtract(in_data.vertices[i].bone_indices.x, 16, 16),
+                          bitfieldExtract(in_data.vertices[i].bone_indices.y, 0, 16),
+                          bitfieldExtract(in_data.vertices[i].bone_indices.y, 16, 16));
+                mediump vec4 vtx_weights =
+                    vec4(unpackUnorm2x16(in_data.vertices[i].bone_weights.x),
+                         unpackUnorm2x16(in_data.vertices[i].bone_weights.y));
 
                 highp mat3x4 mat = mat3x4(0.0);
 
                 for (int j = 0; j < 4; j++) {
                     if (vtx_weights[j] > 0.0) {
-                        mat = mat + uMPalette[vtx_indices[j]] * vtx_weights[j];
+                        mat = mat + bone_matrices[vtx_indices[j]] * vtx_weights[j];
                     }
                 }
 
@@ -620,6 +666,16 @@ void main(void) {
 
     skinning_prog_ = ctx_.LoadProgramGLSL("__skin", skinning_cs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    GLuint unif_buf;
+    glGenBuffers(1, &unif_buf);
+    glBindBuffer(GL_UNIFORM_BUFFER, unif_buf);
+    glBufferData(GL_UNIFORM_BUFFER, UniformBufferSize, nullptr, GL_DYNAMIC_COPY);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    uniform_buf_ = (uint32_t)unif_buf;
 }
 
 void ModlApp::DestroyInternal() {
@@ -628,4 +684,10 @@ void ModlApp::DestroyInternal() {
 
     GLuint skinned_mesh_vao = (GLuint)skinned_vao_;
     glDeleteVertexArrays(1, &skinned_mesh_vao);
+
+    GLuint unif_buf = (GLuint)uniform_buf_;
+    glDeleteBuffers(1, &unif_buf);
 }
+
+#undef _AS_STR
+#undef AS_STR

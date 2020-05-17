@@ -9,7 +9,6 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
-#include <map>
 #include <memory>
 
 #include <SDL2/SDL.h>
@@ -49,7 +48,7 @@ int Tokenize(const std::string &str, const char *delims, std::string out_toks[32
         p++;
     }
 
-    for (; p != NULL && q != NULL; q = strpbrk(p, delims)) {
+    for (; p != nullptr && q != nullptr; q = strpbrk(p, delims)) {
         if (p == q) {
             p = q + 1;
             continue;
@@ -167,7 +166,9 @@ int ModlApp::Run(const std::vector<std::string> &args) {
 
     if (in_file_type == eInputFileType::Anim) {
         const eCompileResult comp_res = CompileAnim(in_file_name, out_file_name);
-        return (comp_res == eCompileResult::RES_SUCCESS) ? 0 : -1;
+        if (comp_res != eCompileResult::RES_SUCCESS) {
+            return -1;
+        }
     } else if (in_file_type == eInputFileType::Mesh) {
         const eCompileResult comp_res =
             CompileModel(in_file_name, out_file_name, optimize_mesh, generate_occlusion);
@@ -415,8 +416,8 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
         }
     } mesh_info;
     static_assert(sizeof(MeshInfo) == 56, "fix struct packing!");
-    assert(offsetof(MeshInfo, bbox_min) == 32);
-    assert(offsetof(MeshInfo, bbox_max) == 44);
+    static_assert(offsetof(MeshInfo, bbox_min) == 32, "!");
+    static_assert(offsetof(MeshInfo, bbox_max) == 44, "!");
 
     struct OutBone {
         char name[64];
@@ -425,10 +426,10 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
     };
     vector<OutBone> out_bones;
     static_assert(sizeof(OutBone) == 100, "fix struct packing!");
-    assert(offsetof(OutBone, id) == 64);
-    assert(offsetof(OutBone, parent_id) == 68);
-    assert(offsetof(OutBone, bind_pos) == 72);
-    assert(offsetof(OutBone, bind_rot) == 84);
+    static_assert(offsetof(OutBone, id) == 64, "!");
+    static_assert(offsetof(OutBone, parent_id) == 68, "!");
+    static_assert(offsetof(OutBone, bind_pos) == 72, "!");
+    static_assert(offsetof(OutBone, bind_rot) == 84, "!");
 
     int num_vertices, num_indices;
     vector<float> positions, normals, tangents, uvs, uvs2, weights;
@@ -618,10 +619,10 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
         string str;
         while (getline(in_file, str)) {
             if (str.find("skeleton") != string::npos) {
-                while (str.find("{") == string::npos)
+                while (str.find('{') == string::npos)
                     getline(in_file, str);
                 getline(in_file, str);
-                while (str.find("}") == string::npos) {
+                while (str.find('}') == string::npos) {
                     const int toks_count = Tokenize(str, " \t\"", toks);
                     if (toks_count != 3)
                         return eCompileResult::RES_PARSE_ERROR;
@@ -636,10 +637,10 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
                     getline(in_file, str);
                 }
             } else if (str.find("bind_pose") != string::npos) {
-                while (str.find("{") == string::npos)
+                while (str.find('{') == string::npos)
                     getline(in_file, str);
                 getline(in_file, str);
-                while (str.find("}") == string::npos) {
+                while (str.find('}') == string::npos) {
                     const int toks_count = Tokenize(str, " \t()", toks);
                     if (toks_count != 8)
                         return eCompileResult::RES_PARSE_ERROR;
@@ -882,7 +883,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
     file_header.p[CH_STRIPS].length = (int32_t)(sizeof(MeshChunk) * total_chunks.size());
 
     if (mesh_type == eModelType::M_SKEL) {
-        file_header.num_chunks++;
+        //file_header.num_chunks++;
         file_offset += file_header.p[CH_STRIPS].length;
         file_header.p[CH_BONES].offset = (int32_t)file_offset;
         file_header.p[CH_BONES].length = (int32_t)(100 * out_bones.size());
@@ -896,11 +897,12 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
         out_file.write((char *)&normals[i * 3], sizeof(float) * 3);
         out_file.write((char *)&tangents[i * 3], sizeof(float) * 3);
         out_file.write((char *)&uvs[i * 2], sizeof(float) * 2);
-        if (mesh_type == eModelType::M_STATIC) {
+        if (mesh_type == eModelType::M_STATIC || mesh_type == eModelType::M_SKEL) {
             out_file.write((char *)&uvs2[i * 2], sizeof(float) * 2);
         } else if (mesh_type == eModelType::M_COLORED) {
             out_file.write((char *)&vtx_colors[i * 4], sizeof(uint8_t) * 4);
-        } else if (mesh_type == eModelType::M_SKEL) {
+        }
+        if (mesh_type == eModelType::M_SKEL) {
             out_file.write((char *)&weights[i * 8], sizeof(float) * 8);
         }
     }
@@ -911,7 +913,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
         char name[64]{};
         strcpy(name, str.c_str());
         strcat(name, ".txt");
-        out_file.write((char *)&name[0], sizeof(name));
+        out_file.write(name, sizeof(name));
     }
 
     out_file.write((char *)&total_chunks[0], sizeof(MeshChunk) * total_chunks.size());
@@ -983,7 +985,7 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name,
     { // parse bones info
         string str;
         getline(in_file, str);
-        while (str.find("}") == string::npos) {
+        while (str.find('}') == string::npos) {
             const int toks_count = Tokenize(str, " \"", toks);
             if (toks_count < 3)
                 return eCompileResult::RES_PARSE_ERROR;
@@ -1046,7 +1048,7 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name,
     };
 
     static_assert(sizeof(ChunkPos) == 8, "fix struct packing!");
-    assert(offsetof(ChunkPos, length) == 4);
+    static_assert(offsetof(ChunkPos, length) == 4, "!");
 
     struct Header {
         int32_t num_chunks;
@@ -1054,7 +1056,7 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name,
     } file_header;
 
     static_assert(sizeof(Header) == 28, "fix struct packing!");
-    assert(offsetof(Header, p) == 4);
+    static_assert(offsetof(Header, p) == 4, "!");
 
     size_t file_offset = 12 + sizeof(Header);
     file_header.num_chunks = 3;
@@ -1171,7 +1173,7 @@ ModlApp::GenerateOcclusion(const std::vector<float> &positions,
             prim_lists.back().max, root_min, root_max, s);
         prim_lists.pop_back();
 
-        const uint32_t leaf_index = (uint32_t)nodes.size();
+        const auto leaf_index = (uint32_t)nodes.size();
         uint32_t parent_index = 0xffffffff;
 
         if (leaf_index) {

@@ -32,7 +32,7 @@ namespace GSDrawTestInternal {
         //"corridor.json";
         //"vegetation_test_night.json";
         //"test_decals.json";
-        //"courtroom.json";
+        "courtroom.json";
         //"lmap_test.json";
         "sss_test.json";
 }

@@ -21,6 +21,8 @@ enum class eActionType { Play, Look, Invalid };
 struct SeqAction {
     eActionType type;
     double time_beg, time_end;
+    float pos_beg[3], pos_end[3];
+    float rot_beg[3], rot_end[3];
     std::string caption;
 
     // temp data
@@ -48,7 +50,7 @@ class ScriptedSequence {
         // temp data
         double time_beg, time_end;
         int active_count;
-        SceneObject *target_actor;
+        uint32_t target_actor;
     };
 
     Ren::Context &ctx_;
@@ -62,8 +64,7 @@ class ScriptedSequence {
 
     double end_time_;
 
-    SceneObject *FindActor(const char *name) const;
-    void UpdateAction(SceneObject *target_actor, SeqAction &action, double time_cur_s);
+    void UpdateAction(uint32_t target_actor, SeqAction &action, double time_cur_s);
 
   public:
     ScriptedSequence(Ren::Context &ctx_, SceneManager &scene_manager);

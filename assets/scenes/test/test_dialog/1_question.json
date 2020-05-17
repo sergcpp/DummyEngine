@@ -24,7 +24,7 @@
 					"type" : "play", 
 					"time_beg" : 0.0, 
 					"time_end" : 3.0, 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer_walk.anim", 
 					"caption" : "Die Verteidigung is bereit, Euer Ehren."
 				}
 			]

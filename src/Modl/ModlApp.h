@@ -64,6 +64,7 @@ class ModlApp {
     uint32_t simple_vao_ = 0, skinned_vao_ = 0;
     uint32_t last_vertex_buf1_ = 0, last_vertex_buf2_, last_skin_vertex_buffer_ = 0,
              last_index_buffer_ = 0;
+    uint32_t uniform_buf_ = 0;
 
     void CheckInitVAOs();
 #endif
@@ -71,7 +72,7 @@ class ModlApp {
     Ren::MeshRef view_mesh_;
     Ren::AnimSeqRef anim_seq_;
     float anim_time_ = 0.0f;
-    Ren::Mat4f matr_palette_[160];
+    Ren::Mat4f matr_palette_[256];
     Ren::Camera cam_;
     Ren::Context ctx_;
 

@@ -193,7 +193,7 @@ int Ren::Skeleton::AddAnimSequence(const AnimSeqRef &ref) {
     anims.emplace_back();
     AnimLink &a = anims.back();
     a.anim = ref;
-    a.anim_bones = anims[anims.size() - 1].anim->LinkBones(bones);
+    a.anim_bones = a.anim->LinkBones(bones);
     return int(anims.size() - 1);
 }
 
