@@ -215,11 +215,6 @@ Ren::TextureAtlasArray::TextureAtlasArray(int w, int h, int layer_count,
     ren_glTextureParameteri_Comp(GL_TEXTURE_2D_ARRAY, tex_id, GL_TEXTURE_MAG_FILTER,
                                  g_gl_mag_filter[(size_t)filter_]);
 
-    ren_glTextureParameteri_Comp(GL_TEXTURE_2D_ARRAY, tex_id, GL_TEXTURE_WRAP_S,
-                                 g_gl_wrap_mode[(size_t)filter]);
-    ren_glTextureParameteri_Comp(GL_TEXTURE_2D_ARRAY, tex_id, GL_TEXTURE_WRAP_T,
-                                 g_gl_wrap_mode[(size_t)filter]);
-
     tex_id_ = (uint32_t)tex_id;
 
     for (int i = 0; i < layer_count; i++) {
