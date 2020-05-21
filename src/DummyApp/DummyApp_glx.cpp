@@ -293,12 +293,23 @@ void DummyApp::PollEvents() {
 
             evt.type = RawInputEvent::EvKeyUp;
             evt.key_code = key_code;
-        } else if (xev.type == ButtonPress && (xev.xbutton.button == 1 || xev.xbutton.button == 3)) {
-            evt.type = (xev.xbutton.button == 1) ? RawInputEvent::EvP1Down : RawInputEvent::EvP2Down;
+        } else if (xev.type == ButtonPress && (xev.xbutton.button >= Button1 && xev.xbutton.button <= Button5)) {
+            if (xev.xbutton.button == Button1) {
+                evt.type = RawInputEvent::EvP1Down;
+            } else if (xev.xbutton.button == Button3) {
+                evt.type = RawInputEvent::EvP2Down;
+            } else if (xev.xbutton.button == Button4 || xev.xbutton.button == Button5) {
+                evt.type = RawInputEvent::EvMouseWheel;
+                evt.move.dx = (xev.xbutton.button == Button4) ? 1.0f : -1.0f;
+            }
             evt.point.x = (float) xev.xbutton.x;
             evt.point.y = (float) xev.xbutton.y;
-        } else if (xev.type == ButtonRelease && (xev.xbutton.button == 1 || xev.xbutton.button == 3)) {
-            evt.type = (xev.xbutton.button == 1) ? RawInputEvent::EvP1Up : RawInputEvent::EvP2Up;
+        } else if (xev.type == ButtonRelease && (xev.xbutton.button >= Button1 && xev.xbutton.button <= Button5)) {
+            if (xev.xbutton.button == Button1) {
+                evt.type = RawInputEvent::EvP1Up;
+            } else if (xev.xbutton.button == Button3) {
+                evt.type = RawInputEvent::EvP2Up;
+            }
             evt.point.x = (float)xev.xbutton.x;
             evt.point.y = (float)xev.xbutton.y;
         } else if (xev.type == MotionNotify) {
