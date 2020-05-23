@@ -185,7 +185,7 @@ void main() {
     outColor = vec4(0.0);
 
     ivec2 pix_uvs = ivec2(aVertexUVs_ + vec2(0.5));
-    vec2 norm_uvs = aVertexUVs_.xy / shrd_data.uResAndFRes.xy;
+    vec2 norm_uvs = aVertexUVs_ / shrd_data.uResAndFRes.xy;
 
     vec4 normal_tex = texelFetch(norm_texture, pix_uvs + ivec2(0, 0), 0);
     if (normal_tex.w < 0.0001) return;

@@ -594,7 +594,7 @@ void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target,
     cam_.Perspective(fov, float(cur_scr_w) / float(cur_scr_h), NEAR_CLIP, FAR_CLIP);
     cam_.UpdatePlanes();
 
-    cam_.set_max_exposure(max_exposure);
+    cam_.max_exposure = max_exposure;
 }
 
 void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp,

@@ -119,6 +119,11 @@ set(SHADERS_SOURCES Renderer/Shaders/_common.glsl
                     Renderer/Shaders/blit_debug.frag.glsl
                     Renderer/Shaders/blit_debug_bvh.frag.glsl
                     Renderer/Shaders/blit_depth.frag.glsl
+                    Renderer/Shaders/blit_dof_init_coc.frag.glsl
+                    Renderer/Shaders/blit_dof_bilateral.frag.glsl
+                    Renderer/Shaders/blit_dof_calc_near.frag.glsl
+                    Renderer/Shaders/blit_dof_small_blur.frag.glsl
+                    Renderer/Shaders/blit_dof_combine.frag.glsl
                     Renderer/Shaders/blit_down.frag.glsl
                     Renderer/Shaders/blit_down_depth.frag.glsl
                     Renderer/Shaders/blit_down_ms.frag.glsl

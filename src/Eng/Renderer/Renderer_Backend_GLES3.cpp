@@ -179,6 +179,24 @@ void Renderer::InitRendererInternal() {
     blit_gauss_sep_prog_ =
         ctx_.LoadProgramGLSL("blit_gauss_sep", blit_vs, blit_gauss_sep_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    blit_dof_init_coc_prog_ =
+        ctx_.LoadProgramGLSL("blit_dof_init_coc", blit_vs, blit_dof_init_coc_fs, &status);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    blit_dof_bilateral_prog_ = ctx_.LoadProgramGLSL("blit_dof_bilateral", blit_vs,
+                                                    blit_dof_bilateral_fs, &status);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    blit_dof_calc_near_prog_ = ctx_.LoadProgramGLSL("blit_dof_calc_near", blit_vs,
+                                                    blit_dof_calc_near_fs, &status);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    blit_dof_small_blur_prog_ = ctx_.LoadProgramGLSL("blit_dof_small_blur", blit_vs,
+                                                     blit_dof_small_blur_fs, &status);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    blit_dof_combine_prog_ =
+        ctx_.LoadProgramGLSL("blit_dof_combine", blit_vs, blit_dof_combine_fs, &status);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    blit_dof_combine_ms_prog_ = ctx_.LoadProgramGLSL("blit_dof_combine_ms", blit_vs,
+                                                     blit_dof_combine_ms_fs, &status);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     blit_bilateral_prog_ =
         ctx_.LoadProgramGLSL("blit_bilateral", blit_vs, blit_bilateral_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
@@ -2236,7 +2254,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glViewport(0, 0, act_w_ / 2, act_h_ / 2);
 
         // downsample depth buffer
-        glBindFramebuffer(GL_FRAMEBUFFER, down_depth_.fb);
+        glBindFramebuffer(GL_FRAMEBUFFER, down_depth_2x_.fb);
 
         const Ren::Program *down_depth_prog = nullptr;
 
@@ -2249,6 +2267,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUseProgram(down_depth_prog->prog_id());
 
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
+        glUniform1f(1, 1.0f); // linearize
 
         if (clean_buf_.sample_count > 1) {
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT,
@@ -2267,8 +2286,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     if ((list.render_flags & use_ssao_mask) == use_ssao) {
         DebugMarker _("SSAO PASS");
 
-        assert(down_depth_.w == ssao_buf1_.w && down_depth_.w == ssao_buf2_.w &&
-               down_depth_.h == ssao_buf1_.h && down_depth_.h == ssao_buf2_.h);
+        assert(down_depth_2x_.w == ssao_buf1_.w && down_depth_2x_.w == ssao_buf2_.w &&
+               down_depth_2x_.h == ssao_buf1_.h && down_depth_2x_.h == ssao_buf2_.h);
 
         const int ssao_res[] = {act_w_ / 2, act_h_ / 2};
 
@@ -2283,7 +2302,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniform4f(0, 0.0f, 0.0f, float(ssao_res[0]), float(ssao_res[1]));
 
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
-                                       down_depth_.attachments[0].tex);
+                                       down_depth_2x_.attachments[0].tex);
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT,
                                        rand2d_dirs_4x4_->tex_id());
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE2_TEX_SLOT,
@@ -2298,7 +2317,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUseProgram(blit_bilateral_prog_->prog_id());
 
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, down_depth_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0,
+                                       down_depth_2x_.attachments[0].tex);
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 1, ssao_buf1_.attachments[0].tex);
 
             glUniform4f(0, 0.0f, 0.0f, float(ssao_res[0]), float(ssao_res[1]));
@@ -2340,7 +2360,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 1, down_depth_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 1,
+                                       down_depth_2x_.attachments[0].tex);
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 2, ssao_buf1_.attachments[0].tex);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
@@ -2792,7 +2813,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_DEPTH_TEX_SLOT,
-                                   down_depth_.attachments[0].tex);
+                                   down_depth_2x_.attachments[0].tex);
 
         const GLenum clean_buf_bind_target =
             (clean_buf_.sample_count > 1) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
@@ -2847,12 +2868,12 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                                    clean_buf_.attachments[REN_OUT_NORM_INDEX].tex);
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_DEPTH_LOW_TEX_SLOT,
-                                   down_depth_.attachments[0].tex);
+                                   down_depth_2x_.attachments[0].tex);
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_SSR_TEX_SLOT,
                                    ssr_buf2_.attachments[0].tex);
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_PREV_TEX_SLOT,
-                                   down_buf_.attachments[0].tex);
+                                   down_buf_4x_.attachments[0].tex);
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_REFL_BRDF_TEX_SLOT,
                                    brdf_lut_->tex_id());
 
@@ -2973,7 +2994,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             float exposure = reduced_average_ > std::numeric_limits<float>::epsilon()
                                  ? (1.0f / reduced_average_)
                                  : 1.0f;
-            exposure = std::min(exposure, list.draw_cam.max_exposure());
+            exposure = std::min(exposure, list.draw_cam.max_exposure);
 
             glUniform1f(14, exposure);
 
@@ -3099,18 +3120,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     prev_clip_from_world_ = clip_from_world_unjittered;
     prev_clip_from_view_ = shrd_data.uProjMatrix;
 
-    if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap)) &&
+    if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap | EnableDOF)) &&
         ((list.render_flags & DebugWireframe) == 0)) {
-        DebugMarker _("BLUR PASS");
+        DebugMarker _("DOWNSAMPLE COLOR");
 
-        // prepare blured buffer
-        glBindFramebuffer(GL_FRAMEBUFFER, down_buf_.fb);
-        glViewport(0, 0, down_buf_.w, down_buf_.h);
+        glBindFramebuffer(GL_FRAMEBUFFER, down_buf_4x_.fb);
+        glViewport(0, 0, down_buf_4x_.w, down_buf_4x_.h);
 
         const Ren::Program *cur_program = blit_down_prog_.get();
         glUseProgram(cur_program->prog_id());
 
-        glUniform4f(0, 0.0f, 0.0f, float(act_w_), float(act_h_));
+        glUniform4f(0, 0.0f, 0.0f, float(act_w_) / float(scr_w_),
+                    float(act_h_) / float(scr_h_));
 
         if (clean_buf_.sample_count > 1 || ((list.render_flags & EnableTaa) != 0)) {
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
@@ -3122,19 +3143,230 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
                        (const GLvoid *)uintptr_t(quad_ndx_offset_));
+    }
+
+    const bool apply_dof =
+        (list.render_flags & EnableDOF) &&
+        list.draw_cam.focus_near_mul > 0.0f && list.draw_cam.focus_far_mul > 0.0f &&
+        ((list.render_flags & DebugWireframe) == 0);
+
+    if (apply_dof) {
+        DebugMarker _("DOF");
+
+        const int qres_w = clean_buf_.w / 4, qres_h = clean_buf_.h / 4;
+        glViewport(0, 0, qres_w, qres_h);
+
+        { // prepare coc buffer
+            glBindFramebuffer(GL_FRAMEBUFFER, down_buf_coc_[0].fb);
+            assert(down_buf_coc_[0].w == qres_w && down_buf_coc_[0].h == qres_h);
+
+            glUseProgram(blit_dof_init_coc_prog_->prog_id());
+
+            glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
+            glUniform4f(1, -list.draw_cam.focus_near_mul,
+                        list.draw_cam.focus_distance - 0.5f * list.draw_cam.focus_depth,
+                        0.0f, 0.0f);
+
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       down_depth_2x_.attachments[0].tex);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        }
+
+        { // blur coc buffer
+            glBindFramebuffer(GL_FRAMEBUFFER, blur_buf2_.fb);
+            assert(blur_buf2_.w == qres_w && blur_buf2_.h == qres_h);
+
+            glUseProgram(blit_gauss_prog_->prog_id());
+
+            glUniform4f(0, 0.0f, 0.0f, float(down_buf_coc_[0].w),
+                        float(down_buf_coc_[0].h));
+            glUniform1f(1, 0.0f); // horizontal
+
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       down_buf_coc_[0].attachments[0].tex);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
+
+            glBindFramebuffer(GL_FRAMEBUFFER, down_buf_coc_[1].fb);
+            assert(down_buf_coc_[1].w == qres_w && down_buf_coc_[1].h == qres_h);
+
+            glUniform4f(0, 0.0f, 0.0f, float(blur_buf2_.w), float(blur_buf2_.h));
+            glUniform1f(1, 1.0f); // vertical
+
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       blur_buf2_.attachments[0].tex);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        }
+
+        { // downsample depth (once more)
+            glBindFramebuffer(GL_FRAMEBUFFER, down_depth_4x_.fb);
+            assert(down_depth_4x_.w == qres_w && down_depth_4x_.h == qres_h);
+
+            glUseProgram(blit_down_depth_prog_->prog_id());
+
+            glUniform4f(0, 0.0f, 0.0f, float(down_depth_2x_.w), float(down_depth_2x_.h));
+            glUniform1f(1, 0.0f); // already linearized
+
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       down_depth_2x_.attachments[0].tex);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        }
+
+        { // calc near coc
+            // TODO: hdr buf is unnecessary here
+            glBindFramebuffer(GL_FRAMEBUFFER, blur_buf2_.fb);
+            assert(blur_buf2_.w == qres_w && blur_buf2_.h == qres_h);
+
+            glUseProgram(blit_dof_calc_near_prog_->prog_id());
+
+            glUniform4f(0, 0.0f, 0.0f, float(qres_w), float(qres_h));
+
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       down_buf_coc_[0].attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT,
+                                       down_buf_coc_[1].attachments[0].tex);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        }
+
+        { // apply 3x3 blur to coc
+            glBindFramebuffer(GL_FRAMEBUFFER, down_buf_coc_[0].fb);
+            assert(down_buf_coc_[0].w == qres_w && down_buf_coc_[0].h == qres_h);
+
+            glUseProgram(blit_dof_small_blur_prog_->prog_id());
+
+            glUniform4f(0, 0.0f, 0.0f, float(qres_w), float(qres_h));
+
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       blur_buf2_.attachments[0].tex);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        }
+
+        { // blur color buffer
+            glBindFramebuffer(GL_FRAMEBUFFER, blur_buf1_.fb);
+            assert(blur_buf1_.w == qres_w && blur_buf1_.h == qres_h);
+
+            glUseProgram(blit_dof_bilateral_prog_->prog_id());
+
+            glUniform4f(0, 0.0f, 0.0f, float(down_buf_4x_.w), float(down_buf_4x_.h));
+            glUniform1f(1, 0.0f); // horizontal
+            glUniform1f(2, list.draw_cam.focus_distance);
+
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       down_depth_4x_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT,
+                                       down_buf_4x_.attachments[0].tex);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
+
+            glBindFramebuffer(GL_FRAMEBUFFER, blur_buf2_.fb);
+            assert(blur_buf2_.w == qres_w && blur_buf2_.h == qres_h);
+
+            glUniform4f(0, 0.0f, 0.0f, float(blur_buf2_.w), float(blur_buf2_.h));
+            glUniform1f(1, 1.0f); // vertical
+
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT,
+                                       blur_buf1_.attachments[0].tex);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        }
+
+        { // apply 3x3 blur to color
+            glBindFramebuffer(GL_FRAMEBUFFER, blur_buf1_.fb);
+            assert(blur_buf1_.w == qres_w && blur_buf1_.h == qres_h);
+
+            glUseProgram(blit_dof_small_blur_prog_->prog_id());
+
+            glUniform4f(0, 0.0f, 0.0f, float(qres_w), float(qres_h));
+
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                       down_buf_4x_.attachments[0].tex);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        }
+
+        { // combine dof buffers, apply blur
+            if (clean_buf_.sample_count > 1) {
+                glBindFramebuffer(GL_FRAMEBUFFER, dof_buf_.fb);
+                glUseProgram(blit_dof_combine_ms_prog_->prog_id());
+            } else {
+                glBindFramebuffer(GL_FRAMEBUFFER, resolved_or_transparent_buf_.fb);
+                glUseProgram(blit_dof_combine_prog_->prog_id());
+            }
+
+            glViewport(0, 0, clean_buf_.w, clean_buf_.h);
+
+            glUniform4f(0, 0.0f, 0.0f, float(clean_buf_.w), float(clean_buf_.h));
+            glUniform3f(
+                1, list.draw_cam.focus_far_mul,
+                -(list.draw_cam.focus_distance + 0.5f * list.draw_cam.focus_depth), 1.0f);
+
+            {  // calc dof lerp parameters
+                const float d0 = 0.333f; // unblurred to small blur distance
+                const float d1 = 0.333f; // small to medium blur distance
+                const float d2 = 0.333f; // medium to large blur distance
+
+                const auto dof_lerp_scale =
+                    Ren::Vec4f{-1.0f / d0, -1.0f / d1, -1.0f / d2, 1.0f / d2};
+                const auto dof_lerp_bias =
+                    Ren::Vec4f{1.0f, (1.0f - d2) / d1, 1.0f / d2, (d2 - 1.0f) / d2};
+
+                glUniform4fv(2, 1, ValuePtr(dof_lerp_scale));
+                glUniform4fv(3, 1, ValuePtr(dof_lerp_bias));
+            }
+
+            if (clean_buf_.sample_count > 1) {
+                ren_glBindTextureUnit_Comp(
+                    GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                    resolved_or_transparent_buf_.attachments[0].tex);
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, 3,
+                                           clean_buf_.depth_tex.GetValue());
+            } else {
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                           clean_buf_.attachments[0].tex);
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 3,
+                                           clean_buf_.depth_tex.GetValue());
+            }
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT,
+                                       blur_buf1_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE2_TEX_SLOT,
+                                       blur_buf2_.attachments[0].tex);
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 4,
+                                       down_buf_coc_[0].attachments[0].tex);
+
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
+                           (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        }
+    }
+
+    if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap)) &&
+        ((list.render_flags & DebugWireframe) == 0)) {
+        DebugMarker _("BLUR PASS");
 
         if (list.render_flags & EnableBloom) {
             glBindFramebuffer(GL_FRAMEBUFFER, blur_buf2_.fb);
             glViewport(0, 0, blur_buf2_.w, blur_buf2_.h);
 
-            cur_program = blit_gauss_prog_.get();
-            glUseProgram(cur_program->prog_id());
+            glUseProgram(blit_gauss_prog_->prog_id());
 
-            glUniform4f(0, 0.0f, 0.0f, float(down_buf_.w), float(down_buf_.h));
-            glUniform1f(4, 0.0f);
+            glUniform4f(0, 0.0f, 0.0f, float(down_buf_4x_.w), float(down_buf_4x_.h));
+            glUniform1f(1, 0.0f); // horizontal
 
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
-                                       down_buf_.attachments[0].tex);
+                                       down_buf_4x_.attachments[0].tex);
 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
                            (const GLvoid *)uintptr_t(quad_ndx_offset_));
@@ -3143,7 +3375,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glViewport(0, 0, blur_buf1_.w, blur_buf1_.h);
 
             glUniform4f(0, 0.0f, 0.0f, float(blur_buf2_.w), float(blur_buf2_.h));
-            glUniform1f(4, 1.0f);
+            glUniform1f(1, 1.0f); // vertical
 
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
                                        blur_buf2_.attachments[0].tex);
@@ -3168,7 +3400,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             buf_to_sample = &blur_buf1_;
         } else {
             // sample small buffer
-            buf_to_sample = &down_buf_;
+            buf_to_sample = &down_buf_4x_;
         }
 
         glUseProgram(blit_red_prog_->prog_id());
@@ -3219,7 +3451,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     float exposure = reduced_average_ > std::numeric_limits<float>::epsilon()
                          ? (1.0f / reduced_average_)
                          : 1.0f;
-    exposure = std::min(exposure, list.draw_cam.max_exposure());
+    exposure = std::min(exposure, list.draw_cam.max_exposure);
 
     //
     // Blit pass (tonemap buffer / apply fxaa / blit to backbuffer)
@@ -3256,9 +3488,16 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glUniform1f(U_GAMMA, (list.render_flags & DebugLights) ? 1.0f : 2.2f);
         glUniform1f(U_EXPOSURE, exposure);
 
-        if (clean_buf_.sample_count > 1 || ((list.render_flags & EnableTaa) != 0)) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
-                                       resolved_or_transparent_buf_.attachments[0].tex);
+        if (clean_buf_.sample_count > 1 || ((list.render_flags & EnableTaa) != 0) ||
+            apply_dof) {
+            if (apply_dof) {
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                           dof_buf_.attachments[0].tex);
+            } else {
+                ren_glBindTextureUnit_Comp(
+                    GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                    resolved_or_transparent_buf_.attachments[0].tex);
+            }
         } else {
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
                                        clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex);
@@ -3589,8 +3828,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         float exposure = reduced_average_ > std::numeric_limits<float>::epsilon()
                              ? (1.0f / reduced_average_)
                              : 1.0f;
-        exposure = std::min(exposure, list.draw_cam.max_exposure());
-        BlitBuffer(0.0f, -1.0f, 0.5f, 0.5f, down_buf_, 0, 1, exposure);
+        exposure = std::min(exposure, list.draw_cam.max_exposure);
+        BlitBuffer(0.0f, -1.0f, 0.5f, 0.5f, down_buf_4x_, 0, 1, exposure);
     }
 
     if (list.render_flags & DebugBlur) {
@@ -3892,8 +4131,8 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h,
     glDepthMask(GL_FALSE);
 
     { // prepare downsampled buffer
-        glBindFramebuffer(GL_FRAMEBUFFER, down_buf_.fb);
-        glViewport(0, 0, down_buf_.w, down_buf_.h);
+        glBindFramebuffer(GL_FRAMEBUFFER, down_buf_4x_.fb);
+        glViewport(0, 0, down_buf_4x_.w, down_buf_4x_.h);
 
         const Ren::Program *cur_program = blit_down_prog_.get();
         glUseProgram(cur_program->prog_id());
@@ -3916,16 +4155,16 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h,
         glUseProgram(cur_program->prog_id());
 
         glUniform4f(0, 0.0f, 0.0f, float(blur_buf2_.w), float(blur_buf2_.h));
-        glUniform1f(4, 0.0f);
+        glUniform1f(1, 0.0f); // horizontal
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
-                                   down_buf_.attachments[0].tex);
+                                   down_buf_4x_.attachments[0].tex);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
                        (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
         glUniform4f(0, 0.0f, 0.0f, float(blur_buf2_.w), float(blur_buf2_.h));
-        glUniform1f(4, 1.0f);
+        glUniform1f(1, 1.0f); // vertical
 
         glBindFramebuffer(GL_FRAMEBUFFER, blur_buf1_.fb);
         glViewport(0, 0, blur_buf1_.w, blur_buf1_.h);

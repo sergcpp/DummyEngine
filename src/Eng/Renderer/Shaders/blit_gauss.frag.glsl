@@ -9,7 +9,7 @@ R"(#version 310 es
 R"(
 
 layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D s_texture;
-layout(location = 4) uniform float vertical;
+layout(location = 1) uniform float vertical;
 
 in vec2 aVertexUVs_;
 

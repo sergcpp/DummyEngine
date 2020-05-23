@@ -69,7 +69,8 @@ const Ren::Vec2f HaltonSeq23[64] = {
 
 // TODO: remove this coupling!!!
 namespace SceneManagerInternal {
-int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y, bool is_rgbm, const char *name);
+int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y,
+               bool is_rgbm, const char *name);
 }
 
 #define BBOX_POINTS(min, max)                                                            \
@@ -188,8 +189,9 @@ Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
             ctx_.LoadTexture2D("cone_rt_lut", &__cone_rt_lut[0],
                                4 * __cone_rt_lut_res * __cone_rt_lut_res, p, &status);
 
-        //cone_rt_lut_ =
-        //    ctx_.LoadTexture2D("cone_rt_lut", &occ_data[0], 4 * resx * resy, p, &status);
+        // cone_rt_lut_ =
+        //    ctx_.LoadTexture2D("cone_rt_lut", &occ_data[0], 4 * resx * resy, p,
+        //    &status);
     }
 
     {
@@ -293,6 +295,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
 
     const bool cur_msaa_enabled = (list.render_flags & EnableMsaa) != 0;
     const bool cur_taa_enabled = (list.render_flags & EnableTaa) != 0;
+    const bool cur_dof_enabled = (list.render_flags & EnableDOF) != 0;
 
     uint64_t gpu_draw_start = 0;
     if (list.render_flags & DebugTimings) {
@@ -301,7 +304,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
     const uint64_t cpu_draw_start_us = Sys::GetTimeUs();
 
     if (cur_scr_w != scr_w_ || cur_scr_h != scr_h_ || cur_msaa_enabled != msaa_enabled_ ||
-        cur_taa_enabled != taa_enabled_) {
+        cur_taa_enabled != taa_enabled_ || cur_dof_enabled != dof_enabled_) {
         { // Main buffer for raw frame before tonemapping
             FrameBuf::ColorAttachmentDesc desc[4];
             int desc_count = 0;
@@ -369,20 +372,29 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         {                                       // Buffer that holds resolved color
             FrameBuf::ColorAttachmentDesc desc; // NOLINT
             desc.format = Ren::eTexFormat::RawRG11F_B10F;
-            desc.filter = Ren::eTexFilter::NoFilter;
+            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
             desc.repeat = Ren::eTexRepeat::ClampToEdge;
             resolved_or_transparent_buf_ =
                 FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1,
                          {FrameBuf::eDepthFormat::DepthNone}, 1, log);
         }
 
-        { // Buffer that holds downsampled linear depth
+        { // Buffer that holds 2x downsampled linear depth
             FrameBuf::ColorAttachmentDesc desc; // NOLINT
             desc.format = Ren::eTexFormat::RawR32F;
             desc.filter = Ren::eTexFilter::NoFilter;
             desc.repeat = Ren::eTexRepeat::ClampToEdge;
-            down_depth_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1,
-                                   {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+            down_depth_2x_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1,
+                                      {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+        }
+
+        { // Buffer that holds 4x downsampled linear depth
+            FrameBuf::ColorAttachmentDesc desc; // NOLINT
+            desc.format = Ren::eTexFormat::RawR32F;
+            desc.filter = Ren::eTexFilter::NoFilter;
+            desc.repeat = Ren::eTexRepeat::ClampToEdge;
+            down_depth_4x_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1,
+                                      {FrameBuf::eDepthFormat::DepthNone}, 1, log);
         }
 
         { // Buffer that holds tonemapped ldr frame before fxaa applied
@@ -404,6 +416,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
 
             log->Info("Setting texture lod bias to -1.0");
 
+            // TODO: Replace this with usage of sampler objects
             int counter = 0;
             ctx_.VisitTextures(Ren::TexUsageScene, [&counter](Ren::Texture2D &tex) {
                 Ren::Texture2DParams &p = tex.params();
@@ -433,7 +446,18 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             log->Info("Textures processed: %i", counter);
         }
 
-        {                                       // Buffer for SSAO
+        if (cur_dof_enabled) {
+            FrameBuf::ColorAttachmentDesc desc; // NOLINT
+            desc.format = Ren::eTexFormat::RawRG11F_B10F;
+            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
+            desc.repeat = Ren::eTexRepeat::ClampToEdge;
+            dof_buf_ = FrameBuf(clean_buf_.w, clean_buf_.h, &desc, 1,
+                                {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+        } else {
+            dof_buf_ = {};
+        }
+
+        { // Buffer for SSAO
             FrameBuf::ColorAttachmentDesc desc; // NOLINT
             desc.format = Ren::eTexFormat::RawR8;
             desc.filter = Ren::eTexFilter::BilinearNoMipmap;
@@ -453,15 +477,25 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             ssr_buf2_ = FrameBuf(clean_buf_.w / 2, clean_buf_.h / 2, &desc, 1,
                                  {FrameBuf::eDepthFormat::DepthNone}, 1, log);
         }
+        { // Buffer that holds near circle of confusion values
+            FrameBuf::ColorAttachmentDesc desc; // NOLINT
+            desc.format = Ren::eTexFormat::RawR8;
+            desc.filter = Ren::eTexFilter::BilinearNoMipmap;
+            desc.repeat = Ren::eTexRepeat::ClampToEdge;
+            down_buf_coc_[0] = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1,
+                                        {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+            down_buf_coc_[1] = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1,
+                                        {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+        }
         { // Buffer that holds previous frame (used for SSR)
             FrameBuf::ColorAttachmentDesc desc; // NOLINT
             desc.format = Ren::eTexFormat::RawRG11F_B10F;
             desc.filter = Ren::eTexFilter::BilinearNoMipmap;
             desc.repeat = Ren::eTexRepeat::ClampToEdge;
-            down_buf_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1,
-                                 {FrameBuf::eDepthFormat::DepthNone}, 1, log);
+            down_buf_4x_ = FrameBuf(clean_buf_.w / 4, clean_buf_.h / 4, &desc, 1,
+                                    {FrameBuf::eDepthFormat::DepthNone}, 1, log);
         }
-        {                                       // Auxilary buffers for bloom effect
+        { // Auxilary buffers for bloom effect
             FrameBuf::ColorAttachmentDesc desc; // NOLINT
             desc.format = Ren::eTexFormat::RawRG11F_B10F;
             desc.filter = Ren::eTexFilter::BilinearNoMipmap;
@@ -474,7 +508,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
 
         // Memory consumption for FullHD frame (except clean_buf_):
         // resolved_buf1_   : ~7.91 Mb
-        // down_depth_      : ~1.97 Mb
+        // down_depth_2x_   : ~1.97 Mb
         // combined_buf_    : ~5.93 Mb
         // ssao_buf1_       : ~0.49 Mb
         // ssao_buf2_       : ~0.49 Mb
@@ -491,6 +525,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             scr_h_ = cur_scr_h;
             msaa_enabled_ = cur_msaa_enabled;
             taa_enabled_ = cur_taa_enabled;
+            dof_enabled_ = cur_dof_enabled;
             log->Info("Successfully initialized framebuffers %ix%i", scr_w_, scr_h_);
         } else {
             log->Error("InitFramebuffersInternal failed, frame will not be drawn!");

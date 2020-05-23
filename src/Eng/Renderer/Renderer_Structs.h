@@ -156,7 +156,7 @@ enum eRenderFlags : uint32_t {
     EnableLights    = (1u << 5u),
     EnableDecals    = (1u << 6u),
     EnableProbes    = (1u << 7u),
-    EnableConeRT    = (1u << 8u),
+    EnableDOF       = (1u << 8u),
     EnableShadows   = (1u << 9u),
     EnableOIT       = (1u << 10u),
     EnableTonemap   = (1u << 11u),

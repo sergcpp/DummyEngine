@@ -151,6 +151,34 @@ static const char blit_gauss_sep_fs[] =
 #include "Shaders/blit_gauss_sep.frag.glsl"
 ;
 
+static const char blit_dof_init_coc_fs[] =
+#include "Shaders/blit_dof_init_coc.frag.glsl"
+;
+
+static const char blit_dof_bilateral_fs[] =
+#include "Shaders/blit_dof_bilateral.frag.glsl"
+;
+
+static const char blit_dof_calc_near_fs[] =
+#include "Shaders/blit_dof_calc_near.frag.glsl"
+;
+
+static const char blit_dof_small_blur_fs[] =
+#include "Shaders/blit_dof_small_blur.frag.glsl"
+;
+
+#define __ADDITIONAL_DEFINES_STR__ ""
+static const char blit_dof_combine_fs[] =
+#include "Shaders/blit_dof_combine.frag.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ "#define MSAA_4"
+static const char blit_dof_combine_ms_fs[] =
+#include "Shaders/blit_dof_combine.frag.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
 static const char blit_bilateral_fs[] =
 #include "Shaders/blit_bilateral.frag.glsl"
 ;

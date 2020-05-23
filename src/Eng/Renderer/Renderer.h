@@ -53,6 +53,8 @@ class Renderer {
         shadow_transp_prog_, shadow_vege_transp_prog_, blit_prog_, blit_ms_prog_,
         blit_combine_prog_, blit_combine_ms_prog_, blit_red_prog_, blit_down_prog_,
         blit_down_ms_prog_, blit_down_depth_prog_, blit_down_depth_ms_prog_,
+        blit_dof_init_coc_prog_, blit_dof_bilateral_prog_, blit_dof_calc_near_prog_,
+        blit_dof_small_blur_prog_, blit_dof_combine_prog_, blit_dof_combine_ms_prog_,
         blit_gauss_prog_, blit_gauss_sep_prog_, blit_bilateral_prog_, blit_upscale_prog_,
         blit_upscale_ms_prog_, blit_debug_prog_, blit_debug_ms_prog_, blit_ssr_prog_,
         blit_ssr_ms_prog_, blit_ssr_compose_prog_, blit_ssr_compose_ms_prog_,
@@ -65,16 +67,17 @@ class Renderer {
     Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_,
         brdf_lut_, cone_rt_lut_, noise_tex_;
 
-    FrameBuf clean_buf_, resolved_or_transparent_buf_, ssr_buf1_, ssr_buf2_, down_buf_,
-        blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_, ssao_buf1_, ssao_buf2_,
-        probe_sample_buf_, combined_buf_, history_buf_, down_depth_;
+    FrameBuf clean_buf_, resolved_or_transparent_buf_, ssr_buf1_, ssr_buf2_,
+        down_buf_coc_[2], down_buf_4x_, blur_buf1_, blur_buf2_, shadow_buf_, reduced_buf_,
+        ssao_buf1_, ssao_buf2_, probe_sample_buf_, combined_buf_, history_buf_, dof_buf_,
+        down_depth_2x_, down_depth_4x_;
 #if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
     FrameBuf moments_buf_;
 #endif
     int scr_w_ = 0, scr_h_ = 0, // allocated screen resolution
         act_w_ = 0, act_h_ = 0; // actual resolution
 
-    bool msaa_enabled_ = false, taa_enabled_ = false;
+    bool msaa_enabled_ = false, taa_enabled_ = false, dof_enabled_ = false;
 
     Ren::TextureSplitter shadow_splitter_;
 
@@ -82,10 +85,11 @@ class Renderer {
 #if !defined(__ANDROID__)
         (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap |
          EnableLights | EnableDecals | EnableShadows /*| EnableOIT*/ | EnableTonemap |
-         EnableBloom | EnableMsaa | EnableFxaa | EnableTimers /*| DebugEllipsoids*/);
+         EnableBloom | EnableMsaa | EnableFxaa | EnableTimers |
+         EnableDOF /*| DebugEllipsoids*/);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights |
-         EnableDecals | EnableShadows | EnableTonemap | EnableTimers);
+         EnableDecals | EnableShadows | EnableTonemap | EnableDOF | EnableTimers);
 #endif
     uint32_t render_flags_ = default_flags;
 

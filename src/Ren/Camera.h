@@ -51,9 +51,12 @@ class Camera {
     bool is_orthographic_;
 
     float angle_, aspect_, near_, far_;
-    float max_exposure_;
 
   public:
+    float max_exposure = 1000.0f;
+    float focus_distance = 4.0f, focus_depth = 2.0f;
+    float focus_near_mul = 0.0f, focus_far_mul = 0.0f;
+
     Camera() = default;
     Camera(const Vec3f &center, const Vec3f &target, const Vec3f &up);
 
@@ -74,12 +77,7 @@ class Camera {
     float near() const { return near_; }
     float far() const { return far_; }
 
-    float max_exposure() const { return max_exposure_; }
-
-    void set_max_exposure(float val) { max_exposure_ = val; }
-
     const Plane &frustum_plane(int i) const { return frustum_.planes[i]; }
-
     const Plane &frustum_plane(eCamPlane i) const { return frustum_.planes[int(i)]; }
 
     bool is_orthographic() const { return is_orthographic_; }
