@@ -149,6 +149,7 @@ bool Ren::InitGLExtentions() {
     ren_glUniform1i                 = (PFNGLUNIFORM1IPROC)GetProcAddress(glUniform1i);
     ren_glUniform2i                 = (PFNGLUNIFORM2IPROC)GetProcAddress(glUniform2i);
     ren_glUniform3i                 = (PFNGLUNIFORM3IPROC)GetProcAddress(glUniform3i);
+    ren_glUniform4i                 = (PFNGLUNIFORM4IPROC)GetProcAddress(glUniform4i);
 
     ren_glUniform1iv                = (PFNGLUNIFORM1IVPROC)GetProcAddress(glUniform1iv);
     ren_glUniform2iv                = (PFNGLUNIFORM2IVPROC)GetProcAddress(glUniform2iv);

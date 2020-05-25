@@ -1024,6 +1024,11 @@ Ren::Texture2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) 
         p.repeat = Ren::eTexRepeat::ClampToEdge;
     }
 
+    // TODO: Refactor this!
+    if (flags & Ren::TexNoRepeat) {
+        p.repeat = Ren::eTexRepeat::ClampToEdge;
+    }
+
     Ren::eTexLoadStatus status;
 
     Ren::Texture2DRef ret = ctx_.LoadTexture2D(name_buf, nullptr, 0, p, &status);
@@ -1184,7 +1189,11 @@ void SceneManager::Serve(const int texture_budget) {
                 p.repeat = Ren::eTexRepeat::ClampToEdge;
             } else {
                 p.filter = Ren::eTexFilter::Trilinear;
-                p.repeat = Ren::eTexRepeat::Repeat;
+                if (p.flags & Ren::TexNoRepeat) {
+                    p.repeat = Ren::eTexRepeat::ClampToEdge;
+                } else {
+                    p.repeat = Ren::eTexRepeat::Repeat;
+                }
             }
 
             req.ref->Init(req.data, req.data_size, p, nullptr, ctx_.log());

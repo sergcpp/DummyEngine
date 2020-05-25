@@ -167,6 +167,8 @@ void GSUITest::OnUpdateScene() {
                 auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(
                     sophia->components[CompAnimState]);
 
+                // keep previous palette for velocity calculation
+                std::swap(as->matr_palette_curr, as->matr_palette_prev);
                 as->anim_time_s += delta_time_s;
 
                 Ren::Mesh *mesh = dr->mesh.get();
@@ -176,7 +178,7 @@ void GSUITest::OnUpdateScene() {
 
                 skel->UpdateAnim(anim_index, as->anim_time_s);
                 skel->ApplyAnim(anim_index);
-                skel->UpdateBones(as->matr_palette);
+                skel->UpdateBones(&as->matr_palette_curr[0]);
             }
         }
     }

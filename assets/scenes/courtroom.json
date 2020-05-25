@@ -928,7 +928,8 @@
 				"rot" : [ 0.0, 180.0, 0.0 ]
             },
             "drawable" : {
-                "mesh_file" : "chars/lawyer.mesh",
+                "mesh_file1" : "chars/lawyer.mesh",
+                "mesh_file" : "chars/char_test.mesh",
                 "anims" : [
 					"chars/lawyer_walk.anim"
                 ],
@@ -1279,10 +1280,10 @@
 	], 
 	"camera" : {
 		"view_origin" : [
-			-3.061171, 1.015197, 5.201690
+			4.605538, 0.649088, -0.746524
 		], 
 		"view_dir" : [
-			0.922632, -0.273549, 0.271847
+			0.865103, -0.381892, 0.32515
 		], 
 		"fwd_speed" : 0.1, 
 		"fov" : 60, 

@@ -7,9 +7,7 @@
 #pragma warning(disable : 4996)
 #endif
 
-Ren::Context::~Context() {
-    ReleaseAll();
-}
+Ren::Context::~Context() { ReleaseAll(); }
 
 void Ren::Context::Init(int w, int h, ILog *log) {
     InitGLExtentions();
@@ -36,7 +34,7 @@ void Ren::Context::Init(int w, int h, ILog *log) {
     log_->Info("\tGLSL version\t: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     log_->Info("Capabilities:");
-    
+
     // determine if anisotropy supported
     if (IsExtensionSupported("GL_EXT_texture_filter_anisotropic")) {
         GLfloat f;
@@ -44,12 +42,14 @@ void Ren::Context::Init(int w, int h, ILog *log) {
         capabilities.max_anisotropy = f;
         log_->Info("\tAnisotropy\t: %f", capabilities.max_anisotropy);
     }
-    
-    {   // how many uniform vec4 vectors can be used
+
+    { // how many uniform vec4 vectors can be used
         GLint i = 0;
-        glGetIntegerv(/*GL_MAX_VERTEX_UNIFORM_VECTORS*/ GL_MAX_VERTEX_UNIFORM_COMPONENTS, &i);
+        glGetIntegerv(/*GL_MAX_VERTEX_UNIFORM_VECTORS*/ GL_MAX_VERTEX_UNIFORM_COMPONENTS,
+                      &i);
         i /= 4;
-        if (i == 0) i = 256;
+        if (i == 0)
+            i = 256;
         capabilities.max_uniform_vec4 = i;
         log_->Info("\tMax uniforms\t: %i", capabilities.max_uniform_vec4);
     }
@@ -85,15 +85,12 @@ void Ren::Context::Init(int w, int h, ILog *log) {
     log_->Info("===========================================");
 
 #if !defined(NDEBUG) && !defined(__APPLE__)
-    if (IsExtensionSupported("GL_KHR_debug") || IsExtensionSupported("ARB_debug_output") ||
+    if (IsExtensionSupported("GL_KHR_debug") ||
+        IsExtensionSupported("ARB_debug_output") ||
         IsExtensionSupported("AMD_debug_output")) {
 
-        auto gl_debug_proc = [](GLenum source,
-                                GLenum type,
-                                GLuint id,
-                                GLenum severity,
-                                GLsizei length,
-                                const GLchar *message,
+        auto gl_debug_proc = [](GLenum source, GLenum type, GLuint id, GLenum severity,
+                                GLsizei length, const GLchar *message,
                                 const void *userParam) {
             if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
                 auto *self = (Context *)userParam;
@@ -113,12 +110,15 @@ void Ren::Context::Init(int w, int h, ILog *log) {
 
     capabilities.gl_spirv = IsExtensionSupported("GL_ARB_gl_spirv");
 
-    default_vertex_buf1_        = buffers_.Add("default_vtx_buf1", 64 * 1024 * 1024);
-    default_vertex_buf2_        = buffers_.Add("default_vtx_buf2", 64 * 1024 * 1024);
-    default_skin_vertex_buf_    = buffers_.Add("default_skin_vtx_buf", 64 * 1024 * 1024);
-    default_indices_buf_        = buffers_.Add("default_ndx_buf2", 64 * 1024 * 1024);
+    default_vertex_buf1_ = buffers_.Add("default_vtx_buf1", 64 * 1024 * 1024);
+    default_vertex_buf2_ = buffers_.Add("default_vtx_buf2", 64 * 1024 * 1024);
+    default_skin_vertex_buf_ = buffers_.Add("default_skin_vtx_buf", 64 * 1024 * 1024);
+    default_delta_buf_ = buffers_.Add("default_delta_buf", 64 * 1024 * 1024);
+    default_indices_buf_ = buffers_.Add("default_ndx_buf2", 64 * 1024 * 1024);
 
-    texture_atlas_ = TextureAtlasArray{ TextureAtlasWidth, TextureAtlasHeight, TextureAtlasLayers, eTexFormat::RawRGBA8888, eTexFilter::BilinearNoMipmap };
+    texture_atlas_ =
+        TextureAtlasArray{TextureAtlasWidth, TextureAtlasHeight, TextureAtlasLayers,
+                          eTexFormat::RawRGBA8888, eTexFilter::BilinearNoMipmap};
 }
 
 void Ren::Context::Resize(int w, int h) {
@@ -127,14 +127,17 @@ void Ren::Context::Resize(int w, int h) {
     glViewport(0, 0, w_, h_);
 }
 
-Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *load_status) {
+Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *vs_source,
+                                              const char *fs_source,
+                                              eProgLoadStatus *load_status) {
     ProgramRef ref = programs_.FindByName(name);
 
     if (!ref) {
         ref = programs_.Add(name, vs_source, fs_source, load_status, log_);
     } else {
         if (ref->ready()) {
-            if (load_status) *load_status = eProgLoadStatus::Found;
+            if (load_status)
+                *load_status = eProgLoadStatus::Found;
         } else if (!ref->ready() && vs_source && fs_source) {
             ref->Init(vs_source, fs_source, load_status, log_);
         }
@@ -143,14 +146,16 @@ Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *vs_s
     return ref;
 }
 
-Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *cs_source, eProgLoadStatus *load_status) {
+Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *cs_source,
+                                              eProgLoadStatus *load_status) {
     ProgramRef ref = programs_.FindByName(name);
 
     if (!ref) {
         ref = programs_.Add(name, cs_source, load_status, log_);
     } else {
         if (ref->ready()) {
-            if (load_status) *load_status = eProgLoadStatus::Found;
+            if (load_status)
+                *load_status = eProgLoadStatus::Found;
         } else if (!ref->ready() && cs_source) {
             ref->Init(cs_source, load_status, log_);
         }
@@ -160,17 +165,22 @@ Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *cs_s
 }
 
 #ifndef __ANDROID__
-Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *vs_data, const int vs_data_size,
-                                                                 const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *load_status) {
+Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *vs_data,
+                                               const int vs_data_size,
+                                               const uint8_t *fs_data,
+                                               const int fs_data_size,
+                                               eProgLoadStatus *load_status) {
     ProgramRef ref = programs_.FindByName(name);
 
     assert(capabilities.gl_spirv);
 
     if (!ref) {
-        ref = programs_.Add(name, vs_data, vs_data_size, fs_data, fs_data_size, load_status, log_);
+        ref = programs_.Add(name, vs_data, vs_data_size, fs_data, fs_data_size,
+                            load_status, log_);
     } else {
         if (ref->ready()) {
-            if (load_status) *load_status = eProgLoadStatus::Found;
+            if (load_status)
+                *load_status = eProgLoadStatus::Found;
         } else if (!ref->ready() && vs_data && fs_data) {
             ref->Init(vs_data, vs_data_size, fs_data, fs_data_size, load_status, log_);
         }
@@ -179,7 +189,9 @@ Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *
     return ref;
 }
 
-Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *load_status) {
+Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *cs_data,
+                                               const int cs_data_size,
+                                               eProgLoadStatus *load_status) {
     ProgramRef ref = programs_.FindByName(name);
 
     assert(capabilities.gl_spirv);
@@ -188,7 +200,8 @@ Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *
         ref = programs_.Add(name, cs_data, cs_data_size, load_status, log_);
     } else {
         if (ref->ready()) {
-            if (load_status) *load_status = eProgLoadStatus::Found;
+            if (load_status)
+                *load_status = eProgLoadStatus::Found;
         } else if (!ref->ready() && cs_data) {
             ref->Init(cs_data, cs_data_size, load_status, log_);
         }
@@ -203,7 +216,7 @@ bool Ren::Context::IsExtensionSupported(const char *ext) {
     glGetIntegerv(GL_NUM_EXTENSIONS, &ext_count);
 
     for (GLint i = 0; i < ext_count; i++) {
-        const char *extension = (const char*)glGetStringi(GL_EXTENSIONS, i);
+        const char *extension = (const char *)glGetStringi(GL_EXTENSIONS, i);
         if (strcmp(extension, ext) == 0) {
             return true;
         }

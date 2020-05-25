@@ -1,0 +1,7 @@
+gl_program: main_probelit_sss main_probelit_sss.vert.glsl main_probelit_sss.frag.glsl
+gl_program: main_probelit_sss main_probelit_sss.vert.glsl main_probelit_sss.frag.glsl
+sw_program: main
+texture: chars/Std_Skin_Arm_diff.png srgb
+texture: chars/Std_Skin_Arm_norm.png
+texture: chars/Std_Skin_Arm_spec.png srgb
+texture: skin_diffusion.uncompressed.png srgb norepeat

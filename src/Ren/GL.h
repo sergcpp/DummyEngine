@@ -288,6 +288,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_READ_ONLY                        0x88B8
 #define GL_WRITE_ONLY                       0x88B9
 
+#define GL_COPY_READ_BUFFER                 0x8f36
 #define GL_COPY_WRITE_BUFFER                0x8f37
 
 #define GL_DEPTH_COMPONENT16                0x81A5
@@ -583,6 +584,7 @@ typedef void (APIENTRY *PFNGLUNIFORM4FPROC)(GLint location, GLfloat v0, GLfloat 
 typedef void (APIENTRY *PFNGLUNIFORM1IPROC)(GLint location, GLint v0);
 typedef void (APIENTRY *PFNGLUNIFORM2IPROC)(GLint location, GLint v0, GLint v1);
 typedef void (APIENTRY *PFNGLUNIFORM3IPROC)(GLint location, GLint v0, GLint v1, GLint v2);
+typedef void (APIENTRY* PFNGLUNIFORM4IPROC)(GLint location, GLint v0, GLint v1, GLint v2, GLint v3);
 
 typedef void (APIENTRY *PFNGLUNIFORM1IVPROC)(GLint location, GLsizei count, const GLint *value);
 typedef void (APIENTRY *PFNGLUNIFORM2IVPROC)(GLint location, GLsizei count, const GLint *value);
@@ -832,6 +834,7 @@ typedef void (APIENTRY *PFNGLBINDTEXTUREUNITCOMPPROC)(GLenum target, GLuint unit
 #define glUniform1i                 ren_glUniform1i
 #define glUniform2i                 ren_glUniform2i
 #define glUniform3i                 ren_glUniform3i
+#define glUniform4i                 ren_glUniform4i
 
 #define glUniform1iv                ren_glUniform1iv
 #define glUniform2iv                ren_glUniform2iv
@@ -1021,6 +1024,7 @@ EXTERN_FUNC PFNGLUNIFORM4FPROC                  ren_glUniform4f;
 EXTERN_FUNC PFNGLUNIFORM1IPROC                  ren_glUniform1i;
 EXTERN_FUNC PFNGLUNIFORM2IPROC                  ren_glUniform2i;
 EXTERN_FUNC PFNGLUNIFORM3IPROC                  ren_glUniform3i;
+EXTERN_FUNC PFNGLUNIFORM4IPROC                 ren_glUniform4i;
 
 EXTERN_FUNC PFNGLUNIFORM1IVPROC                 ren_glUniform1iv;
 EXTERN_FUNC PFNGLUNIFORM2IVPROC                 ren_glUniform2iv;

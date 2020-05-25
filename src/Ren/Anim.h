@@ -13,6 +13,7 @@
 #include "String.h"
 
 namespace Ren {
+enum class eAnimSeqType { AnimBones, AnimShapes };
 enum class eAnimBoneFlags { AnimHasTranslate = 1 };
 
 struct AnimBone {
@@ -29,10 +30,20 @@ struct AnimBone {
     }
 };
 
+struct AnimShape {
+    char name[64];
+    float cur_weight = 0.0f;
+
+    AnimShape() {
+        name[0] = '\0';
+    }
+};
+
 struct Bone;
 
 class AnimSequence : public RefCounter {
     String      name_, act_name_;
+    eAnimSeqType type_;
     int         fps_ = 0;
     int         len_ = 0;
     int         frame_size_ = 0;
@@ -40,6 +51,7 @@ class AnimSequence : public RefCounter {
     float       anim_dur_ = 0;
     std::vector<float> frames_;
     std::vector<AnimBone> bones_;
+    std::vector<AnimShape> shapes_;
     bool        ready_ = false;
 
 public:
@@ -51,6 +63,9 @@ public:
     }
     const String &act_name() const {
         return act_name_;
+    }
+    eAnimSeqType type() const {
+        return type_;
     }
     int fps() const {
         return fps_;
@@ -82,6 +97,7 @@ public:
     }
 
     void Init(std::istream &data);
+    void InitAnimBones(std::istream &data);
 
     std::vector<AnimBone *> LinkBones(std::vector<Bone> &bones);
     void Update(float time);

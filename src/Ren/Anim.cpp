@@ -12,7 +12,11 @@ Ren::AnimSequence::AnimSequence(const char *name, std::istream &data) {
     Init(data);
 }
 
-void Ren::AnimSequence::Init(std::istream &data) {
+void Ren::AnimSequence::Init(std::istream& data) {
+    InitAnimBones(data);
+}
+
+void Ren::AnimSequence::InitAnimBones(std::istream &data) {
     if (!data) {
         ready_ = false;
         return;
@@ -24,6 +28,7 @@ void Ren::AnimSequence::Init(std::istream &data) {
 
     enum {
         SKELETON_CHUNK,
+        SHAPES_CHUNK,
         ANIM_INFO_CHUNK,
         FRAMES_CHUNK
     };
@@ -35,15 +40,16 @@ void Ren::AnimSequence::Init(std::istream &data) {
 
     struct Header {
         int num_chunks;
-        ChunkPos p[3];
+        ChunkPos p[4];
     } file_header;
 
-    data.read((char *)&file_header, sizeof(file_header));
+    data.read((char *)&file_header.num_chunks, sizeof(int));
+    data.read((char *)&file_header.p[0], file_header.num_chunks * sizeof(ChunkPos));
 
-    size_t num_bones = (size_t)file_header.p[SKELETON_CHUNK].length / (64 + 64 + 4);
-    bones_.resize(num_bones);
+    const size_t bones_count = (size_t)file_header.p[SKELETON_CHUNK].length / (64 + 64 + 4);
+    bones_.resize(bones_count);
     int offset = 0;
-    for (size_t i = 0; i < num_bones; i++) {
+    for (size_t i = 0; i < bones_count; i++) {
         bones_[i].id = (int)i;
         bones_[i].flags = 0;
         data.read(bones_[i].name, 64);
@@ -58,6 +64,23 @@ void Ren::AnimSequence::Init(std::istream &data) {
             offset += 4;
         }
     }
+
+    if (file_header.num_chunks == 4) {
+        const size_t shapes_count = (size_t)file_header.p[SHAPES_CHUNK].length / 64;
+        shapes_.resize(shapes_count);
+        for (size_t i = 0; i < shapes_count; i++) {
+            data.read(shapes_[i].name, 64);
+            shapes_[i].cur_weight = 0.0f;
+            offset += 1;
+        }
+    }
+
+    // support old layout
+    const int AnimInfoChunk = (file_header.num_chunks == 4) ? ANIM_INFO_CHUNK : ANIM_INFO_CHUNK - 1;
+    const int FramesChunk = (file_header.num_chunks == 4) ? FRAMES_CHUNK : FRAMES_CHUNK - 1;
+
+    assert(file_header.p[AnimInfoChunk].length == 64 + 2 * sizeof(int32_t));
+
     frame_size_ = offset;
     char act_name[64];
     data.read(act_name, 64);
@@ -65,8 +88,8 @@ void Ren::AnimSequence::Init(std::istream &data) {
     data.read((char *)&fps_, 4);
     data.read((char *)&len_, 4);
 
-    frames_.resize(file_header.p[FRAMES_CHUNK].length / 4);
-    data.read((char *)&frames_[0], (size_t)file_header.p[FRAMES_CHUNK].length);
+    frames_.resize(file_header.p[FramesChunk].length / 4);
+    data.read((char *)&frames_[0], (size_t)file_header.p[FramesChunk].length);
 
     frame_dur_ = 1.0f / (float)fps_;
     anim_dur_ = (float)len_ * frame_dur_;

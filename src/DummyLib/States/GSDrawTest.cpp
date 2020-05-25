@@ -22,19 +22,20 @@ namespace GSDrawTestInternal {
 #if defined(__ANDROID__)
     const char SCENE_NAME[] = "assets/scenes/"
 #else
-    const char SCENE_NAME[] = "assets_pc/scenes/"
+const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-        //"skin_test.json";
-        //"living_room_gumroad.json";
-        //"bistro.json";
-        //"pbr_test.json";
-        //"zenith.json";
-        //"corridor.json";
-        //"vegetation_test_night.json";
-        //"test_decals.json";
-        //"courtroom.json";
-        //"lmap_test.json";
-        "sss_test.json";
+                          //"skin_test.json";
+                          //"living_room_gumroad.json";
+                          //"bistro.json";
+                          //"pbr_test.json";
+                          //"zenith.json";
+                          //"corridor.json";
+                          //"vegetation_test_night.json";
+                          //"test_decals.json";
+                          "courtroom.json";
+                          //"lmap_test.json";
+                          //"sss_test.json";
+                          //"char_test.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {
@@ -597,6 +598,8 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
                 auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(wolf->components[CompDrawable]);
                 auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
 
+                // keep previous palette for velocity calculation
+                std::swap(as->matr_palette_curr, as->matr_palette_prev);
                 as->anim_time_s += delta_time_s;
 
                 Ren::Mesh *mesh = dr->mesh.get();
@@ -604,7 +607,7 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
                 skel->UpdateAnim(0, as->anim_time_s);
                 skel->ApplyAnim(0);
-                skel->UpdateBones(as->matr_palette);
+                skel->UpdateBones(&as->matr_palette_curr[0]);
             }
         }
     }
@@ -620,6 +623,8 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
                 auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(scooter->components[CompDrawable]);
                 auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(scooter->components[CompAnimState]);
 
+                // keep previous palette for velocity calculation
+                std::swap(as->matr_palette_curr, as->matr_palette_prev);
                 as->anim_time_s += delta_time_s;
 
                 Ren::Mesh *mesh = dr->mesh.get();
@@ -629,7 +634,7 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
                 skel->UpdateAnim(anim_index, as->anim_time_s);
                 skel->ApplyAnim(anim_index);
-                skel->UpdateBones(as->matr_palette);
+                skel->UpdateBones(&as->matr_palette_curr[0]);
             }
         }
     }
@@ -645,6 +650,8 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
                 auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(sophia->components[CompDrawable]);
                 auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(sophia->components[CompAnimState]);
 
+                // keep previous palette for velocity calculation
+                std::swap(as->matr_palette_curr, as->matr_palette_prev);
                 as->anim_time_s += delta_time_s;
 
                 Ren::Mesh *mesh = dr->mesh.get();
@@ -654,7 +661,7 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
                 skel->UpdateAnim(anim_index, as->anim_time_s);
                 skel->ApplyAnim(anim_index);
-                skel->UpdateBones(as->matr_palette);
+                skel->UpdateBones(&as->matr_palette_curr[0]);
             }
         }
     }
@@ -670,6 +677,8 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
                 auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(eric->components[CompDrawable]);
                 auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(eric->components[CompAnimState]);
 
+                // keep previous palette for velocity calculation
+                std::swap(as->matr_palette_curr, as->matr_palette_prev);
                 as->anim_time_s += delta_time_s;
 
                 Ren::Mesh *mesh = dr->mesh.get();
@@ -679,7 +688,7 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
                 skel->UpdateAnim(anim_index, as->anim_time_s);
                 skel->ApplyAnim(anim_index);
-                skel->UpdateBones(as->matr_palette);
+                skel->UpdateBones(&as->matr_palette_curr[0]);
             }
         }
     }
@@ -692,6 +701,8 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
             auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(zenith->components[CompDrawable]);
             auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(zenith->components[CompAnimState]);
 
+            // keep previous palette for velocity calculation
+            std::swap(as->matr_palette_curr, as->matr_palette_prev);
             as->anim_time_s += delta_time_s;
 
             Ren::Mesh *mesh = dr->mesh.get();
@@ -701,7 +712,7 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
             skel->UpdateAnim(anim_index, as->anim_time_s);
             skel->ApplyAnim(anim_index);
-            skel->UpdateBones(as->matr_palette);
+            skel->UpdateBones(&as->matr_palette_curr[0]);
         }
     }
 
@@ -713,6 +724,8 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
             auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(palm->components[CompDrawable]);
             auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(palm->components[CompAnimState]);
 
+            // keep previous palette for velocity calculation
+            std::swap(as->matr_palette_curr, as->matr_palette_prev);
             as->anim_time_s += delta_time_s;
 
             Ren::Mesh *mesh = dr->mesh.get();
@@ -722,7 +735,7 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
             skel->UpdateAnim(anim_index, as->anim_time_s);
             skel->ApplyAnim(anim_index);
-            skel->UpdateBones(as->matr_palette);
+            skel->UpdateBones(&as->matr_palette_curr[0]);
         }
     }
 

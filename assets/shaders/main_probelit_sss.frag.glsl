@@ -141,6 +141,8 @@ void main(void) {
     vec3 normal = normal_color * 2.0 - 1.0;
     normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_), aVertexNormal_) * normal);
     
+	float curvature = clamp(aVertexUVAndCurvature_.z, 0.0, 1.0);
+	
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
     
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
@@ -165,10 +167,9 @@ void main(void) {
         atten = (atten - factor) / (1.0 - LIGHT_ATTEN_CUTOFF);
         atten = max(atten, 0.0);
         
-        float _dot1 = max(dot(L, normal), 0.0);
         float _dot2 = dot(L, dir_and_spot.xyz);
         
-        atten = _dot1 * atten;
+        atten = atten;
         if (_dot2 > dir_and_spot.w && (brightness * atten) > FLT_EPS) {
             int shadowreg_index = floatBitsToInt(col_and_index.w);
             if (shadowreg_index != -1) {
@@ -182,7 +183,9 @@ void main(void) {
                 atten *= SampleShadowPCF5x5(shadow_texture, pp.xyz);
             }
             
-            additional_light += col_and_index.xyz * atten * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
+			float _dot1 = dot(L, normal);
+			vec3 l_diffuse = atten * texture(sss_texture, vec2(_dot1 * 0.5 + 0.5, curvature)).rgb;
+            additional_light += col_and_index.xyz * l_diffuse * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
         }
     }
     
@@ -193,23 +196,19 @@ void main(void) {
         highp uint item_data = texelFetch(items_buffer, int(i)).x;
         int pi = int(bitfieldExtract(item_data, 24, 8));
         
-        const float SH_A0 = 0.886226952; // PI / sqrt(4.0f * Pi)
-        const float SH_A1 = 1.02332675;  // sqrt(PI / 3.0f)
-        
         float dist = distance(shrd_data.uProbes[pi].pos_and_radius.xyz, aVertexPos_);
         float fade = 1.0 - smoothstep(0.9, 1.0, dist / shrd_data.uProbes[pi].pos_and_radius.w);
-        vec4 vv = fade * vec4(SH_A0, SH_A1 * normal.yzx);
 
-        indirect_col.r += dot(shrd_data.uProbes[pi].sh_coeffs[0], vv);
-        indirect_col.g += dot(shrd_data.uProbes[pi].sh_coeffs[1], vv);
-        indirect_col.b += dot(shrd_data.uProbes[pi].sh_coeffs[2], vv);
+        indirect_col += fade * EvalSHIrradiance_NonLinear(normal,
+                                                          shrd_data.uProbes[pi].sh_coeffs[0],
+                                                          shrd_data.uProbes[pi].sh_coeffs[1],
+                                                          shrd_data.uProbes[pi].sh_coeffs[2]);
         total_fade += fade;
     }
     
     indirect_col /= max(total_fade, 1.0);
-    indirect_col = max(4.0 * indirect_col, vec3(0.0));
+    indirect_col = max(indirect_col, vec3(0.0));
     
-
 	float N_dot_L = dot(normal, shrd_data.uSunDir.xyz);
     float lambert = clamp(N_dot_L, 0.0, 1.0);
 
@@ -218,15 +217,7 @@ void main(void) {
         visibility = GetSunVisibility(lin_depth, shadow_texture, aVertexShUVs_);
     }
     
-	vec3 sun_diffuse;
-	
-	{
-		visibility = clamp((visibility + 0.75) / 1.75, 0.0, 1.0);
-		
-		float curvature = clamp(aVertexUVAndCurvature_.z, 0.0, 1.0);
-		
-		sun_diffuse = texture(sss_texture, vec2(N_dot_L * 0.5 + 0.5, curvature)).rgb;
-	}
+	vec3 sun_diffuse = texture(sss_texture, vec2(N_dot_L * 0.5 + 0.5, curvature)).rgb;
 	
     vec2 ao_uvs = vec2(ix, iy) / shrd_data.uResAndFRes.zw;
     float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;
@@ -241,9 +232,6 @@ void main(void) {
     outNormal = vec4(normal * 0.5 + 0.5, 0.0);
     outSpecular = specular_color;
 	
-	/*{
-		outColor.rgb *= 0.00001;
-		
-		outColor.rgb += vec3(aVertexUVAndCurvature_.z);
-	}*/
+	//outColor.rgb *= 0.00001;
+	//outColor.rgb += vec3(curvature);
 }

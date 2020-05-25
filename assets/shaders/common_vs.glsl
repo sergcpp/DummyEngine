@@ -11,6 +11,7 @@
 #define REN_VTX_TAN_LOC 2
 #define REN_VTX_UV1_LOC 3
 #define REN_VTX_AUX_LOC 4
+#define REN_VTX_PRE_LOC 5
 
 // Texture binding
 #define REN_MAT_TEX0_SLOT   0
@@ -36,8 +37,6 @@
 #define REN_MOMENTS2_MS_TEX_SLOT 18
 #define REN_NOISE_TEX_SLOT 18
 #define REN_CONE_RT_LUT_SLOT 19
-
-#define REN_ALPHATEST_TEX_SLOT 0
 
 #define REN_BASE0_TEX_SLOT 0
 #define REN_BASE1_TEX_SLOT 1
@@ -87,7 +86,7 @@
 #define REN_MAX_SHADOWMAPS_TOTAL    32
 #define REN_MAX_PROBES_TOTAL        32
 #define REN_MAX_ELLIPSES_TOTAL      64
-#define REN_SKIN_REGION_SIZE        256
+#define REN_SKIN_REGION_SIZE        REN_SKIN_REGION_SIZE
 #define REN_MAX_SKIN_XFORMS_TOTAL   65536
 #define REN_MAX_SKIN_REGIONS_TOTAL  262144
 #define REN_MAX_SKIN_VERTICES_TOTAL 1048576
@@ -146,6 +145,14 @@ struct SharedData {
 };
 
 
+
+#define INSTANCE_BUF_STRIDE 4
+
+#define FetchModelMatrix(instance_buf, instance)									\
+    transpose(mat4(texelFetch((instance_buf), (instance) * INSTANCE_BUF_STRIDE + 0),\
+                   texelFetch((instance_buf), (instance) * INSTANCE_BUF_STRIDE + 1),\
+                   texelFetch((instance_buf), (instance) * INSTANCE_BUF_STRIDE + 2),\
+                   vec4(0.0, 0.0, 0.0, 1.0)))
 
 #define VEGE_MAX_MOVEMENT 8.0
 #define VEGE_MAX_BRANCH_AMPLITUDE 1.0

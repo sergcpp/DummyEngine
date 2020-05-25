@@ -10,7 +10,7 @@ R"(#version 310 es
 R"(
 
 #ifdef TRANSPARENT_PERM
-layout(binding = REN_ALPHATEST_TEX_SLOT) uniform sampler2D alphatest_texture;
+layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D alphatest_texture;
 
 in vec2 aVertexUVs1_;
 #endif

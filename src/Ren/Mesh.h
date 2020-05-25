@@ -37,6 +37,15 @@ struct TriGroup {
 
 const int MaxMeshTriGroupsCount = 52;
 
+struct VtxDelta {
+    float dp[3], dn[3], db[3];
+};
+
+struct ShapeKey {
+    char name[64];
+    uint32_t delta_offset, delta_count;
+};
+
 struct BufferRange {
     BufferRef buf;
     uint32_t offset, size;
@@ -89,8 +98,12 @@ class Mesh : public RefCounter {
     int type_ = MeshUndefined;
     uint32_t flags_ = 0;
     bool ready_ = false;
-    BufferRange attribs_buf1_, attribs_buf2_, sk_attribs_buf_, indices_buf_;
+    BufferRange attribs_buf1_, attribs_buf2_, sk_attribs_buf_, sk_deltas_buf_,
+        indices_buf_;
     std::unique_ptr<char[]> attribs_, indices_;
+    std::unique_ptr<VtxDelta[]> deltas_;
+    std::unique_ptr<ShapeKey[]> shape_keys_;
+    uint32_t shape_keys_count_ = 0;
     std::array<TriGroup, MaxMeshTriGroupsCount> groups_;
     Vec3f bbox_min_, bbox_max_;
     String name_;
@@ -107,7 +120,8 @@ class Mesh : public RefCounter {
                          BufferRef &index_buf, ILog *log);
     // mesh with 4 bone weights per vertex
     void InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load,
-                          BufferRef &skin_vertex_buf, BufferRef &index_buf, ILog *log);
+                          BufferRef &skin_vertex_buf, BufferRef &delta_buf,
+                          BufferRef &index_buf, ILog *log);
 
     // split skeletal mesh into chunks to fit uniforms limit in shader
     void SplitMesh(int bones_limit, ILog *log);
@@ -116,7 +130,8 @@ class Mesh : public RefCounter {
     Mesh() = default;
     Mesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
          BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
-         BufferRef &skin_vertex_buf, eMeshLoadStatus *load_status, ILog *log);
+         BufferRef &skin_vertex_buf, BufferRef &delta_buf, eMeshLoadStatus *load_status,
+         ILog *log);
 
     Mesh(const Mesh &rhs) = delete;
     Mesh(Mesh &&rhs) = default;
@@ -127,6 +142,8 @@ class Mesh : public RefCounter {
     int type() const { return type_; }
     uint32_t flags() const { return flags_; }
     bool ready() const { return ready_; }
+    uint32_t shape_keys_count() const { return shape_keys_count_; }
+    const ShapeKey &shape_key(int i) const { return shape_keys_[i]; }
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
     uint32_t attribs_buf1_id() const { return attribs_buf1_.buf->buf_id(); }
     uint32_t attribs_buf2_id() const { return attribs_buf2_.buf->buf_id(); }
@@ -136,6 +153,7 @@ class Mesh : public RefCounter {
     const BufferRange &attribs_buf1() const { return attribs_buf1_; }
     const BufferRange &attribs_buf2() const { return attribs_buf2_; }
     const BufferRange &sk_attribs_buf() const { return sk_attribs_buf_; }
+    const BufferRange &sk_deltas_buf() const { return sk_deltas_buf_; }
     const void *indices() const { return indices_.get(); }
     const BufferRange &indices_buf() const { return indices_buf_; }
     const TriGroup &group(int i) const { return groups_[i]; }
@@ -150,7 +168,8 @@ class Mesh : public RefCounter {
 
     void Init(std::istream *data, const material_load_callback &on_mat_load,
               BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
-              BufferRef &skin_vertex_buf, eMeshLoadStatus *load_status, ILog *log);
+              BufferRef &skin_vertex_buf, BufferRef &delta_buf,
+              eMeshLoadStatus *load_status, ILog *log);
 };
 
 typedef StorageRef<Mesh> MeshRef;

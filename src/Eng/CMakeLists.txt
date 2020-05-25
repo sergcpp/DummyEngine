@@ -150,6 +150,7 @@ set(SHADERS_SOURCES Renderer/Shaders/_common.glsl
                     Renderer/Shaders/ellipsoid.vert.glsl
                     Renderer/Shaders/ellipsoid.frag.glsl
                     Renderer/Shaders/fillz.vert.glsl
+                    Renderer/Shaders/fillz_skin.vert.glsl
                     Renderer/Shaders/fillz_vege.vert.glsl
                     Renderer/Shaders/fillz.frag.glsl
                     Renderer/Shaders/probe.vert.glsl

@@ -92,7 +92,8 @@ void main() {
     //col_hist = clip_aabb(col_min, col_max, col_curr, col_hist);
     col_hist = clamp(col_hist, col_min, col_max);
 
-    float weight = 0.04; //1.0 - 1.0 / (1.0 + luma(col_curr));
+    float weight = 0.04;
+    //float weight = 1.0 - 1.0 / (1.0 + luma(col_curr));
     vec3 col = mix(col_hist, col_curr, weight);
     outColor = TonemapInvert(col);
 	outHistory = outColor;

@@ -1,0 +1,6 @@
+gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+sw_program: main
+texture: chars/Boots_diff.png srgb
+texture: chars/Boots_norm.png
+texture: chars/Boots_spec.png srgb

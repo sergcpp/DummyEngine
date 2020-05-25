@@ -57,8 +57,8 @@ uint8_t f32_to_u8(float value) { return uint8_t(value * 255); }
 
 void __push_ellipsoids(const Drawable &dr, const Ren::Mat4f &world_from_object,
                        DrawList &list);
-uint32_t __push_skeletal_mesh(uint32_t skinned_buf_vtx_offset, uint32_t obj_index,
-                              const AnimState &as, const Ren::Mesh *mesh, DrawList &list);
+uint32_t __push_skeletal_mesh(uint32_t skinned_buf_vtx_offset, const AnimState &as,
+                              const Ren::Mesh *mesh, DrawList &list);
 void __init_wind_params(const VegState &vs, const Environment &env,
                         const Ren::Mat4f &object_from_world, InstanceData &instance);
 } // namespace RendererInternal
@@ -198,12 +198,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
             const bvh_node_t *n = &scene.nodes[cur];
 
             if (!skip_check) {
-                const eVisibilityResult res =
+                const eVisResult res =
                     list.draw_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
-                if (res == eVisibilityResult::Invisible)
+                if (res == eVisResult::Invisible) {
                     continue;
-                else if (res == eVisibilityResult::FullyVisible)
+                } else if (res == eVisResult::FullyVisible) {
                     skip_check = SkipCheckBit;
+                }
             }
 
             if (!n->prim_count) {
@@ -218,10 +219,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                     // Node has slightly enlarged bounds, so we need to check object's
                     // bounding box here
-                    if (!skip_check && list.draw_cam.CheckFrustumVisibility(
-                                           tr.bbox_min_ws, tr.bbox_max_ws) ==
-                                           eVisibilityResult::Invisible)
+                    if (!skip_check &&
+                        list.draw_cam.CheckFrustumVisibility(
+                            tr.bbox_min_ws, tr.bbox_max_ws) == eVisResult::Invisible) {
                         continue;
+                    }
 
                     const Mat4f &world_from_object = tr.mat;
 
@@ -276,12 +278,12 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
             if (!skip_check) {
                 const float bbox_points[8][3] = {BBOX_POINTS(n->bbox_min, n->bbox_max)};
-                const eVisibilityResult res =
-                    list.draw_cam.CheckFrustumVisibility(bbox_points);
-                if (res == eVisibilityResult::Invisible)
+                const eVisResult res = list.draw_cam.CheckFrustumVisibility(bbox_points);
+                if (res == eVisResult::Invisible) {
                     continue;
-                else if (res == eVisibilityResult::FullyVisible)
+                } else if (res == eVisResult::FullyVisible) {
                     skip_check = SkipCheckBit;
+                }
 
                 if (culling_enabled) {
                     const Vec3f &cam_pos = list.draw_cam.world_position();
@@ -308,8 +310,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                         swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
-                        if (surf.visible == 0)
+                        if (surf.visible == 0) {
                             continue;
+                        }
                     }
                 }
             }
@@ -332,8 +335,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         // Node has slightly enlarged bounds, so we need to check object's
                         // bounding box here
                         if (list.draw_cam.CheckFrustumVisibility(bbox_points) ==
-                            eVisibilityResult::Invisible)
+                            eVisResult::Invisible) {
                             continue;
+                        }
 
                         if (culling_enabled) {
                             const Vec3f &cam_pos = list.draw_cam.world_position();
@@ -361,8 +365,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                                 swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
-                                if (surf.visible == 0)
+                                if (surf.visible == 0) {
                                     continue;
+                                }
                             }
                         }
                     }
@@ -374,17 +379,19 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                     proc_objects_.data[n->prim_index].instance_index =
                         list.instances.count;
 
-                    InstanceData &instance = list.instances.data[list.instances.count++];
-                    memcpy(&instance.model_matrix[0][0],
+                    InstanceData &curr_instance =
+                        list.instances.data[list.instances.count++];
+                    memcpy(&curr_instance.model_matrix[0][0],
                            ValuePtr(world_from_object_trans), 12 * sizeof(float));
 
                     if (obj.comp_mask & CompLightmapBit) {
                         const Lightmap &lm = lightmaps[obj.components[CompLightmap]];
-                        memcpy(&instance.lmap_transform[0], ValuePtr(lm.xform),
+                        memcpy(&curr_instance.lmap_transform[0], ValuePtr(lm.xform),
                                4 * sizeof(float));
                     } else if (obj.comp_mask & CompVegStateBit) {
                         const VegState &vs = vegs[obj.components[CompVegState]];
-                        __init_wind_params(vs, list.env, object_from_world, instance);
+                        __init_wind_params(vs, list.env, object_from_world,
+                                           curr_instance);
                     }
 
                     const Mat4f view_from_object = view_from_world * world_from_object,
@@ -407,8 +414,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                         if (obj.comp_mask & CompAnimStateBit) {
                             const AnimState &as = anims[obj.components[CompAnimState]];
-                            base_vertex = __push_skeletal_mesh(
-                                skinned_buf_vtx_offset, n->prim_index, as, mesh, list);
+                            base_vertex = __push_skeletal_mesh(skinned_buf_vtx_offset, as,
+                                                               mesh, list);
                         }
                         proc_objects_.data[n->prim_index].base_vertex = base_vertex;
 
@@ -441,10 +448,14 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 DepthDrawBatch &zfill_batch =
                                     list.zfill_batches.data[list.zfill_batches.count++];
 
+                                zfill_batch.skinned_bit =
+                                    (obj.comp_mask & CompAnimStateBit) ? 1 : 0;
                                 zfill_batch.alpha_test_bit =
                                     (mat_flags & AlphaTest) ? 1 : 0;
                                 zfill_batch.vegetation_bit =
                                     (obj.comp_mask & CompVegStateBit) ? 1 : 0;
+                                zfill_batch.moving_bit =
+                                    (obj.last_change_mask & CompTransformBit) ? 1 : 0;
                                 zfill_batch.mat_id =
                                     (mat_flags & AlphaTest) ? main_batch.mat_id : 0;
                                 zfill_batch.indices_offset = main_batch.indices_offset;
@@ -456,6 +467,19 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             }
 
                             ++grp;
+                        }
+
+                        if (obj.last_change_mask & CompTransformBit) {
+                            const Mat4f prev_world_from_object_trans =
+                                Transpose(tr.prev_mat);
+
+                            // moving objects need 2 transform matrices (for velocity
+                            // calculation)
+                            InstanceData &prev_instance =
+                                list.instances.data[list.instances.count++];
+                            memcpy(&prev_instance.model_matrix[0][0],
+                                   ValuePtr(prev_world_from_object_trans),
+                                   12 * sizeof(float));
                         }
                     }
 
@@ -472,7 +496,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             Vec4f{-light.dir[0], -light.dir[1], -light.dir[2], 0.0f};
                         dir = world_from_object * dir;
 
-                        eVisibilityResult res = eVisibilityResult::FullyVisible;
+                        eVisResult res = eVisResult::FullyVisible;
 
                         for (int k = 0; k < 6 && !skip_check; k++) {
                             const Plane &plane = list.draw_cam.frustum_plane(k);
@@ -481,14 +505,14 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                                plane.n[2] * pos[2] + plane.d;
 
                             if (dist < -light.influence) {
-                                res = eVisibilityResult::Invisible;
+                                res = eVisResult::Invisible;
                                 break;
                             } else if (std::abs(dist) < light.influence) {
-                                res = eVisibilityResult::PartiallyVisible;
+                                res = eVisResult::PartiallyVisible;
                             }
                         }
 
-                        if (res != eVisibilityResult::Invisible) {
+                        if (res != eVisResult::Invisible) {
                             litem_to_lsource_.data[litem_to_lsource_.count++] = &light;
                             LightSourceItem &ls =
                                 list.light_sources.data[list.light_sources.count++];
@@ -527,7 +551,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             bbox_max = Max(bbox_max, Vec3f{bbox_points[k]});
                         }
 
-                        eVisibilityResult res = eVisibilityResult::FullyVisible;
+                        eVisResult res = eVisResult::FullyVisible;
 
                         for (int p = int(eCamPlane::LeftPlane);
                              p <= int(eCamPlane::FarPlane) && !skip_check; p++) {
@@ -546,14 +570,14 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             }
 
                             if (in_count == 0) {
-                                res = eVisibilityResult::Invisible;
+                                res = eVisResult::Invisible;
                                 break;
                             } else if (in_count != 8) {
-                                res = eVisibilityResult::PartiallyVisible;
+                                res = eVisResult::PartiallyVisible;
                             }
                         }
 
-                        if (res != eVisibilityResult::Invisible) {
+                        if (res != eVisResult::Invisible) {
                             ditem_to_decal_.data[ditem_to_decal_.count++] = &decal;
                             decals_boxes_.data[decals_boxes_.count++] = {bbox_min,
                                                                          bbox_max};
@@ -917,7 +941,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
             }
 
 #if 0
-            if (shadow_cam.CheckFrustumVisibility(cam.world_position()) != eVisibilityResult::FullyVisible) {
+            if (shadow_cam.CheckFrustumVisibility(cam.world_position()) != eVisResult::FullyVisible) {
                 // Check if shadowmap frustum is visible to main camera
                 
                 Mat4f world_from_clip = Inverse(sh_clip_from_world);
@@ -969,12 +993,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                 const bvh_node_t *n = &scene.nodes[cur];
 
                 if (!skip_check) {
-                    eVisibilityResult res =
+                    eVisResult res =
                         sh_clip_frustum.CheckVisibility(n->bbox_min, n->bbox_max);
-                    if (res == eVisibilityResult::Invisible)
+                    if (res == eVisResult::Invisible) {
                         continue;
-                    else if (res == eVisibilityResult::FullyVisible)
+                    } else if (res == eVisResult::FullyVisible) {
                         skip_check = SkipCheckBit;
+                    }
                 }
 
                 if (!n->prim_count) {
@@ -988,18 +1013,21 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         const Transform &tr = transforms[obj.components[CompTransform]];
                         const Drawable &dr = drawables[obj.components[CompDrawable]];
                         if ((dr.vis_mask &
-                             uint32_t(Drawable::eDrVisibility::VisShadow)) == 0)
+                             uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) {
                             continue;
+                        }
 
                         if (!skip_check && sh_clip_frustum.CheckVisibility(
                                                tr.bbox_min_ws, tr.bbox_max_ws) ==
-                                               eVisibilityResult::Invisible)
+                                               eVisResult::Invisible) {
                             continue;
+                        }
 
                         if ((tr.bbox_max_ws[0] - tr.bbox_min_ws[0]) < object_dim_thres &&
                             (tr.bbox_max_ws[1] - tr.bbox_min_ws[1]) < object_dim_thres &&
-                            (tr.bbox_max_ws[2] - tr.bbox_min_ws[2]) < object_dim_thres)
+                            (tr.bbox_max_ws[2] - tr.bbox_min_ws[2]) < object_dim_thres) {
                             continue;
+                        }
 
                         const Mat4f &world_from_object = tr.mat,
                                     &object_from_world = tr.inv_mat;
@@ -1035,8 +1063,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 const AnimState &as =
                                     anims[obj.components[CompAnimState]];
                                 proc_objects_.data[n->prim_index].base_vertex =
-                                    __push_skeletal_mesh(skinned_buf_vtx_offset,
-                                                         n->prim_index, as, mesh, list);
+                                    __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh,
+                                                         list);
                             }
                         }
 
@@ -1050,9 +1078,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 batch.mat_id = (mat->flags() & AlphaTest)
                                                    ? (uint32_t)s->mat.index()
                                                    : 0;
+                                batch.skinned_bit = 0;
                                 batch.alpha_test_bit = (mat->flags() & AlphaTest) ? 1 : 0;
                                 batch.vegetation_bit =
                                     (obj.comp_mask & CompVegStateBit) ? 1 : 0;
+                                batch.moving_bit = 0;
                                 batch.indices_offset =
                                     mesh->indices_buf().offset + s->offset;
                                 batch.base_vertex =
@@ -1080,16 +1110,17 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
         LightSourceItem &l = list.light_sources.data[i];
         const LightSource *ls = litem_to_lsource_.data[i];
 
-        if (!ls->cast_shadow)
+        if (!ls->cast_shadow) {
             continue;
+        }
 
         const auto light_center = Vec3f{l.pos[0], l.pos[1], l.pos[2]};
         const float distance = Distance(light_center, cam_pos);
 
-        const int resolutions[][2] = {{512, 512}, {256, 256}, {128, 128}, {64, 64}};
+        const int ShadowResolutions[][2] = {{512, 512}, {256, 256}, {128, 128}, {64, 64}};
 
         // choose resolution based on distance
-        int res_index = std::min(int(distance * 0.02f), 4);
+        int res_index = _MIN(int(distance * 0.02f), 4);
 
         ShadReg *region = nullptr;
 
@@ -1097,8 +1128,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
             ShadReg &reg = allocated_shadow_regions_.data[j];
 
             if (reg.ls == ls) {
-                if (reg.size[0] != resolutions[res_index][0] ||
-                    reg.size[1] != resolutions[res_index][1]) {
+                if (reg.size[0] != ShadowResolutions[res_index][0] ||
+                    reg.size[1] != ShadowResolutions[res_index][1]) {
                     // free and reallocate region
                     shadow_splitter_.Free(reg.pos);
                     reg =
@@ -1113,7 +1144,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
         // try to allocate best resolution possible
         for (; res_index < 4 && !region; res_index++) {
             int pos[2];
-            int node = shadow_splitter_.Allocate(resolutions[res_index], pos);
+            int node = shadow_splitter_.Allocate(ShadowResolutions[res_index], pos);
             if (node == -1 && allocated_shadow_regions_.count) {
                 ShadReg *oldest = &allocated_shadow_regions_.data[0];
                 for (int j = 0; j < (int)allocated_shadow_regions_.count; j++) {
@@ -1128,7 +1159,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                     *oldest =
                         allocated_shadow_regions_.data[--allocated_shadow_regions_.count];
                     // try again to insert
-                    node = shadow_splitter_.Allocate(resolutions[res_index], pos);
+                    node = shadow_splitter_.Allocate(ShadowResolutions[res_index], pos);
                 }
             }
             if (node != -1) {
@@ -1137,8 +1168,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                 region->ls = ls;
                 region->pos[0] = pos[0];
                 region->pos[1] = pos[1];
-                region->size[0] = resolutions[res_index][0];
-                region->size[1] = resolutions[res_index][1];
+                region->size[0] = ShadowResolutions[res_index][0];
+                region->size[1] = ShadowResolutions[res_index][1];
                 region->last_update = region->last_visible = 0xffffffff;
             }
         }
@@ -1196,15 +1227,15 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
             stack[stack_size++] = scene.root_node;
 
             while (stack_size) {
-                uint32_t cur = stack[--stack_size] & index_bits;
+                const uint32_t cur = stack[--stack_size] & index_bits;
                 uint32_t skip_check = stack[stack_size] & skip_check_bit;
-                const auto *n = &scene.nodes[cur];
+                const bvh_node_t *n = &scene.nodes[cur];
 
-                eVisibilityResult res =
+                const eVisResult res =
                     shadow_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
-                if (res == eVisibilityResult::Invisible) {
+                if (res == eVisResult::Invisible) {
                     continue;
-                } else if (res == eVisibilityResult::FullyVisible) {
+                } else if (res == eVisResult::FullyVisible) {
                     skip_check = skip_check_bit;
                 }
 
@@ -1220,15 +1251,17 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                         if (!skip_check && shadow_cam.CheckFrustumVisibility(
                                                tr.bbox_min_ws, tr.bbox_max_ws) ==
-                                               eVisibilityResult::Invisible)
+                                               eVisResult::Invisible) {
                             continue;
+                        }
 
                         const Mat4f &world_from_object = tr.mat,
                                     &object_from_world = tr.inv_mat;
                         const Drawable &dr = drawables[obj.components[CompDrawable]];
                         if ((dr.vis_mask &
-                             uint32_t(Drawable::eDrVisibility::VisShadow)) == 0)
+                             uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) {
                             continue;
+                        }
 
                         const Mesh *mesh = dr.mesh.get();
 
@@ -1259,8 +1292,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 const AnimState &as =
                                     anims[obj.components[CompAnimState]];
                                 proc_objects_.data[n->prim_index].base_vertex =
-                                    __push_skeletal_mesh(skinned_buf_vtx_offset,
-                                                         n->prim_index, as, mesh, list);
+                                    __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh,
+                                                         list);
                             }
                         }
 
@@ -1274,9 +1307,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 batch.mat_id = (mat->flags() & AlphaTest)
                                                    ? (uint32_t)s->mat.index()
                                                    : 0;
+                                batch.skinned_bit = 0;
                                 batch.alpha_test_bit = (mat->flags() & AlphaTest) ? 1 : 0;
                                 batch.vegetation_bit =
                                     (obj.comp_mask & CompVegStateBit) ? 1 : 0;
+                                batch.moving_bit = 0;
                                 batch.indices_offset =
                                     mesh->indices_buf().offset + s->offset;
                                 batch.base_vertex =
@@ -1628,7 +1663,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
         const float influence = litem_to_lsource[j]->influence;
         const float cap_radius = litem_to_lsource[j]->cap_radius;
 
-        eVisibilityResult visible_to_slice = eVisibilityResult::FullyVisible;
+        eVisResult visible_to_slice = eVisResult::FullyVisible;
 
         // Check if light is inside of a whole z-slice
         for (int k = int(eCamPlane::NearPlane); k <= int(eCamPlane::FarPlane); k++) {
@@ -1637,7 +1672,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 
             float dist = p_n[0] * l.pos[0] + p_n[1] * l.pos[1] + p_n[2] * l.pos[2] + p_d;
             if (dist < -influence) {
-                visible_to_slice = eVisibilityResult::Invisible;
+                visible_to_slice = eVisResult::Invisible;
             } else if (l.spot > epsilon) {
                 const float dn[3] = _CROSS(l.dir, p_n);
                 const float m[3] = _CROSS(l.dir, dn);
@@ -1648,13 +1683,13 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 
                 if (dist < -radius &&
                     p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d < -epsilon) {
-                    visible_to_slice = eVisibilityResult::Invisible;
+                    visible_to_slice = eVisResult::Invisible;
                 }
             }
         }
 
         // Skip light for whole slice
-        if (visible_to_slice == eVisibilityResult::Invisible) {
+        if (visible_to_slice == eVisResult::Invisible) {
             continue;
         }
 
@@ -1662,7 +1697,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
              row_offset += REN_GRID_RES_X) {
             const Frustum *first_line_sf = first_sf + row_offset;
 
-            eVisibilityResult visible_to_line = eVisibilityResult::FullyVisible;
+            eVisResult visible_to_line = eVisResult::FullyVisible;
 
             // Check if light is inside of grid line
             for (int k = int(eCamPlane::TopPlane); k <= int(eCamPlane::BottomPlane);
@@ -1673,7 +1708,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 float dist =
                     p_n[0] * l.pos[0] + p_n[1] * l.pos[1] + p_n[2] * l.pos[2] + p_d;
                 if (dist < -influence) {
-                    visible_to_line = eVisibilityResult::Invisible;
+                    visible_to_line = eVisResult::Invisible;
                 } else if (l.spot > epsilon) {
                     const float dn[3] = _CROSS(l.dir, p_n);
                     const float m[3] = _CROSS(l.dir, dn);
@@ -1686,20 +1721,20 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                     const float val = p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d;
 
                     if (dist < -radius && val < -epsilon) {
-                        visible_to_line = eVisibilityResult::Invisible;
+                        visible_to_line = eVisResult::Invisible;
                     }
                 }
             }
 
             // Skip light for whole line
-            if (visible_to_line == eVisibilityResult::Invisible) {
+            if (visible_to_line == eVisResult::Invisible) {
                 continue;
             }
 
             for (int col_offset = 0; col_offset < REN_GRID_RES_X; col_offset++) {
                 const Frustum *sf = first_line_sf + col_offset;
 
-                eVisibilityResult res = eVisibilityResult::FullyVisible;
+                eVisResult res = eVisResult::FullyVisible;
 
                 // Can skip near, far, top and bottom plane check
                 for (int k = int(eCamPlane::LeftPlane); k <= int(eCamPlane::RightPlane);
@@ -1710,7 +1745,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                     float dist =
                         p_n[0] * l.pos[0] + p_n[1] * l.pos[1] + p_n[2] * l.pos[2] + p_d;
                     if (dist < -influence) {
-                        res = eVisibilityResult::Invisible;
+                        res = eVisResult::Invisible;
                     } else if (l.spot > epsilon) {
                         const float dn[3] = _CROSS(l.dir, p_n);
                         const float m[3] = _CROSS(l.dir, dn);
@@ -1723,12 +1758,12 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                         if (dist < -radius &&
                             p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d <
                                 -epsilon) {
-                            res = eVisibilityResult::Invisible;
+                            res = eVisResult::Invisible;
                         }
                     }
                 }
 
-                if (res != eVisibilityResult::Invisible) {
+                if (res != eVisResult::Invisible) {
                     const int index = base_index + row_offset + col_offset;
                     CellData &cell = list.cells.data[index];
                     if (cell.light_count < REN_MAX_LIGHTS_PER_CELL) {
@@ -1747,7 +1782,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
         const float bbox_points[8][3] = {
             BBOX_POINTS(decals_boxes[j].bmin, decals_boxes[j].bmax)};
 
-        eVisibilityResult visible_to_slice = eVisibilityResult::FullyVisible;
+        eVisResult visible_to_slice = eVisResult::FullyVisible;
 
         // Check if decal is inside of a whole slice
         for (int k = int(eCamPlane::NearPlane); k <= int(eCamPlane::FarPlane); k++) {
@@ -1764,13 +1799,13 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
             }
 
             if (in_count == 0) {
-                visible_to_slice = eVisibilityResult::Invisible;
+                visible_to_slice = eVisResult::Invisible;
                 break;
             }
         }
 
         // Skip decal for whole slice
-        if (visible_to_slice == eVisibilityResult::Invisible) {
+        if (visible_to_slice == eVisResult::Invisible) {
             continue;
         }
 
@@ -1778,7 +1813,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
              row_offset += REN_GRID_RES_X) {
             const Frustum *first_line_sf = first_sf + row_offset;
 
-            eVisibilityResult visible_to_line = eVisibilityResult::FullyVisible;
+            eVisResult visible_to_line = eVisResult::FullyVisible;
 
             // Check if decal is inside of grid line
             for (int k = int(eCamPlane::TopPlane); k <= int(eCamPlane::BottomPlane);
@@ -1796,20 +1831,20 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                 }
 
                 if (in_count == 0) {
-                    visible_to_line = eVisibilityResult::Invisible;
+                    visible_to_line = eVisResult::Invisible;
                     break;
                 }
             }
 
             // Skip decal for whole line
-            if (visible_to_line == eVisibilityResult::Invisible) {
+            if (visible_to_line == eVisResult::Invisible) {
                 continue;
             }
 
             for (int col_offset = 0; col_offset < REN_GRID_RES_X; col_offset++) {
                 const Frustum *sf = first_line_sf + col_offset;
 
-                eVisibilityResult res = eVisibilityResult::FullyVisible;
+                eVisResult res = eVisResult::FullyVisible;
 
                 // Can skip near, far, top and bottom plane check
                 for (int k = int(eCamPlane::LeftPlane); k <= int(eCamPlane::RightPlane);
@@ -1827,12 +1862,12 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                     }
 
                     if (in_count == 0) {
-                        res = eVisibilityResult::Invisible;
+                        res = eVisResult::Invisible;
                         break;
                     }
                 }
 
-                if (res != eVisibilityResult::Invisible) {
+                if (res != eVisResult::Invisible) {
                     const int index = base_index + row_offset + col_offset;
                     CellData &cell = list.cells.data[index];
                     if (cell.decal_count < REN_MAX_DECALS_PER_CELL) {
@@ -1849,7 +1884,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
         const ProbeItem &p = list.probes.data[j];
         const float *p_pos = &p.position[0];
 
-        eVisibilityResult visible_to_slice = eVisibilityResult::FullyVisible;
+        eVisResult visible_to_slice = eVisResult::FullyVisible;
 
         // Check if probe is inside of a whole slice
         for (int k = int(eCamPlane::NearPlane); k <= int(eCamPlane::FarPlane); k++) {
@@ -1857,12 +1892,12 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                          first_sf->planes[k].n[1] * p_pos[1] +
                          first_sf->planes[k].n[2] * p_pos[2] + first_sf->planes[k].d;
             if (dist < -p.radius) {
-                visible_to_slice = eVisibilityResult::Invisible;
+                visible_to_slice = eVisResult::Invisible;
             }
         }
 
         // Skip probe for whole slice
-        if (visible_to_slice == eVisibilityResult::Invisible) {
+        if (visible_to_slice == eVisResult::Invisible) {
             continue;
         }
 
@@ -1870,7 +1905,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
              row_offset += REN_GRID_RES_X) {
             const Frustum *first_line_sf = first_sf + row_offset;
 
-            eVisibilityResult visible_to_line = eVisibilityResult::FullyVisible;
+            eVisResult visible_to_line = eVisResult::FullyVisible;
 
             // Check if probe is inside of grid line
             for (int k = int(eCamPlane::TopPlane); k <= int(eCamPlane::BottomPlane);
@@ -1880,19 +1915,19 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                              first_line_sf->planes[k].n[2] * p_pos[2] +
                              first_line_sf->planes[k].d;
                 if (dist < -p.radius) {
-                    visible_to_line = eVisibilityResult::Invisible;
+                    visible_to_line = eVisResult::Invisible;
                 }
             }
 
             // Skip probe for whole line
-            if (visible_to_line == eVisibilityResult::Invisible) {
+            if (visible_to_line == eVisResult::Invisible) {
                 continue;
             }
 
             for (int col_offset = 0; col_offset < REN_GRID_RES_X; col_offset++) {
                 const Frustum *sf = first_line_sf + col_offset;
 
-                eVisibilityResult res = eVisibilityResult::FullyVisible;
+                eVisResult res = eVisResult::FullyVisible;
 
                 // Can skip near, far, top and bottom plane check
                 for (int k = int(eCamPlane::LeftPlane); k <= int(eCamPlane::RightPlane);
@@ -1902,11 +1937,11 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                                        sf->planes[k].n[2] * p_pos[2] + sf->planes[k].d;
 
                     if (dist < -p.radius) {
-                        res = eVisibilityResult::Invisible;
+                        res = eVisResult::Invisible;
                     }
                 }
 
-                if (res != eVisibilityResult::Invisible) {
+                if (res != eVisResult::Invisible) {
                     const int index = base_index + row_offset + col_offset;
                     CellData &cell = list.cells.data[index];
                     if (cell.probe_count < REN_MAX_PROBES_PER_CELL) {
@@ -1925,7 +1960,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
         const EllipsItem &e = list.ellipsoids.data[j];
         const float *p_pos = &e.position[0];
 
-        eVisibilityResult visible_to_slice = eVisibilityResult::FullyVisible;
+        eVisResult visible_to_slice = eVisResult::FullyVisible;
 
         // Check if ellipsoid is inside of a whole slice
         for (int k = int(eCamPlane::NearPlane); k <= int(eCamPlane::FarPlane); k++) {
@@ -1933,12 +1968,12 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                          first_sf->planes[k].n[1] * p_pos[1] +
                          first_sf->planes[k].n[2] * p_pos[2] + first_sf->planes[k].d;
             if (dist < -EllipsoidInfluence) {
-                visible_to_slice = eVisibilityResult::Invisible;
+                visible_to_slice = eVisResult::Invisible;
             }
         }
 
         // Skip ellipsoid for whole slice
-        if (visible_to_slice == eVisibilityResult::Invisible) {
+        if (visible_to_slice == eVisResult::Invisible) {
             continue;
         }
 
@@ -1946,7 +1981,7 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
              row_offset += REN_GRID_RES_X) {
             const Frustum *first_line_sf = first_sf + row_offset;
 
-            eVisibilityResult visible_to_line = eVisibilityResult::FullyVisible;
+            eVisResult visible_to_line = eVisResult::FullyVisible;
 
             // Check if ellipsoid is inside of grid line
             for (int k = int(eCamPlane::TopPlane); k <= int(eCamPlane::BottomPlane);
@@ -1956,19 +1991,19 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                              first_line_sf->planes[k].n[2] * p_pos[2] +
                              first_line_sf->planes[k].d;
                 if (dist < -EllipsoidInfluence) {
-                    visible_to_line = eVisibilityResult::Invisible;
+                    visible_to_line = eVisResult::Invisible;
                 }
             }
 
             // Skip ellipsoid for whole line
-            if (visible_to_line == eVisibilityResult::Invisible) {
+            if (visible_to_line == eVisResult::Invisible) {
                 continue;
             }
 
             for (int col_offset = 0; col_offset < REN_GRID_RES_X; col_offset++) {
                 const Frustum *sf = first_line_sf + col_offset;
 
-                eVisibilityResult res = eVisibilityResult::FullyVisible;
+                eVisResult res = eVisResult::FullyVisible;
 
                 // Can skip near, far, top and bottom plane check
                 for (int k = int(eCamPlane::LeftPlane); k <= int(eCamPlane::RightPlane);
@@ -1978,11 +2013,11 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
                                        sf->planes[k].n[2] * p_pos[2] + sf->planes[k].d;
 
                     if (dist < -EllipsoidInfluence) {
-                        res = eVisibilityResult::Invisible;
+                        res = eVisResult::Invisible;
                     }
                 }
 
-                if (res != eVisibilityResult::Invisible) {
+                if (res != eVisResult::Invisible) {
                     const int index = base_index + row_offset + col_offset;
                     CellData &cell = list.cells.data[index];
                     if (cell.ellips_count < REN_MAX_ELLIPSES_PER_CELL) {
@@ -2062,38 +2097,36 @@ void RendererInternal::__push_ellipsoids(const Drawable &dr,
 }
 
 uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_offset,
-                                                const uint32_t obj_index,
                                                 const AnimState &as,
                                                 const Ren::Mesh *mesh, DrawList &list) {
     const Ren::Skeleton *skel = mesh->skel();
 
-    const auto palette_start = (uint16_t)list.skin_transforms.count;
-    SkinTransform *matr_palette = &list.skin_transforms.data[list.skin_transforms.count];
-    list.skin_transforms.count += (uint32_t)skel->bones.size();
+    const auto palette_start = uint16_t(list.skin_transforms.count / 2);
+    SkinTransform *out_matr_palette =
+        &list.skin_transforms.data[list.skin_transforms.count];
+    list.skin_transforms.count += uint32_t(2 * skel->bones.size());
 
     for (int i = 0; i < (int)skel->bones.size(); i++) {
-        const Ren::Mat4f matr_trans = Ren::Transpose(as.matr_palette[i]);
-        memcpy(&matr_palette[i].matr[0][0], Ren::ValuePtr(matr_trans),
+        const Ren::Mat4f matr_curr_trans = Ren::Transpose(as.matr_palette_curr[i]);
+        memcpy(&out_matr_palette[2 * i + 0].matr[0][0], Ren::ValuePtr(matr_curr_trans),
+               12 * sizeof(float));
+
+        const Ren::Mat4f matr_prev_trans = Ren::Transpose(as.matr_palette_prev[i]);
+        memcpy(&out_matr_palette[2 * i + 1].matr[0][0], Ren::ValuePtr(matr_prev_trans),
                12 * sizeof(float));
     }
 
     const Ren::BufferRange &buf = mesh->sk_attribs_buf();
 
-    const uint32_t vertex_beg = buf.offset / 48,
-                   vertex_end = (buf.offset + buf.size) / 48;
+    const uint32_t vertex_beg = buf.offset / 48, vertex_cnt = buf.size / 48;
 
-    const uint32_t base_vertex = skinned_buf_vtx_offset + list.skin_vertices_count;
-
-    for (uint32_t i = vertex_beg; i < vertex_end; i += REN_SKIN_REGION_SIZE) {
-        const auto count = (uint16_t)_MIN(vertex_end - i, REN_SKIN_REGION_SIZE);
-        const uint32_t out_offset = skinned_buf_vtx_offset + list.skin_vertices_count;
-        list.skin_regions.data[list.skin_regions.count++] = {i, out_offset, palette_start,
-                                                             count};
-        list.skin_vertices_count += count;
-    }
+    const uint32_t curr_out_offset = skinned_buf_vtx_offset + list.skin_vertices_count;
+    list.skin_regions.data[list.skin_regions.count++] = {vertex_beg, curr_out_offset,
+                                                         palette_start, vertex_cnt};
+    list.skin_vertices_count += vertex_cnt;
 
     assert(list.skin_vertices_count <= REN_MAX_SKIN_VERTICES_TOTAL);
-    return base_vertex;
+    return curr_out_offset;
 }
 
 void RendererInternal::__init_wind_params(const VegState &vs, const Environment &env,

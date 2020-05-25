@@ -16,7 +16,6 @@ layout(location = REN_VTX_POS_LOC) in vec3 aVertexPosition;
 #ifdef TRANSPARENT_PERM
 layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs1;
 #endif
-//layout(location = REN_VTX_NOR_LOC) in vec3 aVertexNormal;
 layout(location = REN_VTX_AUX_LOC) in uint aVertexColorPacked;
 
 layout (std140) uniform SharedDataBlock {
@@ -41,26 +40,20 @@ void main() {
     int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
 
     // load model matrix
-    mat4 MMatrix;
-    MMatrix[0] = texelFetch(instances_buffer, instance * 4 + 0);
-    MMatrix[1] = texelFetch(instances_buffer, instance * 4 + 1);
-    MMatrix[2] = texelFetch(instances_buffer, instance * 4 + 2);
-    MMatrix[3] = vec4(0.0, 0.0, 0.0, 1.0);
-
-    MMatrix = transpose(MMatrix);
+    mat4 model_matrix = FetchModelMatrix(instances_buffer, instance);
 
     // load vegetation properties
     vec4 veg_params = texelFetch(instances_buffer, instance * 4 + 3);
 
 	vec4 vtx_color = unpackUnorm4x8(aVertexColorPacked);
 
-    vec3 obj_pos_ws = MMatrix[3].xyz;
+    vec3 obj_pos_ws = model_matrix[3].xyz;
     vec4 wind_scroll = shrd_data.uWindScroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
 	vec4 wind_params = unpackUnorm4x8(floatBitsToUint(veg_params.x));
 	vec4 wind_vec_ls = vec4(unpackHalf2x16(floatBitsToUint(veg_params.y)), unpackHalf2x16(floatBitsToUint(veg_params.z)));
 
     vec3 vtx_pos_ls = TransformVegetation(aVertexPosition, vtx_color, wind_scroll, wind_params, wind_vec_ls, noise_texture);
-    vec3 vtx_pos_ws = (MMatrix * vec4(vtx_pos_ls, 1.0)).xyz;
+    vec3 vtx_pos_ws = (model_matrix * vec4(vtx_pos_ls, 1.0)).xyz;
 
 #ifdef TRANSPARENT_PERM
     aVertexUVs1_ = aVertexUVs1;
@@ -71,7 +64,7 @@ void main() {
 #ifdef OUTPUT_VELOCITY
     vec4 wind_scroll_prev = shrd_data.uWindScrollPrev + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
     vec3 vtx_pos_ls_prev = TransformVegetation(aVertexPosition, vtx_color, wind_scroll_prev, wind_params, wind_vec_ls, noise_texture);
-    vec3 vtx_pos_ws_prev = (MMatrix * vec4(vtx_pos_ls_prev, 1.0)).xyz;
+    vec3 vtx_pos_ws_prev = (model_matrix * vec4(vtx_pos_ls_prev, 1.0)).xyz;
 
     aVertexCSCurr_ = gl_Position.xyw;
     aVertexCSPrev_ = (shrd_data.uViewProjPrevMatrix * vec4(vtx_pos_ws_prev, 1.0)).xyw;

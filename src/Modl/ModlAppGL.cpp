@@ -55,6 +55,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
 
     Mat4f world_from_object = Mat4f{1.0f};
 
+    world_from_object = Translate(world_from_object, Vec3f{offset_x_, offset_y_, 0});
     world_from_object = Rotate(world_from_object, angle_x_, Vec3f{1, 0, 0});
     world_from_object = Rotate(world_from_object, angle_y_, Vec3f{0, 1, 0});
 
@@ -109,6 +110,7 @@ void ModlApp::DrawMeshColored(Ren::MeshRef &ref) {
 
     Mat4f world_from_object = Mat4f{1.0f};
 
+    world_from_object = Translate(world_from_object, Vec3f{offset_x_, offset_y_, 0});
     world_from_object = Rotate(world_from_object, angle_x_, Vec3f{1, 0, 0});
     world_from_object = Rotate(world_from_object, angle_y_, Vec3f{0, 1, 0});
 
@@ -171,6 +173,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
     Mat4f world_from_object = Mat4f{ 1.0f };
 
+    world_from_object = Translate(world_from_object,Vec3f{offset_x_, offset_y_, 0});
     //world_from_object = Rotate(world_from_object, angle_x_, Vec3f{ 1, 0, 0 });
     world_from_object = Rotate(world_from_object, angle_y_, Vec3f{ 0, 1, 0 });
 
@@ -226,26 +229,60 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
         glUseProgram(p->prog_id());
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, (GLuint)last_skin_vertex_buffer_);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)last_vertex_buf1_);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)last_vertex_buf2_);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)last_delta_buffer_);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)last_vertex_buf1_);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, (GLuint)last_vertex_buf2_);
         glBindBufferBase(GL_UNIFORM_BUFFER, BONE_MATRICES_UBO, (GLuint)uniform_buf_);
 
-        int vertex_offset = m->sk_attribs_buf().offset / 48,
-            vertex_count = m->sk_attribs_buf().size / 48;
+        const Ren::BufferRange &sk_attribs_buf = m->sk_attribs_buf();
+        const Ren::BufferRange &sk_deltas_buf = m->sk_deltas_buf();
 
-        glUniform2i(0, vertex_offset, 0);
+        const int vertex_offset = sk_attribs_buf.offset / 48,
+                  vertex_count = sk_attribs_buf.size / 48;
+        const int delta_offset = sk_deltas_buf.offset / 24,
+                  delta_count = sk_deltas_buf.size / 24;
 
-        /*const size_t num_bones = skel->bones.size();
+        const int shape_keys_count = m->shape_keys_count();
+        if (!shape_keys_count || shape_key_index_ == -1) {
+            glUniform4i(0, vertex_offset, vertex_count, 0 /* offset to out buffers */,
+                        delta_offset);
+            glUniform1f(1, 0.0f);
 
-        Mat3x4f _matr_palette[256];
-        for (size_t i = 0; i < num_bones; i++) {
-            const Mat4f tr_mat = Ren::Transpose(matr_palette_[i]);
-            memcpy(&_matr_palette[i][0][0], ValuePtr(tr_mat), 12 * sizeof(float));
+            const int group_count = (vertex_count + 63) / 64;
+            glDispatchCompute(group_count, 1, 1);
+        } else {
+            const Ren::ShapeKey &sh_key = m->shape_key(shape_key_index_);
+
+            const int shapekeyed_vertex_count = sh_key.delta_count;
+            const int non_shapekeyed_vertex_count =
+                vertex_count - shapekeyed_vertex_count;
+
+            { // transform simple vertices
+                glUniform4i(0, vertex_offset, non_shapekeyed_vertex_count,
+                            0 /* offset to out buffers */, delta_offset);
+                glUniform1f(1, 0.0f);
+
+                const int group_count = (non_shapekeyed_vertex_count + 63) / 64;
+                glDispatchCompute(group_count, 1, 1);
+            }
+
+            { // transform shapekeyed vertices
+                glUniform4i(0, vertex_offset + non_shapekeyed_vertex_count,
+                            shapekeyed_vertex_count,
+                            non_shapekeyed_vertex_count /* offset to out buffers */,
+                            delta_offset + sh_key.delta_offset);
+                static float f = 0.0f, s = 1.0f;
+
+                f += 0.005f * s;
+                if (f > 1.0) s = -1.0f;
+                else if (f < 0.0) s = 1.0f;
+
+                glUniform1f(1, f);
+
+                const int group_count = (shapekeyed_vertex_count + 63) / 64;
+                glDispatchCompute(group_count, 1, 1);
+            }
         }
-
-        glUniformMatrix3x4fv(2, (GLsizei)num_bones, GL_FALSE, ValuePtr(_matr_palette[0]));*/
-
-        glDispatchCompute(vertex_count, 1, 1);
     }
 
     glBindVertexArray((GLuint)simple_vao_);
@@ -257,6 +294,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
     Mat4f world_from_object = Mat4f{1.0f};
 
+    world_from_object = Translate(world_from_object,Vec3f{offset_x_, offset_y_, 0});
     // world_from_object = Rotate(world_from_object, angle_x_, { 1, 0, 0 });
     world_from_object = Rotate(world_from_object, angle_y_, Vec3f{0, 1, 0});
 
@@ -300,16 +338,18 @@ void ModlApp::CheckInitVAOs() {
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
                    vtx_buf2 = ctx_.default_vertex_buf2();
     Ren::BufferRef skin_vtx_buf = ctx_.default_skin_vertex_buf();
+    Ren::BufferRef delta_buf = ctx_.default_delta_buf();
     Ren::BufferRef ndx_buf = ctx_.default_indices_buf();
 
     const auto gl_vertex_buf1 = (GLuint)vtx_buf1->buf_id(),
                gl_vertex_buf2 = (GLuint)vtx_buf2->buf_id(),
                gl_skin_vertex_buf = (GLuint)skin_vtx_buf->buf_id(),
+               gl_delta_buf = (GLuint)delta_buf->buf_id(),
                gl_indices_buf = (GLuint)ndx_buf->buf_id();
 
     if (gl_vertex_buf1 != last_vertex_buf1_ || gl_vertex_buf2 != last_vertex_buf2_ ||
         gl_skin_vertex_buf != last_skin_vertex_buffer_ ||
-        gl_indices_buf != last_index_buffer_) {
+        gl_delta_buf != last_delta_buffer_ || gl_indices_buf != last_index_buffer_) {
 
         if (last_vertex_buf1_) {
             auto simple_mesh_vao = (GLuint)simple_vao_;
@@ -400,6 +440,7 @@ void ModlApp::CheckInitVAOs() {
         skinned_vao_ = (uint32_t)skinned_mesh_vao;
 
         last_skin_vertex_buffer_ = (uint32_t)gl_skin_vertex_buf;
+        last_delta_buffer_ = (uint32_t)gl_delta_buf;
         last_vertex_buf1_ = (uint32_t)gl_vertex_buf1;
         last_vertex_buf2_ = (uint32_t)gl_vertex_buf2;
         last_index_buffer_ = (uint32_t)gl_indices_buf;
@@ -529,7 +570,9 @@ out vec4 outColor;
 
 void main(void) {
     if (mode < 0.5) {
-        outColor = texture(diffuse_texture, aVertexUVs1_);
+        vec4 color = texture(diffuse_texture, aVertexUVs1_);
+        if (color.a < 0.1) discard;
+        outColor = color;
     } else if (mode < 1.5) {
         vec3 normal = aVertexTBN_[2] * 0.5 + vec3(0.5);
         outColor = vec4(normal, 1.0);
@@ -537,7 +580,7 @@ void main(void) {
         vec3 tangent = aVertexTBN_[0] * 0.5 + vec3(0.5);
         outColor = vec4(tangent, 1.0);
     } else if (mode < 3.5) {
-        vec3 tex_normal = texture(normals_texture, aVertexUVs1_).xyz * 2.0 - 1.0;
+        vec3 tex_normal = texture(normals_texture, aVertexUVs1_).wyz * 2.0 - 1.0;
         outColor = vec4((aVertexTBN_ * tex_normal) * 0.5 + vec3(0.5), 1.0);
     } else if (mode < 4.5) {
         outColor = texture(diffuse_texture, aVertexUVs1_);
@@ -585,6 +628,12 @@ void main(void) {
                 highp uvec2 bone_weights;
             };
 
+            struct InDelta {
+                highp vec2 dpxy;
+                highp vec2 dpz_dnxy;
+                highp uvec2 dnz_and_db;
+            };
+
             struct OutVertexData0 {
                 highp vec4 p_and_t0;
             };
@@ -596,45 +645,62 @@ void main(void) {
 
             layout(std430, binding = 0) readonly buffer Input0 {
                 InVertex vertices[];
-            } in_data;
+            } in_data0;
 
-            layout(std430, binding = 1) writeonly buffer Output0 {
+            layout(std430, binding = 1) readonly buffer Input1 {
+                InDelta deltas[];
+            } in_data1;
+
+            layout(std430, binding = 2) writeonly buffer Output0 {
                 OutVertexData0 vertices[];
             } out_data0;
 
-            layout(std430, binding = 2) writeonly buffer Output1 {
+            layout(std430, binding = 3) writeonly buffer Output1 {
                 OutVertexData1 vertices[];
             } out_data1;
 
-            layout(location = 0) uniform ivec2 uOffsets;
+            layout(location = 0) uniform ivec4 uOffsets;
+            layout(location = 1) uniform float uApplyShapeKey;
             
             layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
             void main() {
+                if (gl_GlobalInvocationID.x >= uOffsets[1]) return;
                 int i = int(uOffsets[0] + gl_GlobalInvocationID.x);
 
-                highp vec3 p = in_data.vertices[i].p_and_nxy.xyz;
+                highp vec3 p = in_data0.vertices[i].p_and_nxy.xyz;
 
-                highp uint _nxy = floatBitsToUint(in_data.vertices[i].p_and_nxy.w);
+                highp uint _nxy = floatBitsToUint(in_data0.vertices[i].p_and_nxy.w);
                 highp vec2 nxy = unpackSnorm2x16(_nxy);
 
-                highp uint _nz_and_bx = in_data.vertices[i].nz_and_b.x;
+                highp uint _nz_and_bx = in_data0.vertices[i].nz_and_b.x;
                 highp vec2 nz_and_bx = unpackSnorm2x16(_nz_and_bx);
 
-                highp uint _byz = in_data.vertices[i].nz_and_b.y;
+                highp uint _byz = in_data0.vertices[i].nz_and_b.y;
                 highp vec2 byz = unpackSnorm2x16(_byz);
 
                 highp vec3 n = vec3(nxy, nz_and_bx.x),
                            b = vec3(nz_and_bx.y, byz);
 
+                if (uApplyShapeKey > 0.0001) {
+                    int sh_i = int(uOffsets[3] + gl_GlobalInvocationID.x);
+                    p += uApplyShapeKey * vec3(in_data1.deltas[sh_i].dpxy,
+                                               in_data1.deltas[sh_i].dpz_dnxy.x);
+                    highp uint _dnxy = floatBitsToUint(in_data1.deltas[sh_i].dpz_dnxy.y);
+                    mediump vec2 _dnz_and_dbx = unpackSnorm2x16(in_data1.deltas[sh_i].dnz_and_db.x);
+                    n += uApplyShapeKey * vec3(unpackSnorm2x16(_dnxy), _dnz_and_dbx.x);
+                    mediump vec2 _dbyz = unpackSnorm2x16(in_data1.deltas[sh_i].dnz_and_db.y);
+                    b += uApplyShapeKey * vec3(_dnz_and_dbx.y, _dbyz);
+                }
+
                 mediump uvec4 vtx_indices =
-                    uvec4(bitfieldExtract(in_data.vertices[i].bone_indices.x, 0, 16),
-                          bitfieldExtract(in_data.vertices[i].bone_indices.x, 16, 16),
-                          bitfieldExtract(in_data.vertices[i].bone_indices.y, 0, 16),
-                          bitfieldExtract(in_data.vertices[i].bone_indices.y, 16, 16));
+                    uvec4(bitfieldExtract(in_data0.vertices[i].bone_indices.x, 0, 16),
+                          bitfieldExtract(in_data0.vertices[i].bone_indices.x, 16, 16),
+                          bitfieldExtract(in_data0.vertices[i].bone_indices.y, 0, 16),
+                          bitfieldExtract(in_data0.vertices[i].bone_indices.y, 16, 16));
                 mediump vec4 vtx_weights =
-                    vec4(unpackUnorm2x16(in_data.vertices[i].bone_weights.x),
-                         unpackUnorm2x16(in_data.vertices[i].bone_weights.y));
+                    vec4(unpackUnorm2x16(in_data0.vertices[i].bone_weights.x),
+                         unpackUnorm2x16(in_data0.vertices[i].bone_weights.y));
 
                 highp mat3x4 mat = mat3x4(0.0);
 
@@ -650,17 +716,17 @@ void main(void) {
                 mediump vec3 tr_n = tr_mat * vec4(n, 0.0);
                 mediump vec3 tr_b = tr_mat * vec4(b, 0.0);
 
-                int out_ndx = int(uOffsets[1] + gl_GlobalInvocationID.x);
+                int out_ndx = int(uOffsets[2] + gl_GlobalInvocationID.x);
                 
                 out_data0.vertices[out_ndx].p_and_t0.xyz = tr_p;
                 // copy texture coordinates unchanged
-                out_data0.vertices[out_ndx].p_and_t0.w = uintBitsToFloat(in_data.vertices[i].t0_and_t1.x);
+                out_data0.vertices[out_ndx].p_and_t0.w = uintBitsToFloat(in_data0.vertices[i].t0_and_t1.x);
 
                 out_data1.vertices[out_ndx].n_and_bx.x = packSnorm2x16(tr_n.xy);
                 out_data1.vertices[out_ndx].n_and_bx.y = packSnorm2x16(vec2(tr_n.z, tr_b.x));
                 out_data1.vertices[out_ndx].byz_and_t1.x = packSnorm2x16(tr_b.yz);
                 // copy texture coordinates unchanged
-                out_data1.vertices[out_ndx].byz_and_t1.y = in_data.vertices[i].t0_and_t1.y;
+                out_data1.vertices[out_ndx].byz_and_t1.y = in_data0.vertices[i].t0_and_t1.y;
             }
         )";
 

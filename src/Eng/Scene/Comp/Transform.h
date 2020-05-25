@@ -8,7 +8,7 @@ struct Transform {
     // streaming data
 
     // temporary data
-    Ren::Mat4f  mat, inv_mat;
+    Ren::Mat4f  mat, inv_mat, prev_mat;
     Ren::Vec3f  bbox_min;
     uint32_t    node_index;
     Ren::Vec3f  bbox_max;

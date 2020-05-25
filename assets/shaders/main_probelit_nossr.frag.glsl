@@ -207,7 +207,7 @@ void main(void) {
     }
     
     indirect_col /= max(total_fade, 1.0);
-    indirect_col = max(1.0 * indirect_col, vec3(0.0));
+    indirect_col = max(indirect_col, vec3(0.0));
     
     float lambert = clamp(dot(normal, shrd_data.uSunDir.xyz), 0.0, 1.0);
     float visibility = 0.0;

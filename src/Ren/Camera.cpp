@@ -20,18 +20,18 @@ int Ren::Plane::ClassifyPoint(const float point[3]) const {
     return OnPlane;
 }
 
-Ren::eVisibilityResult Ren::Frustum::CheckVisibility(const Vec3f &point) const {
+Ren::eVisResult Ren::Frustum::CheckVisibility(const Vec3f &point) const {
     for (int pl = 0; pl < planes_count; pl++) {
         if (planes[pl].ClassifyPoint(&point[0]) == Back) {
-            return eVisibilityResult::Invisible;
+            return eVisResult::Invisible;
         }
     }
 
-    return eVisibilityResult::FullyVisible;
+    return eVisResult::FullyVisible;
 }
 
-Ren::eVisibilityResult Ren::Frustum::CheckVisibility(const float bbox[8][3]) const {
-    eVisibilityResult res = eVisibilityResult::FullyVisible;
+Ren::eVisResult Ren::Frustum::CheckVisibility(const float bbox[8][3]) const {
+    eVisResult res = eVisResult::FullyVisible;
 
     for (int pl = 0; pl < planes_count; pl++) {
         int in_count = 8;
@@ -42,24 +42,24 @@ Ren::eVisibilityResult Ren::Frustum::CheckVisibility(const float bbox[8][3]) con
             }
         }
         if (in_count == 0) {
-            res = eVisibilityResult::Invisible;
+            res = eVisResult::Invisible;
             break;
         }
 
         if (in_count != 8) {
-            res = eVisibilityResult::PartiallyVisible;
+            res = eVisResult::PartiallyVisible;
         }
     }
 
     return res;
 }
 
-Ren::eVisibilityResult Ren::Frustum::CheckVisibility(const Vec3f &bbox_min,
+Ren::eVisResult Ren::Frustum::CheckVisibility(const Vec3f &bbox_min,
                                                      const Vec3f &bbox_max) const {
     const float epsilon = 0.002f;
     const float *_bbox_min = ValuePtr(bbox_min), *_bbox_max = ValuePtr(bbox_max);
 
-    eVisibilityResult res = eVisibilityResult::FullyVisible;
+    eVisResult res = eVisResult::FullyVisible;
 
     for (int pl = 0; pl < planes_count; pl++) {
         int in_count = 8;
@@ -93,12 +93,12 @@ Ren::eVisibilityResult Ren::Frustum::CheckVisibility(const Vec3f &bbox_min,
             --in_count;
 
         if (in_count == 0) {
-            res = eVisibilityResult::Invisible;
+            res = eVisResult::Invisible;
             break;
         }
 
         if (in_count != 8) {
-            res = eVisibilityResult::PartiallyVisible;
+            res = eVisResult::PartiallyVisible;
         }
     }
 
@@ -246,15 +246,15 @@ void Ren::Camera::UpdatePlanes() {
     world_position_[2] = -Dot(view_matrix_[2], view_matrix_[3]);
 }
 
-Ren::eVisibilityResult Ren::Camera::CheckFrustumVisibility(const Vec3f &point) const {
+Ren::eVisResult Ren::Camera::CheckFrustumVisibility(const Vec3f &point) const {
     return frustum_.CheckVisibility(point);
 }
 
-Ren::eVisibilityResult Ren::Camera::CheckFrustumVisibility(const float bbox[8][3]) const {
+Ren::eVisResult Ren::Camera::CheckFrustumVisibility(const float bbox[8][3]) const {
     return frustum_.CheckVisibility(bbox);
 }
 
-Ren::eVisibilityResult Ren::Camera::CheckFrustumVisibility(const Vec3f &bbox_min,
+Ren::eVisResult Ren::Camera::CheckFrustumVisibility(const Vec3f &bbox_min,
                                                            const Vec3f &bbox_max) const {
     return frustum_.CheckVisibility(bbox_min, bbox_max);
 }

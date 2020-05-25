@@ -173,12 +173,12 @@ void Ren::Texture2D::Init(const void *data, int size, const Texture2DParams &p,
         _p.w = _p.h = 1;
         _p.format = eTexFormat::RawRGBA8888;
         _p.filter = eTexFilter::NoFilter;
-        _p.repeat = eTexRepeat::Repeat;
         InitFromRAWData(p.fallback_color, _p, log);
         // mark it as not ready
         ready_ = false;
-        if (load_status)
+        if (load_status) {
             *load_status = eTexLoadStatus::TexCreatedDefault;
+        }
     } else {
         if (name_.EndsWith(".tga_rgbe") != 0 || name_.EndsWith(".TGA_RGBE") != 0) {
             InitFromTGA_RGBEFile(data, p, log);
@@ -210,7 +210,6 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6],
         _p.w = _p.h = 1;
         _p.format = eTexFormat::RawRGBA8888;
         _p.filter = eTexFilter::NoFilter;
-        _p.repeat = eTexRepeat::Repeat;
         InitFromRAWData(_data, _p, log);
         // mark it as not ready
         ready_ = false;

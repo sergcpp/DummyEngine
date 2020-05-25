@@ -9,7 +9,9 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <memory>
+#include <set>
 
 #include <SDL2/SDL.h>
 
@@ -114,6 +116,8 @@ int ModlApp::Run(const std::vector<std::string> &args) {
             view_file_name = args[++i];
         } else if (args[i] == "-a") {
             anim_file_name = args[++i];
+        } else if (args[i] == "-b") {
+            shape_key_index_ = stoi(args[++i]);
         } else if (args[i] == "-noopt") {
             optimize_mesh = false;
         } else if (args[i] == "-genocc") {
@@ -336,20 +340,27 @@ void ModlApp::PollEvents() {
             } else if (e.key.keysym.sym >= SDLK_0 && e.key.keysym.sym <= SDLK_9) {
                 view_mode_ = eViewMode(e.key.keysym.sym - SDLK_0);
             } else if (e.key.keysym.sym == SDLK_r) {
-                angle_x_ = 0.0f;
-                angle_y_ = 0.0f;
+                angle_x_ = angle_y_ = 0.0f;
+                offset_x_ = offset_y_ = 0.0f;
             }
         } break;
         case SDL_MOUSEBUTTONDOWN: {
-            mouse_grabbed_ = true;
+            if (e.button.button == SDL_BUTTON_LEFT) {
+                grabbed_pointer_ = 0;
+            } else if (e.button.button == SDL_BUTTON_RIGHT) {
+                grabbed_pointer_ = 1;
+            }
         } break;
         case SDL_MOUSEBUTTONUP:
-            mouse_grabbed_ = false;
+            grabbed_pointer_ = -1;
             break;
         case SDL_MOUSEMOTION:
-            if (mouse_grabbed_) {
+            if (grabbed_pointer_ == 0) {
                 angle_y_ += 0.01f * e.motion.xrel;
                 angle_x_ += -0.01f * e.motion.yrel;
+            } else if (grabbed_pointer_ == 1) {
+                offset_x_ -= 0.01f * e.motion.xrel;
+                offset_y_ -= 0.01f * e.motion.yrel;
             }
             break;
         case SDL_MOUSEWHEEL: {
@@ -403,7 +414,8 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
         M_UNKNOWN,
         M_STATIC,
         M_COLORED,
-        M_SKEL
+        M_SKEL,
+        M_SKEL_COLORED
     } mesh_type = eModelType::M_UNKNOWN;
     struct MeshInfo {
         char name[32];
@@ -431,6 +443,17 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
     static_assert(offsetof(OutBone, bind_pos) == 72, "!");
     static_assert(offsetof(OutBone, bind_rot) == 84, "!");
 
+    struct ShapeKeyElement {
+        int index;
+        Ren::VtxDelta delta;
+    };
+    using ShapeKeyData = vector<ShapeKeyElement>;
+
+    struct ShapeKey {
+        char name[64];
+        ShapeKeyData data;
+    };
+
     int num_vertices, num_indices;
     vector<float> positions, normals, tangents, uvs, uvs2, weights;
     vector<uint8_t> vtx_colors;
@@ -438,6 +461,8 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
     vector<vector<uint32_t>> indices;
 
     vector<vector<uint32_t>> reordered_indices;
+
+    vector<ShapeKey> shape_keys;
 
     ios::sync_with_stdio(false);
     ifstream in_file(in_file_name);
@@ -468,6 +493,8 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
             mesh_type = eModelType::M_COLORED;
         } else if (str == "SKELETAL_MESH") {
             mesh_type = eModelType::M_SKEL;
+        } else if (str == "SKELETAL_COLORED_MESH") {
+            mesh_type = eModelType::M_SKEL_COLORED;
         } else {
             cerr << "Unknown mesh type" << endl;
             return eCompileResult::RES_PARSE_ERROR;
@@ -502,7 +529,8 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
             const int toks_count = Tokenize(str, " ", toks);
             if ((mesh_type == eModelType::M_STATIC && toks_count != 10) ||
                 (mesh_type == eModelType::M_COLORED && toks_count != 12) ||
-                (mesh_type == eModelType::M_SKEL && toks_count < 10)) {
+                (mesh_type == eModelType::M_SKEL && toks_count < 10) ||
+                (mesh_type == eModelType::M_SKEL_COLORED && toks_count < 12)) {
                 cerr << "Wrong number of tokens!" << endl;
                 return eCompileResult::RES_PARSE_ERROR;
             }
@@ -530,24 +558,29 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
                 for (int j : {8, 9}) {
                     uvs2.push_back(stof(toks[j]));
                 }
-            }
-
-            if (mesh_type == eModelType::M_COLORED) {
-                // parse per vertex color
+            } else if (mesh_type == eModelType::M_COLORED ||
+                       mesh_type == eModelType::M_SKEL_COLORED) {
+                // parse vertex color
                 for (int j : {8, 9, 10, 11}) {
                     vtx_colors.push_back((uint8_t)(stof(toks[j]) * 255.0f));
                 }
-            } else if (mesh_type == eModelType::M_SKEL) {
+            }
+
+            if (mesh_type == eModelType::M_SKEL ||
+                mesh_type == eModelType::M_SKEL_COLORED) {
+                const int tok_off = (mesh_type == eModelType::M_SKEL_COLORED) ? 12 : 10;
+
                 // parse joint indices and weights (limited to four bones)
-                int bones_count = (toks_count - 10) / 2;
+                int bones_count = (toks_count - tok_off) / 2;
                 int start_index = (int)weights.size();
 
                 std::pair<int32_t, float> parsed_bones[16];
                 int parsed_bones_count = 0;
                 for (int j = 0; j < bones_count; j++) {
-                    parsed_bones[parsed_bones_count].first = stoi(toks[10 + j * 2 + 0]);
+                    parsed_bones[parsed_bones_count].first =
+                        stoi(toks[tok_off + j * 2 + 0]);
                     parsed_bones[parsed_bones_count++].second =
-                        stof(toks[10 + j * 2 + 1]);
+                        stof(toks[tok_off + j * 2 + 1]);
                 }
 
                 sort(
@@ -603,8 +636,9 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
                 indices.emplace_back();
             } else {
                 const int toks_count = Tokenize(str, " \t", toks);
-                if (toks_count != 3)
+                if (toks_count != 3) {
                     return eCompileResult::RES_PARSE_ERROR;
+                }
                 for (int j : {0, 1, 2}) {
                     indices.back().push_back((uint32_t)stoi(toks[j]));
                 }
@@ -615,17 +649,20 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
 
     std::cout << "Done" << std::endl;
 
-    if (mesh_type == eModelType::M_SKEL) { // parse skeletal information
+    if (mesh_type == eModelType::M_SKEL ||
+        mesh_type == eModelType::M_SKEL_COLORED) { // parse skeletal information
         string str;
         while (getline(in_file, str)) {
             if (str.find("skeleton") != string::npos) {
-                while (str.find('{') == string::npos)
+                while (str.find('{') == string::npos) {
                     getline(in_file, str);
+                }
                 getline(in_file, str);
                 while (str.find('}') == string::npos) {
                     const int toks_count = Tokenize(str, " \t\"", toks);
-                    if (toks_count != 3)
+                    if (toks_count != 3) {
                         return eCompileResult::RES_PARSE_ERROR;
+                    }
                     out_bones.emplace_back();
                     out_bones.back().id = stoi(toks[0]);
                     if (toks[1].length() >= sizeof(OutBone().name)) {
@@ -637,14 +674,16 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
                     getline(in_file, str);
                 }
             } else if (str.find("bind_pose") != string::npos) {
-                while (str.find('{') == string::npos)
+                while (str.find('{') == string::npos) {
                     getline(in_file, str);
+                }
                 getline(in_file, str);
                 while (str.find('}') == string::npos) {
                     const int toks_count = Tokenize(str, " \t()", toks);
-                    if (toks_count != 8)
+                    if (toks_count != 8) {
                         return eCompileResult::RES_PARSE_ERROR;
-                    int bone_index = stoi(toks[0]);
+                    }
+                    const int bone_index = stoi(toks[0]);
                     for (int j : {0, 1, 2}) {
                         out_bones[bone_index].bind_pos[j] = stof(toks[1 + j]);
                     }
@@ -653,9 +692,57 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
                     }
                     getline(in_file, str);
                 }
+                break;
             }
         }
     }
+
+    std::cout << "Reading shape keys... ";
+    std::cout.flush();
+
+    /*if (mesh_type == eModelType::M_SKEL)*/ { // parse shape keys
+        string str;
+        while (getline(in_file, str)) {
+            if (str.find("ShapeKey") != string::npos) {
+                shape_keys.emplace_back();
+                ShapeKey &new_key = shape_keys.back();
+
+                { // parse name
+                    const int toks_count = Tokenize(str, " '", toks);
+                    if (toks_count != 2) {
+                        return eCompileResult::RES_PARSE_ERROR;
+                    }
+                    assert(toks[1].length() < sizeof(new_key.name));
+                    strcpy(new_key.name, toks[1].c_str());
+                }
+
+                while (str.find('{') == string::npos) {
+                    getline(in_file, str);
+                }
+                getline(in_file, str);
+                while (str.find('}') == string::npos) {
+                    const int toks_count = Tokenize(str, " ", toks);
+                    if (toks_count != 8 || toks[1] != ":") {
+                        return eCompileResult::RES_PARSE_ERROR;
+                    }
+
+                    new_key.data.emplace_back();
+                    ShapeKeyElement &key = new_key.data.back();
+                    key.index = stoi(toks[0]);
+                    key.delta.dp[0] = stof(toks[2]);
+                    key.delta.dp[1] = stof(toks[3]);
+                    key.delta.dp[2] = stof(toks[4]);
+                    key.delta.dn[0] = stof(toks[5]);
+                    key.delta.dn[1] = stof(toks[6]);
+                    key.delta.dn[2] = stof(toks[7]);
+
+                    getline(in_file, str);
+                }
+            }
+        }
+    }
+
+    std::cout << "Done" << std::endl;
 
     std::cout << "Generating tangents... ";
     std::cout.flush();
@@ -664,14 +751,15 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
         std::vector<Ren::vertex_t> vertices(num_vertices);
 
         for (int i = 0; i < num_vertices; i++) {
-            memcpy(&vertices[i].p[0], &positions[i * 3], sizeof(float) * 3);
-            memcpy(&vertices[i].n[0], &normals[i * 3], sizeof(float) * 3);
+            memcpy(&vertices[i].p[0], &positions[i * 3ull], sizeof(float) * 3);
+            memcpy(&vertices[i].n[0], &normals[i * 3ull], sizeof(float) * 3);
             memset(&vertices[i].b[0], 0, sizeof(float) * 3);
-            memcpy(&vertices[i].t[0][0], &uvs[i * 2], sizeof(float) * 2);
+            memcpy(&vertices[i].t[0][0], &uvs[i * 2ull], sizeof(float) * 2);
             if (mesh_type == eModelType::M_STATIC || mesh_type == eModelType::M_SKEL) {
-                memcpy(&vertices[i].t[1][0], &uvs2[i * 2], sizeof(float) * 2);
-            } else if (mesh_type == eModelType::M_COLORED) {
-                memcpy(&vertices[i].t[1][0], &vtx_colors[i * 4], sizeof(uint8_t) * 4);
+                memcpy(&vertices[i].t[1][0], &uvs2[i * 2ull], sizeof(float) * 2);
+            } else if (mesh_type == eModelType::M_COLORED ||
+                       mesh_type == eModelType::M_SKEL_COLORED) {
+                memcpy(&vertices[i].t[1][0], &vtx_colors[i * 4ull], sizeof(uint8_t) * 4);
             }
             vertices[i].index = i;
         }
@@ -697,7 +785,8 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
             uvs.push_back(vertices[i].t[0][0]);
             uvs.push_back(vertices[i].t[0][1]);
 
-            if (mesh_type == eModelType::M_COLORED) {
+            if (mesh_type == eModelType::M_COLORED ||
+                mesh_type == eModelType::M_SKEL_COLORED) {
                 const size_t colors_start = vtx_colors.size();
                 vtx_colors.resize(vtx_colors.size() + 4);
                 memcpy(&vtx_colors[colors_start], &vertices[i].t[1][0],
@@ -707,9 +796,21 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
                 uvs2.push_back(vertices[i].t[1][1]);
             }
 
-            if (mesh_type == eModelType::M_SKEL) {
+            if (mesh_type == eModelType::M_SKEL ||
+                mesh_type == eModelType::M_SKEL_COLORED) {
                 for (int j = 0; j < 8; j++) {
-                    weights.push_back(weights[vertices[i].index * 8 + j]);
+                    weights.push_back(weights[(size_t)vertices[i].index * 8 + j]);
+                }
+
+                for (ShapeKey &sh_key : shape_keys) {
+                    for (ShapeKeyElement &key : sh_key.data) {
+                        if (key.index == vertices[i].index) {
+                            ShapeKeyElement new_key = key;
+                            new_key.index = i;
+                            sh_key.data.push_back(new_key);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -718,6 +819,134 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
     }
 
     std::cout << "Done" << std::endl;
+
+    if (!shape_keys.empty()) {
+        std::cout << "Processing shape keys... ";
+        std::cout.flush();
+
+        // gather all vertices affected by shape keys
+        set<int> shape_keyed_vertices;
+
+        for (ShapeKey &sh_key : shape_keys) {
+            for (ShapeKeyElement &key : sh_key.data) {
+                shape_keyed_vertices.insert(key.index);
+
+                const Ren::Vec3f orig_normal = Ren::MakeVec3(&normals[key.index * 3ull]);
+                const Ren::Vec3f orig_tangent =
+                    Ren::MakeVec3(&tangents[key.index * 3ull]);
+                const Ren::Vec3f tran_normal = orig_normal + Ren::MakeVec3(key.delta.dn);
+                const Ren::Vec3f tran_binormal = Ren::Cross(tran_normal, orig_tangent);
+                const Ren::Vec3f tran_tangent =
+                    Ren::Normalize(Ren::Cross(tran_binormal, tran_normal));
+
+                key.delta.db[0] = tran_tangent[0] - orig_tangent[0];
+                key.delta.db[1] = tran_tangent[1] - orig_tangent[1];
+                key.delta.db[2] = tran_tangent[2] - orig_tangent[2];
+            }
+        }
+
+        for (ShapeKey &sh_key : shape_keys) {
+            map<int, int> index_to_key;
+            for (int i = 0; i < (int)sh_key.data.size(); i++) {
+                const ShapeKeyElement &key = sh_key.data[i];
+                index_to_key[key.index] = i;
+            }
+
+            ShapeKeyData sparse_data = std::move(sh_key.data);
+            sh_key.data.reserve(sparse_data.size());
+
+            for (const int i : shape_keyed_vertices) {
+                const auto it = index_to_key.find(i);
+                if (it != index_to_key.end()) {
+                    sh_key.data.push_back(sparse_data[it->second]);
+                } else {
+                    sh_key.data.push_back(ShapeKeyElement{});
+                }
+            }
+        }
+
+        const int keyed_vertices_start = num_vertices;
+        int vertices_processed = 0;
+        for (const int i : shape_keyed_vertices) {
+            const uint32_t old_index = uint32_t(i);
+            const uint32_t new_index =
+                uint32_t(keyed_vertices_start + vertices_processed);
+
+            { // copy vertex to the end of container
+                positions.insert(positions.end(), positions.begin() + i * 3ull,
+                                 positions.begin() + i * 3ull + 3);
+                normals.insert(normals.end(), normals.begin() + i * 3ull,
+                               normals.begin() + i * 3ull + 3);
+                tangents.insert(tangents.end(), tangents.begin() + i * 3ull,
+                                tangents.begin() + i * 3ull + 3);
+                uvs.insert(uvs.end(), uvs.begin() + i * 2ull, uvs.begin() + i * 2ull + 2);
+
+                if (mesh_type == eModelType::M_COLORED ||
+                    mesh_type == eModelType::M_SKEL_COLORED) {
+                    vtx_colors.insert(vtx_colors.end(), vtx_colors.begin() + i * 4ull,
+                                      vtx_colors.begin() + i * 4ull + 4);
+                } else {
+                    uvs2.insert(uvs2.end(), uvs2.begin() + i * 2ull,
+                                uvs2.begin() + i * 2ull + 2);
+                }
+
+                if (mesh_type == eModelType::M_SKEL ||
+                    mesh_type == eModelType::M_SKEL_COLORED) {
+                    weights.insert(weights.end(), weights.begin() + i * 8ull,
+                                   weights.begin() + i * 8ull + 8);
+                }
+            }
+
+            for (vector<uint32_t> &index_group : indices) {
+                for (uint32_t &index : index_group) {
+                    if (index == old_index) {
+                        index = new_index;
+                    }
+                }
+            }
+
+            ++vertices_processed;
+        }
+
+        for (auto it = shape_keyed_vertices.rbegin(); it != shape_keyed_vertices.rend();
+             ++it) {
+            const int i = *it;
+
+            { // delete vertex from it's old position
+                positions.erase(positions.begin() + i * 3ull,
+                                positions.begin() + i * 3ull + 3);
+                normals.erase(normals.begin() + i * 3ull, normals.begin() + i * 3ull + 3);
+                tangents.erase(tangents.begin() + i * 3ull,
+                               tangents.begin() + i * 3ull + 3);
+                uvs.erase(uvs.begin() + i * 2ull, uvs.begin() + i * 2ull + 2);
+
+                if (mesh_type == eModelType::M_COLORED ||
+                    mesh_type == eModelType::M_SKEL_COLORED) {
+                    vtx_colors.erase(vtx_colors.begin() + i * 4ull,
+                                     vtx_colors.begin() + i * 4ull + 4);
+                } else {
+                    uvs2.erase(uvs2.begin() + i * 2ull, uvs2.begin() + i * 2ull + 2);
+                }
+
+                if (mesh_type == eModelType::M_SKEL ||
+                    mesh_type == eModelType::M_SKEL_COLORED) {
+                    weights.erase(weights.begin() + i * 8ull,
+                                  weights.begin() + i * 8ull + 8);
+                }
+            }
+
+            // not effective, but ok for now
+            for (vector<uint32_t> &index_group : indices) {
+                for (uint32_t &index : index_group) {
+                    if (index > uint32_t(i)) {
+                        --index;
+                    }
+                }
+            }
+        }
+
+        std::cout << "Done" << std::endl;
+    }
 
     if (optimize) {
         std::cout << "Optimizing mesh... ";
@@ -826,6 +1055,8 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
         out_file.write("COLORE_MESH\0", 12);
     } else if (mesh_type == eModelType::M_SKEL) {
         out_file.write("SKELET_MESH\0", 12);
+    } else if (mesh_type == eModelType::M_SKEL_COLORED) {
+        out_file.write("SKECOL_MESH\0", 12);
     }
 
     enum eFileChunk {
@@ -834,7 +1065,8 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
         CH_VTX_NDX,
         CH_MATERIALS,
         CH_STRIPS,
-        CH_BONES
+        CH_BONES,
+        CH_SHAPE_KEYS
     };
 
     struct ChunkPos {
@@ -843,73 +1075,85 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
 
     struct Header {
         int32_t num_chunks;
-        ChunkPos p[6];
+        ChunkPos p[7];
     } file_header;
 
-    size_t header_size = sizeof(Header);
     if (mesh_type == eModelType::M_STATIC || mesh_type == eModelType::M_COLORED) {
-        header_size -= sizeof(ChunkPos);
         file_header.num_chunks = 5;
     } else {
         file_header.num_chunks = 6;
+        if (!shape_keys.empty()) {
+            file_header.num_chunks++;
+        }
     }
-
+    size_t header_size = sizeof(int32_t) + file_header.num_chunks * sizeof(ChunkPos);
     size_t file_offset = 12 + header_size;
 
     file_header.p[CH_MESH_INFO].offset = (int32_t)file_offset;
     file_header.p[CH_MESH_INFO].length = sizeof(mesh_info);
-
     file_offset += file_header.p[CH_MESH_INFO].length;
+
     file_header.p[CH_VTX_ATTR].offset = (int32_t)file_offset;
-    if (mesh_type == eModelType::M_COLORED) {
-        file_header.p[CH_VTX_ATTR].length =
-            (int32_t)(sizeof(float) * (positions.size() / 3) * 11 +
-                      sizeof(uint8_t) * vtx_colors.size());
+    if (mesh_type == eModelType::M_COLORED || mesh_type == eModelType::M_SKEL_COLORED) {
+        file_header.p[CH_VTX_ATTR].length = (int32_t)(
+            sizeof(float) * (positions.size() / 3) * 11 +
+            sizeof(uint8_t) * vtx_colors.size() + sizeof(float) * weights.size());
     } else {
         file_header.p[CH_VTX_ATTR].length = (int32_t)(
             sizeof(float) * (positions.size() / 3) * 13 + sizeof(float) * weights.size());
     }
-
     file_offset += file_header.p[CH_VTX_ATTR].length;
+
     file_header.p[CH_VTX_NDX].offset = (int32_t)file_offset;
     file_header.p[CH_VTX_NDX].length = (int32_t)(sizeof(uint32_t) * total_indices.size());
-
     file_offset += file_header.p[CH_VTX_NDX].length;
+
     file_header.p[CH_MATERIALS].offset = (int32_t)file_offset;
     file_header.p[CH_MATERIALS].length = (int32_t)(64 * materials.size());
-
     file_offset += file_header.p[CH_MATERIALS].length;
+
     file_header.p[CH_STRIPS].offset = (int32_t)file_offset;
     file_header.p[CH_STRIPS].length = (int32_t)(sizeof(MeshChunk) * total_chunks.size());
+    file_offset += file_header.p[CH_STRIPS].length;
 
-    if (mesh_type == eModelType::M_SKEL) {
-        //file_header.num_chunks++;
-        file_offset += file_header.p[CH_STRIPS].length;
+    if (mesh_type == eModelType::M_SKEL || mesh_type == eModelType::M_SKEL_COLORED) {
         file_header.p[CH_BONES].offset = (int32_t)file_offset;
         file_header.p[CH_BONES].length = (int32_t)(100 * out_bones.size());
+        file_offset += file_header.p[CH_BONES].length;
+
+        if (!shape_keys.empty()) {
+            file_header.p[CH_SHAPE_KEYS].offset = (int32_t)file_offset;
+            file_header.p[CH_SHAPE_KEYS].length = int32_t(
+                2 * sizeof(uint32_t) +
+                shape_keys.size() * (64 + shape_keys[0].data.size() *
+                                              (3 * sizeof(float) + 3 * sizeof(float) +
+                                               3 * sizeof(float))));
+            file_offset += file_header.p[CH_SHAPE_KEYS].length;
+        }
     }
 
     out_file.write((char *)&file_header, header_size);
     out_file.write((char *)&mesh_info, sizeof(MeshInfo));
 
     for (unsigned i = 0; i < positions.size() / 3; i++) {
-        out_file.write((char *)&positions[i * 3], sizeof(float) * 3);
-        out_file.write((char *)&normals[i * 3], sizeof(float) * 3);
-        out_file.write((char *)&tangents[i * 3], sizeof(float) * 3);
-        out_file.write((char *)&uvs[i * 2], sizeof(float) * 2);
+        out_file.write((char *)&positions[i * 3ull], sizeof(float) * 3);
+        out_file.write((char *)&normals[i * 3ull], sizeof(float) * 3);
+        out_file.write((char *)&tangents[i * 3ull], sizeof(float) * 3);
+        out_file.write((char *)&uvs[i * 2ull], sizeof(float) * 2);
         if (mesh_type == eModelType::M_STATIC || mesh_type == eModelType::M_SKEL) {
-            out_file.write((char *)&uvs2[i * 2], sizeof(float) * 2);
-        } else if (mesh_type == eModelType::M_COLORED) {
-            out_file.write((char *)&vtx_colors[i * 4], sizeof(uint8_t) * 4);
+            out_file.write((char *)&uvs2[i * 2ull], sizeof(float) * 2);
+        } else if (mesh_type == eModelType::M_COLORED ||
+                   mesh_type == eModelType::M_SKEL_COLORED) {
+            out_file.write((char *)&vtx_colors[i * 4ull], sizeof(uint8_t) * 4);
         }
-        if (mesh_type == eModelType::M_SKEL) {
-            out_file.write((char *)&weights[i * 8], sizeof(float) * 8);
+        if (mesh_type == eModelType::M_SKEL || mesh_type == eModelType::M_SKEL_COLORED) {
+            out_file.write((char *)&weights[i * 8ull], sizeof(float) * 8);
         }
     }
 
     out_file.write((char *)&total_indices[0], sizeof(uint32_t) * total_indices.size());
 
-    for (std::string &str : materials) {
+    for (const std::string &str : materials) {
         char name[64]{};
         strcpy(name, str.c_str());
         strcat(name, ".txt");
@@ -918,13 +1162,32 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
 
     out_file.write((char *)&total_chunks[0], sizeof(MeshChunk) * total_chunks.size());
 
-    if (mesh_type == eModelType::M_SKEL) {
-        for (OutBone &bone : out_bones) {
+    if (mesh_type == eModelType::M_SKEL || mesh_type == eModelType::M_SKEL_COLORED) {
+        for (const OutBone &bone : out_bones) {
             out_file.write((char *)&bone.name, 64);
             out_file.write((char *)&bone.id, sizeof(int32_t));
             out_file.write((char *)&bone.parent_id, sizeof(int32_t));
             out_file.write((char *)&bone.bind_pos, sizeof(float) * 3);
             out_file.write((char *)&bone.bind_rot, sizeof(float) * 4);
+        }
+
+        if (!shape_keys.empty()) {
+            const uint32_t shape_keyed_vertices_start =
+                uint32_t(num_vertices - shape_keys[0].data.size());
+            const uint32_t shape_keyed_vertices_count =
+                uint32_t(shape_keys[0].data.size());
+
+            out_file.write((char *)&shape_keyed_vertices_start, sizeof(uint32_t));
+            out_file.write((char *)&shape_keyed_vertices_count, sizeof(uint32_t));
+
+            for (const ShapeKey &sh_key : shape_keys) {
+                out_file.write(sh_key.name, 64);
+                for (const ShapeKeyElement &sh_el : sh_key.data) {
+                    out_file.write((char *)sh_el.delta.dp, 3 * sizeof(float));
+                    out_file.write((char *)sh_el.delta.dn, 3 * sizeof(float));
+                    out_file.write((char *)sh_el.delta.db, 3 * sizeof(float));
+                }
+            }
         }
     }
 
@@ -966,6 +1229,12 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name,
         OutAnimBone() : name{}, parent_name{}, anim_type(0) {}
     };
 
+    struct OutAnimShape {
+        char name[64];
+
+        OutAnimShape() : name{} {}
+    };
+
     struct OutAnimInfo {
         char name[64];
         int32_t fps, len;
@@ -974,6 +1243,7 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name,
     } anim_info;
 
     vector<OutAnimBone> out_bones;
+    vector<OutAnimShape> out_shapes;
     vector<float> frames;
     int frame_size = 0;
 
@@ -987,23 +1257,47 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name,
         getline(in_file, str);
         while (str.find('}') == string::npos) {
             const int toks_count = Tokenize(str, " \"", toks);
-            if (toks_count < 3)
+            if (toks_count < 3) {
                 return eCompileResult::RES_PARSE_ERROR;
-            OutAnimBone b;
+            }
+            out_bones.emplace_back();
+            OutAnimBone &new_bone = out_bones.back();
             if (toks[1] == "RT") {
-                b.anim_type = int32_t(eAnimType::RotationTranslation);
+                new_bone.anim_type = int32_t(eAnimType::RotationTranslation);
                 frame_size += 7;
             } else if (toks[1] == "R") {
-                b.anim_type = int32_t(eAnimType::Rotation);
+                new_bone.anim_type = int32_t(eAnimType::Rotation);
                 frame_size += 3;
             }
-            strcpy(b.name, toks[2].c_str());
+            strcpy(new_bone.name, toks[2].c_str());
             if (toks_count > 3) {
-                strcpy(b.parent_name, toks[3].c_str());
+                strcpy(new_bone.parent_name, toks[3].c_str());
             } else {
-                strcpy(b.parent_name, "None");
+                strcpy(new_bone.parent_name, "None");
             }
-            out_bones.push_back(b);
+            getline(in_file, str);
+        }
+    }
+
+    { // parse shapes info
+        string str;
+        getline(in_file, str);
+        if (str != "shapes") {
+            return eCompileResult::RES_PARSE_ERROR;
+        }
+        getline(in_file, str);
+        if (str != "{") {
+            return eCompileResult::RES_PARSE_ERROR;
+        }
+        getline(in_file, str);
+        while (str.find('}') == string::npos) {
+            const int toks_count = Tokenize(str, " \"", toks);
+            if (toks_count != 2) {
+                return eCompileResult::RES_PARSE_ERROR;
+            }
+            out_shapes.emplace_back();
+            OutAnimShape &new_shape = out_shapes.back();
+            strcpy(new_shape.name, toks[1].c_str());
             getline(in_file, str);
         }
     }
@@ -1012,8 +1306,9 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name,
         string str;
         getline(in_file, str);
         const int toks_count = Tokenize(str, " []/", toks);
-        if (toks_count != 3)
+        if (toks_count != 3) {
             return eCompileResult::RES_PARSE_ERROR;
+        }
         strcpy(anim_info.name, toks[0].c_str());
         anim_info.len = stoi(toks[1]);
         anim_info.fps = stoi(toks[2]);
@@ -1027,21 +1322,31 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name,
             getline(in_file, str);
             for (int j = 0; j < (int)out_bones.size(); j++) {
                 getline(in_file, str);
-                Tokenize(str, " ", toks);
-                for (int k = 1; k < ((out_bones[j].anim_type ==
-                                      int32_t(eAnimType::RotationTranslation))
-                                         ? 8
-                                         : 5);
-                     k++) {
+                const int toks_count = Tokenize(str, " ", toks);
+                if ((out_bones[j].anim_type == int32_t(eAnimType::RotationTranslation) &&
+                     toks_count != 8) ||
+                    (out_bones[j].anim_type == int32_t(eAnimType::Rotation) &&
+                     toks_count != 5)) {
+                    return eCompileResult::RES_PARSE_ERROR;
+                }
+                for (int k = 1; k < toks_count; k++) {
                     frames.push_back(stof(toks[k]));
                 }
+            }
+            for (int j = 0; j < (int)out_shapes.size(); j++) {
+                getline(in_file, str);
+                const int toks_count = Tokenize(str, " ", toks);
+                if (toks_count != 2) {
+                    return eCompileResult::RES_PARSE_ERROR;
+                }
+                frames.push_back(stof(toks[1]));
             }
         }
     }
 
     // Write output file
 
-    enum eFileChunk { CH_SKELETON, CH_ANIM_INFO, CH_FRAMES };
+    enum eFileChunk { CH_SKELETON, CH_SHAPES, CH_ANIM_INFO, CH_FRAMES };
 
     struct ChunkPos {
         int32_t offset, length;
@@ -1052,22 +1357,26 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name,
 
     struct Header {
         int32_t num_chunks;
-        ChunkPos p[3];
+        ChunkPos p[4];
     } file_header;
 
-    static_assert(sizeof(Header) == 28, "fix struct packing!");
+    static_assert(sizeof(Header) == 36, "fix struct packing!");
     static_assert(offsetof(Header, p) == 4, "!");
 
     size_t file_offset = 12 + sizeof(Header);
-    file_header.num_chunks = 3;
+    file_header.num_chunks = 4;
     file_header.p[CH_SKELETON].offset = (int32_t)file_offset;
     file_header.p[CH_SKELETON].length = (int32_t)(sizeof(OutAnimBone) * out_bones.size());
-
     file_offset += file_header.p[CH_SKELETON].length;
+
+    file_header.p[CH_SHAPES].offset = (int32_t)file_offset;
+    file_header.p[CH_SHAPES].length = (int32_t)(sizeof(OutAnimShape) * out_shapes.size());
+    file_offset += file_header.p[CH_SHAPES].length;
+
     file_header.p[CH_ANIM_INFO].offset = (int32_t)file_offset;
     file_header.p[CH_ANIM_INFO].length = (int32_t)(sizeof(OutAnimInfo));
-
     file_offset += file_header.p[CH_ANIM_INFO].length;
+
     file_header.p[CH_FRAMES].offset = (int32_t)file_offset;
     file_header.p[CH_FRAMES].length = (int32_t)(sizeof(float) * frames.size());
 
@@ -1076,13 +1385,20 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name,
 
     out_file.write((char *)&file_header, sizeof(Header));
 
-    out_file.write((char *)&out_bones[0], file_header.p[CH_SKELETON].length);
+    if (!out_bones.empty()) {
+        out_file.write((char *)&out_bones[0], file_header.p[CH_SKELETON].length);
+    }
+    if (!out_shapes.empty()) {
+        out_file.write((char *)&out_shapes[0], file_header.p[CH_SHAPES].length);
+    }
     out_file.write((char *)&anim_info, file_header.p[CH_ANIM_INFO].length);
     out_file.write((char *)&frames[0], file_header.p[CH_FRAMES].length);
 
     cout << "*** Anim info ***" << endl;
     cout << "Name:\t" << anim_info.name << endl;
     cout << "Bones:\t" << out_bones.size() << endl;
+    cout << "Shapes:\t" << out_shapes.size() << endl;
+    cout << "*****************" << endl;
 
     return eCompileResult::RES_SUCCESS;
 }
@@ -1116,9 +1432,9 @@ ModlApp::GenerateOcclusion(const std::vector<float> &positions,
             tri_indices.push_back(i1);
             tri_indices.push_back(i2);
 
-            const Ren::Vec3f v0 = Ren::MakeVec3(&positions[3 * i0]);
-            const Ren::Vec3f v1 = Ren::MakeVec3(&positions[3 * i1]);
-            const Ren::Vec3f v2 = Ren::MakeVec3(&positions[3 * i2]);
+            const Ren::Vec3f v0 = Ren::MakeVec3(&positions[3ull * i0]);
+            const Ren::Vec3f v1 = Ren::MakeVec3(&positions[3ull * i1]);
+            const Ren::Vec3f v2 = Ren::MakeVec3(&positions[3ull * i2]);
 
             primitives.emplace_back();
             prim_t &new_prim = primitives.back();

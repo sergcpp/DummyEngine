@@ -25,7 +25,7 @@ enum class eCamPlane {
     FarPlane
 };
 
-enum class eVisibilityResult { Invisible, FullyVisible, PartiallyVisible };
+enum class eVisResult { Invisible, FullyVisible, PartiallyVisible };
 
 struct Frustum {
     Plane planes[8] = {Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize},
@@ -34,9 +34,9 @@ struct Frustum {
                        Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize}};
     int planes_count = 6;
 
-    eVisibilityResult CheckVisibility(const Vec3f &point) const;
-    eVisibilityResult CheckVisibility(const float bbox[8][3]) const;
-    eVisibilityResult CheckVisibility(const Vec3f &bbox_min, const Vec3f &bbox_max) const;
+    eVisResult CheckVisibility(const Vec3f &point) const;
+    eVisResult CheckVisibility(const float bbox[8][3]) const;
+    eVisResult CheckVisibility(const Vec3f &bbox_min, const Vec3f &bbox_max) const;
 };
 
 class Camera {
@@ -90,9 +90,9 @@ class Camera {
 
     void UpdatePlanes();
 
-    eVisibilityResult CheckFrustumVisibility(const Vec3f &point) const;
-    eVisibilityResult CheckFrustumVisibility(const float bbox[8][3]) const;
-    eVisibilityResult CheckFrustumVisibility(const Vec3f &bbox_min,
+    eVisResult CheckFrustumVisibility(const Vec3f &point) const;
+    eVisResult CheckFrustumVisibility(const float bbox[8][3]) const;
+    eVisResult CheckFrustumVisibility(const Vec3f &bbox_min,
                                              const Vec3f &bbox_max) const;
 
     // returns radius

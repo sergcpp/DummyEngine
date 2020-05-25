@@ -73,10 +73,11 @@ static_assert(sizeof(InstanceData) == 64, "!");
 struct DepthDrawBatch { // NOLINT
     union {
         struct {
-            uint32_t _pad1 : 2;
             uint32_t indices_offset : 28;
+            uint32_t moving_bit : 1;
             uint32_t vegetation_bit : 1;
             uint32_t alpha_test_bit : 1;
+            uint32_t skinned_bit : 1;
         };
         uint32_t sort_key = 0;
     };
@@ -143,9 +144,8 @@ static_assert(sizeof(SkinTransform) == 48, "!");
 
 struct SkinRegion {
     uint32_t in_vtx_offset, out_vtx_offset;
-    uint16_t xform_offset, vertex_count;
+    uint32_t xform_offset, vertex_count;
 };
-static_assert(sizeof(SkinRegion) == 12, "!");
 
 enum eRenderFlags : uint32_t {
     EnableZFill     = (1u << 0u),

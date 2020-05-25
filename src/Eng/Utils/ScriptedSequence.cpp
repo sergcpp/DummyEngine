@@ -389,10 +389,12 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
     assert(scene.comp_store[CompAnimState]->IsSequential());
 
     if (action.type == eActionType::Play) {
-        SceneObject* actor_obj = scene_manager_.GetObject(target_actor);
+        SceneObject *actor_obj = scene_manager_.GetObject(target_actor);
 
         const float t = float(time_cur_s - action.time_beg);
         const float t_norm = t / float(action.time_end - action.time_beg);
+
+        uint32_t invalidate_mask = 0;
 
         { // update position
             Transform &tr = transforms[actor_obj->components[CompTransform]];
@@ -400,6 +402,7 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
             const Ren::Vec3f new_rot =
                 Mix(Ren::MakeVec3(action.rot_beg), Ren::MakeVec3(action.rot_end), t_norm);
 
+            tr.prev_mat = tr.mat;
             tr.mat = Ren::Mat4f{1.0f};
             tr.mat = Ren::Rotate(tr.mat, new_rot[2] * Ren::Pi<float>() / 180.0f,
                                  Ren::Vec3f{0.0f, 0.0f, 1.0f});
@@ -411,21 +414,31 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
             const Ren::Vec3f new_pos =
                 Mix(Ren::MakeVec3(action.pos_beg), Ren::MakeVec3(action.pos_end), t_norm);
             memcpy(&tr.mat[3][0], ValuePtr(new_pos), 3 * sizeof(float));
+
+            if (memcmp(ValuePtr(tr.prev_mat), ValuePtr(tr.mat), sizeof(Ren::Mat4f)) !=
+                0) {
+                invalidate_mask |= CompTransformBit;
+            }
         }
 
         { // update skeleton
             Drawable &dr = drawables[actor_obj->components[CompDrawable]];
             AnimState &as = anim_states[actor_obj->components[CompAnimState]];
+
+            // keep previous palette for velocity calculation
+            std::swap(as.matr_palette_curr, as.matr_palette_prev);
+
             Ren::Mesh *target_mesh = dr.mesh.get();
             Ren::Skeleton *target_skel = target_mesh->skel();
 
             target_skel->UpdateAnim(action.anim_id, t);
             target_skel->ApplyAnim(action.anim_id);
-            target_skel->UpdateBones(as.matr_palette);
+            target_skel->UpdateBones(&as.matr_palette_curr[0]);
+
+            invalidate_mask |= CompDrawableBit;
         }
 
-        scene_manager_.InvalidateObjects(&target_actor, 1,
-                                         CompTransformBit | CompDrawableBit);
+        scene_manager_.InvalidateObjects(&target_actor, 1, invalidate_mask);
 
         if (!action.caption.empty()) {
             const double vis0 =

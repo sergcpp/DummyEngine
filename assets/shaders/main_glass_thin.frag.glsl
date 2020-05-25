@@ -70,7 +70,7 @@ void main(void) {
     
     vec3 view_ray_ws = normalize(aVertexPos_ - shrd_data.uCamPosAndGamma.xyz);
     
-    const float R0 = 0.15f;
+    const float R0 = 0.04f;
     float factor = pow5(clamp(1.0 - dot(normal, -view_ray_ws), 0.0, 1.0));
     float fresnel = clamp(R0 + (1.0 - R0) * factor, 0.0, 1.0);
     

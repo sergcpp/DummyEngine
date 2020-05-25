@@ -63,7 +63,7 @@ class ModlApp {
     void *gl_ctx_ = nullptr;
     uint32_t simple_vao_ = 0, skinned_vao_ = 0;
     uint32_t last_vertex_buf1_ = 0, last_vertex_buf2_, last_skin_vertex_buffer_ = 0,
-             last_index_buffer_ = 0;
+             last_delta_buffer_ = 0, last_index_buffer_ = 0;
     uint32_t uniform_buf_ = 0;
 
     void CheckInitVAOs();
@@ -80,8 +80,11 @@ class ModlApp {
     Ren::Texture2DRef checker_tex_;
 
     float angle_x_ = 0.0f, angle_y_ = 0.0f;
+    float offset_x_ = 0.0f, offset_y_ = 0.0f;
     float view_dist_ = 10.0f;
-    bool mouse_grabbed_ = false;
+    int grabbed_pointer_ = -1;
+
+    int shape_key_index_ = -1;
 
     enum class eViewMode {
         Diffuse,

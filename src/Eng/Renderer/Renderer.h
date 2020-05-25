@@ -49,21 +49,24 @@ class Renderer {
     SWcull_ctx cull_ctx_;
     Ren::ProgramRef skydome_prog_, fillz_solid_prog_, fillz_vege_solid_prog_,
         fillz_vege_solid_vel_prog_, fillz_transp_prog_, fillz_vege_transp_prog_,
-        fillz_vege_transp_vel_prog_, shadow_solid_prog_, shadow_vege_solid_prog_,
-        shadow_transp_prog_, shadow_vege_transp_prog_, blit_prog_, blit_ms_prog_,
-        blit_combine_prog_, blit_combine_ms_prog_, blit_red_prog_, blit_down_prog_,
-        blit_down_ms_prog_, blit_down_depth_prog_, blit_down_depth_ms_prog_,
-        blit_dof_init_coc_prog_, blit_dof_bilateral_prog_, blit_dof_calc_near_prog_,
-        blit_dof_small_blur_prog_, blit_dof_combine_prog_, blit_dof_combine_ms_prog_,
-        blit_gauss_prog_, blit_gauss_sep_prog_, blit_bilateral_prog_, blit_upscale_prog_,
-        blit_upscale_ms_prog_, blit_debug_prog_, blit_debug_ms_prog_, blit_ssr_prog_,
-        blit_ssr_ms_prog_, blit_ssr_compose_prog_, blit_ssr_compose_ms_prog_,
-        blit_ssr_dilate_prog_, blit_ms_resolve_prog_, blit_ao_prog_, blit_multiply_prog_,
-        blit_multiply_ms_prog_, blit_debug_bvh_prog_, blit_debug_bvh_ms_prog_,
-        blit_depth_prog_, blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_,
-        blit_project_sh_prog_, blit_fxaa_prog_, blit_taa_prog_, blit_static_vel_prog_,
-        blit_transparent_compose_prog_, blit_transparent_compose_ms_prog_,
-        blit_transparent_init_prog_, probe_prog_, ellipsoid_prog_, skinning_prog_;
+        fillz_vege_transp_vel_prog_, fillz_skin_solid_prog_, fillz_skin_solid_vel_prog_,
+        fillz_skin_solid_vel_mov_prog_, fillz_skin_transp_prog_,
+        fillz_skin_transp_vel_prog_, fillz_skin_transp_vel_mov_prog_, shadow_solid_prog_,
+        shadow_vege_solid_prog_, shadow_transp_prog_, shadow_vege_transp_prog_,
+        blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_combine_ms_prog_,
+        blit_red_prog_, blit_down_prog_, blit_down_ms_prog_, blit_down_depth_prog_,
+        blit_down_depth_ms_prog_, blit_dof_init_coc_prog_, blit_dof_bilateral_prog_,
+        blit_dof_calc_near_prog_, blit_dof_small_blur_prog_, blit_dof_combine_prog_,
+        blit_dof_combine_ms_prog_, blit_gauss_prog_, blit_gauss_sep_prog_,
+        blit_bilateral_prog_, blit_upscale_prog_, blit_upscale_ms_prog_, blit_debug_prog_,
+        blit_debug_ms_prog_, blit_ssr_prog_, blit_ssr_ms_prog_, blit_ssr_compose_prog_,
+        blit_ssr_compose_ms_prog_, blit_ssr_dilate_prog_, blit_ms_resolve_prog_,
+        blit_ao_prog_, blit_multiply_prog_, blit_multiply_ms_prog_, blit_debug_bvh_prog_,
+        blit_debug_bvh_ms_prog_, blit_depth_prog_, blit_rgbm_prog_, blit_mipmap_prog_,
+        blit_prefilter_prog_, blit_project_sh_prog_, blit_fxaa_prog_, blit_taa_prog_,
+        blit_static_vel_prog_, blit_transparent_compose_prog_,
+        blit_transparent_compose_ms_prog_, blit_transparent_init_prog_, probe_prog_,
+        ellipsoid_prog_, skinning_prog_;
     Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_,
         brdf_lut_, cone_rt_lut_, noise_tex_;
 
@@ -85,7 +88,7 @@ class Renderer {
 #if !defined(__ANDROID__)
         (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap |
          EnableLights | EnableDecals | EnableShadows /*| EnableOIT*/ | EnableTonemap |
-         EnableBloom | EnableMsaa | EnableFxaa | EnableTimers |
+         EnableBloom | EnableTaa /*EnableMsaa | EnableFxaa*/ | EnableTimers |
          EnableDOF /*| DebugEllipsoids*/);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights |
@@ -139,8 +142,8 @@ class Renderer {
 
     uint32_t unif_shared_data_block_[FrameSyncWindow];
     uint32_t temp_vao_, fs_quad_vao_, depth_pass_solid_vao_, depth_pass_vege_solid_vao_,
-        depth_pass_transp_vao_, depth_pass_vege_transp_vao_, draw_pass_vao_, skydome_vao_,
-        sphere_vao_;
+        depth_pass_transp_vao_, depth_pass_vege_transp_vao_, depth_pass_skin_solid_vao_,
+        depth_pass_skin_transp_vao_, draw_pass_vao_, skydome_vao_, sphere_vao_;
     uint32_t temp_buf1_vtx_offset_, temp_buf2_vtx_offset_, temp_buf_ndx_offset_,
         skydome_vtx1_offset_, skydome_vtx2_offset_, skydome_ndx_offset_,
         sphere_vtx1_offset_, sphere_vtx2_offset_, sphere_ndx_offset_, quad_vtx1_offset_,
@@ -148,7 +151,7 @@ class Renderer {
         skinned_buf2_vtx_offset_;
     uint32_t last_vertex_buf1_ = 0, last_vertex_buf2_ = 0, last_index_buffer_ = 0;
     uint32_t instances_buf_, instances_tbo_[FrameSyncWindow], skin_transforms_buf_,
-        skin_transforms_tbo_, skin_regions_buf_, skin_regions_tbo_;
+        skin_transforms_tbo_;
     uint32_t lights_buf_, lights_tbo_[FrameSyncWindow], decals_buf_,
         decals_tbo_[FrameSyncWindow], cells_buf_, cells_tbo_[FrameSyncWindow], items_buf_,
         items_tbo_[FrameSyncWindow];

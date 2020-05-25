@@ -61,6 +61,42 @@ static const char fillz_vege_transp_vel_vs[] =
 #undef __ADDITIONAL_DEFINES_STR__
 
 #define __ADDITIONAL_DEFINES_STR__ ""
+static const char fillz_skin_solid_vs[] =
+#include "Shaders/fillz_skin.vert.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ "#define OUTPUT_VELOCITY"
+static const char fillz_skin_solid_vel_vs[] =
+#include "Shaders/fillz_skin.vert.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ "#define OUTPUT_VELOCITY\n#define MOVING_PERM"
+static const char fillz_skin_solid_vel_mov_vs[] =
+#include "Shaders/fillz_skin.vert.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM"
+static const char fillz_skin_transp_vs[] =
+#include "Shaders/fillz_skin.vert.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM\n#define OUTPUT_VELOCITY"
+static const char fillz_skin_transp_vel_vs[] =
+#include "Shaders/fillz_skin.vert.glsl"
+;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM\n#define OUTPUT_VELOCITY\n#define MOVING_PERM"
+static const char fillz_skin_transp_vel_mov_vs[] =
+#include "Shaders/fillz_skin.vert.glsl"
+    ;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ ""
 static const char shadow_solid_vs[] =
 #include "Shaders/shadow.vert.glsl"
 ;

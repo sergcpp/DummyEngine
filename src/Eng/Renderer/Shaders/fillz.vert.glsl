@@ -26,6 +26,7 @@ layout(location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BA
 
 #ifdef TRANSPARENT_PERM
 out vec2 aVertexUVs1_;
+out vec3 aVertexObjCoord_;
 #endif
 
 invariant gl_Position;
@@ -33,19 +34,14 @@ invariant gl_Position;
 void main() {
     int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
 
-    mat4 MMatrix;
-    MMatrix[0] = texelFetch(instances_buffer, instance * 4 + 0);
-    MMatrix[1] = texelFetch(instances_buffer, instance * 4 + 1);
-    MMatrix[2] = texelFetch(instances_buffer, instance * 4 + 2);
-    MMatrix[3] = vec4(0.0, 0.0, 0.0, 1.0);
-
-    MMatrix = transpose(MMatrix);
+    mat4 model_matrix = FetchModelMatrix(instances_buffer, instance);
 
 #ifdef TRANSPARENT_PERM
     aVertexUVs1_ = aVertexUVs1;
+    aVertexObjCoord_ = aVertexPosition;
 #endif
 
-    vec3 vertex_position_ws = (MMatrix * vec4(aVertexPosition, 1.0)).xyz;
+    vec3 vertex_position_ws = (model_matrix * vec4(aVertexPosition, 1.0)).xyz;
     gl_Position = shrd_data.uViewProjMatrix * vec4(vertex_position_ws, 1.0);
 } 
 )"

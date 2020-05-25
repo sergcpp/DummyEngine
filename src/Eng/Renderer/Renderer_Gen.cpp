@@ -304,7 +304,6 @@ std::unique_ptr<int16_t[]> Renderer::Generate_RandDirs(const int res,
     for (int i = 0; i < res * res; i++) {
         angles[i] = Ren::Pi<float>() * (2.0f * float(i) / float(res * res) - 1.0f);
     }
-
     std::shuffle(std::begin(angles), std::begin(angles) + res * res,
                  std::default_random_engine(0));
 
@@ -407,12 +406,12 @@ std::unique_ptr<uint8_t[]> Renderer::Generate_ConeTraceLUT(const int resx, const
                     const float cos_angle = std::cos(2.0f * Ren::Pi<float>() * rnd[1]);
                     const float sin_angle = std::sin(2.0f * Ren::Pi<float>() * rnd[1]);
 
-                    const Ren::Vec3f ray_dir = Ren::Normalize(dir *sin_angle *B +
-                        std::sqrt(1.0f - dir) * cone_dir +
+                    const Ren::Vec3f ray_dir = Ren::Normalize(
+                        dir * sin_angle * B + std::sqrt(1.0f - dir) * cone_dir +
                         dir * cos_angle * T);
 
-                    if (intersect_sphere(Ren::Vec3f{ 0.0f, sph_dist, 0.0f }, 1.0f,
-                        Ren::Vec3f{ 0.0f, 0.0f, 0.0f }, ray_dir)) {
+                    if (intersect_sphere(Ren::Vec3f{0.0f, sph_dist, 0.0f}, 1.0f,
+                                         Ren::Vec3f{0.0f, 0.0f, 0.0f}, ray_dir)) {
                         occluded_rays++;
                     }
                 }
