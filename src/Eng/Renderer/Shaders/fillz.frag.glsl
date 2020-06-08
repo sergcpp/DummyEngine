@@ -17,10 +17,12 @@ layout (std140) uniform SharedDataBlock {
 #ifdef TRANSPARENT_PERM
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D alphatest_texture;
 
+#ifdef HASHED_TRANSPARENCY
 layout(location = 3) uniform float hash_scale;
+in vec3 aVertexObjCoord_;
+#endif
 
 in vec2 aVertexUVs1_;
-in vec3 aVertexObjCoord_;
 #endif
 
 #ifdef OUTPUT_VELOCITY
@@ -32,8 +34,7 @@ out vec2 outVelocity;
 
 float hash(vec2 v) {
     return fract(1.0e4 * sin(17.0 * v.x + 0.1 * v.y) *
-                 (0.1 + abs(sin(13.0 * v.y + v.x)))
-                 );
+                 (0.1 + abs(sin(13.0 * v.y + v.x))));
 }
 
 float hash3D(vec3 v) {
@@ -43,8 +44,8 @@ float hash3D(vec3 v) {
 void main() {
 #ifdef TRANSPARENT_PERM
     float tx_alpha = texture(alphatest_texture, aVertexUVs1_).a;
-#if 0
-    if (tx_alpha < 0.5) discard;
+#ifndef HASHED_TRANSPARENCY
+    if (tx_alpha < 0.9) discard;
 #else
     float max_deriv = max(length(dFdx(aVertexObjCoord_)),
                           length(dFdy(aVertexObjCoord_)));

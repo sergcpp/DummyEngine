@@ -11,15 +11,16 @@ namespace Ren {
 bool IsMainThread();
 }
 
-Ren::Material::Material(
-        const char *name, const char *mat_src, eMatLoadStatus *status,
-        const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log) {
-    name_ = String{ name };
+Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *status,
+                        const program_load_callback &on_prog_load,
+                        const texture_load_callback &on_tex_load, ILog *log) {
+    name_ = String{name};
     Init(mat_src, status, on_prog_load, on_tex_load, log);
 }
 
-Ren::Material::Material(const char *name, uint32_t flags, ProgramRef programs[], Texture2DRef textures[], const Vec4f params[], ILog *log) {
-    name_ = String{ name };
+Ren::Material::Material(const char *name, uint32_t flags, ProgramRef programs[],
+                        Texture2DRef textures[], const Vec4f params[], ILog *log) {
+    name_ = String{name};
     Init(flags, programs, textures, params, log);
 }
 
@@ -42,7 +43,8 @@ Ren::Material &Ren::Material::operator=(Material &&rhs) noexcept {
     return *this;
 }
 
-void Ren::Material::Init(uint32_t flags, ProgramRef programs[], Texture2DRef textures[], const Vec4f params[], ILog *log) {
+void Ren::Material::Init(uint32_t flags, ProgramRef programs[], Texture2DRef textures[],
+                         const Vec4f params[], ILog *log) {
     assert(IsMainThread());
     flags_ = flags;
     ready_ = true;
@@ -57,17 +59,18 @@ void Ren::Material::Init(uint32_t flags, ProgramRef programs[], Texture2DRef tex
     }
 }
 
-void Ren::Material::Init(
-        const char *mat_src, eMatLoadStatus *status,
-        const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log) {
+void Ren::Material::Init(const char *mat_src, eMatLoadStatus *status,
+                         const program_load_callback &on_prog_load,
+                         const texture_load_callback &on_tex_load, ILog *log) {
     InitFromTXT(mat_src, status, on_prog_load, on_tex_load, log);
 }
 
-void Ren::Material::InitFromTXT(
-        const char *mat_src, eMatLoadStatus *status,
-        const program_load_callback &on_prog_load, const texture_load_callback &on_tex_load, ILog *log) {
+void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
+                                const program_load_callback &on_prog_load,
+                                const texture_load_callback &on_tex_load, ILog *log) {
     if (!mat_src) {
-        if (status) *status = MatSetToDefault;
+        if (status)
+            *status = MatSetToDefault;
         return;
     }
 
@@ -85,34 +88,35 @@ void Ren::Material::InitFromTXT(
             p = q + 1;
             continue;
         }
-        std::string item(p, q);
+        const std::string item(p, q);
 
         if (item == "gl_program:") {
 #ifdef USE_GL_RENDER
             p = q + 1;
             q = strpbrk(p, delims);
-            std::string program_name = std::string(p, q);
+            const std::string program_name = std::string(p, q);
             p = q + 1;
             q = strpbrk(p, delims);
-            std::string v_shader_name = std::string(p, q);
+            const std::string v_shader_name = std::string(p, q);
             p = q + 1;
             q = strpbrk(p, delims);
-            std::string f_shader_name = std::string(p, q);
+            const std::string f_shader_name = std::string(p, q);
 
-            programs[programs_count++] = on_prog_load(program_name.c_str(), v_shader_name.c_str(), f_shader_name.c_str());
+            programs[programs_count++] = on_prog_load(
+                program_name.c_str(), v_shader_name.c_str(), f_shader_name.c_str());
 #endif
         } else if (item == "sw_program:") {
 #ifdef USE_SW_RENDER
             p = q + 1;
             q = strpbrk(p, delims);
-            std::string program_name = std::string(p, q);
+            const std::string program_name = std::string(p, q);
 
             program_ = on_prog_load(program_name.c_str(), nullptr, nullptr);
 #endif
         } else if (item == "flag:") {
             p = q + 1;
             q = strpbrk(p, delims);
-            std::string flag = std::string(p, q);
+            const std::string flag = std::string(p, q);
 
             if (flag == "alpha_test") {
                 flags_ |= AlphaTest;
@@ -124,7 +128,7 @@ void Ren::Material::InitFromTXT(
         } else if (item == "texture:") {
             p = q + 1;
             q = strpbrk(p, delims);
-            std::string texture_name = std::string(p, q);
+            const std::string texture_name = std::string(p, q);
 
             uint32_t texture_flags = 0;
 
@@ -132,7 +136,8 @@ void Ren::Material::InitFromTXT(
             const char *_q = strpbrk(_p, delims);
 
             for (; _p != nullptr && _q != nullptr; _q = strpbrk(_p, delims)) {
-                if (_p == _q) break;
+                if (_p == _q)
+                    break;
 
                 std::string flag = std::string(_p, _q);
                 if (flag == "signed") {
@@ -171,12 +176,14 @@ void Ren::Material::InitFromTXT(
             par[3] = (float)atof(p);
         }
 
-        if (!q) break;
+        if (!q)
+            break;
         p = q + 1;
     }
 
     ready_ = true;
-    if (status) *status = MatCreatedFromData;
+    if (status)
+        *status = MatCreatedFromData;
 }
 
 #ifdef _MSC_VER

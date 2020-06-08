@@ -2142,8 +2142,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     if ((list.render_flags & EnableZFill) &&
         ((list.render_flags & DebugWireframe) == 0)) {
-        const float TransparencyHashScale =
-            (list.render_flags & EnableTaa) ? 0.25f : 1.0f;
+        //const float TransparencyHashScale =
+        //    (list.render_flags & EnableTaa) ? 0.25f : 1.0f;
 
         //
         // TODO: refactor this madness!!!
@@ -2182,7 +2182,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindVertexArray(depth_pass_transp_vao_);
         glUseProgram(fillz_transp_prog_->prog_id());
 
-        glUniform1f(3, TransparencyHashScale);
+        //glUniform1f(3, TransparencyHashScale);
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
                                    dummy_white_->tex_id());
@@ -2262,7 +2262,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUseProgram(fillz_vege_transp_prog_->prog_id());
         }
 
-        glUniform1f(3, TransparencyHashScale);
+        //glUniform1f(3, TransparencyHashScale);
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
                                    dummy_white_->tex_id());
@@ -2357,7 +2357,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUseProgram(fillz_skin_transp_prog_->prog_id());
         }
 
-        glUniform1f(3, TransparencyHashScale);
+        //glUniform1f(3, TransparencyHashScale);
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
                                    dummy_white_->tex_id());
@@ -2398,7 +2398,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUseProgram(fillz_skin_transp_prog_->prog_id());
         }
 
-        glUniform1f(3, TransparencyHashScale);
+        //glUniform1f(3, TransparencyHashScale);
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
                                    dummy_white_->tex_id());
@@ -2613,8 +2613,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             if (!batch.instance_count) {
                 continue;
             }
-            if (batch.alpha_blend_bit) {
-                break;
+            if (batch.alpha_blend_bit && !batch.alpha_test_bit) {
+                continue;
+                // break;
             }
 
             const Ren::Program *p = ctx_.GetProgram(batch.prog_id).get();
@@ -2635,6 +2636,13 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 if (mat->textures[3]) {
                     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX3_SLOT,
                                                mat->textures[3]->tex_id());
+                    if (mat->textures[4]) {
+                        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX4_SLOT,
+                                                   mat->textures[4]->tex_id());
+                    }
+                }
+                if (mat->params_count) {
+                    glUniform4fv(REN_U_MAT_PARAM_LOC, 1, ValuePtr(mat->params[0]));
                 }
                 cur_mat = mat;
             }
@@ -2706,10 +2714,12 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             for (int j = (int)list.main_batch_indices.count - 1; j >= 0; j--) {
                 const MainDrawBatch &batch =
                     list.main_batches.data[list.main_batch_indices.data[j]];
-                if (!batch.instance_count)
+                if (!batch.instance_count) {
                     continue;
-                if (!batch.alpha_blend_bit)
+                }
+                if (!batch.alpha_blend_bit) {
                     break;
+                }
 
                 const Ren::Program *p = ctx_.GetProgram(batch.prog_id).get();
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
@@ -2786,10 +2796,12 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             for (int j = (int)list.main_batch_indices.count - 1; j >= 0; j--) {
                 const MainDrawBatch &batch =
                     list.main_batches.data[list.main_batch_indices.data[j]];
-                if (!batch.instance_count)
+                if (!batch.instance_count) {
                     continue;
-                if (!batch.alpha_blend_bit)
+                }
+                if (!batch.alpha_blend_bit) {
                     break;
+                }
 
                 const Ren::Program *p = ctx_.GetProgram(batch.prog_id).get();
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
@@ -2862,10 +2874,12 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             for (int j = (int)list.main_batch_indices.count - 1; j >= 0; j--) {
                 const MainDrawBatch &batch =
                     list.main_batches.data[list.main_batch_indices.data[j]];
-                if (!batch.instance_count)
+                if (!batch.instance_count) {
                     continue;
-                if (!batch.alpha_blend_bit)
+                }
+                if (!batch.alpha_blend_bit) {
                     break;
+                }
 
                 const Ren::Program *p = ctx_.GetProgram(batch.prog_id).get();
                 const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
@@ -2920,6 +2934,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         const Ren::Program *cur_program = nullptr;
         const Ren::Material *cur_mat = nullptr;
 
+        glCullFace(GL_FRONT);
+        glDepthMask(GL_FALSE);
+        glDepthFunc(GL_LESS);
+
         for (int j = (int)list.main_batch_indices.count - 1; j >= 0; j--) {
             const MainDrawBatch &batch =
                 list.main_batches.data[list.main_batch_indices.data[j]];
@@ -2948,6 +2966,13 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 if (mat->textures[3]) {
                     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX3_SLOT,
                                                mat->textures[3]->tex_id());
+                    if (mat->textures[4]) {
+                        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX4_SLOT,
+                                                   mat->textures[4]->tex_id());
+                    }
+                }
+                if (mat->params_count) {
+                    glUniform4fv(REN_U_MAT_PARAM_LOC, 1, ValuePtr(mat->params[0]));
                 }
                 cur_mat = mat;
             }
@@ -2955,16 +2980,59 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
                          &batch.instance_indices[0]);
 
-            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-            glDepthFunc(GL_LEQUAL);
-
             glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
                 (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                 (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
-            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-            glDepthFunc(GL_EQUAL);
+            backend_info_.opaque_draw_calls_count += 2;
+            backend_info_.triangles_rendered +=
+                (batch.indices_count / 3) * batch.instance_count;
+        }
+
+        glCullFace(GL_BACK);
+
+        for (int j = (int)list.main_batch_indices.count - 1; j >= 0; j--) {
+            const MainDrawBatch &batch =
+                list.main_batches.data[list.main_batch_indices.data[j]];
+            if (!batch.instance_count) {
+                continue;
+            }
+            if (!batch.alpha_blend_bit) {
+                break;
+            }
+
+            const Ren::Program *p = ctx_.GetProgram(batch.prog_id).get();
+            const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
+
+            if (cur_program != p) {
+                glUseProgram(p->prog_id());
+                cur_program = p;
+            }
+
+            if (cur_mat != mat) {
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
+                                           mat->textures[0]->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT,
+                                           mat->textures[1]->tex_id());
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT,
+                                           mat->textures[2]->tex_id());
+                if (mat->textures[3]) {
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX3_SLOT,
+                                               mat->textures[3]->tex_id());
+                    if (mat->textures[4]) {
+                        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX4_SLOT,
+                                                   mat->textures[4]->tex_id());
+                    }
+                }
+                if (mat->params_count) {
+                    glUniform4fv(REN_U_MAT_PARAM_LOC, 1, ValuePtr(mat->params[0]));
+                }
+                cur_mat = mat;
+            }
+
+            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                         &batch.instance_indices[0]);
 
             glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,

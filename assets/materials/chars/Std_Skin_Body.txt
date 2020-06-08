@@ -5,3 +5,5 @@ texture: chars/Std_Skin_Body_diff.png srgb
 texture: chars/Std_Skin_Body_norm.png
 texture: chars/Std_Skin_Body_spec.png srgb
 texture: skin_diffusion.uncompressed.png srgb norepeat
+texture: chars/skin_detail_norm.png
+param: 4.0 2.0 1.0 24.0

@@ -30,7 +30,9 @@ layout(location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BA
 
 #ifdef TRANSPARENT_PERM
 out vec2 aVertexUVs1_;
+#ifdef HASHED_TRANSPARENCY
 out vec3 aVertexObjCoord_;
+#endif
 #endif
 #ifdef OUTPUT_VELOCITY
 out vec3 aVertexCSCurr_;
@@ -50,7 +52,9 @@ void main() {
 
 #ifdef TRANSPARENT_PERM
     aVertexUVs1_ = aVertexUVs1;
+#ifdef HASHED_TRANSPARENCY
     aVertexObjCoord_ = aVertexPositionCurr;
+#endif
 #endif
 
     vec3 vtx_pos_ws_curr = (model_matrix_curr * vec4(aVertexPositionCurr, 1.0)).xyz;

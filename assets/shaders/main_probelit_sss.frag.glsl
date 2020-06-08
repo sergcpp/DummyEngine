@@ -19,6 +19,7 @@ layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D diffuse_texture;
 layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D normals_texture;
 layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D specular_texture;
 layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D sss_texture;
+layout(binding = REN_MAT_TEX4_SLOT) uniform sampler2D normals_detail_texture;
 layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow shadow_texture;
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D decals_texture;
 layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D ao_texture;
@@ -35,6 +36,8 @@ layout (std140)
 uniform SharedDataBlock {
     SharedData shrd_data;
 };
+
+layout (location = REN_U_MAT_PARAM_LOC) uniform vec4 uMaterialParams;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in highp vec3 aVertexPos_;
@@ -72,12 +75,31 @@ void main(void) {
     
     vec2 duv_dx = dFdx(aVertexUVAndCurvature_.xy), duv_dy = dFdy(aVertexUVAndCurvature_.xy);
     vec3 normal_color = texture(normals_texture, aVertexUVAndCurvature_.xy).wyz;
+	vec3 normal_detail_color = texture(normals_detail_texture, aVertexUVAndCurvature_.xy * uMaterialParams.w).wyz;
+	
+	normal_color.xy += normal_detail_color.xy;
+	
+	const vec3 lod_offsets = { 3.0, 2.0, 1.0 };
+	const vec3 der_muls = uMaterialParams.xyz;//{ 8.0, 4.0, 2.0 };
+	
+	vec3 normal_color_r = textureGrad(normals_texture, aVertexUVAndCurvature_.xy,
+									  der_muls.x * dFdx(aVertexUVAndCurvature_.xy), der_muls.x * dFdy(aVertexUVAndCurvature_.xy)).wyz;
+	vec3 normal_color_g = textureGrad(normals_texture, aVertexUVAndCurvature_.xy,
+									  der_muls.y * dFdx(aVertexUVAndCurvature_.xy), der_muls.y * dFdy(aVertexUVAndCurvature_.xy)).wyz;
+	vec3 normal_color_b = textureGrad(normals_texture, aVertexUVAndCurvature_.xy,
+									  der_muls.z * dFdx(aVertexUVAndCurvature_.xy), der_muls.z * dFdy(aVertexUVAndCurvature_.xy)).wyz;
+									 
+	/*float lod = textureQueryLod(normals_texture, aVertexUVAndCurvature_.xy).x;
+	vec3 normal_color_r = textureLod(normals_texture, aVertexUVAndCurvature_.xy, lod + lod_offsets.x).wyz;
+	vec3 normal_color_g = textureLod(normals_texture, aVertexUVAndCurvature_.xy, lod + lod_offsets.y).wyz;
+	vec3 normal_color_b = textureLod(normals_texture, aVertexUVAndCurvature_.xy, lod + lod_offsets.z).wyz;*/
+									  
     vec4 specular_color = texture(specular_texture, aVertexUVAndCurvature_.xy);
     
     vec3 dp_dx = dFdx(aVertexPos_);
     vec3 dp_dy = dFdy(aVertexPos_);
 
-    for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.x; i++) {
+    /*for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.x; i++) {
         highp uint item_data = texelFetch(items_buffer, int(i)).x;
         int di = int(bitfieldExtract(item_data, 12, 12));
         
@@ -136,10 +158,14 @@ void main(void) {
                 specular_color = mix(specular_color, decal_spec, decal_influence);
             }
         }
-    }
+    }*/
 
-    vec3 normal = normal_color * 2.0 - 1.0;
+    vec3 normal = vec3(normal_color.xy - vec2(1.0), normal_color.z * 2.0 - 1.0);//normal_color * 2.0 - 1.0;
     normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_), aVertexNormal_) * normal);
+	
+    vec3 normal_r = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_), aVertexNormal_) * (normal_color_r * 2.0 - 1.0));
+	vec3 normal_g = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_), aVertexNormal_) * (normal_color_g * 2.0 - 1.0));
+	vec3 normal_b = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_), aVertexNormal_) * (normal_color_b * 2.0 - 1.0));
     
     float curvature = clamp(aVertexUVAndCurvature_.z, 0.0, 1.0);
     
@@ -169,7 +195,6 @@ void main(void) {
         
         float _dot2 = dot(L, dir_and_spot.xyz);
         
-        atten = atten;
         if (_dot2 > dir_and_spot.w && (brightness * atten) > FLT_EPS) {
             int shadowreg_index = floatBitsToInt(col_and_index.w);
             if (shadowreg_index != -1) {
@@ -183,9 +208,21 @@ void main(void) {
                 atten *= SampleShadowPCF5x5(shadow_texture, pp.xyz);
             }
             
+#if 0
             float _dot1 = dot(L, normal);
-            vec3 l_diffuse = atten * texture(sss_texture, vec2(_dot1 * 0.5 + 0.5, curvature)).rgb;
-            additional_light += col_and_index.xyz * l_diffuse * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
+            vec3 l_diffuse = texture(sss_texture, vec2(_dot1 * 0.5 + 0.5, curvature)).rgb;
+			
+            additional_light += col_and_index.xyz * atten * l_diffuse * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
+#else
+			float _dot_r = dot(L, normal_r);
+			float _dot_g = dot(L, normal_g);
+			float _dot_b = dot(L, normal_b);
+            float l_diffuse_r = texture(sss_texture, vec2(_dot_r * 0.5 + 0.5, curvature)).r;
+			float l_diffuse_g = texture(sss_texture, vec2(_dot_g * 0.5 + 0.5, curvature)).g;
+			float l_diffuse_b = texture(sss_texture, vec2(_dot_b * 0.5 + 0.5, curvature)).b;
+			
+			additional_light += col_and_index.xyz * atten * vec3(l_diffuse_r, l_diffuse_g, l_diffuse_b) * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
+#endif
         }
     }
     
@@ -199,10 +236,26 @@ void main(void) {
         float dist = distance(shrd_data.uProbes[pi].pos_and_radius.xyz, aVertexPos_);
         float fade = 1.0 - smoothstep(0.9, 1.0, dist / shrd_data.uProbes[pi].pos_and_radius.w);
 
+#if 0
         indirect_col += fade * EvalSHIrradiance_NonLinear(normal,
                                                           shrd_data.uProbes[pi].sh_coeffs[0],
                                                           shrd_data.uProbes[pi].sh_coeffs[1],
                                                           shrd_data.uProbes[pi].sh_coeffs[2]);
+#else											  
+		indirect_col.r += fade * EvalSHIrradiance_NonLinear(normal_r,
+                                                            shrd_data.uProbes[pi].sh_coeffs[0],
+                                                            shrd_data.uProbes[pi].sh_coeffs[1],
+                                                            shrd_data.uProbes[pi].sh_coeffs[2]).r;
+		indirect_col.g += fade * EvalSHIrradiance_NonLinear(normal_g,
+                                                            shrd_data.uProbes[pi].sh_coeffs[0],
+                                                            shrd_data.uProbes[pi].sh_coeffs[1],
+                                                            shrd_data.uProbes[pi].sh_coeffs[2]).g;
+		indirect_col.b += fade * EvalSHIrradiance_NonLinear(normal_b,
+                                                            shrd_data.uProbes[pi].sh_coeffs[0],
+                                                            shrd_data.uProbes[pi].sh_coeffs[1],
+                                                            shrd_data.uProbes[pi].sh_coeffs[2]).b;
+#endif
+															
         total_fade += fade;
     }
     

@@ -21,6 +21,7 @@ layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D specular_texture;
 layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow shadow_texture;
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D decals_texture;
 layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D ao_texture;
+layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray env_texture;
 layout(binding = REN_BRDF_TEX_SLOT) uniform sampler2D brdf_lut_texture;
 layout(binding = REN_LIGHT_BUF_SLOT) uniform mediump samplerBuffer lights_buffer;
 layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer decals_buffer;
@@ -126,8 +127,14 @@ void main(void) {
                 smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
         }
     }
+	
+	vec3 view_ray_ws = normalize(aVertexPos_ - shrd_data.uCamPosAndGamma.xyz);
+	vec3 refl_ray_ws = reflect(view_ray_ws, normal);
+	
+	float refl_lod = 6.0 * specular_color.a;
     
     vec3 indirect_col = vec3(0.0);
+	vec3 reflected_col = vec3(0.0);
     float total_fade = 0.0;
     
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
@@ -141,12 +148,16 @@ void main(void) {
                                                           shrd_data.uProbes[pi].sh_coeffs[0],
                                                           shrd_data.uProbes[pi].sh_coeffs[1],
                                                           shrd_data.uProbes[pi].sh_coeffs[2]);
+		reflected_col += fade * RGBMDecode(
+                textureLod(env_texture, vec4(refl_ray_ws,
+                                             shrd_data.uProbes[pi].unused_and_layer.w), refl_lod));
         total_fade += fade;
     }
     
     indirect_col /= max(total_fade, 1.0);
-    indirect_col = max(1.0 * indirect_col, vec3(0.0));
-    
+    //indirect_col = max(1.0 * indirect_col, vec3(0.0));
+    reflected_col /= max(total_fade, 1.0);
+	
     float lambert = clamp(dot(normal, shrd_data.uSunDir.xyz), 0.0, 1.0);
     float visibility = 0.0;
     if (lambert > 0.00001) {
@@ -159,12 +170,12 @@ void main(void) {
                                              ambient_occlusion * ambient_occlusion * indirect_col +
                                              additional_light);
     
-    vec3 view_ray_ws = normalize(shrd_data.uCamPosAndGamma.xyz - aVertexPos_);
-    float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);
+    float N_dot_V = clamp(dot(normal, -view_ray_ws), 0.0, 1.0);
     
-    vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, specular_color.rgb, specular_color.a);
+    vec3 kS = FresnelSchlickRoughness(N_dot_V, specular_color.rgb, specular_color.a);
+	vec2 brdf = texture(brdf_lut_texture, vec2(N_dot_V, specular_color.a)).xy;
 
-    outColor = vec4(diffuse_color * kD, albedo_color.a);
-    outNormal = vec4(normal * 0.5 + 0.5, 1.0);
-    outSpecular = specular_color;
+    outColor = vec4(diffuse_color * (1.0 - kS) + reflected_col * (kS * brdf.x + brdf.y), albedo_color.a);
+    //outNormal = vec4(normal * 0.5 + 0.5, 1.0);
+    outSpecular = vec4(0.0);
 }

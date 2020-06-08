@@ -73,11 +73,12 @@ static_assert(sizeof(InstanceData) == 64, "!");
 struct DepthDrawBatch { // NOLINT
     union {
         struct {
-            uint32_t indices_offset : 28;
-            uint32_t moving_bit : 1;
-            uint32_t vegetation_bit : 1;
+            uint32_t indices_offset : 27;
+            uint32_t two_sided_bit  : 1;
+            uint32_t moving_bit     : 1;    // indicates that depth pass should write velocity
+            uint32_t vegetation_bit : 1;    // indicates that depth pass should apply vegetation vertex transform
             uint32_t alpha_test_bit : 1;
-            uint32_t skinned_bit : 1;
+            uint32_t skinned_bit    : 1;    // indicates that depth pass should write velocity
         };
         uint32_t sort_key = 0;
     };
@@ -91,13 +92,14 @@ static_assert(offsetof(DepthDrawBatch, indices_count) == 4, "!");
 struct MainDrawBatch {  // NOLINT
     union {
         struct {
-            uint32_t _pad1              : 4;
-            uint32_t indices_offset     : 28;
-            uint32_t cam_dist           : 8;
-            uint32_t mat_id             : 14;
-            uint32_t alpha_test_bit     : 1;
-            uint32_t prog_id            : 8;
-            uint32_t alpha_blend_bit    : 1;
+            uint64_t _pad1              : 4;
+            uint64_t indices_offset     : 27;
+            uint64_t cam_dist           : 8;
+            uint64_t mat_id             : 14;
+            uint64_t two_sided_bit      : 1;
+            uint64_t alpha_test_bit     : 1;
+            uint64_t prog_id            : 8;
+            uint64_t alpha_blend_bit    : 1;
         };
         uint64_t sort_key = 0;
     };

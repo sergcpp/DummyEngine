@@ -32,10 +32,10 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
                           //"corridor.json";
                           //"vegetation_test_night.json";
                           //"test_decals.json";
-                          "courtroom.json";
+                          //"courtroom.json";
                           //"lmap_test.json";
                           //"sss_test.json";
-                          //"char_test.json";
+                          "char_test.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {
@@ -351,6 +351,7 @@ void GSDrawTest::Update(uint64_t dt_us) {
             if ((scooter->comp_mask & mask) == mask) {
                 auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(scooter->components[CompTransform]);
 
+                tr->prev_mat = tr->mat;
                 tr->mat = Ren::Mat4f{ 1.0f };
                 tr->mat = Ren::Translate(tr->mat, rot_center);
                 

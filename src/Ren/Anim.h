@@ -13,7 +13,6 @@
 #include "String.h"
 
 namespace Ren {
-enum class eAnimSeqType { AnimBones, AnimShapes };
 enum class eAnimBoneFlags { AnimHasTranslate = 1 };
 
 struct AnimBone {
@@ -43,7 +42,6 @@ struct Bone;
 
 class AnimSequence : public RefCounter {
     String      name_, act_name_;
-    eAnimSeqType type_;
     int         fps_ = 0;
     int         len_ = 0;
     int         frame_size_ = 0;
@@ -63,9 +61,6 @@ public:
     }
     const String &act_name() const {
         return act_name_;
-    }
-    eAnimSeqType type() const {
-        return type_;
     }
     int fps() const {
         return fps_;

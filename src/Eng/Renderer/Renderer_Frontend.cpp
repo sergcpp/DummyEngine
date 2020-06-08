@@ -430,10 +430,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             MainDrawBatch &main_batch =
                                 list.main_batches.data[list.main_batches.count++];
 
+                            main_batch.alpha_blend_bit = (mat_flags & AlphaBlend) ? 1 : 0;
                             main_batch.prog_id =
                                 (uint32_t)mat->programs[program_index].index();
                             main_batch.alpha_test_bit = (mat_flags & AlphaTest) ? 1 : 0;
-                            main_batch.alpha_blend_bit = (mat_flags & AlphaBlend) ? 1 : 0;
+                            main_batch.two_sided_bit = 0;
                             main_batch.mat_id = (uint32_t)grp->mat.index();
                             main_batch.cam_dist =
                                 (mat_flags & AlphaBlend) ? uint32_t(dist) : 0;
@@ -445,7 +446,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 (uint32_t)(list.instances.count - 1);
                             main_batch.instance_count = 1;
 
-                            if (zfill_enabled && !(mat->flags() & AlphaBlend)) {
+                            if (zfill_enabled && (!(mat->flags() & AlphaBlend) ||
+                                                  ((mat->flags() & AlphaBlend) &&
+                                                   (mat->flags() & AlphaTest)))) {
                                 DepthDrawBatch &zfill_batch =
                                     list.zfill_batches.data[list.zfill_batches.count++];
 
@@ -457,8 +460,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                     (obj.comp_mask & CompVegStateBit) ? 1 : 0;
                                 zfill_batch.moving_bit =
                                     (obj.last_change_mask & CompTransformBit) ? 1 : 0;
+                                zfill_batch.two_sided_bit = 0;
                                 zfill_batch.mat_id =
-                                    (mat_flags & AlphaTest) ? main_batch.mat_id : 0;
+                                    (mat_flags & AlphaTest) ? uint32_t(main_batch.mat_id) : 0;
                                 zfill_batch.indices_offset = main_batch.indices_offset;
                                 zfill_batch.base_vertex = base_vertex;
                                 zfill_batch.indices_count = grp->num_indices;
@@ -1084,6 +1088,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 batch.vegetation_bit =
                                     (obj.comp_mask & CompVegStateBit) ? 1 : 0;
                                 batch.moving_bit = 0;
+                                batch.two_sided_bit = 0;
                                 batch.indices_offset =
                                     (mesh->indices_buf().offset + grp->offset) / sizeof(uint32_t);
                                 batch.base_vertex =
@@ -1312,6 +1317,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 batch.vegetation_bit =
                                     (obj.comp_mask & CompVegStateBit) ? 1 : 0;
                                 batch.moving_bit = 0;
+                                batch.two_sided_bit = 0;
                                 batch.indices_offset =
                                     (mesh->indices_buf().offset + grp->offset) / sizeof(uint32_t);
                                 batch.base_vertex =

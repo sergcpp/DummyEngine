@@ -28,6 +28,7 @@ uniform SharedDataBlock {
 };
 
 layout (location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
+layout (location = REN_U_MAT_PARAM_LOC) uniform vec4 uMaterialParams;
 
 layout(binding = REN_INST_BUF_SLOT) uniform highp samplerBuffer instances_buffer;
 

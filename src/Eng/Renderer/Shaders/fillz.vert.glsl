@@ -24,7 +24,7 @@ layout (std140) uniform SharedDataBlock {
 layout(binding = REN_INST_BUF_SLOT) uniform mediump samplerBuffer instances_buffer;
 layout(location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
 
-#ifdef TRANSPARENT_PERM
+#if defined(TRANSPARENT_PERM) && defined(HASHED_TRANSPARENCY)
 out vec2 aVertexUVs1_;
 out vec3 aVertexObjCoord_;
 #endif
@@ -36,7 +36,7 @@ void main() {
 
     mat4 model_matrix = FetchModelMatrix(instances_buffer, instance);
 
-#ifdef TRANSPARENT_PERM
+#if defined(TRANSPARENT_PERM) && defined(HASHED_TRANSPARENCY)
     aVertexUVs1_ = aVertexUVs1;
     aVertexObjCoord_ = aVertexPosition;
 #endif
