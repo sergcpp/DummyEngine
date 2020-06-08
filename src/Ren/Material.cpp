@@ -37,6 +37,7 @@ Ren::Material &Ren::Material::operator=(Material &&rhs) noexcept {
     for (int i = 0; i < MaxMaterialParamCount; i++) {
         params[i] = rhs.params[i];
     }
+    params_count = rhs.params_count;
     RefCounter::operator=(std::move(rhs));
     return *this;
 }
@@ -75,9 +76,9 @@ void Ren::Material::InitFromTXT(
     const char *p = mat_src;
     const char *q = strpbrk(p + 1, delims);
 
-    int num_programs = 0;
-    int num_textures = 0;
-    int num_params = 0;
+    int programs_count = 0;
+    int textures_count = 0;
+    params_count = 0;
 
     for (; p != nullptr && q != nullptr; q = strpbrk(p, delims)) {
         if (p == q) {
@@ -98,8 +99,7 @@ void Ren::Material::InitFromTXT(
             q = strpbrk(p, delims);
             std::string f_shader_name = std::string(p, q);
 
-            programs[num_programs] = on_prog_load(program_name.c_str(), v_shader_name.c_str(), f_shader_name.c_str());
-            num_programs++;
+            programs[programs_count++] = on_prog_load(program_name.c_str(), v_shader_name.c_str(), f_shader_name.c_str());
 #endif
         } else if (item == "sw_program:") {
 #ifdef USE_SW_RENDER
@@ -154,10 +154,9 @@ void Ren::Material::InitFromTXT(
                 _p = _q + 1;
             }
 
-            textures[num_textures] = on_tex_load(texture_name.c_str(), texture_flags);
-            num_textures++;
+            textures[textures_count++] = on_tex_load(texture_name.c_str(), texture_flags);
         } else if (item == "param:") {
-            Vec4f &par = params[num_params++];
+            Vec4f &par = params[params_count++];
             p = q + 1;
             q = strpbrk(p, delims);
             par[0] = (float)atof(p);

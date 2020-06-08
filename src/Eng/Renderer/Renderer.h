@@ -196,13 +196,10 @@ class Renderer {
     static uint64_t GetGpuTimeBlockingUs();
 
     // Parallel Jobs
-    static void GatherItemsForZSlice_Job(
-        int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights,
-        int lights_count, const DecalItem *decals, int decals_count,
-        const BBox *decals_boxes, const ProbeItem *probes, int probes_count,
-        const EllipsItem *ellipsoids, int ellipsoids_count,
-        const LightSource *const *litem_to_lsource, CellData *cells, ItemData *items,
-        std::atomic_int &items_count);
+    static void GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums,
+                                         const BBox *decals_boxes,
+                                         const LightSource *const *litem_to_lsource,
+                                         DrawList &list, std::atomic_int &items_count);
 
     // Generate auxiliary textures
     static std::unique_ptr<uint16_t[]> Generate_BRDF_LUT(int res,

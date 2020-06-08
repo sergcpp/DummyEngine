@@ -474,20 +474,17 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                         eVisibilityResult res = eVisibilityResult::FullyVisible;
 
-                        if (!skip_check) {
-                            for (int k = 0; k < 6; k++) {
-                                const Plane &plane = list.draw_cam.frustum_plane(k);
+                        for (int k = 0; k < 6 && !skip_check; k++) {
+                            const Plane &plane = list.draw_cam.frustum_plane(k);
 
-                                const float dist = plane.n[0] * pos[0] +
-                                                   plane.n[1] * pos[1] +
-                                                   plane.n[2] * pos[2] + plane.d;
+                            const float dist = plane.n[0] * pos[0] + plane.n[1] * pos[1] +
+                                               plane.n[2] * pos[2] + plane.d;
 
-                                if (dist < -light.influence) {
-                                    res = eVisibilityResult::Invisible;
-                                    break;
-                                } else if (std::abs(dist) < light.influence) {
-                                    res = eVisibilityResult::PartiallyVisible;
-                                }
+                            if (dist < -light.influence) {
+                                res = eVisibilityResult::Invisible;
+                                break;
+                            } else if (std::abs(dist) < light.influence) {
+                                res = eVisibilityResult::PartiallyVisible;
                             }
                         }
 
@@ -532,29 +529,27 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                         eVisibilityResult res = eVisibilityResult::FullyVisible;
 
-                        if (!skip_check) {
-                            for (int p = int(eCamPlane::LeftPlane);
-                                 p <= int(eCamPlane::FarPlane); p++) {
-                                const Plane &plane = list.draw_cam.frustum_plane(p);
+                        for (int p = int(eCamPlane::LeftPlane);
+                             p <= int(eCamPlane::FarPlane) && !skip_check; p++) {
+                            const Plane &plane = list.draw_cam.frustum_plane(p);
 
-                                int in_count = 8;
+                            int in_count = 8;
 
-                                for (int k = 0; k < 8; k++) {
-                                    const float dist = plane.n[0] * bbox_points[k][0] +
-                                                       plane.n[1] * bbox_points[k][1] +
-                                                       plane.n[2] * bbox_points[k][2] +
-                                                       plane.d;
-                                    if (dist < 0.0f) {
-                                        in_count--;
-                                    }
+                            for (int k = 0; k < 8; k++) {
+                                const float dist = plane.n[0] * bbox_points[k][0] +
+                                                   plane.n[1] * bbox_points[k][1] +
+                                                   plane.n[2] * bbox_points[k][2] +
+                                                   plane.d;
+                                if (dist < 0.0f) {
+                                    in_count--;
                                 }
+                            }
 
-                                if (in_count == 0) {
-                                    res = eVisibilityResult::Invisible;
-                                    break;
-                                } else if (in_count != 8) {
-                                    res = eVisibilityResult::PartiallyVisible;
-                                }
+                            if (in_count == 0) {
+                                res = eVisibilityResult::Invisible;
+                                break;
+                            } else if (in_count != 8) {
+                                res = eVisibilityResult::PartiallyVisible;
                             }
                         }
 
@@ -728,13 +723,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                     frustum_points[k] /= frustum_points[k][3];
                 }
 
-                Vec2f frustum_points_proj[8] = {REN_UNINITIALIZE_X8(Vec2f)};
+                Vec2f fr_points_proj[8] = {REN_UNINITIALIZE_X8(Vec2f)};
 
                 for (int k = 0; k < 8; k++) {
                     Vec4f projected_p = sh_clip_from_world * frustum_points[k];
                     projected_p /= projected_p[3];
 
-                    frustum_points_proj[k] = Vec2f{projected_p};
+                    fr_points_proj[k] = Vec2f{projected_p};
                 }
 
                 Vec2i frustum_edges[] = {Vec2i{0, 1}, Vec2i{1, 2}, Vec2i{2, 3},
@@ -756,11 +751,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         }
 
                         const float d =
-                            (frustum_points_proj[k][0] - frustum_points_proj[k1][0]) *
-                                (frustum_points_proj[k2][1] -
-                                 frustum_points_proj[k1][1]) -
-                            (frustum_points_proj[k][1] - frustum_points_proj[k1][1]) *
-                                (frustum_points_proj[k2][0] - frustum_points_proj[k1][0]);
+                            (fr_points_proj[k][0] - fr_points_proj[k1][0]) *
+                                (fr_points_proj[k2][1] - fr_points_proj[k1][1]) -
+                            (fr_points_proj[k][1] - fr_points_proj[k1][1]) *
+                                (fr_points_proj[k2][0] - fr_points_proj[k1][0]);
 
                         const int sign = (d > 0.0f) ? 1 : -1;
 
@@ -779,41 +773,37 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         }
 
                         const float x_diff0 =
-                            (frustum_points_proj[k1][0] - frustum_points_proj[k2][0]);
+                            (fr_points_proj[k1][0] - fr_points_proj[k2][0]);
                         const bool is_vertical0 =
                             _ABS(x_diff0) < std::numeric_limits<float>::epsilon();
                         const float slope0 = is_vertical0 ? 0.0f
-                                                          : (frustum_points_proj[k1][1] -
-                                                             frustum_points_proj[k2][1]) /
+                                                          : (fr_points_proj[k1][1] -
+                                                             fr_points_proj[k2][1]) /
                                                                 x_diff0,
-                                    b0 = is_vertical0
-                                             ? frustum_points_proj[k1][0]
-                                             : (frustum_points_proj[k1][1] -
-                                                slope0 * frustum_points_proj[k1][0]);
+                                    b0 = is_vertical0 ? fr_points_proj[k1][0]
+                                                      : (fr_points_proj[k1][1] -
+                                                         slope0 * fr_points_proj[k1][0]);
 
                         // Check if it is a duplicate
                         for (int k = 0; k < silhouette_edges_count - 1; k++) {
                             const int j = silhouette_edges[k];
 
                             const float x_diff1 =
-                                (frustum_points_proj[frustum_edges[j][0]][0] -
-                                 frustum_points_proj[frustum_edges[j][1]][0]);
+                                (fr_points_proj[frustum_edges[j][0]][0] -
+                                 fr_points_proj[frustum_edges[j][1]][0]);
                             const bool is_vertical1 =
                                 _ABS(x_diff1) < std::numeric_limits<float>::epsilon();
                             const float
-                                slope1 =
-                                    is_vertical1
-                                        ? 0.0f
-                                        : (frustum_points_proj[frustum_edges[j][0]][1] -
-                                           frustum_points_proj[frustum_edges[j][1]][1]) /
-                                              x_diff1,
-                                b1 =
-                                    is_vertical1
-                                        ? frustum_points_proj[frustum_edges[j][0]][0]
-                                        : frustum_points_proj[frustum_edges[j][0]][1] -
-                                              slope1 *
-                                                  frustum_points_proj[frustum_edges[j][0]]
-                                                                     [0];
+                                slope1 = is_vertical1
+                                             ? 0.0f
+                                             : (fr_points_proj[frustum_edges[j][0]][1] -
+                                                fr_points_proj[frustum_edges[j][1]][1]) /
+                                                   x_diff1,
+                                b1 = is_vertical1
+                                         ? fr_points_proj[frustum_edges[j][0]][0]
+                                         : fr_points_proj[frustum_edges[j][0]][1] -
+                                               slope1 *
+                                                   fr_points_proj[frustum_edges[j][0]][0];
 
                             if (is_vertical1 == is_vertical0 &&
                                 _ABS(slope1 - slope0) < 0.001f &&
@@ -845,10 +835,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                     sh_clip_frustum.planes[i] = Plane{p1, p2, p3};
 
                     // Store projected points for debugging
-                    sh_list.view_frustum_outline[2 * i + 0] =
-                        frustum_points_proj[edge[0]];
-                    sh_list.view_frustum_outline[2 * i + 1] =
-                        frustum_points_proj[edge[1]];
+                    sh_list.view_frustum_outline[2 * i + 0] = fr_points_proj[edge[0]];
+                    sh_list.view_frustum_outline[2 * i + 1] = fr_points_proj[edge[1]];
 
                     // Find region for scissor test
                     const auto p1i =
@@ -1545,12 +1533,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
         for (int i = 0; i < REN_GRID_RES_Z; i++) {
             futures[i] = threads_->enqueue(
-                GatherItemsForZSlice_Job, i, temp_sub_frustums_.data,
-                list.light_sources.data, list.light_sources.count, list.decals.data,
-                list.decals.count, decals_boxes_.data, list.probes.data,
-                list.probes.count, list.ellipsoids.data, list.ellipsoids.count,
-                litem_to_lsource_.data, list.cells.data, list.items.data,
-                std::ref(a_items_count));
+                GatherItemsForZSlice_Job, i, temp_sub_frustums_.data, decals_boxes_.data,
+                litem_to_lsource_.data, std::ref(list), std::ref(a_items_count));
         }
 
         for (std::future<void> &fut : futures) {
@@ -1617,12 +1601,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
     }
 }
 
-void Renderer::GatherItemsForZSlice_Job(
-    int slice, const Ren::Frustum *sub_frustums, const LightSourceItem *lights,
-    int lights_count, const DecalItem *decals, int decals_count, const BBox *decals_boxes,
-    const ProbeItem *probes, int probes_count, const EllipsItem *ellipsoids,
-    int ellipsoids_count, const LightSource *const *litem_to_lsource, CellData *cells,
-    ItemData *items, std::atomic_int &items_count) {
+void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums,
+                                        const BBox *decals_boxes,
+                                        const LightSource *const *litem_to_lsource,
+                                        DrawList &list, std::atomic_int &items_count) {
     using namespace RendererInternal;
     using namespace Ren;
 
@@ -1634,14 +1616,14 @@ void Renderer::GatherItemsForZSlice_Job(
 
     // Reset cells information for slice
     for (int s = 0; s < frustums_per_slice; s++) {
-        cells[base_index + s] = {};
+        list.cells.data[base_index + s] = {};
     }
 
     // Gather to local list first
     ItemData local_items[REN_GRID_RES_X * REN_GRID_RES_Y][REN_MAX_ITEMS_PER_CELL];
 
-    for (int j = 0; j < lights_count; j++) {
-        const LightSourceItem &l = lights[j];
+    for (int j = 0; j < int(list.light_sources.count); j++) {
+        const LightSourceItem &l = list.light_sources.data[j];
         const float radius = litem_to_lsource[j]->radius;
         const float influence = litem_to_lsource[j]->influence;
         const float cap_radius = litem_to_lsource[j]->cap_radius;
@@ -1748,7 +1730,7 @@ void Renderer::GatherItemsForZSlice_Job(
 
                 if (res != eVisibilityResult::Invisible) {
                     const int index = base_index + row_offset + col_offset;
-                    CellData &cell = cells[index];
+                    CellData &cell = list.cells.data[index];
                     if (cell.light_count < REN_MAX_LIGHTS_PER_CELL) {
                         local_items[row_offset + col_offset][cell.light_count]
                             .light_index = (uint16_t)j;
@@ -1759,8 +1741,8 @@ void Renderer::GatherItemsForZSlice_Job(
         }
     }
 
-    for (int j = 0; j < decals_count; j++) {
-        const DecalItem &de = decals[j];
+    for (int j = 0; j < int(list.decals.count); j++) {
+        const DecalItem &de = list.decals.data[j];
 
         const float bbox_points[8][3] = {
             BBOX_POINTS(decals_boxes[j].bmin, decals_boxes[j].bmax)};
@@ -1852,7 +1834,7 @@ void Renderer::GatherItemsForZSlice_Job(
 
                 if (res != eVisibilityResult::Invisible) {
                     const int index = base_index + row_offset + col_offset;
-                    CellData &cell = cells[index];
+                    CellData &cell = list.cells.data[index];
                     if (cell.decal_count < REN_MAX_DECALS_PER_CELL) {
                         local_items[row_offset + col_offset][cell.decal_count]
                             .decal_index = (uint16_t)j;
@@ -1863,8 +1845,8 @@ void Renderer::GatherItemsForZSlice_Job(
         }
     }
 
-    for (int j = 0; j < probes_count; j++) {
-        const ProbeItem &p = probes[j];
+    for (int j = 0; j < int(list.probes.count); j++) {
+        const ProbeItem &p = list.probes.data[j];
         const float *p_pos = &p.position[0];
 
         eVisibilityResult visible_to_slice = eVisibilityResult::FullyVisible;
@@ -1926,7 +1908,7 @@ void Renderer::GatherItemsForZSlice_Job(
 
                 if (res != eVisibilityResult::Invisible) {
                     const int index = base_index + row_offset + col_offset;
-                    CellData &cell = cells[index];
+                    CellData &cell = list.cells.data[index];
                     if (cell.probe_count < REN_MAX_PROBES_PER_CELL) {
                         local_items[row_offset + col_offset][cell.probe_count]
                             .probe_index = (uint16_t)j;
@@ -1939,8 +1921,8 @@ void Renderer::GatherItemsForZSlice_Job(
 
     const float EllipsoidInfluence = 3.0f;
 
-    for (int j = 0; j < ellipsoids_count; j++) {
-        const EllipsItem &e = ellipsoids[j];
+    for (int j = 0; j < int(list.ellipsoids.count); j++) {
+        const EllipsItem &e = list.ellipsoids.data[j];
         const float *p_pos = &e.position[0];
 
         eVisibilityResult visible_to_slice = eVisibilityResult::FullyVisible;
@@ -2002,7 +1984,7 @@ void Renderer::GatherItemsForZSlice_Job(
 
                 if (res != eVisibilityResult::Invisible) {
                     const int index = base_index + row_offset + col_offset;
-                    CellData &cell = cells[index];
+                    CellData &cell = list.cells.data[index];
                     if (cell.ellips_count < REN_MAX_ELLIPSES_PER_CELL) {
                         local_items[row_offset + col_offset][cell.ellips_count]
                             .ellips_index = (uint16_t)j;
@@ -2015,7 +1997,7 @@ void Renderer::GatherItemsForZSlice_Job(
 
     // Pack gathered local item data to total list
     for (int s = 0; s < frustums_per_slice; s++) {
-        CellData &cell = cells[base_index + s];
+        CellData &cell = list.cells.data[base_index + s];
 
         int local_items_count =
             (int)_MAX(cell.light_count,
@@ -2035,7 +2017,7 @@ void Renderer::GatherItemsForZSlice_Job(
                 cell.probe_count = _MIN((int)cell.probe_count, free_items_left);
                 cell.ellips_count = _MIN((int)cell.ellips_count, free_items_left);
 
-                memcpy(&items[cell.item_offset], &local_items[s][0],
+                memcpy(&list.items.data[cell.item_offset], &local_items[s][0],
                        local_items_count * sizeof(ItemData));
             }
         }

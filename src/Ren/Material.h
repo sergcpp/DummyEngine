@@ -40,6 +40,7 @@ public:
     ProgramRef      programs[MaxMaterialProgramCount];
     Texture2DRef    textures[MaxMaterialTextureCount];
     Vec4f           params[MaxMaterialParamCount];
+    int             params_count = 0;
 
     Material() = default;
     Material(

@@ -282,7 +282,7 @@ int DummyApp::Init(int w, int h) {
     };
 
     UINT format_count;
-    BOOL status = wglChoosePixelFormatARB(device_context_, pixel_attribs, NULL, 1, &pix_format_id, &format_count);
+    const BOOL status = wglChoosePixelFormatARB(device_context_, pixel_attribs, NULL, 1, &pix_format_id, &format_count);
 
     if (!status || format_count == 0) {
         std::cerr << "wglChoosePixelFormatARB() failed\n";
