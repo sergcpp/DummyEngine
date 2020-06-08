@@ -54,21 +54,14 @@ invariant gl_Position;
 void main(void) {
     int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
 
-    // load model matrix
-    mat4 MMatrix;
-    MMatrix[0] = texelFetch(instances_buffer, instance * 4 + 0);
-    MMatrix[1] = texelFetch(instances_buffer, instance * 4 + 1);
-    MMatrix[2] = texelFetch(instances_buffer, instance * 4 + 2);
-    MMatrix[3] = vec4(0.0, 0.0, 0.0, 1.0);
+    mat4 model_matrix = FetchModelMatrix(instances_buffer, instance);
 
-    MMatrix = transpose(MMatrix);
-
-	vec3 vtx_pos_ls = aVertexPosition;
-	float vtx_curvature = unpackUnorm4x8(aVertexColorPacked).r;
-	
-	vec3 vtx_pos_ws = (MMatrix * vec4(vtx_pos_ls, 1.0)).xyz;
-    vec3 vtx_nor_ws = normalize((MMatrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
-    vec3 vtx_tan_ws = normalize((MMatrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
+    vec3 vtx_pos_ls = aVertexPosition;
+    float vtx_curvature = unpackUnorm4x8(aVertexColorPacked).r;
+    
+    vec3 vtx_pos_ws = (model_matrix * vec4(vtx_pos_ls, 1.0)).xyz;
+    vec3 vtx_nor_ws = normalize((model_matrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
+    vec3 vtx_tan_ws = normalize((model_matrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
 
     aVertexPos_ = vtx_pos_ws;
     aVertexNormal_ = vtx_nor_ws;

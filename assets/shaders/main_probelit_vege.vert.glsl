@@ -55,34 +55,27 @@ invariant gl_Position;
 void main(void) {
     int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
 
-    // load model matrix
-    mat4 MMatrix;
-    MMatrix[0] = texelFetch(instances_buffer, instance * 4 + 0);
-    MMatrix[1] = texelFetch(instances_buffer, instance * 4 + 1);
-    MMatrix[2] = texelFetch(instances_buffer, instance * 4 + 2);
-    MMatrix[3] = vec4(0.0, 0.0, 0.0, 1.0);
+    mat4 model_matrix = FetchModelMatrix(instances_buffer, instance);
 
-    MMatrix = transpose(MMatrix);
-
-	// load vegetation properties
+    // load vegetation properties
     vec4 veg_params = texelFetch(instances_buffer, instance * 4 + 3);
 
-	vec3 vtx_pos_ls = aVertexPosition;
-	vec4 vtx_color = unpackUnorm4x8(aVertexColorPacked);
-	
-	vec3 obj_pos_ws = MMatrix[3].xyz;
+    vec3 vtx_pos_ls = aVertexPosition;
+    vec4 vtx_color = unpackUnorm4x8(aVertexColorPacked);
+    
+    vec3 obj_pos_ws = model_matrix[3].xyz;
     vec4 wind_scroll = shrd_data.uWindScroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz,
                                                     VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
-	vec4 wind_params = unpackUnorm4x8(floatBitsToUint(veg_params.x));
-	vec4 wind_vec_ls = vec4(unpackHalf2x16(floatBitsToUint(veg_params.y)),
+    vec4 wind_params = unpackUnorm4x8(floatBitsToUint(veg_params.x));
+    vec4 wind_vec_ls = vec4(unpackHalf2x16(floatBitsToUint(veg_params.y)),
                             unpackHalf2x16(floatBitsToUint(veg_params.z)));
-	
-	vtx_pos_ls = TransformVegetation(vtx_pos_ls, vtx_color, wind_scroll, wind_params,
+    
+    vtx_pos_ls = TransformVegetation(vtx_pos_ls, vtx_color, wind_scroll, wind_params,
                                      wind_vec_ls, noise_texture);
-	
-	vec3 vtx_pos_ws = (MMatrix * vec4(vtx_pos_ls, 1.0)).xyz;
-    vec3 vtx_nor_ws = normalize((MMatrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
-    vec3 vtx_tan_ws = normalize((MMatrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
+    
+    vec3 vtx_pos_ws = (model_matrix * vec4(vtx_pos_ls, 1.0)).xyz;
+    vec3 vtx_nor_ws = normalize((model_matrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
+    vec3 vtx_tan_ws = normalize((model_matrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
 
     aVertexPos_ = vtx_pos_ws;
     aVertexNormal_ = vtx_nor_ws;

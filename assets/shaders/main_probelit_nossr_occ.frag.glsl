@@ -192,7 +192,7 @@ void main(void) {
     }
     
     vec3 indirect_col = vec3(0.0);
-	vec3 indirect_dir = normalize(aVertexOcclusion_.xyz);
+    vec3 indirect_dir = normalize(aVertexOcclusion_.xyz);
     float total_fade = 0.0;
     
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
@@ -220,7 +220,7 @@ void main(void) {
     
     vec2 ao_uvs = vec2(ix, iy) / shrd_data.uResAndFRes.zw;
     float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;
-	ambient_occlusion *= ambient_occlusion * aVertexOcclusion_.a /* dot(normal, aVertexOcclusion_.xyz)*/;
+    ambient_occlusion *= ambient_occlusion * aVertexOcclusion_.a /* dot(normal, aVertexOcclusion_.xyz)*/;
     vec3 diffuse_color = albedo_color * (shrd_data.uSunCol.xyz * lambert * visibility +
                                          ambient_occlusion * indirect_col + additional_light);
     

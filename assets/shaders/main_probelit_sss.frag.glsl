@@ -141,8 +141,8 @@ void main(void) {
     vec3 normal = normal_color * 2.0 - 1.0;
     normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_), aVertexNormal_) * normal);
     
-	float curvature = clamp(aVertexUVAndCurvature_.z, 0.0, 1.0);
-	
+    float curvature = clamp(aVertexUVAndCurvature_.z, 0.0, 1.0);
+    
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
     
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
@@ -183,8 +183,8 @@ void main(void) {
                 atten *= SampleShadowPCF5x5(shadow_texture, pp.xyz);
             }
             
-			float _dot1 = dot(L, normal);
-			vec3 l_diffuse = atten * texture(sss_texture, vec2(_dot1 * 0.5 + 0.5, curvature)).rgb;
+            float _dot1 = dot(L, normal);
+            vec3 l_diffuse = atten * texture(sss_texture, vec2(_dot1 * 0.5 + 0.5, curvature)).rgb;
             additional_light += col_and_index.xyz * l_diffuse * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
         }
     }
@@ -209,7 +209,7 @@ void main(void) {
     indirect_col /= max(total_fade, 1.0);
     indirect_col = max(indirect_col, vec3(0.0));
     
-	float N_dot_L = dot(normal, shrd_data.uSunDir.xyz);
+    float N_dot_L = dot(normal, shrd_data.uSunDir.xyz);
     float lambert = clamp(N_dot_L, 0.0, 1.0);
 
     float visibility = 0.0;
@@ -217,8 +217,8 @@ void main(void) {
         visibility = GetSunVisibility(lin_depth, shadow_texture, aVertexShUVs_);
     }
     
-	vec3 sun_diffuse = texture(sss_texture, vec2(N_dot_L * 0.5 + 0.5, curvature)).rgb;
-	
+    vec3 sun_diffuse = texture(sss_texture, vec2(N_dot_L * 0.5 + 0.5, curvature)).rgb;
+    
     vec2 ao_uvs = vec2(ix, iy) / shrd_data.uResAndFRes.zw;
     float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;
     vec3 diffuse_color = albedo_color * (shrd_data.uSunCol.xyz * sun_diffuse * visibility + ambient_occlusion * indirect_col + additional_light);
@@ -231,7 +231,7 @@ void main(void) {
     outColor = vec4(diffuse_color * kD, 1.0);
     outNormal = vec4(normal * 0.5 + 0.5, 0.0);
     outSpecular = specular_color;
-	
-	//outColor.rgb *= 0.00001;
-	//outColor.rgb += vec3(curvature);
+    
+    //outColor.rgb *= 0.00001;
+    //outColor.rgb += vec3(curvature);
 }

@@ -56,22 +56,15 @@ invariant gl_Position;
 void main(void) {
     int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
 
-    // load model matrix
-    mat4 MMatrix;
-    MMatrix[0] = texelFetch(instances_buffer, instance * 4 + 0);
-    MMatrix[1] = texelFetch(instances_buffer, instance * 4 + 1);
-    MMatrix[2] = texelFetch(instances_buffer, instance * 4 + 2);
-    MMatrix[3] = vec4(0.0, 0.0, 0.0, 1.0);
+    mat4 model_matrix = FetchModelMatrix(instances_buffer, instance);
 
-    MMatrix = transpose(MMatrix);
+    vec3 vtx_pos_ws = (model_matrix * vec4(aVertexPosition, 1.0)).xyz;
+    vec3 vtx_nor_ws = normalize((model_matrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
+    vec3 vtx_tan_ws = normalize((model_matrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
 
-    vec3 vertex_position_ws = (MMatrix * vec4(aVertexPosition, 1.0)).xyz;
-    vec3 vertex_normal_ws = normalize((MMatrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
-    vec3 vertex_tangent_ws = normalize((MMatrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
-
-    aVertexPos_ = vertex_position_ws;
-    aVertexNormal_ = vertex_normal_ws;
-    aVertexTangent_ = vertex_tangent_ws;
+    aVertexPos_ = vtx_pos_ws;
+    aVertexNormal_ = vtx_nor_ws;
+    aVertexTangent_ = vtx_tan_ws;
     aVertexUVs_ = aVertexUVs1;
     
     aVertexOcclusion_ = unpackUnorm4x8(aVertexOcclusion);
@@ -89,11 +82,11 @@ void main(void) {
     
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
         aVertexShUVs_[i] = (shrd_data.uShadowMapRegions[i].clip_from_world *
-                            vec4(vertex_position_ws, 1.0)).xyz;
+                            vec4(vtx_pos_ws, 1.0)).xyz;
         aVertexShUVs_[i] = 0.5 * aVertexShUVs_[i] + 0.5;
         aVertexShUVs_[i].xy *= vec2(0.25, 0.5);
         aVertexShUVs_[i].xy += offsets[i];
     }
     
-    gl_Position = shrd_data.uViewProjMatrix * vec4(vertex_position_ws, 1.0);
+    gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
 } 

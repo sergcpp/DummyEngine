@@ -43,17 +43,10 @@ invariant gl_Position;
 void main(void) {
     int instance = uInstanceIndices[gl_InstanceID / 4][gl_InstanceID % 4];
 
-    // load model matrix
-    mat4 MMatrix;
-    MMatrix[0] = texelFetch(instances_buffer, instance * 4 + 0);
-    MMatrix[1] = texelFetch(instances_buffer, instance * 4 + 1);
-    MMatrix[2] = texelFetch(instances_buffer, instance * 4 + 2);
-    MMatrix[3] = vec4(0.0, 0.0, 0.0, 1.0);
-
-    MMatrix = transpose(MMatrix);
+    mat4 model_matrix = FetchModelMatrix(instances_buffer, instance);
 
     aVertexUVs1_ = aVertexUVs1;
     
-	vec3 vertex_pos_ws = (MMatrix * vec4(aVertexPosition, 1.0)).xyz;
-    gl_Position = shrd_data.uViewProjMatrix * vec4(vertex_pos_ws, 1.0);
+    vec3 vtx_pos_ws = (model_matrix * vec4(aVertexPosition, 1.0)).xyz;
+    gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
 } 
