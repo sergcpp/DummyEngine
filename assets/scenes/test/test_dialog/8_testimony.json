@@ -151,14 +151,14 @@
 					"time_beg" : 3.1, 
 					"time_end" : 7.0, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Passen wir gut auf. Uns darf nichts entgehen, was unserem Mandanten helfen könnte."
+					"caption" : "Passen wir gut auf. Uns darf nichts entgehen, was unseren Mandanten helfen könnte."
 				},
                 {
 					"type" : "play", 
 					"time_beg" : 7.1, 
 					"time_end" : 10.0, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Du hast dir Möglichkeit, später auf die Anklage zu reagieren. Mach dich bereit."
+					"caption" : "Du hast die Möglichkeit, später auf die Anklage zu reagieren. Mach dich bereit."
 				},
                 {
 					"type" : "play", 

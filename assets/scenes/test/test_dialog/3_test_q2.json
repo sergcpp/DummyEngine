@@ -32,7 +32,7 @@
 					"time_beg" : 6.6, 
 					"time_end" : 11.5, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Dies is ein Mordprozess. Können Sie mir den Namen des Opfers nennen?"
+					"caption" : "Dies ist ein Mordprozess. Können Sie mir den Namen des Opfers nennen?"
 				}
 			]
 		}, 
@@ -60,7 +60,7 @@
 					"time_beg" : 15.0, 
 					"time_end" : 18.0, 
 					"anim" : "sophia_idle.anim", 
-					"caption" : "Bist du dich wirklich sicher, dass du sas schaffst?"
+					"caption" : "Bist du dich wirklich sicher, dass du das schaffst?"
 				},
 				{
 					"type" : "play", 
