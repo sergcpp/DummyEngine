@@ -153,8 +153,9 @@ void Renderer::InitRendererInternal() {
     fillz_skin_transp_vel_prog_ = ctx_.LoadProgramGLSL(
         "fillz_skin_transp_vel", fillz_skin_transp_vel_vs, fillz_transp_vel_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_skin_transp_vel_mov_prog_ = ctx_.LoadProgramGLSL(
-        "fillz_skin_transp_vel_mov", fillz_skin_transp_vel_mov_vs, fillz_transp_vel_fs, &status);
+    fillz_skin_transp_vel_mov_prog_ =
+        ctx_.LoadProgramGLSL("fillz_skin_transp_vel_mov", fillz_skin_transp_vel_mov_vs,
+                             fillz_transp_vel_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
     shadow_solid_prog_ =
         ctx_.LoadProgramGLSL("shadow_solid", shadow_solid_vs, shadow_solid_fs, &status);
@@ -1854,7 +1855,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
                 glDrawElementsInstancedBaseVertex(
                     GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                    (const GLvoid *)uintptr_t(batch.indices_offset),
+                    (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                     (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
                 backend_info_.shadow_draw_calls_count++;
             }
@@ -1898,7 +1899,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
                 glDrawElementsInstancedBaseVertex(
                     GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                    (const GLvoid *)uintptr_t(batch.indices_offset),
+                    (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                     (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
                 backend_info_.shadow_draw_calls_count++;
             }
@@ -1951,7 +1952,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
                 glDrawElementsInstancedBaseVertex(
                     GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                    (const GLvoid *)uintptr_t(batch.indices_offset),
+                    (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                     (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
                 backend_info_.shadow_draw_calls_count++;
             }
@@ -2004,7 +2005,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
                 glDrawElementsInstancedBaseVertex(
                     GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                    (const GLvoid *)uintptr_t(batch.indices_offset),
+                    (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                     (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
                 backend_info_.shadow_draw_calls_count++;
             }
@@ -2172,7 +2173,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                 (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
@@ -2208,7 +2209,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                 (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
@@ -2248,7 +2249,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                 (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
@@ -2288,7 +2289,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                 (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
@@ -2315,7 +2316,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                 (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
@@ -2342,7 +2343,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                 (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
@@ -2383,7 +2384,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                 (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
@@ -2424,7 +2425,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                 (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.depth_fill_draw_calls_count++;
         }
@@ -2643,7 +2644,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                 (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
             backend_info_.opaque_draw_calls_count++;
             backend_info_.triangles_rendered +=
@@ -2729,7 +2730,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
                 glDrawElementsInstancedBaseVertex(
                     GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                    (const GLvoid *)uintptr_t(batch.indices_offset),
+                    (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                     (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
                 backend_info_.opaque_draw_calls_count += 2;
@@ -2815,7 +2816,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
                 glDrawElementsInstancedBaseVertex(
                     GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                    (const GLvoid *)uintptr_t(batch.indices_offset),
+                    (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                     (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
                 backend_info_.opaque_draw_calls_count += 2;
@@ -2893,7 +2894,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
                 glDrawElementsInstancedBaseVertex(
                     GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                    (const GLvoid *)uintptr_t(batch.indices_offset),
+                    (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                     (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
                 backend_info_.opaque_draw_calls_count++;
@@ -2959,7 +2960,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                 (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -2967,7 +2968,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset),
+                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
                 (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
 
             backend_info_.opaque_draw_calls_count += 2;

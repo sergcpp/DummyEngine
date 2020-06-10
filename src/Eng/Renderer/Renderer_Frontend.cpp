@@ -421,6 +421,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                         __push_ellipsoids(dr, world_from_object, list);
 
+                        const uint32_t indices_start = mesh->indices_buf().offset;
                         const TriGroup *grp = &mesh->group(0);
                         while (grp->offset != -1) {
                             const Material *mat = grp->mat.get();
@@ -437,7 +438,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             main_batch.cam_dist =
                                 (mat_flags & AlphaBlend) ? uint32_t(dist) : 0;
                             main_batch.indices_offset =
-                                mesh->indices_buf().offset + grp->offset;
+                                (indices_start + grp->offset) / sizeof(uint32_t);
                             main_batch.base_vertex = base_vertex;
                             main_batch.indices_count = grp->num_indices;
                             main_batch.instance_indices[0] =
@@ -1068,15 +1069,15 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             }
                         }
 
-                        const TriGroup *s = &mesh->group(0);
-                        while (s->offset != -1) {
-                            const Material *mat = s->mat.get();
+                        const TriGroup *grp = &mesh->group(0);
+                        while (grp->offset != -1) {
+                            const Material *mat = grp->mat.get();
                             if ((mat->flags() & AlphaBlend) == 0) {
                                 DepthDrawBatch &batch =
                                     list.shadow_batches.data[list.shadow_batches.count++];
 
                                 batch.mat_id = (mat->flags() & AlphaTest)
-                                                   ? (uint32_t)s->mat.index()
+                                                   ? (uint32_t)grp->mat.index()
                                                    : 0;
                                 batch.skinned_bit = 0;
                                 batch.alpha_test_bit = (mat->flags() & AlphaTest) ? 1 : 0;
@@ -1084,16 +1085,15 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                     (obj.comp_mask & CompVegStateBit) ? 1 : 0;
                                 batch.moving_bit = 0;
                                 batch.indices_offset =
-                                    mesh->indices_buf().offset + s->offset;
+                                    (mesh->indices_buf().offset + grp->offset) / sizeof(uint32_t);
                                 batch.base_vertex =
                                     proc_objects_.data[n->prim_index].base_vertex;
-                                batch.indices_count = s->num_indices;
+                                batch.indices_count = grp->num_indices;
                                 batch.instance_indices[0] =
                                     proc_objects_.data[n->prim_index].instance_index;
                                 batch.instance_count = 1;
                             }
-
-                            ++s;
+                            ++grp;
                         }
                     }
                 }
@@ -1297,15 +1297,15 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             }
                         }
 
-                        const TriGroup *s = &mesh->group(0);
-                        while (s->offset != -1) {
-                            const Material *mat = s->mat.get();
+                        const TriGroup *grp = &mesh->group(0);
+                        while (grp->offset != -1) {
+                            const Material *mat = grp->mat.get();
                             if ((mat->flags() & AlphaBlend) == 0) {
                                 DepthDrawBatch &batch =
                                     list.shadow_batches.data[list.shadow_batches.count++];
 
                                 batch.mat_id = (mat->flags() & AlphaTest)
-                                                   ? (uint32_t)s->mat.index()
+                                                   ? (uint32_t)grp->mat.index()
                                                    : 0;
                                 batch.skinned_bit = 0;
                                 batch.alpha_test_bit = (mat->flags() & AlphaTest) ? 1 : 0;
@@ -1313,15 +1313,15 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                     (obj.comp_mask & CompVegStateBit) ? 1 : 0;
                                 batch.moving_bit = 0;
                                 batch.indices_offset =
-                                    mesh->indices_buf().offset + s->offset;
+                                    (mesh->indices_buf().offset + grp->offset) / sizeof(uint32_t);
                                 batch.base_vertex =
                                     proc_objects_.data[n->prim_index].base_vertex;
-                                batch.indices_count = s->num_indices;
+                                batch.indices_count = grp->num_indices;
                                 batch.instance_indices[0] =
                                     proc_objects_.data[n->prim_index].instance_index;
                                 batch.instance_count = 1;
                             }
-                            ++s;
+                            ++grp;
                         }
                     }
 
