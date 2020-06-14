@@ -18,6 +18,12 @@ static const char fillz_solid_fs[] =
 ;
 #undef __ADDITIONAL_DEFINES_STR__
 
+#define __ADDITIONAL_DEFINES_STR__ "#define MOVING_PERM"
+static const char fillz_solid_mov_vs[] =
+#include "Shaders/fillz.vert.glsl"
+    ;
+#undef __ADDITIONAL_DEFINES_STR__
+
 #define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM"
 static const char fillz_transp_vs[] =
 #include "Shaders/fillz.vert.glsl"
@@ -25,6 +31,12 @@ static const char fillz_transp_vs[] =
 static const char fillz_transp_fs[] =
 #include "Shaders/fillz.frag.glsl"
 ;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ "#define MOVING_PERM"
+static const char fillz_transp_mov_vs[] =
+#include "Shaders/fillz.vert.glsl"
+    ;
 #undef __ADDITIONAL_DEFINES_STR__
 
 #define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM\n#define OUTPUT_VELOCITY"
@@ -48,6 +60,12 @@ static const char fillz_solid_vel_fs[] =
 ;
 #undef __ADDITIONAL_DEFINES_STR__
 
+#define __ADDITIONAL_DEFINES_STR__ "#define OUTPUT_VELOCITY\n#define MOVING_PERM"
+static const char fillz_vege_solid_vel_mov_vs[] =
+#include "Shaders/fillz_vege.vert.glsl"
+    ;
+#undef __ADDITIONAL_DEFINES_STR__
+
 #define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM"
 static const char fillz_vege_transp_vs[] =
 #include "Shaders/fillz_vege.vert.glsl"
@@ -58,6 +76,12 @@ static const char fillz_vege_transp_vs[] =
 static const char fillz_vege_transp_vel_vs[] =
 #include "Shaders/fillz_vege.vert.glsl"
 ;
+#undef __ADDITIONAL_DEFINES_STR__
+
+#define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM\n#define OUTPUT_VELOCITY\n#define MOVING_PERM"
+static const char fillz_vege_transp_vel_mov_vs[] =
+#include "Shaders/fillz_vege.vert.glsl"
+    ;
 #undef __ADDITIONAL_DEFINES_STR__
 
 #define __ADDITIONAL_DEFINES_STR__ ""

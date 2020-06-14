@@ -16,13 +16,12 @@ layout (std140) uniform SharedDataBlock {
 
 #ifdef TRANSPARENT_PERM
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D alphatest_texture;
+in vec2 aVertexUVs1_;
 
 #ifdef HASHED_TRANSPARENCY
 layout(location = 3) uniform float hash_scale;
 in vec3 aVertexObjCoord_;
 #endif
-
-in vec2 aVertexUVs1_;
 #endif
 
 #ifdef OUTPUT_VELOCITY

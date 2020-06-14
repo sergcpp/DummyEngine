@@ -80,6 +80,10 @@ void main(void) {
     vec3 normal = normal_color * 2.0 - 1.0;
     normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_),
                             aVertexNormal_) * normal);
+                            
+    if (!gl_FrontFacing) {
+        normal = -normal;
+    }
     
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
     
@@ -155,7 +159,7 @@ void main(void) {
     }
     
     indirect_col /= max(total_fade, 1.0);
-    //indirect_col = max(1.0 * indirect_col, vec3(0.0));
+    indirect_col = max(indirect_col, vec3(0.0));
     reflected_col /= max(total_fade, 1.0);
 	
     float lambert = clamp(dot(normal, shrd_data.uSunDir.xyz), 0.0, 1.0);

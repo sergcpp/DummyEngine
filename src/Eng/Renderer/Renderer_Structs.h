@@ -71,14 +71,25 @@ struct InstanceData {
 static_assert(sizeof(InstanceData) == 64, "!");
 
 struct DepthDrawBatch { // NOLINT
+    static const uint32_t TypeSimple    = 0b00u;
+    static const uint32_t TypeVege      = 0b01u;
+    static const uint32_t TypeSkinned   = 0b10u;
+
+    static const uint32_t BitsSimple    = (TypeSimple   << 30u);
+    static const uint32_t BitsVege      = (TypeVege     << 30u);
+    static const uint32_t BitsSkinned   = (TypeSkinned  << 30u);
+    static const uint32_t BitAlphaTest  = (1u << 29u);
+    static const uint32_t BitMoving     = (1u << 28u);
+    static const uint32_t BitTwoSided   = (1u << 27u);
+    static const uint32_t FlagBits      = (0b11111u << 27u);
+
     union {
         struct {
             uint32_t indices_offset : 27;
             uint32_t two_sided_bit  : 1;
-            uint32_t moving_bit     : 1;    // indicates that depth pass should write velocity
-            uint32_t vegetation_bit : 1;    // indicates that depth pass should apply vegetation vertex transform
+            uint32_t moving_bit     : 1;    // object uses two transforms
             uint32_t alpha_test_bit : 1;
-            uint32_t skinned_bit    : 1;    // indicates that depth pass should write velocity
+            uint32_t type_bits      : 2;    // indicates that depth pass should apply vegetation vertex transform
         };
         uint32_t sort_key = 0;
     };

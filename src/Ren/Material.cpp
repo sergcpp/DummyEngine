@@ -122,6 +122,8 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                 flags_ |= AlphaTest;
             } else if (flag == "alpha_blend") {
                 flags_ |= AlphaBlend;
+            } else if (flag == "twosided") {
+                flags_ |= TwoSided;
             } else {
                 log->Error("Unknown flag %s", flag.c_str());
             }

@@ -109,6 +109,64 @@ struct DebugMarker {
 #endif
     }
 };
+
+uint32_t __draw_depth_list_range_simple(const DrawList &list, uint32_t i, uint32_t mask,
+                                        BackendInfo &backend_info) {
+    for (; i < list.zfill_batch_indices.count; i++) {
+        const DepthDrawBatch &batch =
+            list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+        if ((batch.sort_key & DepthDrawBatch::FlagBits) != mask) {
+            break;
+        }
+
+        if (!batch.instance_count) {
+            continue;
+        }
+
+        glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                     &batch.instance_indices[0]);
+
+        glDrawElementsInstancedBaseVertex(
+            GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+            (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
+            (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+        backend_info.depth_fill_draw_calls_count++;
+    }
+    return i;
+}
+
+uint32_t __draw_depth_list_range_material(Ren::Context &ctx, const DrawList &list,
+                                          uint32_t i, uint32_t mask, uint32_t &cur_mat_id,
+                                          BackendInfo &backend_info) {
+    for (; i < list.zfill_batch_indices.count; i++) {
+        const DepthDrawBatch &batch =
+            list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+        if ((batch.sort_key & DepthDrawBatch::FlagBits) != mask) {
+            break;
+        }
+
+        if (!batch.instance_count) {
+            continue;
+        }
+
+        if (batch.mat_id != cur_mat_id) {
+            const Ren::Material *mat = ctx.GetMaterial(batch.mat_id).get();
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
+                                       mat->textures[0]->tex_id());
+            cur_mat_id = batch.mat_id;
+        }
+
+        glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
+                     &batch.instance_indices[0]);
+
+        glDrawElementsInstancedBaseVertex(
+            GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+            (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
+            (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+        backend_info.depth_fill_draw_calls_count++;
+    }
+    return i;
+}
 } // namespace RendererInternal
 
 void Renderer::InitRendererInternal() {
@@ -122,20 +180,34 @@ void Renderer::InitRendererInternal() {
     fillz_solid_prog_ =
         ctx_.LoadProgramGLSL("fillz_solid", fillz_solid_vs, fillz_solid_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    fillz_solid_mov_prog_ = ctx_.LoadProgramGLSL("fillz_solid_mov", fillz_solid_mov_vs,
+                                                 fillz_solid_vel_fs, &status);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     fillz_vege_solid_prog_ = ctx_.LoadProgramGLSL("fillz_vege_solid", fillz_vege_solid_vs,
                                                   fillz_solid_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
     fillz_vege_solid_vel_prog_ = ctx_.LoadProgramGLSL(
         "fillz_vege_solid_vel", fillz_vege_solid_vel_vs, fillz_solid_vel_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    fillz_vege_solid_vel_mov_prog_ =
+        ctx_.LoadProgramGLSL("fillz_vege_solid_vel_mov", fillz_vege_solid_vel_mov_vs,
+                             fillz_solid_vel_fs, &status);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
     fillz_transp_prog_ =
         ctx_.LoadProgramGLSL("fillz_transp", fillz_transp_vs, fillz_transp_fs, &status);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    fillz_transp_mov_prog_ = ctx_.LoadProgramGLSL("fillz_transp_mov", fillz_transp_mov_vs,
+                                                  fillz_transp_vel_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
     fillz_vege_transp_prog_ = ctx_.LoadProgramGLSL(
         "fillz_vege_transp", fillz_vege_transp_vs, fillz_transp_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
     fillz_vege_transp_vel_prog_ = ctx_.LoadProgramGLSL(
         "fillz_vege_transp_vel", fillz_vege_transp_vel_vs, fillz_transp_vel_fs, &status);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    fillz_vege_transp_vel_mov_prog_ =
+        ctx_.LoadProgramGLSL("fillz_vege_transp_vel_mov", fillz_vege_transp_vel_mov_vs,
+                             fillz_transp_vel_fs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
     fillz_skin_solid_prog_ = ctx_.LoadProgramGLSL("fillz_skin_solid", fillz_skin_solid_vs,
                                                   fillz_solid_fs, &status);
@@ -1846,7 +1918,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 const DepthDrawBatch &batch =
                     list.shadow_batches.data[list.shadow_batch_indices.data[j]];
                 if (!batch.instance_count || batch.alpha_test_bit ||
-                    batch.vegetation_bit) {
+                    batch.type_bits == DepthDrawBatch::TypeVege) {
                     continue;
                 }
 
@@ -1890,7 +1962,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 const DepthDrawBatch &batch =
                     list.shadow_batches.data[list.shadow_batch_indices.data[j]];
                 if (!batch.instance_count || batch.alpha_test_bit ||
-                    !batch.vegetation_bit) {
+                    batch.type_bits != DepthDrawBatch::TypeVege) {
                     continue;
                 }
 
@@ -1936,7 +2008,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 const DepthDrawBatch &batch =
                     list.shadow_batches.data[list.shadow_batch_indices.data[j]];
                 if (!batch.instance_count || !batch.alpha_test_bit ||
-                    batch.vegetation_bit) {
+                    batch.type_bits == DepthDrawBatch::TypeVege) {
                     continue;
                 }
 
@@ -1989,7 +2061,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 const DepthDrawBatch &batch =
                     list.shadow_batches.data[list.shadow_batch_indices.data[j]];
                 if (!batch.instance_count || !batch.alpha_test_bit ||
-                    !batch.vegetation_bit) {
+                    batch.type_bits != DepthDrawBatch::TypeVege) {
                     continue;
                 }
 
@@ -2142,159 +2214,213 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     if ((list.render_flags & EnableZFill) &&
         ((list.render_flags & DebugWireframe) == 0)) {
-        //const float TransparencyHashScale =
-        //    (list.render_flags & EnableTaa) ? 0.25f : 1.0f;
-
-        //
-        // TODO: refactor this madness!!!
-        //
-
-        // Write depth only
-        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
 
         glDepthFunc(GL_LESS);
 
         DebugMarker _("DEPTH-FILL");
 
+        uint32_t i = 0;
+
+        glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
+
+        glClear(GL_STENCIL_BUFFER_BIT);
+
+        glEnable(GL_STENCIL_TEST);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        glStencilFunc(GL_ALWAYS, 0, 0xFF);
+
         // draw solid objects
         glBindVertexArray(depth_pass_solid_vao_);
         glUseProgram(fillz_solid_prog_->prog_id());
 
-        for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const DepthDrawBatch &batch =
-                list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || batch.alpha_test_bit || batch.vegetation_bit ||
-                batch.skinned_bit) {
-                continue;
+        i = __draw_depth_list_range_simple(list, i, 0u, backend_info_);
+
+        glDisable(GL_CULL_FACE);
+
+        i = __draw_depth_list_range_simple(list, i, DepthDrawBatch::BitTwoSided,
+                                           backend_info_);
+
+        glEnable(GL_CULL_FACE);
+
+        { // moving solid meshes (depth and velocity)
+            if ((list.render_flags & EnableTaa) != 0) {
+                // Write depth and velocity
+                glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_vel_);
+                glUseProgram(fillz_solid_mov_prog_->prog_id());
+            } else {
+                // Write depth only
+                glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
             }
 
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
-                         &batch.instance_indices[0]);
+            // mark dynamic objects
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);
 
-            glDrawElementsInstancedBaseVertex(
-                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
-                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
-            backend_info_.depth_fill_draw_calls_count++;
+            i = __draw_depth_list_range_simple(list, i, DepthDrawBatch::BitMoving,
+                                               backend_info_);
+
+            glDisable(GL_CULL_FACE);
+
+            i = __draw_depth_list_range_simple(
+                list, i, DepthDrawBatch::BitMoving | DepthDrawBatch::BitTwoSided,
+                backend_info_);
+
+            glEnable(GL_CULL_FACE);
         }
 
-        // draw alpha-tested objects
-        glBindVertexArray(depth_pass_transp_vao_);
-        glUseProgram(fillz_transp_prog_->prog_id());
+        { // alpha-tested objects
+            glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
+            glBindVertexArray(depth_pass_transp_vao_);
+            glUseProgram(fillz_transp_prog_->prog_id());
 
-        //glUniform1f(3, TransparencyHashScale);
+            glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                   dummy_white_->tex_id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
+                                       dummy_white_->tex_id());
 
-        uint32_t cur_mat_id = 0xffffffff;
+            uint32_t cur_mat_id = 0xffffffff;
 
-        for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const DepthDrawBatch &batch =
-                list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || !batch.alpha_test_bit || batch.vegetation_bit ||
-                batch.skinned_bit || batch.moving_bit) {
-                continue;
+            i = __draw_depth_list_range_material(
+                ctx_, list, i, DepthDrawBatch::BitAlphaTest, cur_mat_id, backend_info_);
+
+            glDisable(GL_CULL_FACE);
+
+            i = __draw_depth_list_range_material(
+                ctx_, list, i, DepthDrawBatch::BitAlphaTest | DepthDrawBatch::BitTwoSided,
+                cur_mat_id, backend_info_);
+
+            glEnable(GL_CULL_FACE);
+
+            { // moving alpha-tested meshes (depth and velocity)
+                if ((list.render_flags & EnableTaa) != 0) {
+                    // Write depth and velocity
+                    glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_vel_);
+                    glUseProgram(fillz_transp_mov_prog_->prog_id());
+                } else {
+                    // Write depth only
+                    glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
+                }
+
+                // mark dynamic objects
+                glStencilFunc(GL_ALWAYS, 1, 0xFF);
+
+                i = __draw_depth_list_range_material(ctx_, list, i,
+                                                     DepthDrawBatch::BitAlphaTest |
+                                                         DepthDrawBatch::BitMoving,
+                                                     cur_mat_id, backend_info_);
+
+                glDisable(GL_CULL_FACE);
+
+                i = __draw_depth_list_range_material(ctx_, list, i,
+                                                     DepthDrawBatch::BitAlphaTest |
+                                                         DepthDrawBatch::BitMoving |
+                                                         DepthDrawBatch::BitTwoSided,
+                                                     cur_mat_id, backend_info_);
+
+                glEnable(GL_CULL_FACE);
             }
-
-            if (batch.mat_id != cur_mat_id) {
-                const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                           mat->textures[0]->tex_id());
-                cur_mat_id = batch.mat_id;
-            }
-
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
-                         &batch.instance_indices[0]);
-
-            glDrawElementsInstancedBaseVertex(
-                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
-                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
-            backend_info_.depth_fill_draw_calls_count++;
         }
 
+        // solid vegetation
+        glBindVertexArray(depth_pass_vege_solid_vao_);
         if ((list.render_flags & EnableTaa) != 0) {
             // Write depth and velocity
             glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_vel_);
-
-            glClear(GL_STENCIL_BUFFER_BIT);
-
-            glEnable(GL_STENCIL_TEST);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            glStencilFunc(GL_ALWAYS, 1, 0xFF);
+            glUseProgram(fillz_vege_solid_vel_prog_->prog_id());
         } else {
             // Write depth only
             glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
-        }
-
-        // draw solid vegetation
-        glBindVertexArray(depth_pass_vege_solid_vao_);
-        if ((list.render_flags & EnableTaa) != 0) {
-            glUseProgram(fillz_vege_solid_vel_prog_->prog_id());
-        } else {
             glUseProgram(fillz_vege_solid_prog_->prog_id());
         }
 
-        for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const DepthDrawBatch &batch =
-                list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || batch.alpha_test_bit || !batch.vegetation_bit ||
-                batch.skinned_bit || batch.moving_bit) {
-                continue;
+        // mark dynamic objects
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+
+        i = __draw_depth_list_range_simple(list, i, DepthDrawBatch::BitsVege,
+                                           backend_info_);
+
+        glDisable(GL_CULL_FACE);
+
+        i = __draw_depth_list_range_simple(
+            list, i, DepthDrawBatch::BitsVege | DepthDrawBatch::BitTwoSided,
+            backend_info_);
+
+        glEnable(GL_CULL_FACE);
+
+        { // moving solid vegetation (depth and velocity)
+            if ((list.render_flags & EnableTaa) != 0) {
+                glUseProgram(fillz_vege_solid_vel_mov_prog_->prog_id());
+            } else {
+                glUseProgram(fillz_vege_solid_prog_->prog_id());
             }
 
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
-                         &batch.instance_indices[0]);
+            i = __draw_depth_list_range_simple(
+                list, i, DepthDrawBatch::BitsVege | DepthDrawBatch::BitMoving,
+                backend_info_);
 
-            glDrawElementsInstancedBaseVertex(
-                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
-                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
-            backend_info_.depth_fill_draw_calls_count++;
+            glDisable(GL_CULL_FACE);
+
+            i = __draw_depth_list_range_simple(list, i,
+                                               DepthDrawBatch::BitsVege |
+                                                   DepthDrawBatch::BitMoving |
+                                                   DepthDrawBatch::BitTwoSided,
+                                               backend_info_);
+
+            glEnable(GL_CULL_FACE);
         }
 
-        // draw alpha-tested vegetation
-        glBindVertexArray(depth_pass_vege_transp_vao_);
-        if ((list.render_flags & EnableTaa) != 0) {
-            glUseProgram(fillz_vege_transp_vel_prog_->prog_id());
-        } else {
-            glUseProgram(fillz_vege_transp_prog_->prog_id());
-        }
-
-        //glUniform1f(3, TransparencyHashScale);
-
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                   dummy_white_->tex_id());
-
-        cur_mat_id = 0xffffffff;
-
-        for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const DepthDrawBatch &batch =
-                list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || !batch.alpha_test_bit || !batch.vegetation_bit ||
-                batch.skinned_bit || batch.moving_bit) {
-                continue;
+        { // alpha-tested vegetation
+            glBindVertexArray(depth_pass_vege_transp_vao_);
+            if ((list.render_flags & EnableTaa) != 0) {
+                glUseProgram(fillz_vege_transp_vel_prog_->prog_id());
+            } else {
+                glUseProgram(fillz_vege_transp_prog_->prog_id());
             }
 
-            if (batch.mat_id != cur_mat_id) {
-                const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                           mat->textures[0]->tex_id());
-                cur_mat_id = batch.mat_id;
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
+                                       dummy_white_->tex_id());
+
+            uint32_t cur_mat_id = 0xffffffff;
+
+            i = __draw_depth_list_range_material(
+                ctx_, list, i, DepthDrawBatch::BitsVege | DepthDrawBatch::BitAlphaTest,
+                cur_mat_id, backend_info_);
+
+            glDisable(GL_CULL_FACE);
+
+            i = __draw_depth_list_range_material(ctx_, list, i,
+                                                 DepthDrawBatch::BitsVege |
+                                                     DepthDrawBatch::BitAlphaTest |
+                                                     DepthDrawBatch::BitTwoSided,
+                                                 cur_mat_id, backend_info_);
+
+            glEnable(GL_CULL_FACE);
+
+            { // moving alpha-tested vegetation (depth and velocity)
+                if ((list.render_flags & EnableTaa) != 0) {
+                    glUseProgram(fillz_vege_transp_vel_mov_prog_->prog_id());
+                } else {
+                    glUseProgram(fillz_vege_transp_prog_->prog_id());
+                }
+
+                i = __draw_depth_list_range_material(ctx_, list, i,
+                                                     DepthDrawBatch::BitsVege |
+                                                         DepthDrawBatch::BitAlphaTest |
+                                                         DepthDrawBatch::BitMoving,
+                                                     cur_mat_id, backend_info_);
+
+                glDisable(GL_CULL_FACE);
+
+                i = __draw_depth_list_range_material(
+                    ctx_, list, i,
+                    DepthDrawBatch::BitsVege | DepthDrawBatch::BitAlphaTest |
+                        DepthDrawBatch::BitMoving | DepthDrawBatch::BitTwoSided,
+                    cur_mat_id, backend_info_);
+
+                glEnable(GL_CULL_FACE);
             }
-
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
-                         &batch.instance_indices[0]);
-
-            glDrawElementsInstancedBaseVertex(
-                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
-                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
-            backend_info_.depth_fill_draw_calls_count++;
         }
 
-        // draw solid skinned meshes
+        // solid skinned meshes (depth and velocity)
         if ((list.render_flags & EnableTaa) != 0) {
             glBindVertexArray(depth_pass_skin_solid_vao_);
             glUseProgram(fillz_skin_solid_vel_prog_->prog_id());
@@ -2303,131 +2429,89 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glUseProgram(fillz_solid_prog_->prog_id());
         }
 
-        for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const DepthDrawBatch &batch =
-                list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || batch.alpha_test_bit || batch.vegetation_bit ||
-                !batch.skinned_bit || batch.moving_bit) {
-                continue;
+        i = __draw_depth_list_range_simple(list, i, DepthDrawBatch::BitsSkinned,
+                                           backend_info_);
+
+        glDisable(GL_CULL_FACE);
+
+        i = __draw_depth_list_range_simple(
+            list, i, DepthDrawBatch::BitsSkinned | DepthDrawBatch::BitTwoSided,
+            backend_info_);
+
+        glEnable(GL_CULL_FACE);
+
+        { // moving solid skinned (depth and velocity)
+            if ((list.render_flags & EnableTaa) != 0) {
+                glUseProgram(fillz_skin_solid_vel_mov_prog_->prog_id());
+            } else {
+                glUseProgram(fillz_skin_solid_prog_->prog_id());
             }
 
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
-                         &batch.instance_indices[0]);
+            i = __draw_depth_list_range_simple(
+                list, i, DepthDrawBatch::BitsSkinned | DepthDrawBatch::BitMoving,
+                backend_info_);
 
-            glDrawElementsInstancedBaseVertex(
-                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
-                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
-            backend_info_.depth_fill_draw_calls_count++;
+            glDisable(GL_CULL_FACE);
+
+            i = __draw_depth_list_range_simple(list, i,
+                                               DepthDrawBatch::BitsSkinned |
+                                                   DepthDrawBatch::BitMoving |
+                                                   DepthDrawBatch::BitTwoSided,
+                                               backend_info_);
+
+            glEnable(GL_CULL_FACE);
         }
 
-        // draw solid moving skinned meshes
-        if ((list.render_flags & EnableTaa) != 0) {
-            glBindVertexArray(depth_pass_skin_solid_vao_);
-            glUseProgram(fillz_skin_solid_vel_mov_prog_->prog_id());
-        } else {
-            glBindVertexArray(depth_pass_solid_vao_);
-            glUseProgram(fillz_solid_prog_->prog_id());
-        }
-
-        for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const DepthDrawBatch &batch =
-                list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || batch.alpha_test_bit || batch.vegetation_bit ||
-                !batch.skinned_bit || !batch.moving_bit) {
-                continue;
-            }
-
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
-                         &batch.instance_indices[0]);
-
-            glDrawElementsInstancedBaseVertex(
-                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
-                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
-            backend_info_.depth_fill_draw_calls_count++;
-        }
-
-        // draw alpha-tested skinned meshes
-        if ((list.render_flags & EnableTaa) != 0) {
+        { // alpha-tested skinned
             glBindVertexArray(depth_pass_skin_transp_vao_);
-            glUseProgram(fillz_skin_transp_vel_prog_->prog_id());
-        } else {
-            glBindVertexArray(depth_pass_transp_vao_);
-            glUseProgram(fillz_skin_transp_prog_->prog_id());
-        }
-
-        //glUniform1f(3, TransparencyHashScale);
-
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                   dummy_white_->tex_id());
-
-        cur_mat_id = 0xffffffff;
-
-        for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const DepthDrawBatch &batch =
-                list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || !batch.alpha_test_bit || batch.vegetation_bit ||
-                !batch.skinned_bit || batch.moving_bit) {
-                continue;
+            if ((list.render_flags & EnableTaa) != 0) {
+                glUseProgram(fillz_skin_transp_vel_prog_->prog_id());
+            } else {
+                glUseProgram(fillz_skin_transp_prog_->prog_id());
             }
 
-            if (batch.mat_id != cur_mat_id) {
-                const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                           mat->textures[0]->tex_id());
-                cur_mat_id = batch.mat_id;
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
+                                       dummy_white_->tex_id());
+
+            uint32_t cur_mat_id = 0xffffffff;
+
+            i = __draw_depth_list_range_material(
+                ctx_, list, i, DepthDrawBatch::BitsSkinned | DepthDrawBatch::BitAlphaTest,
+                cur_mat_id, backend_info_);
+
+            glDisable(GL_CULL_FACE);
+
+            i = __draw_depth_list_range_material(ctx_, list, i,
+                                                 DepthDrawBatch::BitsSkinned |
+                                                     DepthDrawBatch::BitAlphaTest |
+                                                     DepthDrawBatch::BitTwoSided,
+                                                 cur_mat_id, backend_info_);
+
+            glEnable(GL_CULL_FACE);
+
+            { // moving alpha-tested skinned (depth and velocity)
+                if ((list.render_flags & EnableTaa) != 0) {
+                    glUseProgram(fillz_skin_transp_vel_mov_prog_->prog_id());
+                } else {
+                    glUseProgram(fillz_skin_transp_prog_->prog_id());
+                }
+
+                i = __draw_depth_list_range_material(ctx_, list, i,
+                                                     DepthDrawBatch::BitsSkinned |
+                                                         DepthDrawBatch::BitAlphaTest |
+                                                         DepthDrawBatch::BitMoving,
+                                                     cur_mat_id, backend_info_);
+
+                glDisable(GL_CULL_FACE);
+
+                i = __draw_depth_list_range_material(
+                    ctx_, list, i,
+                    DepthDrawBatch::BitsSkinned | DepthDrawBatch::BitAlphaTest |
+                        DepthDrawBatch::BitMoving | DepthDrawBatch::BitTwoSided,
+                    cur_mat_id, backend_info_);
+
+                glEnable(GL_CULL_FACE);
             }
-
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
-                         &batch.instance_indices[0]);
-
-            glDrawElementsInstancedBaseVertex(
-                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
-                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
-            backend_info_.depth_fill_draw_calls_count++;
-        }
-
-        // draw alpha-tested moving skinned meshes
-        if ((list.render_flags & EnableTaa) != 0) {
-            glBindVertexArray(depth_pass_skin_transp_vao_);
-            glUseProgram(fillz_skin_transp_vel_mov_prog_->prog_id());
-        } else {
-            glBindVertexArray(depth_pass_transp_vao_);
-            glUseProgram(fillz_skin_transp_prog_->prog_id());
-        }
-
-        //glUniform1f(3, TransparencyHashScale);
-
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                   dummy_white_->tex_id());
-
-        cur_mat_id = 0xffffffff;
-
-        for (uint32_t i = 0; i < list.zfill_batch_indices.count; i++) {
-            const DepthDrawBatch &batch =
-                list.zfill_batches.data[list.zfill_batch_indices.data[i]];
-            if (!batch.instance_count || !batch.alpha_test_bit || batch.vegetation_bit ||
-                !batch.skinned_bit || !batch.moving_bit) {
-                continue;
-            }
-
-            if (batch.mat_id != cur_mat_id) {
-                const Ren::Material *mat = ctx_.GetMaterial(batch.mat_id).get();
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                           mat->textures[0]->tex_id());
-                cur_mat_id = batch.mat_id;
-            }
-
-            glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
-                         &batch.instance_indices[0]);
-
-            glDrawElementsInstancedBaseVertex(
-                GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
-                (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
-            backend_info_.depth_fill_draw_calls_count++;
         }
 
         glDisable(GL_STENCIL_TEST);
@@ -4174,8 +4258,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             const Ren::Program *debug_bvh_prog = nullptr;
-
-            debug_bvh_prog = blit_debug_bvh_ms_prog_.get();
+            if (clean_buf_.sample_count > 1) {
+                debug_bvh_prog = blit_debug_bvh_ms_prog_.get();
+            } else {
+                debug_bvh_prog = blit_debug_bvh_prog_.get();
+            }
             glUseProgram(debug_bvh_prog->prog_id());
 
             glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
@@ -4203,8 +4290,13 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                                   (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ +
                                                             sizeof(fs_quad_positions)));
 
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, 0,
-                                       clean_buf_.depth_tex.GetValue());
+            if (clean_buf_.sample_count > 1) {
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, 0,
+                                           clean_buf_.depth_tex.GetValue());
+            } else {
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0,
+                                           clean_buf_.depth_tex.GetValue());
+            }
 
             ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, 1, nodes_tbo_);
 

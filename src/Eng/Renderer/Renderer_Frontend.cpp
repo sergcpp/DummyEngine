@@ -434,7 +434,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             main_batch.prog_id =
                                 (uint32_t)mat->programs[program_index].index();
                             main_batch.alpha_test_bit = (mat_flags & AlphaTest) ? 1 : 0;
-                            main_batch.two_sided_bit = 0;
+                            main_batch.two_sided_bit = (mat_flags & TwoSided) ? 1 : 0;
                             main_batch.mat_id = (uint32_t)grp->mat.index();
                             main_batch.cam_dist =
                                 (mat_flags & AlphaBlend) ? uint32_t(dist) : 0;
@@ -452,15 +452,20 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 DepthDrawBatch &zfill_batch =
                                     list.zfill_batches.data[list.zfill_batches.count++];
 
-                                zfill_batch.skinned_bit =
-                                    (obj.comp_mask & CompAnimStateBit) ? 1 : 0;
+                                zfill_batch.type_bits = DepthDrawBatch::TypeSimple;
+
+                                if (obj.comp_mask & CompAnimStateBit) {
+                                    zfill_batch.type_bits = DepthDrawBatch::TypeSkinned;
+                                } else if (obj.comp_mask & CompVegStateBit) {
+                                    zfill_batch.type_bits = DepthDrawBatch::TypeVege;
+                                }
+
                                 zfill_batch.alpha_test_bit =
                                     (mat_flags & AlphaTest) ? 1 : 0;
-                                zfill_batch.vegetation_bit =
-                                    (obj.comp_mask & CompVegStateBit) ? 1 : 0;
                                 zfill_batch.moving_bit =
                                     (obj.last_change_mask & CompTransformBit) ? 1 : 0;
-                                zfill_batch.two_sided_bit = 0;
+                                zfill_batch.two_sided_bit =
+                                    (mat_flags & TwoSided) ? 1 : 0;
                                 zfill_batch.mat_id =
                                     (mat_flags & AlphaTest) ? uint32_t(main_batch.mat_id) : 0;
                                 zfill_batch.indices_offset = main_batch.indices_offset;
@@ -1076,19 +1081,26 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         const TriGroup *grp = &mesh->group(0);
                         while (grp->offset != -1) {
                             const Material *mat = grp->mat.get();
-                            if ((mat->flags() & AlphaBlend) == 0) {
+                            const uint32_t mat_flags = mat->flags();
+
+                            if ((mat_flags & AlphaBlend) == 0) {
                                 DepthDrawBatch &batch =
                                     list.shadow_batches.data[list.shadow_batches.count++];
 
-                                batch.mat_id = (mat->flags() & AlphaTest)
+                                batch.mat_id = (mat_flags & AlphaTest)
                                                    ? (uint32_t)grp->mat.index()
                                                    : 0;
-                                batch.skinned_bit = 0;
-                                batch.alpha_test_bit = (mat->flags() & AlphaTest) ? 1 : 0;
-                                batch.vegetation_bit =
-                                    (obj.comp_mask & CompVegStateBit) ? 1 : 0;
+
+                                batch.type_bits = DepthDrawBatch::TypeSimple;
+
+                                // we do not care if it is skinned
+                                if (obj.comp_mask & CompVegStateBit) {
+                                    batch.type_bits = DepthDrawBatch::TypeVege;
+                                }
+
+                                batch.alpha_test_bit = (mat_flags & AlphaTest) ? 1 : 0;
                                 batch.moving_bit = 0;
-                                batch.two_sided_bit = 0;
+                                batch.two_sided_bit = (mat_flags & TwoSided) ? 1 : 0;
                                 batch.indices_offset =
                                     (mesh->indices_buf().offset + grp->offset) / sizeof(uint32_t);
                                 batch.base_vertex =
@@ -1305,19 +1317,26 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         const TriGroup *grp = &mesh->group(0);
                         while (grp->offset != -1) {
                             const Material *mat = grp->mat.get();
-                            if ((mat->flags() & AlphaBlend) == 0) {
+                            const uint32_t mat_flags = mat->flags();
+
+                            if ((mat_flags & AlphaBlend) == 0) {
                                 DepthDrawBatch &batch =
                                     list.shadow_batches.data[list.shadow_batches.count++];
 
-                                batch.mat_id = (mat->flags() & AlphaTest)
+                                batch.mat_id = (mat_flags & AlphaTest)
                                                    ? (uint32_t)grp->mat.index()
                                                    : 0;
-                                batch.skinned_bit = 0;
-                                batch.alpha_test_bit = (mat->flags() & AlphaTest) ? 1 : 0;
-                                batch.vegetation_bit =
-                                    (obj.comp_mask & CompVegStateBit) ? 1 : 0;
+
+                                batch.type_bits = DepthDrawBatch::TypeSimple;
+
+                                // we do not care if it is skinned
+                                if (obj.comp_mask & CompVegStateBit) {
+                                    batch.type_bits = DepthDrawBatch::TypeVege;
+                                }
+
+                                batch.alpha_test_bit = (mat_flags & AlphaTest) ? 1 : 0;
                                 batch.moving_bit = 0;
-                                batch.two_sided_bit = 0;
+                                batch.two_sided_bit = (mat_flags & TwoSided) ? 1 : 0;
                                 batch.indices_offset =
                                     (mesh->indices_buf().offset + grp->offset) / sizeof(uint32_t);
                                 batch.base_vertex =

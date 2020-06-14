@@ -30,6 +30,7 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
                           //"pbr_test.json";
                           //"zenith.json";
                           //"corridor.json";
+                          //"vegetation_test.json";
                           //"vegetation_test_night.json";
                           //"test_decals.json";
                           //"courtroom.json";
@@ -663,6 +664,8 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
                 skel->UpdateAnim(anim_index, as->anim_time_s);
                 skel->ApplyAnim(anim_index);
                 skel->UpdateBones(&as->matr_palette_curr[0]);
+
+                sophia->change_mask |= CompDrawableBit;
             }
         }
     }
