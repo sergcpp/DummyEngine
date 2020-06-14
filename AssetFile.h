@@ -32,11 +32,11 @@ public:
 
     ~AssetFile();
 
-    size_t size() {
+    size_t size() const {
         return size_;
     }
 
-    inline int mode() {
+    int mode() const {
         return mode_;
     }
 
@@ -47,8 +47,6 @@ public:
     size_t pos();
 
     bool Read(char *buf, size_t size);
-
-    bool ReadFloat(float &f);
 
 #ifndef __ANDROID__
     bool Write(const char *buf, size_t size);

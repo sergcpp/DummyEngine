@@ -147,10 +147,6 @@ Sys::AssetFile::operator bool() {
 #endif
 }
 
-bool Sys::AssetFile::ReadFloat(float &f) {
-    return this->Read((char *)&f, sizeof(float));
-}
-
 #ifndef __ANDROID__
 bool Sys::AssetFile::Write(const char *buf, size_t size) {
     assert(file_stream_);
