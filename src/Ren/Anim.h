@@ -24,7 +24,7 @@ struct AnimBone {
     Vec3f       cur_pos;
     Quatf       cur_rot;
 
-    AnimBone() {
+    AnimBone() { // NOLINT
         name[0] = parent_name[0] = '\0';
     }
 };
@@ -33,7 +33,7 @@ struct AnimShape {
     char name[64];
     float cur_weight = 0.0f;
 
-    AnimShape() {
+    AnimShape() { // NOLINT
         name[0] = '\0';
     }
 };
@@ -118,7 +118,7 @@ struct Bone {
     Mat4f       inv_bind_matrix;
     Vec3f       head_pos;
 
-    Bone() {
+    Bone() { // NOLINT
         name[0] = '\0';
     }
 };

@@ -134,8 +134,8 @@ void pack_vertex(const orig_vertex_colored_t &in_v, packed_vertex_t &out_v) {
     out_v.byz[1] = f32_to_s16(in_v.b[2]);
     out_v.t0[0] = f32_to_f16(in_v.t0[0]);
     out_v.t0[1] = f32_to_f16(1.0f - in_v.t0[1]);
-    out_v.t1[0] = (uint16_t(in_v.c[1]) << 8u) | uint16_t(in_v.c[0]);
-    out_v.t1[1] = (uint16_t(in_v.c[3]) << 8u) | uint16_t(in_v.c[2]);
+    out_v.t1[0] = uint16_t(uint16_t(in_v.c[1]) << 8u) | uint16_t(in_v.c[0]);
+    out_v.t1[1] = uint16_t(uint16_t(in_v.c[3]) << 8u) | uint16_t(in_v.c[2]);
 }
 
 void pack_vertex_data1(const orig_vertex_t &in_v, packed_vertex_data1_t &out_v) {
@@ -200,8 +200,8 @@ void pack_vertex_data2(const orig_vertex_colored_t &in_v, packed_vertex_data2_t 
     out_v.n_and_bx[3] = f32_to_s16(in_v.b[0]);
     out_v.byz[0] = f32_to_s16(in_v.b[1]);
     out_v.byz[1] = f32_to_s16(in_v.b[2]);
-    out_v.t1[0] = (uint16_t(in_v.c[1]) << 8u) | uint16_t(in_v.c[0]);
-    out_v.t1[1] = (uint16_t(in_v.c[3]) << 8u) | uint16_t(in_v.c[2]);
+    out_v.t1[0] = uint16_t(uint16_t(in_v.c[1]) << 8u) | uint16_t(in_v.c[0]);
+    out_v.t1[1] = uint16_t(uint16_t(in_v.c[3]) << 8u) | uint16_t(in_v.c[2]);
 }
 
 void pack_vertex_delta(const VtxDelta &in_v, packed_vertex_delta_t &out_v) {
@@ -285,7 +285,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data,
     struct Header {
         int num_chunks;
         ChunkPos p[5];
-    } file_header;
+    } file_header = {};
 
     data.read((char *)&file_header, sizeof(file_header));
 
@@ -394,7 +394,7 @@ void Ren::Mesh::InitMeshColored(std::istream &data,
     struct Header {
         int num_chunks;
         ChunkPos p[5];
-    } file_header;
+    } file_header = {};
 
     data.read((char *)&file_header, sizeof(file_header));
 
@@ -509,7 +509,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
     struct Header {
         int num_chunks;
         ChunkPos p[7];
-    } file_header;
+    } file_header = {};
 
     data.read((char *)&file_header.num_chunks, sizeof(int));
     data.read((char *)&file_header.p[0], file_header.num_chunks * sizeof(ChunkPos));
@@ -686,7 +686,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
     ready_ = true;
 }
 
-void Ren::Mesh::SplitMesh(int bones_limit, ILog *log) {
+/*void Ren::Mesh::SplitMesh(int bones_limit, ILog *log) {
     assert(type_ == MeshSkeletal);
 
     std::vector<int> bone_ids;
@@ -880,7 +880,7 @@ void Ren::Mesh::SplitMesh(int bones_limit, ILog *log) {
     attribs_buf1_.size = (uint32_t)(new_attribs.size() * sizeof(float));
     attribs_.reset(new char[attribs_buf1_.size]);
     memcpy(attribs_.get(), &new_attribs[0], attribs_buf1_.size);
-}
+}*/
 
 #ifdef _MSC_VER
 #pragma warning(pop)

@@ -109,5 +109,5 @@ class ModlApp {
                                     const char *fs_shader);
     Ren::MaterialRef OnMaterialNeeded(const char *name);
 
-    void ClearColorAndDepth(float r, float g, float b, float a);
+    static void ClearColorAndDepth(float r, float g, float b, float a);
 };

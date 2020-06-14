@@ -33,7 +33,7 @@ static const char fillz_transp_fs[] =
 ;
 #undef __ADDITIONAL_DEFINES_STR__
 
-#define __ADDITIONAL_DEFINES_STR__ "#define MOVING_PERM"
+#define __ADDITIONAL_DEFINES_STR__ "#define TRANSPARENT_PERM\n#define MOVING_PERM"
 static const char fillz_transp_mov_vs[] =
 #include "Shaders/fillz.vert.glsl"
     ;

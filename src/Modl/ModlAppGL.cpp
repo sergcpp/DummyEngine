@@ -237,10 +237,10 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
         const Ren::BufferRange &sk_attribs_buf = m->sk_attribs_buf();
         const Ren::BufferRange &sk_deltas_buf = m->sk_deltas_buf();
 
-        const int vertex_offset = sk_attribs_buf.offset / 48,
-                  vertex_count = sk_attribs_buf.size / 48;
-        const int delta_offset = sk_deltas_buf.offset / 24,
-                  delta_count = sk_deltas_buf.size / 24;
+        const int vertex_offset = int(sk_attribs_buf.offset) / 48,
+                  vertex_count = int(sk_attribs_buf.size) / 48;
+        const int delta_offset = int(sk_deltas_buf.offset) / 24,
+                  delta_count = int(sk_deltas_buf.size) / 24;
 
         const int shape_keys_count = m->shape_keys_count();
         if (!shape_keys_count || shape_key_index_ == -1) {
@@ -331,7 +331,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
 void ModlApp::ClearColorAndDepth(float r, float g, float b, float a) {
     glClearColor(r, g, b, a);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GLbitfield(GL_COLOR_BUFFER_BIT) | GLbitfield(GL_DEPTH_BUFFER_BIT));
 }
 
 void ModlApp::CheckInitVAOs() {
@@ -745,13 +745,13 @@ void main(void) {
 }
 
 void ModlApp::DestroyInternal() {
-    GLuint simple_mesh_vao = (GLuint)simple_vao_;
+    auto simple_mesh_vao = (GLuint)simple_vao_;
     glDeleteVertexArrays(1, &simple_mesh_vao);
 
-    GLuint skinned_mesh_vao = (GLuint)skinned_vao_;
+    auto skinned_mesh_vao = (GLuint)skinned_vao_;
     glDeleteVertexArrays(1, &skinned_mesh_vao);
 
-    GLuint unif_buf = (GLuint)uniform_buf_;
+    auto unif_buf = (GLuint)uniform_buf_;
     glDeleteBuffers(1, &unif_buf);
 }
 

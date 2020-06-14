@@ -7,9 +7,9 @@ struct FrameBuf {
     int w = -1, h = -1, sample_count = 0;
 
     struct ColorAttachmentDesc {
-        Ren::eTexFormat format;
-        Ren::eTexFilter filter;
-        Ren::eTexRepeat repeat;
+        Ren::eTexFormat format = Ren::eTexFormat::Undefined;
+        Ren::eTexFilter filter = Ren::eTexFilter::NoFilter;
+        Ren::eTexRepeat repeat = Ren::eTexRepeat::Repeat;
         bool attached = true;
     };
 
@@ -21,7 +21,7 @@ struct FrameBuf {
     };
 
 #if defined(USE_GL_RENDER)
-    struct ColorAttachment {
+    struct ColorAttachment { // NOLINT
         ColorAttachmentDesc desc;
         uint32_t tex;
     };

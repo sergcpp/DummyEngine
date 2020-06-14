@@ -7,8 +7,7 @@
 namespace Gui {
 class ButtonBase : public BaseElement {
 protected:
-    enum class eState { Normal, Focused, Pressed };
-    eState state_;
+    enum class eState { Normal, Focused, Pressed } state_;
 public:
     ButtonBase(const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
 

@@ -34,15 +34,15 @@ Ren::TextureAtlas::TextureAtlas(int w, int h, int min_res, const eTexFormat *for
         const int blank_block_res = 64;
         uint8_t blank_block[blank_block_res * blank_block_res * 4] = {};
         if (formats[i] == Ren::eTexFormat::Compressed) {
-            for (int i = 0; i < (blank_block_res / 4) * (blank_block_res / 4) * 16;) {
+            for (int j = 0; j < (blank_block_res / 4) * (blank_block_res / 4) * 16;) {
 #if defined(__ANDROID__)
-                memcpy(&blank_block[i], Ren::_blank_ASTC_block_4x4,
+                memcpy(&blank_block[j], Ren::_blank_ASTC_block_4x4,
                        Ren::_blank_ASTC_block_4x4_len);
-                i += Ren::_blank_ASTC_block_4x4_len;
+                j += Ren::_blank_ASTC_block_4x4_len;
 #else
-                memcpy(&blank_block[i], Ren::_blank_DXT5_block_4x4,
+                memcpy(&blank_block[j], Ren::_blank_DXT5_block_4x4,
                        Ren::_blank_DXT5_block_4x4_len);
-                i += Ren::_blank_DXT5_block_4x4_len;
+                j += Ren::_blank_DXT5_block_4x4_len;
 #endif
             }
             internal_format = compressed_tex_format;
@@ -106,10 +106,10 @@ Ren::TextureAtlas::TextureAtlas(int w, int h, int min_res, const eTexFormat *for
 }
 
 Ren::TextureAtlas::~TextureAtlas() {
-    for (int i = 0; i < MaxTextureCount; i++) {
-        if (tex_ids_[i] != 0xffffffff) {
-            auto tex_id = (GLuint)tex_ids_[i];
-            glDeleteTextures(1, &tex_id);
+    for (const uint32_t tex_id : tex_ids_) {
+        if (tex_id != 0xffffffff) {
+            auto _tex_id = (GLuint)tex_id;
+            glDeleteTextures(1, &_tex_id);
         }
     }
 }

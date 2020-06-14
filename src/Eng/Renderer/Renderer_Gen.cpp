@@ -109,7 +109,7 @@ std::unique_ptr<uint16_t[]> Renderer::Generate_BRDF_LUT(const int res,
         out_c_header += '\t';
         for (int i = 0; i < res; i++) {
             const Ren::Vec2f val = RendererInternal::IntegrateBRDF(
-                (float(i) + 0.5f) / res, (float(j) + 0.5f) / res);
+                (float(i) + 0.5f) / float(res), (float(j) + 0.5f) / float(res));
 
             const uint16_t r =
                 (uint16_t)std::min(std::max(int(val[0] * 65535), 0), 65535);
@@ -139,7 +139,7 @@ std::unique_ptr<int8_t[]> Renderer::Generate_PeriodicPerlin(const int res,
 
             for (int i = 0; i < 4; i++) {
                 const float scale = 8.0f;
-                auto coord = Ren::Vec4f{norm_x * scale, i * 1.0f, norm_y * scale, 1.0f};
+                auto coord = Ren::Vec4f{norm_x * scale, float(i) * 1.0f, norm_y * scale, 1.0f};
 
                 float fval = 0.0f;
 
@@ -305,7 +305,7 @@ std::unique_ptr<int16_t[]> Renderer::Generate_RandDirs(const int res,
         angles[i] = Ren::Pi<float>() * (2.0f * float(i) / float(res * res) - 1.0f);
     }
     std::shuffle(std::begin(angles), std::begin(angles) + res * res,
-                 std::default_random_engine(0));
+                 std::default_random_engine(0)); // NOLINT
 
     std::unique_ptr<int16_t[]> out_data_rg16(new int16_t[2 * res * res]);
 

@@ -5,9 +5,9 @@
 namespace Gui {
 class Cursor : public BaseElement {
 protected:
-    Image		img_;
-    bool		clicked_;
-    Vec2f	    offset_;
+    Image   img_;
+    bool    clicked_;
+    Vec2f   offset_;
 public:
     Cursor(const Ren::Texture2DRef &tex, const Vec2f uvs[2], const Vec2f &size, const BaseElement *parent);
     Cursor(Ren::Context &ctx, const char *tex_name, const Vec2f uvs[2], const Vec2f &size, const BaseElement *parent);

@@ -37,7 +37,7 @@ class Context : public RenderThread {
     SWcontext *sw_ctx_;
 #endif
   public:
-    Context() {}
+    Context() = default;
     ~Context();
 
     Context(const Context &rhs) = delete;

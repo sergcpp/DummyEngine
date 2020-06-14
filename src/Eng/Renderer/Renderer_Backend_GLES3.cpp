@@ -4201,11 +4201,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     if (list.render_flags & DebugDeferred) {
         BlitBuffer(-1.0f, -1.0f, 0.5f, 0.5f, clean_buf_, 1, 2);
-
-        float exposure = reduced_average_ > std::numeric_limits<float>::epsilon()
-                             ? (1.0f / reduced_average_)
-                             : 1.0f;
-        exposure = std::min(exposure, list.draw_cam.max_exposure);
         BlitBuffer(0.0f, -1.0f, 0.5f, 0.5f, down_buf_4x_, 0, 1, exposure);
     }
 

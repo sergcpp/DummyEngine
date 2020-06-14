@@ -187,7 +187,7 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
                     uint32_t mask = CompDrawableBit | CompAnimStateBit;
                     if ((wolf->comp_mask & mask) == mask) {
                         auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
-                        as->anim_time_s = 4.0f * (float(rand()) / RAND_MAX);
+                        as->anim_time_s = 4.0f * (float(rand()) / float(RAND_MAX)); // NOLINT
                     }
                 }
             }
@@ -296,8 +296,9 @@ void GSDrawTest::Update(uint64_t dt_us) {
         invalidate_view_ = true;
     }
 
-    uint32_t mask = CompTransformBit | CompDrawableBit;
 #if 0
+    uint32_t mask = CompTransformBit | CompDrawableBit;
+
     static float t = 0.0f;
     t += 0.04f;
 
@@ -358,11 +359,11 @@ void GSDrawTest::Update(uint64_t dt_us) {
                 
                 if (i < 8) {
                     // inner circle
-                    tr->mat = Ren::Rotate(tr->mat, scooters_angle_ + i * 0.25f * Ren::Pi<float>(), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+                    tr->mat = Ren::Rotate(tr->mat, scooters_angle_ + float(i) * 0.25f * Ren::Pi<float>(), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
                     tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 6.5f, 0.0f, 0.0f });
                 } else {
                     // outer circle
-                    tr->mat = Ren::Rotate(tr->mat, -scooters_angle_ + (i - 8) * 0.25f * Ren::Pi<float>(), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+                    tr->mat = Ren::Rotate(tr->mat, -scooters_angle_ + float(i - 8) * 0.25f * Ren::Pi<float>(), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
                     tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ -8.5f, 0.0f, 0.0f });
                 }
             }
@@ -376,7 +377,7 @@ void GSDrawTest::Update(uint64_t dt_us) {
     if (wind_update_time_ > 400000) {
         wind_update_time_ = 0;
         // update wind vector
-        const float next_wind_strength = 0.15f * random_->GetNormalizedFloat();
+        //const float next_wind_strength = 0.15f * random_->GetNormalizedFloat();
         //wind_vector_goal_ = next_wind_strength * random_->GetUnitVec3();
     }
 
@@ -504,21 +505,21 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
     }
     break;
     case RawInputEvent::EvKeyUp: {
-        if (evt.key_code == KeyUp || (evt.key_code == KeyW && (!cmdline_enabled_ || view_pointer_))) {
-            fwd_press_speed_ = 0;
-        } else if (evt.key_code == KeyDown || (evt.key_code == KeyS && (!cmdline_enabled_ || view_pointer_))) {
-            fwd_press_speed_ = 0;
-        } else if (evt.key_code == KeyLeft || (evt.key_code == KeyA && (!cmdline_enabled_ || view_pointer_))) {
-            side_press_speed_ = 0;
-        } else if (evt.key_code == KeyRight || (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
-            side_press_speed_ = 0;
+        if (!cmdline_enabled_ || view_pointer_) {
+            if (evt.key_code == KeyUp || evt.key_code == KeyW ||
+                evt.key_code == KeyDown || evt.key_code == KeyS) {
+                fwd_press_speed_ = 0;
+            } else if (evt.key_code == KeyLeft || evt.key_code == KeyA ||
+                       evt.key_code == KeyRight || evt.key_code == KeyD) {
+                side_press_speed_ = 0;
+            } else {
+                input_processed = false;
+            }
         } else {
             input_processed = false;
         }
     }
     break;
-    case RawInputEvent::EvResize:
-        break;
     default:
         break;
     }
@@ -641,59 +642,55 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
         }
     }
 
-    if (sophia_indices_[0] != 0xffffffff) {
-        for (int i = 0; i < 2; i++) {
-            if (sophia_indices_[i] == 0xffffffff) break;
+    for (const uint32_t ndx : sophia_indices_) {
+        if (ndx == 0xffffffff) break;
 
-            SceneObject *sophia = scene_manager_->GetObject(sophia_indices_[i]);
+        SceneObject *sophia = scene_manager_->GetObject(ndx);
 
-            uint32_t mask = CompDrawableBit | CompAnimStateBit;
-            if ((sophia->comp_mask & mask) == mask) {
-                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(sophia->components[CompDrawable]);
-                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(sophia->components[CompAnimState]);
+        uint32_t mask = CompDrawableBit | CompAnimStateBit;
+        if ((sophia->comp_mask & mask) == mask) {
+            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(sophia->components[CompDrawable]);
+            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(sophia->components[CompAnimState]);
 
-                // keep previous palette for velocity calculation
-                std::swap(as->matr_palette_curr, as->matr_palette_prev);
-                as->anim_time_s += delta_time_s;
+            // keep previous palette for velocity calculation
+            std::swap(as->matr_palette_curr, as->matr_palette_prev);
+            as->anim_time_s += delta_time_s;
 
-                Ren::Mesh *mesh = dr->mesh.get();
-                Ren::Skeleton *skel = mesh->skel();
+            Ren::Mesh *mesh = dr->mesh.get();
+            Ren::Skeleton *skel = mesh->skel();
 
-                const int anim_index = 0;
+            const int anim_index = 0;
 
-                skel->UpdateAnim(anim_index, as->anim_time_s);
-                skel->ApplyAnim(anim_index);
-                skel->UpdateBones(&as->matr_palette_curr[0]);
+            skel->UpdateAnim(anim_index, as->anim_time_s);
+            skel->ApplyAnim(anim_index);
+            skel->UpdateBones(&as->matr_palette_curr[0]);
 
-                sophia->change_mask |= CompDrawableBit;
-            }
+            sophia->change_mask |= CompDrawableBit;
         }
     }
 
-    if (eric_indices_[0] != 0xffffffff) {
-        for (int i = 0; i < 2; i++) {
-            if (eric_indices_[i] == 0xffffffff) break;
+    for (const uint32_t ndx : eric_indices_) {
+        if (ndx == 0xffffffff) break;
 
-            SceneObject *eric = scene_manager_->GetObject(eric_indices_[i]);
+        SceneObject *eric = scene_manager_->GetObject(ndx);
 
-            uint32_t mask = CompDrawableBit | CompAnimStateBit;
-            if ((eric->comp_mask & mask) == mask) {
-                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(eric->components[CompDrawable]);
-                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(eric->components[CompAnimState]);
+        uint32_t mask = CompDrawableBit | CompAnimStateBit;
+        if ((eric->comp_mask & mask) == mask) {
+            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(eric->components[CompDrawable]);
+            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(eric->components[CompAnimState]);
 
-                // keep previous palette for velocity calculation
-                std::swap(as->matr_palette_curr, as->matr_palette_prev);
-                as->anim_time_s += delta_time_s;
+            // keep previous palette for velocity calculation
+            std::swap(as->matr_palette_curr, as->matr_palette_prev);
+            as->anim_time_s += delta_time_s;
 
-                Ren::Mesh *mesh = dr->mesh.get();
-                Ren::Skeleton *skel = mesh->skel();
+            Ren::Mesh *mesh = dr->mesh.get();
+            Ren::Skeleton *skel = mesh->skel();
 
-                const int anim_index = 0;
+            const int anim_index = 0;
 
-                skel->UpdateAnim(anim_index, as->anim_time_s);
-                skel->ApplyAnim(anim_index);
-                skel->UpdateBones(&as->matr_palette_curr[0]);
-            }
+            skel->UpdateAnim(anim_index, as->anim_time_s);
+            skel->ApplyAnim(anim_index);
+            skel->UpdateBones(&as->matr_palette_curr[0]);
         }
     }
 

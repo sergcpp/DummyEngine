@@ -46,7 +46,7 @@ class Renderer {
   private:
     Ren::Context &ctx_;
     std::shared_ptr<Sys::ThreadPool> threads_;
-    SWcull_ctx cull_ctx_;
+    SWcull_ctx cull_ctx_ = {};
     Ren::ProgramRef skydome_prog_, fillz_solid_prog_, fillz_solid_mov_prog_,
         fillz_vege_solid_prog_, fillz_vege_solid_vel_prog_,
         fillz_vege_solid_vel_mov_prog_, fillz_transp_prog_, fillz_transp_mov_prog_,
@@ -111,7 +111,7 @@ class Renderer {
     DynArray<BBox> decals_boxes_;
     BackendInfo backend_info_;
     uint64_t backend_cpu_start_ = 0, backend_cpu_end_ = 0;
-    int64_t backend_time_diff_;
+    int64_t backend_time_diff_ = 0;
     float reduced_average_ = 0.0f;
     Ren::Mat4f down_buf_view_from_world_, prev_clip_from_world_, prev_clip_from_view_;
     Ren::Vec4f prev_wind_scroll_;
@@ -132,15 +132,15 @@ class Renderer {
     // Constant that controls buffers orphaning
     static const int FrameSyncWindow = 2;
 
-    uint32_t temp_tex_;
-    Ren::eTexFormat temp_tex_format_;
+    uint32_t temp_tex_ = 0xffffffff;
+    Ren::eTexFormat temp_tex_format_ = Ren::eTexFormat::Undefined;
     int temp_tex_w_ = 0, temp_tex_h_ = 0;
 
-    uint32_t temp_framebuf_, skydome_framebuf_ = 0, depth_fill_framebuf_ = 0,
-                             depth_fill_framebuf_vel_ = 0, refl_comb_framebuf_ = 0,
-                             transparent_comb_framebuf_ = 0, clean_buf_color_only_ = 0,
-                             clean_buf_vel_only_ = 0, clean_buf_transparent_ = 0,
-                             temporal_resolve_framebuf_ = 0;
+    uint32_t temp_framebuf_ = 0, skydome_framebuf_ = 0, depth_fill_framebuf_ = 0,
+             depth_fill_framebuf_vel_ = 0, refl_comb_framebuf_ = 0,
+             transparent_comb_framebuf_ = 0, clean_buf_color_only_ = 0,
+             clean_buf_vel_only_ = 0, clean_buf_transparent_ = 0,
+             temporal_resolve_framebuf_ = 0;
 
     uint32_t unif_shared_data_block_[FrameSyncWindow];
     uint32_t temp_vao_, fs_quad_vao_, depth_pass_solid_vao_, depth_pass_vege_solid_vao_,

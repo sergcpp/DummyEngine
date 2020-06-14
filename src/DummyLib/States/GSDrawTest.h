@@ -27,7 +27,7 @@ class BitmapFont;
 class Renderer;
 }
 
-class GSDrawTest : public GSBaseState {
+class GSDrawTest final : public GSBaseState {
     int view_pointer_ = 0, move_pointer_ = 0;
 
     Ren::Vec3f
@@ -41,9 +41,6 @@ class GSDrawTest : public GSBaseState {
 
     float max_fwd_speed_ = 0.5f, view_fov_ = 60.0f;
     float max_exposure_ = 1000.0f;
-
-    uint64_t last_frame_time_ = 0;
-    double cur_fps_ = 0.0;
 
     uint32_t click_time_ = 0;
 
@@ -60,8 +57,8 @@ class GSDrawTest : public GSBaseState {
     float scooters_angle_ = 0.0f;
 
     std::vector<Ren::Vec3f>             cam_follow_path_;
-    int                                 cam_follow_point_;
-    float                               cam_follow_param_;
+    int                                 cam_follow_point_ = -1;
+    float                               cam_follow_param_ = 0.0f;
 
     void OnPreloadScene(JsObject &js_scene) override;
     void OnPostloadScene(JsObject &js_scene) override;

@@ -5,7 +5,7 @@
 #include "Texture.h"
 
 namespace Ren {
-    uint16_t f32_to_f16(float value) {
+    uint16_t f32_to_f16(const float value) {
         int32_t i;
         memcpy(&i, &value, sizeof(float));
 
@@ -98,7 +98,7 @@ namespace Ren {
 }
 
 std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eTexFormat &format) {
-    uint8_t tga_header[12] = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    const uint8_t tga_header[12] = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     const auto *tga_compare = (const uint8_t *)data;
     const uint8_t *img_header = (const uint8_t *)data + sizeof(tga_header);
     uint32_t img_size;
@@ -664,7 +664,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
 }
 
 void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint32_t> &new_vtx_indices,
-                              const uint32_t *indices, size_t indices_count) {
+                              const uint32_t *indices, const size_t indices_count) {
     const float flt_eps = 0.0000001f;
 
     std::vector<std::array<uint32_t, 3>> twin_verts(vertices.size(), { 0, 0, 0 });
@@ -678,21 +678,21 @@ void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint3
         Vec3f &b1 = binormals[indices[i + 1]];
         Vec3f &b2 = binormals[indices[i + 2]];
 
-        Vec3f dp1 = MakeVec3(v1->p) - MakeVec3(v0->p);
-        Vec3f dp2 = MakeVec3(v2->p) - MakeVec3(v0->p);
+        const Vec3f dp1 = MakeVec3(v1->p) - MakeVec3(v0->p);
+        const Vec3f dp2 = MakeVec3(v2->p) - MakeVec3(v0->p);
 
-        Vec2f dt1 = MakeVec2(v1->t[0]) - MakeVec2(v0->t[0]);
-        Vec2f dt2 = MakeVec2(v2->t[0]) - MakeVec2(v0->t[0]);
+        const Vec2f dt1 = MakeVec2(v1->t[0]) - MakeVec2(v0->t[0]);
+        const Vec2f dt2 = MakeVec2(v2->t[0]) - MakeVec2(v0->t[0]);
 
         Vec3f tangent, binormal;
 
-        float det = dt1[0] * dt2[1] - dt1[1] * dt2[0];
+        const float det = dt1[0] * dt2[1] - dt1[1] * dt2[0];
         if (std::abs(det) > flt_eps) {
-            float inv_det = 1.0f / det;
+            const float inv_det = 1.0f / det;
             tangent = (dp1 * dt2[1] - dp2 * dt1[1]) * inv_det;
             binormal = (dp2 * dt1[0] - dp1 * dt2[0]) * inv_det;
         } else {
-            Vec3f plane_N = Cross(dp1, dp2);
+            const Vec3f plane_N = Cross(dp1, dp2);
             tangent = Vec3f{ 0.0f, 1.0f, 0.0f };
             if (std::abs(plane_N[0]) <= std::abs(plane_N[1]) && std::abs(plane_N[0]) <= std::abs(plane_N[2])) {
                 tangent = Vec3f{ 1.0f, 0.0f, 0.0f };
@@ -779,7 +779,7 @@ void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint3
 
     for (vertex_t &v : vertices) {
         if (std::abs(v.b[0]) > flt_eps || std::abs(v.b[1]) > flt_eps || std::abs(v.b[2]) > flt_eps) {
-            Vec3f tangent = MakeVec3(v.b);
+            const Vec3f tangent = MakeVec3(v.b);
             Vec3f binormal = Cross(MakeVec3(v.n), tangent);
             float l = Length(binormal);
             if (l > flt_eps) {

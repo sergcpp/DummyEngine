@@ -77,8 +77,8 @@ void main() {
 
     for (int j = 0; j < 4; j++) {
         if (bone_weights[j] > 0.0) {
-            mat_curr += in_data1.matrices[2 * (xform_offset + bone_indices[j]) + 0] * bone_weights[j];
-            mat_prev += in_data1.matrices[2 * (xform_offset + bone_indices[j]) + 1] * bone_weights[j];
+            mat_curr += in_data1.matrices[2u * (xform_offset + bone_indices[j]) + 0u] * bone_weights[j];
+            mat_prev += in_data1.matrices[2u * (xform_offset + bone_indices[j]) + 1u] * bone_weights[j];
         }
     }
 
@@ -103,7 +103,7 @@ void main() {
     highp mat4x3 tr_mat_prev = transpose(mat_prev);
     highp vec3 p_prev = tr_mat_prev * vec4(p, 1.0);
 
-    highp uint out_ndx_prev = out_ndx_curr + REN_MAX_SKIN_VERTICES_TOTAL;
+    highp uint out_ndx_prev = out_ndx_curr + uint(REN_MAX_SKIN_VERTICES_TOTAL);
     out_data0.vertices[out_ndx_prev].p_and_t0.xyz = p_prev;
 }
 

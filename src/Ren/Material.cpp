@@ -43,19 +43,19 @@ Ren::Material &Ren::Material::operator=(Material &&rhs) noexcept {
     return *this;
 }
 
-void Ren::Material::Init(uint32_t flags, ProgramRef programs[], Texture2DRef textures[],
-                         const Vec4f params[], ILog *log) {
+void Ren::Material::Init(uint32_t flags, ProgramRef _programs[], Texture2DRef _textures[],
+                         const Vec4f _params[], ILog *log) {
     assert(IsMainThread());
     flags_ = flags;
     ready_ = true;
     for (int i = 0; i < MaxMaterialProgramCount; i++) {
-        this->programs[i] = programs[i];
+        this->programs[i] = _programs[i];
     }
     for (int i = 0; i < MaxMaterialTextureCount; i++) {
-        this->textures[i] = textures[i];
+        this->textures[i] = _textures[i];
     }
     for (int i = 0; i < MaxMaterialParamCount; i++) {
-        this->params[i] = params[i];
+        this->params[i] = _params[i];
     }
 }
 
@@ -69,8 +69,9 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                                 const program_load_callback &on_prog_load,
                                 const texture_load_callback &on_tex_load, ILog *log) {
     if (!mat_src) {
-        if (status)
+        if (status) {
             *status = MatSetToDefault;
+        }
         return;
     }
 
@@ -122,7 +123,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                 flags_ |= AlphaTest;
             } else if (flag == "alpha_blend") {
                 flags_ |= AlphaBlend;
-            } else if (flag == "twosided") {
+            } else if (flag == "two_sided") {
                 flags_ |= TwoSided;
             } else {
                 log->Error("Unknown flag %s", flag.c_str());
@@ -138,8 +139,9 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             const char *_q = strpbrk(_p, delims);
 
             for (; _p != nullptr && _q != nullptr; _q = strpbrk(_p, delims)) {
-                if (_p == _q)
+                if (_p == _q) {
                     break;
+                }
 
                 std::string flag = std::string(_p, _q);
                 if (flag == "signed") {
@@ -166,26 +168,28 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             Vec4f &par = params[params_count++];
             p = q + 1;
             q = strpbrk(p, delims);
-            par[0] = (float)atof(p);
+            par[0] = (float)strtod(p, nullptr);
             p = q + 1;
             q = strpbrk(p, delims);
-            par[1] = (float)atof(p);
+            par[1] = (float)strtod(p, nullptr);
             p = q + 1;
             q = strpbrk(p, delims);
-            par[2] = (float)atof(p);
+            par[2] = (float)strtod(p, nullptr);
             p = q + 1;
             q = strpbrk(p, delims);
-            par[3] = (float)atof(p);
+            par[3] = (float)strtod(p, nullptr);
         }
 
-        if (!q)
+        if (!q) {
             break;
+        }
         p = q + 1;
     }
 
     ready_ = true;
-    if (status)
+    if (status) {
         *status = MatCreatedFromData;
+    }
 }
 
 #ifdef _MSC_VER

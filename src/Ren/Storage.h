@@ -25,7 +25,7 @@ public:
         return { this, index };
     }
 
-    void erase(uint32_t i) {
+    void erase(const uint32_t i) {
         const String &name = SparseArray<T>::at(i).name();
 
         bool res = items_by_name_.Erase(name);

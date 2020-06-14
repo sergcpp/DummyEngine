@@ -11,7 +11,7 @@ struct Plane {
 
     Plane() : d(0.0f) {}
     Plane(const Ren::Vec3f &v0, const Ren::Vec3f &v1, const Ren::Vec3f &v2);
-    explicit Plane(eUninitialized) : n(Uninitialize) {}
+    explicit Plane(eUninitialized) : n(Uninitialize) {} // NOLINT
 
     int ClassifyPoint(const float point[3]) const;
 };
@@ -48,9 +48,9 @@ class Camera {
     uint32_t render_mask_ = 0xffffffff;
 
     Frustum frustum_;
-    bool is_orthographic_;
+    bool is_orthographic_ = false;
 
-    float angle_, aspect_, near_, far_;
+    float angle_ = 0.0f, aspect_  = 1.0f, near_ = 0.0f, far_ = 0.0f;
 
   public:
     float max_exposure = 1000.0f;

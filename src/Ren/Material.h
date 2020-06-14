@@ -64,8 +64,8 @@ class Material : public RefCounter {
     bool ready() const { return ready_; }
     const String &name() const { return name_; }
 
-    void Init(uint32_t flags, ProgramRef programs[], Texture2DRef textures[],
-              const Vec4f params[], ILog *log);
+    void Init(uint32_t flags, ProgramRef _programs[], Texture2DRef _textures[],
+              const Vec4f _params[], ILog *log);
     void Init(const char *mat_src, eMatLoadStatus *status,
               const program_load_callback &on_prog_load,
               const texture_load_callback &on_tex_load, ILog *log);

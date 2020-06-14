@@ -124,7 +124,7 @@ class Mesh : public RefCounter {
                           BufferRef &index_buf, ILog *log);
 
     // split skeletal mesh into chunks to fit uniforms limit in shader
-    void SplitMesh(int bones_limit, ILog *log);
+    //void SplitMesh(int bones_limit, ILog *log);
 
   public:
     Mesh() = default;

@@ -13,7 +13,7 @@ class Buffer : public RefCounter {
         bool is_free = true;
         int parent = -1;
         int child[2] = { -1, -1 };
-        uint32_t offset, size;
+        uint32_t offset = 0, size = 0;
 
         bool has_children() const {
             return child[0] != 0 || child[1] != 0;

@@ -41,7 +41,7 @@ void Ren::AnimSequence::InitAnimBones(std::istream &data) {
     struct Header {
         int num_chunks;
         ChunkPos p[4];
-    } file_header;
+    } file_header = {};
 
     data.read((char *)&file_header.num_chunks, sizeof(int));
     data.read((char *)&file_header.p[0], file_header.num_chunks * sizeof(ChunkPos));

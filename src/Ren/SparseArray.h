@@ -182,7 +182,7 @@ public:
     }
 
     const T &operator[](uint32_t index) const {
-        assert((ctrl_[index / 8] & (1 << (index % 8))) && "Invalid index!");
+        assert((ctrl_[index / 8] & (1u << (index % 8))) && "Invalid index!");
         return data_[index];
     }
 

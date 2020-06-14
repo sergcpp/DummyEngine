@@ -24,10 +24,11 @@ float Gui::BitmapFont::height(const BaseElement *parent) const {
 
 bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
     Sys::AssetFile in_file(fname, Sys::AssetFile::FileIn);
-    if (!in_file)
+    if (!in_file) {
         return false;
+    }
 
-    size_t file_size = in_file.size();
+    //size_t file_size = in_file.size();
 
     char sign[4];
     if (!in_file.Read(sign, 4) || sign[0] != 'F' || sign[1] != 'O' || sign[2] != 'N' ||
@@ -341,7 +342,7 @@ int Gui::BitmapFont::CheckText(const char *text, const Vec2f &pos, const Vec2f &
                 press_pos[0] <= corners[1][0] /*&&
                 press_pos[1] >= corners[0][1] &&
                 press_pos[1] <= corners[1][1]*/) {
-                out_char_offset = cur_x * m[0];
+                out_char_offset = float(cur_x) * m[0];
                 return char_index;
             }
         }
