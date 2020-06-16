@@ -427,6 +427,8 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
 
             // keep previous palette for velocity calculation
             std::swap(as.matr_palette_curr, as.matr_palette_prev);
+            std::swap(as.shape_palette_curr, as.shape_palette_prev);
+            std::swap(as.shape_palette_count_curr, as.shape_palette_count_prev);
 
             Ren::Mesh *target_mesh = dr.mesh.get();
             Ren::Skeleton *target_skel = target_mesh->skel();
@@ -434,6 +436,8 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
             target_skel->UpdateAnim(action.anim_id, t);
             target_skel->ApplyAnim(action.anim_id);
             target_skel->UpdateBones(&as.matr_palette_curr[0]);
+            as.shape_palette_count_curr =
+                target_skel->UpdateShapes(&as.shape_palette_curr[0]);
 
             invalidate_mask |= CompDrawableBit;
         }

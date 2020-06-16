@@ -153,7 +153,7 @@ class Renderer {
         skinned_buf2_vtx_offset_;
     uint32_t last_vertex_buf1_ = 0, last_vertex_buf2_ = 0, last_index_buffer_ = 0;
     uint32_t instances_buf_, instances_tbo_[FrameSyncWindow], skin_transforms_buf_,
-        skin_transforms_tbo_;
+        skin_transforms_tbo_, shape_keys_buf_, shape_keys_tbo_;
     uint32_t lights_buf_, lights_tbo_[FrameSyncWindow], decals_buf_,
         decals_tbo_[FrameSyncWindow], cells_buf_, cells_tbo_[FrameSyncWindow], items_buf_,
         items_tbo_[FrameSyncWindow];

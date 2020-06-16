@@ -64,7 +64,7 @@ void __init_wind_params(const VegState &vs, const Environment &env,
 } // namespace RendererInternal
 
 #define REN_UNINITIALIZE_X2(t)                                                           \
-    t{Ren::Uninitialize}, t{Ren::Uninitialize}
+    t{Ren::Uninitialize}, t { Ren::Uninitialize }
 #define REN_UNINITIALIZE_X4(t) REN_UNINITIALIZE_X2(t), REN_UNINITIALIZE_X2(t)
 #define REN_UNINITIALIZE_X8(t) REN_UNINITIALIZE_X4(t), REN_UNINITIALIZE_X4(t)
 
@@ -123,6 +123,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
     list.skin_transforms.count = 0;
     list.skin_regions.count = 0;
+    list.shape_keys_data.count = 0;
     list.skin_vertices_count = 0;
 
     const bool culling_enabled = (list.render_flags & EnableCulling) != 0;
@@ -466,8 +467,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                     (obj.last_change_mask & CompTransformBit) ? 1 : 0;
                                 zfill_batch.two_sided_bit =
                                     (mat_flags & TwoSided) ? 1 : 0;
-                                zfill_batch.mat_id =
-                                    (mat_flags & AlphaTest) ? uint32_t(main_batch.mat_id) : 0;
+                                zfill_batch.mat_id = (mat_flags & AlphaTest)
+                                                         ? uint32_t(main_batch.mat_id)
+                                                         : 0;
                                 zfill_batch.indices_offset = main_batch.indices_offset;
                                 zfill_batch.base_vertex = base_vertex;
                                 zfill_batch.indices_count = grp->num_indices;
@@ -1102,7 +1104,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 batch.moving_bit = 0;
                                 batch.two_sided_bit = (mat_flags & TwoSided) ? 1 : 0;
                                 batch.indices_offset =
-                                    (mesh->indices_buf().offset + grp->offset) / sizeof(uint32_t);
+                                    (mesh->indices_buf().offset + grp->offset) /
+                                    sizeof(uint32_t);
                                 batch.base_vertex =
                                     proc_objects_.data[n->prim_index].base_vertex;
                                 batch.indices_count = grp->num_indices;
@@ -1338,7 +1341,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 batch.moving_bit = 0;
                                 batch.two_sided_bit = (mat_flags & TwoSided) ? 1 : 0;
                                 batch.indices_offset =
-                                    (mesh->indices_buf().offset + grp->offset) / sizeof(uint32_t);
+                                    (mesh->indices_buf().offset + grp->offset) /
+                                    sizeof(uint32_t);
                                 batch.base_vertex =
                                     proc_objects_.data[n->prim_index].base_vertex;
                                 batch.indices_count = grp->num_indices;
@@ -2096,7 +2100,7 @@ void RendererInternal::__push_ellipsoids(const Drawable &dr,
         auto pos = Ren::Vec4f{e.offset[0], e.offset[1], e.offset[2], 1.0f},
              axis = Ren::Vec4f{-e.axis[0], -e.axis[1], -e.axis[2], 0.0f};
 
-        if (e.bone_index != -1 && !skel->bones.empty()) {
+        if (e.bone_index != -1 && skel->bones_count) {
             const Ren::Mat4f _world_from_object =
                 world_from_object * skel->bones[e.bone_index].cur_comb_matrix;
 
@@ -2129,9 +2133,9 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
     const auto palette_start = uint16_t(list.skin_transforms.count / 2);
     SkinTransform *out_matr_palette =
         &list.skin_transforms.data[list.skin_transforms.count];
-    list.skin_transforms.count += uint32_t(2 * skel->bones.size());
+    list.skin_transforms.count += uint32_t(2 * skel->bones_count);
 
-    for (int i = 0; i < (int)skel->bones.size(); i++) {
+    for (int i = 0; i < skel->bones_count; i++) {
         const Ren::Mat4f matr_curr_trans = Ren::Transpose(as.matr_palette_curr[i]);
         memcpy(&out_matr_palette[2 * i + 0].matr[0][0], Ren::ValuePtr(matr_curr_trans),
                12 * sizeof(float));
@@ -2141,13 +2145,38 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
                12 * sizeof(float));
     }
 
-    const Ren::BufferRange &buf = mesh->sk_attribs_buf();
+    const Ren::BufferRange &sk_buf = mesh->sk_attribs_buf();
+    const Ren::BufferRange &deltas_buf = mesh->sk_deltas_buf();
 
-    const uint32_t vertex_beg = buf.offset / 48, vertex_cnt = buf.size / 48;
+    const uint32_t vertex_beg = sk_buf.offset / 48, vertex_cnt = sk_buf.size / 48;
+    const uint32_t deltas_offset = deltas_buf.offset / 24;
 
     const uint32_t curr_out_offset = skinned_buf_vtx_offset + list.skin_vertices_count;
-    list.skin_regions.data[list.skin_regions.count++] = {vertex_beg, curr_out_offset,
-                                                         palette_start, vertex_cnt};
+
+    SkinRegion &sr = list.skin_regions.data[list.skin_regions.count++];
+    sr.in_vtx_offset = vertex_beg;
+    sr.out_vtx_offset = curr_out_offset;
+    sr.delta_offset = deltas_offset;
+    sr.xform_offset = palette_start;
+    // shape key data for current frame
+    sr.shape_key_offset_curr = list.shape_keys_data.count;
+    memcpy(&list.shape_keys_data.data[list.shape_keys_data.count],
+           &as.shape_palette_curr[0], as.shape_palette_count_curr * sizeof(ShapeKeyData));
+    list.shape_keys_data.count += as.shape_palette_count_curr;
+    sr.shape_key_count_curr = as.shape_palette_count_curr;
+    // shape key data from previous frame
+    sr.shape_key_offset_prev = list.shape_keys_data.count;
+    memcpy(&list.shape_keys_data.data[list.shape_keys_data.count],
+           &as.shape_palette_prev[0], as.shape_palette_count_prev * sizeof(ShapeKeyData));
+    list.shape_keys_data.count += as.shape_palette_count_prev;
+    sr.shape_key_count_prev = as.shape_palette_count_prev;
+    sr.vertex_count = vertex_cnt;
+    if (skel->shapes_count) {
+        sr.shape_keyed_vertex_count = skel->shapes[0].delta_count;
+    } else {
+        sr.shape_keyed_vertex_count = 0;
+    }
+
     list.skin_vertices_count += vertex_cnt;
 
     assert(list.skin_vertices_count <= REN_MAX_SKIN_VERTICES_TOTAL);

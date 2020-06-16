@@ -596,6 +596,11 @@ typedef void (APIENTRY *PFNGLUNIFORM2UIPROC)(GLint location, GLuint v0, GLuint v
 typedef void (APIENTRY *PFNGLUNIFORM3UIPROC)(GLint location, GLuint v0, GLuint v1, GLuint v2);
 typedef void (APIENTRY *PFNGLUNIFORM4UIPROC)(GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3);
 
+typedef void (APIENTRY* PFNGLUNIFORM1UIVPROC)(GLint location, GLsizei count, const GLuint* value);
+typedef void (APIENTRY* PFNGLUNIFORM2UIVPROC)(GLint location, GLsizei count, const GLuint* value);
+typedef void (APIENTRY* PFNGLUNIFORM3UIVPROC)(GLint location, GLsizei count, const GLuint* value);
+typedef void (APIENTRY* PFNGLUNIFORM4UIVPROC)(GLint location, GLsizei count, const GLuint* value);
+
 typedef void (APIENTRY *PFNGLUNIFORM3FVPROC)(GLint location, GLsizei count, const GLfloat *value);
 typedef void (APIENTRY *PFNGLUNIFORM4FVPROC)(GLint location, GLsizei count, const GLfloat *value);
 
@@ -846,6 +851,11 @@ typedef void (APIENTRY *PFNGLBINDTEXTUREUNITCOMPPROC)(GLenum target, GLuint unit
 #define glUniform3ui                ren_glUniform3ui
 #define glUniform4ui                ren_glUniform4ui
 
+#define glUniform1uiv               ren_glUniform1uiv
+#define glUniform2uiv               ren_glUniform2uiv
+#define glUniform3uiv               ren_glUniform3uiv
+#define glUniform4uiv               ren_glUniform4uiv
+
 #define glUniform3fv                ren_glUniform3fv
 #define glUniform4fv                ren_glUniform4fv
 
@@ -1035,6 +1045,11 @@ EXTERN_FUNC PFNGLUNIFORM1UIPROC                 ren_glUniform1ui;
 EXTERN_FUNC PFNGLUNIFORM2UIPROC                 ren_glUniform2ui;
 EXTERN_FUNC PFNGLUNIFORM3UIPROC                 ren_glUniform3ui;
 EXTERN_FUNC PFNGLUNIFORM4UIPROC                 ren_glUniform4ui;
+
+EXTERN_FUNC PFNGLUNIFORM1UIVPROC                ren_glUniform1uiv;
+EXTERN_FUNC PFNGLUNIFORM2UIVPROC                ren_glUniform2uiv;
+EXTERN_FUNC PFNGLUNIFORM3UIVPROC                ren_glUniform3uiv;
+EXTERN_FUNC PFNGLUNIFORM4UIVPROC                ren_glUniform4uiv;
 
 EXTERN_FUNC PFNGLUNIFORM3FVPROC                 ren_glUniform3fv;
 EXTERN_FUNC PFNGLUNIFORM4FVPROC                 ren_glUniform4fv;

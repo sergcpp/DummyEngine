@@ -167,7 +167,15 @@ static_assert(sizeof(SkinTransform) == 48, "!");
 
 struct SkinRegion {
     uint32_t in_vtx_offset, out_vtx_offset;
-    uint32_t xform_offset, vertex_count;
+    uint32_t xform_offset, delta_offset;
+    uint32_t shape_key_offset_curr, shape_key_count_curr;
+    uint32_t shape_key_offset_prev, shape_key_count_prev;
+    uint32_t vertex_count, shape_keyed_vertex_count;
+};
+
+struct ShapeKeyData {
+    uint16_t shape_index;
+    uint16_t shape_weight;
 };
 
 enum eRenderFlags : uint32_t {

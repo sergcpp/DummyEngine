@@ -88,6 +88,7 @@ const uint16_t fs_quad_indices[] = {0, 1, 2, 0, 2, 3};
 
 const size_t SkinTransformsBufChunkSize =
     2 * sizeof(SkinTransform) * REN_MAX_SKIN_XFORMS_TOTAL;
+const size_t ShapeKeysBufChunkSize = sizeof(ShapeKeyData) * REN_MAX_SHAPE_KEYS_TOTAL;
 const size_t InstanceDataBufChunkSize = sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL;
 const size_t LightsBufChunkSize = sizeof(LightSourceItem) * REN_MAX_LIGHTS_TOTAL;
 const size_t DecalsBufChunkSize = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
@@ -574,6 +575,30 @@ void Renderer::InitRendererInternal() {
         glBindTexture(GL_TEXTURE_BUFFER, 0);
 
         skin_transforms_tbo_ = (uint32_t)skin_transforms_tbo;
+    }
+
+    Ren::CheckError("[InitRendererInternal]: skin transforms TBO", ctx_.log());
+
+    { // Create buffer that holds shape keys data
+        GLuint shape_keys_buf;
+
+        glGenBuffers(1, &shape_keys_buf);
+        glBindBuffer(GL_TEXTURE_BUFFER, shape_keys_buf);
+        glBufferData(GL_TEXTURE_BUFFER, FrameSyncWindow * ShapeKeysBufChunkSize, nullptr,
+                     GL_DYNAMIC_COPY);
+        glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+        shape_keys_buf_ = (uint32_t)shape_keys_buf;
+
+        GLuint shape_keys_tbo;
+
+        glGenTextures(1, &shape_keys_tbo);
+        glBindTexture(GL_TEXTURE_BUFFER, shape_keys_tbo);
+
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_RG16UI, shape_keys_tbo);
+        glBindTexture(GL_TEXTURE_BUFFER, 0);
+
+        shape_keys_tbo_ = (uint32_t)shape_keys_tbo;
     }
 
     Ren::CheckError("[InitRendererInternal]: skin transforms TBO", ctx_.log());
@@ -1512,6 +1537,14 @@ void Renderer::DestroyRendererInternal() {
     }
 
     {
+        auto shape_keys_tbo = (GLuint)shape_keys_tbo_;
+        glDeleteTextures(1, &shape_keys_tbo);
+
+        auto shape_keys_buf = (GLuint)shape_keys_buf_;
+        glDeleteBuffers(1, &shape_keys_buf);
+    }
+
+    {
         glDeleteTextures(FrameSyncWindow, lights_tbo_);
 
         auto lights_buf = (GLuint)lights_buf_;
@@ -1722,7 +1755,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
             GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
 
-        // Update skinning buffers
+        // Update bone transforms buffer
         if (list.skin_transforms.count) {
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)skin_transforms_buf_);
 
@@ -1739,6 +1772,28 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             } else {
                 log->Error("[Renderer::DrawObjectsInternal]: Failed to map skin "
                            "transforms buffer!");
+            }
+
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        }
+
+        // Update shape keys buffer
+        if (list.shape_keys_data.count) {
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)shape_keys_buf_);
+
+            void *pinned_mem = glMapBufferRange(
+                GL_SHADER_STORAGE_BUFFER, cur_buf_chunk_ * ShapeKeysBufChunkSize,
+                ShapeKeysBufChunkSize, BufferRangeBindFlags);
+            if (pinned_mem) {
+                const size_t shape_keys_mem_size =
+                    list.shape_keys_data.count * sizeof(ShapeKeyData);
+                memcpy(pinned_mem, list.shape_keys_data.data, shape_keys_mem_size);
+                glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0,
+                                         shape_keys_mem_size);
+                glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+            } else {
+                log->Error(
+                    "[Renderer::DrawObjectsInternal]: Failed to map shape keys buffer!");
             }
 
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -1970,6 +2025,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         const GLuint vertex_buf1_id = ctx_.default_vertex_buf1()->buf_id();
         const GLuint vertex_buf2_id = ctx_.default_vertex_buf2()->buf_id();
+        const GLuint delta_buf_id = ctx_.default_delta_buf()->buf_id();
         const GLuint skin_vtx_buf_id = ctx_.default_skin_vertex_buf()->buf_id();
 
         const int SkinLocalGroupSize = 128;
@@ -1980,17 +2036,42 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)skin_transforms_buf_,
                           cur_buf_chunk_ * SkinTransformsBufChunkSize,
                           SkinTransformsBufChunkSize);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, vertex_buf1_id);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, vertex_buf2_id);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)shape_keys_buf_,
+                          cur_buf_chunk_ * ShapeKeysBufChunkSize, ShapeKeysBufChunkSize);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, delta_buf_id);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, vertex_buf1_id);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, vertex_buf2_id);
 
         for (uint32_t i = 0; i < list.skin_regions.count; i++) {
             const SkinRegion &sr = list.skin_regions.data[i];
 
-            glUniform4ui(0, sr.in_vtx_offset, sr.vertex_count, sr.xform_offset,
-                         sr.out_vtx_offset);
+            const uint32_t non_shapekeyed_vertex_count =
+                sr.vertex_count - sr.shape_keyed_vertex_count;
 
-            glDispatchCompute(
-                (sr.vertex_count + SkinLocalGroupSize - 1) / SkinLocalGroupSize, 1, 1);
+            if (non_shapekeyed_vertex_count) {
+                glUniform4ui(0, sr.in_vtx_offset, non_shapekeyed_vertex_count,
+                             sr.xform_offset, sr.out_vtx_offset);
+                glUniform4ui(1, 0, 0, 0, 0);
+                glUniform4ui(2, 0, 0, 0, 0);
+
+                glDispatchCompute((sr.vertex_count + SkinLocalGroupSize - 1) /
+                                      SkinLocalGroupSize,
+                                  1, 1);
+            }
+
+            if (sr.shape_keyed_vertex_count) {
+                glUniform4ui(0, sr.in_vtx_offset + non_shapekeyed_vertex_count,
+                             sr.shape_keyed_vertex_count, sr.xform_offset,
+                             sr.out_vtx_offset + non_shapekeyed_vertex_count);
+                glUniform4ui(1, sr.shape_key_offset_curr, sr.shape_key_count_curr,
+                    sr.delta_offset, 0);
+                glUniform4ui(2, sr.shape_key_offset_prev, sr.shape_key_count_prev,
+                    sr.delta_offset, 0);
+
+                glDispatchCompute((sr.shape_keyed_vertex_count + SkinLocalGroupSize - 1) /
+                                      SkinLocalGroupSize,
+                                  1, 1);
+            }
         }
 
         glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
@@ -2259,7 +2340,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         Ren::Mat4f scale_matrix;
         scale_matrix = Ren::Scale(scale_matrix, Ren::Vec3f{5000.0f, 5000.0f, 5000.0f});
 
-        Ren::Mat4f world_from_object = translate_matrix * scale_matrix;
+        const Ren::Mat4f world_from_object = translate_matrix * scale_matrix;
         glUniformMatrix4fv(REN_U_M_MATRIX_LOC, 1, GL_FALSE,
                            Ren::ValuePtr(world_from_object));
 

@@ -149,7 +149,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     using namespace Ren;
 
     Ren::Mesh *m = ref.get();
-    Ren::Material *mat = m->group(0).mat.get();
+    const Ren::Material *mat = m->group(0).mat.get();
 
     anim_time_ += dt_s;
 
@@ -160,7 +160,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     }
 
     skel->UpdateBones(matr_palette_);
-
+    
     CheckInitVAOs();
 
 #if 0
@@ -211,10 +211,8 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 #else
 
     { // update matrices buffer
-        const size_t num_bones = skel->bones.size();
-
         Mat3x4f _matr_palette[256];
-        for (size_t i = 0; i < num_bones; i++) {
+        for (int i = 0; i < skel->bones_count; i++) {
             const Mat4f tr_mat = Ren::Transpose(matr_palette_[i]);
             memcpy(&_matr_palette[i][0][0], ValuePtr(tr_mat), 12 * sizeof(float));
         }
@@ -242,25 +240,16 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
         const int delta_offset = int(sk_deltas_buf.offset) / 24,
                   delta_count = int(sk_deltas_buf.size) / 24;
 
-        const int shape_keys_count = m->shape_keys_count();
-        if (!shape_keys_count || shape_key_index_ == -1) {
-            glUniform4i(0, vertex_offset, vertex_count, 0 /* offset to out buffers */,
-                        delta_offset);
-            glUniform1f(1, 0.0f);
-
-            const int group_count = (vertex_count + 63) / 64;
-            glDispatchCompute(group_count, 1, 1);
-        } else {
-            const Ren::ShapeKey &sh_key = m->shape_key(shape_key_index_);
-
-            const int shapekeyed_vertex_count = sh_key.delta_count;
+        if (skel->shapes_count && (shape_key_index_ != -1 || !skel->anims.empty())) {
+            // assume all shape keys have same vertex count
+            const int shapekeyed_vertex_count = skel->shapes[0].delta_count;
             const int non_shapekeyed_vertex_count =
                 vertex_count - shapekeyed_vertex_count;
 
             { // transform simple vertices
                 glUniform4i(0, vertex_offset, non_shapekeyed_vertex_count,
-                            0 /* offset to out buffers */, delta_offset);
-                glUniform1f(1, 0.0f);
+                    0 /* offset to out buffers */, delta_offset);
+                glUniform1i(1, 0);
 
                 const int group_count = (non_shapekeyed_vertex_count + 63) / 64;
                 glDispatchCompute(group_count, 1, 1);
@@ -268,20 +257,43 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
             { // transform shapekeyed vertices
                 glUniform4i(0, vertex_offset + non_shapekeyed_vertex_count,
-                            shapekeyed_vertex_count,
-                            non_shapekeyed_vertex_count /* offset to out buffers */,
-                            delta_offset + sh_key.delta_offset);
-                static float f = 0.0f, s = 1.0f;
+                    shapekeyed_vertex_count,
+                    non_shapekeyed_vertex_count /* offset to out buffers */,
+                    delta_offset);
 
-                f += 0.005f * s;
-                if (f > 1.0) s = -1.0f;
-                else if (f < 0.0) s = 1.0f;
+                uint16_t shape_palette[256];
 
-                glUniform1f(1, f);
+                if (shape_key_index_ != -1) {
+                    static float f = 0.0f, s = 1.0f;
+                    f += 0.05f * s;
+                    if (f < 0.0f) {
+                        s = 1.0f;
+                    } else if (f > 1.0f) {
+                        s = -1.0f;
+                    }
+                    f = Ren::Clamp(f, 0.0f, 1.0f);
+
+                    shape_palette[0] = uint16_t(shape_key_index_);
+                    shape_palette[1] = uint16_t(f * 65535);
+
+                    glUniform1i(1, 1);
+                    glUniform1uiv(2, 1, (const GLuint*)&shape_palette[0]);
+                } else {
+                    const int shapes_count = skel->UpdateShapes(shape_palette);
+                    glUniform1i(1, shapes_count);
+                    glUniform1uiv(2, shapes_count, (const GLuint*)&shape_palette[0]);
+                }
 
                 const int group_count = (shapekeyed_vertex_count + 63) / 64;
                 glDispatchCompute(group_count, 1, 1);
             }
+        } else {
+            glUniform4i(0, vertex_offset, vertex_count, 0 /* offset to out buffers */,
+                delta_offset);
+            glUniform1i(1, 0);
+
+            const int group_count = (vertex_count + 63) / 64;
+            glDispatchCompute(group_count, 1, 1);
         }
     }
 
@@ -294,7 +306,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
     Mat4f world_from_object = Mat4f{1.0f};
 
-    world_from_object = Translate(world_from_object,Vec3f{offset_x_, offset_y_, 0});
+    world_from_object = Translate(world_from_object, Vec3f{offset_x_, offset_y_, 0});
     // world_from_object = Rotate(world_from_object, angle_x_, { 1, 0, 0 });
     world_from_object = Rotate(world_from_object, angle_y_, Vec3f{0, 1, 0});
 
@@ -306,12 +318,17 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     glUniformMatrix4fv(U_MVP_MATR, 1, GL_FALSE, ValuePtr(proj_from_object));
     glUniformMatrix4fv(U_M_MATR, 1, GL_FALSE, ValuePtr(world_from_object));
 
-    glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
     const Ren::TriGroup *s = &m->group(0);
     while (s->offset != -1) {
         const Ren::Material *mat = s->mat.get();
+
+        if ((mat->flags() & Ren::TwoSided) != 0) {
+            glDisable(GL_CULL_FACE);
+        } else {
+            glEnable(GL_CULL_FACE);
+        }
 
         if (view_mode_ == eViewMode::DiagUVs1 || view_mode_ == eViewMode::DiagUVs2) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
@@ -511,7 +528,7 @@ layout(location = 0) in vec3 aVertexPosition;
 layout(location = 1) in mediump vec4 aVertexNormal;
 layout(location = 2) in mediump vec2 aVertexTangent;
 layout(location = 3) in mediump vec2 aVertexUVs1;
-layout(location = 4) in highp uint aVertexUVs2Packed;
+layout(location = 4) in highp uint aVertexColorPacked;//aVertexUVs2Packed;
 layout(location = 5) in mediump vec4 aVertexIndices;
 layout(location = 6) in mediump vec4 aVertexWeights;
 
@@ -544,7 +561,8 @@ void main(void) {
     aVertexTBN_ = mat3(vertex_tangent_ws, cross(vertex_normal_ws, vertex_tangent_ws),
                        vertex_normal_ws);
     aVertexUVs1_ = aVertexUVs1;
-    aVertexAttrib_ = vec4(unpackHalf2x16(aVertexUVs2Packed), 0.0, 0.0);
+    //aVertexAttrib_ = vec4(unpackHalf2x16(aVertexUVs2Packed), 0.0, 0.0);
+    aVertexAttrib_ = unpackUnorm4x8(aVertexColorPacked);
 
     gl_Position = (uMVPMatrix * mat) * vec4(aVertexPosition, 1.0);
 }
@@ -660,7 +678,8 @@ void main(void) {
             } out_data1;
 
             layout(location = 0) uniform ivec4 uOffsets;
-            layout(location = 1) uniform float uApplyShapeKey;
+            layout(location = 1) uniform int uShapeCount;
+            layout(location = 2) uniform uint uShapePalette[16];
             
             layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
@@ -682,15 +701,19 @@ void main(void) {
                 highp vec3 n = vec3(nxy, nz_and_bx.x),
                            b = vec3(nz_and_bx.y, byz);
 
-                if (uApplyShapeKey > 0.0001) {
-                    int sh_i = int(uOffsets[3] + gl_GlobalInvocationID.x);
-                    p += uApplyShapeKey * vec3(in_data1.deltas[sh_i].dpxy,
+                for (int j = 0; j < uShapeCount; j++) {
+                    highp uint shape_data = uShapePalette[j];
+                    mediump uint shape_index = bitfieldExtract(shape_data, 0, 16);
+                    mediump float shape_weight = unpackUnorm2x16(shape_data).y;
+
+                    int sh_i = int(uOffsets[3] + shape_index * uOffsets[1] + gl_GlobalInvocationID.x);
+                    p += shape_weight * vec3(in_data1.deltas[sh_i].dpxy,
                                                in_data1.deltas[sh_i].dpz_dnxy.x);
                     highp uint _dnxy = floatBitsToUint(in_data1.deltas[sh_i].dpz_dnxy.y);
                     mediump vec2 _dnz_and_dbx = unpackSnorm2x16(in_data1.deltas[sh_i].dnz_and_db.x);
-                    n += uApplyShapeKey * vec3(unpackSnorm2x16(_dnxy), _dnz_and_dbx.x);
+                    n += shape_weight * vec3(unpackSnorm2x16(_dnxy), _dnz_and_dbx.x);
                     mediump vec2 _dbyz = unpackSnorm2x16(in_data1.deltas[sh_i].dnz_and_db.y);
-                    b += uApplyShapeKey * vec3(_dnz_and_dbx.y, _dbyz);
+                    b += shape_weight * vec3(_dnz_and_dbx.y, _dbyz);
                 }
 
                 mediump uvec4 vtx_indices =

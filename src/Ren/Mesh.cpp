@@ -171,7 +171,8 @@ void pack_vertex(const orig_vertex_skinned_t &in_v, packed_vertex_skinned_t &out
     out_v.bone_weights[3] = f32_to_u16(in_v.bone_weights[3]);
 }
 
-void pack_vertex(const orig_vertex_skinned_colored_t &in_v, packed_vertex_skinned_t &out_v) {
+void pack_vertex(const orig_vertex_skinned_colored_t &in_v,
+                 packed_vertex_skinned_t &out_v) {
     pack_vertex(in_v.v, out_v.v);
 
     out_v.bone_indices[0] = uint16_t(in_v.bone_indices[0]);
@@ -565,38 +566,38 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
         groups_[tri_groups_count].offset = -1;
     }
 
-    std::vector<Bone> &bones = skel_.bones;
+    skel_.bones_count = file_header.p[BONES_CHUNK].length / (64 + 8 + 12 + 16);
+    skel_.bones.reset(new Bone[skel_.bones_count]);
 
-    const int bones_count = file_header.p[BONES_CHUNK].length / (64 + 8 + 12 + 16);
-    bones.resize((size_t)bones_count);
-    for (int i = 0; i < bones_count; i++) {
+    for (int i = 0; i < skel_.bones_count; i++) {
         float temp_f[4];
         Vec3f temp_v;
         Quatf temp_q;
-        data.read(bones[i].name, 64);
-        data.read((char *)&bones[i].id, sizeof(int));
-        data.read((char *)&bones[i].parent_id, sizeof(int));
+        data.read(skel_.bones[i].name, 64);
+        data.read((char *)&skel_.bones[i].id, sizeof(int));
+        data.read((char *)&skel_.bones[i].parent_id, sizeof(int));
 
         data.read((char *)&temp_f[0], sizeof(float) * 3);
         temp_v = MakeVec3(&temp_f[0]);
-        bones[i].bind_matrix = Translate(bones[i].bind_matrix, temp_v);
+        skel_.bones[i].bind_matrix = Translate(skel_.bones[i].bind_matrix, temp_v);
         data.read((char *)&temp_f[0], sizeof(float) * 4);
         temp_q = MakeQuat(&temp_f[0]);
-        bones[i].bind_matrix *= ToMat4(temp_q);
-        bones[i].inv_bind_matrix = Inverse(bones[i].bind_matrix);
+        skel_.bones[i].bind_matrix *= ToMat4(temp_q);
+        skel_.bones[i].inv_bind_matrix = Inverse(skel_.bones[i].bind_matrix);
 
-        if (bones[i].parent_id != -1) {
-            bones[i].cur_matrix =
-                bones[bones[i].parent_id].inv_bind_matrix * bones[i].bind_matrix;
-            Vec4f pos =
-                bones[bones[i].parent_id].inv_bind_matrix * bones[i].bind_matrix[3];
-            bones[i].head_pos = MakeVec3(&pos[0]);
+        if (skel_.bones[i].parent_id != -1) {
+            skel_.bones[i].cur_matrix =
+                skel_.bones[skel_.bones[i].parent_id].inv_bind_matrix *
+                skel_.bones[i].bind_matrix;
+            Vec4f pos = skel_.bones[skel_.bones[i].parent_id].inv_bind_matrix *
+                        skel_.bones[i].bind_matrix[3];
+            skel_.bones[i].head_pos = MakeVec3(&pos[0]);
         } else {
-            bones[i].cur_matrix = bones[i].bind_matrix;
-            bones[i].head_pos = MakeVec3(&bones[i].bind_matrix[3][0]);
+            skel_.bones[i].cur_matrix = skel_.bones[i].bind_matrix;
+            skel_.bones[i].head_pos = MakeVec3(&skel_.bones[i].bind_matrix[3][0]);
         }
-        bones[i].cur_comb_matrix = bones[i].cur_matrix;
-        bones[i].dirty = true;
+        skel_.bones[i].cur_comb_matrix = skel_.bones[i].cur_matrix;
+        skel_.bones[i].dirty = true;
     }
 
     if (file_header.num_chunks > 6) {
@@ -604,49 +605,52 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
         data.read((char *)&shape_keyed_vertices_start, sizeof(uint32_t));
         data.read((char *)&shape_keyed_vertices_count, sizeof(uint32_t));
 
-        shape_keys_count_ =
+        skel_.shapes_count =
             (file_header.p[SHAPE_KEYS_CHUNK].length - 2 * sizeof(uint32_t)) /
             (64 + shape_keyed_vertices_count *
                       (3 * sizeof(float) + 3 * sizeof(float) + 3 * sizeof(float)));
 
         deltas_.reset(
-            new VtxDelta[(size_t)shape_keys_count_ * shape_keyed_vertices_count]);
-        shape_keys_.reset(new ShapeKey[shape_keys_count_]);
+            new VtxDelta[(size_t)skel_.shapes_count * shape_keyed_vertices_count]);
+        skel_.shapes.reset(new ShapeKey[skel_.shapes_count]);
 
-        for (uint32_t i = 0; i < shape_keys_count_; i++) {
-            ShapeKey &sh_key = shape_keys_[i];
+        for (int i = 0; i < skel_.shapes_count; i++) {
+            ShapeKey &sh_key = skel_.shapes[i];
 
             data.read(sh_key.name, 64);
             sh_key.delta_offset = shape_keyed_vertices_count * i;
             sh_key.delta_count = shape_keyed_vertices_count;
+            sh_key.cur_weight_packed = 0;
 
             data.read((char *)&deltas_[sh_key.delta_offset],
                       sh_key.delta_count * sizeof(VtxDelta));
         }
 
         std::unique_ptr<packed_vertex_delta_t[]> packed_deltas(
-            new packed_vertex_delta_t[(size_t)shape_keys_count_ *
+            new packed_vertex_delta_t[(size_t)skel_.shapes_count *
                                       shape_keyed_vertices_count]);
 
-        for (uint32_t i = 0; i < shape_keys_count_ * shape_keyed_vertices_count; i++) {
+        for (uint32_t i = 0; i < skel_.shapes_count * shape_keyed_vertices_count;
+             i++) {
             pack_vertex_delta(deltas_[i], packed_deltas[i]);
         }
 
         sk_deltas_buf_.buf = delta_buf;
-        sk_deltas_buf_.size = uint32_t(shape_keys_count_ * shape_keyed_vertices_count *
-                                       sizeof(packed_vertex_delta_t));
+        sk_deltas_buf_.size =
+            uint32_t(skel_.shapes_count * shape_keyed_vertices_count *
+                     sizeof(packed_vertex_delta_t));
         sk_deltas_buf_.offset =
             delta_buf->Alloc(sk_deltas_buf_.size, packed_deltas.get());
     }
 
     // assert(max_gpu_bones);
-    /*if (bones.size() <= (size_t)max_gpu_bones)*/ {
+    /*if (bones.size() <= (size_t)max_gpu_bones) {
         for (size_t s = 0; s < groups_.size(); s++) {
             if (groups_[s].offset == -1) {
                 break;
             }
             BoneGroup grp;
-            for (size_t i = 0; i < bones.size(); i++) {
+            for (int i = 0; i < skel_.bones_count; i++) {
                 grp.bone_ids.push_back((uint32_t)i);
             }
             grp.strip_ids.push_back((uint32_t)s);
@@ -654,7 +658,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
             grp.strip_ids.push_back(groups_[s].num_indices);
             skel_.bone_groups.push_back(grp);
         }
-    } /*else {
+    } else {
         SplitMesh(max_gpu_bones);
     }*/
 

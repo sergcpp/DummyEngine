@@ -10,6 +10,12 @@ struct InVertex {
     highp uvec2 bone_weights;
 };
 
+struct InDelta {
+    highp vec2 dpxy;
+    highp vec2 dpz_dnxy;
+    highp uvec2 dnz_and_db;
+};
+
 struct OutVertexData0 {
     highp vec4 p_and_t0;
 };
@@ -27,25 +33,35 @@ layout(std430, binding = 1) readonly buffer Input1 {
     highp mat3x4 matrices[];
 } in_data1;
 
-layout(std430, binding = 2) writeonly buffer Output0 {
+layout(std430, binding = 2) readonly buffer Input2 {
+    highp uint shape_keys[];
+} in_data2;
+
+layout(std430, binding = 3) readonly buffer Input3 {
+    InDelta deltas[];
+} in_data3;
+
+layout(std430, binding = 4) writeonly buffer Output0 {
     OutVertexData0 vertices[];
 } out_data0;
 
-layout(std430, binding = 3) writeonly buffer Output1 {
+layout(std430, binding = 5) writeonly buffer Output1 {
     OutVertexData1 vertices[];
 } out_data1;
 
-layout(location = 0) uniform highp uvec4 uParams;
+layout(location = 0) uniform highp uvec4 uSkinParams;
+layout(location = 1) uniform highp uvec4 uShapeParamsCurr;
+layout(location = 2) uniform highp uvec4 uShapeParamsPrev;
 
-layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
-    if (gl_GlobalInvocationID.x >= uParams.y) {
+    if (gl_GlobalInvocationID.x >= uSkinParams.y) {
         return;
     }
 
-    highp uint in_ndx = uParams.x + gl_GlobalInvocationID.x;
-    mediump uint xform_offset = uParams.z;
+    highp uint in_ndx = uSkinParams.x + gl_GlobalInvocationID.x;
+    mediump uint xform_offset = uSkinParams.z;
 
     highp vec3 p = in_data0.vertices[in_ndx].p_and_nxy.xyz;
 
@@ -60,6 +76,33 @@ void main() {
 
     highp vec3 n = vec3(nxy, nz_and_bx.x),
                b = vec3(nz_and_bx.y, byz);
+
+    highp vec3 p2 = p;
+
+    for (uint j = uShapeParamsCurr.x; j < uShapeParamsCurr.x + uShapeParamsCurr.y; j++) {
+        highp uint shape_data = in_data2.shape_keys[j];
+        mediump uint shape_index = bitfieldExtract(shape_data, 0, 16);
+        mediump float shape_weight = unpackUnorm2x16(shape_data).y;
+
+        int sh_i = int(uShapeParamsCurr.z + shape_index * uSkinParams.y + gl_GlobalInvocationID.x);
+        p += shape_weight * vec3(in_data3.deltas[sh_i].dpxy,
+                                 in_data3.deltas[sh_i].dpz_dnxy.x);
+        highp uint _dnxy = floatBitsToUint(in_data3.deltas[sh_i].dpz_dnxy.y);
+        mediump vec2 _dnz_and_dbx = unpackSnorm2x16(in_data3.deltas[sh_i].dnz_and_db.x);
+        n += shape_weight * vec3(unpackSnorm2x16(_dnxy), _dnz_and_dbx.x);
+        mediump vec2 _dbyz = unpackSnorm2x16(in_data3.deltas[sh_i].dnz_and_db.y);
+        b += shape_weight * vec3(_dnz_and_dbx.y, _dbyz);
+    }
+
+    for (uint j = uShapeParamsPrev.x; j < uShapeParamsPrev.x + uShapeParamsPrev.y; j++) {
+        highp uint shape_data = in_data2.shape_keys[j];
+        mediump uint shape_index = bitfieldExtract(shape_data, 0, 16);
+        mediump float shape_weight = unpackUnorm2x16(shape_data).y;
+
+        int sh_i = int(uShapeParamsPrev.z + shape_index * uSkinParams.y + gl_GlobalInvocationID.x);
+        p2 += shape_weight * vec3(in_data3.deltas[sh_i].dpxy,
+                                  in_data3.deltas[sh_i].dpz_dnxy.x);
+    }
 
     mediump uvec4 bone_indices = uvec4(
         bitfieldExtract(in_data0.vertices[in_ndx].bone_indices.x, 0, 16),
@@ -88,7 +131,7 @@ void main() {
     mediump vec3 n_curr = tr_mat_curr * vec4(n, 0.0);
     mediump vec3 b_curr = tr_mat_curr * vec4(b, 0.0);
 
-    highp uint out_ndx_curr = uParams.w + gl_GlobalInvocationID.x;
+    highp uint out_ndx_curr = uSkinParams.w + gl_GlobalInvocationID.x;
 
     out_data0.vertices[out_ndx_curr].p_and_t0.xyz = p_curr;
     // copy texture coordinates unchanged
@@ -101,7 +144,7 @@ void main() {
     out_data1.vertices[out_ndx_curr].byz_and_t1.y = in_data0.vertices[in_ndx].t0_and_t1.y;
 
     highp mat4x3 tr_mat_prev = transpose(mat_prev);
-    highp vec3 p_prev = tr_mat_prev * vec4(p, 1.0);
+    highp vec3 p_prev = tr_mat_prev * vec4(p2, 1.0);
 
     highp uint out_ndx_prev = out_ndx_curr + uint(REN_MAX_SKIN_VERTICES_TOTAL);
     out_data0.vertices[out_ndx_prev].p_and_t0.xyz = p_prev;

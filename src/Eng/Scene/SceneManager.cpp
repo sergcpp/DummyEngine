@@ -714,7 +714,7 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp,
                 continue;
             }
 
-            for (int j = 0; j < (int)skel->bones.size(); j++) {
+            for (int j = 0; j < skel->bones_count; j++) {
                 if (e.bone_name == skel->bones[j].name) {
                     e.bone_index = j;
                     break;
