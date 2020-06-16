@@ -71,9 +71,9 @@ struct InstanceData {
 static_assert(sizeof(InstanceData) == 64, "!");
 
 struct DepthDrawBatch { // NOLINT
-    static const uint32_t TypeSimple    = 0b00u;
-    static const uint32_t TypeVege      = 0b01u;
-    static const uint32_t TypeSkinned   = 0b10u;
+    static const uint32_t TypeSimple    = 0b00u;    // simple
+    static const uint32_t TypeVege      = 0b01u;    // vegetation
+    static const uint32_t TypeSkinned   = 0b10u;    // skeletal
 
     static const uint32_t BitsSimple    = (TypeSimple   << 30u);
     static const uint32_t BitsVege      = (TypeVege     << 30u);
@@ -89,7 +89,7 @@ struct DepthDrawBatch { // NOLINT
             uint32_t two_sided_bit  : 1;
             uint32_t moving_bit     : 1;    // object uses two transforms
             uint32_t alpha_test_bit : 1;
-            uint32_t type_bits      : 2;    // indicates that depth pass should apply vegetation vertex transform
+            uint32_t type_bits      : 2;
         };
         uint32_t sort_key = 0;
     };
@@ -101,15 +101,23 @@ struct DepthDrawBatch { // NOLINT
 static_assert(offsetof(DepthDrawBatch, indices_count) == 4, "!");
 
 struct MainDrawBatch {  // NOLINT
+    static const uint64_t BitAlphaBlend = (1ull << 63u);
+    static const uint64_t BitAlphaTest  = (1ull << 62u);
+    static const uint64_t BitTwoSided   = (1ull << 61u);
+    static const uint64_t BitsProgId    = (0b11111111ull << 53u);
+    static const uint64_t BitsMatId     = (0b11111111111111ull << 39u);
+    static const uint64_t BitsCamDist   = (0b11111111ull << 31u);
+    static const uint64_t FlagBits      = (0b111ull << 61u);
+
     union {
         struct {
             uint64_t _pad1              : 4;
             uint64_t indices_offset     : 27;
             uint64_t cam_dist           : 8;
             uint64_t mat_id             : 14;
+            uint64_t prog_id            : 8;
             uint64_t two_sided_bit      : 1;
             uint64_t alpha_test_bit     : 1;
-            uint64_t prog_id            : 8;
             uint64_t alpha_blend_bit    : 1;
         };
         uint64_t sort_key = 0;
@@ -143,12 +151,14 @@ struct SortSpan32 {
     uint32_t base;
     uint32_t count;
 };
+static_assert(sizeof(SortSpan32) == 12, "!");
 
 struct SortSpan64 {
     uint64_t key;
     uint32_t base;
     uint32_t count;
 };
+static_assert(sizeof(SortSpan64) == 16, "!");
 
 struct SkinTransform {
     float matr[3][4];

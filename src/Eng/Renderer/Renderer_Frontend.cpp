@@ -64,7 +64,7 @@ void __init_wind_params(const VegState &vs, const Environment &env,
 } // namespace RendererInternal
 
 #define REN_UNINITIALIZE_X2(t)                                                           \
-    t{Ren::Uninitialize}, t { Ren::Uninitialize }
+    t{Ren::Uninitialize}, t{Ren::Uninitialize}
 #define REN_UNINITIALIZE_X4(t) REN_UNINITIALIZE_X2(t), REN_UNINITIALIZE_X2(t)
 #define REN_UNINITIALIZE_X8(t) REN_UNINITIALIZE_X4(t), REN_UNINITIALIZE_X4(t)
 
@@ -233,7 +233,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                     const Occluder &occ = occluders[obj.components[CompOccluder]];
                     const Mesh *mesh = occ.mesh.get();
 
-                    SWcull_surf surf[16];
+                    SWcull_surf surf[Ren::MaxMeshTriGroupsCount];
                     int surf_count = 0;
 
                     const TriGroup *s = &mesh->group(0);
