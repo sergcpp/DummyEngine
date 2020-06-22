@@ -36,6 +36,7 @@ class GSUITest4 final : public GSBaseState {
     std::shared_ptr<Gui::BitmapFont> dialog_font_;
     float test_time_counter_s = 0.0f;
 
+    bool use_free_cam_ = true;
     std::unique_ptr<FreeCamController> cam_ctrl_;
     std::unique_ptr<DialogController> dial_ctrl_;
 

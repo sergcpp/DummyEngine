@@ -6,15 +6,13 @@
 			"type" : "actor", 
 			"target" : "judge", 
 			"actions" : [
-				
 			]
 		}, 
-        {
+		{
 			"name" : "prosec_speech", 
 			"type" : "actor", 
 			"target" : "prosec", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -22,7 +20,6 @@
 			"type" : "actor", 
 			"target" : "lawyer", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -30,7 +27,6 @@
 			"type" : "actor", 
 			"target" : "assist", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -38,19 +34,41 @@
 			"type" : "actor", 
 			"target" : "witness", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 2.5, 
+					"time_beg" : 0, 
+					"time_end" : 3.1, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Aber ich sah, dass der Krankenwagen bereits angekommen war."
-				},
-                {
+					"caption" : "Aber ich sah, dass der Krankenwagen bereits angekommen war.", 
+					"sound" : "witness/10_ambulance.wav"
+				}, 
+				{
 					"type" : "play", 
-					"time_beg" : 2.5, 
-					"time_end" : 4.5, 
+					"time_beg" : 3.2, 
+					"time_end" : 5.1, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Es war genau 12:00 Uhr."
+					"caption" : "Es war genau 12:00 Uhr.", 
+					"sound" : "witness/10_twelve_o_clock.wav"
 				}
 			]
 		}, 
@@ -63,16 +81,16 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 5.0,
-        "choices" : [
-            {
-				"key" : "objection",
-                "text" : "[Einspruch]",
+		"time_point" : 6, 
+		"choices" : [
+			{
+				"key" : "objection", 
+				"text" : "[Einspruch]", 
 				"sequence" : "test/test_dialog/10_testimony2_07_obj.json"
-			},
-            {
-				"key" : "repeat",
-                "text" : "[Noch mal]",
+			}, 
+			{
+				"key" : "repeat", 
+				"text" : "[Noch mal]", 
 				"sequence" : "test/test_dialog/10_testimony2_07_obj.json"
 			}
 		]

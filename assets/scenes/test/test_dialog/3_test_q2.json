@@ -8,31 +8,111 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 1.0, 
+					"time_beg" : 0, 
+					"time_end" : 1, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Korrekt."
-				},
+					"caption" : "Korrekt.", 
+					"sound" : "judge/11_correct.wav"
+				}, 
 				{
 					"type" : "play", 
 					"time_beg" : 1.1, 
-					"time_end" : 5.1, 
+					"time_end" : 3.9, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Versuchen Sie einfach, einen klaren Kopf zu behalten. Dann wird das schon."
-				},
+					"caption" : "Versuchen Sie einfach, einen klaren Kopf zu behalten.", 
+					"sound" : "judge/12_clear_head.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 4, 
+					"time_end" : 5.2, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Dann wird das schon.", 
+					"sound" : "judge/13_good.wav"
+				}, 
 				{
 					"type" : "play", 
 					"time_beg" : 5.5, 
 					"time_end" : 6.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Nächste Frage."
-				},
+					"caption" : "Nächste Frage.", 
+					"sound" : "judge/14_next_question.wav"
+				}, 
 				{
 					"type" : "play", 
 					"time_beg" : 6.6, 
-					"time_end" : 11.5, 
+					"time_end" : 8.2, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Dies ist ein Mordprozess. Können Sie mir den Namen des Opfers nennen?"
+					"caption" : "Dies ist ein Mordprozess.", 
+					"sound" : "judge/15_murder.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 8.3, 
+					"time_end" : 10.6, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Können Sie mir den Namen des Opfers nennen?", 
+					"sound" : "judge/16_victim.wav"
 				}
 			]
 		}, 
@@ -43,10 +123,21 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 12.0, 
-					"time_end" : 13.0, 
+					"time_beg" : 11.6, 
+					"time_end" : 13, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Das Opfer?"
+					"caption" : "Des Opfers?", 
+					"sound" : "lawyer/09_victim.wav"
 				}
 			]
 		}, 
@@ -57,17 +148,39 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 15.0, 
-					"time_end" : 18.0, 
+					"time_beg" : 14, 
+					"time_end" : 16.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "sophia_idle.anim", 
-					"caption" : "Bist du dich wirklich sicher, dass du das schaffst?"
-				},
+					"caption" : "Bist du dich wirklich sicher, dass du das schaffst?", 
+					"sound" : "assistant/011_sure.wav"
+				}, 
 				{
 					"type" : "play", 
-					"time_beg" : 18.5, 
-					"time_end" : 21.5, 
+					"time_beg" : 16.6, 
+					"time_end" : 19, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "sophia_idle.anim", 
-					"caption" : "Du kennst nicht mal den Namen des Opfers!?"
+					"caption" : "Du kennst nicht mal den Namen des Opfers!?", 
+					"sound" : "assistant/012_name.wav"
 				}
 			]
 		}, 
@@ -80,11 +193,11 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 22.0,
+		"time_point" : 19.5, 
 		"choices" : [
 			{
 				"key" : "pass", 
-				"sequence" : "test/test_dialog/3_test_q2_cont.json",
+				"sequence" : "test/test_dialog/3_test_q2_cont.json", 
 				"puzzle" : "test/test_dialog/3_test_q2_puzzle1.json"
 			}
 		]

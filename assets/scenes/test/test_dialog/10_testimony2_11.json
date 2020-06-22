@@ -6,20 +6,84 @@
 			"type" : "actor", 
 			"target" : "judge", 
 			"actions" : [
-				
+				{
+					"type" : "play", 
+					"time_beg" : 15.7, 
+					"time_end" : 18.6, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Es wirft wirklich Zweifel am Rest des Zeugnisses auf.", 
+					"sound" : "judge/43_doubt.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 18.7, 
+					"time_end" : 19.6, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Was wollen Sie?", 
+					"sound" : "judge/44_what_do_you_want.wav"
+				}
 			]
 		}, 
-        {
+		{
 			"name" : "prosec_speech", 
 			"type" : "actor", 
 			"target" : "prosec", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
-					"time_beg" : 8.1, 
-					"time_end" : 10.0, 
+					"time_beg" : 9, 
+					"time_end" : 11.4, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Angenommen, das ist wahr. Was wollen Sie?"
+					"caption" : "Die Uhr ist wirklich 2 Stunden hinterher.", 
+					"sound" : "prosecutor/14_changes_nothing1.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 11.6, 
+					"time_end" : 15.1, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Angenommen, der Zeuge war in der Wohnung, ändert das nichts.", 
+					"sound" : "prosecutor/14_changes_nothing2.wav"
 				}
 			]
 		}, 
@@ -28,12 +92,23 @@
 			"type" : "actor", 
 			"target" : "lawyer", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 4.0, 
+					"time_beg" : 0, 
+					"time_end" : 4, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Der Zeuge sah wahrscheinlich die Zeit auf dem Armband des Opfers."
+					"caption" : "Der Zeuge sah wahrscheinlich die Zeit auf dem Armband des Opfers.", 
+					"sound" : "lawyer/27_bracelet.wav"
 				}
 			]
 		}, 
@@ -42,19 +117,41 @@
 			"type" : "actor", 
 			"target" : "assist", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
 					"time_beg" : 4.1, 
-					"time_end" : 6.0, 
+					"time_end" : 6.7, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Aber er wusste nicht, dass die Zeit falsch war."
-				},
-                {
+					"caption" : "Aber er wusste nicht, dass die Zeit falsch war.", 
+					"sound" : "assistant/08_didnt_know.wav"
+				}, 
+				{
 					"type" : "play", 
-					"time_beg" : 6.1, 
-					"time_end" : 8.0, 
+					"time_beg" : 6.8, 
+					"time_end" : 8.7, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Aufgrund des Zeitunterschieds."
+					"caption" : "Aufgrund des Zeitunterschieds.", 
+					"sound" : "assistant/09_time_diff.wav"
 				}
 			]
 		}, 
@@ -74,19 +171,19 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 10.0,
-        "choices" : [
-            {
-				"key" : "inspect",
-                "text" : "Den Tatort inspizieren",
-                "puzzle" : "test/test_dialog/10_testimony2_12_puzzle.json",
-				"sequence" : "test/test_dialog/10_testimony2_12.json"
-			},
-            {
-				"key" : "combat",
-                "text" : "Zweikampf",
-                "puzzle" : "test/test_dialog/10_testimony2_11_joke_puzzle.json",
-				"sequence" : "test/test_dialog/10_testimony2_11_joke.json"
+		"time_point" : 20.0, 
+		"choices" : [
+			{
+				"key" : "inspect", 
+				"text" : "Den Tatort inspizieren", 
+				"sequence" : "test/test_dialog/10_testimony2_12.json", 
+				"puzzle" : "test/test_dialog/10_testimony2_12_puzzle.json"
+			}, 
+			{
+				"key" : "combat", 
+				"text" : "Zweikampf", 
+				"sequence" : "test/test_dialog/10_testimony2_11_joke.json", 
+				"puzzle" : "test/test_dialog/10_testimony2_11_joke_puzzle.json"
 			}
 		]
 	}

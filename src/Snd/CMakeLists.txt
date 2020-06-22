@@ -1,0 +1,57 @@
+cmake_minimum_required(VERSION 3.1)
+project(Snd)
+
+if(WIN32)
+	if(${SOUND} STREQUAL "AL")
+		if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+			set(OPENAL_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/OpenAL/include")
+			set(OPENAL_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/OpenAL/libs/Win64")
+		else(CMAKE_SIZEOF_VOID_P EQUAL 8)
+			set(OPENAL_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/OpenAL/include")
+			set(OPENAL_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/OpenAL/libs/Win32")
+		endif()
+	
+		set(LIBS OpenAL32)
+	endif()
+else(WIN32)
+    if(${SOUND} STREQUAL "AL")
+	    include(FindPkgConfig)
+        pkg_search_module (OPENAL REQUIRED openal)
+	    
+		set(LIBS openal)
+	endif()
+endif(WIN32)
+
+set(SOURCE_FILES Buffer.h
+				 Context.h
+                 Context.cpp
+				 HashMap32.h
+                 Log.h
+				 Source.h
+				 SparseArray.h
+				 Storage.h
+				 String.h
+				 Utils.h
+				 Utils.cpp)
+
+if(${SOUND} STREQUAL "AL")
+	add_definitions(-DUSE_AL_SOUND)
+    set(SOURCE_FILES ${SOURCE_FILES}
+					 BufferAL.cpp
+                     ContextAL.cpp
+					 SourceAL.cpp)
+endif()
+
+list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
+set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+source_group("src" FILES ${SOURCE_FILES})
+
+list(APPEND ALL_SOURCE_FILES _Snd.cpp)
+source_group("src" FILES _Snd.cpp)
+
+add_library(Snd STATIC ${ALL_SOURCE_FILES})
+target_link_libraries(Snd ${LIBS})
+target_include_directories(Snd PRIVATE ${OPENAL_INCLUDE_DIRS})
+target_link_directories(Snd PUBLIC ${OPENAL_LIBRARIES})
+
+add_subdirectory(tests)

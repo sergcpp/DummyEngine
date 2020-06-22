@@ -9,16 +9,26 @@
 				{
 					"type" : "play", 
 					"time_beg" : 1.5, 
-					"time_end" : 5.5, 
+					"time_end" : 3.9, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Der Test besteht aus ein paar einfachen Fragen. Beantworten Sie sie klar und deutlich."
+					"caption" : "Der Test besteht aus ein paar einfachen Fragen.",
+                    "sound" : "judge/07_test_cont.wav"
+				},
+                {
+					"type" : "play", 
+					"time_beg" : 4.0, 
+					"time_end" : 6.2, 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Beantworten Sie sie klar und deutlich.",
+                    "sound" : "judge/08_clear_and_distinct.wav"
 				},
 				{
 					"type" : "play", 
-					"time_beg" : 6.5, 
-					"time_end" : 10.5, 
+					"time_beg" : 6.8, 
+					"time_end" : 10.0, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Nennen Sie bitte den Namen des Angeklagten in diesem Prozess."
+					"caption" : "Nennen Sie bitte den Namen des Angeklagten in diesem Prozess.",
+                    "sound" : "judge/09_accused.wav"
 				}
 			]
 		}, 
@@ -30,16 +40,18 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0.0, 
-					"time_end" : 1.25, 
+					"time_end" : 1.4, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Ja, Eurer Ehren."
+					"caption" : "Ja, Eurer Ehren.",
+                    "sound" : "lawyer/06_yes.wav"
 				},
 				{
 					"type" : "play", 
 					"time_beg" : 10.75, 
 					"time_end" : 12.0, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Der Angeklagte?"
+					"caption" : "Der Angeklagte?",
+                    "sound" : "lawyer/07_accused.wav"
 				}
 			]
 		}, 

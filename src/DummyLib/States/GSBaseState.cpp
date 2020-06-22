@@ -38,7 +38,8 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
     cmdline_        = game->GetComponent<Cmdline>(CMDLINE_KEY);
 
     state_manager_  = game->GetComponent<GameStateManager>(STATE_MANAGER_KEY);
-    ctx_            = game->GetComponent<Ren::Context>(REN_CONTEXT_KEY);
+    ren_ctx_        = game->GetComponent<Ren::Context>(REN_CONTEXT_KEY);
+    snd_ctx_        = game->GetComponent<Snd::Context>(SND_CONTEXT_KEY);
     log_            = game->GetComponent<Ren::ILog>(LOG_KEY);
 
     renderer_       = game->GetComponent<Renderer>(RENDERER_KEY);
@@ -75,7 +76,7 @@ void GSBaseState::Enter() {
         desc.repeat = Ren::eTexRepeat::ClampToEdge;
 
         const int res = scene_manager_->scene_data().probe_storage.res();
-        temp_probe_buf_ = FrameBuf(res, res, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, ctx_->log());
+        temp_probe_buf_ = FrameBuf(res, res, &desc, 1, { FrameBuf::eDepthFormat::DepthNone }, 1, ren_ctx_->log());
     }
 
     cmdline_history_.resize(MAX_CMD_LINES, "~");
@@ -230,7 +231,7 @@ void GSBaseState::Enter() {
             const int
                     res = scene_data.probe_storage.res(),
                     capacity = scene_data.probe_storage.capacity();
-            scene_data.probe_storage.Resize(Ren::eTexFormat::RawRGBA8888, res, capacity, shrd_this->ctx_->log());
+            scene_data.probe_storage.Resize(Ren::eTexFormat::RawRGBA8888, res, capacity, shrd_this->ren_ctx_->log());
 
             shrd_this->update_all_probes_ = true;
         }
@@ -244,7 +245,7 @@ void GSBaseState::Enter() {
             
             const CompStorage *lprobes = scene_data.comp_store[CompProbe];
             SceneManager::WriteProbeCache("assets/textures/probes_cache", scene_data.name.c_str(),
-                    scene_data.probe_storage, lprobes, shrd_this->ctx_->log());
+                    scene_data.probe_storage, lprobes, shrd_this->ren_ctx_->log());
 
             // probe textures were written, convert them
             Viewer::PrepareAssets("pc");
@@ -291,7 +292,7 @@ void GSBaseState::Enter() {
                         if (i == 7 && std::ifstream(name2).good()) {
                             const int ret = std::remove(name2.c_str());
                             if (ret) {
-                                shrd_this->ctx_->log()->Error("Failed to remove file %s",
+                                shrd_this->ren_ctx_->log()->Error("Failed to remove file %s",
                                                    name2.c_str());
                                 return false;
                             }
@@ -299,7 +300,7 @@ void GSBaseState::Enter() {
 
                         const int ret = std::rename(name1.c_str(), name2.c_str());
                         if (ret) {
-                            shrd_this->ctx_->log()->Error("Failed to rename file %s", name1.c_str());
+                            shrd_this->ren_ctx_->log()->Error("Failed to rename file %s", name1.c_str());
                             return false;
                         }
                     }
@@ -312,7 +313,7 @@ void GSBaseState::Enter() {
 
                     const int ret = std::rename(name1.c_str(), name2.c_str());
                     if (ret) {
-                        shrd_this->ctx_->log()->Error("Failed to rename file %s", name1.c_str());
+                        shrd_this->ren_ctx_->log()->Error("Failed to rename file %s", name1.c_str());
                         return false;
                     }
 
@@ -681,7 +682,7 @@ void GSBaseState::Draw(uint64_t dt_us) {
 
     ui_renderer_->Draw();
 
-    ctx_->ProcessTasks();
+    ren_ctx_->ProcessTasks();
 }
 
 void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {

@@ -84,7 +84,8 @@ set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/__skydome_mesh.inl
                         Renderer/__sphere_mesh.inl)
 
-set(SCENE_SOURCES   Scene/SceneData.h
+set(SCENE_SOURCES   Scene/__cam_rig.inl
+                    Scene/SceneData.h
                     Scene/SceneData.cpp
                     Scene/SceneManager.h
                     Scene/SceneManager.cpp
@@ -178,6 +179,8 @@ set(SCENE_COMP_SOURCES
         Scene/Comp/LightSource.cpp
         Scene/Comp/Occluder.h
         Scene/Comp/Occluder.cpp
+        Scene/Comp/SoundSource.h
+        Scene/Comp/SoundSource.cpp
         Scene/Comp/Transform.h
         Scene/Comp/Transform.cpp
         Scene/Comp/VegState.h
@@ -232,6 +235,6 @@ list(APPEND ALL_SOURCE_FILES _Eng.cpp _Eng_Renderer.cpp _Eng_Gui.cpp _Eng_Scene.
 source_group("src" FILES _Eng.cpp _Eng_Renderer.cpp _Eng_Gui.cpp _Eng_Scene.cpp _Eng_Utils.cpp)
 
 add_library(Eng STATIC ${ALL_SOURCE_FILES})
-target_link_libraries(Eng Ren Sys)
+target_link_libraries(Eng Net Ray Ren Snd Sys astc)
 
 add_subdirectory(_tests)

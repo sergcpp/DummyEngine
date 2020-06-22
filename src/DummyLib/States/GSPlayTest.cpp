@@ -51,20 +51,20 @@ GSPlayTest::GSPlayTest(GameBase *game) : GSBaseState(game) {
 
     const float font_height = dialog_font_->height(ui_root_.get());
 
-    cam_ctrl_.reset(new FreeCamController(ctx_->w(), ctx_->h(), 0.3f));
+    cam_ctrl_.reset(new FreeCamController(ren_ctx_->w(), ren_ctx_->h(), 0.3f));
 
-    test_dialog_.reset(new ScriptedDialog{*ctx_, *scene_manager_});
+    test_dialog_.reset(new ScriptedDialog{*ren_ctx_, *snd_ctx_, *scene_manager_});
 
     // test_seq_.reset(new ScriptedSequence{*ctx_, *scene_manager_});
 
     dialog_ui_.reset(
         new DialogUI{Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_.get(), *dialog_font_});
 
-    seq_edit_ui_.reset(new SeqEditUI{*ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f},
+    seq_edit_ui_.reset(new SeqEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f},
                                      Gui::Vec2f{2.0f, 1.0f}, ui_root_.get()});
     // seq_edit_ui_->set_sequence(/*test_seq_.get()*/ test_dialog_->GetSequence(0));
 
-    dialog_edit_ui_.reset(new DialogEditUI{*ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f},
+    dialog_edit_ui_.reset(new DialogEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f},
                                            Gui::Vec2f{2.0f, 1.0f}, ui_root_.get()});
     dialog_edit_ui_->set_dialog(test_dialog_.get());
 
@@ -159,14 +159,14 @@ bool GSPlayTest::SaveSequence(const char *seq_name) {
         if (i == 7 && std::ifstream(name2).good()) {
             const int ret = std::remove(name2.c_str());
             if (ret) {
-                ctx_->log()->Error("Failed to remove file %s", name2.c_str());
+                ren_ctx_->log()->Error("Failed to remove file %s", name2.c_str());
                 return false;
             }
         }
 
         const int ret = std::rename(name1.c_str(), name2.c_str());
         if (ret) {
-            ctx_->log()->Error("Failed to rename file %s", name1.c_str());
+            ren_ctx_->log()->Error("Failed to rename file %s", name1.c_str());
             return false;
         }
     }
@@ -179,7 +179,7 @@ bool GSPlayTest::SaveSequence(const char *seq_name) {
         const std::string back_name = out_file_name + "1";
         const int ret = std::rename(out_file_name.c_str(), back_name.c_str());
         if (ret) {
-            ctx_->log()->Error("Failed to rename file %s", out_file_name.c_str());
+            ren_ctx_->log()->Error("Failed to rename file %s", out_file_name.c_str());
             return false;
         }
     }
@@ -251,7 +251,7 @@ void GSPlayTest::OnUpdateScene() {
 
     seq_cap_ui_->Clear();
     if (test_seq_) {
-        test_seq_->Update((float)seq_edit_ui_->GetTime());
+        test_seq_->Update((float)seq_edit_ui_->GetTime(), true);
     }
 }
 
@@ -310,8 +310,8 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
-        if (evt.point.x > (float)ctx_->w() * 0.9f &&
-            evt.point.y < (float)ctx_->h() * 0.1f) {
+        if (evt.point.x > (float)ren_ctx_->w() * 0.9f &&
+            evt.point.y < (float)ren_ctx_->h() * 0.1f) {
             uint32_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -333,7 +333,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP1Down: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
-                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
+                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && seq_edit_ui_->Check(p)) {
             seq_edit_ui_->Press(p, true);
             input_processed = true;
@@ -345,7 +345,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP2Down: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
-                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
+                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && seq_edit_ui_->Check(p)) {
             seq_edit_ui_->PressRMB(p, true);
             input_processed = true;
@@ -357,7 +357,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP1Up: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
-                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
+                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             seq_edit_ui_->Press(p, false);
             input_processed = seq_edit_ui_->Check(p);
@@ -369,7 +369,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP2Up: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
-                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
+                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             seq_edit_ui_->PressRMB(p, false);
             input_processed = seq_edit_ui_->Check(p);
@@ -381,7 +381,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP1Move: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
-                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
+                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             seq_edit_ui_->Hover(p);
         } else if (dial_edit_mode_ == 1) {
@@ -450,7 +450,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
         }
     } break;
     case RawInputEvent::EvResize:
-        cam_ctrl_->Resize(ctx_->w(), ctx_->h());
+        cam_ctrl_->Resize(ren_ctx_->w(), ren_ctx_->h());
         dialog_edit_ui_->Resize(ui_root_.get());
         seq_edit_ui_->Resize(ui_root_.get());
         break;

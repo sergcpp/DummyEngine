@@ -38,7 +38,7 @@ GSUITest::GSUITest(GameBase *game) : GSBaseState(game) {
     dialog_font_ = fonts->FindFont("dialog_font");
     dialog_font_->set_scale(1.5f);
 
-    word_puzzle_.reset(new WordPuzzleUI{*ctx_, Ren::Vec2f{-0.995f, -0.995f},
+    word_puzzle_.reset(new WordPuzzleUI{*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f},
                                         Ren::Vec2f{1.99f, 1.1f}, ui_root_.get(),
                                         *dialog_font_});
 }
@@ -202,8 +202,8 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
-        if (evt.point.x > (float)ctx_->w() * 0.9f &&
-            evt.point.y < (float)ctx_->h() * 0.1f) {
+        if (evt.point.x > (float)ren_ctx_->w() * 0.9f &&
+            evt.point.y < (float)ren_ctx_->h() * 0.1f) {
             uint32_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -225,7 +225,7 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP1Down: {
         Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
-                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
+                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Press(p, true);
     } break;
     case RawInputEvent::EvP2Down: {
@@ -236,7 +236,7 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
 
         Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
-                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
+                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Press(p, false);
     } break;
     case RawInputEvent::EvP2Up: {
@@ -245,7 +245,7 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP1Move: {
         Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
-                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
+                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Hover(p);
     } break;
     case RawInputEvent::EvP2Move: {

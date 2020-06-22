@@ -37,7 +37,7 @@ public:
     explicit Buffer(const char *name, uint32_t initial_size);
     Buffer(const Buffer &rhs) = delete;
     Buffer(Buffer &&rhs) noexcept {
-        *this = std::move(rhs);
+        (*this) = std::move(rhs);
     }
     ~Buffer();
 

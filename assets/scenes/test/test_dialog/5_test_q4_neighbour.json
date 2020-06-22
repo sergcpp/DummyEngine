@@ -16,9 +16,10 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0.0, 
-					"time_end" : 4.5, 
+					"time_end" : 2.6, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Der Nachbar hat einen Krankenwagen gerufen."
+					"caption" : "Der Nachbar hat einen Krankenwagen gerufen.",
+                    "sound" : "lawyer/13_neighbor.wav"
 				},
 			]
 		}, 
@@ -31,7 +32,7 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 5.0,
+		"time_point" : 3.1,
 		"choices" : [
 			{
 				"key" : "pass", 

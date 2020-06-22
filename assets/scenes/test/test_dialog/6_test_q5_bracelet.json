@@ -16,9 +16,10 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0.0, 
-					"time_end" : 4.5, 
+					"time_end" : 5.2, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Das Fitnessarmband des Opfers erkannte einen Herzstillstand und gab ein Signal."
+					"caption" : "Das Fitnessarmband des Opfers erkannte einen Herzstillstand und gab ein Signal.",
+                    "sound" : "lawyer/14_bracelet.wav"
 				},
 			]
 		}, 
@@ -31,7 +32,7 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 5.0,
+		"time_point" : 5.7,
 		"choices" : [
 			{
 				"key" : "pass", 

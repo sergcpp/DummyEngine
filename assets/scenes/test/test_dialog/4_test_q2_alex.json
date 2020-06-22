@@ -16,9 +16,10 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0.0, 
-					"time_end" : 4.0, 
+					"time_end" : 2.9, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Nun, das ist Alex Smiths, Euer Ehren."
+					"caption" : "Nun, das ist Alex Smiths, Euer Ehren.",
+                    "sound" : "lawyer/11_alex.wav"
 				},
 			]
 		}, 
@@ -31,7 +32,7 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 5.0,
+		"time_point" : 3.4,
 		"choices" : [
 			{
 				"key" : "pass", 

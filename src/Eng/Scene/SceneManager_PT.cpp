@@ -41,14 +41,14 @@ const float *SceneManager::Draw_PT(int *w, int *h) {
 
     if (ray_reg_ctx_.empty()) {
         if (ray_renderer_.type() == Ray::RendererOCL) {
-            ray_reg_ctx_.emplace_back(Ray::rect_t{0, 0, ctx_.w(), ctx_.h()});
+            ray_reg_ctx_.emplace_back(Ray::rect_t{0, 0, ren_ctx_.w(), ren_ctx_.h()});
         } else {
             const int TILE_SIZE = 64;
 
 #if defined(__ANDROID__)
             const int pt_res_w = 640, pt_res_h = 360;
 #else
-            const int pt_res_w = ctx_.w(), pt_res_h = ctx_.h();
+            const int pt_res_w = ren_ctx_.w(), pt_res_h = ren_ctx_.h();
 #endif
 
             for (int y = 0; y < pt_res_h + TILE_SIZE - 1; y += TILE_SIZE) {
@@ -309,13 +309,14 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                 const int FilterSize = 32;
 
                 { // Save direct lightmap
-                    ctx_.log()->Info("Flushing seams...");
+                    ren_ctx_.log()->Info("Flushing seams...");
                     const double t1 = Sys::GetTimeS();
                     const std::vector<Ray::pixel_color_t> out_pixels =
                         SceneManagerInternal::FlushSeams(
                             &pt_lm_direct_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY,
                             InvalidThreshold, FilterSize);
-                    ctx_.log()->Info("                 done (%fs)", Sys::GetTimeS() - t1);
+                    ren_ctx_.log()->Info("                 done (%fs)",
+                                         Sys::GetTimeS() - t1);
 
                     std::string out_file_name = "./assets/textures/lightmaps/";
                     out_file_name += scene_data_.name.c_str();
@@ -327,13 +328,14 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                 }
 
                 { // Save indirect lightmap
-                    ctx_.log()->Info("Flushing seams...");
+                    ren_ctx_.log()->Info("Flushing seams...");
                     const double t1 = Sys::GetTimeS();
                     const std::vector<Ray::pixel_color_t> out_pixels =
                         SceneManagerInternal::FlushSeams(
                             &pt_lm_indir_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY,
                             InvalidThreshold, FilterSize);
-                    ctx_.log()->Info("                 done (%fs)", Sys::GetTimeS() - t1);
+                    ren_ctx_.log()->Info("                 done (%fs)",
+                                         Sys::GetTimeS() - t1);
 
                     std::string out_file_name = "./assets/textures/lightmaps/";
                     out_file_name += scene_data_.name.c_str();
@@ -346,14 +348,14 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
                 { // Save indirect SH-lightmap
                     for (int sh_l = 0; sh_l < 4; sh_l++) {
-                        ctx_.log()->Info("Flushing seams...");
+                        ren_ctx_.log()->Info("Flushing seams...");
                         const double t1 = Sys::GetTimeS();
                         std::vector<Ray::pixel_color_t> out_pixels =
                             SceneManagerInternal::FlushSeams(
                                 &pt_lm_indir_sh_[sh_l][0], LIGHTMAP_ATLAS_RESX,
                                 LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
-                        ctx_.log()->Info("                 done (%fs)",
-                                         Sys::GetTimeS() - t1);
+                        ren_ctx_.log()->Info("                 done (%fs)",
+                                             Sys::GetTimeS() - t1);
 
                         std::string out_file_name = "./assets/textures/lightmaps/";
                         out_file_name += scene_data_.name.c_str();
@@ -428,8 +430,9 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
     const int SamplesDone = ray_reg_ctx_[0].iteration;
     const int SamplesTotal = cur_lm_indir_ ? LmSamplesIndirect : LmSamplesDirect;
 
-    ctx_.log()->Info("Lightmap: %i %i/%i (%.1fs left)", int(cur_lm_obj_), SamplesDone,
-                     SamplesTotal, seconds_per_iteration * (SamplesTotal - SamplesDone));
+    ren_ctx_.log()->Info("Lightmap: %i %i/%i (%.1fs left)", int(cur_lm_obj_), SamplesDone,
+                         SamplesTotal,
+                         seconds_per_iteration *(SamplesTotal - SamplesDone));
 
     const Ray::pixel_color_t *pixels = ray_renderer_.get_pixels_ref();
     *preview_pixels = &pixels[0].r;
@@ -506,7 +509,7 @@ void SceneManager::InitScene_PT(bool _override) {
         cam_desc.uv_index = 1;
         cam_desc.mi_index = 0;
         cam_desc.output_sh = true;
-        //cam_desc.use_coherent_sampling = true;
+        // cam_desc.use_coherent_sampling = true;
 
         ray_scene_->AddCamera(cam_desc);
     }

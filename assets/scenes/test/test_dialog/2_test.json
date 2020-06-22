@@ -8,17 +8,19 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 1.0, 
-					"time_end" : 2.0, 
+					"time_beg" : 1.5, 
+					"time_end" : 2.6, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "In jeder Fall."
+					"caption" : "In jeder Fall.",
+                    "sound" : "judge/06_test.wav"
 				},
 				{
 					"type" : "play", 
-					"time_beg" : 2.25, 
-					"time_end" : 7.0, 
+					"time_beg" : 2.7, 
+					"time_end" : 6.9, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Möchte ich einen kleinen Test mit Ihnen machen, um zu sehen, ob Sie wirklich bereit sind."
+					"caption" : "Möchte ich einen kleinen Test mit Ihnen machen, um zu sehen, ob Sie wirklich bereit sind.",
+                    "sound" : "judge/06_test2.wav"
 				}
 			]
 		}, 
@@ -30,9 +32,10 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0.0, 
-					"time_end" : 1.0, 
+					"time_end" : 1.4, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Danke, Euer Ehren."
+					"caption" : "Danke, Euer Ehren.",
+                    "sound" : "lawyer/05_thanks.wav"
 				}
 			]
 		}, 
@@ -45,7 +48,7 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 7.5,
+		"time_point" : 7.0,
 		"choices" : [
 			{
 				"key" : "pass", 

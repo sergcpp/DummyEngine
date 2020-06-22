@@ -3,14 +3,15 @@
 #include <Ren/GL.h>
 
 namespace GSUITest3Internal {
-    extern const Ren::Vec2f page_corners_uvs[];
-    extern const int page_order_indices[][4];
-}
+extern const Ren::Vec2f page_corners_uvs[];
+extern const int page_order_indices[][4];
+} // namespace GSUITest3Internal
 
 void GSUITest3::InitBookMaterials() {
-    assert(page_buf_.w != -1 && page_buf_.h != -1 && "Page framebuffer is not initialized!");
+    assert(page_buf_.w != -1 && page_buf_.h != -1 &&
+           "Page framebuffer is not initialized!");
 
-    {   // register framebuffer texture
+    { // register framebuffer texture
         Ren::Texture2DParams params;
         params.w = page_buf_.w;
         params.h = page_buf_.h;
@@ -21,12 +22,14 @@ void GSUITest3::InitBookMaterials() {
         // prevent texture deletion
         params.flags = Ren::TexNoOwnership;
 
-        page_tex_ = ctx_->textures().Add("__book_page_texture__", page_buf_.attachments[0].tex, params, log_.get());
+        page_tex_ = ren_ctx_->textures().Add(
+            "__book_page_texture__", page_buf_.attachments[0].tex, params, log_.get());
     }
 
-    {   // register material
+    { // register material
         Ren::eMatLoadStatus status;
-        orig_page_mat_ = ctx_->LoadMaterial("book/book_page0.txt", nullptr, &status, nullptr, nullptr);
+        orig_page_mat_ = ren_ctx_->LoadMaterial("book/book_page0.txt", nullptr, &status,
+                                                nullptr, nullptr);
         if (status != Ren::MatFound) {
             log_->Error("Failed to find material book/book_page0");
             return;
@@ -50,7 +53,9 @@ void GSUITest3::InitBookMaterials() {
             params[i] = orig_page_mat_->params[i];
         }
 
-        page_mat_ = ctx_->materials().Add("__book_page_material__", orig_page_mat_->flags(), programs, textures, params, log_.get());
+        page_mat_ =
+            ren_ctx_->materials().Add("__book_page_material__", orig_page_mat_->flags(),
+                                      programs, textures, params, log_.get());
     }
 }
 
@@ -68,7 +73,7 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
 #ifndef DISABLE_MARKERS
     glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "PAGE DRAW");
 #endif
-    auto page_root = Gui::RootElement{ Ren::Vec2i{ page_buf_.w, page_buf_.h } };
+    auto page_root = Gui::RootElement{Ren::Vec2i{page_buf_.w, page_buf_.h}};
 
     glBindFramebuffer(GL_FRAMEBUFFER, page_buf_.fb);
     glViewport(0, 0, page_buf_.w, page_buf_.h);
@@ -78,13 +83,13 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
     r->SwapBuffers();
 
     // just blit sdf into a buffer ignoring alpha
-    //glDisable(GL_BLEND);
-    //glBlendFunc(GL_ONE, GL_ONE);
+    // glDisable(GL_BLEND);
+    // glBlendFunc(GL_ONE, GL_ONE);
 
     book_main_font_->set_scale(/*std::max((float)ctx_->w() / 4096.0f, 1.0f)*/ 1.0f);
     assert(book_main_font_->draw_mode() == Gui::eDrawMode::DrDistanceField &&
-        book_emph_font_->draw_mode() == Gui::eDrawMode::DrDistanceField &&
-        book_caption_font_->draw_mode() == Gui::eDrawMode::DrDistanceField);
+           book_emph_font_->draw_mode() == Gui::eDrawMode::DrDistanceField &&
+           book_caption_font_->draw_mode() == Gui::eDrawMode::DrDistanceField);
 
     // just draw SDF 'as-is'
     book_main_font_->set_draw_mode(Gui::eDrawMode::DrBlitDistanceField);
@@ -93,9 +98,12 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
 
     const int page_base = paged_reader_->cur_page();
     for (int i = 0; i < (book_state_ == eBookState::BkOpened ? 2 : 4); i++) {
-        paged_reader_->set_cur_page(page_base + page_order_indices[(size_t)book_state_][i]);
+        paged_reader_->set_cur_page(page_base +
+                                    page_order_indices[(size_t)book_state_][i]);
 
-        paged_reader_->Resize(2.0f * page_corners_uvs[i * 2] - Vec2f{ 1.0f }, 2.0f * (page_corners_uvs[i * 2 + 1] - page_corners_uvs[i * 2]), &page_root);
+        paged_reader_->Resize(
+            2.0f * page_corners_uvs[i * 2] - Vec2f{1.0f},
+            2.0f * (page_corners_uvs[i * 2 + 1] - page_corners_uvs[i * 2]), &page_root);
         paged_reader_->Draw(r);
     }
 

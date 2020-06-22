@@ -391,7 +391,7 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
-        if (evt.point.x > (float)ctx_->w() * 0.9f && evt.point.y < (float)ctx_->h() * 0.1f) {
+        if (evt.point.x > (float)ren_ctx_->w() * 0.9f && evt.point.y < (float)ren_ctx_->h() * 0.1f) {
             uint32_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -411,14 +411,14 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
 
     switch (evt.type) {
     case RawInputEvent::EvP1Down:
-        if (evt.point.x < ((float)ctx_->w() / 3.0f) && move_pointer_ == 0) {
+        if (evt.point.x < ((float)ren_ctx_->w() / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 1;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 1;
         }
         break;
     case RawInputEvent::EvP2Down:
-        if (evt.point.x < ((float)ctx_->w() / 3.0f) && move_pointer_ == 0) {
+        if (evt.point.x < ((float)ren_ctx_->w() / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 2;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 2;

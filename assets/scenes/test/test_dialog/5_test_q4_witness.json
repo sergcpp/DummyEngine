@@ -16,9 +16,10 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0.0, 
-					"time_end" : 4.5, 
+					"time_end" : 2.65, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Der Zeuge hat einen Krankenwagen gerufen."
+					"caption" : "Der Zeuge hat einen Krankenwagen gerufen.",
+                    "sound" : "lawyer/13_witness.wav"
 				},
 			]
 		}, 
@@ -31,7 +32,7 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 5.0,
+		"time_point" : 3.2,
 		"choices" : [
 			{
 				"key" : "pass", 

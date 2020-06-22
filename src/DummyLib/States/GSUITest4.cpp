@@ -39,8 +39,8 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
                           "courtroom.json";
 
-//const char SEQ_NAME[] = "test/test_dialog/0_intro.json";
-const char SEQ_NAME[] = "test/test_seq.json";
+const char SEQ_NAME[] = "test/test_dialog/0_begin.json";
+//const char SEQ_NAME[] = "test/test_seq.json";
 } // namespace GSUITest4Internal
 
 GSUITest4::GSUITest4(GameBase *game) : GSBaseState(game) {
@@ -51,21 +51,21 @@ GSUITest4::GSUITest4(GameBase *game) : GSBaseState(game) {
 
     const float font_height = dialog_font_->height(ui_root_.get());
 
-    cam_ctrl_.reset(new FreeCamController(ctx_->w(), ctx_->h(), 0.3f));
+    cam_ctrl_.reset(new FreeCamController(ren_ctx_->w(), ren_ctx_->h(), 0.3f));
     dial_ctrl_.reset(new DialogController);
 
-    test_dialog_.reset(new ScriptedDialog{*ctx_, *scene_manager_});
+    test_dialog_.reset(new ScriptedDialog{*ren_ctx_, *snd_ctx_, *scene_manager_});
 
     dialog_ui_.reset(new DialogUI{Gui::Vec2f{-1.0f, 0.0f}, Gui::Vec2f{2.0f, 1.0f},
                                   ui_root_.get(), *dialog_font_, true /* debug */});
     dialog_ui_->make_choice_signal
         .Connect<DialogController, &DialogController::MakeChoice>(dial_ctrl_.get());
 
-    seq_edit_ui_.reset(new SeqEditUI{*ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f},
+    seq_edit_ui_.reset(new SeqEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f},
                                      Gui::Vec2f{2.0f, 1.0f}, ui_root_.get()});
     // seq_edit_ui_->set_sequence(/*test_seq_.get()*/ test_dialog_->GetSequence(0));
 
-    dialog_edit_ui_.reset(new DialogEditUI{*ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f},
+    dialog_edit_ui_.reset(new DialogEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f},
                                            Gui::Vec2f{2.0f, 1.0f}, ui_root_.get()});
     dialog_edit_ui_->set_dialog(test_dialog_.get());
 
@@ -85,7 +85,7 @@ GSUITest4::GSUITest4(GameBase *game) : GSBaseState(game) {
         .Connect<DialogEditUI, &DialogEditUI::OnSwitchSequence>(dialog_edit_ui_.get());
     dial_ctrl_->start_puzzle_signal.Connect<GSUITest4, &GSUITest4::OnStartPuzzle>(this);
 
-    word_puzzle_.reset(new WordPuzzleUI(*ctx_, Ren::Vec2f{-1.0f, -1.0f},
+    word_puzzle_.reset(new WordPuzzleUI(*ren_ctx_, Ren::Vec2f{-1.0f, -1.0f},
                                         Ren::Vec2f{2.0f, 1.0f}, ui_root_.get(),
                                         *dialog_font_));
     word_puzzle_->puzzle_solved_signal
@@ -144,6 +144,8 @@ void GSUITest4::LoadDialog(const char *seq_name) {
     dial_ctrl_->SetDialog(test_dialog_.get());
     dialog_edit_ui_->set_dialog(test_dialog_.get());
     seq_edit_ui_->set_sequence(dial_ctrl_->GetCurSequence());
+
+    use_free_cam_ = false;
 }
 
 bool GSUITest4::SaveSequence(const char *seq_name) {
@@ -159,14 +161,14 @@ bool GSUITest4::SaveSequence(const char *seq_name) {
         if (i == 7 && std::ifstream(name2).good()) {
             const int ret = std::remove(name2.c_str());
             if (ret) {
-                ctx_->log()->Error("Failed to remove file %s", name2.c_str());
+                log_->Error("Failed to remove file %s", name2.c_str());
                 return false;
             }
         }
 
         const int ret = std::rename(name1.c_str(), name2.c_str());
         if (ret) {
-            ctx_->log()->Error("Failed to rename file %s", name1.c_str());
+            log_->Error("Failed to rename file %s", name1.c_str());
             return false;
         }
     }
@@ -179,7 +181,7 @@ bool GSUITest4::SaveSequence(const char *seq_name) {
         const std::string back_name = out_file_name + "1";
         const int ret = std::rename(out_file_name.c_str(), back_name.c_str());
         if (ret) {
-            ctx_->log()->Error("Failed to rename file %s", out_file_name.c_str());
+            log_->Error("Failed to rename file %s", out_file_name.c_str());
             return false;
         }
     }
@@ -211,7 +213,7 @@ void GSUITest4::OnStartPuzzle(const char *puzzle_name) {
 
     Sys::AssetFile in_puzzle(file_name);
     if (!in_puzzle) {
-        ctx_->log()->Error("Failed to load %s", file_name.c_str());
+        log_->Error("Failed to load %s", file_name.c_str());
         return;
     }
 
@@ -225,7 +227,7 @@ void GSUITest4::OnStartPuzzle(const char *puzzle_name) {
 
     JsObject js_puzzle;
     if (!js_puzzle.Read(in_stream)) {
-        ctx_->log()->Error("Failed to parse %s", file_name.c_str());
+        log_->Error("Failed to parse %s", file_name.c_str());
         return;
     }
 
@@ -276,19 +278,17 @@ void GSUITest4::OnUpdateScene() {
 
     GSBaseState::OnUpdateScene();
 
-    const float delta_time_s = fr_info_.delta_time_us * 0.000001f;
-
-    scene_manager_->SetupView(
-        cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
-        Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam_ctrl_->view_fov, cam_ctrl_->max_exposure);
-
-    const SceneData &scene = scene_manager_->scene_data();
-
     seq_cap_ui_->Clear();
     dialog_ui_->Clear();
 
     if (dial_ctrl_) {
         dial_ctrl_->Update(Sys::GetTimeS());
+    }
+
+    if (use_free_cam_) {
+        scene_manager_->SetupView(
+            cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
+            Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, cam_ctrl_->view_fov, cam_ctrl_->max_exposure);
     }
 }
 
@@ -331,8 +331,8 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
-        if (evt.point.x > (float)ctx_->w() * 0.9f &&
-            evt.point.y < (float)ctx_->h() * 0.1f) {
+        if (evt.point.x > (float)ren_ctx_->w() * 0.9f &&
+            evt.point.y < (float)ren_ctx_->h() * 0.1f) {
             uint32_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -354,7 +354,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP1Down: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
-                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
+                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && dialog_edit_ui_->Check(p)) {
             dialog_edit_ui_->Press(p, true);
             input_processed = true;
@@ -369,7 +369,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP2Down: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
-                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
+                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && dialog_edit_ui_->Check(p)) {
             dialog_edit_ui_->PressRMB(p, true);
             input_processed = true;
@@ -383,7 +383,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP1Up: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
-                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
+                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             dialog_edit_ui_->Press(p, false);
             input_processed = dialog_edit_ui_->Check(p);
@@ -398,7 +398,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP2Up: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
-                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
+                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             dialog_edit_ui_->PressRMB(p, false);
             input_processed = dialog_edit_ui_->Check(p);
@@ -410,7 +410,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP1Move: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
-                                  Ren::Vec2i{ctx_->w(), ctx_->h()});
+                                  Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             dialog_edit_ui_->Hover(p);
         } else if (dial_edit_mode_ == 1) {
@@ -473,7 +473,8 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
             Viewer::PrepareAssets("pc");
             LoadDialog(SEQ_NAME);
         } else if (evt.key_code == KeyF6) {
-            SaveSequence(SEQ_NAME);
+            const ScriptedSequence *cur_seq = dial_ctrl_->GetCurSequence();
+            SaveSequence(cur_seq->lookup_name());
         } else {
             input_processed = false;
         }
@@ -488,7 +489,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
         }
     } break;
     case RawInputEvent::EvResize:
-        cam_ctrl_->Resize(ctx_->w(), ctx_->h());
+        cam_ctrl_->Resize(ren_ctx_->w(), ren_ctx_->h());
         dialog_ui_->Resize(ui_root_.get());
         dialog_edit_ui_->Resize(ui_root_.get());
         seq_edit_ui_->Resize(ui_root_.get());

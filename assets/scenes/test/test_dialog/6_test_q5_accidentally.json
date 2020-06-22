@@ -16,9 +16,10 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0.0, 
-					"time_end" : 4.5, 
+					"time_end" : 2.5, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Sie stolperten unerwartet über sie."
+					"caption" : "Sie stolperten unerwartet über sie.",
+                    "sound" : "lawyer/14_stumbled.wav"
 				},
 			]
 		}, 
@@ -31,7 +32,7 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 5.0,
+		"time_point" : 3.0,
 		"choices" : [
 			{
 				"key" : "pass", 

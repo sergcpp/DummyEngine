@@ -31,7 +31,7 @@ void DialogController::Update(const double cur_time_s) {
                 play_time_s_ = end_time_s;
             }
 
-            cur_seq_->Update(play_time_s_);
+            cur_seq_->Update(play_time_s_, false);
         }
     } else if (state_ == eState::Sequence) {
         if (cur_seq_) {
@@ -53,7 +53,7 @@ void DialogController::Update(const double cur_time_s) {
                 play_time_s_ = end_time_s;
             }
 
-            cur_seq_->Update(play_time_s_);
+            cur_seq_->Update(play_time_s_, true);
         }
     } else if (state_ == eState::ChoicePlaying || state_ == eState::ChoicePaused) {
         const int choices_count = cur_seq_->GetChoicesCount();

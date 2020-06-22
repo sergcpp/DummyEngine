@@ -8,45 +8,100 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 10.0, 
-					"time_end" : 12.5, 
+					"time_beg" : 14, 
+					"time_end" : 16.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Hr. Lügner, machen Sie Ihre Aussage."
-				},
-                {
+					"caption" : "Hr. Lügner, machen Sie Ihre Aussage.", 
+					"sound" : "judge/39_testimony.wav"
+				}, 
+				{
 					"type" : "play", 
-					"time_beg" : 12.5, 
-					"time_end" : 15.5, 
+					"time_beg" : 16.6, 
+					"time_end" : 19.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Bitte sagen Sie dem Gericht, was Sie am Tag des Mordes gesehen haben."
+					"caption" : "Bitte sagen Sie dem Gericht, was Sie am Tag des Mordes gesehen haben.", 
+					"sound" : "judge/40_what_you_saw.wav"
 				}
 			]
 		}, 
-        {
+		{
 			"name" : "prosec_speech", 
 			"type" : "actor", 
 			"target" : "prosec", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 2.5, 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Mein Zeuge hat dem Opfer am Tag des Mordes ein Paket übergeben."
-				},
-                {
-					"type" : "play", 
-					"time_beg" : 2.5, 
+					"time_beg" : 0, 
 					"time_end" : 4.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Holen Sie bitte Hr. Lügner in den Zeugenstand!"
-				},
-                {
+					"caption" : "Mein Zeuge hat dem Opfer am Tag des Mordes ein Paket übergeben.", 
+					"sound" : "prosecutor/11_delivery2.wav"
+				}, 
+				{
 					"type" : "play", 
-					"time_beg" : 4.5, 
-					"time_end" : 7.0, 
+					"time_beg" : 4.6, 
+					"time_end" : 6.9, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Hr. Lügner, Sie liefern Pakete, stimmt das?"
+					"caption" : "Holen Sie bitte Hr. Lügner in den Zeugenstand!", 
+					"sound" : "prosecutor/12_go_to_stand.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 8, 
+					"time_end" : 10.9, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Hr. Lügner, Sie liefern Pakete, stimmt das?", 
+					"sound" : "prosecutor/13_you_deliver.wav"
 				}
 			]
 		}, 
@@ -55,7 +110,6 @@
 			"type" : "actor", 
 			"target" : "lawyer", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -63,7 +117,6 @@
 			"type" : "actor", 
 			"target" : "assist", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -71,19 +124,23 @@
 			"type" : "actor", 
 			"target" : "witness", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
-					"time_beg" : 7.1, 
-					"time_end" : 7.6, 
+					"time_beg" : 10.9, 
+					"time_end" : 13.4, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Oh, ja!"
-				},
-                {
-					"type" : "play", 
-					"time_beg" : 7.6, 
-					"time_end" : 9.6, 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Pakete, klar!"
+					"caption" : "Oh, ja! Pakete, klar!", 
+					"sound" : "witness/01_packets.wav"
 				}
 			]
 		}, 
@@ -96,8 +153,8 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 15.5,
-        "choices" : [
+		"time_point" : 20.0, 
+		"choices" : [
 			{
 				"key" : "pass", 
 				"sequence" : "test/test_dialog/10_testimony2_01.json"

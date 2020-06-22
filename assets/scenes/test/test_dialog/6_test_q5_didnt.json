@@ -16,9 +16,10 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0.0, 
-					"time_end" : 4.5, 
+					"time_end" : 1.9, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Die Ärzte kamen nicht an."
+					"caption" : "Die Ärzte kamen nicht an.",
+                    "sound" : "lawyer/14_not_come.wav"
 				},
 			]
 		}, 
@@ -31,7 +32,7 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 5.0,
+		"time_point" : 2.4,
 		"choices" : [
 			{
 				"key" : "pass", 

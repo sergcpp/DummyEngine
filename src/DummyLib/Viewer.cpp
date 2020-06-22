@@ -20,7 +20,8 @@
 #include "Utils/Dictionary.h"
 
 Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) {
-    auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
+    auto ren_ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
+    auto snd_ctx = GetComponent<Snd::Context>(SND_CONTEXT_KEY);
     JsObject main_config;
 
     {
@@ -61,7 +62,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
             file_name += el.second.as_str().val;
 
             std::shared_ptr<Gui::BitmapFont> loaded_font =
-                font_storage->LoadFont(name, file_name, ctx.get());
+                font_storage->LoadFont(name, file_name, ren_ctx.get());
             (void)loaded_font;
         }
     }
@@ -82,7 +83,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
 
     {
         auto threads = GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
-        auto renderer = std::make_shared<Renderer>(*ctx, threads);
+        auto renderer = std::make_shared<Renderer>(*ren_ctx, threads);
         AddComponent(RENDERER_KEY, renderer);
 
         Ray::settings_t s;
@@ -95,7 +96,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
         AddComponent(RAY_RENDERER_KEY, ray_renderer);
 
         auto scene_manager =
-            std::make_shared<SceneManager>(*ctx, *ray_renderer, *threads);
+            std::make_shared<SceneManager>(*ren_ctx, *snd_ctx, *ray_renderer, *threads);
         AddComponent(SCENE_MANAGER_KEY, scene_manager);
     }
 

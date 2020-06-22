@@ -27,7 +27,8 @@
 					"time_beg" : 0.0, 
 					"time_end" : 3.0, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Sie können nicht sicher sein, dass er es war."
+					"caption" : "Sie können nicht sicher sein, dass er es war.",
+                    "sound" : "lawyer/21_could_not_know.wav"
 				}
 			]
 		}, 
@@ -49,7 +50,8 @@
 					"time_beg" : 3.1, 
 					"time_end" : 6.0, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Ich habe es gut untersucht, er war es."
+					"caption" : "Ich habe es gut untersucht, er war es.",
+                    "sound" : "witness/05_it_was_him.wav"
 				}
 			]
 		}, 

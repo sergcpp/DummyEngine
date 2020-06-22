@@ -8,10 +8,21 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 0, 
-					"time_end" : 4, 
+					"time_beg" : 3, 
+					"time_end" : 5.8, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Das Gericht befasst sich nun mit dem Verfahren gegen Hr. Smiths."
+					"caption" : "Das Gericht befasst sich nun mit dem Verfahren gegen Hr. Smiths.", 
+					"sound" : "judge/01_trial_start.wav"
 				}
 			]
 		}, 
@@ -22,10 +33,46 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 4.1, 
-					"time_end" : 7, 
+					"time_beg" : 6, 
+					"time_end" : 7.7, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Die Anklage ist bereit, Euer Ehren."
+					"caption" : "Die Anklage ist bereit, Euer Ehren.", 
+					"sound" : "prosecutor/01_ready.wav"
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 2.2, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "chars/lawyer_walk.anim", 
+					"caption" : "Ich wähle Herrn Bauer.", 
+					"sound" : "lawyer/02_bauer.wav"
 				}
 			]
 		}, 
@@ -37,13 +84,23 @@
 				{
 					"type" : "look", 
 					"time_beg" : 0, 
-					"time_end" : 2
+					"time_end" : 2, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					]
 				}
 			]
 		}
 	], 
 	"ending" : {
-		"time_point" : 7.5, 
+		"time_point" : 8.5, 
 		"choices" : [
 			{
 				"key" : "pass", 

@@ -269,7 +269,7 @@ bool Ren::InitGLExtentions() {
         ren_glTextureStorage3D_Comp = ren_glTextureStorage3D_Comp_emu;
     }
 
-    ren_glTextureSubImage2D         = (PFNGLTEXTURESUBIMAGE2DPROC)GetProcAddress(glTextureSubImage2D);
+    ren_glTextureSubImage2D = (PFNGLTEXTURESUBIMAGE2DPROC)GetProcAddress(glTextureSubImage2D);
     if (ren_glTextureSubImage2D) {
         ren_glTextureSubImage2D_Comp = [](
                 GLenum /*target*/, GLuint texture, GLint level, GLint xoffset, GLint yoffset,

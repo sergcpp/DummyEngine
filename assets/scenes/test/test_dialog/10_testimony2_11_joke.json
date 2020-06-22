@@ -8,24 +8,57 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 3.0, 
-					"time_end" : 5.5, 
+					"time_beg" : 3, 
+					"time_end" : 3.9, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Sehr lustig. Wir sind nicht im Kino."
-				}
-			]
-		}, 
-        {
-			"name" : "prosec_speech", 
-			"type" : "actor", 
-			"target" : "prosec", 
-			"actions" : [
-                {
+					"caption" : "Sehr witzig.", 
+					"sound" : "judge/45_very_funny.wav"
+				}, 
+				{
 					"type" : "play", 
-					"time_beg" : 5.6, 
-					"time_end" : 8.0, 
+					"time_beg" : 4, 
+					"time_end" : 6.3, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Ich frage nochmal was wollen Sie?"
+					"caption" : "Wir sind nicht in einem Computerspiel, Frau Doll.", 
+					"sound" : "judge/46_not_a_game.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 6.5, 
+					"time_end" : 8.4, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Ich frage nochmal was wollen Sie?", 
+					"sound" : "judge/47_what_do_you_want.wav"
 				}
 			]
 		}, 
@@ -34,12 +67,23 @@
 			"type" : "actor", 
 			"target" : "lawyer", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 3.0, 
+					"time_beg" : 0, 
+					"time_end" : 2.6, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Ich verlange ein Götterurteil durch Zweikampf."
+					"caption" : "Ich verlange ein Götterurteil durch Zweikampf.", 
+					"sound" : "lawyer/28_trial_by_combat.wav"
 				}
 			]
 		}, 
@@ -48,7 +92,6 @@
 			"type" : "actor", 
 			"target" : "assist", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -67,17 +110,17 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 8.0,
-        "choices" : [
-            {
-				"key" : "inspect",
-                "text" : "Den Tatort inspizieren",
-                "puzzle" : "test/test_dialog/10_testimony2_12_puzzle.json",
-				"sequence" : "test/test_dialog/10_testimony2_12.json"
-			},
-            {
-				"key" : "combat",
-                "text" : "Zweikampf",
+		"time_point" : 9, 
+		"choices" : [
+			{
+				"key" : "inspect", 
+				"text" : "Den Tatort inspizieren", 
+				"sequence" : "test/test_dialog/10_testimony2_12.json", 
+				"puzzle" : "test/test_dialog/10_testimony2_12_puzzle.json"
+			}, 
+			{
+				"key" : "combat", 
+				"text" : "Zweikampf", 
 				"sequence" : "test/test_dialog/10_testimony2_11_blank.json"
 			}
 		]

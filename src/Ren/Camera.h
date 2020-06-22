@@ -65,6 +65,14 @@ class Camera {
 
     const Vec3f &world_position() const { return world_position_; }
 
+    Vec3f fwd() const {
+        return Vec3f{ -view_matrix_[0][2], -view_matrix_[1][2], -view_matrix_[2][2] };
+    }
+
+    Vec3f up() const {
+        return Vec3f{ view_matrix_[0][1], view_matrix_[1][1], view_matrix_[2][1] };
+    }
+
     uint32_t render_mask() const { return render_mask_; }
     void set_render_mask(uint32_t mask) { render_mask_ = mask; }
 

@@ -16,9 +16,10 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0.0, 
-					"time_end" : 4.0, 
+					"time_end" : 3.3, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Nun, das ist Maria Sneider, Euer Ehren."
+					"caption" : "Nun, das ist Maria Sneider, Euer Ehren.",
+                    "sound" : "lawyer/08_maria.wav"
 				},
 			]
 		}, 
@@ -31,7 +32,7 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 5.0,
+		"time_point" : 4.0,
 		"choices" : [
 			{
 				"key" : "pass", 

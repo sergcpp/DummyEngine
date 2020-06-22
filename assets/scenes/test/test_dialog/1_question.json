@@ -8,10 +8,21 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 3.5, 
-					"time_end" : 7.0, 
+					"time_beg" : 3, 
+					"time_end" : 6, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Herr 0? Dies ist Ihre erste Verhandlung, nicht wahr?"
+					"caption" : "Frau Doll? Dies ist Ihre erste Verhandlung, nicht wahr?", 
+					"sound" : "prosecutor/02_first_time.wav"
 				}
 			]
 		}, 
@@ -22,10 +33,21 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 3.0, 
+					"time_beg" : 0, 
+					"time_end" : 2.3, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "chars/lawyer_walk.anim", 
-					"caption" : "Die Verteidigung is bereit, Euer Ehren."
+					"caption" : "Die Verteidigung is bereit, Euer Ehren.", 
+					"sound" : "lawyer/03_ready.wav"
 				}
 			]
 		}, 
@@ -37,7 +59,17 @@
 				{
 					"type" : "look", 
 					"time_beg" : 0, 
-					"time_end" : 2
+					"time_end" : 2, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					]
 				}
 			]
 		}

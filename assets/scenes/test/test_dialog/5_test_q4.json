@@ -9,23 +9,26 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0.0, 
-					"time_end" : 1.5, 
+					"time_end" : 1.0, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Korrekt."
+					"caption" : "Korrekt.",
+                    "sound" : "judge/11_correct.wav"
 				},
                 {
 					"type" : "play", 
-					"time_beg" : 1.6, 
-					"time_end" : 3.0, 
+					"time_beg" : 1.1, 
+					"time_end" : 2.5, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Die letzte Frage."
+					"caption" : "Die letzte Frage.",
+                    "sound" : "judge/21_last_question.wav"
 				},
                 {
 					"type" : "play", 
-					"time_beg" : 3.1, 
-					"time_end" : 6.5, 
+					"time_beg" : 2.6, 
+					"time_end" : 5.0, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Wer hat den Krankenwagen zur Szene gerufen?"
+					"caption" : "Wer hat den Krankenwagen zur Szene gerufen?",
+                    "sound" : "judge/22_ambulance.wav"
 				}
 			]
 		}, 
@@ -52,7 +55,7 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 7.0,
+		"time_point" : 5.5,
         "choices" : [
 			{
 				"key" : "neighbour",

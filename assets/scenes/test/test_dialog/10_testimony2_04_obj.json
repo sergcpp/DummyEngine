@@ -6,15 +6,13 @@
 			"type" : "actor", 
 			"target" : "judge", 
 			"actions" : [
-				
 			]
 		}, 
-        {
+		{
 			"name" : "prosec_speech", 
 			"type" : "actor", 
 			"target" : "prosec", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -22,12 +20,23 @@
 			"type" : "actor", 
 			"target" : "lawyer", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 3.0, 
+					"time_beg" : 0, 
+					"time_end" : 3, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Waren Sie sich sicher, dass sie tot war?"
+					"caption" : "Waren Sie sich sicher, dass sie tot war?", 
+					"sound" : "lawyer/22_sure_dead.wav"
 				}
 			]
 		}, 
@@ -36,7 +45,6 @@
 			"type" : "actor", 
 			"target" : "assist", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -44,19 +52,41 @@
 			"type" : "actor", 
 			"target" : "witness", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
 					"time_beg" : 3.1, 
-					"time_end" : 6.0, 
+					"time_end" : 5.3, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Nun, nein, ich glaube nicht."
-				},
-                {
+					"caption" : "Nun, nein, ich glaube nicht.", 
+					"sound" : "witness/07_dont_think_so1.wav"
+				}, 
+				{
 					"type" : "play", 
-					"time_beg" : 6.1, 
-					"time_end" : 9.0, 
+					"time_beg" : 5.5, 
+					"time_end" : 8.6, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Aber, sie rührte sich kein bisschen und überall war Blut."
+					"caption" : "Aber, sie rührte sich kein bisschen und überall war Blut.", 
+					"sound" : "witness/07_dont_think_so2.wav"
 				}
 			]
 		}, 
@@ -69,10 +99,10 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 9.0,
-        "choices" : [
+		"time_point" : 9, 
+		"choices" : [
 			{
-				"key" : "pass",
+				"key" : "pass", 
 				"sequence" : "test/test_dialog/10_testimony2_05.json"
 			}
 		]

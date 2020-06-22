@@ -6,15 +6,13 @@
 			"type" : "actor", 
 			"target" : "judge", 
 			"actions" : [
-				
 			]
 		}, 
-        {
+		{
 			"name" : "prosec_speech", 
 			"type" : "actor", 
 			"target" : "prosec", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -22,7 +20,6 @@
 			"type" : "actor", 
 			"target" : "lawyer", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -30,7 +27,6 @@
 			"type" : "actor", 
 			"target" : "assist", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -38,19 +34,41 @@
 			"type" : "actor", 
 			"target" : "witness", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 2.5, 
+					"time_beg" : 0, 
+					"time_end" : 2.7, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Ich schaute hinein. Dann sah ich sie da liegen..."
-				},
-                {
+					"caption" : "Ich schaute hinein. Dann sah ich sie da liegen...", 
+					"sound" : "witness/06_dead1.wav"
+				}, 
+				{
 					"type" : "play", 
-					"time_beg" : 2.5, 
-					"time_end" : 5.0, 
+					"time_beg" : 3.2, 
+					"time_end" : 5.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Eine Frau... reglos... tot!"
+					"caption" : "Eine Frau... reglos... tot!", 
+					"sound" : "witness/06_dead2.wav"
 				}
 			]
 		}, 
@@ -63,18 +81,18 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 5.0,
-        "choices" : [
+		"time_point" : 6, 
+		"choices" : [
 			{
-				"key" : "continue",
-                "text" : "[Weiter]",
+				"key" : "continue", 
+				"text" : "[Weiter]", 
 				"sequence" : "test/test_dialog/10_testimony2_05.json"
-			},
-            {
-				"key" : "objection",
-                "text" : "[Einspruch]",
+			}, 
+			{
+				"key" : "objection", 
+				"text" : "[Einspruch]", 
 				"sequence" : "test/test_dialog/10_testimony2_04_obj.json"
-			},
+			}
 		]
 	}
 }

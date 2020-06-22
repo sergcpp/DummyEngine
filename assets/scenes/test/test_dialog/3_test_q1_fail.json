@@ -9,9 +9,10 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0.0, 
-					"time_end" : 6.0, 
+					"time_end" : 5.9, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Sie haben die Überprüfung fälschlicherweise nicht bestanden und können nicht zu Verhandlung zugelassen werden."
+					"caption" : "Sie haben die Überprüfung fälschlicherweise nicht bestanden und können nicht zu Verhandlung zugelassen werden.",
+                    "sound" : "judge/10_failed.wav"
 				}
 			]
 		}, 

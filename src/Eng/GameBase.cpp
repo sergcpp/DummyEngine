@@ -6,6 +6,7 @@
 #include <Eng/Gui/BaseElement.h>
 #include <Eng/Gui/Renderer.h>
 #include <Ren/Context.h>
+#include <Snd/Context.h>
 #include <Sys/AssetFileIO.h>
 #include <Sys/Json.h>
 #include <Sys/Time_.h>
@@ -29,9 +30,13 @@ GameBase::GameBase(int w, int h, const char * /*local_dir*/) : width(w), height(
 #endif
     AddComponent(LOG_KEY, log);
 
-    auto ctx = std::make_shared<Ren::Context>();
-    ctx->Init(w, h, log.get());
-    AddComponent(REN_CONTEXT_KEY, ctx);
+    auto ren_ctx = std::make_shared<Ren::Context>();
+    ren_ctx->Init(w, h, log.get());
+    AddComponent(REN_CONTEXT_KEY, ren_ctx);
+
+    auto snd_ctx = std::make_shared<Snd::Context>();
+    snd_ctx->Init(log.get());
+    AddComponent(SND_CONTEXT_KEY, snd_ctx);
 
 #if !defined(__EMSCRIPTEN__)
     unsigned int num_threads = std::max(std::thread::hardware_concurrency(), 1u);
@@ -53,7 +58,7 @@ GameBase::GameBase(int w, int h, const char * /*local_dir*/) : width(w), height(
 
     JsObject config;
     config[Gui::GL_DEFINES_KEY] = JsString{ "" };
-    auto ui_renderer = std::make_shared<Gui::Renderer>(*ctx, config);
+    auto ui_renderer = std::make_shared<Gui::Renderer>(*ren_ctx, config);
     AddComponent(UI_RENDERER_KEY, ui_renderer);
 
     auto ui_root = std::make_shared<Gui::RootElement>(Gui::Vec2i(w, h));
@@ -62,11 +67,12 @@ GameBase::GameBase(int w, int h, const char * /*local_dir*/) : width(w), height(
 
 GameBase::~GameBase() {
     // context should be deleted last
-    auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
+    auto ren_ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
+    auto snd_ctx = GetComponent<Snd::Context>(SND_CONTEXT_KEY);
     // finish file IO tasks
-    while (!Sys::StopWorker()) ctx->ProcessTasks();
+    while (!Sys::StopWorker()) ren_ctx->ProcessTasks();
     // finish remaining tasks in queue
-    while (ctx->ProcessTasks());
+    while (ren_ctx->ProcessTasks());
     components_.clear();
 }
 

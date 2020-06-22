@@ -9,9 +9,10 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0, 
-					"time_end" : 4, 
+					"time_end" : 3, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Nein, dies ist nicht mein erstes Mal vor Gericht."
+					"caption" : "Nein, dies ist nicht mein erstes Mal vor Gericht.",
+                    "sound" : "lawyer/04_exp.wav"
 				}
 			]
 		},
@@ -22,10 +23,11 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 4.5, 
-					"time_end" : 9.0, 
+					"time_beg" : 3.5, 
+					"time_end" : 7.2, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Großartig, dann wage ich es nicht, den Prozess zu verzögern."
+					"caption" : "Großartig, dann wage ich es nicht, den Prozess zu verzögern.",
+                    "sound" : "judge/05_no_delay.wav"
 				}
 			]
 		},
@@ -43,11 +45,12 @@
 		}
 	],
     "ending" : {
-        "time_point" : 9.0, 
+        "time_point" : 7.5, 
 		"choices" : [
 			{
 				"key" : "pass", 
-				"sequence" : "test/test_dialog/2_test.json"
+				"sequence" : "test/test_dialog/2_test.json", 
+				"puzzle" : "test/test_dialog/1_thanks_puzzle.json"
 			}
 		]
     }

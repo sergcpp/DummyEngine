@@ -8,17 +8,39 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 1.5, 
+					"time_beg" : 0, 
+					"time_end" : 0.8, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Richtig."
-				},
-                {
+					"caption" : "Richtig.", 
+					"sound" : "judge/23_right.wav"
+				}, 
+				{
 					"type" : "play", 
-					"time_beg" : 1.6, 
-					"time_end" : 5.0, 
+					"time_beg" : 0.9, 
+					"time_end" : 3.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Aber warum kamen dann die Ärzte zur Szene?"
+					"caption" : "Aber warum kamen dann die Ärzte zur Szene?", 
+					"sound" : "judge/24_why_came.wav"
 				}
 			]
 		}, 
@@ -45,23 +67,23 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 5.5,
-        "choices" : [
+		"time_point" : 5, 
+		"choices" : [
 			{
-				"key" : "bracelet",
-				"text" : "Der Armband",
-                "puzzle" : "test/test_dialog/6_test_q5_puzzle_bracelet.json",
-                "sequence" : "test/test_dialog/6_test_q5_bracelet.json"
-			},
+				"key" : "bracelet", 
+				"text" : "Der Armband", 
+				"sequence" : "test/test_dialog/6_test_q5_bracelet.json", 
+				"puzzle" : "test/test_dialog/6_test_q5_puzzle_bracelet.json"
+			}, 
 			{
-				"key" : "accidentally",
-				"text" : "Versehentlich",
-                "sequence" : "test/test_dialog/6_test_q5_accidentally.json"
-			},
+				"key" : "accidentally", 
+				"text" : "Versehentlich", 
+				"sequence" : "test/test_dialog/6_test_q5_accidentally.json"
+			}, 
 			{
 				"key" : "they didnt", 
-				"text" : "Nicht gekommen",
-                "sequence" : "test/test_dialog/6_test_q5_didnt.json"
+				"text" : "Nicht gekommen", 
+				"sequence" : "test/test_dialog/6_test_q5_didnt.json"
 			}
 		]
 	}

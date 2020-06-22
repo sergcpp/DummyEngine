@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <Ren/Context.h>
+#include <Snd/Context.h>
 #include <Sys/Signal_.h>
 
 struct JsObject;
@@ -23,12 +24,18 @@ struct SeqAction {
     double time_beg, time_end;
     float pos_beg[3], pos_end[3];
     float rot_beg[3], rot_end[3];
+    double sound_offset;
     std::string caption;
 
     // temp data
     bool is_active;
     Ren::AnimSeqRef anim_ref;
     int anim_id;
+    Snd::BufferRef sound_ref;
+    bool dof;
+
+    static constexpr float SoundWaveStepS = 0.02f;
+    Ren::TextureRegionRef sound_wave_tex;
 };
 
 struct SeqChoice {
@@ -53,7 +60,8 @@ class ScriptedSequence {
         uint32_t target_actor;
     };
 
-    Ren::Context &ctx_;
+    Ren::Context &ren_ctx_;
+    Snd::Context &snd_ctx_;
     SceneManager &scene_manager_;
     std::string lookup_name_, name_;
     std::vector<Track> tracks_;
@@ -62,12 +70,18 @@ class ScriptedSequence {
     SeqChoice choices_[8];
     int choices_count_ = 0;
 
-    double end_time_;
+    double end_time_, last_t_ = 0.0;
 
-    void UpdateAction(uint32_t target_actor, SeqAction &action, double time_cur_s);
+    void UpdateAction(uint32_t target_actor, SeqAction &action, double time_cur_s,
+                      bool playing);
+
+    Ren::TextureRegionRef RenderSoundWaveForm(const char *name, const void *samples_data,
+                                              int samples_count,
+                                              const Snd::BufParams &params);
 
   public:
-    ScriptedSequence(Ren::Context &ctx_, SceneManager &scene_manager);
+    ScriptedSequence(Ren::Context &ren_ctx, Snd::Context &snd_ctx,
+                     SceneManager &scene_manager);
 
     const char *lookup_name() const {
         return lookup_name_.empty() ? nullptr : lookup_name_.c_str();
@@ -143,7 +157,7 @@ class ScriptedSequence {
     void Save(JsObject &js_seq);
 
     void Reset();
-    void Update(double cur_time_s);
+    void Update(double cur_time_s, bool playing);
 
     Sys::Signal<void(const char *text, const uint8_t color[4])> push_caption_signal;
 

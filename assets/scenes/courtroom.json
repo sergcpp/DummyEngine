@@ -132,53 +132,13 @@
 			"lightmap" : {
 				"res" : 128
 			}
-		}, 
-		{
-			"transform" : {
-				"pos" : [
-					-3.88968, 
-					0.835354, 
-					5.37758
-				], 
-				"rot" : [
-					0, 
-					0, 
-					0
-				]
-			}, 
-			"drawable" : {
-				"mesh_file" : "courtroom/table.mesh"
-			}, 
-			"lightmap" : {
-				"res" : 128
-			}
-		}, 
+		},  
 		{
 			"transform" : {
 				"pos" : [
 					2.14998, 
 					0.835354, 
-					3.59696
-				], 
-				"rot" : [
-					0, 
-					0, 
-					0
-				]
-			}, 
-			"drawable" : {
-				"mesh_file" : "courtroom/table.mesh"
-			}, 
-			"lightmap" : {
-				"res" : 128
-			}
-		}, 
-		{
-			"transform" : {
-				"pos" : [
-					2.14998, 
-					0.835354, 
-					6.8685
+					7.3685
 				], 
 				"rot" : [
 					0, 
@@ -481,60 +441,9 @@
 		{
 			"transform" : {
 				"pos" : [
-					-4.18109, 
-					0.538896, 
-					4.33782
-				], 
-				"rot" : [
-					0, 
-					0, 
-					0
-				]
-			}, 
-			"drawable" : {
-				"mesh_file" : "courtroom/chair.mesh"
-			}
-		}, 
-		{
-			"transform" : {
-				"pos" : [
-					-4.18109, 
-					0.538896, 
-					5.42528
-				], 
-				"rot" : [
-					0, 
-					0, 
-					0
-				]
-			}, 
-			"drawable" : {
-				"mesh_file" : "courtroom/chair.mesh"
-			}
-		}, 
-		{
-			"transform" : {
-				"pos" : [
-					-4.18109, 
-					0.538896, 
-					6.44372
-				], 
-				"rot" : [
-					0, 
-					0, 
-					0
-				]
-			}, 
-			"drawable" : {
-				"mesh_file" : "courtroom/chair.mesh"
-			}
-		}, 
-		{
-			"transform" : {
-				"pos" : [
 					2.4414, 
 					0.538896, 
-					2.55828
+					6.32874
 				], 
 				"rot" : [
 					0, 
@@ -551,7 +460,7 @@
 				"pos" : [
 					2.4414, 
 					0.538896, 
-					3.64576
+					7.4162
 				], 
 				"rot" : [
 					0, 
@@ -568,58 +477,7 @@
 				"pos" : [
 					2.4414, 
 					0.538896, 
-					4.66418
-				], 
-				"rot" : [
-					0, 
-					180, 
-					0
-				]
-			}, 
-			"drawable" : {
-				"mesh_file" : "courtroom/chair.mesh"
-			}
-		}, 
-		{
-			"transform" : {
-				"pos" : [
-					2.4414, 
-					0.538896, 
-					5.82874
-				], 
-				"rot" : [
-					0, 
-					180, 
-					0
-				]
-			}, 
-			"drawable" : {
-				"mesh_file" : "courtroom/chair.mesh"
-			}
-		}, 
-		{
-			"transform" : {
-				"pos" : [
-					2.4414, 
-					0.538896, 
-					6.9162
-				], 
-				"rot" : [
-					0, 
-					180, 
-					0
-				]
-			}, 
-			"drawable" : {
-				"mesh_file" : "courtroom/chair.mesh"
-			}
-		}, 
-		{
-			"transform" : {
-				"pos" : [
-					2.4414, 
-					0.538896, 
-					7.93464
+					8.43464
 				], 
 				"rot" : [
 					0, 
@@ -736,43 +594,9 @@
 		{
 			"transform" : {
 				"pos" : [
-					-3.54794, 
-					0.86424, 
-					4.37142
-				], 
-				"rot" : [
-					0, 
-					0, 
-					0
-				]
-			}, 
-			"drawable" : {
-				"mesh_file" : "courtroom/mikes.mesh"
-			}
-		}, 
-		{
-			"transform" : {
-				"pos" : [
 					1.877994, 
 					0.86424, 
-					4.67248
-				], 
-				"rot" : [
-					0, 
-					180, 
-					0
-				]
-			}, 
-			"drawable" : {
-				"mesh_file" : "courtroom/mikes.mesh"
-			}
-		}, 
-		{
-			"transform" : {
-				"pos" : [
-					1.877994, 
-					0.86424, 
-					7.90094
+					8.40094
 				], 
 				"rot" : [
 					0, 
@@ -891,24 +715,6 @@
 			}
 		}, 
 		{
-			"transform" : {
-				"pos" : [
-					0, 
-					0, 
-					0
-				], 
-				"rot" : [
-					0, 
-					0, 
-					0
-				]
-			}, 
-			"drawable" : {
-				"mesh_file" : "courtroom/statue.mesh",
-				"pt_mesh_file" : "courtroom/statue_low.mesh"
-			}
-		}, 
-		{
             "name" : "judge",
             "transform" : {
                 "pos" : [ -4.0, 0.25, 0.0 ],
@@ -919,7 +725,10 @@
                 "anims" : [
                 ]
             },
-            "anim_state" : {}
+            "anim_state" : {},
+            "sound" : {
+                "offset" : [ 0.0, 0.0, 0.0 ]
+            } 
         },
 		{
             "name" : "lawyer",
@@ -1026,7 +835,10 @@
 					}
 				]
             },
-            "anim_state" : {}
+            "anim_state" : {},
+            "sound" : {
+                "offset" : [ 0.0, 0.0, 0.0 ]
+            }
         },
         {
             "name" : "assist",
@@ -1192,7 +1004,10 @@
 					}
 				]
             },
-            "anim_state" : {}
+            "anim_state" : {},
+            "sound" : {
+                "offset" : [ 0.0, 0.0, 0.0 ]
+            }
         },
         {
             "name" : "accused",
@@ -1205,7 +1020,10 @@
                 "anims" : [
                 ]
             },
-            "anim_state" : {}
+            "anim_state" : {},
+            "sound" : {
+                "offset" : [ 0.0, 0.0, 0.0 ]
+            }
         },
         {
             "name" : "witness",
@@ -1218,7 +1036,10 @@
                 "anims" : [
                 ]
             },
-            "anim_state" : {}
+            "anim_state" : {},
+            "sound" : {
+                "offset" : [ 0.0, 0.0, 0.0 ]
+            }
         },
 		{
             "name" : "prosec",
@@ -1231,7 +1052,94 @@
                 "anims" : [
                 ]
             },
-            "anim_state" : {}
+            "anim_state" : {},
+            "sound" : {
+                "offset" : [ 0.0, 0.0, 0.0 ]
+            } 
+        },
+        {
+            "name" : "help",
+            "transform" : {
+                "pos" : [ -5.5, 0.25, -1.0 ],
+				"rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "eric.mesh",
+                "anims" : [
+                ]
+            },
+            "anim_state" : {},
+            "sound" : {
+                "offset" : [ 0.0, 0.0, 0.0 ]
+            } 
+        },
+        {
+            "name" : "guard",
+            "transform" : {
+                "pos" : [ -5.5, 0.25, -1.0 ],
+				"rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "eric.mesh",
+                "anims" : [
+                ]
+            },
+            "anim_state" : {},
+            "sound" : {
+                "offset" : [ 0.0, 0.0, 0.0 ]
+            } 
+        },
+        {
+            "name" : "door",
+            "transform" : {
+                "pos" : [ 5.9733, 0.004064, -0.38226 ],
+				"rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "courtroom/door.mesh",
+                "anims" : [
+                ]
+            },
+            "anim_state" : {},
+            "sound" : {
+                "offset" : [ 0.0, 0.0, 0.0 ]
+            } 
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.2, 0.0, 5.01962 ],
+				"rot" : [ 0.0, 90.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "courtroom/tribune.mesh"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ -2.2, 0.0, 5.59606 ],
+				"rot" : [ 0.0, 90.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "courtroom/tribune.mesh"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [ 0.8, 0.0, 5.01962 ],
+				"rot" : [ 0.0, -90.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "courtroom/tribune.mesh"
+            }
+        },
+		{
+            "transform" : {
+                "pos" : [ -0.659627, 0.0, 2.3517 ],
+				"rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "courtroom/tribune.mesh"
+            }
         },
 		{
 			"transform" : {

@@ -43,7 +43,8 @@
 					"time_beg" : 0.0, 
 					"time_end" : 2.5, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Ich habe die Post wie gewohnt zugestellt."
+					"caption" : "Ich habe die Post wie gewohnt zugestellt.",
+                    "sound" : "witness/02_delivered.wav"
 				}
 			]
 		}, 

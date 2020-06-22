@@ -6,15 +6,13 @@
 			"type" : "actor", 
 			"target" : "judge", 
 			"actions" : [
-				
 			]
 		}, 
-        {
+		{
 			"name" : "prosec_speech", 
 			"type" : "actor", 
 			"target" : "prosec", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -22,19 +20,41 @@
 			"type" : "actor", 
 			"target" : "lawyer", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 2.5, 
+					"time_beg" : 0, 
+					"time_end" : 1.9, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Haben Sie Post zugestellt?"
-				},
-                {
+					"caption" : "Haben Sie Post zugestellt?", 
+					"sound" : "lawyer/19_delivered.wav"
+				}, 
+				{
 					"type" : "play", 
-					"time_beg" : 4.1, 
-					"time_end" : 6.1, 
+					"time_beg" : 4.2, 
+					"time_end" : 5.7, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Nichts, bitte weiter."
+					"caption" : "Nichts, bitte weiter.", 
+					"sound" : "lawyer/20_nothing.wav"
 				}
 			]
 		}, 
@@ -43,7 +63,6 @@
 			"type" : "actor", 
 			"target" : "assist", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -51,12 +70,23 @@
 			"type" : "actor", 
 			"target" : "witness", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
 					"time_beg" : 2.6, 
-					"time_end" : 4.0, 
+					"time_end" : 4, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Ja. Was stimmt damit nicht?"
+					"caption" : "Ja. Was stimmt damit nicht?", 
+					"sound" : "witness/03_whats_wrong.wav"
 				}
 			]
 		}, 
@@ -69,10 +99,10 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 6.1,
-        "choices" : [
+		"time_point" : 6.1, 
+		"choices" : [
 			{
-				"key" : "pass",
+				"key" : "pass", 
 				"sequence" : "test/test_dialog/10_testimony2_02.json"
 			}
 		]

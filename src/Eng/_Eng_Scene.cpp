@@ -19,6 +19,7 @@
 #include "Scene/Comp/LightProbe.cpp"
 #include "Scene/Comp/LightSource.cpp"
 #include "Scene/Comp/Occluder.cpp"
+#include "Scene/Comp/SoundSource.cpp"
 #include "Scene/Comp/Transform.cpp"
 #include "Scene/Comp/VegState.cpp"
 

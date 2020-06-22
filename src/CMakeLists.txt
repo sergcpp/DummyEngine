@@ -25,6 +25,7 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
             if(CMAKE_SIZEOF_VOID_P EQUAL 8)
                 set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x64")
 				set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x64)
+                set(OPENAL_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/OpenAL/libs/Win64)
             else(CMAKE_SIZEOF_VOID_P EQUAL 8)
                 set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x86")
 				set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x86)
@@ -50,6 +51,7 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     include_directories(${SDL2_INCLUDE_DIRS})
     link_directories(${SDL2_LIBRARIES})
     link_directories(${ITT_LIBRARIES})
+    link_directories(${OPENAL_LIBRARIES})
 endif()
 
 set(RENDERER GL)
@@ -60,6 +62,12 @@ elseif(${RENDERER} STREQUAL "SW")
   add_definitions(-DUSE_SW_RENDER)
 elseif(${RENDERER} STREQUAL "VK")
   add_definitions(-DUSE_VK_RENDER)
+endif()
+
+set(SOUND AL)
+
+if(${SOUND} STREQUAL "AL")
+  add_definitions(-DUSE_AL_SOUND)
 endif()
 
 include_directories(.)
@@ -81,6 +89,7 @@ add_subdirectory(Modl)
 add_subdirectory(Net)
 add_subdirectory(Ray)
 add_subdirectory(Ren)
+add_subdirectory(Snd)
 add_subdirectory(Sys)
 
 add_subdirectory(libs/astc)
@@ -96,6 +105,7 @@ set_target_properties(Eng
                       Ray
                       Ren
                       SW
+					  Snd
                       Sys PROPERTIES FOLDER Libs)
 
 set_target_properties(test_DummyLib
@@ -104,6 +114,7 @@ set_target_properties(test_DummyLib
                       test_Ray
                       test_Ren
                       test_SW
+					  test_Snd
                       test_Sys PROPERTIES FOLDER Tests)
                       
 set_target_properties(SOIL2
@@ -115,6 +126,7 @@ add_test(NetTest        Net/tests/test_Net)
 add_test(RayTest        Ray/tests/test_Ray)
 add_test(RenTest        Ren/tests/test_Ren)
 add_test(SWTest         Ren/SW/tests/test_SW)
+add_test(SndTest        Sys/tests/test_Snd)
 add_test(SysTest        Sys/tests/test_Sys)
 
 add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_DummyLib
@@ -122,5 +134,6 @@ add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_DummyLib
                                                                test_Ray
                                                                test_Ren
                                                                test_SW
+															   test_Snd
                                                                test_Sys)
 set_target_properties(Check PROPERTIES FOLDER Tests)

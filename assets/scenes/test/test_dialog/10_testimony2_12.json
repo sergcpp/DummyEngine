@@ -8,33 +8,65 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 3.5, 
-					"time_end" : 4.0, 
+					"time_beg" : 3.9, 
+					"time_end" : 7.1, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Ruhe!"
-				},
-                {
+					"caption" : "Ruhe! Nun, das ist eine faire Forderung.", 
+					"sound" : "judge/48_fair.wav"
+				}, 
+				{
 					"type" : "play", 
-					"time_beg" : 4.2, 
-					"time_end" : 6.2, 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Nun, das ist eine faire Forderung."
-				},
-                {
-					"type" : "play", 
-					"time_beg" : 6.5, 
+					"time_beg" : 7.2, 
 					"time_end" : 9.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Wir geben Ihnen 15 Minuten vor Ort. Das Gericht wird vertagt."
+					"caption" : "Wir geben Ihnen 15 Minuten vor Ort.", 
+					"sound" : "judge/49_fifteen_minutes.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 9.6, 
+					"time_end" : 11, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Das Gericht wird vertagt.", 
+					"sound" : "judge/50_delayed.wav"
 				}
 			]
 		}, 
-        {
+		{
 			"name" : "prosec_speech", 
 			"type" : "actor", 
 			"target" : "prosec", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -42,12 +74,23 @@
 			"type" : "actor", 
 			"target" : "lawyer", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 3.0, 
+					"time_beg" : 0, 
+					"time_end" : 3, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Ich möchte den Tatort persönlich inspizieren."
+					"caption" : "Ich möchte den Tatort persönlich inspizieren.", 
+					"sound" : "lawyer/29_investigate.wav"
 				}
 			]
 		}, 
@@ -56,7 +99,6 @@
 			"type" : "actor", 
 			"target" : "assist", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -75,6 +117,8 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 9.5
+		"time_point" : 12, 
+		"choices" : [
+		]
 	}
 }

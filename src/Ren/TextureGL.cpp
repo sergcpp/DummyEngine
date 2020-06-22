@@ -15,7 +15,7 @@
 #endif
 
 namespace Ren {
-uint32_t g_gl_formats[] = {
+const uint32_t g_gl_formats[] = {
     0xffffffff, // Undefined
     GL_RGB,     // RawRGB888
     GL_RGBA,    // RawRGBA8888
@@ -42,7 +42,7 @@ static_assert(sizeof(g_gl_formats) / sizeof(g_gl_formats[0]) ==
                   (size_t)eTexFormat::FormatCount,
               "!");
 
-uint32_t g_gl_internal_formats[] = {
+const uint32_t g_gl_internal_formats[] = {
     0xffffffff,        // Undefined
     GL_RGB8,           // RawRGB888
     GL_RGBA8,          // RawRGBA8888
@@ -69,7 +69,7 @@ static_assert(sizeof(g_gl_internal_formats) / sizeof(g_gl_internal_formats[0]) =
                   (size_t)eTexFormat::FormatCount,
               "!");
 
-uint32_t g_gl_types[] = {
+const uint32_t g_gl_types[] = {
     0xffffffff,        // Undefined
     GL_UNSIGNED_BYTE,  // RawRGB888
     GL_UNSIGNED_BYTE,  // RawRGBA8888
@@ -96,7 +96,7 @@ static_assert(sizeof(g_gl_types) / sizeof(g_gl_types[0]) ==
                   (size_t)eTexFormat::FormatCount,
               "!");
 
-uint32_t g_gl_min_filter[] = {
+const uint32_t g_gl_min_filter[] = {
     GL_NEAREST,               // NoFilter
     GL_LINEAR_MIPMAP_NEAREST, // Bilinear
     GL_LINEAR_MIPMAP_LINEAR,  // Trilinear
@@ -106,7 +106,7 @@ static_assert(sizeof(g_gl_min_filter) / sizeof(g_gl_min_filter[0]) ==
                   (size_t)eTexFilter::FilterCount,
               "!");
 
-uint32_t g_gl_mag_filter[] = {
+const uint32_t g_gl_mag_filter[] = {
     GL_NEAREST, // NoFilter
     GL_LINEAR,  // Bilinear
     GL_LINEAR,  // Trilinear
@@ -116,7 +116,7 @@ static_assert(sizeof(g_gl_mag_filter) / sizeof(g_gl_mag_filter[0]) ==
                   (size_t)eTexFilter::FilterCount,
               "!");
 
-uint32_t g_gl_wrap_mode[] = {
+const uint32_t g_gl_wrap_mode[] = {
     GL_REPEAT,          // Repeat
     GL_CLAMP_TO_EDGE,   // ClampToEdge
     GL_CLAMP_TO_BORDER, // ClampToBorder
@@ -130,15 +130,13 @@ bool IsMainThread();
 
 Ren::Texture2D::Texture2D(const char *name, const void *data, int size,
                           const Texture2DParams &p, eTexLoadStatus *load_status,
-                          ILog *log) {
-    name_ = String{name};
+                          ILog *log) : name_(name) {
     Init(data, size, p, load_status, log);
 }
 
 Ren::Texture2D::Texture2D(const char *name, const void *data[6], const int size[6],
                           const Texture2DParams &p, eTexLoadStatus *load_status,
-                          ILog *log) {
-    name_ = String{name};
+                          ILog *log) : name_(name) {
     Init(data, size, p, load_status, log);
 }
 

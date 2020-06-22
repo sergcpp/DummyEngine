@@ -82,6 +82,6 @@ list(APPEND ALL_SOURCE_FILES Utils/_Utils.cpp)
 source_group("src\\Utils" FILES Utils/_Utils.cpp)
 
 add_library(DummyLib STATIC ${ALL_SOURCE_FILES})
-target_link_libraries(DummyLib Eng Net Ray Ren Sys astc ${LIBS})
+target_link_libraries(DummyLib Eng Net Ray Ren Snd Sys astc ${LIBS})
 
 add_subdirectory(tests)

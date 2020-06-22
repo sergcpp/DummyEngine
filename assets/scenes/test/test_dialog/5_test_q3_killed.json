@@ -16,9 +16,10 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0.0, 
-					"time_end" : 3.0, 
+					"time_end" : 1.5, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Sie wurde erschlagen."
+					"caption" : "Sie wurde erschlagen.",
+                    "sound" : "lawyer/12_killed.wav"
 				},
 			]
 		}, 
@@ -31,7 +32,7 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 5.0,
+		"time_point" : 2.0,
 		"choices" : [
 			{
 				"key" : "pass", 

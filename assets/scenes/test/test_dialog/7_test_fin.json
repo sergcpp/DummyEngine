@@ -9,23 +9,26 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0.0, 
-					"time_end" : 1.5, 
+					"time_end" : 0.7, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Richtig."
+					"caption" : "Richtig.",
+                    "sound" : "judge/23_right.wav"
 				},
                 {
 					"type" : "play", 
-					"time_beg" : 1.6, 
-					"time_end" : 5.0, 
+					"time_beg" : 0.8, 
+					"time_end" : 3.1, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Sie haben alle meine Fragen beantwortet."
+					"caption" : "Sie haben alle meine Fragen beantwortet.",
+                    "sound" : "judge/25_answered.wav"
 				},
                 {
 					"type" : "play", 
-					"time_beg" : 5.1, 
-					"time_end" : 8.0, 
+					"time_beg" : 3.2, 
+					"time_end" : 5.6, 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Es gibt keinen Grund, nicht fortzufahren."
+					"caption" : "Es gibt keinen Grund, nicht fortzufahren.",
+                    "sound" : "judge/26_no_reason_for_delay.wav"
 				}
 			]
 		}, 
@@ -52,7 +55,7 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 8.5, 
+		"time_point" : 6.1, 
 		"choices" : [
 			{
 				"key" : "pass", 

@@ -9,18 +9,28 @@
 				{
 					"type" : "play", 
 					"time_beg" : 3.2, 
-					"time_end" : 6.2, 
+					"time_end" : 4.9, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Ja. Was bedeutet das?"
+					"caption" : "Ja. Was bedeutet das?", 
+					"sound" : "judge/41_what_does_it_mean.wav"
 				}
 			]
 		}, 
-        {
+		{
 			"name" : "prosec_speech", 
 			"type" : "actor", 
 			"target" : "prosec", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -28,12 +38,23 @@
 			"type" : "actor", 
 			"target" : "lawyer", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 3.0, 
+					"time_beg" : 0, 
+					"time_end" : 2.6, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Der Krankenwagen kam um 10:00 Uhr an."
+					"caption" : "Der Krankenwagen kam um 10:00 Uhr an.", 
+					"sound" : "lawyer/24_10_o_clock.wav"
 				}
 			]
 		}, 
@@ -42,7 +63,6 @@
 			"type" : "actor", 
 			"target" : "assist", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -61,12 +81,12 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 6.2,
-        "choices" : [
-            {
-				"key" : "pass",
-				"sequence" : "test/test_dialog/10_testimony2_09.json",
-                "puzzle" : "test/test_dialog/10_testimony2_08_puzzle.json"
+		"time_point" : 6.2, 
+		"choices" : [
+			{
+				"key" : "pass", 
+				"sequence" : "test/test_dialog/10_testimony2_09.json", 
+				"puzzle" : "test/test_dialog/10_testimony2_08_puzzle.json"
 			}
 		]
 	}

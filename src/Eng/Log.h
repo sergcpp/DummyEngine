@@ -1,8 +1,9 @@
 #pragma once
 
 #include <Ren/Log.h>
+#include <Snd/Log.h>
 
-class LogStdout : public Ren::ILog {
+class LogStdout : public Ren::ILog, public Snd::ILog {
 public:
     void Info(const char *fmt, ...) override;
     void Error(const char *fmt, ...) override;

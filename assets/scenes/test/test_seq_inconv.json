@@ -1,51 +1,53 @@
 {
-	"name" : "test_seq1",
-	"tracks" : [
-		{
-			"name" : "lawyer_speech", 
-			"type" : "actor", 
-			"target" : "lawyer", 
-			"actions" : [
-				{
-					"type" : "play", 
-					"time_beg" : 0, 
-					"time_end" : 3.6,
-					"pos_beg" : [ -1.5, 0.0, 5.0 ],
-					"pos_end" : [ -1.5, 0.0, 5.0 ],
-					"rot_beg" : [ 0.0, 180.0, 0.0 ],
-					"rot_end" : [ 0.0, 180.0, 0.0 ],
-					"anim" : "chars/lawyer_talk.anim", 
-					"caption" : ""
-				}
-			]
-		},
-		{
-			"name" : "camera_track",
-			"type" : "camera",
-			"target" : "main_camera",
-			"actions" : [
-				{
-					"time_beg" : 0.0,
-					"time_end" : 2.0,
-					"type" : "look"
-				}
-			]
-		}
-	],
+    "name" : "test_seq1",
+    "tracks" : [
+        {
+            "name" : "lawyer_speech", 
+            "type" : "actor", 
+            "target" : "lawyer", 
+            "actions" : [
+                {
+                    "type" : "play", 
+                    "time_beg" : 0, 
+                    "time_end" : 2.8,
+                    "pos_beg" : [ -1.5, 0.0, 5.0 ],
+                    "pos_end" : [ -1.5, 0.0, 5.0 ],
+                    "rot_beg" : [ 0.0, 180.0, 0.0 ],
+                    "rot_end" : [ 0.0, 180.0, 0.0 ],
+                    "anim" : "chars/lawyer_talk.anim", 
+                    "caption" : "",
+                    "sound" : "lawyer/28_trial_by_combat.wav",
+					"sound_offset" : 0.0
+                }
+            ]
+        },
+        {
+            "name" : "camera_track",
+            "type" : "camera",
+            "target" : "main_camera",
+            "actions" : [
+                {
+                    "time_beg" : 0.0,
+                    "time_end" : 2.0,
+                    "type" : "look"
+                }
+            ]
+        }
+    ],
     "ending" : {
         "time_point" : 5.0,
-		"choices" : [
+        "choices" : [
             {
                 "key" : "ch1",
                 "text" : "Choice 1",
                 "sequence" : "test/test_seq3.json",
-				"puzzle" : "test/test_puzzle.json"
+                "puzzle" : "test/test_puzzle.json"
             },
             {
                 "key" : "ch2",
                 "text" : "Choice 2",
                 "sequence" : "test/test_seq4.json",
-				"puzzle" : "test/test_puzzle.json"
+                "puzzle" : "test/test_puzzle.json"
             }
         ]
     }

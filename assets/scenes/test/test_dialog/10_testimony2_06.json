@@ -6,15 +6,13 @@
 			"type" : "actor", 
 			"target" : "judge", 
 			"actions" : [
-				
 			]
 		}, 
-        {
+		{
 			"name" : "prosec_speech", 
 			"type" : "actor", 
 			"target" : "prosec", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -22,7 +20,6 @@
 			"type" : "actor", 
 			"target" : "lawyer", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -30,7 +27,6 @@
 			"type" : "actor", 
 			"target" : "assist", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -38,12 +34,23 @@
 			"type" : "actor", 
 			"target" : "witness", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 2.5, 
+					"time_beg" : 0, 
+					"time_end" : 2, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Ich wollte sofort die Polizei rufen!"
+					"caption" : "Ich wollte sofort die Polizei rufen!", 
+					"sound" : "witness/09_police.wav"
 				}
 			]
 		}, 
@@ -56,18 +63,18 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 5.0,
-        "choices" : [
+		"time_point" : 3, 
+		"choices" : [
 			{
-				"key" : "continue",
-                "text" : "[Weiter]",
+				"key" : "continue", 
+				"text" : "[Weiter]", 
 				"sequence" : "test/test_dialog/10_testimony2_07.json"
-			},
-            {
-				"key" : "objection",
-                "text" : "[Einspruch]",
+			}, 
+			{
+				"key" : "objection", 
+				"text" : "[Einspruch]", 
 				"sequence" : "test/test_dialog/10_testimony2_07.json"
-			},
+			}
 		]
 	}
 }

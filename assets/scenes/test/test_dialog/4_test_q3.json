@@ -8,24 +8,39 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 1.5, 
+					"time_beg" : 0, 
+					"time_end" : 1, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Korrekt."
-				},
-                {
+					"caption" : "Korrekt.", 
+					"sound" : "judge/11_correct.wav"
+				}, 
+				{
 					"type" : "play", 
-					"time_beg" : 2.0, 
-					"time_end" : 4.5, 
+					"time_beg" : 1.5, 
+					"time_end" : 5.9, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Sagen Sie mir jetzt, was die Todesursache war."
-				},
-                {
-					"type" : "play", 
-					"time_beg" : 4.6, 
-					"time_end" : 6.6, 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Sie starb, weil sie...?"
+					"caption" : "Sagen Sie mir jetzt, was die Todesursache war. Sie starb, weil sie...?", 
+					"sound" : "judge/20_weapon.wav"
 				}
 			]
 		}, 
@@ -52,22 +67,22 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 7.0,
-        "choices" : [
+		"time_point" : 6.5, 
+		"choices" : [
 			{
-				"key" : "poisoned",
-				"text" : "Vergiftet wurde",
+				"key" : "poisoned", 
+				"text" : "Vergiftet wurde", 
 				"sequence" : "test/test_dialog/5_test_q3_poisoned.json"
-			},
+			}, 
 			{
-				"key" : "killed",
-				"text" : "Ershlagen wurde",
-                "puzzle" : "test/test_dialog/4_test_q3_puzzle_killed.json",
-				"sequence" : "test/test_dialog/5_test_q3_killed.json"
-			},
+				"key" : "killed", 
+				"text" : "Ershlagen wurde", 
+				"sequence" : "test/test_dialog/5_test_q3_killed.json", 
+				"puzzle" : "test/test_dialog/4_test_q3_puzzle_killed.json"
+			}, 
 			{
 				"key" : "choked", 
-				"text" : "Erdrosselt wurde",	
+				"text" : "Erdrosselt wurde", 
 				"sequence" : "test/test_dialog/5_test_q3_choked.json"
 			}
 		]

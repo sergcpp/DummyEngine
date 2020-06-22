@@ -1,0 +1,197 @@
+{
+	"name" : "begin", 
+	"tracks" : [
+		{
+			"name" : "judge_speech", 
+			"type" : "actor", 
+			"target" : "judge", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
+			"actions" : [
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 2, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "sophia_idle.anim", 
+					"caption" : "Das ist ernster, als wir dachten.", 
+					"sound" : "assistant/01_worse.wav"
+				}
+			]
+		}, 
+		{
+			"name" : "help_speech", 
+			"type" : "actor", 
+			"target" : "help", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 2.1, 
+					"time_end" : 4.7, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Was machen wir jetzt? Wir haben keine Chance.", 
+					"sound" : "misc/01_chances.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 9.4, 
+					"time_end" : 10.7, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Bist du sicher? Wir...", 
+					"sound" : "misc/02_sure.wav"
+				}
+			]
+		}, 
+		{
+			"name" : "defence_speech", 
+			"type" : "actor", 
+			"target" : "lawyer", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 4.9, 
+					"time_end" : 9.3, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Wir sollten uns beruhigen. Er kann es nicht getan haben. Er ist unschuldig.", 
+					"sound" : "lawyer/01_calm.wav"
+				}
+			]
+		}, 
+		{
+			"name" : "guard_speech", 
+			"type" : "actor", 
+			"target" : "guard", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 10.8, 
+					"time_end" : 12.4, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Nur Anwalt und Assistent.", 
+					"sound" : "guard/01.wav"
+				}
+			]
+		}, 
+		{
+			"name" : "door_track", 
+			"type" : "actor", 
+			"target" : "door", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0.0, 
+					"time_end" : 3.0, 
+					"pos_beg" : [
+						5.9733, 0.004064, -0.38226
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/door_open.anim"
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 2, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					],
+					"anim" : "cam_test.anim",
+					"dof" : true
+				}
+			]
+		}
+	], 
+	"ending" : {
+		"time_point" : 13, 
+		"choices" : [
+			{
+				"key" : "bauer", 
+				"text" : "Herrn Bauer", 
+				"sequence" : "test/test_dialog/0_intro.json"
+			}, 
+			{
+				"key" : "schnitzel", 
+				"text" : "Frau Schnitzel", 
+				"sequence" : "test/test_dialog/0_intro.json"
+			}
+		]
+	}
+}

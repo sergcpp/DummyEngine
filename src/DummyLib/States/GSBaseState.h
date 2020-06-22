@@ -28,12 +28,17 @@ class BitmapFont;
 class Renderer;
 }
 
+namespace Snd {
+class Context;
+}
+
 class GSBaseState : public GameState {
 protected:
     GameBase                        *game_;
     std::weak_ptr<GameStateManager> state_manager_;
     std::shared_ptr<Cmdline>        cmdline_;
-    std::shared_ptr<Ren::Context>   ctx_;
+    std::shared_ptr<Ren::Context>   ren_ctx_;
+    std::shared_ptr<Snd::Context>   snd_ctx_;
     std::shared_ptr<Ren::ILog>      log_;
     std::shared_ptr<Renderer>       renderer_;
     std::shared_ptr<SceneManager>   scene_manager_;

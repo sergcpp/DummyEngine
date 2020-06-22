@@ -6,15 +6,13 @@
 			"type" : "actor", 
 			"target" : "judge", 
 			"actions" : [
-				
 			]
 		}, 
-        {
+		{
 			"name" : "prosec_speech", 
 			"type" : "actor", 
 			"target" : "prosec", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -22,12 +20,23 @@
 			"type" : "actor", 
 			"target" : "lawyer", 
 			"actions" : [
-                {
+				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 5.0, 
+					"time_beg" : 0, 
+					"time_end" : 5.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Das Opfer kam aus dem Urlaub. Ihre Uhr sollte 2 Stunden im Voraus eingestellt worden sein."
+					"caption" : "Das Opfer kam aus dem Urlaub. Ihre Uhr sollte 2 Stunden im Voraus eingestellt worden sein.", 
+					"sound" : "lawyer/26_vacation.wav"
 				}
 			]
 		}, 
@@ -36,7 +45,6 @@
 			"type" : "actor", 
 			"target" : "assist", 
 			"actions" : [
-                
 			]
 		}, 
 		{
@@ -55,10 +63,10 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 7.0,
-        "choices" : [
-            {
-				"key" : "pass",
+		"time_point" : 7, 
+		"choices" : [
+			{
+				"key" : "pass", 
 				"sequence" : "test/test_dialog/10_testimony2_11.json"
 			}
 		]

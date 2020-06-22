@@ -8,10 +8,39 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 9.0, 
-					"time_end" : 12.5, 
+					"time_beg" : 9, 
+					"time_end" : 10.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Wie lautet Ihre Antwort? Wie heißt das Opfer in diesem Fall?"
+					"caption" : "Wie lautet Ihre Antwort?", 
+					"sound" : "judge/17_answer.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 10.6, 
+					"time_end" : 12.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "eric_idle.anim", 
+					"caption" : "Wie heißt das Opfer in diesem Fall?", 
+					"sound" : "judge/18_name_victim.wav"
 				}
 			]
 		}, 
@@ -22,10 +51,21 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 2.5, 
+					"time_beg" : 0, 
+					"time_end" : 2.2, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "eric_idle.anim", 
-					"caption" : "Natürlich weiß ich den Namen des Opfer!"
+					"caption" : "Natürlich weiß ich den Namen des Opfers!", 
+					"sound" : "lawyer/10_i_know.wav"
 				}
 			]
 		}, 
@@ -36,17 +76,39 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 3.0, 
-					"time_end" : 6.0, 
+					"time_beg" : 2.5, 
+					"time_end" : 5.8, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "sophia_idle.anim", 
-					"caption" : "Siehst du, der Name des Opfers steht in der Gerichtsakte."
-				},
+					"caption" : "Siehst du, der Name des Opfers steht in der Gerichtsakte.", 
+					"sound" : "assistant/013_act.wav"
+				}, 
 				{
 					"type" : "play", 
-					"time_beg" : 6.5, 
-					"time_end" : 8.5, 
+					"time_beg" : 5.9, 
+					"time_end" : 8.6, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
 					"anim" : "sophia_idle.anim", 
-					"caption" : "Du solltest sie öfter überprüfen. Ich bitte dich."
+					"caption" : "Du solltest sie öfter überprüfen. Ich bitte dich.", 
+					"sound" : "assistant/014_often.wav"
 				}
 			]
 		}, 
@@ -59,22 +121,22 @@
 		}
 	], 
 	"ending" : {
-		"time_point" : 13.0,
-        "choices" : [
+		"time_point" : 13, 
+		"choices" : [
 			{
-				"key" : "alex",
-				"text" : "Alex Smiths",
+				"key" : "alex", 
+				"text" : "Alex Smiths", 
 				"sequence" : "test/test_dialog/4_test_q2_alex.json"
-			},
+			}, 
 			{
-				"key" : "maria",
-				"text" : "Maria Sneider",
-                "puzzle" : "test/test_dialog/3_test_q2_puzzle_maria.json",
-				"sequence" : "test/test_dialog/4_test_q2_maria.json"
-			},
+				"key" : "maria", 
+				"text" : "Maria Sneider", 
+				"sequence" : "test/test_dialog/4_test_q2_maria.json", 
+				"puzzle" : "test/test_dialog/3_test_q2_puzzle_maria.json"
+			}, 
 			{
 				"key" : "stephan", 
-				"text" : "Stephan Lier",	
+				"text" : "Stephan Lier", 
 				"sequence" : "test/test_dialog/4_test_q2_stephan.json"
 			}
 		]

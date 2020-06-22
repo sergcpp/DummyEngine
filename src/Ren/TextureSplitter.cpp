@@ -1,7 +1,7 @@
 #include "TextureSplitter.h"
 
 int Ren::TextureSplitter::Allocate(const int res[2], int pos[2]) {
-    int i = Insert_Recursive(0, res);
+    const int i = Insert_Recursive(0, res);
     if (i != -1) {
         pos[0] = nodes_[i].pos[0];
         pos[1] = nodes_[i].pos[1];
@@ -10,12 +10,14 @@ int Ren::TextureSplitter::Allocate(const int res[2], int pos[2]) {
 }
 
 bool Ren::TextureSplitter::Free(const int pos[2]) {
-    int i = Find_Recursive(0, pos);
+    const int i = Find_Recursive(0, pos);
     return Free(i);
 }
 
 bool Ren::TextureSplitter::Free(int i) {
-    if (i == -1 || nodes_[i].is_free) return false;
+    if (i == -1 || nodes_[i].is_free) {
+        return false;
+    }
 
     nodes_[i].is_free = true;
 
@@ -49,7 +51,7 @@ void Ren::TextureSplitter::Clear() {
 }
 
 int Ren::TextureSplitter::FindNode(const int pos[2], int size[2]) const {
-    int i = Find_Recursive(0, pos);
+    const int i = Find_Recursive(0, pos);
     if (i != -1) {
         size[0] = nodes_[i].size[0];
         size[1] = nodes_[i].size[1];
@@ -65,7 +67,7 @@ int Ren::TextureSplitter::Insert_Recursive(int i, const int res[2]) {
     int ch0 = nodes_[i].child[0], ch1 = nodes_[i].child[1];
 
     if (ch0 != -1) {
-        int new_node = Insert_Recursive(ch0, res);
+        const int new_node = Insert_Recursive(ch0, res);
         if (new_node != -1) return new_node;
 
         return Insert_Recursive(ch1, res);
@@ -113,7 +115,7 @@ int Ren::TextureSplitter::Find_Recursive(int i, const int pos[2]) const {
         return -1;
     }
 
-    int ch0 = nodes_[i].child[0], ch1 = nodes_[i].child[1];
+    const int ch0 = nodes_[i].child[0], ch1 = nodes_[i].child[1];
 
     if (ch0 != -1) {
         int ndx = Find_Recursive(ch0, pos);
@@ -129,7 +131,7 @@ int Ren::TextureSplitter::Find_Recursive(int i, const int pos[2]) const {
 }
 
 void Ren::TextureSplitter::SafeErase(int i, int *indices, int num) {
-    int last = (int)nodes_.size() - 1;
+    const int last = (int)nodes_.size() - 1;
 
     if (last != i) {
         int ch0 = nodes_[last].child[0],
