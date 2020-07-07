@@ -14,8 +14,8 @@
 #endif
 
 namespace Ren {
-const int MAX_NUM_ATTRIBUTES = 16;
-const int MAX_NUM_UNIFORMS = 16;
+const int MaxAttributesCount = 16;
+const int MaxUniformsCount = 16;
 struct Descr {
     std::string name;
     int loc = -1;
@@ -31,8 +31,8 @@ enum eProgLoadStatus { Found, SetToDefault, CreatedFromData };
 
 class Program : public RefCounter {
     uint32_t    prog_id_ = 0;
-    std::array<Attribute, MAX_NUM_ATTRIBUTES>   attributes_;
-    std::array<Uniform, MAX_NUM_UNIFORMS>       uniforms_;
+    std::array<Attribute, MaxAttributesCount>   attributes_;
+    std::array<Uniform, MaxUniformsCount>       uniforms_;
     bool        ready_ = false;
     char        name_[32];
 
@@ -42,11 +42,11 @@ public:
         name_[0] = '\0';
     }
     Program(const char *name, uint32_t prog_id, const Attribute *attrs, const Uniform *unifs) : prog_id_(prog_id) {
-        for (int i = 0; i < MAX_NUM_ATTRIBUTES; i++) {
+        for (int i = 0; i < MaxAttributesCount; i++) {
             if (attrs[i].loc == -1) break;
             attributes_[i] = attrs[i];
         }
-        for (int i = 0; i < MAX_NUM_UNIFORMS; i++) {
+        for (int i = 0; i < MaxUniformsCount; i++) {
             if (unifs[i].loc == -1) break;
             uniforms_[i] = unifs[i];
         }
@@ -79,7 +79,7 @@ public:
     }
 
     const Attribute &attribute(const char *name) const {
-        for (int i = 0; i < MAX_NUM_ATTRIBUTES; i++) {
+        for (int i = 0; i < MaxAttributesCount; i++) {
             if (attributes_[i].name == name) {
                 return attributes_[i];
             }
@@ -92,7 +92,7 @@ public:
     }
 
     const Uniform &uniform(const char *name) const {
-        for (int i = 0; i < MAX_NUM_UNIFORMS; i++) {
+        for (int i = 0; i < MaxUniformsCount; i++) {
             if (uniforms_[i].name == name) {
                 return uniforms_[i];
             }

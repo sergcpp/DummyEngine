@@ -18,7 +18,12 @@ layout(location = REN_VTX_TAN_LOC) in vec2 aVertexTangent;
 layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs1;
 layout(location = REN_VTX_AUX_LOC) in uint aVertexUnused;
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = 0, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     SharedData shrd_data;
 };
 

@@ -49,12 +49,12 @@ void Ren::Program::Init(const char *name, void *vs_shader, void *fs_shader, int 
 
     InitFromFuncs(vs_shader, fs_shader, num_fvars, status);
 
-    for (int i = 0; i < MAX_NUM_ATTRIBUTES; i++) {
+    for (int i = 0; i < MaxAttributesCount; i++) {
         if (attrs[i].loc == -1) break;
         attributes_[i] = attrs[i];
 
     }
-    for (int i = 0; i < MAX_NUM_UNIFORMS; i++) {
+    for (int i = 0; i < MaxUniformsCount; i++) {
         if (unifs[i].loc == -1) break;
         uniforms_[i] = unifs[i];
         swRegisterUniformv(unifs[i].loc, (SWenum)unifs[i].type, unifs[i].size);

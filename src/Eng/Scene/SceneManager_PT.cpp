@@ -593,7 +593,8 @@ void SceneManager::InitScene_PT(bool _override) {
                 const Ren::TriGroup *s = &mesh->group(0);
                 while (s->offset != -1) {
                     const Ren::Material *mat = s->mat.get();
-                    if (mat->flags() & (Ren::AlphaBlend | Ren::AlphaTest)) {
+                    if (mat->flags() & (uint32_t(Ren::eMaterialFlags::AlphaBlend) |
+                                        uint32_t(Ren::eMaterialFlags::AlphaTest))) {
                         // TODO: Properly support transparent objects
                         is_sparse = true;
                         ++s;

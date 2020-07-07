@@ -429,6 +429,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
     g_asset_handlers["wav"] = {"wav", HCopy};
     g_asset_handlers["vert.glsl"] = {"vert.glsl", HPreprocessShader};
     g_asset_handlers["frag.glsl"] = {"frag.glsl", HPreprocessShader};
+    g_asset_handlers["tesc.glsl"] = {"tesc.glsl", HPreprocessShader};
+    g_asset_handlers["tese.glsl"] = {"tese.glsl", HPreprocessShader};
     g_asset_handlers["comp.glsl"] = {"comp.glsl", HPreprocessShader};
     g_asset_handlers["ttf"] = {"font", HConvTTFToFont};
 

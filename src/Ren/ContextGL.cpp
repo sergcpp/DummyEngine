@@ -133,13 +133,38 @@ Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *vs_s
     ProgramRef ref = programs_.FindByName(name);
 
     if (!ref) {
-        ref = programs_.Add(name, vs_source, fs_source, load_status, log_);
+        ref = programs_.Add(name, vs_source, fs_source, nullptr, nullptr, load_status,
+                            log_);
     } else {
         if (ref->ready()) {
-            if (load_status)
-                *load_status = eProgLoadStatus::Found;
+            if (load_status) {
+                (*load_status) = eProgLoadStatus::Found;
+            }
         } else if (!ref->ready() && vs_source && fs_source) {
-            ref->Init(vs_source, fs_source, load_status, log_);
+            ref->Init(vs_source, fs_source, nullptr, nullptr, load_status, log_);
+        }
+    }
+
+    return ref;
+}
+
+Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *vs_source,
+                                              const char *fs_source,
+                                              const char *tcs_source,
+                                              const char *tes_source,
+                                              eProgLoadStatus *load_status) {
+    ProgramRef ref = programs_.FindByName(name);
+
+    if (!ref) {
+        ref = programs_.Add(name, vs_source, fs_source, tcs_source, tes_source,
+                            load_status, log_);
+    } else {
+        if (ref->ready()) {
+            if (load_status) {
+                *load_status = eProgLoadStatus::Found;
+            }
+        } else if (!ref->ready() && vs_source && fs_source) {
+            ref->Init(vs_source, fs_source, tcs_source, tes_source, load_status, log_);
         }
     }
 

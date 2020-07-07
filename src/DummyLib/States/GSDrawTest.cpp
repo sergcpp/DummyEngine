@@ -20,7 +20,7 @@
 
 namespace GSDrawTestInternal {
 #if defined(__ANDROID__)
-    const char SCENE_NAME[] = "assets/scenes/"
+const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
@@ -36,7 +36,8 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
                           //"courtroom.json";
                           //"lmap_test.json";
                           //"sss_test.json";
-                          "char_test.json";
+                          //"char_test.json";
+                          "tessellation_test.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {

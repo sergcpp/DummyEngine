@@ -125,18 +125,22 @@ static_assert(sizeof(g_gl_wrap_mode) / sizeof(g_gl_wrap_mode[0]) ==
                   (size_t)eTexRepeat::WrapModesCount,
               "!");
 
+const float AnisotropyLevel = 4.0f;
+
 bool IsMainThread();
 } // namespace Ren
 
 Ren::Texture2D::Texture2D(const char *name, const void *data, int size,
                           const Texture2DParams &p, eTexLoadStatus *load_status,
-                          ILog *log) : name_(name) {
+                          ILog *log)
+    : name_(name) {
     Init(data, size, p, load_status, log);
 }
 
 Ren::Texture2D::Texture2D(const char *name, const void *data[6], const int size[6],
                           const Texture2DParams &p, eTexLoadStatus *load_status,
-                          ILog *log) : name_(name) {
+                          ILog *log)
+    : name_(name) {
     Init(data, size, p, load_status, log);
 }
 
@@ -203,7 +207,7 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6],
     assert(IsMainThread());
     if (!data) {
         const void *_data[6] = {p.fallback_color, p.fallback_color, p.fallback_color,
-                                p.fallback_color, p.fallback_color, p.fallback_color };
+                                p.fallback_color, p.fallback_color, p.fallback_color};
         Texture2DParams _p = p;
         _p.w = _p.h = 1;
         _p.format = eTexFormat::RawRGBA8888;
@@ -272,9 +276,8 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Texture2DParams &p,
                                      type, data);
     }
 
-    const float anisotropy = 4.0f;
     ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_ANISOTROPY_EXT,
-                                 anisotropy);
+                                 AnisotropyLevel);
 
     ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_FILTER,
                                  g_gl_min_filter[(size_t)p.filter]);
@@ -794,6 +797,9 @@ void Ren::Texture2D::SetFilter(eTexFilter f, eTexRepeat r, float lod_bias) {
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_LOD_BIAS,
                                      lod_bias);
 #endif
+
+        ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_ANISOTROPY_EXT,
+                                     AnisotropyLevel);
 
         if (params_.format != eTexFormat::Compressed &&
             (f == eTexFilter::Trilinear || f == eTexFilter::Bilinear)) {

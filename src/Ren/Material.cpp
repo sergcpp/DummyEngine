@@ -102,9 +102,17 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             p = q + 1;
             q = strpbrk(p, delims);
             const std::string f_shader_name = std::string(p, q);
+            p = q + 1;
+            q = strpbrk(p, delims);
+            const std::string tc_shader_name = std::string(p, q);
+            p = q + 1;
+            q = strpbrk(p, delims);
+            const std::string te_shader_name = std::string(p, q);
 
             programs[programs_count++] = on_prog_load(
-                program_name.c_str(), v_shader_name.c_str(), f_shader_name.c_str());
+                program_name.c_str(), v_shader_name.c_str(), f_shader_name.c_str(),
+                tc_shader_name.empty() ? nullptr : tc_shader_name.c_str(),
+                te_shader_name.empty() ? nullptr : te_shader_name.c_str());
 #endif
         } else if (item == "sw_program:") {
 #ifdef USE_SW_RENDER
@@ -120,11 +128,11 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             const std::string flag = std::string(p, q);
 
             if (flag == "alpha_test") {
-                flags_ |= AlphaTest;
+                flags_ |= uint32_t(eMaterialFlags::AlphaTest);
             } else if (flag == "alpha_blend") {
-                flags_ |= AlphaBlend;
+                flags_ |= uint32_t(eMaterialFlags::AlphaBlend);
             } else if (flag == "two_sided") {
-                flags_ |= TwoSided;
+                flags_ |= uint32_t(eMaterialFlags::TwoSided);
             } else {
                 log->Error("Unknown flag %s", flag.c_str());
             }

@@ -15,34 +15,40 @@ GLuint LoadShader(GLenum shader_type, const uint8_t *data, int data_size, ILog *
 #endif
 
 struct Binding {
-    String  name;
-    int     loc;
+    String name;
+    int loc;
 };
-void ParseGLSLBindings(const char *shader_str, Binding *attr_bindings, int &attr_bindings_count,
-    Binding *uniform_bindings, int &uniform_bindings_count,
-    Binding *uniform_block_bindings, int &uniform_block_bindings_count, ILog *log);
+void ParseGLSLBindings(const char *shader_str, Binding *attr_bindings,
+                       int &attr_bindings_count, Binding *uniform_bindings,
+                       int &uniform_bindings_count, Binding *uniform_block_bindings,
+                       int &uniform_block_bindings_count, ILog *log);
 bool IsMainThread();
+} // namespace Ren
+
+Ren::Program::Program(const char *name, const char *vs_source, const char *fs_source,
+                      const char *tcs_source, const char *tes_source,
+                      eProgLoadStatus *status, ILog *log) {
+    name_ = String{name};
+    Init(vs_source, fs_source, tcs_source, tes_source, status, log);
 }
 
-Ren::Program::Program(const char *name, const char *vs_source, const char *fs_source, eProgLoadStatus *status, ILog *log) {
-    name_ = String{ name };
-    Init(vs_source, fs_source, status, log);
-}
-
-Ren::Program::Program(const char *name, const char *cs_source, eProgLoadStatus *status, ILog *log) {
-    name_ = String{ name };
+Ren::Program::Program(const char *name, const char *cs_source, eProgLoadStatus *status,
+                      ILog *log) {
+    name_ = String{name};
     Init(cs_source, status, log);
 }
 
 #ifndef __ANDROID__
 Ren::Program::Program(const char *name, const uint8_t *vs_data, const int vs_data_size,
-        const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status, ILog *log) {
-    name_ = String{ name };
+                      const uint8_t *fs_data, const int fs_data_size,
+                      eProgLoadStatus *status, ILog *log) {
+    name_ = String{name};
     Init(vs_data, vs_data_size, fs_data, fs_data_size, status, log);
 }
 
-Ren::Program::Program(const char *name, const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *status, ILog *log) {
-    name_ = String{ name };
+Ren::Program::Program(const char *name, const uint8_t *cs_data, const int cs_data_size,
+                      eProgLoadStatus *status, ILog *log) {
+    name_ = String{name};
     Init(cs_data, cs_data_size, status, log);
 }
 #endif
@@ -76,39 +82,49 @@ Ren::Program &Ren::Program::operator=(Program &&rhs) noexcept {
     return *this;
 }
 
-void Ren::Program::Init(const char *vs_source, const char *fs_source, eProgLoadStatus *status, ILog *log) {
+void Ren::Program::Init(const char *vs_source, const char *fs_source,
+                        const char *tcs_source, const char *tes_source,
+                        eProgLoadStatus *status, ILog *log) {
     assert(IsMainThread());
-    InitFromGLSL({ vs_source, fs_source, nullptr }, status, log);
+    InitFromGLSL({vs_source, fs_source, tcs_source, tes_source, nullptr}, status, log);
 }
 
 void Ren::Program::Init(const char *cs_source, eProgLoadStatus *status, ILog *log) {
     assert(IsMainThread());
-    InitFromGLSL({ nullptr, nullptr, cs_source }, status, log);
+    InitFromGLSL({nullptr, nullptr, nullptr, nullptr, cs_source}, status, log);
 }
 
 #ifndef __ANDROID__
 void Ren::Program::Init(const uint8_t *vs_data, const int vs_data_size,
-                        const uint8_t *fs_data, const int fs_data_size, eProgLoadStatus *status, ILog *log) {
+                        const uint8_t *fs_data, const int fs_data_size,
+                        eProgLoadStatus *status, ILog *log) {
     assert(IsMainThread());
-    InitFromSPIRV({ vs_data, vs_data_size, fs_data, fs_data_size, nullptr, 0 }, status, log);
+    InitFromSPIRV({vs_data, vs_data_size, fs_data, fs_data_size, nullptr, 0}, status,
+                  log);
 }
 
-void Ren::Program::Init(const uint8_t *cs_data, const int cs_data_size, eProgLoadStatus *status, ILog *log) {
+void Ren::Program::Init(const uint8_t *cs_data, const int cs_data_size,
+                        eProgLoadStatus *status, ILog *log) {
     assert(IsMainThread());
-    InitFromSPIRV({ nullptr, 0, nullptr, 0, cs_data, cs_data_size }, status, log);
+    InitFromSPIRV({nullptr, 0, nullptr, 0, cs_data, cs_data_size}, status, log);
 }
 #endif
 
-void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *status, ILog *log) {
+void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *status,
+                                ILog *log) {
     if ((!shaders.vs_source || !shaders.fs_source) && !shaders.cs_source) {
-        if (status) *status = eProgLoadStatus::SetToDefault;
+        if (status) {
+            (*status) = eProgLoadStatus::SetToDefault;
+        }
         return;
     }
 
     assert(!ready_);
 
-    Binding attr_bindings[MAX_NUM_ATTRIBUTES], uniform_bindings[MAX_NUM_UNIFORMS], uniform_block_bindings[MAX_NUM_UNIFORM_BLOCKS];
-    int attr_bindings_count = 0, uniform_bindings_count = 0, uniform_block_bindings_count = 0;
+    Binding attr_bindings[MaxAttributesCount], uniform_bindings[MaxUniformsCount],
+        uniform_block_bindings[MaxUniformBlocksCount];
+    int attr_bindings_count = 0, uniform_bindings_count = 0,
+        uniform_block_bindings_count = 0;
 
     GLuint program = 0;
 
@@ -117,16 +133,38 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
         if (!v_shader) {
             log->Error("VertexShader %s error", name_.c_str());
         }
+        flags_ |= uint32_t(eProgFlags::VertShaderPresent);
 
         const GLuint f_shader = LoadShader(GL_FRAGMENT_SHADER, shaders.fs_source, log);
         if (!f_shader) {
             log->Error("FragmentShader %s error", name_.c_str());
+        }
+        flags_ |= uint32_t(eProgFlags::FragShaderPresent);
+
+        GLuint tc_shader = 0, te_shader = 0;
+
+        if (shaders.tcs_source && shaders.tes_source) {
+            tc_shader = LoadShader(GL_TESS_CONTROL_SHADER, shaders.tcs_source, log);
+            if (!tc_shader) {
+                log->Error("TesselationControlShader %s error", name_.c_str());
+            }
+            flags_ |= uint32_t(eProgFlags::TescShaderPresent);
+
+            te_shader = LoadShader(GL_TESS_EVALUATION_SHADER, shaders.tes_source, log);
+            if (!te_shader) {
+                log->Error("TesselationControlShader %s error", name_.c_str());
+            }
+            flags_ |= uint32_t(eProgFlags::TeseShaderPresent);
         }
 
         program = glCreateProgram();
         if (program) {
             glAttachShader(program, v_shader);
             glAttachShader(program, f_shader);
+            if (tc_shader && te_shader) {
+                glAttachShader(program, tc_shader);
+                glAttachShader(program, te_shader);
+            }
             glLinkProgram(program);
             GLint link_status = GL_FALSE;
             glGetProgramiv(program, GL_LINK_STATUS, &link_status);
@@ -150,17 +188,18 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
             throw std::runtime_error("Program creation error!");
         }
 
-        ParseGLSLBindings(
-            shaders.vs_source, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
-            uniform_block_bindings, uniform_block_bindings_count, log);
-        ParseGLSLBindings(
-            shaders.fs_source, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
-            uniform_block_bindings, uniform_block_bindings_count, log);
+        ParseGLSLBindings(shaders.vs_source, attr_bindings, attr_bindings_count,
+                          uniform_bindings, uniform_bindings_count,
+                          uniform_block_bindings, uniform_block_bindings_count, log);
+        ParseGLSLBindings(shaders.fs_source, attr_bindings, attr_bindings_count,
+                          uniform_bindings, uniform_bindings_count,
+                          uniform_block_bindings, uniform_block_bindings_count, log);
     } else if (shaders.cs_source) {
         const GLuint c_shader = LoadShader(GL_COMPUTE_SHADER, shaders.cs_source, log);
         if (!c_shader) {
             log->Error("ComputeShader %s error", name_.c_str());
         }
+        flags_ |= uint32_t(eProgFlags::CompShaderPresent);
 
         program = glCreateProgram();
         if (program) {
@@ -175,7 +214,7 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
                     char *buf = (char *)malloc((size_t)buf_len);
                     if (buf) {
                         glGetProgramInfoLog(program, buf_len, nullptr, buf);
-                        log->Error( "Could not link program: %s", buf);
+                        log->Error("Could not link program: %s", buf);
                         free(buf);
                         throw;
                     }
@@ -188,9 +227,9 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
             throw std::runtime_error("Program creation error!");
         }
 
-        ParseGLSLBindings(
-            shaders.cs_source, attr_bindings, attr_bindings_count, uniform_bindings, uniform_bindings_count,
-            uniform_block_bindings, uniform_block_bindings_count, log);
+        ParseGLSLBindings(shaders.cs_source, attr_bindings, attr_bindings_count,
+                          uniform_bindings, uniform_bindings_count,
+                          uniform_block_bindings, uniform_block_bindings_count, log);
     }
 
     for (int i = 0; i < attr_bindings_count; i++) {
@@ -231,7 +270,7 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
         glGetActiveAttrib(program, i, 128, &len, &len, &n, name);
 
         int skip = 0, free_index = -1;
-        for (int j = 0; j < MAX_NUM_ATTRIBUTES; j++) {
+        for (int j = 0; j < MaxAttributesCount; j++) {
             if (free_index == -1 && attributes_[j].loc == -1) {
                 free_index = j;
             }
@@ -242,7 +281,7 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
         }
 
         if (!skip && free_index != -1) {
-            attributes_[free_index].name = String{ name };
+            attributes_[free_index].name = String{name};
             attributes_[free_index].loc = glGetAttribLocation(program, name);
         }
     }
@@ -251,7 +290,7 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
 
     // Print all attributes
     log->Info("\tATTRIBUTES");
-    for (int i = 0; i < MAX_NUM_ATTRIBUTES; i++) {
+    for (int i = 0; i < MaxAttributesCount; i++) {
         if (attributes_[i].loc == -1) {
             continue;
         }
@@ -267,7 +306,7 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
         glGetActiveUniform(program, i, 128, &len, &len, &n, name);
 
         int skip = 0, free_index = -1;
-        for (int j = 0; j < MAX_NUM_UNIFORMS; j++) {
+        for (int j = 0; j < MaxUniformsCount; j++) {
             if (free_index == -1 && uniforms_[j].loc == -1) {
                 free_index = j;
             }
@@ -278,14 +317,14 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
         }
 
         if (!skip && free_index != -1) {
-            uniforms_[free_index].name = String{ name };
+            uniforms_[free_index].name = String{name};
             uniforms_[free_index].loc = glGetUniformLocation(program, name);
         }
     }
 
     // Print all uniforms
     log->Info("\tUNIFORMS");
-    for (int i = 0; i < MAX_NUM_UNIFORMS; i++) {
+    for (int i = 0; i < MaxUniformsCount; i++) {
         if (uniforms_[i].loc == -1) {
             continue;
         }
@@ -294,13 +333,16 @@ void Ren::Program::InitFromGLSL(const ShadersSrc &shaders, eProgLoadStatus *stat
 
     prog_id_ = (uint32_t)program;
     ready_ = true;
-    if (status) *status = eProgLoadStatus::CreatedFromData;
+    if (status)
+        *status = eProgLoadStatus::CreatedFromData;
 }
 
 #ifndef __ANDROID__
-void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *status, ILog *log) {
+void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *status,
+                                 ILog *log) {
     if ((!shaders.vs_data || !shaders.fs_data) && !shaders.cs_data) {
-        if (status) *status = eProgLoadStatus::SetToDefault;
+        if (status)
+            *status = eProgLoadStatus::SetToDefault;
         return;
     }
 
@@ -308,12 +350,14 @@ void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *sta
 
     GLuint program = 0;
     if (shaders.vs_data && shaders.fs_data) {
-        GLuint v_shader = LoadShader(GL_VERTEX_SHADER, shaders.vs_data, shaders.vs_data_size, log);
+        GLuint v_shader =
+            LoadShader(GL_VERTEX_SHADER, shaders.vs_data, shaders.vs_data_size, log);
         if (!v_shader) {
             log->Error("VertexShader %s error", name_.c_str());
         }
 
-        GLuint f_shader = LoadShader(GL_FRAGMENT_SHADER, shaders.fs_data, shaders.fs_data_size, log);
+        GLuint f_shader =
+            LoadShader(GL_FRAGMENT_SHADER, shaders.fs_data, shaders.fs_data_size, log);
         if (!f_shader) {
             log->Error("FragmentShader %s error", name_.c_str());
         }
@@ -367,7 +411,7 @@ void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *sta
 
     // Print all attributes
     log->Info("\tATTRIBUTES");
-    for (int i = 0; i < MAX_NUM_ATTRIBUTES; i++) {
+    for (int i = 0; i < MaxAttributesCount; i++) {
         if (attributes_[i].loc == -1) {
             continue;
         }
@@ -376,7 +420,7 @@ void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *sta
 
     // Print all uniforms
     log->Info("\tUNIFORMS");
-    for (int i = 0; i < MAX_NUM_UNIFORMS; i++) {
+    for (int i = 0; i < MaxUniformsCount; i++) {
         if (uniforms_[i].loc == -1) {
             continue;
         }
@@ -385,7 +429,8 @@ void Ren::Program::InitFromSPIRV(const ShadersBin &shaders, eProgLoadStatus *sta
 
     prog_id_ = (uint32_t)program;
     ready_ = true;
-    if (status) *status = eProgLoadStatus::CreatedFromData;
+    if (status)
+        *status = eProgLoadStatus::CreatedFromData;
 }
 #endif
 
@@ -430,10 +475,12 @@ GLuint Ren::LoadShader(GLenum shader_type, const char *source, ILog *log) {
 }
 
 #if !defined(__ANDROID__) && !defined(__APPLE__)
-GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_size, ILog *log) {
+GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_size,
+                       ILog *log) {
     GLuint shader = glCreateShader(shader_type);
     if (shader) {
-        glShaderBinary(1, &shader, GL_SHADER_BINARY_FORMAT_SPIR_V, data, static_cast<GLsizei>(data_size));
+        glShaderBinary(1, &shader, GL_SHADER_BINARY_FORMAT_SPIR_V, data,
+                       static_cast<GLsizei>(data_size));
         glSpecializeShader(shader, "main", 0, nullptr, nullptr);
 
         GLint compiled = 0;
@@ -472,9 +519,10 @@ GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_s
 }
 #endif
 
-void Ren::ParseGLSLBindings(const char *shader_str, Binding *attr_bindings, int &attr_bindings_count,
-                            Binding *uniform_bindings, int &uniform_bindings_count,
-                            Binding *uniform_block_bindings, int &uniform_block_bindings_count, ILog *log) {
+void Ren::ParseGLSLBindings(const char *shader_str, Binding *attr_bindings,
+                            int &attr_bindings_count, Binding *uniform_bindings,
+                            int &uniform_bindings_count, Binding *uniform_block_bindings,
+                            int &uniform_block_bindings_count, ILog *log) {
     const char *delims = " \r\n\t";
     const char *p = strstr(shader_str, "/*");
     const char *q = p ? strpbrk(p + 2, delims) : nullptr;
@@ -517,7 +565,8 @@ void Ren::ParseGLSLBindings(const char *shader_str, Binding *attr_bindings, int 
             (*cur_bind_count)++;
         }
 
-        if (!q) break;
+        if (!q)
+            break;
         p = q + 1;
     }
 }

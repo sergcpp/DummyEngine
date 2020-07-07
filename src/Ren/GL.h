@@ -241,6 +241,8 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 
 #define GL_FRAGMENT_SHADER                  0x8B30
 #define GL_VERTEX_SHADER                    0x8B31
+#define GL_TESS_EVALUATION_SHADER           0x8E87
+#define GL_TESS_CONTROL_SHADER              0x8E88
 #define GL_COMPUTE_SHADER                   0x91B9
 
 #define GL_COMPILE_STATUS                   0x8B81
@@ -460,6 +462,9 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 
 #define GL_MAX_COMPUTE_WORK_GROUP_COUNT 0x91BE
 #define GL_MAX_COMPUTE_WORK_GROUP_SIZE  0x91BF
+
+#define GL_PATCHES                      0x000E
+#define GL_MAX_TESS_GEN_LEVEL           0x8E7E
 
 #ifndef APIENTRY
 #if defined(WIN32)

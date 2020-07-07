@@ -13,6 +13,7 @@ struct LightSource {
     float       spot, cap_radius;
     float       influence;
     bool        cast_shadow, cache_shadow;
+    float       shadow_bias[2];
 
     Ren::Vec3f  bbox_min;
     float       angle_deg;

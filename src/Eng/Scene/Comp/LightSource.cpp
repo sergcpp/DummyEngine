@@ -57,48 +57,66 @@ void LightSource::Read(const JsObject &js_in, LightSource &ls) {
     } else {
         ls.cast_shadow = false;
     }
+
+    if (js_in.Has("shadow_bias")) {
+        const JsArray &js_shadow_bias = js_in.at("shadow_bias").as_arr();
+        ls.shadow_bias[0] = (float)js_shadow_bias.at(0).as_num().val;
+        ls.shadow_bias[1] = (float)js_shadow_bias.at(1).as_num().val;
+    } else {
+        ls.shadow_bias[0] = 4.0f;
+        ls.shadow_bias[1] = 8.0f;
+    }
 }
 
 void LightSource::Write(const LightSource &ls, JsObject &js_out) {
-    {   // Write color
+    { // Write color
         JsArray js_color;
 
-        js_color.Push(JsNumber{ (double)ls.col[0] });
-        js_color.Push(JsNumber{ (double)ls.col[1] });
-        js_color.Push(JsNumber{ (double)ls.col[2] });
+        js_color.Push(JsNumber{(double)ls.col[0]});
+        js_color.Push(JsNumber{(double)ls.col[1]});
+        js_color.Push(JsNumber{(double)ls.col[2]});
 
         js_out.Push("color", std::move(js_color));
     }
 
-    {   // Write offset
+    { // Write offset
         JsArray js_offset;
 
-        js_offset.Push(JsNumber{ (double)ls.offset[0] });
-        js_offset.Push(JsNumber{ (double)ls.offset[1] });
-        js_offset.Push(JsNumber{ (double)ls.offset[2] });
+        js_offset.Push(JsNumber{(double)ls.offset[0]});
+        js_offset.Push(JsNumber{(double)ls.offset[1]});
+        js_offset.Push(JsNumber{(double)ls.offset[2]});
 
         js_out.Push("offset", std::move(js_offset));
     }
 
     if (ls.radius != 1.0f) {
-        js_out.Push("radius", JsNumber{ (double)ls.radius });
+        js_out.Push("radius", JsNumber{(double)ls.radius});
     }
 
-    {   // Write direction and angle
+    { // Write direction and angle
         JsArray js_dir;
 
-        js_dir.Push(JsNumber{ (double)ls.dir[0] });
-        js_dir.Push(JsNumber{ (double)ls.dir[1] });
-        js_dir.Push(JsNumber{ (double)ls.dir[2] });
+        js_dir.Push(JsNumber{(double)ls.dir[0]});
+        js_dir.Push(JsNumber{(double)ls.dir[1]});
+        js_dir.Push(JsNumber{(double)ls.dir[2]});
 
         js_out.Push("direction", std::move(js_dir));
 
         if (ls.angle_deg != 45.0f) {
-            js_out.Push("angle", JsNumber{ (double)ls.angle_deg });
+            js_out.Push("angle", JsNumber{(double)ls.angle_deg});
         }
     }
 
     if (ls.cast_shadow) {
-        js_out.Push("cast_shadow", JsLiteral{ JS_TRUE });
+        js_out.Push("cast_shadow", JsLiteral{JS_TRUE});
+    }
+
+    if (ls.shadow_bias[0] != 4.0f || ls.shadow_bias[1] != 8.0f) {
+        JsArray js_shadow_bias;
+
+        js_shadow_bias.Push(JsNumber{(double)ls.shadow_bias[0]});
+        js_shadow_bias.Push(JsNumber{(double)ls.shadow_bias[1]});
+
+        js_out.Push("shadow_bias", std::move(js_shadow_bias));
     }
 }

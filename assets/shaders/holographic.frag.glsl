@@ -29,7 +29,12 @@ layout(binding = REN_MOMENTS0_MS_TEX_SLOT) uniform mediump sampler2DMS moments0_
 layout(binding = REN_MOMENTS1_MS_TEX_SLOT) uniform mediump sampler2DMS moments1_texture_ms;
 layout(binding = REN_MOMENTS2_MS_TEX_SLOT) uniform mediump sampler2DMS moments2_texture_ms;
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = 0, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     SharedData shrd_data;
 };
 

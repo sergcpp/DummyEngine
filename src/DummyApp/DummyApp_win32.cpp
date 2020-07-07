@@ -324,7 +324,7 @@ int DummyApp::Init(int w, int h) {
     }
 
     if (wglSwapIntervalEXT) {
-        wglSwapIntervalEXT(1);
+        wglSwapIntervalEXT(0);
     }
 
     try {

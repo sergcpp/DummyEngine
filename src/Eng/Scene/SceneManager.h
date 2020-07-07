@@ -107,7 +107,9 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
                              Ren::Vec3f obj_bbox[2]);
 
     Ren::MaterialRef OnLoadMaterial(const char *name);
-    Ren::ProgramRef OnLoadProgram(const char *name, const char *arg1, const char *arg2);
+    Ren::ProgramRef OnLoadProgram(const char *name, const char *v_shader,
+                                  const char *f_shader, const char *tc_shader,
+                                  const char *te_shader);
     Ren::Texture2DRef OnLoadTexture(const char *name, uint32_t flags);
 
     Ren::Vec4f LoadDecalTexture(const char *name);

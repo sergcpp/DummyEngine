@@ -764,10 +764,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
             vertices[i].index = i;
         }
 
-        for (std::vector<uint32_t> &index_group : indices) {
-            Ren::ComputeTextureBasis(vertices, index_group, &index_group[0],
-                                     index_group.size());
-        }
+        Ren::ComputeTextureBasis(vertices, &indices[0], int(indices.size()));
 
         tangents.resize(vertices.size() * 3);
 
@@ -1016,7 +1013,8 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
                     std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
                     std::bind(&ModlApp::OnTextureNeeded, this, _1));
                 Ren::Material *mat = mat_ref.get();
-                alpha_test = (bool)(mat->flags() & Ren::AlphaTest);
+                alpha_test =
+                    (bool)(mat->flags() & uint32_t(Ren::eMaterialFlags::AlphaTest));
             } else {
                 cerr << "material " << materials[i] << " missing!" << endl;
             }

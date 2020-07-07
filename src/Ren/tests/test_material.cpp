@@ -22,7 +22,8 @@ class MaterialTest : public Ren::Context {
     void *gl_ctx_;
 #endif
     Ren::LogNull log_;
-public:
+
+  public:
     MaterialTest() {
 #if defined(_WIN32)
         hInstance = GetModuleHandle(NULL);
@@ -42,9 +43,9 @@ public:
             throw std::runtime_error("Cannot register window class!");
         }
 
-        hWnd = CreateWindow("MaterialTest", "!!", WS_OVERLAPPEDWINDOW |
-                            WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-                            0, 0, 100, 100, NULL, NULL, hInstance, NULL);
+        hWnd = CreateWindow("MaterialTest", "!!",
+                            WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0,
+                            100, 100, NULL, NULL, hInstance, NULL);
 
         if (hWnd == NULL) {
             throw std::runtime_error("Cannot create window!");
@@ -76,7 +77,9 @@ public:
 #else
         SDL_Init(SDL_INIT_VIDEO);
 
-        window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 256, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+        window_ =
+            SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                             256, 256, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
         gl_ctx_ = SDL_GL_CreateContext(window_);
 #endif
         Context::Init(256, 256, &log_);
@@ -102,33 +105,32 @@ public:
 #else
 #include "../SW/SW.h"
 class MaterialTest : public Ren::Context {
-public:
-    MaterialTest() {
-        Ren::Context::Init(256, 256);
-    }
+  public:
+    MaterialTest() { Ren::Context::Init(256, 256); }
 };
 #endif
 
-static Ren::ProgramRef OnProgramNeeded(const char *name, const char *arg1, const char *arg2) {
+static Ren::ProgramRef OnProgramNeeded(const char *name, const char *arg1,
+                                       const char *arg2) {
     return {};
 }
 
-static Ren::Texture2DRef OnTextureNeeded(const char *name) {
-    return {};
-}
+static Ren::Texture2DRef OnTextureNeeded(const char *name) { return {}; }
 
 void test_material() {
     {
         // Load material
         MaterialTest test;
 
-        auto on_program_needed = [&test](const char *name, const char *arg1, const char *arg2) {
+        auto on_program_needed = [&test](const char *name, const char *arg1,
+                                         const char *arg2, const char *arg3,
+                                         const char *arg4) {
             Ren::eProgLoadStatus status;
 #if defined(USE_GL_RENDER)
             return test.LoadProgramGLSL(name, nullptr, nullptr, &status);
 #elif defined(USE_SW_RENDER)
-            Ren::Attribute _attrs[] = { {} };
-            Ren::Uniform _unifs[] = { {} };
+            Ren::Attribute _attrs[] = {{}};
+            Ren::Uniform _unifs[] = {{}};
             return test.LoadProgramSW(name, nullptr, nullptr, 0, _attrs, _unifs, &status);
 #endif
         };
@@ -150,17 +152,16 @@ void test_material() {
                               "param: 0.5 1.2 11 15";
 
         Ren::eMatLoadStatus status;
-        Ren::MaterialRef m_ref = test.LoadMaterial("mat1", nullptr, &status, on_program_needed, on_texture_needed);
+        Ren::MaterialRef m_ref = test.LoadMaterial("mat1", nullptr, &status,
+                                                   on_program_needed, on_texture_needed);
         require(status == Ren::MatSetToDefault);
 
-        {
-            require(!m_ref->ready());
-        }
+        { require(!m_ref->ready()); }
 
         test.LoadMaterial("mat1", mat_src, &status, on_program_needed, on_texture_needed);
 
         require(status == Ren::MatCreatedFromData);
-        require(m_ref->flags() & Ren::AlphaTest);
+        require(m_ref->flags() & uint32_t(Ren::eMaterialFlags::AlphaTest));
         require(m_ref->ready());
         require(m_ref->name() == "mat1");
 

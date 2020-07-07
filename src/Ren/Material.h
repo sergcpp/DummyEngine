@@ -15,10 +15,10 @@
 namespace Ren {
 class ILog;
 
-enum eMaterialFlags {
-    AlphaTest = (1u << 0u),
-    AlphaBlend = (1u << 1u),
-    TwoSided = (1u << 2u)
+enum class eMaterialFlags {
+    AlphaTest   = (1u << 0u),
+    AlphaBlend  = (1u << 1u),
+    TwoSided    = (1u << 2u)
 };
 
 const int MaxMaterialProgramCount = 4;
@@ -29,7 +29,8 @@ enum eMatLoadStatus { MatFound, MatSetToDefault, MatCreatedFromData };
 
 typedef std::function<Texture2DRef(const char *name, uint32_t flags)>
     texture_load_callback;
-typedef std::function<ProgramRef(const char *name, const char *arg1, const char *arg2)>
+typedef std::function<ProgramRef(const char *name, const char *arg1, const char *arg2,
+                                 const char *arg3, const char *arg4)>
     program_load_callback;
 
 class Material : public RefCounter {

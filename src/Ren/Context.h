@@ -85,6 +85,9 @@ class Context : public RenderThread {
 #if defined(USE_GL_RENDER)
     ProgramRef LoadProgramGLSL(const char *name, const char *vs_source,
                                const char *fs_source, eProgLoadStatus *load_status);
+    ProgramRef LoadProgramGLSL(const char *name, const char *vs_source,
+                               const char *fs_source, const char *tcs_source,
+                               const char *tes_source, eProgLoadStatus *load_status);
     ProgramRef LoadProgramGLSL(const char *name, const char *cs_source,
                                eProgLoadStatus *load_status);
 #ifndef __ANDROID__

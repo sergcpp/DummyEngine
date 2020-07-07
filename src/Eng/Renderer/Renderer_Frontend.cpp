@@ -431,14 +431,20 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             MainDrawBatch &main_batch =
                                 list.main_batches.data[list.main_batches.count++];
 
-                            main_batch.alpha_blend_bit = (mat_flags & AlphaBlend) ? 1 : 0;
+                            main_batch.alpha_blend_bit =
+                                (mat_flags & uint32_t(eMaterialFlags::AlphaBlend)) ? 1
+                                                                                   : 0;
                             main_batch.prog_id =
                                 (uint32_t)mat->programs[program_index].index();
-                            main_batch.alpha_test_bit = (mat_flags & AlphaTest) ? 1 : 0;
-                            main_batch.two_sided_bit = (mat_flags & TwoSided) ? 1 : 0;
+                            main_batch.alpha_test_bit =
+                                (mat_flags & uint32_t(eMaterialFlags::AlphaTest)) ? 1 : 0;
+                            main_batch.two_sided_bit =
+                                (mat_flags & uint32_t(eMaterialFlags::TwoSided)) ? 1 : 0;
                             main_batch.mat_id = (uint32_t)grp->mat.index();
                             main_batch.cam_dist =
-                                (mat_flags & AlphaBlend) ? uint32_t(dist) : 0;
+                                (mat_flags & uint32_t(eMaterialFlags::AlphaBlend))
+                                    ? uint32_t(dist)
+                                    : 0;
                             main_batch.indices_offset =
                                 (indices_start + grp->offset) / sizeof(uint32_t);
                             main_batch.base_vertex = base_vertex;
@@ -447,9 +453,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 (uint32_t)(list.instances.count - 1);
                             main_batch.instance_count = 1;
 
-                            if (zfill_enabled && (!(mat->flags() & AlphaBlend) ||
-                                                  ((mat->flags() & AlphaBlend) &&
-                                                   (mat->flags() & AlphaTest)))) {
+                            if (zfill_enabled &&
+                                (!(mat->flags() & uint32_t(eMaterialFlags::AlphaBlend)) ||
+                                 ((mat->flags() & uint32_t(eMaterialFlags::AlphaBlend)) &&
+                                  (mat->flags() &
+                                   uint32_t(eMaterialFlags::AlphaTest))))) {
                                 DepthDrawBatch &zfill_batch =
                                     list.zfill_batches.data[list.zfill_batches.count++];
 
@@ -462,14 +470,17 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 }
 
                                 zfill_batch.alpha_test_bit =
-                                    (mat_flags & AlphaTest) ? 1 : 0;
+                                    (mat_flags & uint32_t(eMaterialFlags::AlphaTest)) ? 1
+                                                                                      : 0;
                                 zfill_batch.moving_bit =
                                     (obj.last_change_mask & CompTransformBit) ? 1 : 0;
                                 zfill_batch.two_sided_bit =
-                                    (mat_flags & TwoSided) ? 1 : 0;
-                                zfill_batch.mat_id = (mat_flags & AlphaTest)
-                                                         ? uint32_t(main_batch.mat_id)
-                                                         : 0;
+                                    (mat_flags & uint32_t(eMaterialFlags::TwoSided)) ? 1
+                                                                                     : 0;
+                                zfill_batch.mat_id =
+                                    (mat_flags & uint32_t(eMaterialFlags::AlphaTest))
+                                        ? uint32_t(main_batch.mat_id)
+                                        : 0;
                                 zfill_batch.indices_offset = main_batch.indices_offset;
                                 zfill_batch.base_vertex = base_vertex;
                                 zfill_batch.indices_count = grp->num_indices;
@@ -748,6 +759,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
             sh_list.shadow_batch_count = 0;
             sh_list.cam_near = shadow_cam.near();
             sh_list.cam_far = shadow_cam.far();
+            sh_list.bias[0] = scene.env.sun_shadow_bias[0];
+            sh_list.bias[1] = scene.env.sun_shadow_bias[1];
 
             Frustum sh_clip_frustum;
 
@@ -1085,13 +1098,14 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             const Material *mat = grp->mat.get();
                             const uint32_t mat_flags = mat->flags();
 
-                            if ((mat_flags & AlphaBlend) == 0) {
+                            if ((mat_flags & uint32_t(eMaterialFlags::AlphaBlend)) == 0) {
                                 DepthDrawBatch &batch =
                                     list.shadow_batches.data[list.shadow_batches.count++];
 
-                                batch.mat_id = (mat_flags & AlphaTest)
-                                                   ? (uint32_t)grp->mat.index()
-                                                   : 0;
+                                batch.mat_id =
+                                    (mat_flags & uint32_t(eMaterialFlags::AlphaTest))
+                                        ? (uint32_t)grp->mat.index()
+                                        : 0;
 
                                 batch.type_bits = DepthDrawBatch::TypeSimple;
 
@@ -1100,9 +1114,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                     batch.type_bits = DepthDrawBatch::TypeVege;
                                 }
 
-                                batch.alpha_test_bit = (mat_flags & AlphaTest) ? 1 : 0;
+                                batch.alpha_test_bit =
+                                    (mat_flags & uint32_t(eMaterialFlags::AlphaTest)) ? 1
+                                                                                      : 0;
                                 batch.moving_bit = 0;
-                                batch.two_sided_bit = (mat_flags & TwoSided) ? 1 : 0;
+                                batch.two_sided_bit =
+                                    (mat_flags & uint32_t(eMaterialFlags::TwoSided)) ? 1
+                                                                                     : 0;
                                 batch.indices_offset =
                                     (mesh->indices_buf().offset + grp->offset) /
                                     sizeof(uint32_t);
@@ -1215,7 +1233,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
             // TODO: Check visibility of shadow frustum
 
-            Mat4f clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
+            const Mat4f clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
 
             ShadowList &sh_list = list.shadow_lists.data[list.shadow_lists.count++];
 
@@ -1228,6 +1246,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
             sh_list.cam_near = region->cam_near = shadow_cam.near();
             sh_list.cam_far = region->cam_far = shadow_cam.far();
             sh_list.view_frustum_outline_count = 0;
+            sh_list.bias[0] = ls->shadow_bias[0];
+            sh_list.bias[1] = ls->shadow_bias[1];
 
             l.shadowreg_index = (int)list.shadow_regions.count;
             ShadowMapRegion &reg = list.shadow_regions.data[list.shadow_regions.count++];
@@ -1322,13 +1342,14 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             const Material *mat = grp->mat.get();
                             const uint32_t mat_flags = mat->flags();
 
-                            if ((mat_flags & AlphaBlend) == 0) {
+                            if ((mat_flags & uint32_t(eMaterialFlags::AlphaBlend)) == 0) {
                                 DepthDrawBatch &batch =
                                     list.shadow_batches.data[list.shadow_batches.count++];
 
-                                batch.mat_id = (mat_flags & AlphaTest)
-                                                   ? (uint32_t)grp->mat.index()
-                                                   : 0;
+                                batch.mat_id =
+                                    (mat_flags & uint32_t(eMaterialFlags::AlphaTest))
+                                        ? (uint32_t)grp->mat.index()
+                                        : 0;
 
                                 batch.type_bits = DepthDrawBatch::TypeSimple;
 
@@ -1337,9 +1358,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                     batch.type_bits = DepthDrawBatch::TypeVege;
                                 }
 
-                                batch.alpha_test_bit = (mat_flags & AlphaTest) ? 1 : 0;
+                                batch.alpha_test_bit =
+                                    (mat_flags & uint32_t(eMaterialFlags::AlphaTest)) ? 1
+                                                                                      : 0;
                                 batch.moving_bit = 0;
-                                batch.two_sided_bit = (mat_flags & TwoSided) ? 1 : 0;
+                                batch.two_sided_bit =
+                                    (mat_flags & uint32_t(eMaterialFlags::TwoSided)) ? 1
+                                                                                     : 0;
                                 batch.indices_offset =
                                     (mesh->indices_buf().offset + grp->offset) /
                                     sizeof(uint32_t);

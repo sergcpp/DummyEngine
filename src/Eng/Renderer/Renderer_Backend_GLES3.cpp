@@ -172,6 +172,15 @@ uint32_t __draw_list_range_ext(Ren::Context &ctx, const DrawList &list, uint32_t
 uint32_t __draw_list_range_full(Ren::Context &ctx, const DrawList &list, uint32_t i,
                                 uint64_t mask, uint64_t &cur_mat_id,
                                 uint64_t &cur_prog_id, BackendInfo &backend_info) {
+    GLenum cur_primitive;
+    if (cur_prog_id != 0xffffffffffffffff) {
+        const Ren::Program* p = ctx.GetProgram(uint32_t(cur_prog_id)).get();
+        if (p->has_tessellation()) {
+            cur_primitive = GL_PATCHES;
+        } else {
+            cur_primitive = GL_TRIANGLES;
+        }
+    }
 
     for (; i < list.main_batch_indices.count; i++) {
         const MainDrawBatch &batch =
@@ -187,6 +196,12 @@ uint32_t __draw_list_range_full(Ren::Context &ctx, const DrawList &list, uint32_
         if (cur_prog_id != batch.prog_id) {
             const Ren::Program *p = ctx.GetProgram(batch.prog_id).get();
             glUseProgram(p->prog_id());
+
+            if (p->has_tessellation()) {
+                cur_primitive = GL_PATCHES;
+            } else {
+                cur_primitive = GL_TRIANGLES;
+            }
         }
 
         if (cur_mat_id != batch.mat_id) {
@@ -222,7 +237,7 @@ uint32_t __draw_list_range_full(Ren::Context &ctx, const DrawList &list, uint32_
                      &batch.instance_indices[0]);
 
         glDrawElementsInstancedBaseVertex(
-            GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+            cur_primitive, batch.indices_count, GL_UNSIGNED_INT,
             (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
             (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
         backend_info.opaque_draw_calls_count++;
@@ -2092,7 +2107,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindFramebuffer(GL_FRAMEBUFFER, shadow_buf_.fb);
 
         glEnable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(4.0f, 8.0f);
         glEnable(GL_SCISSOR_TEST);
 
         DebugMarker _("UPDATE SHADOW MAPS");
@@ -2108,6 +2122,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             if (!sh_list.shadow_batch_count) {
                 continue;
             }
+
+            glPolygonOffset(sh_list.bias[0], sh_list.bias[1]);
 
             glViewport(sh_list.shadow_map_pos[0], sh_list.shadow_map_pos[1],
                        sh_list.shadow_map_size[0], sh_list.shadow_map_size[1]);
@@ -2374,7 +2390,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                                    list.decals_atlas->tex_id(0));
     }
 
-    if (list.render_flags & EnableSSAO) {
+    if ((list.render_flags & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT,
                                    combined_buf_.attachments[0].tex);
     } else {

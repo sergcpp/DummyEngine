@@ -1,0 +1,148 @@
+{
+	"name" : "vegetation_test2", 
+	"environment" : {
+		"sun_dir" : [
+			0.57735, 
+			-0.57735, 
+			-0.57735
+		], 
+		"sun_col" : [
+			5, 
+			5, 
+			4.5
+		], 
+		"sun_softness" : 0.1, 
+		"env_map" : "env/clear", 
+		"env_map_pt" : "env/noon_grass_2k.hdr",
+		"sun_shadow_bias" : [ 4.0, 0.0 ]
+	}, 
+	"objects" : [
+		{
+			"transform" : {
+				"pos" : [
+					0, 
+					0, 
+					0
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"drawable" : {
+				"mesh_file" : "ground_plane_200x200.mesh",
+				"material_override1" : [ "cobblestone_pom.txt", "checker.txt" ],
+				"material_override" : [ "cobblestone_tess.txt", "checker.txt" ],
+				"material_override2" : [ "_wind_debug.txt" ]
+			}
+		},
+		{
+			"transform" : {
+				"pos" : [
+					27.5, 
+					2, 
+					0
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"drawable" : {
+				"mesh_file" : "sph_low.mesh",
+				"material_override" : [ "checker_pn.txt", "checker.txt" ]
+			}
+		},
+		{
+			"transform" : {
+				"pos" : [
+					27.5, 
+					2, 
+					4
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"drawable" : {
+				"mesh_file" : "sph_low2.mesh"
+			}
+		},
+		{
+			"transform" : {
+				"pos" : [
+					0, 
+					0, 
+					0
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"drawable" : {
+				"mesh_file" : "cubes.mesh",
+			}
+		}, 
+		{
+			"transform" : {
+				"pos" : [
+					0, 
+					10, 
+					0
+				], 
+				"rot" : [
+					0, 
+					0, 
+					0
+				]
+			}, 
+			"probe" : {
+				"offset" : [
+					0, 
+					0, 
+					0
+				], 
+				"radius" : 500, 
+				"sh_coeffs" : [
+					[
+						0.272625, 
+						0.312099, 
+						0.367528
+					], 
+					[
+						-0.173, 
+						-0.156751, 
+						-0.115521
+					], 
+					[
+						-0.00510703, 
+						-0.00450024, 
+						-0.00095875
+					], 
+					[
+						-0.0153097, 
+						-0.0176838, 
+						-0.0191808
+					]
+				]
+			}
+		}
+	], 
+	"camera" : {
+		"view_origin" : [
+			5.126657, 0.671322, 6.284571
+		], 
+		"view_dir" : [
+			-0.764283, -0.373624, -0.500961
+		], 
+		"fwd_speed" : 0.1, 
+		"fov" : 45, 
+		"max_exposure" : 1000
+	}
+}

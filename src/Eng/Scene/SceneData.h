@@ -86,6 +86,7 @@ struct Environment {
     Ren::Texture2DRef   env_map;
     Ren::Texture2DRef   lm_direct, lm_indir,
                         lm_indir_sh[4];
+    float               sun_shadow_bias[2] = { 4.0f, 8.0f };
 
     Ren::String         env_map_name, env_map_name_pt;
 };

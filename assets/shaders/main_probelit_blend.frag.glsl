@@ -78,7 +78,7 @@ void main(void) {
     vec4 specular_color = texture(specular_texture, aVertexUVs_);
     
     vec3 normal = normal_color * 2.0 - 1.0;
-    normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_),
+    normal = normalize(mat3(cross(aVertexTangent_, aVertexNormal_), aVertexTangent_,
                             aVertexNormal_) * normal);
                             
     if (!gl_FrontFacing) {

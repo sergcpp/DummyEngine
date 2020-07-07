@@ -142,7 +142,7 @@ void main(void) {
     }
 
     vec3 normal = normal_color * 2.0 - 1.0;
-    normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_),
+    normal = normalize(mat3(cross(aVertexTangent_, aVertexNormal_), aVertexTangent_,
                             aVertexNormal_) * normal);
     
     vec3 additional_light = vec3(0.0, 0.0, 0.0);

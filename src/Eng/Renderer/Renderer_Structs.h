@@ -133,6 +133,7 @@ struct ShadowList { // NOLINT
     int shadow_map_pos[2], shadow_map_size[2];
     int scissor_test_pos[2], scissor_test_size[2];
     uint32_t shadow_batch_start, shadow_batch_count;
+    float bias[2];
 
     // for debugging
     float cam_near, cam_far;

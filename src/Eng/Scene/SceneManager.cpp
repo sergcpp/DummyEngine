@@ -385,6 +385,16 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             scene_data_.env.env_map_name_pt =
                 Ren::String{js_env.at("env_map_pt").as_str().val.c_str()};
         }
+        if (js_env.Has("sun_shadow_bias")) {
+            const JsArray &js_sun_shadow_bias = js_env.at("sun_shadow_bias").as_arr();
+            scene_data_.env.sun_shadow_bias[0] =
+                (float)js_sun_shadow_bias.at(0).as_num().val;
+            scene_data_.env.sun_shadow_bias[1] =
+                (float)js_sun_shadow_bias.at(1).as_num().val;
+        } else {
+            scene_data_.env.sun_shadow_bias[0] = 4.0f;
+            scene_data_.env.sun_shadow_bias[1] = 8.0f;
+        }
     } else {
         scene_data_.env = {};
     }
@@ -973,15 +983,16 @@ Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {
 
         ret = ren_ctx_.LoadMaterial(
             name, mat_src.data(), &status,
-            std::bind(&SceneManager::OnLoadProgram, this, _1, _2, _3),
+            std::bind(&SceneManager::OnLoadProgram, this, _1, _2, _3, _4, _5),
             std::bind(&SceneManager::OnLoadTexture, this, _1, _2));
         assert(status == Ren::MatCreatedFromData);
     }
     return ret;
 }
 
-Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_shader,
-                                            const char *fs_shader) {
+Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *v_shader,
+                                            const char *f_shader, const char *tc_shader,
+                                            const char *te_shader) {
     using namespace SceneManagerConstants;
 
 #if defined(USE_GL_RENDER)
@@ -1018,8 +1029,8 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
             assert(status == Ren::CreatedFromData);
 #endif
         } else {
-            Sys::AssetFile vs_file(string(SHADERS_PATH) + vs_shader),
-                fs_file(string(SHADERS_PATH) + fs_shader);
+            Sys::AssetFile vs_file(string(SHADERS_PATH) + v_shader),
+                fs_file(string(SHADERS_PATH) + f_shader);
             if (!vs_file || !fs_file) {
                 ren_ctx_.log()->Error("Error loading program %s", name);
                 return ret;
@@ -1027,14 +1038,33 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *vs_sha
 
             const size_t vs_size = vs_file.size(), fs_size = fs_file.size();
 
-            string vs_src, fs_src;
+            string vs_src, fs_src, tc_src, te_src;
             vs_src.resize(vs_size);
             fs_src.resize(fs_size);
             vs_file.Read((char *)vs_src.data(), vs_size);
             fs_file.Read((char *)fs_src.data(), fs_size);
 
+            if (tc_shader && te_shader) {
+                Sys::AssetFile tcs_file(string(SHADERS_PATH) + tc_shader),
+                    tes_file(string(SHADERS_PATH) + te_shader);
+                if (!tcs_file || !tes_file) {
+                    ren_ctx_.log()->Error("Error loading program %s", name);
+                    return ret;
+                }
+
+                const size_t tcs_size = tcs_file.size(), tes_size = tes_file.size();
+
+                tc_src.resize(tcs_size);
+                te_src.resize(tes_size);
+                tcs_file.Read((char *)tc_src.data(), tcs_size);
+                tes_file.Read((char *)te_src.data(), tes_size);
+            }
+
             ren_ctx_.log()->Info("Compiling program %s", name);
-            ret = ren_ctx_.LoadProgramGLSL(name, vs_src.c_str(), fs_src.c_str(), &status);
+            ret = ren_ctx_.LoadProgramGLSL(name, vs_src.c_str(), fs_src.c_str(),
+                                           tc_src.empty() ? nullptr : tc_src.c_str(),
+                                           te_src.empty() ? nullptr : te_src.c_str(),
+                                           &status);
             assert(status == Ren::eProgLoadStatus::CreatedFromData);
         }
     }
