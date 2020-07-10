@@ -49,6 +49,8 @@ class GSUITest4 final : public GSBaseState {
     std::unique_ptr<DialogEditUI> dialog_edit_ui_;
     std::unique_ptr<CaptionsUI> seq_cap_ui_;
 
+    bool trigger_dialog_reload_ = false;
+
     void OnPostloadScene(JsObject &js_scene) override;
 
     void OnUpdateScene() override;

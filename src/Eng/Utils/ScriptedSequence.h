@@ -24,6 +24,7 @@ struct SeqAction {
     double time_beg, time_end;
     float pos_beg[3], pos_end[3];
     float rot_beg[3], rot_end[3];
+    float fade_beg, fade_end;
     double sound_offset;
     std::string caption;
 
@@ -37,6 +38,8 @@ struct SeqAction {
     static constexpr float SoundWaveStepS = 0.02f;
     Ren::TextureRegionRef sound_wave_tex;
 };
+
+enum class eChoiceAlign { Center, Left, Right };
 
 struct SeqChoice {
     std::string key;
@@ -70,14 +73,15 @@ class ScriptedSequence {
     SeqChoice choices_[8];
     int choices_count_ = 0;
 
+    eChoiceAlign choice_align_ = eChoiceAlign::Center;
     double end_time_, last_t_ = 0.0;
 
     void UpdateAction(uint32_t target_actor, SeqAction &action, double time_cur_s,
                       bool playing);
 
-    Ren::TextureRegionRef RenderSoundWaveForm(const char *name, const void *samples_data,
-                                              int samples_count,
-                                              const Snd::BufParams &params);
+    Ren::TextureRegionRef RenderSoundWave(const char *name, const void *samples_data,
+                                          int samples_count,
+                                          const Snd::BufParams &params);
 
   public:
     ScriptedSequence(Ren::Context &ren_ctx, Snd::Context &snd_ctx,
@@ -89,6 +93,7 @@ class ScriptedSequence {
     const char *name() const { return name_.empty() ? nullptr : name_.c_str(); }
 
     double duration() const { return end_time_; }
+    eChoiceAlign choice_align() const { return choice_align_; }
 
     const char *GetTrackName(int track) const {
         if (track >= tracks_.size()) {

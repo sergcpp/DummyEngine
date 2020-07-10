@@ -11,34 +11,34 @@
 					"time_beg" : 28.8, 
 					"time_end" : 29.8, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Ruhe!", 
 					"sound" : "judge/32_quiet.wav"
 				}, 
 				{
 					"type" : "play", 
 					"time_beg" : 29.85, 
-					"time_end" : 30.85, 
+					"time_end" : 30.75, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Hr. Smiths?", 
 					"sound" : "judge/33_smith.wav"
 				}, 
@@ -47,16 +47,16 @@
 					"time_beg" : 37.5, 
 					"time_end" : 38.5, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Er lügt?", 
 					"sound" : "judge/34_lied.wav"
 				}, 
@@ -65,16 +65,16 @@
 					"time_beg" : 44.3, 
 					"time_end" : 46.3, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Nun, das macht die Sache einfacher.", 
 					"sound" : "judge/35_easier.wav"
 				}, 
@@ -83,16 +83,16 @@
 					"time_beg" : 46.4, 
 					"time_end" : 47.4, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Wer ist Ihr Zeuge?", 
 					"sound" : "judge/36_who_is_witness.wav"
 				}, 
@@ -101,16 +101,16 @@
 					"time_beg" : 56.8, 
 					"time_end" : 58.1, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Ruhe! Ruhe im Gerichtssaal!", 
 					"sound" : "judge/37_quiet.wav"
 				}, 
@@ -119,16 +119,16 @@
 					"time_beg" : 58.2, 
 					"time_end" : 60.4, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Die Anklage darf ihren Zeugen aufrufen.", 
 					"sound" : "judge/38_call_witness.wav"
 				}
@@ -144,16 +144,16 @@
 					"time_beg" : 13.4, 
 					"time_end" : 17.5, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Herr Smiths, stimmt es, dass Sie am Tag des Mordes zum Opfer gekommen sind?", 
 					"sound" : "prosecutor/07_came_in_day.wav"
 				}, 
@@ -162,16 +162,16 @@
 					"time_beg" : 35.3, 
 					"time_end" : 37.3, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Euer Ehren, der Angeklagte lügt.", 
 					"sound" : "prosecutor/08_lies.wav"
 				}, 
@@ -180,16 +180,16 @@
 					"time_beg" : 38.6, 
 					"time_end" : 43.4, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Die Anklage würde gerne einen Zeugen aufrufen, der beweisen kann, dass Hr. Smiths lügt.", 
 					"sound" : "prosecutor/09_witness.wav"
 				}, 
@@ -198,16 +198,16 @@
 					"time_beg" : 47.8, 
 					"time_end" : 50.1, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Der Mann, der die Leiche des Opfers gefunden hat.", 
 					"sound" : "prosecutor/10_saw1.wav"
 				}, 
@@ -216,16 +216,16 @@
 					"time_beg" : 50.2, 
 					"time_end" : 52.4, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Kurz bevor er den grausamen Fund machte...", 
 					"sound" : "prosecutor/10_saw2.wav"
 				}, 
@@ -234,34 +234,34 @@
 					"time_beg" : 52.5, 
 					"time_end" : 55.9, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "hat er gesehen, wie der Angeklagte vom Tatort geflohen ist!", 
 					"sound" : "prosecutor/10_saw3.wav"
 				}, 
 				{
 					"type" : "play", 
 					"time_beg" : 60.8, 
-					"time_end" : 61.8, 
+					"time_end" : 61.7, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Ja, Euer Ehren.", 
 					"sound" : "prosecutor/11_delivery1.wav"
 				}
@@ -277,34 +277,34 @@
 					"time_beg" : 0, 
 					"time_end" : 1.3, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Was sollen wir jetzt machen?", 
 					"sound" : "lawyer/16_what_to_do.wav"
 				}, 
 				{
 					"type" : "play", 
 					"time_beg" : 19.6, 
-					"time_end" : 20.9, 
+					"time_end" : 20.8, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Du warst dort...?", 
 					"sound" : "lawyer/17_you_were.wav"
 				}, 
@@ -313,16 +313,16 @@
 					"time_beg" : 22.5, 
 					"time_end" : 23.6, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Sag die Wahrheit!", 
 					"sound" : "lawyer/18_truth.wav"
 				}
@@ -338,16 +338,16 @@
 					"time_beg" : 1.5, 
 					"time_end" : 6, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.60796
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/assist/talk.anim", 
 					"caption" : "Passen wir gut auf. Uns darf nichts entgehen, was unseren Mandanten helfen könnte.", 
 					"sound" : "assistant/04_observe.wav"
 				}, 
@@ -356,16 +356,16 @@
 					"time_beg" : 6.1, 
 					"time_end" : 10.5, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.60796
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/assist/talk.anim", 
 					"caption" : "Du hast die Möglichkeit, später auf die Anklage zu reagieren. Mach dich bereit.", 
 					"sound" : "assistant/05_react.wav"
 				}, 
@@ -374,16 +374,16 @@
 					"time_beg" : 10.6, 
 					"time_end" : 13.1, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.60796
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/assist/talk.anim", 
 					"caption" : "Hoffentlich sagt er nichts.. Unglückliches.", 
 					"sound" : "assistant/06_hope.wav"
 				}, 
@@ -392,16 +392,16 @@
 					"time_beg" : 21, 
 					"time_end" : 22.1, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.60796
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/assist/talk.anim", 
 					"caption" : "Was jetzt?", 
 					"sound" : "assistant/07_now_what.wav"
 				}
@@ -414,8 +414,120 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 17.7, 
-					"time_end" : 19, 
+					"time_beg" : 17.6, 
+					"time_end" : 18.9, 
+					"pos_beg" : [
+						-0.659627, 
+						0, 
+						1.79438
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "chars/accused/talk.anim", 
+					"caption" : "Vielleicht...", 
+					"sound" : "accused/01_maybe.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 23.9, 
+					"time_end" : 26, 
+					"pos_beg" : [
+						-0.659627, 
+						0, 
+						1.79438
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "chars/accused/talk.anim", 
+					"caption" : "Ah... Ja! Ja! Ich war da!", 
+					"sound" : "accused/02_was_there1.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 26.1, 
+					"time_end" : 27.1, 
+					"pos_beg" : [
+						-0.659627, 
+						0, 
+						1.79438
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "chars/accused/talk.anim", 
+					"caption" : "Ich bin hingegangen!", 
+					"sound" : "accused/02_was_there2.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 31.5, 
+					"time_end" : 32.8, 
+					"pos_beg" : [
+						-0.659627, 
+						0, 
+						1.79438
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "chars/accused/talk.anim", 
+					"caption" : "Sie war nicht da, Mann...", 
+					"sound" : "accused/03_she_wasnt_there1.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 32.9, 
+					"time_end" : 34.4, 
+					"pos_beg" : [
+						-0.659627, 
+						0, 
+						1.79438
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "chars/accused/talk.anim", 
+					"caption" : "Also hab ich sie auch nicht gesehen.", 
+					"sound" : "accused/03_she_wasnt_there2.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 35.0, 
+					"time_end" : 35.4, 
+					"pos_beg" : [
+						-0.659627, 
+						-5, 
+						1.79438
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					]
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 0.5, 
 					"pos_beg" : [
 						0, 
 						0, 
@@ -426,13 +538,82 @@
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Vielleicht...", 
-					"sound" : "accused/01_maybe.wav"
+					"anim" : "courtroom/anims/cam/defence_focus.anim", 
+					"dof" : true, 
+					"fade_beg" : 1, 
+					"fade_end" : 0
 				}, 
 				{
-					"type" : "play", 
-					"time_beg" : 23.9, 
+					"type" : "look", 
+					"time_beg" : 0.5, 
+					"time_end" : 13.2, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 13.2, 
+					"time_end" : 17.6, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 17.6, 
+					"time_end" : 19.3, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/witness_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 19.3, 
+					"time_end" : 23.7, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 23.7, 
 					"time_end" : 26, 
 					"pos_beg" : [
 						0, 
@@ -444,14 +625,13 @@
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Ah... Ja! Ja! Ich war da!", 
-					"sound" : "accused/02_was_there1.wav"
+					"anim" : "courtroom/anims/cam/witness_focus.anim", 
+					"dof" : true
 				}, 
 				{
-					"type" : "play", 
-					"time_beg" : 26.1, 
-					"time_end" : 27.1, 
+					"type" : "look", 
+					"time_beg" : 26, 
+					"time_end" : 28, 
 					"pos_beg" : [
 						0, 
 						0, 
@@ -462,14 +642,14 @@
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Ich bin hingegangen!", 
-					"sound" : "accused/02_was_there2.wav"
+					"anim" : "courtroom/anims/cam/witness_focus.anim", 
+					"dof" : true,
+					"sound" : "crowd_noise.wav"
 				}, 
 				{
-					"type" : "play", 
-					"time_beg" : 31.5, 
-					"time_end" : 32.8, 
+					"type" : "look", 
+					"time_beg" : 28, 
+					"time_end" : 31.3, 
 					"pos_beg" : [
 						0, 
 						0, 
@@ -480,14 +660,13 @@
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Sie war nicht da, Mann...", 
-					"sound" : "accused/03_she_wasnt_there1.wav"
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"dof" : true
 				}, 
 				{
-					"type" : "play", 
-					"time_beg" : 32.9, 
-					"time_end" : 34.4, 
+					"type" : "look", 
+					"time_beg" : 31.3, 
+					"time_end" : 34.8, 
 					"pos_beg" : [
 						0, 
 						0, 
@@ -498,22 +677,99 @@
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Also hab ich sie auch nicht gesehen.", 
-					"sound" : "accused/03_she_wasnt_there2.wav"
+					"anim" : "courtroom/anims/cam/witness_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 34.8, 
+					"time_end" : 43.7, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 43.7, 
+					"time_end" : 47.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 47.5, 
+					"time_end" : 56.7, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 56.7, 
+					"time_end" : 60.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 60.5, 
+					"time_end" : 62, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim", 
+					"dof" : true
 				}
-			]
-		}, 
-		{
-			"name" : "camera_track", 
-			"type" : "camera", 
-			"target" : "main_camera", 
-			"actions" : [
 			]
 		}
 	], 
 	"ending" : {
-		"time_point" : 63.5, 
+		"time_point" : 62.5, 
 		"choices" : [
 			{
 				"key" : "pass", 

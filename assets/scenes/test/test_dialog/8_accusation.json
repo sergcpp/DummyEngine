@@ -11,16 +11,16 @@
 					"time_beg" : 2, 
 					"time_end" : 5.2, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Gut, dann... Zuerst eine Frage an die Anklage.", 
 					"sound" : "judge/27_prosec_question.wav"
 				}, 
@@ -29,16 +29,16 @@
 					"time_beg" : 6.8, 
 					"time_end" : 11, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Wie der Anwalt sagte, wurde das Opfer mit einem stumpfen Gegenstand niedergeschlagen.", 
 					"sound" : "judge/28_blunt_object.wav"
 				}, 
@@ -47,16 +47,16 @@
 					"time_beg" : 11.1, 
 					"time_end" : 14.5, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Können Sie dem Gericht erklären, was das fur ein 'Gegenstand' war.", 
 					"sound" : "judge/29_what_was_that.wav"
 				}, 
@@ -65,16 +65,16 @@
 					"time_beg" : 22.4, 
 					"time_end" : 25.5, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Ich verstehe... das Gericht nimmt er als Beweisstuck auf.", 
 					"sound" : "judge/30_evidence.wav"
 				}, 
@@ -83,16 +83,16 @@
 					"time_beg" : 34.7, 
 					"time_end" : 37.2, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Die Anklage darf ihren ersten Zeugen aufrufen.", 
 					"sound" : "judge/31_first_witness.wav"
 				}
@@ -106,18 +106,18 @@
 				{
 					"type" : "play", 
 					"time_beg" : 5.4, 
-					"time_end" : 6.6, 
+					"time_end" : 6.4, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Ja, Euer Ehren?", 
 					"sound" : "prosecutor/03_yes.wav"
 				}, 
@@ -126,16 +126,16 @@
 					"time_beg" : 14.7, 
 					"time_end" : 17, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Bei der Mordwaffe handelt es sich um der Hammer.", 
 					"sound" : "prosecutor/04_hammer.wav"
 				}, 
@@ -144,16 +144,16 @@
 					"time_beg" : 17.1, 
 					"time_end" : 19.7, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Er wurde neben dem Opfer auf dem Boden gefunden.", 
 					"sound" : "prosecutor/04_hammer_floor.wav"
 				}, 
@@ -162,16 +162,16 @@
 					"time_beg" : 19.8, 
 					"time_end" : 21.7, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Sie ist gerade aus dem Urlaub zurückgekehrt.", 
 					"sound" : "prosecutor/05_vacation.wav"
 				}, 
@@ -180,16 +180,16 @@
 					"time_beg" : 37.5, 
 					"time_end" : 41.2, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Die Anklage ruft den Angeklagten Hr. Smiths in den Zeugenstand.", 
 					"sound" : "prosecutor/06_call_accused.wav"
 				}
@@ -203,20 +203,36 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0, 
-					"time_end" : 1.5, 
+					"time_end" : 1.3, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Danke, Eurer Ehren.", 
 					"sound" : "lawyer/15_thanks.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 26, 
+					"time_end" : 34.5, 
+					"pos_beg" : [
+						-2.76571, 
+						0, 
+						5.01962
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					], 
+					"anim" : "chars/lawyer/idle.anim"
 				}
 			]
 		}, 
@@ -230,6 +246,49 @@
 					"time_beg" : 26.7, 
 					"time_end" : 31, 
 					"pos_beg" : [
+						-2.76571, 
+						0, 
+						5.60796
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					], 
+					"anim" : "chars/assist/talk.anim", 
+					"caption" : "Wir müssen auf alle Beweise achten, die während des Prozesses hinzukommen.", 
+					"sound" : "assistant/02_attention.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 31.1, 
+					"time_end" : 34.5, 
+					"pos_beg" : [
+						-2.76571, 
+						0, 
+						5.60796
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					], 
+					"anim" : "chars/assist/talk.anim", 
+					"caption" : "Diese Beweise sind unsere einzige Waffe im Gerichtssaal.", 
+					"sound" : "assistant/03_our_weapon.wav"
+				}
+			]
+		}, 
+		{
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
+			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 1.6, 
+					"pos_beg" : [
 						0, 
 						0, 
 						0
@@ -239,13 +298,97 @@
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Wir müssen auf alle Beweise achten, die während des Prozesses hinzukommen.", 
-					"sound" : "assistant/02_attention.wav"
+					"anim" : "courtroom/anims/cam/defence_focus.anim", 
+					"dof" : true
 				}, 
 				{
-					"type" : "play", 
-					"time_beg" : 31.1, 
+					"type" : "look", 
+					"time_beg" : 1.6, 
+					"time_end" : 5.3, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 5.3, 
+					"time_end" : 6.7, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 6.7, 
+					"time_end" : 14.6, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 14.6, 
+					"time_end" : 22, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 22, 
+					"time_end" : 26, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 26, 
 					"time_end" : 34.5, 
 					"pos_beg" : [
 						0, 
@@ -257,22 +400,67 @@
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Diese Beweise sind unsere einzige Waffe im Gerichtssaal.", 
-					"sound" : "assistant/03_our_weapon.wav"
+					"anim" : "courtroom/anims/cam/defence_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 34.5, 
+					"time_end" : 37.3, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 37.3, 
+					"time_end" : 41, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 41, 
+					"time_end" : 41.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim", 
+					"dof" : true, 
+					"fade_beg" : 0, 
+					"fade_end" : 1
 				}
-			]
-		}, 
-		{
-			"name" : "camera_track", 
-			"type" : "camera", 
-			"target" : "main_camera", 
-			"actions" : [
 			]
 		}
 	], 
 	"ending" : {
-		"time_point" : 41.5, 
+		"time_point" : 42, 
 		"choices" : [
 			{
 				"key" : "pass", 

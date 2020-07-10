@@ -23,18 +23,18 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0, 
-					"time_end" : 3, 
+					"time_end" : 2.8, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Waren Sie sich sicher, dass sie tot war?", 
 					"sound" : "lawyer/22_sure_dead.wav"
 				}
@@ -57,16 +57,16 @@
 					"time_beg" : 3.1, 
 					"time_end" : 5.3, 
 					"pos_beg" : [
+						-0.659627, 
 						0, 
-						0, 
-						0
+						1.79438
 					], 
 					"rot_beg" : [
 						0, 
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/witness/talk.anim", 
 					"caption" : "Nun, nein, ich glaube nicht.", 
 					"sound" : "witness/07_dont_think_so1.wav"
 				}, 
@@ -75,16 +75,16 @@
 					"time_beg" : 5.5, 
 					"time_end" : 8.6, 
 					"pos_beg" : [
+						-0.659627, 
 						0, 
-						0, 
-						0
+						1.79438
 					], 
 					"rot_beg" : [
 						0, 
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/witness/talk.anim", 
 					"caption" : "Aber, sie rührte sich kein bisschen und überall war Blut.", 
 					"sound" : "witness/07_dont_think_so2.wav"
 				}
@@ -95,6 +95,40 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 3, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim"
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 3, 
+					"time_end" : 9, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/witness_focus.anim"
+				}
 			]
 		}
 	], 

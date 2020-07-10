@@ -10,7 +10,17 @@
 					"type" : "play", 
 					"time_beg" : 0.0, 
 					"time_end" : 5.9, 
-					"anim" : "eric_idle.anim", 
+                    "pos_beg" : [
+						-0.67541, 
+						0, 
+						9.53697
+					], 
+					"rot_beg" : [
+						0, 
+						180, 
+						0
+					], 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Sie haben die Überprüfung fälschlicherweise nicht bestanden und können nicht zu Verhandlung zugelassen werden.",
                     "sound" : "judge/10_failed.wav"
 				}
@@ -28,6 +38,23 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+                {
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 6.0, 
+                    "dof" : true,
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim"
+				}, 
 			]
 		}
 	], 

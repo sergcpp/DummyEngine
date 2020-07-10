@@ -11,16 +11,16 @@
 					"time_beg" : 15.7, 
 					"time_end" : 18.6, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Es wirft wirklich Zweifel am Rest des Zeugnisses auf.", 
 					"sound" : "judge/43_doubt.wav"
 				}, 
@@ -29,16 +29,16 @@
 					"time_beg" : 18.7, 
 					"time_end" : 19.6, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Was wollen Sie?", 
 					"sound" : "judge/44_what_do_you_want.wav"
 				}
@@ -54,16 +54,16 @@
 					"time_beg" : 9, 
 					"time_end" : 11.4, 
 					"pos_beg" : [
+						1.32044,
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
-					], 
-					"anim" : "eric_idle.anim", 
+					],
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Die Uhr ist wirklich 2 Stunden hinterher.", 
 					"sound" : "prosecutor/14_changes_nothing1.wav"
 				}, 
@@ -72,16 +72,16 @@
 					"time_beg" : 11.6, 
 					"time_end" : 15.1, 
 					"pos_beg" : [
+						1.32044,
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
-					], 
-					"anim" : "eric_idle.anim", 
+					],
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Angenommen, der Zeuge war in der Wohnung, ändert das nichts.", 
 					"sound" : "prosecutor/14_changes_nothing2.wav"
 				}
@@ -95,18 +95,18 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0, 
-					"time_end" : 4, 
+					"time_end" : 3.9, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Der Zeuge sah wahrscheinlich die Zeit auf dem Armband des Opfers.", 
 					"sound" : "lawyer/27_bracelet.wav"
 				}
@@ -122,16 +122,16 @@
 					"time_beg" : 4.1, 
 					"time_end" : 6.7, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.60796
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
-					], 
-					"anim" : "eric_idle.anim", 
+					],  
+					"anim" : "chars/assist/talk.anim", 
 					"caption" : "Aber er wusste nicht, dass die Zeit falsch war.", 
 					"sound" : "assistant/08_didnt_know.wav"
 				}, 
@@ -140,16 +140,16 @@
 					"time_beg" : 6.8, 
 					"time_end" : 8.7, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.60796
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/assist/talk.anim", 
 					"caption" : "Aufgrund des Zeitunterschieds.", 
 					"sound" : "assistant/09_time_diff.wav"
 				}
@@ -167,11 +167,62 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 8.8, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim"
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 8.8, 
+					"time_end" : 15.3, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim"
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 15.3, 
+					"time_end" : 20, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim"
+				}
 			]
 		}
 	], 
 	"ending" : {
-		"time_point" : 20.0, 
+		"time_point" : 20, 
 		"choices" : [
 			{
 				"key" : "inspect", 

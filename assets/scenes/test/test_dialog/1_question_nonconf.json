@@ -11,18 +11,41 @@
 					"time_beg" : 0, 
 					"time_end" : 2.6, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Ja, Euer Ehren. Ich bin ein bisschen besorgt.", 
 					"sound" : "lawyer/04_noexp.wav"
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 3, 
+					"pos_beg" : [
+						-2.76571, 
+						0, 
+						5.60796
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					], 
+					"anim" : "chars/assist/idle.anim"
 				}
 			]
 		}, 
@@ -34,18 +57,18 @@
 				{
 					"type" : "play", 
 					"time_beg" : 3.5, 
-					"time_end" : 7, 
+					"time_end" : 6.9, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Das Schicksal Ihres Mandanten hängt allein von Ihrer Verhandlungsführung ab.", 
 					"sound" : "judge/02_important.wav"
 				}, 
@@ -54,34 +77,34 @@
 					"time_beg" : 7.5, 
 					"time_end" : 9, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Mord ist eine ernste Sache.", 
 					"sound" : "judge/03_serious.wav"
 				}, 
 				{
 					"type" : "play", 
 					"time_beg" : 9, 
-					"time_end" : 12, 
+					"time_end" : 11.9, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Ich hoffe für Ihren Mandanten, dass Sie die Nerven behalten.", 
 					"sound" : "judge/04_nerves.wav"
 				}
@@ -95,7 +118,7 @@
 				{
 					"type" : "look", 
 					"time_beg" : 0, 
-					"time_end" : 2, 
+					"time_end" : 3, 
 					"pos_beg" : [
 						0, 
 						0, 
@@ -105,7 +128,43 @@
 						0, 
 						0, 
 						0
-					]
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 3, 
+					"time_end" : 11.9, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 11.9, 
+					"time_end" : 12.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim", 
+					"dof" : true
 				}
 			]
 		}

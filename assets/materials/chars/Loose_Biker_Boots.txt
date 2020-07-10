@@ -1,0 +1,6 @@
+gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+sw_program: main
+texture: chars/Loose_Biker_Boots_diff.png srgb
+texture: chars/Loose_Biker_Boots_norm.png
+texture: chars/Boots2_spec.png srgb

@@ -2116,6 +2116,10 @@ void Renderer::GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frust
 void RendererInternal::__push_ellipsoids(const Drawable &dr,
                                          const Ren::Mat4f &world_from_object,
                                          DrawList &list) {
+    if (list.ellipsoids.count + dr.ellipsoids_count > REN_MAX_ELLIPSES_TOTAL) {
+        return;
+    }
+
     const Ren::Skeleton *skel = dr.mesh->skel();
 
     for (int i = 0; i < dr.ellipsoids_count; i++) {

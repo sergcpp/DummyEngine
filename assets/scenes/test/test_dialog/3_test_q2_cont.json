@@ -11,16 +11,16 @@
 					"time_beg" : 9, 
 					"time_end" : 10.5, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Wie lautet Ihre Antwort?", 
 					"sound" : "judge/17_answer.wav"
 				}, 
@@ -29,16 +29,16 @@
 					"time_beg" : 10.6, 
 					"time_end" : 12.5, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Wie heißt das Opfer in diesem Fall?", 
 					"sound" : "judge/18_name_victim.wav"
 				}
@@ -54,16 +54,16 @@
 					"time_beg" : 0, 
 					"time_end" : 2.2, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Natürlich weiß ich den Namen des Opfers!", 
 					"sound" : "lawyer/10_i_know.wav"
 				}
@@ -79,16 +79,16 @@
 					"time_beg" : 2.5, 
 					"time_end" : 5.8, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.60796
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "sophia_idle.anim", 
+					"anim" : "chars/assist/talk.anim", 
 					"caption" : "Siehst du, der Name des Opfers steht in der Gerichtsakte.", 
 					"sound" : "assistant/013_act.wav"
 				}, 
@@ -97,16 +97,16 @@
 					"time_beg" : 5.9, 
 					"time_end" : 8.6, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.60796
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "sophia_idle.anim", 
+					"anim" : "chars/assist/talk.anim", 
 					"caption" : "Du solltest sie öfter überprüfen. Ich bitte dich.", 
 					"sound" : "assistant/014_often.wav"
 				}
@@ -117,6 +117,57 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 8.8, 
+                    "dof" : true,
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim"
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 8.8, 
+					"time_end" : 12.5, 
+                    "dof" : true,
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim"
+				},
+                {
+					"type" : "look", 
+					"time_beg" : 12.5, 
+					"time_end" : 13.0, 
+                    "dof" : true,
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/act_focus.anim"
+				}, 
 			]
 		}
 	], 
@@ -139,6 +190,7 @@
 				"text" : "Stephan Lier", 
 				"sequence" : "test/test_dialog/4_test_q2_stephan.json"
 			}
-		]
+		],
+		"choice_align" : "right"
 	}
 }

@@ -31,7 +31,7 @@ class DialogController {
     void ContinueChoice();
 
     Sys::SignalN<void(const char *text, const uint8_t color[4])> push_caption_signal;
-    Sys::SignalN<void(const char *key, const char *text)> push_choice_signal;
+    Sys::SignalN<void(const char *key, const char *text, int off)> push_choice_signal;
 
     Sys::SignalN<void(int id)> switch_sequence_signal;
     Sys::SignalN<void(const char *puzzle)> start_puzzle_signal;

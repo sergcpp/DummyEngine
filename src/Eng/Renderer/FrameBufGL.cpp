@@ -136,8 +136,8 @@ FrameBuf::FrameBuf(
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             }
 
-            glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-            glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+            glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         }
 
         if (depth_att.format == eDepthFormat::Depth24Stencil8) {

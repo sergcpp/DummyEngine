@@ -174,6 +174,9 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, Snd::Context &snd_ctx,
         },
         &status);
     assert(status == Ren::MeshCreatedFromData);
+
+    const float pos[] = { 0.0f, 0.0f, 0.0f };
+    amb_sound_.Init(1.0f, pos);
 }
 
 SceneManager::~SceneManager() { ClearScene(); }

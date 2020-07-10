@@ -69,8 +69,8 @@ const int U_MVP_MATR = 0;
 // const int U_TEX = 3;
 
 const int U_GAMMA = 14;
-
 const int U_EXPOSURE = 15;
+const int U_FADE = 16;
 
 const int U_RES = 15;
 
@@ -174,7 +174,7 @@ uint32_t __draw_list_range_full(Ren::Context &ctx, const DrawList &list, uint32_
                                 uint64_t &cur_prog_id, BackendInfo &backend_info) {
     GLenum cur_primitive;
     if (cur_prog_id != 0xffffffffffffffff) {
-        const Ren::Program* p = ctx.GetProgram(uint32_t(cur_prog_id)).get();
+        const Ren::Program *p = ctx.GetProgram(uint32_t(cur_prog_id)).get();
         if (p->has_tessellation()) {
             cur_primitive = GL_PATCHES;
         } else {
@@ -2079,9 +2079,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                              sr.shape_keyed_vertex_count, sr.xform_offset,
                              sr.out_vtx_offset + non_shapekeyed_vertex_count);
                 glUniform4ui(1, sr.shape_key_offset_curr, sr.shape_key_count_curr,
-                    sr.delta_offset, 0);
+                             sr.delta_offset, 0);
                 glUniform4ui(2, sr.shape_key_offset_prev, sr.shape_key_count_prev,
-                    sr.delta_offset, 0);
+                             sr.delta_offset, 0);
 
                 glDispatchCompute((sr.shape_keyed_vertex_count + SkinLocalGroupSize - 1) /
                                       SkinLocalGroupSize,
@@ -4015,7 +4015,11 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glBindFramebuffer(GL_FRAMEBUFFER, dof_buf_.fb);
                 glUseProgram(blit_dof_combine_ms_prog_->prog_id());
             } else {
-                glBindFramebuffer(GL_FRAMEBUFFER, resolved_or_transparent_buf_.fb);
+                if ((list.render_flags & EnableTaa) != 0u) {
+                    glBindFramebuffer(GL_FRAMEBUFFER, clean_buf_color_only_);
+                } else {
+                    glBindFramebuffer(GL_FRAMEBUFFER, resolved_or_transparent_buf_.fb);
+                }
                 glUseProgram(blit_dof_combine_prog_->prog_id());
             }
 
@@ -4047,8 +4051,14 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, 3,
                                            clean_buf_.depth_tex.GetValue());
             } else {
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
-                                           clean_buf_.attachments[0].tex);
+                if ((list.render_flags & EnableTaa) != 0u) {
+                    ren_glBindTextureUnit_Comp(
+                        GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                        resolved_or_transparent_buf_.attachments[0].tex);
+                } else {
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                               clean_buf_.attachments[0].tex);
+                }
                 ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 3,
                                            clean_buf_.depth_tex.GetValue());
             }
@@ -4204,12 +4214,18 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         glUniform1f(U_GAMMA, gamma);
         glUniform1f(U_EXPOSURE, (list.render_flags & EnableTonemap) ? exposure : 1.0f);
+        glUniform1f(U_FADE, list.draw_cam.fade);
 
         if (clean_buf_.sample_count > 1 || ((list.render_flags & EnableTaa) != 0) ||
             apply_dof) {
             if (apply_dof) {
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
-                                           dof_buf_.attachments[0].tex);
+                if ((list.render_flags & EnableTaa) != 0) {
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                               clean_buf_.attachments[0].tex);
+                } else {
+                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+                                               dof_buf_.attachments[0].tex);
+                }
             } else {
                 ren_glBindTextureUnit_Comp(
                     GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
@@ -4913,6 +4929,7 @@ void Renderer::BlitPixelsTonemap(const void *data, int w, int h,
         exposure = std::min(exposure, 1000.0f);
 
         glUniform1f(U_EXPOSURE, exposure);
+        glUniform1f(U_FADE, 0.0f);
 
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, temp_tex_);
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE1_TEX_SLOT,

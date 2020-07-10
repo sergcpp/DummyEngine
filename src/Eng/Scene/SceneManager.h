@@ -38,6 +38,8 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     SceneData &scene_data() { return scene_data_; }
     bool load_complete() const { return scene_texture_load_counter_ == 0; }
 
+    Snd::Source& ambient_sound() { return amb_sound_; }
+
     SceneObject *GetObject(uint32_t i) { return &scene_data_.objects[i]; }
 
     uint32_t FindObject(const char *name) {
@@ -130,6 +132,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     Ren::Camera cam_;
     Ren::Vec3f last_cam_pos_;
     double last_cam_time_s_ = 0.0;
+    Snd::Source amb_sound_;
 
     SceneData scene_data_;
     std::vector<uint32_t> changed_objects_, last_changed_objects_;

@@ -11,16 +11,16 @@
 					"time_beg" : 0, 
 					"time_end" : 0.8, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Richtig.", 
 					"sound" : "judge/23_right.wav"
 				}, 
@@ -29,16 +29,16 @@
 					"time_beg" : 0.9, 
 					"time_end" : 3.5, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Aber warum kamen dann die Ärzte zur Szene?", 
 					"sound" : "judge/24_why_came.wav"
 				}
@@ -63,6 +63,40 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+                {
+					"type" : "look", 
+					"time_beg" : 0.0, 
+					"time_end" : 4.0, 
+                    "dof" : true,
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim"
+				},
+                {
+					"type" : "look", 
+					"time_beg" : 4.0, 
+					"time_end" : 5.0, 
+                    "dof" : true,
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim"
+				}
 			]
 		}
 	], 

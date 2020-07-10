@@ -6,21 +6,29 @@
 			"type" : "actor", 
 			"target" : "judge", 
 			"actions" : [
+				
+			]
+		}, 
+		{
+			"name" : "prosec_speech", 
+			"type" : "actor", 
+			"target" : "prosec", 
+			"actions" : [
 				{
 					"type" : "play", 
 					"time_beg" : 3, 
 					"time_end" : 6, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Frau Doll? Dies ist Ihre erste Verhandlung, nicht wahr?", 
 					"sound" : "prosecutor/02_first_time.wav"
 				}
@@ -36,18 +44,41 @@
 					"time_beg" : 0, 
 					"time_end" : 2.3, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "chars/lawyer_walk.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Die Verteidigung is bereit, Euer Ehren.", 
 					"sound" : "lawyer/03_ready.wav"
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 7.5, 
+					"pos_beg" : [
+						-2.76571, 
+						0, 
+						5.60796
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					], 
+					"anim" : "chars/assist/idle.anim"
 				}
 			]
 		}, 
@@ -59,7 +90,7 @@
 				{
 					"type" : "look", 
 					"time_beg" : 0, 
-					"time_end" : 2, 
+					"time_end" : 2.6, 
 					"pos_beg" : [
 						0, 
 						0, 
@@ -69,7 +100,43 @@
 						0, 
 						0, 
 						0
-					]
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 2.6, 
+					"time_end" : 6.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 6.5, 
+					"time_end" : 7.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim", 
+					"dof" : true
 				}
 			]
 		}

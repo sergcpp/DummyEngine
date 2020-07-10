@@ -10,17 +10,37 @@
 					"type" : "play", 
 					"time_beg" : 1.5, 
 					"time_end" : 2.6, 
-					"anim" : "eric_idle.anim", 
-					"caption" : "In jeder Fall.",
-                    "sound" : "judge/06_test.wav"
-				},
+					"pos_beg" : [
+						-0.67541, 
+						0, 
+						9.53697
+					], 
+					"rot_beg" : [
+						0, 
+						180, 
+						0
+					], 
+					"anim" : "chars/judge/talk.anim", 
+					"caption" : "In jeder Fall.", 
+					"sound" : "judge/06_test.wav"
+				}, 
 				{
 					"type" : "play", 
 					"time_beg" : 2.7, 
-					"time_end" : 6.9, 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Möchte ich einen kleinen Test mit Ihnen machen, um zu sehen, ob Sie wirklich bereit sind.",
-                    "sound" : "judge/06_test2.wav"
+					"time_end" : 6.8, 
+					"pos_beg" : [
+						-0.67541, 
+						0, 
+						9.53697
+					], 
+					"rot_beg" : [
+						0, 
+						180, 
+						0
+					], 
+					"anim" : "chars/judge/talk.anim", 
+					"caption" : "Möchte ich einen kleinen Test mit Ihnen machen, um zu sehen, ob Sie wirklich bereit sind.", 
+					"sound" : "judge/06_test2.wav"
 				}
 			]
 		}, 
@@ -31,11 +51,44 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
+					"time_beg" : 0, 
 					"time_end" : 1.4, 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Danke, Euer Ehren.",
-                    "sound" : "lawyer/05_thanks.wav"
+					"pos_beg" : [
+						-2.76571, 
+						0, 
+						5.01962
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					], 
+					"anim" : "chars/lawyer/talk.anim", 
+					"caption" : "Danke, Euer Ehren.", 
+					"sound" : "lawyer/05_thanks.wav"
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 0.5, 
+					"pos_beg" : [
+						-2.76571, 
+						0, 
+						5.60796
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					], 
+					"anim" : "chars/assist/idle.anim"
 				}
 			]
 		}, 
@@ -44,15 +97,49 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 1.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 1.5, 
+					"time_end" : 7, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"dof" : true
+				}
 			]
 		}
 	], 
 	"ending" : {
-		"time_point" : 7.0,
+		"time_point" : 7, 
 		"choices" : [
 			{
 				"key" : "pass", 
-				"sequence" : "test/test_dialog/3_test_q1.json",
+				"sequence" : "test/test_dialog/3_test_q1.json", 
 				"puzzle" : "test/test_dialog/2_test_puzzle.json"
 			}
 		]

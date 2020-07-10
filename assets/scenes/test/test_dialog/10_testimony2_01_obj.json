@@ -25,34 +25,34 @@
 					"time_beg" : 0, 
 					"time_end" : 1.9, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Haben Sie Post zugestellt?", 
 					"sound" : "lawyer/19_delivered.wav"
 				}, 
 				{
 					"type" : "play", 
-					"time_beg" : 4.2, 
-					"time_end" : 5.7, 
+					"time_beg" : 4.4, 
+					"time_end" : 5.9, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Nichts, bitte weiter.", 
 					"sound" : "lawyer/20_nothing.wav"
 				}
@@ -75,16 +75,16 @@
 					"time_beg" : 2.6, 
 					"time_end" : 4, 
 					"pos_beg" : [
+						-0.659627, 
 						0, 
-						0, 
-						0
+						1.79438
 					], 
 					"rot_beg" : [
 						0, 
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/witness/talk.anim", 
 					"caption" : "Ja. Was stimmt damit nicht?", 
 					"sound" : "witness/03_whats_wrong.wav"
 				}
@@ -95,6 +95,57 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 2.4, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim"
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 2.4, 
+					"time_end" : 4.1, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/witness_focus.anim"
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 4.1, 
+					"time_end" : 6.1, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim"
+				}
 			]
 		}
 	], 

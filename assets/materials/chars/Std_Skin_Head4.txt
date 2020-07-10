@@ -1,0 +1,9 @@
+gl_program: main_probelit_sss main_probelit_sss.vert.glsl main_probelit_sss.frag.glsl
+gl_program: main_probelit_sss main_probelit_sss.vert.glsl main_probelit_sss.frag.glsl
+sw_program: main
+texture: chars/Std_Skin_Head4_diff.png srgb
+texture: chars/Std_Skin_Head4_norm.png
+texture: default_specular.png
+texture: skin_diffusion.uncompressed.png srgb norepeat
+texture: chars/skin_detail_norm.png
+param: 4.0 2.0 1.0 16.0

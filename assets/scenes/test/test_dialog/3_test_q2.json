@@ -9,18 +9,18 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0, 
-					"time_end" : 1, 
+					"time_end" : 0.8, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Korrekt.", 
 					"sound" : "judge/11_correct.wav"
 				}, 
@@ -29,16 +29,16 @@
 					"time_beg" : 1.1, 
 					"time_end" : 3.9, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Versuchen Sie einfach, einen klaren Kopf zu behalten.", 
 					"sound" : "judge/12_clear_head.wav"
 				}, 
@@ -47,16 +47,16 @@
 					"time_beg" : 4, 
 					"time_end" : 5.2, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Dann wird das schon.", 
 					"sound" : "judge/13_good.wav"
 				}, 
@@ -65,16 +65,16 @@
 					"time_beg" : 5.5, 
 					"time_end" : 6.5, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Nächste Frage.", 
 					"sound" : "judge/14_next_question.wav"
 				}, 
@@ -83,16 +83,16 @@
 					"time_beg" : 6.6, 
 					"time_end" : 8.2, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Dies ist ein Mordprozess.", 
 					"sound" : "judge/15_murder.wav"
 				}, 
@@ -101,16 +101,16 @@
 					"time_beg" : 8.3, 
 					"time_end" : 10.6, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Können Sie mir den Namen des Opfers nennen?", 
 					"sound" : "judge/16_victim.wav"
 				}
@@ -126,16 +126,16 @@
 					"time_beg" : 11.6, 
 					"time_end" : 13, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Des Opfers?", 
 					"sound" : "lawyer/09_victim.wav"
 				}
@@ -151,16 +151,16 @@
 					"time_beg" : 14, 
 					"time_end" : 16.5, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.60796
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "sophia_idle.anim", 
+					"anim" : "chars/assist/talk.anim", 
 					"caption" : "Bist du dich wirklich sicher, dass du das schaffst?", 
 					"sound" : "assistant/011_sure.wav"
 				}, 
@@ -169,16 +169,16 @@
 					"time_beg" : 16.6, 
 					"time_end" : 19, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.60796
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "sophia_idle.anim", 
+					"anim" : "chars/assist/talk.anim", 
 					"caption" : "Du kennst nicht mal den Namen des Opfers!?", 
 					"sound" : "assistant/012_name.wav"
 				}
@@ -189,6 +189,40 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 11, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 11, 
+					"time_end" : 19.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim", 
+					"dof" : true
+				}
 			]
 		}
 	], 

@@ -39,16 +39,16 @@
 					"time_beg" : 0, 
 					"time_end" : 2, 
 					"pos_beg" : [
+						-0.659627, 
 						0, 
-						0, 
-						0
+						1.79438
 					], 
 					"rot_beg" : [
 						0, 
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/witness/talk.anim", 
 					"caption" : "Ich wollte sofort die Polizei rufen!", 
 					"sound" : "witness/09_police.wav"
 				}
@@ -59,6 +59,23 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 3, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/witness_focus.anim"
+				}
 			]
 		}
 	], 

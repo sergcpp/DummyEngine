@@ -10,7 +10,17 @@
 					"type" : "play", 
 					"time_beg" : 0.0, 
 					"time_end" : 0.7, 
-					"anim" : "eric_idle.anim", 
+                    "pos_beg" : [
+						-0.67541, 
+						0, 
+						9.53697
+					], 
+					"rot_beg" : [
+						0, 
+						180, 
+						0
+					], 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Richtig.",
                     "sound" : "judge/23_right.wav"
 				},
@@ -18,7 +28,17 @@
 					"type" : "play", 
 					"time_beg" : 0.8, 
 					"time_end" : 3.1, 
-					"anim" : "eric_idle.anim", 
+                    "pos_beg" : [
+						-0.67541, 
+						0, 
+						9.53697
+					], 
+					"rot_beg" : [
+						0, 
+						180, 
+						0
+					], 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Sie haben alle meine Fragen beantwortet.",
                     "sound" : "judge/25_answered.wav"
 				},
@@ -26,7 +46,17 @@
 					"type" : "play", 
 					"time_beg" : 3.2, 
 					"time_end" : 5.6, 
-					"anim" : "eric_idle.anim", 
+                    "pos_beg" : [
+						-0.67541, 
+						0, 
+						9.53697
+					], 
+					"rot_beg" : [
+						0, 
+						180, 
+						0
+					], 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Es gibt keinen Grund, nicht fortzufahren.",
                     "sound" : "judge/26_no_reason_for_delay.wav"
 				}
@@ -51,6 +81,23 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+                {
+					"type" : "look", 
+					"time_beg" : 0.0, 
+					"time_end" : 6.1, 
+                    "dof" : true,
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim"
+				}
 			]
 		}
 	], 

@@ -17,7 +17,17 @@
 					"type" : "play", 
 					"time_beg" : 0.0, 
 					"time_end" : 1.3, 
-					"anim" : "eric_idle.anim", 
+                    "pos_beg" : [
+						-2.76571, 
+						0, 
+						5.01962
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					], 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Sie wurde vergiftet.",
                     "sound" : "lawyer/12_poisoned.wav"
 				},
@@ -28,6 +38,23 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+                {
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 1.8, 
+                    "dof" : true,
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim"
+				}
 			]
 		}
 	], 

@@ -66,7 +66,7 @@ void DialogUI::IterateChoices(
 
     for (int i = 0; i < choices_count_; i++) {
         const float width = font_.GetWidth(choices_[i].text, -1, this);
-        if (!callback(i, Ren::Vec2f{-0.5f * width, y_coord},
+        if (!callback(i, Ren::Vec2f{-0.5f * width + 0.5f * choices_->off, y_coord},
                       Ren::Vec2f{width, font_height})) {
             break;
         }
@@ -74,8 +74,7 @@ void DialogUI::IterateChoices(
     }
 }
 
-void DialogUI::OnPushChoice(const char *key, const char *text) {
-    choices_[choices_count_].key = key;
-    choices_[choices_count_].text = text;
+void DialogUI::OnPushChoice(const char *key, const char *text, int off) {
+    choices_[choices_count_] = { key, text, off };
     ++choices_count_;
 }

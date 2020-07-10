@@ -30,7 +30,7 @@
 				]
 			}, 
 			"drawable" : {
-				"mesh_file" : "chars/char_test.mesh", 
+				"mesh_file" : "chars/witness.mesh", 
 				"visible_to_probes" : false
 			}, 
 			"anim_state" : {

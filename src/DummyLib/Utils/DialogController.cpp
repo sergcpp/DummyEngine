@@ -37,13 +37,14 @@ void DialogController::Update(const double cur_time_s) {
         if (cur_seq_) {
             const double end_time_s = cur_seq_->duration();
             play_time_s_ = cur_time_s - play_started_time_s_;
+            bool pass = false;
 
             if (play_time_s_ >= end_time_s) {
                 const int choices_count = cur_seq_->GetChoicesCount();
                 if (choices_count) {
                     if (choices_count == 1) {
                         state_ = eState::ChoicePuzzle;
-                        MakeChoice("pass");
+                        pass = true;
                     } else {
                         state_ = eState::ChoicePlaying;
                     }
@@ -54,12 +55,22 @@ void DialogController::Update(const double cur_time_s) {
             }
 
             cur_seq_->Update(play_time_s_, true);
+            if (pass) {
+                MakeChoice("pass");
+            }
         }
     } else if (state_ == eState::ChoicePlaying || state_ == eState::ChoicePaused) {
+        int off = 0;
+        if (cur_seq_->choice_align() == eChoiceAlign::Left) {
+            off = -1;
+        } else if (cur_seq_->choice_align() == eChoiceAlign::Right) {
+            off = 1;
+        }
+
         const int choices_count = cur_seq_->GetChoicesCount();
         for (int i = 0; i < choices_count; i++) {
             const SeqChoice *ch = cur_seq_->GetChoice(i);
-            push_choice_signal.FireN(ch->key.c_str(), ch->text.c_str());
+            push_choice_signal.FireN(ch->key.c_str(), ch->text.c_str(), off);
         }
 
         const double end_time_s = cur_seq_->duration();

@@ -25,16 +25,16 @@
 					"time_beg" : 0, 
 					"time_end" : 1, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "12:00 Uhr?", 
 					"sound" : "lawyer/23_12_o_clock.wav"
 				}
@@ -57,16 +57,16 @@
 					"time_beg" : 1.2, 
 					"time_end" : 3.4, 
 					"pos_beg" : [
+						-0.659627, 
 						0, 
-						0, 
-						0
+						1.79438
 					], 
 					"rot_beg" : [
 						0, 
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/witness/talk.anim", 
 					"caption" : "Ja, ich erinnere mich definitiv an die Zeit.", 
 					"sound" : "witness/11_exactly_twelve1.wav"
 				}, 
@@ -75,16 +75,16 @@
 					"time_beg" : 3.7, 
 					"time_end" : 5.2, 
 					"pos_beg" : [
+						-0.659627, 
 						0, 
-						0, 
-						0
+						1.79438
 					], 
 					"rot_beg" : [
 						0, 
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/witness/talk.anim", 
 					"caption" : "Es war genau 12:00 Uhr.", 
 					"sound" : "witness/11_exactly_twelve2.wav"
 				}
@@ -95,6 +95,40 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 1.1, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim"
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 1.1, 
+					"time_end" : 6, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/witness_focus.anim"
+				}
 			]
 		}
 	], 

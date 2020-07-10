@@ -160,6 +160,10 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
                         std::string(MODELS_PATH) + js_action_anim.val;
 
                     Sys::AssetFile in_file(anim_path.c_str());
+                    if (!in_file) {
+                        ren_ctx_.log()->Error("Failed to load %s", anim_path.c_str());
+                        return false;
+                    }
                     size_t in_file_size = in_file.size();
 
                     std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
@@ -231,7 +235,7 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
                         assert(status == Snd::eBufLoadStatus::Found ||
                                status == Snd::eBufLoadStatus::CreatedFromData);
                         action.sound_wave_tex =
-                            RenderSoundWaveForm(name, &samples[0], samples_count, params);
+                            RenderSoundWave(name, &samples[0], samples_count, params);
                     }
                 }
 
@@ -248,6 +252,13 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
                     action.dof = (js_action_dof.val == JsLiteralType::JS_TRUE);
                 } else {
                     action.dof = false;
+                }
+
+                if (js_action.Has("fade_beg")) {
+                    action.fade_beg = (float)js_action.at("fade_beg").as_num().val;
+                    action.fade_end = (float)js_action.at("fade_end").as_num().val;
+                } else {
+                    action.fade_beg = action.fade_end = 0.0f;
                 }
             }
         }
@@ -277,6 +288,19 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
                     choice.puzzle_name = js_choice_puz.val;
                 }
             }
+        }
+
+        if (js_ending.Has("choice_align")) {
+            const JsString &js_choice_align = js_ending.at("choice_align").as_str();
+            if (js_choice_align.val == "left") {
+                choice_align_ = eChoiceAlign::Left;
+            } else if (js_choice_align.val == "right") {
+                choice_align_ = eChoiceAlign::Right;
+            } else {
+                choice_align_ = eChoiceAlign::Center;
+            }
+        } else {
+            choice_align_ = eChoiceAlign::Center;
         }
     }
 
@@ -359,6 +383,15 @@ void ScriptedSequence::Save(JsObject &js_seq) {
                         js_action.Push("sound_offset", JsNumber{action.sound_offset});
                     }
 
+                    if (action.dof) {
+                        js_action.Push("dof", JsLiteral{JS_TRUE});
+                    }
+
+                    if (action.fade_beg != 0.0f || action.fade_end != 0.0f) {
+                        js_action.Push("fade_beg", JsNumber{(double)action.fade_beg});
+                        js_action.Push("fade_end", JsNumber{(double)action.fade_end});
+                    }
+
                     js_actions.Push(std::move(js_action));
                 }
 
@@ -387,10 +420,15 @@ void ScriptedSequence::Save(JsObject &js_seq) {
             if (!choice.puzzle_name.empty()) {
                 js_choice.Push("puzzle", JsString{choice.puzzle_name});
             }
-
             js_choices.Push(std::move(js_choice));
         }
         js_ending.Push("choices", std::move(js_choices));
+
+        if (choice_align_ != eChoiceAlign::Center) {
+            js_ending.Push(
+                "choice_align",
+                JsString{choice_align_ == eChoiceAlign::Left ? "left" : "right"});
+        }
 
         js_seq.Push("ending", std::move(js_ending));
     }
@@ -497,11 +535,11 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
     const float t = float(time_cur_s - action.time_beg);
     const float t_norm = t / float(action.time_end - action.time_beg);
 
+    const bool play_sound = playing || std::abs(t - last_t_) > 0.05;
+    last_t_ = t;
+
     if (action.type == eActionType::Play) {
         SceneObject *actor_obj = scene_manager_.GetObject(target_actor);
-
-        const bool play_sound = playing || std::abs(t - last_t_) > 0.05;
-        last_t_ = t;
 
         uint32_t invalidate_mask = 0;
 
@@ -551,32 +589,36 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
             invalidate_mask |= CompDrawableBit;
         }
 
-        if ((actor_obj->comp_mask & CompSoundSourceBit) && action.sound_ref) {
-            const Transform &tr = transforms[actor_obj->components[CompTransform]];
+        if ((actor_obj->comp_mask & CompSoundSourceBit)) {
             SoundSource &ss = sounds[actor_obj->components[CompSoundSource]];
+            if (action.sound_ref) {
+                const Transform &tr = transforms[actor_obj->components[CompTransform]];
 
-            if (std::abs(t - action.sound_offset - ss.snd_src.GetOffset()) > 0.05f) {
-                ss.snd_src.SetOffset(t - float(action.sound_offset));
-            }
+                if (std::abs(t - action.sound_offset - ss.snd_src.GetOffset()) > 0.05f) {
+                    ss.snd_src.SetOffset(t - float(action.sound_offset));
+                }
 
-            const Ren::Vec4f pos = tr.mat * Ren::Vec4f{0.0f, 1.0f, 0.0f, 1.0f};
-            ss.snd_src.set_position(Ren::ValuePtr(pos));
+                const Ren::Vec4f pos = tr.mat * Ren::Vec4f{0.0f, 1.0f, 0.0f, 1.0f};
+                ss.snd_src.set_position(Ren::ValuePtr(pos));
 
-            if (play_sound) {
-                if (t >= action.sound_offset &&
-                    t < (action.sound_offset + action.sound_ref->GetDurationS())) {
+                if (play_sound) {
+                    if (t >= action.sound_offset &&
+                        t < (action.sound_offset + action.sound_ref->GetDurationS())) {
 
-                    if (ss.snd_src.GetState() != Snd::eSrcState::Playing ||
-                        ss.snd_src.GetBuffer(0).index() != action.sound_ref.index()) {
-                        ss.snd_src.SetOffset(t - float(action.sound_offset));
-                        ss.snd_src.Stop();
-                        ss.snd_src.SetBuffer(action.sound_ref);
-                        ss.snd_src.Play();
+                        if (ss.snd_src.GetState() != Snd::eSrcState::Playing ||
+                            ss.snd_src.GetBuffer(0).index() != action.sound_ref.index()) {
+                            ss.snd_src.SetOffset(t - float(action.sound_offset));
+                            ss.snd_src.Stop();
+                            ss.snd_src.SetBuffer(action.sound_ref);
+                            ss.snd_src.Play();
+                        }
+                    } else {
+                        if (ss.snd_src.GetBuffer(0).index() != action.sound_ref.index()) {
+                            ss.snd_src.ResetBuffers();
+                        }
                     }
                 } else {
-                    if (ss.snd_src.GetBuffer(0).index() != action.sound_ref.index()) {
-                        ss.snd_src.ResetBuffers();
-                    }
+                    ss.snd_src.Stop();
                 }
             } else {
                 ss.snd_src.Stop();
@@ -614,17 +656,48 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
         const auto pos = Ren::Vec3f{cam_mat[3]};
         const Ren::Vec3f trg = pos - Ren::Vec3f{cam_mat[2]};
 
+        cam.focus_depth = 3.0f;
         cam.focus_distance = Ren::Distance(pos, Ren::Vec3f{target_mat[3]});
         cam.focus_far_mul = cam.focus_near_mul = action.dof ? 1.0f : 0.0f;
+        cam.fade = Ren::Mix(action.fade_beg, action.fade_end, t_norm);
+        cam.max_exposure = 32.0f;
 
         scene_manager_.SetupView(pos, trg, Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam.angle(),
                                  cam.max_exposure);
+
+        Snd::Source &amb_sound = scene_manager_.ambient_sound();
+        if (action.sound_ref) {
+            amb_sound.set_position(Ren::ValuePtr(cam.world_position()));
+
+            if (play_sound) {
+                if (t >= action.sound_offset &&
+                    t < (action.sound_offset + action.sound_ref->GetDurationS())) {
+
+                    if (amb_sound.GetState() != Snd::eSrcState::Playing ||
+                        amb_sound.GetBuffer(0).index() != action.sound_ref.index()) {
+                        amb_sound.SetOffset(t - float(action.sound_offset));
+                        amb_sound.Stop();
+                        amb_sound.SetBuffer(action.sound_ref);
+                        amb_sound.Play();
+                    }
+                } else {
+                    if (amb_sound.GetBuffer(0).index() != action.sound_ref.index()) {
+                        amb_sound.ResetBuffers();
+                    }
+                }
+            } else {
+                amb_sound.Stop();
+            }
+        } else {
+            amb_sound.Stop();
+        }
     }
 }
 
-Ren::TextureRegionRef
-ScriptedSequence::RenderSoundWaveForm(const char *name, const void *samples_data,
-                                      int samples_count, const Snd::BufParams &params) {
+Ren::TextureRegionRef ScriptedSequence::RenderSoundWave(const char *name,
+                                                        const void *samples_data,
+                                                        int samples_count,
+                                                        const Snd::BufParams &params) {
     { // check if sound-wave picture was already loaded
         Ren::eTexLoadStatus status;
         Ren::TextureRegionRef ret =

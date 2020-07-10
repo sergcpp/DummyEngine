@@ -1,5 +1,5 @@
 {
-	"name" : "conf",
+	"name" : "conf", 
 	"tracks" : [
 		{
 			"name" : "lawyer_speech", 
@@ -9,13 +9,45 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0, 
-					"time_end" : 3, 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Nein, dies ist nicht mein erstes Mal vor Gericht.",
-                    "sound" : "lawyer/04_exp.wav"
+					"time_end" : 2.9, 
+					"pos_beg" : [
+						-2.76571, 
+						0, 
+						5.01962
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					], 
+					"anim" : "chars/lawyer/talk.anim", 
+					"caption" : "Nein, dies ist nicht mein erstes Mal vor Gericht.", 
+					"sound" : "lawyer/04_exp.wav"
 				}
 			]
-		},
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 0.5, 
+					"pos_beg" : [
+						-2.76571, 
+						0, 
+						5.60796
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					]
+				}
+			]
+		}, 
 		{
 			"name" : "judge_speech", 
 			"type" : "actor", 
@@ -24,28 +56,67 @@
 				{
 					"type" : "play", 
 					"time_beg" : 3.5, 
-					"time_end" : 7.2, 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Großartig, dann wage ich es nicht, den Prozess zu verzögern.",
-                    "sound" : "judge/05_no_delay.wav"
+					"time_end" : 7, 
+					"pos_beg" : [
+						-0.67541, 
+						0, 
+						9.53697
+					], 
+					"rot_beg" : [
+						0, 
+						180, 
+						0
+					], 
+					"anim" : "chars/judge/talk.anim", 
+					"caption" : "Großartig, dann wage ich es nicht, den Prozess zu verzögern.", 
+					"sound" : "judge/05_no_delay.wav"
 				}
 			]
-		},
+		}, 
 		{
-			"name" : "camera_track",
-			"type" : "camera",
-			"target" : "main_camera",
+			"name" : "camera_track", 
+			"type" : "camera", 
+			"target" : "main_camera", 
 			"actions" : [
 				{
-					"time_beg" : 0.0,
-					"time_end" : 2.0,
-					"type" : "look"
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 3.3, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 3.3, 
+					"time_end" : 7.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"dof" : true
 				}
 			]
 		}
-	],
-    "ending" : {
-        "time_point" : 7.5, 
+	], 
+	"ending" : {
+		"time_point" : 7.5, 
 		"choices" : [
 			{
 				"key" : "pass", 
@@ -53,5 +124,5 @@
 				"puzzle" : "test/test_dialog/1_thanks_puzzle.json"
 			}
 		]
-    }
+	}
 }

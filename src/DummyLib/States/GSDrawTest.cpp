@@ -25,7 +25,7 @@ const char SCENE_NAME[] = "assets/scenes/"
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
                           //"skin_test.json";
-                          //"living_room_gumroad.json";
+                          "living_room_gumroad.json";
                           //"bistro.json";
                           //"pbr_test.json";
                           //"zenith.json";
@@ -37,7 +37,7 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
                           //"lmap_test.json";
                           //"sss_test.json";
                           //"char_test.json";
-                          "tessellation_test.json";
+                          //"tessellation_test.json";
 }
 
 GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {
@@ -217,10 +217,6 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
 
             uint32_t sophia_index = scene_manager_->FindObject(sophia_name);
             sophia_indices_[i] = sophia_index;
-        }
-
-        if (sophia_indices_[0] == 0xffffffff) {
-            sophia_indices_[0] = scene_manager_->FindObject("assist");
         }
     }
 

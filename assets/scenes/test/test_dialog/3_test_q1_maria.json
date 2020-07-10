@@ -17,10 +17,42 @@
 					"type" : "play", 
 					"time_beg" : 0.0, 
 					"time_end" : 3.3, 
-					"anim" : "eric_idle.anim", 
+                    "pos_beg" : [
+						-2.76571, 
+						0, 
+						5.01962
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					], 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Nun, das ist Maria Sneider, Euer Ehren.",
                     "sound" : "lawyer/08_maria.wav"
 				},
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 0.5, 
+					"pos_beg" : [
+						-2.76571, 
+						0, 
+						5.60796
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					]
+				}
 			]
 		}, 
 		{
@@ -28,6 +60,23 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+                {
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 4.0, 
+                    "dof" : true,
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim"
+				}, 
 			]
 		}
 	], 

@@ -11,16 +11,16 @@
 					"time_beg" : 3.9, 
 					"time_end" : 7.1, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Ruhe! Nun, das ist eine faire Forderung.", 
 					"sound" : "judge/48_fair.wav"
 				}, 
@@ -29,16 +29,16 @@
 					"time_beg" : 7.2, 
 					"time_end" : 9.5, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Wir geben Ihnen 15 Minuten vor Ort.", 
 					"sound" : "judge/49_fifteen_minutes.wav"
 				}, 
@@ -47,16 +47,16 @@
 					"time_beg" : 9.6, 
 					"time_end" : 11, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Das Gericht wird vertagt.", 
 					"sound" : "judge/50_delayed.wav"
 				}
@@ -79,16 +79,16 @@
 					"time_beg" : 0, 
 					"time_end" : 3, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Ich möchte den Tatort persönlich inspizieren.", 
 					"sound" : "lawyer/29_investigate.wav"
 				}
@@ -113,6 +113,59 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 3.9, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim"
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 3.9, 
+					"time_end" : 11.5, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim"
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 11.5, 
+					"time_end" : 12, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"fade_beg" : 0, 
+					"fade_end" : 1
+				}
 			]
 		}
 	], 

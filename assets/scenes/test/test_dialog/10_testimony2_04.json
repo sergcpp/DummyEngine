@@ -39,16 +39,16 @@
 					"time_beg" : 0, 
 					"time_end" : 2.7, 
 					"pos_beg" : [
+						-0.659627, 
 						0, 
-						0, 
-						0
+						1.79438
 					], 
 					"rot_beg" : [
 						0, 
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/witness/talk.anim", 
 					"caption" : "Ich schaute hinein. Dann sah ich sie da liegen...", 
 					"sound" : "witness/06_dead1.wav"
 				}, 
@@ -57,16 +57,16 @@
 					"time_beg" : 3.2, 
 					"time_end" : 5.5, 
 					"pos_beg" : [
+						-0.659627, 
 						0, 
-						0, 
-						0
+						1.79438
 					], 
 					"rot_beg" : [
 						0, 
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/witness/talk.anim", 
 					"caption" : "Eine Frau... reglos... tot!", 
 					"sound" : "witness/06_dead2.wav"
 				}
@@ -77,6 +77,23 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 6, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/witness_focus.anim"
+				}
 			]
 		}
 	], 

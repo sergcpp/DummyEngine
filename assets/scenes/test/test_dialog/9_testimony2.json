@@ -11,16 +11,16 @@
 					"time_beg" : 14, 
 					"time_end" : 16.5, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Hr. Lügner, machen Sie Ihre Aussage.", 
 					"sound" : "judge/39_testimony.wav"
 				}, 
@@ -29,16 +29,16 @@
 					"time_beg" : 16.6, 
 					"time_end" : 19.5, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Bitte sagen Sie dem Gericht, was Sie am Tag des Mordes gesehen haben.", 
 					"sound" : "judge/40_what_you_saw.wav"
 				}
@@ -52,36 +52,36 @@
 				{
 					"type" : "play", 
 					"time_beg" : 0, 
-					"time_end" : 4.5, 
+					"time_end" : 3.4, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Mein Zeuge hat dem Opfer am Tag des Mordes ein Paket übergeben.", 
 					"sound" : "prosecutor/11_delivery2.wav"
 				}, 
 				{
 					"type" : "play", 
-					"time_beg" : 4.6, 
-					"time_end" : 6.9, 
+					"time_beg" : 3.5, 
+					"time_end" : 5.8, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Holen Sie bitte Hr. Lügner in den Zeugenstand!", 
 					"sound" : "prosecutor/12_go_to_stand.wav"
 				}, 
@@ -90,16 +90,16 @@
 					"time_beg" : 8, 
 					"time_end" : 10.9, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Hr. Lügner, Sie liefern Pakete, stimmt das?", 
 					"sound" : "prosecutor/13_you_deliver.wav"
 				}
@@ -127,18 +127,18 @@
 				{
 					"type" : "play", 
 					"time_beg" : 10.9, 
-					"time_end" : 13.4, 
+					"time_end" : 13.2, 
 					"pos_beg" : [
+						-0.659627, 
 						0, 
-						0, 
-						0
+						1.79438
 					], 
 					"rot_beg" : [
 						0, 
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/witness/talk.anim", 
 					"caption" : "Oh, ja! Pakete, klar!", 
 					"sound" : "witness/01_packets.wav"
 				}
@@ -149,11 +149,136 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 7.7, 
+					"time_end" : 8.3, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim", 
+					"dof" : true, 
+					"fade_beg" : 1, 
+					"fade_end" : 0
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 6, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 6, 
+					"time_end" : 6.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim", 
+					"dof" : true, 
+					"fade_beg" : 0, 
+					"fade_end" : 1
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 8.3, 
+					"time_end" : 10.9, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 10.9, 
+					"time_end" : 13.7, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/witness_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 13.7, 
+					"time_end" : 19.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 19.5, 
+					"time_end" : 20, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"dof" : true, 
+					"fade_beg" : 0, 
+					"fade_end" : 1
+				}
 			]
 		}
 	], 
 	"ending" : {
-		"time_point" : 20.0, 
+		"time_point" : 20, 
 		"choices" : [
 			{
 				"key" : "pass", 

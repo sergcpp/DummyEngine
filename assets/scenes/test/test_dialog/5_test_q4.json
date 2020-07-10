@@ -10,7 +10,17 @@
 					"type" : "play", 
 					"time_beg" : 0.0, 
 					"time_end" : 1.0, 
-					"anim" : "eric_idle.anim", 
+                    "pos_beg" : [
+						-0.67541, 
+						0, 
+						9.53697
+					], 
+					"rot_beg" : [
+						0, 
+						180, 
+						0
+					], 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Korrekt.",
                     "sound" : "judge/11_correct.wav"
 				},
@@ -18,7 +28,17 @@
 					"type" : "play", 
 					"time_beg" : 1.1, 
 					"time_end" : 2.5, 
-					"anim" : "eric_idle.anim", 
+                    "pos_beg" : [
+						-0.67541, 
+						0, 
+						9.53697
+					], 
+					"rot_beg" : [
+						0, 
+						180, 
+						0
+					], 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Die letzte Frage.",
                     "sound" : "judge/21_last_question.wav"
 				},
@@ -26,7 +46,17 @@
 					"type" : "play", 
 					"time_beg" : 2.6, 
 					"time_end" : 5.0, 
-					"anim" : "eric_idle.anim", 
+                    "pos_beg" : [
+						-0.67541, 
+						0, 
+						9.53697
+					], 
+					"rot_beg" : [
+						0, 
+						180, 
+						0
+					], 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Wer hat den Krankenwagen zur Szene gerufen?",
                     "sound" : "judge/22_ambulance.wav"
 				}
@@ -51,6 +81,40 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+                {
+					"type" : "look", 
+					"time_beg" : 0.0, 
+					"time_end" : 5.0, 
+                    "dof" : true,
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim"
+				},
+                {
+					"type" : "look", 
+					"time_beg" : 5.0, 
+					"time_end" : 5.5, 
+                    "dof" : true,
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim"
+				}
 			]
 		}
 	], 

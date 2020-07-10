@@ -25,16 +25,16 @@
 					"time_beg" : 0, 
 					"time_end" : 5.5, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Das Opfer kam aus dem Urlaub. Ihre Uhr sollte 2 Stunden im Voraus eingestellt worden sein.", 
 					"sound" : "lawyer/26_vacation.wav"
 				}
@@ -59,6 +59,23 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 7, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim"
+				}
 			]
 		}
 	], 

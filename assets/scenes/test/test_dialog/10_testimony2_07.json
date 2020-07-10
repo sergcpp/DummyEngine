@@ -39,16 +39,16 @@
 					"time_beg" : 0, 
 					"time_end" : 3.1, 
 					"pos_beg" : [
+						-0.659627, 
 						0, 
-						0, 
-						0
+						1.79438
 					], 
 					"rot_beg" : [
 						0, 
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/witness/talk.anim", 
 					"caption" : "Aber ich sah, dass der Krankenwagen bereits angekommen war.", 
 					"sound" : "witness/10_ambulance.wav"
 				}, 
@@ -57,16 +57,16 @@
 					"time_beg" : 3.2, 
 					"time_end" : 5.1, 
 					"pos_beg" : [
+						-0.659627, 
 						0, 
-						0, 
-						0
+						1.79438
 					], 
 					"rot_beg" : [
 						0, 
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/witness/talk.anim", 
 					"caption" : "Es war genau 12:00 Uhr.", 
 					"sound" : "witness/10_twelve_o_clock.wav"
 				}
@@ -77,6 +77,23 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 6, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/witness_focus.anim"
+				}
 			]
 		}
 	], 

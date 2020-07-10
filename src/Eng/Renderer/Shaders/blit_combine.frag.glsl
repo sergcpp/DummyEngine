@@ -17,6 +17,7 @@ layout(location = 12) uniform float tonemap;
 layout(location = 13) uniform vec2 uTexSize;
 layout(location = 14) uniform float gamma;
 layout(location = 15) uniform float exposure;
+layout(location = 16) uniform float fade;
 
 in vec2 aVertexUVs_;
 
@@ -100,6 +101,7 @@ void main() {
         col = pow(col / white, inv_gamma);
     }
 
+    col = mix(col, vec3(0.0), fade);
     outColor = vec4(col, 1.0);
 }
 )"

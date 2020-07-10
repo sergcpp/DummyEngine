@@ -25,9 +25,9 @@
 					"time_beg" : 0, 
 					"time_end" : 2, 
 					"pos_beg" : [
-						0, 
-						0, 
-						0
+						4.6062, 
+						-5, 
+						0.154196
 					], 
 					"rot_beg" : [
 						0, 
@@ -37,6 +37,22 @@
 					"anim" : "sophia_idle.anim", 
 					"caption" : "Das ist ernster, als wir dachten.", 
 					"sound" : "assistant/01_worse.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 14.5, 
+					"time_end" : 16.5, 
+					"pos_beg" : [
+						4.6062, 
+						0, 
+						0.154196
+					], 
+					"rot_beg" : [
+						0, 
+						-90, 
+						0
+					], 
+					"anim" : "chars/assist/idle.anim"
 				}
 			]
 		}, 
@@ -65,8 +81,8 @@
 				}, 
 				{
 					"type" : "play", 
-					"time_beg" : 9.4, 
-					"time_end" : 10.7, 
+					"time_beg" : 9.3, 
+					"time_end" : 10.6, 
 					"pos_beg" : [
 						0, 
 						0, 
@@ -77,9 +93,24 @@
 						0, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
 					"caption" : "Bist du sicher? Wir...", 
 					"sound" : "misc/02_sure.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 14.5, 
+					"time_end" : 16.5, 
+					"pos_beg" : [
+						4.6062, 
+						0, 
+						-1.01911
+					], 
+					"rot_beg" : [
+						0, 
+						-90, 
+						0
+					], 
+					"anim" : "sophia_idle.anim"
 				}
 			]
 		}, 
@@ -105,6 +136,43 @@
 					"anim" : "eric_idle.anim", 
 					"caption" : "Wir sollten uns beruhigen. Er kann es nicht getan haben. Er ist unschuldig.", 
 					"sound" : "lawyer/01_calm.wav"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 11.8, 
+					"time_end" : 14.5, 
+					"pos_beg" : [
+						6.77801, 
+						0, 
+						-0.3
+					], 
+					"pos_end" : [
+						4, 
+						0, 
+						-0.3
+					], 
+					"rot_beg" : [
+						0, 
+						-90, 
+						0
+					], 
+					"anim" : "chars/lawyer/walk.anim"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 14.5, 
+					"time_end" : 16.5, 
+					"pos_beg" : [
+						4, 
+						0, 
+						-0.3
+					], 
+					"rot_beg" : [
+						0, 
+						-90, 
+						0
+					], 
+					"anim" : "chars/lawyer/idle.anim"
 				}
 			]
 		}, 
@@ -115,8 +183,8 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 10.8, 
-					"time_end" : 12.4, 
+					"time_beg" : 14.5, 
+					"time_end" : 16.1, 
 					"pos_beg" : [
 						0, 
 						0, 
@@ -140,10 +208,12 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
-					"time_end" : 3.0, 
+					"time_beg" : 10.5, 
+					"time_end" : 14.5, 
 					"pos_beg" : [
-						5.9733, 0.004064, -0.38226
+						5.9733, 
+						0.004064, 
+						-0.38226
 					], 
 					"rot_beg" : [
 						0, 
@@ -162,7 +232,7 @@
 				{
 					"type" : "look", 
 					"time_beg" : 0, 
-					"time_end" : 2, 
+					"time_end" : 9.8, 
 					"pos_beg" : [
 						0, 
 						0, 
@@ -172,15 +242,66 @@
 						0, 
 						0, 
 						0
-					],
-					"anim" : "cam_test.anim",
-					"dof" : true
+					], 
+					"sound" : "crowd_walk.wav", 
+					"fade_beg" : 1, 
+					"fade_end" : 1
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 9.8, 
+					"time_end" : 10.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/0_begin0.anim", 
+					"fade_beg" : 1, 
+					"fade_end" : 0
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 10.5, 
+					"time_end" : 14.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/0_begin1.anim"
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 14.5, 
+					"time_end" : 16.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/0_begin2.anim"
 				}
 			]
 		}
 	], 
 	"ending" : {
-		"time_point" : 13, 
+		"time_point" : 16.5, 
 		"choices" : [
 			{
 				"key" : "bauer", 

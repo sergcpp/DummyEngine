@@ -40,7 +40,7 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
                           "courtroom.json";
 
 const char SEQ_NAME[] = "test/test_dialog/0_begin.json";
-//const char SEQ_NAME[] = "test/test_seq.json";
+// const char SEQ_NAME[] = "test/test_seq.json";
 } // namespace GSUITest4Internal
 
 GSUITest4::GSUITest4(GameBase *game) : GSBaseState(game) {
@@ -75,7 +75,7 @@ GSUITest4::GSUITest4(GameBase *game) : GSBaseState(game) {
     dialog_edit_ui_->edit_cur_seq_signal.Connect<GSUITest4, &GSUITest4::OnEditSequence>(
         this);
 
-    seq_cap_ui_.reset(new CaptionsUI{Ren::Vec2f{-1.0f, 0.0f}, Ren::Vec2f{2.0f, 1.0f},
+    seq_cap_ui_.reset(new CaptionsUI{Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f},
                                      ui_root_.get(), *dialog_font_});
     dial_ctrl_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(
         seq_cap_ui_.get());
@@ -98,6 +98,19 @@ void GSUITest4::Enter() {
     using namespace GSUITest4Internal;
 
     GSBaseState::Enter();
+
+    std::shared_ptr<GameStateManager> state_manager = state_manager_.lock();
+    std::weak_ptr<GSUITest4> weak_this =
+        std::dynamic_pointer_cast<GSUITest4>(state_manager->Peek());
+
+    cmdline_->RegisterCommand(
+        "dialog", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
+            auto shrd_this = weak_this.lock();
+            if (shrd_this) {
+                shrd_this->LoadDialog(argv[1].str.str);
+            }
+            return true;
+        });
 
     log_->Info("GSUITest: Loading scene!");
     GSBaseState::LoadScene(SCENE_NAME);
@@ -288,13 +301,20 @@ void GSUITest4::OnUpdateScene() {
     if (use_free_cam_) {
         scene_manager_->SetupView(
             cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
-            Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, cam_ctrl_->view_fov, cam_ctrl_->max_exposure);
+            Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam_ctrl_->view_fov, cam_ctrl_->max_exposure);
     }
 }
 
 void GSUITest4::Exit() { GSBaseState::Exit(); }
 
 void GSUITest4::Draw(uint64_t dt_us) {
+    using namespace GSUITest4Internal;
+
+    if (trigger_dialog_reload_) {
+        LoadDialog(SEQ_NAME);
+        trigger_dialog_reload_ = false;
+    }
+
     const double cur_time_s = Sys::GetTimeS();
     if (seq_edit_ui_->timeline_grabbed()) {
         const double play_time_s = seq_edit_ui_->GetTime();
@@ -462,7 +482,9 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEvent::EvKeyUp: {
         input_processed = true;
-        if (evt.key_code == KeySpace) {
+        if (evt.key_code == KeyReturn) {
+            use_free_cam_ = !use_free_cam_;
+        } else if (evt.key_code == KeySpace) {
             auto dial_state = dial_ctrl_->state();
             if (dial_state == DialogController::eState::Sequence) {
                 dial_ctrl_->Pause();
@@ -471,7 +493,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
             }
         } else if (evt.key_code == KeyF5) {
             Viewer::PrepareAssets("pc");
-            LoadDialog(SEQ_NAME);
+            trigger_dialog_reload_ = true;
         } else if (evt.key_code == KeyF6) {
             const ScriptedSequence *cur_seq = dial_ctrl_->GetCurSequence();
             SaveSequence(cur_seq->lookup_name());

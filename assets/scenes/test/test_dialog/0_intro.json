@@ -8,19 +8,19 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 3, 
-					"time_end" : 5.8, 
+					"time_beg" : 4.5, 
+					"time_end" : 7.3, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Das Gericht befasst sich nun mit dem Verfahren gegen Hr. Smiths.", 
 					"sound" : "judge/01_trial_start.wav"
 				}
@@ -33,19 +33,35 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 6, 
-					"time_end" : 7.7, 
+					"time_beg" : 4.5, 
+					"time_end" : 5, 
 					"pos_beg" : [
+						1.32044, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						-90, 
 						0
 					], 
-					"anim" : "eric_idle.anim", 
+					"anim" : "chars/prosecutor/idle.anim"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 7.6, 
+					"time_end" : 9.3, 
+					"pos_beg" : [
+						1.32044, 
+						0, 
+						5.01962
+					], 
+					"rot_beg" : [
+						0, 
+						-90, 
+						0
+					], 
+					"anim" : "chars/prosecutor/talk.anim", 
 					"caption" : "Die Anklage ist bereit, Euer Ehren.", 
 					"sound" : "prosecutor/01_ready.wav"
 				}
@@ -58,21 +74,99 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 0, 
-					"time_end" : 2.2, 
+					"time_beg" : 4.5, 
+					"time_end" : 9.5, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
 					], 
-					"anim" : "chars/lawyer_walk.anim", 
+					"anim" : "chars/lawyer/idle.anim"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 2.2, 
+					"pos_beg" : [
+						4, 
+						0, 
+						-0.3
+					], 
+					"rot_beg" : [
+						0, 
+						-90, 
+						0
+					], 
+					"anim" : "courtroom/anims/lawyer/02_bauer.anim", 
 					"caption" : "Ich wähle Herrn Bauer.", 
 					"sound" : "lawyer/02_bauer.wav"
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 4.5, 
+					"pos_beg" : [
+						4.6062, 
+						0, 
+						0.154196
+					], 
+					"rot_beg" : [
+						0, 
+						-90, 
+						0
+					], 
+					"anim" : "chars/assist/idle.anim"
+				}, 
+				{
+					"type" : "play", 
+					"time_beg" : 4.5, 
+					"time_end" : 9.5, 
+					"pos_beg" : [
+						-2.76571, 
+						0, 
+						5.60796
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					], 
+					"anim" : "chars/assist/idle.anim"
+				}
+			]
+		}, 
+		{
+			"name" : "help_speech", 
+			"type" : "actor", 
+			"target" : "help", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 4.5, 
+					"pos_beg" : [
+						4.6062, 
+						0, 
+						-1.01911
+					], 
+					"rot_beg" : [
+						0, 
+						-90, 
+						0
+					], 
+					"anim" : "sophia_idle.anim"
 				}
 			]
 		}, 
@@ -84,7 +178,7 @@
 				{
 					"type" : "look", 
 					"time_beg" : 0, 
-					"time_end" : 2, 
+					"time_end" : 2.5, 
 					"pos_beg" : [
 						0, 
 						0, 
@@ -94,13 +188,101 @@
 						0, 
 						0, 
 						0
-					]
+					], 
+					"anim" : "courtroom/anims/cam/0_begin2.anim"
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 2.5, 
+					"time_end" : 3, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/0_begin2.anim", 
+					"fade_beg" : 0, 
+					"fade_end" : 1
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 3, 
+					"time_end" : 4.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/0_begin2.anim", 
+					"fade_beg" : 1, 
+					"fade_end" : 1
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 4.5, 
+					"time_end" : 5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/overall_focus.anim", 
+					"fade_beg" : 1, 
+					"fade_end" : 0
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 5, 
+					"time_end" : 7.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/overall_focus.anim"
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 7.5, 
+					"time_end" : 9, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/prosec_focus.anim", 
+					"dof" : true
 				}
 			]
 		}
 	], 
 	"ending" : {
-		"time_point" : 8.5, 
+		"time_point" : 9.5, 
 		"choices" : [
 			{
 				"key" : "pass", 

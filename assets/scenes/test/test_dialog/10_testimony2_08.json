@@ -11,16 +11,16 @@
 					"time_beg" : 3.2, 
 					"time_end" : 4.9, 
 					"pos_beg" : [
+						-0.67541, 
 						0, 
-						0, 
-						0
+						9.53697
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						180, 
 						0
-					], 
-					"anim" : "eric_idle.anim", 
+					],  
+					"anim" : "chars/judge/talk.anim", 
 					"caption" : "Ja. Was bedeutet das?", 
 					"sound" : "judge/41_what_does_it_mean.wav"
 				}
@@ -43,16 +43,16 @@
 					"time_beg" : 0, 
 					"time_end" : 2.6, 
 					"pos_beg" : [
+						-2.76571, 
 						0, 
-						0, 
-						0
+						5.01962
 					], 
 					"rot_beg" : [
 						0, 
-						0, 
+						90, 
 						0
-					], 
-					"anim" : "eric_idle.anim", 
+					],  
+					"anim" : "chars/lawyer/talk.anim", 
 					"caption" : "Der Krankenwagen kam um 10:00 Uhr an.", 
 					"sound" : "lawyer/24_10_o_clock.wav"
 				}
@@ -77,6 +77,40 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 3, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim"
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 3, 
+					"time_end" : 6.2, 
+                    "dof" : true, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim"
+				}
 			]
 		}
 	], 

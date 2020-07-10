@@ -10,6 +10,7 @@ class DialogUI : public Gui::BaseElement {
     struct {
         const char *key;
         const char *text;
+        int off;
     } choices_[8];
     int choices_count_ = 0;
 
@@ -33,7 +34,7 @@ class DialogUI : public Gui::BaseElement {
     void Press(const Ren::Vec2f &p, bool push) override;
     void Hover(const Ren::Vec2f &p) override;
 
-    void OnPushChoice(const char *key, const char *text);
+    void OnPushChoice(const char *key, const char *text, int off);
 
     Sys::SignalN<void(const char *key)> make_choice_signal;
 };

@@ -33,7 +33,7 @@ in vec2 aVertexUVs_;
 out float outColor;
 
 void main() {
-    highp ivec2 coord = ivec2(aVertexUVs_);
+    highp ivec2 coord = ivec2(aVertexUVs_ - vec2(0.5));
 
     highp float d1 = texelFetch(depth_texture, coord + ivec2(0, 0), 0).r;
     highp float d2 = texelFetch(depth_texture, coord + ivec2(0, 1), 0).r;

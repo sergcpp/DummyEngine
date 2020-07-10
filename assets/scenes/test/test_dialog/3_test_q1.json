@@ -10,25 +10,55 @@
 					"type" : "play", 
 					"time_beg" : 1.5, 
 					"time_end" : 3.9, 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Der Test besteht aus ein paar einfachen Fragen.",
-                    "sound" : "judge/07_test_cont.wav"
-				},
-                {
+					"pos_beg" : [
+						-0.67541, 
+						0, 
+						9.53697
+					], 
+					"rot_beg" : [
+						0, 
+						180, 
+						0
+					], 
+					"anim" : "chars/judge/talk.anim", 
+					"caption" : "Der Test besteht aus ein paar einfachen Fragen.", 
+					"sound" : "judge/07_test_cont.wav"
+				}, 
+				{
 					"type" : "play", 
-					"time_beg" : 4.0, 
-					"time_end" : 6.2, 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Beantworten Sie sie klar und deutlich.",
-                    "sound" : "judge/08_clear_and_distinct.wav"
-				},
+					"time_beg" : 4, 
+					"time_end" : 6.1, 
+					"pos_beg" : [
+						-0.67541, 
+						0, 
+						9.53697
+					], 
+					"rot_beg" : [
+						0, 
+						180, 
+						0
+					], 
+					"anim" : "chars/judge/talk.anim", 
+					"caption" : "Beantworten Sie sie klar und deutlich.", 
+					"sound" : "judge/08_clear_and_distinct.wav"
+				}, 
 				{
 					"type" : "play", 
 					"time_beg" : 6.8, 
-					"time_end" : 10.0, 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Nennen Sie bitte den Namen des Angeklagten in diesem Prozess.",
-                    "sound" : "judge/09_accused.wav"
+					"time_end" : 9.9, 
+					"pos_beg" : [
+						-0.67541, 
+						0, 
+						9.53697
+					], 
+					"rot_beg" : [
+						0, 
+						180, 
+						0
+					], 
+					"anim" : "chars/judge/talk.anim", 
+					"caption" : "Nennen Sie bitte den Namen des Angeklagten in diesem Prozess.", 
+					"sound" : "judge/09_accused.wav"
 				}
 			]
 		}, 
@@ -39,19 +69,62 @@
 			"actions" : [
 				{
 					"type" : "play", 
-					"time_beg" : 0.0, 
+					"time_beg" : 0, 
 					"time_end" : 1.4, 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Ja, Eurer Ehren.",
-                    "sound" : "lawyer/06_yes.wav"
-				},
+					"pos_beg" : [
+						-2.76571, 
+						0, 
+						5.01962
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					], 
+					"anim" : "chars/lawyer/talk.anim", 
+					"caption" : "Ja, Eurer Ehren.", 
+					"sound" : "lawyer/06_yes.wav"
+				}, 
 				{
 					"type" : "play", 
 					"time_beg" : 10.75, 
-					"time_end" : 12.0, 
-					"anim" : "eric_idle.anim", 
-					"caption" : "Der Angeklagte?",
-                    "sound" : "lawyer/07_accused.wav"
+					"time_end" : 12, 
+					"pos_beg" : [
+						-2.76571, 
+						0, 
+						5.01962
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					], 
+					"anim" : "chars/lawyer/talk.anim", 
+					"caption" : "Der Angeklagte?", 
+					"sound" : "lawyer/07_accused.wav"
+				}
+			]
+		}, 
+		{
+			"name" : "assist_speech", 
+			"type" : "actor", 
+			"target" : "assist", 
+			"actions" : [
+				{
+					"type" : "play", 
+					"time_beg" : 0, 
+					"time_end" : 1.4, 
+					"pos_beg" : [
+						-2.76571, 
+						0, 
+						5.60796
+					], 
+					"rot_beg" : [
+						0, 
+						90, 
+						0
+					], 
+					"anim" : "chars/assist/idle.anim"
 				}
 			]
 		}, 
@@ -60,26 +133,77 @@
 			"type" : "camera", 
 			"target" : "main_camera", 
 			"actions" : [
+				{
+					"type" : "look", 
+					"time_beg" : 0, 
+					"time_end" : 1.4, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 1.4, 
+					"time_end" : 10.5, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/judge_focus.anim", 
+					"dof" : true
+				}, 
+				{
+					"type" : "look", 
+					"time_beg" : 10.5, 
+					"time_end" : 12, 
+					"pos_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"rot_beg" : [
+						0, 
+						0, 
+						0
+					], 
+					"anim" : "courtroom/anims/cam/defence_focus.anim", 
+					"dof" : true
+				}
 			]
 		}
 	], 
 	"ending" : {
-		"time_point" : 12.0,
+		"time_point" : 12, 
 		"choices" : [
 			{
-				"key" : "alex",
-				"text" : "Alex Smiths",
-                "puzzle" : "test/test_dialog/3_test_q1_puzzle_alex.json",
-				"sequence" : "test/test_dialog/3_test_q1_alex.json"
-			},
+				"key" : "alex", 
+				"text" : "Alex Smiths", 
+				"sequence" : "test/test_dialog/3_test_q1_alex.json", 
+				"puzzle" : "test/test_dialog/3_test_q1_puzzle_alex.json"
+			}, 
 			{
-				"key" : "maria",
-				"text" : "Maria Sneider",				
+				"key" : "maria", 
+				"text" : "Maria Sneider", 
 				"sequence" : "test/test_dialog/3_test_q1_maria.json"
-			},
+			}, 
 			{
 				"key" : "stephan", 
-				"text" : "Stephan Lier",	
+				"text" : "Stephan Lier", 
 				"sequence" : "test/test_dialog/3_test_q1_stephan.json"
 			}
 		]

@@ -1,0 +1,8 @@
+gl_program: main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
+gl_program: main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
+sw_program: main
+flag: alpha_test
+flag: alpha_blend
+texture: chars/skullcap_diff.png srgb
+texture: default_normalmap.png
+texture: chars/skullcap_spec.png srgb

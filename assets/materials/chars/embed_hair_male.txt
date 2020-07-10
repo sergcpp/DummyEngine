@@ -1,0 +1,9 @@
+gl_program: main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
+gl_program: main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
+sw_program: main
+flag: two_sided
+flag: alpha_blend
+flag: alpha_test
+texture: chars/embed_hair_male_diff.png srgb
+texture: default_normalmap.png
+texture: default_specular.png

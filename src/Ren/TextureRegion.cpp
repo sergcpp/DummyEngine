@@ -37,7 +37,7 @@ Ren::TextureRegion &Ren::TextureRegion::operator=(TextureRegion &&rhs) noexcept 
 void Ren::TextureRegion::Init(const void *data, const int size, const Texture2DParams &p,
                               TextureAtlasArray *atlas, eTexLoadStatus *load_status) {
     if (!data) {
-        unsigned char cyan[4] = {0, 255, 255, 255};
+        const unsigned char cyan[40] = {0, 255, 255, 255};
         Texture2DParams _p;
         _p.w = _p.h = 1;
         _p.format = eTexFormat::RawRGBA8888;
@@ -47,9 +47,13 @@ void Ren::TextureRegion::Init(const void *data, const int size, const Texture2DP
         // mark it as not ready
         ready_ = false;
         if (load_status) {
-            *load_status = eTexLoadStatus::TexCreatedDefault;
+            (*load_status) = eTexLoadStatus::TexCreatedDefault;
         }
     } else {
+        if (atlas_) {
+            atlas_->Free(texture_pos_);
+        }
+
         if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
             InitFromTGAFile(data, size, p, atlas);
         } else if (name_.EndsWith(".png") != 0 || name_.EndsWith(".PNG") != 0) {
@@ -59,7 +63,7 @@ void Ren::TextureRegion::Init(const void *data, const int size, const Texture2DP
         }
         ready_ = true;
         if (load_status) {
-            *load_status = eTexLoadStatus::TexCreatedFromData;
+            (*load_status) = eTexLoadStatus::TexCreatedFromData;
         }
     }
 }
@@ -68,7 +72,7 @@ void Ren::TextureRegion::InitFromRAWData(const void *data, int size,
                                          const Texture2DParams &p,
                                          TextureAtlasArray *atlas) {
     const int res[2] = {p.w, p.h};
-    int node = atlas->Allocate(data, p.format, res, texture_pos_, 1);
+    const int node = atlas->Allocate(data, p.format, res, texture_pos_, 1);
     if (node != -1) {
         atlas_ = atlas;
         params_ = p;

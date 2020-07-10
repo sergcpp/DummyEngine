@@ -2,7 +2,7 @@
 	"name" : "courtroom", 
 	"environment" : {
 		"sun_dir" : [
-			0.57735, 
+			0.67735, 
 			-0.57735, 
 			-0.57735
 		], 
@@ -12,6 +12,7 @@
 			2.25
 		], 
 		"sun_softness" : 0.1, 
+        "sun_shadow_bias" : [ 3.0, 0.0 ],
 		"env_map" : "env/noon_grass", 
 		"env_map_pt" : "env/noon_grass_2k.hdr"
 	}, 
@@ -721,7 +722,7 @@
 				"rot" : [ 0.0, -90.0, 0.0 ]
             },
             "drawable" : {
-                "mesh_file" : "eric.mesh",
+                "mesh_file" : "chars/judge.mesh",
                 "anims" : [
                 ]
             },
@@ -737,101 +738,99 @@
 				"rot" : [ 0.0, 180.0, 0.0 ]
             },
             "drawable" : {
-                "mesh_file1" : "chars/lawyer.mesh",
-                "mesh_file" : "chars/char_test.mesh",
+                "mesh_file" : "chars/lawyer.mesh",
                 "anims" : [
-					"chars/lawyer_walk.anim"
                 ],
 				"ellipsoids" : [
 					{
-						"offset" : [ 0.0, 0.0, 0.0 ],
+						"offset" : [ 0.0, 0.0, -0.07 ],
 						"radius" : 0.1,
 						"axis" : [ 0.0, 0.0, 1.2 ],
-						"bone" : "DEF-head"
+						"bone" : "CC_Base_Head"
 					},
 					{
 						"offset" : [ 0.0, 0.05, -0.12 ],
 						"radius" : 0.15,
 						"axis" : [ 0.0, 0.0, 1.2 ],
-						"bone" : "DEF-chest"
+						"bone" : "CC_Base_Spine02"
 					},
 					{
-						"offset" : [ 0.0, 0.05, 0.0 ],
+						"offset" : [ 0.0, 0.0, 0.0 ],
 						"radius" : 0.15,
 						"axis" : [ 0.0, 0.0, 1.2 ],
-						"bone" : "DEF-spine"
+						"bone" : "CC_Base_Spine01"
 					},
 					{
-						"offset" : [ 0.0, 0.025, -0.175 ],
+						"offset" : [ 0.0, 0.02, -0.175 ],
 						"radius" : 0.1,
 						"axis" : [ 0.0, 0.0, 2.0 ],
-						"bone" : "DEF-thigh.L"
+						"bone" : "CC_Base_L_Thigh"
 					},
 					{
 						"offset" : [ 0.0, 0.025, -0.175 ],
-						"radius" : 0.075,
+						"radius" : 0.08,
 						"axis" : [ 0.0, 0.0, 3.0 ],
-						"bone" : "DEF-shin.01.L"
+						"bone" : "CC_Base_L_Calf"
 					},
 					{
-						"offset" : [ 0.0, 0.0, -0.05 ],
+						"offset" : [ 0.0, 0.0, -0.075 ],
 						"radius" : 0.05,
 						"axis" : [ 0.0, 0.0, 2.5 ],
-						"bone" : "DEF-foot.L"
+						"bone" : "CC_Base_L_Foot"
 					},
 					{
-						"offset" : [ 0.0, 0.025, -0.175 ],
+						"offset" : [ 0.0, 0.02, -0.175 ],
 						"radius" : 0.1,
 						"axis" : [ 0.0, 0.0, 2.0 ],
-						"bone" : "DEF-thigh.R"
+						"bone" : "CC_Base_R_Thigh"
 					},
 					{
 						"offset" : [ 0.0, 0.025, -0.175 ],
-						"radius" : 0.075,
+						"radius" : 0.08,
 						"axis" : [ 0.0, 0.0, 3.0 ],
-						"bone" : "DEF-shin.01.R"
+						"bone" : "CC_Base_R_Calf"
 					},
 					{
-						"offset" : [ 0.0, 0.0, -0.05 ],
+						"offset" : [ 0.0, 0.0, -0.075 ],
 						"radius" : 0.05,
 						"axis" : [ 0.0, 0.0, 2.5 ],
-						"bone" : "DEF-foot.R"
+						"bone" : "CC_Base_R_Foot"
 					},
 					{
-						"offset" : [ 0.0, 0.0, -0.1 ],
+						"offset" : [ -0.012, 0.0, -0.1 ],
 						"radius" : 0.05,
 						"axis" : [ 0.0, 0.0, 3.0 ],
-						"bone" : "DEF-upper_arm.L"
+						"bone" : "CC_Base_L_Upperarm"
 					},
 					{
 						"offset" : [ 0.0, 0.0, -0.1 ],
 						"radius" : 0.045,
 						"axis" : [ 0.0, 0.0, 3.0 ],
-						"bone" : "DEF-forearm.01.L"
+						"bone" : "CC_Base_L_Forearm"
 					},
 					{
 						"offset" : [ 0.0, 0.0, -0.05 ],
 						"radius" : 0.045,
 						"axis" : [ 0.0, 0.0, 1.5 ],
-						"bone" : "DEF-hand.L"
+						"bone" : "CC_Base_L_Hand"
 					},
 					{
-						"offset" : [ 0.0, 0.0, -0.1 ],
+						"offset" : [ -0.012, 0.0, -0.1 ],
 						"radius" : 0.05,
 						"axis" : [ 0.0, 0.0, 3.0 ],
-						"bone" : "DEF-upper_arm.R"
+						"bone" : "CC_Base_R_Upperarm"
 					},
 					{
 						"offset" : [ 0.0, 0.0, -0.1 ],
 						"radius" : 0.045,
 						"axis" : [ 0.0, 0.0, 3.0 ],
-						"bone" : "DEF-forearm.01.R"
+						"bone" : "CC_Base_R_Forearm"
 					},
 					{
 						"offset" : [ 0.0, 0.0, -0.05 ],
 						"radius" : 0.045,
 						"axis" : [ 0.0, 0.0, 1.5 ],
-						"bone" : "DEF-hand.R"
+						"bone" : "CC_Base_R_Hand"
 					}
 				]
             },
@@ -847,160 +846,99 @@
 				"rot" : [ 0.0, -90.0, 0.0 ]
             },
             "drawable" : {
-                "mesh_file" : "sophia.mesh",
+                "mesh_file" : "chars/assist.mesh",
                 "anims" : [
-                    "sophia_idle.anim"
-                ],
-                "ellipsoids3" : [
-                    {
-						"offset" : [ -1.0, 0.125, 0.5 ],
-						"radius" : 0.125,
-						"axis" : [ 3.0, 0.0, 0.0 ]
-					},
-                    {
-						"offset" : [ -1.0, 0.375, 0.5 ],
-						"radius" : 0.125,
-						"axis" : [ 3.0, 0.0, 0.0 ]
-					},
-                    {
-						"offset" : [ -1.0, 0.625, 0.5 ],
-						"radius" : 0.125,
-						"axis" : [ 3.0, 0.0, 0.0 ]
-					},
-                    {
-						"offset" : [ -1.0, 0.875, 0.5 ],
-						"radius" : 0.125,
-						"axis" : [ 3.0, 0.0, 0.0 ]
-					}
-                ],
-                "ellipsoids2" : [
-                    {
-						"offset" : [ 0.0, 0.0, -0.18 ],
-						"radius" : 0.1,
-						"axis" : [ 0.0, 0.0, 2.5 ],
-						"bone" : "rp_sophia_animated_003_idling_upperleg_l"
-					},
-                    {
-						"offset" : [ 0.0, 0.0, -0.18 ],
-						"radius" : 0.1,
-						"axis" : [ 0.0, 0.0, 2.5 ],
-						"bone" : "rp_sophia_animated_003_idling_upperleg_r"
-					},
-                    {
-						"offset" : [ 0.0, 0.0, -0.18 ],
-						"radius" : 0.075,
-						"axis" : [ 0.0, 0.0, 3.5 ],
-						"bone" : "rp_sophia_animated_003_idling_lowerleg_l"
-					},
-                    {
-						"offset" : [ 0.0, 0.0, -0.18 ],
-						"radius" : 0.075,
-						"axis" : [ 0.0, 0.0, 3.5 ],
-						"bone" : "rp_sophia_animated_003_idling_lowerleg_r"
-					},
-                    {
-						"offset" : [ -0.05, 0.0, -0.05 ],
-						"radius" : 0.05,
-						"axis" : [ 0.0, 0.0, 2.0 ],
-						"bone" : "rp_sophia_animated_003_idling_foot_l"
-					},
-                    {
-						"offset" : [ 0.05, 0.0, -0.05 ],
-						"radius" : 0.05,
-						"axis" : [ 0.0, 0.0, 2.0 ],
-						"bone" : "rp_sophia_animated_003_idling_foot_r"
-					}
                 ],
                 "ellipsoids" : [
 					{
-						"offset" : [ -0.02, 0.0, -0.09 ],
+						"offset" : [ 0.0, 0.0, -0.07 ],
 						"radius" : 0.1,
 						"axis" : [ 0.0, 0.0, 1.2 ],
-						"bone" : "rp_sophia_animated_003_idling_head"
+						"bone" : "CC_Base_Head"
 					},
-                    {
+					{
+						"offset" : [ 0.0, 0.05, -0.12 ],
+						"radius" : 0.15,
+						"axis" : [ 0.0, 0.0, 1.2 ],
+						"bone" : "CC_Base_Spine02"
+					},
+					{
 						"offset" : [ 0.0, 0.0, 0.0 ],
 						"radius" : 0.15,
-						"axis" : [ 0.0, 0.0, 1.5 ],
-						"bone" : "rp_sophia_animated_003_idling_spine_03"
+						"axis" : [ 0.0, 0.0, 1.2 ],
+						"bone" : "CC_Base_Spine01"
 					},
-                    {
-						"offset" : [ 0.0, 0.0, 0.0 ],
-						"radius" : 0.15,
-						"axis" : [ 0.0, 0.0, 1.5 ],
-						"bone" : "rp_sophia_animated_003_idling_spine_01"
-					},
-                    {
-						"offset" : [ 0.0, 0.0, -0.12 ],
-						"radius" : 0.05,
-						"axis" : [ 0.0, 0.0, 3.0 ],
-						"bone" : "rp_sophia_animated_003_idling_upperarm_l"
-					},
-                    {
-						"offset" : [ 0.0, 0.0, -0.12 ],
-						"radius" : 0.05,
-						"axis" : [ 0.0, 0.0, 3.0 ],
-						"bone" : "rp_sophia_animated_003_idling_upperarm_r"
-					},
-                    {
-						"offset" : [ 0.0, 0.0, -0.12 ],
-						"radius" : 0.04,
-						"axis" : [ 0.0, 0.0, 3.0 ],
-						"bone" : "rp_sophia_animated_003_idling_lowerarm_l"
-					},
-                    {
-						"offset" : [ 0.0, 0.0, -0.12 ],
-						"radius" : 0.04,
-						"axis" : [ 0.0, 0.0, 3.0 ],
-						"bone" : "rp_sophia_animated_003_idling_lowerarm_r"
-					},
-                    {
-						"offset" : [ 0.0, 0.0, -0.05 ],
-						"radius" : 0.03,
-						"axis" : [ 0.0, 0.0, 2.0 ],
-						"bone" : "rp_sophia_animated_003_idling_hand_l"
-					},
-                    {
-						"offset" : [ 0.0, 0.0, -0.05 ],
-						"radius" : 0.03,
-						"axis" : [ 0.0, 0.0, 2.0 ],
-						"bone" : "rp_sophia_animated_003_idling_hand_r"
-					},
-                    {
-						"offset" : [ 0.0, 0.0, -0.18 ],
+					{
+						"offset" : [ 0.0, 0.02, -0.175 ],
 						"radius" : 0.1,
-						"axis" : [ 0.0, 0.0, 2.5 ],
-						"bone" : "rp_sophia_animated_003_idling_upperleg_l"
+						"axis" : [ 0.0, 0.0, 2.0 ],
+						"bone" : "CC_Base_L_Thigh"
 					},
-                    {
-						"offset" : [ 0.0, 0.0, -0.18 ],
+					{
+						"offset" : [ 0.0, 0.025, -0.175 ],
+						"radius" : 0.08,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_L_Calf"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.075 ],
+						"radius" : 0.05,
+						"axis" : [ 0.0, 0.0, 2.5 ],
+						"bone" : "CC_Base_L_Foot"
+					},
+					{
+						"offset" : [ 0.0, 0.02, -0.175 ],
 						"radius" : 0.1,
+						"axis" : [ 0.0, 0.0, 2.0 ],
+						"bone" : "CC_Base_R_Thigh"
+					},
+					{
+						"offset" : [ 0.0, 0.025, -0.175 ],
+						"radius" : 0.08,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_R_Calf"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.075 ],
+						"radius" : 0.05,
 						"axis" : [ 0.0, 0.0, 2.5 ],
-						"bone" : "rp_sophia_animated_003_idling_upperleg_r"
+						"bone" : "CC_Base_R_Foot"
 					},
-                    {
-						"offset" : [ 0.0, 0.0, -0.18 ],
-						"radius" : 0.06,
-						"axis" : [ 0.0, 0.0, 3.5 ],
-						"bone" : "rp_sophia_animated_003_idling_lowerleg_l"
-					},
-                    {
-						"offset" : [ 0.0, 0.0, -0.18 ],
-						"radius" : 0.06,
-						"axis" : [ 0.0, 0.0, 3.5 ],
-						"bone" : "rp_sophia_animated_003_idling_lowerleg_r"
-					},
-                    {
-						"offset" : [ -0.05, 0.0, -0.05 ],
+					{
+						"offset" : [ -0.012, 0.0, -0.1 ],
 						"radius" : 0.05,
-						"axis" : [ 0.0, 0.0, 2.0 ],
-						"bone" : "rp_sophia_animated_003_idling_foot_l"
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_L_Upperarm"
 					},
-                    {
-						"offset" : [ 0.05, 0.0, -0.05 ],
+					{
+						"offset" : [ 0.0, 0.0, -0.1 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_L_Forearm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.05 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 1.5 ],
+						"bone" : "CC_Base_L_Hand"
+					},
+					{
+						"offset" : [ -0.012, 0.0, -0.1 ],
 						"radius" : 0.05,
-						"axis" : [ 0.0, 0.0, 2.0 ],
-						"bone" : "rp_sophia_animated_003_idling_foot_r"
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_R_Upperarm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.1 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_R_Forearm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.05 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 1.5 ],
+						"bone" : "CC_Base_R_Hand"
 					}
 				]
             },
@@ -1016,9 +954,101 @@
 				"rot" : [ 0.0, 180.0, 0.0 ]
             },
             "drawable" : {
-                "mesh_file" : "eric.mesh",
+                "mesh_file" : "chars/accused.mesh",
                 "anims" : [
-                ]
+                ],
+				"ellipsoids" : [
+					{
+						"offset" : [ 0.0, 0.0, -0.07 ],
+						"radius" : 0.1,
+						"axis" : [ 0.0, 0.0, 1.2 ],
+						"bone" : "CC_Base_Head"
+					},
+					{
+						"offset" : [ 0.0, 0.05, -0.12 ],
+						"radius" : 0.15,
+						"axis" : [ 0.0, 0.0, 1.2 ],
+						"bone" : "CC_Base_Spine02"
+					},
+					{
+						"offset" : [ 0.0, 0.0, 0.0 ],
+						"radius" : 0.15,
+						"axis" : [ 0.0, 0.0, 1.2 ],
+						"bone" : "CC_Base_Spine01"
+					},
+					{
+						"offset" : [ 0.0, 0.02, -0.175 ],
+						"radius" : 0.1,
+						"axis" : [ 0.0, 0.0, 2.0 ],
+						"bone" : "CC_Base_L_Thigh"
+					},
+					{
+						"offset" : [ 0.0, 0.025, -0.175 ],
+						"radius" : 0.08,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_L_Calf"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.075 ],
+						"radius" : 0.05,
+						"axis" : [ 0.0, 0.0, 2.5 ],
+						"bone" : "CC_Base_L_Foot"
+					},
+					{
+						"offset" : [ 0.0, 0.02, -0.175 ],
+						"radius" : 0.1,
+						"axis" : [ 0.0, 0.0, 2.0 ],
+						"bone" : "CC_Base_R_Thigh"
+					},
+					{
+						"offset" : [ 0.0, 0.025, -0.175 ],
+						"radius" : 0.08,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_R_Calf"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.075 ],
+						"radius" : 0.05,
+						"axis" : [ 0.0, 0.0, 2.5 ],
+						"bone" : "CC_Base_R_Foot"
+					},
+					{
+						"offset" : [ -0.012, 0.0, -0.1 ],
+						"radius" : 0.05,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_L_Upperarm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.1 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_L_Forearm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.05 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 1.5 ],
+						"bone" : "CC_Base_L_Hand"
+					},
+					{
+						"offset" : [ -0.012, 0.0, -0.1 ],
+						"radius" : 0.05,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_R_Upperarm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.1 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_R_Forearm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.05 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 1.5 ],
+						"bone" : "CC_Base_R_Hand"
+					}
+				]
             },
             "anim_state" : {},
             "sound" : {
@@ -1032,9 +1062,101 @@
 				"rot" : [ 0.0, 180.0, 0.0 ]
             },
             "drawable" : {
-                "mesh_file" : "eric.mesh",
+                "mesh_file" : "chars/witness.mesh",
                 "anims" : [
-                ]
+                ],
+				"ellipsoids" : [
+					{
+						"offset" : [ 0.0, 0.0, -0.07 ],
+						"radius" : 0.1,
+						"axis" : [ 0.0, 0.0, 1.2 ],
+						"bone" : "CC_Base_Head"
+					},
+					{
+						"offset" : [ 0.0, 0.05, -0.12 ],
+						"radius" : 0.15,
+						"axis" : [ 0.0, 0.0, 1.2 ],
+						"bone" : "CC_Base_Spine02"
+					},
+					{
+						"offset" : [ 0.0, 0.0, 0.0 ],
+						"radius" : 0.15,
+						"axis" : [ 0.0, 0.0, 1.2 ],
+						"bone" : "CC_Base_Spine01"
+					},
+					{
+						"offset" : [ 0.0, 0.02, -0.175 ],
+						"radius" : 0.1,
+						"axis" : [ 0.0, 0.0, 2.0 ],
+						"bone" : "CC_Base_L_Thigh"
+					},
+					{
+						"offset" : [ 0.0, 0.025, -0.175 ],
+						"radius" : 0.08,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_L_Calf"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.075 ],
+						"radius" : 0.05,
+						"axis" : [ 0.0, 0.0, 2.5 ],
+						"bone" : "CC_Base_L_Foot"
+					},
+					{
+						"offset" : [ 0.0, 0.02, -0.175 ],
+						"radius" : 0.1,
+						"axis" : [ 0.0, 0.0, 2.0 ],
+						"bone" : "CC_Base_R_Thigh"
+					},
+					{
+						"offset" : [ 0.0, 0.025, -0.175 ],
+						"radius" : 0.08,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_R_Calf"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.075 ],
+						"radius" : 0.05,
+						"axis" : [ 0.0, 0.0, 2.5 ],
+						"bone" : "CC_Base_R_Foot"
+					},
+					{
+						"offset" : [ -0.012, 0.0, -0.1 ],
+						"radius" : 0.05,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_L_Upperarm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.1 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_L_Forearm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.05 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 1.5 ],
+						"bone" : "CC_Base_L_Hand"
+					},
+					{
+						"offset" : [ -0.012, 0.0, -0.1 ],
+						"radius" : 0.05,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_R_Upperarm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.1 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_R_Forearm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.05 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 1.5 ],
+						"bone" : "CC_Base_R_Hand"
+					}
+				]
             },
             "anim_state" : {},
             "sound" : {
@@ -1048,9 +1170,101 @@
 				"rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh_file" : "eric.mesh",
+                "mesh_file" : "chars/prosecutor.mesh",
                 "anims" : [
-                ]
+                ],
+				"ellipsoids" : [
+					{
+						"offset" : [ 0.0, 0.0, -0.07 ],
+						"radius" : 0.1,
+						"axis" : [ 0.0, 0.0, 1.2 ],
+						"bone" : "CC_Base_Head"
+					},
+					{
+						"offset" : [ 0.0, 0.05, -0.12 ],
+						"radius" : 0.15,
+						"axis" : [ 0.0, 0.0, 1.2 ],
+						"bone" : "CC_Base_Spine02"
+					},
+					{
+						"offset" : [ 0.0, 0.0, 0.0 ],
+						"radius" : 0.15,
+						"axis" : [ 0.0, 0.0, 1.2 ],
+						"bone" : "CC_Base_Spine01"
+					},
+					{
+						"offset" : [ 0.0, 0.02, -0.175 ],
+						"radius" : 0.1,
+						"axis" : [ 0.0, 0.0, 2.0 ],
+						"bone" : "CC_Base_L_Thigh"
+					},
+					{
+						"offset" : [ 0.0, 0.025, -0.175 ],
+						"radius" : 0.08,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_L_Calf"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.075 ],
+						"radius" : 0.05,
+						"axis" : [ 0.0, 0.0, 2.5 ],
+						"bone" : "CC_Base_L_Foot"
+					},
+					{
+						"offset" : [ 0.0, 0.02, -0.175 ],
+						"radius" : 0.1,
+						"axis" : [ 0.0, 0.0, 2.0 ],
+						"bone" : "CC_Base_R_Thigh"
+					},
+					{
+						"offset" : [ 0.0, 0.025, -0.175 ],
+						"radius" : 0.08,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_R_Calf"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.075 ],
+						"radius" : 0.05,
+						"axis" : [ 0.0, 0.0, 2.5 ],
+						"bone" : "CC_Base_R_Foot"
+					},
+					{
+						"offset" : [ -0.012, 0.0, -0.1 ],
+						"radius" : 0.05,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_L_Upperarm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.1 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_L_Forearm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.05 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 1.5 ],
+						"bone" : "CC_Base_L_Hand"
+					},
+					{
+						"offset" : [ -0.012, 0.0, -0.1 ],
+						"radius" : 0.05,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_R_Upperarm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.1 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 3.0 ],
+						"bone" : "CC_Base_R_Forearm"
+					},
+					{
+						"offset" : [ 0.0, 0.0, -0.05 ],
+						"radius" : 0.045,
+						"axis" : [ 0.0, 0.0, 1.5 ],
+						"bone" : "CC_Base_R_Hand"
+					}
+				]
             },
             "anim_state" : {},
             "sound" : {
@@ -1064,7 +1278,7 @@
 				"rot" : [ 0.0, 0.0, 0.0 ]
             },
             "drawable" : {
-                "mesh_file" : "eric.mesh",
+                "mesh_file" : "sophia.mesh",
                 "anims" : [
                 ]
             },
@@ -1107,6 +1321,15 @@
         },
         {
             "transform" : {
+                "pos" : [ -0.659627, 0.0, 8.44752 ],
+				"rot" : [ 0.0, 0.0, 0.0 ]
+            },
+            "drawable" : {
+                "mesh_file" : "courtroom/tribune2.mesh"
+            }
+        },
+        {
+            "transform" : {
                 "pos" : [ -2.2, 0.0, 5.01962 ],
 				"rot" : [ 0.0, 90.0, 0.0 ]
             },
@@ -1141,6 +1364,24 @@
                 "mesh_file" : "courtroom/tribune.mesh"
             }
         },
+		{
+			"transform" : {
+				"pos" : [
+					-2.22832, 
+					1.16073, 
+					5.14729
+				], 
+				"rot" : [
+					13.4419, 
+					270, 
+					0
+				]
+			}, 
+			"drawable" : {
+				"mesh_file" : "courtroom/court_act.mesh",
+				"visible_to_shadow" : false
+			}
+		}, 
 		{
 			"transform" : {
 				"pos" : [
@@ -1195,6 +1436,6 @@
 		], 
 		"fwd_speed" : 0.1, 
 		"fov" : 60, 
-		"max_exposure" : 1000
+		"max_exposure" : 8
 	}
 }
