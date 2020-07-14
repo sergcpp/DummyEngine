@@ -81,33 +81,33 @@ vec2 ParallaxMapping(vec3 dir, vec2 uvs) {
 }
 
 vec2 ReliefParallaxMapping(vec3 dir, vec2 uvs) {
-	const float ParallaxScale = 0.008;
+	const float ParallaxScale = 0.25;//0.008;
 	
-	const float MinLayers = 4.0;
-	const float MaxLayers = 16.0;
+	const float MinLayers = 64.0;
+	const float MaxLayers = 64.0;
 	float layer_count = mix(MaxLayers, MinLayers, clamp(abs(dir.z), 0.0, 1.0));
 	
 	float layer_height = 1.0 / layer_count;
-	float cur_layer_height = 0.0;
+	float cur_layer_height = 1.0;
 	
 	vec2 duvs = ParallaxScale * dir.xy / dir.z / layer_count;
 	vec2 cur_uvs = uvs;
 	
 	float height = texture(bump_texture, cur_uvs).r;
 	
-	while (height > cur_layer_height) {
-		cur_layer_height += layer_height;
-		cur_uvs += duvs;
+	while (height < cur_layer_height) {
+		cur_layer_height -= layer_height;
+		cur_uvs -= duvs;
 		height = texture(bump_texture, cur_uvs).r;
 	}
 	
 	duvs = 0.5 * duvs;
 	layer_height = 0.5 * layer_height;
 	
-	cur_uvs -= duvs;
-	cur_layer_height -= layer_height;
+	cur_uvs += duvs;
+	cur_layer_height += layer_height;
 	
-	const int BinSearchInterations = 8;
+	const int BinSearchInterations = 5;
 	for (int i = 0; i < BinSearchInterations; i++) {
 		duvs = 0.5 * duvs;
 		layer_height = 0.5 * layer_height;
@@ -124,36 +124,240 @@ vec2 ReliefParallaxMapping(vec3 dir, vec2 uvs) {
 	return cur_uvs;
 }
 
-vec2 ParallaxOcclusionMapping(vec3 dir, vec2 uvs) {
-	const float ParallaxScale = 0.008;
-	
-	const float MinLayers = 4.0;
-	const float MaxLayers = 16.0;
+vec2 ParallaxOcclusionMapping(vec3 dir, vec2 uvs, out float iterations) {
+	const float MinLayers = 32.0;
+	const float MaxLayers = 256.0;
 	float layer_count = mix(MaxLayers, MinLayers, clamp(abs(dir.z), 0.0, 1.0));
 	
 	float layer_height = 1.0 / layer_count;
-	float cur_layer_height = 0.0;
+	float cur_layer_height = 1.0;
 	
-	vec2 duvs = ParallaxScale * dir.xy / dir.z / layer_count;
+	vec2 duvs = dir.xy / dir.z / layer_count;
 	vec2 cur_uvs = uvs;
 	
-	float height = texture(bump_texture, cur_uvs).r;
+	float height = 1.0 - texture(bump_texture, cur_uvs).g;
 	
-	while (height > cur_layer_height) {
-		cur_layer_height += layer_height;
+	while (height < cur_layer_height) {
+		cur_layer_height -= layer_height;
 		cur_uvs += duvs;
-		height = texture(bump_texture, cur_uvs).r;
+		height = 1.0 - texture(bump_texture, cur_uvs).g;
 	}
 	
 	vec2 prev_uvs = cur_uvs - duvs;
 	
 	float next_height = height - cur_layer_height;
-	float prev_height = texture(bump_texture, prev_uvs).r - cur_layer_height + layer_height;
+	float prev_height = 1.0 - texture(bump_texture, prev_uvs).g - cur_layer_height - layer_height;
 	
 	float weight = next_height / (next_height - prev_height);
 	vec2 final_uvs = mix(cur_uvs, prev_uvs, weight);
 	
+	iterations = layer_count;
 	return final_uvs;
+}
+
+vec2 ConeSteppingExact(vec3 dir, vec2 uvs) {
+	ivec2 tex_size = textureSize(bump_texture, 0);
+	float w = 1.0 / float(max(tex_size.x, tex_size.y));
+	
+	float iz = sqrt(1.0 - clamp(dir.z * dir.z, 0.0, 1.0));
+	
+	vec2 h = textureLod(bump_texture, uvs, 0.0).rg;
+	h.g = max(h.g, 1.0/255.0);
+	
+	int counter = 0;
+	
+	float t = 0.0;
+	while (1.0 - dir.z * t > h.r) {
+		t += w + (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+		h = textureLod(bump_texture, uvs - t * dir.xy, 0.0).rg;
+		h.g = max(h.g, 1.0/255.0);
+		
+		counter += 1;
+		if (counter > 1000) {
+			//discard;
+			break;
+		}
+	}
+	
+	t -= w;
+	
+	return uvs - t * dir.xy;
+}
+
+vec2 ConeSteppingFixed(vec3 dir, vec2 uvs) {
+	float iz = sqrt(1.0 - clamp(dir.z * dir.z, 0.0, 1.0));
+	
+	vec2 h = texture(bump_texture, uvs).rg;
+	float t = (1.0 - h.r) / (dir.z + iz / (h.g * h.g));
+	
+	// repeate 4 times
+	h = texture(bump_texture, uvs - t * dir.xy).rg;
+	t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+	h = texture(bump_texture, uvs - t * dir.xy).rg;
+	t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+	h = texture(bump_texture, uvs - t * dir.xy).rg;
+	t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+	h = texture(bump_texture, uvs - t * dir.xy).rg;
+	t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+	
+	// and 5 more times
+	h = texture(bump_texture, uvs - t * dir.xy).rg;
+	t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+	h = texture(bump_texture, uvs - t * dir.xy).rg;
+	t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+	h = texture(bump_texture, uvs - t * dir.xy).rg;
+	t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+	h = texture(bump_texture, uvs - t * dir.xy).rg;
+	t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+	h = texture(bump_texture, uvs - t * dir.xy).rg;
+	t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+	
+	return uvs - t * dir.xy;
+}
+
+vec2 ConeSteppingLoop(vec3 dir, vec2 uvs) {
+	float iz = sqrt(1.0 - clamp(dir.z * dir.z, 0.0, 1.0));
+	
+	const float MinLayers = 64.0;
+	const float MaxLayers = 64.0;
+	int steps_count = int(mix(MinLayers, MaxLayers, iz));
+	
+	float t = 0.0;
+	
+	for (int i = 0; i < steps_count; i++) {
+		vec2 h = textureLod(bump_texture, uvs - t * dir.xy, 0.0).rg;
+		t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+	}
+	
+	return uvs - t * dir.xy;
+}
+
+vec2 ConeSteppingLoop32(vec3 dir, vec2 uvs) {
+	float iz = sqrt(1.0 - clamp(dir.z * dir.z, 0.0, 1.0));
+	
+	const float MinLayers = 32.0;
+	const float MaxLayers = 32.0;
+	int steps_count = int(mix(MinLayers, MaxLayers, iz));
+	
+	float t = 0.0;
+	
+	for (int i = 0; i < steps_count; i++) {
+		vec2 h = textureLod(bump_texture, uvs - t * dir.xy, 0.0).rg;
+		t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+	}
+	
+	return uvs - t * dir.xy;
+}
+
+vec2 ConeSteppingRelaxed(vec3 dir, vec2 uvs) {
+	const int ConeSteps = 15;
+	const int BinarySteps = 8;
+	
+	dir.xy *= -1.0;
+	dir /= dir.z;
+	float ray_ratio = length(dir.xy);
+	
+	vec3 pos = vec3(uvs, 0.0);
+	for (int i = 0; i < ConeSteps; i++) {
+		vec2 h = textureLod(bump_texture, pos.xy, 0.0).rg;
+		float height = clamp(h.r - pos.z, 0.0, 1.0);
+		float d = h.g * height / (ray_ratio + h.g);
+		pos += dir * d;
+	}
+	
+	vec3 bs_range = 0.5 * dir * pos.z;
+	vec3 bs_pos = pos - bs_range;
+	
+	for (int i = 0; i < BinarySteps; i++) {
+		vec2 h = textureLod(bump_texture, bs_pos.xy, 0.0).rg;
+		bs_range *= 0.5;
+		if (bs_pos.z < h.r) {
+			bs_pos += bs_range;
+		} else {
+			bs_pos -= bs_range;
+		}
+	}
+	
+	if (gl_FragCoord.x < 1920.0 / 2.0) {
+		return pos.xy;
+	} else {
+		return bs_pos.xy;
+	}
+}
+
+#define DISP_MAX_ITER 256
+#define DISP_MAX_MIP 12.0
+
+vec2 QuadTreeDisplacement(highp vec3 dir, highp vec2 uvs, out float iterations) {
+	// max mip level of texture itself
+	float max_level = float(textureQueryLevels(bump_texture)) - 1.0;
+	// max mip level that we will access
+	float lim_level = min(max_level - textureQueryLod(bump_texture, uvs).x - 1.0, DISP_MAX_MIP);
+	float lim_lod = max(textureQueryLod(bump_texture, uvs).x, max(max_level - DISP_MAX_MIP, 0.0));
+
+	vec2 cursor = uvs;
+	vec2 start_point = uvs;
+	// defines which planes pair of pixel's bounding box will be checked for intersection
+	vec2 quadrant = vec2(0.5) + 0.5 * sign(dir.xy);
+	vec2 tex_size = vec2(textureSize(bump_texture, int(max_level - lim_level)));
+	float delta = 0.5 / tex_size.x;
+
+	// defines forward/backward step for approximate bilinear interpolation of height map
+	vec2 temp = abs(delta / dir.xy);
+	float adv = min(temp.x, temp.y);
+	
+	float lod = max_level;
+	float t_cursor = 0.0;
+	
+	// keep track of current resolution (it is faster than calling textureSize every iteration)
+	vec2 cur_tex_size = vec2(textureSize(bump_texture, int(max_level)));
+	
+	int iter = 0;
+	while (iter++ < DISP_MAX_ITER) {
+		// check if we reached bottom mip level
+		if (lod <= lim_lod) {
+			// advance forward by a half of a pixel
+			vec3 next_ray_pos = vec3(start_point, 0.0) + dir * (t_cursor + adv);
+			float next_height = textureLod(bump_texture, next_ray_pos.xy, lim_lod).g - next_ray_pos.z;
+			// check if we intersect interpolated height map
+			if (next_height <= 0.0) {
+				// step backward by a half of a pixel
+				vec3 prev_ray_pos = vec3(start_point, 0.0) + dir * (t_cursor - adv);
+				float prev_height = textureLod(bump_texture, prev_ray_pos.xy, lim_lod).g - prev_ray_pos.z;
+				// compute interpolation factor
+				float weight = prev_height / (prev_height - next_height);
+				// final cursor position at intersection point
+				cursor = mix(prev_ray_pos.xy, next_ray_pos.xy, weight);
+				break;
+			}
+		}
+		
+#if 0
+		// fetch max bump map height at current level (manually because nearest sampling is required)
+		highp ivec2 icursor = ivec2(fract(vec2(1.0) + fract(cursor)) * cur_tex_size);
+		highp float max_height = texelFetch(bump_texture, icursor, int(lod)).g;
+#else
+		// snap cursor to pixel's center to emulate nearest sampling
+		highp vec2 snapped_cursor = (vec2(0.5) + floor(cursor * cur_tex_size)) / cur_tex_size;
+		highp float max_height = textureLod(bump_texture, snapped_cursor, lod).g;
+#endif
+		// intersection of ray with z-plane of pixel's bounding box
+		float t = max_height / dir.z;
+		vec2 bound = floor(cursor * cur_tex_size + quadrant);
+		// intersection of ray with xy-planes of pixel's bounding box
+		vec2 t_bound = (bound / cur_tex_size - start_point) / dir.xy;
+		float t_min = min(t_bound.x, t_bound.y);
+		t_cursor = max(t_cursor + 1e-04, min(t, t_min + delta));
+		cursor = start_point + dir.xy * t_cursor;
+		// we either jump inside of current tile or skip it
+		bool expand_tile = (t < t_min + delta) && (lod > lim_lod);
+		// adjust current lod and resolution
+		lod += (expand_tile ? -1.0 : +1.0);
+		cur_tex_size *= (expand_tile ? 2.0 : 0.5);
+	}
+	
+	iterations = float(iter);
+	return cursor;
 }
 
 void main(void) {
@@ -179,11 +383,36 @@ void main(void) {
 	
 	vec2 modified_uvs;
 	
-	if (gl_FragCoord.x < (1920.0 / 2.0)) {
+	const float ParallaxDepth = 0.25;//0.008;
+	
+	float iterations = 0.0;
+	vec3 _view_ray_ts = normalize(vec3(-view_ray_ts.xy, view_ray_ts.z / ParallaxDepth));
+	
+	//modified_uvs = ConeSteppingExact(normalize(vec3(view_ray_ts.xy, view_ray_ts.z / ParallaxDepth)), aVertexUVs_);
+	//modified_uvs = ConeSteppingLoop(normalize(vec3(view_ray_ts.xy, view_ray_ts.z / ParallaxDepth)), aVertexUVs_);
+	//modified_uvs = ConeSteppingRelaxed(normalize(vec3(view_ray_ts.xy, view_ray_ts.z / ParallaxDepth)), aVertexUVs_);
+	//modified_uvs = ParallaxOcclusionMapping(_view_ray_ts, aVertexUVs_, iterations);
+	//modified_uvs = ReliefParallaxMapping(view_ray_ts, aVertexUVs_);
+	modified_uvs = QuadTreeDisplacement(_view_ray_ts, aVertexUVs_, iterations);
+	
+	/*if (gl_FragCoord.x < 1.0 * (1920.0 / 4.0)) {
+		modified_uvs = ParallaxOcclusionMapping(view_ray_ts, aVertexUVs_);
+	} else if (gl_FragCoord.x < 2.0 * (1920.0 / 4.0)) {
+		modified_uvs = ReliefParallaxMapping(view_ray_ts, aVertexUVs_);
+	} else if (gl_FragCoord.x < 3.0 * (1920.0 / 4.0)) {
+		modified_uvs = ConeSteppingLoop(normalize(vec3(view_ray_ts.xy, view_ray_ts.z / ParallaxDepth)), aVertexUVs_);
+	} else {
+		modified_uvs = ConeSteppingLoop32(normalize(vec3(view_ray_ts.xy, view_ray_ts.z / ParallaxDepth)), aVertexUVs_);
+	}*/
+	
+	/*if (gl_FragCoord.x < (1920.0 / 2.0)) {
 		modified_uvs = ParallaxOcclusionMapping(view_ray_ts, aVertexUVs_);
 	} else {
 		modified_uvs = ReliefParallaxMapping(view_ray_ts, aVertexUVs_);
-	}
+	}*/
+	
+	//modified_uvs = ConeSteppingFixed(view_ray_ts, aVertexUVs_);
+	
 	
     vec3 albedo_color = texture(diffuse_texture, modified_uvs).rgb;
     
@@ -258,7 +487,7 @@ void main(void) {
     vec3 normal = normal_color * 2.0 - 1.0;
     normal = normalize(mat3(cross(aVertexTangent_, aVertexNormal_), aVertexTangent_,
                             aVertexNormal_) * normal);
-    
+						
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
     
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
@@ -346,5 +575,7 @@ void main(void) {
     outNormal = vec4(normal * 0.5 + 0.5, 0.0);
     outSpecular = specular_color;
 	
-	//outColor.rgb = 0.0001 * outColor.rgb + abs(view_ray_ws - view_ray_ts);
+	if (gl_FragCoord.x < 960.0) {
+		outColor.rgb = heatmap(iterations / 256.0);
+	}
 }

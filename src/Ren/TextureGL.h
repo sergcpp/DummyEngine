@@ -23,8 +23,11 @@ enum eTexFlags {
     TexSigned      = (1u << 1u),
     TexSRGB        = (1u << 2u),
     TexNoRepeat    = (1u << 3u),
-    TexUsageScene  = (1u << 4u),
-    TexUsageUI     = (1u << 5u)
+    TexMIPMin      = (1u << 4u),
+    TexMIPMax      = (1u << 5u),
+    TexNoBias      = (1u << 6u),
+    TexUsageScene  = (1u << 7u),
+    TexUsageUI     = (1u << 8u)
 };
 
 struct Texture2DParams {

@@ -299,7 +299,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data,
     data.read((char *)&temp_f[0], sizeof(float) * 3);
     bbox_max_ = MakeVec3(temp_f);
 
-    auto attribs_size = (uint32_t)file_header.p[VTX_ATTR_CHUNK].length;
+    const auto attribs_size = (uint32_t)file_header.p[VTX_ATTR_CHUNK].length;
 
     attribs_.reset(new char[attribs_size]);
     data.read((char *)attribs_.get(), attribs_size);
@@ -589,8 +589,8 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
             skel_.bones[i].cur_matrix =
                 skel_.bones[skel_.bones[i].parent_id].inv_bind_matrix *
                 skel_.bones[i].bind_matrix;
-            Vec4f pos = skel_.bones[skel_.bones[i].parent_id].inv_bind_matrix *
-                        skel_.bones[i].bind_matrix[3];
+            const Vec4f pos = skel_.bones[skel_.bones[i].parent_id].inv_bind_matrix *
+                              skel_.bones[i].bind_matrix[3];
             skel_.bones[i].head_pos = MakeVec3(&pos[0]);
         } else {
             skel_.bones[i].cur_matrix = skel_.bones[i].bind_matrix;
@@ -630,15 +630,13 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
             new packed_vertex_delta_t[(size_t)skel_.shapes_count *
                                       shape_keyed_vertices_count]);
 
-        for (uint32_t i = 0; i < skel_.shapes_count * shape_keyed_vertices_count;
-             i++) {
+        for (uint32_t i = 0; i < skel_.shapes_count * shape_keyed_vertices_count; i++) {
             pack_vertex_delta(deltas_[i], packed_deltas[i]);
         }
 
         sk_deltas_buf_.buf = delta_buf;
-        sk_deltas_buf_.size =
-            uint32_t(skel_.shapes_count * shape_keyed_vertices_count *
-                     sizeof(packed_vertex_delta_t));
+        sk_deltas_buf_.size = uint32_t(skel_.shapes_count * shape_keyed_vertices_count *
+                                       sizeof(packed_vertex_delta_t));
         sk_deltas_buf_.offset =
             delta_buf->Alloc(sk_deltas_buf_.size, packed_deltas.get());
     }

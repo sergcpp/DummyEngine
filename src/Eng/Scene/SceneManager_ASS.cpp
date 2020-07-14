@@ -539,7 +539,7 @@ void SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_fil
     std::string line;
     while (std::getline(src_stream, line)) {
         SceneManagerInternal::ReplaceTextureExtension(ctx.platform, line);
-        dst_stream << line << "\r\n";
+        dst_stream << line << "\n";
     }
 }
 

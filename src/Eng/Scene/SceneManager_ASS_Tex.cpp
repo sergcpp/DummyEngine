@@ -11,7 +11,279 @@ extern "C" {
 #include <Ren/Utils.h>
 #include <Sys/Json.h>
 
+// faster than std::min/max in debug
+#define _MIN(x, y) ((x) < (y) ? (x) : (y))
+#define _MAX(x, y) ((x) < (y) ? (y) : (x))
+
 namespace SceneManagerInternal {
+std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width,
+                                              int height, int channels,
+                                              assets_context_t &ctx) {
+    std::unique_ptr<uint8_t[]> _out_conemap(new uint8_t[width * height * 4]);
+    // faster access in debug
+    uint8_t *out_conemap = &_out_conemap[0];
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            // height
+            out_conemap[4 * (y * width + x) + 0] = img_data[channels * (y * width + x)];
+
+            { // x slope
+                int dx;
+                if (x == 0) {
+                    dx = (int(img_data[channels * (y * width + x + 1)]) -
+                          int(img_data[channels * (y * width + x)])) /
+                         2;
+                } else if (x == width - 1) {
+                    dx = (int(img_data[channels * (y * width + x)]) -
+                          int(img_data[channels * (y * width + x - 1)])) /
+                         2;
+                } else {
+                    dx = (int(img_data[channels * (y * width + x + 1)]) -
+                          int(img_data[channels * (y * width + x - 1)])) /
+                         2;
+                }
+                // store in blue channel
+                out_conemap[4 * (y * width + x) + 2] = 127 + dx / 2;
+            }
+
+            { // y slope
+                int dy;
+                if (y == 0) {
+                    dy = (int(img_data[channels * ((y + 1) * width + x)]) -
+                          int(img_data[channels * (y * width + x)])) /
+                         2;
+                } else if (y == height - 1) {
+                    dy = (int(img_data[channels * (y * width + x)]) -
+                          int(img_data[channels * ((y - 1) * width + x)])) /
+                         2;
+                } else {
+                    dy = (int(img_data[channels * ((y + 1) * width + x)]) -
+                          int(img_data[channels * ((y - 1) * width + x)])) /
+                         2;
+                }
+                // store in alpha channel
+                out_conemap[4 * (y * width + x) + 3] = 127 + dy / 2;
+            }
+        }
+    }
+
+    const float MaxRatio = 1.0f;
+    const bool Repeat = true;
+
+    const float inv_width = 1.0f / float(width);
+    const float inv_height = 1.0f / float(height);
+
+    const int TileSize = 128;
+
+    auto compute_tile = [&](int x_start, int y_start) {
+        for (int y = y_start; y < y_start + TileSize; y++) {
+            for (int x = x_start; x < x_start + TileSize; x++) {
+                const float h = out_conemap[4 * (y * width + x) + 0] / 255.0f;
+                const float dhdx =
+                    +(out_conemap[4 * (y * width + x) + 2] / 255.0f - 0.5f) *
+                    float(width);
+                const float dhdy =
+                    -(out_conemap[4 * (y * width + x) + 3] / 255.0f - 0.5f) *
+                    float(height);
+
+                float min_ratio2 = MaxRatio * MaxRatio;
+
+                for (int rad = 1; (rad * rad <= 1.1f * 1.1f * (1.0f - h) * (1.0f - h) *
+                                                    min_ratio2 * width * height) &&
+                                  (rad <= 1.1f * (1.0f - h) * width) &&
+                                  (rad <= 1.1f * (1.0f - h) * height);
+                     rad++) {
+                    { // west
+                        int x1 = x - rad;
+                        while (Repeat && x1 < 0) {
+                            x1 += width;
+                        }
+                        if (x1 >= 0) {
+                            const float delx = -rad * inv_width;
+                            const int y1 = _MAX(y - rad + 1, 0);
+                            const int y2 = _MIN(y + rad - 1, height - 1);
+                            for (int dy = y1; dy <= y2; dy++) {
+                                const float dely = (dy - y) * inv_height;
+                                const float r2 = delx * delx + dely * dely;
+                                const float h2 =
+                                    out_conemap[4 * (dy * width + x1)] / 255.0f - h;
+                                if ((h2 > 0.0f) && (h2 * h2 * min_ratio2 > r2)) {
+                                    min_ratio2 = r2 / (h2 * h2);
+                                }
+                            }
+                        }
+                    }
+
+                    { // east
+                        int x2 = x + rad;
+                        while (Repeat && x2 >= width) {
+                            x2 -= width;
+                        }
+                        if (x2 < width) {
+                            const float delx = rad * inv_width;
+                            const int y1 = _MAX(y - rad + 1, 0);
+                            const int y2 = _MIN(y + rad - 1, height - 1);
+                            for (int dy = y1; dy <= y2; dy++) {
+                                const float dely = (dy - y) * inv_height;
+                                const float r2 = delx * delx + dely * dely;
+                                const float h2 =
+                                    out_conemap[4 * (dy * width + x2)] / 255.0f - h;
+                                if ((h2 > 0.0f) && (h2 * h2 * min_ratio2 > r2)) {
+                                    min_ratio2 = r2 / (h2 * h2);
+                                }
+                            }
+                        }
+                    }
+
+                    { // north
+                        int y1 = y - rad;
+                        while (Repeat && y1 < 0) {
+                            y1 += height;
+                        }
+                        if (y1 >= 0) {
+                            const float dely = -rad * inv_height;
+                            const int x1 = _MAX(x - rad, 0);
+                            const int x2 = _MIN(x + rad, width - 1);
+                            for (int dx = x1; dx <= x2; dx++) {
+                                const float delx = (dx - x) * inv_width;
+                                const float r2 = delx * delx + dely * dely;
+                                const float h2 =
+                                    out_conemap[4 * (y1 * width + dx)] / 255.0f - h;
+                                if ((h2 > 0.0f) && (h2 * h2 * min_ratio2 > r2)) {
+                                    min_ratio2 = r2 / (h2 * h2);
+                                }
+                            }
+                        }
+                    }
+
+                    { // south
+                        int y2 = y + rad;
+                        while (Repeat && y2 >= height) {
+                            y2 -= height;
+                        }
+                        if (y2 < height) {
+                            const float dely = rad * inv_height;
+                            const int x1 = _MAX(x - rad, 0);
+                            const int x2 = _MIN(x + rad, width - 1);
+                            for (int dx = x1; dx <= x2; dx++) {
+                                const float delx = (dx - x) * inv_width;
+                                const float r2 = delx * delx + dely * dely;
+                                const float h2 =
+                                    out_conemap[4 * (y2 * width + dx)] / 255.0f - h;
+                                if ((h2 > 0.0f) && (h2 * h2 * min_ratio2 > r2)) {
+                                    min_ratio2 = r2 / (h2 * h2);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                float ratio = std::sqrt(min_ratio2);
+                ratio = std::sqrt(ratio / MaxRatio);
+
+                // store in green channel
+                out_conemap[4 * (y * width + x) + 1] =
+                    (uint8_t)_MAX(255.0f * ratio + 0.5f, 1.0f);
+            }
+        }
+    };
+
+    std::vector<std::future<void>> futures;
+
+    int counter = 0;
+    for (int y = 0; y < height; y += TileSize) {
+        for (int x = 0; x < width; x += TileSize) {
+            if (ctx.p_threads) {
+                futures.emplace_back(
+                    ctx.p_threads->enqueue(std::bind(compute_tile, x, y)));
+            } else {
+                compute_tile(x, y);
+                ctx.log->Info("Computing conemap %i%%",
+                              int(100.0f * float(++counter) /
+                                  float((width * height) / (TileSize * TileSize))));
+            }
+        }
+    }
+
+    for (auto &f : futures) {
+        f.wait();
+        ctx.log->Info("Computing conemap %i%%",
+                      int(100.0f * float(++counter) / float(futures.size())));
+    }
+
+    return _out_conemap;
+}
+
+std::unique_ptr<uint8_t[]> ComputeBumpNormalmap(unsigned char *img_data, int width,
+                                                int height, int channels,
+                                                Ren::ILog *log) {
+    std::unique_ptr<uint8_t[]> _out_normalmap(new uint8_t[width * height * 3]);
+    // faster access in debug
+    uint8_t *out_normalmap = &_out_normalmap[0];
+
+    for (int y = 0; y < height; y++) {
+        const int y_top = (y - 1 >= 0) ? (y - 1) : (height - 1);
+        const int y_bottom = (y + 1 < height) ? (y + 1) : 0;
+
+        for (int x = 0; x < width; x++) {
+            const int x_left = (x - 1 >= 0) ? (x - 1) : (width - 1);
+            const int x_right = (x + 1 < width) ? (x + 1) : 0;
+
+            const float h = img_data[(y * width + x) * channels + 0] / 255.0f;
+            const float h_top_left =
+                img_data[(y_top * width + x_left) * channels + 0] / 255.0f;
+            const float h_top = img_data[(y_top * width + x) * channels + 0] / 255.0f;
+            const float h_top_right =
+                img_data[(y_top * width + x_right) * channels + 0] / 255.0f;
+            const float h_left = img_data[(y * width + x_left) * channels + 0] / 255.0f;
+            const float h_right = img_data[(y * width + x_right) * channels + 0] / 255.0f;
+            const float h_bot_left =
+                img_data[(y_bottom * width + x_left) * channels + 0] / 255.0f;
+            const float h_bot = img_data[(y_bottom * width + x) * channels + 0] / 255.0f;
+            const float h_bot_right =
+                img_data[(y_bottom * width + x_right) * channels + 0] / 255.0f;
+
+            Ren::Vec3f n;
+            n[0] = (h_top_right + 2.0f * h_right + h_bot_right) -
+                   (h_top_left + 2.0f * h_left + h_bot_left);
+            n[1] = (h_bot_left + 2.0f * h_bot + h_bot_right) -
+                   (h_top_left + 2.0f * h_top + h_top_right);
+            n[2] = 0.25f;
+
+            n = Normalize(n);
+
+            n = 0.5f * n + Ren::Vec3f{0.5f};
+            n *= 255.0f;
+
+            out_normalmap[(y * width + x) * 3 + 0] = uint8_t(n[0]);
+            out_normalmap[(y * width + x) * 3 + 1] = uint8_t(n[1]);
+            out_normalmap[(y * width + x) * 3 + 2] = uint8_t(n[2]);
+        }
+    }
+
+    return _out_normalmap;
+}
+
+int ComputeBumpQuadtree(unsigned char *img_data, int channels, Ren::ILog *log,
+                        std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
+                        int heights[16]) {
+    mipmaps[0].reset(new uint8_t[4 * widths[0] * heights[0]]);
+    for (int y = 0; y < heights[0]; y++) {
+        for (int x = 0; x < widths[0]; x++) {
+            const uint8_t h = img_data[(y * widths[0] + x) * channels];
+            mipmaps[0][4 * (y * widths[0] + x) + 0] = 0;
+            mipmaps[0][4 * (y * widths[0] + x) + 1] = 255 - h;
+            mipmaps[0][4 * (y * widths[0] + x) + 2] = 0;
+            mipmaps[0][4 * (y * widths[0] + x) + 3] = 0;
+        }
+    }
+
+    const Ren::eMipOp ops[4] = {Ren::eMipOp::Zero, Ren::eMipOp::MinBilinear,
+                                Ren::eMipOp::Zero, Ren::eMipOp::Skip};
+    return Ren::InitMipMaps(mipmaps, widths, heights, 4, ops);
+}
+
 int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y,
                bool is_rgbm, const char *name);
 
@@ -128,7 +400,9 @@ void Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
             assert(channels == 4);
             mip_count = Ren::InitMipMapsRGBM(mipmaps, widths, heights);
         } else {
-            mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
+            const Ren::eMipOp ops[4] = {Ren::eMipOp::Avg, Ren::eMipOp::Avg,
+                                        Ren::eMipOp::Avg, Ren::eMipOp::Avg};
+            mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels, ops);
         }
     } else {
         mip_count = 1;
@@ -165,7 +439,9 @@ void Write_KTX_DXT(const uint8_t *image_data, const int w, const int h,
             assert(channels == 4);
             mip_count = Ren::InitMipMapsRGBM(mipmaps, widths, heights);
         } else {
-            mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
+            const Ren::eMipOp ops[4] = {Ren::eMipOp::Avg, Ren::eMipOp::Avg,
+                                        Ren::eMipOp::Avg, Ren::eMipOp::Avg};
+            mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels, ops);
         }
     } else {
         mip_count = 1;
@@ -248,7 +524,7 @@ int ConvertToASTC(const uint8_t *image_data, int width, int height, int channels
                   float bitrate, std::unique_ptr<uint8_t[]> &out_buf);
 std::unique_ptr<uint8_t[]> DecodeASTC(const uint8_t *image_data, int data_size, int xdim,
                                       int ydim, int width, int height);
-// std::unique_ptr<uint8_t[]> Decode_KTX_ASTC(const uint8_t *image_data, int data_size,
+// std::unique_ptr<uint8_t[]> Decode_KTX_ASTC(const uint8_t *img_data, int data_size,
 // int &width, int &height);
 
 void Write_KTX_ASTC_Mips(const uint8_t *const *mipmaps, const int *widths,
@@ -358,7 +634,9 @@ void Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h,
             assert(channels == 4);
             mip_count = Ren::InitMipMapsRGBM(mipmaps, widths, heights);
         } else {
-            mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels);
+            const Ren::eMipOp ops[4] = {Ren::eMipOp::Avg, Ren::eMipOp::Avg,
+                                        Ren::eMipOp::Avg, Ren::eMipOp::Avg};
+            mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels, ops);
         }
     } else {
         mip_count = 1;
@@ -376,8 +654,28 @@ int WriteImage(const uint8_t *out_data, const int w, const int h, const int chan
                const bool flip_y, const bool is_rgbm, const char *name) {
     int res = 0;
     if (strstr(name, ".tga")) {
+        std::unique_ptr<uint8_t[]> temp_data;
+        if (flip_y) {
+            temp_data.reset(new uint8_t[w * h * channels]);
+            for (int j = 0; j < h; j++) {
+                memcpy(&temp_data[j * w * channels],
+                       &out_data[(h - j - 1) * w * channels], w * channels);
+            }
+            out_data = &temp_data[0];
+        }
+
         res = SOIL_save_image(name, SOIL_SAVE_TYPE_TGA, w, h, channels, out_data);
     } else if (strstr(name, ".png")) {
+        std::unique_ptr<uint8_t[]> temp_data;
+        if (flip_y) {
+            temp_data.reset(new uint8_t[w * h * channels]);
+            for (int j = 0; j < h; j++) {
+                memcpy(&temp_data[j * w * channels],
+                       &out_data[(h - j - 1) * w * channels], w * channels);
+            }
+            out_data = &temp_data[0];
+        }
+
         res = SOIL_save_image(name, SOIL_SAVE_TYPE_PNG, w, h, channels, out_data);
     } else if (strstr(name, ".dds")) {
         res = 1;
@@ -426,13 +724,62 @@ void SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
 
         Write_DDS(temp_data.get(), width, height, 4, false /* flip_y */,
                   false /* is_rgbm */, out_file);
-        SOIL_free_image_data(image_data);
+
+    } else if (strstr(in_file, "_bump")) {
+        if (channels != 1) {
+            ctx.log->Info("Bump map has too many channels (%i)", channels);
+        }
+
+        // prepare data for cone stepping
+        //std::unique_ptr<uint8_t[]> conemap_data =
+        //    ComputeBumpConemap(image_data, width, height, channels, ctx);
+
+        // prepare data for quad tree displacement
+        std::unique_ptr<uint8_t[]> mipmaps[16];
+        int widths[16], heights[16];
+        widths[0] = width;
+        heights[0] = height;
+
+        const int mip_count =
+            ComputeBumpQuadtree(image_data, channels, ctx.log, mipmaps, widths, heights);
+
+        // combine data into one image
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                uint8_t *rgba = &mipmaps[0][4 * (y * height + x)];
+                // store cone map in alpha channel
+                //rgba[3] = conemap_data[4 * (y * height + x) + 1];
+            }
+        }
+
+        WriteImage(&mipmaps[0][0], width, height, 4, true, false,
+            "assets_pc/textures/pom_test_bump.uncompressed.png");
+
+        // apply padding to account for compression artifacts
+        for (int i = 1; i < mip_count; i++) {
+            for (int y = 0; y < heights[i]; y++) {
+                for (int x = 0; x < widths[i]; x++) {
+                    uint8_t *rgba = &mipmaps[i][4 * (y * heights[i] + x)];
+                    if (rgba[1] > i) {
+                        rgba[1] -= i;
+                    } else {
+                        rgba[1] = 0;
+                    }
+                }
+            }
+        }
+
+        uint8_t *_mipmaps[16];
+        for (int i = 0; i < mip_count; i++) {
+            _mipmaps[i] = mipmaps[i].get();
+        }
+        Write_DDS_Mips(_mipmaps, widths, heights, mip_count, 4, out_file);
     } else {
         const bool is_rgbm = channels == 4 && strstr(in_file, "lightmaps") != nullptr;
         Write_DDS(image_data, width, height, channels, false /* flip_y */,
                   is_rgbm /* is_rgbm */, out_file);
-        SOIL_free_image_data(image_data);
     }
+    SOIL_free_image_data(image_data);
 }
 
 void SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
@@ -468,12 +815,58 @@ void SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
 
         Write_KTX_ASTC(temp_data.get(), width, height, 4, false /* flip_y */,
                        false /* is_rgbm */, out_file);
-        SOIL_free_image_data(image_data);
+    } else if (strstr(in_file, "_bump")) {
+        if (channels != 1) {
+            ctx.log->Info("Bump map has too many channels (%i)", channels);
+        }
+
+        // prepare data for cone stepping
+        std::unique_ptr<uint8_t[]> conemap_data =
+            ComputeBumpConemap(image_data, width, height, channels, ctx);
+
+        // prepare data for quad tree displacement
+        std::unique_ptr<uint8_t[]> mipmaps[16];
+        int widths[16], heights[16];
+        widths[0] = width;
+        heights[0] = height;
+
+        const int mip_count =
+            ComputeBumpQuadtree(image_data, channels, ctx.log, mipmaps, widths, heights);
+
+        // combine data into one image
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                uint8_t* rgba = &mipmaps[0][4 * (y * height + x)];
+                // store cone map in alpha channel
+                rgba[3] = conemap_data[4 * (y * height + x) + 1];
+            }
+        }
+
+        // apply padding to account for compression artifacts
+        for (int i = 1; i < mip_count; i++) {
+            for (int y = 0; y < heights[i]; y++) {
+                for (int x = 0; x < widths[i]; x++) {
+                    uint8_t* rgba = &mipmaps[i][4 * (y * heights[i] + x)];
+                    if (rgba[1] > i) {
+                        rgba[1] -= i;
+                    } else {
+                        rgba[1] = 0;
+                    }
+                }
+            }
+        }
+
+        uint8_t* _mipmaps[16];
+        for (int i = 0; i < mip_count; i++) {
+            _mipmaps[i] = mipmaps[i].get();
+        }
+        Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mip_count, 4, out_file);
     } else {
         Write_KTX_ASTC(image_data, width, height, channels, false /* flip_y */,
                        false /* is_rgbm */, out_file);
-        SOIL_free_image_data(image_data);
     }
+
+    SOIL_free_image_data(image_data);
 }
 
 void SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file,
@@ -665,7 +1058,6 @@ bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_nam
 
 // these are from astc codec
 #undef IGNORE
-#include <Eng/Gui/BitmapFont.h>
 #include <astc/astc_codec_internals.h>
 
 #undef MAX
@@ -958,3 +1350,6 @@ SceneManagerInternal::Decode_KTX_ASTC(const uint8_t *image_data, int data_size,
         return DecodeASTC(&image_data[data_offset], img_size, xdim, ydim, width, height);
     }
 }
+
+#undef _MIN
+#undef _MAX

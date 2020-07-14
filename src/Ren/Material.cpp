@@ -102,12 +102,16 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             p = q + 1;
             q = strpbrk(p, delims);
             const std::string f_shader_name = std::string(p, q);
-            p = q + 1;
-            q = strpbrk(p, delims);
-            const std::string tc_shader_name = std::string(p, q);
-            p = q + 1;
-            q = strpbrk(p, delims);
-            const std::string te_shader_name = std::string(p, q);
+
+            std::string tc_shader_name, te_shader_name;
+            if (q && q[0] == '\r' && q[0] == '\n') {
+                p = q + 1;
+                q = strpbrk(p, delims);
+                tc_shader_name = std::string(p, q);
+                p = q + 1;
+                q = strpbrk(p, delims);
+                te_shader_name = std::string(p, q);
+            }
 
             programs[programs_count++] = on_prog_load(
                 program_name.c_str(), v_shader_name.c_str(), f_shader_name.c_str(),
@@ -131,6 +135,8 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                 flags_ |= uint32_t(eMaterialFlags::AlphaTest);
             } else if (flag == "alpha_blend") {
                 flags_ |= uint32_t(eMaterialFlags::AlphaBlend);
+            } else if (flag == "depth_write") {
+                flags_ |= uint32_t(eMaterialFlags::DepthWrite);
             } else if (flag == "two_sided") {
                 flags_ |= uint32_t(eMaterialFlags::TwoSided);
             } else {
@@ -162,6 +168,18 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                     q = _q;
                 } else if (flag == "norepeat") {
                     texture_flags |= TexNoRepeat;
+                    p = _p;
+                    q = _q;
+                } else if (flag == "mip_min") {
+                    texture_flags |= TexMIPMin;
+                    p = _p;
+                    q = _q;
+                } else if (flag == "mip_max") {
+                    texture_flags |= TexMIPMax;
+                    p = _p;
+                    q = _q;
+                } else if (flag == "nobias") {
+                    texture_flags |= TexNoBias;
                     p = _p;
                     q = _q;
                 } else {

@@ -22,6 +22,7 @@ class Context;
 struct assets_context_t {
     const char *platform;
     Ren::ILog *log;
+    Sys::ThreadPool *p_threads;
 };
 
 class SceneManager : public std::enable_shared_from_this<SceneManager> {
@@ -38,7 +39,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     SceneData &scene_data() { return scene_data_; }
     bool load_complete() const { return scene_texture_load_counter_ == 0; }
 
-    Snd::Source& ambient_sound() { return amb_sound_; }
+    Snd::Source &ambient_sound() { return amb_sound_; }
 
     SceneObject *GetObject(uint32_t i) { return &scene_data_.objects[i]; }
 
@@ -182,6 +183,8 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     static void HConvHDRToRGBM(assets_context_t &ctx, const char *in_file,
                                const char *out_file);
+    static void HPreprocessHeightmap(assets_context_t &ctx, const char *in_file,
+                                     const char *out_file);
 
     // probe textures
     static void HConvImgToDDS(assets_context_t &ctx, const char *in_file,

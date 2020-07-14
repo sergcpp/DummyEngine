@@ -29,7 +29,7 @@ struct OutputPatch {
 	vec2 aVertexUVs[3];
     vec3 aVertexNormal[3];
 	vec3 aVertexTangent[3];
-    vec3 aVertexShUVs[3][4];
+    //vec3 aVertexShUVs[3][4];
 };
 
 layout(location = 0) in patch OutputPatch oPatch;
@@ -64,10 +64,10 @@ void main(void) {
 	aVertexNormal_ = gl_TessCoord[0] * oPatch.aVertexNormal[0] + gl_TessCoord[1] * oPatch.aVertexNormal[1] + gl_TessCoord[2] * oPatch.aVertexNormal[2];
 	aVertexTangent_ = gl_TessCoord[0] * oPatch.aVertexTangent[0] + gl_TessCoord[1] * oPatch.aVertexTangent[1] + gl_TessCoord[2] * oPatch.aVertexTangent[2];
 	
-	aVertexShUVs_[0] = gl_TessCoord[0] * oPatch.aVertexShUVs[0][0] + gl_TessCoord[1] * oPatch.aVertexShUVs[1][0] + gl_TessCoord[2] * oPatch.aVertexShUVs[2][0];
-	aVertexShUVs_[1] = gl_TessCoord[0] * oPatch.aVertexShUVs[0][1] + gl_TessCoord[1] * oPatch.aVertexShUVs[1][1] + gl_TessCoord[2] * oPatch.aVertexShUVs[2][1];
-	aVertexShUVs_[2] = gl_TessCoord[0] * oPatch.aVertexShUVs[0][2] + gl_TessCoord[1] * oPatch.aVertexShUVs[1][2] + gl_TessCoord[2] * oPatch.aVertexShUVs[2][2];
-	aVertexShUVs_[3] = gl_TessCoord[0] * oPatch.aVertexShUVs[0][3] + gl_TessCoord[1] * oPatch.aVertexShUVs[1][3] + gl_TessCoord[2] * oPatch.aVertexShUVs[2][3];
+	//aVertexShUVs_[0] = gl_TessCoord[0] * oPatch.aVertexShUVs[0][0] + gl_TessCoord[1] * oPatch.aVertexShUVs[1][0] + gl_TessCoord[2] * oPatch.aVertexShUVs[2][0];
+	//aVertexShUVs_[1] = gl_TessCoord[0] * oPatch.aVertexShUVs[0][1] + gl_TessCoord[1] * oPatch.aVertexShUVs[1][1] + gl_TessCoord[2] * oPatch.aVertexShUVs[2][1];
+	//aVertexShUVs_[2] = gl_TessCoord[0] * oPatch.aVertexShUVs[0][2] + gl_TessCoord[1] * oPatch.aVertexShUVs[1][2] + gl_TessCoord[2] * oPatch.aVertexShUVs[2][2];
+	//aVertexShUVs_[3] = gl_TessCoord[0] * oPatch.aVertexShUVs[0][3] + gl_TessCoord[1] * oPatch.aVertexShUVs[1][3] + gl_TessCoord[2] * oPatch.aVertexShUVs[2][3];
 
 	float u = gl_TessCoord.x;
     float v = gl_TessCoord.y;

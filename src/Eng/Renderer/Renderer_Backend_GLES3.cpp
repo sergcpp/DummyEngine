@@ -522,6 +522,11 @@ void Renderer::InitRendererInternal() {
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
     skinning_prog_ = ctx_.LoadProgramGLSL("skinning_prog", skinning_cs, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    quad_tree_prog_ = ctx_.LoadProgramGLSL("quad_tree_prog", quad_tree_cs, &status);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    quad_tree2_prog_ =
+        ctx_.LoadProgramGLSL("quad_tree2_prog", blit_vs, quad_tree_fs, &status);
+    assert(status == Ren::eProgLoadStatus::CreatedFromData);
 
     GLint tex_buf_offset_alignment;
     glGetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT, &tex_buf_offset_alignment);
@@ -3364,6 +3369,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 continue;
             }
 
+            if (batch.depth_write_bit) {
+                glDepthMask(GL_TRUE);
+            }
+
             if (cur_prog_id != batch.prog_id) {
                 const Ren::Program *p = ctx_.GetProgram(batch.prog_id).get();
                 glUseProgram(p->prog_id());
@@ -3412,6 +3421,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         glCullFace(GL_BACK);
+        glDepthMask(GL_FALSE);
 
         for (int j = (int)list.main_batch_indices.count - 1; j >= alpha_blend_start_index;
              j--) {
@@ -3419,6 +3429,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 list.main_batches.data[list.main_batch_indices.data[j]];
             if (!batch.instance_count) {
                 continue;
+            }
+
+            if (batch.depth_write_bit) {
+                glDepthMask(GL_TRUE);
             }
 
             if (cur_prog_id != batch.prog_id) {

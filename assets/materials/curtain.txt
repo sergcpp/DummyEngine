@@ -1,6 +1,8 @@
 gl_program: main_translucent main_translucent.vert.glsl main_translucent.frag.glsl
 gl_program: main_translucent main_translucent.vert.glsl main_translucent.frag.glsl
 sw_program: main
+flag: two_sided
+flag: depth_write
 flag: alpha_blend
 texture: curtain.png srgb
 texture: default_normalmap.png

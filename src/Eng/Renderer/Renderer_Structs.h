@@ -103,20 +103,22 @@ static_assert(offsetof(DepthDrawBatch, indices_count) == 4, "!");
 struct MainDrawBatch {  // NOLINT
     static const uint64_t BitAlphaBlend = (1ull << 63u);
     static const uint64_t BitAlphaTest  = (1ull << 62u);
-    static const uint64_t BitTwoSided   = (1ull << 61u);
-    static const uint64_t BitsProgId    = (0b11111111ull << 53u);
-    static const uint64_t BitsMatId     = (0b11111111111111ull << 39u);
-    static const uint64_t BitsCamDist   = (0b11111111ull << 31u);
-    static const uint64_t FlagBits      = (0b111ull << 61u);
+    static const uint64_t BitDepthWrite = (1ull << 61u);
+    static const uint64_t BitTwoSided   = (1ull << 60u);
+    static const uint64_t BitsProgId    = (0b11111111ull << 54u);
+    static const uint64_t BitsMatId     = (0b11111111111111ull << 40u);
+    static const uint64_t BitsCamDist   = (0b11111111ull << 32u);
+    static const uint64_t FlagBits      = (0b1111ull << 60u);
 
     union {
         struct {
-            uint64_t _pad1              : 4;
+            uint64_t _pad1              : 3;
             uint64_t indices_offset     : 27;
             uint64_t cam_dist           : 8;
             uint64_t mat_id             : 14;
             uint64_t prog_id            : 8;
             uint64_t two_sided_bit      : 1;
+            uint64_t depth_write_bit    : 1;
             uint64_t alpha_test_bit     : 1;
             uint64_t alpha_blend_bit    : 1;
         };

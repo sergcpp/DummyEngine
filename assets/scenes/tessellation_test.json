@@ -32,8 +32,9 @@
 			}, 
 			"drawable" : {
 				"mesh_file" : "ground_plane_200x200.mesh",
-				"material_override1" : [ "cobblestone_pom.txt", "checker.txt" ],
-				"material_override" : [ "cobblestone_tess.txt", "checker.txt" ],
+				"material_override3" : [ "cobblestone_pom.txt", "checker.txt" ],
+				"material_override1" : [ "cobblestone_tess.txt", "checker.txt" ],
+				"material_override" : [ "checker_pom.txt", "checker.txt" ],
 				"material_override2" : [ "_wind_debug.txt" ]
 			}
 		},
@@ -136,12 +137,12 @@
 	], 
 	"camera" : {
 		"view_origin" : [
-			5.126657, 0.671322, 6.284571
+			7.097551, 0.710216, 9.163921
 		], 
 		"view_dir" : [
-			-0.764283, -0.373624, -0.500961
+			-0.765923, -0.424372, -0.456002
 		], 
-		"fwd_speed" : 0.1, 
+		"fwd_speed" : 0.01, 
 		"fov" : 45, 
 		"max_exposure" : 1000
 	}

@@ -179,7 +179,7 @@ void Ren::Texture2D::Init(const void *data, int size, const Texture2DParams &p,
         // mark it as not ready
         ready_ = false;
         if (load_status) {
-            *load_status = eTexLoadStatus::TexCreatedDefault;
+            (*load_status) = eTexLoadStatus::TexCreatedDefault;
         }
     } else {
         if (name_.EndsWith(".tga_rgbe") != 0 || name_.EndsWith(".TGA_RGBE") != 0) {
@@ -196,8 +196,9 @@ void Ren::Texture2D::Init(const void *data, int size, const Texture2DParams &p,
             InitFromRAWData(data, p, log);
         }
         ready_ = true;
-        if (load_status)
-            *load_status = eTexLoadStatus::TexCreatedFromData;
+        if (load_status) {
+            (*load_status) = eTexLoadStatus::TexCreatedFromData;
+        }
     }
 }
 
@@ -216,8 +217,9 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6],
         // mark it as not ready
         ready_ = false;
         cubemap_ready_ = 0;
-        if (load_status)
-            *load_status = eTexLoadStatus::TexCreatedDefault;
+        if (load_status) {
+            (*load_status) = eTexLoadStatus::TexCreatedDefault;
+        }
     } else {
         if (name_.EndsWith(".tga_rgbe") != 0 || name_.EndsWith(".TGA_RGBE") != 0) {
             InitFromTGA_RGBEFile(data, p, log);
@@ -237,8 +239,9 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6],
         for (unsigned i = 1; i < 6; i++) {
             ready_ = ready_ && ((cubemap_ready_ & (1u << i)) == 1);
         }
-        if (load_status)
-            *load_status = eTexLoadStatus::TexCreatedFromData;
+        if (load_status) {
+            (*load_status) = eTexLoadStatus::TexCreatedFromData;
+        }
     }
 }
 
@@ -405,12 +408,15 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, int size, const Texture2D
     glCreateTextures(GL_TEXTURE_2D, 1, &tex_id);
     tex_id_ = tex_id;
 
+    if (params_.flags & eTexFlags::TexMIPMin) {
+        volatile int ii = 0;
+    }
+
     params_ = p;
-    params_.format = eTexFormat::Compressed;
 
     const unsigned res = SOIL_load_OGL_texture_from_memory(
         (unsigned char *)data, size, SOIL_LOAD_AUTO, tex_id,
-        SOIL_FLAG_INVERT_Y | SOIL_FLAG_GL_MIPMAPS);
+        SOIL_FLAG_INVERT_Y /*| SOIL_FLAG_GL_MIPMAPS*/);
     assert(res == tex_id);
 
     GLint w, h;
@@ -420,6 +426,42 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, int size, const Texture2D
 
     params_.w = (int)w;
     params_.h = (int)h;
+
+    // generate mip maps manually
+    if (params_.flags & (eTexFlags::TexMIPMin | eTexFlags::TexMIPMax)) {
+        int width, height, channels;
+        uint8_t *img_data = SOIL_load_image_from_memory((unsigned char *)data, size,
+                                                        &width, &height, &channels, 0);
+
+        std::unique_ptr<uint8_t[]> mipmaps[16];
+        int widths[16] = {}, heights[16] = {};
+
+        mipmaps[0].reset(new uint8_t[w * h * channels]);
+        widths[0] = w;
+        heights[0] = h;
+
+        for (int y = 0; y < h; y++) {
+            // flip y
+            memcpy(&mipmaps[0][y * w * channels], &img_data[(h - y - 1) * w * channels],
+                   w * channels);
+        }
+
+        // select mip operation
+        const Ren::eMipOp op = (params_.flags & eTexFlags::TexMIPMin)
+                                   ? Ren::eMipOp::MinBilinear
+                                   : Ren::eMipOp::MaxBilinear;
+        // use it for all channels
+        const Ren::eMipOp ops[4] = {op, op, op, op};
+        const int mip_count = InitMipMaps(mipmaps, widths, heights, 4, ops);
+
+        for (int lod = 1; lod < mip_count; lod++) {
+            glTexImage2D(GL_TEXTURE_2D, lod, (channels == 3 ? GL_RGB : GL_RGBA),
+                         widths[lod], heights[lod], 0, (channels == 3 ? GL_RGB : GL_RGBA),
+                         GL_UNSIGNED_BYTE, &mipmaps[lod][0]);
+        }
+
+        SOIL_free_image_data(img_data);
+    }
 
     SetFilter(p.filter, p.repeat, p.lod_bias);
 }
@@ -795,7 +837,7 @@ void Ren::Texture2D::SetFilter(eTexFilter f, eTexRepeat r, float lod_bias) {
 
 #ifndef __ANDROID__
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_LOD_BIAS,
-                                     lod_bias);
+            (params_.flags & eTexFlags::TexNoBias) ? 0.0f : lod_bias);
 #endif
 
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_ANISOTROPY_EXT,
@@ -803,7 +845,9 @@ void Ren::Texture2D::SetFilter(eTexFilter f, eTexRepeat r, float lod_bias) {
 
         if (params_.format != eTexFormat::Compressed &&
             (f == eTexFilter::Trilinear || f == eTexFilter::Bilinear)) {
-            ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, tex_id);
+            if (!(params_.flags & (eTexFlags::TexMIPMin | eTexFlags::TexMIPMax))) {
+                ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, tex_id);
+            }
         }
     } else {
         ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MIN_FILTER,

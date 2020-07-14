@@ -42,7 +42,7 @@ struct OutputPatch {
 	vec2 aVertexUVs[3];
     vec3 aVertexNormal[3];
 	vec3 aVertexTangent[3];
-    vec3 aVertexShUVs[3][4];
+    //vec3 aVertexShUVs[3][4];
 };
 
 layout(location = 0) out patch OutputPatch oPatch;
@@ -113,10 +113,10 @@ void main(void) {
 		oPatch.aVertexUVs[i] = aVertexUVs_CS[i];
 		oPatch.aVertexNormal[i] = aVertexNormal_CS[i];
 		oPatch.aVertexTangent[i] = aVertexTangent_CS[i];
-		oPatch.aVertexShUVs[i][0] = aVertexShUVs_CS[i][0];
-		oPatch.aVertexShUVs[i][1] = aVertexShUVs_CS[i][1];
-		oPatch.aVertexShUVs[i][2] = aVertexShUVs_CS[i][2];
-		oPatch.aVertexShUVs[i][3] = aVertexShUVs_CS[i][3];
+		//oPatch.aVertexShUVs[i][0] = aVertexShUVs_CS[i][0];
+		//oPatch.aVertexShUVs[i][1] = aVertexShUVs_CS[i][1];
+		//oPatch.aVertexShUVs[i][2] = aVertexShUVs_CS[i][2];
+		//oPatch.aVertexShUVs[i][3] = aVertexShUVs_CS[i][3];
 	}
 	
 	CalcPositions();

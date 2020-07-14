@@ -4,7 +4,7 @@ R"(#version 310 es
 #endif
 
 )"
-#include "_vs_common.glsl"
+#include "_fs_common.glsl"
 R"(
 
 layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D s_texture;

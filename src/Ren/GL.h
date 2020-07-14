@@ -704,8 +704,17 @@ typedef GLsync (APIENTRY *PFNGLFENCESYNCPROC)(GLenum condition, GLbitfield flags
 typedef GLenum (APIENTRY *PFNGLCLIENTWAITSYNCPROC)(GLsync sync, GLbitfield flags, GLuint64 timeout);
 typedef void (APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
 
-typedef void (APIENTRY *PFNGLBLENDFUNCI)(GLuint buf, GLenum sfactor, GLenum dfactor);
-typedef void (APIENTRY *PFNGLCLEARBUFFERFV)(GLenum buffer, GLint drawbuffer, const GLfloat * value);
+typedef void (APIENTRY *PFNGLBLENDFUNCIPROC)(GLuint buf, GLenum sfactor, GLenum dfactor);
+typedef void (APIENTRY *PFNGLCLEARBUFFERFVPROC)(GLenum buffer, GLint drawbuffer, const GLfloat * value);
+
+typedef void (APIENTRY *PFNGLBINDIMAGETEXTUREPROC)(GLuint unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format);
+
+typedef void (APIENTRY *PFNGLGENSAMPLERSPROC)(GLsizei n, GLuint* samplers);
+typedef void (APIENTRY *PFNGLDELETESAMPLERSPROC)(GLsizei n, const GLuint* samplers);
+typedef void (APIENTRY *PFNGLBINDSAMPLERPROC)(GLuint unit, GLuint sampler);
+typedef void (APIENTRY *PFNGLSAMPLERPARAMETERFPROC)(GLuint sampler, GLenum pname, GLfloat param);
+typedef void (APIENTRY *PFNGLSAMPLERPARAMETERIPROC)(GLuint sampler, GLenum pname, GLint param);
+
 #endif
 
 //
@@ -933,7 +942,16 @@ typedef void (APIENTRY *PFNGLBINDTEXTUREUNITCOMPPROC)(GLenum target, GLuint unit
 #define glDeleteSync                ren_glDeleteSync
 
 #define glBlendFunci                ren_glBlendFunci
+#define glBlendFunci                ren_glBlendFunci
 #define glClearBufferfv             ren_glClearBufferfv
+
+#define glBindImageTexture          ren_glBindImageTexture
+
+#define glGenSamplers               ren_glGenSamplers
+#define glDeleteSamplers            ren_glDeleteSamplers
+#define glBindSampler               ren_glBindSampler
+#define glSamplerParameterf         ren_glSamplerParameterf
+#define glSamplerParameteri         ren_glSamplerParameteri
 #endif
 
 //
@@ -1127,8 +1145,16 @@ EXTERN_FUNC PFNGLFENCESYNCPROC                  ren_glFenceSync;
 EXTERN_FUNC PFNGLCLIENTWAITSYNCPROC             ren_glClientWaitSync;
 EXTERN_FUNC PFNGLDELETESYNCPROC                 ren_glDeleteSync;
 
-EXTERN_FUNC PFNGLBLENDFUNCI                     ren_glBlendFunci;
-EXTERN_FUNC PFNGLCLEARBUFFERFV                  ren_glClearBufferfv;
+EXTERN_FUNC PFNGLBLENDFUNCIPROC                 ren_glBlendFunci;
+EXTERN_FUNC PFNGLCLEARBUFFERFVPROC              ren_glClearBufferfv;
+
+EXTERN_FUNC PFNGLBINDIMAGETEXTUREPROC           ren_glBindImageTexture;
+
+EXTERN_FUNC PFNGLGENSAMPLERSPROC                ren_glGenSamplers;
+EXTERN_FUNC PFNGLDELETESAMPLERSPROC             ren_glDeleteSamplers;
+EXTERN_FUNC PFNGLBINDSAMPLERPROC                ren_glBindSampler;
+EXTERN_FUNC PFNGLSAMPLERPARAMETERFPROC          ren_glSamplerParameterf;
+EXTERN_FUNC PFNGLSAMPLERPARAMETERIPROC          ren_glSamplerParameteri;
 #endif
 
 //

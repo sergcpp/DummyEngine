@@ -18,7 +18,8 @@ class ILog;
 enum class eMaterialFlags {
     AlphaTest   = (1u << 0u),
     AlphaBlend  = (1u << 1u),
-    TwoSided    = (1u << 2u)
+    DepthWrite  = (1u << 2u),
+    TwoSided    = (1u << 3u)
 };
 
 const int MaxMaterialProgramCount = 4;

@@ -139,11 +139,8 @@ void Ren::AnimSequence::Update(float time) {
 
     const float frame = time * (float)fps_;
     const float frame_fl = std::floor(frame);
-    int fr_0 = (int)frame;
-    int fr_1 = (int)std::ceil(frame);
-
-    fr_0 = fr_0 % len_;
-    fr_1 = fr_1 % len_;
+    const int fr_0 = int(frame) % len_;
+    const int fr_1 = int(std::ceil(frame)) % len_;
     const float t = frame - frame_fl;
     InterpolateFrames(fr_0, fr_1, t);
 }

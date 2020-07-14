@@ -396,3 +396,11 @@ static const char ellipsoid_fs[] =
 static const char skinning_cs[] =
 #include "Shaders/skinning.comp.glsl"
 ;
+
+static const char quad_tree_cs[] =
+#include "Shaders/quad_tree.comp.glsl"
+;
+
+static const char quad_tree_fs[] =
+#include "Shaders/quad_tree.frag.glsl"
+;

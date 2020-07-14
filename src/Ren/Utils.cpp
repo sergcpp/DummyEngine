@@ -91,6 +91,16 @@ Ren::Vec4f fade(const Ren::Vec4f &t) {
 }
 } // namespace Ren
 
+#define _MIN(x, y) ((x) < (y) ? (x) : (y))
+#define _MAX(x, y) ((x) < (y) ? (y) : (x))
+#define _CLAMP(x, lo, hi) (_MIN(_MAX((x), (lo)), (hi)))
+
+#define _MIN3(x, y, z) _MIN((x), _MIN((y), (z)))
+#define _MAX3(x, y, z) _MAX((x), _MAX((y), (z)))
+
+#define _MIN4(x, y, z, w) _MIN(_MIN((x), (y)), _MIN((z), (w)))
+#define _MAX4(x, y, z, w) _MAX(_MAX((x), (y)), _MAX((z), (w)))
+
 std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h,
                                             eTexFormat &format) {
     const uint8_t tga_header[12] = {0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -125,8 +135,8 @@ std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h,
         return nullptr;
     }
 
-    uint32_t bpp = img_header[4];
-    uint32_t bytes_per_pixel = bpp / 8;
+    const uint32_t bpp = img_header[4];
+    const uint32_t bytes_per_pixel = bpp / 8;
     img_size = w * h * bytes_per_pixel;
     const uint8_t *image_data = (const uint8_t *)data + 18;
 
@@ -206,14 +216,14 @@ void Ren::RGBMEncode(const float rgb[3], uint8_t out_rgbm[4]) {
     fg /= fa;
     fb /= fa;
 
-    out_rgbm[0] = (uint8_t)std::max(std::min(int(fr * 255), 255), 0);
-    out_rgbm[1] = (uint8_t)std::max(std::min(int(fg * 255), 255), 0);
-    out_rgbm[2] = (uint8_t)std::max(std::min(int(fb * 255), 255), 0);
-    out_rgbm[3] = (uint8_t)std::max(std::min(int(fa * 255), 255), 0);
+    out_rgbm[0] = (uint8_t)_CLAMP(int(fr * 255), 0, 255);
+    out_rgbm[1] = (uint8_t)_CLAMP(int(fg * 255), 0, 255);
+    out_rgbm[2] = (uint8_t)_CLAMP(int(fb * 255), 0, 255);
+    out_rgbm[3] = (uint8_t)_CLAMP(int(fa * 255), 0, 255);
 }
 
-std::unique_ptr<float[]> Ren::ConvertRGBE_to_RGB32F(const uint8_t *image_data, int w,
-                                                    int h) {
+std::unique_ptr<float[]> Ren::ConvertRGBE_to_RGB32F(const uint8_t *image_data,
+                                                    const int w, const int h) {
     std::unique_ptr<float[]> fp_data(new float[w * h * 3]);
 
     for (int i = 0; i < w * h; i++) {
@@ -231,8 +241,8 @@ std::unique_ptr<float[]> Ren::ConvertRGBE_to_RGB32F(const uint8_t *image_data, i
     return fp_data;
 }
 
-std::unique_ptr<uint16_t[]> Ren::ConvertRGBE_to_RGB16F(const uint8_t *image_data, int w,
-                                                       int h) {
+std::unique_ptr<uint16_t[]> Ren::ConvertRGBE_to_RGB16F(const uint8_t *image_data,
+                                                       const int w, const int h) {
     std::unique_ptr<uint16_t[]> fp16_data(new uint16_t[w * h * 3]);
 
     for (int i = 0; i < w * h; i++) {
@@ -250,8 +260,9 @@ std::unique_ptr<uint16_t[]> Ren::ConvertRGBE_to_RGB16F(const uint8_t *image_data
     return fp16_data;
 }
 
-std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBE(const float *image_data, int w,
-                                                      int h, int channels) {
+std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBE(const float *image_data,
+                                                      const int w, const int h,
+                                                      const int channels) {
     std::unique_ptr<uint8_t[]> u8_data(new uint8_t[w * h * 4]);
 
     for (int y = 0; y < h; y++) {
@@ -271,10 +282,11 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBE(const float *image_data, i
             auto exp = Vec3f{std::log2(val[0]), std::log2(val[1]), std::log2(val[2])};
             for (int i = 0; i < 3; i++) {
                 exp[i] = std::ceil(exp[i]);
-                if (exp[i] < -128.0f)
+                if (exp[i] < -128.0f) {
                     exp[i] = -128.0f;
-                else if (exp[i] > 127.0f)
+                } else if (exp[i] > 127.0f) {
                     exp[i] = 127.0f;
+                }
             }
 
             const float common_exp = std::max(exp[0], std::max(exp[1], exp[2]));
@@ -288,26 +300,22 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBE(const float *image_data, i
                     mantissa[i] = 1.0f;
             }
 
-            auto res =
+            const auto res =
                 Ren::Vec4f{mantissa[0], mantissa[1], mantissa[2], common_exp + 128.0f};
 
-            const auto r = (uint8_t)std::max(std::min(int(res[0] * 255), 255), 0),
-                       g = (uint8_t)std::max(std::min(int(res[1] * 255), 255), 0),
-                       b = (uint8_t)std::max(std::min(int(res[2] * 255), 255), 0),
-                       a = (uint8_t)std::max(std::min(int(res[3]), 255), 0);
-
-            u8_data[(y * w + x) * 4 + 0] = r;
-            u8_data[(y * w + x) * 4 + 1] = g;
-            u8_data[(y * w + x) * 4 + 2] = b;
-            u8_data[(y * w + x) * 4 + 3] = a;
+            u8_data[(y * w + x) * 4 + 0] = (uint8_t)_CLAMP(int(res[0] * 255), 0, 255);
+            u8_data[(y * w + x) * 4 + 1] = (uint8_t)_CLAMP(int(res[1] * 255), 0, 255);
+            u8_data[(y * w + x) * 4 + 2] = (uint8_t)_CLAMP(int(res[2] * 255), 0, 255);
+            u8_data[(y * w + x) * 4 + 3] = (uint8_t)_CLAMP(int(res[3]), 0, 255);
         }
     }
 
     return u8_data;
 }
 
-std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBM(const float *image_data, int w,
-                                                      int h, int channels) {
+std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBM(const float *image_data,
+                                                      const int w, const int h,
+                                                      const int channels) {
     std::unique_ptr<uint8_t[]> u8_data(new uint8_t[w * h * 4]);
 
     for (int y = 0; y < h; y++) {
@@ -320,7 +328,7 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBM(const float *image_data, i
 }
 
 int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
-                     int heights[16], int channels) {
+                     int heights[16], const int channels, const eMipOp op[4]) {
     int mip_count = 1;
 
     int _w = widths[0], _h = heights[0];
@@ -328,61 +336,119 @@ int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
         int _prev_w = _w, _prev_h = _h;
         _w = std::max(_w / 2, 1);
         _h = std::max(_h / 2, 1);
-        mipmaps[mip_count].reset(new uint8_t[_w * _h * channels]);
+        if (!mipmaps[mip_count]) {
+            mipmaps[mip_count].reset(new uint8_t[_w * _h * channels]);
+        }
         widths[mip_count] = _w;
         heights[mip_count] = _h;
         const uint8_t *tex = mipmaps[mip_count - 1].get();
 
         int count = 0;
 
-        if (channels == 4) {
-            for (int j = 0; j < _prev_h; j += 2) {
-                for (int i = 0; i < _prev_w; i += 2) {
-                    int r = tex[((j + 0) * _prev_w + i) * 4 + 0] +
-                            tex[((j + 0) * _prev_w + i + 1) * 4 + 0] +
-                            tex[((j + 1) * _prev_w + i) * 4 + 0] +
-                            tex[((j + 1) * _prev_w + i + 1) * 4 + 0];
-                    int g = tex[((j + 0) * _prev_w + i) * 4 + 1] +
-                            tex[((j + 0) * _prev_w + i + 1) * 4 + 1] +
-                            tex[((j + 1) * _prev_w + i) * 4 + 1] +
-                            tex[((j + 1) * _prev_w + i + 1) * 4 + 1];
-                    int b = tex[((j + 0) * _prev_w + i) * 4 + 2] +
-                            tex[((j + 0) * _prev_w + i + 1) * 4 + 2] +
-                            tex[((j + 1) * _prev_w + i) * 4 + 2] +
-                            tex[((j + 1) * _prev_w + i + 1) * 4 + 2];
-                    int a = tex[((j + 0) * _prev_w + i) * 4 + 3] +
-                            tex[((j + 0) * _prev_w + i + 1) * 4 + 3] +
-                            tex[((j + 1) * _prev_w + i) * 4 + 3] +
-                            tex[((j + 1) * _prev_w + i + 1) * 4 + 3];
+        for (int j = 0; j < _prev_h; j += 2) {
+            for (int i = 0; i < _prev_w; i += 2) {
+                for (int k = 0; k < channels; k++) {
+                    if (op[k] == eMipOp::Skip) {
+                        continue;
+                    } else if (op[k] == eMipOp::Zero) {
+                        mipmaps[mip_count][count * channels + k] = 0;
+                    }
 
-                    mipmaps[mip_count][count * 4 + 0] = uint8_t(r / 4);
-                    mipmaps[mip_count][count * 4 + 1] = uint8_t(g / 4);
-                    mipmaps[mip_count][count * 4 + 2] = uint8_t(b / 4);
-                    mipmaps[mip_count][count * 4 + 3] = uint8_t(a / 4);
-                    count++;
-                }
-            }
-        } else if (channels == 3) {
-            for (int j = 0; j < _prev_h; j += 2) {
-                for (int i = 0; i < _prev_w; i += 2) {
-                    int r = tex[((j + 0) * _prev_w + i) * 3 + 0] +
-                            tex[((j + 0) * _prev_w + i + 1) * 3 + 0] +
-                            tex[((j + 1) * _prev_w + i) * 3 + 0] +
-                            tex[((j + 1) * _prev_w + i + 1) * 3 + 0];
-                    int g = tex[((j + 0) * _prev_w + i) * 3 + 1] +
-                            tex[((j + 0) * _prev_w + i + 1) * 3 + 1] +
-                            tex[((j + 1) * _prev_w + i) * 3 + 1] +
-                            tex[((j + 1) * _prev_w + i + 1) * 3 + 1];
-                    int b = tex[((j + 0) * _prev_w + i) * 3 + 2] +
-                            tex[((j + 0) * _prev_w + i + 1) * 3 + 2] +
-                            tex[((j + 1) * _prev_w + i) * 3 + 2] +
-                            tex[((j + 1) * _prev_w + i + 1) * 3 + 2];
+                    // 4x4 pixel neighbourhood
+                    int c[4][4];
 
-                    mipmaps[mip_count][count * 3 + 0] = uint8_t(r / 4);
-                    mipmaps[mip_count][count * 3 + 1] = uint8_t(g / 4);
-                    mipmaps[mip_count][count * 3 + 2] = uint8_t(b / 4);
-                    count++;
+                    // fetch inner quad
+                    c[1][1] = tex[((j + 0) * _prev_w + i + 0) * channels + k];
+                    c[1][2] = tex[((j + 0) * _prev_w + i + 1) * channels + k];
+                    c[2][1] = tex[((j + 1) * _prev_w + i + 0) * channels + k];
+                    c[2][2] = tex[((j + 1) * _prev_w + i + 1) * channels + k];
+
+                    if (op[k] == eMipOp::Avg) {
+                        mipmaps[mip_count][count * channels + k] =
+                            uint8_t((c[1][1] + c[1][2] + c[2][1] + c[2][2]) / 4);
+                    } else if (op[k] == eMipOp::Min) {
+                        mipmaps[mip_count][count * channels + k] =
+                            uint8_t(_MIN4(c[1][1], c[1][2], c[2][1], c[2][2]));
+                    } else if (op[k] == eMipOp::Max) {
+                        mipmaps[mip_count][count * channels + k] =
+                            uint8_t(_MAX4(c[1][1], c[1][2], c[2][1], c[2][2]));
+                    } else if (op[k] == eMipOp::MinBilinear ||
+                               op[k] == eMipOp::MaxBilinear) {
+
+                        // fetch outer quad
+                        for (int dy = -1; dy < 3; dy++) {
+                            for (int dx = -1; dx < 3; dx++) {
+                                if ((dx == 0 || dx == 1) && (dy == 0 || dy == 1)) {
+                                    continue;
+                                }
+
+                                const int i0 = (i + dx + _prev_w) % _prev_w;
+                                const int j0 = (j + dy + _prev_h) % _prev_h;
+
+                                c[dy + 1][dx + 1] =
+                                    tex[(j0 * _prev_w + i0) * channels + k];
+                            }
+                        }
+
+                        static const int quadrants[2][2][2] = {{{-1, -1}, {+1, -1}},
+                                                               {{-1, +1}, {+1, +1}}};
+
+                        int test_val = c[1][1];
+
+                        for (int dj = 1; dj < 3; dj++) {
+                            for (int di = 1; di < 3; di++) {
+                                const int i0 = di + quadrants[dj - 1][di - 1][0];
+                                const int j0 = dj + quadrants[dj - 1][di - 1][1];
+
+                                if (op[k] == eMipOp::MinBilinear) {
+                                    test_val =
+                                        _MIN(test_val, (c[dj][di] + c[dj][i0]) / 2);
+                                    test_val =
+                                        _MIN(test_val, (c[dj][di] + c[j0][di]) / 2);
+                                } else if (op[k] == eMipOp::MaxBilinear) {
+                                    test_val =
+                                        _MAX(test_val, (c[dj][di] + c[dj][i0]) / 2);
+                                    test_val =
+                                        _MAX(test_val, (c[dj][di] + c[j0][di]) / 2);
+                                }
+                            }
+                        }
+
+                        for (int dj = 0; dj < 3; dj++) {
+                            for (int di = 0; di < 3; di++) {
+                                if (di == 1 && dj == 1) {
+                                    continue;
+                                }
+
+                                if (op[k] == eMipOp::MinBilinear) {
+                                    test_val =
+                                        _MIN(test_val,
+                                             (c[dj + 0][di + 0] + c[dj + 0][di + 1] +
+                                              c[dj + 1][di + 0] + c[dj + 1][di + 1]) /
+                                                 4);
+                                } else if (op[k] == eMipOp::MaxBilinear) {
+                                    test_val =
+                                        _MAX(test_val,
+                                             (c[dj + 0][di + 0] + c[dj + 0][di + 1] +
+                                              c[dj + 1][di + 0] + c[dj + 1][di + 1]) /
+                                                 4);
+                                }
+                            }
+                        }
+
+                        c[1][1] = test_val;
+
+                        if (op[k] == eMipOp::MinBilinear) {
+                            mipmaps[mip_count][count * channels + k] = uint8_t(
+                                _MIN4(c[1][1], c[1][2], c[2][1], c[2][2]));
+                        } else if (op[k] == eMipOp::MaxBilinear) {
+                            mipmaps[mip_count][count * channels + k] = uint8_t(
+                                _MAX4(c[1][1], c[1][2], c[2][1], c[2][2]));
+                        }
+                    }
                 }
+
+                count++;
             }
         }
 
@@ -444,8 +510,8 @@ int Ren::InitMipMapsRGBM(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
     return mip_count;
 }
 
-void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count,
-                                 uint32_t vtx_count, uint32_t *out_indices) {
+void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices_count,
+                                 const uint32_t vtx_count, uint32_t *out_indices) {
     // From https://tomforsyth1000.github.io/papers/fast_vert_cache_opt.html
 
     uint32_t prim_count = indices_count / 3;
@@ -693,7 +759,8 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count
 }
 
 void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices,
-                              std::vector<uint32_t> index_groups[], int groups_count) {
+                              std::vector<uint32_t> index_groups[],
+                              const int groups_count) {
     const float flt_eps = 0.0000001f;
 
     std::vector<std::array<uint32_t, 3>> twin_verts(vertices.size(), {0, 0, 0});
@@ -831,7 +898,7 @@ void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices,
     }
 }
 
-int Ren::CalcMipCount(int w, int h, int min_res, eTexFilter filter) {
+int Ren::CalcMipCount(const int w, const int h, const int min_res, eTexFilter filter) {
     int mip_count = 0;
     if (filter == eTexFilter::Trilinear || filter == eTexFilter::Bilinear) {
         int max_dim = std::max(w, h);
@@ -852,22 +919,22 @@ float Ren::PerlinNoise(const Ren::Vec4f &P) {
     Vec4f Pi1 = Pi0 + Vec4f{1.0f}; // Integer part + 1
     Pi0 = Mod(Pi0, Vec4f{289.0f});
     Pi1 = Mod(Pi1, Vec4f{289.0f});
-    Vec4f Pf0 = Fract(P);         // Fractional part for interpolation
-    Vec4f Pf1 = Pf0 - Vec4f{1.0}; // Fractional part - 1.0
-    auto ix = Vec4f{Pi0[0], Pi1[0], Pi0[0], Pi1[0]};
-    auto iy = Vec4f{Pi0[1], Pi0[1], Pi1[1], Pi1[1]};
-    auto iz0 = Vec4f{Pi0[2]};
-    auto iz1 = Vec4f{Pi1[2]};
-    auto iw0 = Vec4f{Pi0[3]};
-    auto iw1 = Vec4f{Pi1[3]};
+    const Vec4f Pf0 = Fract(P);         // Fractional part for interpolation
+    const Vec4f Pf1 = Pf0 - Vec4f{1.0}; // Fractional part - 1.0
+    const auto ix = Vec4f{Pi0[0], Pi1[0], Pi0[0], Pi1[0]};
+    const auto iy = Vec4f{Pi0[1], Pi0[1], Pi1[1], Pi1[1]};
+    const auto iz0 = Vec4f{Pi0[2]};
+    const auto iz1 = Vec4f{Pi1[2]};
+    const auto iw0 = Vec4f{Pi0[3]};
+    const auto iw1 = Vec4f{Pi1[3]};
 
-    Vec4f ixy = permute(permute(ix) + iy);
-    Vec4f ixy0 = permute(ixy + iz0);
-    Vec4f ixy1 = permute(ixy + iz1);
-    Vec4f ixy00 = permute(ixy0 + iw0);
-    Vec4f ixy01 = permute(ixy0 + iw1);
-    Vec4f ixy10 = permute(ixy1 + iw0);
-    Vec4f ixy11 = permute(ixy1 + iw1);
+    const Vec4f ixy = permute(permute(ix) + iy);
+    const Vec4f ixy0 = permute(ixy + iz0);
+    const Vec4f ixy1 = permute(ixy + iz1);
+    const Vec4f ixy00 = permute(ixy0 + iw0);
+    const Vec4f ixy01 = permute(ixy0 + iw1);
+    const Vec4f ixy10 = permute(ixy1 + iw0);
+    const Vec4f ixy11 = permute(ixy1 + iw1);
 
     Vec4f gx00 = ixy00 / 7.0f;
     Vec4f gy00 = Floor(gx00) / 7.0;
@@ -930,82 +997,83 @@ float Ren::PerlinNoise(const Ren::Vec4f &P) {
     auto g0111 = Vec4f{gx11[2], gy11[2], gz11[2], gw11[2]};
     auto g1111 = Vec4f{gx11[3], gy11[3], gz11[3], gw11[3]};
 
-    Vec4f norm00 = taylor_inv_sqrt(Vec4f{Dot(g0000, g0000), Dot(g0100, g0100),
-                                         Dot(g1000, g1000), Dot(g1100, g1100)});
+    const Vec4f norm00 = taylor_inv_sqrt(Vec4f{Dot(g0000, g0000), Dot(g0100, g0100),
+                                               Dot(g1000, g1000), Dot(g1100, g1100)});
     g0000 *= norm00[0];
     g0100 *= norm00[1];
     g1000 *= norm00[2];
     g1100 *= norm00[3];
 
-    Vec4f norm01 = taylor_inv_sqrt(Vec4f{Dot(g0001, g0001), Dot(g0101, g0101),
-                                         Dot(g1001, g1001), Dot(g1101, g1101)});
+    const Vec4f norm01 = taylor_inv_sqrt(Vec4f{Dot(g0001, g0001), Dot(g0101, g0101),
+                                               Dot(g1001, g1001), Dot(g1101, g1101)});
     g0001 *= norm01[0];
     g0101 *= norm01[1];
     g1001 *= norm01[2];
     g1101 *= norm01[3];
 
-    Vec4f norm10 = taylor_inv_sqrt(Vec4f{Dot(g0010, g0010), Dot(g0110, g0110),
-                                         Dot(g1010, g1010), Dot(g1110, g1110)});
+    const Vec4f norm10 = taylor_inv_sqrt(Vec4f{Dot(g0010, g0010), Dot(g0110, g0110),
+                                               Dot(g1010, g1010), Dot(g1110, g1110)});
     g0010 *= norm10[0];
     g0110 *= norm10[1];
     g1010 *= norm10[2];
     g1110 *= norm10[3];
 
-    Vec4f norm11 = taylor_inv_sqrt(Vec4f{Dot(g0011, g0011), Dot(g0111, g0111),
-                                         Dot(g1011, g1011), Dot(g1111, g1111)});
+    const Vec4f norm11 = taylor_inv_sqrt(Vec4f{Dot(g0011, g0011), Dot(g0111, g0111),
+                                               Dot(g1011, g1011), Dot(g1111, g1111)});
     g0011 *= norm11[0];
     g0111 *= norm11[1];
     g1011 *= norm11[2];
     g1111 *= norm11[3];
 
-    float n0000 = Dot(g0000, Pf0);
-    float n1000 = Dot(g1000, Vec4f{Pf1[0], Pf0[1], Pf0[2], Pf0[3]});
-    float n0100 = Dot(g0100, Vec4f{Pf0[0], Pf1[1], Pf0[2], Pf0[3]});
-    float n1100 = Dot(g1100, Vec4f{Pf1[0], Pf1[1], Pf0[2], Pf0[3]});
-    float n0010 = Dot(g0010, Vec4f{Pf0[0], Pf0[1], Pf1[2], Pf0[3]});
-    float n1010 = Dot(g1010, Vec4f{Pf1[0], Pf0[1], Pf1[2], Pf0[3]});
-    float n0110 = Dot(g0110, Vec4f{Pf0[0], Pf1[1], Pf1[2], Pf0[3]});
-    float n1110 = Dot(g1110, Vec4f{Pf1[0], Pf1[1], Pf1[2], Pf0[3]});
-    float n0001 = Dot(g0001, Vec4f{Pf0[0], Pf0[1], Pf0[2], Pf1[3]});
-    float n1001 = Dot(g1001, Vec4f{Pf1[0], Pf0[1], Pf0[2], Pf1[3]});
-    float n0101 = Dot(g0101, Vec4f{Pf0[0], Pf1[1], Pf0[2], Pf1[3]});
-    float n1101 = Dot(g1101, Vec4f{Pf1[0], Pf1[1], Pf0[2], Pf1[3]});
-    float n0011 = Dot(g0011, Vec4f{Pf0[0], Pf0[1], Pf1[2], Pf1[3]});
-    float n1011 = Dot(g1011, Vec4f{Pf1[0], Pf0[1], Pf1[2], Pf1[3]});
-    float n0111 = Dot(g0111, Vec4f{Pf0[0], Pf1[1], Pf1[2], Pf1[3]});
-    float n1111 = Dot(g1111, Pf1);
+    const float n0000 = Dot(g0000, Pf0);
+    const float n1000 = Dot(g1000, Vec4f{Pf1[0], Pf0[1], Pf0[2], Pf0[3]});
+    const float n0100 = Dot(g0100, Vec4f{Pf0[0], Pf1[1], Pf0[2], Pf0[3]});
+    const float n1100 = Dot(g1100, Vec4f{Pf1[0], Pf1[1], Pf0[2], Pf0[3]});
+    const float n0010 = Dot(g0010, Vec4f{Pf0[0], Pf0[1], Pf1[2], Pf0[3]});
+    const float n1010 = Dot(g1010, Vec4f{Pf1[0], Pf0[1], Pf1[2], Pf0[3]});
+    const float n0110 = Dot(g0110, Vec4f{Pf0[0], Pf1[1], Pf1[2], Pf0[3]});
+    const float n1110 = Dot(g1110, Vec4f{Pf1[0], Pf1[1], Pf1[2], Pf0[3]});
+    const float n0001 = Dot(g0001, Vec4f{Pf0[0], Pf0[1], Pf0[2], Pf1[3]});
+    const float n1001 = Dot(g1001, Vec4f{Pf1[0], Pf0[1], Pf0[2], Pf1[3]});
+    const float n0101 = Dot(g0101, Vec4f{Pf0[0], Pf1[1], Pf0[2], Pf1[3]});
+    const float n1101 = Dot(g1101, Vec4f{Pf1[0], Pf1[1], Pf0[2], Pf1[3]});
+    const float n0011 = Dot(g0011, Vec4f{Pf0[0], Pf0[1], Pf1[2], Pf1[3]});
+    const float n1011 = Dot(g1011, Vec4f{Pf1[0], Pf0[1], Pf1[2], Pf1[3]});
+    const float n0111 = Dot(g0111, Vec4f{Pf0[0], Pf1[1], Pf1[2], Pf1[3]});
+    const float n1111 = Dot(g1111, Pf1);
 
-    Vec4f fade_xyzw = fade(Pf0);
-    Vec4f n_0w = Mix(Vec4f{n0000, n1000, n0100, n1100}, Vec4f{n0001, n1001, n0101, n1101},
-                     fade_xyzw[3]);
-    Vec4f n_1w = Mix(Vec4f{n0010, n1010, n0110, n1110}, Vec4f{n0011, n1011, n0111, n1111},
-                     fade_xyzw[3]);
-    Vec4f n_zw = Mix(n_0w, n_1w, fade_xyzw[2]);
-    Vec2f n_yzw = Mix(Vec2f{n_zw[0], n_zw[1]}, Vec2f{n_zw[2], n_zw[3]}, fade_xyzw[1]);
-    float n_xyzw = Mix(n_yzw[0], n_yzw[1], fade_xyzw[0]);
+    const Vec4f fade_xyzw = fade(Pf0);
+    const Vec4f n_0w = Mix(Vec4f{n0000, n1000, n0100, n1100},
+                           Vec4f{n0001, n1001, n0101, n1101}, fade_xyzw[3]);
+    const Vec4f n_1w = Mix(Vec4f{n0010, n1010, n0110, n1110},
+                           Vec4f{n0011, n1011, n0111, n1111}, fade_xyzw[3]);
+    const Vec4f n_zw = Mix(n_0w, n_1w, fade_xyzw[2]);
+    const Vec2f n_yzw =
+        Mix(Vec2f{n_zw[0], n_zw[1]}, Vec2f{n_zw[2], n_zw[3]}, fade_xyzw[1]);
+    const float n_xyzw = Mix(n_yzw[0], n_yzw[1], fade_xyzw[0]);
     return 2.2f * n_xyzw;
 }
 
 // Classic Perlin noise, periodic version
 float Ren::PerlinNoise(const Ren::Vec4f &P, const Ren::Vec4f &rep) {
-    Vec4f Pi0 = Mod(Floor(P), rep);          // Integer part modulo rep
-    Vec4f Pi1 = Mod(Pi0 + Vec4f{1.0f}, rep); // Integer part + 1 mod rep
-    Vec4f Pf0 = Fract(P);                    // Fractional part for interpolation
-    Vec4f Pf1 = Pf0 - Vec4f{1.0f};           // Fractional part - 1.0
-    Vec4f ix = Vec4f{Pi0[0], Pi1[0], Pi0[0], Pi1[0]};
-    Vec4f iy = Vec4f{Pi0[1], Pi0[1], Pi1[1], Pi1[1]};
-    Vec4f iz0 = Vec4f{Pi0[2]};
-    Vec4f iz1 = Vec4f{Pi1[2]};
-    Vec4f iw0 = Vec4f{Pi0[3]};
-    Vec4f iw1 = Vec4f{Pi1[3]};
+    const Vec4f Pi0 = Mod(Floor(P), rep);          // Integer part modulo rep
+    const Vec4f Pi1 = Mod(Pi0 + Vec4f{1.0f}, rep); // Integer part + 1 mod rep
+    const Vec4f Pf0 = Fract(P);                    // Fractional part for interpolation
+    const Vec4f Pf1 = Pf0 - Vec4f{1.0f};           // Fractional part - 1.0
+    const Vec4f ix = Vec4f{Pi0[0], Pi1[0], Pi0[0], Pi1[0]};
+    const Vec4f iy = Vec4f{Pi0[1], Pi0[1], Pi1[1], Pi1[1]};
+    const Vec4f iz0 = Vec4f{Pi0[2]};
+    const Vec4f iz1 = Vec4f{Pi1[2]};
+    const Vec4f iw0 = Vec4f{Pi0[3]};
+    const Vec4f iw1 = Vec4f{Pi1[3]};
 
-    Vec4f ixy = permute(permute(ix) + iy);
-    Vec4f ixy0 = permute(ixy + iz0);
-    Vec4f ixy1 = permute(ixy + iz1);
-    Vec4f ixy00 = permute(ixy0 + iw0);
-    Vec4f ixy01 = permute(ixy0 + iw1);
-    Vec4f ixy10 = permute(ixy1 + iw0);
-    Vec4f ixy11 = permute(ixy1 + iw1);
+    const Vec4f ixy = permute(permute(ix) + iy);
+    const Vec4f ixy0 = permute(ixy + iz0);
+    const Vec4f ixy1 = permute(ixy + iz1);
+    const Vec4f ixy00 = permute(ixy0 + iw0);
+    const Vec4f ixy01 = permute(ixy0 + iw1);
+    const Vec4f ixy10 = permute(ixy1 + iw0);
+    const Vec4f ixy11 = permute(ixy1 + iw1);
 
     Vec4f gx00 = ixy00 / 7.0f;
     Vec4f gy00 = Floor(gx00) / 7.0f;
@@ -1068,58 +1136,62 @@ float Ren::PerlinNoise(const Ren::Vec4f &P, const Ren::Vec4f &rep) {
     auto g0111 = Vec4f(gx11[2], gy11[2], gz11[2], gw11[2]);
     auto g1111 = Vec4f(gx11[3], gy11[3], gz11[3], gw11[3]);
 
-    Vec4f norm00 = taylor_inv_sqrt(Vec4f{Dot(g0000, g0000), Dot(g0100, g0100),
-                                         Dot(g1000, g1000), Dot(g1100, g1100)});
+    const Vec4f norm00 = taylor_inv_sqrt(Vec4f{Dot(g0000, g0000), Dot(g0100, g0100),
+                                               Dot(g1000, g1000), Dot(g1100, g1100)});
     g0000 *= norm00[0];
     g0100 *= norm00[1];
     g1000 *= norm00[2];
     g1100 *= norm00[3];
 
-    Vec4f norm01 = taylor_inv_sqrt(Vec4f{Dot(g0001, g0001), Dot(g0101, g0101),
-                                         Dot(g1001, g1001), Dot(g1101, g1101)});
+    const Vec4f norm01 = taylor_inv_sqrt(Vec4f{Dot(g0001, g0001), Dot(g0101, g0101),
+                                               Dot(g1001, g1001), Dot(g1101, g1101)});
     g0001 *= norm01[0];
     g0101 *= norm01[1];
     g1001 *= norm01[2];
     g1101 *= norm01[3];
 
-    Vec4f norm10 = taylor_inv_sqrt(Vec4f{Dot(g0010, g0010), Dot(g0110, g0110),
-                                         Dot(g1010, g1010), Dot(g1110, g1110)});
+    const Vec4f norm10 = taylor_inv_sqrt(Vec4f{Dot(g0010, g0010), Dot(g0110, g0110),
+                                               Dot(g1010, g1010), Dot(g1110, g1110)});
     g0010 *= norm10[0];
     g0110 *= norm10[1];
     g1010 *= norm10[2];
     g1110 *= norm10[3];
 
-    Vec4f norm11 = taylor_inv_sqrt(Vec4f{Dot(g0011, g0011), Dot(g0111, g0111),
-                                         Dot(g1011, g1011), Dot(g1111, g1111)});
+    const Vec4f norm11 = taylor_inv_sqrt(Vec4f{Dot(g0011, g0011), Dot(g0111, g0111),
+                                               Dot(g1011, g1011), Dot(g1111, g1111)});
     g0011 *= norm11[0];
     g0111 *= norm11[1];
     g1011 *= norm11[2];
     g1111 *= norm11[3];
 
-    float n0000 = Dot(g0000, Pf0);
-    float n1000 = Dot(g1000, Vec4f{Pf1[0], Pf0[1], Pf0[2], Pf0[3]});
-    float n0100 = Dot(g0100, Vec4f{Pf0[0], Pf1[1], Pf0[2], Pf0[3]});
-    float n1100 = Dot(g1100, Vec4f{Pf1[0], Pf1[1], Pf0[2], Pf0[3]});
-    float n0010 = Dot(g0010, Vec4f{Pf0[0], Pf0[1], Pf1[2], Pf0[3]});
-    float n1010 = Dot(g1010, Vec4f{Pf1[0], Pf0[1], Pf1[2], Pf0[3]});
-    float n0110 = Dot(g0110, Vec4f{Pf0[0], Pf1[1], Pf1[2], Pf0[3]});
-    float n1110 = Dot(g1110, Vec4f{Pf1[0], Pf1[1], Pf1[2], Pf0[3]});
-    float n0001 = Dot(g0001, Vec4f{Pf0[0], Pf0[1], Pf0[2], Pf1[3]});
-    float n1001 = Dot(g1001, Vec4f{Pf1[0], Pf0[1], Pf0[2], Pf1[3]});
-    float n0101 = Dot(g0101, Vec4f{Pf0[0], Pf1[1], Pf0[2], Pf1[3]});
-    float n1101 = Dot(g1101, Vec4f{Pf1[0], Pf1[1], Pf0[2], Pf1[3]});
-    float n0011 = Dot(g0011, Vec4f{Pf0[0], Pf0[1], Pf1[2], Pf1[3]});
-    float n1011 = Dot(g1011, Vec4f{Pf1[0], Pf0[1], Pf1[2], Pf1[3]});
-    float n0111 = Dot(g0111, Vec4f{Pf0[0], Pf1[1], Pf1[2], Pf1[3]});
-    float n1111 = Dot(g1111, Pf1);
+    const float n0000 = Dot(g0000, Pf0);
+    const float n1000 = Dot(g1000, Vec4f{Pf1[0], Pf0[1], Pf0[2], Pf0[3]});
+    const float n0100 = Dot(g0100, Vec4f{Pf0[0], Pf1[1], Pf0[2], Pf0[3]});
+    const float n1100 = Dot(g1100, Vec4f{Pf1[0], Pf1[1], Pf0[2], Pf0[3]});
+    const float n0010 = Dot(g0010, Vec4f{Pf0[0], Pf0[1], Pf1[2], Pf0[3]});
+    const float n1010 = Dot(g1010, Vec4f{Pf1[0], Pf0[1], Pf1[2], Pf0[3]});
+    const float n0110 = Dot(g0110, Vec4f{Pf0[0], Pf1[1], Pf1[2], Pf0[3]});
+    const float n1110 = Dot(g1110, Vec4f{Pf1[0], Pf1[1], Pf1[2], Pf0[3]});
+    const float n0001 = Dot(g0001, Vec4f{Pf0[0], Pf0[1], Pf0[2], Pf1[3]});
+    const float n1001 = Dot(g1001, Vec4f{Pf1[0], Pf0[1], Pf0[2], Pf1[3]});
+    const float n0101 = Dot(g0101, Vec4f{Pf0[0], Pf1[1], Pf0[2], Pf1[3]});
+    const float n1101 = Dot(g1101, Vec4f{Pf1[0], Pf1[1], Pf0[2], Pf1[3]});
+    const float n0011 = Dot(g0011, Vec4f{Pf0[0], Pf0[1], Pf1[2], Pf1[3]});
+    const float n1011 = Dot(g1011, Vec4f{Pf1[0], Pf0[1], Pf1[2], Pf1[3]});
+    const float n0111 = Dot(g0111, Vec4f{Pf0[0], Pf1[1], Pf1[2], Pf1[3]});
+    const float n1111 = Dot(g1111, Pf1);
 
-    Vec4f fade_xyzw = fade(Pf0);
-    Vec4f n_0w = Mix(Vec4f{n0000, n1000, n0100, n1100}, Vec4f{n0001, n1001, n0101, n1101},
-                     fade_xyzw[3]);
-    Vec4f n_1w = Mix(Vec4f{n0010, n1010, n0110, n1110}, Vec4f{n0011, n1011, n0111, n1111},
-                     fade_xyzw[3]);
-    Vec4f n_zw = Mix(n_0w, n_1w, fade_xyzw[2]);
-    Vec2f n_yzw = Mix(Vec2f{n_zw[0], n_zw[1]}, Vec2f{n_zw[2], n_zw[3]}, fade_xyzw[1]);
-    float n_xyzw = Mix(n_yzw[0], n_yzw[1], fade_xyzw[0]);
+    const Vec4f fade_xyzw = fade(Pf0);
+    const Vec4f n_0w = Mix(Vec4f{n0000, n1000, n0100, n1100},
+                           Vec4f{n0001, n1001, n0101, n1101}, fade_xyzw[3]);
+    const Vec4f n_1w = Mix(Vec4f{n0010, n1010, n0110, n1110},
+                           Vec4f{n0011, n1011, n0111, n1111}, fade_xyzw[3]);
+    const Vec4f n_zw = Mix(n_0w, n_1w, fade_xyzw[2]);
+    const Vec2f n_yzw =
+        Mix(Vec2f{n_zw[0], n_zw[1]}, Vec2f{n_zw[2], n_zw[3]}, fade_xyzw[1]);
+    const float n_xyzw = Mix(n_yzw[0], n_yzw[1], fade_xyzw[0]);
     return 2.2f * n_xyzw;
 }
+
+#undef _MIN
+#undef _MAX

@@ -19,8 +19,17 @@ std::unique_ptr<uint8_t[]> ConvertRGB32F_to_RGBE(const float *image_data, int w,
 std::unique_ptr<uint8_t[]> ConvertRGB32F_to_RGBM(const float *image_data, int w, int h,
                                                  int channels);
 
+enum class eMipOp {
+    Skip = 0,
+    Zero,       // fill with zeroes
+    Avg,        // average value of 4 pixels
+    Min,        // min value of 4 pixels
+    Max,        // max value of 4 pixels
+    MinBilinear,// min value of 4 pixels and result of bilinear interpolation with neighbours
+    MaxBilinear // max value of 4 pixels and result of bilinear interpolation with neighbours
+};
 int InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int heights[16],
-                int channels);
+                int channels, const eMipOp op[4]);
 int InitMipMapsRGBM(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
                     int heights[16]);
 

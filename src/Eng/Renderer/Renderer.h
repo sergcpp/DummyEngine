@@ -68,7 +68,7 @@ class Renderer {
         blit_depth_prog_, blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_,
         blit_project_sh_prog_, blit_fxaa_prog_, blit_taa_prog_, blit_static_vel_prog_,
         blit_transparent_compose_prog_, blit_transparent_compose_ms_prog_,
-        blit_transparent_init_prog_, probe_prog_, ellipsoid_prog_, skinning_prog_;
+        blit_transparent_init_prog_, probe_prog_, ellipsoid_prog_, skinning_prog_, quad_tree_prog_, quad_tree2_prog_;
     Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_,
         brdf_lut_, cone_rt_lut_, noise_tex_;
 
@@ -90,7 +90,7 @@ class Renderer {
 #if !defined(__ANDROID__)
         (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap |
          EnableLights | EnableDecals | EnableShadows /*| EnableOIT*/ | EnableTonemap |
-         EnableBloom | EnableTaa /*EnableMsaa*/ /*| EnableFxaa*/ | EnableTimers |
+         EnableBloom | EnableTaa /*EnableMsaa | EnableFxaa*/ | EnableTimers |
          EnableDOF /*| DebugEllipsoids*/);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights |

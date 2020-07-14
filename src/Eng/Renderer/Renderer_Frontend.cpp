@@ -438,6 +438,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 (uint32_t)mat->programs[program_index].index();
                             main_batch.alpha_test_bit =
                                 (mat_flags & uint32_t(eMaterialFlags::AlphaTest)) ? 1 : 0;
+                            main_batch.depth_write_bit =
+                                (mat_flags & uint32_t(eMaterialFlags::DepthWrite)) ? 1 : 0;
                             main_batch.two_sided_bit =
                                 (mat_flags & uint32_t(eMaterialFlags::TwoSided)) ? 1 : 0;
                             main_batch.mat_id = (uint32_t)grp->mat.index();

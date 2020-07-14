@@ -294,8 +294,16 @@ bool Ren::InitGLExtentions() {
     ren_glClientWaitSync = (PFNGLCLIENTWAITSYNCPROC)GetProcAddress(glClientWaitSync);
     ren_glDeleteSync = (PFNGLDELETESYNCPROC)GetProcAddress(glDeleteSync);
 
-    ren_glBlendFunci = (PFNGLBLENDFUNCI)GetProcAddress(glBlendFunci);
-    ren_glClearBufferfv = (PFNGLCLEARBUFFERFV)GetProcAddress(glClearBufferfv);
+    ren_glBlendFunci = (PFNGLBLENDFUNCIPROC)GetProcAddress(glBlendFunci);
+    ren_glClearBufferfv = (PFNGLCLEARBUFFERFVPROC)GetProcAddress(glClearBufferfv);
+
+    ren_glBindImageTexture = (PFNGLBINDIMAGETEXTUREPROC)GetProcAddress(glBindImageTexture);
+
+    ren_glGenSamplers = (PFNGLGENSAMPLERSPROC)GetProcAddress(glGenSamplers);
+    ren_glDeleteSamplers = (PFNGLDELETESAMPLERSPROC)GetProcAddress(glDeleteSamplers);
+    ren_glBindSampler = (PFNGLBINDSAMPLERPROC)GetProcAddress(glBindSampler);
+    ren_glSamplerParameterf = (PFNGLSAMPLERPARAMETERFPROC)GetProcAddress(glSamplerParameterf);
+    ren_glSamplerParameteri = (PFNGLSAMPLERPARAMETERIPROC)GetProcAddress(glSamplerParameteri);
 #endif
 
     //

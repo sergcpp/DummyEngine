@@ -179,13 +179,13 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
                 wolf_name[4] = char('0' + j);
                 wolf_name[5] = char('0' + i);
 
-                uint32_t wolf_index = scene_manager_->FindObject(wolf_name);
+                const uint32_t wolf_index = scene_manager_->FindObject(wolf_name);
                 wolf_indices_[index] = wolf_index;
 
                 if (wolf_index != 0xffffffff) {
                     SceneObject *wolf = scene_manager_->GetObject(wolf_index);
 
-                    uint32_t mask = CompDrawableBit | CompAnimStateBit;
+                    const uint32_t mask = CompDrawableBit | CompAnimStateBit;
                     if ((wolf->comp_mask & mask) == mask) {
                         auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
                         as->anim_time_s = 4.0f * (float(rand()) / float(RAND_MAX)); // NOLINT
@@ -203,7 +203,7 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
                 scooter_name[8] = char('0' + j);
                 scooter_name[9] = char('0' + i);
 
-                uint32_t scooter_index = scene_manager_->FindObject(scooter_name);
+                const uint32_t scooter_index = scene_manager_->FindObject(scooter_name);
                 scooter_indices_[j * 8 + i] = scooter_index;
             }
         }
@@ -215,7 +215,7 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
         for (int i = 0; i < 2; i++) {
             sophia_name[8] = char('0' + i);
 
-            uint32_t sophia_index = scene_manager_->FindObject(sophia_name);
+            const uint32_t sophia_index = scene_manager_->FindObject(sophia_name);
             sophia_indices_[i] = sophia_index;
         }
     }
@@ -226,7 +226,7 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
         for (int i = 0; i < 2; i++) {
             eric_name[6] = char('0' + i);
 
-            uint32_t eric_index = scene_manager_->FindObject(eric_name);
+            const uint32_t eric_index = scene_manager_->FindObject(eric_name);
             eric_indices_[i] = eric_index;
         }
     }
@@ -346,7 +346,7 @@ void GSDrawTest::Update(uint64_t dt_us) {
 
             SceneObject *scooter = scene_manager_->GetObject(scooter_indices_[i]);
 
-            uint32_t mask = CompTransform;
+            const uint32_t mask = CompTransform;
             if ((scooter->comp_mask & mask) == mask) {
                 auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(scooter->components[CompTransform]);
 
@@ -389,7 +389,7 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
     // pt switch for touch controls
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
         if (evt.point.x > (float)ren_ctx_->w() * 0.9f && evt.point.y < (float)ren_ctx_->h() * 0.1f) {
-            uint32_t new_time = Sys::GetTimeMs();
+            const uint32_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {
@@ -593,7 +593,7 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
             SceneObject *wolf = scene_manager_->GetObject(wolf_index);
 
-            uint32_t mask = CompDrawableBit | CompAnimStateBit;
+            const uint32_t mask = CompDrawableBit | CompAnimStateBit;
             if ((wolf->comp_mask & mask) == mask) {
                 auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(wolf->components[CompDrawable]);
                 auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
@@ -618,7 +618,7 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
             SceneObject *scooter = scene_manager_->GetObject(scooter_indices_[i]);
 
-            uint32_t mask = CompDrawableBit | CompAnimStateBit;
+            const uint32_t mask = CompDrawableBit | CompAnimStateBit;
             if ((scooter->comp_mask & mask) == mask) {
                 auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(scooter->components[CompDrawable]);
                 auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(scooter->components[CompAnimState]);
@@ -644,7 +644,7 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
         SceneObject *sophia = scene_manager_->GetObject(ndx);
 
-        uint32_t mask = CompDrawableBit | CompAnimStateBit;
+        const uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((sophia->comp_mask & mask) == mask) {
             auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(sophia->components[CompDrawable]);
             auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(sophia->components[CompAnimState]);
@@ -671,7 +671,7 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
         SceneObject *eric = scene_manager_->GetObject(ndx);
 
-        uint32_t mask = CompDrawableBit | CompAnimStateBit;
+        const uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((eric->comp_mask & mask) == mask) {
             auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(eric->components[CompDrawable]);
             auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(eric->components[CompAnimState]);
@@ -694,7 +694,7 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
     if (zenith_index_ != 0xffffffff) {
         SceneObject *zenith = scene_manager_->GetObject(zenith_index_);
 
-        uint32_t mask = CompDrawableBit | CompAnimStateBit;
+        const uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((zenith->comp_mask & mask) == mask) {
             auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(zenith->components[CompDrawable]);
             auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(zenith->components[CompAnimState]);
@@ -717,7 +717,7 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
     if (palm_index_ != 0xffffffff) {
         SceneObject *palm = scene_manager_->GetObject(palm_index_);
 
-        uint32_t mask = CompDrawableBit | CompAnimStateBit;
+        const uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((palm->comp_mask & mask) == mask) {
             auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(palm->components[CompDrawable]);
             auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(palm->components[CompAnimState]);

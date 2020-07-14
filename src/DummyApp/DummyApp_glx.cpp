@@ -115,12 +115,12 @@ int DummyApp::Init(int w, int h) {
     swa.event_mask = ExposureMask | StructureNotifyMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
     
     win_ = XCreateWindow(dpy_, RootWindow(dpy_, vi->screen), 0, 0, w, h, 0, vi->depth, InputOutput, vi->visual, CWBorderPixel | CWColormap | CWEventMask, &swa);
-    
+
+    Atom wm_delete = XInternAtom(dpy_, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(dpy_, win_, &wm_delete, 1);
+
     XMapWindow(dpy_, win_);
     XStoreName(dpy_, win_, "View");
-
-    Atom wmDelete = XInternAtom(dpy_, "WM_DELETE_WINDOW", False);
-    XSetWMProtocols(dpy_, win_, &wmDelete, 1);
 
     auto glXCreateContextAttribsARB = (GLXCREATECONTEXTATTIBSARBPROC)glXGetProcAddress((const GLubyte *)"glXCreateContextAttribsARB");
     if (!glXCreateContextAttribsARB) {
@@ -333,10 +333,6 @@ void DummyApp::PollEvents() {
                 last_window_size[0] = xev.xconfigure.width;
                 last_window_size[1] = xev.xconfigure.height;
             }
-        } else if (xev.type == ClientMessage) {
-            printf("Destroy!!!\n");
-        } else {
-
         }
 
         if (evt.type != RawInputEvent::EvNone) {
@@ -345,7 +341,11 @@ void DummyApp::PollEvents() {
         }
     }
 
-    
+    if (XCheckTypedWindowEvent(dpy_, win_, ClientMessage, &xev)) {
+        if (strcmp( XGetAtomName(dpy_, xev.xclient.message_type ), "WM_PROTOCOLS" ) == 0) {
+            quit_ = true;
+        }
+    }
 }
 
 #endif

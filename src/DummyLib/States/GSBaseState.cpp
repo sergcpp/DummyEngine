@@ -462,7 +462,7 @@ bool GSBaseState::LoadScene(const char *name) {
             return false;
         }
 
-        size_t scene_size = in_scene.size();
+        const size_t scene_size = in_scene.size();
 
         std::unique_ptr<uint8_t[]> scene_data(new uint8_t[scene_size]);
         in_scene.Read((char *)&scene_data[0], scene_size);
@@ -491,7 +491,7 @@ bool GSBaseState::LoadScene(const char *name) {
         Sys::AssetFile in_cache(cache_file.c_str());
 
         if (in_cache) {
-            size_t cache_size = in_cache.size();
+            const size_t cache_size = in_cache.size();
 
             std::unique_ptr<uint8_t[]> cache_data(new uint8_t[cache_size]);
             in_cache.Read((char *)&cache_data[0], cache_size);
@@ -710,7 +710,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     }
 
     if (!use_pt_ && !use_lm_) {
-        int back_list = (front_list_ + 1) % 2;
+        const int back_list = (front_list_ + 1) % 2;
 
         uint32_t render_flags = renderer_->render_flags();
         FrontendInfo front_info = main_view_lists_[back_list].frontend_info;
@@ -849,7 +849,7 @@ void GSBaseState::UpdateFrame(int list_index) {
             if (probes_to_update_.empty()) {
                 const int obj_count = (int)scene_manager_->scene_data().objects.size();
                 for (int i = 0; i < obj_count; i++) {
-                    SceneObject *obj = scene_manager_->GetObject(i);
+                    const SceneObject *obj = scene_manager_->GetObject(i);
                     if (obj->comp_mask & CompProbeBit) {
                         probes_to_update_.push_back(i);
                     }

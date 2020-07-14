@@ -216,8 +216,7 @@ public:
         if (!v) {
             v = InsertNoCheck(key);
         }
-        *v = val;
-        return v;
+        (*v) = val;
     }
 
     V *InsertNoCheck(const K &key) {
