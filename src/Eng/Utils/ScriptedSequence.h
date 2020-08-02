@@ -96,28 +96,28 @@ class ScriptedSequence {
     eChoiceAlign choice_align() const { return choice_align_; }
 
     const char *GetTrackName(int track) const {
-        if (track >= tracks_.size()) {
+        if (track >= int(tracks_.size())) {
             return nullptr;
         }
         return tracks_[track].name.c_str();
     }
 
     const char *GetTrackTarget(int track) const {
-        if (track >= tracks_.size()) {
+        if (track >= int(tracks_.size())) {
             return nullptr;
         }
         return tracks_[track].target.c_str();
     }
 
     int GetActionsCount(int track) const {
-        if (track >= tracks_.size()) {
+        if (track >= int(tracks_.size())) {
             return 0;
         }
         return tracks_[track].action_count;
     }
 
     SeqAction *GetAction(int track, int action) {
-        if (track >= tracks_.size() || action >= tracks_[track].action_count) {
+        if (track >= int(tracks_.size()) || action >= tracks_[track].action_count) {
             return nullptr;
         }
         return &actions_[tracks_[track].action_start + action];

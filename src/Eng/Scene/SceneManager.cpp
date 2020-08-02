@@ -163,7 +163,7 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, Snd::Context &snd_ctx,
             std::bind(&SceneManager::PostloadSoundSource, this, _1, _2, _3));
     }
 
-    Sys::MemBuf buf{__cam_rig_mesh, __cam_rig_mesh_size};
+    Sys::MemBuf buf{__cam_rig_mesh, size_t(__cam_rig_mesh_size)};
     std::istream in_mesh(&buf);
 
     Ren::eMeshLoadStatus status;
