@@ -22,6 +22,7 @@ extern "C" {
 
 #include <Eng/Gui/Renderer.h>
 #include <Eng/Gui/Utils.h>
+#include <Net/hash/Crc32.h>
 #include <Ray/internal/TextureSplitter.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
@@ -234,56 +235,153 @@ void ReadAllFiles_MT_r(
     closedir(in_dir);
 }
 
-bool CheckCanSkipAsset(const char *in_file, const char *out_file, Ren::ILog *log) {
+uint32_t Crc32HashFile(const char *in_file, Ren::ILog *log) {
+    std::ifstream in_file_stream(in_file, std::ios::binary | std::ios::ate);
+    if (!in_file_stream) {
+        return 0;
+    }
+    const size_t in_file_size = (size_t)in_file_stream.tellg();
+    in_file_stream.seekg(0, std::ios::beg);
+
+    const size_t HashChunkSize = 64 * 1024;
+    uint8_t in_file_buf[HashChunkSize];
+
+    log->Info("[PrepareAssets] Hashing %s", in_file);
+
+    uint32_t crc32_hash = 0;
+    for (size_t i = 0; i < in_file_size; i += HashChunkSize) {
+        const size_t portion = std::min(HashChunkSize, in_file_size - i);
+        in_file_stream.read((char *)&in_file_buf[0], portion);
+        crc32_hash = crc32_fast(&in_file_buf[0], portion, crc32_hash);
+    }
+
+    return crc32_hash;
+}
+
+bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &ctx) {
+#ifdef _WIN32
+    auto filetime_to_uint64 = [](const FILETIME &ft) -> uint64_t {
+        ULARGE_INTEGER ull;
+        ull.LowPart = ft.dwLowDateTime;
+        ull.HighPart = ft.dwHighDateTime;
+        return ull.QuadPart;
+    };
+
+    HANDLE in_h = CreateFile(in_file, 0, 0, NULL, OPEN_EXISTING, NULL, NULL);
+    if (in_h == INVALID_HANDLE_VALUE) {
+        ctx.log->Info("[PrepareAssets] Failed to open file %s", in_file);
+        CloseHandle(in_h);
+        return false;
+    }
+
+    FILETIME in_t;
+    GetFileTime(in_h, NULL, NULL, &in_t);
+    CloseHandle(in_h);
+
+    const uint64_t val = filetime_to_uint64(in_t);
+    sprintf(out_str, "%llu", val);
+
+    return true;
+#else
+    static_assert(false, "Not implemented");
+
+    struct stat st1 = {};
+    const int res1 = stat(in_file, &st1);
+    if (res1 == -1) {
+        ctx.log->Info("[PrepareAssets] Failed to open input file %s!", in_file);
+        return {};
+    }
+
+    struct tm tm1 = {};
+    localtime_r(&st1.st_ctime, &tm1);
+    return mktime(&tm1);
+#endif
+}
+
+bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context_t &ctx) {
 #if !defined(NDEBUG) && 0
     log->Info("Warning: glsl is forced to be not skipped!");
     if (strstr(in_file, ".glsl"))
         return false;
 #endif
 
-#ifdef _WIN32
-    HANDLE in_h = CreateFile(in_file, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL);
-    if (in_h == INVALID_HANDLE_VALUE) {
-        log->Info("[PrepareAssets] Failed to open file %s", in_file);
-        CloseHandle(in_h);
-        return true;
-    }
-    HANDLE out_h = CreateFile(out_file, GENERIC_READ, 0, NULL, OPEN_EXISTING, NULL, NULL);
-    LARGE_INTEGER out_size = {};
-    if (out_h != INVALID_HANDLE_VALUE && GetFileSizeEx(out_h, &out_size) &&
-        out_size.QuadPart) {
-        FILETIME in_t, out_t;
-        GetFileTime(in_h, NULL, NULL, &in_t);
-        GetFileTime(out_h, NULL, NULL, &out_t);
+    char in_t[32] = "", out_t[32] = "";
+    GetFileModifyTime(in_file, in_t, ctx);
+    GetFileModifyTime(in_file, out_t, ctx);
 
-        if (CompareFileTime(&in_t, &out_t) == -1) {
-            CloseHandle(in_h);
-            CloseHandle(out_h);
-            return true;
+    JsObject &js_files = ctx.js_db["files"].as_obj();
+
+    const int *in_ndx = ctx.db_map.Find(in_file);
+    if (in_ndx) {
+        JsObject &js_in_file = js_files[*in_ndx].second.as_obj();
+        if (js_in_file.Has("in_time") && js_in_file.Has("out_time")) {
+            const JsString &js_in_file_time = js_in_file.at("in_time").as_str();
+            const JsString &js_out_file_time = js_in_file.at("out_time").as_str();
+            if (strncmp(js_in_file_time.val.c_str(), in_t, 32) == 0 &&
+                strncmp(js_out_file_time.val.c_str(), out_t, 32) == 0) {
+                // can skip
+                return true;
+            }
         }
-    }
 
-    CloseHandle(in_h);
-    CloseHandle(out_h);
-#else
-    struct stat st1 = {}, st2 = {};
-    const int res1 = stat(in_file, &st1), res2 = stat(out_file, &st2);
-    if (res1 != -1 && res2 != -1) {
-        struct tm tm1 = {}, tm2 = {};
-        localtime_r(&st1.st_ctime, &tm1);
-        localtime_r(&st2.st_ctime, &tm2);
+        const uint32_t in_crc32_hash = Crc32HashFile(in_file, ctx.log);
+        const std::string in_crc32_hash_str = std::to_string(in_crc32_hash);
 
-        time_t t1 = mktime(&tm1), t2 = mktime(&tm2);
+        if (js_in_file.Has("in_hash") && js_in_file.Has("out_hash")) {
+            const JsString &js_in_file_hash = js_in_file.at("in_hash").as_str();
+            if (js_in_file_hash.val == in_crc32_hash_str) {
+                const uint32_t out_crc32_hash = Crc32HashFile(out_file, ctx.log);
+                const std::string out_crc32_hash_str = std::to_string(out_crc32_hash);
 
-        double diff_s = difftime(t1, t2);
-        if (diff_s < 0) {
-            return true;
+                const JsString &js_out_file_hash = js_in_file.at("out_hash").as_str();
+                if (js_out_file_hash.val == out_crc32_hash_str) {
+                    // write new time
+                    if (!js_in_file.Has("in_time")) {
+                        js_in_file.Push("in_time", JsString{ in_t });
+                    } else {
+                        JsString &js_in_file_time = js_in_file["in_time"].as_str();
+                        js_in_file_time.val = in_t;
+                    }
+
+                    if (!js_in_file.Has("out_time")) {
+                        js_in_file.Push("out_time", JsString{out_t});
+                    } else {
+                        JsString &js_out_file_time = js_in_file["out_time"].as_str();
+                        js_out_file_time.val = out_t;
+                    }
+
+                    // can skip
+                    return true;
+                }
+            }
         }
-    } else if (res1 == -1) {
-        log->Info("[PrepareAssets] Failed to open input file %s!", in_file);
+
+        // store new hash and time value
+        if (!js_in_file.Has("in_hash")) {
+            js_in_file.Push("in_hash", JsString{in_crc32_hash_str});
+        } else {
+            JsString &js_in_file_hash = js_in_file["in_hash"].as_str();
+            js_in_file_hash.val = in_crc32_hash_str;
+        }
+
+        // write new time
+        if (!js_in_file.Has("in_time")) {
+            js_in_file.Push("in_time", JsString{in_t});
+        } else {
+            JsString &js_in_file_time = js_in_file["in_time"].as_str();
+            js_in_file_time.val = in_t;
+        }
+    } else {
+        const uint32_t in_crc32_hash = Crc32HashFile(in_file, ctx.log);
+        const std::string in_crc32_hash_str = std::to_string(in_crc32_hash);
+
+        JsObject new_entry;
+        new_entry.Push("in_time", JsString{in_t});
+        new_entry.Push("in_hash", JsString{in_crc32_hash_str});
+        const size_t new_ndx = js_files.Push(in_file, std::move(new_entry));
+        ctx.db_map[in_file] = int(new_ndx);
     }
 
-#endif
     return false;
 }
 
@@ -331,6 +429,69 @@ void ReplaceTextureExtension(const char *platform, std::string &tex) {
             }
         }
     }
+}
+
+JsObject LoadDB(const char *out_folder) {
+    const std::string file_names[] = {std::string(out_folder) + "/assets_db.json",
+                                      std::string(out_folder) + "/assets_db.json1",
+                                      std::string(out_folder) + "/assets_db.json2"};
+
+    JsObject js_assets_db;
+
+    int i = 0;
+    for (; i < 3; i++) {
+        std::ifstream in_file(file_names[i], std::ios::binary);
+        if (in_file) {
+            try {
+                if (js_assets_db.Read(in_file)) {
+                    break;
+                } else {
+                    // unsuccessful read can leave junk
+                    js_assets_db.elements.clear();
+                }
+            } catch (...) {
+                // unsuccessful read can leave junk
+                js_assets_db.elements.clear();
+            }
+        }
+    }
+
+    if (i != 0 && !js_assets_db.elements.empty()) {
+        // write loaded db as most recent one
+        std::ofstream out_file(file_names[0], std::ios::binary);
+        try {
+            js_assets_db.Write(out_file);
+        } catch (...) {
+        }
+    }
+
+    return js_assets_db;
+}
+
+bool WriteDB(const JsObject &js_db, const char *out_folder) {
+    const std::string name1 = std::string(out_folder) + "/assets_db.json";
+    const std::string name2 = std::string(out_folder) + "/assets_db.json1";
+    const std::string name3 = std::string(out_folder) + "/assets_db.json2";
+    const std::string temp = std::string(out_folder) + "/assets_db.json_temp";
+
+    bool write_successful = false;
+
+    try {
+        std::ofstream out_file(temp, std::ios::binary);
+        out_file.precision(std::numeric_limits<double>::max_digits10);
+        js_db.Write(out_file);
+        write_successful = out_file.good();
+    } catch (...) {
+    }
+
+    if (write_successful) {
+        std::remove(name3.c_str());
+        std::rename(name2.c_str(), name3.c_str());
+        std::rename(name1.c_str(), name2.c_str());
+        std::rename(temp.c_str(), name1.c_str());
+    }
+
+    return write_successful;
 }
 
 std::string ExtractHTMLData(assets_context_t &ctx, const char *in_file,
@@ -453,13 +614,17 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
     g_asset_handlers["uncompressed.tga"] = {"uncompressed.tga", HCopy};
     g_asset_handlers["uncompressed.png"] = {"uncompressed.png", HCopy};
 
-    auto convert_file = [out_folder](assets_context_t &ctx, const char *in_file) {
+    double last_db_write = Sys::GetTimeS();
+    auto convert_file = [out_folder, &last_db_write](assets_context_t &ctx,
+                                                     const char *in_file) {
         const char *base_path = strchr(in_file, '/');
-        if (!base_path)
+        if (!base_path) {
             return;
+        }
         const char *ext = strchr(in_file, '.');
-        if (!ext)
+        if (!ext) {
             return;
+        }
 
         ext++;
 
@@ -473,7 +638,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
             out_folder + std::string(base_path, strlen(base_path) - strlen(ext)) +
             handler->ext;
 
-        if (CheckCanSkipAsset(in_file, out_file.c_str(), ctx.log)) {
+        if (CheckCanSkipAsset(in_file, out_file.c_str(), ctx)) {
             return;
         }
 
@@ -483,8 +648,40 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
             return;
         }
 
-        const auto &conv_func = handler->convert;
-        conv_func(ctx, in_file, out_file.c_str());
+        const bool res = handler->convert(ctx, in_file, out_file.c_str());
+        if (res) {
+            const uint32_t out_crc32_hash = Crc32HashFile(out_file.c_str(), ctx.log);
+            const std::string out_crc32_hash_str = std::to_string(out_crc32_hash);
+
+            JsObject &js_files = ctx.js_db["files"].as_obj();
+
+            const int *in_ndx = ctx.db_map.Find(in_file);
+            if (in_ndx) {
+                JsObject &js_in_file = js_files[*in_ndx].second.as_obj();
+                // store new hash value
+                if (!js_in_file.Has("out_hash")) {
+                    js_in_file.Push("out_hash", JsString{out_crc32_hash_str});
+                } else {
+                    JsString &js_out_file_hash = js_in_file["out_hash"].as_str();
+                    js_out_file_hash.val = out_crc32_hash_str;
+                }
+
+                char out_t[32];
+                GetFileModifyTime(out_file.c_str(), out_t, ctx);
+
+                // store new time value
+                if (!js_in_file.Has("out_time")) {
+                    js_in_file.Push("out_time", JsString{out_t});
+                } else {
+                    JsString &js_out_file_time = js_in_file["out_time"].as_str();
+                    js_out_file_time.val = out_t;
+                }
+            }
+
+            if (Sys::GetTimeS() - last_db_write > 5.0 && WriteDB(ctx.js_db, out_folder)) {
+                last_db_write = Sys::GetTimeS();
+            }
+        }
     };
 
 #ifdef __linux__
@@ -495,7 +692,21 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
     }
 #endif
 
-    assets_context_t ctx = {platform, log};
+    JsObject js_assets_db = LoadDB(out_folder);
+
+    Ren::HashMap32<const char *, int> db_map;
+
+    if (js_assets_db.Has("files")) {
+        const JsObject &js_files = js_assets_db.at("files").as_obj();
+        for (int i = 0; i < (int)js_files.elements.size(); i++) {
+            const char *key = js_files.elements[i].first.c_str();
+            db_map[key] = i;
+        }
+    } else {
+        js_assets_db.Push("files", JsObject{});
+    }
+
+    assets_context_t ctx = {platform, log, js_assets_db, db_map};
 
     /*if (p_threads) {
         std::vector<std::future<void>> events;
@@ -508,32 +719,46 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
     ReadAllFiles_r(ctx, in_folder, convert_file);
     //}
 
+    WriteDB(js_assets_db, out_folder);
+
     return true;
 }
 
-void SceneManager::HSkip(assets_context_t &ctx, const char *in_file,
+bool SceneManager::HSkip(assets_context_t &ctx, const char *in_file,
                          const char *out_file) {
     ctx.log->Info("[PrepareAssets] Skip %s", out_file);
+    return true;
 }
 
-void SceneManager::HCopy(assets_context_t &ctx, const char *in_file,
+bool SceneManager::HCopy(assets_context_t &ctx, const char *in_file,
                          const char *out_file) {
     ctx.log->Info("[PrepareAssets] Copy %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary);
+    if (!src_stream) {
+        return false;
+    }
     std::ofstream dst_stream(out_file, std::ios::binary);
 
-    std::istreambuf_iterator<char> src_beg(src_stream);
-    std::istreambuf_iterator<char> src_end;
-    std::ostreambuf_iterator<char> dst_beg(dst_stream);
-    std::copy(src_beg, src_end, dst_beg);
+    const int BufSize = 64 * 1024;
+    char buf[BufSize];
+
+    while (src_stream) {
+        src_stream.read(buf, BufSize);
+        dst_stream.write(buf, src_stream.gcount());
+    }
+
+    return dst_stream.good();
 }
 
-void SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_file,
+bool SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_file,
                                        const char *out_file) {
     ctx.log->Info("[PrepareAssets] Prep %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary);
+    if (!src_stream) {
+        return false;
+    }
     std::ofstream dst_stream(out_file, std::ios::binary);
 
     std::string line;
@@ -541,15 +766,20 @@ void SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_fil
         SceneManagerInternal::ReplaceTextureExtension(ctx.platform, line);
         dst_stream << line << "\n";
     }
+
+    return true;
 }
 
-void SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file,
+bool SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file,
                                    const char *out_file) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Prep %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary);
+    if (!src_stream) {
+        return false;
+    }
     std::ofstream dst_stream(out_file, std::ios::binary);
 
     JsObject js_root;
@@ -669,4 +899,6 @@ void SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file,
     flags.use_spaces = 1;
 
     js_root.Write(dst_stream, flags);
+
+    return true;
 }

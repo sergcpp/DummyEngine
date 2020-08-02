@@ -13,6 +13,7 @@
 #include <Ren/MVec.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
+#include <Sys/Time_.h>
 
 #include "Gui/DebugInfoUI.h"
 #include "Gui/FontStorage.h"
@@ -135,6 +136,7 @@ void Viewer::Frame() {
 void Viewer::PrepareAssets(const char *platform) {
     LogStdout log;
 
+    const double t1 = Sys::GetTimeS();
     SceneManager::RegisterAsset("tei.json", "dict", HConvTEIToDict);
 
 #if !defined(__ANDROID__)
@@ -148,9 +150,11 @@ void Viewer::PrepareAssets(const char *platform) {
                                     &log);
     }
 #endif
+    const double t2 = Sys::GetTimeS();
+    log.Info("Assets processed in %fs", t2 - t1);
 }
 
-void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
+bool Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
                             const char *out_file) {
     ctx.log->Info("[PrepareAssets] Prep %s", out_file);
 
@@ -167,7 +171,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
         uint32_t trans_index, trans_count;
     };
 
-    Ren::HashMap32<Ren::String, dict_link_t> dictionary_hashmap;
+    Ren::HashMap32<Ren::String, dict_link_t> dict_hashmap;
     std::vector<dict_entry_t> dict_entries;
     std::vector<std::string> translations;
 
@@ -178,7 +182,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
             std::ifstream src_stream(in_file, std::ios::binary);
             if (!js_root.Read(src_stream)) {
                 ctx.log->Error("Error parsing %s!", in_file);
-                return;
+                return false;
             }
         }
 
@@ -197,7 +201,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
             JsObject &js_form = js_entry.at("form").as_obj();
             JsString &js_orth = js_form.at("orth").as_str();
 
-            dict_link_t &link = dictionary_hashmap[Ren::String{js_orth.val.c_str()}];
+            dict_link_t &link = dict_hashmap[Ren::String{js_orth.val.c_str()}];
             link.entries[link.entries_count++] = (uint32_t)dict_entries.size();
 
             dict_entries.emplace_back();
@@ -314,8 +318,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
 
     { // compact data structures and write output file
         size_t str_mem_req = 0;
-        for (auto it = dictionary_hashmap.cbegin(); it < dictionary_hashmap.cend();
-             ++it) {
+        for (auto it = dict_hashmap.cbegin(); it < dict_hashmap.cend(); ++it) {
             str_mem_req += it->key.length() + 1;
 
             const dict_link_t &src_link = it->val;
@@ -349,8 +352,7 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
 
         int links_count = 0;
 
-        for (auto it = dictionary_hashmap.cbegin(); it < dictionary_hashmap.cend();
-             ++it) {
+        for (auto it = dict_hashmap.cbegin(); it < dict_hashmap.cend(); ++it) {
             const dict_link_t &src_link = it->val;
 
             const size_t key_len = it->key.length();
@@ -516,4 +518,6 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
         // String data
         out_stream.write(comb_str_buf.get(), str_mem_req);
     }
+
+    return true;
 }

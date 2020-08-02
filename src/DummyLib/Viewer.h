@@ -30,6 +30,6 @@ public:
     void Frame() override;
 
     static void PrepareAssets(const char *platform = "all");
-    static void HConvTEIToDict(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static bool HConvTEIToDict(assets_context_t &ctx, const char *in_file, const char *out_file);
 };
 

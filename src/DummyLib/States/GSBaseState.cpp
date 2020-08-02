@@ -318,6 +318,7 @@ void GSBaseState::Enter() {
                     }
 
                     std::ofstream out_file(name1, std::ios::binary);
+                    out_file.precision(std::numeric_limits<double>::max_digits10);
                     out_scene.Write(out_file);
                 }
             }

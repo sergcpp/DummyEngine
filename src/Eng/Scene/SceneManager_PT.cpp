@@ -20,10 +20,10 @@ extern const int LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY;
 } // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {
-void Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *name);
-void Write_RGBM(const float *out_data, int w, int h, int channels, bool flip_y,
+bool Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *name);
+bool Write_RGBM(const float *out_data, int w, int h, int channels, bool flip_y,
                 const char *name);
-void Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name);
+bool Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name);
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data);
 
@@ -322,9 +322,13 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                     out_file_name += scene_data_.name.c_str();
                     out_file_name += "_lm_direct.png";
 
-                    SceneManagerInternal::Write_RGBM(
-                        &out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4,
-                        false /* flip_y */, out_file_name.c_str());
+                    if (!SceneManagerInternal::Write_RGBM(
+                            &out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4,
+                            false /* flip_y */, out_file_name.c_str())) {
+                        ren_ctx_.log()->Error("Failed to write %s",
+                                              out_file_name.c_str());
+                        return false;
+                    }
                 }
 
                 { // Save indirect lightmap
@@ -341,9 +345,13 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                     out_file_name += scene_data_.name.c_str();
                     out_file_name += "_lm_indirect.png";
 
-                    SceneManagerInternal::Write_RGBM(
-                        &out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4,
-                        false /* flip_y */, out_file_name.c_str());
+                    if (!SceneManagerInternal::Write_RGBM(
+                            &out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4,
+                            false /* flip_y */, out_file_name.c_str())) {
+                        ren_ctx_.log()->Error("Failed to write %s",
+                                              out_file_name.c_str());
+                        return false;
+                    }
                 }
 
                 { // Save indirect SH-lightmap
@@ -365,15 +373,23 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
                         if (sh_l == 0) {
                             // Save first band as HDR
-                            SceneManagerInternal::Write_RGBM(
-                                &out_pixels[0].r, LIGHTMAP_ATLAS_RESX,
-                                LIGHTMAP_ATLAS_RESY, 4, false /* flip_y */,
-                                out_file_name.c_str());
+                            if (!SceneManagerInternal::Write_RGBM(
+                                    &out_pixels[0].r, LIGHTMAP_ATLAS_RESX,
+                                    LIGHTMAP_ATLAS_RESY, 4, false /* flip_y */,
+                                    out_file_name.c_str())) {
+                                ren_ctx_.log()->Error("Failed to write %s",
+                                                      out_file_name.c_str());
+                                return false;
+                            }
                         } else {
                             // Save rest as LDR
-                            SceneManagerInternal::Write_RGB(
-                                &out_pixels[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY,
-                                out_file_name.c_str());
+                            if (!SceneManagerInternal::Write_RGB(
+                                    &out_pixels[0], LIGHTMAP_ATLAS_RESX,
+                                    LIGHTMAP_ATLAS_RESY, out_file_name.c_str())) {
+                                ren_ctx_.log()->Error("Failed to write %s",
+                                                      out_file_name.c_str());
+                                return false;
+                            }
                         }
                     }
                 }

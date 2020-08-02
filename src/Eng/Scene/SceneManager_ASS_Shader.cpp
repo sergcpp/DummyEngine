@@ -76,12 +76,15 @@ void SceneManager::InlineShaderConstants(assets_context_t &ctx, std::string &lin
     }
 }
 
-void SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file, const char *out_file) {
+bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file, const char *out_file) {
     ctx.log->Info("[PrepareAssets] Prep %s", out_file);
     std::remove(out_file);
 
     {   // resolve includes, inline constants
         std::ifstream src_stream(in_file, std::ios::binary);
+        if (!src_stream) {
+            return false;
+        }
         std::ofstream dst_stream(out_file, std::ios::binary);
         std::string line;
 
@@ -231,4 +234,6 @@ void SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
 #endif
         }
     }
+
+    return true;
 }

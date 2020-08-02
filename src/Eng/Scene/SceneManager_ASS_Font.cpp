@@ -12,13 +12,16 @@
 #include "../Gui/BitmapFont.h"
 #include "../Gui/Utils.h"
 
-void SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file,
+bool SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file,
                                   const char *out_file) {
     using namespace Ren;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
+    if (!src_stream) {
+        return false;
+    }
     auto src_size = (size_t)src_stream.tellg();
     src_stream.seekg(0, std::ios::beg);
 
@@ -29,7 +32,7 @@ void SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file,
     int res = stbtt_InitFont(&font, &src_buf[0], 0);
     if (!res) {
         ctx.log->Error("stbtt_InitFont failed (%s)", in_file);
-        return;
+        return false;
     }
 
     const bool is_sdf_font = strstr(in_file, "_sdf") != nullptr,
@@ -462,4 +465,6 @@ void SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file,
         out_stream.write((const char *)out_glyphs.get(),
                          total_glyph_count * sizeof(Gui::glyph_info_t));
     }
+
+    return true;
 }

@@ -287,13 +287,14 @@ int ComputeBumpQuadtree(unsigned char *img_data, int channels, Ren::ILog *log,
 int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y,
                bool is_rgbm, const char *name);
 
-void Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
+bool Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
     std::unique_ptr<uint8_t[]> u8_data =
         Ren::ConvertRGB32F_to_RGBE(&out_data[0].r, w, h, 4);
-    WriteImage(&u8_data[0], w, h, 4, false /* flip_y */, false /* is_rgbm */, name);
+    return WriteImage(&u8_data[0], w, h, 4, false /* flip_y */, false /* is_rgbm */,
+                      name) == 1;
 }
 
-void Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
+bool Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
     std::vector<uint8_t> u8_data(w * h * 3);
 
     for (int y = 0; y < h; y++) {
@@ -306,17 +307,18 @@ void Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *nam
         }
     }
 
-    WriteImage(&u8_data[0], w, h, 3, false /* flip_y */, false /* is_rgbm */, name);
+    return WriteImage(&u8_data[0], w, h, 3, false /* flip_y */, false /* is_rgbm */,
+                      name) == 1;
 }
 
-void Write_RGBM(const float *out_data, const int w, const int h, const int channels,
+bool Write_RGBM(const float *out_data, const int w, const int h, const int channels,
                 const bool flip_y, const char *name) {
     const std::unique_ptr<uint8_t[]> u8_data =
         Ren::ConvertRGB32F_to_RGBM(out_data, w, h, channels);
-    WriteImage(&u8_data[0], w, h, 4, flip_y, true /* is_rgbm */, name);
+    return WriteImage(&u8_data[0], w, h, 4, flip_y, true /* is_rgbm */, name) == 1;
 }
 
-void Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int *heights,
+bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int *heights,
                     const int mip_count, const int channels, const char *out_file) {
     //
     // Compress mip images
@@ -332,6 +334,8 @@ void Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
         } else if (channels == 4) {
             dxt_data[i] = convert_image_to_DXT5(mipmaps[i], widths[i], heights[i],
                                                 channels, &dxt_size[i]);
+        } else {
+            return false;
         }
         dxt_size_total += dxt_size[i];
     }
@@ -371,9 +375,11 @@ void Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
         SOIL_free_image_data(dxt_data[i]);
         dxt_data[i] = nullptr;
     }
+
+    return out_stream.good();
 }
 
-void Write_DDS(const uint8_t *image_data, const int w, const int h, const int channels,
+bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int channels,
                const bool flip_y, const bool is_rgbm, const char *out_file) {
     // Check if resolution is power of two
     const bool store_mipmaps =
@@ -413,10 +419,10 @@ void Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
         _mipmaps[i] = mipmaps[i].get();
     }
 
-    Write_DDS_Mips(_mipmaps, widths, heights, mip_count, channels, out_file);
+    return Write_DDS_Mips(_mipmaps, widths, heights, mip_count, channels, out_file);
 }
 
-void Write_KTX_DXT(const uint8_t *image_data, const int w, const int h,
+bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h,
                    const int channels, const bool is_rgbm, const char *out_file) {
     // Check if power of two
     bool store_mipmaps = (w & (w - 1)) == 0 && (h & (h - 1)) == 0;
@@ -518,6 +524,8 @@ void Write_KTX_DXT(const uint8_t *image_data, const int w, const int h,
         SOIL_free_image_data(dxt_data[i]);
         dxt_data[i] = nullptr;
     }
+
+    return out_stream.good();
 }
 
 int ConvertToASTC(const uint8_t *image_data, int width, int height, int channels,
@@ -527,7 +535,7 @@ std::unique_ptr<uint8_t[]> DecodeASTC(const uint8_t *image_data, int data_size, 
 // std::unique_ptr<uint8_t[]> Decode_KTX_ASTC(const uint8_t *img_data, int data_size,
 // int &width, int &height);
 
-void Write_KTX_ASTC_Mips(const uint8_t *const *mipmaps, const int *widths,
+bool Write_KTX_ASTC_Mips(const uint8_t *const *mipmaps, const int *widths,
                          const int *heights, const int mip_count, const int channels,
                          const char *out_file) {
 
@@ -604,9 +612,11 @@ void Write_KTX_ASTC_Mips(const uint8_t *const *mipmaps, const int *widths,
             pad--;
         }
     }
+
+    return out_stream.good();
 }
 
-void Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h,
+bool Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h,
                     const int channels, const bool flip_y, const bool is_rgbm,
                     const char *out_file) {
     // Check if power of two
@@ -647,7 +657,7 @@ void Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h,
         _mipmaps[i] = mipmaps[i].get();
     }
 
-    Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mip_count, channels, out_file);
+    return Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mip_count, channels, out_file);
 }
 
 int WriteImage(const uint8_t *out_data, const int w, const int h, const int channels,
@@ -691,13 +701,16 @@ bool CreateFolders(const char *out_file, Ren::ILog *log);
 
 } // namespace SceneManagerInternal
 
-void SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
+bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
                               const char *out_file) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
+    if (!src_stream) {
+        return false;
+    }
     auto src_size = (size_t)src_stream.tellg();
     src_stream.seekg(0, std::ios::beg);
 
@@ -708,6 +721,7 @@ void SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
     unsigned char *image_data = SOIL_load_image_from_memory(
         &src_buf[0], (int)src_size, &width, &height, &channels, 0);
 
+    bool res = true;
     if (strstr(in_file, "_norm")) {
         // this is normal map, store it in RxGB format
         std::unique_ptr<uint8_t[]> temp_data(new uint8_t[width * height * 4]);
@@ -722,9 +736,104 @@ void SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
             }
         }
 
-        Write_DDS(temp_data.get(), width, height, 4, false /* flip_y */,
-                  false /* is_rgbm */, out_file);
+        res &= Write_DDS(temp_data.get(), width, height, 4, false /* flip_y */,
+                         false /* is_rgbm */, out_file);
+    } else if (strstr(in_file, "_bump")) {
+        if (channels != 1) {
+            ctx.log->Info("Bump map has too many channels (%i)", channels);
+        }
 
+        // prepare data for cone stepping
+        // std::unique_ptr<uint8_t[]> conemap_data =
+        //    ComputeBumpConemap(image_data, width, height, channels, ctx);
+
+        // prepare data for quad tree displacement
+        std::unique_ptr<uint8_t[]> mipmaps[16];
+        int widths[16], heights[16];
+        widths[0] = width;
+        heights[0] = height;
+
+        const int mip_count =
+            ComputeBumpQuadtree(image_data, channels, ctx.log, mipmaps, widths, heights);
+
+        // combine data into one image
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                uint8_t *rgba = &mipmaps[0][4 * (y * height + x)];
+                // store cone map in alpha channel
+                // rgba[3] = conemap_data[4 * (y * height + x) + 1];
+            }
+        }
+
+        // WriteImage(&mipmaps[0][0], width, height, 4, true, false,
+        //    "assets_pc/textures/pom_test_bump.uncompressed.png");
+
+        // apply padding to account for compression artifacts
+        for (int i = 1; i < mip_count; i++) {
+            for (int y = 0; y < heights[i]; y++) {
+                for (int x = 0; x < widths[i]; x++) {
+                    uint8_t *rgba = &mipmaps[i][4 * (y * heights[i] + x)];
+                    if (rgba[1] > i) {
+                        rgba[1] -= i;
+                    } else {
+                        rgba[1] = 0;
+                    }
+                }
+            }
+        }
+
+        uint8_t *_mipmaps[16];
+        for (int i = 0; i < mip_count; i++) {
+            _mipmaps[i] = mipmaps[i].get();
+        }
+        res &= Write_DDS_Mips(_mipmaps, widths, heights, mip_count, 4, out_file);
+    } else {
+        const bool is_rgbm = channels == 4 && strstr(in_file, "lightmaps") != nullptr;
+        res &= Write_DDS(image_data, width, height, channels, false /* flip_y */,
+                         is_rgbm /* is_rgbm */, out_file);
+    }
+    SOIL_free_image_data(image_data);
+
+    return res;
+}
+
+bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
+                               const char *out_file) {
+    using namespace SceneManagerInternal;
+
+    ctx.log->Info("[PrepareAssets] Conv %s", out_file);
+
+    std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
+    if (!src_stream) {
+        return false;
+    }
+    auto src_size = (size_t)src_stream.tellg();
+    src_stream.seekg(0, std::ios::beg);
+
+    std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
+    src_stream.read((char *)&src_buf[0], src_size);
+
+    int width, height, channels;
+    unsigned char *image_data = SOIL_load_image_from_memory(
+        &src_buf[0], (int)src_size, &width, &height, &channels, 0);
+
+    bool res = true;
+    if (strstr(in_file, "_norm")) {
+        // this is normal map, store it in RxGB format
+        std::unique_ptr<uint8_t[]> temp_data(new uint8_t[width * height * 4]);
+        assert(channels == 3);
+
+        for (int j = 0; j < height; j++) {
+            for (int i = 0; i < width; i++) {
+                temp_data[4 * (j * width + i) + 0] = 0;
+                temp_data[4 * (j * width + i) + 1] = image_data[3 * (j * width + i) + 1];
+                temp_data[4 * (j * width + i) + 2] = image_data[3 * (j * width + i) + 2];
+                temp_data[4 * (j * width + i) + 3] = image_data[3 * (j * width + i) + 0];
+            }
+        }
+
+        res &= Write_KTX_ASTC(temp_data.get(), width, height, 4, false /* flip_y */,
+                              false /* is_rgbm */, out_file);
     } else if (strstr(in_file, "_bump")) {
         if (channels != 1) {
             ctx.log->Info("Bump map has too many channels (%i)", channels);
@@ -752,9 +861,6 @@ void SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
             }
         }
 
-        WriteImage(&mipmaps[0][0], width, height, 4, true, false,
-            "assets_pc/textures/pom_test_bump.uncompressed.png");
-
         // apply padding to account for compression artifacts
         for (int i = 1; i < mip_count; i++) {
             for (int y = 0; y < heights[i]; y++) {
@@ -773,103 +879,18 @@ void SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
         for (int i = 0; i < mip_count; i++) {
             _mipmaps[i] = mipmaps[i].get();
         }
-        Write_DDS_Mips(_mipmaps, widths, heights, mip_count, 4, out_file);
+        res &= Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mip_count, 4, out_file);
     } else {
-        const bool is_rgbm = channels == 4 && strstr(in_file, "lightmaps") != nullptr;
-        Write_DDS(image_data, width, height, channels, false /* flip_y */,
-                  is_rgbm /* is_rgbm */, out_file);
-    }
-    SOIL_free_image_data(image_data);
-}
-
-void SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
-                               const char *out_file) {
-    using namespace SceneManagerInternal;
-
-    ctx.log->Info("[PrepareAssets] Conv %s", out_file);
-
-    std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
-    auto src_size = (size_t)src_stream.tellg();
-    src_stream.seekg(0, std::ios::beg);
-
-    std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
-    src_stream.read((char *)&src_buf[0], src_size);
-
-    int width, height, channels;
-    unsigned char *image_data = SOIL_load_image_from_memory(
-        &src_buf[0], (int)src_size, &width, &height, &channels, 0);
-
-    if (strstr(in_file, "_norm")) {
-        // this is normal map, store it in RxGB format
-        std::unique_ptr<uint8_t[]> temp_data(new uint8_t[width * height * 4]);
-        assert(channels == 3);
-
-        for (int j = 0; j < height; j++) {
-            for (int i = 0; i < width; i++) {
-                temp_data[4 * (j * width + i) + 0] = 0;
-                temp_data[4 * (j * width + i) + 1] = image_data[3 * (j * width + i) + 1];
-                temp_data[4 * (j * width + i) + 2] = image_data[3 * (j * width + i) + 2];
-                temp_data[4 * (j * width + i) + 3] = image_data[3 * (j * width + i) + 0];
-            }
-        }
-
-        Write_KTX_ASTC(temp_data.get(), width, height, 4, false /* flip_y */,
-                       false /* is_rgbm */, out_file);
-    } else if (strstr(in_file, "_bump")) {
-        if (channels != 1) {
-            ctx.log->Info("Bump map has too many channels (%i)", channels);
-        }
-
-        // prepare data for cone stepping
-        std::unique_ptr<uint8_t[]> conemap_data =
-            ComputeBumpConemap(image_data, width, height, channels, ctx);
-
-        // prepare data for quad tree displacement
-        std::unique_ptr<uint8_t[]> mipmaps[16];
-        int widths[16], heights[16];
-        widths[0] = width;
-        heights[0] = height;
-
-        const int mip_count =
-            ComputeBumpQuadtree(image_data, channels, ctx.log, mipmaps, widths, heights);
-
-        // combine data into one image
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                uint8_t* rgba = &mipmaps[0][4 * (y * height + x)];
-                // store cone map in alpha channel
-                rgba[3] = conemap_data[4 * (y * height + x) + 1];
-            }
-        }
-
-        // apply padding to account for compression artifacts
-        for (int i = 1; i < mip_count; i++) {
-            for (int y = 0; y < heights[i]; y++) {
-                for (int x = 0; x < widths[i]; x++) {
-                    uint8_t* rgba = &mipmaps[i][4 * (y * heights[i] + x)];
-                    if (rgba[1] > i) {
-                        rgba[1] -= i;
-                    } else {
-                        rgba[1] = 0;
-                    }
-                }
-            }
-        }
-
-        uint8_t* _mipmaps[16];
-        for (int i = 0; i < mip_count; i++) {
-            _mipmaps[i] = mipmaps[i].get();
-        }
-        Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mip_count, 4, out_file);
-    } else {
-        Write_KTX_ASTC(image_data, width, height, channels, false /* flip_y */,
-                       false /* is_rgbm */, out_file);
+        res &= Write_KTX_ASTC(image_data, width, height, channels, false /* flip_y */,
+                              false /* is_rgbm */, out_file);
     }
 
     SOIL_free_image_data(image_data);
+
+    return res;
 }
 
-void SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file,
+bool SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file,
                                   const char *out_file) {
     using namespace SceneManagerInternal;
 
@@ -880,16 +901,19 @@ void SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file,
     const std::unique_ptr<float[]> image_f32 =
         Ren::ConvertRGBE_to_RGB32F(&image_rgbe[0], width, height);
 
-    Write_RGBM(&image_f32[0], width, height, 3, false /* flip_y */, out_file);
+    return Write_RGBM(&image_f32[0], width, height, 3, false /* flip_y */, out_file);
 }
 
-void SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file,
+bool SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file,
                                  const char *out_file) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
+    if (!src_stream) {
+        return false;
+    }
     auto src_size = (int)src_stream.tellg();
     src_stream.seekg(0, std::ios::beg);
 
@@ -927,18 +951,22 @@ void SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file,
 
     if (src_size != 0) {
         ctx.log->Error("Error reading file %s", in_file);
+        return false;
     }
 
-    Write_DDS_Mips(_mipmaps, widths, heights, mips_count, 4, out_file);
+    return Write_DDS_Mips(_mipmaps, widths, heights, mips_count, 4, out_file);
 }
 
-void SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file,
+bool SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file,
                                   const char *out_file) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
+    if (!src_stream) {
+        return false;
+    }
     auto src_size = (int)src_stream.tellg();
     src_stream.seekg(0, std::ios::beg);
 
@@ -976,9 +1004,10 @@ void SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file,
 
     if (src_size != 0) {
         ctx.log->Error("Error reading file %s", in_file);
+        return false;
     }
 
-    Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mips_count, 4, out_file);
+    return Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mips_count, 4, out_file);
 }
 
 bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_name,
@@ -1046,6 +1075,11 @@ bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_nam
                         Net::CompressLZO(&temp_buf[0], buf_size, &temp_comp_buf[0]);
                     out_file.write((char *)&comp_size, sizeof(int));
                     out_file.write((char *)&temp_comp_buf[0], comp_size);
+                }
+
+                if (!out_file.good()) {
+                    log->Error("Failed to write %s", out_file_name.c_str());
+                    return false;
                 }
             }
         }

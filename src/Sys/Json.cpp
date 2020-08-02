@@ -254,24 +254,14 @@ bool JsObject::Has(const std::string &s) const {
     return false;
 }
 
-void JsObject::Push(const std::string &s, const JsElement &el) {
-    for (auto &e : elements) {
-        if (e.first == s) {
-            e.second = el;
-            return;
-        }
-    }
+size_t JsObject::Push(const std::string &s, const JsElement &el) {
     elements.emplace_back(s, el);
+    return elements.size() - 1;
 }
 
-void JsObject::Push(const std::string &s, JsElement &&el) {
-    for (auto &e : elements) {
-        if (e.first == s) {
-            e.second = std::move(el);
-            return;
-        }
-    }
+size_t JsObject::Push(const std::string &s, JsElement &&el) {
     elements.emplace_back(s, std::move(el));
+    return elements.size() - 1;
 }
 
 bool JsObject::Read(std::istream &in) {

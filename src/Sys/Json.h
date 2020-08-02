@@ -1,9 +1,9 @@
 #pragma once
 
 #include <iosfwd>
-#include <list>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "Variant.h"
 
@@ -89,7 +89,7 @@ struct JsString {
 };
 
 struct JsArray {
-    std::list<JsElement> elements;
+    std::vector<JsElement> elements;
 
     JsArray() {}
     JsArray(const JsArray &rhs) = default;
@@ -125,7 +125,7 @@ struct JsArray {
 };
 
 struct JsObject {
-    std::list<std::pair<std::string, JsElement>> elements;
+    std::vector<std::pair<std::string, JsElement>> elements;
 
     std::pair<std::string, JsElement> &operator[](size_t i);
     JsElement &operator[](const std::string &s);
@@ -147,8 +147,8 @@ struct JsObject {
         return elements.size();
     }
 
-    void Push(const std::string &s, const JsElement &el);
-    void Push(const std::string &s, JsElement &&el);
+    size_t Push(const std::string &s, const JsElement &el);
+    size_t Push(const std::string &s, JsElement &&el);
 
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
