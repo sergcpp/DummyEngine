@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(OccDemo)
+project(_Dummy)
 
 set(CMAKE_CXX_STANDARD 11)
 
@@ -25,7 +25,6 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
             if(CMAKE_SIZEOF_VOID_P EQUAL 8)
                 set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x64")
 				set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x64)
-                set(OPENAL_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/OpenAL/libs/Win64)
             else(CMAKE_SIZEOF_VOID_P EQUAL 8)
                 set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x86")
 				set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x86)
@@ -51,7 +50,6 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     include_directories(${SDL2_INCLUDE_DIRS})
     link_directories(${SDL2_LIBRARIES})
     link_directories(${ITT_LIBRARIES})
-    link_directories(${OPENAL_LIBRARIES})
 endif()
 
 set(RENDERER GL)

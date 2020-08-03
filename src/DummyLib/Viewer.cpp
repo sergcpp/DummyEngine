@@ -176,7 +176,6 @@ void Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
 
         { // read json file
             std::ifstream src_stream(in_file, std::ios::binary);
-
             if (!js_root.Read(src_stream)) {
                 ctx.log->Error("Error parsing %s!", in_file);
                 return;

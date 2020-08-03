@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 2.8.4)
 project(Eng)
 
-add_definitions(-DSHINY_IS_COMPILED=FALSE)
-
 IF(WIN32)
 
 ELSE(WIN32)
