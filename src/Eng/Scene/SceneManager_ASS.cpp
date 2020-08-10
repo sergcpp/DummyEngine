@@ -279,12 +279,7 @@ bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &
     CloseHandle(in_h);
 
     const uint64_t val = filetime_to_uint64(in_t);
-    sprintf(out_str, "%llu", val);
-
-    return true;
 #else
-    static_assert(false, "Not implemented");
-
     struct stat st1 = {};
     const int res1 = stat(in_file, &st1);
     if (res1 == -1) {
@@ -292,10 +287,12 @@ bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &
         return {};
     }
 
-    struct tm tm1 = {};
-    localtime_r(&st1.st_ctime, &tm1);
-    return mktime(&tm1);
+    const auto val = (unsigned long long)st1.st_ctime;
 #endif
+
+    sprintf(out_str, "%llu", val);
+
+    return true;
 }
 
 bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context_t &ctx) {

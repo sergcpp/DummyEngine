@@ -124,7 +124,7 @@ add_test(NetTest        Net/tests/test_Net)
 add_test(RayTest        Ray/tests/test_Ray)
 add_test(RenTest        Ren/tests/test_Ren)
 add_test(SWTest         Ren/SW/tests/test_SW)
-add_test(SndTest        Sys/tests/test_Snd)
+add_test(SndTest        Snd/tests/test_Snd)
 add_test(SysTest        Sys/tests/test_Sys)
 
 add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_DummyLib

@@ -27,9 +27,9 @@ class Source {
     Source() = default;
     ~Source();
     Source(const Source &rhs) = delete;
-    Source(Source &&rhs);
+    Source(Source &&rhs) noexcept;
     Source &operator=(const Source &rhs) = delete;
-    Source &operator=(Source &&rhs);
+    Source &operator=(Source &&rhs) noexcept;
 
     void Init(float gain, const float pos[3]);
     void Destroy();

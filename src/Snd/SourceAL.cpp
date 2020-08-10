@@ -35,7 +35,7 @@ void Snd::Source::Destroy() {
 
 Snd::Source::~Source() { Destroy(); }
 
-Snd::Source::Source(Source &&rhs) {
+Snd::Source::Source(Source &&rhs) noexcept {
     source_ = rhs.source_;
     rhs.source_ = 0xffffffff;
 
@@ -57,7 +57,7 @@ Snd::Source::Source(Source &&rhs) {
     rhs.bufs_count_ = 0;
 }
 
-Snd::Source &Snd::Source::operator=(Source &&rhs) {
+Snd::Source &Snd::Source::operator=(Source &&rhs) noexcept {
     ResetBuffers();
     Destroy();
 

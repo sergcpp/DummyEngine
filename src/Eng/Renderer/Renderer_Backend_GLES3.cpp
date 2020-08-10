@@ -615,13 +615,13 @@ void Renderer::InitRendererInternal() {
         glGenTextures(1, &shape_keys_tbo);
         glBindTexture(GL_TEXTURE_BUFFER, shape_keys_tbo);
 
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RG16UI, shape_keys_tbo);
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_RG16UI, shape_keys_buf);
         glBindTexture(GL_TEXTURE_BUFFER, 0);
 
         shape_keys_tbo_ = (uint32_t)shape_keys_tbo;
     }
 
-    Ren::CheckError("[InitRendererInternal]: skin transforms TBO", ctx_.log());
+    Ren::CheckError("[InitRendererInternal]: shape keys TBO", ctx_.log());
 
     { // Create buffer for lights information
         GLuint lights_buf;
