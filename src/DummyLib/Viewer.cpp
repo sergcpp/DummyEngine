@@ -83,8 +83,9 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     }
 
     {
+        auto sh_loader = GetComponent<ShaderLoader>(SHADER_LOADER_KEY);
         auto threads = GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
-        auto renderer = std::make_shared<Renderer>(*ren_ctx, threads);
+        auto renderer = std::make_shared<Renderer>(*ren_ctx, *sh_loader, threads);
         AddComponent(RENDERER_KEY, renderer);
 
         Ray::settings_t s;
@@ -96,8 +97,8 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
                    Ray::RendererAVX2 /*| Ray::RendererOCL*/);
         AddComponent(RAY_RENDERER_KEY, ray_renderer);
 
-        auto scene_manager =
-            std::make_shared<SceneManager>(*ren_ctx, *snd_ctx, *ray_renderer, *threads);
+        auto scene_manager = std::make_shared<SceneManager>(
+            *ren_ctx, *sh_loader, *snd_ctx, *ray_renderer, *threads);
         AddComponent(SCENE_MANAGER_KEY, scene_manager);
     }
 

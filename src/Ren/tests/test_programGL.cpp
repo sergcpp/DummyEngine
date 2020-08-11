@@ -161,19 +161,24 @@ void main(void) {
 })";
 
         Ren::eProgLoadStatus status;
-        Ren::ProgramRef p = test.LoadProgramGLSL("constant", nullptr, nullptr, &status);
+        Ren::ProgramRef p = test.LoadProgram("constant", {}, {}, {}, {}, &status);
 
         require(status == Ren::eProgLoadStatus::SetToDefault);
         require(p->name() == "constant");
         require(p->prog_id() == 0); // not initialized
         require(p->ready() == false);
 
-        test.LoadProgramGLSL("constant", vs_src, fs_src, &status);
+        Ren::eShaderLoadStatus sh_status;
+        Ren::ShaderRef vs_ref = test.LoadShaderGLSL("constant_vs", vs_src, Ren::eShaderType::Vert, &sh_status);
+        require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+        Ren::ShaderRef fs_ref = test.LoadShaderGLSL("constant_fs", fs_src, Ren::eShaderType::Frag, &sh_status);
+        require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+
+        test.LoadProgram("constant", vs_ref, fs_ref, {}, {}, &status);
 
         require(status == Ren::eProgLoadStatus::CreatedFromData);
 
         require(p->name() == "constant");
-
         require(p->ready() == true);
 
         require(p->attribute(0).name == "aVertexPosition");
@@ -220,8 +225,13 @@ void main() {
 	inout_buffer.data[global_index].c = vec4(1.0, 0.0, 1.0, 1.0);
 })";
 
+        Ren::eShaderLoadStatus sh_status;
+        Ren::ShaderRef cs_ref = test.LoadShaderGLSL("sample_cs", cs_source, Ren::eShaderType::Comp, &sh_status);
+        require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+
         Ren::eProgLoadStatus status;
-        Ren::ProgramRef p = test.LoadProgramGLSL("sample", cs_source, &status);
+        Ren::ProgramRef p = test.LoadProgram("sample", cs_ref, &status);
+        require(status == Ren::eProgLoadStatus::CreatedFromData);
 
         require(p->uniform(0).name == "delta");
         require(p->uniform(0).loc != -1);
@@ -464,18 +474,23 @@ void main() {
                 0xFD, 0x00, 0x01, 0x00, 0x38, 0x00, 0x01, 0x00
             };
 
-            Ren::eProgLoadStatus status;
-            Ren::ProgramRef p = test.LoadProgramSPIRV("simple", vert_spv, vert_spv_size, frag_spv, frag_spv_size, &status);
+            Ren::eShaderLoadStatus sh_status;
+            Ren::ShaderRef vs_ref = test.LoadShaderSPIRV("simple_vs", vert_spv, vert_spv_size, Ren::eShaderType::Vert, &sh_status);
+            require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+            Ren::ShaderRef fs_ref = test.LoadShaderSPIRV("simple_fs", frag_spv, frag_spv_size, Ren::eShaderType::Frag, &sh_status);
+            require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
+            Ren::eProgLoadStatus status;
+            Ren::ProgramRef p = test.LoadProgram("simple", vs_ref, fs_ref, {}, {}, &status);
             require(status == Ren::eProgLoadStatus::CreatedFromData);
 
             require(p->name() == "simple");
             require(p->ready() == true);
 
-            require(p->attribute(0).loc == 0);
-            require(p->attribute(1).loc == 1);
-            require(p->attribute(2).loc == 2);
-            require(p->attribute(3).loc == -1);
+            //require(p->attribute(0).loc == 0);
+            //require(p->attribute(1).loc == 1);
+            //require(p->attribute(2).loc == 2);
+            //require(p->attribute(3).loc == -1);
 
             //require(p->uniform(0).loc == 0);
             //require(p->uniform(1).loc == -1);

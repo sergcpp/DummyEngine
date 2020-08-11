@@ -11,16 +11,18 @@ class Context;
 class Material;
 class Mesh;
 class Program;
+class Shader;
 class Texture2D;
 class TextureAtlas;
 class TextureSplitter;
 
-typedef StorageRef<AnimSequence> AnimSeqRef;
-typedef StorageRef<Buffer> BufferRef;
-typedef StorageRef<Material> MaterialRef;
-typedef StorageRef<Mesh> MeshRef;
-typedef StorageRef<Program> ProgramRef;
-typedef StorageRef<Texture2D> Texture2DRef;
+using AnimSeqRef = StorageRef<AnimSequence>;
+using BufferRef = StorageRef<Buffer>;
+using MaterialRef = StorageRef<Material>;
+using MeshRef = StorageRef<Mesh>;
+using ProgramRef = StorageRef<Program>;
+using ShaderRef = StorageRef<Shader>;
+using Texture2DRef = StorageRef<Texture2D>;
 
 #if defined(USE_GL_RENDER)
 void CheckError(const char *op = "undefined");

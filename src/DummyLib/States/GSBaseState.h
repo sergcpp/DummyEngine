@@ -21,6 +21,7 @@ class GameStateManager;
 class FontStorage;
 class SceneManager;
 class Random;
+class ShaderLoader;
 
 namespace Gui {
 class BaseElement;
@@ -44,6 +45,7 @@ protected:
     std::shared_ptr<SceneManager>   scene_manager_;
     std::shared_ptr<TimeInterval>   swap_interval_;
     std::shared_ptr<Random>         random_;
+    std::shared_ptr<ShaderLoader>   shader_loader_;
 
     std::shared_ptr<Gui::Renderer>      ui_renderer_;
     std::shared_ptr<Gui::BaseElement>   ui_root_;

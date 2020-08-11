@@ -21,8 +21,9 @@ Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data,
                           skin_vertex_buf, delta_buf, load_status, log_);
     } else {
         if (ref->ready()) {
-            if (load_status)
-                *load_status = MeshFound;
+            if (load_status) {
+                (*load_status) = eMeshLoadStatus::Found;
+            }
         } else if (data) {
             ref->Init(data, on_mat_load, vertex_buf1, vertex_buf2, index_buf,
                       skin_vertex_buf, delta_buf, load_status, log_);
@@ -41,8 +42,9 @@ Ren::MaterialRef Ren::Context::LoadMaterial(const char *name, const char *mat_sr
         ref = materials_.Add(name, mat_src, status, on_prog_load, on_tex_load, log_);
     } else {
         if (ref->ready()) {
-            if (status)
-                *status = MatFound;
+            if (status) {
+                (*status) = eMatLoadStatus::Found;
+            }
         } else if (!ref->ready() && mat_src) {
             ref->Init(mat_src, status, on_prog_load, on_tex_load, log_);
         }

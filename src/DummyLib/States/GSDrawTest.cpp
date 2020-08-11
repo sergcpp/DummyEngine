@@ -3,10 +3,11 @@
 #include <fstream>
 #include <memory>
 
+#include <Eng/Gui/Renderer.h>
 #include <Eng/Renderer/Renderer.h>
 #include <Eng/Scene/SceneManager.h>
 #include <Eng/Utils/Cmdline.h>
-#include <Eng/Gui/Renderer.h>
+#include <Eng/Utils/ShaderLoader.h>
 #include <Ren/Context.h>
 #include <Ren/GL.h>
 #include <Ren/Utils.h>
@@ -26,22 +27,21 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
                           //"skin_test.json";
                           "living_room_gumroad.json";
-                          //"bistro.json";
-                          //"pbr_test.json";
-                          //"zenith.json";
-                          //"corridor.json";
-                          //"vegetation_test.json";
-                          //"vegetation_test_night.json";
-                          //"test_decals.json";
-                          //"courtroom.json";
-                          //"lmap_test.json";
-                          //"sss_test.json";
-                          //"char_test.json";
-                          //"tessellation_test.json";
-}
+//"bistro.json";
+//"pbr_test.json";
+//"zenith.json";
+//"corridor.json";
+//"vegetation_test.json";
+//"vegetation_test_night.json";
+//"test_decals.json";
+//"courtroom.json";
+//"lmap_test.json";
+//"sss_test.json";
+//"char_test.json";
+//"tessellation_test.json";
+} // namespace GSDrawTestInternal
 
-GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {
-}
+GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {}
 
 void GSDrawTest::Enter() {
     using namespace GSDrawTestInternal;
@@ -50,6 +50,13 @@ void GSDrawTest::Enter() {
 
     log_->Info("GSDrawTest: Loading scene!");
     GSBaseState::LoadScene(SCENE_NAME);
+
+    ///////////////// TEST TESST TEST
+
+    const ShaderLoader::Param params[] = { {"THRES", "0.15"}, {"ENABLE_SHIT"}, {} };
+    Ren::ShaderRef sh_ref = shader_loader_->LoadGLSL(*ren_ctx_, "internal/blit.vert.glsl", params);
+
+    volatile int ii = 0;
 }
 
 void GSDrawTest::OnPreloadScene(JsObject &js_scene) {
@@ -154,10 +161,8 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
             for (const JsElement &el : js_points.elements) {
                 const JsArray &js_point = el.as_arr();
 
-                const JsNumber
-                    &x = js_point.at(0).as_num(),
-                    &y = js_point.at(1).as_num(),
-                    &z = js_point.at(2).as_num();
+                const JsNumber &x = js_point.at(0).as_num(), &y = js_point.at(1).as_num(),
+                               &z = js_point.at(2).as_num();
 
                 cam_follow_path_.emplace_back((float)x.val, (float)y.val, (float)z.val);
             }
@@ -187,8 +192,10 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
 
                     const uint32_t mask = CompDrawableBit | CompAnimStateBit;
                     if ((wolf->comp_mask & mask) == mask) {
-                        auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
-                        as->anim_time_s = 4.0f * (float(rand()) / float(RAND_MAX)); // NOLINT
+                        auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(
+                            wolf->components[CompAnimState]);
+                        as->anim_time_s =
+                            4.0f * (float(rand()) / float(RAND_MAX)); // NOLINT
                     }
                 }
             }
@@ -236,13 +243,9 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
     leaf_tree_index_ = scene_manager_->FindObject("leaf_tree");
 }
 
-void GSDrawTest::Exit() {
-    GSBaseState::Exit();
-}
+void GSDrawTest::Exit() { GSBaseState::Exit(); }
 
-void GSDrawTest::Draw(uint64_t dt_us) {
-    GSBaseState::Draw(dt_us);
-}
+void GSDrawTest::Draw(uint64_t dt_us) { GSBaseState::Draw(dt_us); }
 
 void GSDrawTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     GSBaseState::DrawUI(r, root);
@@ -251,14 +254,15 @@ void GSDrawTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
 void GSDrawTest::Update(uint64_t dt_us) {
     using namespace GSDrawTestInternal;
 
-    const Ren::Vec3f
-        up = Ren::Vec3f{ 0, 1, 0 },
-        side = Normalize(Cross(view_dir_, up));
+    const Ren::Vec3f up = Ren::Vec3f{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
 
     if (cam_follow_path_.size() < 3) {
-        const float
-            fwd_speed = std::max(std::min(fwd_press_speed_ + fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_),
-            side_speed = std::max(std::min(side_press_speed_ + side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+        const float fwd_speed = std::max(
+                        std::min(fwd_press_speed_ + fwd_touch_speed_, max_fwd_speed_),
+                        -max_fwd_speed_),
+                    side_speed = std::max(
+                        std::min(side_press_speed_ + side_touch_speed_, max_fwd_speed_),
+                        -max_fwd_speed_);
 
         view_origin_ += view_dir_ * fwd_speed;
         view_origin_ += side * side_speed;
@@ -269,14 +273,14 @@ void GSDrawTest::Update(uint64_t dt_us) {
     } else {
         int next_point = (cam_follow_point_ + 1) % (int)cam_follow_path_.size();
 
-        {   // update param
-            const Ren::Vec3f
-                &p1 = cam_follow_path_[cam_follow_point_],
-                &p2 = cam_follow_path_[next_point];
+        { // update param
+            const Ren::Vec3f &p1 = cam_follow_path_[cam_follow_point_],
+                             &p2 = cam_follow_path_[next_point];
 
             cam_follow_param_ += 0.000005f * dt_us / Ren::Distance(p1, p2);
             while (cam_follow_param_ > 1.0f) {
-                cam_follow_point_ = (cam_follow_point_ + 1) % (int)cam_follow_path_.size();
+                cam_follow_point_ =
+                    (cam_follow_point_ + 1) % (int)cam_follow_path_.size();
                 cam_follow_param_ -= 1.0f;
             }
         }
@@ -337,31 +341,38 @@ void GSDrawTest::Update(uint64_t dt_us) {
     SceneData &scene = scene_manager_->scene_data();
 
     if (scooter_indices_[0] != 0xffffffff) {
-        const auto rot_center = Ren::Vec3f{ 44.5799f, 0.15f, 24.7763f };
+        const auto rot_center = Ren::Vec3f{44.5799f, 0.15f, 24.7763f};
 
         scooters_angle_ += 0.0000005f * dt_us;
 
         for (int i = 0; i < 16; i++) {
-            if (scooter_indices_[i] == 0xffffffff) break;
+            if (scooter_indices_[i] == 0xffffffff)
+                break;
 
             SceneObject *scooter = scene_manager_->GetObject(scooter_indices_[i]);
 
             const uint32_t mask = CompTransform;
             if ((scooter->comp_mask & mask) == mask) {
-                auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(scooter->components[CompTransform]);
+                auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(
+                    scooter->components[CompTransform]);
 
                 tr->prev_mat = tr->mat;
-                tr->mat = Ren::Mat4f{ 1.0f };
+                tr->mat = Ren::Mat4f{1.0f};
                 tr->mat = Ren::Translate(tr->mat, rot_center);
-                
+
                 if (i < 8) {
                     // inner circle
-                    tr->mat = Ren::Rotate(tr->mat, scooters_angle_ + float(i) * 0.25f * Ren::Pi<float>(), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-                    tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 6.5f, 0.0f, 0.0f });
+                    tr->mat = Ren::Rotate(
+                        tr->mat, scooters_angle_ + float(i) * 0.25f * Ren::Pi<float>(),
+                        Ren::Vec3f{0.0f, 1.0f, 0.0f});
+                    tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{6.5f, 0.0f, 0.0f});
                 } else {
                     // outer circle
-                    tr->mat = Ren::Rotate(tr->mat, -scooters_angle_ + float(i - 8) * 0.25f * Ren::Pi<float>(), Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
-                    tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ -8.5f, 0.0f, 0.0f });
+                    tr->mat = Ren::Rotate(tr->mat,
+                                          -scooters_angle_ +
+                                              float(i - 8) * 0.25f * Ren::Pi<float>(),
+                                          Ren::Vec3f{0.0f, 1.0f, 0.0f});
+                    tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{-8.5f, 0.0f, 0.0f});
                 }
             }
         }
@@ -374,8 +385,8 @@ void GSDrawTest::Update(uint64_t dt_us) {
     if (wind_update_time_ > 400000) {
         wind_update_time_ = 0;
         // update wind vector
-        //const float next_wind_strength = 0.15f * random_->GetNormalizedFloat();
-        //wind_vector_goal_ = next_wind_strength * random_->GetUnitVec3();
+        // const float next_wind_strength = 0.15f * random_->GetNormalizedFloat();
+        // wind_vector_goal_ = next_wind_strength * random_->GetUnitVec3();
     }
 
     scene.env.wind_vec = 0.99f * scene.env.wind_vec + 0.01f * wind_vector_goal_;
@@ -388,7 +399,8 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
-        if (evt.point.x > (float)ren_ctx_->w() * 0.9f && evt.point.y < (float)ren_ctx_->h() * 0.1f) {
+        if (evt.point.x > (float)ren_ctx_->w() * 0.9f &&
+            evt.point.y < (float)ren_ctx_->h() * 0.1f) {
             const uint32_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -442,12 +454,14 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP1Move:
         if (move_pointer_ == 1) {
             side_touch_speed_ += evt.move.dx * 0.002f;
-            side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+            side_touch_speed_ =
+                std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
             fwd_touch_speed_ -= evt.move.dy * 0.002f;
-            fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+            fwd_touch_speed_ =
+                std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 1) {
-            auto up = Vec3f{ 0, 1, 0 };
+            auto up = Vec3f{0, 1, 0};
             Vec3f side = Normalize(Cross(view_dir_, up));
             up = Cross(side, view_dir_);
 
@@ -464,12 +478,14 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
     case RawInputEvent::EvP2Move:
         if (move_pointer_ == 2) {
             side_touch_speed_ += evt.move.dx * 0.002f;
-            side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+            side_touch_speed_ =
+                std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
             fwd_touch_speed_ -= evt.move.dy * 0.002f;
-            fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
+            fwd_touch_speed_ =
+                std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 2) {
-            auto up = Vec3f{ 0, 1, 0 };
+            auto up = Vec3f{0, 1, 0};
             Vec3f side = Normalize(Cross(view_dir_, up));
             up = Cross(side, view_dir_);
 
@@ -484,23 +500,26 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
         }
         break;
     case RawInputEvent::EvKeyDown: {
-        if (evt.key_code == KeyUp || (evt.key_code == KeyW && (!cmdline_enabled_ || view_pointer_))) {
+        if (evt.key_code == KeyUp ||
+            (evt.key_code == KeyW && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = max_fwd_speed_;
-        } else if (evt.key_code == KeyDown || (evt.key_code == KeyS && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyDown ||
+                   (evt.key_code == KeyS && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key_code == KeyLeft || (evt.key_code == KeyA && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyLeft ||
+                   (evt.key_code == KeyA && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key_code == KeyRight || (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == KeyRight ||
+                   (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = max_fwd_speed_;
         } else if (evt.key_code == KeySpace) {
-            wind_vector_goal_ = Ren::Vec3f{ 1.0f, 0.0f, 0.0f };
+            wind_vector_goal_ = Ren::Vec3f{1.0f, 0.0f, 0.0f};
         } else if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
             shift_down_ = true;
         } else {
             input_processed = false;
         }
-    }
-    break;
+    } break;
     case RawInputEvent::EvKeyUp: {
         if (!cmdline_enabled_ || view_pointer_) {
             if (evt.key_code == KeyUp || evt.key_code == KeyW ||
@@ -515,8 +534,7 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
         } else {
             input_processed = false;
         }
-    }
-    break;
+    } break;
     default:
         break;
     }
@@ -535,11 +553,10 @@ void GSDrawTest::OnUpdateScene() {
     TestUpdateAnims(delta_time_s);
 
     // Update camera
-    scene_manager_->SetupView(
-            view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{ 0.0f, 1.0f, 0.0f },
-            view_fov_, max_exposure_);
+    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_),
+                              Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_, max_exposure_);
 
-    //log_->Info("%f %f %f | %f %f %f",
+    // log_->Info("%f %f %f | %f %f %f",
     //        view_origin_[0], view_origin_[1], view_origin_[2],
     //        view_dir_[0], view_dir_[1], view_dir_[2]);
 }
@@ -547,37 +564,37 @@ void GSDrawTest::OnUpdateScene() {
 void GSDrawTest::SaveScene(JsObject &js_scene) {
     GSBaseState::SaveScene(js_scene);
 
-    {   // write camera
+    { // write camera
         JsObject js_camera;
 
-        {   // write view origin
+        { // write view origin
             JsArray js_view_origin;
-            js_view_origin.Push(JsNumber{ (double)initial_view_origin_[0] });
-            js_view_origin.Push(JsNumber{ (double)initial_view_origin_[1] });
-            js_view_origin.Push(JsNumber{ (double)initial_view_origin_[2] });
+            js_view_origin.Push(JsNumber{(double)initial_view_origin_[0]});
+            js_view_origin.Push(JsNumber{(double)initial_view_origin_[1]});
+            js_view_origin.Push(JsNumber{(double)initial_view_origin_[2]});
 
             js_camera.Push("view_origin", std::move(js_view_origin));
         }
 
-        {   // write view direction
+        { // write view direction
             JsArray js_view_dir;
-            js_view_dir.Push(JsNumber{ (double)initial_view_dir_[0] });
-            js_view_dir.Push(JsNumber{ (double)initial_view_dir_[1] });
-            js_view_dir.Push(JsNumber{ (double)initial_view_dir_[2] });
+            js_view_dir.Push(JsNumber{(double)initial_view_dir_[0]});
+            js_view_dir.Push(JsNumber{(double)initial_view_dir_[1]});
+            js_view_dir.Push(JsNumber{(double)initial_view_dir_[2]});
 
             js_camera.Push("view_dir", std::move(js_view_dir));
         }
 
-        {   // write forward speed
-            js_camera.Push("fwd_speed", JsNumber{ (double)max_fwd_speed_ });
+        { // write forward speed
+            js_camera.Push("fwd_speed", JsNumber{(double)max_fwd_speed_});
         }
 
-        {   // write fov
-            js_camera.Push("fov", JsNumber{ (double)view_fov_ });
+        { // write fov
+            js_camera.Push("fov", JsNumber{(double)view_fov_});
         }
 
-        {   // write max exposure
-            js_camera.Push("max_exposure", JsNumber{ (double)max_exposure_ });
+        { // write max exposure
+            js_camera.Push("max_exposure", JsNumber{(double)max_exposure_});
         }
 
         js_scene.Push("camera", std::move(js_camera));
@@ -589,14 +606,17 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
     if (wolf_indices_[0] != 0xffffffff) {
         for (uint32_t wolf_index : wolf_indices_) {
-            if (wolf_index == 0xffffffff) break;
+            if (wolf_index == 0xffffffff)
+                break;
 
             SceneObject *wolf = scene_manager_->GetObject(wolf_index);
 
             const uint32_t mask = CompDrawableBit | CompAnimStateBit;
             if ((wolf->comp_mask & mask) == mask) {
-                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(wolf->components[CompDrawable]);
-                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
+                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(
+                    wolf->components[CompDrawable]);
+                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(
+                    wolf->components[CompAnimState]);
 
                 // keep previous palette for velocity calculation
                 std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -614,14 +634,17 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
     if (scooter_indices_[0] != 0xffffffff) {
         for (int i = 0; i < 16; i++) {
-            if (scooter_indices_[i] == 0xffffffff) break;
+            if (scooter_indices_[i] == 0xffffffff)
+                break;
 
             SceneObject *scooter = scene_manager_->GetObject(scooter_indices_[i]);
 
             const uint32_t mask = CompDrawableBit | CompAnimStateBit;
             if ((scooter->comp_mask & mask) == mask) {
-                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(scooter->components[CompDrawable]);
-                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(scooter->components[CompAnimState]);
+                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(
+                    scooter->components[CompDrawable]);
+                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(
+                    scooter->components[CompAnimState]);
 
                 // keep previous palette for velocity calculation
                 std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -640,14 +663,17 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
     }
 
     for (const uint32_t ndx : sophia_indices_) {
-        if (ndx == 0xffffffff) break;
+        if (ndx == 0xffffffff)
+            break;
 
         SceneObject *sophia = scene_manager_->GetObject(ndx);
 
         const uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((sophia->comp_mask & mask) == mask) {
-            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(sophia->components[CompDrawable]);
-            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(sophia->components[CompAnimState]);
+            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(
+                sophia->components[CompDrawable]);
+            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(
+                sophia->components[CompAnimState]);
 
             // keep previous palette for velocity calculation
             std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -667,14 +693,17 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
     }
 
     for (const uint32_t ndx : eric_indices_) {
-        if (ndx == 0xffffffff) break;
+        if (ndx == 0xffffffff)
+            break;
 
         SceneObject *eric = scene_manager_->GetObject(ndx);
 
         const uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((eric->comp_mask & mask) == mask) {
-            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(eric->components[CompDrawable]);
-            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(eric->components[CompAnimState]);
+            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(
+                eric->components[CompDrawable]);
+            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(
+                eric->components[CompAnimState]);
 
             // keep previous palette for velocity calculation
             std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -696,8 +725,10 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
         const uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((zenith->comp_mask & mask) == mask) {
-            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(zenith->components[CompDrawable]);
-            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(zenith->components[CompAnimState]);
+            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(
+                zenith->components[CompDrawable]);
+            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(
+                zenith->components[CompAnimState]);
 
             // keep previous palette for velocity calculation
             std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -719,8 +750,10 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
         const uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((palm->comp_mask & mask) == mask) {
-            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(palm->components[CompDrawable]);
-            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(palm->components[CompAnimState]);
+            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(
+                palm->components[CompDrawable]);
+            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(
+                palm->components[CompAnimState]);
 
             // keep previous palette for velocity calculation
             std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -742,17 +775,21 @@ void GSDrawTest::TestUpdateAnims(float delta_time_s) {
 
         uint32_t mask = CompDrawableBit | CompTransformBit;
         if ((leaf_tree->comp_mask & mask) == mask) {
-            auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(leaf_tree->components[CompTransform]);
+            auto *tr = (Transform
+    *)scene.comp_store[CompTransform]->Get(leaf_tree->components[CompTransform]);
 
             Ren::Mat4f rot_mat;
-            rot_mat = Ren::Rotate(rot_mat, 1.0f * delta_time_s, Ren::Vec3f{ 0.0f, 1.0f, 0.0f });
+            rot_mat = Ren::Rotate(rot_mat, 1.0f * delta_time_s, Ren::Vec3f{ 0.0f, 1.0f,
+    0.0f });
 
             tr->mat = rot_mat * tr->mat;
             scene_manager_->InvalidateObjects(&leaf_tree_index_, 1, CompTransformBit);
         }
     }*/
 
-    const auto wind_scroll_dir = Ren::Vec2f{ scene.env.wind_vec[0], scene.env.wind_vec[2] };
-    scene.env.wind_scroll_lf = Ren::Fract(scene.env.wind_scroll_lf - (1.0f / 256.0f) * delta_time_s * wind_scroll_dir);
-    scene.env.wind_scroll_hf = Ren::Fract(scene.env.wind_scroll_hf - (1.0f / 32.0f) * delta_time_s * wind_scroll_dir);
+    const auto wind_scroll_dir = Ren::Vec2f{scene.env.wind_vec[0], scene.env.wind_vec[2]};
+    scene.env.wind_scroll_lf = Ren::Fract(
+        scene.env.wind_scroll_lf - (1.0f / 256.0f) * delta_time_s * wind_scroll_dir);
+    scene.env.wind_scroll_hf = Ren::Fract(
+        scene.env.wind_scroll_hf - (1.0f / 32.0f) * delta_time_s * wind_scroll_dir);
 }

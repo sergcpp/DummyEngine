@@ -19,6 +19,8 @@ namespace Snd {
 class Context;
 }
 
+class ShaderLoader;
+
 struct assets_context_t {
     const char *platform;
     Ren::ILog *log;
@@ -29,7 +31,7 @@ struct assets_context_t {
 
 class SceneManager : public std::enable_shared_from_this<SceneManager> {
   public:
-    SceneManager(Ren::Context &ren_ctx, Snd::Context &snd_ctx,
+    SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context &snd_ctx,
                  Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads);
     ~SceneManager();
 
@@ -125,6 +127,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     int scene_texture_load_counter_ = 0;
 
     Ren::Context &ren_ctx_;
+    ShaderLoader &sh_;
     Snd::Context &snd_ctx_;
     Ren::MeshRef cam_rig_;
     Ray::RendererBase &ray_renderer_;

@@ -6,6 +6,7 @@
 #include "Mesh.h"
 #include "Program.h"
 #include "RenderThread.h"
+#include "Shader.h"
 #include "Texture.h"
 #include "TextureAtlas.h"
 #include "TextureRegion.h"
@@ -23,6 +24,7 @@ class Context : public RenderThread {
     MeshStorage meshes_;
     MaterialStorage materials_;
     ProgramStorage programs_;
+    ShaderStorage shaders_;
     Texture2DStorage textures_;
     TextureRegionStorage texture_regions_;
     AnimSeqStorage anims_;
@@ -83,20 +85,18 @@ class Context : public RenderThread {
 
     /*** Program ***/
 #if defined(USE_GL_RENDER)
-    ProgramRef LoadProgramGLSL(const char *name, const char *vs_source,
-                               const char *fs_source, eProgLoadStatus *load_status);
-    ProgramRef LoadProgramGLSL(const char *name, const char *vs_source,
-                               const char *fs_source, const char *tcs_source,
-                               const char *tes_source, eProgLoadStatus *load_status);
-    ProgramRef LoadProgramGLSL(const char *name, const char *cs_source,
-                               eProgLoadStatus *load_status);
+    ShaderRef LoadShaderGLSL(const char *name, const char *shader_src, eShaderType type,
+                             eShaderLoadStatus *load_status);
 #ifndef __ANDROID__
-    ProgramRef LoadProgramSPIRV(const char *name, const uint8_t *vs_data,
-                                int vs_data_size, const uint8_t *fs_data,
-                                int fs_data_size, eProgLoadStatus *load_status);
-    ProgramRef LoadProgramSPIRV(const char *name, const uint8_t *cs_data,
-                                int cs_data_size, eProgLoadStatus *load_status);
+    ShaderRef LoadShaderSPIRV(const char *name, const uint8_t *shader_data, int data_size,
+                              eShaderType type, eShaderLoadStatus *load_status);
 #endif
+
+    ProgramRef LoadProgram(const char *name, ShaderRef vs_ref, ShaderRef fs_ref,
+                           ShaderRef tcs_ref, ShaderRef tes_ref,
+                           eProgLoadStatus *load_status);
+    ProgramRef LoadProgram(const char *name, ShaderRef cs_source,
+                           eProgLoadStatus *load_status);
 #elif defined(USE_SW_RENDER)
     ProgramRef LoadProgramSW(const char *name, void *vs_shader, void *fs_shader,
                              int num_fvars, const Attribute *attrs, const Uniform *unifs,

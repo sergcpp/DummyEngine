@@ -70,7 +70,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                                 const texture_load_callback &on_tex_load, ILog *log) {
     if (!mat_src) {
         if (status) {
-            *status = MatSetToDefault;
+            (*status) = eMatLoadStatus::SetToDefault;
         }
         return;
     }
@@ -214,7 +214,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
 
     ready_ = true;
     if (status) {
-        *status = MatCreatedFromData;
+        (*status) = eMatLoadStatus::CreatedFromData;
     }
 }
 

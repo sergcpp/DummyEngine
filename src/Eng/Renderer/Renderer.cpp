@@ -78,8 +78,8 @@ int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y,
         (max)[2], (max)[0], (min)[1], (max)[2], (min)[0], (max)[1], (min)[2], (max)[0],  \
         (max)[1], (min)[2], (min)[0], (max)[1], (max)[2], (max)[0], (max)[1], (max)[2]
 
-Renderer::Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads)
-    : ctx_(ctx), threads_(std::move(threads)),
+Renderer::Renderer(Ren::Context &ctx, ShaderLoader& sh, std::shared_ptr<Sys::ThreadPool> threads)
+    : ctx_(ctx), sh_(sh), threads_(std::move(threads)),
       shadow_splitter_(RendererInternal::SHADOWMAP_WIDTH,
                        RendererInternal::SHADOWMAP_HEIGHT) {
     using namespace RendererInternal;

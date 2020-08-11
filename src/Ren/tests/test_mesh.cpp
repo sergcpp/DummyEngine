@@ -221,7 +221,7 @@ void test_mesh() {
                                          const char *arg4) {
             Ren::eProgLoadStatus status;
 #if defined(USE_GL_RENDER)
-            return test.LoadProgramGLSL(name, nullptr, nullptr, &status);
+            return test.LoadProgram(name, {}, {}, {}, {}, &status);
 #elif defined(USE_SW_RENDER)
             Ren::Attribute attrs[] = {{}};
             Ren::Uniform unifs[] = {{}};
@@ -243,8 +243,8 @@ void test_mesh() {
 
         Ren::eMeshLoadStatus load_status;
         Ren::MeshRef m_ref = test.LoadMesh("ivy", &in, on_material_needed, &load_status);
-        require(load_status == Ren::MeshCreatedFromData);
-        require(m_ref->type() == Ren::MeshSimple);
+        require(load_status == Ren::eMeshLoadStatus::CreatedFromData);
+        require(m_ref->type() == Ren::eMeshType::Simple);
         require(m_ref->name() == "ivy");
 
         require(m_ref->bbox_min() == Ren::Vec3f(-10.389862f, -220.607803f, -441.704651f));
@@ -267,7 +267,7 @@ void test_mesh() {
             Ren::eMeshLoadStatus load_status;
             Ren::MeshRef m_ref2 =
                 test.LoadMesh("ivy", &in, on_material_needed, &load_status);
-            require(load_status == Ren::MeshFound);
+            require(load_status == Ren::eMeshLoadStatus::Found);
             require((bool)m_ref2);
         }
 
@@ -287,7 +287,7 @@ void test_mesh() {
                                          const char *arg4) {
             Ren::eProgLoadStatus status;
 #if defined(USE_GL_RENDER)
-            return test.LoadProgramGLSL(name, nullptr, nullptr, &status);
+            return test.LoadProgram(name, {}, {}, {}, {}, &status);
 #elif defined(USE_SW_RENDER)
             Ren::Attribute _attrs[] = {{}};
             Ren::Uniform _unifs[] = {{}};
@@ -309,9 +309,9 @@ void test_mesh() {
 
         Ren::eMeshLoadStatus load_status;
         Ren::MeshRef m_ref = test.LoadMesh("test", &in, on_material_needed, &load_status);
-        require(load_status == Ren::MeshCreatedFromData);
+        require(load_status == Ren::eMeshLoadStatus::CreatedFromData);
         require((bool)m_ref);
-        require(m_ref->type() == Ren::MeshSkeletal);
+        require(m_ref->type() == Ren::eMeshType::Skeletal);
         require(m_ref->name() == "test");
 
         require(m_ref->bbox_min()[0] == Approx(0).epsilon(0.01));
@@ -348,7 +348,7 @@ void test_mesh() {
             Ren::eMeshLoadStatus load_status;
             Ren::MeshRef m_ref2 =
                 test.LoadMesh("test", &in, on_material_needed, &load_status);
-            require(load_status == Ren::MeshFound);
+            require(load_status == Ren::eMeshLoadStatus::Found);
             require((bool)m_ref2);
         }
 

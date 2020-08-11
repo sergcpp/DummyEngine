@@ -21,6 +21,7 @@ extern "C" {
 }
 
 #include "../Utils/Load.h"
+#include "../Utils/ShaderLoader.h"
 
 namespace SceneManagerConstants {
 const float NEAR_CLIP = 0.1f;
@@ -88,9 +89,9 @@ template <typename T> class DefaultCompStorage : public CompStorage {
 #include "__cam_rig.inl"
 } // namespace SceneManagerInternal
 
-SceneManager::SceneManager(Ren::Context &ren_ctx, Snd::Context &snd_ctx,
+SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context &snd_ctx,
                            Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads)
-    : ren_ctx_(ren_ctx), snd_ctx_(snd_ctx), ray_renderer_(ray_renderer),
+    : ren_ctx_(ren_ctx), sh_(sh), snd_ctx_(snd_ctx), ray_renderer_(ray_renderer),
       threads_(threads), cam_(Ren::Vec3f{0.0f, 0.0f, 1.0f}, Ren::Vec3f{0.0f, 0.0f, 0.0f},
                               Ren::Vec3f{0.0f, 1.0f, 0.0f}),
       loading_textures_(8), pending_textures_(8) {
@@ -173,9 +174,9 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, Snd::Context &snd_ctx,
             return ren_ctx_.LoadMaterial(name, nullptr, nullptr, nullptr, nullptr);
         },
         &status);
-    assert(status == Ren::MeshCreatedFromData);
+    assert(status == Ren::eMeshLoadStatus::CreatedFromData);
 
-    const float pos[] = { 0.0f, 0.0f, 0.0f };
+    const float pos[] = {0.0f, 0.0f, 0.0f};
     amb_sound_.Init(1.0f, pos);
 }
 
@@ -659,7 +660,7 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp,
         Ren::eMeshLoadStatus status;
         dr->mesh = ren_ctx_.LoadMesh(js_mesh_lookup_name, nullptr, nullptr, &status);
 
-        if (status != Ren::MeshFound) {
+        if (status != Ren::eMeshLoadStatus::Found) {
             const std::string mesh_path =
                 std::string(MODELS_PATH) + js_mesh_file_name.val;
 
@@ -676,7 +677,7 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp,
             dr->mesh = ren_ctx_.LoadMesh(
                 js_mesh_lookup_name, &in_file_stream,
                 std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
-            assert(status == Ren::MeshCreatedFromData);
+            assert(status == Ren::eMeshLoadStatus::CreatedFromData);
         }
     } else {
         assert(false && "Not supported anymore, update scene file!");
@@ -689,7 +690,7 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp,
         dr->pt_mesh = ren_ctx_.LoadMesh(js_pt_mesh_file_name.val.c_str(), nullptr,
                                         nullptr, &status);
 
-        if (status != Ren::MeshFound) {
+        if (status != Ren::eMeshLoadStatus::Found) {
             const std::string mesh_path =
                 std::string(MODELS_PATH) + js_pt_mesh_file_name.val;
 
@@ -706,7 +707,7 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp,
             dr->pt_mesh = ren_ctx_.LoadMesh(
                 js_pt_mesh_file_name.val.c_str(), &in_file_stream,
                 std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
-            assert(status == Ren::MeshCreatedFromData);
+            assert(status == Ren::eMeshLoadStatus::CreatedFromData);
         }
     }
 
@@ -726,7 +727,7 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp,
     if (js_comp_obj.Has("anims")) {
         const JsArray &js_anims = js_comp_obj.at("anims").as_arr();
 
-        assert(dr->mesh->type() == Ren::MeshSkeletal);
+        assert(dr->mesh->type() == Ren::eMeshType::Skeletal);
         Ren::Skeleton *skel = dr->mesh->skel();
 
         for (const auto &js_anim : js_anims.elements) {
@@ -748,7 +749,7 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp,
         }
     }
 
-    if (dr->mesh->type() == Ren::MeshSkeletal) {
+    if (dr->mesh->type() == Ren::eMeshType::Skeletal) {
         const Ren::Skeleton *skel = dr->mesh->skel();
 
         // Attach ellipsoids to bones
@@ -784,7 +785,7 @@ void SceneManager::PostloadOccluder(const JsObject &js_comp_obj, void *comp,
     occ->mesh =
         ren_ctx_.LoadMesh(js_mesh_file_name.val.c_str(), nullptr, nullptr, &status);
 
-    if (status != Ren::MeshFound) {
+    if (status != Ren::eMeshLoadStatus::Found) {
         const std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file_name.val;
 
         Sys::AssetFile in_file(mesh_path.c_str());
@@ -800,7 +801,7 @@ void SceneManager::PostloadOccluder(const JsObject &js_comp_obj, void *comp,
         occ->mesh = ren_ctx_.LoadMesh(js_mesh_file_name.val.c_str(), &in_file_stream,
                                       std::bind(&SceneManager::OnLoadMaterial, this, _1),
                                       &status);
-        assert(status == Ren::MeshCreatedFromData);
+        assert(status == Ren::eMeshLoadStatus::CreatedFromData);
     }
 
     obj_bbox[0] = Ren::Min(obj_bbox[0], occ->mesh->bbox_min());
@@ -813,7 +814,7 @@ void SceneManager::PostloadLightmap(const JsObject &js_comp_obj, void *comp,
 
     auto *lm = (Lightmap *)comp;
 
-    int node_id = scene_data_.lm_splitter.Allocate(lm->size, lm->pos);
+    const int node_id = scene_data_.lm_splitter.Allocate(lm->size, lm->pos);
     if (node_id == -1) {
         throw std::runtime_error("Cannot allocate lightmap region!");
     }
@@ -988,7 +989,7 @@ Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {
             name, mat_src.data(), &status,
             std::bind(&SceneManager::OnLoadProgram, this, _1, _2, _3, _4, _5),
             std::bind(&SceneManager::OnLoadTexture, this, _1, _2));
-        assert(status == Ren::MatCreatedFromData);
+        assert(status == Ren::eMatLoadStatus::CreatedFromData);
     }
     return ret;
 }
@@ -999,15 +1000,11 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *v_shad
     using namespace SceneManagerConstants;
 
 #if defined(USE_GL_RENDER)
-    Ren::eProgLoadStatus status;
-    Ren::ProgramRef ret = ren_ctx_.LoadProgramGLSL(name, nullptr, nullptr, &status);
-    if (!ret->ready()) {
-        using namespace std;
-
-        if (ren_ctx_.capabilities.gl_spirv && false) {
+    return sh_.LoadProgram(ren_ctx_, name, v_shader, f_shader, tc_shader, te_shader);
 #if 0
+        if (ren_ctx_.capabilities.gl_spirv && false) {
             string vs_name = string(SHADERS_PATH) + vs_shader,
-                   fs_name = string(SHADERS_PATH) + fs_shader;
+                fs_name = string(SHADERS_PATH) + fs_shader;
 
             size_t n = vs_name.find(".glsl");
             assert(n != string::npos);
@@ -1020,58 +1017,18 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *v_shad
             Sys::AssetFile vs_file(vs_name), fs_file(fs_name);
 
             size_t vs_size = vs_file.size(),
-                   fs_size = fs_file.size();
+                fs_size = fs_file.size();
 
             std::unique_ptr<uint8_t[]> vs_data(new uint8_t[vs_size]),
-                                       fs_data(new uint8_t[fs_size]);
+                fs_data(new uint8_t[fs_size]);
 
-            vs_file.Read((char *)vs_data.get(), vs_size);
-            fs_file.Read((char *)fs_data.get(), fs_size);
+            vs_file.Read((char*)vs_data.get(), vs_size);
+            fs_file.Read((char*)fs_data.get(), fs_size);
 
             ret = ren_ctx_.LoadProgramSPIRV(name, vs_data.get(), (int)vs_size, fs_data.get(), (int)fs_size, &status);
             assert(status == Ren::CreatedFromData);
-#endif
-        } else {
-            Sys::AssetFile vs_file(string(SHADERS_PATH) + v_shader),
-                fs_file(string(SHADERS_PATH) + f_shader);
-            if (!vs_file || !fs_file) {
-                ren_ctx_.log()->Error("Error loading program %s", name);
-                return ret;
-            }
-
-            const size_t vs_size = vs_file.size(), fs_size = fs_file.size();
-
-            string vs_src, fs_src, tc_src, te_src;
-            vs_src.resize(vs_size);
-            fs_src.resize(fs_size);
-            vs_file.Read((char *)vs_src.data(), vs_size);
-            fs_file.Read((char *)fs_src.data(), fs_size);
-
-            if (tc_shader && te_shader) {
-                Sys::AssetFile tcs_file(string(SHADERS_PATH) + tc_shader),
-                    tes_file(string(SHADERS_PATH) + te_shader);
-                if (!tcs_file || !tes_file) {
-                    ren_ctx_.log()->Error("Error loading program %s", name);
-                    return ret;
-                }
-
-                const size_t tcs_size = tcs_file.size(), tes_size = tes_file.size();
-
-                tc_src.resize(tcs_size);
-                te_src.resize(tes_size);
-                tcs_file.Read((char *)tc_src.data(), tcs_size);
-                tes_file.Read((char *)te_src.data(), tes_size);
-            }
-
-            ren_ctx_.log()->Info("Compiling program %s", name);
-            ret = ren_ctx_.LoadProgramGLSL(name, vs_src.c_str(), fs_src.c_str(),
-                                           tc_src.empty() ? nullptr : tc_src.c_str(),
-                                           te_src.empty() ? nullptr : te_src.c_str(),
-                                           &status);
-            assert(status == Ren::eProgLoadStatus::CreatedFromData);
         }
-    }
-    return ret;
+#endif
 #elif defined(USE_SW_RENDER)
     ren::ProgramRef LoadSWProgram(ren::Context &, const char *);
     return LoadSWProgram(ctx_, name);

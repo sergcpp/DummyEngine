@@ -8,6 +8,7 @@ extern "C" {
 #include "GLExtDSAEmu.cpp"
 #include "ContextGL.cpp"
 #include "ProgramGL.cpp"
+#include "ShaderGL.cpp"
 #include "TextureGL.cpp"
 #include "TextureAtlasGL.cpp"
 #elif defined(USE_SW_RENDER)

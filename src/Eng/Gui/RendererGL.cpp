@@ -101,11 +101,23 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config) : ctx_(ctx) {
     const JsString &js_gl_defines = config.at(GL_DEFINES_KEY).as_str();
 
     { // Load main shader
-        Ren::eProgLoadStatus status;
+        using namespace Ren;
+
+        eShaderLoadStatus sh_status;
+        ShaderRef ui_vs_ref =
+            ctx_.LoadShaderGLSL("__ui_vs__", vs_source, eShaderType::Vert, &sh_status);
+        assert(sh_status == eShaderLoadStatus::CreatedFromData ||
+               sh_status == eShaderLoadStatus::Found);
+        ShaderRef ui_fs_ref =
+            ctx_.LoadShaderGLSL("__ui_fs__", fs_source, eShaderType::Frag, &sh_status);
+        assert(sh_status == eShaderLoadStatus::CreatedFromData ||
+               sh_status == eShaderLoadStatus::Found);
+
+        eProgLoadStatus status;
         ui_program_ =
-            ctx_.LoadProgramGLSL(UI_PROGRAM2_NAME, vs_source, fs_source, &status);
-        assert(status == Ren::eProgLoadStatus::CreatedFromData ||
-               status == Ren::eProgLoadStatus::Found);
+            ctx_.LoadProgram("__ui_program__", ui_vs_ref, ui_fs_ref, {}, {}, &status);
+        assert(status == eProgLoadStatus::CreatedFromData ||
+               status == eProgLoadStatus::Found);
     }
 
     vtx_data_.reset(new vertex_t[MaxVerticesPerRange * FrameSyncWindow]);

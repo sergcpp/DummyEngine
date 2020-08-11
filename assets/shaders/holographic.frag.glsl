@@ -2,6 +2,7 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
 //#extension GL_EXT_control_flow_attributes : enable
+#extension GL_GOOGLE_include_directive : enable
 
 $ModifyWarning
 
@@ -10,8 +11,7 @@ $ModifyWarning
     precision mediump sampler2DShadow;
 #endif
 
-#include "common_fs.glsl"
-#include "common.glsl"
+#include "internal/_fs_common.glsl"
 
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D diffuse_texture;
 layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D normals_texture;

@@ -118,8 +118,7 @@ static Ren::ProgramRef OnProgramNeeded(const char *name, const char *arg1,
 static Ren::Texture2DRef OnTextureNeeded(const char *name) { return {}; }
 
 void test_material() {
-    {
-        // Load material
+    { // Load material
         MaterialTest test;
 
         auto on_program_needed = [&test](const char *name, const char *arg1,
@@ -127,7 +126,7 @@ void test_material() {
                                          const char *arg4) {
             Ren::eProgLoadStatus status;
 #if defined(USE_GL_RENDER)
-            return test.LoadProgramGLSL(name, nullptr, nullptr, &status);
+            return test.LoadProgram(name, {}, {}, {}, {}, &status);
 #elif defined(USE_SW_RENDER)
             Ren::Attribute _attrs[] = {{}};
             Ren::Uniform _unifs[] = {{}};
@@ -154,13 +153,13 @@ void test_material() {
         Ren::eMatLoadStatus status;
         Ren::MaterialRef m_ref = test.LoadMaterial("mat1", nullptr, &status,
                                                    on_program_needed, on_texture_needed);
-        require(status == Ren::MatSetToDefault);
+        require(status == Ren::eMatLoadStatus::SetToDefault);
 
         { require(!m_ref->ready()); }
 
         test.LoadMaterial("mat1", mat_src, &status, on_program_needed, on_texture_needed);
 
-        require(status == Ren::MatCreatedFromData);
+        require(status == Ren::eMatLoadStatus::CreatedFromData);
         require(m_ref->flags() & uint32_t(Ren::eMaterialFlags::AlphaTest));
         require(m_ref->ready());
         require(m_ref->name() == "mat1");

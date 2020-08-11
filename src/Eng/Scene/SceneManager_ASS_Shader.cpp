@@ -5,13 +5,25 @@
 #include "../Renderer/Renderer_GL_Defines.inl"
 
 void SceneManager::WriteCommonShaderIncludes(const char *in_folder) {
+    {   // common header
+        static const char vs_common[] =
+#include "../Renderer/Shaders/_common.glsl"
+            ;
+
+        std::string out_file_name = in_folder;
+        out_file_name += "/shaders/internal/_common.glsl";
+
+        std::ofstream out_file(out_file_name, std::ios::binary);
+        out_file.write(vs_common, sizeof(vs_common) - 1);
+    }
+
     {   // common vertex shader header
         static const char vs_common[] =
 #include "../Renderer/Shaders/_vs_common.glsl"
             ;
 
         std::string out_file_name = in_folder;
-        out_file_name += "/shaders/common_vs.glsl";
+        out_file_name += "/shaders/internal/_vs_common.glsl";
 
         std::ofstream out_file(out_file_name, std::ios::binary);
         out_file.write(vs_common, sizeof(vs_common) - 1);
@@ -23,7 +35,7 @@ void SceneManager::WriteCommonShaderIncludes(const char *in_folder) {
             ;
 
         std::string out_file_name = in_folder;
-        out_file_name += "/shaders/common_fs.glsl";
+        out_file_name += "/shaders/internal/_fs_common.glsl";
 
         std::ofstream out_file(out_file_name, std::ios::binary);
         out_file.write(fs_common, sizeof(fs_common) - 1);
@@ -100,7 +112,7 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
                     line = "#version 430";
                 }
                 dst_stream << line << "\r\n";
-            } else if (line.rfind("#include ") == 0) {
+            } else if (line.rfind("#include ") == 0 && false) {
                 size_t n1 = line.find_first_of('\"');
                 size_t n2 = line.find_last_of('\"');
 
@@ -226,7 +238,7 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
 #ifdef _WIN32
         std::replace(cross_cmd.begin(), cross_cmd.end(), '/', '\\');
 #endif
-        res = system(cross_cmd.c_str());
+        //res = system(cross_cmd.c_str());
         if (res != 0) {
             ctx.log->Error("[PrepareAssets] Failed to cross-compile %s", spv_file.c_str());
 #if !defined(NDEBUG) && defined(_WIN32)

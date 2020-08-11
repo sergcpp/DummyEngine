@@ -1,11 +1,11 @@
 #include "Renderer.h"
 
+#include "../Utils/ShaderLoader.h"
 #include <Ren/Camera.h>
 #include <Ren/Context.h>
 #include <Ren/GL.h>
 
 namespace RendererInternal {
-#include "Renderer_GL_Shaders.inl"
 #include "__skydome_mesh.inl"
 #include "__sphere_mesh.inl"
 
@@ -316,217 +316,269 @@ uint32_t __draw_list_range_full_rev(Ren::Context &ctx, const DrawList &list, uin
 
 void Renderer::InitRendererInternal() {
     using namespace RendererInternal;
+    using namespace Ren;
 
-    // Ren::ILog *log = ctx_.log();
-
-    Ren::eProgLoadStatus status;
-    skydome_prog_ = ctx_.LoadProgramGLSL("skydome", skydome_vs, skydome_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_solid_prog_ =
-        ctx_.LoadProgramGLSL("fillz_solid", fillz_solid_vs, fillz_solid_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_solid_mov_prog_ = ctx_.LoadProgramGLSL("fillz_solid_mov", fillz_solid_mov_vs,
-                                                 fillz_solid_vel_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_vege_solid_prog_ = ctx_.LoadProgramGLSL("fillz_vege_solid", fillz_vege_solid_vs,
-                                                  fillz_solid_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_vege_solid_vel_prog_ = ctx_.LoadProgramGLSL(
-        "fillz_vege_solid_vel", fillz_vege_solid_vel_vs, fillz_solid_vel_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    skydome_prog_ = sh_.LoadProgram(ctx_, "skydome", "internal/skydome.vert.glsl",
+                                    "internal/skydome.frag.glsl");
+    assert(skydome_prog_->ready());
+    fillz_solid_prog_ = sh_.LoadProgram(ctx_, "fillz_solid", "internal/fillz.vert.glsl",
+                                        "internal/fillz.frag.glsl");
+    assert(fillz_solid_prog_->ready());
+    fillz_solid_mov_prog_ =
+        sh_.LoadProgram(ctx_, "fillz_solid_mov", "internal/fillz.vert.glsl@MOVING_PERM",
+                        "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
+    assert(fillz_solid_mov_prog_->ready());
+    fillz_vege_solid_prog_ =
+        sh_.LoadProgram(ctx_, "fillz_vege_solid", "internal/fillz_vege.vert.glsl",
+                        "internal/fillz.frag.glsl");
+    assert(fillz_vege_solid_prog_->ready());
+    fillz_vege_solid_vel_prog_ = sh_.LoadProgram(
+        ctx_, "fillz_vege_solid_vel", "internal/fillz_vege.vert.glsl@OUTPUT_VELOCITY",
+        "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
+    assert(fillz_vege_solid_vel_prog_->ready());
     fillz_vege_solid_vel_mov_prog_ =
-        ctx_.LoadProgramGLSL("fillz_vege_solid_vel_mov", fillz_vege_solid_vel_mov_vs,
-                             fillz_solid_vel_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "fillz_vege_solid_vel_mov",
+                        "internal/fillz_vege.vert.glsl@OUTPUT_VELOCITY;MOVING_PERM",
+                        "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
+    assert(fillz_vege_solid_vel_mov_prog_->ready());
     fillz_transp_prog_ =
-        ctx_.LoadProgramGLSL("fillz_transp", fillz_transp_vs, fillz_transp_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_transp_mov_prog_ = ctx_.LoadProgramGLSL("fillz_transp_mov", fillz_transp_mov_vs,
-                                                  fillz_transp_vel_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_vege_transp_prog_ = ctx_.LoadProgramGLSL(
-        "fillz_vege_transp", fillz_vege_transp_vs, fillz_transp_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_vege_transp_vel_prog_ = ctx_.LoadProgramGLSL(
-        "fillz_vege_transp_vel", fillz_vege_transp_vel_vs, fillz_transp_vel_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_vege_transp_vel_mov_prog_ =
-        ctx_.LoadProgramGLSL("fillz_vege_transp_vel_mov", fillz_vege_transp_vel_mov_vs,
-                             fillz_transp_vel_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_skin_solid_prog_ = ctx_.LoadProgramGLSL("fillz_skin_solid", fillz_skin_solid_vs,
-                                                  fillz_solid_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_skin_solid_vel_prog_ = ctx_.LoadProgramGLSL(
-        "fillz_skin_solid_vel", fillz_skin_solid_vel_vs, fillz_solid_vel_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "fillz_transp", "internal/fillz.vert.glsl@TRANSPARENT_PERM",
+                        "internal/fillz.frag.glsl@TRANSPARENT_PERM");
+    assert(fillz_transp_prog_->ready());
+    fillz_transp_mov_prog_ = sh_.LoadProgram(
+        ctx_, "fillz_transp_mov", "internal/fillz.vert.glsl@TRANSPARENT_PERM;MOVING_PERM",
+        "internal/fillz.frag.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY");
+    assert(fillz_transp_mov_prog_->ready());
+    fillz_vege_transp_prog_ = sh_.LoadProgram(
+        ctx_, "fillz_vege_transp", "internal/fillz_vege.vert.glsl@TRANSPARENT_PERM",
+        "internal/fillz.frag.glsl@TRANSPARENT_PERM");
+    assert(fillz_vege_transp_prog_->ready());
+    fillz_vege_transp_vel_prog_ =
+        sh_.LoadProgram(ctx_, "fillz_vege_transp_vel",
+                        "internal/fillz_vege.vert.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY",
+                        "internal/fillz.frag.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY");
+    assert(fillz_vege_transp_vel_prog_->ready());
+    fillz_vege_transp_vel_mov_prog_ = sh_.LoadProgram(
+        ctx_, "fillz_vege_transp_vel_mov",
+        "internal/fillz_vege.vert.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY;MOVING_PERM",
+        "internal/fillz.frag.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY");
+    assert(fillz_vege_transp_vel_mov_prog_->ready());
+    fillz_skin_solid_prog_ =
+        sh_.LoadProgram(ctx_, "fillz_skin_solid", "internal/fillz_skin.vert.glsl",
+                        "internal/fillz.frag.glsl");
+    assert(fillz_skin_solid_prog_->ready());
+    fillz_skin_solid_vel_prog_ = sh_.LoadProgram(
+        ctx_, "fillz_skin_solid_vel", "internal/fillz_skin.vert.glsl@OUTPUT_VELOCITY",
+        "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
+    assert(fillz_skin_solid_vel_prog_->ready());
     fillz_skin_solid_vel_mov_prog_ =
-        ctx_.LoadProgramGLSL("fillz_skin_solid_vel_mov", fillz_skin_solid_vel_mov_vs,
-                             fillz_solid_vel_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_skin_transp_prog_ = ctx_.LoadProgramGLSL(
-        "fillz_skin_transp", fillz_skin_transp_vs, fillz_transp_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_skin_transp_vel_prog_ = ctx_.LoadProgramGLSL(
-        "fillz_skin_transp_vel", fillz_skin_transp_vel_vs, fillz_transp_vel_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    fillz_skin_transp_vel_mov_prog_ =
-        ctx_.LoadProgramGLSL("fillz_skin_transp_vel_mov", fillz_skin_transp_vel_mov_vs,
-                             fillz_transp_vel_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    shadow_solid_prog_ =
-        ctx_.LoadProgramGLSL("shadow_solid", shadow_solid_vs, shadow_solid_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    shadow_vege_solid_prog_ = ctx_.LoadProgramGLSL(
-        "shadow_vege_solid", shadow_vege_solid_vs, shadow_solid_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    shadow_transp_prog_ = ctx_.LoadProgramGLSL("shadow_transp", shadow_transp_vs,
-                                               shadow_transp_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    shadow_vege_transp_prog_ = ctx_.LoadProgramGLSL(
-        "shadow_vege_transp", shadow_vege_transp_vs, shadow_transp_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_prog_ = ctx_.LoadProgramGLSL("blit", blit_vs, blit_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_combine_prog_ =
-        ctx_.LoadProgramGLSL("blit_combine", blit_vs, blit_combine_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "fillz_skin_solid_vel_mov",
+                        "internal/fillz_skin.vert.glsl@OUTPUT_VELOCITY;MOVING_PERM",
+                        "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
+    assert(fillz_skin_solid_vel_mov_prog_->ready());
+    fillz_skin_transp_prog_ = sh_.LoadProgram(
+        ctx_, "fillz_skin_transp", "internal/fillz_skin.vert.glsl@TRANSPARENT_PERM",
+        "internal/fillz.frag.glsl@TRANSPARENT_PERM");
+    assert(fillz_skin_transp_prog_->ready());
+    fillz_skin_transp_vel_prog_ =
+        sh_.LoadProgram(ctx_, "fillz_skin_transp_vel",
+                        "internal/fillz_skin.vert.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY",
+                        "internal/fillz.frag.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY");
+    assert(fillz_skin_transp_vel_prog_->ready());
+    fillz_skin_transp_vel_mov_prog_ = sh_.LoadProgram(
+        ctx_, "fillz_skin_transp_vel_mov",
+        "internal/fillz_skin.vert.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY;MOVING_PERM",
+        "internal/fillz.frag.glsl@TRANSPARENT_PERM;OUTPUT_VELOCITY");
+    assert(fillz_skin_transp_vel_mov_prog_->ready());
+    shadow_solid_prog_ = sh_.LoadProgram(
+        ctx_, "shadow_solid", "internal/shadow.vert.glsl", "internal/shadow.frag.glsl");
+    assert(shadow_solid_prog_->ready());
+    shadow_vege_solid_prog_ =
+        sh_.LoadProgram(ctx_, "shadow_vege_solid", "internal/shadow_vege.vert.glsl",
+                        "internal/shadow.frag.glsl");
+    assert(shadow_vege_solid_prog_->ready());
+    shadow_transp_prog_ = sh_.LoadProgram(ctx_, "shadow_transp",
+                                          "internal/shadow.vert.glsl@TRANSPARENT_PERM",
+                                          "internal/shadow.frag.glsl@TRANSPARENT_PERM");
+    assert(shadow_transp_prog_->ready());
+    shadow_vege_transp_prog_ = sh_.LoadProgram(
+        ctx_, "shadow_vege_transp", "internal/shadow_vege.vert.glsl@TRANSPARENT_PERM",
+        "internal/shadow.frag.glsl@TRANSPARENT_PERM");
+    assert(shadow_vege_transp_prog_->ready());
+    blit_prog_ = sh_.LoadProgram(ctx_, "blit", "internal/blit.vert.glsl",
+                                 "internal/blit.frag.glsl");
+    assert(blit_prog_->ready());
+    blit_combine_prog_ = sh_.LoadProgram(ctx_, "blit_combine", "internal/blit.vert.glsl",
+                                         "internal/blit_combine.frag.glsl");
+    assert(blit_combine_prog_->ready());
     blit_combine_ms_prog_ =
-        ctx_.LoadProgramGLSL("blit_combine_ms", blit_vs, blit_combine_ms_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_ms_prog_ = ctx_.LoadProgramGLSL("blit_ms", blit_vs, blit_ms_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_red_prog_ = ctx_.LoadProgramGLSL("blit_red", blit_vs, blit_reduced_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_down_prog_ = ctx_.LoadProgramGLSL("blit_down", blit_vs, blit_down_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_down_ms_prog_ =
-        ctx_.LoadProgramGLSL("blit_down_ms", blit_vs, blit_down_ms_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "blit_combine_ms", "internal/blit.vert.glsl",
+                        "internal/blit_combine.frag.glsl@MSAA_4");
+    assert(blit_combine_ms_prog_->ready());
+    blit_ms_prog_ = sh_.LoadProgram(ctx_, "blit_ms", "internal/blit.vert.glsl",
+                                    "internal/blit_ms.frag.glsl");
+    assert(blit_ms_prog_->ready());
+    blit_red_prog_ = sh_.LoadProgram(ctx_, "blit_red", "internal/blit.vert.glsl",
+                                     "internal/blit_reduced.frag.glsl");
+    assert(blit_red_prog_->ready());
+    blit_down_prog_ = sh_.LoadProgram(ctx_, "blit_down", "internal/blit.vert.glsl",
+                                      "internal/blit_down.frag.glsl");
+    assert(blit_down_prog_->ready());
+    blit_down_ms_prog_ = sh_.LoadProgram(ctx_, "blit_down_ms", "internal/blit.vert.glsl",
+                                         "internal/blit_down_ms.frag.glsl");
+    assert(blit_down_ms_prog_->ready());
     blit_down_depth_prog_ =
-        ctx_.LoadProgramGLSL("blit_down_depth", blit_vs, blit_down_depth_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_down_depth_ms_prog_ = ctx_.LoadProgramGLSL("blit_down_depth_ms", blit_vs,
-                                                    blit_down_depth_ms_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_gauss_prog_ =
-        ctx_.LoadProgramGLSL("blit_gauss", blit_vs, blit_gauss_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "blit_down_depth", "internal/blit.vert.glsl",
+                        "internal/blit_down_depth.frag.glsl");
+    assert(blit_down_depth_prog_->ready());
+    blit_down_depth_ms_prog_ =
+        sh_.LoadProgram(ctx_, "blit_down_depth_ms", "internal/blit.vert.glsl",
+                        "internal/blit_down_depth.frag.glsl@MSAA_4");
+    assert(blit_down_depth_ms_prog_->ready());
+    blit_gauss_prog_ = sh_.LoadProgram(ctx_, "blit_gauss", "internal/blit.vert.glsl",
+                                       "internal/blit_gauss.frag.glsl");
+    assert(blit_gauss_prog_->ready());
     blit_gauss_sep_prog_ =
-        ctx_.LoadProgramGLSL("blit_gauss_sep", blit_vs, blit_gauss_sep_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "blit_gauss_sep", "internal/blit.vert.glsl",
+                        "internal/blit_gauss_sep.frag.glsl");
+    assert(blit_gauss_sep_prog_->ready());
     blit_dof_init_coc_prog_ =
-        ctx_.LoadProgramGLSL("blit_dof_init_coc", blit_vs, blit_dof_init_coc_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_dof_bilateral_prog_ = ctx_.LoadProgramGLSL("blit_dof_bilateral", blit_vs,
-                                                    blit_dof_bilateral_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_dof_calc_near_prog_ = ctx_.LoadProgramGLSL("blit_dof_calc_near", blit_vs,
-                                                    blit_dof_calc_near_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_dof_small_blur_prog_ = ctx_.LoadProgramGLSL("blit_dof_small_blur", blit_vs,
-                                                     blit_dof_small_blur_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "blit_dof_init_coc", "internal/blit.vert.glsl",
+                        "internal/blit_dof_init_coc.frag.glsl");
+    assert(blit_dof_init_coc_prog_->ready());
+    blit_dof_bilateral_prog_ =
+        sh_.LoadProgram(ctx_, "blit_dof_bilateral", "internal/blit.vert.glsl",
+                        "internal/blit_dof_bilateral.frag.glsl");
+    assert(blit_dof_bilateral_prog_->ready());
+    blit_dof_calc_near_prog_ =
+        sh_.LoadProgram(ctx_, "blit_dof_calc_near", "internal/blit.vert.glsl",
+                        "internal/blit_dof_calc_near.frag.glsl");
+    assert(blit_dof_calc_near_prog_->ready());
+    blit_dof_small_blur_prog_ =
+        sh_.LoadProgram(ctx_, "blit_dof_small_blur", "internal/blit.vert.glsl",
+                        "internal/blit_dof_small_blur.frag.glsl");
+    assert(blit_dof_small_blur_prog_->ready());
     blit_dof_combine_prog_ =
-        ctx_.LoadProgramGLSL("blit_dof_combine", blit_vs, blit_dof_combine_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_dof_combine_ms_prog_ = ctx_.LoadProgramGLSL("blit_dof_combine_ms", blit_vs,
-                                                     blit_dof_combine_ms_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "blit_dof_combine", "internal/blit.vert.glsl",
+                        "internal/blit_dof_combine.frag.glsl");
+    assert(blit_dof_combine_prog_->ready());
+    blit_dof_combine_ms_prog_ =
+        sh_.LoadProgram(ctx_, "blit_dof_combine_ms", "internal/blit.vert.glsl",
+                        "internal/blit_dof_combine.frag.glsl@MSAA_4");
+    assert(blit_dof_combine_ms_prog_->ready());
     blit_bilateral_prog_ =
-        ctx_.LoadProgramGLSL("blit_bilateral", blit_vs, blit_bilateral_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_upscale_prog_ =
-        ctx_.LoadProgramGLSL("blit_upscale", blit_vs, blit_upscale_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "blit_bilateral", "internal/blit.vert.glsl",
+                        "internal/blit_bilateral.frag.glsl");
+    assert(blit_bilateral_prog_->ready());
+    blit_upscale_prog_ = sh_.LoadProgram(ctx_, "blit_upscale", "internal/blit.vert.glsl",
+                                         "internal/blit_upscale.frag.glsl");
+    assert(blit_upscale_prog_->ready());
     blit_upscale_ms_prog_ =
-        ctx_.LoadProgramGLSL("blit_upscale_ms", blit_vs, blit_upscale_ms_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_debug_prog_ =
-        ctx_.LoadProgramGLSL("blit_debug", blit_vs, blit_debug_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "blit_upscale_ms", "internal/blit.vert.glsl",
+                        "internal/blit_upscale.frag.glsl@MSAA_4");
+    assert(blit_upscale_ms_prog_->ready());
+    blit_debug_prog_ = sh_.LoadProgram(ctx_, "blit_debug", "internal/blit.vert.glsl",
+                                       "internal/blit_debug.frag.glsl");
+    assert(blit_debug_prog_->ready());
     blit_debug_ms_prog_ =
-        ctx_.LoadProgramGLSL("blit_debug_ms", blit_vs, blit_debug_ms_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "blit_debug_ms", "internal/blit.vert.glsl",
+                        "internal/blit_debug.frag.glsl@MSAA_4");
+    assert(blit_debug_ms_prog_->ready());
 
     { // ssr related
-        blit_ssr_prog_ = ctx_.LoadProgramGLSL("blit_ssr", blit_vs, blit_ssr_fs, &status);
-        assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        blit_ssr_prog_ = sh_.LoadProgram(ctx_, "blit_ssr", "internal/blit.vert.glsl",
+                                         "internal/blit_ssr.frag.glsl");
+        assert(blit_ssr_prog_->ready());
         blit_ssr_ms_prog_ =
-            ctx_.LoadProgramGLSL("blit_ssr_ms", blit_vs, blit_ssr_ms_fs, &status);
-        assert(status == Ren::eProgLoadStatus::CreatedFromData);
-        blit_ssr_compose_prog_ = ctx_.LoadProgramGLSL("blit_ssr_compose", blit_vs,
-                                                      blit_ssr_compose_fs, &status);
-        assert(status == Ren::eProgLoadStatus::CreatedFromData);
-        blit_ssr_compose_ms_prog_ = ctx_.LoadProgramGLSL("blit_ssr_compose_ms", blit_vs,
-                                                         blit_ssr_compose_ms_fs, &status);
-        assert(status == Ren::eProgLoadStatus::CreatedFromData);
+            sh_.LoadProgram(ctx_, "blit_ssr_ms", "internal/blit.vert.glsl",
+                            "internal/blit_ssr.frag.glsl@MSAA_4");
+        assert(blit_ssr_ms_prog_->ready());
+        blit_ssr_compose_prog_ =
+            sh_.LoadProgram(ctx_, "blit_ssr_compose", "internal/blit.vert.glsl",
+                            "internal/blit_ssr_compose.frag.glsl");
+        assert(blit_ssr_compose_prog_->ready());
+        blit_ssr_compose_ms_prog_ =
+            sh_.LoadProgram(ctx_, "blit_ssr_compose_ms", "internal/blit.vert.glsl",
+                            "internal/blit_ssr_compose.frag.glsl@MSAA_4");
+        assert(blit_ssr_compose_ms_prog_->ready());
         blit_ssr_dilate_prog_ =
-            ctx_.LoadProgramGLSL("blit_ssr_dilate", blit_vs, blit_ssr_dilate_fs, &status);
-        assert(status == Ren::eProgLoadStatus::CreatedFromData);
+            sh_.LoadProgram(ctx_, "blit_ssr_dilate", "internal/blit.vert.glsl",
+                            "internal/blit_ssr_dilate.frag.glsl");
+        assert(blit_ssr_dilate_prog_->ready());
     }
 
     blit_ms_resolve_prog_ =
-        ctx_.LoadProgramGLSL("blit_ms_resolve", blit_vs, blit_ms_resolve_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_ao_prog_ = ctx_.LoadProgramGLSL("blit_ao", blit_vs, blit_ssao_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "blit_ms_resolve", "internal/blit.vert.glsl",
+                        "internal/blit_ms_resolve.frag.glsl");
+    assert(blit_ms_resolve_prog_->ready());
+    blit_ao_prog_ = sh_.LoadProgram(ctx_, "blit_ao", "internal/blit.vert.glsl",
+                                    "internal/blit_ssao.frag.glsl");
+    assert(blit_ao_prog_->ready());
     blit_multiply_prog_ =
-        ctx_.LoadProgramGLSL("blit_multiply", blit_vs, blit_multiply_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "blit_multiply", "internal/blit.vert.glsl",
+                        "internal/blit_multiply.frag.glsl");
+    assert(blit_multiply_prog_->ready());
     blit_multiply_ms_prog_ =
-        ctx_.LoadProgramGLSL("blit_multiply_ms", blit_vs, blit_multiply_ms_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "blit_multiply_ms", "internal/blit.vert.glsl",
+                        "internal/blit_multiply.frag.glsl@MSAA_4");
+    assert(blit_multiply_ms_prog_->ready());
     blit_debug_bvh_prog_ =
-        ctx_.LoadProgramGLSL("blit_debug_bvh", blit_vs, blit_debug_bvh_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "blit_debug_bvh", "internal/blit.vert.glsl",
+                        "internal/blit_debug_bvh.frag.glsl");
+    assert(blit_debug_bvh_prog_->ready());
     blit_debug_bvh_ms_prog_ =
-        ctx_.LoadProgramGLSL("blit_debug_bvh_ms", blit_vs, blit_debug_bvh_ms_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_depth_prog_ =
-        ctx_.LoadProgramGLSL("blit_depth", blit_vs, blit_depth_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_rgbm_prog_ = ctx_.LoadProgramGLSL("blit_rgbm", blit_vs, blit_rgbm_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_mipmap_prog_ =
-        ctx_.LoadProgramGLSL("blit_mipmap", blit_vs, blit_mipmap_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "blit_debug_bvh_ms", "internal/blit.vert.glsl",
+                        "internal/blit_debug_bvh.frag.glsl@MSAA_4");
+    assert(blit_debug_bvh_ms_prog_->ready());
+    blit_depth_prog_ = sh_.LoadProgram(ctx_, "blit_depth", "internal/blit.vert.glsl",
+                                       "internal/blit_depth.frag.glsl");
+    assert(blit_depth_prog_->ready());
+    blit_rgbm_prog_ = sh_.LoadProgram(ctx_, "blit_rgbm", "internal/blit.vert.glsl",
+                                      "internal/blit_rgbm.frag.glsl");
+    assert(blit_rgbm_prog_->ready());
+    blit_mipmap_prog_ = sh_.LoadProgram(ctx_, "blit_mipmap", "internal/blit.vert.glsl",
+                                        "internal/blit_mipmap.frag.glsl");
+    assert(blit_mipmap_prog_->ready());
     blit_prefilter_prog_ =
-        ctx_.LoadProgramGLSL("blit_prefilter", blit_vs, blit_prefilter_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_project_sh_prog_ = ctx_.LoadProgramGLSL("blit_project_sh_prog", blit_vs,
-                                                 blit_project_sh_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_fxaa_prog_ =
-        ctx_.LoadProgramGLSL("blit_fxaa_prog", blit_vs, blit_fxaa_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_taa_prog_ = ctx_.LoadProgramGLSL("blit_taa_prog", blit_vs, blit_taa_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_static_vel_prog_ = ctx_.LoadProgramGLSL("blit_static_vel_prog", blit_vs,
-                                                 blit_static_vel_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_transparent_compose_prog_ = ctx_.LoadProgramGLSL(
-        "blit_transparent_compose_prog", blit_vs, blit_transparent_compose_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_transparent_compose_ms_prog_ =
-        ctx_.LoadProgramGLSL("blit_transparent_compose_ms_prog", blit_vs,
-                             blit_transparent_compose_ms_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    blit_transparent_init_prog_ = ctx_.LoadProgramGLSL(
-        "blit_transparent_init_prog", blit_vs, blit_transparent_init_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    probe_prog_ = ctx_.LoadProgramGLSL("probe_prog", probe_vs, probe_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "blit_prefilter", "internal/blit.vert.glsl",
+                        "internal/blit_prefilter.frag.glsl");
+    assert(blit_prefilter_prog_->ready());
+    blit_project_sh_prog_ =
+        sh_.LoadProgram(ctx_, "blit_project_sh_prog", "internal/blit.vert.glsl",
+                        "internal/blit_project_sh.frag.glsl");
+    assert(blit_project_sh_prog_->ready());
+    blit_fxaa_prog_ = sh_.LoadProgram(ctx_, "blit_fxaa_prog", "internal/blit.vert.glsl",
+                                      "internal/blit_fxaa.frag.glsl");
+    assert(blit_fxaa_prog_->ready());
+    blit_taa_prog_ = sh_.LoadProgram(ctx_, "blit_taa_prog", "internal/blit.vert.glsl",
+                                     "internal/blit_taa.frag.glsl");
+    assert(blit_taa_prog_->ready());
+    blit_static_vel_prog_ =
+        sh_.LoadProgram(ctx_, "blit_static_vel_prog", "internal/blit.vert.glsl",
+                        "internal/blit_static_vel.frag.glsl");
+    assert(blit_static_vel_prog_->ready());
+    blit_transparent_compose_prog_ =
+        sh_.LoadProgram(ctx_, "blit_transparent_compose_prog", "internal/blit.vert.glsl",
+                        "internal/blit_transparent_compose.frag.glsl");
+    assert(blit_transparent_compose_prog_->ready());
+    blit_transparent_compose_ms_prog_ = sh_.LoadProgram(
+        ctx_, "blit_transparent_compose_ms_prog", "internal/blit.vert.glsl",
+        "internal/blit_transparent_compose.frag.glsl@MSAA_4");
+    assert(blit_transparent_compose_ms_prog_->ready());
+    blit_transparent_init_prog_ =
+        sh_.LoadProgram(ctx_, "blit_transparent_init_prog", "internal/blit.vert.glsl",
+                        "internal/blit_transparent_init.frag.glsl");
+    assert(blit_transparent_init_prog_->ready());
+    probe_prog_ = sh_.LoadProgram(ctx_, "probe_prog", "internal/probe.vert.glsl",
+                                  "internal/probe.frag.glsl");
+    assert(probe_prog_->ready());
     ellipsoid_prog_ =
-        ctx_.LoadProgramGLSL("ellipsoid_prog", ellipsoid_vs, ellipsoid_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    skinning_prog_ = ctx_.LoadProgramGLSL("skinning_prog", skinning_cs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    quad_tree_prog_ = ctx_.LoadProgramGLSL("quad_tree_prog", quad_tree_cs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    quad_tree2_prog_ =
-        ctx_.LoadProgramGLSL("quad_tree2_prog", blit_vs, quad_tree_fs, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+        sh_.LoadProgram(ctx_, "ellipsoid_prog", "internal/ellipsoid.vert.glsl",
+                        "internal/ellipsoid.frag.glsl");
+    assert(ellipsoid_prog_->ready());
+    skinning_prog_ =
+        sh_.LoadProgram(ctx_, "skinning_prog", "internal/skinning.comp.glsl");
+    assert(skinning_prog_->ready());
 
     GLint tex_buf_offset_alignment;
     glGetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT, &tex_buf_offset_alignment);

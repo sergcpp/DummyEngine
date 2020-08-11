@@ -127,62 +127,20 @@ void Ren::Context::Resize(int w, int h) {
     glViewport(0, 0, w_, h_);
 }
 
-Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *vs_source,
-                                              const char *fs_source,
-                                              eProgLoadStatus *load_status) {
-    ProgramRef ref = programs_.FindByName(name);
+Ren::ShaderRef Ren::Context::LoadShaderGLSL(const char *name, const char *shader_src,
+                                            eShaderType type,
+                                            eShaderLoadStatus *load_status) {
+    ShaderRef ref = shaders_.FindByName(name);
 
     if (!ref) {
-        ref = programs_.Add(name, vs_source, fs_source, nullptr, nullptr, load_status,
-                            log_);
+        ref = shaders_.Add(name, shader_src, type, load_status, log_);
     } else {
         if (ref->ready()) {
             if (load_status) {
-                (*load_status) = eProgLoadStatus::Found;
+                (*load_status) = eShaderLoadStatus::Found;
             }
-        } else if (!ref->ready() && vs_source && fs_source) {
-            ref->Init(vs_source, fs_source, nullptr, nullptr, load_status, log_);
-        }
-    }
-
-    return ref;
-}
-
-Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *vs_source,
-                                              const char *fs_source,
-                                              const char *tcs_source,
-                                              const char *tes_source,
-                                              eProgLoadStatus *load_status) {
-    ProgramRef ref = programs_.FindByName(name);
-
-    if (!ref) {
-        ref = programs_.Add(name, vs_source, fs_source, tcs_source, tes_source,
-                            load_status, log_);
-    } else {
-        if (ref->ready()) {
-            if (load_status) {
-                *load_status = eProgLoadStatus::Found;
-            }
-        } else if (!ref->ready() && vs_source && fs_source) {
-            ref->Init(vs_source, fs_source, tcs_source, tes_source, load_status, log_);
-        }
-    }
-
-    return ref;
-}
-
-Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *cs_source,
-                                              eProgLoadStatus *load_status) {
-    ProgramRef ref = programs_.FindByName(name);
-
-    if (!ref) {
-        ref = programs_.Add(name, cs_source, load_status, log_);
-    } else {
-        if (ref->ready()) {
-            if (load_status)
-                *load_status = eProgLoadStatus::Found;
-        } else if (!ref->ready() && cs_source) {
-            ref->Init(cs_source, load_status, log_);
+        } else if (shader_src) {
+            ref->Init(shader_src, type, load_status, log_);
         }
     }
 
@@ -190,51 +148,67 @@ Ren::ProgramRef Ren::Context::LoadProgramGLSL(const char *name, const char *cs_s
 }
 
 #ifndef __ANDROID__
-Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *vs_data,
-                                               const int vs_data_size,
-                                               const uint8_t *fs_data,
-                                               const int fs_data_size,
-                                               eProgLoadStatus *load_status) {
-    ProgramRef ref = programs_.FindByName(name);
-
-    assert(capabilities.gl_spirv);
+Ren::ShaderRef Ren::Context::LoadShaderSPIRV(const char *name, const uint8_t *shader_data,
+                                             int data_size, eShaderType type,
+                                             eShaderLoadStatus *load_status) {
+    ShaderRef ref = shaders_.FindByName(name);
 
     if (!ref) {
-        ref = programs_.Add(name, vs_data, vs_data_size, fs_data, fs_data_size,
-                            load_status, log_);
+        ref = shaders_.Add(name, shader_data, data_size, type, load_status, log_);
     } else {
         if (ref->ready()) {
-            if (load_status)
-                *load_status = eProgLoadStatus::Found;
-        } else if (!ref->ready() && vs_data && fs_data) {
-            ref->Init(vs_data, vs_data_size, fs_data, fs_data_size, load_status, log_);
-        }
-    }
-
-    return ref;
-}
-
-Ren::ProgramRef Ren::Context::LoadProgramSPIRV(const char *name, const uint8_t *cs_data,
-                                               const int cs_data_size,
-                                               eProgLoadStatus *load_status) {
-    ProgramRef ref = programs_.FindByName(name);
-
-    assert(capabilities.gl_spirv);
-
-    if (!ref) {
-        ref = programs_.Add(name, cs_data, cs_data_size, load_status, log_);
-    } else {
-        if (ref->ready()) {
-            if (load_status)
-                *load_status = eProgLoadStatus::Found;
-        } else if (!ref->ready() && cs_data) {
-            ref->Init(cs_data, cs_data_size, load_status, log_);
+            if (load_status) {
+                (*load_status) = eShaderLoadStatus::Found;
+            }
+        } else if (shader_data) {
+            ref->Init(shader_data, data_size, type, load_status, log_);
         }
     }
 
     return ref;
 }
 #endif
+
+Ren::ProgramRef Ren::Context::LoadProgram(const char *name, ShaderRef vs_ref,
+                                          ShaderRef fs_ref, ShaderRef tcs_ref,
+                                          ShaderRef tes_ref,
+                                          eProgLoadStatus *load_status) {
+    ProgramRef ref = programs_.FindByName(name);
+
+    if (!ref) {
+        ref = programs_.Add(name, std::move(vs_ref), std::move(fs_ref),
+                            std::move(tcs_ref), std::move(tes_ref), load_status, log_);
+    } else {
+        if (ref->ready()) {
+            if (load_status) {
+                (*load_status) = eProgLoadStatus::Found;
+            }
+        } else if (!ref->ready() && vs_ref && fs_ref) {
+            ref->Init(std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref),
+                      std::move(tes_ref), load_status, log_);
+        }
+    }
+
+    return ref;
+}
+
+Ren::ProgramRef Ren::Context::LoadProgram(const char *name, ShaderRef cs_ref,
+                                          eProgLoadStatus *load_status) {
+    ProgramRef ref = programs_.FindByName(name);
+
+    if (!ref) {
+        ref = programs_.Add(name, std::move(cs_ref), load_status, log_);
+    } else {
+        if (ref->ready()) {
+            if (load_status)
+                *load_status = eProgLoadStatus::Found;
+        } else if (!ref->ready() && cs_ref) {
+            ref->Init(std::move(cs_ref), load_status, log_);
+        }
+    }
+
+    return ref;
+}
 
 bool Ren::Context::IsExtensionSupported(const char *ext) {
     GLint ext_count = 0;

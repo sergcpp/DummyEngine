@@ -30,7 +30,7 @@ void GSUITest3::InitBookMaterials() {
         Ren::eMatLoadStatus status;
         orig_page_mat_ = ren_ctx_->LoadMaterial("book/book_page0.txt", nullptr, &status,
                                                 nullptr, nullptr);
-        if (status != Ren::MatFound) {
+        if (status != Ren::eMatLoadStatus::Found) {
             log_->Error("Failed to find material book/book_page0");
             return;
         }

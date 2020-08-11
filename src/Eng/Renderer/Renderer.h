@@ -16,9 +16,12 @@ namespace Sys {
 class ThreadPool;
 }
 
+class ShaderLoader;
+
 class Renderer {
   public:
-    Renderer(Ren::Context &ctx, std::shared_ptr<Sys::ThreadPool> threads);
+    Renderer(Ren::Context &ctx, ShaderLoader &sh,
+             std::shared_ptr<Sys::ThreadPool> threads);
     ~Renderer();
 
     uint32_t render_flags() const { return render_flags_; }
@@ -45,6 +48,7 @@ class Renderer {
 
   private:
     Ren::Context &ctx_;
+    ShaderLoader &sh_;
     std::shared_ptr<Sys::ThreadPool> threads_;
     SWcull_ctx cull_ctx_ = {};
     Ren::ProgramRef skydome_prog_, fillz_solid_prog_, fillz_solid_mov_prog_,
@@ -68,7 +72,7 @@ class Renderer {
         blit_depth_prog_, blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_,
         blit_project_sh_prog_, blit_fxaa_prog_, blit_taa_prog_, blit_static_vel_prog_,
         blit_transparent_compose_prog_, blit_transparent_compose_ms_prog_,
-        blit_transparent_init_prog_, probe_prog_, ellipsoid_prog_, skinning_prog_, quad_tree_prog_, quad_tree2_prog_;
+        blit_transparent_init_prog_, probe_prog_, ellipsoid_prog_, skinning_prog_;
     Ren::Texture2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_,
         brdf_lut_, cone_rt_lut_, noise_tex_;
 

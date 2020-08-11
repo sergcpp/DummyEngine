@@ -190,7 +190,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
             view_mesh_ = ctx_.LoadMesh(out_file_name.c_str(), &mesh_file,
                                        std::bind(&ModlApp::OnMaterialNeeded, this, _1),
                                        &load_status);
-            assert(load_status == Ren::MeshCreatedFromData);
+            assert(load_status == Ren::eMeshLoadStatus::CreatedFromData);
 
             Ren::Vec3f bbox_min = view_mesh_->bbox_min(),
                        bbox_max = view_mesh_->bbox_max();
@@ -317,11 +317,11 @@ void ModlApp::Frame() {
         cam_.SetupView(center - Ren::Vec3f{0.0f, 0.0f, 1.0f} * view_dist_, center, up);
     }
 
-    if (view_mesh_->type() == Ren::MeshSimple) {
+    if (view_mesh_->type() == Ren::eMeshType::Simple) {
         DrawMeshSimple(view_mesh_);
-    } else if (view_mesh_->type() == Ren::MeshColored) {
+    } else if (view_mesh_->type() == Ren::eMeshType::Colored) {
         DrawMeshColored(view_mesh_);
-    } else if (view_mesh_->type() == Ren::MeshSkeletal) {
+    } else if (view_mesh_->type() == Ren::eMeshType::Skeletal) {
         float dt_s = 0.001f * dt_ms;
         DrawMeshSkeletal(view_mesh_, dt_s);
     }
@@ -1739,7 +1739,7 @@ Ren::ProgramRef ModlApp::OnProgramNeeded(const char *name, const char *vs_shader
                                          const char *fs_shader) {
 #if defined(USE_GL_RENDER)
     Ren::eProgLoadStatus status;
-    Ren::ProgramRef ret = ctx_.LoadProgramGLSL(name, nullptr, nullptr, &status);
+    Ren::ProgramRef ret = ctx_.LoadProgram(name, {}, {}, {}, {}, &status);
     if (!ret->ready()) {
         using namespace std;
 
@@ -1758,7 +1758,13 @@ Ren::ProgramRef ModlApp::OnProgramNeeded(const char *name, const char *vs_shader
         vs_file.Read((char *)vs_src.data(), vs_size);
         fs_file.Read((char *)fs_src.data(), fs_size);
 
-        ret = ctx_.LoadProgramGLSL(name, vs_src.c_str(), fs_src.c_str(), &status);
+        Ren::eShaderLoadStatus sh_status;
+        Ren::ShaderRef vs_ref = ctx_.LoadShaderGLSL(vs_shader, vs_src.c_str(), Ren::eShaderType::Vert, &sh_status);
+        assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+        Ren::ShaderRef fs_ref = ctx_.LoadShaderGLSL(fs_shader, fs_src.c_str(), Ren::eShaderType::Frag, &sh_status);
+        assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+
+        ret = ctx_.LoadProgram(name, vs_ref, fs_ref, {}, {}, &status);
         assert(status == Ren::eProgLoadStatus::CreatedFromData);
     }
     return ret;
@@ -1791,7 +1797,7 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(const char *name) {
         ret = ctx_.LoadMaterial(name, mat_src.data(), &status,
                                 std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
                                 std::bind(&ModlApp::OnTextureNeeded, this, _1));
-        assert(status == Ren::MatCreatedFromData);
+        assert(status == Ren::eMatLoadStatus::CreatedFromData);
     }
     return ret;
 }

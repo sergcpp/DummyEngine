@@ -99,8 +99,7 @@ if(${RENDERER} STREQUAL "GL")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                         Renderer/FrameBufGL.cpp
                         Renderer/Renderer_Backend_GLES3.cpp
-                        Renderer/Renderer_GL_Defines.inl
-                        Renderer/Renderer_GL_Shaders.inl)
+                        Renderer/Renderer_GL_Defines.inl)
     set(SCENE_SOURCES ${SCENE_SOURCES}
                         Scene/ProbeStorageGL.cpp)
 elseif(${RENDERER} STREQUAL "SW")
@@ -110,56 +109,7 @@ endif()
 
 set(SHADERS_SOURCES Renderer/Shaders/_common.glsl
                     Renderer/Shaders/_fs_common.glsl
-                    Renderer/Shaders/_vs_common.glsl
-                    Renderer/Shaders/blit.frag.glsl
-                    Renderer/Shaders/blit.vert.glsl
-                    Renderer/Shaders/blit_bilateral.frag.glsl
-                    Renderer/Shaders/blit_combine.frag.glsl
-                    Renderer/Shaders/blit_debug.frag.glsl
-                    Renderer/Shaders/blit_debug_bvh.frag.glsl
-                    Renderer/Shaders/blit_depth.frag.glsl
-                    Renderer/Shaders/blit_dof_init_coc.frag.glsl
-                    Renderer/Shaders/blit_dof_bilateral.frag.glsl
-                    Renderer/Shaders/blit_dof_calc_near.frag.glsl
-                    Renderer/Shaders/blit_dof_small_blur.frag.glsl
-                    Renderer/Shaders/blit_dof_combine.frag.glsl
-                    Renderer/Shaders/blit_down.frag.glsl
-                    Renderer/Shaders/blit_down_depth.frag.glsl
-                    Renderer/Shaders/blit_down_ms.frag.glsl
-                    Renderer/Shaders/blit_fxaa.frag.glsl
-                    Renderer/Shaders/blit_gauss.frag.glsl
-                    Renderer/Shaders/blit_gauss_sep.frag.glsl
-                    Renderer/Shaders/blit_mipmap.frag.glsl
-                    Renderer/Shaders/blit_ms.frag.glsl
-                    Renderer/Shaders/blit_ms_resolve.frag.glsl
-                    Renderer/Shaders/blit_multiply.frag.glsl
-					Renderer/Shaders/blit_prefilter.frag.glsl
-                    Renderer/Shaders/blit_project_sh.frag.glsl
-                    Renderer/Shaders/blit_reduced.frag.glsl
-                    Renderer/Shaders/blit_rgbm.frag.glsl
-                    Renderer/Shaders/blit_ssao.frag.glsl
-                    Renderer/Shaders/blit_ssr.frag.glsl
-                    Renderer/Shaders/blit_ssr_compose.frag.glsl
-                    Renderer/Shaders/blit_ssr_dilate.frag.glsl
-                    Renderer/Shaders/blit_static_vel.frag.glsl
-                    Renderer/Shaders/blit_taa.frag.glsl
-                    Renderer/Shaders/blit_transparent_compose.frag.glsl
-                    Renderer/Shaders/blit_transparent_init.frag.glsl
-                    Renderer/Shaders/blit_upscale.frag.glsl
-                    Renderer/Shaders/ellipsoid.vert.glsl
-                    Renderer/Shaders/ellipsoid.frag.glsl
-                    Renderer/Shaders/fillz.vert.glsl
-                    Renderer/Shaders/fillz_skin.vert.glsl
-                    Renderer/Shaders/fillz_vege.vert.glsl
-                    Renderer/Shaders/fillz.frag.glsl
-                    Renderer/Shaders/probe.vert.glsl
-                    Renderer/Shaders/probe.frag.glsl
-                    Renderer/Shaders/shadow.vert.glsl
-                    Renderer/Shaders/shadow_vege.vert.glsl
-                    Renderer/Shaders/shadow.frag.glsl
-                    Renderer/Shaders/skinning.comp.glsl
-                    Renderer/Shaders/skydome.frag.glsl
-                    Renderer/Shaders/skydome.vert.glsl)
+                    Renderer/Shaders/_vs_common.glsl)
 
 set(SCENE_COMP_SOURCES
         Scene/Comp/Common.h
@@ -195,7 +145,9 @@ set(UTILS_SOURCES Utils/BVHSplit.h
                   Utils/ScriptedDialog.h
                   Utils/ScriptedDialog.cpp
 				  Utils/ScriptedSequence.h
-				  Utils/ScriptedSequence.cpp)
+				  Utils/ScriptedSequence.cpp
+                  Utils/ShaderLoader.h
+                  Utils/ShaderLoaderGLSL.cpp)
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)

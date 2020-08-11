@@ -23,8 +23,6 @@ class Context;
 
 namespace Gui {
 const char GL_DEFINES_KEY[] = "gl_defines";
-const char UI_PROGRAM_NAME[] = "ui_program";
-const char UI_PROGRAM2_NAME[] = "ui_program2";
 
 enum class eBlendMode { BlAlpha, BlColor };
 enum class eDrawMode { DrPassthrough, DrDistanceField, DrBlitDistanceField };

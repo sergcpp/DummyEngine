@@ -3,6 +3,7 @@
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
 //#extension GL_EXT_control_flow_attributes : enable
+#extension GL_GOOGLE_include_directive : enable
 
 $ModifyWarning
 
@@ -11,7 +12,7 @@ $ModifyWarning
     precision mediump sampler2DShadow;
 #endif
 
-#include "common_fs.glsl"
+#include "internal/_fs_common.glsl"
 
 #define LIGHT_ATTEN_CUTOFF 0.004
 
@@ -56,8 +57,6 @@ in lowp float tex_height;
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
 layout(location = REN_OUT_NORM_INDEX) out vec4 outNormal;
 layout(location = REN_OUT_SPEC_INDEX) out vec4 outSpecular;
-
-#include "common.glsl"
 
 vec2 ReliefParallaxMapping(vec3 dir, vec2 uvs) {
 	const float ParallaxScale = 0.008;// * fract(shrd_data.uTranspParamsAndTime.w);

@@ -44,6 +44,7 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
 
     renderer_       = game->GetComponent<Renderer>(RENDERER_KEY);
     scene_manager_  = game->GetComponent<SceneManager>(SCENE_MANAGER_KEY);
+    shader_loader_  = game->GetComponent<ShaderLoader>(SHADER_LOADER_KEY);
 
     ui_renderer_    = game->GetComponent<Gui::Renderer>(UI_RENDERER_KEY);
     ui_root_        = game->GetComponent<Gui::BaseElement>(UI_ROOT_KEY);

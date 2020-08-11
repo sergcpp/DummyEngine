@@ -16,6 +16,7 @@
 #include "GameStateManager.h"
 #include "Log.h"
 #include "Random.h"
+#include "Utils/ShaderLoader.h"
 
 GameBase::GameBase(int w, int h, const char * /*local_dir*/) : width(w), height(h) {
     terminated = false;
@@ -49,6 +50,9 @@ GameBase::GameBase(int w, int h, const char * /*local_dir*/) : width(w), height(
 
     auto input_manager = std::make_shared<InputManager>();
     AddComponent(INPUT_MANAGER_KEY, input_manager);
+
+    auto shader_loader = std::make_shared<ShaderLoader>();
+    AddComponent(SHADER_LOADER_KEY, shader_loader);
 
     auto flow_control = std::make_shared<FlowControl>(2 * NET_UPDATE_DELTA, NET_UPDATE_DELTA);
     AddComponent(FLOW_CONTROL_KEY, flow_control);

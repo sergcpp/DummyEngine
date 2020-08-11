@@ -258,7 +258,8 @@ uint32_t Crc32HashFile(const char *in_file, Ren::ILog *log) {
     return crc32_hash;
 }
 
-bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &ctx) {
+bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &ctx,
+                       bool report_error) {
 #ifdef _WIN32
     auto filetime_to_uint64 = [](const FILETIME &ft) -> uint64_t {
         ULARGE_INTEGER ull;
@@ -269,7 +270,9 @@ bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &
 
     HANDLE in_h = CreateFile(in_file, 0, 0, NULL, OPEN_EXISTING, NULL, NULL);
     if (in_h == INVALID_HANDLE_VALUE) {
-        ctx.log->Info("[PrepareAssets] Failed to open file %s", in_file);
+        if (report_error) {
+            ctx.log->Info("[PrepareAssets] Failed to open file %s", in_file);
+        }
         CloseHandle(in_h);
         return false;
     }
@@ -283,7 +286,9 @@ bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &
     struct stat st1 = {};
     const int res1 = stat(in_file, &st1);
     if (res1 == -1) {
-        ctx.log->Info("[PrepareAssets] Failed to open input file %s!", in_file);
+        if (report_error) {
+            ctx.log->Info("[PrepareAssets] Failed to open input file %s!", in_file);
+        }
         return {};
     }
 
@@ -303,8 +308,8 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context
 #endif
 
     char in_t[32] = "", out_t[32] = "";
-    GetFileModifyTime(in_file, in_t, ctx);
-    GetFileModifyTime(in_file, out_t, ctx);
+    GetFileModifyTime(in_file, in_t, ctx, true /* report_error */);
+    GetFileModifyTime(out_file, out_t, ctx, false /* report_error */);
 
     JsObject &js_files = ctx.js_db["files"].as_obj();
 
@@ -334,7 +339,7 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context
                 if (js_out_file_hash.val == out_crc32_hash_str) {
                     // write new time
                     if (!js_in_file.Has("in_time")) {
-                        js_in_file.Push("in_time", JsString{ in_t });
+                        js_in_file.Push("in_time", JsString{in_t});
                     } else {
                         JsString &js_in_file_time = js_in_file["in_time"].as_str();
                         js_in_file_time.val = in_t;
@@ -585,6 +590,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
     g_asset_handlers["mesh"] = {"mesh", HCopy};
     g_asset_handlers["anim"] = {"anim", HCopy};
     g_asset_handlers["wav"] = {"wav", HCopy};
+    g_asset_handlers["glsl"] = {"glsl", HCopy};
     g_asset_handlers["vert.glsl"] = {"vert.glsl", HPreprocessShader};
     g_asset_handlers["frag.glsl"] = {"frag.glsl", HPreprocessShader};
     g_asset_handlers["tesc.glsl"] = {"tesc.glsl", HPreprocessShader};
@@ -664,7 +670,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
                 }
 
                 char out_t[32];
-                GetFileModifyTime(out_file.c_str(), out_t, ctx);
+                GetFileModifyTime(out_file.c_str(), out_t, ctx, true /* report_error */);
 
                 // store new time value
                 if (!js_in_file.Has("out_time")) {

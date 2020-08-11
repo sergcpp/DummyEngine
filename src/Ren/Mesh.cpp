@@ -250,13 +250,14 @@ void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_lo
         }
 
         if (load_status) {
-            *load_status = MeshCreatedFromData;
+            (*load_status) = eMeshLoadStatus::CreatedFromData;
         }
     } else {
         // TODO: actually set to default mesh ('error' label like in source engine for
         // example)
-        if (load_status)
-            *load_status = MeshSetToDefault;
+        if (load_status) {
+            (*load_status) = eMeshLoadStatus::SetToDefault;
+        }
     }
 }
 
@@ -268,7 +269,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data,
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "STATIC_MESH\0") == 0);
 
-    type_ = MeshSimple;
+    type_ = eMeshType::Simple;
 
     enum {
         MESH_INFO_CHUNK = 0,
@@ -377,7 +378,7 @@ void Ren::Mesh::InitMeshColored(std::istream &data,
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "COLORE_MESH\0") == 0);
 
-    type_ = MeshColored;
+    type_ = eMeshType::Colored;
 
     enum {
         MESH_INFO_CHUNK = 0,
@@ -490,7 +491,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
 
     const bool vtx_color_present = strcmp(mesh_type_str, "SKECOL_MESH\0") == 0;
 
-    type_ = MeshSkeletal;
+    type_ = eMeshType::Skeletal;
 
     enum {
         MESH_INFO_CHUNK = 0,

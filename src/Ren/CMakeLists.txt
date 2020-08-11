@@ -40,6 +40,7 @@ set(SOURCE_FILES Anim.h
                  RenderThread.h
                  RenderThread.cpp
                  RingBuffer.h
+                 Shader.h
                  SparseArray.h
                  Storage.h
                  String.h
@@ -60,6 +61,8 @@ if(${RENDERER} STREQUAL "GL")
                      GLExt.cpp
                      GLExtDSAEmu.h
                      GLExtDSAEmu.cpp
+                     ShaderGL.h
+                     ShaderGL.cpp
                      ProgramGL.h
                      ProgramGL.cpp
                      TextureGL.h

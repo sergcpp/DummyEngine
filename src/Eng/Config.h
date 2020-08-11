@@ -14,6 +14,7 @@ const char REN_CONTEXT_KEY[] = "ren_context";
 const char SND_CONTEXT_KEY[] = "snd_context";
 const char RANDOM_KEY[] = "random_eng";
 const char LOG_KEY[] = "log";
+const char SHADER_LOADER_KEY[] = "shader_loader";
 
 const char UI_RENDERER_KEY[] = "ui_renderer";
 const char UI_ROOT_KEY[] = "ui_root";

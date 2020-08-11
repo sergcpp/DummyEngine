@@ -16,17 +16,17 @@ namespace Ren {
 class ILog;
 
 enum class eMaterialFlags {
-    AlphaTest   = (1u << 0u),
-    AlphaBlend  = (1u << 1u),
-    DepthWrite  = (1u << 2u),
-    TwoSided    = (1u << 3u)
+    AlphaTest = (1u << 0u),
+    AlphaBlend = (1u << 1u),
+    DepthWrite = (1u << 2u),
+    TwoSided = (1u << 3u)
 };
 
 const int MaxMaterialProgramCount = 4;
 const int MaxMaterialTextureCount = 8;
 const int MaxMaterialParamCount = 8;
 
-enum eMatLoadStatus { MatFound, MatSetToDefault, MatCreatedFromData };
+enum class eMatLoadStatus { Found, SetToDefault, CreatedFromData };
 
 typedef std::function<Texture2DRef(const char *name, uint32_t flags)>
     texture_load_callback;

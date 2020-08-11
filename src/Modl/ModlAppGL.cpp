@@ -160,7 +160,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     }
 
     skel->UpdateBones(matr_palette_);
-    
+
     CheckInitVAOs();
 
 #if 0
@@ -248,7 +248,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
             { // transform simple vertices
                 glUniform4i(0, vertex_offset, non_shapekeyed_vertex_count,
-                    0 /* offset to out buffers */, delta_offset);
+                            0 /* offset to out buffers */, delta_offset);
                 glUniform1i(1, 0);
 
                 const int group_count = (non_shapekeyed_vertex_count + 63) / 64;
@@ -257,9 +257,9 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
             { // transform shapekeyed vertices
                 glUniform4i(0, vertex_offset + non_shapekeyed_vertex_count,
-                    shapekeyed_vertex_count,
-                    non_shapekeyed_vertex_count /* offset to out buffers */,
-                    delta_offset);
+                            shapekeyed_vertex_count,
+                            non_shapekeyed_vertex_count /* offset to out buffers */,
+                            delta_offset);
 
                 uint16_t shape_palette[256];
 
@@ -277,11 +277,11 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
                     shape_palette[1] = uint16_t(f * 65535);
 
                     glUniform1i(1, 1);
-                    glUniform1uiv(2, 1, (const GLuint*)&shape_palette[0]);
+                    glUniform1uiv(2, 1, (const GLuint *)&shape_palette[0]);
                 } else {
                     const int shapes_count = skel->UpdateShapes(shape_palette);
                     glUniform1i(1, shapes_count);
-                    glUniform1uiv(2, shapes_count, (const GLuint*)&shape_palette[0]);
+                    glUniform1uiv(2, shapes_count, (const GLuint *)&shape_palette[0]);
                 }
 
                 const int group_count = (shapekeyed_vertex_count + 63) / 64;
@@ -289,7 +289,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
             }
         } else {
             glUniform4i(0, vertex_offset, vertex_count, 0 /* offset to out buffers */,
-                delta_offset);
+                        delta_offset);
             glUniform1i(1, 0);
 
             const int group_count = (vertex_count + 63) / 64;
@@ -616,14 +616,28 @@ void main(void) {
 }
 )";
 
+    Ren::eShaderLoadStatus sh_status;
+    Ren::ShaderRef diag_vs_ref =
+        ctx_.LoadShaderGLSL("__diag_vs", diag_vs, Ren::eShaderType::Vert, &sh_status);
+    assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+    Ren::ShaderRef diag_colored_vs_ref = ctx_.LoadShaderGLSL(
+        "__diag_colored_vs", diag_colored_vs, Ren::eShaderType::Vert, &sh_status);
+    assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+    Ren::ShaderRef diag_skinned_vs_ref = ctx_.LoadShaderGLSL(
+        "__diag_skinned_vs", diag_skinned_vs, Ren::eShaderType::Vert, &sh_status);
+    assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+    Ren::ShaderRef diag_fs_ref =
+        ctx_.LoadShaderGLSL("__diag_fs", diag_fs, Ren::eShaderType::Frag, &sh_status);
+    assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+
     Ren::eProgLoadStatus status;
-    diag_prog_ = ctx_.LoadProgramGLSL("__diag", diag_vs, diag_fs, &status);
+    diag_prog_ = ctx_.LoadProgram("__diag", diag_vs_ref, diag_fs_ref, {}, {}, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    diag_colored_prog_ =
-        ctx_.LoadProgramGLSL("__diag_colored", diag_colored_vs, diag_fs, &status);
+    diag_colored_prog_ = ctx_.LoadProgram("__diag_colored", diag_colored_vs_ref,
+                                          diag_fs_ref, {}, {}, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    diag_skinned_prog_ =
-        ctx_.LoadProgramGLSL("__diag_skinned", diag_skinned_vs, diag_fs, &status);
+    diag_skinned_prog_ = ctx_.LoadProgram("__diag_skinned", diag_skinned_vs_ref,
+                                          diag_fs_ref, {}, {}, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
 
     static const char skinning_cs[] = R"(
@@ -753,7 +767,11 @@ void main(void) {
             }
         )";
 
-    skinning_prog_ = ctx_.LoadProgramGLSL("__skin", skinning_cs, &status);
+    Ren::ShaderRef skinning_cs_ref =
+        ctx_.LoadShaderGLSL("__skin_cs", diag_vs, Ren::eShaderType::Comp, &sh_status);
+    assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+
+    skinning_prog_ = ctx_.LoadProgram("__skin", skinning_cs_ref, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
 
     ////////////////////////////////////////////////////////////////////////////////////////

@@ -1,10 +1,11 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
+#extension GL_GOOGLE_include_directive : enable
 
 $ModifyWarning
 
-#include "common_vs.glsl"
+#include "internal/_vs_common.glsl"
 
 /*
 UNIFORM_BLOCKS

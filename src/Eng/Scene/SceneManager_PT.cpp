@@ -585,7 +585,8 @@ void SceneManager::InitScene_PT(bool _override) {
                 obj.components[CompDrawable]);
             const Ren::Mesh *mesh = dr->pt_mesh ? dr->pt_mesh.get() : dr->mesh.get();
             if (!(dr->vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) ||
-                (mesh->type() != Ren::MeshSimple && mesh->type() != Ren::MeshColored)) {
+                (mesh->type() != Ren::eMeshType::Simple &&
+                 mesh->type() != Ren::eMeshType::Colored)) {
                 continue;
             }
 
@@ -594,7 +595,7 @@ void SceneManager::InitScene_PT(bool _override) {
             if (mesh_it == loaded_meshes.end()) {
                 Ray::mesh_desc_t mesh_desc;
                 mesh_desc.prim_type = Ray::TriangleList;
-                mesh_desc.layout = (mesh->type() == Ren::MeshColored)
+                mesh_desc.layout = (mesh->type() == Ren::eMeshType::Colored)
                                        ? Ray::PxyzNxyzBxyzTuvX
                                        : Ray::PxyzNxyzBxyzTuvTuv;
                 mesh_desc.vtx_attrs = (const float *)mesh->attribs();

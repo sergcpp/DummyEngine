@@ -83,14 +83,14 @@ struct BufferRange {
     }
 };
 
-enum eMeshLoadStatus { MeshFound, MeshSetToDefault, MeshCreatedFromData };
+enum class eMeshLoadStatus { Found, SetToDefault, CreatedFromData };
 
-enum eMeshType { MeshUndefined, MeshSimple, MeshColored, MeshSkeletal };
+enum class eMeshType { Undefined, Simple, Colored, Skeletal };
 
 typedef std::function<MaterialRef(const char *name)> material_load_callback;
 
 class Mesh : public RefCounter {
-    int type_ = MeshUndefined;
+    eMeshType type_ = eMeshType::Undefined;
     uint32_t flags_ = 0;
     bool ready_ = false;
     BufferRange attribs_buf1_, attribs_buf2_, sk_attribs_buf_, sk_deltas_buf_,
@@ -132,7 +132,7 @@ class Mesh : public RefCounter {
     Mesh &operator=(const Mesh &rhs) = delete;
     Mesh &operator=(Mesh &&rhs) = default;
 
-    int type() const { return type_; }
+    eMeshType type() const { return type_; }
     uint32_t flags() const { return flags_; }
     bool ready() const { return ready_; }
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)

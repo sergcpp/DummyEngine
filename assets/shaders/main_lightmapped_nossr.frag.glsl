@@ -2,6 +2,7 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 //#extension GL_EXT_control_flow_attributes : enable
+#extension GL_GOOGLE_include_directive : enable
 
 $ModifyWarning
 
@@ -14,7 +15,7 @@ $ModifyWarning
     #define highp
 #endif
 
-#include "common_fs.glsl"
+#include "internal/_fs_common.glsl"
 
 #define LIGHT_ATTEN_CUTOFF 0.004
 
@@ -57,8 +58,6 @@ in highp vec3 aVertexShUVs_[4];
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
 layout(location = REN_OUT_NORM_INDEX) out vec4 outNormal;
 layout(location = REN_OUT_SPEC_INDEX) out vec4 outSpecular;
-
-#include "common.glsl"
 
 void main(void) {
     highp float lin_depth = LinearizeDepth(gl_FragCoord.z, shrd_data.uClipInfo);

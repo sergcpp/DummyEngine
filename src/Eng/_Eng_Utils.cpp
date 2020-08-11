@@ -5,3 +5,6 @@
 #include "Utils/Load.cpp"
 #include "Utils/ScriptedDialog.cpp"
 #include "Utils/ScriptedSequence.cpp"
+#ifdef USE_GL_RENDER
+#include "Utils/ShaderLoaderGLSL.cpp"
+#endif
