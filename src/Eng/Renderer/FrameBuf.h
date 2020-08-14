@@ -13,7 +13,7 @@ struct FrameBuf {
         bool attached = true;
     };
 
-    enum class eDepthFormat { DepthNone, Depth16, Depth24Stencil8 };
+    enum class eDepthFormat { DepthNone, Depth16, Depth24Stencil8, Depth32 };
 
     struct DepthAttachmentDesc {
         eDepthFormat format;

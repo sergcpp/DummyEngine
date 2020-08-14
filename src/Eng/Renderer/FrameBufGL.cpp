@@ -114,6 +114,8 @@ FrameBuf::FrameBuf(
             internal_format = GL_DEPTH_COMPONENT16;
         } else if (depth_att.format == eDepthFormat::Depth24Stencil8) {
             internal_format = GL_DEPTH24_STENCIL8;
+        } else if (depth_att.format == eDepthFormat::Depth32) {
+            internal_format = GL_DEPTH_COMPONENT32;
         } else {
             throw std::invalid_argument("Wrong format!");
         }
