@@ -6,15 +6,15 @@ int main(int argc, char *argv[]) {
 }
 
 // TODO:
+// decal masks
 // fix exposure flicker
 // use texture array for lightmaps
 // texture streaming
-// use stencil to distinguich ssr/nossr regions
+// use stencil to distinguich ssr/nossr regions <-- msaa :(
 // use GL_EXT_shader_group_vote
 // refactor msaa (resolve once, remove permutations)
 // refactor file read on android
 // start with scene editing
-// use direct state access extension
 // add assetstream
 // get rid of SDL in Modl app
 // make full screen quad passes differently

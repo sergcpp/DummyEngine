@@ -385,11 +385,11 @@ mat3 CotangentFrame_Precise(vec3 normal, vec3 position, vec2 uv) {
     vec2 duv1 = dFdx(uv);
     vec2 duv2 = dFdy(uv);
 
-	vec3 N = normalize(normal);
-	vec3 T = normalize(dp2 * duv1.y - dp1 * duv2.y);
-	vec3 B = normalize(cross(T, N));
-	
-	return mat3(T, B, N);
+    vec3 N = normalize(normal);
+    vec3 T = normalize(dp2 * duv1.y - dp1 * duv2.y);
+    vec3 B = normalize(cross(T, N));
+    
+    return mat3(T, B, N);
 }
 
 void main(void) {
@@ -409,7 +409,12 @@ void main(void) {
     vec3 view_ray_ws = normalize(shrd_data.uCamPosAndGamma.xyz - aVertexPos_);
     
     mat3 basis = mat3(cross(aVertexTangent_, aVertexNormal_), -aVertexTangent_, aVertexNormal_);
-    //mat3 basis = CotangentFrame_Precise(aVertexNormal_, aVertexPos_, aVertexUVs_);
+    /*mat3 basis;
+    if (gl_FragCoord.x < 500.0) {
+        basis = CotangentFrame_Fast(aVertexNormal_, aVertexPos_, aVertexUVs_);
+    } else {
+        basis = CotangentFrame_Precise(aVertexNormal_, aVertexPos_, aVertexUVs_);
+    }*/
     
     vec3 view_ray_ts = view_ray_ws * basis;
     
