@@ -73,7 +73,7 @@ void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
         return;
     }
 
-    GLuint program = (uint32_t)glCreateProgram();
+    GLuint program = glCreateProgram();
     if (program) {
         glAttachShader(program, (GLuint)vs_ref->shader_id());
         glAttachShader(program, (GLuint)fs_ref->shader_id());

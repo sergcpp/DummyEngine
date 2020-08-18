@@ -27,6 +27,8 @@ Ren::eShaderType ShaderTypeFromName(const char *name, const int len) {
     }
     return type;
 }
+
+const bool TryToLoadSPIRV = false;
 } // namespace ShaderLoaderInternal
 
 ShaderLoader::ShaderLoader() {
@@ -189,6 +191,27 @@ Ren::ShaderRef ShaderLoader::LoadGLSL(Ren::Context &ctx, const char *name) {
     Ren::ShaderRef ret = ctx.LoadShaderGLSL(name, nullptr, type, &status);
     if (!ret->ready()) {
         temp_param_def_.clear();
+
+        if (TryToLoadSPIRV && ctx.capabilities.gl_spirv) {
+            std::string spv_name = SHADERS_PATH;
+            spv_name += name;
+            const size_t n = spv_name.rfind(".glsl");
+            assert(n != std::string::npos);
+            spv_name.replace(n + 1, n + 4, "spv", 3);
+
+            Sys::AssetFile spv_file(spv_name);
+            if (spv_file) {
+                const size_t spv_data_size = spv_file.size();
+
+                std::unique_ptr<uint8_t[]> spv_data(new uint8_t[spv_data_size]);
+                spv_file.Read((char*)&spv_data[0], spv_data_size);
+
+                ret->Init(&spv_data[0], int(spv_data_size), type, &status, ctx.log());
+                if (status == Ren::eShaderLoadStatus::CreatedFromData) {
+                    return ret;
+                }
+            }
+        }
 
         const int params_cnt = ParamsStringToDef(params, temp_param_def_);
         assert(params_cnt != -1);

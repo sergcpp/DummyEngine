@@ -115,8 +115,9 @@ set_target_properties(test_DummyLib
 					  test_Snd
                       test_Sys PROPERTIES FOLDER Tests)
                       
-set_target_properties(SOIL2
-                      astc PROPERTIES FOLDER _)
+set_target_properties(astc
+                      SOIL2
+                      SPIRV-Reflect PROPERTIES FOLDER _)
 
 add_test(DummyLibTest   DummyLib/tests/test_DummyLib)
 add_test(EngTest        Eng/_tests/test_Eng)

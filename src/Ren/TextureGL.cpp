@@ -408,10 +408,6 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, int size, const Texture2D
     glCreateTextures(GL_TEXTURE_2D, 1, &tex_id);
     tex_id_ = tex_id;
 
-    if (params_.flags & eTexFlags::TexMIPMin) {
-        volatile int ii = 0;
-    }
-
     params_ = p;
 
     const unsigned res = SOIL_load_OGL_texture_from_memory(
@@ -423,9 +419,6 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, int size, const Texture2D
     glBindTexture(GL_TEXTURE_2D, tex_id);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
-
-    params_.w = (int)w;
-    params_.h = (int)h;
 
     // generate mip maps manually
     if (params_.flags & (eTexFlags::TexMIPMin | eTexFlags::TexMIPMax)) {
@@ -462,6 +455,9 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, int size, const Texture2D
 
         SOIL_free_image_data(img_data);
     }
+
+    params_.w = (int)w;
+    params_.h = (int)h;
 
     SetFilter(p.filter, p.repeat, p.lod_bias);
 }
@@ -837,7 +833,8 @@ void Ren::Texture2D::SetFilter(eTexFilter f, eTexRepeat r, float lod_bias) {
 
 #ifndef __ANDROID__
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_LOD_BIAS,
-            (params_.flags & eTexFlags::TexNoBias) ? 0.0f : lod_bias);
+                                     (params_.flags & eTexFlags::TexNoBias) ? 0.0f
+                                                                            : lod_bias);
 #endif
 
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_ANISOTROPY_EXT,

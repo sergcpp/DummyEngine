@@ -3,6 +3,8 @@
 #include "GL.h"
 #include "Log.h"
 
+#include "SPIRV-Reflect/spirv_reflect.h"
+
 namespace Ren {
 GLuint LoadShader(GLenum shader_type, const char *source, ILog *log);
 #ifndef __ANDROID__
@@ -130,9 +132,37 @@ void Ren::Shader::InitFromSPIRV(const uint8_t *shader_data, int data_size,
         return;
     }
 
-    // TODO!!
-    // Descr *_bindings[3] = {bindings[0], bindings[1], bindings[2]};
-    // ParseGLSLBindings(shader_data, _bindings, bindings_count, log);
+    SpvReflectShaderModule module = {};
+    const SpvReflectResult res =
+        spvReflectCreateShaderModule(data_size, shader_data, &module);
+    assert(res == SPV_REFLECT_RESULT_SUCCESS);
+
+    bindings_count[0] = 0;
+    for (uint32_t i = 0; i < module.input_variable_count; i++) {
+        const auto &var = module.input_variables[i];
+        if (var.built_in == -1) {
+            const int ndx = bindings_count[0]++;
+            bindings[0][ndx].name = String{var.name};
+            bindings[0][ndx].loc = var.location;
+        }
+    }
+
+    bindings_count[1] = 0;
+    bindings_count[2] = 0;
+    for (uint32_t i = 0; i < module.descriptor_binding_count; i++) {
+        const auto &desc = module.descriptor_bindings[i];
+        if (desc.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+            const int ndx = bindings_count[2]++;
+            bindings[2][ndx].name = String{desc.name};
+            bindings[2][ndx].loc = desc.binding;
+        } else {
+            const int ndx = bindings_count[1]++;
+            bindings[1][ndx].name = String{desc.name};
+            bindings[1][ndx].loc = desc.binding;
+        }
+    }
+
+    spvReflectDestroyShaderModule(&module);
 
     if (status) {
         (*status) = eShaderLoadStatus::CreatedFromData;
@@ -178,7 +208,7 @@ GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_s
                        ILog *log) {
     GLuint shader = glCreateShader(shader_type);
     if (shader) {
-        glShaderBinary(1, &shader, GL_SHADER_BINARY_FORMAT_SPIR_V, data,
+        glShaderBinary(1, &shader, GL_SHADER_BINARY_FORMAT_SPIR_V_ARB, data,
                        static_cast<GLsizei>(data_size));
         glSpecializeShader(shader, "main", 0, nullptr, nullptr);
 
