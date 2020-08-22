@@ -1,5 +1,6 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
+
 #ifdef GL_ES
     precision highp float;
 #endif
@@ -9,9 +10,15 @@
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
+PERM @MSAA_4
 */
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
@@ -23,9 +30,13 @@ layout(binding = 0) uniform mediump sampler2D depth_texture;
 layout(binding = 1) uniform highp samplerBuffer nodes_buffer;
 layout(location = 12) uniform int uRootIndex;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 bool _bbox_test(vec3 o, vec3 inv_d, float t, vec3 bbox_min, vec3 bbox_max) {
     float low = inv_d.x * (bbox_min[0] - o.x);

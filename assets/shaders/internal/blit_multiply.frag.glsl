@@ -1,6 +1,7 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
+
 #ifdef GL_ES
     precision mediump float;
 #endif
@@ -8,11 +9,17 @@
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
+PERM @MSAA_4
 */
         
 #include "_fs_common.glsl"
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
@@ -32,9 +39,13 @@ layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray env_texture;
 layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer cells_buffer;
 layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer items_buffer;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 float LinearDepthTexelFetch(ivec2 hit_pixel) {
     float depth = texelFetch(s_depth_texture, hit_pixel, 0).r;

@@ -7,11 +7,17 @@
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
+PERM @MSAA_4
 */
 
 #include "_fs_common.glsl"
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
@@ -23,9 +29,13 @@ layout(binding = 0) uniform highp sampler2D depth_texture;
 layout(binding = 1) uniform mediump sampler2D depth_low_texture;
 layout(binding = 2) uniform lowp sampler2D source_texture;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 void main() {
     ivec2 icoord = ivec2(gl_FragCoord.xy);

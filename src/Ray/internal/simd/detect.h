@@ -28,6 +28,7 @@ inline unsigned long long _xgetbv(unsigned int index) {
 #if !defined(__arm__) && !defined(__aarch64__) && !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
 //  GCC Intrinsics
 #include <cpuid.h>
+#include <immintrin.h>
 inline void cpuid(int info[4], int InfoType) {
     __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
 }

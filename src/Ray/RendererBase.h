@@ -11,13 +11,13 @@
 
 namespace Ray {
 /// Renderer flags used to choose backend
-enum eRendererType {
-    RendererRef     = (1 << 0),
-    RendererSSE2    = (1 << 1),
-    RendererAVX     = (1 << 2),
-    RendererAVX2    = (1 << 3),
-    RendererNEON    = (1 << 4),
-    RendererOCL     = (1 << 5),
+enum eRendererType : uint32_t {
+    RendererRef     = (1u << 0u),
+    RendererSSE2    = (1u << 1u),
+    RendererAVX     = (1u << 2u),
+    RendererAVX2    = (1u << 3u),
+    RendererNEON    = (1u << 4u),
+    RendererOCL     = (1u << 5u),
 };
 
 /// Renderer settings

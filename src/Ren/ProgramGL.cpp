@@ -172,7 +172,7 @@ void Ren::Program::InitBindings(ILog *log) {
             Attribute& a = attributes_[b.loc];
             a.loc = glGetAttribLocation(GLuint(prog_id_), b.name.c_str());
             if (a.loc != -1) {
-                a.name = std::move(b.name);
+                a.name = b.name;
             }
         }
 
@@ -181,7 +181,7 @@ void Ren::Program::InitBindings(ILog *log) {
             Attribute& u = uniforms_[b.loc];
             u.loc = glGetUniformLocation(GLuint(prog_id_), b.name.c_str());
             if (u.loc != -1) {
-                u.name = std::move(b.name);
+                u.name = b.name;
             }
         }
 
@@ -190,7 +190,7 @@ void Ren::Program::InitBindings(ILog *log) {
             Attribute& u = uniform_blocks_[b.loc];
             u.loc = glGetUniformBlockIndex(GLuint(prog_id_), b.name.c_str());
             if (u.loc != -1) {
-                u.name = std::move(b.name);
+                u.name = b.name;
                 glUniformBlockBinding(GLuint(prog_id_), u.loc, b.loc);
             }
         }

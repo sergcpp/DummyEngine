@@ -6,6 +6,12 @@
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
+PERM @TRANSPARENT_PERM
+PERM @MOVING_PERM
+PERM @OUTPUT_VELOCITY
+PERM @TRANSPARENT_PERM;OUTPUT_VELOCITY
+PERM @OUTPUT_VELOCITY;MOVING_PERM
+PERM @TRANSPARENT_PERM;OUTPUT_VELOCITY;MOVING_PERM
 */
 
 layout(location = REN_VTX_POS_LOC) in vec3 aVertexPosition;
@@ -14,7 +20,12 @@ layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs1;
 #endif
 layout(location = REN_VTX_AUX_LOC) in uint aVertexColorPacked;
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
@@ -22,12 +33,22 @@ layout(binding = REN_INST_BUF_SLOT) uniform mediump samplerBuffer instances_buff
 layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D noise_texture;
 layout(location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
 
-#ifdef TRANSPARENT_PERM
-out vec2 aVertexUVs1_;
-#endif
-#ifdef OUTPUT_VELOCITY
-out vec3 aVertexCSCurr_;
-out vec3 aVertexCSPrev_;
+#if defined(VULKAN) || defined(GL_SPIRV)
+    #ifdef TRANSPARENT_PERM
+    layout(location = 0) out vec2 aVertexUVs1_;
+    #endif
+    #ifdef OUTPUT_VELOCITY
+    layout(location = 2) out vec3 aVertexCSCurr_;
+    layout(location = 3) out vec3 aVertexCSPrev_;
+    #endif
+#else
+    #ifdef TRANSPARENT_PERM
+    out vec2 aVertexUVs1_;
+    #endif
+    #ifdef OUTPUT_VELOCITY
+    out vec3 aVertexCSCurr_;
+    out vec3 aVertexCSPrev_;
+    #endif
 #endif
 
 invariant gl_Position;

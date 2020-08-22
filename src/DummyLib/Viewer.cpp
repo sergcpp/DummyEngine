@@ -104,7 +104,7 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
 
 #if defined(__ANDROID__)
     auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);
-    const Ren::Context *p_ctx = ctx.get();
+    const Ren::Context *p_ctx = ren_ctx.get();
     input_manager->SetConverter(EvP1Move, [p_ctx](InputManager::Event &evt) {
         evt.move.dx *= 300.0f / p_ctx->w();
         evt.move.dy *= 300.0f / p_ctx->w();
@@ -164,7 +164,7 @@ bool Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
         uint32_t entries_count = 0;
     };
 
-    struct dict_entry_t {
+    struct dict_entry_t { // NOLINT
         eGramGrpPos pos;
         eGramGrpNum num;
         eGramGrpGen gen;
@@ -358,13 +358,11 @@ bool Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
 
             const size_t key_len = it->key.length();
             memcpy(&comb_str_buf[comb_str_buf_ndx1], it->key.c_str(), key_len + 1);
-            const char *key = &comb_str_buf[comb_str_buf_ndx1];
             const auto key_str_offset = (uint32_t)comb_str_buf_ndx1;
             comb_str_buf_ndx1 += key_len + 1;
 
             links_compact.emplace_back();
-            Dictionary::dict_link_compact_t &link =
-                links_compact.back(); // dictionary_hashmap_compact[key];
+            Dictionary::dict_link_compact_t &link = links_compact.back();
             link.key_str_off = key_str_offset;
             link.entry_index = (uint32_t)entries_compact.size();
             link.entry_count = src_link.entries_count;
@@ -496,7 +494,7 @@ bool Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
         assert(hdr_offset == header_size);
 
         { // Info data
-            Dictionary::dict_info_t info;
+            Dictionary::dict_info_t info; // NOLINT
             info.src_lang[0] = 'e';
             info.src_lang[1] = 'n';
             info.dst_lang[0] = 'd';

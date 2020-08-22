@@ -8,9 +8,13 @@ layout(binding = 0) uniform mediump sampler2D depth_texture;
 layout(binding = 1) uniform lowp sampler2D source_texture;
 layout(location = 3) uniform float vertical;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 void main() {
     ivec2 icoord = ivec2(aVertexUVs_);

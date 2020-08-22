@@ -1,4 +1,5 @@
 #version 310 es
+
 #ifdef GL_ES
     precision mediump float;
 #endif
@@ -8,9 +9,13 @@
 layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D s_texture;
 layout(location = 4) uniform vec2 uOffset;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 void main() {
     vec3 c0 = texture(s_texture, aVertexUVs_ + uOffset).xyz;

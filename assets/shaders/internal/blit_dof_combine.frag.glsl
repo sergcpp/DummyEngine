@@ -9,9 +9,15 @@
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
+PERM @MSAA_4
 */
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
@@ -30,7 +36,11 @@ layout(location = 1) uniform vec3 uDofEquation;
 layout(location = 2) uniform vec4 uDofLerpScale;
 layout(location = 3) uniform vec4 uDofLerpBias;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
 layout(location = 0) out vec4 outColor;
 

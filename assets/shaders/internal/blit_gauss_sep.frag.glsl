@@ -10,12 +10,16 @@ UNIFORMS
     vertical : 4
 */
         
-uniform sampler2D s_texture;
-uniform float vertical;
+layout(binding = 0) uniform sampler2D s_texture;
+layout(location = 1) uniform float vertical;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 void main() {
     vec4 col = texelFetch(s_texture, ivec2(aVertexUVs_), 0);

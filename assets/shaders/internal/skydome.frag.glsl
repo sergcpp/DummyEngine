@@ -6,13 +6,22 @@
 
 #include "_fs_common.glsl"
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
 layout(binding = REN_BASE0_TEX_SLOT) uniform samplerCube env_texture;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec3 aVertexPos_;
+#else
 in vec3 aVertexPos_;
+#endif
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
 layout(location = REN_OUT_SPEC_INDEX) out vec4 outSpecular;

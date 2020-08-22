@@ -10,9 +10,13 @@ layout(location = 1) uniform float src_layer;
 layout(location = 2) uniform int src_face;
 layout(location = 3) uniform float src_level;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 vec3 gen_cubemap_coord(in vec2 txc, in int face) {
     vec3 v;

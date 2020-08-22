@@ -10,9 +10,13 @@
 layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2DMS s_texture;
 layout(location = 4) uniform float multiplier;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 void main() {
     outColor = vec4(multiplier, multiplier, multiplier, 1.0) * texelFetch(s_texture, ivec2(aVertexUVs_), 0);

@@ -8,7 +8,12 @@ UNIFORM_BLOCKS
     SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
 */
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
@@ -26,7 +31,11 @@ layout(location = REN_U_M_MATRIX_LOC) uniform mat4 uShadowViewProjMatrix;
 layout(location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
 
 #ifdef TRANSPARENT_PERM
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) out vec2 aVertexUVs1_;
+#else
 out vec2 aVertexUVs1_;
+#endif
 #endif
 
 void main() {

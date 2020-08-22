@@ -9,7 +9,11 @@
 layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D s_shrunk_coc;
 layout(binding = REN_BASE1_TEX_SLOT) uniform sampler2D s_blurred_coc;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
 layout(location = 0) out float outCoc;
 

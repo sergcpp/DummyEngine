@@ -192,12 +192,13 @@ Ren::ShaderRef ShaderLoader::LoadGLSL(Ren::Context &ctx, const char *name) {
     if (!ret->ready()) {
         temp_param_def_.clear();
 
+#ifndef __ANDROID__
         if (TryToLoadSPIRV && ctx.capabilities.gl_spirv) {
             std::string spv_name = SHADERS_PATH;
             spv_name += name;
             const size_t n = spv_name.rfind(".glsl");
             assert(n != std::string::npos);
-            spv_name.replace(n + 1, n + 4, "spv", 3);
+            spv_name.replace(n + 1, 4, "spv");
 
             Sys::AssetFile spv_file(spv_name);
             if (spv_file) {
@@ -212,6 +213,7 @@ Ren::ShaderRef ShaderLoader::LoadGLSL(Ren::Context &ctx, const char *name) {
                 }
             }
         }
+#endif
 
         const int params_cnt = ParamsStringToDef(params, temp_param_def_);
         assert(params_cnt != -1);

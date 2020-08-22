@@ -42,6 +42,9 @@ Ray::Ref::Scene::Scene(bool use_wide_bvh) : use_wide_bvh_(use_wide_bvh), texture
             throw std::runtime_error("Cannot allocate 1px default normal map!");
         }
     }
+
+    macro_nodes_root_ = use_wide_bvh ? InvalidMNodeIndex : InvalidNodeIndex;
+    light_nodes_root_ = use_wide_bvh ? InvalidMNodeIndex : InvalidNodeIndex;
 }
 
 void Ray::Ref::Scene::GetEnvironment(environment_desc_t &env) {

@@ -13,7 +13,11 @@ layout(binding = 3) uniform mediump sampler2D s_velocity;
 layout(location = 13) uniform vec2 uTexSize;
 layout(location = 14) uniform float uExposure;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
 layout(location = 0) out vec3 outColor;
 layout(location = 1) out vec3 outHistory;

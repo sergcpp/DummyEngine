@@ -8,9 +8,13 @@
         
 layout(binding = REN_BASE0_TEX_SLOT) uniform lowp sampler2D source_texture;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out vec3 outColor;
+layout(location = 0) out vec3 outColor;
 
 void main() {
     ivec2 icoord = ivec2(aVertexUVs_);

@@ -6,6 +6,9 @@
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
+PERM @MOVING_PERM
+PERM @TRANSPARENT_PERM
+PERM @TRANSPARENT_PERM;MOVING_PERM
 */
 
 layout(location = REN_VTX_POS_LOC) in vec3 aVertexPosition;
@@ -13,22 +16,40 @@ layout(location = REN_VTX_POS_LOC) in vec3 aVertexPosition;
 layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs1;
 #endif
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
 layout(binding = REN_INST_BUF_SLOT) uniform mediump samplerBuffer instances_buffer;
 layout(location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
 
-#ifdef TRANSPARENT_PERM
-out vec2 aVertexUVs1_;
-#ifdef HASHED_TRANSPARENCY
-out vec3 aVertexObjCoord_;
-#endif
-#endif
-#ifdef MOVING_PERM
-out vec3 aVertexCSCurr_;
-out vec3 aVertexCSPrev_;
+#if defined(VULKAN) || defined(GL_SPIRV)
+    #ifdef TRANSPARENT_PERM
+    layout(location = 0) out vec2 aVertexUVs1_;
+    #ifdef HASHED_TRANSPARENCY
+    layout(location = 1) out vec3 aVertexObjCoord_;
+    #endif
+    #endif
+    #ifdef MOVING_PERM
+    layout(location = 2) out vec3 aVertexCSCurr_;
+    layout(location = 3) out vec3 aVertexCSPrev_;
+    #endif
+#else
+    #ifdef TRANSPARENT_PERM
+    out vec2 aVertexUVs1_;
+    #ifdef HASHED_TRANSPARENCY
+    out vec3 aVertexObjCoord_;
+    #endif
+    #endif
+    #ifdef MOVING_PERM
+    out vec3 aVertexCSCurr_;
+    out vec3 aVertexCSPrev_;
+    #endif
 #endif
 
 invariant gl_Position;

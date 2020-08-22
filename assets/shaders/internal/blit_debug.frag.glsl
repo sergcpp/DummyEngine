@@ -8,6 +8,10 @@
 
 #include "_fs_common.glsl"
 
+/*
+PERM @MSAA_4
+*/
+
 #if defined(MSAA_4)
 layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2DMS s_texture;
 #else
@@ -20,9 +24,13 @@ layout(location = 15) uniform ivec2 res;
 layout(location = 16) uniform int mode;
 layout(location = 17) uniform vec4 uClipInfo;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 void main() {
     float depth = texelFetch(s_texture, ivec2(aVertexUVs_), 0).r;

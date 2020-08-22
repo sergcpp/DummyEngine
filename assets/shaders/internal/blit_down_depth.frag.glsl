@@ -10,9 +10,15 @@
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
+PERM @MSAA_4
 */
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
@@ -24,9 +30,13 @@ layout(binding = REN_BASE0_TEX_SLOT) uniform highp sampler2DMS depth_texture;
 layout(binding = REN_BASE0_TEX_SLOT) uniform highp sampler2D depth_texture;
 #endif
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out float outColor;
+layout(location = 0) out float outColor;
 
 void main() {
     highp ivec2 coord = ivec2(aVertexUVs_ - vec2(0.5));

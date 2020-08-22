@@ -1,13 +1,18 @@
 #version 310 es
+
 #ifdef GL_ES
     precision mediump float;
 #endif
         
 layout(binding = 0) uniform sampler2D s_texture;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 vec4 RGBMEncode(vec3 color) {
     vec4 rgbm;

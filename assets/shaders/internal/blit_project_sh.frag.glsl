@@ -11,9 +11,13 @@ layout(binding = 1) uniform mediump sampler2D s_rand;
 layout(location = 1) uniform float src_layer;
 layout(location = 2) uniform int iteration;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 vec3 RGBMDecode(vec4 rgbm) {
     return 4.0 * rgbm.rgb * rgbm.a;

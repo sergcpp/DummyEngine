@@ -5,6 +5,10 @@
     precision mediump float;
 #endif
 
+/*
+PERM @MSAA_4
+*/
+
 #if defined(MSAA_4)
 layout(binding = 0) uniform mediump sampler2DMS s_texture;
 #else
@@ -17,9 +21,13 @@ layout(location = 14) uniform float gamma;
 layout(location = 15) uniform float exposure;
 layout(location = 16) uniform float fade;
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 vec3 Unch2Tonemap(vec3 x) {
     const highp float A = 0.22; // shoulder strength

@@ -6,25 +6,49 @@
 
 #include "_fs_common.glsl"
 
-layout (std140) uniform SharedDataBlock {
+/*
+PERM @TRANSPARENT_PERM
+PERM @OUTPUT_VELOCITY
+PERM @TRANSPARENT_PERM;OUTPUT_VELOCITY
+*/
+
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
 #ifdef TRANSPARENT_PERM
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D alphatest_texture;
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs1_;
+#else
 in vec2 aVertexUVs1_;
+#endif
 
 #ifdef HASHED_TRANSPARENCY
 layout(location = 3) uniform float hash_scale;
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 1) in vec3 aVertexObjCoord_;
+#else
 in vec3 aVertexObjCoord_;
+#endif
 #endif
 #endif
 
 #ifdef OUTPUT_VELOCITY
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 2) in vec3 aVertexCSCurr_;
+layout(location = 3) in vec3 aVertexCSPrev_;
+#else
 in vec3 aVertexCSCurr_;
 in vec3 aVertexCSPrev_;
+#endif
 
-out vec2 outVelocity;
+layout(location = 0) out vec2 outVelocity;
 #endif
 
 float hash(vec2 v) {

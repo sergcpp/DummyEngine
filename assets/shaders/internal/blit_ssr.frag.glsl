@@ -11,6 +11,7 @@
 /*
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
+PERM @MSAA_4
 */
 
 #define Z_THICKNESS 0.05
@@ -18,7 +19,12 @@ UNIFORM_BLOCKS
 #define MAX_STEPS 48.0
 #define BSEARCH_STEPS 4
 
-layout (std140) uniform SharedDataBlock {
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
@@ -31,9 +37,13 @@ layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2D norm_texture;
 layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2D spec_texture;
 #endif
 
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout(location = 0) in vec2 aVertexUVs_;
+#else
 in vec2 aVertexUVs_;
+#endif
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 float distance2(vec2 P0, vec2 P1) {
     vec2 d = P1 - P0;

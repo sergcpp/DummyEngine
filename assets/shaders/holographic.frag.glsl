@@ -2,7 +2,6 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
 //#extension GL_EXT_control_flow_attributes : enable
-#extension GL_GOOGLE_include_directive : enable
 
 $ModifyWarning
 

@@ -50,13 +50,6 @@ void GSDrawTest::Enter() {
 
     log_->Info("GSDrawTest: Loading scene!");
     GSBaseState::LoadScene(SCENE_NAME);
-
-    ///////////////// TEST TESST TEST
-
-    const ShaderLoader::Param params[] = { {"THRES", "0.15"}, {"ENABLE_SHIT"}, {} };
-    Ren::ShaderRef sh_ref = shader_loader_->LoadGLSL(*ren_ctx_, "internal/blit.vert.glsl", params);
-
-    volatile int ii = 0;
 }
 
 void GSDrawTest::OnPreloadScene(JsObject &js_scene) {

@@ -1140,7 +1140,7 @@ Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
     int pos[2];
     const int rc = scene_data_.decals_atlas.AllocateRegion(res, pos);
     if (rc == -1) {
-        ctx_.log()->Error("Failed to allocate decal texture!");
+        ren_ctx_.log()->Error("Failed to allocate decal texture!");
         return Ren::Vec4f{};
     }
 
@@ -1159,12 +1159,12 @@ Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
         data_len -= sizeof(uint32_t);
 
         if (int(len) > data_len) {
-            ctx_.log()->Error("Invalid data count!");
+            ren_ctx_.log()->Error("Invalid data count!");
             break;
         }
 
         scene_data_.decals_atlas.InitRegion(p_data, len, Ren::eTexFormat::Compressed, 0,
-                                            0, level, _pos, _res, ctx_.log());
+                                            0, level, _pos, _res, ren_ctx_.log());
 
         data_offset += len;
         data_len -= len;
