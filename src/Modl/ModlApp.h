@@ -60,9 +60,9 @@ class ModlApp {
     SDL_Window *window_ = nullptr;
     LogStdout log_;
 #if defined(USE_GL_RENDER)
-    void *gl_ctx_ = nullptr;
+    void *gl_ctx_main_ = nullptr;
     uint32_t simple_vao_ = 0, skinned_vao_ = 0;
-    uint32_t last_vertex_buf1_ = 0, last_vertex_buf2_, last_skin_vertex_buffer_ = 0,
+    uint32_t last_vertex_buf1_ = 0, last_vertex_buf2_ = 0, last_skin_vertex_buffer_ = 0,
              last_delta_buffer_ = 0, last_index_buffer_ = 0;
     uint32_t uniform_buf_ = 0;
 

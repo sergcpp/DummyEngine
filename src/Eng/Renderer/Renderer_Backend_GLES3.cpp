@@ -58,25 +58,13 @@ const Ren::Vec2f poisson_disk[] = {
 
 extern const Ren::Vec2f HaltonSeq23[];
 
-// const GLuint A_INDICES = 3;
-// const GLuint A_WEIGHTS = 4;
-
 const int U_MVP_MATR = 0;
-// const int U_MV_MATR = 1;
-
-// const int U_SH_MVP_MATR = 2;
-
-// const int U_TEX = 3;
 
 const int U_GAMMA = 14;
 const int U_EXPOSURE = 15;
 const int U_FADE = 16;
 
 const int U_RES = 15;
-
-// const int U_LM_TRANSFORM = 16;
-
-// const int LIGHTS_BUFFER_BINDING = 0;
 
 const int TEMP_BUF_SIZE = 256;
 
@@ -111,8 +99,8 @@ struct DebugMarker {
     }
 };
 
-uint32_t __draw_list_range(const DrawList &list, uint32_t i, uint32_t mask,
-                           BackendInfo &backend_info) {
+uint32_t _draw_list_range(const DrawList &list, uint32_t i, uint32_t mask,
+                          BackendInfo &backend_info) {
     for (; i < list.zfill_batch_indices.count; i++) {
         const DepthDrawBatch &batch =
             list.zfill_batches.data[list.zfill_batch_indices.data[i]];
@@ -136,9 +124,9 @@ uint32_t __draw_list_range(const DrawList &list, uint32_t i, uint32_t mask,
     return i;
 }
 
-uint32_t __draw_list_range_ext(Ren::Context &ctx, const DrawList &list, uint32_t i,
-                               uint32_t mask, uint32_t &cur_mat_id,
-                               BackendInfo &backend_info) {
+uint32_t _draw_list_range_ext(Ren::Context &ctx, const DrawList &list, uint32_t i,
+                              uint32_t mask, uint32_t &cur_mat_id,
+                              BackendInfo &backend_info) {
     for (; i < list.zfill_batch_indices.count; i++) {
         const DepthDrawBatch &batch =
             list.zfill_batches.data[list.zfill_batch_indices.data[i]];
@@ -248,7 +236,7 @@ uint32_t __draw_list_range_full(Ren::Context &ctx, const DrawList &list, uint32_
     return i;
 }
 
-uint32_t __draw_list_range_full_rev(Ren::Context &ctx, const DrawList &list, uint32_t ndx,
+uint32_t _draw_list_range_full_rev(Ren::Context &ctx, const DrawList &list, uint32_t ndx,
                                     uint64_t mask, uint64_t &cur_mat_id,
                                     uint64_t &cur_prog_id, BackendInfo &backend_info) {
 
@@ -1815,7 +1803,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         cur_buf_chunk_ = (cur_buf_chunk_ + 1) % FrameSyncWindow;
         if (buf_range_fences_[cur_buf_chunk_]) {
             auto sync = reinterpret_cast<GLsync>(buf_range_fences_[cur_buf_chunk_]);
-            GLenum res = glClientWaitSync(sync, 0, 1000000000);
+            const GLenum res = glClientWaitSync(sync, 0, 1000000000);
             if (res != GL_ALREADY_SIGNALED && res != GL_CONDITION_SATISFIED) {
                 log->Error("[Renderer::DrawObjectsInternal]: Wait failed!");
             }
@@ -1823,7 +1811,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             buf_range_fences_[cur_buf_chunk_] = nullptr;
         }
 
-        const GLbitfield BufferRangeBindFlags =
+        const GLbitfield BufferRangeMapFlags =
             GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
             GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
 
@@ -1833,7 +1821,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             void *pinned_mem = glMapBufferRange(
                 GL_SHADER_STORAGE_BUFFER, cur_buf_chunk_ * SkinTransformsBufChunkSize,
-                SkinTransformsBufChunkSize, BufferRangeBindFlags);
+                SkinTransformsBufChunkSize, BufferRangeMapFlags);
             if (pinned_mem) {
                 const size_t skin_transforms_mem_size =
                     list.skin_transforms.count * sizeof(SkinTransform);
@@ -1855,7 +1843,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             void *pinned_mem = glMapBufferRange(
                 GL_SHADER_STORAGE_BUFFER, cur_buf_chunk_ * ShapeKeysBufChunkSize,
-                ShapeKeysBufChunkSize, BufferRangeBindFlags);
+                ShapeKeysBufChunkSize, BufferRangeMapFlags);
             if (pinned_mem) {
                 const size_t shape_keys_mem_size =
                     list.shape_keys_data.count * sizeof(ShapeKeyData);
@@ -1877,7 +1865,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             void *pinned_mem = glMapBufferRange(
                 GL_TEXTURE_BUFFER, cur_buf_chunk_ * InstanceDataBufChunkSize,
-                InstanceDataBufChunkSize, BufferRangeBindFlags);
+                InstanceDataBufChunkSize, BufferRangeMapFlags);
             if (pinned_mem) {
                 const size_t instance_mem_size =
                     list.instances.count * sizeof(InstanceData);
@@ -1898,7 +1886,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             void *pinned_mem =
                 glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * CellsBufChunkSize,
-                                 CellsBufChunkSize, BufferRangeBindFlags);
+                                 CellsBufChunkSize, BufferRangeMapFlags);
             if (pinned_mem) {
                 const size_t cells_mem_size = list.cells.count * sizeof(CellData);
                 memcpy(pinned_mem, list.cells.data, cells_mem_size);
@@ -1918,7 +1906,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             void *pinned_mem =
                 glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * LightsBufChunkSize,
-                                 LightsBufChunkSize, BufferRangeBindFlags);
+                                 LightsBufChunkSize, BufferRangeMapFlags);
             if (pinned_mem) {
                 const size_t lights_mem_size =
                     list.light_sources.count * sizeof(LightSourceItem);
@@ -1939,7 +1927,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             void *pinned_mem =
                 glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * DecalsBufChunkSize,
-                                 DecalsBufChunkSize, BufferRangeBindFlags);
+                                 DecalsBufChunkSize, BufferRangeMapFlags);
             if (pinned_mem) {
                 const size_t decals_mem_size = list.decals.count * sizeof(DecalItem);
                 memcpy(pinned_mem, list.decals.data, decals_mem_size);
@@ -1959,7 +1947,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
             void *pinned_mem =
                 glMapBufferRange(GL_TEXTURE_BUFFER, cur_buf_chunk_ * ItemsBufChunkSize,
-                                 ItemsBufChunkSize, BufferRangeBindFlags);
+                                 ItemsBufChunkSize, BufferRangeMapFlags);
             if (pinned_mem) {
                 const size_t items_mem_size = list.items.count * sizeof(ItemData);
                 memcpy(pinned_mem, list.items.data, items_mem_size);
@@ -2513,22 +2501,21 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
         { // solid meshes
-            DebugMarker _("STATIC-SOLID-SIMPLE");
+            DebugMarker _m("STATIC-SOLID-SIMPLE");
 
             glBindVertexArray(depth_pass_solid_vao_);
             glUseProgram(fillz_solid_prog_->prog_id());
 
             { // one-sided
-                DebugMarker _("ONE-SIDED");
-                i = __draw_list_range(list, i, 0u, backend_info_);
+                DebugMarker _mm("ONE-SIDED");
+                i = _draw_list_range(list, i, 0u, backend_info_);
             }
 
             { // two-sided
-                DebugMarker _("TWO-SIDED");
+                DebugMarker _mm("TWO-SIDED");
                 glDisable(GL_CULL_FACE);
 
-                i = __draw_list_range(list, i, DepthDrawBatch::BitTwoSided,
-                                      backend_info_);
+                i = _draw_list_range(list, i, DepthDrawBatch::BitTwoSided, backend_info_);
 
                 glEnable(GL_CULL_FACE);
             }
@@ -2537,7 +2524,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         // TODO: we can skip many things if TAA is disabled
 
         { // moving solid meshes (depth and velocity)
-            DebugMarker _("STATIC-SOLID-MOVING");
+            DebugMarker _m("STATIC-SOLID-MOVING");
 
             if ((list.render_flags & EnableTaa) != 0) {
                 // Write depth and velocity
@@ -2552,15 +2539,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glStencilFunc(GL_ALWAYS, 1, 0xFF);
 
             { // one-sided
-                DebugMarker _("ONE-SIDED");
-                i = __draw_list_range(list, i, DepthDrawBatch::BitMoving, backend_info_);
+                DebugMarker _mm("ONE-SIDED");
+                i = _draw_list_range(list, i, DepthDrawBatch::BitMoving, backend_info_);
             }
 
             { // two-sided
-                DebugMarker _("TWO-SIDED");
+                DebugMarker _mm("TWO-SIDED");
                 glDisable(GL_CULL_FACE);
 
-                i = __draw_list_range(
+                i = _draw_list_range(
                     list, i, DepthDrawBatch::BitMoving | DepthDrawBatch::BitTwoSided,
                     backend_info_);
 
@@ -2572,7 +2559,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             uint32_t cur_mat_id = 0xffffffff;
 
             { // simple meshes (depth only)
-                DebugMarker _("STATIC-ALPHA-SIMPLE");
+                DebugMarker _m("STATIC-ALPHA-SIMPLE");
 
                 glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)depth_fill_framebuf_);
                 glBindVertexArray(depth_pass_transp_vao_);
@@ -2584,26 +2571,26 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                                            dummy_white_->tex_id());
 
                 { // one-sided
-                    DebugMarker _("ONE-SIDED");
-                    i = __draw_list_range_ext(ctx_, list, i, DepthDrawBatch::BitAlphaTest,
-                                              cur_mat_id, backend_info_);
+                    DebugMarker _mm("ONE-SIDED");
+                    i = _draw_list_range_ext(ctx_, list, i, DepthDrawBatch::BitAlphaTest,
+                                             cur_mat_id, backend_info_);
                 }
 
                 { // two-sided
-                    DebugMarker _("TWO-SIDED");
+                    DebugMarker _mm("TWO-SIDED");
                     glDisable(GL_CULL_FACE);
 
-                    i = __draw_list_range_ext(ctx_, list, i,
-                                              DepthDrawBatch::BitAlphaTest |
-                                                  DepthDrawBatch::BitTwoSided,
-                                              cur_mat_id, backend_info_);
+                    i = _draw_list_range_ext(ctx_, list, i,
+                                             DepthDrawBatch::BitAlphaTest |
+                                                 DepthDrawBatch::BitTwoSided,
+                                             cur_mat_id, backend_info_);
 
                     glEnable(GL_CULL_FACE);
                 }
             }
 
             { // moving meshes (depth and velocity)
-                DebugMarker _("STATIC-ALPHA-MOVING");
+                DebugMarker _m("STATIC-ALPHA-MOVING");
 
                 if ((list.render_flags & EnableTaa) != 0) {
                     // Write depth and velocity
@@ -2618,22 +2605,22 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 glStencilFunc(GL_ALWAYS, 1, 0xFF);
 
                 { // one-sided
-                    DebugMarker _("ONE-SIDED");
-                    i = __draw_list_range_ext(ctx_, list, i,
-                                              DepthDrawBatch::BitAlphaTest |
-                                                  DepthDrawBatch::BitMoving,
-                                              cur_mat_id, backend_info_);
+                    DebugMarker _mm("ONE-SIDED");
+                    i = _draw_list_range_ext(ctx_, list, i,
+                                             DepthDrawBatch::BitAlphaTest |
+                                                 DepthDrawBatch::BitMoving,
+                                             cur_mat_id, backend_info_);
                 }
 
                 { // two-sided
-                    DebugMarker _("TWO-SIDED");
+                    DebugMarker _mm("TWO-SIDED");
                     glDisable(GL_CULL_FACE);
 
-                    i = __draw_list_range_ext(ctx_, list, i,
-                                              DepthDrawBatch::BitAlphaTest |
-                                                  DepthDrawBatch::BitMoving |
-                                                  DepthDrawBatch::BitTwoSided,
-                                              cur_mat_id, backend_info_);
+                    i = _draw_list_range_ext(ctx_, list, i,
+                                             DepthDrawBatch::BitAlphaTest |
+                                                 DepthDrawBatch::BitMoving |
+                                                 DepthDrawBatch::BitTwoSided,
+                                             cur_mat_id, backend_info_);
 
                     glEnable(GL_CULL_FACE);
                 }
@@ -2641,7 +2628,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         { // solid vegetation
-            DebugMarker _("VEGE-SOLID-SIMPLE");
+            DebugMarker _m("VEGE-SOLID-SIMPLE");
             glBindVertexArray(depth_pass_vege_solid_vao_);
             if ((list.render_flags & EnableTaa) != 0) {
                 // Write depth and velocity
@@ -2657,15 +2644,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glStencilFunc(GL_ALWAYS, 1, 0xFF);
 
             { // one-sided
-                DebugMarker _("ONE-SIDED");
-                i = __draw_list_range(list, i, DepthDrawBatch::BitsVege, backend_info_);
+                DebugMarker _mm("ONE-SIDED");
+                i = _draw_list_range(list, i, DepthDrawBatch::BitsVege, backend_info_);
             }
 
             { // two-sided
-                DebugMarker _("TWO-SIDED");
+                DebugMarker _mm("TWO-SIDED");
                 glDisable(GL_CULL_FACE);
 
-                i = __draw_list_range(
+                i = _draw_list_range(
                     list, i, DepthDrawBatch::BitsVege | DepthDrawBatch::BitTwoSided,
                     backend_info_);
 
@@ -2674,7 +2661,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         { // moving solid vegetation (depth and velocity)
-            DebugMarker _("VEGE-SOLID-MOVING");
+            DebugMarker _m("VEGE-SOLID-MOVING");
             if ((list.render_flags & EnableTaa) != 0) {
                 glUseProgram(fillz_vege_solid_vel_mov_prog_->prog_id());
             } else {
@@ -2682,21 +2669,21 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             }
 
             { // one-sided
-                DebugMarker _("ONE-SIDED");
-                i = __draw_list_range(
-                    list, i, DepthDrawBatch::BitsVege | DepthDrawBatch::BitMoving,
-                    backend_info_);
+                DebugMarker _mm("ONE-SIDED");
+                i = _draw_list_range(list, i,
+                                     DepthDrawBatch::BitsVege | DepthDrawBatch::BitMoving,
+                                     backend_info_);
             }
 
             { // two-sided
-                DebugMarker _("TWO-SIDED");
+                DebugMarker _mm("TWO-SIDED");
                 glDisable(GL_CULL_FACE);
 
-                i = __draw_list_range(list, i,
-                                      DepthDrawBatch::BitsVege |
-                                          DepthDrawBatch::BitMoving |
-                                          DepthDrawBatch::BitTwoSided,
-                                      backend_info_);
+                i = _draw_list_range(list, i,
+                                     DepthDrawBatch::BitsVege |
+                                         DepthDrawBatch::BitMoving |
+                                         DepthDrawBatch::BitTwoSided,
+                                     backend_info_);
 
                 glEnable(GL_CULL_FACE);
             }
@@ -2706,7 +2693,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             uint32_t cur_mat_id = 0xffffffff;
 
             { // moving alpha-tested vegetation (depth and velocity)
-                DebugMarker _("VEGE-ALPHA-SIMPLE");
+                DebugMarker _m("VEGE-ALPHA-SIMPLE");
                 glBindVertexArray(depth_pass_vege_transp_vao_);
                 if ((list.render_flags & EnableTaa) != 0) {
                     glUseProgram(fillz_vege_transp_vel_prog_->prog_id());
@@ -2718,29 +2705,29 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                                            dummy_white_->tex_id());
 
                 { // one-sided
-                    DebugMarker _("ONE-SIDED");
-                    i = __draw_list_range_ext(ctx_, list, i,
-                                              DepthDrawBatch::BitsVege |
-                                                  DepthDrawBatch::BitAlphaTest,
-                                              cur_mat_id, backend_info_);
+                    DebugMarker _mm("ONE-SIDED");
+                    i = _draw_list_range_ext(ctx_, list, i,
+                                             DepthDrawBatch::BitsVege |
+                                                 DepthDrawBatch::BitAlphaTest,
+                                             cur_mat_id, backend_info_);
                 }
 
                 { // two-sided
-                    DebugMarker _("TWO-SIDED");
+                    DebugMarker _mm("TWO-SIDED");
                     glDisable(GL_CULL_FACE);
 
-                    i = __draw_list_range_ext(ctx_, list, i,
-                                              DepthDrawBatch::BitsVege |
-                                                  DepthDrawBatch::BitAlphaTest |
-                                                  DepthDrawBatch::BitTwoSided,
-                                              cur_mat_id, backend_info_);
+                    i = _draw_list_range_ext(ctx_, list, i,
+                                             DepthDrawBatch::BitsVege |
+                                                 DepthDrawBatch::BitAlphaTest |
+                                                 DepthDrawBatch::BitTwoSided,
+                                             cur_mat_id, backend_info_);
 
                     glEnable(GL_CULL_FACE);
                 }
             }
 
             { // moving alpha-tested vegetation (depth and velocity)
-                DebugMarker _("VEGE-ALPHA-MOVING");
+                DebugMarker _m("VEGE-ALPHA-MOVING");
                 if ((list.render_flags & EnableTaa) != 0) {
                     glUseProgram(fillz_vege_transp_vel_mov_prog_->prog_id());
                 } else {
@@ -2748,19 +2735,19 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 }
 
                 { // one-sided
-                    DebugMarker _("ONE-SIDED");
-                    i = __draw_list_range_ext(ctx_, list, i,
-                                              DepthDrawBatch::BitsVege |
-                                                  DepthDrawBatch::BitAlphaTest |
-                                                  DepthDrawBatch::BitMoving,
-                                              cur_mat_id, backend_info_);
+                    DebugMarker _mm("ONE-SIDED");
+                    i = _draw_list_range_ext(ctx_, list, i,
+                                             DepthDrawBatch::BitsVege |
+                                                 DepthDrawBatch::BitAlphaTest |
+                                                 DepthDrawBatch::BitMoving,
+                                             cur_mat_id, backend_info_);
                 }
 
                 { // two-sided
-                    DebugMarker _("TWO-SIDED");
+                    DebugMarker _mm("TWO-SIDED");
                     glDisable(GL_CULL_FACE);
 
-                    i = __draw_list_range_ext(
+                    i = _draw_list_range_ext(
                         ctx_, list, i,
                         DepthDrawBatch::BitsVege | DepthDrawBatch::BitAlphaTest |
                             DepthDrawBatch::BitMoving | DepthDrawBatch::BitTwoSided,
@@ -2772,7 +2759,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         { // solid skinned meshes (depth and velocity)
-            DebugMarker _("SKIN-SOLID-SIMPLE");
+            DebugMarker _m("SKIN-SOLID-SIMPLE");
             if ((list.render_flags & EnableTaa) != 0) {
                 glBindVertexArray(depth_pass_skin_solid_vao_);
                 glUseProgram(fillz_skin_solid_vel_prog_->prog_id());
@@ -2782,16 +2769,15 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             }
 
             { // one-sided
-                DebugMarker _("ONE-SIDED");
-                i = __draw_list_range(list, i, DepthDrawBatch::BitsSkinned,
-                                      backend_info_);
+                DebugMarker _mm("ONE-SIDED");
+                i = _draw_list_range(list, i, DepthDrawBatch::BitsSkinned, backend_info_);
             }
 
             { // two-sided
-                DebugMarker _("TWO-SIDED");
+                DebugMarker _mm("TWO-SIDED");
                 glDisable(GL_CULL_FACE);
 
-                i = __draw_list_range(
+                i = _draw_list_range(
                     list, i, DepthDrawBatch::BitsSkinned | DepthDrawBatch::BitTwoSided,
                     backend_info_);
 
@@ -2800,7 +2786,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         { // moving solid skinned (depth and velocity)
-            DebugMarker _("SKIN-SOLID-MOVING");
+            DebugMarker _m("SKIN-SOLID-MOVING");
             if ((list.render_flags & EnableTaa) != 0) {
                 glUseProgram(fillz_skin_solid_vel_mov_prog_->prog_id());
             } else {
@@ -2808,21 +2794,21 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             }
 
             { // one-sided
-                DebugMarker _("ONE-SIDED");
-                i = __draw_list_range(
+                DebugMarker _mm("ONE-SIDED");
+                i = _draw_list_range(
                     list, i, DepthDrawBatch::BitsSkinned | DepthDrawBatch::BitMoving,
                     backend_info_);
             }
 
             { // two-sided
-                DebugMarker _("TWO-SIDED");
+                DebugMarker _mm("TWO-SIDED");
                 glDisable(GL_CULL_FACE);
 
-                i = __draw_list_range(list, i,
-                                      DepthDrawBatch::BitsSkinned |
-                                          DepthDrawBatch::BitMoving |
-                                          DepthDrawBatch::BitTwoSided,
-                                      backend_info_);
+                i = _draw_list_range(list, i,
+                                     DepthDrawBatch::BitsSkinned |
+                                         DepthDrawBatch::BitMoving |
+                                         DepthDrawBatch::BitTwoSided,
+                                     backend_info_);
 
                 glEnable(GL_CULL_FACE);
             }
@@ -2832,7 +2818,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             uint32_t cur_mat_id = 0xffffffff;
 
             { // simple alpha-tested skinned (depth and velocity)
-                DebugMarker _("SKIN-ALPHA-SIMPLE");
+                DebugMarker _m("SKIN-ALPHA-SIMPLE");
                 glBindVertexArray(depth_pass_skin_transp_vao_);
                 if ((list.render_flags & EnableTaa) != 0) {
                     glUseProgram(fillz_skin_transp_vel_prog_->prog_id());
@@ -2844,29 +2830,29 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                                            dummy_white_->tex_id());
 
                 { // one-sided
-                    DebugMarker _("ONE-SIDED");
-                    i = __draw_list_range_ext(ctx_, list, i,
-                                              DepthDrawBatch::BitsSkinned |
-                                                  DepthDrawBatch::BitAlphaTest,
-                                              cur_mat_id, backend_info_);
+                    DebugMarker _mm("ONE-SIDED");
+                    i = _draw_list_range_ext(ctx_, list, i,
+                                             DepthDrawBatch::BitsSkinned |
+                                                 DepthDrawBatch::BitAlphaTest,
+                                             cur_mat_id, backend_info_);
                 }
 
                 { // two-sided
-                    DebugMarker _("TWO-SIDED");
+                    DebugMarker _mm("TWO-SIDED");
                     glDisable(GL_CULL_FACE);
 
-                    i = __draw_list_range_ext(ctx_, list, i,
-                                              DepthDrawBatch::BitsSkinned |
-                                                  DepthDrawBatch::BitAlphaTest |
-                                                  DepthDrawBatch::BitTwoSided,
-                                              cur_mat_id, backend_info_);
+                    i = _draw_list_range_ext(ctx_, list, i,
+                                             DepthDrawBatch::BitsSkinned |
+                                                 DepthDrawBatch::BitAlphaTest |
+                                                 DepthDrawBatch::BitTwoSided,
+                                             cur_mat_id, backend_info_);
 
                     glEnable(GL_CULL_FACE);
                 }
             }
 
             { // moving alpha-tested skinned (depth and velocity)
-                DebugMarker _("SKIN-ALPHA-MOVING");
+                DebugMarker _m("SKIN-ALPHA-MOVING");
                 if ((list.render_flags & EnableTaa) != 0) {
                     glUseProgram(fillz_skin_transp_vel_mov_prog_->prog_id());
                 } else {
@@ -2874,19 +2860,19 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
                 }
 
                 { // one-sided
-                    DebugMarker _("ONE-SIDED");
-                    i = __draw_list_range_ext(ctx_, list, i,
-                                              DepthDrawBatch::BitsSkinned |
-                                                  DepthDrawBatch::BitAlphaTest |
-                                                  DepthDrawBatch::BitMoving,
-                                              cur_mat_id, backend_info_);
+                    DebugMarker _mm("ONE-SIDED");
+                    i = _draw_list_range_ext(ctx_, list, i,
+                                             DepthDrawBatch::BitsSkinned |
+                                                 DepthDrawBatch::BitAlphaTest |
+                                                 DepthDrawBatch::BitMoving,
+                                             cur_mat_id, backend_info_);
                 }
 
                 { // two-sided
-                    DebugMarker _("TWO-SIDED");
+                    DebugMarker _mm("TWO-SIDED");
                     glDisable(GL_CULL_FACE);
 
-                    i = __draw_list_range_ext(
+                    i = _draw_list_range_ext(
                         ctx_, list, i,
                         DepthDrawBatch::BitsSkinned | DepthDrawBatch::BitAlphaTest |
                             DepthDrawBatch::BitMoving | DepthDrawBatch::BitTwoSided,
@@ -3079,13 +3065,13 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         uint32_t i = 0;
 
         { // one-sided1
-            DebugMarker _("ONE-SIDED-1");
+            DebugMarker _m("ONE-SIDED-1");
             i = __draw_list_range_full(ctx_, list, i, 0ull, cur_mat_id, cur_prog_id,
                                        backend_info_);
         }
 
         { // two-sided1
-            DebugMarker _("TWO-SIDED-1");
+            DebugMarker _m("TWO-SIDED-1");
             glDisable(GL_CULL_FACE);
 
             i = __draw_list_range_full(ctx_, list, i, MainDrawBatch::BitTwoSided,
@@ -3095,7 +3081,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         }
 
         { // one-sided2
-            DebugMarker _("ONE-SIDED-2");
+            DebugMarker _m("ONE-SIDED-2");
             i = __draw_list_range_full(ctx_, list, i, MainDrawBatch::BitAlphaTest,
                                        cur_mat_id, cur_prog_id, backend_info_);
         }
@@ -3103,7 +3089,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glDisable(GL_CULL_FACE);
 
         { // two-sided2
-            DebugMarker _("TWO-SIDED-2");
+            DebugMarker _m("TWO-SIDED-2");
 
             i = __draw_list_range_full(
                 ctx_, list, i, MainDrawBatch::BitAlphaTest | MainDrawBatch::BitTwoSided,
@@ -3113,8 +3099,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         alpha_blend_start_index = int(i);
 
         { // two-sided-tested-blended
-            DebugMarker _("TWO-SIDED-TESTED-BLENDED");
-            i = __draw_list_range_full_rev(ctx_, list, list.main_batch_indices.count - 1,
+            DebugMarker _m("TWO-SIDED-TESTED-BLENDED");
+            i = _draw_list_range_full_rev(ctx_, list, list.main_batch_indices.count - 1,
                                            MainDrawBatch::BitAlphaBlend |
                                                MainDrawBatch::BitAlphaTest |
                                                MainDrawBatch::BitTwoSided,
@@ -3124,8 +3110,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glEnable(GL_CULL_FACE);
 
         { // one-sided-tested-blended
-            DebugMarker _("ONE-SIDED-TESTED-BLENDED");
-            __draw_list_range_full_rev(
+            DebugMarker _m("ONE-SIDED-TESTED-BLENDED");
+            _draw_list_range_full_rev(
                 ctx_, list, i, MainDrawBatch::BitAlphaBlend | MainDrawBatch::BitAlphaTest,
                 cur_mat_id, cur_prog_id, backend_info_);
         }
@@ -4735,6 +4721,10 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     if (list.render_flags & EnableTimers) {
         glQueryCounter(queries_[cur_query_][TimeDrawEnd], GL_TIMESTAMP);
+    }
+
+    for (int i = REN_MAT_TEX0_SLOT; i <= REN_MAT_TEX4_SLOT; i++) {
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, i, 0);
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

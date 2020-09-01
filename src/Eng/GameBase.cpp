@@ -41,7 +41,7 @@ GameBase::GameBase(int w, int h, const char * /*local_dir*/) : width(w), height(
 
 #if !defined(__EMSCRIPTEN__)
     unsigned int num_threads = std::max(std::thread::hardware_concurrency(), 1u);
-    auto pool = std::make_shared<Sys::ThreadPool>(num_threads);
+    auto pool = std::make_shared<Sys::ThreadPool>(num_threads, "worker");
     AddComponent(THREAD_POOL_KEY, pool);
 #endif
 

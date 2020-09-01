@@ -23,7 +23,7 @@ float Gui::BitmapFont::height(const BaseElement *parent) const {
 }
 
 bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
-    Sys::AssetFile in_file(fname, Sys::AssetFile::FileIn);
+    Sys::AssetFile in_file(fname, Sys::eOpenMode::In);
     if (!in_file) {
         return false;
     }
@@ -56,7 +56,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
         }
 
         const size_t old_pos = in_file.pos();
-        in_file.Seek(chunk_off);
+        in_file.SeekAbsolute(chunk_off);
 
         if (chunk_id == uint32_t(Gui::eFontFileChunk::FontChTypoData)) {
             if (!in_file.Read((char *)&info_, sizeof(typgraph_info_t))) {
@@ -124,7 +124,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
             }
         }
 
-        in_file.Seek(old_pos);
+        in_file.SeekAbsolute(old_pos);
     }
 
     return true;

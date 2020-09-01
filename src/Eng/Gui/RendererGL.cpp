@@ -121,9 +121,13 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config) : ctx_(ctx) {
     }
 
     vtx_data_.reset(new vertex_t[MaxVerticesPerRange * FrameSyncWindow]);
-    vertex_count_[0] = vertex_count_[1] = 0;
+    for (int i = 0; i < FrameSyncWindow; i++) {
+        vertex_count_[i] = 0;
+    }
     ndx_data_.reset(new uint16_t[MaxIndicesPerRange * FrameSyncWindow]);
-    index_count_[0] = index_count_[1] = 0;
+    for (int i = 0; i < FrameSyncWindow; i++) {
+        index_count_[i] = 0;
+    }
 
     GLuint vtx_buf_id;
     glGenBuffers(1, &vtx_buf_id);
@@ -165,7 +169,8 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config) : ctx_(ctx) {
     vertex_buf_id_ = (uint32_t)vtx_buf_id;
     index_buf_id_ = (uint32_t)ndx_buf_id;
 
-    fill_range_index_ = 0;
+    draw_range_index_ = 0;
+    fill_range_index_ = (draw_range_index_ + (FrameSyncWindow - 1)) % FrameSyncWindow;
 }
 
 Gui::Renderer::~Renderer() {
@@ -239,15 +244,16 @@ void Gui::Renderer::SubmitVertexData(const int vertex_count, const int index_cou
 }
 
 void Gui::Renderer::SwapBuffers() {
-    draw_range_index_ = fill_range_index_;
-    fill_range_index_ = (fill_range_index_ + 1) % FrameSyncWindow;
+    draw_range_index_ = (draw_range_index_ + 1) % FrameSyncWindow;
+    fill_range_index_ = (draw_range_index_ + (FrameSyncWindow - 1)) % FrameSyncWindow;
 }
 
 void Gui::Renderer::Draw() {
     using namespace UIRendererConstants;
 
-    /* Synchronize with previous draw */
-
+    //
+    // Synchronize with previous draw
+    //
     if (buf_range_fences_[draw_range_index_]) {
         auto sync = reinterpret_cast<GLsync>(buf_range_fences_[draw_range_index_]);
         const GLenum res = glClientWaitSync(sync, 0, 1000000000);
@@ -258,8 +264,9 @@ void Gui::Renderer::Draw() {
         buf_range_fences_[draw_range_index_] = nullptr;
     }
 
-    /* Update buffers */
-
+    //
+    // Update buffers
+    //
     const GLbitfield BufferRangeBindFlags =
         GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
         GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
@@ -302,8 +309,9 @@ void Gui::Renderer::Draw() {
         }
     }
 
-    /* Submit draw call */
-
+    //
+    // Submit draw call
+    //
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -420,7 +428,7 @@ void Gui::Renderer::PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t c
     const Vec2f uvs_scale =
         1.0f / Vec2f{(float)Ren::TextureAtlasWidth, (float)Ren::TextureAtlasHeight};
 
-    uint16_t u16_tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_layer));
+    const uint16_t u16_tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_layer));
 
     static const uint16_t u16_draw_mode[] = {0, 32767, 65535};
 

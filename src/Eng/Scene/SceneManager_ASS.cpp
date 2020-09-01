@@ -227,7 +227,7 @@ void ReadAllFiles_MT_r(
             path += '/';
             path += in_ent->d_name;
 
-            events.push_back(threads->enqueue(
+            events.push_back(threads->Enqueue(
                 [path, &ctx, &callback]() { callback(ctx, path.c_str()); }));
         }
     }
@@ -590,6 +590,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
     g_asset_handlers["mesh"] = {"mesh", HCopy};
     g_asset_handlers["anim"] = {"anim", HCopy};
     g_asset_handlers["wav"] = {"wav", HCopy};
+    g_asset_handlers["ivf"] = {"ivf", HCopy};
     g_asset_handlers["glsl"] = {"glsl", HCopy};
     g_asset_handlers["vert.glsl"] = {"vert.glsl", HPreprocessShader};
     g_asset_handlers["frag.glsl"] = {"frag.glsl", HPreprocessShader};

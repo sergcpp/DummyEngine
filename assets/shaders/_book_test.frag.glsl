@@ -154,7 +154,7 @@ void main(void) {
         visibility = GetSunVisibility(lin_depth, shadow_texture, aVertexShUVs_);
     }
     
-    vec4 text_color = textureLod(specular_texture, aVertexUVs_, 0.0);
+    vec4 text_color = textureLod(specular_texture, vec2(aVertexUVs_.x, 1.0 - aVertexUVs_.y), 0.0);
     
     {   // SDF drawing
         float sig_dist = median(text_color.r, text_color.g, text_color.b);

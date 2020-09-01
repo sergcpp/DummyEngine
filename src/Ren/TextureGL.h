@@ -14,20 +14,17 @@
 namespace Ren {
 class ILog;
 
-enum class eTexFormat { Undefined, RawRGB888, RawRGBA8888, RawRGBA8888Snorm, RawR32F, RawR16F, RawR8, RawRG88, RawRGB32F, RawRGBA32F, RawRGBE8888, RawRGB16F, RawRGBA16F, RawRG16, RawRG16U, RawRG16F, RawRG32F, RawRGB10_A2, RawRG11F_B10F, Compressed, None, FormatCount };
-enum class eTexFilter { NoFilter, Bilinear, Trilinear, BilinearNoMipmap, FilterCount };
-enum class eTexRepeat { Repeat, ClampToEdge, ClampToBorder, WrapModesCount };
-
 enum eTexFlags {
     TexNoOwnership = (1u << 0u),
-    TexSigned      = (1u << 1u),
-    TexSRGB        = (1u << 2u),
-    TexNoRepeat    = (1u << 3u),
-    TexMIPMin      = (1u << 4u),
-    TexMIPMax      = (1u << 5u),
-    TexNoBias      = (1u << 6u),
-    TexUsageScene  = (1u << 7u),
-    TexUsageUI     = (1u << 8u)
+    TexMutable     = (1u << 1u),
+    TexSigned      = (1u << 2u),
+    TexSRGB        = (1u << 3u),
+    TexNoRepeat    = (1u << 4u),
+    TexMIPMin      = (1u << 5u),
+    TexMIPMax      = (1u << 6u),
+    TexNoBias      = (1u << 7u),
+    TexUsageScene  = (1u << 8u),
+    TexUsageUI     = (1u << 9u)
 };
 
 struct Texture2DParams {

@@ -76,7 +76,7 @@ const float *SceneManager::Draw_PT(int *w, int *h) {
         };
         std::vector<std::future<void>> ev(ray_reg_ctx_.size());
         for (int i = 0; i < (int)ray_reg_ctx_.size(); i++) {
-            ev[i] = threads_.enqueue(render_task, i);
+            ev[i] = threads_.Enqueue(render_task, i);
         }
         for (const std::future<void> &e : ev) {
             e.wait();
@@ -432,7 +432,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
             };
             std::vector<std::future<void>> ev(ray_reg_ctx_.size());
             for (int i = 0; i < (int)ray_reg_ctx_.size(); i++) {
-                ev[i] = threads_.enqueue(render_task, i);
+                ev[i] = threads_.Enqueue(render_task, i);
             }
             for (const std::future<void> &e : ev) {
                 e.wait();

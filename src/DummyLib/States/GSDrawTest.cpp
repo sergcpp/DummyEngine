@@ -122,9 +122,9 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
         const JsObject &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
             const JsArray &js_orig = js_cam.at("view_origin").as_arr();
-            initial_view_origin_[0] = (float)js_orig.at(0).as_num().val;
-            initial_view_origin_[1] = (float)js_orig.at(1).as_num().val;
-            initial_view_origin_[2] = (float)js_orig.at(2).as_num().val;
+            initial_view_pos_[0] = (float)js_orig.at(0).as_num().val;
+            initial_view_pos_[1] = (float)js_orig.at(1).as_num().val;
+            initial_view_pos_[2] = (float)js_orig.at(2).as_num().val;
         }
 
         if (js_cam.Has("view_dir")) {
@@ -162,7 +162,7 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
         }
     }
 
-    view_origin_ = initial_view_origin_;
+    view_origin_ = initial_view_pos_;
     view_dir_ = initial_view_dir_;
 
     SceneData &scene = scene_manager_->scene_data();
@@ -394,7 +394,7 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
         if (evt.point.x > (float)ren_ctx_->w() * 0.9f &&
             evt.point.y < (float)ren_ctx_->h() * 0.1f) {
-            const uint32_t new_time = Sys::GetTimeMs();
+            const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {
@@ -562,9 +562,9 @@ void GSDrawTest::SaveScene(JsObject &js_scene) {
 
         { // write view origin
             JsArray js_view_origin;
-            js_view_origin.Push(JsNumber{(double)initial_view_origin_[0]});
-            js_view_origin.Push(JsNumber{(double)initial_view_origin_[1]});
-            js_view_origin.Push(JsNumber{(double)initial_view_origin_[2]});
+            js_view_origin.Push(JsNumber{(double)initial_view_pos_[0]});
+            js_view_origin.Push(JsNumber{(double)initial_view_pos_[1]});
+            js_view_origin.Push(JsNumber{(double)initial_view_pos_[2]});
 
             js_camera.Push("view_origin", std::move(js_view_origin));
         }

@@ -30,8 +30,8 @@ public:
     virtual void Quit();
 
     template <class T>
-    void AddComponent(const std::string &name, const std::shared_ptr<T> &p) {
-        components_[name] = p;
+    void AddComponent(const std::string &name, const std::shared_ptr<T> p) {
+        components_[name] = std::move(p);
     }
 
     template <class T>

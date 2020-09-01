@@ -271,12 +271,22 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Texture2DParams &p,
     auto mip_count = (GLsizei)CalcMipCount(p.w, p.h, 1, p.filter);
 
     if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
-        // allocate all mip levels
-        ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format,
-                                    (GLsizei)p.w, (GLsizei)p.h);
-        // update first level
-        ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, tex_id, 0, 0, 0, p.w, p.h, format,
-                                     type, data);
+        if (p.flags & TexMutable) {
+            glBindTexture(GL_TEXTURE_2D, tex_id);
+            for (int i = 0; i < mip_count; i++) {
+                const int w = std::max(p.w << i, 1);
+                const int h = std::max(p.h << i, 1);
+                glTexImage2D(GL_TEXTURE_2D, GLint(i), internal_format, w, h, 0, format,
+                             type, (i == 0) ? data : nullptr);
+            }
+        } else {
+            // allocate all mip levels
+            ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format,
+                                        (GLsizei)p.w, (GLsizei)p.h);
+            // update first level
+            ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, tex_id, 0, 0, 0, p.w, p.h, format,
+                                         type, data);
+        }
     }
 
     ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_ANISOTROPY_EXT,

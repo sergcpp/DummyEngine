@@ -21,7 +21,7 @@
 #include <Ren/SW/SW.h>
 #endif
 #include <Ren/Mesh.h>
-#include <Ren/RenderThread.h>
+#include <Ren/TaskExecutor.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/AssetFileIO.h>
@@ -254,7 +254,7 @@ int ModlApp::Init(int w, int h) {
                                w, h, SDL_WINDOW_OPENGL);
 
 #if defined(USE_GL_RENDER)
-    gl_ctx_ = SDL_GL_CreateContext(window_);
+    gl_ctx_main_ = SDL_GL_CreateContext(window_);
     SDL_GL_SetSwapInterval(1);
 #endif
 
@@ -398,7 +398,7 @@ void ModlApp::Destroy() {
     Sys::StopWorker();
 
 #if defined(USE_GL_RENDER)
-    SDL_GL_DeleteContext(gl_ctx_);
+    SDL_GL_DeleteContext(gl_ctx_main_);
 #endif
     SDL_DestroyWindow(window_);
     SDL_Quit();

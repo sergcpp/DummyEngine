@@ -74,10 +74,13 @@ struct DepthDrawBatch { // NOLINT
     static const uint32_t TypeSimple    = 0b00u;    // simple
     static const uint32_t TypeVege      = 0b01u;    // vegetation
     static const uint32_t TypeSkinned   = 0b10u;    // skeletal
+    // TODO: this probably should not be a type
+    static const uint32_t TypeTaaResp   = 0b11u;    // video-textured etc.
 
     static const uint32_t BitsSimple    = (TypeSimple   << 30u);
     static const uint32_t BitsVege      = (TypeVege     << 30u);
     static const uint32_t BitsSkinned   = (TypeSkinned  << 30u);
+    static const uint32_t BitsTaaResp   = (TypeTaaResp  << 30u);
     static const uint32_t BitAlphaTest  = (1u << 29u);
     static const uint32_t BitMoving     = (1u << 28u);
     static const uint32_t BitTwoSided   = (1u << 27u);

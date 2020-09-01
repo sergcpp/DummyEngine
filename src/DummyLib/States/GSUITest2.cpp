@@ -345,7 +345,7 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
         if (evt.point.x > (float)ren_ctx_->w() * 0.9f &&
             evt.point.y < (float)ren_ctx_->h() * 0.1f) {
-            uint32_t new_time = Sys::GetTimeMs();
+            const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {

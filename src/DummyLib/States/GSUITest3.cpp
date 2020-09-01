@@ -104,8 +104,8 @@ void GSUITest3::Enter() {
         {
             const auto page_root = Gui::RootElement{Ren::Vec2i{page_buf_.w, page_buf_.h}};
             paged_reader_.reset(new PagedReader{
-                *ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{2.0f, 2.0f}, &page_root,
-                book_main_font_, book_emph_font_, book_caption_font_});
+                *ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{2.0f, 2.0f},
+                &page_root, book_main_font_, book_emph_font_, book_caption_font_});
 
             paged_reader_->LoadBook(js_book, "en", "de");
         }
@@ -135,7 +135,7 @@ void GSUITest3::Enter() {
     if (book_index_ != 0xffffffff) {
         SceneObject *book = scene_manager_->GetObject(book_index_);
 
-        uint32_t mask = CompDrawableBit | CompAnimStateBit;
+        const uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((book->comp_mask & mask) == mask) {
             auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(
                 book->components[CompDrawable]);
@@ -144,8 +144,9 @@ void GSUITest3::Enter() {
 
             for (int i = 0; i < Ren::MaxMeshTriGroupsCount; i++) {
                 Ren::TriGroup &grp = mesh->group(i);
-                if (grp.offset == -1)
+                if (grp.offset == -1) {
                     break;
+                }
 
                 // hold reference to original material here
                 Ren::MaterialRef mat = grp.mat;
@@ -333,7 +334,7 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
         if (evt.point.x > (float)ren_ctx_->w() * 0.9f &&
             evt.point.y < (float)ren_ctx_->h() * 0.1f) {
-            uint32_t new_time = Sys::GetTimeMs();
+            const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {

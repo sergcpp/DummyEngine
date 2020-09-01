@@ -6,6 +6,9 @@ if(WIN32)
 else(WIN32)
     set(CMAKE_CXX_STANDARD 11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+    if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -msse2")
+    endif()
 if(${RENDERER} STREQUAL "GL")
     set(LIBS GL)
 elseif(${RENDERER} STREQUAL "VK")
@@ -26,6 +29,8 @@ set(SOURCE_FILES Anim.h
                  Camera.cpp
                  Context.h
                  Context.cpp
+                 CPUFeatures.h
+                 CPUFeatures.cpp
                  Fwd.h
                  HashMap32.h
                  Log.h
@@ -37,21 +42,24 @@ set(SOURCE_FILES Anim.h
                  MQuat.h
                  MVec.h
                  Program.h
-                 RenderThread.h
-                 RenderThread.cpp
                  RingBuffer.h
                  Shader.h
                  SparseArray.h
                  Storage.h
                  String.h
+                 TaskExecutor.h
+                 TaskExecutor.cpp
                  Texture.h
+                 Texture.cpp
                  TextureAtlas.h
                  TextureRegion.h
                  TextureRegion.cpp
                  TextureSplitter.h
                  TextureSplitter.cpp
                  Utils.h
-                 Utils.cpp)
+                 Utils.cpp
+                 Utils_AVX.cpp
+                 Utils_SSE2.cpp)
 
 if(${RENDERER} STREQUAL "GL")
     add_definitions(-DUSE_GL_RENDER)
@@ -96,8 +104,15 @@ list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src" FILES ${SOURCE_FILES})
 
-list(APPEND ALL_SOURCE_FILES _Ren.cpp)
-source_group("src" FILES _Ren.cpp)
+list(APPEND ALL_SOURCE_FILES _Ren.cpp _Ren_SSE2.cpp _Ren_AVX.cpp)
+source_group("src" FILES _Ren.cpp _Ren_SSE2.cpp _Ren_AVX.cpp)
+
+if(MSVC)
+    if(NOT CMAKE_CL_64)
+        set_source_files_properties(_Ren_Sse2.cpp PROPERTIES COMPILE_FLAGS /arch:SSE2)
+    endif()
+    set_source_files_properties(_Ren_Avx.cpp PROPERTIES COMPILE_FLAGS /arch:AVX)
+endif(MSVC)
 
 add_library(Ren STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(Ren ${LIBS})

@@ -20,7 +20,7 @@ class DialogEditUI : public Gui::BaseElement {
     ScriptedDialog *dialog_ = nullptr;
 
     int selected_element_ = -1;
-    uint32_t selected_timestamp_ = 0;
+    uint64_t selected_timestamp_ = 0;
 
     Ren::Vec2f SnapToPixels(const Ren::Vec2f &p) const;
     void DrawLineLocal(Gui::Renderer *r, const Ren::Vec2f &p0, const Ren::Vec2f &p1,

@@ -5,8 +5,8 @@
 #include "Material.h"
 #include "Mesh.h"
 #include "Program.h"
-#include "RenderThread.h"
 #include "Shader.h"
+#include "TaskExecutor.h"
 #include "Texture.h"
 #include "TextureAtlas.h"
 #include "TextureRegion.h"
@@ -16,7 +16,7 @@ struct SWcontext;
 namespace Ren {
 const int TextureAtlasWidth = 1024, TextureAtlasHeight = 512, TextureAtlasLayers = 4;
 
-class Context : public RenderThread {
+class Context : public TaskExecutor {
   protected:
     int w_ = 0, h_ = 0;
     ILog *log_ = nullptr;
@@ -141,6 +141,7 @@ class Context : public RenderThread {
         int max_uniform_vec4 = 0;
         int max_vertex_input = 0, max_vertex_output = 0;
         bool gl_spirv = false;
+        bool persistent_buf_mapping = false;
         int max_compute_work_group_size[3] = {};
     } capabilities;
 

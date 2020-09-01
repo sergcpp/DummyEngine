@@ -21,9 +21,12 @@ extern "C" {
 #include "Buffer.cpp"
 #include "Camera.cpp"
 #include "Context.cpp"
+#include "CPUFeatures.cpp"
 #include "Material.cpp"
 #include "Mesh.cpp"
-#include "RenderThread.cpp"
+#include "TaskExecutor.cpp"
+#include "Texture.cpp"
 #include "TextureRegion.cpp"
 #include "TextureSplitter.cpp"
 #include "Utils.cpp"
+

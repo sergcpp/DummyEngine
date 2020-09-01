@@ -1,6 +1,9 @@
 #pragma once
 
 #include <memory>
+#include <vector>
+
+#include "MVec.h"
 
 namespace Ren {
 enum class eTexFormat;
@@ -21,12 +24,14 @@ std::unique_ptr<uint8_t[]> ConvertRGB32F_to_RGBM(const float *image_data, int w,
 
 enum class eMipOp {
     Skip = 0,
-    Zero,       // fill with zeroes
-    Avg,        // average value of 4 pixels
-    Min,        // min value of 4 pixels
-    Max,        // max value of 4 pixels
-    MinBilinear,// min value of 4 pixels and result of bilinear interpolation with neighbours
-    MaxBilinear // max value of 4 pixels and result of bilinear interpolation with neighbours
+    Zero,        // fill with zeroes
+    Avg,         // average value of 4 pixels
+    Min,         // min value of 4 pixels
+    Max,         // max value of 4 pixels
+    MinBilinear, // min value of 4 pixels and result of bilinear interpolation with
+                 // neighbours
+    MaxBilinear  // max value of 4 pixels and result of bilinear interpolation with
+                 // neighbours
 };
 int InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int heights[16],
                 int channels, const eMipOp op[4]);
@@ -105,8 +110,15 @@ extern const int _blank_DXT5_block_4x4_len;
 extern const uint8_t _blank_ASTC_block_4x4[];
 extern const int _blank_ASTC_block_4x4_len;
 
-int CalcMipCount(int w, int h, int min_res, eTexFilter filter);
-
 float PerlinNoise(const Ren::Vec4f &P);
 float PerlinNoise(const Ren::Vec4f &P, const Ren::Vec4f &rep);
+
+//
+// YUV image processing
+//
+void CopyYChannel_16px(const uint8_t *y_src, int y_stride, int w, int h, uint8_t *y_dst);
+void CopyYChannel_32px(const uint8_t *y_src, int y_stride, int w, int h, uint8_t *y_dst);
+
+void InterleaveUVChannels_16px(const uint8_t *u_src, const uint8_t *v_src, int u_stride,
+                               int v_stride, int w, int h, uint8_t *uv_dst);
 } // namespace Ren

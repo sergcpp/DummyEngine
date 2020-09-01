@@ -312,17 +312,16 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
         if (evt.point.x > (float)ren_ctx_->w() * 0.9f &&
             evt.point.y < (float)ren_ctx_->h() * 0.1f) {
-            uint32_t new_time = Sys::GetTimeMs();
-            if (new_time - click_time_ < 400) {
+            const uint64_t new_time = Sys::GetTimeMs();
+            if (new_time - click_time_ms_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {
                     scene_manager_->InitScene_PT();
                     invalidate_view_ = true;
                 }
-
-                click_time_ = 0;
+                click_time_ms_ = 0;
             } else {
-                click_time_ = new_time;
+                click_time_ms_ = new_time;
             }
         }
     }

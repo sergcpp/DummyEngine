@@ -279,6 +279,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_ARRAY_BUFFER_BINDING             0x8894
 #define GL_ELEMENT_ARRAY_BUFFER_BINDING     0x8895
 
+#define GL_STREAM_DRAW                      0x88E0
 #define GL_STATIC_DRAW                      0x88E4
 #define GL_DYNAMIC_DRAW                     0x88E8
 
@@ -321,6 +322,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_MAP_INVALIDATE_RANGE_BIT         0x0004
 #define GL_MAP_FLUSH_EXPLICIT_BIT           0x0010
 #define GL_MAP_UNSYNCHRONIZED_BIT           0x0020
+#define GL_MAP_PERSISTENT_BIT               0x0040
 
 #define GL_COMPRESSED_RED       0x8225
 #define GL_COMPRESSED_RG        0x8226
@@ -397,6 +399,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_MAX_TEXTURE_BUFFER_SIZE        0x8C2B
 
 #define GL_PIXEL_PACK_BUFFER        0x88eb
+#define GL_PIXEL_UNPACK_BUFFER      0x88ec
 
 #define GL_TIMESTAMP 0x8E28
 
@@ -458,6 +461,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_ALREADY_SIGNALED               0x911A
 #define GL_TIMEOUT_EXPIRED                0x911B
 #define GL_CONDITION_SATISFIED            0x911C
+#define GL_TIMEOUT_IGNORED                -1l
 
 #define GL_SHADER_BINARY_FORMAT_SPIR_V_ARB  0x9551
 #define GL_SPIR_V_BINARY_ARB                0x9552
@@ -557,6 +561,7 @@ typedef void (APIENTRY *PFNGLBINDBUFFERBASEPROC)(GLenum target, GLuint index, GL
 typedef void (APIENTRY *PFNGLBINDBUFFERRANGEPROC)(GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
 typedef void (APIENTRY *PFNGLBINDVERTEXBUFFERPROC)(GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride);
 typedef void (APIENTRY *PFNGLCOPYBUFFERSUBDATAPROC)(GLenum readTarget, GLenum writeTarget, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size);
+typedef void (APIENTRY *PFNGLBUFFERSTORAGEPROC)(GLenum target, GLsizeiptr size, const void* data, GLbitfield flags);
 
 typedef void* (APIENTRY *PFNGLMAPBUFFERPROC)(GLenum target, GLenum access);
 typedef void* (APIENTRY *PFNGLMAPBUFFERRANGEPROC)(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
@@ -705,6 +710,7 @@ typedef void (APIENTRY *PFNGLPOPDEBUGGROUPPROC)();
 typedef void (APIENTRY *PFNGLOBJECTLABELPROC)(GLenum identifier, GLuint name, GLsizei length, const char *label);
 
 typedef GLsync (APIENTRY *PFNGLFENCESYNCPROC)(GLenum condition, GLbitfield flags);
+typedef void (APIENTRY *PFNGLWAITSYNCPROC)(GLsync sync, GLbitfield flags, GLuint64 timeout);
 typedef GLenum (APIENTRY *PFNGLCLIENTWAITSYNCPROC)(GLsync sync, GLbitfield flags, GLuint64 timeout);
 typedef void (APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
 
@@ -821,6 +827,7 @@ typedef void (APIENTRY *PFNGLBINDTEXTUREUNITCOMPPROC)(GLenum target, GLuint unit
 #define glBindBufferRange           ren_glBindBufferRange
 #define glBindVertexBuffer          ren_glBindVertexBuffer
 #define glCopyBufferSubData         ren_glCopyBufferSubData
+#define glBufferStorage             ren_glBufferStorage
 
 #define glMapBuffer                 ren_glMapBuffer
 #define glMapBufferRange            ren_glMapBufferRange
@@ -942,6 +949,7 @@ typedef void (APIENTRY *PFNGLBINDTEXTUREUNITCOMPPROC)(GLenum target, GLuint unit
 #define glObjectLabel               ren_glObjectLabel
 
 #define glFenceSync                 ren_glFenceSync
+#define glWaitSync                  ren_glWaitSync
 #define glClientWaitSync            ren_glClientWaitSync
 #define glDeleteSync                ren_glDeleteSync
 
@@ -1025,6 +1033,7 @@ EXTERN_FUNC PFNGLBINDBUFFERBASEPROC             ren_glBindBufferBase;
 EXTERN_FUNC PFNGLBINDBUFFERRANGEPROC            ren_glBindBufferRange;
 EXTERN_FUNC PFNGLBINDVERTEXBUFFERPROC           ren_glBindVertexBuffer;
 EXTERN_FUNC PFNGLCOPYBUFFERSUBDATAPROC          ren_glCopyBufferSubData;
+EXTERN_FUNC PFNGLBUFFERSTORAGEPROC              ren_glBufferStorage;
 
 EXTERN_FUNC PFNGLMAPBUFFERPROC                  ren_glMapBuffer;
 EXTERN_FUNC PFNGLMAPBUFFERRANGEPROC             ren_glMapBufferRange;
@@ -1147,6 +1156,7 @@ EXTERN_FUNC PFNGLOBJECTLABELPROC                ren_glObjectLabel;
 
 EXTERN_FUNC PFNGLFENCESYNCPROC                  ren_glFenceSync;
 EXTERN_FUNC PFNGLCLIENTWAITSYNCPROC             ren_glClientWaitSync;
+EXTERN_FUNC PFNGLWAITSYNCPROC                   ren_glWaitSync;
 EXTERN_FUNC PFNGLDELETESYNCPROC                 ren_glDeleteSync;
 
 EXTERN_FUNC PFNGLBLENDFUNCIPROC                 ren_glBlendFunci;

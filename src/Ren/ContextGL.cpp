@@ -109,6 +109,7 @@ void Ren::Context::Init(int w, int h, ILog *log) {
 #endif
 
     capabilities.gl_spirv = IsExtensionSupported("GL_ARB_gl_spirv");
+    capabilities.persistent_buf_mapping = IsExtensionSupported("GL_ARB_buffer_storage");
 
     default_vertex_buf1_ = buffers_.Add("default_vtx_buf1", 64 * 1024 * 1024);
     default_vertex_buf2_ = buffers_.Add("default_vtx_buf2", 64 * 1024 * 1024);

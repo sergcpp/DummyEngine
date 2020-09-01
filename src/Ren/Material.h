@@ -19,7 +19,8 @@ enum class eMaterialFlags {
     AlphaTest = (1u << 0u),
     AlphaBlend = (1u << 1u),
     DepthWrite = (1u << 2u),
-    TwoSided = (1u << 3u)
+    TwoSided = (1u << 3u),
+    TaaResponsive = (1u << 4u)
 };
 
 const int MaxMaterialProgramCount = 4;

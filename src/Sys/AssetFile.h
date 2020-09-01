@@ -11,61 +11,59 @@ class AAssetManager;
 #endif
 
 namespace Sys {
-class CannotOpenFileException;
+enum class eOpenMode { None, In, Out };
 
 // TODO: replace this with stream ???
 class AssetFile {
 #ifdef __ANDROID__
-    static AAssetManager* asset_manager_;
-    AAsset* asset_file_ = nullptr;
+    static AAssetManager *asset_manager_;
+    AAsset *asset_file_ = nullptr;
 #else
     std::fstream *file_stream_ = nullptr;
 #endif
-    int mode_ = -1;
+    eOpenMode mode_ = eOpenMode::None;
     std::string name_;
     size_t size_ = 0, pos_override_ = 0;
-public:
-    explicit AssetFile(const char *file_name, int mode = FileIn);
-    explicit AssetFile(const std::string &file_name, int mode = FileIn) : AssetFile(file_name.c_str(), mode) {}
+
+  public:
+    AssetFile() = default;
+    explicit AssetFile(const char *file_name, eOpenMode mode = eOpenMode::In);
+    explicit AssetFile(const std::string &file_name, eOpenMode mode = eOpenMode::In)
+        : AssetFile(file_name.c_str(), mode) {}
     AssetFile(const AssetFile &) = delete;
+    AssetFile(AssetFile &&rhs) noexcept;
     AssetFile &operator=(const AssetFile &) = delete;
+    AssetFile &operator=(AssetFile &&rhs) noexcept;
 
     ~AssetFile();
 
-    size_t size() const {
-        return size_;
-    }
+    size_t size() const { return size_; }
 
-    int mode() const {
-        return mode_;
-    }
+    eOpenMode mode() const { return mode_; }
 
-    std::string name() {
-        return name_;
-    }
+    std::string name() { return name_; }
 
     size_t pos();
 
-    bool Read(char *buf, size_t size);
+    bool Open(const char* file_name, eOpenMode mode = eOpenMode::In);
+    void Close();
+
+    size_t Read(char *buf, size_t size);
 
 #ifndef __ANDROID__
     bool Write(const char *buf, size_t size);
 #endif
 
-    void Seek(size_t pos);
+    void SeekAbsolute(size_t pos);
+    void SeekRelative(int64_t off);
 
     operator bool();
-
-    enum {
-        FileIn, FileOut
-    };
 
     static void AddPackage(const char *name);
     static void RemovePackage(const char *name);
 #ifdef __ANDROID__
-    static void InitAssetManager(class AAssetManager*);
+    static void InitAssetManager(class AAssetManager *);
     int32_t descriptor(off_t *start, off_t *len);
 #endif
 };
-}
-
+} // namespace Sys

@@ -31,7 +31,7 @@ class GSDrawTest final : public GSBaseState {
     int view_pointer_ = 0, move_pointer_ = 0;
 
     Ren::Vec3f
-        initial_view_origin_ = Ren::Vec3f{ 0, 1, 0 },
+        initial_view_pos_ = Ren::Vec3f{ 0, 1, 0 },
         initial_view_dir_ = Ren::Vec3f{ 0, 0, -1 };
 
     Ren::Vec3f view_origin_, view_dir_;
@@ -42,7 +42,7 @@ class GSDrawTest final : public GSBaseState {
     float max_fwd_speed_ = 0.5f, view_fov_ = 60.0f;
     float max_exposure_ = 1000.0f;
 
-    uint32_t click_time_ = 0;
+    uint64_t click_time_ = 0;
 
     uint64_t wind_update_time_ = 0;
     Ren::Vec3f wind_vector_goal_ = Ren::Vec3f{ 16.0f, 0.0f, 0.0f };

@@ -439,7 +439,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             main_batch.alpha_test_bit =
                                 (mat_flags & uint32_t(eMaterialFlags::AlphaTest)) ? 1 : 0;
                             main_batch.depth_write_bit =
-                                (mat_flags & uint32_t(eMaterialFlags::DepthWrite)) ? 1 : 0;
+                                (mat_flags & uint32_t(eMaterialFlags::DepthWrite)) ? 1
+                                                                                   : 0;
                             main_batch.two_sided_bit =
                                 (mat_flags & uint32_t(eMaterialFlags::TwoSided)) ? 1 : 0;
                             main_batch.mat_id = (uint32_t)grp->mat.index();
@@ -1235,7 +1236,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
             // TODO: Check visibility of shadow frustum
 
-            const Mat4f clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
+            const Mat4f clip_from_world =
+                shadow_cam.proj_matrix() * shadow_cam.view_matrix();
 
             ShadowList &sh_list = list.shadow_lists.data[list.shadow_lists.count++];
 
@@ -1623,7 +1625,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
         std::atomic_int a_items_count = {};
 
         for (int i = 0; i < REN_GRID_RES_Z; i++) {
-            futures[i] = threads_->enqueue(
+            futures[i] = threads_->Enqueue(
                 GatherItemsForZSlice_Job, i, temp_sub_frustums_.data, decals_boxes_.data,
                 litem_to_lsource_.data, std::ref(list), std::ref(a_items_count));
         }

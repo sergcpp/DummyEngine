@@ -2,9 +2,10 @@ cmake_minimum_required(VERSION 2.8.4)
 project(Eng)
 
 IF(WIN32)
-
+    set(VPX_LIB "vpxmd")
 ELSE(WIN32)
-    set(CMAKE_CXX_STANDARD  11)
+    set(VPX_LIB "vpx")
+    set(CMAKE_CXX_STANDARD 11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(WIN32)
 
@@ -48,8 +49,7 @@ set(GUI_SOURCE_FILES    Gui/BaseElement.h
                         Gui/TypeMesh.h
                         Gui/TypeMesh.cpp
                         Gui/Utils.h
-                        Gui/Utils.cpp
-                        )
+                        Gui/Utils.cpp)
 
 if(${RENDERER} STREQUAL "GL")
     set(GUI_SOURCE_FILES    ${GUI_SOURCE_FILES}
@@ -147,7 +147,9 @@ set(UTILS_SOURCES Utils/BVHSplit.h
 				  Utils/ScriptedSequence.h
 				  Utils/ScriptedSequence.cpp
                   Utils/ShaderLoader.h
-                  Utils/ShaderLoaderGLSL.cpp)
+                  Utils/ShaderLoaderGLSL.cpp
+                  Utils/VideoPlayer.h
+                  Utils/VideoPlayer.cpp)
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
@@ -185,6 +187,6 @@ list(APPEND ALL_SOURCE_FILES _Eng.cpp _Eng_Renderer.cpp _Eng_Gui.cpp _Eng_Scene.
 source_group("src" FILES _Eng.cpp _Eng_Renderer.cpp _Eng_Gui.cpp _Eng_Scene.cpp _Eng_Utils.cpp)
 
 add_library(Eng STATIC ${ALL_SOURCE_FILES})
-target_link_libraries(Eng Net Ray Ren Snd Sys astc)
+target_link_libraries(Eng Net Ray Ren Snd Sys astc ${VPX_LIB})
 
 add_subdirectory(_tests)

@@ -5,7 +5,7 @@
 
 /*
 UNIFORM_BLOCKS
-    SharedDataBlock : )" AS_STR(REN_UB_SHARED_DATA_LOC) R"(
+    SharedDataBlock : $ubSharedDataLoc
 */
 
 #if defined(VULKAN) || defined(GL_SPIRV)

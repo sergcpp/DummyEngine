@@ -196,7 +196,7 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width
         for (int x = 0; x < width; x += TileSize) {
             if (ctx.p_threads) {
                 futures.emplace_back(
-                    ctx.p_threads->enqueue(std::bind(compute_tile, x, y)));
+                    ctx.p_threads->Enqueue(std::bind(compute_tile, x, y)));
             } else {
                 compute_tile(x, y);
                 ctx.log->Info("Computing conemap %i%%",
@@ -663,7 +663,7 @@ bool Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h,
 int WriteImage(const uint8_t *out_data, const int w, const int h, const int channels,
                const bool flip_y, const bool is_rgbm, const char *name) {
     int res = 0;
-    if (strstr(name, ".tga")) {
+    if (strstr(name, ".tga") || strstr(name, ".png")) {
         std::unique_ptr<uint8_t[]> temp_data;
         if (flip_y) {
             temp_data.reset(new uint8_t[w * h * channels]);
@@ -674,19 +674,8 @@ int WriteImage(const uint8_t *out_data, const int w, const int h, const int chan
             out_data = &temp_data[0];
         }
 
-        res = SOIL_save_image(name, SOIL_SAVE_TYPE_TGA, w, h, channels, out_data);
-    } else if (strstr(name, ".png")) {
-        std::unique_ptr<uint8_t[]> temp_data;
-        if (flip_y) {
-            temp_data.reset(new uint8_t[w * h * channels]);
-            for (int j = 0; j < h; j++) {
-                memcpy(&temp_data[j * w * channels],
-                       &out_data[(h - j - 1) * w * channels], w * channels);
-            }
-            out_data = &temp_data[0];
-        }
-
-        res = SOIL_save_image(name, SOIL_SAVE_TYPE_PNG, w, h, channels, out_data);
+        const int img_type = strstr(name, ".tga") ? SOIL_SAVE_TYPE_TGA : SOIL_SAVE_TYPE_PNG;
+        res = SOIL_save_image(name, img_type, w, h, channels, out_data);
     } else if (strstr(name, ".dds")) {
         res = 1;
         Write_DDS(out_data, w, h, channels, flip_y, is_rgbm, name);

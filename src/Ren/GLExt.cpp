@@ -129,6 +129,7 @@ bool Ren::InitGLExtentions() {
         (PFNGLBINDVERTEXBUFFERPROC)GetProcAddress(glBindVertexBuffer);
     ren_glCopyBufferSubData =
         (PFNGLCOPYBUFFERSUBDATAPROC)GetProcAddress(glCopyBufferSubData);
+    ren_glBufferStorage = (PFNGLBUFFERSTORAGEPROC)GetProcAddress(glBufferStorage);
 
     ren_glMapBuffer = (PFNGLMAPBUFFERPROC)GetProcAddress(glMapBuffer);
     ren_glMapBufferRange = (PFNGLMAPBUFFERRANGEPROC)GetProcAddress(glMapBufferRange);
@@ -291,6 +292,7 @@ bool Ren::InitGLExtentions() {
     ren_glObjectLabel = (PFNGLOBJECTLABELPROC)GetProcAddress(glObjectLabel);
 
     ren_glFenceSync = (PFNGLFENCESYNCPROC)GetProcAddress(glFenceSync);
+    ren_glWaitSync = (PFNGLWAITSYNCPROC)GetProcAddress(glWaitSync);
     ren_glClientWaitSync = (PFNGLCLIENTWAITSYNCPROC)GetProcAddress(glClientWaitSync);
     ren_glDeleteSync = (PFNGLDELETESYNCPROC)GetProcAddress(glDeleteSync);
 

@@ -345,7 +345,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             int res = 0;
 
             for (int i = 0; i < 6; i++) {
-                Sys::AssetFile in_file(tex_names[i], Sys::AssetFile::FileIn);
+                Sys::AssetFile in_file(tex_names[i]);
                 size_t in_file_size = in_file.size();
 
                 tex_data[i].resize(in_file_size);
@@ -1077,7 +1077,7 @@ Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
 
     const std::string file_name = TEXTURES_PATH + std::string(name);
 
-    Sys::AssetFile in_file(file_name, Sys::AssetFile::FileIn);
+    Sys::AssetFile in_file(file_name);
     size_t in_file_size = in_file.size();
 
     std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);

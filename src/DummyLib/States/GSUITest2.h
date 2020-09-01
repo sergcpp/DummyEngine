@@ -24,7 +24,7 @@ class GSUITest2 : public GSBaseState {
     uint64_t last_frame_time_ = 0;
     double cur_fps_ = 0.0;
 
-    uint32_t click_time_ = 0;
+    uint64_t click_time_ = 0;
 
     std::shared_ptr<Gui::BitmapFont> dialog_font_;
     float test_time_counter_s = 0.0f;

@@ -39,14 +39,14 @@ class DummyApp {
 #if defined(_WIN32)
     HWND            window_handle_;
     HDC             device_context_;
-    HGLRC           gl_ctx_;
+    HGLRC           gl_ctx_main_, gl_ctx_aux_;
 #elif defined(__linux__)
     Display         *dpy_ = nullptr;
     Window          win_ = {};
-    GLXContext      ctx_ = {};
+    GLXContext      gl_ctx_main_ = {}, gl_ctx_aux_ = {};
 #else
 #if defined(USE_GL_RENDER)
-    void            *gl_ctx_ = nullptr;
+    void            *gl_ctx_main_ = nullptr;
 #elif defined(USE_SW_RENDER)
     SDL_Renderer    *renderer_ = nullptr;
     SDL_Texture     *texture_ = nullptr;

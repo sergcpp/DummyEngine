@@ -2,6 +2,7 @@
 
 #include <deque>
 
+#include "CPUFeatures.h"
 #include "Texture.h"
 
 namespace Ren {
@@ -439,11 +440,11 @@ int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
                         c[1][1] = test_val;
 
                         if (op[k] == eMipOp::MinBilinear) {
-                            mipmaps[mip_count][count * channels + k] = uint8_t(
-                                _MIN4(c[1][1], c[1][2], c[2][1], c[2][2]));
+                            mipmaps[mip_count][count * channels + k] =
+                                uint8_t(_MIN4(c[1][1], c[1][2], c[2][1], c[2][2]));
                         } else if (op[k] == eMipOp::MaxBilinear) {
-                            mipmaps[mip_count][count * channels + k] = uint8_t(
-                                _MAX4(c[1][1], c[1][2], c[2][1], c[2][2]));
+                            mipmaps[mip_count][count * channels + k] =
+                                uint8_t(_MAX4(c[1][1], c[1][2], c[2][1], c[2][2]));
                         }
                     }
                 }
@@ -896,19 +897,6 @@ void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices,
             }
         }
     }
-}
-
-int Ren::CalcMipCount(const int w, const int h, const int min_res, eTexFilter filter) {
-    int mip_count = 0;
-    if (filter == eTexFilter::Trilinear || filter == eTexFilter::Bilinear) {
-        int max_dim = std::max(w, h);
-        do {
-            mip_count++;
-        } while ((max_dim /= 2) >= min_res);
-    } else {
-        mip_count = 1;
-    }
-    return mip_count;
 }
 
 //	Classic Perlin 3D Noise

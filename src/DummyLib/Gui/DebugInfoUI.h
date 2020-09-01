@@ -14,7 +14,7 @@ class DebugInfoUI : public Gui::BaseElement {
     std::shared_ptr<Gui::BitmapFont>    font_;
 
     uint64_t    last_frame_time_ = 0;
-    double      cur_fps_ = 0.0;
+    double      cur_frame_dur_ = 0.0;
 
     uint32_t    render_flags_ = 0;
 

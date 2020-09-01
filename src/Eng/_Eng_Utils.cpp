@@ -8,3 +8,4 @@
 #ifdef USE_GL_RENDER
 #include "Utils/ShaderLoaderGLSL.cpp"
 #endif
+#include "Utils/VideoPlayer.cpp"

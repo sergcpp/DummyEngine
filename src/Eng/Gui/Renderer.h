@@ -89,6 +89,8 @@ class Renderer {
     static const int FrameSyncWindow = 2;
     static const int MaxClipStackSize = 8;
 
+    static_assert(FrameSyncWindow > 1, "!");
+
     Ren::Context &ctx_;
 
     int vertex_count_[FrameSyncWindow];

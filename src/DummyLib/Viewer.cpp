@@ -20,7 +20,9 @@
 #include "States/GSCreate.h"
 #include "Utils/Dictionary.h"
 
-Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) {
+Viewer::Viewer(int w, int h, const char *local_dir,
+               std::shared_ptr<Sys::ThreadWorker> aux_gfx_thread)
+    : GameBase(w, h, local_dir) {
     auto ren_ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
     auto snd_ctx = GetComponent<Snd::Context>(SND_CONTEXT_KEY);
     JsObject main_config;
@@ -28,9 +30,9 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
     {
         // load config
 #if defined(__ANDROID__)
-        Sys::AssetFile config_file("assets/config.json", Sys::AssetFile::FileIn);
+        Sys::AssetFile config_file("assets/config.json", Sys::eOpenMode::In);
 #else
-        Sys::AssetFile config_file("assets_pc/config.json", Sys::AssetFile::FileIn);
+        Sys::AssetFile config_file("assets_pc/config.json", Sys::eOpenMode::In);
 #endif
         size_t config_file_size = config_file.size();
 
@@ -81,6 +83,8 @@ Viewer::Viewer(int w, int h, const char *local_dir) : GameBase(w, h, local_dir) 
             font_storage->FindFont("main_font"));
         AddComponent(UI_DEBUG_KEY, debug_ui);
     }
+
+    AddComponent(AUX_GFX_THREAD, std::move(aux_gfx_thread));
 
     {
         auto sh_loader = GetComponent<ShaderLoader>(SHADER_LOADER_KEY);
@@ -493,7 +497,7 @@ bool Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file,
 
         assert(hdr_offset == header_size);
 
-        { // Info data
+        {                                 // Info data
             Dictionary::dict_info_t info; // NOLINT
             info.src_lang[0] = 'e';
             info.src_lang[1] = 'n';

@@ -22,7 +22,7 @@ class MeshTest : public Ren::Context {
     HGLRC hRC;
 #else
     SDL_Window *window_;
-    void *gl_ctx_;
+    void *gl_ctx_main_;
 #endif
     Ren::LogNull log_;
 
@@ -83,7 +83,7 @@ class MeshTest : public Ren::Context {
         window_ =
             SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                              256, 256, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
-        gl_ctx_ = SDL_GL_CreateContext(window_);
+        gl_ctx_main_ = SDL_GL_CreateContext(window_);
 #endif
         Context::Init(256, 256, &log_);
     }
@@ -96,7 +96,7 @@ class MeshTest : public Ren::Context {
         DestroyWindow(hWnd);
         UnregisterClass("MeshTest", hInstance);
 #else
-        SDL_GL_DeleteContext(gl_ctx_);
+        SDL_GL_DeleteContext(gl_ctx_main_);
         SDL_DestroyWindow(window_);
 #ifndef EMSCRIPTEN
         SDL_Quit();
