@@ -13,7 +13,7 @@ namespace Sys {
 class Platform {
     DynLib          sdl_lib_;
 #if defined(USE_GL_RENDER)
-    void            *gl_ctx_ = nullptr;
+    void            *gl_ctx_main_ = nullptr;
 #elif defined(USE_SW_RENDER)
     SDL_Renderer    *renderer_ = nullptr;
     SDL_Texture     *texture_ = nullptr;
@@ -33,7 +33,7 @@ public:
         Release();
 
 #if defined(USE_GL_RENDER)
-        gl_ctx_ = rhs.gl_ctx_;
+        gl_ctx_main_ = rhs.gl_ctx_main_;
 #elif defined(USE_SW_RENDER)
         renderer_ = rhs.renderer_;
         rhs.renderer_ = nullptr;

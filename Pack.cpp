@@ -7,7 +7,7 @@
 #include "AssetFile.h"
 
 void Sys::ReadPackage(const char *pack_name, onfile_func on_file) {
-    AssetFile in_file(pack_name, AssetFile::FileIn);
+    AssetFile in_file(pack_name, eOpenMode::In);
     size_t file_size = in_file.size();
     uint32_t num_files;
     in_file.Read((char*)&num_files, sizeof(uint32_t));
@@ -24,7 +24,7 @@ void Sys::ReadPackage(const char *pack_name, onfile_func on_file) {
 
     for (auto &f : file_list) {
         std::unique_ptr<char[]> buf(new char[f.size]);
-        in_file.Seek(f.off);
+        in_file.SeekAbsolute(f.off);
         in_file.Read(buf.get(), f.size);
 
         on_file(f.name, buf.get(), f.size);
@@ -33,14 +33,14 @@ void Sys::ReadPackage(const char *pack_name, onfile_func on_file) {
 
 #ifndef __ANDROID__
 void Sys::WritePackage(const char *pack_name, std::vector<std::string> &file_list) {
-    AssetFile out_file(pack_name, AssetFile::FileOut);
+    AssetFile out_file(pack_name, eOpenMode::Out);
     uint32_t num_files = (uint32_t)file_list.size();
     out_file.Write((char*)&num_files, sizeof(uint32_t));
 
     size_t file_pos = sizeof(uint32_t) + num_files * (120 + 2 * sizeof(uint32_t));
     for (auto &f : file_list) {
         assert(f.length() < 124);
-        AssetFile in_file(f.c_str(), AssetFile::FileIn);
+        AssetFile in_file(f.c_str(), eOpenMode::In);
         char name[120] {};
         strcpy(name, f.c_str());
         uint32_t file_size = (uint32_t)in_file.size();
@@ -51,7 +51,7 @@ void Sys::WritePackage(const char *pack_name, std::vector<std::string> &file_lis
     }
 
     for (auto &f : file_list) {
-        AssetFile in_file(f.c_str(), AssetFile::FileIn);
+        AssetFile in_file(f.c_str(), eOpenMode::In);
         std::unique_ptr<char[]> buf(new char[in_file.size()]);
         in_file.Read(buf.get(), in_file.size());
         out_file.Write(buf.get(), in_file.size());
@@ -60,7 +60,7 @@ void Sys::WritePackage(const char *pack_name, std::vector<std::string> &file_lis
 #endif
 
 std::vector<Sys::FileDesc> Sys::EnumFilesInPackage(const char *pack_name) {
-    AssetFile in_file(pack_name, AssetFile::FileIn);
+    AssetFile in_file(pack_name, eOpenMode::In);
     size_t file_size = in_file.size();
     uint32_t num_files;
     in_file.Read((char*)&num_files, sizeof(uint32_t));
@@ -79,7 +79,7 @@ std::vector<Sys::FileDesc> Sys::EnumFilesInPackage(const char *pack_name) {
 }
 
 bool Sys::ReadFromPackage(const char *pack_name, const char *fname, size_t pos, char *buf, size_t /*size*/) {
-    AssetFile in_file(pack_name, AssetFile::FileIn);
+    AssetFile in_file(pack_name, eOpenMode::In);
     //size_t file_size = in_file.size();
     uint32_t num_files;
     in_file.Read((char*)&num_files, sizeof(uint32_t));
@@ -92,7 +92,7 @@ bool Sys::ReadFromPackage(const char *pack_name, const char *fname, size_t pos, 
         in_file.Read((char*)&off, sizeof(uint32_t));
         in_file.Read((char*)&size, sizeof(uint32_t));
         if (strcmp(name, fname) == 0) {
-            in_file.Seek(off + pos);
+            in_file.SeekAbsolute(off + pos);
             in_file.Read(buf, size);
             return true;
         }
