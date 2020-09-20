@@ -25,6 +25,8 @@
 #include "internal/TextureAtlasOCL.cpp"
 #endif
 
+#include "internal/simd/detect.cpp"
+
 // TODO:
 // consider transparency in shadow from punctual lights
 // add deletion functions for OpenCL backend

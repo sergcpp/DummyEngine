@@ -114,16 +114,17 @@ endif()
 
 set(SIMD_FILES internal/simd/aligned_allocator.h
                internal/simd/detect.h
+               internal/simd/detect.cpp
                internal/simd/simd_vec.h
                internal/simd/simd_vec_sse.h
                internal/simd/simd_vec_avx.h
                internal/simd/simd_vec_neon.h)
 
-list(APPEND ALL_SOURCE_FILES ${INTERNAL_SOURCE_FILES})
-source_group("src\\internal" FILES ${INTERNAL_SOURCE_FILES})
-
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
+
+list(APPEND ALL_SOURCE_FILES ${INTERNAL_SOURCE_FILES})
+source_group("src\\internal" FILES ${INTERNAL_SOURCE_FILES})
 
 list(APPEND ALL_SOURCE_FILES ${KERNEL_FILES})
 source_group("src\\internal\\kernels" FILES ${KERNEL_FILES})
@@ -137,6 +138,7 @@ set_source_files_properties(${KERNEL_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 if(ENABLE_UNITYBUILD)
     set_source_files_properties(${INTERNAL_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
     set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    set_source_files_properties(${SIMD_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 
     list(APPEND ALL_SOURCE_FILES _Ray.cpp)
     source_group("src" FILES _Ray.cpp)
