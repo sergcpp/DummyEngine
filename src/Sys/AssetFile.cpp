@@ -176,7 +176,7 @@ size_t Sys::AssetFile::Read(char *buf, size_t size) {
 #endif
 }
 
-void Sys::AssetFile::SeekAbsolute(const size_t pos) {
+void Sys::AssetFile::SeekAbsolute(const uint64_t pos) {
 #ifdef __ANDROID__
     AAsset_seek(asset_file_, pos, SEEK_SET);
 #else
