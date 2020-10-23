@@ -54,7 +54,7 @@ class AssetFile {
     bool Write(const char *buf, size_t size);
 #endif
 
-    void SeekAbsolute(size_t pos);
+    void SeekAbsolute(uint64_t pos);
     void SeekRelative(int64_t off);
 
     operator bool();
