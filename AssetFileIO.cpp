@@ -35,7 +35,7 @@ void Sys::LoadAssetComplete(const char *url, void *arg, onload_func onload, oner
 #if !defined(__ANDROID__) && !defined(__APPLE__)
         success = g_file_reader.ReadFile(url_str.c_str(), g_file_read_buffer_size, &g_file_read_buffer[0], file_size);
 #else
-        AssetFile in_file(url_str.c_str(), AssetFile::FileIn);
+        AssetFile in_file(url_str.c_str(), eOpenMode::In);
         if (in_file) {
             file_size = in_file.size();
             if (file_size <= g_file_read_buffer_size)  {
