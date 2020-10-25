@@ -104,8 +104,8 @@ list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src" FILES ${SOURCE_FILES})
 
-list(APPEND ALL_SOURCE_FILES _Ren.cpp _Ren_SSE2.cpp _Ren_AVX.cpp)
-source_group("src" FILES _Ren.cpp _Ren_SSE2.cpp _Ren_AVX.cpp)
+list(APPEND ALL_SOURCE_FILES _Ren.cpp _Ren_SSE2.cpp _Ren_AVX.cpp _Ren_NEON.cpp)
+source_group("src" FILES _Ren.cpp _Ren_SSE2.cpp _Ren_AVX.cpp _Ren_NEON.cpp)
 
 if(MSVC)
     if(NOT CMAKE_CL_64)

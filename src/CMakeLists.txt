@@ -59,10 +59,10 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     include_directories(${SDL2_INCLUDE_DIRS})
     link_directories(${SDL2_LIBRARIES})
     link_directories(${ITT_LIBRARIES})
-    include_directories(libs/vpx/include)
-    link_directories(${VPX_LIBRARIES})
 	
 	add_definitions(-DENABLE_ITT_API)
+else()
+    set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/arm64-v8a)
 endif()
 
 set(RENDERER GL)
@@ -87,11 +87,16 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     include_directories(libs/dirent)
 endif()
 
+include_directories(libs/vpx/include)
+link_directories(${VPX_LIBRARIES})
+
 include_directories(libs)
 
-#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..)
-#set(WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..)
 enable_testing()
+
+if(CMAKE_SYSTEM_NAME MATCHES "Android")
+    link_directories(${CMAKE_CURRENT_SOURCE_DIR}/Snd/OpenAL/libs/arm64-v8a)
+endif()
 
 add_subdirectory(DummyApp)
 add_subdirectory(DummyLib)

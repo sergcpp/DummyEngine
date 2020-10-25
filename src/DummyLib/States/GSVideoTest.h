@@ -104,7 +104,7 @@ class GSVideoTest final : public GSBaseState {
     void InsertVideoTextureBarrier(int tex_index, int frame_index);
     void WaitVideoTextureUpdated(int tex_index, int frame_index);
     void UpdateVideoTextureData(int tex_index, int frame_index);
-    void FlushGPUCommands();
+    static void FlushGPUCommands();
 
     // Decoder thread procedures
     void UpdatePBOWithDecodedFrame_Persistent(int tex_index, int frame_index);

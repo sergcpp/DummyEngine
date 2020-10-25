@@ -9,7 +9,7 @@
 
 #ifdef ENABLE_ITT_API
 #include <vtune/ittnotify.h>
-__itt_domain *__g_itt_domain = __itt_domain_create("Global");
+__itt_domain *__g_itt_domain = __itt_domain_create("Global"); // NOLINT
 #endif
 
 #if defined(USE_GL_RENDER)
@@ -59,6 +59,7 @@ uint32_t ScancodeToHID(uint32_t scancode) {
     return ScancodeToHID_table[scancode];
 }
 
+#if !defined(__ANDROID__)
 class AuxGfxThread : public Sys::ThreadWorker {
     Display *dpy_;
     GLXContext gl_ctx_;
@@ -75,6 +76,7 @@ class AuxGfxThread : public Sys::ThreadWorker {
 
     void OnStop() override { glXMakeCurrent(dpy_, None, nullptr); }
 };
+#endif
 } // namespace
 
 extern "C" {
@@ -185,7 +187,10 @@ int DummyApp::Init(int w, int h) {
     try {
         Viewer::PrepareAssets("pc");
 
-        auto aux_gfx_thread = std::make_shared<AuxGfxThread>(dpy_, gl_ctx_aux_);
+        std::shared_ptr<Sys::ThreadWorker> aux_gfx_thread;
+#if !defined(__ANDROID__)
+        aux_gfx_thread = std::make_shared<AuxGfxThread>(dpy_, gl_ctx_aux_);
+#endif
         viewer_.reset(new Viewer(w, h, nullptr, std::move(aux_gfx_thread)));
 
         auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);

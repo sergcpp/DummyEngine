@@ -28,8 +28,6 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
         return false;
     }
 
-    //size_t file_size = in_file.size();
-
     char sign[4];
     if (!in_file.Read(sign, 4) || sign[0] != 'F' || sign[1] != 'O' || sign[2] != 'N' ||
         sign[3] != 'T') {
@@ -44,8 +42,9 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
     const uint32_t expected_chunks_size =
         uint32_t(Gui::eFontFileChunk::FontChCount) * 3 * sizeof(uint32_t);
     const uint32_t chunks_size = header_size - 4 - sizeof(uint32_t);
-    if (chunks_size != expected_chunks_size)
+    if (chunks_size != expected_chunks_size) {
         return false;
+    }
 
     for (uint32_t i = 0; i < chunks_size; i += 3 * sizeof(uint32_t)) {
         uint32_t chunk_id, chunk_off, chunk_size;

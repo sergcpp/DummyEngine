@@ -2,13 +2,15 @@
 
 #ifdef ENABLE_ITT_API
 #include <vtune/ittnotify.h>
-extern __itt_domain *__g_itt_domain;
+extern __itt_domain *__g_itt_domain; // NOLINT
 #endif
 
 #include <Ren/GL.h>
 
 namespace GSVideoTestInternal {
+#ifdef ENABLE_ITT_API
 __itt_string_handle *itt_update_tex_str = __itt_string_handle_create("Update Textures");
+#endif
 const bool VerboseLogging = false;
 } // namespace GSVideoTestInternal
 
@@ -96,6 +98,7 @@ void GSVideoTest::InitVideoTextures() {
                 programs, textures, params, log_.get());
         }
 
+#if !defined(__ANDROID__)
         { // init PBOs
             const GLbitfield BufferRangeMapFlags =
                 GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_PERSISTENT_BIT) |
@@ -134,6 +137,7 @@ void GSVideoTest::InitVideoTextures() {
 
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
         }
+#endif
     }
 }
 
@@ -189,7 +193,7 @@ void GSVideoTest::UpdatePBOWithDecodedFrame(const int tex_index, const int frame
                 glFlushMappedBufferRange(GL_PIXEL_UNPACK_BUFFER, range_offset,
                                          GLsizeiptr(w * h));
             } else { // non-persistent mapping case
-                uint8_t *pinned_mem = (uint8_t *)glMapBufferRange(
+                auto *pinned_mem = (uint8_t *)glMapBufferRange(
                     GL_PIXEL_UNPACK_BUFFER, GLintptr(frame_index * w * h),
                     GLsizeiptr(w * h), BufferRangeMapFlags);
                 if (pinned_mem) {
@@ -226,7 +230,7 @@ void GSVideoTest::UpdatePBOWithDecodedFrame(const int tex_index, const int frame
                 glFlushMappedBufferRange(GL_PIXEL_UNPACK_BUFFER, range_offset,
                                          GLsizeiptr(u_w * u_h));
             } else { // non-persistent mapping case
-                uint8_t *pinned_mem = (uint8_t *)glMapBufferRange(
+                auto *pinned_mem = (uint8_t *)glMapBufferRange(
                     GL_PIXEL_UNPACK_BUFFER, GLintptr(range_offset),
                     GLsizeiptr(2 * u_w * u_h), BufferRangeMapFlags);
                 if (pinned_mem) {
@@ -248,7 +252,7 @@ void GSVideoTest::SetVideoTextureFence(const int tex_index, const int frame_inde
     after_tex_update_fences_[tex_index][frame_index] =
         glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
-    if (GSVideoTestInternal::VerboseLogging) {
+    if (GSVideoTestInternal::VerboseLogging) { // NOLINT
         log_->Info("Setting VT fence %tx", frame_index);
     }
 }
@@ -272,7 +276,7 @@ void GSVideoTest::WaitVideoTextureUpdated(const int tex_index, const int frame_i
         glDeleteSync(sync);
         after_tex_update_fences_[tex_index][frame_index] = nullptr;
 
-        if (GSVideoTestInternal::VerboseLogging) {
+        if (GSVideoTestInternal::VerboseLogging) { // NOLINT
             log_->Info("Waiting PBO fence %tx", frame_index);
         }
     }
@@ -285,7 +289,7 @@ void GSVideoTest::UpdateVideoTextureData(const int tex_index, const int frame_in
 
     assert(vp_[tex_index].initialized());
 
-    if (GSVideoTestInternal::VerboseLogging) {
+    if (GSVideoTestInternal::VerboseLogging) { // NOLINT
         log_->Info("Updating texture %tx", frame_index);
     }
 
