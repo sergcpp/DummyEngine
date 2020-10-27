@@ -25,17 +25,11 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
             if(CMAKE_SIZEOF_VOID_P EQUAL 8)
                 set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x64")
 				set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x64)
-                set(VPX_LIBRARIES $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Debug/x64>
-                                  $<$<CONFIG:MinSizeRel>:${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x64>
-                                  $<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x64>
-                                  $<$<CONFIG:RelWithDebInfo>:${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x64>)
+                set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x64)
             else(CMAKE_SIZEOF_VOID_P EQUAL 8)
                 set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x86")
 				set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x86)
-                set(VPX_LIBRARIES $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Debug/x86>
-                                  $<$<CONFIG:MinSizeRel>:${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x86>
-                                  $<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x86>
-                                  $<$<CONFIG:RelWithDebInfo>:${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x86>)
+                set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x86)
             endif()
             set(SDL2_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/include)
         endif()
