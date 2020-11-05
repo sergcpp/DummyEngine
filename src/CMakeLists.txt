@@ -3,6 +3,8 @@ project(_Dummy)
 
 set(CMAKE_CXX_STANDARD 11)
 
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "" FORCE)
+
 set(SDL_STATIC ON)
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
