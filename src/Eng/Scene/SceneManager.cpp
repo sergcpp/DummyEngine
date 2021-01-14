@@ -20,6 +20,11 @@ extern "C" {
 #include <Ren/SOIL2/stb_image.h>
 }
 
+#ifdef ENABLE_ITT_API
+#include <vtune/ittnotify.h>
+extern __itt_domain *__g_itt_domain;
+#endif
+
 #include "../Utils/Load.h"
 #include "../Utils/ShaderLoader.h"
 
@@ -44,6 +49,14 @@ const int LIGHTMAP_ATLAS_RESX = 2048, LIGHTMAP_ATLAS_RESY = 1024;
 
 const int PROBE_RES = 512;
 const int PROBE_COUNT = 16;
+
+#ifdef ENABLE_ITT_API
+__itt_string_handle *itt_load_scene_str =
+    __itt_string_handle_create("SceneManager::LoadScene");
+__itt_string_handle *itt_serve_str = __itt_string_handle_create("SceneManager::Serve");
+__itt_string_handle *itt_on_loaded_str =
+    __itt_string_handle_create("SceneManager::OnTextureDataLoaded");
+#endif
 } // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {
@@ -91,8 +104,7 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
                            Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads)
     : ren_ctx_(ren_ctx), sh_(sh), snd_ctx_(snd_ctx), ray_renderer_(ray_renderer),
       threads_(threads), cam_(Ren::Vec3f{0.0f, 0.0f, 1.0f}, Ren::Vec3f{0.0f, 0.0f, 0.0f},
-                              Ren::Vec3f{0.0f, 1.0f, 0.0f}),
-      loading_textures_(8), pending_textures_(8) {
+                              Ren::Vec3f{0.0f, 1.0f, 0.0f}) {
     using namespace SceneManagerConstants;
     using namespace SceneManagerInternal;
 
@@ -174,11 +186,28 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
         &status);
     assert(status == Ren::eMeshLoadStatus::CreatedFromData);
 
+    for (TextureRequest &r : pending_textures_) {
+        r.buf_size = 32 * 1024 * 1024;
+        r.buf.reset(new uint8_t[r.buf_size]);
+    }
+    texture_loader_thread_ = std::thread(&SceneManager::TextureLoaderProc, this);
+
     const float pos[] = {0.0f, 0.0f, 0.0f};
     amb_sound_.Init(1.0f, pos);
 }
 
-SceneManager::~SceneManager() { ClearScene(); }
+SceneManager::~SceneManager() {
+    ClearScene();
+
+    {
+        std::unique_lock<std::mutex> lock(texture_requests_lock_);
+        texture_loader_stop_ = true;
+        texture_loader_cnd_.notify_one();
+    }
+
+    assert(texture_loader_thread_.joinable());
+    texture_loader_thread_.join();
+}
 
 void SceneManager::RegisterComponent(uint32_t index, CompStorage *storage,
                                      const std::function<PostLoadFunc> &post_init) {
@@ -188,6 +217,10 @@ void SceneManager::RegisterComponent(uint32_t index, CompStorage *storage,
 
 void SceneManager::LoadScene(const JsObject &js_scene) {
     using namespace SceneManagerConstants;
+
+#ifdef ENABLE_ITT_API
+    __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_load_scene_str);
+#endif
 
     Ren::ILog *log = ren_ctx_.log();
 
@@ -409,6 +442,10 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
     log->Info("SceneManager: RebuildBVH!");
 
     RebuildBVH();
+
+#ifdef ENABLE_ITT_API
+    __itt_task_end(__g_itt_domain);
+#endif
 }
 
 void SceneManager::SaveScene(JsObject &js_scene) {
@@ -1071,7 +1108,9 @@ Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) {
 
     Ren::Tex2DRef ret = ren_ctx_.LoadTexture2D(name_buf, nullptr, 0, p, &status);
     if (status == Ren::eTexLoadStatus::TexCreatedDefault) {
+        std::lock_guard<std::mutex> _(texture_requests_lock_);
         requested_textures_.emplace_back(ret);
+        texture_loader_cnd_.notify_one();
     }
 
     return ret;
@@ -1190,65 +1229,16 @@ Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
         float(res[0]) / DECALS_ATLAS_RESX, float(res[1]) / DECALS_ATLAS_RESY};
 }
 
-void SceneManager::OnTextureDataLoaded(void *arg, void *data, int size) {
-    auto *self = reinterpret_cast<SceneManager *>(arg);
-
-    TextureRequest req;
-    const bool result = self->loading_textures_.Pop(req);
-    assert(result);
-
-    req.data = data;
-    req.data_size = size;
-
-    assert(self->pending_textures_.Empty());
-    self->pending_textures_.Push(req);
-}
-
-void SceneManager::OnTextureDataFailed(void *arg) {
-    auto *self = reinterpret_cast<SceneManager *>(arg);
-
-    TextureRequest req;
-    const bool result = self->loading_textures_.Pop(req);
-    assert(result);
-
-    assert(self->pending_textures_.Empty());
-    self->pending_textures_.Push(req);
-}
-
 void SceneManager::Serve(const int texture_budget) {
-    TextureRequest req;
-    if (pending_textures_.Pop(req)) {
-        const char *tex_name = req.ref->name().c_str();
+    using namespace SceneManagerConstants;
 
-        if (req.data_size) {
-            Ren::Texture2DParams p = req.ref->params();
-            if (strstr(tex_name, ".tga_rgbe")) {
-                p.filter = Ren::eTexFilter::BilinearNoMipmap;
-                p.repeat = Ren::eTexRepeat::ClampToEdge;
-            } else {
-                p.filter = Ren::eTexFilter::Trilinear;
-                if (p.flags & Ren::TexNoRepeat) {
-                    p.repeat = Ren::eTexRepeat::ClampToEdge;
-                } else {
-                    p.repeat = Ren::eTexRepeat::Repeat;
-                }
-            }
+#ifdef ENABLE_ITT_API
+    __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_serve_str);
+#endif
 
-            req.ref->Init(req.data, req.data_size, p, nullptr, ren_ctx_.log());
+    ProcessPendingTextures(texture_budget);
 
-            const int count = int(requested_textures_.size());
-            ren_ctx_.log()->Info("Texture %s loaded (%i left)", tex_name, count);
-        } else {
-            ren_ctx_.log()->Error("Error loading %s", req.ref->name().c_str());
-        }
-    }
-
-    if (loading_textures_.Empty() && !requested_textures_.empty()) {
-        Ren::Tex2DRef ref = requested_textures_.front();
-        requested_textures_.pop_front();
-
-        loading_textures_.Push({ref, nullptr, 0});
-        Sys::LoadAssetComplete(ref->name().c_str(), this, OnTextureDataLoaded,
-                               OnTextureDataFailed);
-    }
+#ifdef ENABLE_ITT_API
+    __itt_task_end(__g_itt_domain);
+#endif
 }

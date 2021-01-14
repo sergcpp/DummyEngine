@@ -84,7 +84,7 @@ class AsyncFileReaderImpl {
         LARGE_INTEGER size;
         GetFileSizeEx(h_file, &size);
 
-        out_size = (size_t)size.QuadPart;
+        out_size = size_t(size.QuadPart);
 
         if (max_size < out_size) {
             ::CloseHandle(h_file);
@@ -111,7 +111,7 @@ class AsyncFileReaderImpl {
                 RequestChunk(h_file, next_request);
             }
 
-            memcpy((char *)out_data + i * size_t(chunk_size_), b, cb);
+            memcpy((char *)(out_data) + i * size_t(chunk_size_), b, cb);
         }
 
         ::CloseHandle(h_file);

@@ -2,10 +2,12 @@
 
 #include <deque>
 #include <memory>
+#include <mutex>
 
 #include <Ray/RendererBase.h>
 #include <Ren/Camera.h>
 #include <Ren/RingBuffer.h>
+#include <Sys/AsyncFileReader.h>
 
 #include "SceneData.h"
 
@@ -121,6 +123,8 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     Ren::Vec4f LoadDecalTexture(const char *name);
 
+    void ProcessPendingTextures(int portion_size);
+
     void RebuildBVH();
     void RemoveNode(uint32_t node_index);
 
@@ -148,14 +152,24 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     struct TextureRequest {
         Ren::Tex2DRef ref;
-        const void *data;
-        int data_size;
+        std::unique_ptr<uint8_t[]> buf;
+        size_t buf_size = 0, data_size = 0;
     };
     std::deque<Ren::Tex2DRef> requested_textures_;
-    Ren::RingBuffer<TextureRequest> loading_textures_, pending_textures_;
 
-    static void OnTextureDataLoaded(void *arg, void *data, int size);
-    static void OnTextureDataFailed(void *arg);
+    static const int MaxSimultaneousRequests = 4;
+
+    std::mutex texture_requests_lock_;
+    std::thread texture_loader_thread_;
+    std::condition_variable texture_loader_cnd_;
+    bool texture_loader_stop_ = false;
+
+    Sys::AsyncFileReader texture_reader_;
+
+    TextureRequest pending_textures_[MaxSimultaneousRequests];
+    int pending_textures_tail_ = 0, pending_textures_head_ = 0;
+
+    void TextureLoaderProc();
 
     std::vector<char> temp_buf;
 

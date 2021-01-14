@@ -628,8 +628,9 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
 
     if (scooter_indices_[0] != 0xffffffff) {
         for (int i = 0; i < 16; i++) {
-            if (scooter_indices_[i] == 0xffffffff)
+            if (scooter_indices_[i] == 0xffffffff) {
                 break;
+            }
 
             SceneObject *scooter = scene_manager_->GetObject(scooter_indices_[i]);
 
@@ -657,8 +658,9 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
     }
 
     for (const uint32_t ndx : sophia_indices_) {
-        if (ndx == 0xffffffff)
+        if (ndx == 0xffffffff) {
             break;
+        }
 
         SceneObject *sophia = scene_manager_->GetObject(ndx);
 

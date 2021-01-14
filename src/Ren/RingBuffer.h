@@ -10,7 +10,7 @@ namespace Ren {
         std::atomic_int head_, tail_;
         int             size_;
 
-        int next(int cur) {
+        int next(int cur) const {
             return (cur + 1) % size_;
         }
     public:
@@ -26,13 +26,23 @@ namespace Ren {
         RingBuffer& operator=(const RingBuffer&) = delete;
 
         bool Empty() const {
-            int tail = tail_.load(std::memory_order_relaxed);
+            const int tail = tail_.load(std::memory_order_relaxed);
             return (tail == head_.load(std::memory_order_acquire));
         }
 
+        bool Full() const {
+            const int head = head_.load(std::memory_order_relaxed);
+            const int next_head = next(head);
+            return next_head == tail_.load(std::memory_order_acquire);
+        }
+
+        int Capacity() const {
+            return size_;
+        }
+
         bool Push(const T& item) {
-            int head = head_.load(std::memory_order_relaxed);
-            int next_head = next(head);
+            const int head = head_.load(std::memory_order_relaxed);
+            const int next_head = next(head);
             if (next_head == tail_.load(std::memory_order_acquire)) {
                 return false;
             }
@@ -43,8 +53,8 @@ namespace Ren {
         }
 
         bool Push(T&& item) {
-            int head = head_.load(std::memory_order_relaxed);
-            int next_head = next(head);
+            const int head = head_.load(std::memory_order_relaxed);
+            const int next_head = next(head);
             if (next_head == tail_.load(std::memory_order_acquire)) {
                 return false;
             }
@@ -55,7 +65,7 @@ namespace Ren {
         }
 
         bool Pop(T& item) {
-            int tail = tail_.load(std::memory_order_relaxed);
+            const int tail = tail_.load(std::memory_order_relaxed);
             if (tail == head_.load(std::memory_order_acquire)) {
                 return false;
             }

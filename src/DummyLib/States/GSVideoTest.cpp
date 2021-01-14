@@ -621,9 +621,9 @@ void GSVideoTest::UpdatePBOWithDecodedFrame_Persistent(const int tex_index,
                 }
             }
         }
+    }
 
 #ifdef ENABLE_ITT_API
-        __itt_task_end(__g_itt_domain);
+    __itt_task_end(__g_itt_domain);
 #endif
-    }
 }

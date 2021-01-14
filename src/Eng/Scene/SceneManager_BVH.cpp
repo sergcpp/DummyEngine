@@ -5,6 +5,11 @@
 #include <Sys/BinaryTree.h>
 #include <Sys/MonoAlloc.h>
 
+#ifdef ENABLE_ITT_API
+#include <vtune/ittnotify.h>
+extern __itt_domain* __g_itt_domain;
+#endif
+
 #include "../Utils/BVHSplit.h"
 
 namespace SceneManagerInternal {
@@ -60,10 +65,16 @@ void update_bbox(const bvh_node_t *nodes, bvh_node_t &node) {
     node.bbox_max =
         Ren::Max(nodes[node.left_child].bbox_max, nodes[node.right_child].bbox_max);
 }
+
+__itt_string_handle* itt_rebuild_bvh_str = __itt_string_handle_create("SceneManager::RebuildBVH");
 } // namespace SceneManagerInternal
 
 void SceneManager::RebuildBVH() {
     using namespace SceneManagerInternal;
+
+#ifdef ENABLE_ITT_API
+    __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_rebuild_bvh_str);
+#endif
 
     auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->Get(0);
     assert(scene_data_.comp_store[CompTransform]->IsSequential());
@@ -208,9 +219,13 @@ void SceneManager::RebuildBVH() {
             }
         }
     }*/
+
+#ifdef ENABLE_ITT_API
+    __itt_task_end(__g_itt_domain);
+#endif
 }
 
-void SceneManager::RemoveNode(uint32_t node_index) {
+void SceneManager::RemoveNode(const uint32_t node_index) {
     using namespace SceneManagerInternal;
 
     bvh_node_t *nodes = scene_data_.nodes.data();
@@ -292,7 +307,7 @@ void SceneManager::UpdateObjects() {
                                              tr.bbox_max_ws[2] <= node.bbox_max[2];
 
                 if (is_fully_inside) {
-                    // Update is not needed (object is inside of node bounds)
+                    // Update is not needed (object is still inside of node bounds)
                     obj.change_mask ^= CompTransformBit;
                 } else {
                     // Object is out of node bounds, remove node and re-insert it later
@@ -329,7 +344,7 @@ void SceneManager::UpdateObjects() {
                             Sys::MonoAlloc<insert_candidate_t>>
                 candidates(insert_candidate_compare, m_alloc);
 
-            float node_cost = surface_area(new_node);
+            const float node_cost = surface_area(new_node);
 
             uint32_t best_candidate = scene_data_.root_node;
             float best_cost = surface_area_of_union(new_node, nodes[best_candidate]);
@@ -349,7 +364,7 @@ void SceneManager::UpdateObjects() {
                     parent = nodes[parent].parent;
                 }
 
-                float total_cost = c.direct_cost + inherited_cost;
+                const float total_cost = c.direct_cost + inherited_cost;
                 if (total_cost < best_cost) {
                     best_candidate = c.node_index;
                     best_cost = total_cost;
@@ -374,8 +389,8 @@ void SceneManager::UpdateObjects() {
                 }
             }
 
-            uint32_t old_parent = nodes[best_candidate].parent;
-            uint32_t new_parent = free_nodes[free_nodes_pos++];
+            const uint32_t old_parent = nodes[best_candidate].parent;
+            const uint32_t new_parent = free_nodes[free_nodes_pos++];
 
             nodes[new_parent].prim_count = 0;
             nodes[new_parent].parent = old_parent;

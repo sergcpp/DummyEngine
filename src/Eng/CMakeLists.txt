@@ -95,6 +95,7 @@ set(SCENE_SOURCES   Scene/__cam_rig.inl
                     Scene/SceneManager_ASS_Tex.cpp
                     Scene/SceneManager_BVH.cpp
                     Scene/SceneManager_PT.cpp
+                    Scene/SceneManager_Tex.cpp
                     Scene/ProbeStorage.h)
 
 set(GRAPH_SOURCES   Renderer/Graph/GraphBuilder.h
@@ -257,6 +258,6 @@ list(APPEND ALL_SOURCE_FILES _Eng.cpp _Eng_Renderer.cpp _Eng_Gui.cpp _Eng_Scene.
 source_group("src" FILES _Eng.cpp _Eng_Renderer.cpp _Eng_Gui.cpp _Eng_Scene.cpp _Eng_Utils.cpp)
 
 add_library(Eng STATIC ${ALL_SOURCE_FILES})
-target_link_libraries(Eng Net Ray Ren Snd Sys astc ${VPX_LIB})
+target_link_libraries(Eng Net Ray Ren Snd Sys astc libittnotify ${VPX_LIB})
 
 add_subdirectory(_tests)

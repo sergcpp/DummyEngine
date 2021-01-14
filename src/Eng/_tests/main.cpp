@@ -1,6 +1,11 @@
 
 #include <cstdio>
 
+#ifdef ENABLE_ITT_API
+#include <vtune/ittnotify.h>
+__itt_domain* __g_itt_domain = __itt_domain_create("Global");
+#endif
+
 //void test_object_pool();
 void test_cmdline();
 void test_unicode();
