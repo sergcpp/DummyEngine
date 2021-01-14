@@ -17,7 +17,7 @@ class ThreadWorker {
     bool Stop();
 
     template <class F, class... Args>
-    auto AddTask(F &&f, Args &&...args)
+    auto AddTask(F &&f, Args &&... args)
         -> std::future<typename std::result_of<F(Args...)>::type>;
 
   private:
@@ -64,7 +64,7 @@ inline bool ThreadWorker::Stop() {
 }
 
 template <class F, class... Args>
-auto ThreadWorker::AddTask(F &&f, Args &&...args)
+auto ThreadWorker::AddTask(F &&f, Args &&... args)
     -> std::future<typename std::result_of<F(Args...)>::type> {
     using return_type = typename std::result_of<F(Args...)>::type;
 
@@ -103,7 +103,7 @@ class ThreadWorker {
 
     virtual ~ThreadWorker() {}
 
-    template <class F, class... Args> void AddTask(F &&f, Args &&...args) { f(args...); }
+    template <class F, class... Args> void AddTask(F &&f, Args &&... args) { f(args...); }
 };
 } // namespace Sys
 #endif // __EMSCRIPTEN__

@@ -26,6 +26,7 @@ Sys::AsyncFileReader g_file_reader;
 void Sys::LoadAssetComplete(const char *url, void *arg, onload_func onload, onerror_func onerror) {
     std::string url_str(url);
     g_worker->AddTask([url_str, arg, onload, onerror] {
+
 #if defined(IMITATE_LONG_LOAD)
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 #endif
@@ -62,7 +63,7 @@ void Sys::LoadAssetComplete(const char *url, void *arg, onload_func onload, oner
 
         if (success) {
             if (onload) {
-                onload(arg, &g_file_read_buffer[0], (int)file_size);
+                onload(arg, &g_file_read_buffer[0], int(file_size));
             }
         } else {
             if (onerror) {
