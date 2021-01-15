@@ -159,20 +159,20 @@ uint32_t TextureHandleCounter = 0;
 bool IsMainThread();
 } // namespace Ren
 
-Ren::Texture2D::Texture2D(const char *name, const Texture2DParams &p, ILog *log)
+Ren::Texture2D::Texture2D(const char *name, const Tex2DParams &p, ILog *log)
     : name_(name) {
     Init(p, log);
 }
 
 Ren::Texture2D::Texture2D(const char *name, const void *data, const int size,
-                          const Texture2DParams &p, eTexLoadStatus *load_status,
+                          const Tex2DParams &p, eTexLoadStatus *load_status,
                           ILog *log)
     : name_(name) {
     Init(data, size, p, load_status, log);
 }
 
 Ren::Texture2D::Texture2D(const char *name, const void *data[6], const int size[6],
-                          const Texture2DParams &p, eTexLoadStatus *load_status,
+                          const Tex2DParams &p, eTexLoadStatus *load_status,
                           ILog *log)
     : name_(name) {
     Init(data, size, p, load_status, log);
@@ -202,18 +202,18 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Texture2D::Init(const Texture2DParams &params, ILog *log) {
+void Ren::Texture2D::Init(const Tex2DParams &params, ILog *log) {
     assert(IsMainThread());
     const void *null = nullptr;
     InitFromRAWData(null, params, log);
     ready_ = true;
 }
 
-void Ren::Texture2D::Init(const void *data, int size, const Texture2DParams &p,
+void Ren::Texture2D::Init(const void *data, int size, const Tex2DParams &p,
                           eTexLoadStatus *load_status, ILog *log) {
     assert(IsMainThread());
     if (!data) {
-        Texture2DParams _p = p;
+        Tex2DParams _p = p;
         _p.w = _p.h = 1;
         _p.format = eTexFormat::RawRGBA8888;
         _p.filter = eTexFilter::NoFilter;
@@ -245,13 +245,13 @@ void Ren::Texture2D::Init(const void *data, int size, const Texture2DParams &p,
 }
 
 void Ren::Texture2D::Init(const void *data[6], const int size[6],
-                          const Texture2DParams &p, eTexLoadStatus *load_status,
+                          const Tex2DParams &p, eTexLoadStatus *load_status,
                           ILog *log) {
     assert(IsMainThread());
     if (!data) {
         const void *_data[6] = {p.fallback_color, p.fallback_color, p.fallback_color,
                                 p.fallback_color, p.fallback_color, p.fallback_color};
-        Texture2DParams _p = p;
+        Tex2DParams _p = p;
         _p.w = _p.h = 1;
         _p.format = eTexFormat::RawRGBA8888;
         _p.filter = eTexFilter::NoFilter;
@@ -296,7 +296,7 @@ void Ren::Texture2D::Free() {
     }
 }
 
-void Ren::Texture2D::InitFromRAWData(const void *data, const Texture2DParams &p,
+void Ren::Texture2D::InitFromRAWData(const void *data, const Tex2DParams &p,
                                      ILog *log) {
     Free();
 
@@ -367,13 +367,13 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Texture2DParams &p,
     CheckError("create texture", log);
 }
 
-void Ren::Texture2D::InitFromTGAFile(const void *data, const Texture2DParams &p,
+void Ren::Texture2D::InitFromTGAFile(const void *data, const Tex2DParams &p,
                                      ILog *log) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
     std::unique_ptr<uint8_t[]> image_data = ReadTGAFile(data, w, h, format);
 
-    Texture2DParams _p = p;
+    Tex2DParams _p = p;
     _p.w = w;
     _p.h = h;
     _p.format = format;
@@ -381,7 +381,7 @@ void Ren::Texture2D::InitFromTGAFile(const void *data, const Texture2DParams &p,
     InitFromRAWData(image_data.get(), _p, log);
 }
 
-void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data, const Texture2DParams &p,
+void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data, const Tex2DParams &p,
                                           ILog *log) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
@@ -389,7 +389,7 @@ void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data, const Texture2DParam
 
     std::unique_ptr<uint16_t[]> fp_data = ConvertRGBE_to_RGB16F(image_data.get(), w, h);
 
-    Texture2DParams _p = p;
+    Tex2DParams _p = p;
     _p.w = w;
     _p.h = h;
     _p.format = eTexFormat::RawRGB16F;
@@ -398,7 +398,7 @@ void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data, const Texture2DParam
 }
 
 void Ren::Texture2D::InitFromDDSFile(const void *data, const int size,
-                                     const Texture2DParams &p, ILog *log) {
+                                     const Tex2DParams &p, ILog *log) {
     Free();
 
     GLuint tex_id;
@@ -471,7 +471,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size,
 }
 
 void Ren::Texture2D::InitFromPNGFile(const void *data, const int size,
-                                     const Texture2DParams &p, ILog *log) {
+                                     const Tex2DParams &p, ILog *log) {
     Free();
 
     GLuint tex_id;
@@ -536,7 +536,7 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, const int size,
 }
 
 void Ren::Texture2D::InitFromKTXFile(const void *data, const int size,
-                                     const Texture2DParams &p, ILog *log) {
+                                     const Tex2DParams &p, ILog *log) {
     Free();
 
     GLuint tex_id;
@@ -606,7 +606,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size,
     SetFilter(p.filter, p.repeat, p.lod_bias);
 }
 
-void Ren::Texture2D::InitFromRAWData(const void *data[6], const Texture2DParams &p,
+void Ren::Texture2D::InitFromRAWData(const void *data[6], const Tex2DParams &p,
                                      ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
@@ -685,7 +685,7 @@ void Ren::Texture2D::InitFromRAWData(const void *data[6], const Texture2DParams 
     }
 }
 
-void Ren::Texture2D::InitFromTGAFile(const void *data[6], const Texture2DParams &p,
+void Ren::Texture2D::InitFromTGAFile(const void *data[6], const Tex2DParams &p,
                                      ILog *log) {
     std::unique_ptr<uint8_t[]> image_data[6];
     const void *_image_data[6] = {};
@@ -698,7 +698,7 @@ void Ren::Texture2D::InitFromTGAFile(const void *data[6], const Texture2DParams 
         }
     }
 
-    Texture2DParams _p = p;
+    Tex2DParams _p = p;
     _p.w = w;
     _p.h = h;
     _p.format = format;
@@ -706,7 +706,7 @@ void Ren::Texture2D::InitFromTGAFile(const void *data[6], const Texture2DParams 
     InitFromRAWData(_image_data, _p, log);
 }
 
-void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data[6], const Texture2DParams &p,
+void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data[6], const Tex2DParams &p,
                                           ILog *log) {
     std::unique_ptr<uint16_t[]> image_data[6];
     const void *_image_data[6] = {};
@@ -718,7 +718,7 @@ void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data[6], const Texture2DPa
         }
     }
 
-    Texture2DParams _p = p;
+    Tex2DParams _p = p;
     _p.w = w;
     _p.h = h;
     _p.format = Ren::eTexFormat::RawRGB16F;
@@ -727,7 +727,7 @@ void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data[6], const Texture2DPa
 }
 
 void Ren::Texture2D::InitFromPNGFile(const void *data[6], const int size[6],
-                                     const Texture2DParams &p, ILog *log) {
+                                     const Tex2DParams &p, ILog *log) {
     Free();
 
     GLuint tex_id;
@@ -760,7 +760,7 @@ void Ren::Texture2D::InitFromPNGFile(const void *data[6], const int size[6],
 }
 
 void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6],
-                                     const Texture2DParams &p, ILog *log) {
+                                     const Tex2DParams &p, ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
 
@@ -830,7 +830,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6],
 }
 
 void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6],
-                                     const Texture2DParams &p, ILog *log) {
+                                     const Tex2DParams &p, ILog *log) {
     (void)size;
 
     Free();

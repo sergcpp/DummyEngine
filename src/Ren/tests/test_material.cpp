@@ -136,7 +136,7 @@ void test_material() {
 
         auto on_texture_needed = [&test](const char *name, uint32_t flags) {
             Ren::eTexLoadStatus status;
-            Ren::Texture2DParams p;
+            Ren::Tex2DParams p;
             return test.LoadTexture2D(name, nullptr, 0, p, &status);
         };
 

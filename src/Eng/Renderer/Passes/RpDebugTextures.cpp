@@ -8,15 +8,16 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-void RpDebugTextures::Setup(
-    Graph::RpBuilder &builder, const ViewState *view_state, const DrawList &list,
-    int orphan_index, Ren::TexHandle depth_tex, const Ren::Tex1DRef &cells_tbo,
-    const Ren::Tex1DRef &items_tbo, const Ren::Tex2DRef &color_tex,
-    const Ren::Tex2DRef &spec_tex, const Ren::Tex2DRef &norm_tex,
-    const Ren::Tex2DRef &down_tex_4x, const Ren::Tex2DRef &reduced_tex,
-    const Ren::Tex2DRef &blur_tex, const Ren::Tex2DRef &ssao_tex,
-    const Ren::Tex2DRef &shadow_tex, Graph::ResourceHandle in_shared_data_buf,
-    Ren::TexHandle output_tex) {
+void RpDebugTextures::Setup(RpBuilder &builder, const ViewState *view_state,
+                            const DrawList &list, const int orphan_index,
+                            Ren::TexHandle depth_tex, const Ren::Tex2DRef &color_tex,
+                            const Ren::Tex2DRef &spec_tex, const Ren::Tex2DRef &norm_tex,
+                            const Ren::Tex2DRef &down_tex_4x,
+                            const Ren::Tex2DRef &reduced_tex,
+                            const Ren::Tex2DRef &blur_tex, const Ren::Tex2DRef &ssao_tex,
+                            const Ren::Tex2DRef &shadow_tex,
+                            Ren::TexHandle output_tex) {
+    orphan_index_ = orphan_index;
     render_flags_ = list.render_flags;
     view_state_ = view_state;
     draw_cam_ = &list.draw_cam;
@@ -44,9 +45,6 @@ void RpDebugTextures::Setup(
     ssao_tex_ = ssao_tex;
     shadow_tex_ = shadow_tex;
 
-    cells_tbo_ = cells_tbo;
-    items_tbo_ = items_tbo;
-
     shadow_lists_ = list.shadow_lists;
     shadow_regions_ = list.shadow_regions;
     cached_shadow_regions_ = list.cached_shadow_regions;
@@ -55,17 +53,21 @@ void RpDebugTextures::Setup(
     nodes_count_ = uint32_t(list.temp_nodes.size());
     root_node_ = list.root_index;
 
-    input_[0] = builder.ReadBuffer(in_shared_data_buf);
-    input_count_ = 1;
+    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
+    input_[1] = builder.ReadBuffer(CELLS_BUF);
+    input_[2] = builder.ReadBuffer(ITEMS_BUF);
+    input_count_ = 3;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpDebugTextures::Execute(Graph::RpBuilder &builder) {
+void RpDebugTextures::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(input_[1]);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(input_[2]);
 
     Ren::RastState rast_state;
     rast_state.cull_face.enabled = true;
@@ -112,9 +114,9 @@ void RpDebugTextures::Execute(Graph::RpBuilder &builder) {
         }
 
         bindings[1] = {Ren::eBindTarget::TexBuf, REN_CELLS_BUF_SLOT,
-                       cells_tbo_->handle()};
+                       cells_buf.tbos[orphan_index_]->handle()};
         bindings[2] = {Ren::eBindTarget::TexBuf, REN_ITEMS_BUF_SLOT,
-                       items_tbo_->handle()};
+                       items_buf.tbos[orphan_index_]->handle()};
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {output_fb_.id(), 0}, blit_prog,
                             bindings, 3, uniforms, 4);
@@ -169,16 +171,16 @@ void RpDebugTextures::Execute(Graph::RpBuilder &builder) {
             nodes_buf_ = builder.ctx().CreateBuffer(
                 "Nodes buf", Ren::eBufferType::Texture, Ren::eBufferAccessType::Draw,
                 Ren::eBufferAccessFreq::Dynamic, buf_size);
-            const uint32_t off = nodes_buf_->Alloc(buf_size, nodes_);
+            const uint32_t off = nodes_buf_->AllocRegion(buf_size, nodes_);
             assert(off == 0);
 
             nodes_tbo_ = builder.ctx().CreateTexture1D(
                 "Nodes TBO", nodes_buf_, Ren::eTexFormat::RawRGBA32F, 0, buf_size);
         } else {
-            const bool res = nodes_buf_->Free(0);
+            const bool res = nodes_buf_->FreeRegion(0);
             assert(res);
 
-            const uint32_t off = nodes_buf_->Alloc(buf_size, nodes_);
+            const uint32_t off = nodes_buf_->AllocRegion(buf_size, nodes_);
             assert(off == 0);
         }
 
@@ -199,6 +201,7 @@ void RpDebugTextures::Execute(Graph::RpBuilder &builder) {
 
         PrimDraw::Binding bindings[3];
         bindings[0] = {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
+                       orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
                        unif_shared_data_buf.ref->handle()};
         bindings[1] = {view_state_->is_multisampled ? Ren::eBindTarget::Tex2DMs
                                                     : Ren::eBindTarget::Tex2D,
@@ -248,7 +251,7 @@ void RpDebugTextures::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         assert(blit_depth_prog_->ready());
 
         { // temp 256x128 texture
-            Ren::Texture2DParams params;
+            Ren::Tex2DParams params;
             params.w = 256;
             params.h = 128;
             params.format = Ren::eTexFormat::RawRGBA8888;

@@ -220,7 +220,7 @@ bool Ren::Buffer::Free_Node(int i) {
     return true;
 }
 
-uint32_t Ren::Buffer::Alloc(uint32_t req_size, const void *init_data) {
+uint32_t Ren::Buffer::AllocRegion(uint32_t req_size, const void *init_data) {
     const int i = Alloc_Recursive(0, req_size);
     if (i != -1) {
         Node &n = nodes_[i];
@@ -234,11 +234,11 @@ uint32_t Ren::Buffer::Alloc(uint32_t req_size, const void *init_data) {
         return n.offset;
     } else {
         Resize(size_ + req_size);
-        return Alloc(req_size);
+        return AllocRegion(req_size);
     }
 }
 
-bool Ren::Buffer::Free(uint32_t offset) {
+bool Ren::Buffer::FreeRegion(uint32_t offset) {
     const int i = Find_Recursive(0, offset);
     return Free_Node(i);
 }

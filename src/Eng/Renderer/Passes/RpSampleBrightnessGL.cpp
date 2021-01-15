@@ -63,7 +63,7 @@ void RpSampleBrightness::DestroyPBO() {
     }
 }
 
-void RpSampleBrightness::Execute(Graph::RpBuilder &builder) {
+void RpSampleBrightness::Execute(RpBuilder &builder) {
     using namespace RpSampleBrightnessInternal;
 
     LazyInit(builder.ctx(), builder.sh());

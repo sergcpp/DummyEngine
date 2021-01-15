@@ -5,7 +5,7 @@
 class PrimDraw;
 struct ViewState;
 
-class RpDOF : public Graph::RenderPassBase {
+class RpDOF : public RenderPassBase {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -20,6 +20,7 @@ class RpDOF : public Graph::RenderPassBase {
         down_tex_coc_[2], blur_temp_4x_[2];
     Ren::TexHandle output_tex_;
     const ViewState *view_state_ = nullptr;
+    int orphan_index_ = -1;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
@@ -29,14 +30,14 @@ class RpDOF : public Graph::RenderPassBase {
   public:
     RpDOF(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(Graph::RpBuilder &builder, const Ren::Camera *draw_cam,
-               const ViewState *view_state, Ren::TexHandle color_tex,
+    void Setup(RpBuilder &builder, const Ren::Camera *draw_cam,
+               const ViewState *view_state, int orphan_index, Ren::TexHandle color_tex,
                Ren::TexHandle depth_tex, Ren::TexHandle down_buf_4x,
                Ren::TexHandle down_depth_2x, Ren::TexHandle down_depth_4x,
                Ren::TexHandle down_tex_coc[2], Ren::TexHandle blur_temp_4x[2],
-               Ren::TexHandle dof_buf, Graph::ResourceHandle in_shared_data_buf,
+               Ren::TexHandle dof_buf,
                Ren::TexHandle output_tex);
-    void Execute(Graph::RpBuilder &builder) override;
+    void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "DOF"; }
 };

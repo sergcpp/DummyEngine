@@ -5,6 +5,11 @@
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 
+#ifdef ENABLE_ITT_API
+#include <vtune/ittnotify.h>
+extern __itt_domain *__g_itt_domain;
+#endif
+
 namespace RendererInternal {
 bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]) {
     return p[0] > bbox_min[0] && p[0] < bbox_max[0] && p[1] > bbox_min[1] &&
@@ -61,6 +66,10 @@ uint32_t __push_skeletal_mesh(uint32_t skinned_buf_vtx_offset, const AnimState &
                               const Ren::Mesh *mesh, DrawList &list);
 void __init_wind_params(const VegState &vs, const Environment &env,
                         const Ren::Mat4f &object_from_world, InstanceData &instance);
+
+#ifdef ENABLE_ITT_API
+__itt_string_handle *itt_gather_str = __itt_string_handle_create("GatherDrawables");
+#endif
 } // namespace RendererInternal
 
 #define REN_UNINITIALIZE_X2(t)                                                           \
@@ -88,6 +97,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                DrawList &list) {
     using namespace RendererInternal;
     using namespace Ren;
+
+#ifdef ENABLE_ITT_API
+    __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_gather_str);
+#endif
 
     const uint64_t iteration_start = Sys::GetTimeUs();
 
@@ -218,8 +231,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                 if ((obj.comp_mask & occluder_flags) == occluder_flags) {
                     const Transform &tr = transforms[obj.components[CompTransform]];
 
-                    // Node has slightly enlarged bounds, so we need to check object's
-                    // bounding box here
+                    // Node has slightly enlarged bounds, so we still need to check
+                    // object's bounding box here
                     if (!skip_check &&
                         list.draw_cam.CheckFrustumVisibility(
                             tr.bbox_min_ws, tr.bbox_max_ws) == eVisResult::Invisible) {
@@ -1695,6 +1708,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
         list.frontend_info.items_assignment_time_us =
             uint32_t(iteration_end - items_assignment_start);
     }
+
+#ifdef ENABLE_ITT_API
+    __itt_task_end(__g_itt_domain);
+#endif
 }
 
 void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub_frustums,

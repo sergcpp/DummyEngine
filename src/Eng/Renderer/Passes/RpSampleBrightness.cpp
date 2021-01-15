@@ -1,6 +1,6 @@
 #include "RpSampleBrightness.h"
 
-void RpSampleBrightness::Setup(Graph::RpBuilder &builder, Ren::TexHandle tex_to_sample,
+void RpSampleBrightness::Setup(RpBuilder &builder, Ren::TexHandle tex_to_sample,
                                Ren::TexHandle reduce_tex) {
     tex_to_sample_ = tex_to_sample;
     reduce_tex_ = reduce_tex;

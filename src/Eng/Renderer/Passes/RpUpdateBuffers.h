@@ -2,7 +2,7 @@
 
 #include "../Graph/GraphBuilder.h"
 
-class RpUpdateBuffers : public Graph::RenderPassBase {
+class RpUpdateBuffers : public RenderPassBase {
     int orphan_index_ = 0;
 
     // temp data (valid only between Setup and Execute calls)
@@ -25,23 +25,9 @@ class RpUpdateBuffers : public Graph::RenderPassBase {
     const ViewState *view_state_ = nullptr;
 
   public:
-    void Setup(Graph::RpBuilder &builder, const DrawList &list,
-               const ViewState *view_state, int orphan_index, void **fences,
-               Graph::ResourceHandle in_skin_transforms_buf,
-               Graph::ResourceHandle in_shape_keys_buf,
-               Graph::ResourceHandle in_instances_buf, Graph::ResourceHandle in_cells_buf,
-               Graph::ResourceHandle in_lights_buf, Graph::ResourceHandle in_decals_buf,
-               Graph::ResourceHandle in_items_buf,
-               Graph::ResourceHandle in_shared_data_buf);
-    void Execute(Graph::RpBuilder &builder) override;
-
-    Graph::ResourceHandle out_skin_transforms_buf() const { return output_[0]; }
-    Graph::ResourceHandle out_shape_keys_buf() const { return output_[1]; }
-    Graph::ResourceHandle out_instances_buf() const { return output_[2]; }
-    Graph::ResourceHandle out_cells_buf() const { return output_[3]; }
-    Graph::ResourceHandle out_lights_buf() const { return output_[4]; }
-    Graph::ResourceHandle out_items_buf() const { return output_[5]; }
-    Graph::ResourceHandle out_shared_data_buf() const { return output_[7]; }
+    void Setup(RpBuilder &builder, const DrawList &list,
+               const ViewState *view_state, int orphan_index, void **fences);
+    void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "UPDATE BUFFERS"; }
 };

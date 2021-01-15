@@ -27,7 +27,7 @@ void _adjust_bias_and_viewport(Ren::RastState &rast_state, const ShadowList &sh_
 }
 } // namespace RpShadowMapsInternal
 
-void RpShadowMaps::DrawShadowMaps(Ren::Context &ctx) {
+void RpShadowMaps::DrawShadowMaps(RpBuilder &builder) {
     using namespace RpShadowMapsInternal;
 
     Ren::RastState rast_state;
@@ -43,8 +43,13 @@ void RpShadowMaps::DrawShadowMaps(Ren::Context &ctx) {
 
     rast_state.Apply();
 
+    Ren::Context &ctx = builder.ctx();
+
+    RpAllocBuf &instances_buf = builder.GetReadBuffer(input_[0]);
+    assert(instances_buf.tbos[orphan_index_]);
+
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT,
-                               GLuint(instances_tbo_->id()));
+                               GLuint(instances_buf.tbos[orphan_index_]->id()));
 
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_fb_.id());
 

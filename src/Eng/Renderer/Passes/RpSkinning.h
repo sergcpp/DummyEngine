@@ -5,7 +5,7 @@
 
 struct DrawList;
 
-class RpSkinning : public Graph::RenderPassBase {
+class RpSkinning : public RenderPassBase {
     int orphan_index_ = 0;
 
     // lazily initialized data
@@ -20,11 +20,10 @@ class RpSkinning : public Graph::RenderPassBase {
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
   public:
-    void Setup(Graph::RpBuilder &builder, const DrawList &list, int orphan_index,
+    void Setup(RpBuilder &builder, const DrawList &list, int orphan_index,
                Ren::BufferRef vtx_buf1, Ren::BufferRef vtx_buf2, Ren::BufferRef delta_buf,
-               Ren::BufferRef skin_vtx_buf, Graph::ResourceHandle in_skin_transforms_buf,
-               Graph::ResourceHandle in_shape_keys_buf);
-    void Execute(Graph::RpBuilder &builder) override;
+               Ren::BufferRef skin_vtx_buf);
+    void Execute(RpBuilder &builder) override;
 
-    const char* name() const override { return "SKINNING"; }
+    const char *name() const override { return "SKINNING"; }
 };

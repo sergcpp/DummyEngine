@@ -5,7 +5,7 @@
 class PrimDraw;
 struct ViewState;
 
-class RpBlur : public Graph::RenderPassBase {
+class RpBlur : public RenderPassBase {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -24,10 +24,10 @@ class RpBlur : public Graph::RenderPassBase {
   public:
     RpBlur(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(Graph::RpBuilder &builder, const ViewState *view_state,
+    void Setup(RpBuilder &builder, const ViewState *view_state,
                Ren::TexHandle down_buf_4x, Ren::TexHandle blur_temp_4x,
-               Graph::ResourceHandle in_shared_data_buf, Ren::TexHandle output_tex);
-    void Execute(Graph::RpBuilder &builder) override;
+               Ren::TexHandle output_tex);
+    void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "BLUR PASS"; }
 };

@@ -1,32 +1,30 @@
 #include "RpShadowMaps.h"
 
 #include "../../Utils/ShaderLoader.h"
+#include "../Renderer_Names.h"
 #include "../Renderer_Structs.h"
 
-void RpShadowMaps::Setup(Graph::RpBuilder &builder, const DrawList &list,
-                         int orphan_index, Ren::TexHandle shadow_tex,
-                         Graph::ResourceHandle in_instances_buf,
-                         Ren::Tex1DRef instances_tbo) {
+void RpShadowMaps::Setup(RpBuilder &builder, const DrawList &list,
+                         const int orphan_index, Ren::TexHandle shadow_tex) {
     orphan_index_ = orphan_index;
 
     shadow_tex_ = shadow_tex;
-    instances_tbo_ = std::move(instances_tbo);
 
     shadow_batches_ = list.shadow_batches;
     shadow_batch_indices_ = list.shadow_batch_indices;
     shadow_lists_ = list.shadow_lists;
     shadow_regions_ = list.shadow_regions;
 
-    input_[0] = builder.ReadBuffer(in_instances_buf);
+    input_[0] = builder.ReadBuffer(INSTANCES_BUF);
     input_count_ = 1;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpShadowMaps::Execute(Graph::RpBuilder &builder) {
+void RpShadowMaps::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
-    DrawShadowMaps(builder.ctx());
+    DrawShadowMaps(builder);
 }
 
 void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {

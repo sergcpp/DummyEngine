@@ -1,23 +1,25 @@
 #include "RpDownDepth.h"
 
 #include "../../Utils/ShaderLoader.h"
+#include "../Renderer_Names.h"
 #include "../Renderer_Structs.h"
 
-void RpDownDepth::Setup(Graph::RpBuilder &builder, const ViewState *view_state,
-                        Ren::TexHandle depth_tex, Ren::TexHandle down_depth_2x_tex,
-                        Graph::ResourceHandle in_shared_data_buf) {
+void RpDownDepth::Setup(RpBuilder &builder, const ViewState *view_state,
+                        const int orphan_index, Ren::TexHandle depth_tex,
+                        Ren::TexHandle down_depth_2x_tex) {
     depth_tex_ = depth_tex;
     down_depth_2x_tex_ = down_depth_2x_tex;
     view_state_ = view_state;
+    orphan_index_ = orphan_index;
 
-    input_[0] = builder.ReadBuffer(in_shared_data_buf);
+    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
     input_count_ = 1;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpDownDepth::Execute(Graph::RpBuilder &builder) {
+void RpDownDepth::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
     Ren::RastState rast_state;
@@ -32,14 +34,15 @@ void RpDownDepth::Execute(Graph::RpBuilder &builder) {
                                         ? blit_down_depth_ms_prog_.get()
                                         : blit_down_depth_prog_.get();
 
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
 
-    const PrimDraw::Binding bindings[] = {{view_state_->is_multisampled
-                                               ? Ren::eBindTarget::Tex2DMs
-                                               : Ren::eBindTarget::Tex2D,
-                                           REN_BASE0_TEX_SLOT, depth_tex_},
-                                          {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
-                                           unif_shared_data_buf.ref->handle()}};
+    const PrimDraw::Binding bindings[] = {
+        {view_state_->is_multisampled ? Ren::eBindTarget::Tex2DMs
+                                      : Ren::eBindTarget::Tex2D,
+         REN_BASE0_TEX_SLOT, depth_tex_},
+        {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
+         orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
+         unif_shared_data_buf.ref->handle()}};
 
     const PrimDraw::Uniform uniforms[] = {
         {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]),

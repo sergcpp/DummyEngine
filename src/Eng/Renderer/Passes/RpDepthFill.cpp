@@ -1,34 +1,31 @@
 #include "RpDepthFill.h"
 
 #include "../../Utils/ShaderLoader.h"
+#include "../Renderer_Names.h"
 #include "../Renderer_Structs.h"
 
-void RpDepthFill::Setup(Graph::RpBuilder &builder, const DrawList &list,
+void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list,
                         const ViewState *view_state, int orphan_index,
-                        Ren::TexHandle depth_tex, Ren::TexHandle velocity_tex,
-                        Graph::ResourceHandle in_instances_buf,
-                        Ren::Tex1DRef instances_tbo,
-                        Graph::ResourceHandle in_shared_data_buf) {
+                        Ren::TexHandle depth_tex, Ren::TexHandle velocity_tex) {
     orphan_index_ = orphan_index;
 
     depth_tex_ = depth_tex;
     velocity_tex_ = velocity_tex;
     view_state_ = view_state;
-    instances_tbo_ = std::move(instances_tbo);
 
     render_flags_ = list.render_flags;
     zfill_batch_indices = list.zfill_batch_indices;
     zfill_batches = list.zfill_batches;
 
-    input_[0] = builder.ReadBuffer(in_instances_buf);
-    input_[1] = builder.ReadBuffer(in_shared_data_buf);
+    input_[0] = builder.ReadBuffer(INSTANCES_BUF);
+    input_[1] = builder.ReadBuffer(SHARED_DATA_BUF);
     input_count_ = 2;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpDepthFill::Execute(Graph::RpBuilder &builder) {
+void RpDepthFill::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
     DrawDepth(builder);
 }
@@ -107,7 +104,7 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         assert(fillz_skin_transp_vel_mov_prog_->ready());
 
         { // dummy 1px texture
-            Ren::Texture2DParams p;
+            Ren::Tex2DParams p;
             p.w = p.h = 1;
             p.format = Ren::eTexFormat::RawRGBA8888;
             p.filter = Ren::eTexFilter::Bilinear;

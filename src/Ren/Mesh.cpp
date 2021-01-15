@@ -282,17 +282,17 @@ void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t
 
     attribs_buf1_.buf = vertex_buf1;
     attribs_buf1_.size = vtx_count * sizeof(packed_vertex_data1_t);
-    attribs_buf1_.offset = vertex_buf1->Alloc(attribs_buf1_.size, _vtx_data1);
+    attribs_buf1_.offset = vertex_buf1->AllocRegion(attribs_buf1_.size, _vtx_data1);
 
     attribs_buf2_.buf = vertex_buf2;
     attribs_buf2_.size = vtx_count * sizeof(packed_vertex_data2_t);
-    attribs_buf2_.offset = vertex_buf2->Alloc(attribs_buf2_.size, nullptr);
+    attribs_buf2_.offset = vertex_buf2->AllocRegion(attribs_buf2_.size, nullptr);
 
     assert(attribs_buf1_.offset == attribs_buf2_.offset && "Offsets do not match!");
 
     indices_buf_.buf = index_buf;
     indices_buf_.size = ndx_count * sizeof(uint32_t);
-    indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices);
+    indices_buf_.offset = index_buf->AllocRegion(indices_buf_.size, indices);
 
     if (load_status) {
         (*load_status) = Ren::eMeshLoadStatus::CreatedFromData;
@@ -427,16 +427,16 @@ void Ren::Mesh::InitMeshSimple(std::istream &data,
 
     attribs_buf1_.buf = vertex_buf1;
     attribs_buf1_.size = vertex_count * sizeof(packed_vertex_data1_t);
-    attribs_buf1_.offset = vertex_buf1->Alloc(attribs_buf1_.size, vertices_data1.get());
+    attribs_buf1_.offset = vertex_buf1->AllocRegion(attribs_buf1_.size, vertices_data1.get());
 
     attribs_buf2_.buf = vertex_buf2;
     attribs_buf2_.size = vertex_count * sizeof(packed_vertex_data2_t);
-    attribs_buf2_.offset = vertex_buf2->Alloc(attribs_buf2_.size, vertices_data2.get());
+    attribs_buf2_.offset = vertex_buf2->AllocRegion(attribs_buf2_.size, vertices_data2.get());
 
     assert(attribs_buf1_.offset == attribs_buf2_.offset && "Offsets do not match!");
 
     indices_buf_.buf = index_buf;
-    indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices_.get());
+    indices_buf_.offset = index_buf->AllocRegion(indices_buf_.size, indices_.get());
 
     ready_ = true;
 }
@@ -537,16 +537,16 @@ void Ren::Mesh::InitMeshColored(std::istream &data,
 
     attribs_buf1_.buf = vertex_buf1;
     attribs_buf1_.size = vertex_count * sizeof(packed_vertex_data1_t);
-    attribs_buf1_.offset = vertex_buf1->Alloc(attribs_buf1_.size, vertices_data1.get());
+    attribs_buf1_.offset = vertex_buf1->AllocRegion(attribs_buf1_.size, vertices_data1.get());
 
     attribs_buf2_.buf = vertex_buf2;
     attribs_buf2_.size = vertex_count * sizeof(packed_vertex_data2_t);
-    attribs_buf2_.offset = vertex_buf2->Alloc(attribs_buf2_.size, vertices_data2.get());
+    attribs_buf2_.offset = vertex_buf2->AllocRegion(attribs_buf2_.size, vertices_data2.get());
 
     assert(attribs_buf1_.offset == attribs_buf2_.offset && "Offsets do not match!");
 
     indices_buf_.buf = index_buf;
-    indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices_.get());
+    indices_buf_.offset = index_buf->AllocRegion(indices_buf_.size, indices_.get());
 
     ready_ = true;
 }
@@ -710,7 +710,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
         sk_deltas_buf_.size = uint32_t(skel_.shapes_count * shape_keyed_vertices_count *
                                        sizeof(packed_vertex_delta_t));
         sk_deltas_buf_.offset =
-            delta_buf->Alloc(sk_deltas_buf_.size, packed_deltas.get());
+            delta_buf->AllocRegion(sk_deltas_buf_.size, packed_deltas.get());
     }
 
     // assert(max_gpu_bones);
@@ -753,9 +753,9 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
     // allocate space for untransformed vertices
     sk_attribs_buf_.buf = skin_vertex_buf;
     sk_attribs_buf_.size = vertex_count * sizeof(packed_vertex_skinned_t);
-    sk_attribs_buf_.offset = skin_vertex_buf->Alloc(sk_attribs_buf_.size, vertices.get());
+    sk_attribs_buf_.offset = skin_vertex_buf->AllocRegion(sk_attribs_buf_.size, vertices.get());
 
-    indices_buf_.offset = index_buf->Alloc(indices_buf_.size, indices_.get());
+    indices_buf_.offset = index_buf->AllocRegion(indices_buf_.size, indices_.get());
 
     ready_ = true;
 }

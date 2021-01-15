@@ -7,25 +7,25 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-void RpDebugProbes::Setup(Graph::RpBuilder &builder, const DrawList &list,
-                          const ViewState *view_state,
-                          Graph::ResourceHandle in_shared_data_buf,
+void RpDebugProbes::Setup(RpBuilder &builder, const DrawList &list,
+                          const ViewState *view_state, const int orphan_index,
                           Ren::TexHandle output_tex) {
 
     view_state_ = view_state;
+    orphan_index_ = orphan_index;
     output_tex_ = output_tex;
 
     probe_storage_ = list.probe_storage;
     probes_ = list.probes;
 
-    input_[0] = builder.ReadBuffer(in_shared_data_buf);
+    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
     input_count_ = 1;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpDebugProbes::Execute(Graph::RpBuilder &builder) {
+void RpDebugProbes::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
     DrawProbes(builder);
 }
@@ -44,7 +44,7 @@ void RpDebugProbes::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
     }
 }
 
-void RpDebugProbes::DrawProbes(Graph::RpBuilder &builder) {
+void RpDebugProbes::DrawProbes(RpBuilder &builder) {
     Ren::RastState rast_state;
     rast_state.cull_face.enabled = true;
     rast_state.viewport[2] = view_state_->act_res[0];
@@ -53,11 +53,12 @@ void RpDebugProbes::DrawProbes(Graph::RpBuilder &builder) {
     rast_state.Apply();
     Ren::RastState applied_state = rast_state;
 
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
 
     const PrimDraw::Binding bindings[] = {
         {Ren::eBindTarget::TexCubeArray, REN_BASE0_TEX_SLOT, probe_storage_->handle()},
         {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
+         orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
          unif_shared_data_buf.ref->handle()}};
 
     debug_roughness_ += 0.1f;

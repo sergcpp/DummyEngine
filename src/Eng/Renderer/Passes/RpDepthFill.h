@@ -7,7 +7,7 @@
 #include <Ren/VaoGL.h>
 #endif
 
-class RpDepthFill : public Graph::RenderPassBase {
+class RpDepthFill : public RenderPassBase {
     bool initialized = false;
     int orphan_index_ = 0;
 
@@ -24,14 +24,13 @@ class RpDepthFill : public Graph::RenderPassBase {
     // temp data (valid only between Setup and Execute calls)
     Ren::TexHandle depth_tex_, velocity_tex_;
     const ViewState *view_state_ = nullptr;
-    Ren::Tex1DRef instances_tbo_;
 
     uint32_t render_flags_ = 0;
     DynArrayConstRef<uint32_t> zfill_batch_indices;
     DynArrayConstRef<DepthDrawBatch> zfill_batches;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
-    void DrawDepth(Graph::RpBuilder &builder);
+    void DrawDepth(RpBuilder &builder);
 
 #if defined(USE_GL_RENDER)
     Ren::Vao depth_pass_solid_vao_, depth_pass_vege_solid_vao_, depth_pass_transp_vao_,
@@ -41,11 +40,9 @@ class RpDepthFill : public Graph::RenderPassBase {
     Ren::Framebuffer depth_fill_fb_, depth_fill_vel_fb_;
 #endif
   public:
-    void Setup(Graph::RpBuilder &builder, const DrawList &list,
-               const ViewState *view_state, int orphan_index, Ren::TexHandle depth_tex,
-               Ren::TexHandle velocity_tex, Graph::ResourceHandle in_instances_buf,
-               Ren::Tex1DRef instances_tbo, Graph::ResourceHandle in_shared_data_buf);
-    void Execute(Graph::RpBuilder &builder) override;
+    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
+               int orphan_index, Ren::TexHandle depth_tex, Ren::TexHandle velocity_tex);
+    void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "DEPTH FILL"; }
 };

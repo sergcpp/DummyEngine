@@ -32,7 +32,7 @@ FrameBuf::FrameBuf(const char *name, Ren::Context &ctx, const int _w, const int 
         char name_buf[32];
         sprintf(name_buf, "%s | col #%i", name, i);
 
-        Ren::Texture2DParams params;
+        Ren::Tex2DParams params;
         params.w = w;
         params.h = h;
         params.format = att.format;
@@ -70,7 +70,7 @@ FrameBuf::FrameBuf(const char *name, Ren::Context &ctx, const int _w, const int 
         char name_buf[32];
         sprintf(name_buf, "%s | depth", name);
 
-        Ren::Texture2DParams params;
+        Ren::Tex2DParams params;
         params.w = w;
         params.h = h;
         params.format = depth_att.format;

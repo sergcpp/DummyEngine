@@ -78,8 +78,8 @@ class Renderer {
     Ren::ProgramRef blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_down_prog_,
         blit_gauss_prog_, blit_depth_prog_, blit_rgbm_prog_, blit_mipmap_prog_,
         blit_prefilter_prog_, blit_project_sh_prog_;
-    Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_,
-        brdf_lut_, cone_rt_lut_, noise_tex_;
+    Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_,
+        cone_rt_lut_, noise_tex_;
 
     FrameBuf probe_sample_buf_;
     Ren::Tex2DRef color_tex_, spec_tex_, normal_tex_, depth_tex_;
@@ -135,9 +135,6 @@ class Renderer {
     ShadowFrustumCache sun_shadow_cache_[4];
 
 #if defined(USE_GL_RENDER)
-    // Constant that controls buffers orphaning
-    static const int FrameSyncWindow = 2;
-
     Ren::Tex2DRef temp_tex_;
 
     uint32_t temp_framebuf_ = 0;
@@ -146,8 +143,7 @@ class Renderer {
     Ren::Vao temp_vao_;
     uint32_t temp_buf1_vtx_offset_, temp_buf2_vtx_offset_, temp_buf_ndx_offset_,
         skinned_buf1_vtx_offset_, skinned_buf2_vtx_offset_;
-    Ren::Tex1DRef cells_tbo_[FrameSyncWindow], items_tbo_[FrameSyncWindow];
-    Ren::Tex1DRef instances_tbo_[FrameSyncWindow], lights_tbo_[FrameSyncWindow],
+    Ren::Tex1DRef lights_tbo_[FrameSyncWindow],
         decals_tbo_[FrameSyncWindow];
     uint32_t /*reduce_pbo_[FrameSyncWindow], */ probe_sample_pbo_;
     // int cur_reduce_pbo_ = 0;
@@ -176,18 +172,7 @@ class Renderer {
 
     DynArray<ShadReg> allocated_shadow_regions_;
 
-    Graph::RpBuilder rp_builder_;
-
-    // persistent resources
-    Graph::ResourceHandle skin_transofrms_buf2_;
-    Graph::ResourceHandle instances_buf2_;
-    Graph::ResourceHandle shape_keys_buf2_;
-    Graph::ResourceHandle cells_buf2_;
-    Graph::ResourceHandle lights_buf2_;
-    Graph::ResourceHandle decals_buf2_;
-    Graph::ResourceHandle items_buf2_;
-
-    Graph::ResourceHandle unif_shared_data_buf_[FrameSyncWindow];
+    RpBuilder rp_builder_;
 
     RpUpdateBuffers rp_update_buffers_;
     RpSkinning rp_skinning_;

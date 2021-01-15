@@ -5,7 +5,7 @@
 
 class PrimDraw;
 
-class RpSampleBrightness : public Graph::RenderPassBase {
+class RpSampleBrightness : public RenderPassBase {
     PrimDraw &prim_draw_;
     Ren::Vec2i res_;
     int frame_sync_window_;
@@ -34,9 +34,9 @@ class RpSampleBrightness : public Graph::RenderPassBase {
         : prim_draw_(prim_draw), res_(res), frame_sync_window_(frame_sync_window) {}
     ~RpSampleBrightness() { DestroyPBO(); }
 
-    void Setup(Graph::RpBuilder &builder, Ren::TexHandle tex_to_sample,
+    void Setup(RpBuilder &builder, Ren::TexHandle tex_to_sample,
                Ren::TexHandle reduce_tex);
-    void Execute(Graph::RpBuilder &builder) override;
+    void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "SAMPLE BRIGHTNESS"; }
     float reduced_average() const { return reduced_average_; }

@@ -17,6 +17,10 @@ __itt_string_handle *itt_read_file_str = __itt_string_handle_create("ReadFile");
 void SceneManager::TextureLoaderProc() {
     using namespace SceneManagerConstants;
 
+#ifdef ENABLE_ITT_API
+    __itt_thread_set_name("Texture loader");
+#endif
+
     for (;;) {
         Ren::Tex2DRef ref;
 
@@ -69,18 +73,10 @@ void SceneManager::TextureLoaderProc() {
 void SceneManager::ProcessPendingTextures(const int portion_size) {
     for (int i = 0; i < portion_size; i++) {
         TextureRequest *req = nullptr;
-        int textures_pending = 0;
-
         {
             std::lock_guard<std::mutex> _(texture_requests_lock_);
             if (pending_textures_head_ != pending_textures_tail_) {
                 req = &pending_textures_[pending_textures_tail_];
-                if (pending_textures_head_ > pending_textures_tail_) {
-                    textures_pending = pending_textures_head_ - pending_textures_tail_;
-                } else {
-                    textures_pending = pending_textures_head_ + MaxSimultaneousRequests -
-                                       pending_textures_tail_;
-                }
             }
         }
 
@@ -88,7 +84,7 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
             const char *tex_name = req->ref->name().c_str();
 
             if (req->data_size) {
-                Ren::Texture2DParams p = req->ref->params();
+                Ren::Tex2DParams p = req->ref->params();
                 if (strstr(tex_name, ".tga_rgbe")) {
                     p.filter = Ren::eTexFilter::BilinearNoMipmap;
                     p.repeat = Ren::eTexRepeat::ClampToEdge;
@@ -104,8 +100,7 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                 req->ref->Init(req->buf.get(), int(req->data_size), p, nullptr,
                                ren_ctx_.log());
 
-                const int count = textures_pending - 1 + int(requested_textures_.size());
-                ren_ctx_.log()->Info("Texture %s loaded (%i left)", tex_name, count);
+                ren_ctx_.log()->Info("Texture %s loaded", tex_name);
             } else {
                 ren_ctx_.log()->Error("Error loading %s", tex_name);
             }

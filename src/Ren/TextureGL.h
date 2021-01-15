@@ -26,17 +26,21 @@ enum eTexFlags {
     TexUsageUI = (1u << 9u)
 };
 
-struct Texture2DParams {
-    int w = 0, h = 0, cube = 0;
+struct Tex2DParams {
+    uint16_t w = 0, h = 0;
+    float lod_bias = 0.0f;
+    uint16_t flags = 0;
+    uint8_t cube = 0;
+    uint8_t samples = 1;
+    uint8_t fallback_color[4] = { 0, 255, 255, 255 };
     eTexFormat format = eTexFormat::Undefined;
     eTexFilter filter = eTexFilter::NoFilter;
     eTexRepeat repeat = eTexRepeat::Repeat;
-    uint8_t samples = 1;
-    float lod_bias = 0.0f;
-    uint32_t flags = 0;
-    uint8_t fallback_color[4] = {0, 255, 255, 255};
+    uint8_t _padding;
 };
-inline bool operator==(const Texture2DParams &lhs, const Texture2DParams &rhs) {
+static_assert(sizeof(Tex2DParams) == 20, "!");
+
+inline bool operator==(const Tex2DParams &lhs, const Tex2DParams &rhs) {
     return lhs.w == rhs.w && lhs.h == rhs.h && lhs.cube == rhs.cube &&
            lhs.format == rhs.format && lhs.filter == rhs.filter &&
            lhs.repeat == rhs.repeat && lhs.lod_bias == rhs.lod_bias &&
@@ -45,7 +49,7 @@ inline bool operator==(const Texture2DParams &lhs, const Texture2DParams &rhs) {
            lhs.fallback_color[2] == rhs.fallback_color[2] &&
            lhs.fallback_color[3] == rhs.fallback_color[3];
 }
-inline bool operator!=(const Texture2DParams &lhs, const Texture2DParams &rhs) {
+inline bool operator!=(const Tex2DParams &lhs, const Tex2DParams &rhs) {
     return !operator==(lhs, rhs);
 }
 
@@ -74,40 +78,40 @@ inline bool operator!=(const TexHandle lhs, const TexHandle rhs) {
 
 class Texture2D : public RefCounter {
     TexHandle handle_;
-    Texture2DParams params_;
+    Tex2DParams params_;
     bool ready_ = false;
     uint32_t cubemap_ready_ = 0;
     String name_;
 
     void Free();
 
-    void InitFromRAWData(const void *data, const Texture2DParams &p, ILog *log);
-    void InitFromTGAFile(const void *data, const Texture2DParams &p, ILog *log);
-    void InitFromTGA_RGBEFile(const void *data, const Texture2DParams &p, ILog *log);
-    void InitFromDDSFile(const void *data, int size, const Texture2DParams &p, ILog *log);
-    void InitFromPNGFile(const void *data, int size, const Texture2DParams &p, ILog *log);
-    void InitFromKTXFile(const void *data, int size, const Texture2DParams &p, ILog *log);
+    void InitFromRAWData(const void *data, const Tex2DParams &p, ILog *log);
+    void InitFromTGAFile(const void *data, const Tex2DParams &p, ILog *log);
+    void InitFromTGA_RGBEFile(const void *data, const Tex2DParams &p, ILog *log);
+    void InitFromDDSFile(const void *data, int size, const Tex2DParams &p, ILog *log);
+    void InitFromPNGFile(const void *data, int size, const Tex2DParams &p, ILog *log);
+    void InitFromKTXFile(const void *data, int size, const Tex2DParams &p, ILog *log);
 
-    void InitFromRAWData(const void *data[6], const Texture2DParams &p, ILog *log);
-    void InitFromTGAFile(const void *data[6], const Texture2DParams &p, ILog *log);
-    void InitFromTGA_RGBEFile(const void *data[6], const Texture2DParams &p, ILog *log);
-    void InitFromPNGFile(const void *data[6], const int size[6], const Texture2DParams &p,
+    void InitFromRAWData(const void *data[6], const Tex2DParams &p, ILog *log);
+    void InitFromTGAFile(const void *data[6], const Tex2DParams &p, ILog *log);
+    void InitFromTGA_RGBEFile(const void *data[6], const Tex2DParams &p, ILog *log);
+    void InitFromPNGFile(const void *data[6], const int size[6], const Tex2DParams &p,
                          ILog *log);
-    void InitFromDDSFile(const void *data[6], const int size[6], const Texture2DParams &p,
+    void InitFromDDSFile(const void *data[6], const int size[6], const Tex2DParams &p,
                          ILog *log);
-    void InitFromKTXFile(const void *data[6], const int size[6], const Texture2DParams &p,
+    void InitFromKTXFile(const void *data[6], const int size[6], const Tex2DParams &p,
                          ILog *log);
 
   public:
     Texture2D() = default;
-    Texture2D(const char *name, const Texture2DParams &params, ILog *log);
+    Texture2D(const char *name, const Tex2DParams &params, ILog *log);
     // TODO: remove this!
-    Texture2D(const char *name, uint32_t tex_id, const Texture2DParams &params, ILog *log)
+    Texture2D(const char *name, uint32_t tex_id, const Tex2DParams &params, ILog *log)
         : handle_{tex_id, 0}, params_(params), ready_(true), name_(name) {}
-    Texture2D(const char *name, const void *data, int size, const Texture2DParams &params,
+    Texture2D(const char *name, const void *data, int size, const Tex2DParams &params,
               eTexLoadStatus *load_status, ILog *log);
     Texture2D(const char *name, const void *data[6], const int size[6],
-              const Texture2DParams &params, eTexLoadStatus *load_status, ILog *log);
+              const Tex2DParams &params, eTexLoadStatus *load_status, ILog *log);
     Texture2D(const Texture2D &rhs) = delete;
     Texture2D(Texture2D &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Texture2D();
@@ -115,17 +119,17 @@ class Texture2D : public RefCounter {
     Texture2D &operator=(const Texture2D &rhs) = delete;
     Texture2D &operator=(Texture2D &&rhs) noexcept;
 
-    void Init(const Texture2DParams &params, ILog *log);
-    void Init(const void *data, int size, const Texture2DParams &params,
+    void Init(const Tex2DParams &params, ILog *log);
+    void Init(const void *data, int size, const Tex2DParams &params,
               eTexLoadStatus *load_status, ILog *log);
-    void Init(const void *data[6], const int size[6], const Texture2DParams &params,
+    void Init(const void *data[6], const int size[6], const Tex2DParams &params,
               eTexLoadStatus *load_status, ILog *log);
 
     TexHandle handle() const { return handle_; }
     uint32_t id() const { return handle_.id; }
     uint32_t generation() const { return handle_.generation; }
 
-    const Texture2DParams &params() const { return params_; }
+    const Tex2DParams &params() const { return params_; }
 
     bool ready() const { return ready_; }
     const String &name() const { return name_; }
@@ -142,9 +146,11 @@ using WeakTex2DRef = WeakRef<Texture2D>;
 using Texture2DStorage = Storage<Texture2D>;
 
 struct Texture1DParams {
-    int offset = 0, size = 0;
+    uint16_t offset = 0, size = 0;
     eTexFormat format = eTexFormat::Undefined;
+    uint8_t _padding;
 };
+static_assert(sizeof(Texture1DParams) == 6, "!");
 
 class Texture1D : public RefCounter {
     TexHandle handle_;

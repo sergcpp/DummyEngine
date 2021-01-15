@@ -111,6 +111,18 @@ void Ren::Context::Init(int w, int h, ILog *log) {
     capabilities.gl_spirv = IsExtensionSupported("GL_ARB_gl_spirv");
     capabilities.persistent_buf_mapping = IsExtensionSupported("GL_ARB_buffer_storage");
 
+    { // minimal texture buffer offset alignment
+        GLint tex_buf_offset_alignment;
+        glGetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT, &tex_buf_offset_alignment);
+        capabilities.tex_buf_offset_alignment = tex_buf_offset_alignment;
+    }
+
+    { // minimal uniform buffer offset alignment
+        GLint unif_buf_offset_alignment;
+        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &unif_buf_offset_alignment);
+        capabilities.unif_buf_offset_alignment = unif_buf_offset_alignment;
+    }
+    
     default_vertex_buf1_ = buffers_.Add("default_vtx_buf1", eBufferType::VertexAttribs, eBufferAccessType::Draw, eBufferAccessFreq::Static, 64 * 1024 * 1024);
     default_vertex_buf2_ = buffers_.Add("default_vtx_buf2", eBufferType::VertexAttribs, eBufferAccessType::Draw, eBufferAccessFreq::Static, 64 * 1024 * 1024);
     default_skin_vertex_buf_ = buffers_.Add("default_skin_vtx_buf", eBufferType::VertexAttribs, eBufferAccessType::Draw, eBufferAccessFreq::Static, 64 * 1024 * 1024);

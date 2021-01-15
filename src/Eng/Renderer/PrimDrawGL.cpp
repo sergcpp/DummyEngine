@@ -21,25 +21,26 @@ bool PrimDraw::LazyInit(Ren::Context &ctx) {
         // Allocate quad vertices
         uint32_t mem_required = sizeof(fs_quad_positions) + sizeof(fs_quad_norm_uvs);
         mem_required += (16 - mem_required % 16); // align to vertex stride
-        quad_vtx1_offset_ = vtx_buf1->Alloc(mem_required, nullptr);
-        quad_vtx2_offset_ = vtx_buf2->Alloc(mem_required, nullptr);
+        quad_vtx1_offset_ = vtx_buf1->AllocRegion(mem_required, nullptr);
+        quad_vtx2_offset_ = vtx_buf2->AllocRegion(mem_required, nullptr);
         assert(quad_vtx1_offset_ == quad_vtx2_offset_ && "Offsets do not match!");
-        quad_ndx_offset_ = ndx_buf->Alloc(6 * sizeof(uint16_t), fs_quad_indices);
+        quad_ndx_offset_ = ndx_buf->AllocRegion(6 * sizeof(uint16_t), fs_quad_indices);
 
         // Allocate sphere vertices
-        sphere_vtx1_offset_ = vtx_buf1->Alloc(sizeof(__sphere_positions) +
-                                                  (16 - sizeof(__sphere_positions) % 16),
-                                              __sphere_positions);
-        sphere_vtx2_offset_ = vtx_buf2->Alloc(
+        sphere_vtx1_offset_ = vtx_buf1->AllocRegion(
+            sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16),
+            __sphere_positions);
+        sphere_vtx2_offset_ = vtx_buf2->AllocRegion(
             sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16), nullptr);
         assert(sphere_vtx1_offset_ == sphere_vtx2_offset_ && "Offsets do not match!");
-        sphere_ndx_offset_ = ndx_buf->Alloc(sizeof(__sphere_indices), __sphere_indices);
+        sphere_ndx_offset_ =
+            ndx_buf->AllocRegion(sizeof(__sphere_indices), __sphere_indices);
 
         // Allocate temporary buffer
-        temp_buf1_vtx_offset_ = vtx_buf1->Alloc(TempBufSize);
-        temp_buf2_vtx_offset_ = vtx_buf2->Alloc(TempBufSize);
+        temp_buf1_vtx_offset_ = vtx_buf1->AllocRegion(TempBufSize);
+        temp_buf2_vtx_offset_ = vtx_buf2->AllocRegion(TempBufSize);
         assert(temp_buf1_vtx_offset_ == temp_buf2_vtx_offset_ && "Offsets do not match!");
-        temp_buf_ndx_offset_ = ndx_buf->Alloc(TempBufSize);
+        temp_buf_ndx_offset_ = ndx_buf->AllocRegion(TempBufSize);
 
         // TODO: make this non-gl specific!
         glBindVertexArray(0);
@@ -79,27 +80,27 @@ void PrimDraw::CleanUp(Ren::Context &ctx) {
                    ndx_buf = ctx.default_indices_buf();
 
     if (quad_vtx1_offset_ != 0xffffffff) {
-        vtx_buf1->Free(quad_vtx1_offset_);
+        vtx_buf1->FreeRegion(quad_vtx1_offset_);
         assert(quad_vtx2_offset_ != 0xffffffff);
-        vtx_buf2->Free(quad_vtx2_offset_);
+        vtx_buf2->FreeRegion(quad_vtx2_offset_);
         assert(quad_ndx_offset_ != 0xffffffff);
-        ndx_buf->Free(quad_ndx_offset_);
+        ndx_buf->FreeRegion(quad_ndx_offset_);
     }
 
     if (sphere_vtx1_offset_ != 0xffffffff) {
-        vtx_buf1->Free(sphere_vtx1_offset_);
+        vtx_buf1->FreeRegion(sphere_vtx1_offset_);
         assert(sphere_vtx2_offset_ != 0xffffffff);
-        vtx_buf2->Free(sphere_vtx2_offset_);
+        vtx_buf2->FreeRegion(sphere_vtx2_offset_);
         assert(sphere_ndx_offset_ != 0xffffffff);
-        ndx_buf->Free(sphere_ndx_offset_);
+        ndx_buf->FreeRegion(sphere_ndx_offset_);
     }
 
     if (temp_buf1_vtx_offset_ != 0xffffffff) {
-        vtx_buf1->Free(temp_buf1_vtx_offset_);
+        vtx_buf1->FreeRegion(temp_buf1_vtx_offset_);
         assert(temp_buf2_vtx_offset_ != 0xffffffff);
-        vtx_buf2->Free(temp_buf2_vtx_offset_);
+        vtx_buf2->FreeRegion(temp_buf2_vtx_offset_);
         assert(temp_buf_ndx_offset_ != 0xffffffff);
-        ndx_buf->Free(temp_buf_ndx_offset_);
+        ndx_buf->FreeRegion(temp_buf_ndx_offset_);
     }
 }
 
@@ -114,7 +115,12 @@ void PrimDraw::DrawPrim(const ePrim prim, const RenderTarget &rt, Ren::Program *
     for (int i = 0; i < bindings_count; i++) {
         const auto &b = bindings[i];
         if (b.trg == Ren::eBindTarget::UBuf) {
-            glBindBufferBase(GL_UNIFORM_BUFFER, b.loc, b.handle.id);
+            if (b.offset) {
+                assert(b.size != 0);
+                glBindBufferRange(GL_UNIFORM_BUFFER, b.loc, b.handle.id, b.offset, b.size);
+            } else {
+                glBindBufferBase(GL_UNIFORM_BUFFER, b.loc, b.handle.id);
+            }
         } else {
             ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc),
                                        GLuint(b.handle.id));

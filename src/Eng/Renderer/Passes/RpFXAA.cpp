@@ -6,26 +6,28 @@
 
 #include "../../Utils/ShaderLoader.h"
 #include "../PrimDraw.h"
+#include "../Renderer_Names.h"
 #include "../Renderer_Structs.h"
 
-void RpFXAA::Setup(Graph::RpBuilder &builder, const ViewState *view_state,
-                   Ren::TexHandle color_tex, Graph::ResourceHandle in_shared_data_buf,
+void RpFXAA::Setup(RpBuilder &builder, const ViewState *view_state,
+                   const int orphan_index, Ren::TexHandle color_tex,
                    Ren::TexHandle output_tex) {
     view_state_ = view_state;
+    orphan_index_ = orphan_index;
     color_tex_ = color_tex;
     output_tex_ = output_tex;
 
-    input_[0] = builder.ReadBuffer(in_shared_data_buf);
+    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
     input_count_ = 1;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpFXAA::Execute(Graph::RpBuilder &builder) {
+void RpFXAA::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
 
     Ren::RastState rast_state;
     rast_state.cull_face.enabled = true;
@@ -41,6 +43,7 @@ void RpFXAA::Execute(Graph::RpBuilder &builder) {
     const PrimDraw::Binding bindings[] = {
         {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, color_tex_},
         {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
+         orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
          unif_shared_data_buf.ref->handle()}};
 
     const PrimDraw::Uniform uniforms[] = {

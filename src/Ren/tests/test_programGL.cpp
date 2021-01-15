@@ -264,7 +264,7 @@ void main() {
             _data.push_back({Ren::Vec4f{0.0f, float(i), 0.0f, 0.0f}, Ren::Vec4f{0.0f}});
         }
 
-        uint32_t offset = buf.Alloc(128 * sizeof(AttribData), _data.data());
+        uint32_t offset = buf.AllocRegion(128 * sizeof(AttribData), _data.data());
         require(offset == 0);
 
         glUseProgram(p->id());

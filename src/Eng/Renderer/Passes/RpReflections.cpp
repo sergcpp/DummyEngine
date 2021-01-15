@@ -3,16 +3,15 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpReflections::Setup(Graph::RpBuilder &builder, const ViewState *view_state,
-                          const ProbeStorage *probe_storage, Ren::TexHandle depth_tex,
-                          Ren::TexHandle norm_tex, Ren::TexHandle spec_tex,
-                          Ren::TexHandle down_depth_2x_tex,
+void RpReflections::Setup(RpBuilder &builder, const ViewState *view_state,
+                          int orphan_index, const ProbeStorage *probe_storage,
+                          Ren::TexHandle depth_tex, Ren::TexHandle norm_tex,
+                          Ren::TexHandle spec_tex, Ren::TexHandle down_depth_2x_tex,
                           Ren::TexHandle down_buf_4x_tex, Ren::TexHandle ssr_buf1_tex,
-                          Ren::TexHandle ssr_buf2_tex,
-                          Graph::ResourceHandle in_shared_data_buf,
-                          Ren::Tex1DRef cells_tbo, Ren::Tex1DRef items_tbo,
-                          Ren::Tex2DRef brdf_lut, Ren::TexHandle output_tex) {
+                          Ren::TexHandle ssr_buf2_tex, Ren::Tex2DRef brdf_lut,
+                          Ren::TexHandle output_tex) {
     view_state_ = view_state;
+    orphan_index_ = orphan_index;
     depth_tex_ = depth_tex;
     norm_tex_ = norm_tex;
     spec_tex_ = spec_tex;
@@ -20,25 +19,27 @@ void RpReflections::Setup(Graph::RpBuilder &builder, const ViewState *view_state
     down_buf_4x_tex_ = down_buf_4x_tex;
     ssr_buf1_tex_ = ssr_buf1_tex;
     ssr_buf2_tex_ = ssr_buf2_tex;
-    cells_tbo_ = cells_tbo;
-    items_tbo_ = items_tbo;
     brdf_lut_ = brdf_lut;
 
     probe_storage_ = probe_storage;
 
     output_tex_ = output_tex;
 
-    input_[0] = builder.ReadBuffer(in_shared_data_buf);
-    input_count_ = 1;
+    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
+    input_[1] = builder.ReadBuffer(CELLS_BUF);
+    input_[2] = builder.ReadBuffer(ITEMS_BUF);
+    input_count_ = 3;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpReflections::Execute(Graph::RpBuilder &builder) {
+void RpReflections::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-    Graph::AllocatedBuffer &unif_sh_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(input_[1]);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(input_[2]);
 
     Ren::RastState rast_state;
     rast_state.depth_test.enabled = false;
@@ -68,6 +69,7 @@ void RpReflections::Execute(Graph::RpBuilder &builder) {
             {clean_buf_bind_target, REN_REFL_NORM_TEX_SLOT, norm_tex_},
             {clean_buf_bind_target, REN_REFL_SPEC_TEX_SLOT, spec_tex_},
             {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
+             orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
              unif_sh_data_buf.ref->handle()}};
 
         const PrimDraw::Uniform uniforms[] = {
@@ -120,10 +122,13 @@ void RpReflections::Execute(Graph::RpBuilder &builder) {
             {Ren::eBindTarget::Tex2D, REN_REFL_PREV_TEX_SLOT, down_buf_4x_tex_},
             {Ren::eBindTarget::Tex2D, REN_REFL_BRDF_TEX_SLOT, brdf_lut_->handle()},
             //
-            {Ren::eBindTarget::TexBuf, REN_CELLS_BUF_SLOT, cells_tbo_->handle()},
-            {Ren::eBindTarget::TexBuf, REN_ITEMS_BUF_SLOT, items_tbo_->handle()},
+            {Ren::eBindTarget::TexBuf, REN_CELLS_BUF_SLOT,
+             cells_buf.tbos[orphan_index_]->handle()},
+            {Ren::eBindTarget::TexBuf, REN_ITEMS_BUF_SLOT,
+             items_buf.tbos[orphan_index_]->handle()},
             {Ren::eBindTarget::TexCubeArray, REN_ENV_TEX_SLOT, probe_storage_->handle()},
             {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
+             orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
              unif_sh_data_buf.ref->handle()}};
 
         const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f}}};

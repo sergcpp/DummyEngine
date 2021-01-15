@@ -17,7 +17,7 @@ Gui::Image9Patch::Image9Patch(
 }
 
 void Gui::Image9Patch::Draw(Gui::Renderer *r) {
-    const Ren::Texture2DParams &p = tex_->params();
+    const Ren::Tex2DParams &p = tex_->params();
     const int tex_layer = tex_->pos(2);
 
     const Vec2f offset_norm = offset_px_ * dims_[1] / Vec2f{ dims_px_[1] };

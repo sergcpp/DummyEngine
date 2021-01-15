@@ -3,17 +3,16 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpTransparent::Setup(
-    Graph::RpBuilder &builder, const DrawList &list, const int *alpha_blend_start_index,
-    const ViewState *view_state, int orphan_index, Ren::TexHandle color_tex,
-    Ren::TexHandle normal_tex, Ren::TexHandle spec_tex, Ren::TexHandle depth_tex,
-    Ren::TexHandle transparent_tex, Ren::TexHandle moments_b0,
-    Ren::TexHandle moments_z_and_z2, Ren::TexHandle moments_z3_and_z4,
-    Graph::ResourceHandle in_instances_buf, Ren::Tex1DRef instances_tbo,
-    Graph::ResourceHandle in_shared_data_buf, Ren::TexHandle shadow_tex,
-    Ren::TexHandle ssao_tex, Ren::Tex1DRef lights_tbo, Ren::Tex1DRef decals_tbo,
-    Ren::Tex1DRef cells_tbo, Ren::Tex1DRef items_tbo, Ren::Tex2DRef brdf_lut,
-    Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut) {
+void RpTransparent::Setup(RpBuilder &builder, const DrawList &list,
+                          const int *alpha_blend_start_index, const ViewState *view_state,
+                          int orphan_index, Ren::TexHandle color_tex,
+                          Ren::TexHandle normal_tex, Ren::TexHandle spec_tex,
+                          Ren::TexHandle depth_tex, Ren::TexHandle transparent_tex,
+                          Ren::TexHandle moments_b0, Ren::TexHandle moments_z_and_z2,
+                          Ren::TexHandle moments_z3_and_z4,
+                          Ren::TexHandle shadow_tex,
+                          Ren::TexHandle ssao_tex, Ren::Tex2DRef brdf_lut,
+                          Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut) {
     orphan_index_ = orphan_index;
 
     color_tex_ = color_tex;
@@ -25,12 +24,6 @@ void RpTransparent::Setup(
     moments_z_and_z2_ = moments_z_and_z2;
     moments_z3_and_z4_ = moments_z3_and_z4;
     view_state_ = view_state;
-
-    instances_tbo_ = std::move(instances_tbo);
-    lights_tbo_ = std::move(lights_tbo);
-    decals_tbo_ = std::move(decals_tbo);
-    cells_tbo_ = std::move(cells_tbo);
-    items_tbo_ = std::move(items_tbo);
 
     brdf_lut_ = std::move(brdf_lut);
     noise_tex_ = std::move(noise_tex);
@@ -47,21 +40,30 @@ void RpTransparent::Setup(
     main_batch_indices_ = list.main_batch_indices;
     alpha_blend_start_index_ = alpha_blend_start_index;
 
-    input_[0] = builder.ReadBuffer(in_instances_buf);
-    input_[1] = builder.ReadBuffer(in_shared_data_buf);
-    input_count_ = 2;
+    input_[0] = builder.ReadBuffer(INSTANCES_BUF);
+    input_[1] = builder.ReadBuffer(SHARED_DATA_BUF);
+    input_[2] = builder.ReadBuffer(CELLS_BUF);
+    input_[3] = builder.ReadBuffer(ITEMS_BUF);
+    input_[4] = builder.ReadBuffer(LIGHTS_BUF);
+    input_[5] = builder.ReadBuffer(DECALS_BUF);
+    input_count_ = 6;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpTransparent::Execute(Graph::RpBuilder &builder) {
+void RpTransparent::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
     DrawTransparent(builder);
 }
 
-void RpTransparent::DrawTransparent(Graph::RpBuilder &builder) {
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetReadBuffer(input_[1]);
+void RpTransparent::DrawTransparent(RpBuilder &builder) {
+    RpAllocBuf &instances_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[1]);
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(input_[2]);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(input_[3]);
+    RpAllocBuf &lights_buf = builder.GetReadBuffer(input_[4]);
+    RpAllocBuf &decals_buf = builder.GetReadBuffer(input_[5]);
 
     if (alpha_blend_start_index_ == nullptr) {
         return;
@@ -71,7 +73,8 @@ void RpTransparent::DrawTransparent(Graph::RpBuilder &builder) {
     DrawTransparent_Moments(builder);
 #elif (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED)
 #else
-    DrawTransparent_Simple(builder, unif_shared_data_buf);
+    DrawTransparent_Simple(builder, instances_buf, unif_shared_data_buf, cells_buf,
+                           items_buf, lights_buf, decals_buf);
 #endif
 }
 
@@ -86,7 +89,7 @@ void RpTransparent::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
 
         static const uint8_t black[] = {0, 0, 0, 0}, white[] = {255, 255, 255, 255};
 
-        Ren::Texture2DParams p;
+        Ren::Tex2DParams p;
         p.w = p.h = 1;
         p.format = Ren::eTexFormat::RawRGBA8888;
         p.filter = Ren::eTexFilter::NoFilter;

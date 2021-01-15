@@ -87,7 +87,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
                 return false;
             }
 
-            Ren::Texture2DParams p;
+            Ren::Tex2DParams p;
             p.w = img_data_w;
             p.h = img_data_h;
             p.filter = draw_mode_ == eDrawMode::DrPassthrough

@@ -1,13 +1,11 @@
 #include "RpUpdateBuffers.h"
 
+#include "../Renderer_Names.h"
 #include "../Renderer_Structs.h"
 
-void RpUpdateBuffers::Setup(
-    Graph::RpBuilder &builder, const DrawList &list, const ViewState *view_state,
-    int orphan_index, void **fences, Graph::ResourceHandle in_skin_transforms_buf,
-    Graph::ResourceHandle in_shape_keys_buf, Graph::ResourceHandle in_instances_buf,
-    Graph::ResourceHandle in_cells_buf, Graph::ResourceHandle in_lights_buf,
-    Graph::ResourceHandle in_decals_buf, Graph::ResourceHandle in_items_buf, Graph::ResourceHandle in_shared_data_buf) {
+void RpUpdateBuffers::Setup(RpBuilder &builder, const DrawList &list,
+                            const ViewState *view_state, int orphan_index,
+                            void **fences) {
     assert(list.instances.count < REN_MAX_INSTANCES_TOTAL);
     assert(list.skin_transforms.count < REN_MAX_SKIN_XFORMS_TOTAL);
     assert(list.skin_regions.count < REN_MAX_SKIN_REGIONS_TOTAL);
@@ -38,14 +36,79 @@ void RpUpdateBuffers::Setup(
     draw_cam_ = &list.draw_cam;
     view_state_ = view_state;
 
-    input_[0] = in_skin_transforms_buf;
-    input_[1] = in_shape_keys_buf;
-    input_[2] = in_instances_buf;
-    input_[3] = in_cells_buf;
-    input_[4] = in_lights_buf;
-    input_[5] = in_decals_buf;
-    input_[6] = in_items_buf;
-    input_[7] = in_shared_data_buf;
+    { // create skin transforms buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufferType::Texture;
+        desc.size = FrameSyncWindow * SkinTransformsBufChunkSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        input_[0] = builder.CreateBuffer(SKIN_TRANSFORMS_BUF, desc);
+    }
+    { // create shape keys buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufferType::Texture;
+        desc.size = FrameSyncWindow * ShapeKeysBufChunkSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        input_[1] = builder.CreateBuffer(SHAPE_KEYS_BUF, desc);
+    }
+    { // create instances buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufferType::Texture;
+        desc.size = FrameSyncWindow * InstanceDataBufChunkSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        input_[2] = builder.CreateBuffer(INSTANCES_BUF, desc);
+    }
+    { // create cells buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufferType::Texture;
+        desc.size = FrameSyncWindow * CellsBufChunkSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        input_[3] = builder.CreateBuffer(CELLS_BUF, desc);
+    }
+    { // create lights buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufferType::Texture;
+        desc.size = FrameSyncWindow * LightsBufChunkSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        input_[4] = builder.CreateBuffer(LIGHTS_BUF, desc);
+    }
+    { // create decals buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufferType::Texture;
+        desc.size = FrameSyncWindow * DecalsBufChunkSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        input_[5] = builder.CreateBuffer(DECALS_BUF, desc);
+    }
+
+    { // create items buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufferType::Texture;
+        desc.size = FrameSyncWindow * ItemsBufChunkSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        input_[6] = builder.CreateBuffer(ITEMS_BUF, desc);
+    }
+    { // create uniform buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufferType::Uniform;
+        desc.size = FrameSyncWindow * SharedDataBlockSize;
+        desc.access = Ren::eBufferAccessType::Draw;
+        desc.freq = Ren::eBufferAccessFreq::Dynamic;
+
+        input_[7] = builder.CreateBuffer(SHARED_DATA_BUF, desc);
+    }
     input_count_ = 8;
 
     output_[0] = builder.WriteBuffer(input_[0], *this);

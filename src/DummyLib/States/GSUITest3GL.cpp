@@ -14,7 +14,7 @@ void GSUITest3::InitBookMaterials() {
            "Page framebuffer is not initialized!");
 
     { // register framebuffer texture
-        Ren::Texture2DParams params;
+        Ren::Tex2DParams params;
         params.w = page_buf_.w;
         params.h = page_buf_.h;
         params.format = page_buf_.attachments[0].desc.format;

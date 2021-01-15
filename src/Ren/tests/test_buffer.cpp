@@ -121,13 +121,13 @@ void test_buffer() {
             Ren::Buffer{"buf", Ren::eBufferType::Uniform, Ren::eBufferAccessType::Draw,
                         Ren::eBufferAccessFreq::Static, 256};
 
-        require(buf.Alloc(16) == 0);
-        require(buf.Alloc(32) == 16);
-        require(buf.Alloc(64) == 16 + 32);
-        require(buf.Alloc(16) == 16 + 32 + 64);
+        require(buf.AllocRegion(16) == 0);
+        require(buf.AllocRegion(32) == 16);
+        require(buf.AllocRegion(64) == 16 + 32);
+        require(buf.AllocRegion(16) == 16 + 32 + 64);
 
-        buf.Free(0);
+        buf.FreeRegion(0);
 
-        require(buf.Alloc(16) == 0);
+        require(buf.AllocRegion(16) == 0);
     }
 }

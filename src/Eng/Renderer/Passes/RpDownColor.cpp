@@ -3,22 +3,21 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpDownColor::Setup(Graph::RpBuilder &builder, const ViewState *view_state,
-                        Ren::TexHandle color_tex,
-                        Graph::ResourceHandle in_shared_data_buf,
-                        Ren::TexHandle output_tex) {
+void RpDownColor::Setup(RpBuilder &builder, const ViewState *view_state, int orphan_index,
+                        Ren::TexHandle color_tex, Ren::TexHandle output_tex) {
     color_tex_ = color_tex;
     output_tex_ = output_tex;
     view_state_ = view_state;
+    orphan_index_ = orphan_index;
 
-    input_[0] = builder.ReadBuffer(in_shared_data_buf);
+    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
     input_count_ = 1;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpDownColor::Execute(Graph::RpBuilder &builder) {
+void RpDownColor::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
     Ren::RastState rast_state;
@@ -31,12 +30,13 @@ void RpDownColor::Execute(Graph::RpBuilder &builder) {
 
     Ren::Program *down_prog = blit_down_prog_.get();
 
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
 
     PrimDraw::Binding bindings[2];
 
     bindings[0] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, color_tex_};
     bindings[1] = {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
+                   orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
                    unif_shared_data_buf.ref->handle()};
 
     const PrimDraw::Uniform uniforms[] = {

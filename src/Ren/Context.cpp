@@ -124,7 +124,7 @@ void Ren::Context::ReleasePrograms() {
     programs_.clear();
 }
 
-Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const Texture2DParams &p,
+Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const Tex2DParams &p,
                                           eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_.FindByName(name);
     if (!ref) {
@@ -146,7 +146,7 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const Texture2DParam
 }
 
 Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const void *data, int size,
-                                          const Texture2DParams &p,
+                                          const Tex2DParams &p,
                                           eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_.FindByName(name);
     if (!ref) {
@@ -164,7 +164,7 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const void *data, in
 }
 
 Ren::Tex2DRef Ren::Context::LoadTextureCube(const char *name, const void *data[6],
-                                            const int size[6], const Texture2DParams &p,
+                                            const int size[6], const Tex2DParams &p,
                                             eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_.FindByName(name);
     if (!ref) {
@@ -234,7 +234,7 @@ void Ren::Context::Release1DTextures() {
 
 Ren::TextureRegionRef Ren::Context::LoadTextureRegion(const char *name, const void *data,
                                                       const int size,
-                                                      const Texture2DParams &p,
+                                                      const Tex2DParams &p,
                                                       eTexLoadStatus *load_status) {
     TextureRegionRef ref = texture_regions_.FindByName(name);
     if (!ref) {

@@ -8,25 +8,23 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-void RpBlur::Setup(Graph::RpBuilder &builder, const ViewState *view_state,
+void RpBlur::Setup(RpBuilder &builder, const ViewState *view_state,
                    Ren::TexHandle down_buf_4x, Ren::TexHandle blur_temp_4x,
-                   Graph::ResourceHandle in_shared_data_buf, Ren::TexHandle output_tex) {
+                   Ren::TexHandle output_tex) {
     view_state_ = view_state;
     down_buf_4x_ = down_buf_4x;
     blur_temp_4x_ = blur_temp_4x;
     output_tex_ = output_tex;
 
-    input_[0] = builder.ReadBuffer(in_shared_data_buf);
-    input_count_ = 1;
+    // input_[0] = builder.ReadBuffer(in_shared_data_buf);
+    input_count_ = 0;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpBlur::Execute(Graph::RpBuilder &builder) {
+void RpBlur::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
-
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
 
     Ren::RastState rast_state;
     rast_state.cull_face.enabled = true;

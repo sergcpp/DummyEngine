@@ -8,7 +8,7 @@
 #include <Ren/VaoGL.h>
 #endif
 
-class RpSkydome : public Graph::RenderPassBase {
+class RpSkydome : public RenderPassBase {
     bool initialized = false;
     Ren::ProgramRef skydome_prog_;
 
@@ -29,16 +29,15 @@ class RpSkydome : public Graph::RenderPassBase {
 #endif
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
-    void DrawSkydome(Graph::RpBuilder &builder);
+    void DrawSkydome(RpBuilder &builder);
 
   public:
     ~RpSkydome();
 
-    void Setup(Graph::RpBuilder &builder, const DrawList &list,
-               const ViewState *view_state, int orphan_index, Ren::TexHandle color_tex,
-               Ren::TexHandle spec_tex, Ren::TexHandle depth_tex,
-               Graph::ResourceHandle in_shared_data_buf);
-    void Execute(Graph::RpBuilder &builder) override;
+    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
+               int orphan_index, Ren::TexHandle color_tex, Ren::TexHandle spec_tex,
+               Ren::TexHandle depth_tex);
+    void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "SKYDOME"; }
 };

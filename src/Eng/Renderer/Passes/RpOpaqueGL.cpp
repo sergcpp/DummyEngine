@@ -78,7 +78,7 @@ uint32_t _draw_list_range_full(Ren::Context &ctx,
         glDrawElementsInstancedBaseVertex(
             cur_primitive, batch.indices_count, GL_UNSIGNED_INT,
             (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
-            (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+            GLsizei(batch.instance_count), GLint(batch.base_vertex));
         backend_info.opaque_draw_calls_count++;
         backend_info.tris_rendered += (batch.indices_count / 3) * batch.instance_count;
     }
@@ -142,7 +142,7 @@ uint32_t _draw_list_range_full_rev(Ren::Context &ctx,
         glDrawElementsInstancedBaseVertex(
             GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
             (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
-            (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
+            GLsizei(batch.instance_count), GLint(batch.base_vertex));
         backend_info.opaque_draw_calls_count++;
         backend_info.tris_rendered += (batch.indices_count / 3) * batch.instance_count;
     }
@@ -151,7 +151,7 @@ uint32_t _draw_list_range_full_rev(Ren::Context &ctx,
 }
 } // namespace RpSharedInternal
 
-void RpOpaque::DrawOpaque(Graph::RpBuilder &builder) {
+void RpOpaque::DrawOpaque(RpBuilder &builder) {
     using namespace RpSharedInternal;
 
     Ren::RastState rast_state;
@@ -192,10 +192,18 @@ void RpOpaque::DrawOpaque(Graph::RpBuilder &builder) {
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
 
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetReadBuffer(input_[1]);
+    RpAllocBuf &instances_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[1]);
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(input_[2]);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(input_[3]);
+    RpAllocBuf &lights_buf = builder.GetReadBuffer(input_[4]);
+    RpAllocBuf &decals_buf = builder.GetReadBuffer(input_[5]);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
-                     unif_shared_data_buf.ref->id());
+    auto id = unif_shared_data_buf.ref->id();
+
+    glBindBufferRange(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
+                      unif_shared_data_buf.ref->id(), orphan_index_ * SharedDataBlockSize,
+                      sizeof(SharedDataBlock));
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT, shadow_tex_.id);
 
@@ -227,16 +235,20 @@ void RpOpaque::DrawOpaque(Graph::RpBuilder &builder) {
     ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT,
                                probe_storage_ ? probe_storage_->tex_id() : 0);
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_LIGHT_BUF_SLOT, lights_tbo_->id());
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_DECAL_BUF_SLOT, decals_tbo_->id());
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT, cells_tbo_->id());
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT, items_tbo_->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_LIGHT_BUF_SLOT,
+                               GLuint(lights_buf.tbos[orphan_index_]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_DECAL_BUF_SLOT,
+                               GLuint(decals_buf.tbos[orphan_index_]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT,
+                               GLuint(cells_buf.tbos[orphan_index_]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT,
+                               GLuint(items_buf.tbos[orphan_index_]->id()));
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_NOISE_TEX_SLOT, noise_tex_->id());
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_CONE_RT_LUT_SLOT, cone_rt_lut_->id());
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT,
-                               GLuint(instances_tbo_->id()));
+                               GLuint(instances_buf.tbos[orphan_index_]->id()));
 
     BackendInfo _dummy = {};
 

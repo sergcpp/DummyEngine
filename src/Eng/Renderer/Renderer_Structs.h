@@ -278,6 +278,8 @@ struct SharedDataBlock {
 };
 static_assert(sizeof(SharedDataBlock) == 7824, "!");
 
+// Constant that controls buffers orphaning
+const int FrameSyncWindow = 2;
 const size_t SkinTransformsBufChunkSize = sizeof(SkinTransform) * REN_MAX_SKIN_XFORMS_TOTAL;
 const size_t ShapeKeysBufChunkSize = sizeof(ShapeKeyData) * REN_MAX_SHAPE_KEYS_TOTAL;
 const size_t SkinRegionsBufChunkSize = sizeof(SkinRegion) * REN_MAX_SKIN_REGIONS_TOTAL;
@@ -286,3 +288,6 @@ const size_t LightsBufChunkSize = sizeof(LightSourceItem) * REN_MAX_LIGHTS_TOTAL
 const size_t DecalsBufChunkSize = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
 const size_t CellsBufChunkSize = sizeof(CellData) * REN_CELLS_COUNT;
 const size_t ItemsBufChunkSize = sizeof(ItemData) * REN_MAX_ITEMS_TOTAL;
+const size_t SharedDataBlockSize = 8 * 1024;
+
+static_assert(sizeof(SharedDataBlock) <= SharedDataBlockSize, "!");

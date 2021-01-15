@@ -6,11 +6,11 @@
 #include "../DebugMarker.h"
 #include "../Renderer_Structs.h"
 
-void RpSkinning::Execute(Graph::RpBuilder &builder) {
+void RpSkinning::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-    Graph::AllocatedBuffer& skin_transforms_buf = builder.GetReadBuffer(input_[0]);
-    Graph::AllocatedBuffer& shape_keys_buf = builder.GetReadBuffer(input_[1]);
+    RpAllocBuf& skin_transforms_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf& shape_keys_buf = builder.GetReadBuffer(input_[1]);
 
     if (skin_regions_.count) {
         const GLuint vertex_buf1_id = vtx_buf1_->id();

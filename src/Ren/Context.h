@@ -114,12 +114,12 @@ class Context : public TaskExecutor {
     void ReleasePrograms();
 
     /*** Texture ***/
-    Tex2DRef LoadTexture2D(const char *name, const Texture2DParams &p,
+    Tex2DRef LoadTexture2D(const char *name, const Tex2DParams &p,
                                eTexLoadStatus *load_status);
     Tex2DRef LoadTexture2D(const char *name, const void *data, int size,
-                               const Texture2DParams &p, eTexLoadStatus *load_status);
+                               const Tex2DParams &p, eTexLoadStatus *load_status);
     Tex2DRef LoadTextureCube(const char *name, const void *data[6], const int size[6],
-                                 const Texture2DParams &p, eTexLoadStatus *load_status);
+                                 const Tex2DParams &p, eTexLoadStatus *load_status);
 
     void VisitTextures(uint32_t mask,
                        const std::function<void(Texture2D &tex)> &callback);
@@ -133,7 +133,7 @@ class Context : public TaskExecutor {
 
     /** Texture regions **/
     TextureRegionRef LoadTextureRegion(const char *name, const void *data, int size,
-                                       const Texture2DParams &p,
+                                       const Tex2DParams &p,
                                        eTexLoadStatus *load_status);
 
     void ReleaseTextureRegions();
@@ -158,6 +158,8 @@ class Context : public TaskExecutor {
         bool gl_spirv = false;
         bool persistent_buf_mapping = false;
         int max_compute_work_group_size[3] = {};
+        int tex_buf_offset_alignment = 1;
+        int unif_buf_offset_alignment = 1;
     } capabilities;
 
     static bool IsExtensionSupported(const char *ext);

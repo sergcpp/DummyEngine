@@ -70,6 +70,9 @@ public:
     Buffer &operator=(Buffer &&rhs) noexcept;
 
     const String &name() const { return name_; }
+    eBufferType type() const { return type_; }
+    eBufferAccessType access() const { return access_; }
+    eBufferAccessFreq freq() const { return freq_; }
     uint32_t size() const { return size_; }
 
     BufHandle handle() const { return handle_; }
@@ -78,8 +81,8 @@ public:
 #endif
     uint32_t generation() const { return handle_.generation; }
 
-    uint32_t Alloc(uint32_t size, const void *init_data = nullptr);
-    bool Free(uint32_t offset);
+    uint32_t AllocRegion(uint32_t size, const void *init_data = nullptr);
+    bool FreeRegion(uint32_t offset);
 
     void Resize(uint32_t new_size);
 };

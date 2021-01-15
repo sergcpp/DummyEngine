@@ -399,7 +399,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
                 size[i] = int(tex_data[i].size());
             }
 
-            Ren::Texture2DParams p;
+            Ren::Tex2DParams p;
             p.format = Ren::eTexFormat::Compressed;
             p.filter = Ren::eTexFilter::Bilinear;
             p.repeat = Ren::eTexRepeat::ClampToEdge;
@@ -1084,7 +1084,7 @@ Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) {
     strcpy(name_buf, TEXTURES_PATH);
     strcat(name_buf, name);
 
-    Ren::Texture2DParams p;
+    Ren::Tex2DParams p;
     p.flags = flags | Ren::TexUsageScene;
 
     if (strstr(name_buf, "lm_sh_0")) {

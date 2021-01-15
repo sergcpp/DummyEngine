@@ -61,105 +61,7 @@ void Renderer::InitRendererInternal() {
                         "internal/blit_project_sh.frag.glsl");
     assert(blit_project_sh_prog_->ready());
 
-    GLint tex_buf_offset_alignment;
-    glGetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT, &tex_buf_offset_alignment);
-
     Ren::CheckError("[InitRendererInternal]: UBO creation", ctx_.log());
-
-    { // Create buffer that holds per-instance transform matrices
-        Graph::AllocatedBuffer inst_buf = rp_builder_.GetWriteBuffer(instances_buf2_);
-
-        for (int i = 0; i < FrameSyncWindow; i++) {
-            const uint32_t offset = i * InstanceDataBufChunkSize;
-            assert((offset % tex_buf_offset_alignment == 0) &&
-                   "Offset is not properly aligned!");
-
-            char name_buf[32];
-            sprintf(name_buf, "Instances TBO #%i", i);
-
-            instances_tbo_[i] =
-                ctx_.CreateTexture1D(name_buf, inst_buf.ref, Ren::eTexFormat::RawRGBA32F,
-                                     offset, InstanceDataBufChunkSize);
-        }
-    }
-
-    Ren::CheckError("[InitRendererInternal]: skin regions TBO", ctx_.log());
-
-    { // Create buffer for lights information
-        Graph::AllocatedBuffer lights_buf = rp_builder_.GetWriteBuffer(lights_buf2_);
-
-        for (int i = 0; i < FrameSyncWindow; i++) {
-            const uint32_t offset = i * LightsBufChunkSize;
-            assert((offset % tex_buf_offset_alignment == 0) &&
-                   "Offset is not properly aligned!");
-
-            char name_buf[32];
-            sprintf(name_buf, "Lights TBO #%i", i);
-
-            lights_tbo_[i] = ctx_.CreateTexture1D(name_buf, lights_buf.ref,
-                                                  Ren::eTexFormat::RawRGBA32F, offset,
-                                                  LightsBufChunkSize);
-        }
-    }
-
-    Ren::CheckError("[InitRendererInternal]: lights TBO", ctx_.log());
-
-    { // Create buffer for decals
-        Graph::AllocatedBuffer decals_buf = rp_builder_.GetWriteBuffer(decals_buf2_);
-
-        for (int i = 0; i < FrameSyncWindow; i++) {
-            const uint32_t offset = i * DecalsBufChunkSize;
-            assert((offset % tex_buf_offset_alignment == 0) &&
-                   "Offset is not properly aligned!");
-
-            char name_buf[32];
-            sprintf(name_buf, "Decals TBO #%i", i);
-
-            decals_tbo_[i] = ctx_.CreateTexture1D(name_buf, decals_buf.ref,
-                                                  Ren::eTexFormat::RawRGBA32F, offset,
-                                                  DecalsBufChunkSize);
-        }
-    }
-
-    Ren::CheckError("[InitRendererInternal]: decals TBO", ctx_.log());
-
-    { // Create buffer for fructum cells
-        Graph::AllocatedBuffer cells_buf = rp_builder_.GetWriteBuffer(cells_buf2_);
-
-        for (int i = 0; i < FrameSyncWindow; i++) {
-            const uint32_t offset = i * CellsBufChunkSize;
-            assert((offset % tex_buf_offset_alignment == 0) &&
-                   "Offset is not properly aligned!");
-
-            char name_buf[32];
-            sprintf(name_buf, "Cells TBO #%i", i);
-
-            cells_tbo_[i] =
-                ctx_.CreateTexture1D(name_buf, cells_buf.ref, Ren::eTexFormat::RawRG32U,
-                                     offset, CellsBufChunkSize);
-        }
-    }
-
-    Ren::CheckError("[InitRendererInternal]: cells TBO", ctx_.log());
-
-    { // Create buffer for item offsets
-        Graph::AllocatedBuffer items_buf = rp_builder_.GetWriteBuffer(items_buf2_);
-
-        for (int i = 0; i < FrameSyncWindow; i++) {
-            const uint32_t offset = i * ItemsBufChunkSize;
-            assert((offset % tex_buf_offset_alignment == 0) &&
-                   "Offset is not properly aligned!");
-
-            char name_buf[32];
-            sprintf(name_buf, "Items TBO #%i", i);
-
-            items_tbo_[i] =
-                ctx_.CreateTexture1D(name_buf, items_buf.ref, Ren::eTexFormat::RawRG32U,
-                                     offset, ItemsBufChunkSize);
-        }
-    }
-
-    Ren::CheckError("[InitRendererInternal]: items TBO", ctx_.log());
 
     {
         GLuint probe_sample_pbo;
@@ -203,15 +105,17 @@ void Renderer::InitRendererInternal() {
                        ndx_buf = ctx_.default_indices_buf();
 
         // Allocate temporary buffer
-        temp_buf1_vtx_offset_ = vtx_buf1->Alloc(TEMP_BUF_SIZE);
-        temp_buf2_vtx_offset_ = vtx_buf2->Alloc(TEMP_BUF_SIZE);
+        temp_buf1_vtx_offset_ = vtx_buf1->AllocRegion(TEMP_BUF_SIZE);
+        temp_buf2_vtx_offset_ = vtx_buf2->AllocRegion(TEMP_BUF_SIZE);
         assert(temp_buf1_vtx_offset_ == temp_buf2_vtx_offset_ && "Offsets do not match!");
-        temp_buf_ndx_offset_ = ndx_buf->Alloc(TEMP_BUF_SIZE);
+        temp_buf_ndx_offset_ = ndx_buf->AllocRegion(TEMP_BUF_SIZE);
 
         // Allocate buffer for skinned vertices
         // TODO: fix this. do not allocate twice more memory in buf2
-        skinned_buf1_vtx_offset_ = vtx_buf1->Alloc(REN_MAX_SKIN_VERTICES_TOTAL * 16 * 2);
-        skinned_buf2_vtx_offset_ = vtx_buf2->Alloc(REN_MAX_SKIN_VERTICES_TOTAL * 16 * 2);
+        skinned_buf1_vtx_offset_ =
+            vtx_buf1->AllocRegion(REN_MAX_SKIN_VERTICES_TOTAL * 16 * 2);
+        skinned_buf2_vtx_offset_ =
+            vtx_buf2->AllocRegion(REN_MAX_SKIN_VERTICES_TOTAL * 16 * 2);
         assert(skinned_buf1_vtx_offset_ == skinned_buf2_vtx_offset_ &&
                "Offsets do not match!");
     }
@@ -251,9 +155,9 @@ void Renderer::DestroyRendererInternal() {
     }
 
     {
-        assert(vtx_buf1->Free(temp_buf1_vtx_offset_));
-        assert(vtx_buf2->Free(temp_buf2_vtx_offset_));
-        assert(ndx_buf->Free(temp_buf_ndx_offset_));
+        assert(vtx_buf1->FreeRegion(temp_buf1_vtx_offset_));
+        assert(vtx_buf2->FreeRegion(temp_buf2_vtx_offset_));
+        assert(ndx_buf->FreeRegion(temp_buf_ndx_offset_));
     }
 
     for (int i = 0; i < FrameSyncWindow; i++) {
@@ -337,7 +241,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         unif_shared_data_buf_[cur_buf_chunk_].read_count++;
     }
 
-    Graph::AllocatedBuffer &unif_shared_data_buf =
+    Graph::RpAllocBuf &unif_shared_data_buf =
         rp_builder_.GetReadBuffer(unif_shared_data_buf_[cur_buf_chunk_]);
     glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
                      GLuint(unif_shared_data_buf.ref->id()));
@@ -733,7 +637,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
         ////
 
-        Ren::Texture2DParams params;
+        Ren::Tex2DParams params;
         params.w = 256;
         params.h = 128;
         params.format = Ren::eTexFormat::RawRGBA8888;
@@ -974,7 +878,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     }*/
 
     /*if (list.render_flags & DebugSSAO) {
-        const Ren::Texture2DParams &p = ssao_tex1_->params();
+        const Ren::Tex2DParams &p = ssao_tex1_->params();
         BlitTexture(-1.0f, -1.0f, 1.0f, 1.0f, ssao_tex1_);
     }*/
 
@@ -1177,7 +1081,7 @@ void Renderer::BlitPixels(const void *data, const int w, const int h,
         temp_tex_->params().format != format) {
         temp_tex_ = {};
 
-        Ren::Texture2DParams params;
+        Ren::Tex2DParams params;
         params.w = w;
         params.h = h;
         params.format = format;
@@ -1219,7 +1123,7 @@ void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h,
         temp_tex_->params().format != format) {
         temp_tex_ = {};
 
-        Ren::Texture2DParams params;
+        Ren::Tex2DParams params;
         params.w = w;
         params.h = h;
         params.format = format;
@@ -1279,12 +1183,12 @@ void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h,
         Ren::Program *cur_program = blit_down_prog_.get();
 
         // TODO: REMOVE THIS!
-        unif_shared_data_buf_[cur_buf_chunk_].write_count = 1;
+        /*unif_shared_data_buf_[cur_buf_chunk_].write_count = 1;
 
-        Graph::AllocatedBuffer &unif_shared_data_buf =
+        Graph::RpAllocBuf &unif_shared_data_buf =
             rp_builder_.GetReadBuffer(unif_shared_data_buf_[cur_buf_chunk_]);
         glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
-                         (GLuint)unif_shared_data_buf.ref->id());
+                         (GLuint)unif_shared_data_buf.ref->id());*/
 
         const PrimDraw::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT,
                                            temp_tex_->handle()};
@@ -1395,8 +1299,8 @@ void Renderer::BlitBuffer(const float px, const float py, const float sx, const 
     using namespace RendererInternal;
 
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
-        vtx_buf2 = ctx_.default_vertex_buf2(),
-        ndx_buf = ctx_.default_indices_buf();
+                   vtx_buf2 = ctx_.default_vertex_buf2(),
+                   ndx_buf = ctx_.default_indices_buf();
 
     glBindVertexArray(temp_vao_.id());
 
@@ -1469,8 +1373,8 @@ void Renderer::BlitTexture(const float px, const float py, const float sx, const
     using namespace RendererInternal;
 
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
-        vtx_buf2 = ctx_.default_vertex_buf2(),
-        ndx_buf = ctx_.default_indices_buf();
+                   vtx_buf2 = ctx_.default_vertex_buf2(),
+                   ndx_buf = ctx_.default_indices_buf();
 
     Ren::Program *cur_program = nullptr;
 
@@ -1541,8 +1445,8 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &
     using namespace RendererInternal;
 
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
-        vtx_buf2 = ctx_.default_vertex_buf2(),
-        ndx_buf = ctx_.default_indices_buf();
+                   vtx_buf2 = ctx_.default_vertex_buf2(),
+                   ndx_buf = ctx_.default_indices_buf();
 
     GLint framebuf_before;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuf_before);
@@ -1660,8 +1564,8 @@ void Renderer::BlitPrefilterFromTemp(const ProbeStorage &dst_store,
     using namespace RendererInternal;
 
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
-        vtx_buf2 = ctx_.default_vertex_buf2(),
-        ndx_buf = ctx_.default_indices_buf();
+                   vtx_buf2 = ctx_.default_vertex_buf2(),
+                   ndx_buf = ctx_.default_indices_buf();
 
     GLint framebuf_before;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuf_before);
@@ -1749,8 +1653,8 @@ bool Renderer::BlitProjectSH(const ProbeStorage &store, const int probe_index,
     using namespace RendererInternal;
 
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
-        vtx_buf2 = ctx_.default_vertex_buf2(),
-        ndx_buf = ctx_.default_indices_buf();
+                   vtx_buf2 = ctx_.default_vertex_buf2(),
+                   ndx_buf = ctx_.default_indices_buf();
 
     GLint framebuf_before;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuf_before);

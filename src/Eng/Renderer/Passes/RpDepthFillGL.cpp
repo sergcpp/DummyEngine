@@ -67,7 +67,7 @@ uint32_t _depth_draw_range_ext(Ren::Context &ctx,
 }
 } // namespace RpSharedInternal
 
-void RpDepthFill::DrawDepth(Graph::RpBuilder &builder) {
+void RpDepthFill::DrawDepth(RpBuilder &builder) {
     using namespace RpSharedInternal;
 
     Ren::RastState rast_state;
@@ -88,12 +88,19 @@ void RpDepthFill::DrawDepth(Graph::RpBuilder &builder) {
 
     uint32_t i = 0;
 
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetReadBuffer(input_[1]);
-    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
-                     (GLuint)unif_shared_data_buf.ref->id());
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[1]);
+    glBindBufferRange(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
+                      GLuint(unif_shared_data_buf.ref->id()),
+                      orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock));
+    assert(orphan_index_ * SharedDataBlockSize %
+               builder.ctx().capabilities.unif_buf_offset_alignment ==
+           0);
+
+    RpAllocBuf &instances_buf = builder.GetReadBuffer(input_[0]);
+    assert(instances_buf.tbos[orphan_index_]);
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT,
-                               GLuint(instances_tbo_->id()));
+                               GLuint(instances_buf.tbos[orphan_index_]->id()));
 
     glBindFramebuffer(GL_FRAMEBUFFER, GLuint(depth_fill_fb_.id()));
     glClear(GL_STENCIL_BUFFER_BIT);

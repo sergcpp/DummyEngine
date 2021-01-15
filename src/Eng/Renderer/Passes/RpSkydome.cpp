@@ -1,17 +1,17 @@
 #include "RpSkydome.h"
 
 #include "../../Utils/ShaderLoader.h"
+#include "../Renderer_Names.h"
 #include "../Renderer_Structs.h"
 
 namespace RpSkydomeInternal {
 #include "__skydome_mesh.inl"
 }
 
-void RpSkydome::Setup(Graph::RpBuilder &builder, const DrawList &list,
-                      const ViewState *view_state, int orphan_index,
+void RpSkydome::Setup(RpBuilder &builder, const DrawList &list,
+                      const ViewState *view_state, const int orphan_index,
                       Ren::TexHandle color_tex, Ren::TexHandle spec_tex,
-                      Ren::TexHandle depth_tex,
-                      Graph::ResourceHandle in_shared_data_buf) {
+                      Ren::TexHandle depth_tex) {
     orphan_index_ = orphan_index;
 
     color_tex_ = color_tex;
@@ -23,14 +23,14 @@ void RpSkydome::Setup(Graph::RpBuilder &builder, const DrawList &list,
     env_ = &list.env;
     draw_cam_pos_ = list.draw_cam.world_position();
 
-    input_[0] = builder.ReadBuffer(in_shared_data_buf);
+    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
     input_count_ = 1;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpSkydome::Execute(Graph::RpBuilder &builder) {
+void RpSkydome::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
     DrawSkydome(builder);
 }

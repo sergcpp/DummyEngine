@@ -20,8 +20,11 @@ uint32_t _draw_list_range_full_rev(Ren::Context &ctx,
                                    uint64_t &cur_prog_id, BackendInfo &backend_info);
 } // namespace RpSharedInternal
 
-void RpTransparent::DrawTransparent_Simple(Graph::RpBuilder &builder,
-                                           Graph::AllocatedBuffer &unif_shared_data_buf) {
+void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf,
+                                           RpAllocBuf &unif_shared_data_buf,
+                                           RpAllocBuf &cells_buf, RpAllocBuf &items_buf,
+                                           RpAllocBuf &lights_buf,
+                                           RpAllocBuf &decals_buf) {
     Ren::RastState rast_state;
     rast_state.depth_test.enabled = true;
     rast_state.depth_test.func = Ren::eTestFunc::Less;
@@ -62,8 +65,9 @@ void RpTransparent::DrawTransparent_Simple(Graph::RpBuilder &builder,
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
-                     unif_shared_data_buf.ref->id());
+    glBindBufferRange(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
+                      unif_shared_data_buf.ref->id(), orphan_index_ * SharedDataBlockSize,
+                      sizeof(SharedDataBlock));
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT, shadow_tex_.id);
 
@@ -95,16 +99,20 @@ void RpTransparent::DrawTransparent_Simple(Graph::RpBuilder &builder,
     ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT,
                                probe_storage_ ? probe_storage_->tex_id() : 0);
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_LIGHT_BUF_SLOT, lights_tbo_->id());
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_DECAL_BUF_SLOT, decals_tbo_->id());
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT, cells_tbo_->id());
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT, items_tbo_->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_LIGHT_BUF_SLOT,
+                               GLuint(lights_buf.tbos[orphan_index_]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_DECAL_BUF_SLOT,
+                               GLuint(decals_buf.tbos[orphan_index_]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT,
+                               GLuint(cells_buf.tbos[orphan_index_]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT,
+                               GLuint(items_buf.tbos[orphan_index_]->id()));
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_NOISE_TEX_SLOT, noise_tex_->id());
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_CONE_RT_LUT_SLOT, cone_rt_lut_->id());
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT,
-                               GLuint(instances_tbo_->id()));
+                               GLuint(instances_buf.tbos[orphan_index_]->id()));
 
     uint64_t cur_prog_id = 0xffffffffffffffff;
     uint64_t cur_mat_id = 0xffffffffffffffff;
@@ -265,7 +273,7 @@ void RpTransparent::DrawTransparent_Simple(Graph::RpBuilder &builder,
 #endif
 }
 
-void RpTransparent::DrawTransparent_OIT_MomentBased(Graph::RpBuilder &builder) {
+void RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {
     Ren::RastState rast_state;
     rast_state.depth_test.enabled = true;
     rast_state.depth_test.func = Ren::eTestFunc::LEqual;
@@ -293,10 +301,11 @@ void RpTransparent::DrawTransparent_OIT_MomentBased(Graph::RpBuilder &builder) {
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
 
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetReadBuffer(input_[1]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[1]);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
-                     unif_shared_data_buf.ref->id());
+    glBindBufferRange(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
+                      unif_shared_data_buf.ref->id(), orphan_index_ * SharedDataBlockSize,
+                      sizeof(SharedDataBlock));
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT, shadow_tex_.id);
 
@@ -458,7 +467,7 @@ void RpTransparent::DrawTransparent_OIT_MomentBased(Graph::RpBuilder &builder) {
     }
 }
 
-void RpTransparent::DrawTransparent_OIT_WeightedBlended(Graph::RpBuilder &builder) {}
+void RpTransparent::DrawTransparent_OIT_WeightedBlended(RpBuilder &builder) {}
 
 //
 // This is needed for moment-based OIT

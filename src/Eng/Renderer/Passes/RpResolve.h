@@ -7,7 +7,7 @@
 class PrimDraw;
 struct ViewState;
 
-class RpResolve : public Graph::RenderPassBase {
+class RpResolve : public RenderPassBase {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -26,9 +26,9 @@ class RpResolve : public Graph::RenderPassBase {
   public:
     RpResolve(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(Graph::RpBuilder &builder, const ViewState *view_state,
+    void Setup(RpBuilder &builder, const ViewState *view_state,
                Ren::TexHandle color_tex, Ren::TexHandle output_tex);
-    void Execute(Graph::RpBuilder &builder) override;
+    void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "REFLECTIONS PASS"; }
 };

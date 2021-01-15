@@ -142,7 +142,7 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
 
 std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref,
                                                       const bool flip_y) {
-    const Ren::Texture2DParams &params = tex_ref->params();
+    const Ren::Tex2DParams &params = tex_ref->params();
 
     std::unique_ptr<Ray::pixel_color8_t[]> tex_data(
         new Ray::pixel_color8_t[params.w * params.h]);

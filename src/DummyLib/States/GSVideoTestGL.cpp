@@ -30,7 +30,7 @@ void GSVideoTest::InitVideoTextures() {
         char name_buf[128];
 
         { // create Y-channel texture (full res)
-            Ren::Texture2DParams params;
+            Ren::Tex2DParams params;
             params.w = vp.w();
             params.h = vp.h();
             params.format = Ren::eTexFormat::RawR8;
@@ -50,7 +50,7 @@ void GSVideoTest::InitVideoTextures() {
         }
 
         { // register U-channel texture (half res)
-            Ren::Texture2DParams params;
+            Ren::Tex2DParams params;
             params.w = vp.w() / 2;
             params.h = vp.h() / 2;
             params.format = Ren::eTexFormat::RawRG88;

@@ -7,7 +7,7 @@
 class PrimDraw;
 struct ViewState;
 
-class RpDebugTextures : public Graph::RenderPassBase {
+class RpDebugTextures : public RenderPassBase {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -19,6 +19,7 @@ class RpDebugTextures : public Graph::RenderPassBase {
     Ren::Tex1DRef nodes_tbo_;
 
     // temp data (valid only between Setup and Execute calls)
+    int orphan_index_ = -1;
     uint32_t render_flags_ = 0;
     Ren::TexHandle depth_tex_;
     Ren::TexHandle output_tex_;
@@ -28,7 +29,6 @@ class RpDebugTextures : public Graph::RenderPassBase {
     const uint8_t *depth_tiles_ = nullptr;
     Ren::WeakTex2DRef color_tex_, spec_tex_, norm_tex_, down_tex_4x_;
     Ren::WeakTex2DRef reduced_tex_, blur_tex_, ssao_tex_;
-    Ren::WeakTex1DRef cells_tbo_, items_tbo_;
     Ren::WeakTex2DRef shadow_tex_;
     DynArrayConstRef<ShadowList> shadow_lists_;
     DynArrayConstRef<ShadowMapRegion> shadow_regions_;
@@ -47,20 +47,19 @@ class RpDebugTextures : public Graph::RenderPassBase {
     int BlitTex(Ren::RastState &applied_state, int x, int y, int w, int h,
                 Ren::WeakTex2DRef tex, float mul);
 
-    void DrawShadowMaps(Ren::Context& ctx);
+    void DrawShadowMaps(Ren::Context &ctx);
 
   public:
     RpDebugTextures(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(Graph::RpBuilder &builder, const ViewState *view_state,
+    void Setup(RpBuilder &builder, const ViewState *view_state,
                const DrawList &list, int orphan_index, Ren::TexHandle depth_tex,
-               const Ren::Tex1DRef &cells_tbo, const Ren::Tex1DRef &items_tbo,
                const Ren::Tex2DRef &color_tex, const Ren::Tex2DRef &spec_tex,
                const Ren::Tex2DRef &norm_tex, const Ren::Tex2DRef &down_tex_4x,
                const Ren::Tex2DRef &reduced_tex, const Ren::Tex2DRef &blur_tex,
                const Ren::Tex2DRef &ssao_tex, const Ren::Tex2DRef &shadow_tex,
-               Graph::ResourceHandle in_shared_data_buf, Ren::TexHandle output_tex);
-    void Execute(Graph::RpBuilder &builder) override;
+               Ren::TexHandle output_tex);
+    void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "DEBUG TEXTURES"; }
 };

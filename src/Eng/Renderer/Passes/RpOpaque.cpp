@@ -1,19 +1,15 @@
 #include "RpOpaque.h"
 
 #include "../../Utils/ShaderLoader.h"
+#include "../Renderer_Names.h"
 #include "../Renderer_Structs.h"
 
-void RpOpaque::Setup(Graph::RpBuilder &builder, const DrawList &list,
-                     const ViewState *view_state, int orphan_index,
-                     Ren::TexHandle color_tex, Ren::TexHandle normal_tex,
-                     Ren::TexHandle spec_tex, Ren::TexHandle depth_tex,
-                     Graph::ResourceHandle in_instances_buf,
-                     Ren::Tex1DRef instances_tbo,
-                     Graph::ResourceHandle in_shared_data_buf, Ren::TexHandle shadow_tex,
-                     Ren::TexHandle ssao_tex, Ren::Tex1DRef lights_tbo,
-                     Ren::Tex1DRef decals_tbo, Ren::Tex1DRef cells_tbo,
-                     Ren::Tex1DRef items_tbo, Ren::Tex2DRef brdf_lut,
-                     Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut) {
+void RpOpaque::Setup(
+    RpBuilder &builder, const DrawList &list, const ViewState *view_state,
+    int orphan_index, Ren::TexHandle color_tex, Ren::TexHandle normal_tex,
+    Ren::TexHandle spec_tex, Ren::TexHandle depth_tex,
+    Ren::TexHandle shadow_tex, Ren::TexHandle ssao_tex, Ren::Tex2DRef brdf_lut,
+    Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut) {
     orphan_index_ = orphan_index;
 
     color_tex_ = color_tex;
@@ -21,12 +17,6 @@ void RpOpaque::Setup(Graph::RpBuilder &builder, const DrawList &list,
     spec_tex_ = spec_tex;
     depth_tex_ = depth_tex;
     view_state_ = view_state;
-
-    instances_tbo_ = std::move(instances_tbo);
-    lights_tbo_ = std::move(lights_tbo);
-    decals_tbo_ = std::move(decals_tbo);
-    cells_tbo_ = std::move(cells_tbo);
-    items_tbo_ = std::move(items_tbo);
 
     brdf_lut_ = std::move(brdf_lut);
     noise_tex_ = std::move(noise_tex);
@@ -42,15 +32,19 @@ void RpOpaque::Setup(Graph::RpBuilder &builder, const DrawList &list,
     main_batches_ = list.main_batches;
     main_batch_indices_ = list.main_batch_indices;
 
-    input_[0] = builder.ReadBuffer(in_instances_buf);
-    input_[1] = builder.ReadBuffer(in_shared_data_buf);
-    input_count_ = 2;
+    input_[0] = builder.ReadBuffer(INSTANCES_BUF);
+    input_[1] = builder.ReadBuffer(SHARED_DATA_BUF);
+    input_[2] = builder.ReadBuffer(CELLS_BUF);
+    input_[3] = builder.ReadBuffer(ITEMS_BUF);
+    input_[4] = builder.ReadBuffer(LIGHTS_BUF);
+    input_[5] = builder.ReadBuffer(DECALS_BUF);
+    input_count_ = 6;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpOpaque::Execute(Graph::RpBuilder &builder) {
+void RpOpaque::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
     DrawOpaque(builder);
 }
@@ -59,7 +53,7 @@ void RpOpaque::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
     if (!initialized) {
         static const uint8_t black[] = {0, 0, 0, 0}, white[] = {255, 255, 255, 255};
 
-        Ren::Texture2DParams p;
+        Ren::Tex2DParams p;
         p.w = p.h = 1;
         p.format = Ren::eTexFormat::RawRGBA8888;
         p.filter = Ren::eTexFilter::NoFilter;

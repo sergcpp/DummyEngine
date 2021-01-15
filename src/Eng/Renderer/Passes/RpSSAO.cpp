@@ -1,14 +1,16 @@
 #include "RpSSAO.h"
 
 #include "../../Utils/ShaderLoader.h"
+#include "../Renderer_Names.h"
 #include "../Renderer_Structs.h"
 
-void RpSSAO::Setup(Graph::RpBuilder &builder, const ViewState *view_state,
-                   Ren::TexHandle depth_tex, Ren::TexHandle down_depth_2x_tex,
-                   Ren::TexHandle rand2d_dirs_4x4_tex, Ren::TexHandle ssao_buf1_tex,
-                   Ren::TexHandle ssao_buf2_tex, Graph::ResourceHandle in_shared_data_buf,
+void RpSSAO::Setup(RpBuilder &builder, const ViewState *view_state,
+                   const int orphan_index, Ren::TexHandle depth_tex,
+                   Ren::TexHandle down_depth_2x_tex, Ren::TexHandle rand2d_dirs_4x4_tex,
+                   Ren::TexHandle ssao_buf1_tex, Ren::TexHandle ssao_buf2_tex,
                    Ren::TexHandle output_tex) {
     view_state_ = view_state;
+    orphan_index_ = orphan_index;
     depth_tex_ = depth_tex;
     down_depth_2x_tex_ = down_depth_2x_tex;
     rand2d_dirs_4x4_tex_ = rand2d_dirs_4x4_tex;
@@ -16,14 +18,14 @@ void RpSSAO::Setup(Graph::RpBuilder &builder, const ViewState *view_state,
     ssao_buf2_tex_ = ssao_buf2_tex;
     output_tex_ = output_tex;
 
-    input_[0] = builder.ReadBuffer(in_shared_data_buf);
+    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
     input_count_ = 1;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpSSAO::Execute(Graph::RpBuilder &builder) {
+void RpSSAO::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
     Ren::RastState rast_state;
@@ -35,13 +37,14 @@ void RpSSAO::Execute(Graph::RpBuilder &builder) {
     rast_state.Apply();
     Ren::RastState applied_state = rast_state;
 
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
 
     { // prepare ao buffer
         const PrimDraw::Binding bindings[] = {
             {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, down_depth_2x_tex_},
             {Ren::eBindTarget::Tex2D, REN_BASE1_TEX_SLOT, rand2d_dirs_4x4_tex_},
             {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
+             orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
              unif_shared_data_buf.ref->handle()}};
 
         const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{applied_state.viewport}}};
@@ -80,6 +83,8 @@ void RpSSAO::Execute(Graph::RpBuilder &builder) {
                                         {Ren::eBindTarget::Tex2D, 1, down_depth_2x_tex_},
                                         {Ren::eBindTarget::Tex2D, 2, ssao_buf1_tex_},
                                         {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
+                                         orphan_index_ * SharedDataBlockSize,
+                                         sizeof(SharedDataBlock),
                                          unif_shared_data_buf.ref->handle()}};
 
         Ren::Program *blit_upscale_prog = nullptr;
@@ -116,7 +121,7 @@ void RpSSAO::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         assert(blit_upscale_ms_prog_->ready());
 
         { // dummy 1px texture
-            Ren::Texture2DParams p;
+            Ren::Tex2DParams p;
             p.w = p.h = 1;
             p.format = Ren::eTexFormat::RawRGBA8888;
             p.filter = Ren::eTexFilter::Bilinear;

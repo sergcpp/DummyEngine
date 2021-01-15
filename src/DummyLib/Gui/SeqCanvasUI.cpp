@@ -97,7 +97,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
                 if (seq_action->sound_wave_tex) {
                     const Ren::TextureRegionRef &t = seq_action->sound_wave_tex;
 
-                    const Ren::Texture2DParams &p = t->params();
+                    const Ren::Tex2DParams &p = t->params();
                     const Ren::Vec2f uvs_px[] = {
                         Ren::Vec2f{(float)(t->pos(0)), (float)(t->pos(1))},
                         Ren::Vec2f{(float)(t->pos(0) + p.w), (float)(t->pos(1) + p.h)}};

@@ -4,7 +4,7 @@
 
 class PrimDraw;
 
-class RpFXAA : public Graph::RenderPassBase {
+class RpFXAA : public RenderPassBase {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -15,6 +15,7 @@ class RpFXAA : public Graph::RenderPassBase {
     Ren::TexHandle color_tex_;
     Ren::TexHandle output_tex_;
     const ViewState *view_state_ = nullptr;
+    int orphan_index_ = -1;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
@@ -24,10 +25,9 @@ class RpFXAA : public Graph::RenderPassBase {
   public:
     RpFXAA(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(Graph::RpBuilder &builder, const ViewState *view_state,
-               Ren::TexHandle color_tex, Graph::ResourceHandle in_shared_data_buf,
-               Ren::TexHandle output_tex);
-    void Execute(Graph::RpBuilder &builder) override;
+    void Setup(RpBuilder &builder, const ViewState *view_state, int orphan_index,
+               Ren::TexHandle color_tex, Ren::TexHandle output_tex);
+    void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "FXAA"; }
 };

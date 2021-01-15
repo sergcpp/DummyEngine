@@ -15,7 +15,7 @@ enum eTexFormat { Undefined, RawRGB888, RawRGBA8888, Compressed };
 enum eTexFilter { NoFilter, Bilinear, Trilinear, BilinearNoMipmap };
 enum eTexRepeat { Repeat, ClampToEdge };
 
-struct Texture2DParams {
+struct Tex2DParams {
     int w = 0, h = 0;
     eTexFormat format = Undefined;
     eTexFilter filter = NoFilter;
@@ -26,22 +26,22 @@ enum eTexLoadStatus { TexFound, TexCreatedDefault, TexCreatedFromData, TexNotSup
 
 class Texture2D : public RefCounter {
     uint32_t    tex_id_ = 0;
-    Texture2DParams params_;
+    Tex2DParams params_;
     bool        ready_ = false;
     char        name_[64];
 
-    void InitFromRAWData(const void *data, const Texture2DParams &p);
-    void InitFromTGAFile(const void *data, const Texture2DParams &p);
-    void InitFromTEXFile(const void *data, const Texture2DParams &p);
+    void InitFromRAWData(const void *data, const Tex2DParams &p);
+    void InitFromTGAFile(const void *data, const Tex2DParams &p);
+    void InitFromTEXFile(const void *data, const Tex2DParams &p);
 public:
     Texture2D() {
         name_[0] = '\0';
     }
-    Texture2D(const char *name, uint32_t tex_id, const Texture2DParams &params) : tex_id_(tex_id), params_(params), ready_(0) {
+    Texture2D(const char *name, uint32_t tex_id, const Tex2DParams &params) : tex_id_(tex_id), params_(params), ready_(0) {
         strcpy(name_, name);
     }
-    Texture2D(const char *name, const void *data, int size, const Texture2DParams &params, eTexLoadStatus *load_status);
-    Texture2D(const char *name, const void *data[6], const int size[6], const Texture2DParams &params, eTexLoadStatus *load_status);
+    Texture2D(const char *name, const void *data, int size, const Tex2DParams &params, eTexLoadStatus *load_status);
+    Texture2D(const char *name, const void *data[6], const int size[6], const Tex2DParams &params, eTexLoadStatus *load_status);
     Texture2D(const Texture2D &rhs) = delete;
     Texture2D(Texture2D &&rhs) {
         *this = std::move(rhs);
@@ -51,13 +51,13 @@ public:
     Texture2D &operator=(const Texture2D &rhs) = delete;
     Texture2D &operator=(Texture2D &&rhs);
 
-    void Init(const char *name, const void *data, int size, const Texture2DParams &params, eTexLoadStatus *load_status);
-    void Init(const char *name, const void *data[6], const int size[6], const Texture2DParams &params, eTexLoadStatus *load_status);
+    void Init(const char *name, const void *data, int size, const Tex2DParams &params, eTexLoadStatus *load_status);
+    void Init(const char *name, const void *data[6], const int size[6], const Tex2DParams &params, eTexLoadStatus *load_status);
 
     uint32_t tex_id() const {
         return tex_id_;
     }
-    const Texture2DParams &params() const {
+    const Tex2DParams &params() const {
         return params_;
     }
     bool ready() const {

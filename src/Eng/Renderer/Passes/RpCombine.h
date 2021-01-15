@@ -7,7 +7,7 @@
 class PrimDraw;
 struct ViewState;
 
-class RpCombine : public Graph::RenderPassBase {
+class RpCombine : public RenderPassBase {
     PrimDraw &prim_draw_;
     bool initialized = false;
     bool tonemap_ = false;
@@ -28,10 +28,10 @@ class RpCombine : public Graph::RenderPassBase {
   public:
     RpCombine(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(Graph::RpBuilder &builder, const ViewState *view_state, float gamma,
+    void Setup(RpBuilder &builder, const ViewState *view_state, float gamma,
                float exposure, float fade, bool tonemap, Ren::TexHandle color_tex,
                Ren::TexHandle blur_tex, Ren::TexHandle output_tex);
-    void Execute(Graph::RpBuilder &builder) override;
+    void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "COMBINE PASS"; }
 };

@@ -8,7 +8,7 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-void RpCombine::Setup(Graph::RpBuilder &builder, const ViewState *view_state, float gamma,
+void RpCombine::Setup(RpBuilder &builder, const ViewState *view_state, float gamma,
                       float exposure, float fade, bool tonemap, Ren::TexHandle color_tex,
                       Ren::TexHandle blur_tex, Ren::TexHandle output_tex) {
     view_state_ = view_state;
@@ -28,7 +28,7 @@ void RpCombine::Setup(Graph::RpBuilder &builder, const ViewState *view_state, fl
     output_count_ = 0;
 }
 
-void RpCombine::Execute(Graph::RpBuilder &builder) {
+void RpCombine::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
     Ren::RastState rast_state;

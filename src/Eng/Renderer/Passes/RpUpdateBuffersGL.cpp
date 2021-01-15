@@ -5,7 +5,7 @@
 
 #include "../Renderer_Structs.h"
 
-void RpUpdateBuffers::Execute(Graph::RpBuilder &builder) {
+void RpUpdateBuffers::Execute(RpBuilder &builder) {
     if (fences_[orphan_index_]) {
         auto sync = reinterpret_cast<GLsync>(fences_[orphan_index_]);
         const GLenum res = glClientWaitSync(sync, 0, 1000000000);
@@ -20,11 +20,11 @@ void RpUpdateBuffers::Execute(Graph::RpBuilder &builder) {
         GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
         GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
 
-    Graph::AllocatedBuffer &skin_transforms_buf = builder.GetWriteBuffer(input_[0]);
+    RpAllocBuf &skin_transforms_buf = builder.GetWriteBuffer(input_[0]);
 
     // Update bone transforms buffer
     if (skin_transforms_.count) {
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)skin_transforms_buf.ref->id());
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, GLuint(skin_transforms_buf.ref->id()));
 
         void *pinned_mem = glMapBufferRange(
             GL_SHADER_STORAGE_BUFFER, orphan_index_ * SkinTransformsBufChunkSize,
@@ -44,10 +44,10 @@ void RpUpdateBuffers::Execute(Graph::RpBuilder &builder) {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     }
 
-    Graph::AllocatedBuffer &shape_keys_buf = builder.GetWriteBuffer(input_[1]);
+    RpAllocBuf &shape_keys_buf = builder.GetWriteBuffer(input_[1]);
 
     if (shape_keys_data_.count) {
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, (GLuint)shape_keys_buf.ref->id());
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, GLuint(shape_keys_buf.ref->id()));
 
         void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER,
                                             orphan_index_ * ShapeKeysBufChunkSize,
@@ -59,18 +59,32 @@ void RpUpdateBuffers::Execute(Graph::RpBuilder &builder) {
             glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0, shape_keys_mem_size);
             glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
         } else {
-            builder.log()->Error(
-                "RpUpdateBuffers: Failed to map shape keys buffer!");
+            builder.log()->Error("RpUpdateBuffers: Failed to map shape keys buffer!");
         }
 
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     }
 
-    Graph::AllocatedBuffer &instances_buf = builder.GetWriteBuffer(input_[2]);
+    Ren::Context &ctx = builder.ctx();
+
+    RpAllocBuf &instances_buf = builder.GetWriteBuffer(input_[2]);
+
+    if (!instances_buf.tbos[orphan_index_]) {
+        const uint32_t offset = orphan_index_ * InstanceDataBufChunkSize;
+        assert((offset % ctx.capabilities.tex_buf_offset_alignment == 0) &&
+               "Offset is not properly aligned!");
+
+        char name_buf[32];
+        sprintf(name_buf, "Instances TBO #%i", orphan_index_);
+
+        instances_buf.tbos[orphan_index_] =
+            ctx.CreateTexture1D(name_buf, instances_buf.ref, Ren::eTexFormat::RawRGBA32F,
+                                offset, InstanceDataBufChunkSize);
+    }
 
     // Update instance buffer
     if (instances_.count) {
-        glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)instances_buf.ref->id());
+        glBindBuffer(GL_TEXTURE_BUFFER, GLuint(instances_buf.ref->id()));
 
         void *pinned_mem =
             glMapBufferRange(GL_TEXTURE_BUFFER, orphan_index_ * InstanceDataBufChunkSize,
@@ -87,11 +101,24 @@ void RpUpdateBuffers::Execute(Graph::RpBuilder &builder) {
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
     }
 
-    Graph::AllocatedBuffer &cells_buf = builder.GetWriteBuffer(input_[3]);
+    RpAllocBuf &cells_buf = builder.GetWriteBuffer(input_[3]);
+
+    if (!cells_buf.tbos[orphan_index_]) {
+        const uint32_t offset = orphan_index_ * CellsBufChunkSize;
+        assert((offset % ctx.capabilities.tex_buf_offset_alignment == 0) &&
+               "Offset is not properly aligned!");
+
+        char name_buf[32];
+        sprintf(name_buf, "Cells TBO #%i", orphan_index_);
+
+        cells_buf.tbos[orphan_index_] =
+            ctx.CreateTexture1D(name_buf, cells_buf.ref, Ren::eTexFormat::RawRG32U,
+                                offset, CellsBufChunkSize);
+    }
 
     // Update cells buffer
     if (cells_.count) {
-        glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)cells_buf.ref->id());
+        glBindBuffer(GL_TEXTURE_BUFFER, GLuint(cells_buf.ref->id()));
 
         void *pinned_mem =
             glMapBufferRange(GL_TEXTURE_BUFFER, orphan_index_ * CellsBufChunkSize,
@@ -108,11 +135,24 @@ void RpUpdateBuffers::Execute(Graph::RpBuilder &builder) {
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
     }
 
-    Graph::AllocatedBuffer &lights_buf = builder.GetWriteBuffer(input_[4]);
+    RpAllocBuf &lights_buf = builder.GetWriteBuffer(input_[4]);
+
+    if (!lights_buf.tbos[orphan_index_]) { // Create buffer for lights information
+        const uint32_t offset = orphan_index_ * LightsBufChunkSize;
+        assert((offset % ctx.capabilities.tex_buf_offset_alignment == 0) &&
+               "Offset is not properly aligned!");
+
+        char name_buf[32];
+        sprintf(name_buf, "Lights TBO #%i", orphan_index_);
+
+        lights_buf.tbos[orphan_index_] =
+            ctx.CreateTexture1D(name_buf, lights_buf.ref, Ren::eTexFormat::RawRGBA32F,
+                                offset, LightsBufChunkSize);
+    }
 
     // Update lights buffer
     if (light_sources_.count) {
-        glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)lights_buf.ref->id());
+        glBindBuffer(GL_TEXTURE_BUFFER, GLuint(lights_buf.ref->id()));
 
         void *pinned_mem =
             glMapBufferRange(GL_TEXTURE_BUFFER, orphan_index_ * LightsBufChunkSize,
@@ -129,11 +169,24 @@ void RpUpdateBuffers::Execute(Graph::RpBuilder &builder) {
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
     }
 
-    Graph::AllocatedBuffer &decals_buf = builder.GetWriteBuffer(input_[5]);
+    RpAllocBuf &decals_buf = builder.GetWriteBuffer(input_[5]);
+
+    if (!decals_buf.tbos[orphan_index_]) {
+        const uint32_t offset = orphan_index_ * DecalsBufChunkSize;
+        assert((offset % ctx.capabilities.tex_buf_offset_alignment == 0) &&
+               "Offset is not properly aligned!");
+
+        char name_buf[32];
+        sprintf(name_buf, "Decals TBO #%i", orphan_index_);
+
+        decals_buf.tbos[orphan_index_] =
+            ctx.CreateTexture1D(name_buf, decals_buf.ref, Ren::eTexFormat::RawRGBA32F,
+                                offset, DecalsBufChunkSize);
+    }
 
     // Update decals buffer
     if (decals_.count) {
-        glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)decals_buf.ref->id());
+        glBindBuffer(GL_TEXTURE_BUFFER, GLuint(decals_buf.ref->id()));
 
         void *pinned_mem =
             glMapBufferRange(GL_TEXTURE_BUFFER, orphan_index_ * DecalsBufChunkSize,
@@ -150,11 +203,24 @@ void RpUpdateBuffers::Execute(Graph::RpBuilder &builder) {
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
     }
 
-    Graph::AllocatedBuffer &items_buf = builder.GetWriteBuffer(input_[6]);
+    RpAllocBuf &items_buf = builder.GetWriteBuffer(input_[6]);
+
+    if (!items_buf.tbos[orphan_index_]) {
+        const uint32_t offset = orphan_index_ * ItemsBufChunkSize;
+        assert((offset % ctx.capabilities.tex_buf_offset_alignment == 0) &&
+               "Offset is not properly aligned!");
+
+        char name_buf[32];
+        sprintf(name_buf, "Items TBO #%i", orphan_index_);
+
+        items_buf.tbos[orphan_index_] =
+            ctx.CreateTexture1D(name_buf, items_buf.ref, Ren::eTexFormat::RawRG32U,
+                                offset, ItemsBufChunkSize);
+    }
 
     // Update items buffer
     if (items_.count) {
-        glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)items_buf.ref->id());
+        glBindBuffer(GL_TEXTURE_BUFFER, GLuint(items_buf.ref->id()));
 
         void *pinned_mem =
             glMapBufferRange(GL_TEXTURE_BUFFER, orphan_index_ * ItemsBufChunkSize,
@@ -170,7 +236,7 @@ void RpUpdateBuffers::Execute(Graph::RpBuilder &builder) {
 
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
     } else {
-        glBindBuffer(GL_TEXTURE_BUFFER, (GLuint)items_buf.ref->id());
+        glBindBuffer(GL_TEXTURE_BUFFER, GLuint(items_buf.ref->id()));
         ItemData dummy = {};
         glBufferSubData(GL_TEXTURE_BUFFER, orphan_index_ * ItemsBufChunkSize,
                         sizeof(ItemData), &dummy);
@@ -180,7 +246,7 @@ void RpUpdateBuffers::Execute(Graph::RpBuilder &builder) {
     //
     // Update UBO with data that is shared between passes
     //
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetWriteBuffer(input_[7]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetWriteBuffer(input_[7]);
 
     { // Prepare data that is shared for all instances
         SharedDataBlock shrd_data;
@@ -253,14 +319,15 @@ void RpUpdateBuffers::Execute(Graph::RpBuilder &builder) {
         memcpy(&shrd_data.uEllipsoids[0], ellipsoids_.data,
                sizeof(EllipsItem) * ellipsoids_.count);
 
-        glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)unif_shared_data_buf.ref->id());
+        glBindBuffer(GL_UNIFORM_BUFFER, GLuint(unif_shared_data_buf.ref->id()));
 
         const GLbitfield BufferRangeBindFlags =
             GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
             GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
 
-        void *pinned_mem = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(SharedDataBlock),
-                                            BufferRangeBindFlags);
+        void *pinned_mem =
+            glMapBufferRange(GL_UNIFORM_BUFFER, orphan_index_ * SharedDataBlockSize,
+                             sizeof(SharedDataBlock), BufferRangeBindFlags);
         if (pinned_mem) {
             memcpy(pinned_mem, &shrd_data, sizeof(SharedDataBlock));
             glFlushMappedBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(SharedDataBlock));

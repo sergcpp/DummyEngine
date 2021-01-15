@@ -78,6 +78,7 @@ set(RENDERER_SOURCES    Renderer/DebugMarker.h
                         Renderer/Renderer_DrawList.cpp
                         Renderer/Renderer_Frontend.cpp
                         Renderer/Renderer_Gen.cpp
+                        Renderer/Renderer_Names.h
                         Renderer/Renderer_Structs.h
                         Renderer/__brdf_lut.inl
                         Renderer/__cone_rt_lut.inl

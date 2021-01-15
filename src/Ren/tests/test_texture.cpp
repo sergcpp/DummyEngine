@@ -121,12 +121,12 @@ void test_texture() {
         TextureTest test;
 
         Ren::eTexLoadStatus status;
-        Ren::Texture2DParams p;
+        Ren::Tex2DParams p;
         Ren::Tex2DRef t_ref = test.LoadTexture2D("checker.tga", nullptr, 0, p, &status);
         require(status == Ren::eTexLoadStatus::TexCreatedDefault);
 
         require(t_ref->name() == "checker.tga");
-        const Ren::Texture2DParams &tp = t_ref->params();
+        const Ren::Tex2DParams &tp = t_ref->params();
         require(tp.w == 1);
         require(tp.h == 1);
         require(tp.format == Ren::eTexFormat::RawRGBA8888);
@@ -141,7 +141,7 @@ void test_texture() {
         {
             Ren::Tex2DRef t_ref3 = test.LoadTexture2D("checker.tga", test_tga_img, (int)sizeof(test_tga_img), p, &status);
             require(status == Ren::eTexLoadStatus::TexCreatedFromData);
-            const Ren::Texture2DParams& tp = t_ref3->params();
+            const Ren::Tex2DParams& tp = t_ref3->params();
             require(tp.w == 2);
             require(tp.h == 2);
             require(tp.format == Ren::eTexFormat::RawRGB888);

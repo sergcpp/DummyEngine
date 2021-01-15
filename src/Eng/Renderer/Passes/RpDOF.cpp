@@ -8,15 +8,16 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-void RpDOF::Setup(Graph::RpBuilder &builder, const Ren::Camera *draw_cam,
-                  const ViewState *view_state, Ren::TexHandle color_tex,
-                  Ren::TexHandle depth_tex, Ren::TexHandle down_buf_4x,
-                  Ren::TexHandle down_depth_2x, Ren::TexHandle down_depth_4x,
-                  Ren::TexHandle down_tex_coc[2], Ren::TexHandle blur_temp_4x[2],
-                  Ren::TexHandle dof_buf, Graph::ResourceHandle in_shared_data_buf,
+void RpDOF::Setup(RpBuilder &builder, const Ren::Camera *draw_cam,
+                  const ViewState *view_state, const int orphan_index,
+                  Ren::TexHandle color_tex, Ren::TexHandle depth_tex,
+                  Ren::TexHandle down_buf_4x, Ren::TexHandle down_depth_2x,
+                  Ren::TexHandle down_depth_4x, Ren::TexHandle down_tex_coc[2],
+                  Ren::TexHandle blur_temp_4x[2], Ren::TexHandle dof_buf,
                   Ren::TexHandle output_tex) {
     draw_cam_ = draw_cam;
     view_state_ = view_state;
+    orphan_index_ = orphan_index;
     color_tex_ = color_tex;
     depth_tex_ = depth_tex;
     down_buf_4x_ = down_buf_4x;
@@ -28,20 +29,20 @@ void RpDOF::Setup(Graph::RpBuilder &builder, const Ren::Camera *draw_cam,
     blur_temp_4x_[1] = blur_temp_4x[1];
     output_tex_ = output_tex;
 
-    input_[0] = builder.ReadBuffer(in_shared_data_buf);
+    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
     input_count_ = 1;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpDOF::Execute(Graph::RpBuilder &builder) {
+void RpDOF::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
     const int hres_w = view_state_->scr_res[0] / 2, hres_h = view_state_->scr_res[1] / 2;
     const int qres_w = view_state_->scr_res[0] / 4, qres_h = view_state_->scr_res[1] / 4;
 
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
 
     Ren::RastState rast_state;
     rast_state.cull_face.enabled = true;
@@ -89,6 +90,7 @@ void RpDOF::Execute(Graph::RpBuilder &builder) {
         const PrimDraw::Binding bindings[] = {
             {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, down_depth_2x_},
             {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
+             orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
              unif_shared_data_buf.ref->handle()}};
 
         const PrimDraw::Uniform uniforms[2] = {
@@ -190,6 +192,7 @@ void RpDOF::Execute(Graph::RpBuilder &builder) {
         PrimDraw::Binding bindings[6];
 
         bindings[0] = {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
+                       orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
                        unif_shared_data_buf.ref->handle()};
         bindings[1] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, color_tex_};
 

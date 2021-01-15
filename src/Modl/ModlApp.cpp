@@ -291,7 +291,7 @@ int ModlApp::Init(int w, int h) {
             }
         }
 
-        Ren::Texture2DParams p;
+        Ren::Tex2DParams p;
         p.w = p.h = checker_res;
         p.format = Ren::eTexFormat::RawRGB888;
         p.filter = Ren::eTexFilter::NoFilter;
@@ -1722,7 +1722,7 @@ Ren::Tex2DRef ModlApp::OnTextureNeeded(const char *name) {
             (std::string("assets_pc/textures/") + tex_name).c_str(),
             [this, tex_name](void *data, int size) {
                 ctx_.ProcessSingleTask([this, tex_name, data, size]() {
-                    Ren::Texture2DParams p;
+                    Ren::Tex2DParams p;
                     p.filter = Ren::eTexFilter::Trilinear;
                     p.repeat = Ren::eTexRepeat::Repeat;
                     ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, nullptr);

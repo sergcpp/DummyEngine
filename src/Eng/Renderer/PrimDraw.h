@@ -47,10 +47,20 @@ class PrimDraw {
 
     struct Binding {
         Ren::eBindTarget trg;
-        uint16_t loc;
+        uint16_t loc = 0;
+        uint16_t offset = 0;
+        uint16_t size = 0;
         Handle handle;
+
+        Binding() = default;
+        Binding(Ren::eBindTarget _trg, uint16_t _loc, Handle _handle)
+            : trg(_trg), loc(_loc), handle(_handle) {}
+        Binding(Ren::eBindTarget _trg, uint16_t _loc, size_t _offset, size_t _size,
+                Handle _handle)
+            : trg(_trg), loc(_loc), offset(uint16_t(_offset)), size(uint16_t(_size)),
+              handle(_handle) {}
     };
-    static_assert(sizeof(Binding) == 8, "!");
+    static_assert(sizeof(Binding) == 12, "!");
 
     struct Uniform {
         Ren::eType type;

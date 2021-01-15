@@ -1,6 +1,6 @@
 #include "RpInsertFence.h"
 
-void RpInsertFence::Setup(Graph::RpBuilder &builder, int orphan_index, void **fences) {
+void RpInsertFence::Setup(RpBuilder &builder, int orphan_index, void **fences) {
     orphan_index_ = orphan_index;
     fences_ = fences;
 

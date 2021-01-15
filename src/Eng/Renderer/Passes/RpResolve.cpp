@@ -6,7 +6,7 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-void RpResolve::Setup(Graph::RpBuilder &builder, const ViewState *view_state,
+void RpResolve::Setup(RpBuilder &builder, const ViewState *view_state,
                       Ren::TexHandle color_tex, Ren::TexHandle output_tex) {
     view_state_ = view_state;
     color_tex_ = color_tex;
@@ -19,7 +19,7 @@ void RpResolve::Setup(Graph::RpBuilder &builder, const ViewState *view_state,
     output_count_ = 0;
 }
 
-void RpResolve::Execute(Graph::RpBuilder &builder) {
+void RpResolve::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
     Ren::RastState rast_state;

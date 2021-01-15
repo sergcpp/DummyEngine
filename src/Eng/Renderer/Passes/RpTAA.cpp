@@ -6,14 +6,16 @@
 
 #include "../../Utils/ShaderLoader.h"
 #include "../PrimDraw.h"
+#include "../Renderer_Names.h"
 #include "../Renderer_Structs.h"
 
-void RpTAA::Setup(Graph::RpBuilder &builder, const ViewState *view_state,
+void RpTAA::Setup(RpBuilder &builder, const ViewState *view_state, const int orphan_index,
                   Ren::TexHandle depth_tex, Ren::TexHandle clean_tex,
                   Ren::TexHandle history_tex, Ren::TexHandle velocity_tex,
                   float reduced_average, float max_exposure,
-                  Graph::ResourceHandle in_shared_data_buf, Ren::TexHandle output_tex) {
+                  Ren::TexHandle output_tex) {
     view_state_ = view_state;
+    orphan_index_ = orphan_index;
     depth_tex_ = depth_tex;
     clean_tex_ = clean_tex;
     history_tex_ = history_tex;
@@ -23,17 +25,17 @@ void RpTAA::Setup(Graph::RpBuilder &builder, const ViewState *view_state,
     reduced_average_ = reduced_average;
     max_exposure_ = max_exposure;
 
-    input_[0] = builder.ReadBuffer(in_shared_data_buf);
+    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
     input_count_ = 1;
 
     // output_[0] = builder.WriteBuffer(input_[0], *this);
     output_count_ = 0;
 }
 
-void RpTAA::Execute(Graph::RpBuilder &builder) {
+void RpTAA::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
 
     Ren::RastState rast_state;
     rast_state.cull_face.enabled = true;
@@ -54,10 +56,11 @@ void RpTAA::Execute(Graph::RpBuilder &builder) {
 
         Ren::Program *blit_prog = blit_static_vel_prog_.get();
 
-        const PrimDraw::Binding bindings[] = {{Ren::eBindTarget::Tex2D, 0, depth_tex_},
-                                              {Ren::eBindTarget::UBuf,
-                                               REN_UB_SHARED_DATA_LOC,
-                                               unif_shared_data_buf.ref->handle()}};
+        const PrimDraw::Binding bindings[] = {
+            {Ren::eBindTarget::Tex2D, 0, depth_tex_},
+            {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
+             orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
+             unif_shared_data_buf.ref->handle()}};
 
         const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{applied_state.viewport}}};
 

@@ -10,7 +10,7 @@ extern const float __skydome_positions[];
 extern const int __skydome_vertices_count;
 } // namespace RpSkydomeInternal
 
-void RpSkydome::DrawSkydome(Graph::RpBuilder &builder) {
+void RpSkydome::DrawSkydome(RpBuilder &builder) {
     using namespace RpSkydomeInternal;
 
     Ren::RastState rast_state;
@@ -31,9 +31,13 @@ void RpSkydome::DrawSkydome(Graph::RpBuilder &builder) {
 
     rast_state.Apply();
 
-    Graph::AllocatedBuffer &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
-    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
-                     (GLuint)unif_shared_data_buf.ref->id());
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    glBindBufferRange(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
+                      GLuint(unif_shared_data_buf.ref->id()),
+                      orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock));
+    assert(orphan_index_ * SharedDataBlockSize %
+               builder.ctx().capabilities.unif_buf_offset_alignment ==
+           0);
 
 #if defined(REN_DIRECT_DRAWING)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
