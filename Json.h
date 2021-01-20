@@ -127,6 +127,7 @@ struct JsArray {
 struct JsObject {
     std::vector<std::pair<std::string, JsElement>> elements;
 
+    const std::pair<std::string, JsElement>& operator[](size_t i) const;
     std::pair<std::string, JsElement> &operator[](size_t i);
     JsElement &operator[](const std::string &s);
 
