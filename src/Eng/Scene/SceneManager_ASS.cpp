@@ -295,6 +295,32 @@ bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &
     return true;
 }
 
+struct AssetCache {
+    JsObject js_db;
+    Ren::HashMap32<const char*, int> db_map;
+    Ren::HashMap32<const char*, uint32_t> texture_averages;
+
+    void WriteTextureAverage(const char* tex_name, const uint8_t average_color[4]) {
+        uint32_t color;
+        memcpy(&color, average_color, 4);
+        texture_averages.Insert(tex_name, color);
+
+        JsObject& js_files = js_db["files"].as_obj();
+        const int* index = db_map.Find(tex_name);
+        if (index) {
+            JsObject& js_file = js_files.elements[*index].second.as_obj();
+
+            if (js_file.Has("color")) {
+                JsNumber& js_color = js_file.at("color").as_num();
+                js_color.val = double(color);
+            } else {
+                auto js_color = JsNumber{ double(color) };
+                js_file.Push("color", js_color);
+            }
+    }
+    }
+};
+
 bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context_t &ctx) {
 #if !defined(NDEBUG) && 0
     log->Info("Warning: glsl is forced to be not skipped!");
@@ -306,9 +332,9 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context
     GetFileModifyTime(in_file, in_t, ctx, true /* report_error */);
     GetFileModifyTime(out_file, out_t, ctx, false /* report_error */);
 
-    JsObject &js_files = ctx.js_db["files"].as_obj();
+    JsObject &js_files = ctx.cache->js_db["files"].as_obj();
 
-    const int *in_ndx = ctx.db_map.Find(in_file);
+    const int *in_ndx = ctx.cache->db_map.Find(in_file);
     if (in_ndx) {
         JsObject &js_in_file = js_files[*in_ndx].second.as_obj();
         if (js_in_file.Has("in_time") && js_in_file.Has("out_time")) {
@@ -376,7 +402,7 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context
         new_entry.Push("in_time", JsString{in_t});
         new_entry.Push("in_hash", JsString{in_crc32_hash_str});
         const size_t new_ndx = js_files.Push(in_file, std::move(new_entry));
-        ctx.db_map[in_file] = int(new_ndx);
+        ctx.cache->db_map[in_file] = int(new_ndx);
     }
 
     return false;
@@ -557,6 +583,7 @@ std::string ExtractHTMLData(assets_context_t &ctx, const char *in_file,
     return out_str;
 }
 
+bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]);
 } // namespace SceneManagerInternal
 
 Ren::HashMap32<std::string, SceneManager::Handler> SceneManager::g_asset_handlers;
@@ -593,22 +620,22 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
     g_asset_handlers["tese.glsl"] = {"tese.glsl", HPreprocessShader};
     g_asset_handlers["comp.glsl"] = {"comp.glsl", HPreprocessShader};
     g_asset_handlers["ttf"] = {"font", HConvTTFToFont};
+    g_asset_handlers["json"] = {"json", HPreprocessJson};
 
     if (strcmp(platform, "pc") == 0) {
-        g_asset_handlers["json"] = {"json", HPreprocessJson};
-        g_asset_handlers["txt"] = {"txt", HPreprocessMaterial};
         g_asset_handlers["tga"] = {"dds", HConvToDDS};
         g_asset_handlers["hdr"] = {"dds", HConvHDRToRGBM};
         g_asset_handlers["png"] = {"dds", HConvToDDS};
         g_asset_handlers["img"] = {"dds", HConvImgToDDS};
     } else if (strcmp(platform, "android") == 0) {
-        g_asset_handlers["json"] = {"json", HPreprocessJson};
-        g_asset_handlers["txt"] = {"txt", HPreprocessMaterial};
         g_asset_handlers["tga"] = {"ktx", HConvToASTC};
         g_asset_handlers["hdr"] = {"ktx", HConvHDRToRGBM};
         g_asset_handlers["png"] = {"ktx", HConvToASTC};
         g_asset_handlers["img"] = {"ktx", HConvImgToASTC};
     }
+    g_asset_handlers["txt"] = {"txt", HPreprocessMaterial};
+
+    // auto
 
     g_asset_handlers["uncompressed.tga"] = {"uncompressed.tga", HCopy};
     g_asset_handlers["uncompressed.png"] = {"uncompressed.png", HCopy};
@@ -652,9 +679,9 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
             const uint32_t out_crc32_hash = Crc32HashFile(out_file.c_str(), ctx.log);
             const std::string out_crc32_hash_str = std::to_string(out_crc32_hash);
 
-            JsObject &js_files = ctx.js_db["files"].as_obj();
+            JsObject &js_files = ctx.cache->js_db["files"].as_obj();
 
-            const int *in_ndx = ctx.db_map.Find(in_file);
+            const int *in_ndx = ctx.cache->db_map.Find(in_file);
             if (in_ndx) {
                 JsObject &js_in_file = js_files[*in_ndx].second.as_obj();
                 // store new hash value
@@ -677,7 +704,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
                 }
             }
 
-            if (Sys::GetTimeS() - last_db_write > 5.0 && WriteDB(ctx.js_db, out_folder)) {
+            if (Sys::GetTimeS() - last_db_write > 5.0 && WriteDB(ctx.cache->js_db, out_folder)) {
                 last_db_write = Sys::GetTimeS();
             }
         }
@@ -691,21 +718,25 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
     }
 #endif
 
-    JsObject js_assets_db = LoadDB(out_folder);
+    assets_context_t ctx = { platform, log };
+    ctx.cache.reset(new AssetCache);
 
-    Ren::HashMap32<const char *, int> db_map;
+    ctx.cache->js_db = LoadDB(out_folder);
 
-    if (js_assets_db.Has("files")) {
-        const JsObject &js_files = js_assets_db.at("files").as_obj();
-        for (int i = 0; i < (int)js_files.elements.size(); i++) {
+    if (ctx.cache->js_db.Has("files")) {
+        const JsObject &js_files = ctx.cache->js_db.at("files").as_obj();
+        for (int i = 0; i < int(js_files.elements.size()); i++) {
             const char *key = js_files.elements[i].first.c_str();
-            db_map[key] = i;
+            ctx.cache->db_map[key] = i;
+
+            if (js_files.elements[i].second.as_obj().Has("color")) {
+                const JsNumber &js_color = js_files.elements[i].second.as_obj().at("color").as_num();
+                ctx.cache->texture_averages[key] = uint32_t(js_color.val);
+            }
         }
     } else {
-        js_assets_db.Push("files", JsObject{});
+        ctx.cache->js_db.Push("files", JsObject{});
     }
-
-    assets_context_t ctx = {platform, log, js_assets_db, db_map};
 
     /*if (p_threads) {
         std::vector<std::future<void>> events;
@@ -718,7 +749,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
     ReadAllFiles_r(ctx, in_folder, convert_file);
     //}
 
-    WriteDB(js_assets_db, out_folder);
+    WriteDB(ctx.cache->js_db, out_folder);
 
     return true;
 }
@@ -762,7 +793,44 @@ bool SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_fil
 
     std::string line;
     while (std::getline(src_stream, line)) {
-        SceneManagerInternal::ReplaceTextureExtension(ctx.platform, line);
+        if (line.back() == '\n') {
+            line.pop_back();
+        }
+        if (line.back() == '\r') {
+            line.pop_back();
+        }
+
+        if (line.rfind("texture:", 0) == 0) {
+            const size_t n1 = line.find(' ');
+            const size_t n2 = line.find(' ', n1 + 1);
+            const std::string tex_name =
+                "assets/textures/" + line.substr(n1 + 1, n2 - n1 - 1);
+
+            uint8_t average_color[4] = {0, 255, 255, 255};
+
+            const uint32_t *cached_color = ctx.cache->texture_averages.Find(tex_name.c_str());
+            if (cached_color) {
+                memcpy(average_color, cached_color, 4);
+            } else {
+                if (!SceneManagerInternal::GetTexturesAverageColor(tex_name.c_str(),
+                                                                   average_color)) {
+                    ctx.log->Error("[PrepareAssets] Failed to get average color of %s",
+                                   tex_name.c_str());
+                } else {
+                    ctx.cache->WriteTextureAverage(tex_name.c_str(), average_color);
+                }
+            }
+
+            SceneManagerInternal::ReplaceTextureExtension(ctx.platform, line);
+
+            static char const hex_chars[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                                               '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+            line += " #";
+            for (int i = 0; i < 4; i++) {
+                line += hex_chars[average_color[i] / 16];
+                line += hex_chars[average_color[i] % 16];
+            }
+        }
         dst_stream << line << "\n";
     }
 

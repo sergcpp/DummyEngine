@@ -187,7 +187,7 @@ using WeakTex1DRef = WeakRef<Texture1D>;
 using Texture1DStorage = Storage<Texture1D>;
 
 uint32_t GLFormatFromTexFormat(eTexFormat format);
-uint32_t GLInternalFormatFromTexFormat(eTexFormat format);
+uint32_t GLInternalFormatFromTexFormat(eTexFormat format, bool is_srgb);
 uint32_t GLTypeFromTexFormat(eTexFormat format);
 uint32_t GLBindTarget(eBindTarget binding);
 

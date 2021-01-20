@@ -23,11 +23,14 @@ class Context;
 
 class ShaderLoader;
 
+namespace SceneManagerInternal {
+struct AssetCache;
+}
+
 struct assets_context_t {
     const char *platform;
     Ren::ILog *log;
-    JsObject &js_db;
-    Ren::HashMap32<const char *, int> &db_map;
+    std::unique_ptr<SceneManagerInternal::AssetCache> cache;
     Sys::ThreadPool *p_threads;
 };
 
@@ -119,7 +122,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     Ren::ProgramRef OnLoadProgram(const char *name, const char *v_shader,
                                   const char *f_shader, const char *tc_shader,
                                   const char *te_shader);
-    Ren::Tex2DRef OnLoadTexture(const char *name, uint32_t flags);
+    Ren::Tex2DRef OnLoadTexture(const char *name, const uint8_t color[4], uint32_t flags);
 
     Ren::Vec4f LoadDecalTexture(const char *name);
 

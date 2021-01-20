@@ -16,6 +16,51 @@ extern "C" {
 #define _MAX(x, y) ((x) < (y) ? (y) : (x))
 
 namespace SceneManagerInternal {
+void GetTexturesAverageColor(const unsigned char *image_data, int w, int h, int channels,
+                             uint8_t out_color[4]) {
+    uint32_t sum[4] = {};
+    for (int y = 0; y < h; y++) {
+        uint32_t line_sum[4] = {};
+        for (int x = 0; x < w; x++) {
+            for (int i = 0; i < channels; i++) {
+                line_sum[i] += image_data[channels * (y * w + x) + i];
+            }
+        }
+        for (int i = 0; i < channels; i++) {
+            sum[i] += line_sum[i] / w;
+        }
+    }
+
+    for (int i = 0; i < channels; i++) {
+        out_color[i] = uint8_t(sum[i] / h);
+    }
+    for (int i = channels; i < 4; i++) {
+        out_color[i] = 255;
+    }
+}
+
+bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]) {
+    std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
+    if (!src_stream) {
+        return false;
+    }
+    const auto src_size = size_t(src_stream.tellg());
+    src_stream.seekg(0, std::ios::beg);
+
+    std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
+    src_stream.read((char *)&src_buf[0], src_size);
+
+    int width, height, channels;
+    unsigned char *const image_data = SOIL_load_image_from_memory(
+        &src_buf[0], int(src_size), &width, &height, &channels, 0);
+
+    GetTexturesAverageColor(image_data, width, height, channels, out_color);
+
+    SOIL_free_image_data(image_data);
+
+    return true;
+}
+
 std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width,
                                               int height, int channels,
                                               assets_context_t &ctx) {
@@ -380,7 +425,7 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
 }
 
 bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int channels,
-               const bool flip_y, const bool is_rgbm, const char *out_file) {
+               const bool flip_y, const bool is_rgbm, const char *out_file, uint8_t out_color[4]) {
     // Check if resolution is power of two
     const bool store_mipmaps =
         (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
@@ -410,8 +455,20 @@ bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
                                         Ren::eMipOp::Avg, Ren::eMipOp::Avg};
             mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels, ops);
         }
+
+        if (out_color) {
+            memcpy(out_color, &mipmaps[mip_count - 1][0], channels);
+        }
     } else {
         mip_count = 1;
+
+        if (out_color) {
+            GetTexturesAverageColor(image_data, w, h, channels, out_color);
+        }
+    }
+
+    if (out_color && channels == 3) {
+        out_color[3] = 255;
     }
 
     uint8_t *_mipmaps[16];
@@ -679,7 +736,7 @@ int WriteImage(const uint8_t *out_data, const int w, const int h, const int chan
         res = SOIL_save_image(name, img_type, w, h, channels, out_data);
     } else if (strstr(name, ".dds")) {
         res = 1;
-        Write_DDS(out_data, w, h, channels, flip_y, is_rgbm, name);
+        Write_DDS(out_data, w, h, channels, flip_y, is_rgbm, name, nullptr);
     } else if (strstr(name, ".ktx")) {
         res = 1;
         Write_KTX_ASTC(out_data, w, h, channels, flip_y, is_rgbm, name);
@@ -708,8 +765,10 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
     src_stream.read((char *)&src_buf[0], src_size);
 
     int width, height, channels;
-    unsigned char *image_data = SOIL_load_image_from_memory(
+    unsigned char *const image_data = SOIL_load_image_from_memory(
         &src_buf[0], int(src_size), &width, &height, &channels, 0);
+
+    uint8_t average_color[4] = {};
 
     bool res = true;
     if (strstr(in_file, "_norm")) {
@@ -727,7 +786,7 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
         }
 
         res &= Write_DDS(temp_data.get(), width, height, 4, false /* flip_y */,
-                         false /* is_rgbm */, out_file);
+                         false /* is_rgbm */, out_file, average_color);
     } else if (strstr(in_file, "_bump")) {
         if (channels != 1) {
             ctx.log->Info("Bump map has too many channels (%i)", channels);
@@ -772,6 +831,11 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
             }
         }
 
+        memcpy(average_color, &mipmaps[mip_count - 1][0], channels);
+        if (channels == 3) {
+            average_color[3] = 255;
+        }
+
         uint8_t *_mipmaps[16];
         for (int i = 0; i < mip_count; i++) {
             _mipmaps[i] = mipmaps[i].get();
@@ -780,9 +844,11 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
     } else {
         const bool is_rgbm = channels == 4 && strstr(in_file, "lightmaps") != nullptr;
         res &= Write_DDS(image_data, width, height, channels, false /* flip_y */,
-                         is_rgbm /* is_rgbm */, out_file);
+                         is_rgbm /* is_rgbm */, out_file, average_color);
     }
     SOIL_free_image_data(image_data);
+
+    ctx.cache->WriteTextureAverage(in_file, average_color);
 
     return res;
 }

@@ -7,7 +7,7 @@
 
 #ifdef ENABLE_ITT_API
 #include <vtune/ittnotify.h>
-extern __itt_domain* __g_itt_domain;
+extern __itt_domain *__g_itt_domain;
 #endif
 
 #include "../Utils/BVHSplit.h"
@@ -66,7 +66,10 @@ void update_bbox(const bvh_node_t *nodes, bvh_node_t &node) {
         Ren::Max(nodes[node.left_child].bbox_max, nodes[node.right_child].bbox_max);
 }
 
-__itt_string_handle* itt_rebuild_bvh_str = __itt_string_handle_create("SceneManager::RebuildBVH");
+__itt_string_handle *itt_rebuild_bvh_str =
+    __itt_string_handle_create("SceneManager::RebuildBVH");
+__itt_string_handle *itt_update_bvh_str =
+    __itt_string_handle_create("SceneManager::UpdateBVH");
 } // namespace SceneManagerInternal
 
 void SceneManager::RebuildBVH() {
@@ -275,6 +278,10 @@ void SceneManager::RemoveNode(const uint32_t node_index) {
 
 void SceneManager::UpdateObjects() {
     using namespace SceneManagerInternal;
+
+#ifdef ENABLE_ITT_API
+    __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_update_bvh_str);
+#endif
 
     auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->Get(0);
     assert(scene_data_.comp_store[CompTransform]->IsSequential());
@@ -513,4 +520,8 @@ void SceneManager::UpdateObjects() {
     scene_data_.free_nodes.erase(scene_data_.free_nodes.begin(),
                                  scene_data_.free_nodes.begin() + free_nodes_pos);
     last_changed_objects_ = std::move(changed_objects_);
+
+#ifdef ENABLE_ITT_API
+    __itt_task_end(__g_itt_domain);
+#endif
 }

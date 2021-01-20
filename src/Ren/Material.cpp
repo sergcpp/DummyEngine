@@ -9,6 +9,10 @@
 
 namespace Ren {
 bool IsMainThread();
+
+uint8_t from_hex_char(const char c) {
+    return (c >= 'A') ? (c >= 'a') ? (c - 'a' + 10) : (c - 'A' + 10) : (c - '0');
+}
 }
 
 Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *status,
@@ -149,6 +153,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             q = strpbrk(p, delims);
             const std::string texture_name = std::string(p, q);
 
+            uint8_t texture_color[] = {0, 255, 255, 255};
             uint32_t texture_flags = 0;
 
             const char *_p = q + 1;
@@ -159,39 +164,37 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                     break;
                 }
 
-                std::string flag = std::string(_p, _q);
-                if (flag == "signed") {
+                const char *flag = _p;
+                const int flag_len = int(_q - _p);
+
+                if (flag[0] == '#') {
+                    texture_color[0] = from_hex_char(flag[1]) * 16 + from_hex_char(flag[2]);
+                    texture_color[1] = from_hex_char(flag[3]) * 16 + from_hex_char(flag[4]);
+                    texture_color[2] = from_hex_char(flag[5]) * 16 + from_hex_char(flag[6]);
+                    texture_color[3] = from_hex_char(flag[7]) * 16 + from_hex_char(flag[8]);
+                } else if (strncmp(flag, "signed", flag_len) == 0) {
                     texture_flags |= TexSigned;
-                    p = _p;
-                    q = _q;
-                } else if (flag == "srgb") {
+                } else if (strncmp(flag, "srgb", flag_len) == 0) {
                     texture_flags |= TexSRGB;
-                    p = _p;
-                    q = _q;
-                } else if (flag == "norepeat") {
+                } else if (strncmp(flag, "norepeat", flag_len) == 0) {
                     texture_flags |= TexNoRepeat;
-                    p = _p;
-                    q = _q;
-                } else if (flag == "mip_min") {
+                } else if (strncmp(flag, "mip_min", flag_len) == 0) {
                     texture_flags |= TexMIPMin;
-                    p = _p;
-                    q = _q;
-                } else if (flag == "mip_max") {
+                } else if (strncmp(flag, "mip_max", flag_len) == 0) {
                     texture_flags |= TexMIPMax;
-                    p = _p;
-                    q = _q;
-                } else if (flag == "nobias") {
+                } else if (strncmp(flag, "nobias", flag_len) == 0) {
                     texture_flags |= TexNoBias;
-                    p = _p;
-                    q = _q;
                 } else {
                     break;
                 }
 
+                p = _p;
+                q = _q;
+
                 _p = _q + 1;
             }
 
-            textures[textures_count++] = on_tex_load(texture_name.c_str(), texture_flags);
+            textures[textures_count++] = on_tex_load(texture_name.c_str(), texture_color, texture_flags);
         } else if (item == "param:") {
             Vec4f &par = params[params_count++];
             p = q + 1;

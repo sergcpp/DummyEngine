@@ -157,6 +157,15 @@ const float AnisotropyLevel = 4.0f;
 uint32_t TextureHandleCounter = 0;
 
 bool IsMainThread();
+
+GLenum ToSRGBFormat(const GLenum internal_format) {
+    if (internal_format == GL_RGB8) {
+        return GL_SRGB8;
+    } else if (internal_format == GL_RGBA8) {
+        return GL_SRGB8_ALPHA8;
+    }
+    return 0xffffffff;
+}
 } // namespace Ren
 
 Ren::Texture2D::Texture2D(const char *name, const Tex2DParams &p, ILog *log)
@@ -165,15 +174,13 @@ Ren::Texture2D::Texture2D(const char *name, const Tex2DParams &p, ILog *log)
 }
 
 Ren::Texture2D::Texture2D(const char *name, const void *data, const int size,
-                          const Tex2DParams &p, eTexLoadStatus *load_status,
-                          ILog *log)
+                          const Tex2DParams &p, eTexLoadStatus *load_status, ILog *log)
     : name_(name) {
     Init(data, size, p, load_status, log);
 }
 
 Ren::Texture2D::Texture2D(const char *name, const void *data[6], const int size[6],
-                          const Tex2DParams &p, eTexLoadStatus *load_status,
-                          ILog *log)
+                          const Tex2DParams &p, eTexLoadStatus *load_status, ILog *log)
     : name_(name) {
     Init(data, size, p, load_status, log);
 }
@@ -244,9 +251,8 @@ void Ren::Texture2D::Init(const void *data, int size, const Tex2DParams &p,
     }
 }
 
-void Ren::Texture2D::Init(const void *data[6], const int size[6],
-                          const Tex2DParams &p, eTexLoadStatus *load_status,
-                          ILog *log) {
+void Ren::Texture2D::Init(const void *data[6], const int size[6], const Tex2DParams &p,
+                          eTexLoadStatus *load_status, ILog *log) {
     assert(IsMainThread());
     if (!data) {
         const void *_data[6] = {p.fallback_color, p.fallback_color, p.fallback_color,
@@ -296,8 +302,7 @@ void Ren::Texture2D::Free() {
     }
 }
 
-void Ren::Texture2D::InitFromRAWData(const void *data, const Tex2DParams &p,
-                                     ILog *log) {
+void Ren::Texture2D::InitFromRAWData(const void *data, const Tex2DParams &p, ILog *log) {
     Free();
 
     GLuint tex_id;
@@ -311,7 +316,8 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Tex2DParams &p,
     params_ = p;
 
     const auto format = (GLenum)GLFormatFromTexFormat(p.format),
-               internal_format = (GLenum)GLInternalFormatFromTexFormat(p.format),
+               internal_format = (GLenum)GLInternalFormatFromTexFormat(
+                   p.format, (p.flags & eTexFlags::TexSRGB) != 0),
                type = (GLenum)GLTypeFromTexFormat(p.format);
 
     auto mip_count = (GLsizei)CalcMipCount(p.w, p.h, 1, p.filter);
@@ -349,14 +355,14 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Tex2DParams &p,
                                      AnisotropyLevel);
 
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_FILTER,
-                                     g_gl_min_filter[(size_t)p.filter]);
+                                     g_gl_min_filter[size_t(p.filter)]);
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAG_FILTER,
-                                     g_gl_mag_filter[(size_t)p.filter]);
+                                     g_gl_mag_filter[size_t(p.filter)]);
 
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_S,
-                                     g_gl_wrap_mode[(size_t)p.repeat]);
+                                     g_gl_wrap_mode[size_t(p.repeat)]);
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_T,
-                                     g_gl_wrap_mode[(size_t)p.repeat]);
+                                     g_gl_wrap_mode[size_t(p.repeat)]);
 
         if (mip_count > 1 &&
             (p.filter == eTexFilter::Trilinear || p.filter == eTexFilter::Bilinear)) {
@@ -367,11 +373,10 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Tex2DParams &p,
     CheckError("create texture", log);
 }
 
-void Ren::Texture2D::InitFromTGAFile(const void *data, const Tex2DParams &p,
-                                     ILog *log) {
+void Ren::Texture2D::InitFromTGAFile(const void *data, const Tex2DParams &p, ILog *log) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
-    std::unique_ptr<uint8_t[]> image_data = ReadTGAFile(data, w, h, format);
+    const std::unique_ptr<uint8_t[]> image_data = ReadTGAFile(data, w, h, format);
 
     Tex2DParams _p = p;
     _p.w = w;
@@ -417,8 +422,8 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size,
     GLenum internal_format;
     int block_size;
 
-    params_.w = (int)header.dwWidth;
-    params_.h = (int)header.dwHeight;
+    params_.w = int(header.dwWidth);
+    params_.h = int(header.dwHeight);
 
     const int px_format = int(header.sPixelFormat.dwFourCC >> 24u) - '0';
     switch (px_format) {
@@ -443,11 +448,11 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size,
     }
 
     // allocate all mip levels
-    ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, (GLsizei)header.dwMipMapCount,
-                                internal_format, (GLsizei)params_.w, (GLsizei)params_.h);
+    ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, GLsizei(header.dwMipMapCount),
+                                internal_format, GLsizei(params_.w), GLsizei(params_.h));
 
     int w = params_.w, h = params_.h;
-    int bytes_left = size - (int)sizeof(DDSHeader);
+    int bytes_left = size - int(sizeof(DDSHeader));
     const uint8_t *p_data = (uint8_t *)data + sizeof(DDSHeader);
 
     for (uint32_t i = 0; i < header.dwMipMapCount; i++) {
@@ -458,7 +463,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size,
             return;
         }
 
-        ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, tex_id, (GLint)i, 0, 0, w,
+        ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, tex_id, GLint(i), 0, 0, w,
                                                h, internal_format, len, p_data);
 
         p_data += len;
@@ -496,8 +501,8 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, const int size,
     // generate mip maps manually
     if (params_.flags & (eTexFlags::TexMIPMin | eTexFlags::TexMIPMax)) {
         int width, height, channels;
-        uint8_t *img_data = SOIL_load_image_from_memory((unsigned char *)data, size,
-                                                        &width, &height, &channels, 0);
+        uint8_t *const img_data = SOIL_load_image_from_memory(
+            (unsigned char *)data, size, &width, &height, &channels, 0);
 
         std::unique_ptr<uint8_t[]> mipmaps[16];
         int widths[16] = {}, heights[16] = {};
@@ -529,8 +534,8 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, const int size,
         SOIL_free_image_data(img_data);
     }
 
-    params_.w = (int)w;
-    params_.h = (int)h;
+    params_.w = int(w);
+    params_.h = int(h);
 
     SetFilter(p.filter, p.repeat, p.lod_bias);
 }
@@ -552,7 +557,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size,
     KTXHeader header;
     memcpy(&header, data, sizeof(KTXHeader));
 
-    auto internal_format = (GLenum)header.gl_internal_format;
+    auto internal_format = GLenum(header.gl_internal_format);
 
     if ((p.flags & TexSRGB) && internal_format >= GL_COMPRESSED_RGBA_ASTC_4x4_KHR &&
         internal_format <= GL_COMPRESSED_RGBA_ASTC_12x12_KHR) {
@@ -560,8 +565,8 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size,
                           (internal_format - GL_COMPRESSED_RGBA_ASTC_4x4_KHR);
     }
 
-    int w = (int)header.pixel_width;
-    int h = (int)header.pixel_height;
+    int w = int(header.pixel_width);
+    int h = int(header.pixel_height);
 
     params_.w = w;
     params_.h = h;
@@ -574,8 +579,8 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size,
     const auto *_data = (const uint8_t *)data;
     int data_offset = sizeof(KTXHeader);
 
-    for (int i = 0; i < (int)header.mipmap_levels_count; i++) {
-        if (data_offset + (int)sizeof(uint32_t) > size) {
+    for (int i = 0; i < int(header.mipmap_levels_count); i++) {
+        if (data_offset + int(sizeof(uint32_t)) > size) {
             log->Error("Insufficient data length, bytes left %i, expected %i",
                        size - data_offset, sizeof(uint32_t));
             break;
@@ -583,7 +588,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size,
 
         uint32_t img_size;
         memcpy(&img_size, &_data[data_offset], sizeof(uint32_t));
-        if (data_offset + (int)img_size > size) {
+        if (data_offset + int(img_size) > size) {
             log->Error("Insufficient data length, bytes left %i, expected %i",
                        size - data_offset, img_size);
             break;
@@ -592,7 +597,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size,
         data_offset += sizeof(uint32_t);
 
         ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, tex_id, i, 0, 0, w, h,
-                                               internal_format, (GLsizei)img_size,
+                                               internal_format, GLsizei(img_size),
                                                &_data[data_offset]);
         data_offset += img_size;
 
@@ -621,7 +626,8 @@ void Ren::Texture2D::InitFromRAWData(const void *data[6], const Tex2DParams &p,
     params_ = p;
 
     const auto format = (GLenum)GLFormatFromTexFormat(params_.format),
-               internal_format = (GLenum)GLInternalFormatFromTexFormat(params_.format),
+               internal_format = (GLenum)GLInternalFormatFromTexFormat(
+                   params_.format, (p.flags & TexSRGB) != 0),
                type = (GLenum)GLTypeFromTexFormat(params_.format);
 
     const int w = p.w, h = p.h;
@@ -752,8 +758,8 @@ void Ren::Texture2D::InitFromPNGFile(const void *data[6], const int size[6],
     glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_WIDTH, &w);
     glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_HEIGHT, &h);
 
-    params_.w = (int)w;
-    params_.h = (int)h;
+    params_.w = int(w);
+    params_.h = int(h);
     params_.cube = 1;
 
     SetFilter(p.filter, p.repeat, p.lod_bias);
@@ -848,7 +854,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6],
     KTXHeader first_header;
     memcpy(&first_header, data[0], sizeof(KTXHeader));
 
-    const int w = (int)first_header.pixel_width, h = (int)first_header.pixel_height;
+    const int w = int(first_header.pixel_width), h = int(first_header.pixel_height);
 
     params_.w = w;
     params_.h = h;
@@ -866,31 +872,31 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6],
         // make sure all images have same properties
         if (this_header.pixel_width != first_header.pixel_width) {
             log->Error("Image width mismatch %i, expected %i",
-                       (int)this_header.pixel_width, (int)first_header.pixel_width);
+                       int(this_header.pixel_width), int(first_header.pixel_width));
             continue;
         }
         if (this_header.pixel_height != first_header.pixel_height) {
             log->Error("Image height mismatch %i, expected %i",
-                       (int)this_header.pixel_height, (int)first_header.pixel_height);
+                       int(this_header.pixel_height), int(first_header.pixel_height));
             continue;
         }
         if (this_header.gl_internal_format != first_header.gl_internal_format) {
             log->Error("Internal format mismatch %i, expected %i",
-                       (int)this_header.gl_internal_format,
-                       (int)first_header.gl_internal_format);
+                       int(this_header.gl_internal_format),
+                       int(first_header.gl_internal_format));
             continue;
         }
 #endif
         int data_offset = sizeof(KTXHeader);
         int _w = w, _h = h;
 
-        for (int i = 0; i < (int)first_header.mipmap_levels_count; i++) {
+        for (int i = 0; i < int(first_header.mipmap_levels_count); i++) {
             uint32_t img_size;
             memcpy(&img_size, &_data[data_offset], sizeof(uint32_t));
             data_offset += sizeof(uint32_t);
-            glCompressedTexImage2D((GLenum)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + j), i,
-                                   (GLenum)first_header.gl_internal_format, _w, _h, 0,
-                                   (GLsizei)img_size, &_data[data_offset]);
+            glCompressedTexImage2D(GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X + j), i,
+                                   GLenum(first_header.gl_internal_format), _w, _h, 0,
+                                   GLsizei(img_size), &_data[data_offset]);
             data_offset += img_size;
 
             _w = std::max(_w / 2, 1);
@@ -1018,7 +1024,8 @@ void Ren::Texture1D::Init(BufferRef buf, const eTexFormat format, const uint32_t
     glGenTextures(1, &tex_id);
     glBindTexture(GL_TEXTURE_BUFFER, tex_id);
 
-    glTexBufferRange(GL_TEXTURE_BUFFER, GLInternalFormatFromTexFormat(format),
+    glTexBufferRange(GL_TEXTURE_BUFFER,
+                     GLInternalFormatFromTexFormat(format, false /* is_srgb */),
                      GLuint(buf->id()), offset, size);
 
     glBindTexture(GL_TEXTURE_BUFFER, 0);
@@ -1043,8 +1050,9 @@ uint32_t Ren::GLFormatFromTexFormat(const eTexFormat format) {
     return g_gl_formats[size_t(format)];
 }
 
-uint32_t Ren::GLInternalFormatFromTexFormat(const eTexFormat format) {
-    return g_gl_internal_formats[size_t(format)];
+uint32_t Ren::GLInternalFormatFromTexFormat(const eTexFormat format, const bool is_srgb) {
+    const uint32_t ret = g_gl_internal_formats[size_t(format)];
+    return is_srgb ? Ren::ToSRGBFormat(ret) : ret;
 }
 
 uint32_t Ren::GLTypeFromTexFormat(const eTexFormat format) {

@@ -179,6 +179,12 @@ void JsArray::Write(std::ostream &out, JsFlags flags) const {
 
 /////////////////////////////////////////////////////////////////
 
+const std::pair<std::string, JsElement>& JsObject::operator[](size_t i) const {
+    auto it = elements.cbegin();
+    std::advance(it, i);
+    return *it;
+}
+
 std::pair<std::string, JsElement> &JsObject::operator[](size_t i) {
     auto it = elements.begin();
     std::advance(it, i);

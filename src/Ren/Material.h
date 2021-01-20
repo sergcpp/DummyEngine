@@ -29,7 +29,7 @@ const int MaxMaterialParamCount = 8;
 
 enum class eMatLoadStatus { Found, SetToDefault, CreatedFromData };
 
-typedef std::function<Tex2DRef(const char *name, uint32_t flags)>
+typedef std::function<Tex2DRef(const char *name, const uint8_t color[4], uint32_t flags)>
     texture_load_callback;
 typedef std::function<ProgramRef(const char *name, const char *arg1, const char *arg2,
                                  const char *arg3, const char *arg4)>
@@ -54,8 +54,8 @@ class Material : public RefCounter {
     Material(const char *name, const char *mat_src, eMatLoadStatus *status,
              const program_load_callback &on_prog_load,
              const texture_load_callback &on_tex_load, ILog *log);
-    Material(const char *name, uint32_t flags, ProgramRef programs[],
-             Tex2DRef textures[], const Vec4f params[], ILog *log);
+    Material(const char *name, uint32_t flags, ProgramRef programs[], Tex2DRef textures[],
+             const Vec4f params[], ILog *log);
 
     Material(const Mesh &rhs) = delete;
     Material(Material &&rhs) noexcept { *this = std::move(rhs); }

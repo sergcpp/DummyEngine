@@ -48,16 +48,12 @@ Ren::TextureAtlas::TextureAtlas(const int w, const int h, const int min_res,
             }
             internal_format = compressed_tex_format;
         } else {
-            internal_format = GLInternalFormatFromTexFormat(formats_[i]);
+            internal_format =
+                GLInternalFormatFromTexFormat(formats_[i], (flags[i] & TexSRGB) != 0);
         }
 
-        if (formats[i] == Ren::eTexFormat::Compressed) {
-            ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count,
-                                        compressed_tex_format, w, h);
-        } else {
-            ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count,
-                                        GLInternalFormatFromTexFormat(formats_[i]), w, h);
-        }
+        ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format, w,
+                                    h);
 
         for (int level = 0; level < mip_count; level++) {
             const int _w = int((unsigned)w >> (unsigned)level),
@@ -207,16 +203,19 @@ Ren::TextureAtlasArray::TextureAtlasArray(int w, int h, int layer_count,
     GLuint tex_id;
     ren_glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &tex_id);
 
+    // TODO: add srgb here
+
     const int mip_count = Ren::CalcMipCount(w, h, 1, filter);
-    ren_glTextureStorage3D_Comp(GL_TEXTURE_2D_ARRAY, tex_id, mip_count,
-                                GLInternalFormatFromTexFormat(format), w, h, layer_count);
+    ren_glTextureStorage3D_Comp(
+        GL_TEXTURE_2D_ARRAY, tex_id, mip_count,
+        GLInternalFormatFromTexFormat(format, false /* is_srgb */), w, h, layer_count);
 
     ren_glTextureParameteri_Comp(GL_TEXTURE_2D_ARRAY, tex_id, GL_TEXTURE_MIN_FILTER,
-                                 g_gl_min_filter[(size_t)filter_]);
+                                 g_gl_min_filter[size_t(filter_)]);
     ren_glTextureParameteri_Comp(GL_TEXTURE_2D_ARRAY, tex_id, GL_TEXTURE_MAG_FILTER,
-                                 g_gl_mag_filter[(size_t)filter_]);
+                                 g_gl_mag_filter[size_t(filter_)]);
 
-    tex_id_ = (uint32_t)tex_id;
+    tex_id_ = uint32_t(tex_id);
 
     for (int i = 0; i < layer_count; i++) {
         splitters_[i] = TextureSplitter{w, h};

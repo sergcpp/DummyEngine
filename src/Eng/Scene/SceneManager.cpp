@@ -257,7 +257,9 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         lm_indir_tex_name += "_lm_indirect";
         lm_indir_tex_name += tex_ext;
 
-        scene_data_.env.lm_direct = OnLoadTexture(lm_direct_tex_name.c_str(), 0);
+        const uint8_t default_l0_color[] = {255, 255, 255, 255};
+        scene_data_.env.lm_direct =
+            OnLoadTexture(lm_direct_tex_name.c_str(), default_l0_color, 0);
         // scene_data_.env.lm_indir = OnLoadTexture(lm_indir_tex_name.c_str(), 0);
         for (int sh_l = 0; sh_l < 4; sh_l++) {
             std::string lm_indir_sh_tex_name = lm_base_tex_name;
@@ -265,8 +267,9 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             lm_indir_sh_tex_name += std::to_string(sh_l);
             lm_indir_sh_tex_name += tex_ext;
 
+            const uint8_t default_l1_color[] = {0, 0, 0, 0};
             scene_data_.env.lm_indir_sh[sh_l] =
-                OnLoadTexture(lm_indir_sh_tex_name.c_str(), 0);
+                OnLoadTexture(lm_indir_sh_tex_name.c_str(), default_l1_color, 0);
         }
     }
 
@@ -1030,7 +1033,7 @@ Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {
         ret = ren_ctx_.LoadMaterial(
             name, mat_src.data(), &status,
             std::bind(&SceneManager::OnLoadProgram, this, _1, _2, _3, _4, _5),
-            std::bind(&SceneManager::OnLoadTexture, this, _1, _2));
+            std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3));
         assert(status == Ren::eMatLoadStatus::CreatedFromData);
     }
     return ret;
@@ -1077,7 +1080,8 @@ Ren::ProgramRef SceneManager::OnLoadProgram(const char *name, const char *v_shad
 #endif
 }
 
-Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) {
+Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, const uint8_t color[4],
+                                          const uint32_t flags) {
     using namespace SceneManagerConstants;
 
     char name_buf[4096];
@@ -1086,16 +1090,11 @@ Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, uint32_t flags) {
 
     Ren::Tex2DParams p;
     p.flags = flags | Ren::TexUsageScene;
+    memcpy(p.fallback_color, color, 4);
 
     if (strstr(name_buf, "lm_sh_0")) {
-        p.fallback_color[0] = 255;
-        p.fallback_color[1] = 255;
-        p.fallback_color[2] = 255;
         p.repeat = Ren::eTexRepeat::ClampToEdge;
     } else if (strstr(name_buf, "lm_sh_")) {
-        p.fallback_color[0] = 200;
-        p.fallback_color[1] = 200;
-        p.fallback_color[2] = 200;
         p.repeat = Ren::eTexRepeat::ClampToEdge;
     }
 
