@@ -8,6 +8,7 @@ add_executable(test_Sys main.cpp
                         test_json.cpp
                         test_optional.cpp
                         test_pack.cpp
-                        test_signal.cpp)
+                        test_signal.cpp
+                        test_vector.cpp)
 
 target_link_libraries(test_Sys Sys)

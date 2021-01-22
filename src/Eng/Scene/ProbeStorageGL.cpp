@@ -15,7 +15,7 @@ ProbeStorage::~ProbeStorage() {
 
 int ProbeStorage::Allocate() {
     if (!free_indices_.empty()) {
-        int ret = free_indices_.back();
+        const int ret = free_indices_.back();
         free_indices_.pop_back();
         return ret;
     } else {

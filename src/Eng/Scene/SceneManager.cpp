@@ -238,7 +238,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
     scene_texture_load_counter_ = 0;
 
-    {
+    { // load lightmaps
         std::string lm_base_tex_name = "lightmaps/";
         lm_base_tex_name += scene_data_.name.c_str();
 

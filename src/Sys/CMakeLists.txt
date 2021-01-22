@@ -36,6 +36,7 @@ set(SOURCE_FILES AssetFile.h
                  PlatformSDL.cpp
                  PoolAlloc.h
                  Signal_.h
+                 SmallVector.h
                  SpinLock.h
                  ThreadPool.h
                  ThreadWorker.h

@@ -459,7 +459,7 @@ bool SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file,
     }
 
     { // Glyph data
-        uint32_t u32_glyph_range_count = glyph_range_count;
+        const uint32_t u32_glyph_range_count = glyph_range_count;
         out_stream.write((const char *)&u32_glyph_range_count, sizeof(uint32_t));
         out_stream.write((const char *)&glyph_ranges[0].beg, sizeof(glyph_ranges));
         out_stream.write((const char *)out_glyphs.get(),

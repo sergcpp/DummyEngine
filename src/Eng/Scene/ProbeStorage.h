@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include <Sys/SmallVector.h>
+
 class ProbeStorage {
 public:
     ProbeStorage();
@@ -34,7 +36,7 @@ private:
     Ren::eTexFormat format_;
     int res_, size_, capacity_, max_level_;
     int reserved_temp_layer_;
-    std::vector<int> free_indices_;
+    Sys::SmallVector<int, 32> free_indices_;
 #if defined(USE_GL_RENDER)
     uint32_t tex_id_ = 0;
 #endif
