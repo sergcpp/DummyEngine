@@ -7,6 +7,7 @@ void test_json();
 void test_optional();
 void test_pack();
 void test_signal();
+void test_vector();
 
 int main() {
     test_alloc();
@@ -15,6 +16,7 @@ int main() {
     test_optional();
     //test_pack();
     test_signal();
+    test_vector();
     puts("OK");
 }
 
