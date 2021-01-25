@@ -193,7 +193,7 @@ void SeqCanvasUI::Resize(const Gui::BaseElement *parent) {
     back_.Resize(this);
 }
 
-void SeqCanvasUI::Press(const Ren::Vec2f &p, bool push) {
+void SeqCanvasUI::Press(const Ren::Vec2f &p, const bool push) {
     if (push) {
         const SeqAction *sel_action =
             GetActionAtPoint(p, selected_index_, selected_drag_flags_);
@@ -236,8 +236,8 @@ void SeqCanvasUI::Hover(const Ren::Vec2f &p) {
     }
 }
 
-void SeqCanvasUI::OnCurTimeChange(float time_cur, float time_range_beg,
-                                  float time_range_end) {
+void SeqCanvasUI::OnCurTimeChange(const float time_cur, const float time_range_beg,
+                                  const float time_range_end) {
     time_cur_ = time_cur;
     time_range_[0] = time_range_beg;
     time_range_[1] = time_range_end;

@@ -1,7 +1,9 @@
 #include "RpUpdateBuffers.h"
 
 #include <Ren/Buffer.h>
+#include <Ren/Context.h>
 #include <Ren/GL.h>
+#include <Sys/Time_.h>
 
 #include "../Renderer_Structs.h"
 
@@ -20,7 +22,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
         GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
         GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
 
-    RpAllocBuf &skin_transforms_buf = builder.GetWriteBuffer(input_[0]);
+    RpAllocBuf &skin_transforms_buf = builder.GetWriteBuffer(skin_transforms_buf_);
 
     // Update bone transforms buffer
     if (skin_transforms_.count) {
@@ -44,9 +46,9 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     }
 
-    RpAllocBuf &shape_keys_buf = builder.GetWriteBuffer(input_[1]);
+    RpAllocBuf &shape_keys_buf = builder.GetWriteBuffer(shape_keys_buf_);
 
-    if (shape_keys_data_.count) {
+    if (shape_keys_.count) {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, GLuint(shape_keys_buf.ref->id()));
 
         void *pinned_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER,
@@ -54,8 +56,8 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
                                             ShapeKeysBufChunkSize, BufferRangeMapFlags);
         if (pinned_mem) {
             const size_t shape_keys_mem_size =
-                shape_keys_data_.count * sizeof(ShapeKeyData);
-            memcpy(pinned_mem, shape_keys_data_.data, shape_keys_mem_size);
+                shape_keys_.count * sizeof(ShapeKeyData);
+            memcpy(pinned_mem, shape_keys_.data, shape_keys_mem_size);
             glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0, shape_keys_mem_size);
             glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
         } else {
@@ -67,7 +69,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 
     Ren::Context &ctx = builder.ctx();
 
-    RpAllocBuf &instances_buf = builder.GetWriteBuffer(input_[2]);
+    RpAllocBuf &instances_buf = builder.GetWriteBuffer(instances_buf_);
 
     if (!instances_buf.tbos[orphan_index_]) {
         const uint32_t offset = orphan_index_ * InstanceDataBufChunkSize;
@@ -101,7 +103,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
     }
 
-    RpAllocBuf &cells_buf = builder.GetWriteBuffer(input_[3]);
+    RpAllocBuf &cells_buf = builder.GetWriteBuffer(cells_buf_);
 
     if (!cells_buf.tbos[orphan_index_]) {
         const uint32_t offset = orphan_index_ * CellsBufChunkSize;
@@ -135,7 +137,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
     }
 
-    RpAllocBuf &lights_buf = builder.GetWriteBuffer(input_[4]);
+    RpAllocBuf &lights_buf = builder.GetWriteBuffer(lights_buf_);
 
     if (!lights_buf.tbos[orphan_index_]) { // Create buffer for lights information
         const uint32_t offset = orphan_index_ * LightsBufChunkSize;
@@ -169,7 +171,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
     }
 
-    RpAllocBuf &decals_buf = builder.GetWriteBuffer(input_[5]);
+    RpAllocBuf &decals_buf = builder.GetWriteBuffer(decals_buf_);
 
     if (!decals_buf.tbos[orphan_index_]) {
         const uint32_t offset = orphan_index_ * DecalsBufChunkSize;
@@ -203,7 +205,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
     }
 
-    RpAllocBuf &items_buf = builder.GetWriteBuffer(input_[6]);
+    RpAllocBuf &items_buf = builder.GetWriteBuffer(items_buf_);
 
     if (!items_buf.tbos[orphan_index_]) {
         const uint32_t offset = orphan_index_ * ItemsBufChunkSize;
@@ -246,7 +248,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
     //
     // Update UBO with data that is shared between passes
     //
-    RpAllocBuf &unif_shared_data_buf = builder.GetWriteBuffer(input_[7]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetWriteBuffer(shared_data_buf_);
 
     { // Prepare data that is shared for all instances
         SharedDataBlock shrd_data;

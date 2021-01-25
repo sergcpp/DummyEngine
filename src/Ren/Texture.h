@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 namespace Ren {
 class Context;
 
@@ -41,6 +43,9 @@ enum class eTexFilter : uint8_t {
     _Count
 };
 enum class eTexRepeat : uint8_t { Repeat, ClampToEdge, ClampToBorder, WrapModesCount };
+
+enum class eTexCompare : uint8_t { None, LEqual, GEqual, Less, Greater, Equal, NotEqual, Always, Never, _Count
+};
 
 enum class eBindTarget : uint16_t { Tex2D, Tex2DMs, TexCubeArray, TexBuf, UBuf, _Count };
 

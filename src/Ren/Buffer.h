@@ -6,11 +6,11 @@
 #include "String.h"
 
 namespace Ren {
-enum class eBufferType { Undefined, VertexAttribs, VertexIndices, Texture, Uniform, _Count };
-enum class eBufferAccessType {
+enum class eBufferType : uint8_t { Undefined, VertexAttribs, VertexIndices, Texture, Uniform, _Count };
+enum class eBufferAccessType : uint8_t {
     Draw, Read, Copy
 };
-enum class eBufferAccessFreq {
+enum class eBufferAccessFreq : uint8_t {
     Stream, // modified once, used a few times
     Static, // modified once, used many times
     Dynamic // modified often, used many times

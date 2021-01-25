@@ -1,5 +1,7 @@
 #include "SoundSource.h"
 
+#include <Sys/Json.h>
+
 void SoundSource::Read(const JsObject &js_in, SoundSource &snd) {
     const JsArray &js_offset = js_in.at("offset").as_arr();
     snd.offset[0] = float(js_offset[0].as_num());

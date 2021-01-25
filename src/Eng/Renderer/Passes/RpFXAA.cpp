@@ -6,28 +6,32 @@
 
 #include "../../Utils/ShaderLoader.h"
 #include "../PrimDraw.h"
-#include "../Renderer_Names.h"
 #include "../Renderer_Structs.h"
 
 void RpFXAA::Setup(RpBuilder &builder, const ViewState *view_state,
-                   const int orphan_index, Ren::TexHandle color_tex,
-                   Ren::TexHandle output_tex) {
+                   const int orphan_index, const char shared_data_buf[],
+                   const char color_tex[], const char output_tex_name[]) {
     view_state_ = view_state;
     orphan_index_ = orphan_index;
-    color_tex_ = color_tex;
-    output_tex_ = output_tex;
 
-    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
-    input_count_ = 1;
-
-    // output_[0] = builder.WriteBuffer(input_[0], *this);
-    output_count_ = 0;
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);
+    color_tex_ = builder.ReadTexture(color_tex, *this);
+    if (output_tex_name) {
+        output_tex_ = builder.WriteTexture(output_tex_name, *this);
+    } else {
+        output_tex_ = {};
+    }
 }
 
 void RpFXAA::Execute(RpBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+    RpAllocBuf& unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
+    RpAllocTex& color_tex = builder.GetReadTexture(color_tex_);
+    RpAllocTex *output_tex = nullptr;
+    if (output_tex_) {
+        output_tex = &builder.GetWriteTexture(output_tex_);
+    }
 
-    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    LazyInit(builder.ctx(), builder.sh(), &color_tex);
 
     Ren::RastState rast_state;
     rast_state.cull_face.enabled = true;
@@ -41,7 +45,7 @@ void RpFXAA::Execute(RpBuilder &builder) {
     Ren::Program *blit_prog = blit_fxaa_prog_.get();
 
     const PrimDraw::Binding bindings[] = {
-        {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, color_tex_},
+        {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, color_tex.ref->handle()},
         {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
          orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
          unif_shared_data_buf.ref->handle()}};
@@ -55,7 +59,7 @@ void RpFXAA::Execute(RpBuilder &builder) {
                         2, uniforms, 2);
 }
 
-void RpFXAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpFXAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex* output_tex) {
     if (!initialized) {
         blit_fxaa_prog_ = sh.LoadProgram(ctx, "blit_fxaa_prog", "internal/blit.vert.glsl",
                                          "internal/blit_fxaa.frag.glsl");
@@ -64,7 +68,8 @@ void RpFXAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         initialized = true;
     }
 
-    if (!output_fb_.Setup(&output_tex_, 1, {}, {}, false)) {
+    Ren::TexHandle output = output_tex ? output_tex->ref->handle() : Ren::TexHandle{};
+    if (!output_fb_.Setup(&output, 1, {}, {}, false)) {
         ctx.log()->Error("RpFXAA: output_fb_ init failed!");
     }
 }

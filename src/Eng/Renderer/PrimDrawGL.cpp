@@ -1,11 +1,14 @@
 #include "PrimDraw.h"
 
+#include <Ren/Context.h>
 #include <Ren/GL.h>
 
+#include "Renderer_GL_Defines.inl"
+
 namespace PrimDrawInternal {
-const float fs_quad_positions[] = {-1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f};
-const float fs_quad_norm_uvs[] = {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f};
-const uint16_t fs_quad_indices[] = {0, 1, 2, 0, 2, 3};
+extern const float fs_quad_positions[] = {-1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f};
+extern const float fs_quad_norm_uvs[] = {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f};
+extern const uint16_t fs_quad_indices[] = {0, 1, 2, 0, 2, 3};
 const int TempBufSize = 256;
 #include "__sphere_mesh.inl"
 } // namespace PrimDrawInternal

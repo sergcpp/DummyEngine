@@ -1,8 +1,12 @@
 #pragma once
 
 #include <Ren/Texture.h>
+#if defined(USE_GL_RENDER)
+#include <Ren/VaoGL.h>
+#endif
 
 #include "../Graph/GraphBuilder.h"
+#include "../Renderer_DrawList.h"
 
 class PrimDraw;
 struct ViewState;
@@ -21,21 +25,31 @@ class RpDebugTextures : public RenderPassBase {
     // temp data (valid only between Setup and Execute calls)
     int orphan_index_ = -1;
     uint32_t render_flags_ = 0;
-    Ren::TexHandle depth_tex_;
     Ren::TexHandle output_tex_;
     const ViewState *view_state_ = nullptr;
     const Ren::Camera *draw_cam_ = nullptr;
     const uint8_t *depth_pixels_ = nullptr;
     const uint8_t *depth_tiles_ = nullptr;
-    Ren::WeakTex2DRef color_tex_, spec_tex_, norm_tex_, down_tex_4x_;
-    Ren::WeakTex2DRef reduced_tex_, blur_tex_, ssao_tex_;
-    Ren::WeakTex2DRef shadow_tex_;
+    Ren::WeakTex2DRef down_tex_4x_;
     DynArrayConstRef<ShadowList> shadow_lists_;
     DynArrayConstRef<ShadowMapRegion> shadow_regions_;
     DynArrayConstRef<ShadReg> cached_shadow_regions_;
 
-    const bvh_node_t *nodes_;
+    const bvh_node_t *nodes_ = nullptr;
     uint32_t root_node_ = 0xffffffff, nodes_count_ = 0;
+
+    RpResource shared_data_buf_;
+    RpResource cells_buf_;
+    RpResource items_buf_;
+
+    RpResource shadowmap_tex_;
+    RpResource color_tex_;
+    RpResource normal_tex_;
+    RpResource spec_tex_;
+    RpResource depth_tex_;
+    RpResource ssao_tex_;
+    RpResource blur_tex_;
+    RpResource reduced_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
@@ -47,18 +61,19 @@ class RpDebugTextures : public RenderPassBase {
     int BlitTex(Ren::RastState &applied_state, int x, int y, int w, int h,
                 Ren::WeakTex2DRef tex, float mul);
 
-    void DrawShadowMaps(Ren::Context &ctx);
+    void DrawShadowMaps(Ren::Context &ctx, RpAllocTex &shadowmap_tex);
 
   public:
     RpDebugTextures(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state,
-               const DrawList &list, int orphan_index, Ren::TexHandle depth_tex,
-               const Ren::Tex2DRef &color_tex, const Ren::Tex2DRef &spec_tex,
-               const Ren::Tex2DRef &norm_tex, const Ren::Tex2DRef &down_tex_4x,
-               const Ren::Tex2DRef &reduced_tex, const Ren::Tex2DRef &blur_tex,
-               const Ren::Tex2DRef &ssao_tex, const Ren::Tex2DRef &shadow_tex,
-               Ren::TexHandle output_tex);
+    void Setup(RpBuilder &builder, const ViewState *view_state, const DrawList &list,
+               int orphan_index, const Ren::Tex2DRef &down_tex_4x,
+               const char shared_data_buf_name[], const char cells_buf_name[],
+               const char items_buf_name[], const char shadow_map_name[],
+               const char main_color_tex_name[], const char main_normal_tex_name[],
+               const char main_spec_tex_name[], const char main_depth_tex_name[],
+               const char ssao_tex_name[], const char blur_res_name[],
+               const char reduced_tex_name[], Ren::TexHandle output_tex);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "DEBUG TEXTURES"; }

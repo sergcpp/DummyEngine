@@ -9,28 +9,29 @@
 
 void RpDebugProbes::Setup(RpBuilder &builder, const DrawList &list,
                           const ViewState *view_state, const int orphan_index,
-                          Ren::TexHandle output_tex) {
+                          const char shared_data_buf_name[],
+                          const char output_tex_name[]) {
 
     view_state_ = view_state;
     orphan_index_ = orphan_index;
-    output_tex_ = output_tex;
 
     probe_storage_ = list.probe_storage;
     probes_ = list.probes;
 
-    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
-    input_count_ = 1;
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf_name, *this);
 
-    // output_[0] = builder.WriteBuffer(input_[0], *this);
-    output_count_ = 0;
+    output_tex_ = builder.ReadTexture(output_tex_name, *this);
 }
 
 void RpDebugProbes::Execute(RpBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+    RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
+
+    LazyInit(builder.ctx(), builder.sh(), output_tex);
     DrawProbes(builder);
 }
 
-void RpDebugProbes::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpDebugProbes::LazyInit(Ren::Context &ctx, ShaderLoader &sh,
+                             RpAllocTex &output_tex) {
     if (!initialized) {
         probe_prog_ = sh.LoadProgram(ctx, "probe_prog", "internal/probe.vert.glsl",
                                      "internal/probe.frag.glsl");
@@ -39,7 +40,8 @@ void RpDebugProbes::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         initialized = true;
     }
 
-    if (!draw_fb_.Setup(&output_tex_, 1, {}, {}, view_state_->is_multisampled)) {
+    if (!draw_fb_.Setup(&output_tex.ref->handle(), 1, {}, {},
+                        view_state_->is_multisampled)) {
         ctx.log()->Error("RpDebugProbes: draw_fb_ init failed!");
     }
 }
@@ -53,7 +55,7 @@ void RpDebugProbes::DrawProbes(RpBuilder &builder) {
     rast_state.Apply();
     Ren::RastState applied_state = rast_state;
 
-    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
 
     const PrimDraw::Binding bindings[] = {
         {Ren::eBindTarget::TexCubeArray, REN_BASE0_TEX_SLOT, probe_storage_->handle()},

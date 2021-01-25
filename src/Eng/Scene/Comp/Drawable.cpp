@@ -1,6 +1,7 @@
 #include "Drawable.h"
 
 #include <Ren/Mesh.h>
+#include <Sys/Json.h>
 
 void Drawable::Read(const JsObject &js_in, Drawable &dr) {
     dr.flags = 0;

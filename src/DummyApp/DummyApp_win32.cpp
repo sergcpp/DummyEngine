@@ -199,7 +199,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 }
 
 int DummyApp::Init(int w, int h) {
-    BOOL dpi_result = SetProcessDPIAware();
+    const BOOL dpi_result = SetProcessDPIAware();
     (void)dpi_result;
 
     WNDCLASSEX window_class = {};
@@ -304,8 +304,8 @@ int DummyApp::Init(int w, int h) {
                                         0};
 
     UINT format_count;
-    const BOOL status = wglChoosePixelFormatARB(device_context_, pixel_attribs, nullptr,
-                                                1, &pix_format_id, &format_count);
+    BOOL status = wglChoosePixelFormatARB(device_context_, pixel_attribs, nullptr, 1,
+                                          &pix_format_id, &format_count);
 
     if (!status || format_count == 0) {
         std::cerr << "wglChoosePixelFormatARB() failed\n";
@@ -397,21 +397,21 @@ void DummyApp::Destroy() {
 
 void DummyApp::Frame() { viewer_->Frame(); }
 
-void DummyApp::Resize(int w, int h) {
+void DummyApp::Resize(const int w, const int h) {
     if (viewer_) {
         viewer_->Resize(w, h);
     }
 }
 
-void DummyApp::AddEvent(int type, uint32_t key_code, float x, float y, float dx,
-                        float dy) {
+void DummyApp::AddEvent(const int type, const uint32_t key_code, const float x,
+                        const float y, const float dx, const float dy) {
     std::shared_ptr<InputManager> input_manager = input_manager_.lock();
     if (!input_manager) {
         return;
     }
 
     InputManager::Event evt;
-    evt.type = (RawInputEvent)type;
+    evt.type = RawInputEvent(type);
     evt.key_code = key_code;
     evt.point.x = x;
     evt.point.y = y;

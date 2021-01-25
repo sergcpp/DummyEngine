@@ -216,47 +216,51 @@ set(UTILS_SOURCES Utils/BVHSplit.h
                   Utils/VideoPlayer.cpp)
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
-set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src" FILES ${SOURCE_FILES})
 
 list(APPEND ALL_SOURCE_FILES ${GUI_SOURCE_FILES})
-set_source_files_properties(${GUI_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Gui" FILES ${GUI_SOURCE_FILES})
 
 list(APPEND ALL_SOURCE_FILES ${INPUT_SOURCE_FILES})
-set_source_files_properties(${INPUT_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Input" FILES ${INPUT_SOURCE_FILES})
 
 list(APPEND ALL_SOURCE_FILES ${RENDERER_SOURCES})
-set_source_files_properties(${RENDERER_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Renderer" FILES ${RENDERER_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${GRAPH_SOURCES})
-set_source_files_properties(${GRAPH_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Renderer\\Graph" FILES ${GRAPH_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${PASS_SOURCES})
-set_source_files_properties(${PASS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Renderer\\Passes" FILES ${PASS_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${SHADERS_SOURCES})
-set_source_files_properties(${SHADERS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Renderer\\Shaders" FILES ${SHADERS_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${SCENE_SOURCES})
-set_source_files_properties(${SCENE_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Scene" FILES ${SCENE_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${SCENE_COMP_SOURCES})
-set_source_files_properties(${SCENE_COMP_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Scene\\Comp" FILES ${SCENE_COMP_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${UTILS_SOURCES})
-set_source_files_properties(${UTILS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\Utils" FILES ${UTILS_SOURCES})
 
-list(APPEND ALL_SOURCE_FILES _Eng.cpp _Eng_Renderer.cpp _Eng_Gui.cpp _Eng_Scene.cpp _Eng_Utils.cpp)
-source_group("src" FILES _Eng.cpp _Eng_Renderer.cpp _Eng_Gui.cpp _Eng_Scene.cpp _Eng_Utils.cpp)
+# enable or disable unity build
+if(ENABLE_UNITYBUILD)
+    set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    set_source_files_properties(${GUI_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    set_source_files_properties(${INPUT_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    set_source_files_properties(${RENDERER_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    set_source_files_properties(${GRAPH_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    set_source_files_properties(${PASS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    set_source_files_properties(${SHADERS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    set_source_files_properties(${SCENE_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    set_source_files_properties(${SCENE_COMP_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    set_source_files_properties(${UTILS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+
+    list(APPEND ALL_SOURCE_FILES _Eng.cpp _Eng_Renderer.cpp _Eng_Gui.cpp _Eng_Scene.cpp _Eng_Utils.cpp)
+    source_group("src" FILES _Eng.cpp _Eng_Renderer.cpp _Eng_Gui.cpp _Eng_Scene.cpp _Eng_Utils.cpp)
+endif()
 
 add_library(Eng STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(Eng Net Ray Ren Snd Sys astc libittnotify ${VPX_LIB})

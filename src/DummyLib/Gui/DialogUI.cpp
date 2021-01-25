@@ -1,7 +1,7 @@
 #include "DialogUI.h"
 
 DialogUI::DialogUI(const Gui::Vec2f &pos, const Gui::Vec2f &size,
-                   const BaseElement *parent, Gui::BitmapFont &font, bool debug)
+                   const BaseElement *parent, Gui::BitmapFont &font, const bool debug)
     : Gui::BaseElement(pos, size, parent), font_(font), debug_(debug) {}
 
 void DialogUI::Draw(Gui::Renderer *r) {
@@ -25,7 +25,7 @@ void DialogUI::Clear() { choices_count_ = 0; }
 
 void DialogUI::Resize(const Gui::BaseElement *parent) { BaseElement::Resize(parent); }
 
-void DialogUI::Press(const Ren::Vec2f &p, bool push) {
+void DialogUI::Press(const Ren::Vec2f &p, const bool push) {
     clicked_choice_ = -1;
     if (Check(p)) {
         const Ren::Vec2f lp = ToLocal(p);
@@ -75,7 +75,7 @@ void DialogUI::IterateChoices(
     }
 }
 
-void DialogUI::OnPushChoice(const char *key, const char *text, int off) {
+void DialogUI::OnPushChoice(const char *key, const char *text, const int off) {
     choices_[choices_count_] = {key, text, off};
     ++choices_count_;
 }

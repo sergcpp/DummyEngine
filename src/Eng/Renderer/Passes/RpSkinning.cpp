@@ -1,12 +1,12 @@
 #include "RpSkinning.h"
 
 #include "../../Utils/ShaderLoader.h"
-#include "../Renderer_Names.h"
 #include "../Renderer_Structs.h"
 
 void RpSkinning::Setup(RpBuilder &builder, const DrawList &list, const int orphan_index,
                        Ren::BufferRef vtx_buf1, Ren::BufferRef vtx_buf2,
-                       Ren::BufferRef delta_buf, Ren::BufferRef skin_vtx_buf) {
+                       Ren::BufferRef delta_buf, Ren::BufferRef skin_vtx_buf,
+                       const char skin_transforms_buf[], const char shape_keys_buf[]) {
     orphan_index_ = orphan_index;
 
     // fences_ = fences;
@@ -17,13 +17,8 @@ void RpSkinning::Setup(RpBuilder &builder, const DrawList &list, const int orpha
     delta_buf_ = std::move(delta_buf);
     skin_vtx_buf_ = std::move(skin_vtx_buf);
 
-    input_[0] = builder.ReadBuffer(SKIN_TRANSFORMS_BUF);
-    input_[1] = builder.ReadBuffer(SHAPE_KEYS_BUF);
-    input_count_ = 2;
-
-    // output_[0] = builder.WriteBuffer(input_[0], *this);
-    // output_[1] = builder.WriteBuffer(input_[1], *this);
-    output_count_ = 0;
+    skin_transforms_buf_ = builder.ReadBuffer(skin_transforms_buf, *this);
+    shape_keys_buf_ = builder.ReadBuffer(shape_keys_buf, *this);
 }
 
 void RpSkinning::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {

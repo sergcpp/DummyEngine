@@ -1,36 +1,58 @@
 #include "RpDepthFill.h"
 
+#include <Ren/Context.h>
+
 #include "../../Utils/ShaderLoader.h"
-#include "../Renderer_Names.h"
 #include "../Renderer_Structs.h"
 
 void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list,
                         const ViewState *view_state, int orphan_index,
-                        Ren::TexHandle depth_tex, Ren::TexHandle velocity_tex) {
+                        const char instances_buf[], const char shared_data_buf[],
+                        const char main_depth_tex[], const char main_velocity_tex[]) {
     orphan_index_ = orphan_index;
-
-    depth_tex_ = depth_tex;
-    velocity_tex_ = velocity_tex;
     view_state_ = view_state;
 
     render_flags_ = list.render_flags;
     zfill_batch_indices = list.zfill_batch_indices;
     zfill_batches = list.zfill_batches;
 
-    input_[0] = builder.ReadBuffer(INSTANCES_BUF);
-    input_[1] = builder.ReadBuffer(SHARED_DATA_BUF);
-    input_count_ = 2;
+    instances_buf_ = builder.ReadBuffer(instances_buf, *this);
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);
 
-    // output_[0] = builder.WriteBuffer(input_[0], *this);
-    output_count_ = 0;
+    { // 24-bit depth
+        Ren::Tex2DParams params;
+        params.w = view_state->scr_res[0];
+        params.h = view_state->scr_res[1];
+        params.format = Ren::eTexFormat::Depth24Stencil8;
+        params.filter = Ren::eTexFilter::NoFilter;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.samples = view_state->is_multisampled ? 4 : 1;
+
+        depth_tex_ = builder.WriteTexture(main_depth_tex, params, *this);
+    }
+    { // Texture that holds 2D velocity
+        Ren::Tex2DParams params;
+        params.w = view_state->scr_res[0];
+        params.h = view_state->scr_res[1];
+        params.format = Ren::eTexFormat::RawRG16;
+        params.filter = Ren::eTexFilter::NoFilter;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.samples = view_state->is_multisampled ? 4 : 1;
+
+        velocity_tex_ = builder.WriteTexture(main_velocity_tex, params, *this);
+    }
 }
 
 void RpDepthFill::Execute(RpBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+    RpAllocTex &depth_tex = builder.GetWriteTexture(depth_tex_);
+    RpAllocTex &velocity_tex = builder.GetWriteTexture(velocity_tex_);
+
+    LazyInit(builder.ctx(), builder.sh(), depth_tex, velocity_tex);
     DrawDepth(builder);
 }
 
-void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &depth_tex,
+                           RpAllocTex &velocity_tex) {
     if (!initialized) {
         fillz_solid_prog_ = sh.LoadProgram(ctx, "fillz_solid", "internal/fillz.vert.glsl",
                                            "internal/fillz.frag.glsl");
@@ -193,12 +215,13 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         }
     }
 
-    if (!depth_fill_fb_.Setup(nullptr, 0, depth_tex_, depth_tex_,
-                              view_state_->is_multisampled)) {
+    if (!depth_fill_fb_.Setup(nullptr, 0, depth_tex.ref->handle(),
+                              depth_tex.ref->handle(), view_state_->is_multisampled)) {
         ctx.log()->Error("RpDepthFill: depth_fill_fb_ init failed!");
     }
 
-    if (!depth_fill_vel_fb_.Setup(&velocity_tex_, 1, depth_tex_, depth_tex_,
+    if (!depth_fill_vel_fb_.Setup(&velocity_tex.ref->handle(), 1, depth_tex.ref->handle(),
+                                  depth_tex.ref->handle(),
                                   view_state_->is_multisampled)) {
         ctx.log()->Error("RpDepthFill: depth_fill_vel_fb_ init failed!");
     }

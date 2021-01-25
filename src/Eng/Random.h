@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <Ren/MVec.h>
 
 class Random_Impl;
@@ -8,7 +10,7 @@ class Random {
     std::unique_ptr<Random_Impl> impl_;
 public:
     explicit Random(uint32_t seed);
-    ~Random() = default;
+    ~Random();
 
     int GetInt(int min, int max);
     float GetFloat(float min, float max);

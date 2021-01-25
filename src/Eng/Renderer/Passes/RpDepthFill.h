@@ -22,14 +22,20 @@ class RpDepthFill : public RenderPassBase {
     Ren::Tex2DRef dummy_white_;
 
     // temp data (valid only between Setup and Execute calls)
-    Ren::TexHandle depth_tex_, velocity_tex_;
     const ViewState *view_state_ = nullptr;
 
     uint32_t render_flags_ = 0;
     DynArrayConstRef<uint32_t> zfill_batch_indices;
     DynArrayConstRef<DepthDrawBatch> zfill_batches;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    RpResource instances_buf_;
+    RpResource shared_data_buf_;
+
+    RpResource depth_tex_;
+    RpResource velocity_tex_;
+
+    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &depth_tex,
+                  RpAllocTex &velocity_tex);
     void DrawDepth(RpBuilder &builder);
 
 #if defined(USE_GL_RENDER)
@@ -41,7 +47,8 @@ class RpDepthFill : public RenderPassBase {
 #endif
   public:
     void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
-               int orphan_index, Ren::TexHandle depth_tex, Ren::TexHandle velocity_tex);
+               int orphan_index, const char instances_buf[], const char shared_data_buf[],
+               const char main_depth_tex[], const char main_velocity_tex[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "DEPTH FILL"; }

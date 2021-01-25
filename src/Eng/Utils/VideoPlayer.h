@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <iosfwd>
+#include <memory>
 #include <vector>
 
 #include <Sys/AssetFile.h>

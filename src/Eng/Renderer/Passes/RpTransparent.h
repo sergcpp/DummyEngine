@@ -7,6 +7,8 @@
 #include <Ren/VaoGL.h>
 #endif
 
+class PrimDraw;
+
 class RpTransparent : public RenderPassBase {
     PrimDraw &prim_draw_;
     bool initialized = false;
@@ -17,12 +19,9 @@ class RpTransparent : public RenderPassBase {
     Ren::Tex2DRef dummy_black_, dummy_white_;
 
     // temp data (valid only between Setup and Execute calls)
-    Ren::TexHandle color_tex_, normal_tex_, spec_tex_, depth_tex_, transparent_tex_;
-    Ren::TexHandle moments_b0_, moments_z_and_z2_, moments_z3_and_z4_;
     const ViewState *view_state_ = nullptr;
     Ren::Tex2DRef brdf_lut_, noise_tex_, cone_rt_lut_;
 
-    Ren::TexHandle shadow_tex_, ssao_tex_;
     const Environment *env_ = nullptr;
     const Ren::TextureAtlas *decals_atlas_ = nullptr;
     const ProbeStorage *probe_storage_ = nullptr;
@@ -32,16 +31,31 @@ class RpTransparent : public RenderPassBase {
     DynArrayConstRef<uint32_t> main_batch_indices_;
     const int *alpha_blend_start_index_ = nullptr;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
-    void DrawTransparent(RpBuilder &builder);
+    RpResource instances_buf_;
+    RpResource shared_data_buf_;
+    RpResource cells_buf_;
+    RpResource items_buf_;
+    RpResource lights_buf_;
+    RpResource decals_buf_;
 
-    void DrawTransparent_Simple(RpBuilder &builder,
-                                RpAllocBuf &instances_buf,
-                                RpAllocBuf &unif_shared_data_buf,
-                                RpAllocBuf &cells_buf,
-                                RpAllocBuf &items_buf,
-                                RpAllocBuf &lights_buf,
-                                RpAllocBuf &decals_buf);
+    RpResource shadowmap_tex_;
+    RpResource color_tex_;
+    RpResource normal_tex_;
+    RpResource spec_tex_;
+    RpResource depth_tex_;
+    RpResource ssao_tex_;
+    RpResource transparent_tex_;
+
+    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &color_tex,
+                  RpAllocTex &normal_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex,
+                  RpAllocTex &transparent_tex);
+    void DrawTransparent(RpBuilder &builder, RpAllocTex &color_tex);
+
+    void DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf,
+                                RpAllocBuf &unif_shared_data_buf, RpAllocBuf &cells_buf,
+                                RpAllocBuf &items_buf, RpAllocBuf &lights_buf,
+                                RpAllocBuf &decals_buf, RpAllocTex &shadowmap_tex,
+                                RpAllocTex &color_tex, RpAllocTex &ssao_tex);
     void DrawTransparent_OIT_MomentBased(RpBuilder &builder);
     void DrawTransparent_OIT_WeightedBlended(RpBuilder &builder);
 
@@ -55,12 +69,13 @@ class RpTransparent : public RenderPassBase {
 
     void Setup(RpBuilder &builder, const DrawList &list,
                const int *alpha_blend_start_index, const ViewState *view_state,
-               int orphan_index, Ren::TexHandle color_tex, Ren::TexHandle normal_tex,
-               Ren::TexHandle spec_tex, Ren::TexHandle depth_tex,
-               Ren::TexHandle transparent_tex, Ren::TexHandle moments_b0,
-               Ren::TexHandle moments_z_and_z2, Ren::TexHandle moments_z3_and_z4,
-               Ren::TexHandle shadow_tex, Ren::TexHandle ssao_tex, Ren::Tex2DRef brdf_lut,
-               Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut);
+               int orphan_index, Ren::Tex2DRef brdf_lut, Ren::Tex2DRef noise_tex,
+               Ren::Tex2DRef cone_rt_lut, const char instances_buf[],
+               const char shared_data_buf[], const char cells_buf[],
+               const char items_buf[], const char lights_buf[], const char decals_buf[],
+               const char shadowmap_tex[], const char ssao_tex[], const char color_tex[],
+               const char normal_tex[], const char spec_tex[], const char depth_tex[],
+               const char transparent_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "TRANSPARENT PASS"; }

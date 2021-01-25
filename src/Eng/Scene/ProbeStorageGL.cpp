@@ -1,6 +1,8 @@
 #include "ProbeStorage.h"
 
+#include <Ren/Context.h>
 #include <Ren/GL.h>
+#include <Ren/Utils.h>
 
 ProbeStorage::ProbeStorage()
     : format_(Ren::eTexFormat::Undefined), res_(0), size_(0), capacity_(0), max_level_(0),

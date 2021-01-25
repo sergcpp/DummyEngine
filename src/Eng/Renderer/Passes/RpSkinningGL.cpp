@@ -9,8 +9,8 @@
 void RpSkinning::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-    RpAllocBuf& skin_transforms_buf = builder.GetReadBuffer(input_[0]);
-    RpAllocBuf& shape_keys_buf = builder.GetReadBuffer(input_[1]);
+    RpAllocBuf& skin_transforms_buf = builder.GetReadBuffer(skin_transforms_buf_);
+    RpAllocBuf& shape_keys_buf = builder.GetReadBuffer(shape_keys_buf_);
 
     if (skin_regions_.count) {
         const GLuint vertex_buf1_id = vtx_buf1_->id();

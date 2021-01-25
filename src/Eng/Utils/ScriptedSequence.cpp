@@ -3,7 +3,9 @@
 #include <limits>
 
 #include <Snd/Utils.h>
+#include <Sys/AssetFile.h>
 #include <Sys/Json.h>
+#include <Sys/MemBuf.h>
 
 #include "../Scene/SceneManager.h"
 

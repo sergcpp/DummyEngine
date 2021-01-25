@@ -15,7 +15,6 @@ class RpSkydome : public RenderPassBase {
     int orphan_index_ = 0;
 
     // temp data (valid only between Setup and Execute calls)
-    Ren::TexHandle color_tex_, spec_tex_, depth_tex_;
     const ViewState *view_state_ = nullptr;
     const Environment *env_ = nullptr;
 
@@ -28,15 +27,22 @@ class RpSkydome : public RenderPassBase {
     Ren::Framebuffer cached_fb_;
 #endif
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    RpResource shared_data_buf_;
+
+    RpResource color_tex_;
+    RpResource spec_tex_;
+    RpResource depth_tex_;
+
+    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &color_tex,
+                  RpAllocTex &spec_tex, RpAllocTex &depth_tex);
     void DrawSkydome(RpBuilder &builder);
 
   public:
     ~RpSkydome();
 
     void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
-               int orphan_index, Ren::TexHandle color_tex, Ren::TexHandle spec_tex,
-               Ren::TexHandle depth_tex);
+               int orphan_index, const char shared_data_buf[], const char color_tex[],
+               const char spec_tex[], const char depth_tex[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "SKYDOME"; }

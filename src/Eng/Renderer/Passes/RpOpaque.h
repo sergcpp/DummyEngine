@@ -15,11 +15,9 @@ class RpOpaque : public RenderPassBase {
     Ren::Tex2DRef dummy_black_, dummy_white_;
 
     // temp data (valid only between Setup and Execute calls)
-    Ren::TexHandle color_tex_, normal_tex_, spec_tex_, depth_tex_;
     const ViewState *view_state_ = nullptr;
     Ren::Tex2DRef brdf_lut_, noise_tex_, cone_rt_lut_;
 
-    Ren::TexHandle shadow_tex_, ssao_tex_;
     const Environment *env_ = nullptr;
     const Ren::TextureAtlas *decals_atlas_ = nullptr;
     const ProbeStorage *probe_storage_ = nullptr;
@@ -28,7 +26,22 @@ class RpOpaque : public RenderPassBase {
     DynArrayConstRef<MainDrawBatch> main_batches_;
     DynArrayConstRef<uint32_t> main_batch_indices_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    RpResource instances_buf_;
+    RpResource shared_data_buf_;
+    RpResource cells_buf_;
+    RpResource items_buf_;
+    RpResource lights_buf_;
+    RpResource decals_buf_;
+    RpResource shadowmap_tex_;
+    RpResource ssao_tex_;
+
+    RpResource color_tex_;
+    RpResource normal_tex_;
+    RpResource spec_tex_;
+    RpResource depth_tex_;
+
+    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &color_tex,
+                  RpAllocTex &normal_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
     void DrawOpaque(RpBuilder &builder);
 
 #if defined(USE_GL_RENDER)
@@ -38,10 +51,12 @@ class RpOpaque : public RenderPassBase {
 #endif
   public:
     void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
-               int orphan_index, Ren::TexHandle color_tex, Ren::TexHandle normal_tex,
-               Ren::TexHandle spec_tex, Ren::TexHandle depth_tex,
-               Ren::TexHandle shadow_tex, Ren::TexHandle ssao_tex, Ren::Tex2DRef brdf_lut,
-               Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut);
+               int orphan_index, Ren::Tex2DRef brdf_lut, Ren::Tex2DRef noise_tex,
+               Ren::Tex2DRef cone_rt_lut, const char instances_buf[],
+               const char shared_data_buf[], const char cells_buf[],
+               const char items_buf[], const char lights_buf[], const char decals_buf[],
+               const char shadowmap_tex[], const char ssao_tex[], const char out_color[],
+               const char out_normals[], const char out_spec[], const char out_depth[]);
     void Execute(RpBuilder &builder) override;
 
     // TODO: remove this

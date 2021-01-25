@@ -4,6 +4,8 @@
 
 #include <Sys/Json.h>
 
+#include "../SceneData.h"
+
 void LightSource::Read(const JsObject &js_in, LightSource &ls) {
     const JsArray &js_color = js_in.at("color").as_arr();
 

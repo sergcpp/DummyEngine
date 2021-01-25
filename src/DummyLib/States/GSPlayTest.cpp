@@ -200,16 +200,16 @@ void GSPlayTest::OnPostloadScene(JsObject &js_scene) {
         const JsObject &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
             const JsArray &js_orig = js_cam.at("view_origin").as_arr();
-            cam_ctrl_->view_origin[0] = (float)js_orig.at(0).as_num().val;
-            cam_ctrl_->view_origin[1] = (float)js_orig.at(1).as_num().val;
-            cam_ctrl_->view_origin[2] = (float)js_orig.at(2).as_num().val;
+            cam_ctrl_->view_origin[0] = float(js_orig.at(0).as_num().val);
+            cam_ctrl_->view_origin[1] = float(js_orig.at(1).as_num().val);
+            cam_ctrl_->view_origin[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
             const JsArray &js_dir = js_cam.at("view_dir").as_arr();
-            cam_ctrl_->view_dir[0] = (float)js_dir.at(0).as_num().val;
-            cam_ctrl_->view_dir[1] = (float)js_dir.at(1).as_num().val;
-            cam_ctrl_->view_dir[2] = (float)js_dir.at(2).as_num().val;
+            cam_ctrl_->view_dir[0] = float(js_dir.at(0).as_num().val);
+            cam_ctrl_->view_dir[1] = float(js_dir.at(1).as_num().val);
+            cam_ctrl_->view_dir[2] = float(js_dir.at(2).as_num().val);
         }
 
         if (js_cam.Has("fwd_speed")) {
@@ -219,12 +219,12 @@ void GSPlayTest::OnPostloadScene(JsObject &js_scene) {
 
         if (js_cam.Has("fov")) {
             const JsNumber &js_fov = js_cam.at("fov").as_num();
-            cam_ctrl_->view_fov = (float)js_fov.val;
+            cam_ctrl_->view_fov = float(js_fov.val);
         }
 
         if (js_cam.Has("max_exposure")) {
             const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
-            cam_ctrl_->max_exposure = (float)js_max_exposure.val;
+            cam_ctrl_->max_exposure = float(js_max_exposure.val);
         }
     }
 }
@@ -242,11 +242,11 @@ void GSPlayTest::OnUpdateScene() {
 
     seq_cap_ui_->Clear();
     if (test_seq_) {
-        test_seq_->Update((float)seq_edit_ui_->GetTime(), true);
+        test_seq_->Update(double(seq_edit_ui_->GetTime()), true);
     }
 }
 
-void GSPlayTest::OnSetCurSequence(int id) {
+void GSPlayTest::OnSetCurSequence(const int id) {
     if (test_seq_) {
         test_seq_->push_caption_signal.clear();
     }
@@ -258,7 +258,7 @@ void GSPlayTest::OnSetCurSequence(int id) {
 
 void GSPlayTest::Exit() { GSBaseState::Exit(); }
 
-void GSPlayTest::Draw(uint64_t dt_us) {
+void GSPlayTest::Draw(const uint64_t dt_us) {
     if (is_playing_) {
         const float cur_time_s = 0.001f * Sys::GetTimeMs();
         if (seq_edit_ui_->timeline_grabbed()) {
@@ -279,7 +279,7 @@ void GSPlayTest::Draw(uint64_t dt_us) {
     GSBaseState::Draw(dt_us);
 }
 
-void GSPlayTest::Update(uint64_t dt_us) { cam_ctrl_->Update(dt_us); }
+void GSPlayTest::Update(const uint64_t dt_us) { cam_ctrl_->Update(dt_us); }
 
 void GSPlayTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     using namespace GSPlayTestInternal;
@@ -301,8 +301,8 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
 
     // pt switch for touch controls
     if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
-        if (evt.point.x > (float)ren_ctx_->w() * 0.9f &&
-            evt.point.y < (float)ren_ctx_->h() * 0.1f) {
+        if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
+            evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ms_ < 400) {
                 use_pt_ = !use_pt_;
@@ -322,7 +322,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
     switch (evt.type) {
     case RawInputEvent::EvP1Down: {
         const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && seq_edit_ui_->Check(p)) {
             seq_edit_ui_->Press(p, true);
@@ -334,7 +334,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEvent::EvP2Down: {
         const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && seq_edit_ui_->Check(p)) {
             seq_edit_ui_->PressRMB(p, true);
@@ -346,7 +346,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEvent::EvP1Up: {
         const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             seq_edit_ui_->Press(p, false);
@@ -358,7 +358,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEvent::EvP2Up: {
         const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             seq_edit_ui_->PressRMB(p, false);
@@ -370,7 +370,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
     } break;
     case RawInputEvent::EvP1Move: {
         const Ren::Vec2f p =
-            Gui::MapPointToScreen(Ren::Vec2i{(int)evt.point.x, (int)evt.point.y},
+            Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             seq_edit_ui_->Hover(p);
@@ -437,11 +437,11 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             }
         }
     } break;
-    case RawInputEvent::EvResize:
+    case RawInputEvent::EvResize: {
         cam_ctrl_->Resize(ren_ctx_->w(), ren_ctx_->h());
         dialog_edit_ui_->Resize(ui_root_.get());
         seq_edit_ui_->Resize(ui_root_.get());
-        break;
+    } break;
     default:
         break;
     }

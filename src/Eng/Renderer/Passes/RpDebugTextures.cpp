@@ -10,18 +10,18 @@
 
 void RpDebugTextures::Setup(RpBuilder &builder, const ViewState *view_state,
                             const DrawList &list, const int orphan_index,
-                            Ren::TexHandle depth_tex, const Ren::Tex2DRef &color_tex,
-                            const Ren::Tex2DRef &spec_tex, const Ren::Tex2DRef &norm_tex,
                             const Ren::Tex2DRef &down_tex_4x,
-                            const Ren::Tex2DRef &reduced_tex,
-                            const Ren::Tex2DRef &blur_tex, const Ren::Tex2DRef &ssao_tex,
-                            const Ren::Tex2DRef &shadow_tex,
+                            const char shared_data_buf_name[],
+                            const char cells_buf_name[], const char items_buf_name[],
+                            const char shadow_map_name[], const char main_color_tex_name[],
+                            const char main_normal_tex_name[], const char main_spec_tex_name[],
+                            const char main_depth_tex_name[], const char ssao_tex_name[],
+                            const char blur_res_name[], const char reduced_tex_name[],
                             Ren::TexHandle output_tex) {
     orphan_index_ = orphan_index;
     render_flags_ = list.render_flags;
     view_state_ = view_state;
     draw_cam_ = &list.draw_cam;
-    depth_tex_ = depth_tex;
     output_tex_ = output_tex;
 
     if (!list.depth_pixels.empty()) {
@@ -36,14 +36,7 @@ void RpDebugTextures::Setup(RpBuilder &builder, const ViewState *view_state,
         depth_tiles_ = nullptr;
     }
 
-    color_tex_ = color_tex;
-    spec_tex_ = spec_tex;
-    norm_tex_ = norm_tex;
     down_tex_4x_ = down_tex_4x;
-    reduced_tex_ = reduced_tex;
-    blur_tex_ = blur_tex;
-    ssao_tex_ = ssao_tex;
-    shadow_tex_ = shadow_tex;
 
     shadow_lists_ = list.shadow_lists;
     shadow_regions_ = list.shadow_regions;
@@ -53,21 +46,34 @@ void RpDebugTextures::Setup(RpBuilder &builder, const ViewState *view_state,
     nodes_count_ = uint32_t(list.temp_nodes.size());
     root_node_ = list.root_index;
 
-    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
-    input_[1] = builder.ReadBuffer(CELLS_BUF);
-    input_[2] = builder.ReadBuffer(ITEMS_BUF);
-    input_count_ = 3;
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf_name, *this);
+    cells_buf_ = builder.ReadBuffer(cells_buf_name, *this);
+    items_buf_ = builder.ReadBuffer(items_buf_name, *this);
 
-    // output_[0] = builder.WriteBuffer(input_[0], *this);
-    output_count_ = 0;
+    shadowmap_tex_ = builder.ReadTexture(shadow_map_name, *this);
+    color_tex_ = builder.ReadTexture(main_color_tex_name, *this);
+    normal_tex_ = builder.ReadTexture(main_normal_tex_name, *this);
+    spec_tex_ = builder.ReadTexture(main_spec_tex_name, *this);
+    depth_tex_ = builder.ReadTexture(main_depth_tex_name, *this);
+    ssao_tex_ = builder.ReadTexture(ssao_tex_name, *this);
+    blur_tex_ = builder.ReadTexture(blur_res_name, *this);
+    reduced_tex_ = builder.ReadTexture(reduced_tex_name, *this);
 }
 
 void RpDebugTextures::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
-    RpAllocBuf &cells_buf = builder.GetReadBuffer(input_[1]);
-    RpAllocBuf &items_buf = builder.GetReadBuffer(input_[2]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(cells_buf_);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(items_buf_);
+    RpAllocTex &shadowmap_tex = builder.GetReadTexture(shadowmap_tex_);
+    RpAllocTex &color_tex = builder.GetReadTexture(color_tex_);
+    RpAllocTex &normal_tex = builder.GetReadTexture(normal_tex_);
+    RpAllocTex &spec_tex = builder.GetReadTexture(spec_tex_);
+    RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
+    RpAllocTex &ssao_tex = builder.GetReadTexture(ssao_tex_);
+    RpAllocTex &blur_tex = builder.GetReadTexture(blur_tex_);
+    RpAllocTex &reduced_tex = builder.GetReadTexture(reduced_tex_);
 
     Ren::RastState rast_state;
     rast_state.cull_face.enabled = true;
@@ -108,9 +114,11 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
         PrimDraw::Binding bindings[3];
 
         if (view_state_->is_multisampled) {
-            bindings[0] = {Ren::eBindTarget::Tex2DMs, REN_BASE0_TEX_SLOT, depth_tex_};
+            bindings[0] = {Ren::eBindTarget::Tex2DMs, REN_BASE0_TEX_SLOT,
+                           depth_tex.ref->handle()};
         } else {
-            bindings[0] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, depth_tex_};
+            bindings[0] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT,
+                           depth_tex.ref->handle()};
         }
 
         bindings[1] = {Ren::eBindTarget::TexBuf, REN_CELLS_BUF_SLOT,
@@ -146,22 +154,22 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
     }
 
     if (render_flags_ & DebugDeferred) {
-        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, color_tex_, 1.0f);
-        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, spec_tex_, 1.0f);
-        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, norm_tex_, 1.0f);
+        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, color_tex.ref, 1.0f);
+        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, spec_tex.ref, 1.0f);
+        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, normal_tex.ref, 1.0f);
         x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, down_tex_4x_, 1.0f);
     }
 
     if (render_flags_ & DebugReduce) {
-        x_offset += BlitTex(applied_state, x_offset, 0, 256, 128, reduced_tex_, 10.0f);
+        x_offset += BlitTex(applied_state, x_offset, 0, 256, 128, reduced_tex.ref, 10.0f);
     }
 
     if (render_flags_ & DebugBlur) {
-        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, blur_tex_, 1.0f);
+        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, blur_tex.ref, 1.0f);
     }
 
     if (render_flags_ & DebugSSAO) {
-        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, ssao_tex_, 1.0f);
+        x_offset += BlitTex(applied_state, x_offset, 0, 384, -1, ssao_tex.ref, 1.0f);
     }
 
     if (render_flags_ & DebugBVH) {
@@ -205,7 +213,7 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
                        unif_shared_data_buf.ref->handle()};
         bindings[1] = {view_state_->is_multisampled ? Ren::eBindTarget::Tex2DMs
                                                     : Ren::eBindTarget::Tex2D,
-                       0, depth_tex_};
+                       0, depth_tex.ref->handle()};
         bindings[2] = {Ren::eBindTarget::TexBuf, 1, nodes_tbo_->handle()};
 
         const PrimDraw::Uniform uniforms[] = {
@@ -218,7 +226,7 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
     }
 
     if (render_flags_ & DebugShadow) {
-        DrawShadowMaps(builder.ctx());
+        DrawShadowMaps(builder.ctx(), shadowmap_tex);
     }
 }
 

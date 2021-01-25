@@ -1,36 +1,25 @@
 #include "RpTransparent.h"
 
+#include <Ren/Context.h>
+
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpTransparent::Setup(RpBuilder &builder, const DrawList &list,
-                          const int *alpha_blend_start_index, const ViewState *view_state,
-                          int orphan_index, Ren::TexHandle color_tex,
-                          Ren::TexHandle normal_tex, Ren::TexHandle spec_tex,
-                          Ren::TexHandle depth_tex, Ren::TexHandle transparent_tex,
-                          Ren::TexHandle moments_b0, Ren::TexHandle moments_z_and_z2,
-                          Ren::TexHandle moments_z3_and_z4,
-                          Ren::TexHandle shadow_tex,
-                          Ren::TexHandle ssao_tex, Ren::Tex2DRef brdf_lut,
-                          Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut) {
+void RpTransparent::Setup(
+    RpBuilder &builder, const DrawList &list, const int *alpha_blend_start_index,
+    const ViewState *view_state, int orphan_index, Ren::Tex2DRef brdf_lut,
+    Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut, const char instances_buf[],
+    const char shared_data_buf[], const char cells_buf[], const char items_buf[],
+    const char lights_buf[], const char decals_buf[], const char shadowmap_tex[],
+    const char ssao_tex[], const char color_tex[], const char normal_tex[],
+    const char spec_tex[], const char depth_tex[], const char transparent_tex_name[]) {
     orphan_index_ = orphan_index;
-
-    color_tex_ = color_tex;
-    normal_tex_ = normal_tex;
-    spec_tex_ = spec_tex;
-    depth_tex_ = depth_tex;
-    transparent_tex_ = transparent_tex;
-    moments_b0_ = moments_b0;
-    moments_z_and_z2_ = moments_z_and_z2;
-    moments_z3_and_z4_ = moments_z3_and_z4;
     view_state_ = view_state;
 
     brdf_lut_ = std::move(brdf_lut);
     noise_tex_ = std::move(noise_tex);
     cone_rt_lut_ = std::move(cone_rt_lut);
 
-    shadow_tex_ = shadow_tex;
-    ssao_tex_ = ssao_tex;
     env_ = &list.env;
     decals_atlas_ = list.decals_atlas;
     probe_storage_ = list.probe_storage;
@@ -40,30 +29,54 @@ void RpTransparent::Setup(RpBuilder &builder, const DrawList &list,
     main_batch_indices_ = list.main_batch_indices;
     alpha_blend_start_index_ = alpha_blend_start_index;
 
-    input_[0] = builder.ReadBuffer(INSTANCES_BUF);
-    input_[1] = builder.ReadBuffer(SHARED_DATA_BUF);
-    input_[2] = builder.ReadBuffer(CELLS_BUF);
-    input_[3] = builder.ReadBuffer(ITEMS_BUF);
-    input_[4] = builder.ReadBuffer(LIGHTS_BUF);
-    input_[5] = builder.ReadBuffer(DECALS_BUF);
-    input_count_ = 6;
+    instances_buf_ = builder.ReadBuffer(instances_buf, *this);
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);
+    cells_buf_ = builder.ReadBuffer(cells_buf, *this);
+    items_buf_ = builder.ReadBuffer(items_buf, *this);
+    lights_buf_ = builder.ReadBuffer(lights_buf, *this);
+    decals_buf_ = builder.ReadBuffer(decals_buf, *this);
 
-    // output_[0] = builder.WriteBuffer(input_[0], *this);
-    output_count_ = 0;
+    shadowmap_tex_ = builder.ReadTexture(shadowmap_tex, *this);
+    ssao_tex_ = builder.ReadTexture(ssao_tex, *this);
+    color_tex_ = builder.WriteTexture(color_tex, *this);
+    normal_tex_ = builder.WriteTexture(normal_tex, *this);
+    spec_tex_ = builder.WriteTexture(spec_tex, *this);
+    depth_tex_ = builder.WriteTexture(depth_tex, *this);
+
+    {
+        Ren::Tex2DParams params;
+        params.w = view_state->scr_res[0];
+        params.h = view_state->scr_res[1];
+        params.format = Ren::eTexFormat::RawRG11F_B10F;
+        params.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+        transparent_tex_ = builder.WriteTexture(transparent_tex_name, params, *this);
+    }
 }
 
 void RpTransparent::Execute(RpBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
-    DrawTransparent(builder);
+    RpAllocTex &color_tex = builder.GetWriteTexture(color_tex_);
+    RpAllocTex &normal_tex = builder.GetWriteTexture(normal_tex_);
+    RpAllocTex &spec_tex = builder.GetWriteTexture(spec_tex_);
+    RpAllocTex &depth_tex = builder.GetWriteTexture(depth_tex_);
+    RpAllocTex &transparent_tex = builder.GetWriteTexture(transparent_tex_);
+
+    LazyInit(builder.ctx(), builder.sh(), color_tex, normal_tex, spec_tex, depth_tex,
+             transparent_tex);
+    DrawTransparent(builder, color_tex);
 }
 
-void RpTransparent::DrawTransparent(RpBuilder &builder) {
-    RpAllocBuf &instances_buf = builder.GetReadBuffer(input_[0]);
-    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[1]);
-    RpAllocBuf &cells_buf = builder.GetReadBuffer(input_[2]);
-    RpAllocBuf &items_buf = builder.GetReadBuffer(input_[3]);
-    RpAllocBuf &lights_buf = builder.GetReadBuffer(input_[4]);
-    RpAllocBuf &decals_buf = builder.GetReadBuffer(input_[5]);
+void RpTransparent::DrawTransparent(RpBuilder &builder, RpAllocTex &color_tex) {
+    RpAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(cells_buf_);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(items_buf_);
+    RpAllocBuf &lights_buf = builder.GetReadBuffer(lights_buf_);
+    RpAllocBuf &decals_buf = builder.GetReadBuffer(decals_buf_);
+
+    RpAllocTex &shadowmap_tex = builder.GetReadTexture(shadowmap_tex_);
+    RpAllocTex &ssao_tex = builder.GetReadTexture(ssao_tex_);
 
     if (alpha_blend_start_index_ == nullptr) {
         return;
@@ -74,11 +87,14 @@ void RpTransparent::DrawTransparent(RpBuilder &builder) {
 #elif (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED)
 #else
     DrawTransparent_Simple(builder, instances_buf, unif_shared_data_buf, cells_buf,
-                           items_buf, lights_buf, decals_buf);
+                           items_buf, lights_buf, decals_buf, shadowmap_tex, color_tex,
+                           ssao_tex);
 #endif
 }
 
-void RpTransparent::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpTransparent::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &color_tex,
+                             RpAllocTex &normal_tex, RpAllocTex &spec_tex,
+                             RpAllocTex &depth_tex, RpAllocTex &transparent_tex) {
     if (!initialized) {
         blit_ms_resolve_prog_ =
             sh.LoadProgram(ctx, "blit_ms_resolve", "internal/blit.vert.glsl",
@@ -130,28 +146,30 @@ void RpTransparent::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
     }
 
     {
-        const Ren::TexHandle attachments[] = {color_tex_, normal_tex_, spec_tex_};
-        if (!transparent_draw_fb_.Setup(attachments, 3, depth_tex_, depth_tex_,
+        const Ren::TexHandle attachments[] = {
+            color_tex.ref->handle(), normal_tex.ref->handle(), spec_tex.ref->handle()};
+        if (!transparent_draw_fb_.Setup(attachments, 3, depth_tex.ref->handle(),
+                                        depth_tex.ref->handle(),
                                         view_state_->is_multisampled)) {
             ctx.log()->Error("RpTransparent: transparent_draw_fb_ init failed!");
         }
     }
 
-    if (!color_only_fb_.Setup(&color_tex_, 1, depth_tex_, depth_tex_,
-                              view_state_->is_multisampled)) {
+    if (!color_only_fb_.Setup(&color_tex.ref->handle(), 1, depth_tex.ref->handle(),
+                              depth_tex.ref->handle(), view_state_->is_multisampled)) {
         ctx.log()->Error("RpTransparent: color_only_fb_ init failed!");
     }
 
-    if (!resolved_fb_.Setup(&transparent_tex_, 1, {}, {}, false)) {
+    if (!resolved_fb_.Setup(&transparent_tex.ref->handle(), 1, {}, {}, false)) {
         ctx.log()->Error("RpTransparent: resolved_fb_ init failed!");
     }
 
-    if (moments_b0_.id && moments_z_and_z2_.id && moments_z3_and_z4_.id) {
+    /*if (moments_b0_.id && moments_z_and_z2_.id && moments_z3_and_z4_.id) {
         const Ren::TexHandle attachments[] = {moments_b0_, moments_z_and_z2_,
                                               moments_z3_and_z4_};
-        if (!moments_fb_.Setup(attachments, 3, depth_tex_, {},
+        if (!moments_fb_.Setup(attachments, 3, depth_tex.ref->handle(), {},
                                view_state_->is_multisampled)) {
             ctx.log()->Error("RpTransparent: moments_fb_ init failed!");
         }
-    }
+    }*/
 }

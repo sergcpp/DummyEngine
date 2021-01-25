@@ -243,7 +243,7 @@ void GSDrawTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     GSBaseState::DrawUI(r, root);
 }
 
-void GSDrawTest::Update(uint64_t dt_us) {
+void GSDrawTest::Update(const uint64_t dt_us) {
     using namespace GSDrawTestInternal;
 
     const Ren::Vec3f up = Ren::Vec3f{0, 1, 0}, side = Normalize(Cross(view_dir_, up));

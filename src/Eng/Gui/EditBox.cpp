@@ -1,6 +1,8 @@
 #include "EditBox.h"
 
+#include "BitmapFont.h"
 #include "Renderer.h"
+#include "Utils.h"
 
 namespace Gui {
 namespace EditBoxConstants {

@@ -1,5 +1,7 @@
 #include "SceneManager.h"
 
+#include <Ren/Context.h>
+
 #ifdef ENABLE_ITT_API
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;

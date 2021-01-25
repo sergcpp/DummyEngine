@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include <Ren/MVec.h>
+
 #undef Always
 
 namespace Ren {

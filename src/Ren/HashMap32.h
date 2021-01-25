@@ -250,7 +250,7 @@ public:
 
     template <typename K2>
     V *Find(const K2 &key) {
-        uint32_t hash = hash_func_(key);
+        const uint32_t hash = hash_func_(key);
         return Find(hash, key);
     }
 
@@ -258,10 +258,10 @@ public:
     V *Find(uint32_t hash, const K2 &key) {
         if (!capacity_) return nullptr;
 
-        uint8_t ctrl = OccupiedBit | (hash & HashMask);
+        const uint8_t ctrl = OccupiedBit | (hash & HashMask);
 
         uint32_t i = hash & (capacity_ - 1);
-        uint32_t end = i;
+        const uint32_t end = i;
         while (ctrl_[i]) {
             if (ctrl_[i] == ctrl && nodes_[i].hash == hash && key_equal_(nodes_[i].key, key)) {
                 return &nodes_[i].val;

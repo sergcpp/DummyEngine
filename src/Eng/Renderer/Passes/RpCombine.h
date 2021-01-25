@@ -15,12 +15,16 @@ class RpCombine : public RenderPassBase {
 
     // lazily initialized data
     Ren::ProgramRef blit_combine_prog_;
+    Ren::Tex2DRef dummy_black_;
 
     // temp data (valid only between Setup and Execute calls)
-    Ren::TexHandle color_tex_, blur_tex_, output_tex_;
     const ViewState *view_state_ = nullptr;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    RpResource color_tex_;
+    RpResource blur_tex_;
+    RpResource output_tex_;
+
+    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex *output_tex);
 
 #if defined(USE_GL_RENDER)
     Ren::Framebuffer output_fb_;
@@ -29,8 +33,8 @@ class RpCombine : public RenderPassBase {
     RpCombine(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
     void Setup(RpBuilder &builder, const ViewState *view_state, float gamma,
-               float exposure, float fade, bool tonemap, Ren::TexHandle color_tex,
-               Ren::TexHandle blur_tex, Ren::TexHandle output_tex);
+               float exposure, float fade, bool tonemap, const char color_tex_name[],
+               const char blur_tex_name[], const char output_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "COMBINE PASS"; }

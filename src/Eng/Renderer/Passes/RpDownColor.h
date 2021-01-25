@@ -3,6 +3,7 @@
 #include "../Graph/GraphBuilder.h"
 
 class PrimDraw;
+struct ViewState;
 
 class RpDownColor : public RenderPassBase {
     PrimDraw &prim_draw_;
@@ -12,9 +13,13 @@ class RpDownColor : public RenderPassBase {
     Ren::ProgramRef blit_down_prog_;
 
     // temp data (valid only between Setup and Execute calls)
-    Ren::TexHandle color_tex_, output_tex_;
+    Ren::TexHandle output_tex_;
     const ViewState *view_state_ = nullptr;
     int orphan_index_ = -1;
+
+    RpResource shared_data_buf_;
+
+    RpResource color_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
@@ -25,7 +30,8 @@ class RpDownColor : public RenderPassBase {
     RpDownColor(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
     void Setup(RpBuilder &builder, const ViewState *view_state, int orphan_index,
-               Ren::TexHandle color_tex, Ren::TexHandle output_tex);
+               const char shared_data_buf[], const char color_tex_name[],
+               Ren::TexHandle output_tex);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "DOWNSAMPLE COLOR"; }

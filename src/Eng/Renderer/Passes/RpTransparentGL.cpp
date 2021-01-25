@@ -1,6 +1,7 @@
 #include "RpTransparent.h"
 
 #include "../DebugMarker.h"
+#include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
 #include <Ren/Context.h>
@@ -23,8 +24,9 @@ uint32_t _draw_list_range_full_rev(Ren::Context &ctx,
 void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf,
                                            RpAllocBuf &unif_shared_data_buf,
                                            RpAllocBuf &cells_buf, RpAllocBuf &items_buf,
-                                           RpAllocBuf &lights_buf,
-                                           RpAllocBuf &decals_buf) {
+                                           RpAllocBuf &lights_buf, RpAllocBuf &decals_buf,
+                                           RpAllocTex &shadowmap_tex,
+                                           RpAllocTex &color_tex, RpAllocTex& ssao_tex) {
     Ren::RastState rast_state;
     rast_state.depth_test.enabled = true;
     rast_state.depth_test.func = Ren::eTestFunc::Less;
@@ -69,7 +71,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
                       unif_shared_data_buf.ref->id(), orphan_index_ * SharedDataBlockSize,
                       sizeof(SharedDataBlock));
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT, shadow_tex_.id);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT, shadowmap_tex.ref->id());
 
     if (decals_atlas_) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_DECAL_TEX_SLOT,
@@ -77,7 +79,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
     }
 
     if ((render_flags_ & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, ssao_tex_.id);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, ssao_tex.ref->id());
     } else {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, dummy_white_->id());
     }
@@ -261,7 +263,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         Ren::RastState applied_state = rast_state;
 
         const PrimDraw::Binding bindings[] = {
-            {Ren::eBindTarget::Tex2DMs, REN_BASE0_TEX_SLOT, color_tex_}};
+            {Ren::eBindTarget::Tex2DMs, REN_BASE0_TEX_SLOT, color_tex.ref->handle()}};
 
         const PrimDraw::Uniform uniforms[] = {
             {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]),
@@ -301,13 +303,14 @@ void RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
 
-    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[1]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
 
     glBindBufferRange(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
                       unif_shared_data_buf.ref->id(), orphan_index_ * SharedDataBlockSize,
                       sizeof(SharedDataBlock));
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT, shadow_tex_.id);
+    // ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT,
+    // shadowmap_tex.ref->id());
 
     if (decals_atlas_) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_DECAL_TEX_SLOT,
@@ -315,7 +318,7 @@ void RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {
     }
 
     if ((render_flags_ & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, ssao_tex_.id);
+        //ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, ssao_tex_.id);
     } else {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, dummy_white_->id());
     }
@@ -343,7 +346,7 @@ void RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {
         const Ren::Program *cur_program = nullptr;
         const Ren::Material *cur_mat = nullptr;
 
-        for (int j = int(main_batch_indices_.count) - 1; j >= *alpha_blend_start_index_;
+        for (int j = int(main_batch_indices_.count) - 1; j >= (*alpha_blend_start_index_);
              j--) {
             const MainDrawBatch &batch = main_batches_.data[main_batch_indices_.data[j]];
             if (!batch.instance_count) {
@@ -398,7 +401,7 @@ void RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    if (view_state_->is_multisampled) {
+    /*if (view_state_->is_multisampled) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_MOMENTS0_MS_TEX_SLOT,
                                    moments_b0_.id);
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_MOMENTS1_MS_TEX_SLOT,
@@ -411,7 +414,7 @@ void RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {
                                    moments_z_and_z2_.id);
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MOMENTS2_TEX_SLOT,
                                    moments_z3_and_z4_.id);
-    }
+    }*/
 
     { // Draw alpha-blended surfaces
         DebugMarker _("COLOR PASS");
@@ -474,6 +477,31 @@ void RpTransparent::DrawTransparent_OIT_WeightedBlended(RpBuilder &builder) {}
 //
 
 #if 0
+
+#if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
+{ // Buffer that holds moments (used for transparency)
+    FrameBuf::ColorAttachmentDesc desc[3];
+    { // b0
+        desc[0].format = Ren::eTexFormat::RawR32F;
+        desc[0].filter = Ren::eTexFilter::NoFilter;
+        desc[0].repeat = Ren::eTexRepeat::ClampToEdge;
+    }
+    { // z and z^2
+        desc[1].format = Ren::eTexFormat::RawRG16F;
+        desc[1].filter = Ren::eTexFilter::NoFilter;
+        desc[1].repeat = Ren::eTexRepeat::ClampToEdge;
+    }
+    { // z^3 and z^4
+        desc[2].format = Ren::eTexFormat::RawRG16F;
+        desc[2].filter = Ren::eTexFilter::NoFilter;
+        desc[2].repeat = Ren::eTexRepeat::ClampToEdge;
+    }
+    moments_buf_ =
+        FrameBuf("Moments buf", ctx_, cur_scr_w, cur_scr_h, desc, 3,
+            { Ren::eTexFormat::None }, clean_buf_.sample_count, log);
+}
+#endif
+
 #if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
 { // Attach depth from clean buffer to moments buffer
     glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)moments_buf_.fb);

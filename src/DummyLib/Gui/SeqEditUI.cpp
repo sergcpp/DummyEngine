@@ -36,7 +36,7 @@ void SeqEditUI::Resize(const BaseElement *parent) {
                    this);
 }
 
-void SeqEditUI::Press(const Ren::Vec2f &p, bool push) {
+void SeqEditUI::Press(const Ren::Vec2f &p, const bool push) {
     timeline_.Press(p, push);
     canvas_.Press(p, push);
 }
@@ -46,4 +46,4 @@ void SeqEditUI::Hover(const Ren::Vec2f &p) {
     canvas_.Hover(p);
 }
 
-void SeqEditUI::PressRMB(const Ren::Vec2f &p, bool push) { timeline_.PressRMB(p, push); }
+void SeqEditUI::PressRMB(const Ren::Vec2f &p, const bool push) { timeline_.PressRMB(p, push); }

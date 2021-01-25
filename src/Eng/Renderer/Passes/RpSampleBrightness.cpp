@@ -1,15 +1,27 @@
 #include "RpSampleBrightness.h"
 
-void RpSampleBrightness::Setup(RpBuilder &builder, Ren::TexHandle tex_to_sample,
-                               Ren::TexHandle reduce_tex) {
-    tex_to_sample_ = tex_to_sample;
-    reduce_tex_ = reduce_tex;
+#include <Ren/Context.h>
 
-    input_count_ = 0;
-    output_count_ = 0;
+#include "../../Utils/ShaderLoader.h"
+
+void RpSampleBrightness::Setup(RpBuilder &builder, Ren::TexHandle tex_to_sample,
+                               const char reduced_tex[]) {
+    tex_to_sample_ = tex_to_sample;
+
+    { // aux buffer which gathers frame luminance
+        Ren::Tex2DParams params;
+        params.w = 16;
+        params.h = 8;
+        params.format = Ren::eTexFormat::RawR16F;
+        params.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+        reduced_tex_ = builder.WriteTexture(reduced_tex, params, *this);
+    }
 }
 
-void RpSampleBrightness::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpSampleBrightness::LazyInit(Ren::Context &ctx, ShaderLoader &sh,
+                                  RpAllocTex &reduced_tex) {
     if (!initialized_) {
         blit_red_prog_ = sh.LoadProgram(ctx, "blit_red", "internal/blit.vert.glsl",
                                         "internal/blit_reduced.frag.glsl");
@@ -22,7 +34,7 @@ void RpSampleBrightness::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         initialized_ = true;
     }
 
-    if (!reduced_fb_.Setup(&reduce_tex_, 1, {}, {}, false)) {
+    if (!reduced_fb_.Setup(&reduced_tex.ref->handle(), 1, {}, {}, false)) {
         ctx.log()->Error("RpSampleBrightness: reduced_fb_ init failed!");
     }
 }

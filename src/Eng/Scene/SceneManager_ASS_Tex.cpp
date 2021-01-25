@@ -1,6 +1,7 @@
 #include "SceneManager.h"
 
 #include <fstream>
+#include <future>
 
 #include <Eng/Utils/Load.h>
 #include <Net/Compress.h>
@@ -10,6 +11,7 @@ extern "C" {
 #include <Ren/SOIL2/SOIL2.h>
 #include <Ren/Utils.h>
 #include <Sys/Json.h>
+#include <Sys/ThreadPool.h>
 
 // faster than std::min/max in debug
 #define _MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -425,7 +427,8 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
 }
 
 bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int channels,
-               const bool flip_y, const bool is_rgbm, const char *out_file, uint8_t out_color[4]) {
+               const bool flip_y, const bool is_rgbm, const char *out_file,
+               uint8_t out_color[4]) {
     // Check if resolution is power of two
     const bool store_mipmaps =
         (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
@@ -589,8 +592,8 @@ int ConvertToASTC(const uint8_t *image_data, int width, int height, int channels
                   float bitrate, std::unique_ptr<uint8_t[]> &out_buf);
 std::unique_ptr<uint8_t[]> DecodeASTC(const uint8_t *image_data, int data_size, int xdim,
                                       int ydim, int width, int height);
-// std::unique_ptr<uint8_t[]> Decode_KTX_ASTC(const uint8_t *img_data, int data_size,
-// int &width, int &height);
+std::unique_ptr<uint8_t[]> Decode_KTX_ASTC(const uint8_t *image_data, int data_size,
+                                           int &width, int &height);
 
 bool Write_KTX_ASTC_Mips(const uint8_t *const *mipmaps, const int *widths,
                          const int *heights, const int mip_count, const int channels,
@@ -746,6 +749,7 @@ int WriteImage(const uint8_t *out_data, const int w, const int h, const int chan
 
 bool CreateFolders(const char *out_file, Ren::ILog *log);
 
+extern bool g_astc_initialized;
 } // namespace SceneManagerInternal
 
 bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,

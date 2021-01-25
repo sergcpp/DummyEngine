@@ -5,32 +5,31 @@
 
 #include "../../Utils/ShaderLoader.h"
 #include "../PrimDraw.h"
-#include "../Renderer_Names.h"
 #include "../Renderer_Structs.h"
 
 void RpDebugEllipsoids::Setup(RpBuilder &builder, const DrawList &list,
                               const ViewState *view_state, const int orphan_index,
-                              Ren::TexHandle output_tex) {
+                              const char shared_data_buf_name[],
+                              const char output_tex_name[]) {
 
     view_state_ = view_state;
     orphan_index_ = orphan_index;
-    output_tex_ = output_tex;
 
     ellipsoids_ = list.ellipsoids;
 
-    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
-    input_count_ = 1;
-
-    // output_[0] = builder.WriteBuffer(input_[0], *this);
-    output_count_ = 0;
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf_name, *this);
+    output_tex_ = builder.WriteTexture(output_tex_name, *this);
 }
 
 void RpDebugEllipsoids::Execute(RpBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+    RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
+
+    LazyInit(builder.ctx(), builder.sh(), output_tex);
     DrawProbes(builder);
 }
 
-void RpDebugEllipsoids::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpDebugEllipsoids::LazyInit(Ren::Context &ctx, ShaderLoader &sh,
+                                 RpAllocTex &output_tex) {
     if (!initialized) {
         ellipsoid_prog_ =
             sh.LoadProgram(ctx, "ellipsoid_prog", "internal/ellipsoid.vert.glsl",
@@ -40,7 +39,8 @@ void RpDebugEllipsoids::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         initialized = true;
     }
 
-    if (!draw_fb_.Setup(&output_tex_, 1, {}, {}, view_state_->is_multisampled)) {
+    if (!draw_fb_.Setup(&output_tex.ref->handle(), 1, {}, {},
+                        view_state_->is_multisampled)) {
         ctx.log()->Error("RpDebugEllipsoids: draw_fb_ init failed!");
     }
 }
@@ -54,7 +54,7 @@ void RpDebugEllipsoids::DrawProbes(RpBuilder &builder) {
     rast_state.Apply();
     Ren::RastState applied_state = rast_state;
 
-    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
 
     const PrimDraw::Binding bindings[] = {{Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
                                            orphan_index_ * SharedDataBlockSize,

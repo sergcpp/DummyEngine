@@ -142,6 +142,21 @@ static_assert(sizeof(g_gl_wrap_mode) / sizeof(g_gl_wrap_mode[0]) ==
                   (size_t)eTexRepeat::WrapModesCount,
               "!");
 
+const uint32_t g_gl_compare_func[] = {
+    0xffffffff,  // None
+    GL_LEQUAL,   // LEqual
+    GL_GEQUAL,   // GEqual
+    GL_LESS,     // Less
+    GL_GREATER,  // Greater
+    GL_EQUAL,    // Equal
+    GL_NOTEQUAL, // NotEqual
+    GL_ALWAYS,   // Always
+    GL_NEVER,    // Never
+};
+static_assert(sizeof(g_gl_compare_func) / sizeof(g_gl_compare_func[0]) ==
+                  (size_t)eTexCompare::_Count,
+              "!");
+
 const uint32_t gl_binding_targets[] = {
     GL_TEXTURE_2D,             // Tex2D
     GL_TEXTURE_2D_MULTISAMPLE, // Tex2DMs
@@ -165,6 +180,11 @@ GLenum ToSRGBFormat(const GLenum internal_format) {
         return GL_SRGB8_ALPHA8;
     }
     return 0xffffffff;
+}
+
+bool IsDepthFormat(const eTexFormat format) {
+    return format == eTexFormat::Depth16 || format == eTexFormat::Depth24Stencil8 ||
+           format == eTexFormat::Depth32;
 }
 } // namespace Ren
 
@@ -351,23 +371,7 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Tex2DParams &p, ILo
     }
 
     if (p.samples == 1) {
-        ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_ANISOTROPY_EXT,
-                                     AnisotropyLevel);
-
-        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_FILTER,
-                                     g_gl_min_filter[size_t(p.filter)]);
-        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAG_FILTER,
-                                     g_gl_mag_filter[size_t(p.filter)]);
-
-        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_S,
-                                     g_gl_wrap_mode[size_t(p.repeat)]);
-        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_T,
-                                     g_gl_wrap_mode[size_t(p.repeat)]);
-
-        if (mip_count > 1 &&
-            (p.filter == eTexFilter::Trilinear || p.filter == eTexFilter::Bilinear)) {
-            ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, tex_id);
-        }
+        SetFilter(p.filter, p.repeat, p.compare, p.lod_bias);
     }
 
     CheckError("create texture", log);
@@ -472,7 +476,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size,
         h = std::max(h / 2, 1);
     }
 
-    SetFilter(p.filter, p.repeat, p.lod_bias);
+    SetFilter(p.filter, p.repeat, p.compare, p.lod_bias);
 }
 
 void Ren::Texture2D::InitFromPNGFile(const void *data, const int size,
@@ -537,7 +541,7 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, const int size,
     params_.w = int(w);
     params_.h = int(h);
 
-    SetFilter(p.filter, p.repeat, p.lod_bias);
+    SetFilter(p.filter, p.repeat, p.compare, p.lod_bias);
 }
 
 void Ren::Texture2D::InitFromKTXFile(const void *data, const int size,
@@ -608,7 +612,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size,
         data_offset += pad;
     }
 
-    SetFilter(p.filter, p.repeat, p.lod_bias);
+    SetFilter(p.filter, p.repeat, p.compare, p.lod_bias);
 }
 
 void Ren::Texture2D::InitFromRAWData(const void *data[6], const Tex2DParams &p,
@@ -762,7 +766,7 @@ void Ren::Texture2D::InitFromPNGFile(const void *data[6], const int size[6],
     params_.h = int(h);
     params_.cube = 1;
 
-    SetFilter(p.filter, p.repeat, p.lod_bias);
+    SetFilter(p.filter, p.repeat, p.compare, p.lod_bias);
 }
 
 void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6],
@@ -832,7 +836,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6],
 
     params_.cube = 1;
 
-    SetFilter(p.filter, p.repeat, p.lod_bias);
+    SetFilter(p.filter, p.repeat, p.compare, p.lod_bias);
 }
 
 void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6],
@@ -907,11 +911,11 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6],
         }
     }
 
-    SetFilter(p.filter, p.repeat, p.lod_bias);
+    SetFilter(p.filter, p.repeat, p.compare, p.lod_bias);
 }
 
 void Ren::Texture2D::SetFilter(const eTexFilter f, const eTexRepeat r,
-                               const float lod_bias) {
+                               const eTexCompare c, const float lod_bias) {
     const auto tex_id = GLuint(handle_.id);
 
     if (!params_.cube) {
@@ -939,6 +943,17 @@ void Ren::Texture2D::SetFilter(const eTexFilter f, const eTexRepeat r,
             if (!(params_.flags & (eTexFlags::TexMIPMin | eTexFlags::TexMIPMax))) {
                 ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, tex_id);
             }
+        }
+
+        if (c != eTexCompare::None) {
+            assert(IsDepthFormat(params_.format));
+            ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_COMPARE_MODE,
+                                         GL_COMPARE_REF_TO_TEXTURE);
+            ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_COMPARE_FUNC,
+                                         g_gl_compare_func[int(c)]);
+        } else {
+            ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_COMPARE_MODE,
+                                         GL_NONE);
         }
     } else {
         ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MIN_FILTER,

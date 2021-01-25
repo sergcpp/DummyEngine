@@ -6,36 +6,47 @@
 
 #include "../../Utils/ShaderLoader.h"
 #include "../PrimDraw.h"
-#include "../Renderer_Names.h"
 #include "../Renderer_Structs.h"
 
 void RpTAA::Setup(RpBuilder &builder, const ViewState *view_state, const int orphan_index,
-                  Ren::TexHandle depth_tex, Ren::TexHandle clean_tex,
-                  Ren::TexHandle history_tex, Ren::TexHandle velocity_tex,
-                  float reduced_average, float max_exposure,
-                  Ren::TexHandle output_tex) {
+                  Ren::TexHandle history_tex, float reduced_average, float max_exposure,
+                  const char shared_data_buf[], const char color_tex[],
+                  const char depth_tex[], const char velocity_tex[],
+                  const char output_tex_name[]) {
     view_state_ = view_state;
     orphan_index_ = orphan_index;
-    depth_tex_ = depth_tex;
-    clean_tex_ = clean_tex;
     history_tex_ = history_tex;
-    velocity_tex_ = velocity_tex;
-    output_tex_ = output_tex;
 
     reduced_average_ = reduced_average;
     max_exposure_ = max_exposure;
 
-    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
-    input_count_ = 1;
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);
 
-    // output_[0] = builder.WriteBuffer(input_[0], *this);
-    output_count_ = 0;
+    clean_tex_ = builder.ReadTexture(color_tex, *this);
+    depth_tex_ = builder.ReadTexture(depth_tex, *this);
+    velocity_tex_ = builder.ReadTexture(velocity_tex, *this);
+
+    { // Texture that holds resolved color
+        Ren::Tex2DParams params;
+        params.w = view_state->scr_res[0];
+        params.h = view_state->scr_res[1];
+        params.format = Ren::eTexFormat::RawRG11F_B10F;
+        params.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+        output_tex_ = builder.WriteTexture(output_tex_name, params, *this);
+    }
 }
 
 void RpTAA::Execute(RpBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
 
-    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocTex &clean_tex = builder.GetReadTexture(clean_tex_);
+    RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
+    RpAllocTex &velocity_tex = builder.GetReadTexture(velocity_tex_);
+    RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
+
+    LazyInit(builder.ctx(), builder.sh(), depth_tex, velocity_tex, output_tex);
 
     Ren::RastState rast_state;
     rast_state.cull_face.enabled = true;
@@ -57,7 +68,7 @@ void RpTAA::Execute(RpBuilder &builder) {
         Ren::Program *blit_prog = blit_static_vel_prog_.get();
 
         const PrimDraw::Binding bindings[] = {
-            {Ren::eBindTarget::Tex2D, 0, depth_tex_},
+            {Ren::eBindTarget::Tex2D, 0, depth_tex.ref->handle()},
             {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
              orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
              unif_shared_data_buf.ref->handle()}};
@@ -82,10 +93,10 @@ void RpTAA::Execute(RpBuilder &builder) {
         exposure = std::min(exposure, max_exposure_);
 
         const PrimDraw::Binding bindings[] = {
-            {Ren::eBindTarget::Tex2D, 0, clean_tex_},
+            {Ren::eBindTarget::Tex2D, 0, clean_tex.ref->handle()},
             {Ren::eBindTarget::Tex2D, 1, history_tex_},
-            {Ren::eBindTarget::Tex2D, 2, depth_tex_},
-            {Ren::eBindTarget::Tex2D, 3, velocity_tex_}};
+            {Ren::eBindTarget::Tex2D, 2, depth_tex.ref->handle()},
+            {Ren::eBindTarget::Tex2D, 3, velocity_tex.ref->handle()}};
 
         const PrimDraw::Uniform uniforms[] = {
             {0, Ren::Vec4f{applied_state.viewport}},
@@ -98,7 +109,8 @@ void RpTAA::Execute(RpBuilder &builder) {
     }
 }
 
-void RpTAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpTAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &depth_tex,
+                     RpAllocTex &velocity_tex, RpAllocTex &output_tex) {
     if (!initialized) {
         blit_taa_prog_ = sh.LoadProgram(ctx, "blit_taa_prog", "internal/blit.vert.glsl",
                                         "internal/blit_taa.frag.glsl");
@@ -111,12 +123,13 @@ void RpTAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         initialized = true;
     }
 
-    if (!velocity_fb_.Setup(&velocity_tex_, 1, {}, depth_tex_, false)) {
+    if (!velocity_fb_.Setup(&velocity_tex.ref->handle(), 1, {}, depth_tex.ref->handle(),
+                            false)) {
         ctx.log()->Error("RpTAA: velocity_fb_ init failed!");
     }
 
     {
-        const Ren::TexHandle textures[] = {output_tex_, history_tex_};
+        const Ren::TexHandle textures[] = {output_tex.ref->handle(), history_tex_};
         if (!resolve_fb_.Setup(textures, 2, {}, {}, false)) {
             ctx.log()->Error("RpTAA: resolve_fb_ init failed!");
         }

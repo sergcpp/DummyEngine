@@ -31,7 +31,7 @@ void RpSkydome::DrawSkydome(RpBuilder &builder) {
 
     rast_state.Apply();
 
-    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
     glBindBufferRange(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
                       GLuint(unif_shared_data_buf.ref->id()),
                       orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock));

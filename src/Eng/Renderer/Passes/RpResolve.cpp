@@ -1,5 +1,7 @@
 #include "RpResolve.h"
 
+#include <Ren/Context.h>
+#include <Ren/Program.h>
 #include <Ren/RastState.h>
 
 #include "../../Utils/ShaderLoader.h"
@@ -7,20 +9,28 @@
 #include "../Renderer_Structs.h"
 
 void RpResolve::Setup(RpBuilder &builder, const ViewState *view_state,
-                      Ren::TexHandle color_tex, Ren::TexHandle output_tex) {
+                      const char color_tex[], const char output_tex_name[]) {
     view_state_ = view_state;
-    color_tex_ = color_tex;
-    output_tex_ = output_tex;
 
-    // input_[0] = builder.ReadBuffer(in_shared_data_buf);
-    input_count_ = 0;
+    color_tex_ = builder.ReadTexture(color_tex, *this);
 
-    // output_[0] = builder.WriteBuffer(input_[0], *this);
-    output_count_ = 0;
+    {
+        Ren::Tex2DParams params;
+        params.w = view_state->scr_res[0];
+        params.h = view_state->scr_res[1];
+        params.format = Ren::eTexFormat::RawRG11F_B10F;
+        params.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+        output_tex_ = builder.WriteTexture(output_tex_name, params, *this);
+    }
 }
 
 void RpResolve::Execute(RpBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+    RpAllocTex &color_tex = builder.GetReadTexture(color_tex_);
+    RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
+
+    LazyInit(builder.ctx(), builder.sh(), output_tex);
 
     Ren::RastState rast_state;
     rast_state.cull_face.enabled = true;
@@ -32,7 +42,7 @@ void RpResolve::Execute(RpBuilder &builder) {
     Ren::RastState applied_state = rast_state;
 
     const PrimDraw::Binding bindings[] = {
-        {Ren::eBindTarget::Tex2DMs, REN_BASE0_TEX_SLOT, color_tex_}};
+        {Ren::eBindTarget::Tex2DMs, REN_BASE0_TEX_SLOT, color_tex.ref->handle()}};
 
     const PrimDraw::Uniform uniforms[] = {
         {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]),
@@ -42,7 +52,7 @@ void RpResolve::Execute(RpBuilder &builder) {
                         blit_ms_resolve_prog_.get(), bindings, 1, uniforms, 1);
 }
 
-void RpResolve::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpResolve::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_tex) {
     if (!initialized) {
         blit_ms_resolve_prog_ =
             sh.LoadProgram(ctx, "blit_ms_resolve", "internal/blit.vert.glsl",
@@ -52,7 +62,7 @@ void RpResolve::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         initialized = true;
     }
 
-    if (!resolve_fb_.Setup(&output_tex_, 1, {}, {}, false)) {
+    if (!resolve_fb_.Setup(&output_tex.ref->handle(), 1, {}, {}, false)) {
         ctx.log()->Error("RpResolve: resolve_fb_ init failed!");
     }
 }

@@ -5,9 +5,12 @@
 #include <vector>
 
 #include <Ren/Fwd.h>
+
+#include <Ren/Buffer.h>
 #include <Ren/HashMap32.h>
 #include <Ren/Log.h>
 #include <Ren/SparseArray.h>
+#include <Ren/Texture.h>
 
 class ShaderLoader;
 
@@ -27,6 +30,10 @@ struct RpResource {
     RpResource() = default;
     RpResource(eRpResType _type, uint16_t __generation, uint32_t _index)
         : type(_type), _generation(__generation), index(_index) {}
+
+    operator bool() {
+        return type != eRpResType::Undefined;
+    }
 };
 
 const int MaxInOutCountPerPass = 16;
@@ -34,7 +41,7 @@ const int MaxInOutCountPerPass = 16;
 class RpBuilder;
 
 class RenderPassBase {
-  protected:
+  private:
     friend class RpBuilder;
 
     RpResource input_[MaxInOutCountPerPass];
@@ -61,6 +68,11 @@ struct RpBufDesc {
     Ren::eBufferAccessFreq freq;
 };
 
+inline bool operator==(const RpBufDesc &lhs, const RpBufDesc &rhs) {
+    return lhs.size == rhs.size && lhs.type == rhs.type && lhs.access == rhs.access &&
+           lhs.freq == rhs.freq;
+}
+
 struct RpAllocBuf {
     union {
         struct {
@@ -69,6 +81,8 @@ struct RpAllocBuf {
         };
         uint16_t _generation;
     };
+    std::string name;
+    RpBufDesc desc;
     Ren::BufferRef ref;
     Ren::Tex1DRef tbos[4];
 };
@@ -81,6 +95,8 @@ struct RpAllocTex {
         };
         uint16_t _generation;
     };
+    std::string name;
+    Ren::Tex2DParams desc;
     Ren::Tex2DRef ref;
 };
 
@@ -89,10 +105,10 @@ class RpBuilder {
     ShaderLoader &sh_;
 
     Ren::SparseArray<RpAllocBuf> buffers_;
-    Ren::HashMap32<const char *, uint32_t> name_to_buffer_;
+    Ren::HashMap32<std::string, uint32_t> name_to_buffer_;
 
     Ren::SparseArray<RpAllocTex> textures_;
-    Ren::HashMap32<const char *, uint32_t> name_to_texture_;
+    Ren::HashMap32<std::string, uint32_t> name_to_texture_;
 
   public:
     RpBuilder(Ren::Context &ctx, ShaderLoader &sh) : ctx_(ctx), sh_(sh) {}
@@ -101,15 +117,20 @@ class RpBuilder {
     Ren::ILog *log();
     ShaderLoader &sh() { return sh_; }
 
-    RpResource CreateBuffer(const char *name, const RpBufDesc &desc);
-    RpResource CreateTexture(const char *name, const Ren::Tex2DParams &p);
+    RpResource ReadBuffer(RpResource handle, RenderPassBase &pass);
+    RpResource ReadBuffer(const char *name, RenderPassBase &pass);
 
-    RpResource ReadBuffer(RpResource handle);
-    RpResource ReadBuffer(const char *name);
-    RpResource ReadTexture(RpResource handle);
+    RpResource ReadTexture(RpResource handle, RenderPassBase &pass);
+    RpResource ReadTexture(const char *name, RenderPassBase &pass);
 
     RpResource WriteBuffer(RpResource handle, RenderPassBase &pass);
+    RpResource WriteBuffer(const char *name, RenderPassBase &pass);
+    RpResource WriteBuffer(const char *name, const RpBufDesc &desc, RenderPassBase &pass);
+
     RpResource WriteTexture(RpResource handle, RenderPassBase &pass);
+    RpResource WriteTexture(const char *name, RenderPassBase &pass);
+    RpResource WriteTexture(const char *name, const Ren::Tex2DParams &p,
+                            RenderPassBase &pass);
 
     RpAllocBuf &GetReadBuffer(RpResource handle);
     RpAllocTex &GetReadTexture(RpResource handle);

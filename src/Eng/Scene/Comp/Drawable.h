@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Ren/Fwd.h>
+#include <Ren/MVec.h>
 
 #include "Common.h"
 

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Ren/Fwd.h>
+#include <Ren/MMat.h>
+#include <Ren/Texture.h>
 
 #if defined(USE_GL_RENDER)
 #include <Ren/VaoGL.h>

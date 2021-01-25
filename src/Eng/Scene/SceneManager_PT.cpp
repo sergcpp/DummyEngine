@@ -9,6 +9,7 @@
 #include <Sys/Time_.h>
 
 #include "../Renderer/Renderer.h"
+#include "../Utils/Load.h"
 
 namespace SceneManagerConstants {
 extern const char *MODELS_PATH;

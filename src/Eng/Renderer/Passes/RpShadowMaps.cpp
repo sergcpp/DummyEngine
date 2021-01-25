@@ -1,33 +1,44 @@
 #include "RpShadowMaps.h"
 
-#include "../../Utils/ShaderLoader.h"
-#include "../Renderer_Names.h"
+#include <Ren/Context.h>
+
 #include "../Renderer_Structs.h"
+#include "../../Utils/ShaderLoader.h"
 
 void RpShadowMaps::Setup(RpBuilder &builder, const DrawList &list,
-                         const int orphan_index, Ren::TexHandle shadow_tex) {
+                         const int orphan_index, const char instances_buf[],
+                         const char shadowmap_tex[]) {
     orphan_index_ = orphan_index;
-
-    shadow_tex_ = shadow_tex;
 
     shadow_batches_ = list.shadow_batches;
     shadow_batch_indices_ = list.shadow_batch_indices;
     shadow_lists_ = list.shadow_lists;
     shadow_regions_ = list.shadow_regions;
 
-    input_[0] = builder.ReadBuffer(INSTANCES_BUF);
-    input_count_ = 1;
+    instances_buf_ = builder.ReadBuffer(instances_buf, *this);
 
-    // output_[0] = builder.WriteBuffer(input_[0], *this);
-    output_count_ = 0;
+    { // shadow map buffer
+        Ren::Tex2DParams params;
+        params.w = w_;
+        params.h = h_;
+        params.format = Ren::eTexFormat::Depth16;
+        params.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.compare = Ren::eTexCompare::LEqual;
+
+        shadowmap_tex_ = builder.WriteTexture(shadowmap_tex, params, *this);
+    }
 }
 
 void RpShadowMaps::Execute(RpBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+    RpAllocTex &shadowmap_tex = builder.GetWriteTexture(shadowmap_tex_);
+
+    LazyInit(builder.ctx(), builder.sh(), shadowmap_tex.ref->handle());
     DrawShadowMaps(builder);
 }
 
-void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh,
+                            Ren::TexHandle shadow_tex) {
     if (!initialized) {
         shadow_solid_prog_ =
             sh.LoadProgram(ctx, "shadow_solid", "internal/shadow.vert.glsl",
@@ -48,7 +59,7 @@ void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         initialized = true;
     }
 
-    if (!shadow_fb_.Setup(nullptr, 0, shadow_tex_, {}, false)) {
+    if (!shadow_fb_.Setup(nullptr, 0, shadow_tex, {}, false)) {
         ctx.log()->Error("RpShadowMaps: shadow_fb_ init failed!");
     }
 

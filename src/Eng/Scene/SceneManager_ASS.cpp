@@ -21,8 +21,10 @@
 #include <Ray/internal/TextureSplitter.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
+#include <Sys/Json.h>
 #include <Sys/MonoAlloc.h>
 #include <Sys/ThreadPool.h>
+#include <Sys/Time_.h>
 
 // TODO: pass defines as a parameter
 #include "../Renderer/Renderer_GL_Defines.inl"
@@ -295,32 +297,6 @@ bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &
     return true;
 }
 
-struct AssetCache {
-    JsObject js_db;
-    Ren::HashMap32<const char*, int> db_map;
-    Ren::HashMap32<const char*, uint32_t> texture_averages;
-
-    void WriteTextureAverage(const char* tex_name, const uint8_t average_color[4]) {
-        uint32_t color;
-        memcpy(&color, average_color, 4);
-        texture_averages.Insert(tex_name, color);
-
-        JsObject& js_files = js_db["files"].as_obj();
-        const int* index = db_map.Find(tex_name);
-        if (index) {
-            JsObject& js_file = js_files.elements[*index].second.as_obj();
-
-            if (js_file.Has("color")) {
-                JsNumber& js_color = js_file.at("color").as_num();
-                js_color.val = double(color);
-            } else {
-                auto js_color = JsNumber{ double(color) };
-                js_file.Push("color", js_color);
-            }
-    }
-    }
-};
-
 bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context_t &ctx) {
 #if !defined(NDEBUG) && 0
     log->Info("Warning: glsl is forced to be not skipped!");
@@ -480,7 +456,7 @@ JsObject LoadDB(const char *out_folder) {
     }
 
     if (i != 0 && !js_assets_db.elements.empty()) {
-        // write loaded db as most recent one
+        // write loaded db as the most recent one
         std::ofstream out_file(file_names[0], std::ios::binary);
         try {
             js_assets_db.Write(out_file);
@@ -584,11 +560,11 @@ std::string ExtractHTMLData(assets_context_t &ctx, const char *in_file,
 }
 
 bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]);
+
+bool g_astc_initialized = false;
 } // namespace SceneManagerInternal
 
 Ren::HashMap32<std::string, SceneManager::Handler> SceneManager::g_asset_handlers;
-
-bool g_astc_initialized = false;
 
 void SceneManager::RegisterAsset(const char *in_ext, const char *out_ext,
                                  const ConvertAssetFunc &convert_func) {
@@ -704,7 +680,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
                 }
             }
 
-            if (Sys::GetTimeS() - last_db_write > 5.0 && WriteDB(ctx.cache->js_db, out_folder)) {
+            if (Sys::GetTimeS() - last_db_write > 5.0 &&
+                WriteDB(ctx.cache->js_db, out_folder)) {
                 last_db_write = Sys::GetTimeS();
             }
         }
@@ -718,7 +695,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
     }
 #endif
 
-    assets_context_t ctx = { platform, log };
+    assets_context_t ctx = {platform, log};
     ctx.cache.reset(new AssetCache);
 
     ctx.cache->js_db = LoadDB(out_folder);
@@ -730,7 +707,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
             ctx.cache->db_map[key] = i;
 
             if (js_files.elements[i].second.as_obj().Has("color")) {
-                const JsNumber &js_color = js_files.elements[i].second.as_obj().at("color").as_num();
+                const JsNumber &js_color =
+                    js_files.elements[i].second.as_obj().at("color").as_num();
                 ctx.cache->texture_averages[key] = uint32_t(js_color.val);
             }
         }
@@ -793,42 +771,47 @@ bool SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_fil
 
     std::string line;
     while (std::getline(src_stream, line)) {
-        if (line.back() == '\n') {
-            line.pop_back();
-        }
-        if (line.back() == '\r') {
-            line.pop_back();
-        }
-
-        if (line.rfind("texture:", 0) == 0) {
-            const size_t n1 = line.find(' ');
-            const size_t n2 = line.find(' ', n1 + 1);
-            const std::string tex_name =
-                "assets/textures/" + line.substr(n1 + 1, n2 - n1 - 1);
-
-            uint8_t average_color[4] = {0, 255, 255, 255};
-
-            const uint32_t *cached_color = ctx.cache->texture_averages.Find(tex_name.c_str());
-            if (cached_color) {
-                memcpy(average_color, cached_color, 4);
-            } else {
-                if (!SceneManagerInternal::GetTexturesAverageColor(tex_name.c_str(),
-                                                                   average_color)) {
-                    ctx.log->Error("[PrepareAssets] Failed to get average color of %s",
-                                   tex_name.c_str());
-                } else {
-                    ctx.cache->WriteTextureAverage(tex_name.c_str(), average_color);
-                }
+        if (!line.empty()) {
+            if (line.back() == '\n') {
+                line.pop_back();
+            }
+            if (line.back() == '\r') {
+                line.pop_back();
             }
 
-            SceneManagerInternal::ReplaceTextureExtension(ctx.platform, line);
+            if (line.rfind("texture:", 0) == 0) {
+                const size_t n1 = line.find(' ');
+                const size_t n2 = line.find(' ', n1 + 1);
+                const std::string tex_name =
+                    "assets/textures/" + line.substr(n1 + 1, n2 - n1 - 1);
 
-            static char const hex_chars[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
-                                               '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-            line += " #";
-            for (int i = 0; i < 4; i++) {
-                line += hex_chars[average_color[i] / 16];
-                line += hex_chars[average_color[i] % 16];
+                uint8_t average_color[4] = {0, 255, 255, 255};
+
+                const uint32_t *cached_color =
+                    ctx.cache->texture_averages.Find(tex_name.c_str());
+                if (cached_color) {
+                    memcpy(average_color, cached_color, 4);
+                } else {
+                    if (!SceneManagerInternal::GetTexturesAverageColor(tex_name.c_str(),
+                                                                       average_color)) {
+                        ctx.log->Error(
+                            "[PrepareAssets] Failed to get average color of %s",
+                            tex_name.c_str());
+                    } else {
+                        ctx.cache->WriteTextureAverage(tex_name.c_str(), average_color);
+                    }
+                }
+
+                SceneManagerInternal::ReplaceTextureExtension(ctx.platform, line);
+
+                static char const hex_chars[16] = {'0', '1', '2', '3', '4', '5',
+                                                   '6', '7', '8', '9', 'A', 'B',
+                                                   'C', 'D', 'E', 'F'};
+                line += " #";
+                for (int i = 0; i < 4; i++) {
+                    line += hex_chars[average_color[i] / 16];
+                    line += hex_chars[average_color[i] % 16];
+                }
             }
         }
         dst_stream << line << "\n";

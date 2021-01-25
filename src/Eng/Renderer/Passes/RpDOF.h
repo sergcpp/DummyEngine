@@ -16,13 +16,21 @@ class RpDOF : public RenderPassBase {
 
     // temp data (valid only between Setup and Execute calls)
     const Ren::Camera *draw_cam_ = nullptr;
-    Ren::TexHandle color_tex_, depth_tex_, down_buf_4x_, down_depth_2x_, down_depth_4x_,
-        down_tex_coc_[2], blur_temp_4x_[2];
-    Ren::TexHandle output_tex_;
+    Ren::TexHandle down_buf_4x_;
     const ViewState *view_state_ = nullptr;
     int orphan_index_ = -1;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    RpResource shared_data_buf_;
+    RpResource color_tex_;
+    RpResource depth_tex_;
+    RpResource down_depth_2x_tex_, down_depth_4x_tex_;
+
+    RpResource blur_temp_4x_[2], down_tex_coc_[2];
+    RpResource output_tex_;
+
+    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &down_depth_4x_tex,
+                  RpAllocTex &blur1_temp_4x, RpAllocTex &blur2_temp_4x,
+                  RpAllocTex &coc1_tex, RpAllocTex &coc2_tex, RpAllocTex &output_tex);
 
 #if defined(USE_GL_RENDER)
     Ren::Framebuffer coc_fb_[2], blur_fb_[2], depth_4x_fb_, dof_fb_;
@@ -31,12 +39,11 @@ class RpDOF : public RenderPassBase {
     RpDOF(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
     void Setup(RpBuilder &builder, const Ren::Camera *draw_cam,
-               const ViewState *view_state, int orphan_index, Ren::TexHandle color_tex,
-               Ren::TexHandle depth_tex, Ren::TexHandle down_buf_4x,
-               Ren::TexHandle down_depth_2x, Ren::TexHandle down_depth_4x,
-               Ren::TexHandle down_tex_coc[2], Ren::TexHandle blur_temp_4x[2],
-               Ren::TexHandle dof_buf,
-               Ren::TexHandle output_tex);
+               const ViewState *view_state, int orphan_index,
+               const char shared_data_buf[], const char color_tex_name[],
+               const char depth_tex_name[], const char depth_down_2x_name[],
+               const char depth_down_4x_name[], Ren::TexHandle down_buf_4x,
+               const char output_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "DOF"; }

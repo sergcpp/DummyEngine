@@ -32,22 +32,23 @@ struct Tex2DParams {
     uint16_t flags = 0;
     uint8_t cube = 0;
     uint8_t samples = 1;
-    uint8_t fallback_color[4] = { 0, 255, 255, 255 };
+    uint8_t fallback_color[4] = {0, 255, 255, 255};
     eTexFormat format = eTexFormat::Undefined;
     eTexFilter filter = eTexFilter::NoFilter;
     eTexRepeat repeat = eTexRepeat::Repeat;
-    uint8_t _padding;
+    eTexCompare compare = eTexCompare::None;
 };
 static_assert(sizeof(Tex2DParams) == 20, "!");
 
 inline bool operator==(const Tex2DParams &lhs, const Tex2DParams &rhs) {
-    return lhs.w == rhs.w && lhs.h == rhs.h && lhs.cube == rhs.cube &&
-           lhs.format == rhs.format && lhs.filter == rhs.filter &&
-           lhs.repeat == rhs.repeat && lhs.lod_bias == rhs.lod_bias &&
-           lhs.flags == rhs.flags && lhs.fallback_color[0] == rhs.fallback_color[0] &&
+    return lhs.w == rhs.w && lhs.h == rhs.h && lhs.lod_bias == rhs.lod_bias &&
+           lhs.flags == rhs.flags && lhs.cube == rhs.cube && lhs.samples == rhs.samples &&
+           lhs.fallback_color[0] == rhs.fallback_color[0] &&
            lhs.fallback_color[1] == rhs.fallback_color[1] &&
            lhs.fallback_color[2] == rhs.fallback_color[2] &&
-           lhs.fallback_color[3] == rhs.fallback_color[3];
+           lhs.fallback_color[3] == rhs.fallback_color[3] && lhs.format == rhs.format &&
+           lhs.filter == rhs.filter && lhs.repeat == rhs.repeat &&
+           lhs.compare == rhs.compare;
 }
 inline bool operator!=(const Tex2DParams &lhs, const Tex2DParams &rhs) {
     return !operator==(lhs, rhs);
@@ -134,7 +135,7 @@ class Texture2D : public RefCounter {
     bool ready() const { return ready_; }
     const String &name() const { return name_; }
 
-    void SetFilter(eTexFilter f, eTexRepeat r, float lod_bias);
+    void SetFilter(eTexFilter f, eTexRepeat r, eTexCompare c, float lod_bias);
     void SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey,
                      Ren::eTexFormat format, const void *data);
 

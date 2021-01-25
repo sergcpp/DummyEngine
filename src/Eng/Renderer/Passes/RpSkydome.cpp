@@ -1,8 +1,9 @@
 #include "RpSkydome.h"
 
-#include "../../Utils/ShaderLoader.h"
-#include "../Renderer_Names.h"
+#include <Ren/Context.h>
+
 #include "../Renderer_Structs.h"
+#include "../../Utils/ShaderLoader.h"
 
 namespace RpSkydomeInternal {
 #include "__skydome_mesh.inl"
@@ -10,32 +11,68 @@ namespace RpSkydomeInternal {
 
 void RpSkydome::Setup(RpBuilder &builder, const DrawList &list,
                       const ViewState *view_state, const int orphan_index,
-                      Ren::TexHandle color_tex, Ren::TexHandle spec_tex,
-                      Ren::TexHandle depth_tex) {
+                      const char shared_data_buf[], const char color_tex[],
+                      const char spec_tex[], const char depth_tex[]) {
     orphan_index_ = orphan_index;
-
-    color_tex_ = color_tex;
-    spec_tex_ = spec_tex;
-    depth_tex_ = depth_tex;
-
     view_state_ = view_state;
 
     env_ = &list.env;
     draw_cam_pos_ = list.draw_cam.world_position();
 
-    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
-    input_count_ = 1;
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);
 
-    // output_[0] = builder.WriteBuffer(input_[0], *this);
-    output_count_ = 0;
+    { // Main color
+        Ren::Tex2DParams params;
+        params.w = view_state->scr_res[0];
+        params.h = view_state->scr_res[1];
+#if (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED) ||                                        \
+    (REN_OIT_MODE == REN_OIT_MOMENT_BASED && REN_OIT_MOMENT_RENORMALIZE)
+        // renormalization requires buffer with alpha channel
+        params.format = Ren::eTexFormat::RawRGBA16F;
+#else
+        params.format = Ren::eTexFormat::RawRG11F_B10F;
+#endif
+        params.filter = Ren::eTexFilter::NoFilter;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.samples = view_state->is_multisampled ? 4 : 1;
+
+        color_tex_ = builder.WriteTexture(color_tex, params, *this);
+    }
+    { // 4-component specular (alpha is roughness)
+        Ren::Tex2DParams params;
+        params.w = view_state->scr_res[0];
+        params.h = view_state->scr_res[1];
+        params.format = Ren::eTexFormat::RawRGBA8888;
+        params.filter = Ren::eTexFilter::NoFilter;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.samples = view_state->is_multisampled ? 4 : 1;
+
+        spec_tex_ = builder.WriteTexture(spec_tex, params, *this);
+    }
+    { // 24-bit depth
+        Ren::Tex2DParams params;
+        params.w = view_state->scr_res[0];
+        params.h = view_state->scr_res[1];
+        params.format = Ren::eTexFormat::Depth24Stencil8;
+        params.filter = Ren::eTexFilter::NoFilter;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.samples = view_state->is_multisampled ? 4 : 1;
+
+        depth_tex_ = builder.WriteTexture(depth_tex, params, *this);
+    }
 }
 
 void RpSkydome::Execute(RpBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+    RpAllocTex &color_tex = builder.GetWriteTexture(color_tex_);
+    RpAllocTex &spec_tex = builder.GetWriteTexture(spec_tex_);
+    RpAllocTex &depth_tex = builder.GetWriteTexture(depth_tex_);
+
+    LazyInit(builder.ctx(), builder.sh(), color_tex, spec_tex, depth_tex);
     DrawSkydome(builder);
 }
 
-void RpSkydome::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpSkydome::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &color_tex,
+                         RpAllocTex &spec_tex, RpAllocTex &depth_tex) {
     using namespace RpSkydomeInternal;
 
     if (!initialized) {
@@ -61,9 +98,10 @@ void RpSkydome::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         ctx.log()->Error("RpSkydome: vao init failed!");
     }
 
-    const Ren::TexHandle color_attachments[] = {color_tex_, {}, spec_tex_};
-    if (!cached_fb_.Setup(color_attachments, 3, depth_tex_, depth_tex_,
-                          view_state_->is_multisampled)) {
+    const Ren::TexHandle color_attachments[] = {
+        color_tex.ref->handle(), {}, spec_tex.ref->handle()};
+    if (!cached_fb_.Setup(color_attachments, 3, depth_tex.ref->handle(),
+                          depth_tex.ref->handle(), view_state_->is_multisampled)) {
         ctx.log()->Error("RpSkydome: fbo init failed!");
     }
 }

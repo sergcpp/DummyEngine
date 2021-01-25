@@ -3,6 +3,7 @@
 #include "../Graph/GraphBuilder.h"
 
 class PrimDraw;
+struct ViewState;
 
 class RpFXAA : public RenderPassBase {
     PrimDraw &prim_draw_;
@@ -12,12 +13,14 @@ class RpFXAA : public RenderPassBase {
     Ren::ProgramRef blit_fxaa_prog_;
 
     // temp data (valid only between Setup and Execute calls)
-    Ren::TexHandle color_tex_;
-    Ren::TexHandle output_tex_;
     const ViewState *view_state_ = nullptr;
     int orphan_index_ = -1;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    RpResource shared_data_buf_;
+    RpResource color_tex_;
+    RpResource output_tex_;
+
+    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex *output_tex);
 
 #if defined(USE_GL_RENDER)
     Ren::Framebuffer output_fb_;
@@ -26,7 +29,8 @@ class RpFXAA : public RenderPassBase {
     RpFXAA(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
     void Setup(RpBuilder &builder, const ViewState *view_state, int orphan_index,
-               Ren::TexHandle color_tex, Ren::TexHandle output_tex);
+               const char shared_data_buf[], const char color_tex[],
+               const char output_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "FXAA"; }

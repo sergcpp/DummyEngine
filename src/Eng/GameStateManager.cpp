@@ -1,5 +1,7 @@
 #include "GameStateManager.h"
 
+#include <stdexcept>
+
 #include <Sys/Log.h>
 
 GameStateManager::~GameStateManager() {

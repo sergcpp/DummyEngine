@@ -1,7 +1,10 @@
 #include "Renderer.h"
 
+#include "Utils.h"
+
 #include <cassert>
 
+#include <Ren/Context.h>
 #include <Ren/GL.h>
 #include <Sys/Json.h>
 

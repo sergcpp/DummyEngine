@@ -1,45 +1,65 @@
 #include "RpReflections.h"
 
-#include "../../Utils/ShaderLoader.h"
+#include <Ren/Context.h>
+#include <Ren/Program.h>
+#include <Ren/RastState.h>
+
+#include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
+#include "../../Scene/ProbeStorage.h"
+#include "../../Utils/ShaderLoader.h"
 
 void RpReflections::Setup(RpBuilder &builder, const ViewState *view_state,
                           int orphan_index, const ProbeStorage *probe_storage,
-                          Ren::TexHandle depth_tex, Ren::TexHandle norm_tex,
-                          Ren::TexHandle spec_tex, Ren::TexHandle down_depth_2x_tex,
-                          Ren::TexHandle down_buf_4x_tex, Ren::TexHandle ssr_buf1_tex,
-                          Ren::TexHandle ssr_buf2_tex, Ren::Tex2DRef brdf_lut,
-                          Ren::TexHandle output_tex) {
+                          Ren::TexHandle down_buf_4x_tex, Ren::Tex2DRef brdf_lut,
+                          const char shared_data_buf[], const char cells_buf[],
+                          const char items_buf[], const char depth_tex[], const char normal_tex[],
+                          const char spec_tex[], const char depth_down_2x[],
+                          const char output_tex_name[]) {
     view_state_ = view_state;
     orphan_index_ = orphan_index;
-    depth_tex_ = depth_tex;
-    norm_tex_ = norm_tex;
-    spec_tex_ = spec_tex;
-    down_depth_2x_tex_ = down_depth_2x_tex;
+
     down_buf_4x_tex_ = down_buf_4x_tex;
-    ssr_buf1_tex_ = ssr_buf1_tex;
-    ssr_buf2_tex_ = ssr_buf2_tex;
     brdf_lut_ = brdf_lut;
 
     probe_storage_ = probe_storage;
 
-    output_tex_ = output_tex;
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);
+    cells_buf_ = builder.ReadBuffer(cells_buf, *this);
+    items_buf_ = builder.ReadBuffer(items_buf, *this);
 
-    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
-    input_[1] = builder.ReadBuffer(CELLS_BUF);
-    input_[2] = builder.ReadBuffer(ITEMS_BUF);
-    input_count_ = 3;
+    depth_tex_ = builder.ReadTexture(depth_tex, *this);
+    normal_tex_ = builder.ReadTexture(normal_tex, *this);
+    spec_tex_ = builder.ReadTexture(spec_tex, *this);
+    depth_down_2x_tex_ = builder.ReadTexture(depth_down_2x, *this);
 
-    // output_[0] = builder.WriteBuffer(input_[0], *this);
-    output_count_ = 0;
+    { // Auxilary texture for reflections (rg - uvs, b - influence)
+        Ren::Tex2DParams params;
+        params.w = view_state->scr_res[0] / 2;
+        params.h = view_state->scr_res[1] / 2;
+        params.format = Ren::eTexFormat::RawRGB10_A2;
+        params.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+        ssr1_tex_ = builder.WriteTexture("SSR Temp 1", params, *this);
+        ssr2_tex_ = builder.WriteTexture("SSR Temp 2", params, *this);
+    }
+    output_tex_ = builder.WriteTexture(output_tex_name, *this);
 }
 
 void RpReflections::Execute(RpBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+    RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(shared_data_buf_);
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(cells_buf_);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(items_buf_);
+    RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
+    RpAllocTex &normal_tex = builder.GetReadTexture(normal_tex_);
+    RpAllocTex &spec_tex = builder.GetReadTexture(spec_tex_);
+    RpAllocTex &depth_down_2x_tex = builder.GetReadTexture(depth_down_2x_tex_);
+    RpAllocTex &ssr1_tex = builder.GetWriteTexture(ssr1_tex_);
+    RpAllocTex &ssr2_tex = builder.GetWriteTexture(ssr2_tex_);
+    RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
 
-    RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(input_[0]);
-    RpAllocBuf &cells_buf = builder.GetReadBuffer(input_[1]);
-    RpAllocBuf &items_buf = builder.GetReadBuffer(input_[2]);
+    LazyInit(builder.ctx(), builder.sh(), ssr1_tex, ssr2_tex, output_tex);
 
     Ren::RastState rast_state;
     rast_state.depth_test.enabled = false;
@@ -65,9 +85,10 @@ void RpReflections::Execute(RpBuilder &builder) {
         }
 
         const PrimDraw::Binding bindings[] = {
-            {Ren::eBindTarget::Tex2D, REN_REFL_DEPTH_TEX_SLOT, down_depth_2x_tex_},
-            {clean_buf_bind_target, REN_REFL_NORM_TEX_SLOT, norm_tex_},
-            {clean_buf_bind_target, REN_REFL_SPEC_TEX_SLOT, spec_tex_},
+            {Ren::eBindTarget::Tex2D, REN_REFL_DEPTH_TEX_SLOT,
+             depth_down_2x_tex.ref->handle()},
+            {clean_buf_bind_target, REN_REFL_NORM_TEX_SLOT, normal_tex.ref->handle()},
+            {clean_buf_bind_target, REN_REFL_SPEC_TEX_SLOT, spec_tex.ref->handle()},
             {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
              orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
              unif_sh_data_buf.ref->handle()}};
@@ -84,7 +105,7 @@ void RpReflections::Execute(RpBuilder &builder) {
         Ren::Program *dilate_prog = blit_ssr_dilate_prog_.get();
 
         const PrimDraw::Binding bindings[] = {
-            {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, ssr_buf1_tex_}};
+            {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, ssr1_tex.ref->handle()}};
 
         const PrimDraw::Uniform uniforms[] = {
             {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_->scr_res[0]) / 2.0f,
@@ -112,12 +133,13 @@ void RpReflections::Execute(RpBuilder &builder) {
         applied_state = rast_state;
 
         const PrimDraw::Binding bindings[] = {
-            {clean_buf_bind_target, REN_REFL_SPEC_TEX_SLOT, spec_tex_},
-            {clean_buf_bind_target, REN_REFL_DEPTH_TEX_SLOT, depth_tex_},
-            {clean_buf_bind_target, REN_REFL_NORM_TEX_SLOT, norm_tex_},
+            {clean_buf_bind_target, REN_REFL_SPEC_TEX_SLOT, spec_tex.ref->handle()},
+            {clean_buf_bind_target, REN_REFL_DEPTH_TEX_SLOT, depth_tex.ref->handle()},
+            {clean_buf_bind_target, REN_REFL_NORM_TEX_SLOT, normal_tex.ref->handle()},
             //
-            {Ren::eBindTarget::Tex2D, REN_REFL_DEPTH_LOW_TEX_SLOT, down_depth_2x_tex_},
-            {Ren::eBindTarget::Tex2D, REN_REFL_SSR_TEX_SLOT, ssr_buf2_tex_},
+            {Ren::eBindTarget::Tex2D, REN_REFL_DEPTH_LOW_TEX_SLOT,
+             depth_down_2x_tex.ref->handle()},
+            {Ren::eBindTarget::Tex2D, REN_REFL_SSR_TEX_SLOT, ssr2_tex.ref->handle()},
             //
             {Ren::eBindTarget::Tex2D, REN_REFL_PREV_TEX_SLOT, down_buf_4x_tex_},
             {Ren::eBindTarget::Tex2D, REN_REFL_BRDF_TEX_SLOT, brdf_lut_->handle()},
@@ -139,7 +161,8 @@ void RpReflections::Execute(RpBuilder &builder) {
     }
 }
 
-void RpReflections::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpReflections::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &ssr1_tex,
+                             RpAllocTex &ssr2_tex, RpAllocTex &output_tex) {
     if (!initialized) {
         blit_ssr_prog_ = sh.LoadProgram(ctx, "blit_ssr", "internal/blit.vert.glsl",
                                         "internal/blit_ssr.frag.glsl");
@@ -163,15 +186,15 @@ void RpReflections::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         initialized = true;
     }
 
-    if (!ssr_buf1_fb_.Setup(&ssr_buf1_tex_, 1, {}, {}, false)) {
+    if (!ssr_buf1_fb_.Setup(&ssr1_tex.ref->handle(), 1, {}, {}, false)) {
         ctx.log()->Error("RpReflections: ssr_buf1_fb_ init failed!");
     }
 
-    if (!ssr_buf2_fb_.Setup(&ssr_buf2_tex_, 1, {}, {}, false)) {
+    if (!ssr_buf2_fb_.Setup(&ssr2_tex.ref->handle(), 1, {}, {}, false)) {
         ctx.log()->Error("RpReflections: ssr_buf2_fb_ init failed!");
     }
 
-    if (!output_fb_.Setup(&output_tex_, 1, {}, {}, false)) {
+    if (!output_fb_.Setup(&output_tex.ref->handle(), 1, {}, {}, false)) {
         ctx.log()->Error("RpReflections: output_fb_ init failed!");
     }
 }

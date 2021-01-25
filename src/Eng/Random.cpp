@@ -19,6 +19,8 @@ Random::Random(uint32_t seed) {
     impl_.reset(new Random_Impl(seed));
 }
 
+Random::~Random() = default;
+
 int Random::GetInt(int min, int max) {
     return std::uniform_int_distribution<int> { min, max }(impl_->gen);
 }

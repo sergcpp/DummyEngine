@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+
+#include <Ren/MMat.h>
+
 #include "Common.h"
 
 class AnimState {

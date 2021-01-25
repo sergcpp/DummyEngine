@@ -1,5 +1,7 @@
 #include "VideoPlayer.h"
 
+#include <cassert>
+
 #include <Ren/Log.h>
 
 #include <vpx/vp8dx.h>
@@ -44,7 +46,7 @@ struct VpxCtx {
     bool initialized = false;
     vpx_codec_ctx_t codec = {};
 
-    bool Init(unsigned w, unsigned h) {
+    bool Init(const unsigned w, const unsigned h) {
         Destroy();
 
         vpx_codec_dec_cfg_t cfg;
@@ -173,7 +175,7 @@ VideoPlayer::eFrUpdateResult VideoPlayer::UpdateFrame(const uint64_t time_ms) {
     }
 
     const uint64_t time_looped_ms = time_ms % video_dur_ms_;
-    const int frame_index = int(time_looped_ms * framerate_ / (1000 * timescale_));
+    const int frame_index = int(time_looped_ms * framerate_ / (1000ull * timescale_));
 
     if (time_looped_ms < last_time_ms_) {
         // reset keyframe

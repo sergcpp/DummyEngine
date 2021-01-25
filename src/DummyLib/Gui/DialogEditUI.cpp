@@ -232,7 +232,7 @@ void DialogEditUI::IterateElements(const IterationCallback &callback) {
     }
 }
 
-void DialogEditUI::Press(const Ren::Vec2f &p, bool push) {
+void DialogEditUI::Press(const Ren::Vec2f &p, const bool push) {
     using namespace DialogEditUIInternal;
 
     if (push && Check(p)) {
@@ -274,7 +274,7 @@ void DialogEditUI::Hover(const Ren::Vec2f &p) {
     }
 }
 
-void DialogEditUI::PressRMB(const Ren::Vec2f &p, bool push) {
+void DialogEditUI::PressRMB(const Ren::Vec2f &p, const bool push) {
     if (push && Check(p)) {
         rmb_point_ = p;
         grabbed_rmb_ = true;
@@ -287,4 +287,4 @@ void DialogEditUI::PressRMB(const Ren::Vec2f &p, bool push) {
     }
 }
 
-void DialogEditUI::OnSwitchSequence(int id) { selected_element_ = id; }
+void DialogEditUI::OnSwitchSequence(const int id) { selected_element_ = id; }

@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include <Ren/Fwd.h>
+#include <Ren/Context.h>
 #include <Ren/GL.h>
 
 FrameBuf::FrameBuf(const char *name, Ren::Context &ctx, const int _w, const int _h,

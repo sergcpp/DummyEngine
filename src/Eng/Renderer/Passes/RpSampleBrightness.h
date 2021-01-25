@@ -18,9 +18,11 @@ class RpSampleBrightness : public RenderPassBase {
     Ren::ProgramRef blit_red_prog_;
 
     // temp data (valid only between Setup and Execute calls)
-    Ren::TexHandle tex_to_sample_, reduce_tex_;
+    Ren::TexHandle tex_to_sample_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    RpResource reduced_tex_;
+
+    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &reduced_tex);
 
 #if defined(USE_GL_RENDER)
     Ren::Framebuffer reduced_fb_;
@@ -35,7 +37,7 @@ class RpSampleBrightness : public RenderPassBase {
     ~RpSampleBrightness() { DestroyPBO(); }
 
     void Setup(RpBuilder &builder, Ren::TexHandle tex_to_sample,
-               Ren::TexHandle reduce_tex);
+               const char reduced_tex[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "SAMPLE BRIGHTNESS"; }

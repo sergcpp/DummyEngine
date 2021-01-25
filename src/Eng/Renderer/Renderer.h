@@ -82,13 +82,8 @@ class Renderer {
         cone_rt_lut_, noise_tex_;
 
     FrameBuf probe_sample_buf_;
-    Ren::Tex2DRef color_tex_, spec_tex_, normal_tex_, depth_tex_;
-    Ren::Tex2DRef down_depth_2x_, velocity_tex_, shadow_tex_,
-        resolved_or_transparent_tex_, history_tex_, ssao_tex1_, ssao_tex2_, ssr_tex1_,
-        ssr_tex2_, down_depth_4x_, blur_tex_[2], reduced_tex_, down_tex_coc_[2], dof_tex_,
-        down_tex_4x_, combined_tex_;
+    Ren::Tex2DRef history_tex_, down_tex_4x_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
-    FrameBuf moments_buf_;
     bool taa_enabled_ = false, dof_enabled_ = false;
 
     Ren::TextureSplitter shadow_splitter_;
@@ -143,8 +138,7 @@ class Renderer {
     Ren::Vao temp_vao_;
     uint32_t temp_buf1_vtx_offset_, temp_buf2_vtx_offset_, temp_buf_ndx_offset_,
         skinned_buf1_vtx_offset_, skinned_buf2_vtx_offset_;
-    Ren::Tex1DRef lights_tbo_[FrameSyncWindow],
-        decals_tbo_[FrameSyncWindow];
+    Ren::Tex1DRef lights_tbo_[FrameSyncWindow], decals_tbo_[FrameSyncWindow];
     uint32_t /*reduce_pbo_[FrameSyncWindow], */ probe_sample_pbo_;
     // int cur_reduce_pbo_ = 0;
 
@@ -172,11 +166,20 @@ class Renderer {
 
     DynArray<ShadReg> allocated_shadow_regions_;
 
+#if defined(__ANDROID__)
+    static const int SHADOWMAP_WIDTH = REN_SHAD_RES_ANDROID;
+#else
+    static const int SHADOWMAP_WIDTH = REN_SHAD_RES_PC;
+#endif
+    static const int SHADOWMAP_HEIGHT = SHADOWMAP_WIDTH / 2;
+    // Sun shadow occupies half of atlas
+    static const int SUN_SHADOW_RES = SHADOWMAP_WIDTH / 2;
+
     RpBuilder rp_builder_;
 
     RpUpdateBuffers rp_update_buffers_;
     RpSkinning rp_skinning_;
-    RpShadowMaps rp_shadow_maps_;
+    RpShadowMaps rp_shadow_maps_ = {SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT};
     RpSkydome rp_skydome_;
     RpDepthFill rp_depth_fill_;
     RpDownColor rp_down_color_ = {prim_draw_};

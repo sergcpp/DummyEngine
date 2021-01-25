@@ -1,6 +1,9 @@
 #include "RpSampleBrightness.h"
 
 #include <Ren/GL.h>
+#include <Ren/RastState.h>
+
+#include "../PrimDraw.h"
 
 namespace RpSampleBrightnessInternal {
 const Ren::Vec2f poisson_disk[] = {
@@ -66,7 +69,9 @@ void RpSampleBrightness::DestroyPBO() {
 void RpSampleBrightness::Execute(RpBuilder &builder) {
     using namespace RpSampleBrightnessInternal;
 
-    LazyInit(builder.ctx(), builder.sh());
+    RpAllocTex &reduced_tex = builder.GetWriteTexture(reduced_tex_);
+
+    LazyInit(builder.ctx(), builder.sh(), reduced_tex);
 
     const auto offset_step = Ren::Vec2f{1.0f / float(res_[0]), 1.0f / float(res_[1])};
 

@@ -88,7 +88,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
 
     uint32_t i = 0;
 
-    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[1]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
     glBindBufferRange(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
                       GLuint(unif_shared_data_buf.ref->id()),
                       orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock));
@@ -96,7 +96,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
                builder.ctx().capabilities.unif_buf_offset_alignment ==
            0);
 
-    RpAllocBuf &instances_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
     assert(instances_buf.tbos[orphan_index_]);
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT,

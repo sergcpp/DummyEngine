@@ -424,7 +424,7 @@ void WordPuzzleUI::Hover(const Gui::Vec2f &p) {
     }
 }
 
-void WordPuzzleUI::Press(const Gui::Vec2f &p, bool push) {
+void WordPuzzleUI::Press(const Gui::Vec2f &p, const bool push) {
     BaseElement::Press(p, push);
 
     const Ren::Vec2f lp = ToLocal(p);
@@ -432,7 +432,7 @@ void WordPuzzleUI::Press(const Gui::Vec2f &p, bool push) {
     if (expanded_option_ != -1) {
         OptionData &opt = text_options_[expanded_option_];
 
-        for (int i = 0; i < (int)expanded_rects_.size(); i++) {
+        for (int i = 0; i < int(expanded_rects_.size()); i++) {
             const rect_t &rect = expanded_rects_[i];
 
             if (lp[0] >= rect.dims[0][0] && lp[1] >= rect.dims[0][1] &&
@@ -450,7 +450,7 @@ void WordPuzzleUI::Press(const Gui::Vec2f &p, bool push) {
 
     expanded_option_ = -1;
 
-    for (int i = 0; i < (int)options_rects_.size() && state_ == eState::Correcting; i++) {
+    for (int i = 0; i < int(options_rects_.size()) && state_ == eState::Correcting; i++) {
         const rect_t &rect = options_rects_[i];
         OptionData &opt = text_options_[rect.data];
 
@@ -473,20 +473,20 @@ void WordPuzzleUI::Press(const Gui::Vec2f &p, bool push) {
         }
     }
 
-    for (int i = 0; i < (int)split_rects_.size() && push && state_ == eState::Building; i++) {
+    for (int i = 0; i < int(split_rects_.size()) && push && state_ == eState::Building; i++) {
         const rect_t &rect = split_rects_[i];
 
         if (lp[0] >= rect.dims[0][0] && lp[1] >= rect.dims[0][1] &&
             lp[0] <= rect.dims[0][0] + rect.dims[1][0] &&
             lp[1] <= rect.dims[0][1] + rect.dims[1][1]) {
 
-            if (i < (int)chosen_splits_.size()) {
+            if (i < int(chosen_splits_.size())) {
                 const int split_index = chosen_splits_[i];
                 chosen_splits_.erase(chosen_splits_.begin() + i);
 
                 avail_splits_.push_back(split_index);
             } else {
-                const int index = i - (int)chosen_splits_.size();
+                const int index = i - int(chosen_splits_.size());
                 const int split_index = avail_splits_[index];
                 avail_splits_.erase(avail_splits_.begin() + index);
 
@@ -517,7 +517,7 @@ void WordPuzzleUI::UpdateTextBuffer() {
     }
 }
 
-void WordPuzzleUI::UpdateState(double cur_time_s) {
+void WordPuzzleUI::UpdateState(const double cur_time_s) {
     if (state_ == eState::AnimIntro) {
         if (cur_time_s - anim_started_time_s_ > 1.0) {
             state_ = eState::Building;

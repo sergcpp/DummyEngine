@@ -159,7 +159,7 @@ void TimelineUI::Resize(const Gui::BaseElement *parent) {
     set_time_cur(time_cur_);
 }
 
-void TimelineUI::Press(const Ren::Vec2f &p, bool push) {
+void TimelineUI::Press(const Ren::Vec2f &p, const bool push) {
     if (push && Check(p)) {
         SetCurTimeFromPoint(p[0]);
         grabbed_ = true;
@@ -188,7 +188,7 @@ void TimelineUI::Hover(const Ren::Vec2f &p) {
     }
 }
 
-void TimelineUI::PressRMB(const Ren::Vec2f &p, bool push) {
+void TimelineUI::PressRMB(const Ren::Vec2f &p, const bool push) {
     if (push && Check(p)) {
         rmb_point_ = p;
         rmb_time_offset_ = time_offset_;

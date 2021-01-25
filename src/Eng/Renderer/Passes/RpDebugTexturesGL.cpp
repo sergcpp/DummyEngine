@@ -1,6 +1,7 @@
 #include "RpDebugTextures.h"
 
 #include <Ren/Context.h>
+#include <Ren/GL.h>
 #include <Ren/RastState.h>
 #include <Ren/Texture.h>
 
@@ -12,7 +13,7 @@ namespace PrimDrawInternal {
 extern const uint16_t fs_quad_indices[];
 } // namespace PrimDrawInternal
 
-void RpDebugTextures::DrawShadowMaps(Ren::Context &ctx) {
+void RpDebugTextures::DrawShadowMaps(Ren::Context& ctx, RpAllocTex& shadowmap_tex) {
     using namespace PrimDrawInternal;
 
 #ifndef NDEBUG
@@ -37,12 +38,11 @@ void RpDebugTextures::DrawShadowMaps(Ren::Context &ctx) {
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, GLintptr(prim_draw_.temp_buf_ndx_offset()),
                     6 * sizeof(uint16_t), PrimDrawInternal::fs_quad_indices);
 
-    ren_glTextureParameteri_Comp(GL_TEXTURE_2D, shadow_tex_->id(),
-                                 GL_TEXTURE_COMPARE_MODE, GL_NONE);
+    const auto &p = shadowmap_tex.ref->params();
+    const Ren::eTexCompare comp_before = p.compare;
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, shadow_tex_->id());
+    shadowmap_tex.ref->SetFilter(p.filter, p.repeat, Ren::eTexCompare::None, p.lod_bias);
 
-    const auto &p = shadow_tex_->params();
     const float k = (float(p.h) / float(p.w)) *
                     (float(view_state_->scr_res[0]) / float(view_state_->scr_res[1]));
 
@@ -184,6 +184,5 @@ void RpDebugTextures::DrawShadowMaps(Ren::Context &ctx) {
     glBindVertexArray(0);
 
     // Restore compare mode
-    ren_glTextureParameteri_Comp(GL_TEXTURE_2D, shadow_tex_->id(),
-                                 GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+    shadowmap_tex.ref->SetFilter(p.filter, p.repeat, comp_before, p.lod_bias);
 }

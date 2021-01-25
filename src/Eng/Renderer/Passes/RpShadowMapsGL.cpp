@@ -1,5 +1,7 @@
 #include "RpShadowMaps.h"
 
+#include <Ren/RastState.h>
+
 #include "../DebugMarker.h"
 #include "../Renderer_Structs.h"
 
@@ -45,7 +47,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder) {
 
     Ren::Context &ctx = builder.ctx();
 
-    RpAllocBuf &instances_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
     assert(instances_buf.tbos[orphan_index_]);
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT,

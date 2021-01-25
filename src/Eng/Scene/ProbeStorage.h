@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include <Ren/Texture.h>
 #include <Sys/SmallVector.h>
 
 class ProbeStorage {

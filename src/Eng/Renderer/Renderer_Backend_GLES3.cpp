@@ -121,16 +121,6 @@ void Renderer::InitRendererInternal() {
     }
 
     Ren::CheckError("[InitRendererInternal]: additional data allocation", ctx_.log());
-
-    { // Set shadowmap compare mode
-        const uint32_t shad_tex = shadow_tex_->id();
-        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, shad_tex, GL_TEXTURE_COMPARE_MODE,
-                                     GL_COMPARE_REF_TO_TEXTURE);
-        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, shad_tex, GL_TEXTURE_COMPARE_FUNC,
-                                     GL_LEQUAL);
-    }
-
-    Ren::CheckError("[InitRendererInternal]: shadowmap compare mode setup", ctx_.log());
 }
 
 void Renderer::DestroyRendererInternal() {
@@ -1207,7 +1197,9 @@ void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h,
     { // prepare blurred buffer
         Ren::Program *cur_program = blit_gauss_prog_.get();
 
-        {
+        // TODO: FIX THIS!
+
+        /*{
             const auto &p = blur_tex_[1]->params();
 
             Ren::RastState rast_state;
@@ -1255,10 +1247,12 @@ void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h,
 
             prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {blur_tex_fb_[0].id(), 0},
                                 cur_program, &binding, 1, uniforms, 2);
-        }
+        }*/
     }
 
-    { // combine buffers
+    // TODO: FIX THIS!
+
+    /*{ // combine buffers
         Ren::RastState rast_state;
         rast_state.cull_face.enabled = true;
 
@@ -1288,7 +1282,7 @@ void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h,
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {0, 0}, cur_program, bindings, 2,
                             uniforms, 6);
-    }
+    }*/
 
     glBindVertexArray(0);
 }

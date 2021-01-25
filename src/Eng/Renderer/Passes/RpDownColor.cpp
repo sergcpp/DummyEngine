@@ -1,20 +1,22 @@
 #include "RpDownColor.h"
 
+#include <Ren/Context.h>
+#include <Ren/Program.h>
+#include <Ren/RastState.h>
+
 #include "../../Utils/ShaderLoader.h"
+#include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
 void RpDownColor::Setup(RpBuilder &builder, const ViewState *view_state, int orphan_index,
-                        Ren::TexHandle color_tex, Ren::TexHandle output_tex) {
-    color_tex_ = color_tex;
+                        const char shared_data_buf[], const char color_tex_name[],
+                        Ren::TexHandle output_tex) {
     output_tex_ = output_tex;
     view_state_ = view_state;
     orphan_index_ = orphan_index;
 
-    input_[0] = builder.ReadBuffer(SHARED_DATA_BUF);
-    input_count_ = 1;
-
-    // output_[0] = builder.WriteBuffer(input_[0], *this);
-    output_count_ = 0;
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);
+    color_tex_ = builder.ReadTexture(color_tex_name, *this);
 }
 
 void RpDownColor::Execute(RpBuilder &builder) {
@@ -30,11 +32,12 @@ void RpDownColor::Execute(RpBuilder &builder) {
 
     Ren::Program *down_prog = blit_down_prog_.get();
 
-    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[0]);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
+    RpAllocTex &color_tex = builder.GetReadTexture(color_tex_);
 
     PrimDraw::Binding bindings[2];
 
-    bindings[0] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, color_tex_};
+    bindings[0] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, color_tex.ref->handle()};
     bindings[1] = {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
                    orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
                    unif_shared_data_buf.ref->handle()};

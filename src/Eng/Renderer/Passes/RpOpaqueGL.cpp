@@ -192,12 +192,15 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
 
-    RpAllocBuf &instances_buf = builder.GetReadBuffer(input_[0]);
-    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(input_[1]);
-    RpAllocBuf &cells_buf = builder.GetReadBuffer(input_[2]);
-    RpAllocBuf &items_buf = builder.GetReadBuffer(input_[3]);
-    RpAllocBuf &lights_buf = builder.GetReadBuffer(input_[4]);
-    RpAllocBuf &decals_buf = builder.GetReadBuffer(input_[5]);
+    RpAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(cells_buf_);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(items_buf_);
+    RpAllocBuf &lights_buf = builder.GetReadBuffer(lights_buf_);
+    RpAllocBuf &decals_buf = builder.GetReadBuffer(decals_buf_);
+
+    RpAllocTex &shadowmap_tex = builder.GetReadTexture(shadowmap_tex_);
+    RpAllocTex &ssao_tex = builder.GetReadTexture(ssao_tex_);
 
     auto id = unif_shared_data_buf.ref->id();
 
@@ -205,7 +208,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
                       unif_shared_data_buf.ref->id(), orphan_index_ * SharedDataBlockSize,
                       sizeof(SharedDataBlock));
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT, shadow_tex_.id);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT, shadowmap_tex.ref->id());
 
     if (decals_atlas_) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_DECAL_TEX_SLOT,
@@ -213,7 +216,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     }
 
     if ((render_flags_ & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, ssao_tex_.id);
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, ssao_tex.ref->id());
     } else {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, dummy_white_->id());
     }

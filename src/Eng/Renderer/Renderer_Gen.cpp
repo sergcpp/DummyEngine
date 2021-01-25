@@ -2,6 +2,8 @@
 
 #include <random>
 
+#include <Ren/Utils.h>
+
 namespace RendererInternal {
 float RadicalInverse_VdC(uint32_t bits) {
     bits = (bits << 16u) | (bits >> 16u);

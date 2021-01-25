@@ -44,8 +44,8 @@ const char *MATERIALS_PATH = "./assets_pc/materials/";
 const char *SHADERS_PATH = "./assets_pc/shaders/";
 #endif
 
-const int DECALS_ATLAS_RESX = 4096, DECALS_ATLAS_RESY = 2048;
-const int LIGHTMAP_ATLAS_RESX = 2048, LIGHTMAP_ATLAS_RESY = 1024;
+extern const int DECALS_ATLAS_RESX = 4096, DECALS_ATLAS_RESY = 2048;
+extern const int LIGHTMAP_ATLAS_RESX = 2048, LIGHTMAP_ATLAS_RESY = 1024;
 
 const int PROBE_RES = 512;
 const int PROBE_COUNT = 16;

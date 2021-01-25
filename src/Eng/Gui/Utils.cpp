@@ -1,6 +1,9 @@
 #include "Utils.h"
 
 #include <cassert>
+#include <memory>
+
+#include <Ren/MMat.h>
 
 #define _abs(x) (((x) < 0.0) ? -(x) : (x))
 

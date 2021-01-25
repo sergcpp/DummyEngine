@@ -4,27 +4,33 @@
 #include <Ren/RastState.h>
 #include <Ren/Texture.h>
 
-#include "../../Utils/ShaderLoader.h"
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
+#include "../../Utils/ShaderLoader.h"
 
 void RpBlur::Setup(RpBuilder &builder, const ViewState *view_state,
-                   Ren::TexHandle down_buf_4x, Ren::TexHandle blur_temp_4x,
-                   Ren::TexHandle output_tex) {
+                   Ren::TexHandle down_buf_4x, const char blur_res_tex_name[]) {
     view_state_ = view_state;
     down_buf_4x_ = down_buf_4x;
-    blur_temp_4x_ = blur_temp_4x;
-    output_tex_ = output_tex;
 
-    // input_[0] = builder.ReadBuffer(in_shared_data_buf);
-    input_count_ = 0;
+    { // Auxilary textures for bloom effect
+        Ren::Tex2DParams params;
+        params.w = view_state->scr_res[0] / 4;
+        params.h = view_state->scr_res[1] / 4;
+        params.format = Ren::eTexFormat::RawRG11F_B10F;
+        params.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
 
-    // output_[0] = builder.WriteBuffer(input_[0], *this);
-    output_count_ = 0;
+        blur_temp_4x_ = builder.WriteTexture("Blur temp", params, *this);
+        output_tex_ = builder.WriteTexture(blur_res_tex_name, params, *this);
+    }
 }
 
 void RpBlur::Execute(RpBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+    RpAllocTex &blur_temp_4x = builder.GetWriteTexture(blur_temp_4x_);
+    RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
+
+    LazyInit(builder.ctx(), builder.sh(), blur_temp_4x, output_tex);
 
     Ren::RastState rast_state;
     rast_state.cull_face.enabled = true;
@@ -50,7 +56,7 @@ void RpBlur::Execute(RpBuilder &builder) {
 
     { // vertical
         const PrimDraw::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT,
-                                           blur_temp_4x_};
+                                           blur_temp_4x.ref->handle()};
 
         const PrimDraw::Uniform uniforms[] = {
             {0, Ren::Vec4f{0.0f, 0.0f, float(applied_state.viewport[2]),
@@ -62,7 +68,8 @@ void RpBlur::Execute(RpBuilder &builder) {
     }
 }
 
-void RpBlur::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpBlur::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &blur_temp_4x,
+                      RpAllocTex &output_tex) {
     if (!initialized) {
         blit_gauss_prog_ = sh.LoadProgram(ctx, "blit_gauss", "internal/blit.vert.glsl",
                                           "internal/blit_gauss.frag.glsl");
@@ -71,11 +78,11 @@ void RpBlur::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         initialized = true;
     }
 
-    if (!blur_fb_[0].Setup(&blur_temp_4x_, 1, {}, {}, false)) {
+    if (!blur_fb_[0].Setup(&blur_temp_4x.ref->handle(), 1, {}, {}, false)) {
         ctx.log()->Error("RpBlur: blur_fb_[0] init failed!");
     }
 
-    if (!blur_fb_[1].Setup(&output_tex_, 1, {}, {}, false)) {
+    if (!blur_fb_[1].Setup(&output_tex.ref->handle(), 1, {}, {}, false)) {
         ctx.log()->Error("RpBlur: blur_fb_[1] init failed!");
     }
 }

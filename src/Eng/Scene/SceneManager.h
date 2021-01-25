@@ -23,8 +23,35 @@ class Context;
 
 class ShaderLoader;
 
+#include <Sys/Json.h>
+
 namespace SceneManagerInternal {
-struct AssetCache;
+// TODO: remove this from header file
+struct AssetCache {
+    JsObject js_db;
+    Ren::HashMap32<const char *, int> db_map;
+    Ren::HashMap32<const char *, uint32_t> texture_averages;
+
+    void WriteTextureAverage(const char *tex_name, const uint8_t average_color[4]) {
+        uint32_t color;
+        memcpy(&color, average_color, 4);
+        texture_averages.Insert(tex_name, color);
+
+        JsObject &js_files = js_db["files"].as_obj();
+        const int *index = db_map.Find(tex_name);
+        if (index) {
+            JsObject &js_file = js_files.elements[*index].second.as_obj();
+
+            if (js_file.Has("color")) {
+                JsNumber &js_color = js_file.at("color").as_num();
+                js_color.val = double(color);
+            } else {
+                auto js_color = JsNumber{double(color)};
+                js_file.Push("color", js_color);
+            }
+        }
+    }
+};
 }
 
 struct assets_context_t {

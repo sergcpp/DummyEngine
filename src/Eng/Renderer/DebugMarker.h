@@ -8,13 +8,13 @@ struct DebugMarker {
 #if defined(USE_GL_RENDER)
 #include <Ren/GL.h>
 
-DebugMarker::DebugMarker(const char* name) {
+inline DebugMarker::DebugMarker(const char* name) {
 #ifndef DISABLE_MARKERS
     glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name);
 #endif
 }
 
-DebugMarker::~DebugMarker() {
+inline DebugMarker::~DebugMarker() {
 #ifndef DISABLE_MARKERS
     glPopDebugGroup();
 #endif
