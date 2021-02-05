@@ -6,6 +6,7 @@
 #include <Eng/GameStateManager.h>
 #include <Eng/Log.h>
 #include <Eng/Renderer/Renderer.h>
+#include <Eng/Scene/PhysicsManager.h>
 #include <Eng/Scene/SceneManager.h>
 #include <Eng/Utils/Cmdline.h>
 #include <Ray/RendererFactory.h>
@@ -20,7 +21,7 @@
 #include "States/GSCreate.h"
 #include "Utils/Dictionary.h"
 
-Viewer::Viewer(int w, int h, const char *local_dir,
+Viewer::Viewer(const int w, const int h, const char *local_dir,
                std::shared_ptr<Sys::ThreadWorker> aux_gfx_thread)
     : GameBase(w, h, local_dir) {
     auto ren_ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
@@ -106,6 +107,11 @@ Viewer::Viewer(int w, int h, const char *local_dir,
         AddComponent(SCENE_MANAGER_KEY, scene_manager);
     }
 
+    {
+        auto physics_manager = std::make_shared<PhysicsManager>();
+        AddComponent(PHYSICS_MANAGER_KEY, physics_manager);
+    }
+
 #if defined(__ANDROID__)
     auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);
     const Ren::Context *p_ctx = ren_ctx.get();
@@ -128,7 +134,7 @@ Viewer::Viewer(int w, int h, const char *local_dir,
     AddComponent(SWAP_TIMER_KEY, swap_interval);
 
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
-    state_manager->Push(GSCreate(eGameState::GS_DRAW_TEST, this));
+    state_manager->Push(GSCreate(eGameState::GS_PHY_TEST, this));
 }
 
 void Viewer::Resize(const int w, const int h) { GameBase::Resize(w, h); }

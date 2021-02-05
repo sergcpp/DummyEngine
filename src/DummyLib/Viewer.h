@@ -8,6 +8,7 @@ const char UI_DEBUG_KEY[] = "ui_debug";
 const char RENDERER_KEY[] = "renderer";
 const char RAY_RENDERER_KEY[] = "ray_renderer";
 const char SCENE_MANAGER_KEY[] = "scene_manager";
+const char PHYSICS_MANAGER_KEY[] = "physics_manager";
 const char CMDLINE_KEY[] = "cmdline";
 const char DICT_KEY[] = "dictionary";
 

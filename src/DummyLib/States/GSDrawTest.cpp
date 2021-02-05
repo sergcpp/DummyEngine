@@ -24,6 +24,7 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
+                          //"physics_test.json";
                           //"skin_test.json";
                           "living_room_gumroad.json";
 //"bistro.json";
@@ -375,6 +376,8 @@ void GSDrawTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
 
 void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
     using namespace GSDrawTestInternal;
+
+    GSBaseState::UpdateFixed(dt_us);
 
     const Ren::Vec3f up = Ren::Vec3f{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
 

@@ -173,7 +173,7 @@ template <typename T> force_inline Vec<T, 3> EulerAngles(const Quat<T> &q) {
 template <typename T> Quat<T> Slerp(const Quat<T> &q0, const Quat<T> &q1, const T a) {
     Quat<T> q2 = q1;
 
-    float cos_theta = Dot(q0, q1);
+    T cos_theta = Dot(q0, q1);
 
     if (cos_theta < 0) {
         q2 = -q1;
@@ -184,7 +184,7 @@ template <typename T> Quat<T> Slerp(const Quat<T> &q0, const Quat<T> &q1, const 
         return Quat<T>{Mix(q0.x, q1.x, a), Mix(q0.y, q1.y, a), Mix(q0.z, q1.z, a),
                        Mix(q0.w, q1.w, a)};
     } else {
-        const float angle = std::acos(cos_theta);
+        const T angle = std::acos(cos_theta);
         return (std::sin((T(1) - a) * angle) * q0 + std::sin(a * angle) * q2) /
                std::sin(angle);
     }
@@ -193,15 +193,15 @@ template <typename T> Quat<T> Slerp(const Quat<T> &q0, const Quat<T> &q1, const 
 template <typename T> force_inline Mat<T, 3, 3> ToMat3(const Quat<T> &vec) {
     Mat<T, 3, 3> ret;
 
-    const float qxx = vec[0] * vec[0];
-    const float qyy = vec[1] * vec[1];
-    const float qzz = vec[2] * vec[2];
-    const float qxz = vec[0] * vec[2];
-    const float qxy = vec[0] * vec[1];
-    const float qyz = vec[1] * vec[2];
-    const float qwx = vec[3] * vec[0];
-    const float qwy = vec[3] * vec[1];
-    const float qwz = vec[3] * vec[2];
+    const T qxx = vec[0] * vec[0];
+    const T qyy = vec[1] * vec[1];
+    const T qzz = vec[2] * vec[2];
+    const T qxz = vec[0] * vec[2];
+    const T qxy = vec[0] * vec[1];
+    const T qyz = vec[1] * vec[2];
+    const T qwx = vec[3] * vec[0];
+    const T qwy = vec[3] * vec[1];
+    const T qwz = vec[3] * vec[2];
 
     ret[0][0] = 1 - 2 * (qyy + qzz);
     ret[0][1] = 2 * (qxy + qwz);

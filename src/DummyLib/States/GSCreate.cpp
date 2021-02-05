@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include "GSDrawTest.h"
+#include "GSPhyTest.h"
 #include "GSPlayTest.h"
 #include "GSUITest.h"
 #include "GSUITest2.h"
@@ -13,6 +14,8 @@
 std::shared_ptr<GameState> GSCreate(eGameState state, GameBase *game) {
     if (state == eGameState::GS_DRAW_TEST) {
         return std::make_shared<GSDrawTest>(game);
+    } else if (state == eGameState::GS_PHY_TEST) {
+        return std::make_shared<GSPhyTest>(game);
     } else if (state == eGameState::GS_PLAY_TEST) {
         return std::make_shared<GSPlayTest>(game);
     } else if (state == eGameState::GS_UI_TEST) {

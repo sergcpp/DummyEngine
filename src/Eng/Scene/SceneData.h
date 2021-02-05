@@ -17,11 +17,12 @@
 #include "Comp/LightProbe.h"
 #include "Comp/LightSource.h"
 #include "Comp/Occluder.h"
+#include "Comp/Physics.h"
 #include "Comp/SoundSource.h"
 #include "Comp/Transform.h"
 #include "Comp/VegState.h"
 
-enum eObjectComp {
+enum eObjectComp : uint32_t {
     CompTransform   = 0,
     CompDrawable    = 1,
     CompOccluder    = 2,
@@ -31,10 +32,11 @@ enum eObjectComp {
     CompProbe       = 6,
     CompAnimState   = 7,
     CompVegState    = 8,
-    CompSoundSource = 9
+    CompSoundSource = 9,
+    CompPhysics     = 10,
 };
 
-enum eObjectCompBit {
+enum eObjectCompBit : uint32_t {
     CompTransformBit    = (1u << CompTransform),
     CompDrawableBit     = (1u << CompDrawable),
     CompOccluderBit     = (1u << CompOccluder),
@@ -44,7 +46,8 @@ enum eObjectCompBit {
     CompProbeBit        = (1u << CompProbe),
     CompAnimStateBit    = (1u << CompAnimState),
     CompVegStateBit     = (1u << CompVegState),
-    CompSoundSourceBit  = (1u << CompSoundSource)
+    CompSoundSourceBit  = (1u << CompSoundSource),
+    CompPhysicsBit      = (1u << CompPhysics),
 };
 
 const int MAX_COMPONENT_TYPES = 32;

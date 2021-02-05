@@ -275,6 +275,7 @@ void SceneManager::UpdateObjects() {
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_update_bvh_str);
 
+    const auto *physes = (Physics *)scene_data_.comp_store[CompPhysics]->SequentialData();
     auto *transforms =
         (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
 
@@ -291,6 +292,32 @@ void SceneManager::UpdateObjects() {
     for (const uint32_t obj_index : changed_objects_) {
         SceneObject &obj = scene_data_.objects[obj_index];
         obj.last_change_mask = obj.change_mask;
+
+        if (obj.change_mask & CompPhysicsBit) {
+            const Physics &ph = physes[obj.components[CompPhysics]];
+            Transform &tr = transforms[obj.components[CompTransform]];
+
+            tr.world_from_object_prev = tr.world_from_object;
+            tr.world_from_object = Ren::Mat4f{1.0f};
+
+            // Copy position
+            tr.world_from_object[3][0] = float(ph.body.pos[0]);
+            tr.world_from_object[3][1] = float(ph.body.pos[1]);
+            tr.world_from_object[3][2] = float(ph.body.pos[2]);
+
+            // Copy orientation
+            const Phy::Mat3 ph_rot = Phy::ToMat3(ph.body.rot);
+            for (int j = 0; j < 3; j++) {
+                for (int i = 0; i < 3; i++) {
+                    tr.world_from_object[j][i] = float(ph_rot[j][i]);
+                }
+            }
+
+            tr.world_from_object = Ren::Scale(tr.world_from_object, tr.scale);
+
+            obj.change_mask |= CompTransformBit;
+            obj.change_mask ^= CompPhysicsBit;
+        }
 
         if (obj.change_mask & CompTransformBit) {
             Transform &tr = transforms[obj.components[CompTransform]];

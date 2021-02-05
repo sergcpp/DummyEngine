@@ -221,6 +221,9 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
         RegisterComponent(
             CompSoundSource, default_comp_storage_[CompSoundSource].get(),
             std::bind(&SceneManager::PostloadSoundSource, this, _1, _2, _3));
+
+        default_comp_storage_[CompPhysics].reset(new DefaultCompStorage<Physics>);
+        RegisterComponent(CompPhysics, default_comp_storage_[CompPhysics].get(), nullptr);
     }
 
     Sys::MemBuf buf{__cam_rig_mesh, size_t(__cam_rig_mesh_size)};
@@ -505,24 +508,24 @@ void SceneManager::SaveScene(JsObjectP &js_scene) {
 
         { // write sun direction
             JsArrayP js_sun_dir(mp_alloc_);
-            js_sun_dir.Push(JsNumber(double(-scene_data_.env.sun_dir[0])));
-            js_sun_dir.Push(JsNumber(double(-scene_data_.env.sun_dir[1])));
-            js_sun_dir.Push(JsNumber(double(-scene_data_.env.sun_dir[2])));
+            js_sun_dir.Push(JsNumber(-scene_data_.env.sun_dir[0]));
+            js_sun_dir.Push(JsNumber(-scene_data_.env.sun_dir[1]));
+            js_sun_dir.Push(JsNumber(-scene_data_.env.sun_dir[2]));
 
             js_env.Push("sun_dir", std::move(js_sun_dir));
         }
 
         { // write sun color
             JsArrayP js_sun_col(mp_alloc_);
-            js_sun_col.Push(JsNumber(double(scene_data_.env.sun_col[0])));
-            js_sun_col.Push(JsNumber(double(scene_data_.env.sun_col[1])));
-            js_sun_col.Push(JsNumber(double(scene_data_.env.sun_col[2])));
+            js_sun_col.Push(JsNumber(scene_data_.env.sun_col[0]));
+            js_sun_col.Push(JsNumber(scene_data_.env.sun_col[1]));
+            js_sun_col.Push(JsNumber(scene_data_.env.sun_col[2]));
 
             js_env.Push("sun_col", std::move(js_sun_col));
         }
 
         { // write sun softness
-            js_env.Push("sun_softness", JsNumber(double(scene_data_.env.sun_softness)));
+            js_env.Push("sun_softness", JsNumber(scene_data_.env.sun_softness));
         }
 
         { // write env map names

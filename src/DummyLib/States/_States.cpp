@@ -6,6 +6,7 @@
 #include "GSCreate.cpp"
 #include "GSBaseState.cpp"
 #include "GSDrawTest.cpp"
+#include "GSPhyTest.cpp"
 #include "GSPlayTest.cpp"
 #include "GSUITest.cpp"
 #include "GSUITest2.cpp"

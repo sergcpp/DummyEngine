@@ -14,6 +14,7 @@
 #include <Eng/Gui/Renderer.h>
 #include <Eng/Random.h>
 #include <Eng/Renderer/Renderer.h>
+#include <Eng/Scene/PhysicsManager.h>
 #include <Eng/Scene/SceneManager.h>
 #include <Eng/Utils/Cmdline.h>
 #include <Ren/Context.h>
@@ -43,6 +44,7 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
 
     renderer_ = game->GetComponent<Renderer>(RENDERER_KEY);
     scene_manager_ = game->GetComponent<SceneManager>(SCENE_MANAGER_KEY);
+    physics_manager_ = game->GetComponent<PhysicsManager>(PHYSICS_MANAGER_KEY);
     shader_loader_ = game->GetComponent<ShaderLoader>(SHADER_LOADER_KEY);
 
     ui_renderer_ = game->GetComponent<Gui::Renderer>(UI_RENDERER_KEY);
@@ -837,7 +839,15 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     }
 }
 
-void GSBaseState::UpdateFixed(const uint64_t dt_us) {}
+void GSBaseState::UpdateFixed(const uint64_t dt_us) {
+    physics_manager_->Update(scene_manager_->scene_data(), float(dt_us * 0.000001));
+
+    { // invalidate objects updated by physics manager
+        uint32_t updated_count = 0;
+        const uint32_t* updated_objects = physics_manager_->updated_objects(updated_count);
+        scene_manager_->InvalidateObjects(updated_objects, updated_count, CompPhysicsBit);
+    }
+}
 
 bool GSBaseState::HandleInput(const InputManager::Event &evt) {
     using namespace Ren;
@@ -908,8 +918,9 @@ void GSBaseState::UpdateFrame(int list_index) {
         FrameInfo &fr = fr_info_;
 
         fr.cur_time_us = Sys::GetTimeUs();
-        if (fr.cur_time_us < fr.prev_time_us)
+        if (fr.cur_time_us < fr.prev_time_us) {
             fr.prev_time_us = 0;
+        }
         fr.delta_time_us = fr.cur_time_us - fr.prev_time_us;
         if (fr.delta_time_us > 200000) {
             fr.delta_time_us = 200000;

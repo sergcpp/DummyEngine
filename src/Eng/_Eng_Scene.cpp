@@ -3,6 +3,7 @@
 #pragma warning(disable : 4996)
 #endif
 
+#include "Scene/PhysicsManager.cpp"
 #include "Scene/SceneData.cpp"
 #include "Scene/SceneManager.cpp"
 #include "Scene/SceneManager_ASS.cpp"
@@ -20,6 +21,7 @@
 #include "Scene/Comp/LightProbe.cpp"
 #include "Scene/Comp/LightSource.cpp"
 #include "Scene/Comp/Occluder.cpp"
+#include "Scene/Comp/Physics.cpp"
 #include "Scene/Comp/SoundSource.cpp"
 #include "Scene/Comp/Transform.cpp"
 #include "Scene/Comp/VegState.cpp"

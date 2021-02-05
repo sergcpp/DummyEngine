@@ -30,6 +30,8 @@ set(STATES_SOURCES  States/GSCreate.h
                     States/GSBaseState.cpp
                     States/GSDrawTest.h
                     States/GSDrawTest.cpp
+                    States/GSPhyTest.h
+                    States/GSPhyTest.cpp
                     States/GSPlayTest.h
                     States/GSPlayTest.cpp
                     States/GSUITest.h
@@ -84,6 +86,6 @@ list(APPEND ALL_SOURCE_FILES Utils/_Utils.cpp)
 source_group("src\\Utils" FILES Utils/_Utils.cpp)
 
 add_library(DummyLib STATIC ${ALL_SOURCE_FILES})
-target_link_libraries(DummyLib Eng Net Ray Ren Snd Sys astc ${LIBS})
+target_link_libraries(DummyLib Eng Net Phy Ray Ren Snd Sys astc ${LIBS})
 
 add_subdirectory(tests)

@@ -24,6 +24,8 @@ void Transform::UpdateBBox() {
 void Transform::UpdateInvMatrix() { object_from_world = Ren::Inverse(world_from_object); }
 
 void Transform::Read(const JsObjectP &js_in, Transform &tr) {
+    tr.world_from_object = Ren::Mat4f{1.0f};
+
     if (js_in.Has("pos")) {
         const JsArrayP &js_pos = js_in.at("pos").as_arr();
 
@@ -56,6 +58,18 @@ void Transform::Read(const JsObjectP &js_in, Transform &tr) {
         tr.world_from_object = tr.world_from_object * rot_all;
     }
 
+    if (js_in.Has("scale")) {
+        const JsArrayP &js_scale = js_in.at("scale").as_arr();
+
+        tr.scale[0] = float(js_scale[0].as_num().val);
+        tr.scale[1] = float(js_scale[1].as_num().val);
+        tr.scale[2] = float(js_scale[2].as_num().val);
+
+        tr.world_from_object = Ren::Scale(tr.world_from_object, tr.scale);
+    } else {
+        tr.scale = Ren::Vec3f{1.0f, 1.0f, 1.0f};
+    }
+
     tr.UpdateInvMatrix();
 }
 
@@ -65,9 +79,9 @@ void Transform::Write(const Transform &tr, JsObjectP &js_out) {
     { // write position
         JsArrayP js_pos(alloc);
 
-        js_pos.Push(JsNumber(double(tr.world_from_object[3][0])));
-        js_pos.Push(JsNumber(double(tr.world_from_object[3][1])));
-        js_pos.Push(JsNumber(double(tr.world_from_object[3][2])));
+        js_pos.Push(JsNumber(tr.world_from_object[3][0]));
+        js_pos.Push(JsNumber(tr.world_from_object[3][1]));
+        js_pos.Push(JsNumber(tr.world_from_object[3][2]));
 
         js_out.Push("pos", std::move(js_pos));
     }
@@ -78,11 +92,21 @@ void Transform::Write(const Transform &tr, JsObjectP &js_out) {
         const Ren::Vec3f euler_angles_deg =
             tr.euler_angles_rad * 180.0f / Ren::Pi<float>();
 
-        js_rot.Push(JsNumber(double(euler_angles_deg[0])));
-        js_rot.Push(JsNumber(double(euler_angles_deg[1])));
-        js_rot.Push(JsNumber(double(euler_angles_deg[2])));
+        js_rot.Push(JsNumber(euler_angles_deg[0]));
+        js_rot.Push(JsNumber(euler_angles_deg[1]));
+        js_rot.Push(JsNumber(euler_angles_deg[2]));
 
         js_out.Push("rot", std::move(js_rot));
+    }
+
+    if (tr.scale[0] != 1.0f || tr.scale[1] != 1.0f || tr.scale[2] != 1.0f) {
+        JsArrayP js_scale(alloc);
+
+        js_scale.Push(JsNumber{tr.scale[0]});
+        js_scale.Push(JsNumber{tr.scale[1]});
+        js_scale.Push(JsNumber{tr.scale[2]});
+
+        js_out.Push("scale", std::move(js_scale));
     }
 }
 

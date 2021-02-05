@@ -20,6 +20,7 @@ class DebugInfoUI;
 class GameStateManager;
 class FontStorage;
 class SceneManager;
+class PhysicsManager;
 class Random;
 class ShaderLoader;
 
@@ -44,6 +45,7 @@ protected:
     std::shared_ptr<Ren::ILog>      log_;
     std::shared_ptr<Renderer>       renderer_;
     std::shared_ptr<SceneManager>   scene_manager_;
+    std::shared_ptr<PhysicsManager> physics_manager_;
     std::shared_ptr<TimeInterval>   swap_interval_;
     std::shared_ptr<Random>         random_;
     std::shared_ptr<ShaderLoader>   shader_loader_;

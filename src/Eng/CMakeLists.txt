@@ -90,6 +90,8 @@ set(RENDERER_SOURCES    Renderer/DebugMarker.h
                         Renderer/__sphere_mesh.inl)
 
 set(SCENE_SOURCES   Scene/__cam_rig.inl
+                    Scene/PhysicsManager.h
+                    Scene/PhysicsManager.cpp
                     Scene/SceneData.h
                     Scene/SceneData.cpp
                     Scene/SceneManager.h
@@ -195,6 +197,8 @@ set(SCENE_COMP_SOURCES
         Scene/Comp/LightSource.cpp
         Scene/Comp/Occluder.h
         Scene/Comp/Occluder.cpp
+        Scene/Comp/Physics.h
+        Scene/Comp/Physics.cpp
         Scene/Comp/SoundSource.h
         Scene/Comp/SoundSource.cpp
         Scene/Comp/Transform.h
@@ -267,6 +271,6 @@ if(ENABLE_UNITYBUILD)
 endif()
 
 add_library(Eng STATIC ${ALL_SOURCE_FILES})
-target_link_libraries(Eng Net Ray Ren Snd Sys astc ${ITT_LIB} ${VPX_LIB})
+target_link_libraries(Eng Net Phy Ray Ren Snd Sys astc ${ITT_LIB} ${VPX_LIB})
 
 add_subdirectory(_tests)

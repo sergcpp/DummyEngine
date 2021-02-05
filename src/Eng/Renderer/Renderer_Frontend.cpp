@@ -924,21 +924,21 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         Vec2i{sh_list.shadow_map_pos[0] +
                                   int((0.5f * sh_list.view_frustum_outline[2 * i + 0][0] +
                                        0.5f) *
-                                      (float)sh_list.shadow_map_size[0]),
+                                      float(sh_list.shadow_map_size[0])),
                               sh_list.shadow_map_pos[1] +
                                   int((0.5f * sh_list.view_frustum_outline[2 * i + 0][1] +
                                        0.5f) *
-                                      (float)sh_list.shadow_map_size[1])};
+                                      float(sh_list.shadow_map_size[1]))};
 
                     const auto p2i =
                         Vec2i{sh_list.shadow_map_pos[0] +
                                   int((0.5f * sh_list.view_frustum_outline[2 * i + 1][0] +
                                        0.5f) *
-                                      (float)sh_list.shadow_map_size[0]),
+                                      float(sh_list.shadow_map_size[0])),
                               sh_list.shadow_map_pos[1] +
                                   int((0.5f * sh_list.view_frustum_outline[2 * i + 1][1] +
                                        0.5f) *
-                                      (float)sh_list.shadow_map_size[1])};
+                                      float(sh_list.shadow_map_size[1]))};
 
                     const auto scissor_margin = Vec2i{2}; // shadow uses 5x5 filter
 
@@ -1160,7 +1160,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
         ShadReg *region = nullptr;
 
-        for (int j = 0; j < (int)allocated_shadow_regions_.count; j++) {
+        for (int j = 0; j < int(allocated_shadow_regions_.count); j++) {
             ShadReg &reg = allocated_shadow_regions_.data[j];
 
             if (reg.ls == ls) {
@@ -1183,7 +1183,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
             int node = shadow_splitter_.Allocate(ShadowResolutions[res_index], pos);
             if (node == -1 && allocated_shadow_regions_.count) {
                 ShadReg *oldest = &allocated_shadow_regions_.data[0];
-                for (int j = 0; j < (int)allocated_shadow_regions_.count; j++) {
+                for (int j = 0; j < int(allocated_shadow_regions_.count); j++) {
                     if (allocated_shadow_regions_.data[j].last_visible <
                         oldest->last_visible) {
                         oldest = &allocated_shadow_regions_.data[j];
@@ -1248,7 +1248,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
             sh_list.bias[0] = ls->shadow_bias[0];
             sh_list.bias[1] = ls->shadow_bias[1];
 
-            l.shadowreg_index = (int)list.shadow_regions.count;
+            l.shadowreg_index = int(list.shadow_regions.count);
             ShadowMapRegion &reg = list.shadow_regions.data[list.shadow_regions.count++];
 
             reg.transform = Vec4f{float(sh_list.shadow_map_pos[0]) / SHADOWMAP_WIDTH,
@@ -1405,7 +1405,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
     if (shadows_enabled && (list.render_flags & DebugShadow)) {
         list.cached_shadow_regions.count = 0;
-        for (int i = 0; i < (int)allocated_shadow_regions_.count; i++) {
+        for (int i = 0; i < int(allocated_shadow_regions_.count); i++) {
             const ShadReg &r = allocated_shadow_regions_.data[i];
             if (r.last_visible != scene.update_counter) {
                 list.cached_shadow_regions.data[list.cached_shadow_regions.count++] = r;
@@ -2110,8 +2110,8 @@ void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub
         CellData &cell = list.cells.data[base_index + s];
 
         int local_items_count =
-            (int)_MAX(cell.light_count,
-                      _MAX(cell.decal_count, _MAX(cell.probe_count, cell.ellips_count)));
+            int(_MAX(cell.light_count,
+                     _MAX(cell.decal_count, _MAX(cell.probe_count, cell.ellips_count))));
 
         if (local_items_count) {
             cell.item_offset = items_count.fetch_add(local_items_count);
