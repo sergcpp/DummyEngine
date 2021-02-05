@@ -41,6 +41,8 @@ struct JsNumber {
     double val;
 
     explicit JsNumber(const double v = 0.0) : val(v) {}
+    explicit JsNumber(const float v) : val(double(v)) {}
+    explicit JsNumber(const int v) : val(double(v)) {}
 
     bool operator==(const JsNumber &rhs) const { return val == rhs.val; }
     bool operator==(const double &rhs) const { return val == rhs; }

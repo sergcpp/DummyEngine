@@ -247,6 +247,7 @@ class SmallVector : public SmallVectorImpl<T, AlignmentOfT> {
 
   public:
     SmallVector() : SmallVectorImpl<T>((T *)buffer_, (T *)buffer_, N) {}
+
     SmallVector(const SmallVector &rhs)
         : SmallVectorImpl<T>((T *)buffer_, (T *)buffer_, N) {
         SmallVectorImpl::operator=(rhs);
