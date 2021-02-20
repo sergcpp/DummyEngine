@@ -28,13 +28,13 @@ const int BONE_MATRICES_UBO = 0;
 
 const int UniformBufferSize = 16 * 1024;
 
-inline void BindTexture(int slot, uint32_t tex) {
-    glActiveTexture((GLenum)(GL_TEXTURE0 + slot));
-    glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
+inline void BindTexture(const int slot, const uint32_t tex) {
+    glActiveTexture(GLenum(GL_TEXTURE0 + slot));
+    glBindTexture(GL_TEXTURE_2D, GLuint(tex));
 }
 } // namespace
 
-void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
+void ModlApp::DrawMeshSimple(const Ren::MeshRef &ref) {
     using namespace Ren;
 
     const Mesh *m = ref.get();
@@ -45,11 +45,11 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
 
     p = diag_prog_;
-    glUniform1f(U_MODE, (float)view_mode_);
+    glUniform1f(U_MODE, float(view_mode_));
 
     CheckInitVAOs();
 
-    glBindVertexArray((GLuint)simple_vao_);
+    glBindVertexArray(GLuint(simple_vao_));
 
     glUseProgram(p->id());
 
@@ -87,7 +87,7 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     Ren::CheckError("", &log_);
 }
 
-void ModlApp::DrawMeshColored(Ren::MeshRef &ref) {
+void ModlApp::DrawMeshColored(const Ren::MeshRef &ref) {
     using namespace Ren;
 
     const Mesh *m = ref.get();
@@ -98,11 +98,11 @@ void ModlApp::DrawMeshColored(Ren::MeshRef &ref) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
 
     p = diag_colored_prog_;
-    glUniform1f(U_MODE, (float)view_mode_);
+    glUniform1f(U_MODE, float(view_mode_));
 
     CheckInitVAOs();
 
-    glBindVertexArray((GLuint)simple_vao_);
+    glBindVertexArray(GLuint(simple_vao_));
 
     glUseProgram(p->id());
 
@@ -112,10 +112,10 @@ void ModlApp::DrawMeshColored(Ren::MeshRef &ref) {
     world_from_object = Rotate(world_from_object, angle_x_, Vec3f{1, 0, 0});
     world_from_object = Rotate(world_from_object, angle_y_, Vec3f{0, 1, 0});
 
-    Mat4f view_from_world = cam_.view_matrix(), proj_from_view = cam_.proj_matrix();
+    const Mat4f view_from_world = cam_.view_matrix(), proj_from_view = cam_.proj_matrix();
 
-    Mat4f view_from_object = view_from_world * world_from_object,
-          proj_from_object = proj_from_view * view_from_object;
+    const Mat4f view_from_object = view_from_world * world_from_object,
+                proj_from_object = proj_from_view * view_from_object;
 
     glUniformMatrix4fv(U_MVP_MATR, 1, GL_FALSE, ValuePtr(proj_from_object));
     glUniformMatrix4fv(U_M_MATR, 1, GL_FALSE, ValuePtr(world_from_object));
@@ -141,7 +141,7 @@ void ModlApp::DrawMeshColored(Ren::MeshRef &ref) {
     Ren::CheckError("", &log_);
 }
 
-void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
+void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
     using namespace Ren;
 
     Ren::Mesh *m = ref.get();
@@ -213,7 +213,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
             memcpy(&_matr_palette[i][0][0], ValuePtr(tr_mat), 12 * sizeof(float));
         }
 
-        glBindBuffer(GL_UNIFORM_BUFFER, (GLuint)uniform_buf_);
+        glBindBuffer(GL_UNIFORM_BUFFER, GLuint(uniform_buf_));
         glBufferSubData(GL_UNIFORM_BUFFER, 0, UniformBufferSize, ValuePtr(_matr_palette));
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
@@ -222,11 +222,11 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
         const Ren::Program *p = skinning_prog_.get();
 
         glUseProgram(p->id());
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, (GLuint)last_skin_vertex_buffer_);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, (GLuint)last_delta_buffer_);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, (GLuint)last_vertex_buf1_);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, (GLuint)last_vertex_buf2_);
-        glBindBufferBase(GL_UNIFORM_BUFFER, BONE_MATRICES_UBO, (GLuint)uniform_buf_);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, GLuint(last_skin_vertex_buffer_));
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, GLuint(last_delta_buffer_));
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, GLuint(last_vertex_buf1_));
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, GLuint(last_vertex_buf2_));
+        glBindBufferBase(GL_UNIFORM_BUFFER, BONE_MATRICES_UBO, GLuint(uniform_buf_));
 
         const Ren::BufferRange &sk_attribs_buf = m->sk_attribs_buf();
         const Ren::BufferRange &sk_deltas_buf = m->sk_deltas_buf();
@@ -293,7 +293,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
         }
     }
 
-    glBindVertexArray((GLuint)simple_vao_);
+    glBindVertexArray(GLuint(simple_vao_));
 
     const Ren::Program *p = diag_prog_.get();
     glUseProgram(p->id());
@@ -340,7 +340,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 #endif
 }
 
-void ModlApp::ClearColorAndDepth(float r, float g, float b, float a) {
+void ModlApp::ClearColorAndDepth(const float r, const float g, const float b, const float a) {
     glClearColor(r, g, b, a);
     glClear(GLbitfield(GL_COLOR_BUFFER_BIT) | GLbitfield(GL_DEPTH_BUFFER_BIT));
 }
@@ -352,21 +352,21 @@ void ModlApp::CheckInitVAOs() {
     Ren::BufferRef delta_buf = ctx_.default_delta_buf();
     Ren::BufferRef ndx_buf = ctx_.default_indices_buf();
 
-    const auto gl_vertex_buf1 = (GLuint)vtx_buf1->id(),
-               gl_vertex_buf2 = (GLuint)vtx_buf2->id(),
-               gl_skin_vertex_buf = (GLuint)skin_vtx_buf->id(),
-               gl_delta_buf = (GLuint)delta_buf->id(),
-               gl_indices_buf = (GLuint)ndx_buf->id();
+    const auto gl_vertex_buf1 = GLuint(vtx_buf1->id()),
+               gl_vertex_buf2 = GLuint(vtx_buf2->id()),
+               gl_skin_vertex_buf = GLuint(skin_vtx_buf->id()),
+               gl_delta_buf = GLuint(delta_buf->id()),
+               gl_indices_buf = GLuint(ndx_buf->id());
 
     if (gl_vertex_buf1 != last_vertex_buf1_ || gl_vertex_buf2 != last_vertex_buf2_ ||
         gl_skin_vertex_buf != last_skin_vertex_buffer_ ||
         gl_delta_buf != last_delta_buffer_ || gl_indices_buf != last_index_buffer_) {
 
         if (last_vertex_buf1_) {
-            auto simple_mesh_vao = (GLuint)simple_vao_;
+            auto simple_mesh_vao = GLuint(simple_vao_);
             glDeleteVertexArrays(1, &simple_mesh_vao);
 
-            auto skinned_mesh_vao = (GLuint)skinned_vao_;
+            auto skinned_mesh_vao = GLuint(skinned_vao_);
             glDeleteVertexArrays(1, &skinned_mesh_vao);
         }
 
@@ -407,7 +407,7 @@ void ModlApp::CheckInitVAOs() {
 
         glBindVertexArray(0);
 
-        simple_vao_ = (uint32_t)simple_mesh_vao;
+        simple_vao_ = uint32_t(simple_mesh_vao);
 
         GLuint skinned_mesh_vao;
         glGenVertexArrays(1, &skinned_mesh_vao);
@@ -448,13 +448,13 @@ void ModlApp::CheckInitVAOs() {
 
         glBindVertexArray(0);
 
-        skinned_vao_ = (uint32_t)skinned_mesh_vao;
+        skinned_vao_ = uint32_t(skinned_mesh_vao);
 
-        last_skin_vertex_buffer_ = (uint32_t)gl_skin_vertex_buf;
-        last_delta_buffer_ = (uint32_t)gl_delta_buf;
-        last_vertex_buf1_ = (uint32_t)gl_vertex_buf1;
-        last_vertex_buf2_ = (uint32_t)gl_vertex_buf2;
-        last_index_buffer_ = (uint32_t)gl_indices_buf;
+        last_skin_vertex_buffer_ = uint32_t(gl_skin_vertex_buf);
+        last_delta_buffer_ = uint32_t(gl_delta_buf);
+        last_vertex_buf1_ = uint32_t(gl_vertex_buf1);
+        last_vertex_buf2_ = uint32_t(gl_vertex_buf2);
+        last_index_buffer_ = uint32_t(gl_indices_buf);
     }
 }
 
@@ -762,7 +762,7 @@ void main(void) {
         )";
 
     Ren::ShaderRef skinning_cs_ref =
-        ctx_.LoadShaderGLSL("__skin_cs", diag_vs, Ren::eShaderType::Comp, &sh_status);
+        ctx_.LoadShaderGLSL("__skin_cs", skinning_cs, Ren::eShaderType::Comp, &sh_status);
     assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
     skinning_prog_ = ctx_.LoadProgram("__skin", skinning_cs_ref, &status);
@@ -776,17 +776,17 @@ void main(void) {
     glBufferData(GL_UNIFORM_BUFFER, UniformBufferSize, nullptr, GL_DYNAMIC_COPY);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-    uniform_buf_ = (uint32_t)unif_buf;
+    uniform_buf_ = uint32_t(unif_buf);
 }
 
 void ModlApp::DestroyInternal() {
-    auto simple_mesh_vao = (GLuint)simple_vao_;
+    auto simple_mesh_vao = GLuint(simple_vao_);
     glDeleteVertexArrays(1, &simple_mesh_vao);
 
-    auto skinned_mesh_vao = (GLuint)skinned_vao_;
+    auto skinned_mesh_vao = GLuint(skinned_vao_);
     glDeleteVertexArrays(1, &skinned_mesh_vao);
 
-    auto unif_buf = (GLuint)uniform_buf_;
+    auto unif_buf = GLuint(uniform_buf_);
     glDeleteBuffers(1, &unif_buf);
 }
 

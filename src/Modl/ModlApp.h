@@ -105,8 +105,8 @@ class ModlApp {
 
     void InitInternal();
     void DestroyInternal();
-    void DrawMeshSimple(Ren::MeshRef &ref);
-    void DrawMeshColored(Ren::MeshRef &ref);
+    void DrawMeshSimple(const Ren::MeshRef &ref);
+    void DrawMeshColored(const Ren::MeshRef &ref);
     void DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s);
 
     void PrintUsage();

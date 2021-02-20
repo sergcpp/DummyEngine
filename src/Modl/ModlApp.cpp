@@ -79,8 +79,8 @@ float RadicalInverse_VdC(uint32_t bits) {
     return float(bits) * 2.3283064365386963e-10f; // / 0x100000000
 }
 
-Ren::Vec2f Hammersley2D(int i, int N) {
-    return Ren::Vec2f{float(i) / float(N), RadicalInverse_VdC((uint32_t)i)};
+Ren::Vec2f Hammersley2D(const int i, const int N) {
+    return Ren::Vec2f{float(i) / float(N), RadicalInverse_VdC(uint32_t(i))};
 }
 
 const auto center = Ren::Vec3f{-2.0f, 2.0f, 4.0f};
@@ -234,7 +234,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
     return 0;
 }
 
-int ModlApp::Init(int w, int h) {
+int ModlApp::Init(const int w, const int h) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "Failed to initialize SDL" << std::endl;
         return -1;
@@ -304,14 +304,14 @@ int ModlApp::Init(int w, int h) {
 
 void ModlApp::Frame() {
     static unsigned t1 = SDL_GetTicks();
-    unsigned t2 = SDL_GetTicks();
-    unsigned dt_ms = t2 - t1;
+    const unsigned t2 = SDL_GetTicks();
+    const unsigned dt_ms = t2 - t1;
     t1 = t2;
 
     ClearColorAndDepth(0.1f, 0.75f, 0.75f, 1);
 
     { // Update camera position
-        Ren::Vec3f center = 0.5f * (view_mesh_->bbox_min() + view_mesh_->bbox_max());
+        const Ren::Vec3f center = 0.5f * (view_mesh_->bbox_min() + view_mesh_->bbox_max());
         cam_.SetupView(center - Ren::Vec3f{0.0f, 0.0f, 1.0f} * view_dist_, center, up);
     }
 
