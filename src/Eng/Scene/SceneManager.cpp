@@ -665,6 +665,10 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp,
                 std::string(MODELS_PATH) + js_mesh_file_name.val;
 
             Sys::AssetFile in_file(mesh_path.c_str());
+            if (!in_file) {
+                ren_ctx_.log()->Error("Failed to open %s", mesh_path.c_str());
+                return;
+            }
             size_t in_file_size = in_file.size();
 
             std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
