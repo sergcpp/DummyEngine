@@ -280,7 +280,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
         SceneObject obj;
 
         Ren::Vec3f obj_bbox[2] = {Ren::Vec3f{std::numeric_limits<float>::max()},
-                                  Ren::Vec3f{-std::numeric_limits<float>::max()}};
+                                  Ren::Vec3f{std::numeric_limits<float>::lowest()}};
 
         for (const auto &js_comp : js_obj.elements) {
             if (js_comp.second.type() != JsType::Object) {

@@ -56,6 +56,7 @@ CpuFeatures GetCpuFeatures() {
         cpuid(info, 0x00000001);
         ret.sse2_supported = (info[3] & (1 << 26)) != 0;
         ret.sse3_supported = (info[2] & (1 << 0)) != 0;
+        ret.ssse3_supported = (info[2] & (1 << 9)) != 0;
         ret.sse41_supported = (info[2] & (1 << 19)) != 0;
 
         const bool os_uses_XSAVE_XRSTORE = (info[2] & (1 << 27)) != 0;

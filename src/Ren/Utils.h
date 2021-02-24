@@ -13,14 +13,24 @@ std::unique_ptr<uint8_t[]> ReadTGAFile(const void *data, int &w, int &h,
 void RGBMDecode(const uint8_t rgbm[4], float out_rgb[3]);
 void RGBMEncode(const float rgb[3], uint8_t out_rgbm[4]);
 
-std::unique_ptr<float[]> ConvertRGBE_to_RGB32F(const uint8_t *image_data, int w, int h);
-std::unique_ptr<uint16_t[]> ConvertRGBE_to_RGB16F(const uint8_t *image_data, int w,
+std::unique_ptr<float[]> ConvertRGBE_to_RGB32F(const uint8_t image_data[], int w, int h);
+std::unique_ptr<uint16_t[]> ConvertRGBE_to_RGB16F(const uint8_t image_data[], int w,
                                                   int h);
 
-std::unique_ptr<uint8_t[]> ConvertRGB32F_to_RGBE(const float *image_data, int w, int h,
+std::unique_ptr<uint8_t[]> ConvertRGB32F_to_RGBE(const float image_data[], int w, int h,
                                                  int channels);
-std::unique_ptr<uint8_t[]> ConvertRGB32F_to_RGBM(const float *image_data, int w, int h,
+std::unique_ptr<uint8_t[]> ConvertRGB32F_to_RGBM(const float image_data[], int w, int h,
                                                  int channels);
+
+// Perfectly reversible conversion between RGB and YCoCg (breaks bilinear filtering)
+std::unique_ptr<uint8_t[]> ConvertRGB_to_CoCgxY_rev(const uint8_t image_data[], int w,
+                                                    int h);
+std::unique_ptr<uint8_t[]> ConvertCoCgxY_to_RGB_rev(const uint8_t image_data[], int w,
+                                                    int h);
+
+// Not-so-perfectly reversible conversion between RGB and YCoCg
+std::unique_ptr<uint8_t[]> ConvertRGB_to_CoCgxY(const uint8_t image_data[], int w, int h);
+std::unique_ptr<uint8_t[]> ConvertCoCgxY_to_RGB(const uint8_t image_data[], int w, int h);
 
 enum class eMipOp {
     Skip = 0,
@@ -121,4 +131,16 @@ void CopyYChannel_32px(const uint8_t *y_src, int y_stride, int w, int h, uint8_t
 
 void InterleaveUVChannels_16px(const uint8_t *u_src, const uint8_t *v_src, int u_stride,
                                int v_stride, int w, int h, uint8_t *uv_dst);
+
+//
+// DXT compression
+//
+
+int GetRequiredMemory_DXT1(int w, int h);
+int GetRequiredMemory_DXT5(int w, int h);
+
+// NOTE: intended for realtime compression, quality might not be the best
+void CompressImage_DXT1(const uint8_t img_src[], int w, int h, int channels,
+                        uint8_t img_dst[]);
+void CompressImage_DXT5(const uint8_t img_src[], int w, int h, bool is_YCoCg, uint8_t img_dst[]);
 } // namespace Ren

@@ -12,6 +12,7 @@ void test_storage();
 void test_sparse_array();
 void test_string();
 void test_texture();
+void test_utils();
 void test_vec();
 
 int main() {
@@ -26,6 +27,7 @@ int main() {
     test_sparse_array();
     test_string();
     test_texture();
+    test_utils();
     test_vec();
     puts("OK");
 }

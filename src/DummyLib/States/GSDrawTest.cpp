@@ -40,6 +40,18 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 //"tessellation_test.json";
 } // namespace GSDrawTestInternal
 
+#include <Ren/SOIL2/SOIL2.h>
+#include <Ren/Utils.h>
+
+extern "C" {
+#include <Ren/SOIL2/image_DXT.h>
+}
+
+namespace SceneManagerInternal {
+int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y,
+               bool is_rgbm, const char *name);
+}
+
 GSDrawTest::GSDrawTest(GameBase *game) : GSBaseState(game) {}
 
 void GSDrawTest::Enter() {
@@ -53,6 +65,103 @@ void GSDrawTest::Enter() {
 
 void GSDrawTest::OnPreloadScene(JsObject &js_scene) {
     GSBaseState::OnPreloadScene(js_scene);
+
+#if 0 // texture compression test
+    std::ifstream src_stream("assets/textures/lenna.png",
+                                std::ios::binary | std::ios::ate);
+    assert(src_stream);
+    auto src_size = size_t(src_stream.tellg());
+    src_stream.seekg(0, std::ios::beg);
+
+    std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
+    src_stream.read((char *)&src_buf[0], src_size);
+
+    int width, height, channels;
+    unsigned char *image_data = SOIL_load_image_from_memory(
+        &src_buf[0], int(src_size), &width, &height, &channels, 0);
+
+    const int RepeatCount = 100;
+
+#if 1 // test DXT1
+    const int dxt_size_total = Ren::GetRequiredMemory_DXT1(width, height);
+    std::unique_ptr<uint8_t[]> img_dst(new uint8_t[dxt_size_total]);
+
+    const uint64_t t1 = Sys::GetTimeUs();
+
+    for (int i = 0; i < RepeatCount; i++) {
+        Ren::CompressImage_DXT1(image_data, width, height, channels, img_dst.get());
+    }
+
+    channels = 3;
+#else // test YCoCg-DXT5
+    std::unique_ptr<uint8_t[]> image_data_YCoCg =
+        Ren::ConvertRGB_to_CoCgxY(image_data, width, height);
+    channels = 4;
+
+    //SceneManagerInternal::WriteImage(image_data_YCoCg.get(), width, height, channels,
+    //                                 false, false, "assets/textures/wall_picture_YCoCg.png");
+
+    const int dxt_size_total = Ren::GetRequiredMemory_DXT5(width, height);
+    std::unique_ptr<uint8_t[]> img_dst(new uint8_t[dxt_size_total]);
+
+    const uint64_t t1 = Sys::GetTimeUs();
+
+    for (int i = 0; i < RepeatCount; i++) {
+        Ren::CompressImage_DXT5(image_data_YCoCg.get(), width, height, true /* is_YCoCg */, img_dst.get());
+    }
+#endif
+    const uint64_t t2 = Sys::GetTimeUs();
+
+    const double elapsed_ms = double(t2 - t1) / (double(RepeatCount) * 1000.0);
+    const double elapsed_s = elapsed_ms / 1000.0;
+
+    log_->Info("Compressed in %f ms", elapsed_ms);
+    log_->Info("Speed is %f Mpixels per second",
+                double(width * height) / (1000000.0 * elapsed_s));
+
+    SOIL_free_image_data(image_data);
+
+    //
+    // Write out file
+    //
+
+    Ren::DDSHeader header = {};
+    header.dwMagic = (unsigned('D') << 0u) | (unsigned('D') << 8u) |
+                        (unsigned('S') << 16u) | (unsigned(' ') << 24u);
+    header.dwSize = 124;
+    header.dwFlags = unsigned(DDSD_CAPS) | unsigned(DDSD_HEIGHT) |
+                        unsigned(DDSD_WIDTH) | unsigned(DDSD_PIXELFORMAT) |
+                        unsigned(DDSD_LINEARSIZE) | unsigned(DDSD_MIPMAPCOUNT);
+    header.dwWidth = width;
+    header.dwHeight = height;
+    header.dwPitchOrLinearSize = dxt_size_total;
+    header.dwMipMapCount = 1;
+    header.sPixelFormat.dwSize = 32;
+    header.sPixelFormat.dwFlags = DDPF_FOURCC;
+
+    if (channels == 3) {
+        header.sPixelFormat.dwFourCC = (unsigned('D') << 0u) | (unsigned('X') << 8u) |
+                                        (unsigned('T') << 16u) |
+                                        (unsigned('1') << 24u);
+    } else {
+        header.sPixelFormat.dwFourCC = (unsigned('D') << 0u) | (unsigned('X') << 8u) |
+                                        (unsigned('T') << 16u) |
+                                        (unsigned('5') << 24u);
+    }
+
+    header.sCaps.dwCaps1 = unsigned(DDSCAPS_TEXTURE) | unsigned(DDSCAPS_MIPMAP);
+
+    std::ofstream out_stream("test.dds", std::ios::binary);
+    out_stream.write((char *)&header, sizeof(header));
+
+    /*for (int i = 0; i < mip_count; i++) {
+        out_stream.write((char*)dxt_data[i], dxt_size[i]);
+        SOIL_free_image_data(dxt_data[i]);
+        dxt_data[i] = nullptr;
+    }*/
+
+    out_stream.write((char *)img_dst.get(), dxt_size_total);
+#endif
 
 #if 0
     JsArray &js_objects = js_scene.at("objects").as_arr();

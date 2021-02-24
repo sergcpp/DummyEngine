@@ -390,7 +390,7 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     //
     // Write out file
     //
-    DDS_header header = {};
+    Ren::DDSHeader header = {};
     header.dwMagic = (unsigned('D') << 0u) | (unsigned('D') << 8u) |
                      (unsigned('S') << 16u) | (unsigned(' ') << 24u);
     header.dwSize = 124;
@@ -875,7 +875,7 @@ bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
 
     int width, height, channels;
     unsigned char *image_data = SOIL_load_image_from_memory(
-        &src_buf[0], (int)src_size, &width, &height, &channels, 0);
+        &src_buf[0], int(src_size), &width, &height, &channels, 0);
 
     bool res = true;
     if (strstr(in_file, "_norm")) {
@@ -974,7 +974,7 @@ bool SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file,
     if (!src_stream) {
         return false;
     }
-    auto src_size = (int)src_stream.tellg();
+    auto src_size = int(src_stream.tellg());
     src_stream.seekg(0, std::ios::beg);
 
     int res, mips_count;
@@ -1411,8 +1411,8 @@ SceneManagerInternal::Decode_KTX_ASTC(const uint8_t *image_data, int data_size,
     Ren::KTXHeader header;
     memcpy(&header, &image_data[0], sizeof(Ren::KTXHeader));
 
-    width = (int)header.pixel_width;
-    height = (int)header.pixel_height;
+    width = int(header.pixel_width);
+    height = int(header.pixel_height);
 
     int data_offset = sizeof(Ren::KTXHeader);
 

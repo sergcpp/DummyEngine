@@ -1,0 +1,6 @@
+gl_program: main_unlit_YCoCg main_unlit.vert.glsl main_unlit_YCoCg.frag.glsl
+gl_program: main_unlit_YCoCg main_unlit.vert.glsl main_unlit_YCoCg.frag.glsl
+sw_program: main
+texture: wall_picture_YCoCg.png
+texture: default_normalmap.png
+texture: default_specular.png

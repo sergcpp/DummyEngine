@@ -67,6 +67,7 @@ set(SOURCE_FILES main.cpp
                  test_storage.cpp
                  test_string.cpp
                  test_texture.cpp
+                 test_utils.cpp
 				 test_vec.cpp
                  )
 
