@@ -94,7 +94,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
         const float FAR_CLIP = 10000.0f;
         SWfloat z = FAR_CLIP / (FAR_CLIP - NEAR_CLIP) +
                     (NEAR_CLIP - (2.0f * NEAR_CLIP)) / (0.15f * (FAR_CLIP - NEAR_CLIP));
-        swCullCtxInit(&cull_ctx_, 256, 128, z);
+        swCullCtxInit(&cull_ctx_, REN_CULL_RES_X, REN_CULL_RES_Y, z);
     }
 
     { // buffer used to sample probes

@@ -1,8 +1,10 @@
 #pragma once
 
+#include <condition_variable>
 #include <deque>
 #include <memory>
 #include <mutex>
+#include <thread>
 
 #include <Ray/RendererBase.h>
 #include <Ren/Camera.h>

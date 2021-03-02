@@ -63,6 +63,9 @@ typedef enum SWenum {
 #define SW_INV_TILE_SIZE (((SWfloat)1) / SW_TILE_SIZE)
 #define SW_INV_TILE_STEP (((SWfloat)1) / (SW_TILE_SIZE - 1));
 
+#define SW_CULL_TILE_WIDTH_SHIFT 5
+#define SW_CULL_TILE_SIZE_X (1 << SW_CULL_TILE_WIDTH_SHIFT)
+
 typedef struct SWcontext SWcontext;
 
 /* Context operations */
@@ -86,7 +89,8 @@ SWint swGetCurFramebuffer();
 const void *swGetPixelDataRef(SWint i);
 const void *swGetDepthDataRef(SWint i);
 
-void swBlitPixels(SWint x, SWint y, SWint pitch, SWenum type, SWenum mode, SWint w, SWint h, const void *pixels, SWfloat scale);
+void swBlitPixels(SWint x, SWint y, SWint pitch, SWenum type, SWenum mode, SWint w,
+                  SWint h, const void *pixels, SWfloat scale);
 void swBlitTexture(SWint x, SWint y, SWfloat scale);
 
 /* Texture operations */
@@ -100,9 +104,12 @@ void swTexImage2DConst(SWenum mode, SWenum type, SWint w, SWint h, void *pixels)
 void swTexture(SWint slot, const SWfloat *uv, SWfloat *col);
 
 /* SWtexture.h should be included for these */
-#define swTexture_RGB888(slot, uv, col) {                                                   \
-    extern SWcontext *sw_cur_context;                                                       \
-    swTex_RGB888_GetColorFloat_RGBA(&sw_cur_context->textures[slot], uv[0], uv[1], col); }
+#define swTexture_RGB888(slot, uv, col)                                                  \
+    {                                                                                    \
+        extern SWcontext *sw_cur_context;                                                \
+        swTex_RGB888_GetColorFloat_RGBA(&sw_cur_context->textures[slot], uv[0], uv[1],   \
+                                        col);                                            \
+    }
 
 /* Program operations */
 SWint swCreateProgram();
@@ -125,5 +132,3 @@ const char *swGetString(SWenum what);
 void swSetFloat(SWenum what, SWfloat val);
 
 #endif /* SW_CORE_H */
-
-

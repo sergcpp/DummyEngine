@@ -198,7 +198,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-int DummyApp::Init(int w, int h) {
+int DummyApp::Init(const int w, const int h) {
     const BOOL dpi_result = SetProcessDPIAware();
     (void)dpi_result;
 

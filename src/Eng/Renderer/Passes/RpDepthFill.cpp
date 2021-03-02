@@ -220,7 +220,7 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &dept
         ctx.log()->Error("RpDepthFill: depth_fill_fb_ init failed!");
     }
 
-    if (!depth_fill_vel_fb_.Setup(&velocity_tex.ref->handle(), 1, depth_tex.ref->handle(),
+    if (!depth_fill_vel_fb_.Setup(velocity_tex.ref->handle(), depth_tex.ref->handle(),
                                   depth_tex.ref->handle(),
                                   view_state_->is_multisampled)) {
         ctx.log()->Error("RpDepthFill: depth_fill_vel_fb_ init failed!");

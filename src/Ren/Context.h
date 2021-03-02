@@ -68,10 +68,12 @@ class Context : public TaskExecutor {
 
     /*** Mesh ***/
     MeshRef LoadMesh(const char *name, const float *positions, int vtx_count,
-                     const uint32_t *indices, int ndx_count, eMeshLoadStatus* load_status);
+                     const uint32_t *indices, int ndx_count,
+                     eMeshLoadStatus *load_status);
     MeshRef LoadMesh(const char *name, const float *positions, int vtx_count,
                      const uint32_t *indices, int ndx_count, BufferRef &vertex_buf1,
-                     BufferRef &vertex_buf2, BufferRef &index_buf, eMeshLoadStatus* load_status);
+                     BufferRef &vertex_buf2, BufferRef &index_buf,
+                     eMeshLoadStatus *load_status);
     MeshRef LoadMesh(const char *name, std::istream *data,
                      const material_load_callback &on_mat_load,
                      eMeshLoadStatus *load_status);
@@ -115,11 +117,11 @@ class Context : public TaskExecutor {
 
     /*** Texture ***/
     Tex2DRef LoadTexture2D(const char *name, const Tex2DParams &p,
-                               eTexLoadStatus *load_status);
+                           eTexLoadStatus *load_status);
     Tex2DRef LoadTexture2D(const char *name, const void *data, int size,
-                               const Tex2DParams &p, eTexLoadStatus *load_status);
+                           const Tex2DParams &p, eTexLoadStatus *load_status);
     Tex2DRef LoadTextureCube(const char *name, const void *data[6], const int size[6],
-                                 const Tex2DParams &p, eTexLoadStatus *load_status);
+                             const Tex2DParams &p, eTexLoadStatus *load_status);
 
     void VisitTextures(uint32_t mask,
                        const std::function<void(Texture2D &tex)> &callback);
@@ -128,13 +130,12 @@ class Context : public TaskExecutor {
 
     /*** Texture 1D ***/
     Tex1DRef CreateTexture1D(const char *name, BufferRef buf, eTexFormat format,
-                                 uint32_t offset, uint32_t size);
+                             uint32_t offset, uint32_t size);
     void Release1DTextures();
 
     /** Texture regions **/
     TextureRegionRef LoadTextureRegion(const char *name, const void *data, int size,
-                                       const Tex2DParams &p,
-                                       eTexLoadStatus *load_status);
+                                       const Tex2DParams &p, eTexLoadStatus *load_status);
 
     void ReleaseTextureRegions();
 

@@ -8,7 +8,8 @@
 
 SWfloat _sw_ubyte_to_float_table[256];
 
-sw_inline void _swGetSizes(SWenum mode, SWenum type, SWint *t_size, SWint *p_size, SWint *additional) {
+sw_inline void _swGetSizes(SWenum mode, SWenum type, SWint *t_size, SWint *p_size,
+                           SWint *additional) {
     SWint type_size, pp_size;
     switch (type) {
     case SW_UNSIGNED_BYTE:
@@ -22,7 +23,8 @@ sw_inline void _swGetSizes(SWenum mode, SWenum type, SWint *t_size, SWint *p_siz
         break;
     case SW_COMPRESSED:
         type_size = 0;
-        if (additional) *additional = 256 * 4 * 4;
+        if (additional)
+            *additional = 256 * 4 * 4;
         break;
     default:
         type_size = 0;
@@ -40,11 +42,14 @@ sw_inline void _swGetSizes(SWenum mode, SWenum type, SWint *t_size, SWint *p_siz
         assert(0);
     }
 
-    if (t_size) (*t_size) = type_size;
-    if (p_size) (*p_size) = pp_size;
+    if (t_size)
+        (*t_size) = type_size;
+    if (p_size)
+        (*p_size) = pp_size;
 }
 
-void swTexInit(SWtexture *t, SWenum mode, SWenum type, SWint w, SWint h, const void *pixels) {
+void swTexInit(SWtexture *t, SWenum mode, SWenum type, SWint w, SWint h,
+               const void *pixels) {
     SWint pp_size, additional = 0;
     _swGetSizes(mode, type, NULL, &pp_size, &additional);
     size_t total_size = (size_t)pp_size * w * h + additional;
@@ -56,7 +61,8 @@ void swTexInit(SWtexture *t, SWenum mode, SWenum type, SWint w, SWint h, const v
     swTexInitMove_malloced(t, mode, type, w, h, p);
 }
 
-void swTexInitMove(SWtexture *t, SWenum mode, SWenum type, SWint w, SWint h, void *pixels, void(*free)(void *)) {
+void swTexInitMove(SWtexture *t, SWenum mode, SWenum type, SWint w, SWint h, void *pixels,
+                   void (*free)(void *)) {
     assert(w == 1 || w % 2 == 0);
     assert(h == 1 || h % 2 == 0);
     t->mode = mode;
@@ -73,7 +79,8 @@ void swTexInitMove(SWtexture *t, SWenum mode, SWenum type, SWint w, SWint h, voi
     _swGetSizes(mode, type, &t->type_size, &t->pp_size, NULL);
 }
 
-void swTexInitMove_malloced(SWtexture *t, SWenum mode, SWenum type, SWint w, SWint h, void *pixels) {
+void swTexInitMove_malloced(SWtexture *t, SWenum mode, SWenum type, SWint w, SWint h,
+                            void *pixels) {
     swTexInitMove(t, mode, type, w, h, pixels, &free);
 }
 

@@ -226,6 +226,8 @@ void Gui::Renderer::SwapBuffers() {
 void Gui::Renderer::Draw() {
     using namespace UIRendererConstants;
 
+    glViewport(0, 0, ctx_.w(), ctx_.h());
+
     //
     // Synchronize with previous draw
     //

@@ -66,10 +66,12 @@ void update_bbox(const bvh_node_t *nodes, bvh_node_t &node) {
         Ren::Max(nodes[node.left_child].bbox_max, nodes[node.right_child].bbox_max);
 }
 
+#ifdef ENABLE_ITT_API
 __itt_string_handle *itt_rebuild_bvh_str =
     __itt_string_handle_create("SceneManager::RebuildBVH");
 __itt_string_handle *itt_update_bvh_str =
     __itt_string_handle_create("SceneManager::UpdateBVH");
+#endif
 } // namespace SceneManagerInternal
 
 void SceneManager::RebuildBVH() {

@@ -3,16 +3,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define _swGetTile(zb, x, y) &zb->tiles[(y & ~(SW_TILE_SIZE - 1) * zb->tile_w) + (x & ~(SW_TILE_SIZE - 1))]
+#define _swGetTile(zb, x, y)                                                             \
+    &zb->tiles[(y & ~(SW_TILE_SIZE - 1) * zb->tile_w) + (x & ~(SW_TILE_SIZE - 1))]
 
-void swZbufInit(SWzbuffer *zb, SWint w, SWint h, SWfloat zmax) {
+void swZbufInit(SWzbuffer *zb, const SWint w, const SWint h, const SWfloat zmax) {
     memset(zb, 0, sizeof(SWzbuffer));
     zb->w = w;
     zb->h = h;
     zb->tile_w = (w + (SW_TILE_SIZE - 1)) / SW_TILE_SIZE;
     zb->tile_h = (h + (SW_TILE_SIZE - 1)) / SW_TILE_SIZE;
-    zb->depth = (SWfloat*)malloc(sizeof(SWfloat) * w * h);
-    zb->tiles = (SWzrange*)malloc(sizeof(SWzrange) * zb->tile_w * zb->tile_h);
+    zb->depth = (SWfloat *)malloc(sizeof(SWfloat) * w * h);
+    zb->tiles = (SWzrange *)malloc(sizeof(SWzrange) * zb->tile_w * zb->tile_h);
     zb->zmax = zmax;
     swZbufClearDepth(zb, 1);
 }
@@ -23,7 +24,7 @@ void swZbufDestroy(SWzbuffer *zb) {
     memset(zb, 0, sizeof(SWzbuffer));
 }
 
-void swZbufClearDepth(SWzbuffer *zb, SWfloat val) {
+void swZbufClearDepth(SWzbuffer *zb, const SWfloat val) {
     SWint i;
     for (i = 0; i < zb->w; i++) {
         zb->depth[i] = val;
@@ -41,14 +42,13 @@ void swZbufClearDepth(SWzbuffer *zb, SWfloat val) {
     }
 }
 
-
 /* Without tiles */
 #if 1
-void swZbufSetDepth_(SWzbuffer *zb, SWint x, SWint y, SWfloat val) {
-    SWint index = y * zb->w + x;
+void swZbufSetDepth_(SWzbuffer *zb, const SWint x, const SWint y, const SWfloat val) {
+    const SWint index = y * zb->w + x;
     zb->depth[index] = val;
 }
-SWint swZbufTestDepth_(SWzbuffer *zb, SWint x, SWint y, SWfloat z) {
+SWint swZbufTestDepth_(SWzbuffer *zb, const SWint x, const SWint y, const SWfloat z) {
     return z <= zb->depth[y * zb->w + x];
 }
 #else
@@ -60,10 +60,9 @@ void swZbufSetDepth_(SWzbuffer *zb, SWint x, SWint y, SWfloat val) {
     SWint i, j;
     SWint index = y * zb->w + x;
     /*SWint iiii = y & ~(SW_TILE_SIZE - 1) * zb->tile_w + (x & ~(SW_TILE_SIZE - 1));*/
-    /*SWint tile_index1 = y & ~(SW_TILE_SIZE - 1) * zb->tile_w + (x & ~(SW_TILE_SIZE - 1));
-    SWint tile_index = index / (SW_TILE_SIZE * SW_TILE_SIZE);
-    assert(tile_index1 == tile_index);
-    SWzrange *r = &zb->tiles[tile_index];*/
+    /*SWint tile_index1 = y & ~(SW_TILE_SIZE - 1) * zb->tile_w + (x & ~(SW_TILE_SIZE -
+    1)); SWint tile_index = index / (SW_TILE_SIZE * SW_TILE_SIZE); assert(tile_index1 ==
+    tile_index); SWzrange *r = &zb->tiles[tile_index];*/
     zb->depth[index] = val;
     if (val < r->min) {
         r->min = val;
@@ -117,8 +116,9 @@ SWint swZbufTestDepth_(SWzbuffer *zb, SWint x, SWint y, SWfloat z) {
 
 #endif
 
-SWoccresult swZbufTriTestDepth(SWzbuffer *zb, SWint min[2], SWint max[2], SWfloat *attrs1, SWfloat *attrs2, SWfloat *attrs3) {
-    SWfloat /*tri_min_z, */tri_max_z, buf_min_z = 1, buf_max_z = 0;
+SWoccresult swZbufTriTestDepth(SWzbuffer *zb, SWint min[2], SWint max[2], SWfloat *attrs1,
+                               SWfloat *attrs2, SWfloat *attrs3) {
+    SWfloat /*tri_min_z, */ tri_max_z, buf_min_z = 1, buf_max_z = 0;
     SWint i, j;
     /*tri_min_z = sw_min(attrs1[2], sw_min(attrs2[2], attrs3[2]));*/
     tri_max_z = sw_max(attrs1[2], sw_max(attrs2[2], attrs3[2]));

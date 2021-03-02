@@ -39,7 +39,7 @@ const uint32_t g_gl_formats[] = {
     GL_DEPTH_COMPONENT,          // Depth16
     GL_DEPTH_STENCIL_ATTACHMENT, // Depth24Stencil8
 #ifndef __ANDROID__
-    GL_DEPTH_COMPONENT, // Depth32
+    GL_DEPTH_COMPONENT,          // Depth32
 #endif
     0xffffffff, // Compressed
     0xffffffff, // None
@@ -183,8 +183,12 @@ GLenum ToSRGBFormat(const GLenum internal_format) {
 }
 
 bool IsDepthFormat(const eTexFormat format) {
-    return format == eTexFormat::Depth16 || format == eTexFormat::Depth24Stencil8 ||
-           format == eTexFormat::Depth32;
+    return format == eTexFormat::Depth16 || format == eTexFormat::Depth24Stencil8
+#ifndef __ANDROID__
+            || format == eTexFormat::Depth32;
+#else
+            ;
+#endif
 }
 } // namespace Ren
 

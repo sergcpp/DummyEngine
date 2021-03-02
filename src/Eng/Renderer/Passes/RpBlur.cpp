@@ -78,11 +78,11 @@ void RpBlur::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &blur_temp
         initialized = true;
     }
 
-    if (!blur_fb_[0].Setup(&blur_temp_4x.ref->handle(), 1, {}, {}, false)) {
+    if (!blur_fb_[0].Setup(blur_temp_4x.ref->handle(), {}, {}, false)) {
         ctx.log()->Error("RpBlur: blur_fb_[0] init failed!");
     }
 
-    if (!blur_fb_[1].Setup(&output_tex.ref->handle(), 1, {}, {}, false)) {
+    if (!blur_fb_[1].Setup(output_tex.ref->handle(), {}, {}, false)) {
         ctx.log()->Error("RpBlur: blur_fb_[1] init failed!");
     }
 }

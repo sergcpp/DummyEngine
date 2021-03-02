@@ -6,6 +6,7 @@
 #endif
 
 #include <cassert>
+#include <cstring>
 
 #include <immintrin.h>
 #include <xmmintrin.h>

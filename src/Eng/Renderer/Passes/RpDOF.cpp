@@ -285,27 +285,27 @@ void RpDOF::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &down_depth
         initialized = true;
     }
 
-    if (!coc_fb_[0].Setup(&coc1_tex.ref->handle(), 1, {}, {}, false)) {
+    if (!coc_fb_[0].Setup(coc1_tex.ref->handle(), {}, {}, false)) {
         ctx.log()->Error("RpDOF: coc_fb_[0] init failed!");
     }
 
-    if (!coc_fb_[1].Setup(&coc2_tex.ref->handle(), 1, {}, {}, false)) {
+    if (!coc_fb_[1].Setup(coc2_tex.ref->handle(), {}, {}, false)) {
         ctx.log()->Error("RpDOF: coc_fb_[1] init failed!");
     }
 
-    if (!blur_fb_[0].Setup(&blur1_temp_4x.ref->handle(), 1, {}, {}, false)) {
+    if (!blur_fb_[0].Setup(blur1_temp_4x.ref->handle(), {}, {}, false)) {
         ctx.log()->Error("RpDOF: blur_fb_[0] init failed!");
     }
 
-    if (!blur_fb_[1].Setup(&blur2_temp_4x.ref->handle(), 1, {}, {}, false)) {
+    if (!blur_fb_[1].Setup(blur2_temp_4x.ref->handle(), {}, {}, false)) {
         ctx.log()->Error("RpDOF: blur_fb_[1] init failed!");
     }
 
-    if (!depth_4x_fb_.Setup(&down_depth_4x_tex.ref->handle(), 1, {}, {}, false)) {
+    if (!depth_4x_fb_.Setup(down_depth_4x_tex.ref->handle(), {}, {}, false)) {
         ctx.log()->Error("RpDOF: depth_4x_fb_ init failed!");
     }
 
-    if (!dof_fb_.Setup(&output_tex.ref->handle(), 1, {}, {}, false)) {
+    if (!dof_fb_.Setup(output_tex.ref->handle(), {}, {}, false)) {
         ctx.log()->Error("RpDOF: dof_fb_ init failed!");
     }
 }

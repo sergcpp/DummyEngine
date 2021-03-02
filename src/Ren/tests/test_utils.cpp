@@ -9,7 +9,7 @@
 void test_utils() {
     std::unique_ptr<uint8_t[]> data_in(new uint8_t[256 * 256 * 256 * 3]);
 
-    { // fill initial array with test data
+    { // fill initial array with test data (every possible color)
         uint8_t *_data_in = data_in.get();
         for (int r = 0; r < 256; r++) {
             for (int g = 0; g < 256; g++) {

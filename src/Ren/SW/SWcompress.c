@@ -1,8 +1,8 @@
 #include "SWcompress.h"
 
 #include <assert.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct SWtex_block {
     SWubyte col[4][4];
@@ -20,7 +20,8 @@ SWint swTexBlockCompare(const SWtex_block *blck1, const SWtex_block *blck2) {
 }
 
 static int tex_block_cmp(const void *blck1, const void *blck2) {
-    //return ((const SWtex_block *)blck1)->counter < ((const SWtex_block *)blck2)->counter;
+    // return ((const SWtex_block *)blck1)->counter < ((const SWtex_block
+    // *)blck2)->counter;
 
     const SWtex_block *b1 = (const SWtex_block *)blck1;
     const SWtex_block *b2 = (const SWtex_block *)blck2;
@@ -37,25 +38,28 @@ static int tex_block_cmp(const void *blck1, const void *blck2) {
         }
     }
 
-
     return b1->counter * brightness1 < b2->counter * brightness2;
 }
 
-SWint swTexBlockFind(SWtex_block *blocks, SWint num_blocks, const SWtex_block *blck, SWint tolerance) {
+SWint swTexBlockFind(SWtex_block *blocks, const SWint num_blocks, const SWtex_block *blck,
+                     const SWint tolerance) {
     SWint i;
     for (i = 0; i < num_blocks; i++) {
         SWint res = swTexBlockCompare(&blocks[i], blck);
-        if (res < tolerance) return i;
+        if (res < tolerance)
+            return i;
     }
     return -1;
 }
 
-SWint swTexBlockClosest(SWtex_block *blocks, SWint num_blocks, const SWtex_block *blck) {
+SWint swTexBlockClosest(SWtex_block *blocks, const SWint num_blocks,
+                        const SWtex_block *blck) {
     SWint i, best = 0, best_res = 255 * 4;
     for (i = 0; i < num_blocks; i++) {
         SWint res = swTexBlockCompare(&blocks[i], blck);
         if (res < best_res) {
-            if (!res) return i;
+            if (!res)
+                return i;
             best = i;
             best_res = res;
         }
@@ -63,7 +67,7 @@ SWint swTexBlockClosest(SWtex_block *blocks, SWint num_blocks, const SWtex_block
     return best;
 }
 
-void swTexCompress(const void *data, SWenum mode, SWint w, SWint h,
+void swTexCompress(const void *data, const SWenum mode, const SWint w, const SWint h,
                    void **out_data, SWint *out_size) {
     assert(w > 1 && h > 1);
     assert(w % 2 == 0 && h % 2 == 0);
@@ -75,16 +79,16 @@ void swTexCompress(const void *data, SWenum mode, SWint w, SWint h,
     SWint step = (mode == SW_RGB) ? 3 : 4;
     SWint i, j, k;
 
-#define InitBlock(block)                                                            \
-    block.counter = 1;                                                              \
-    memcpy(&block.col[0][0], &pixels[step * ((j + 0) * w + (i + 0))], step);        \
-    memcpy(&block.col[1][0], &pixels[step * ((j + 0) * w + (i + 1))], step);        \
-    memcpy(&block.col[2][0], &pixels[step * ((j + 1) * w + (i + 0))], step);        \
-    memcpy(&block.col[3][0], &pixels[step * ((j + 1) * w + (i + 1))], step);        \
-    if (mode == SW_RGB) {                                                           \
-        for (k = 0; k < 4; k++) {                                                   \
-            block.col[k][3] = 255;                                                  \
-        }                                                                           \
+#define InitBlock(block)                                                                 \
+    block.counter = 1;                                                                   \
+    memcpy(&block.col[0][0], &pixels[step * ((j + 0) * w + (i + 0))], step);             \
+    memcpy(&block.col[1][0], &pixels[step * ((j + 0) * w + (i + 1))], step);             \
+    memcpy(&block.col[2][0], &pixels[step * ((j + 1) * w + (i + 0))], step);             \
+    memcpy(&block.col[3][0], &pixels[step * ((j + 1) * w + (i + 1))], step);             \
+    if (mode == SW_RGB) {                                                                \
+        for (k = 0; k < 4; k++) {                                                        \
+            block.col[k][3] = 255;                                                       \
+        }                                                                                \
     }
 
     for (j = 0; j < h; j += 2) {
@@ -92,7 +96,7 @@ void swTexCompress(const void *data, SWenum mode, SWint w, SWint h,
             SWtex_block cur_block;
             InitBlock(cur_block);
 
-            SWint index = swTexBlockFind(blocks, num_blocks, &cur_block, 72);
+            const SWint index = swTexBlockFind(blocks, num_blocks, &cur_block, 72);
             if (index == -1) {
                 blocks[num_blocks++] = cur_block;
             } else {
@@ -113,7 +117,7 @@ void swTexCompress(const void *data, SWenum mode, SWint w, SWint h,
     }
 
     for (i = num_blocks; i < 256; i++) {
-        SWubyte col[4] = { 0, 0, 0, 255 };
+        SWubyte col[4] = {0, 0, 0, 255};
         for (j = 0; j < 4; j++) {
             memcpy(&p[j * 4], col, 4);
         }
@@ -135,8 +139,8 @@ void swTexCompress(const void *data, SWenum mode, SWint w, SWint h,
 #undef InitBlock
 }
 
-SWenum swTexDecompress(const void *data, SWint w, SWint h,
-                       void **out_data, SWint *out_size) {
+SWenum swTexDecompress(const void *data, const SWint w, const SWint h, void **out_data,
+                       SWint *out_size) {
     assert(w > 1 && h > 1);
     assert(w % 2 == 0 && h % 2 == 0);
 
@@ -147,10 +151,8 @@ SWenum swTexDecompress(const void *data, SWint w, SWint h,
     SWint i, j;
     for (i = 0; i < 256; i++) {
         const SWubyte *block = &blocks[i * 16];
-        if (block[4 * 0 + 3] != 255 ||
-                block[4 * 1 + 3] != 255 ||
-                block[4 * 2 + 3] != 255 ||
-                block[4 * 3 + 3] != 255) {
+        if (block[4 * 0 + 3] != 255 || block[4 * 1 + 3] != 255 ||
+            block[4 * 2 + 3] != 255 || block[4 * 3 + 3] != 255) {
             has_alpha = 1;
             break;
         }
@@ -166,7 +168,7 @@ SWenum swTexDecompress(const void *data, SWint w, SWint h,
             SWuint index = pixels[j * (w / 2) + i];
             const SWubyte *block = &blocks[index * 16];
 
-            SWint x = i * 2, y = j * 2;
+            const SWint x = i * 2, y = j * 2;
             memcpy(&p[step * (y * w + x)], &block[0], step);
             memcpy(&p[step * (y * w + x + 1)], &block[4], step);
             memcpy(&p[step * ((y + 1) * w + x)], &block[8], step);
