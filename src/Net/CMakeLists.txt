@@ -42,6 +42,8 @@ set(HASH_SOURCE_FILES   hash/base64.h
                         hash/Crc32.cpp
                         hash/md5.h
                         hash/md5.cpp
+                        hash/murmur.h
+                        hash/murmur.cpp
                         hash/sha1.h
                         hash/sha1.cpp)
 

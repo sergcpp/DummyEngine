@@ -17,6 +17,7 @@
 #include "hash/base64.cpp"
 #include "hash/Crc32.cpp"
 #include "hash/md5.cpp"
+#include "hash/murmur.cpp"
 #include "hash/sha1.cpp"
 
 #include "minilzo/minilzo.c"
