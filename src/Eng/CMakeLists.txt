@@ -3,8 +3,10 @@ project(Eng)
 
 IF(WIN32)
     set(VPX_LIB "vpxmd")
+    set(ITT_LIB "libittnotify")
 ELSE(WIN32)
     set(VPX_LIB "vpx")
+    set(ITT_LIB "ittnotify")
     set(CMAKE_CXX_STANDARD 11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(WIN32)
@@ -263,6 +265,6 @@ if(ENABLE_UNITYBUILD)
 endif()
 
 add_library(Eng STATIC ${ALL_SOURCE_FILES})
-target_link_libraries(Eng Net Ray Ren Snd Sys astc libittnotify ${VPX_LIB})
+target_link_libraries(Eng Net Ray Ren Snd Sys astc ${ITT_LIB} ${VPX_LIB})
 
 add_subdirectory(_tests)
