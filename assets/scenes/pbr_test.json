@@ -32,6 +32,9 @@
 			"drawable" : {
 				"mesh_name" : "sphere_hi.mesh", 
 				"mesh_file" : "sphere_hi.mesh"
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -53,6 +56,9 @@
 				"material_override" : [
 					"pbr_test/met0_rough0.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -74,6 +80,9 @@
 				"material_override" : [
 					"pbr_test/met0_rough20.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -95,6 +104,9 @@
 				"material_override" : [
 					"pbr_test/met0_rough40.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -116,6 +128,9 @@
 				"material_override" : [
 					"pbr_test/met0_rough60.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -137,6 +152,9 @@
 				"material_override" : [
 					"pbr_test/met0_rough80.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -158,6 +176,9 @@
 				"material_override" : [
 					"pbr_test/met0_rough80.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -179,6 +200,9 @@
 				"material_override" : [
 					"pbr_test/met20_rough0.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -200,6 +224,9 @@
 				"material_override" : [
 					"pbr_test/met20_rough20.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -221,6 +248,9 @@
 				"material_override" : [
 					"pbr_test/met20_rough40.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -242,6 +272,9 @@
 				"material_override" : [
 					"pbr_test/met20_rough60.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -263,6 +296,9 @@
 				"material_override" : [
 					"pbr_test/met20_rough80.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -284,6 +320,9 @@
 				"material_override" : [
 					"pbr_test/met20_rough100.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -305,6 +344,9 @@
 				"material_override" : [
 					"pbr_test/met40_rough0.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -326,6 +368,9 @@
 				"material_override" : [
 					"pbr_test/met40_rough20.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -347,6 +392,9 @@
 				"material_override" : [
 					"pbr_test/met40_rough40.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -368,6 +416,9 @@
 				"material_override" : [
 					"pbr_test/met40_rough60.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -389,6 +440,9 @@
 				"material_override" : [
 					"pbr_test/met40_rough80.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -410,6 +464,9 @@
 				"material_override" : [
 					"pbr_test/met40_rough100.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -431,6 +488,9 @@
 				"material_override" : [
 					"pbr_test/met60_rough0.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -452,6 +512,9 @@
 				"material_override" : [
 					"pbr_test/met60_rough20.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -473,6 +536,9 @@
 				"material_override" : [
 					"pbr_test/met60_rough40.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -494,6 +560,9 @@
 				"material_override" : [
 					"pbr_test/met60_rough60.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -515,6 +584,9 @@
 				"material_override" : [
 					"pbr_test/met60_rough80.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -536,6 +608,9 @@
 				"material_override" : [
 					"pbr_test/met60_rough100.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -557,6 +632,9 @@
 				"material_override" : [
 					"pbr_test/met80_rough0.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -578,6 +656,9 @@
 				"material_override" : [
 					"pbr_test/met80_rough20.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -599,6 +680,9 @@
 				"material_override" : [
 					"pbr_test/met80_rough40.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -620,6 +704,9 @@
 				"material_override" : [
 					"pbr_test/met80_rough60.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -641,6 +728,9 @@
 				"material_override" : [
 					"pbr_test/met80_rough80.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -662,6 +752,9 @@
 				"material_override" : [
 					"pbr_test/met80_rough100.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -683,6 +776,9 @@
 				"material_override" : [
 					"pbr_test/met100_rough0.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -704,6 +800,9 @@
 				"material_override" : [
 					"pbr_test/met100_rough20.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -725,6 +824,9 @@
 				"material_override" : [
 					"pbr_test/met100_rough40.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -746,6 +848,9 @@
 				"material_override" : [
 					"pbr_test/met100_rough60.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -767,6 +872,9 @@
 				"material_override" : [
 					"pbr_test/met100_rough80.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{
@@ -788,6 +896,9 @@
 				"material_override" : [
 					"pbr_test/met100_rough100.txt"
 				]
+			},
+			"occluder" : {
+				"mesh_file" : "sph_low.mesh"
 			}
 		}, 
 		{

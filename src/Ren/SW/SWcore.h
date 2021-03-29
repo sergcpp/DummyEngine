@@ -63,9 +63,6 @@ typedef enum SWenum {
 #define SW_INV_TILE_SIZE (((SWfloat)1) / SW_TILE_SIZE)
 #define SW_INV_TILE_STEP (((SWfloat)1) / (SW_TILE_SIZE - 1));
 
-#define SW_CULL_TILE_WIDTH_SHIFT 5
-#define SW_CULL_TILE_SIZE_X (1 << SW_CULL_TILE_WIDTH_SHIFT)
-
 typedef struct SWcontext SWcontext;
 
 /* Context operations */

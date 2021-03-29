@@ -2,12 +2,72 @@
 
 #define FP_BITS (19 - SW_CULL_TILE_HEIGHT_SHIFT)
 
+#define SW_CULL_SUBTILE_Y 4
+
 #define PASTER(x, y) x##_##y
 #define EVALUATOR(x, y) PASTER(x, y)
 #define NAME(fun) EVALUATOR(fun, POSTFIX)
 
 //
 // Scanline processing
+//
+
+typedef struct SWztile {
+    union {
+        __mXXX vec;
+        SWfloat f32[SIMD_WIDTH];
+    } zmin[2];
+    __mXXXi mask;
+} SWztile;
+
+static void NAME(_swUpdateTileQuick)(SWztile *tile, const __mXXXi *coverage_mask,
+                                     const __mXXX *z_subtile_min) {
+    __mXXXi mask = tile->mask;
+    __mXXX *zmin = &tile->zmin->vec;
+
+    __mXXXi rast_mask = *coverage_mask;
+    __mXXXi dead_lane = _mmXXX_cmpeq_epi32(rast_mask, _mmXXX_setzero_siXXX());
+
+    // mask subtiles that fail depth test
+    dead_lane = _mmXXX_or_siXXX(
+        dead_lane, _mmXXX_srai_epi32(
+                       _mmXXX_castps_siXXX(_mmXXX_sub_ps(*z_subtile_min, zmin[0])), 31));
+    rast_mask = _mmXXX_andnot_siXXX(dead_lane, rast_mask);
+
+    // heuristic to discard layer 1
+    __mXXXi covered_lane = _mmXXX_cmpeq_epi32(rast_mask, _mmXXX_set1_epi32(0xffffffff));
+    __mXXX diff = _mmXXX_fmsub_ps(zmin[1], _mmXXX_set1_ps(2.0f),
+                                  _mmXXX_add_ps(*z_subtile_min, zmin[0]));
+    __mXXXi discard_layer_mask = _mmXXX_andnot_siXXX(
+        dead_lane,
+        _mmXXX_or_siXXX(_mmXXX_srai_epi32(_mmXXX_castps_siXXX(diff), 31), covered_lane));
+
+    // update tile mask
+    mask = _mmXXX_or_siXXX(_mmXXX_andnot_siXXX(discard_layer_mask, mask), rast_mask);
+
+    __mXXXi mask_full = _mmXXX_cmpeq_epi32(mask, _mmXXX_set1_epi32(0xffffffff));
+
+    // compute new value of zmin1, there are 4 cases:
+    // zmin1 = min(zmin1, z_subtile_min) -> layer is updated
+    // zmin1 = z_subtile_min             -> layer is discarded
+    // zmin1 = FLT_MAX                   -> layer is fully covered
+    // zmin1 unchanged                   -> layer is not updated
+
+    __mXXX op_a =
+        _mmXXX_blendv_ps(*z_subtile_min, zmin[1], _mmXXX_castsiXXX_ps(dead_lane));
+    __mXXX op_b = _mmXXX_blendv_ps(zmin[1], *z_subtile_min,
+                                   _mmXXX_castsiXXX_ps(discard_layer_mask));
+    __mXXX zmin1 = _mmXXX_min_ps(op_a, op_b);
+
+    zmin[1] =
+        _mmXXX_blendv_ps(zmin1, _mmXXX_set1_ps(FLT_MAX), _mmXXX_castsiXXX_ps(mask_full));
+    zmin[0] = _mmXXX_blendv_ps(zmin[0], zmin1, _mmXXX_castsiXXX_ps(mask_full));
+
+    tile->mask = _mmXXX_andnot_siXXX(mask_full, mask);
+}
+
+//
+// Triangle processing (occludee)
 //
 
 #define SCANLINE_FUNC_NAME NAME(_swProcessScanline_L1R1)
@@ -33,10 +93,6 @@
 #undef RIGHT_COUNT
 #undef LEFT_COUNT
 #undef SCANLINE_FUNC_NAME
-
-//
-// Triangle processing
-//
 
 #define TRI_FUNC_NAME NAME(_swRasterizeTriangle_tight_mid_left)
 #define TIGHT_TRAVERSAL
@@ -66,6 +122,64 @@
 #undef MID_VTX_RIGHT
 #undef TRI_FUNC_NAME
 
+//
+// Triangle processing (occluder)
+//
+
+#define IS_OCCLUDER
+
+#define SCANLINE_FUNC_NAME NAME(_swProcessScanlineOccluder_L1R1)
+#define LEFT_COUNT 1
+#define RIGHT_COUNT 1
+#include "SWculling_rast_scanline.inl"
+#undef RIGHT_COUNT
+#undef LEFT_COUNT
+#undef SCANLINE_FUNC_NAME
+
+#define SCANLINE_FUNC_NAME NAME(_swProcessScanlineOccluder_L2R1)
+#define LEFT_COUNT 2
+#define RIGHT_COUNT 1
+#include "SWculling_rast_scanline.inl"
+#undef RIGHT_COUNT
+#undef LEFT_COUNT
+#undef SCANLINE_FUNC_NAME
+
+#define SCANLINE_FUNC_NAME NAME(_swProcessScanlineOccluder_L1R2)
+#define LEFT_COUNT 1
+#define RIGHT_COUNT 2
+#include "SWculling_rast_scanline.inl"
+#undef RIGHT_COUNT
+#undef LEFT_COUNT
+#undef SCANLINE_FUNC_NAME
+
+#define TRI_FUNC_NAME NAME(_swRasterizeTriangleOccluder_tight_mid_left)
+#define TIGHT_TRAVERSAL
+#define MID_VTX_RIGHT 0
+#include "SWculling_rast_tri.inl"
+#undef MID_VTX_RIGHT
+#undef TIGHT_TRAVERSAL
+#undef TRI_FUNC_NAME
+
+#define TRI_FUNC_NAME NAME(_swRasterizeTriangleOccluder_tight_mid_right)
+#define TIGHT_TRAVERSAL
+#define MID_VTX_RIGHT 1
+#include "SWculling_rast_tri.inl"
+#undef MID_VTX_RIGHT
+#undef TIGHT_TRAVERSAL
+#undef TRI_FUNC_NAME
+
+#define MID_VTX_RIGHT 0
+#define TRI_FUNC_NAME NAME(_swRasterizeTriangleOccluder_mid_left)
+#include "SWculling_rast_tri.inl"
+#undef MID_VTX_RIGHT
+#undef TRI_FUNC_NAME
+
+#define MID_VTX_RIGHT 1
+#define TRI_FUNC_NAME NAME(_swRasterizeTriangleOccluder_mid_right)
+#include "SWculling_rast_tri.inl"
+#undef MID_VTX_RIGHT
+#undef TRI_FUNC_NAME
+
 // bit scan forward
 static inline long _swGetFirstBit(long mask) {
 #ifdef _MSC_VER
@@ -77,8 +191,57 @@ static inline long _swGetFirstBit(long mask) {
 #endif
 }
 
-void NAME(_swProcessTriangleBatch)(SWcull_ctx *ctx, __mXXX vX[3], __mXXX vY[3],
-                                   __mXXX vZ[3], SWuint tri_mask) {
+void NAME(_swComputeDepthPlane)(const __mXXX vX[3], const __mXXX vY[3],
+                                const __mXXX vZ[3], __mXXX *z_px_dx, __mXXX *z_px_dy) {
+    // depth plane z(x,y) = z0 + dx * x + dy * y
+    const __mXXX x10 = _mmXXX_sub_ps(vX[1], vX[0]);
+    const __mXXX x20 = _mmXXX_sub_ps(vX[2], vX[0]);
+    const __mXXX y10 = _mmXXX_sub_ps(vY[1], vY[0]);
+    const __mXXX y20 = _mmXXX_sub_ps(vY[2], vY[0]);
+    const __mXXX z10 = _mmXXX_sub_ps(vZ[1], vZ[0]);
+    const __mXXX z20 = _mmXXX_sub_ps(vZ[2], vZ[0]);
+    // d = 1 / (x10 * y20 - y10 * x20)
+    const __mXXX d =
+        _mmXXX_div_ps(_mmXXX_set1_ps(1.0f),
+                      _mmXXX_sub_ps(_mmXXX_mul_ps(x10, y20), _mmXXX_mul_ps(y10, x20)));
+
+    // (*z_px_dx) = (z10 * y20 - y10 * z20) * d;
+    (*z_px_dx) =
+        _mmXXX_mul_ps(_mmXXX_sub_ps(_mmXXX_mul_ps(z10, y20), _mmXXX_mul_ps(y10, z20)), d);
+    // (*z_px_dy) = (x10 * z20 - z10 * x20) * d;
+    (*z_px_dy) =
+        _mmXXX_mul_ps(_mmXXX_sub_ps(_mmXXX_mul_ps(x10, z20), _mmXXX_mul_ps(z10, x20)), d);
+}
+
+#if defined(USE_SSE2)
+#define SIMD_SUB_TILE_COL_OFFSET_F                                                       \
+    _mm_setr_ps(0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3)
+#define SIMD_SUB_TILE_ROW_OFFSET_F _mm_setzero_ps()
+#elif defined(USE_AVX2)
+#define SIMD_SUB_TILE_COL_OFFSET_F                                                       \
+    _mm256_setr_ps(0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3,   \
+                   0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3)
+#define SIMD_SUB_TILE_ROW_OFFSET_F                                                       \
+    _mm256_setr_ps(0, 0, 0, 0, SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y,  \
+                   SW_CULL_SUBTILE_Y)
+#elif defined(USE_AVX512)
+#define SIMD_SUB_TILE_COL_OFFSET_F                                                       \
+    _mm512_setr_ps(0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3,   \
+                   0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3,   \
+                   0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3,   \
+                   0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3)
+#define SIMD_SUB_TILE_ROW_OFFSET_F                                                       \
+    _mm512_setr_ps(0, 0, 0, 0, SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y,  \
+                   SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y * 2, SW_CULL_SUBTILE_Y * 2,      \
+                   SW_CULL_SUBTILE_Y * 2, SW_CULL_SUBTILE_Y * 2, SW_CULL_SUBTILE_Y * 3,  \
+                   SW_CULL_SUBTILE_Y * 3, SW_CULL_SUBTILE_Y * 3, SW_CULL_SUBTILE_Y * 3)
+
+#endif
+
+SWint NAME(_swProcessTriangleBatch)(SWcull_ctx *ctx, __mXXX vX[3], __mXXX vY[3],
+                                    __mXXX vZ[3], SWuint tri_mask, SWint is_occluder) {
+    const SWint tile_count = ctx->cov_tile_w * ctx->cov_tile_h;
+
     // find triangle bounds
     __mXXXi bb_px_min_x =
         _mmXXX_cvttps_epi32(_mmXXX_min_ps(vX[0], _mmXXX_min_ps(vX[1], vX[2])));
@@ -89,13 +252,15 @@ void NAME(_swProcessTriangleBatch)(SWcull_ctx *ctx, __mXXX vX[3], __mXXX vY[3],
     __mXXXi bb_px_max_y =
         _mmXXX_cvttps_epi32(_mmXXX_max_ps(vY[0], _mmXXX_max_ps(vY[1], vY[2])));
 
-    // clip to frame bounds
+    // clamp to frame bounds
     bb_px_min_x = _mmXXX_max_epi32(bb_px_min_x, _mmXXX_set1_epi32(0));
-    bb_px_max_x = _mmXXX_min_epi32(bb_px_max_x, _mmXXX_set1_epi32(ctx->zbuf.w - 1));
+    bb_px_max_x = _mmXXX_min_epi32(
+        bb_px_max_x, _mmXXX_set1_epi32(ctx->cov_tile_w * SW_CULL_TILE_SIZE_X));
     bb_px_min_y = _mmXXX_max_epi32(bb_px_min_y, _mmXXX_set1_epi32(0));
-    bb_px_max_y = _mmXXX_min_epi32(bb_px_max_y, _mmXXX_set1_epi32(ctx->zbuf.h - 1));
+    bb_px_max_y = _mmXXX_min_epi32(
+        bb_px_max_y, _mmXXX_set1_epi32(ctx->cov_tile_h * SW_CULL_TILE_SIZE_Y));
 
-    // snap to tile bounds (min % TILE_SIZE_, (max + TILE_SIZE_ - 1) % TILE_SIZE_)
+    // snap to tiles (min % TILE_SIZE_, (max + TILE_SIZE_ - 1) % TILE_SIZE_)
     bb_px_min_x =
         _mmXXX_and_siXXX(bb_px_min_x, _mmXXX_set1_epi32(~(SW_CULL_TILE_SIZE_X - 1)));
     bb_px_max_x = _mmXXX_and_siXXX(
@@ -132,8 +297,45 @@ void NAME(_swProcessTriangleBatch)(SWcull_ctx *ctx, __mXXX vX[3], __mXXX vY[3],
         ~_mmXXX_movemask_ps(_mmXXX_castsiXXX_ps(bbox_sign)) & ((1 << SIMD_WIDTH) - 1);
     if (!tri_mask) {
         // skip whole batch
-        return;
+        return 0;
     }
+
+    union {
+        __mXXX vec;
+        SWfloat f32[SIMD_WIDTH];
+    } z_px_dx, z_px_dy, z_plane_offset, z_tile_dx, z_tile_dy, zmin, zmax;
+
+    NAME(_swComputeDepthPlane)(vX, vY, vZ, &z_px_dx.vec, &z_px_dy.vec);
+
+    __mXXX bb_min_v0X = _mmXXX_sub_ps(_mmXXX_cvtepi32_ps(bb_px_min_x), vX[0]);
+    __mXXX bb_min_v0Y = _mmXXX_sub_ps(_mmXXX_cvtepi32_ps(bb_px_min_y), vY[0]);
+    z_plane_offset.vec = _mmXXX_fmadd_ps(z_px_dx.vec, bb_min_v0X,
+                                         _mmXXX_fmadd_ps(z_px_dy.vec, bb_min_v0Y, vZ[0]));
+    z_tile_dx.vec = _mmXXX_mul_ps(z_px_dx.vec, _mmXXX_set1_ps(SW_CULL_TILE_SIZE_X));
+    z_tile_dy.vec = _mmXXX_mul_ps(z_px_dy.vec, _mmXXX_set1_ps(SW_CULL_TILE_SIZE_Y));
+
+    if (is_occluder) {
+        z_plane_offset.vec = _mmXXX_add_ps(
+            z_plane_offset.vec,
+            _mmXXX_min_ps(_mmXXX_setzero_ps(),
+                          _mmXXX_mul_ps(z_px_dx.vec, _mmXXX_set1_ps(SW_CULL_SUBTILE_X))));
+        z_plane_offset.vec = _mmXXX_add_ps(
+            z_plane_offset.vec,
+            _mmXXX_min_ps(_mmXXX_setzero_ps(),
+                          _mmXXX_mul_ps(z_px_dy.vec, _mmXXX_set1_ps(SW_CULL_SUBTILE_Y))));
+    } else {
+        z_plane_offset.vec = _mmXXX_add_ps(
+            z_plane_offset.vec,
+            _mmXXX_max_ps(_mmXXX_setzero_ps(),
+                          _mmXXX_mul_ps(z_px_dx.vec, _mmXXX_set1_ps(SW_CULL_SUBTILE_X))));
+        z_plane_offset.vec = _mmXXX_add_ps(
+            z_plane_offset.vec,
+            _mmXXX_max_ps(_mmXXX_setzero_ps(),
+                          _mmXXX_mul_ps(z_px_dy.vec, _mmXXX_set1_ps(SW_CULL_SUBTILE_Y))));
+    }
+
+    zmin.vec = _mmXXX_min_ps(vZ[0], _mmXXX_min_ps(vZ[1], vZ[2]));
+    zmax.vec = _mmXXX_max_ps(vZ[0], _mmXXX_max_ps(vZ[1], vZ[2]));
 
     // Rotate vertices in winding order until p0 ends up at the bottom
     for (SWint i = 0; i < 2; i++) {
@@ -179,7 +381,7 @@ void NAME(_swProcessTriangleBatch)(SWcull_ctx *ctx, __mXXX vX[3], __mXXX vY[3],
                        _mmXXX_div_ps(edge_x[2], edge_y[2])};
 
     const __mXXX horizontal_slope_delta =
-        _mmXXX_set1_ps((SWfloat)ctx->zbuf.w + 2.0f * (1.0f + 1.0f));
+        _mmXXX_set1_ps((SWfloat)ctx->w + 2.0f * (1.0f + 1.0f));
     slope[0] = _mmXXX_blendv_ps(slope[0], horizontal_slope_delta,
                                 _mmXXX_cmpeq_ps(edge_y[0], _mmXXX_setzero_ps()));
     slope[1] = _mmXXX_blendv_ps(slope[1], _mmXXX_neg_ps(horizontal_slope_delta),
@@ -240,6 +442,17 @@ void NAME(_swProcessTriangleBatch)(SWcull_ctx *ctx, __mXXX vX[3], __mXXX vY[3],
         const SWint tri_ndx = _swGetFirstBit(tri_mask);
         tri_mask &= tri_mask - 1;
 
+        const __mXXX tri_zmin = _mmXXX_set1_ps(zmin.f32[tri_ndx]);
+        const __mXXX tri_zmax = _mmXXX_set1_ps(zmax.f32[tri_ndx]);
+
+        __mXXX z0 = _mmXXX_fmadd_ps(
+            _mmXXX_set1_ps(z_px_dx.f32[tri_ndx]), SIMD_SUB_TILE_COL_OFFSET_F,
+            _mmXXX_fmadd_ps(_mmXXX_set1_ps(z_px_dy.f32[tri_ndx]),
+                            SIMD_SUB_TILE_ROW_OFFSET_F,
+                            _mmXXX_set1_ps(z_plane_offset.f32[tri_ndx])));
+        const SWfloat zx = z_tile_dx.f32[tri_ndx];
+        const SWfloat zy = z_tile_dy.f32[tri_ndx];
+
         const SWint tri_bb_width = bb_tile_size_x.i32[tri_ndx];
         const SWint tri_bb_height = bb_tile_size_y.i32[tri_ndx];
 
@@ -250,32 +463,75 @@ void NAME(_swProcessTriangleBatch)(SWcull_ctx *ctx, __mXXX vX[3], __mXXX vY[3],
         const SWint tri_mid_vtx_right = (mid_vtx_right >> tri_ndx) & 1;
         const SWint tri_flat_bottom = (flat_bottom >> tri_ndx) & 1;
 
+        SWint res;
         if (tri_bb_width > 3 && tri_bb_height > 3) {
             if (tri_mid_vtx_right) {
-                NAME(_swRasterizeTriangle_tight_mid_right)
-                (ctx, tile_row_ndx, tile_mid_row_ndx, tile_end_row_ndx, tri_bb_width,
-                 tri_ndx, slope_tile_delta[0].i32, event_start[0].i32, slope_fp[0].i32,
-                 tri_flat_bottom);
+                if (is_occluder) {
+                    res = NAME(_swRasterizeTriangleOccluder_tight_mid_right)(
+                        ctx, tile_row_ndx, tile_mid_row_ndx, tile_end_row_ndx,
+                        tri_bb_width, tri_ndx, slope_tile_delta[0].i32,
+                        event_start[0].i32, slope_fp[0].i32, &tri_zmin, &tri_zmax, &z0,
+                        zx, zy, tri_flat_bottom);
+                } else {
+                    res = NAME(_swRasterizeTriangle_tight_mid_right)(
+                        ctx, tile_row_ndx, tile_mid_row_ndx, tile_end_row_ndx,
+                        tri_bb_width, tri_ndx, slope_tile_delta[0].i32,
+                        event_start[0].i32, slope_fp[0].i32, &tri_zmin, &tri_zmax, &z0,
+                        zx, zy, tri_flat_bottom);
+                }
             } else {
-                NAME(_swRasterizeTriangle_tight_mid_left)
-                (ctx, tile_row_ndx, tile_mid_row_ndx, tile_end_row_ndx, tri_bb_width,
-                 tri_ndx, slope_tile_delta[0].i32, event_start[0].i32, slope_fp[0].i32,
-                 tri_flat_bottom);
+                if (is_occluder) {
+                    res = NAME(_swRasterizeTriangleOccluder_tight_mid_left)(
+                        ctx, tile_row_ndx, tile_mid_row_ndx, tile_end_row_ndx,
+                        tri_bb_width, tri_ndx, slope_tile_delta[0].i32,
+                        event_start[0].i32, slope_fp[0].i32, &tri_zmin, &tri_zmax, &z0,
+                        zx, zy, tri_flat_bottom);
+                } else {
+                    res = NAME(_swRasterizeTriangle_tight_mid_left)(
+                        ctx, tile_row_ndx, tile_mid_row_ndx, tile_end_row_ndx,
+                        tri_bb_width, tri_ndx, slope_tile_delta[0].i32,
+                        event_start[0].i32, slope_fp[0].i32, &tri_zmin, &tri_zmax, &z0,
+                        zx, zy, tri_flat_bottom);
+                }
             }
         } else {
             if (tri_mid_vtx_right) {
-                NAME(_swRasterizeTriangle_mid_right)
-                (ctx, tile_row_ndx, tile_mid_row_ndx, tile_end_row_ndx, tri_bb_width,
-                 tri_ndx, slope_tile_delta[0].i32, event_start[0].i32, slope_fp[0].i32,
-                 tri_flat_bottom);
+                if (is_occluder) {
+                    res = NAME(_swRasterizeTriangleOccluder_mid_right)(
+                        ctx, tile_row_ndx, tile_mid_row_ndx, tile_end_row_ndx,
+                        tri_bb_width, tri_ndx, slope_tile_delta[0].i32,
+                        event_start[0].i32, slope_fp[0].i32, &tri_zmin, &tri_zmax, &z0,
+                        zx, zy, tri_flat_bottom);
+                } else {
+                    res = NAME(_swRasterizeTriangle_mid_right)(
+                        ctx, tile_row_ndx, tile_mid_row_ndx, tile_end_row_ndx,
+                        tri_bb_width, tri_ndx, slope_tile_delta[0].i32,
+                        event_start[0].i32, slope_fp[0].i32, &tri_zmin, &tri_zmax, &z0,
+                        zx, zy, tri_flat_bottom);
+                }
             } else {
-                NAME(_swRasterizeTriangle_mid_left)
-                (ctx, tile_row_ndx, tile_mid_row_ndx, tile_end_row_ndx, tri_bb_width,
-                 tri_ndx, slope_tile_delta[0].i32, event_start[0].i32, slope_fp[0].i32,
-                 tri_flat_bottom);
+                if (is_occluder) {
+                    res = NAME(_swRasterizeTriangleOccluder_mid_left)(
+                        ctx, tile_row_ndx, tile_mid_row_ndx, tile_end_row_ndx,
+                        tri_bb_width, tri_ndx, slope_tile_delta[0].i32,
+                        event_start[0].i32, slope_fp[0].i32, &tri_zmin, &tri_zmax, &z0,
+                        zx, zy, tri_flat_bottom);
+                } else {
+                    res = NAME(_swRasterizeTriangle_mid_left)(
+                        ctx, tile_row_ndx, tile_mid_row_ndx, tile_end_row_ndx,
+                        tri_bb_width, tri_ndx, slope_tile_delta[0].i32,
+                        event_start[0].i32, slope_fp[0].i32, &tri_zmin, &tri_zmax, &z0,
+                        zx, zy, tri_flat_bottom);
+                }
             }
         }
+
+        if (res && !is_occluder) {
+            return 1;
+        }
     }
+
+    return is_occluder;
 }
 
 SWint _swClipPolygon(const __m128 in_vtx[], const SWint in_vtx_count, const __m128 plane,
@@ -283,9 +539,10 @@ SWint _swClipPolygon(const __m128 in_vtx[], const SWint in_vtx_count, const __m1
 
 #define SW_MAX_CLIPPED (8 * SIMD_WIDTH)
 
-void NAME(_swProcessTrianglesIndexed)(SWcull_ctx *ctx, const void *attribs,
-                                      const SWuint *indices, const SWuint stride,
-                                      const SWuint index_count, const SWfloat *xform) {
+SWint NAME(_swProcessTrianglesIndexed)(SWcull_ctx *ctx, const void *attribs,
+                                       const SWuint *indices, const SWuint stride,
+                                       const SWuint index_count, const SWfloat *xform,
+                                       const SWint is_occluder) {
     union {
         __m128 vec;
         float f32[4];
@@ -507,6 +764,69 @@ void NAME(_swProcessTrianglesIndexed)(SWcull_ctx *ctx, const void *attribs,
             continue;
         }
 
-        NAME(_swProcessTriangleBatch)(ctx, &vX[0].vec, &vY[0].vec, &vW[0].vec, tri_mask);
+        const SWint res = NAME(_swProcessTriangleBatch)(
+            ctx, &vX[0].vec, &vY[0].vec, &vW[0].vec, tri_mask, is_occluder);
+        if (res && !is_occluder) {
+            return 1;
+        }
+    }
+
+    return is_occluder;
+}
+
+void NAME(_swCullCtxDebugDepth)(SWcull_ctx *ctx, SWfloat *out_depth) {
+    const SWztile *ztiles = (SWztile *)ctx->ztiles;
+
+    for (SWint y = 0; y < ctx->h; y++) {
+        SWint ty = y / ctx->tile_size_y;
+        for (SWint x = 0; x < ctx->w; x++) {
+            SWint tx = x / SW_CULL_TILE_SIZE_X;
+
+            SWint tile_ndx = ty * ctx->cov_tile_w + tx;
+
+#if 1 // in case it is transposed (needed later)
+            SWint stx = (x % SW_CULL_TILE_SIZE_X) / SW_CULL_SUBTILE_X;
+            SWint sty = (y % SW_CULL_TILE_SIZE_Y) / SW_CULL_SUBTILE_Y;
+            SWint subtile_ndx = sty * (SW_CULL_TILE_SIZE_X / SW_CULL_SUBTILE_X) + stx;
+
+            SWint px = (x % SW_CULL_SUBTILE_X);
+            SWint py = (y % SW_CULL_SUBTILE_Y);
+            SWint bit_ndx = py * SW_CULL_SUBTILE_X + px;
+
+            const uint32_t *cov = (uint32_t *)&ztiles[tile_ndx].mask;
+            SWint pix = (cov[subtile_ndx] >> bit_ndx) & 1;
+#else
+            SWint subtile_ndx = (y % ctx->tile_size_y);
+            SWint bit_ndx = (x % SW_CULL_TILE_SIZE_X);
+
+            SWint pix =
+                (ctx->coverage[tile_ndx * ctx->tile_size_y + subtile_ndx] >> bit_ndx) & 1;
+#endif
+
+            SWfloat *depth_val = &out_depth[y * ctx->w + x];
+            if (pix) {
+                (*depth_val) = ztiles[tile_ndx].zmin[1].f32[subtile_ndx];
+                //(*depth_val) = 1;
+            } else {
+                (*depth_val) = ztiles[tile_ndx].zmin[0].f32[subtile_ndx];
+                //(*depth_val) = 0;
+            }
+        }
+    }
+}
+
+void NAME(_swCullCtxClearBuf)(SWcull_ctx *ctx) {
+    SWztile *ztiles = (SWztile *)ctx->ztiles;
+
+    for (SWint i = 0; i < ctx->cov_tile_w * ctx->cov_tile_h; i++) {
+        ztiles[i].mask = _mmXXX_setzero_siXXX();
+
+        ztiles[i].zmin[0].vec = _mmXXX_set1_ps(-1.0f);
+
+#ifdef SW_CULL_QUICK_MASK
+        ztiles[i].zmin[1].vec = _mmXXX_set1_ps(FLT_MAX);
+#else
+        ztiles[i].zmin[1].vec = _mmXXX_setzero_ps();
+#endif
     }
 }

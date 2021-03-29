@@ -16,8 +16,8 @@ bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3
            p[1] < bbox_max[1] && p[2] > bbox_min[2] && p[2] < bbox_max[2];
 }
 
-const uint8_t bbox_indices[] = {0, 1, 2, 2, 1, 3, 0, 4, 5, 0, 5, 1, 0, 2, 4, 4, 2, 6,
-                                2, 3, 6, 6, 3, 7, 3, 1, 5, 3, 5, 7, 4, 6, 5, 5, 6, 7};
+const uint32_t bbox_indices[] = {0, 1, 2, 2, 1, 3, 0, 4, 5, 0, 5, 1, 0, 2, 4, 4, 2, 6,
+                                 2, 3, 6, 6, 3, 7, 3, 1, 5, 3, 5, 7, 4, 6, 5, 5, 6, 7};
 
 template <typename SpanType>
 void RadixSort_LSB(SpanType *begin, SpanType *end, SpanType *begin1) {
@@ -69,10 +69,9 @@ void __init_wind_params(const VegState &vs, const Environment &env,
 
 #ifdef ENABLE_ITT_API
 __itt_string_handle *itt_gather_str = __itt_string_handle_create("GatherDrawables");
-__itt_string_handle* itt_proc_occluders_str = __itt_string_handle_create("ProcessOccluders");
+__itt_string_handle *itt_proc_occluders_str =
+    __itt_string_handle_create("ProcessOccluders");
 #endif
-
-const float MaxCullDistance = 100.0f;
 } // namespace RendererInternal
 
 #define REN_UNINITIALIZE_X2(t)                                                           \
@@ -188,6 +187,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
     const Mat4f &view_from_world = list.draw_cam.view_matrix(),
                 &clip_from_view = list.draw_cam.proj_matrix();
 
+    swCullCtxResize(&cull_ctx_, ctx_.w(), ctx_.h(), list.draw_cam.near());
     swCullCtxClear(&cull_ctx_);
 
     const Mat4f view_from_identity = view_from_world * Mat4f{1.0f},
@@ -209,12 +209,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_proc_occluders_str);
 #endif
 
-    Camera cull_cam = list.draw_cam;
-    cull_cam.Perspective(cull_cam.angle(), cull_cam.aspect(), cull_cam.near(),
-                         MaxCullDistance);
-
     const Mat4f &cull_view_from_world = view_from_world,
-                &cull_clip_from_view = cull_cam.proj_matrix();
+                &cull_clip_from_view = list.draw_cam.proj_matrix();
 
     if (scene.root_node != 0xffffffff) {
         // Rasterize occluder meshes into a small framebuffer
@@ -255,7 +251,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                     const Mat4f &world_from_object = tr.mat;
 
-                    const Mat4f view_from_object = cull_view_from_world * world_from_object,
+                    const Mat4f view_from_object =
+                                    cull_view_from_world * world_from_object,
                                 clip_from_object = cull_clip_from_view * view_from_object;
 
                     const Occluder &occ = occluders[obj.components[CompOccluder]];
@@ -274,10 +271,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         _surf->attribs = mesh->attribs();
                         _surf->indices = ((const uint8_t *)mesh->indices() + s->offset);
                         _surf->stride = 13 * sizeof(float);
+
                         _surf->count = (SWuint)s->num_indices;
-                        _surf->base_vertex = 0;
                         _surf->xform = ValuePtr(clip_from_object);
-                        _surf->dont_skip = nullptr;
 
                         ++s;
                     }
@@ -291,9 +287,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 #ifdef ENABLE_ITT_API
     __itt_task_end(__g_itt_domain);
 #endif
-
-    // TODO: remove this!
-    swCullCtxTestCoverage(&cull_ctx_);
 
     /**********************************************************************************/
     /*                        MESHES/LIGHTS/DECALS/PROBES GATHERING                   */
@@ -322,7 +315,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                 }
             }
 
-            if (culling_enabled && false) {
+            if (culling_enabled) {
                 const Vec3f &cam_pos = list.draw_cam.world_position();
 
                 // do not question visibility of the node in which we are inside
@@ -336,14 +329,12 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                     surf.type = SW_OCCLUDEE;
                     surf.prim_type = SW_TRIANGLES;
-                    surf.index_type = SW_UNSIGNED_BYTE;
+                    surf.index_type = SW_UNSIGNED_INT;
                     surf.attribs = &bbox_points[0][0];
                     surf.indices = &bbox_indices[0];
                     surf.stride = 3 * sizeof(float);
                     surf.count = 36;
-                    surf.base_vertex = 0;
                     surf.xform = ValuePtr(clip_from_identity);
-                    surf.dont_skip = nullptr;
 
                     swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
@@ -376,7 +367,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         }
                     }
 
-                    if (culling_enabled && false) {
+                    if (culling_enabled) {
                         const Vec3f &cam_pos = list.draw_cam.world_position();
 
                         // do not question visibility of the object in which we are
@@ -391,14 +382,12 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                             surf.type = SW_OCCLUDEE;
                             surf.prim_type = SW_TRIANGLES;
-                            surf.index_type = SW_UNSIGNED_BYTE;
+                            surf.index_type = SW_UNSIGNED_INT;
                             surf.attribs = &bbox_points[0][0];
                             surf.indices = &bbox_indices[0];
                             surf.stride = 3 * sizeof(float);
                             surf.count = 36;
-                            surf.base_vertex = 0;
                             surf.xform = ValuePtr(clip_from_identity);
-                            surf.dont_skip = nullptr;
 
                             swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
@@ -1037,7 +1026,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                 surf.count = 36;
                 surf.base_vertex = 0;
                 surf.xform = ValuePtr(clip_from_identity);
-                surf.dont_skip = nullptr;
 
                 swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
@@ -1676,42 +1664,25 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
     if ((list.render_flags & (EnableCulling | DebugCulling)) ==
         (EnableCulling | DebugCulling)) {
-        const float NEAR_CLIP = 0.5f;
-        const float FAR_CLIP = 10000.0f;
+        list.depth_w = cull_ctx_.w;
+        list.depth_h = cull_ctx_.h;
 
-        const int w = cull_ctx_.zbuf.w, h = cull_ctx_.zbuf.h;
+        temp_depth.resize(list.depth_w * list.depth_h);
+        swCullCtxDebugDepth(&cull_ctx_, temp_depth.data());
 
-        list.depth_pixels.resize(4ull * w * h);
-        uint8_t *_depth_pixels = list.depth_pixels.data();
+        list.depth_pixels.resize(4ull * list.depth_w * list.depth_h);
+        const float *_depth_pixels_f32 = temp_depth.data();
+        uint8_t *_depth_pixels_u8 = list.depth_pixels.data();
 
-        for (int x = 0; x < w; x++) {
-            for (int y = 0; y < h; y++) {
-                float z = cull_ctx_.zbuf.depth[(h - y - 1) * w + x];
-                z = (2.0f * NEAR_CLIP) /
-                    (FAR_CLIP + NEAR_CLIP - z * (FAR_CLIP - NEAR_CLIP));
-                _depth_pixels[4ul * (y * w + x) + 0] = uint8_t(z * 255);
-                _depth_pixels[4ul * (y * w + x) + 1] = uint8_t(z * 255);
-                _depth_pixels[4ul * (y * w + x) + 2] = uint8_t(z * 255);
-                _depth_pixels[4ul * (y * w + x) + 3] = 255;
+        for (int x = 0; x < list.depth_w; x++) {
+            for (int y = 0; y < list.depth_h; y++) {
+                float z = _depth_pixels_f32[(list.depth_h - y - 1) * list.depth_w + x];
+                _depth_pixels_u8[4ul * (y * list.depth_w + x) + 0] = uint8_t(z * 255);
+                _depth_pixels_u8[4ul * (y * list.depth_w + x) + 1] = uint8_t(z * 255);
+                _depth_pixels_u8[4ul * (y * list.depth_w + x) + 2] = uint8_t(z * 255);
+                _depth_pixels_u8[4ul * (y * list.depth_w + x) + 3] = 255;
             }
         }
-
-        list.depth_tiles.resize(4ull * w * h);
-        uint8_t *_depth_tiles = list.depth_tiles.data();
-
-        /*for (int x = 0; x < w; x++) {
-            for (int y = 0; y < h; y++) {
-                const SWzrange *zr = swZbufGetTileRange(&cull_ctx_.zbuf, x, (h - y - 1));
-
-                float z = zr->min;
-                z = (2.0f * NEAR_CLIP) /
-                    (FAR_CLIP + NEAR_CLIP - z * (FAR_CLIP - NEAR_CLIP));
-                _depth_tiles[4ul * (y * w + x) + 0] = uint8_t(z * 255);
-                _depth_tiles[4ul * (y * w + x) + 1] = uint8_t(z * 255);
-                _depth_tiles[4ul * (y * w + x) + 2] = uint8_t(z * 255);
-                _depth_tiles[4ul * (y * w + x) + 3] = 255;
-            }
-        }*/
     }
 
     uint64_t iteration_end = Sys::GetTimeUs();
@@ -1800,8 +1771,7 @@ void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub
             eVisResult visible_to_line = eVisResult::FullyVisible;
 
             // Check if light is inside of grid line
-            for (int k = int(eCamPlane::Top); k <= int(eCamPlane::Bottom);
-                 k++) {
+            for (int k = int(eCamPlane::Top); k <= int(eCamPlane::Bottom); k++) {
                 const float *p_n = ValuePtr(first_line_sf->planes[k].n);
                 const float p_d = first_line_sf->planes[k].d;
 
@@ -1837,8 +1807,7 @@ void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub
                 eVisResult res = eVisResult::FullyVisible;
 
                 // Can skip near, far, top and bottom plane check
-                for (int k = int(eCamPlane::Left); k <= int(eCamPlane::Right);
-                     k++) {
+                for (int k = int(eCamPlane::Left); k <= int(eCamPlane::Right); k++) {
                     const float *p_n = ValuePtr(sf->planes[k].n);
                     const float p_d = sf->planes[k].d;
 
@@ -1916,8 +1885,7 @@ void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub
             eVisResult visible_to_line = eVisResult::FullyVisible;
 
             // Check if decal is inside of grid line
-            for (int k = int(eCamPlane::Top); k <= int(eCamPlane::Bottom);
-                 k++) {
+            for (int k = int(eCamPlane::Top); k <= int(eCamPlane::Bottom); k++) {
                 int in_count = 8;
 
                 for (int i = 0; i < 8; i++) { // NOLINT
@@ -1947,8 +1915,7 @@ void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub
                 eVisResult res = eVisResult::FullyVisible;
 
                 // Can skip near, far, top and bottom plane check
-                for (int k = int(eCamPlane::Left); k <= int(eCamPlane::Right);
-                     k++) {
+                for (int k = int(eCamPlane::Left); k <= int(eCamPlane::Right); k++) {
                     int in_count = 8;
 
                     for (int i = 0; i < 8; i++) { // NOLINT
@@ -2008,8 +1975,7 @@ void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub
             eVisResult visible_to_line = eVisResult::FullyVisible;
 
             // Check if probe is inside of grid line
-            for (int k = int(eCamPlane::Top); k <= int(eCamPlane::Bottom);
-                 k++) {
+            for (int k = int(eCamPlane::Top); k <= int(eCamPlane::Bottom); k++) {
                 float dist = first_line_sf->planes[k].n[0] * p_pos[0] +
                              first_line_sf->planes[k].n[1] * p_pos[1] +
                              first_line_sf->planes[k].n[2] * p_pos[2] +
@@ -2030,8 +1996,7 @@ void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub
                 eVisResult res = eVisResult::FullyVisible;
 
                 // Can skip near, far, top and bottom plane check
-                for (int k = int(eCamPlane::Left); k <= int(eCamPlane::Right);
-                     k++) {
+                for (int k = int(eCamPlane::Left); k <= int(eCamPlane::Right); k++) {
                     const float dist = sf->planes[k].n[0] * p_pos[0] +
                                        sf->planes[k].n[1] * p_pos[1] +
                                        sf->planes[k].n[2] * p_pos[2] + sf->planes[k].d;
@@ -2084,8 +2049,7 @@ void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub
             eVisResult visible_to_line = eVisResult::FullyVisible;
 
             // Check if ellipsoid is inside of grid line
-            for (int k = int(eCamPlane::Top); k <= int(eCamPlane::Bottom);
-                 k++) {
+            for (int k = int(eCamPlane::Top); k <= int(eCamPlane::Bottom); k++) {
                 float dist = first_line_sf->planes[k].n[0] * p_pos[0] +
                              first_line_sf->planes[k].n[1] * p_pos[1] +
                              first_line_sf->planes[k].n[2] * p_pos[2] +
@@ -2106,8 +2070,7 @@ void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub
                 eVisResult res = eVisResult::FullyVisible;
 
                 // Can skip near, far, top and bottom plane check
-                for (int k = int(eCamPlane::Left); k <= int(eCamPlane::Right);
-                     k++) {
+                for (int k = int(eCamPlane::Left); k <= int(eCamPlane::Right); k++) {
                     const float dist = sf->planes[k].n[0] * p_pos[0] +
                                        sf->planes[k].n[1] * p_pos[1] +
                                        sf->planes[k].n[2] * p_pos[2] + sf->planes[k].d;

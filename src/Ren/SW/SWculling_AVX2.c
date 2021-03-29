@@ -1,6 +1,8 @@
 #include "SWculling.h"
 #include "SWrasterize.h"
 
+#include <float.h>
+
 #define SW_CULL_TILE_HEIGHT_SHIFT 3
 #define SW_CULL_TILE_SIZE_Y (1 << SW_CULL_TILE_HEIGHT_SHIFT)
 

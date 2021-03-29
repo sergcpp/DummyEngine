@@ -93,7 +93,8 @@ struct DrawList {
     std::vector<bvh_node_t>     temp_nodes;
     uint32_t                    root_index = 0xffffffff;
     // culling depth buffer
-    std::vector<uint8_t> depth_pixels, depth_tiles;
+    int depth_w, depth_h;
+    std::vector<uint8_t> depth_pixels;
 
     DrawList();
 };

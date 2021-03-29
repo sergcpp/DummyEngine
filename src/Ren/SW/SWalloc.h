@@ -5,7 +5,7 @@
 #include <malloc.h>
 #endif
 
-inline void* aligned_malloc(size_t size, size_t alignment) {
+inline void* sw_aligned_malloc(size_t size, size_t alignment) {
 #if defined(_MSC_VER) || defined(__MINGW32__)
     return _mm_malloc(size, alignment);
 #elif __STDC_VERSION__ >= 201112L
@@ -21,7 +21,7 @@ inline void* aligned_malloc(size_t size, size_t alignment) {
 #endif
 }
 
-inline void aligned_free(void* p) {
+inline void sw_aligned_free(void* p) {
 #if defined(_MSC_VER) || defined(__MINGW32__)
     _mm_free(p);
 #else

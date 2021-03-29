@@ -1,6 +1,7 @@
 #ifndef SW_RASTERIZE_H
 #define SW_RASTERIZE_H
 
+#include <assert.h>
 #include <math.h>
 
 #include "SWframebuffer.h"

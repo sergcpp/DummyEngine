@@ -1,8 +1,9 @@
 
-void TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
-                   SWint tile_end_row_ndx, SWint bb_width, SWint tri_ndx,
-                   SWint slope_tile_delta[], SWint event_start[], SWint slope[],
-                   SWint flat_bottom) {
+SWint TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
+                    SWint tile_end_row_ndx, SWint bb_width, SWint tri_ndx,
+                    SWint slope_tile_delta[], SWint event_start[], SWint slope[],
+                    const __mXXX *tri_zmin, const __mXXX *tri_zmax, __mXXX *z0,
+                    SWfloat zx, SWfloat zy, SWint flat_bottom) {
 #define LEFT_EDGE_BIAS 0
 #define RIGHT_EDGE_BIAS 0
 #define UPDATE_TILE_EVENTS_Y(i)                                                          \
@@ -59,12 +60,22 @@ void TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
             end_event += end_delta;
 #endif // TIGHT_TRANVERSAL
 
-            NAME(_swProcessScanline_L1R1)
-            (ctx->coverage, start, end, 2 /* left_event */, 0 /* right_event*/, tri_event,
-             tile_row_ndx);
+#ifdef IS_OCCLUDER
+            const SWint res = NAME(_swProcessScanlineOccluder_L1R1)(
+#else
+            const SWint res = NAME(_swProcessScanline_L1R1)(
+#endif
+                (SWztile *)ctx->ztiles, start, end, 2 /* left_event */,
+                0 /* right_event*/, tri_event, tile_row_ndx, tri_zmin,
+                tri_zmax, z0, zx);
+#ifndef IS_OCCLUDER
+            if (res) {
+                return 1;
+            }
+#endif
 
             tile_row_ndx += ctx->cov_tile_w;
-
+            (*z0) = _mmXXX_add_ps(*z0, _mmXXX_set1_ps(zy));
             UPDATE_TILE_EVENTS_Y(0);
             UPDATE_TILE_EVENTS_Y(2);
         }
@@ -87,20 +98,37 @@ void TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
 #endif // TIGHT_TRANVERSAL
 
 #if MID_VTX_RIGHT
-            NAME(_swProcessScanline_L1R2)
-            (ctx->coverage, start, end, 2 /* left_event */, 0 /* right_event*/, tri_event,
-             tile_row_ndx);
+#ifdef IS_OCCLUDER
+            const SWint res = NAME(_swProcessScanlineOccluder_L1R2)(
+#else
+            const SWint res = NAME(_swProcessScanline_L1R2)(
+#endif
+                (SWztile *)ctx->ztiles, start, end, 2 /* left_event */,
+                0 /* right_event*/, tri_event, tile_row_ndx, tri_zmin,
+                tri_zmax, z0, zx);
 #else  // MID_VTX_RIGHT
-            NAME(_swProcessScanline_L2R1)
-            (ctx->coverage, start, end, 2 /* left_event */, 0 /* right_event*/, tri_event,
-             tile_row_ndx);
+#ifdef IS_OCCLUDER
+            const SWint res = NAME(_swProcessScanlineOccluder_L2R1)(
+#else
+            const SWint res = NAME(_swProcessScanline_L2R1)(
+#endif
+                (SWztile *)ctx->ztiles, start, end, 2 /* left_event */,
+                0 /* right_event*/, tri_event, tile_row_ndx, tri_zmin,
+                tri_zmax, z0, zx);
 #endif // MID_VTX_RIGHT
+#ifndef IS_OCCLUDER
+            if (res) {
+                return 1;
+            }
+#endif
 
             tile_row_ndx += ctx->cov_tile_w;
         }
 
         // top half of triangle
         if (tile_row_ndx < tile_end_row_ndx) {
+            // move to the next scanline
+            (*z0) = _mmXXX_add_ps(*z0, _mmXXX_set1_ps(zy));
             SWint i0 = MID_VTX_RIGHT + 0;
             SWint i1 = MID_VTX_RIGHT + 1;
             UPDATE_TILE_EVENTS_Y(i0);
@@ -118,15 +146,27 @@ void TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
                 end_event += end_delta;
 #endif // TIGHT_TRANVERSAL
 
-                NAME(_swProcessScanline_L1R1)
-                (ctx->coverage, start, end, MID_VTX_RIGHT + 1 /* left_event */,
-                 MID_VTX_RIGHT + 0 /* right_event*/, tri_event, tile_row_ndx);
+#ifdef IS_OCCLUDER
+                const SWint res = NAME(_swProcessScanlineOccluder_L1R1)(
+#else
+                const SWint res = NAME(_swProcessScanline_L1R1)(
+#endif
+                    (SWztile *)ctx->ztiles, start, end,
+                    MID_VTX_RIGHT + 1 /* left_event */,
+                    MID_VTX_RIGHT + 0 /* right_event*/, tri_event, tile_row_ndx,
+                    tri_zmin, tri_zmax, z0, zx);
+
+#ifndef IS_OCCLUDER
+                if (res) {
+                    return 1;
+                }
+#endif
 
                 tile_row_ndx += ctx->cov_tile_w;
                 if (tile_row_ndx >= tile_end_row_ndx) {
                     break;
                 }
-
+                (*z0) = _mmXXX_add_ps(*z0, _mmXXX_set1_ps(zy));
                 UPDATE_TILE_EVENTS_Y(i0);
                 UPDATE_TILE_EVENTS_Y(i1);
             }
@@ -156,20 +196,38 @@ void TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
                 end_event += end_delta;
 #endif // TIGHT_TRANVERSAL
 
-                NAME(_swProcessScanline_L1R1)
-                (ctx->coverage, start, end, MID_VTX_RIGHT + 1 /* left_event */,
-                 MID_VTX_RIGHT + 0 /* right_event*/, tri_event, tile_row_ndx);
+#ifdef IS_OCCLUDER
+                const SWint res = NAME(_swProcessScanlineOccluder_L1R1)(
+#else
+                const SWint res = NAME(_swProcessScanline_L1R1)(
+#endif
+                    (SWztile *)ctx->ztiles, start, end,
+                    MID_VTX_RIGHT + 1 /* left_event */,
+                    MID_VTX_RIGHT + 0 /* right_event*/, tri_event, tile_row_ndx,
+                    tri_zmin, tri_zmax, z0, zx);
+#ifndef IS_OCCLUDER
+                if (res) {
+                    return 1;
+                }
+#endif
 
                 tile_row_ndx += ctx->cov_tile_w;
                 if (tile_row_ndx >= tile_end_row_ndx) {
                     break;
                 }
-
+                (*z0) = _mmXXX_add_ps(*z0, _mmXXX_set1_ps(zy));
                 UPDATE_TILE_EVENTS_Y(i0);
                 UPDATE_TILE_EVENTS_Y(i1);
             }
         }
     }
+
+#ifdef IS_OCCLUDER
+    return 1;
+#else
+    return 0;
+#endif
+
 #undef LEFT_EDGE_BIAS
 #undef RIGHT_EDGE_BIAS
 #undef UPDATE_TILE_EVENTS_Y
