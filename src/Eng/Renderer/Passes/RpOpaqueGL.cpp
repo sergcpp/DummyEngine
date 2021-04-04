@@ -156,7 +156,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
 
     Ren::RastState rast_state;
     rast_state.depth_test.enabled = true;
-    if (render_flags_ & EnableZFill) {
+    if ((render_flags_ & (EnableZFill | DebugWireframe)) == EnableZFill) {
         rast_state.depth_test.func = Ren::eTestFunc::Equal;
     } else {
         rast_state.depth_test.func = Ren::eTestFunc::LEqual;

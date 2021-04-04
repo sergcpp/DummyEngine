@@ -432,7 +432,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         //
         // Skydome drawing
         //
-        if ((list.render_flags & DebugWireframe) == 0 && list.env.env_map) {
+        if (list.env.env_map) {
             rp_skydome_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk_,
                               SHARED_DATA_BUF, MAIN_COLOR_TEX, MAIN_SPEC_TEX,
                               MAIN_DEPTH_TEX);
@@ -445,7 +445,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         //
         // Depth prepass
         //
-        if (list.render_flags & EnableZFill) {
+        if ((list.render_flags & (EnableZFill | DebugWireframe)) == EnableZFill) {
             rp_depth_fill_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk_,
                                  INSTANCES_BUF, SHARED_DATA_BUF, MAIN_DEPTH_TEX,
                                  MAIN_VELOCITY_TEX);
