@@ -190,8 +190,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
     const Mat4f view_from_identity = view_from_world * Mat4f{1.0f},
                 clip_from_identity = clip_from_view * view_from_identity;
 
-    const uint32_t SkipCheckBit = (1u << 31u);
-    const uint32_t IndexBits = ~SkipCheckBit;
+    const uint32_t SkipFrustumCheckBit = (1u << 31u);
+    const uint32_t IndexBits = ~SkipFrustumCheckBit;
 
     uint32_t stack[MAX_STACK_SIZE];
     uint32_t stack_size = 0;
@@ -207,23 +207,23 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
         stack[stack_size++] = scene.root_node;
 
         while (stack_size && culling_enabled) {
-            uint32_t cur = stack[--stack_size] & IndexBits;
-            uint32_t skip_check = (stack[stack_size] & SkipCheckBit);
+            const uint32_t cur = stack[--stack_size] & IndexBits;
+            uint32_t skip_frustum_check = (stack[stack_size] & SkipFrustumCheckBit);
             const bvh_node_t *n = &scene.nodes[cur];
 
-            if (!skip_check) {
+            if (!skip_frustum_check) {
                 const eVisResult res =
                     list.draw_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
                 if (res == eVisResult::Invisible) {
                     continue;
                 } else if (res == eVisResult::FullyVisible) {
-                    skip_check = SkipCheckBit;
+                    skip_frustum_check = SkipFrustumCheckBit;
                 }
             }
 
             if (!n->prim_count) {
-                stack[stack_size++] = skip_check | n->left_child;
-                stack[stack_size++] = skip_check | n->right_child;
+                stack[stack_size++] = skip_frustum_check | n->left_child;
+                stack[stack_size++] = skip_frustum_check | n->right_child;
             } else {
                 const SceneObject &obj = scene.objects[n->prim_index];
 
@@ -231,9 +231,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                 if ((obj.comp_mask & occluder_flags) == occluder_flags) {
                     const Transform &tr = transforms[obj.components[CompTransform]];
 
-                    // Node has slightly enlarged bounds, so we still need to check
-                    // object's bounding box here
-                    if (!skip_check &&
+                    // Node has slightly enlarged bounds, so we need to check object's
+                    // bounding box here
+                    if (!skip_frustum_check &&
                         list.draw_cam.CheckFrustumVisibility(
                             tr.bbox_min_ws, tr.bbox_max_ws) == eVisResult::Invisible) {
                         continue;
@@ -287,46 +287,47 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
         while (stack_size) {
             const uint32_t cur = stack[--stack_size] & IndexBits;
-            uint32_t skip_check = stack[stack_size] & SkipCheckBit;
+            uint32_t skip_check = stack[stack_size] & SkipFrustumCheckBit;
             const bvh_node_t *n = &scene.nodes[cur];
 
+            const float bbox_points[8][3] = {BBOX_POINTS(n->bbox_min, n->bbox_max)};
+
             if (!skip_check) {
-                const float bbox_points[8][3] = {BBOX_POINTS(n->bbox_min, n->bbox_max)};
                 const eVisResult res = list.draw_cam.CheckFrustumVisibility(bbox_points);
                 if (res == eVisResult::Invisible) {
                     continue;
                 } else if (res == eVisResult::FullyVisible) {
-                    skip_check = SkipCheckBit;
+                    skip_check = SkipFrustumCheckBit;
                 }
+            }
 
-                if (culling_enabled) {
-                    const Vec3f &cam_pos = list.draw_cam.world_position();
+            if (culling_enabled) {
+                const Vec3f &cam_pos = list.draw_cam.world_position();
 
-                    // do not question visibility of the node in which we are inside
-                    if (cam_pos[0] < n->bbox_min[0] - 0.5f ||
-                        cam_pos[1] < n->bbox_min[1] - 0.5f ||
-                        cam_pos[2] < n->bbox_min[2] - 0.5f ||
-                        cam_pos[0] > n->bbox_max[0] + 0.5f ||
-                        cam_pos[1] > n->bbox_max[1] + 0.5f ||
-                        cam_pos[2] > n->bbox_max[2] + 0.5f) {
-                        SWcull_surf surf;
+                // do not question visibility of the node in which we are inside
+                if (cam_pos[0] < n->bbox_min[0] - 0.5f ||
+                    cam_pos[1] < n->bbox_min[1] - 0.5f ||
+                    cam_pos[2] < n->bbox_min[2] - 0.5f ||
+                    cam_pos[0] > n->bbox_max[0] + 0.5f ||
+                    cam_pos[1] > n->bbox_max[1] + 0.5f ||
+                    cam_pos[2] > n->bbox_max[2] + 0.5f) {
+                    SWcull_surf surf;
 
-                        surf.type = SW_OCCLUDEE;
-                        surf.prim_type = SW_TRIANGLES;
-                        surf.index_type = SW_UNSIGNED_BYTE;
-                        surf.attribs = &bbox_points[0][0];
-                        surf.indices = &bbox_indices[0];
-                        surf.stride = 3 * sizeof(float);
-                        surf.count = 36;
-                        surf.base_vertex = 0;
-                        surf.xform = ValuePtr(clip_from_identity);
-                        surf.dont_skip = nullptr;
+                    surf.type = SW_OCCLUDEE;
+                    surf.prim_type = SW_TRIANGLES;
+                    surf.index_type = SW_UNSIGNED_BYTE;
+                    surf.attribs = &bbox_points[0][0];
+                    surf.indices = &bbox_indices[0];
+                    surf.stride = 3 * sizeof(float);
+                    surf.count = 36;
+                    surf.base_vertex = 0;
+                    surf.xform = ValuePtr(clip_from_identity);
+                    surf.dont_skip = nullptr;
 
-                        swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
+                    swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
-                        if (surf.visible == 0) {
-                            continue;
-                        }
+                    if (surf.visible == 0) {
+                        continue;
                     }
                 }
             }
@@ -342,46 +343,46 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                       CompLightSourceBit | CompProbeBit))) { // NOLINT
                     const Transform &tr = transforms[obj.components[CompTransform]];
 
-                    if (!skip_check) {
-                        const float bbox_points[8][3] = {
-                            BBOX_POINTS(tr.bbox_min_ws, tr.bbox_max_ws)};
+                    const float bbox_points[8][3] = {
+                        BBOX_POINTS(tr.bbox_min_ws, tr.bbox_max_ws)};
 
+                    if (!skip_check) {
                         // Node has slightly enlarged bounds, so we need to check object's
                         // bounding box here
                         if (list.draw_cam.CheckFrustumVisibility(bbox_points) ==
                             eVisResult::Invisible) {
                             continue;
                         }
+                    }
 
-                        if (culling_enabled) {
-                            const Vec3f &cam_pos = list.draw_cam.world_position();
+                    if (culling_enabled) {
+                        const Vec3f &cam_pos = list.draw_cam.world_position();
 
-                            // do not question visibility of the object in which we are
-                            // inside
-                            if (cam_pos[0] < tr.bbox_min_ws[0] - 0.5f ||
-                                cam_pos[1] < tr.bbox_min_ws[1] - 0.5f ||
-                                cam_pos[2] < tr.bbox_min_ws[2] - 0.5f ||
-                                cam_pos[0] > tr.bbox_max_ws[0] + 0.5f ||
-                                cam_pos[1] > tr.bbox_max_ws[1] + 0.5f ||
-                                cam_pos[2] > tr.bbox_max_ws[2] + 0.5f) {
-                                SWcull_surf surf;
+                        // do not question visibility of the object in which we are
+                        // inside
+                        if (cam_pos[0] < tr.bbox_min_ws[0] - 0.5f ||
+                            cam_pos[1] < tr.bbox_min_ws[1] - 0.5f ||
+                            cam_pos[2] < tr.bbox_min_ws[2] - 0.5f ||
+                            cam_pos[0] > tr.bbox_max_ws[0] + 0.5f ||
+                            cam_pos[1] > tr.bbox_max_ws[1] + 0.5f ||
+                            cam_pos[2] > tr.bbox_max_ws[2] + 0.5f) {
+                            SWcull_surf surf;
 
-                                surf.type = SW_OCCLUDEE;
-                                surf.prim_type = SW_TRIANGLES;
-                                surf.index_type = SW_UNSIGNED_BYTE;
-                                surf.attribs = &bbox_points[0][0];
-                                surf.indices = &bbox_indices[0];
-                                surf.stride = 3 * sizeof(float);
-                                surf.count = 36;
-                                surf.base_vertex = 0;
-                                surf.xform = ValuePtr(clip_from_identity);
-                                surf.dont_skip = nullptr;
+                            surf.type = SW_OCCLUDEE;
+                            surf.prim_type = SW_TRIANGLES;
+                            surf.index_type = SW_UNSIGNED_BYTE;
+                            surf.attribs = &bbox_points[0][0];
+                            surf.indices = &bbox_indices[0];
+                            surf.stride = 3 * sizeof(float);
+                            surf.count = 36;
+                            surf.base_vertex = 0;
+                            surf.xform = ValuePtr(clip_from_identity);
+                            surf.dont_skip = nullptr;
 
-                                swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
+                            swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
-                                if (surf.visible == 0) {
-                                    continue;
-                                }
+                            if (surf.visible == 0) {
+                                continue;
                             }
                         }
                     }
@@ -1030,7 +1031,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
             while (stack_size) {
                 const uint32_t cur = stack[--stack_size] & IndexBits;
-                uint32_t skip_check = stack[stack_size] & SkipCheckBit;
+                uint32_t skip_check = stack[stack_size] & SkipFrustumCheckBit;
                 const bvh_node_t *n = &scene.nodes[cur];
 
                 if (!skip_check) {
@@ -1039,7 +1040,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                     if (res == eVisResult::Invisible) {
                         continue;
                     } else if (res == eVisResult::FullyVisible) {
-                        skip_check = SkipCheckBit;
+                        skip_check = SkipFrustumCheckBit;
                     }
                 }
 
