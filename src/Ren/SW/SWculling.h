@@ -28,12 +28,16 @@ typedef struct SWcull_surf {
 /************************************************************************/
 
 struct SWcull_ctx;
-typedef SWint (*TrianglesIndexedProcType)(struct SWcull_ctx *ctx, const void *attribs,
-                                          const SWuint *indices, SWuint stride,
-                                          SWuint index_count, const SWfloat *xform,
-                                          SWint is_occluder);
-typedef void (*ClearBufferProcType)(struct SWcull_ctx *ctx);
-typedef void (*DebugDepthProcType)(struct SWcull_ctx *ctx, SWfloat *out_depth);
+typedef SWint (*SWCullTrianglesIndexedProcType)(struct SWcull_ctx *ctx,
+                                                const void *attribs,
+                                                const SWuint *indices, SWuint stride,
+                                                SWuint index_count, const SWfloat *xform,
+                                                SWint is_occluder);
+typedef SWint (*SWCullRectProcType)(const struct SWcull_ctx *ctx, const SWfloat p_min[2],
+                                    const SWfloat p_max[3], const SWfloat w_min);
+typedef void (*SWCullClearBufferProcType)(struct SWcull_ctx *ctx);
+typedef void (*SWCullDebugDepthProcType)(const struct SWcull_ctx *ctx,
+                                         SWfloat *out_depth);
 
 enum eClipPlane { Left, Right, Top, Bottom, Near, _PlanesCount };
 
@@ -45,13 +49,17 @@ typedef struct SWcull_ctx {
     SWfloat near_clip;
 
     SWint tile_size_y, subtile_size_y;
-    SWint cov_tile_w, cov_tile_h;
+    SWint tile_w, tile_h;
     void *ztiles;
     SWuint ztiles_mem_size;
 
-    TrianglesIndexedProcType tri_indexed_proc;
-    ClearBufferProcType clear_buf_proc;
-    DebugDepthProcType debug_depth_proc;
+    SWCullTrianglesIndexedProcType tri_indexed_proc;
+    SWCullRectProcType test_rect_proc;
+    SWCullClearBufferProcType clear_buf_proc;
+    SWCullDebugDepthProcType debug_depth_proc;
+
+    ALIGNED(SWint size_ivec4[4], 16);
+    ALIGNED(SWfloat half_size_vec4[4], 16);
 
     ALIGNED(SWfloat clip_planes[_PlanesCount][4], 16);
 } SWcull_ctx;
@@ -62,6 +70,9 @@ void swCullCtxDestroy(SWcull_ctx *ctx);
 void swCullCtxResize(SWcull_ctx *ctx, SWint w, SWint h, SWfloat near_clip);
 void swCullCtxClear(SWcull_ctx *ctx);
 void swCullCtxSubmitCullSurfs(SWcull_ctx *ctx, SWcull_surf *surfs, SWuint count);
+
+SWint swCullCtxTestRect(SWcull_ctx *ctx, const SWfloat p_min[2], const SWfloat p_max[3],
+                        SWfloat w_min);
 
 void swCullCtxDebugDepth(SWcull_ctx *ctx, SWfloat *out_depth);
 

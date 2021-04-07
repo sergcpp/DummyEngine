@@ -7,8 +7,10 @@ SWint _swProcessTrianglesIndexed_Ref(SWcull_ctx *ctx, const void *attribs,
                                      const SWuint *indices, SWuint stride,
                                      SWuint index_count, const SWfloat *xform,
                                      SWint is_occluder);
+SWint _swCullCtxTestRect_Ref(const SWcull_ctx *ctx, const SWfloat p_min[2],
+                             const SWfloat p_max[3], const SWfloat w_min);
 void _swCullCtxClearBuf_Ref(SWcull_ctx *ctx);
-void _swCullCtxDebugDepth_Ref(SWcull_ctx *ctx, SWfloat *out_depth);
+void _swCullCtxDebugDepth_Ref(const SWcull_ctx *ctx, SWfloat *out_depth);
 
 #ifndef __ANDROID__
 SWint _swProcessTrianglesIndexed_SSE2(SWcull_ctx *ctx, const void *attribs,
@@ -24,13 +26,20 @@ SWint _swProcessTrianglesIndexed_AVX512(SWcull_ctx *ctx, const void *attribs,
                                         SWuint index_count, const SWfloat *xform,
                                         SWint is_occluder);
 
-void _swCullCtxDebugDepth_SSE2(SWcull_ctx *ctx, SWfloat *out_depth);
-void _swCullCtxDebugDepth_AVX2(SWcull_ctx *ctx, SWfloat *out_depth);
-void _swCullCtxDebugDepth_AVX512(SWcull_ctx *ctx, SWfloat *out_depth);
+SWint _swCullCtxTestRect_SSE2(const SWcull_ctx *ctx, const SWfloat p_min[2],
+                              const SWfloat p_max[3], const SWfloat w_min);
+SWint _swCullCtxTestRect_AVX2(const SWcull_ctx *ctx, const SWfloat p_min[2],
+                              const SWfloat p_max[3], const SWfloat w_min);
+SWint _swCullCtxTestRect_AVX512(const SWcull_ctx *ctx, const SWfloat p_min[2],
+                                const SWfloat p_max[3], const SWfloat w_min);
 
 void _swCullCtxClearBuf_SSE2(SWcull_ctx *ctx);
 void _swCullCtxClearBuf_AVX2(SWcull_ctx *ctx);
 void _swCullCtxClearBuf_AVX512(SWcull_ctx *ctx);
+
+void _swCullCtxDebugDepth_SSE2(const SWcull_ctx *ctx, SWfloat *out_depth);
+void _swCullCtxDebugDepth_AVX2(const SWcull_ctx *ctx, SWfloat *out_depth);
+void _swCullCtxDebugDepth_AVX512(const SWcull_ctx *ctx, SWfloat *out_depth);
 #endif
 
 void swCullCtxInit(SWcull_ctx *ctx, const SWint w, const SWint h, SWfloat near_clip) {
@@ -64,47 +73,63 @@ void swCullCtxResize(SWcull_ctx *ctx, const SWint w, const SWint h, SWfloat near
         ctx->tile_size_y = 16;
         ctx->subtile_size_y = 4;
         ctx->tri_indexed_proc =
-            (TrianglesIndexedProcType)&_swProcessTrianglesIndexed_AVX512;
+            (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_AVX512;
+        ctx->test_rect_proc = &_swCullCtxTestRect_AVX512;
         ctx->clear_buf_proc = &_swCullCtxClearBuf_AVX512;
-        ctx->debug_depth_proc = (DebugDepthProcType)&_swCullCtxDebugDepth_AVX512;
+        ctx->debug_depth_proc = (SWCullDebugDepthProcType)&_swCullCtxDebugDepth_AVX512;
     } else if (ctx->cpu_info.avx2_supported) {
         ctx->tile_size_y = 8;
         ctx->subtile_size_y = 4;
         ctx->tri_indexed_proc =
-            (TrianglesIndexedProcType)&_swProcessTrianglesIndexed_AVX2;
+            (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_AVX2;
+        ctx->test_rect_proc = &_swCullCtxTestRect_AVX2;
         ctx->clear_buf_proc = &_swCullCtxClearBuf_AVX2;
-        ctx->debug_depth_proc = (DebugDepthProcType)&_swCullCtxDebugDepth_AVX2;
+        ctx->debug_depth_proc = (SWCullDebugDepthProcType)&_swCullCtxDebugDepth_AVX2;
     } else if (ctx->cpu_info.sse2_supported) {
         ctx->tile_size_y = 4;
         ctx->subtile_size_y = 4;
         ctx->tri_indexed_proc =
-            (TrianglesIndexedProcType)&_swProcessTrianglesIndexed_SSE2;
+            (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_SSE2;
+        ctx->test_rect_proc = &_swCullCtxTestRect_SSE2;
         ctx->clear_buf_proc = &_swCullCtxClearBuf_SSE2;
-        ctx->debug_depth_proc = (DebugDepthProcType)&_swCullCtxDebugDepth_SSE2;
+        ctx->debug_depth_proc = (SWCullDebugDepthProcType)&_swCullCtxDebugDepth_SSE2;
     } else
 #endif
     {
         ctx->tile_size_y = 1;
         ctx->subtile_size_y = 1;
-        ctx->tri_indexed_proc = (TrianglesIndexedProcType)&_swProcessTrianglesIndexed_Ref;
+        ctx->tri_indexed_proc =
+            (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_Ref;
+        ctx->test_rect_proc = &_swCullCtxTestRect_Ref;
         ctx->clear_buf_proc = &_swCullCtxClearBuf_Ref;
-        ctx->debug_depth_proc = (DebugDepthProcType)&_swCullCtxDebugDepth_Ref;
+        ctx->debug_depth_proc = (SWCullDebugDepthProcType)&_swCullCtxDebugDepth_Ref;
     }
 
-    ctx->cov_tile_w = (w + (SW_CULL_TILE_SIZE_X - 1)) / SW_CULL_TILE_SIZE_X;
-    ctx->cov_tile_h = (h + (ctx->tile_size_y - 1)) / ctx->tile_size_y;
+    assert((w % SW_CULL_SUBTILE_X == 0) && (h % ctx->subtile_size_y == 0));
+
+    ctx->tile_w = (w + (SW_CULL_TILE_SIZE_X - 1)) / SW_CULL_TILE_SIZE_X;
+    ctx->tile_h = (h + (ctx->tile_size_y - 1)) / ctx->tile_size_y;
 
     const int tile_size = SW_CULL_TILE_SIZE_X * ctx->tile_size_y / 8 +
                           2 * sizeof(float) * (SW_CULL_TILE_SIZE_X / SW_CULL_SUBTILE_X) *
                               (ctx->tile_size_y / ctx->subtile_size_y);
 
-    ctx->ztiles_mem_size = ctx->cov_tile_w * ctx->cov_tile_h * tile_size;
+    ctx->ztiles_mem_size = ctx->tile_w * ctx->tile_h * tile_size;
     sw_aligned_free(ctx->ztiles);
     ctx->ztiles = sw_aligned_malloc(ctx->ztiles_mem_size, 64);
+
+    assert((uintptr_t)ctx->size_ivec4 % 16 == 0);
+    __m128i *size_ivec4 = (__m128i *)ctx->size_ivec4;
+    (*size_ivec4) = _mm128_setr_epi32(ctx->w, ctx->w, ctx->h, ctx->h);
+
+    assert((uintptr_t)ctx->half_size_vec4 % 16 == 0);
+    __m128 *half_size = (__m128 *)ctx->half_size_vec4;
+    (*half_size) = _mm128_setr_ps(ctx->half_w, ctx->half_w, ctx->half_h, ctx->half_h);
 
     const SWfloat pad_w = ((SWfloat)2) / ctx->w;
     const SWfloat pad_h = ((SWfloat)2) / ctx->h;
 
+    assert((uintptr_t)ctx->clip_planes % 16 == 0);
     __m128 *clip_planes = (__m128 *)ctx->clip_planes;
     clip_planes[0] = _mm128_setr_ps(1.0f - pad_w, 0.0f, 1.0f, 0.0f);
     clip_planes[1] = _mm128_setr_ps(-1.0f + pad_w, 0.0f, 1.0f, 0.0f);
@@ -134,6 +159,11 @@ void swCullCtxSubmitCullSurfs(SWcull_ctx *ctx, SWcull_surf *surfs, const SWuint 
         } else {
         }
     }
+}
+
+SWint swCullCtxTestRect(SWcull_ctx *ctx, const SWfloat p_min[2], const SWfloat p_max[3],
+                        const SWfloat w_min) {
+    return (*ctx->test_rect_proc)(ctx, p_min, p_max, w_min);
 }
 
 SWint _swClipPolygon(const __m128 in_vtx[], const SWint in_vtx_count, const __m128 plane,

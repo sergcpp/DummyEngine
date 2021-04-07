@@ -217,8 +217,8 @@ SWint _swProcessScanline_Ref(SWztile ztiles[], const SWint left_offset,
                              const SWint left_count, const SWint right_event,
                              const SWint right_count, const SWint events[3],
                              SWint tile_ndx, const SWfloat zmin_tri,
-                             const SWfloat zmax_tri, const SWfloat _z0[4], const SWfloat z_dx,
-                             SWint is_occluder) {
+                             const SWfloat zmax_tri, const SWfloat _z0[4],
+                             const SWfloat z_dx, SWint is_occluder) {
     SWint event_offset = (left_offset << SW_CULL_TILE_WIDTH_SHIFT);
 
     SWint left[2], right[2];
@@ -337,7 +337,7 @@ SWint _swRasterizeTriangle_Ref(SWcull_ctx *ctx, SWint tile_row_ndx,
                                const SWint use_tight_traversal, const SWint flat_bottom,
                                const SWint is_occluder) {
     SWztile *ztiles = (SWztile *)ctx->ztiles;
-    const SWint tile_count = ctx->cov_tile_w * ctx->cov_tile_h;
+    const SWint tile_count = ctx->tile_w * ctx->tile_h;
 
 #define LEFT_EDGE_BIAS 0
 #define RIGHT_EDGE_BIAS 0
@@ -395,7 +395,7 @@ SWint _swRasterizeTriangle_Ref(SWcull_ctx *ctx, SWint tile_row_ndx,
                 return 1;
             }
 
-            tile_row_ndx += ctx->cov_tile_w;
+            tile_row_ndx += ctx->tile_w;
             for (SWint j = 0; j < 4; j++) {
                 z0[j] += z_dy;
             }
@@ -438,7 +438,7 @@ SWint _swRasterizeTriangle_Ref(SWcull_ctx *ctx, SWint tile_row_ndx,
                 return 1;
             }
 
-            tile_row_ndx += ctx->cov_tile_w;
+            tile_row_ndx += ctx->tile_w;
         }
 
         // top half of triangle
@@ -473,7 +473,7 @@ SWint _swRasterizeTriangle_Ref(SWcull_ctx *ctx, SWint tile_row_ndx,
                     return 1;
                 }
 
-                tile_row_ndx += ctx->cov_tile_w;
+                tile_row_ndx += ctx->tile_w;
                 if (tile_row_ndx >= tile_end_row_ndx) {
                     break;
                 }
@@ -520,7 +520,7 @@ SWint _swRasterizeTriangle_Ref(SWcull_ctx *ctx, SWint tile_row_ndx,
                     return 1;
                 }
 
-                tile_row_ndx += ctx->cov_tile_w;
+                tile_row_ndx += ctx->tile_w;
                 if (tile_row_ndx >= tile_end_row_ndx) {
                     break;
                 }
@@ -543,7 +543,7 @@ SWint _swRasterizeTriangle_Ref(SWcull_ctx *ctx, SWint tile_row_ndx,
 
 SWint _swProcessTriangle_Ref(SWcull_ctx *ctx, SWfloat v0[3], SWfloat v1[3], SWfloat v2[3],
                              SWint is_occluder) {
-    const SWint tile_count = ctx->cov_tile_w * ctx->cov_tile_h;
+    const SWint tile_count = ctx->tile_w * ctx->tile_h;
 
     SWint bb_min[2], bb_max[2];
 
@@ -566,8 +566,8 @@ SWint _swProcessTriangle_Ref(SWcull_ctx *ctx, SWfloat v0[3], SWfloat v1[3], SWfl
     // clamp to frame bounds
     bb_min[0] = sw_max(bb_min[0], 0);
     bb_min[1] = sw_max(bb_min[1], 0);
-    bb_max[0] = sw_min(bb_max[0], ctx->cov_tile_w * SW_CULL_TILE_SIZE_X);
-    bb_max[1] = sw_min(bb_max[1], ctx->cov_tile_h * SW_CULL_TILE_SIZE_Y);
+    bb_max[0] = sw_min(bb_max[0], ctx->tile_w * SW_CULL_TILE_SIZE_X);
+    bb_max[1] = sw_min(bb_max[1], ctx->tile_h * SW_CULL_TILE_SIZE_Y);
 
     if (bb_min[0] == bb_max[0] || bb_min[1] == bb_max[1]) {
         return 0;
@@ -677,9 +677,9 @@ SWint _swProcessTriangle_Ref(SWcull_ctx *ctx, SWfloat v0[3], SWfloat v1[3], SWfl
     // Split bounding box into bottom - middle - top region
     //
 
-    SWint bbox_bottom_ndx = bb_tile_min[0] + bb_tile_min[1] * ctx->cov_tile_w;
-    SWint bbox_top_ndx = bb_tile_min[0] + bb_tile_max[1] * ctx->cov_tile_w;
-    SWint bbox_mid_ndx = bb_tile_min[0] + bb_mid_tile_y * ctx->cov_tile_w;
+    SWint bbox_bottom_ndx = bb_tile_min[0] + bb_tile_min[1] * ctx->tile_w;
+    SWint bbox_top_ndx = bb_tile_min[0] + bb_tile_max[1] * ctx->tile_w;
+    SWint bbox_mid_ndx = bb_tile_min[0] + bb_mid_tile_y * ctx->tile_w;
 
     SWint res = 0;
 
@@ -905,7 +905,111 @@ SWint _swProcessTrianglesIndexed_Ref(SWcull_ctx *ctx, const void *attribs,
     return res;
 }
 
-void _swCullCtxDebugDepth_Ref(SWcull_ctx *ctx, SWfloat *out_depth) {
+SWint _swCullCtxTestRect_Ref(const SWcull_ctx *ctx, const SWfloat p_min[2],
+                             const SWfloat p_max[3], const SWfloat w_min) {
+#define SIMD_TILE_PAD _mm128_setr_epi32(0, SW_CULL_TILE_SIZE_X - 1, 0, SW_CULL_TILE_SIZE_Y - 1)
+#define SIMD_TILE_PAD_MASK                                                               \
+    _mm128_setr_epi32(~(SW_CULL_TILE_SIZE_X - 1), ~(SW_CULL_TILE_SIZE_X - 1),            \
+                      ~(SW_CULL_TILE_SIZE_Y - 1), ~(SW_CULL_TILE_SIZE_Y - 1))
+#define SIMD_SUBTILE_PAD _mm128_setr_epi32(0, SW_CULL_SUBTILE_X, 0, SW_CULL_SUBTILE_Y)
+#define SIMD_SUBTILE_PAD_MASK                                                            \
+    _mm128_setr_epi32(~(SW_CULL_SUBTILE_X - 1), ~(SW_CULL_SUBTILE_X - 1),                \
+                      ~(SW_CULL_SUBTILE_Y - 1), ~(SW_CULL_SUBTILE_Y - 1))
+
+    const SWztile *ztiles = (SWztile *)ctx->ztiles;
+
+    __m128i *size = (__m128i *)ctx->size_ivec4;
+    __m128 *half_size = (__m128 *)ctx->half_size_vec4;
+
+    if (p_min[0] > p_max[0] || p_min[1] > p_max[1]) {
+        return 0;
+    }
+
+    __m128 px_bbox = _mm128_fmadd_ps(_mm_setr_ps(p_min[0], p_max[0], p_min[1], p_max[1]),
+                                     (*half_size), (*half_size));
+
+    __m128i px_bboxi = _mm128_cvtps_epi32(px_bbox);
+    px_bboxi = _mm128_max_epi32(px_bboxi, _mm128_setzero_si128());
+    px_bboxi = _mm128_min_epi32(px_bboxi, (*size));
+
+    union {
+        __m128i vec;
+        SWint i32[4];
+    } tile_bboxi, subtile_bboxi;
+
+    tile_bboxi.vec =
+        _mm128_and_si128(_mm128_add_epi32(px_bboxi, SIMD_TILE_PAD), SIMD_TILE_PAD_MASK);
+    SWint tile_min_x = tile_bboxi.i32[0] >> SW_CULL_TILE_WIDTH_SHIFT;
+    SWint tile_max_x = tile_bboxi.i32[1] >> SW_CULL_TILE_WIDTH_SHIFT;
+    SWint tile_min_y = tile_bboxi.i32[2] >> SW_CULL_TILE_HEIGHT_SHIFT;
+    SWint tile_max_y = tile_bboxi.i32[3] >> SW_CULL_TILE_HEIGHT_SHIFT;
+    SWint tile_row_ndx = (tile_bboxi.i32[2] >> SW_CULL_TILE_HEIGHT_SHIFT) * ctx->tile_w;
+    SWint tile_row_end = (tile_bboxi.i32[3] >> SW_CULL_TILE_HEIGHT_SHIFT) * ctx->tile_w;
+
+    subtile_bboxi.vec = _mm128_and_si128(_mm128_add_epi32(px_bboxi, SIMD_SUBTILE_PAD),
+                                         SIMD_SUBTILE_PAD_MASK);
+    SWint stile_min_x = subtile_bboxi.i32[0];
+    SWint stile_min_y = subtile_bboxi.i32[2];
+    SWint stile_max_x = subtile_bboxi.i32[1];
+    SWint stile_max_y = subtile_bboxi.i32[3];
+
+    const SWint start_px_x[4] = {tile_bboxi.i32[0] + 0 * SW_CULL_SUBTILE_X,
+                                 tile_bboxi.i32[0] + 1 * SW_CULL_SUBTILE_X,
+                                 tile_bboxi.i32[0] + 2 * SW_CULL_SUBTILE_X,
+                                 tile_bboxi.i32[0] + 3 * SW_CULL_SUBTILE_X};
+    SWint px_y = tile_bboxi.i32[2];
+
+    const SWfloat z_max = 1 / w_min;
+
+    while (1) {
+        SWint px_x[4];
+        memcpy(px_x, start_px_x, 4 * sizeof(SWint));
+        SWint tile_x = tile_min_x;
+        while (1) {
+            const SWint tile_ndx = tile_row_ndx + tile_x;
+#ifdef SW_CULL_QUICK_MASK
+            const SWfloat *z_min0_buf = ztiles[tile_ndx].zmin[0];
+#else
+#error "Not implemented!"
+#endif
+            uint32_t z_pass = 0;
+            for (SWint j = 0; j < 4; j++) {
+                if (z_max >= z_min0_buf[j] && px_x[j] >= stile_min_x &&
+                    px_y >= stile_min_y && px_x[j] < stile_max_x && px_y < stile_max_y) {
+                    z_pass |= (0xff << j * 8);
+                }
+            }
+
+            if (z_pass) {
+                return 1;
+            }
+
+            if (++tile_x >= tile_max_x) {
+                break;
+            }
+
+            for (SWint j = 0; j < 4; j++) {
+                px_x[j] += SW_CULL_TILE_SIZE_X;
+            }
+        }
+
+        tile_row_ndx += ctx->tile_w;
+        if (tile_row_ndx >= tile_row_end) {
+            break;
+        }
+
+        px_y += SW_CULL_TILE_SIZE_Y;
+    }
+
+    return 0;
+
+#undef SIMD_TILE_PAD
+#undef SIMD_TILE_PAD_MASK
+#undef SIMD_SUBTILE_PAD
+#undef SIMD_SUBTILE_PAD_MASK
+}
+
+void _swCullCtxDebugDepth_Ref(const SWcull_ctx *ctx, SWfloat *out_depth) {
     const SWztile *ztiles = (SWztile *)ctx->ztiles;
 
     for (SWint y = 0; y < ctx->h; y++) {
@@ -913,7 +1017,7 @@ void _swCullCtxDebugDepth_Ref(SWcull_ctx *ctx, SWfloat *out_depth) {
         for (SWint x = 0; x < ctx->w; x++) {
             const SWint tx = x / SW_CULL_TILE_SIZE_X;
 
-            const SWint tile_ndx = ty * ctx->cov_tile_w + tx;
+            const SWint tile_ndx = ty * ctx->tile_w + tx;
 
 #if 1 // in case it is transposed
             SWint stx = (x % SW_CULL_TILE_SIZE_X) / SW_CULL_SUBTILE_X;
@@ -947,7 +1051,7 @@ void _swCullCtxDebugDepth_Ref(SWcull_ctx *ctx, SWfloat *out_depth) {
 void _swCullCtxClearBuf_Ref(SWcull_ctx *ctx) {
     SWztile *ztiles = (SWztile *)ctx->ztiles;
 
-    for (SWint i = 0; i < ctx->cov_tile_w * ctx->cov_tile_h; i++) {
+    for (SWint i = 0; i < ctx->tile_w * ctx->tile_h; i++) {
         ztiles[i].mask = 0;
 
         ztiles[i].zmin[0][0] = ztiles[i].zmin[0][1] = ztiles[i].zmin[0][2] =

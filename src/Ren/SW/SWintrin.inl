@@ -48,6 +48,7 @@ typedef __m128i __mXXXi;
 #define _mmXXX_cmpgt_ps _mm_cmpgt_ps
 #define _mmXXX_cmpge_ps _mm_cmpge_ps
 #define _mmXXX_cmpeq_epi32 _mm_cmpeq_epi32
+#define _mmXXX_cmpgt_epi32 _mm_cmpgt_epi32
 
 #define _mmXXX_not_ps(v) _mm_xor_ps((v), _mm_castsi128_ps(_mm_set1_epi32(~0)))
 #define _mmXXX_not_siXXX(a) _mm_xor_si128((a), _mm_set1_epi32(~0))
@@ -179,6 +180,7 @@ typedef __m256i __mXXXi;
 #define _mmXXX_cmpgt_ps(a, b) _mm256_cmp_ps(a, b, _CMP_GT_OS)
 #define _mmXXX_cmpge_ps(a, b) _mm256_cmp_ps(a, b, _CMP_GE_OS)
 #define _mmXXX_cmpeq_epi32 _mm256_cmpeq_epi32
+#define _mmXXX_cmpgt_epi32 _mm256_cmpgt_epi32
 
 #define _mmXXX_not_ps(v) _mm256_xor_ps(v, _mm256_set1_ps(-0.0f))
 #define _mmXXX_not_siXXX(a) _mm256_xor_si256((a), _mm256_set1_epi32(~0))
@@ -275,6 +277,11 @@ static __m512 _mmXXX_cmpge_ps(__m512 a, __m512 b) {
 
 static __m512i _mmXXX_cmpeq_epi32(__m512i a, __m512i b) {
     __mmask16 mask = _mm512_cmpeq_epi32_mask(a, b);
+    return _mm512_mask_mov_epi32(_mm512_set1_epi32(0), mask, _mm512_set1_epi32(~0));
+}
+
+static __m512i _mmXXX_cmpgt_epi32(__m512i a, __m512i b) {
+    __mmask16 mask = _mm512_cmpgt_epi32_mask(a, b);
     return _mm512_mask_mov_epi32(_mm512_set1_epi32(0), mask, _mm512_set1_epi32(~0));
 }
 
@@ -381,8 +388,11 @@ static int32x4_t _mmXXX_sllv_ones(const int32x4_t ishift) {
 #endif
 
 #if !defined(USE_NEON)
+#define _mm128_setzero_si128 _mm_setzero_si128
 #define _mm128_set1_ps _mm_set1_ps
 #define _mm128_setr_ps _mm_setr_ps
+
+#define _mm128_setr_epi32 _mm_setr_epi32
 
 #define _mm128_add_ps _mm_add_ps
 #define _mm128_sub_ps _mm_sub_ps
@@ -391,9 +401,18 @@ static int32x4_t _mmXXX_sllv_ones(const int32x4_t ishift) {
 
 #define _mm128_fmadd_ps(a, b, c) _mm_add_ps(_mm_mul_ps(a, b), c)
 
+#define _mm128_add_epi32 _mm_add_epi32
+
+#define _mm128_and_si128 _mm_and_si128
+
+#define _mm128_min_epi32 _mm_min_epi32
+#define _mm128_max_epi32 _mm_max_epi32
+
 #define _mm128_xor_ps _mm_xor_ps
 
 #define _mm128_movemask_ps _mm_movemask_ps
+
+#define _mm128_cvtps_epi32 _mm_cvtps_epi32
 
 static inline __m128 _mm128_dp4_ps(const __m128 a, const __m128 b) {
     __m128 prod = _mm_mul_ps(a, b);

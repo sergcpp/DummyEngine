@@ -214,33 +214,54 @@ void NAME(_swComputeDepthPlane)(const __mXXX vX[3], const __mXXX vY[3],
 }
 
 #if defined(USE_SSE2)
+#define SIMD_SUB_TILE_COL_OFFSET_I                                                       \
+    _mm_setr_epi32(0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3)
 #define SIMD_SUB_TILE_COL_OFFSET_F                                                       \
     _mm_setr_ps(0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3)
+#define SIMD_SUB_TILE_ROW_OFFSET_I _mm_setzero_si128()
 #define SIMD_SUB_TILE_ROW_OFFSET_F _mm_setzero_ps()
 #elif defined(USE_AVX2)
+#define SIMD_SUB_TILE_COL_OFFSET_I                                                       \
+    _mm256_setr_epi32(0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2,                       \
+                      SW_CULL_SUBTILE_X * 3, 0, SW_CULL_SUBTILE_X,                       \
+                      SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3)
 #define SIMD_SUB_TILE_COL_OFFSET_F                                                       \
     _mm256_setr_ps(0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3,   \
                    0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3)
+#define SIMD_SUB_TILE_ROW_OFFSET_I                                                       \
+    _mm256_setr_epi32(0, 0, 0, 0, SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y,                  \
+                      SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y)
 #define SIMD_SUB_TILE_ROW_OFFSET_F                                                       \
     _mm256_setr_ps(0, 0, 0, 0, SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y,  \
                    SW_CULL_SUBTILE_Y)
 #elif defined(USE_AVX512)
+#define SIMD_SUB_TILE_COL_OFFSET_I                                                       \
+    _mm512_setr_epi32(                                                                   \
+        0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3, 0,           \
+        SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3, 0,              \
+        SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3, 0,              \
+        SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3)
 #define SIMD_SUB_TILE_COL_OFFSET_F                                                       \
     _mm512_setr_ps(0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3,   \
                    0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3,   \
                    0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3,   \
                    0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3)
+#define SIMD_SUB_TILE_ROW_OFFSET_I                                                       \
+    _mm512_setr_epi32(                                                                   \
+        0, 0, 0, 0, SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y,             \
+        SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y * 2, SW_CULL_SUBTILE_Y * 2,                 \
+        SW_CULL_SUBTILE_Y * 2, SW_CULL_SUBTILE_Y * 2, SW_CULL_SUBTILE_Y * 3,             \
+        SW_CULL_SUBTILE_Y * 3, SW_CULL_SUBTILE_Y * 3, SW_CULL_SUBTILE_Y * 3)
 #define SIMD_SUB_TILE_ROW_OFFSET_F                                                       \
     _mm512_setr_ps(0, 0, 0, 0, SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y,  \
                    SW_CULL_SUBTILE_Y, SW_CULL_SUBTILE_Y * 2, SW_CULL_SUBTILE_Y * 2,      \
                    SW_CULL_SUBTILE_Y * 2, SW_CULL_SUBTILE_Y * 2, SW_CULL_SUBTILE_Y * 3,  \
                    SW_CULL_SUBTILE_Y * 3, SW_CULL_SUBTILE_Y * 3, SW_CULL_SUBTILE_Y * 3)
-
 #endif
 
 SWint NAME(_swProcessTriangleBatch)(SWcull_ctx *ctx, __mXXX vX[3], __mXXX vY[3],
                                     __mXXX vZ[3], SWuint tri_mask, SWint is_occluder) {
-    const SWint tile_count = ctx->cov_tile_w * ctx->cov_tile_h;
+    const SWint tile_count = ctx->tile_w * ctx->tile_h;
 
     // find triangle bounds
     __mXXXi bb_px_min_x =
@@ -254,11 +275,11 @@ SWint NAME(_swProcessTriangleBatch)(SWcull_ctx *ctx, __mXXX vX[3], __mXXX vY[3],
 
     // clamp to frame bounds
     bb_px_min_x = _mmXXX_max_epi32(bb_px_min_x, _mmXXX_set1_epi32(0));
-    bb_px_max_x = _mmXXX_min_epi32(
-        bb_px_max_x, _mmXXX_set1_epi32(ctx->cov_tile_w * SW_CULL_TILE_SIZE_X));
+    bb_px_max_x = _mmXXX_min_epi32(bb_px_max_x,
+                                   _mmXXX_set1_epi32(ctx->tile_w * SW_CULL_TILE_SIZE_X));
     bb_px_min_y = _mmXXX_max_epi32(bb_px_min_y, _mmXXX_set1_epi32(0));
-    bb_px_max_y = _mmXXX_min_epi32(
-        bb_px_max_y, _mmXXX_set1_epi32(ctx->cov_tile_h * SW_CULL_TILE_SIZE_Y));
+    bb_px_max_y = _mmXXX_min_epi32(bb_px_max_y,
+                                   _mmXXX_set1_epi32(ctx->tile_h * SW_CULL_TILE_SIZE_Y));
 
     // snap to tiles (min % TILE_SIZE_, (max + TILE_SIZE_ - 1) % TILE_SIZE_)
     bb_px_min_x =
@@ -428,15 +449,13 @@ SWint NAME(_swProcessTriangleBatch)(SWcull_ctx *ctx, __mXXX vX[3], __mXXX vY[3],
         _mmXXX_sub_epi32(x_diffi[0], _mmXXX_mullo_epi32(slope_fp[2].vec, y_diffi[0]));
 
     bb_bottom_ndx.vec = _mmXXX_add_epi32(
-        bb_tile_min_x,
-        _mmXXX_mullo_epi32(bb_tile_min_y, _mmXXX_set1_epi32(ctx->cov_tile_w)));
+        bb_tile_min_x, _mmXXX_mullo_epi32(bb_tile_min_y, _mmXXX_set1_epi32(ctx->tile_w)));
     bb_top_ndx.vec = _mmXXX_add_epi32(
         bb_tile_min_x,
         _mmXXX_mullo_epi32(_mmXXX_add_epi32(bb_tile_min_y, bb_tile_size_y.vec),
-                           _mmXXX_set1_epi32(ctx->cov_tile_w)));
+                           _mmXXX_set1_epi32(ctx->tile_w)));
     bb_mid_ndx.vec = _mmXXX_add_epi32(
-        bb_tile_min_x,
-        _mmXXX_mullo_epi32(mid_tile_y, _mmXXX_set1_epi32(ctx->cov_tile_w)));
+        bb_tile_min_x, _mmXXX_mullo_epi32(mid_tile_y, _mmXXX_set1_epi32(ctx->tile_w)));
 
     while (tri_mask) {
         const SWint tri_ndx = _swGetFirstBit(tri_mask);
@@ -774,7 +793,112 @@ SWint NAME(_swProcessTrianglesIndexed)(SWcull_ctx *ctx, const void *attribs,
     return is_occluder;
 }
 
-void NAME(_swCullCtxDebugDepth)(SWcull_ctx *ctx, SWfloat *out_depth) {
+SWint NAME(_swCullCtxTestRect)(const SWcull_ctx *ctx, const SWfloat p_min[2],
+                               const SWfloat p_max[3], const SWfloat w_min) {
+#define SIMD_TILE_PAD                                                                    \
+    _mm128_setr_epi32(0, SW_CULL_TILE_SIZE_X - 1, 0, SW_CULL_TILE_SIZE_Y - 1)
+#define SIMD_TILE_PAD_MASK                                                               \
+    _mm128_setr_epi32(~(SW_CULL_TILE_SIZE_X - 1), ~(SW_CULL_TILE_SIZE_X - 1),            \
+                      ~(SW_CULL_TILE_SIZE_Y - 1), ~(SW_CULL_TILE_SIZE_Y - 1))
+#define SIMD_SUBTILE_PAD                                                                 \
+    _mm128_setr_epi32(0, SW_CULL_SUBTILE_X - 1, 0, SW_CULL_SUBTILE_Y - 1)
+#define SIMD_SUBTILE_PAD_MASK                                                            \
+    _mm128_setr_epi32(~(SW_CULL_SUBTILE_X - 1), ~(SW_CULL_SUBTILE_X - 1),                \
+                      ~(SW_CULL_SUBTILE_Y - 1), ~(SW_CULL_SUBTILE_Y - 1))
+
+    const SWztile *ztiles = (SWztile *)ctx->ztiles;
+
+    __m128i *size = (__m128i *)ctx->size_ivec4;
+    __m128 *half_size = (__m128 *)ctx->half_size_vec4;
+
+    if (p_min[0] > p_max[0] || p_min[1] > p_max[1]) {
+        return 0;
+    }
+
+    __m128 px_bbox = _mm128_fmadd_ps(_mm_setr_ps(p_min[0], p_max[0], p_min[1], p_max[1]),
+                                     (*half_size), (*half_size));
+
+    __m128i px_bboxi = _mm128_cvtps_epi32(px_bbox);
+    px_bboxi = _mm128_max_epi32(px_bboxi, _mm128_setzero_si128());
+    px_bboxi = _mm128_min_epi32(px_bboxi, (*size));
+
+    union {
+        __m128i vec;
+        SWint i32[4];
+    } tile_bboxi, subtile_bboxi;
+
+    tile_bboxi.vec =
+        _mm128_and_si128(_mm128_add_epi32(px_bboxi, SIMD_TILE_PAD), SIMD_TILE_PAD_MASK);
+    SWint tile_min_x = tile_bboxi.i32[0] >> SW_CULL_TILE_WIDTH_SHIFT;
+    SWint tile_max_x = tile_bboxi.i32[1] >> SW_CULL_TILE_WIDTH_SHIFT;
+    SWint tile_min_y = tile_bboxi.i32[2] >> SW_CULL_TILE_HEIGHT_SHIFT;
+    SWint tile_max_y = tile_bboxi.i32[3] >> SW_CULL_TILE_HEIGHT_SHIFT;
+    SWint tile_row_ndx = (tile_bboxi.i32[2] >> SW_CULL_TILE_HEIGHT_SHIFT) * ctx->tile_w;
+    SWint tile_row_end = (tile_bboxi.i32[3] >> SW_CULL_TILE_HEIGHT_SHIFT) * ctx->tile_w;
+
+    subtile_bboxi.vec = _mm128_and_si128(_mm128_add_epi32(px_bboxi, SIMD_SUBTILE_PAD),
+                                         SIMD_SUBTILE_PAD_MASK);
+    __mXXXi stile_min_x = _mmXXX_set1_epi32(subtile_bboxi.i32[0] - 1); // no >= for epi32
+    __mXXXi stile_max_x = _mmXXX_set1_epi32(subtile_bboxi.i32[1] - 1); // so we use -1
+    __mXXXi stile_min_y = _mmXXX_set1_epi32(subtile_bboxi.i32[2]);
+    __mXXXi stile_max_y = _mmXXX_set1_epi32(subtile_bboxi.i32[3]);
+
+    __mXXXi start_px_x = _mmXXX_add_epi32(_mmXXX_set1_epi32(tile_bboxi.i32[0]),
+                                          SIMD_SUB_TILE_COL_OFFSET_I);
+    __mXXXi px_y = _mmXXX_add_epi32(_mmXXX_set1_epi32(tile_bboxi.i32[2]),
+                                    SIMD_SUB_TILE_ROW_OFFSET_I);
+
+    __mXXX z_max = _mmXXX_div_ps(_mmXXX_set1_ps(1), _mmXXX_set1_ps(w_min));
+
+    while (1) {
+        __mXXXi px_x = start_px_x;
+        SWint tile_x = tile_min_x;
+        while (1) {
+            SWint tile_ndx = tile_row_ndx + tile_x;
+#ifdef SW_CULL_QUICK_MASK
+            const __mXXX z_min0_buf = ztiles[tile_ndx].zmin[0].vec;
+#else
+#error "Not implemented!"
+#endif
+            __mXXXi z_pass = _mmXXX_castps_siXXX(_mmXXX_cmpge_ps(z_max, z_min0_buf));
+
+            __mXXXi bbox_pass_min =
+                _mmXXX_and_siXXX(_mmXXX_cmpgt_epi32(px_x, stile_min_x),
+                                 _mmXXX_cmpgt_epi32(px_y, stile_min_y));
+            __mXXXi bbox_pass_max =
+                _mmXXX_and_siXXX(_mmXXX_cmpgt_epi32(stile_max_x, px_x),
+                                 _mmXXX_cmpgt_epi32(stile_max_y, px_y));
+            __mXXXi bbox_pass = _mmXXX_and_siXXX(bbox_pass_min, bbox_pass_max);
+            z_pass = _mmXXX_and_siXXX(z_pass, bbox_pass);
+
+            if (!_mmXXX_testz_siXXX(z_pass, z_pass)) {
+                return 1;
+            }
+
+            if (++tile_x >= tile_max_x) {
+                break;
+            }
+
+            px_x = _mmXXX_add_epi32(px_x, _mmXXX_set1_epi32(SW_CULL_TILE_SIZE_X));
+        }
+
+        tile_row_ndx += ctx->tile_w;
+        if (tile_row_ndx >= tile_row_end) {
+            break;
+        }
+
+        px_y = _mmXXX_add_epi32(px_y, _mmXXX_set1_epi32(SW_CULL_TILE_SIZE_Y));
+    }
+
+    return 0;
+
+#undef SIMD_TILE_PAD
+#undef SIMD_TILE_PAD_MASK
+#undef SIMD_SUBTILE_PAD
+#undef SIMD_SUBTILE_PAD_MASK
+}
+
+void NAME(_swCullCtxDebugDepth)(const SWcull_ctx *ctx, SWfloat *out_depth) {
     const SWztile *ztiles = (SWztile *)ctx->ztiles;
 
     for (SWint y = 0; y < ctx->h; y++) {
@@ -782,7 +906,7 @@ void NAME(_swCullCtxDebugDepth)(SWcull_ctx *ctx, SWfloat *out_depth) {
         for (SWint x = 0; x < ctx->w; x++) {
             SWint tx = x / SW_CULL_TILE_SIZE_X;
 
-            SWint tile_ndx = ty * ctx->cov_tile_w + tx;
+            SWint tile_ndx = ty * ctx->tile_w + tx;
 
 #if 1 // in case it is transposed (needed later)
             SWint stx = (x % SW_CULL_TILE_SIZE_X) / SW_CULL_SUBTILE_X;
@@ -818,7 +942,7 @@ void NAME(_swCullCtxDebugDepth)(SWcull_ctx *ctx, SWfloat *out_depth) {
 void NAME(_swCullCtxClearBuf)(SWcull_ctx *ctx) {
     SWztile *ztiles = (SWztile *)ctx->ztiles;
 
-    for (SWint i = 0; i < ctx->cov_tile_w * ctx->cov_tile_h; i++) {
+    for (SWint i = 0; i < ctx->tile_w * ctx->tile_h; i++) {
         ztiles[i].mask = _mmXXX_setzero_siXXX();
 
         ztiles[i].zmin[0].vec = _mmXXX_set1_ps(-1.0f);

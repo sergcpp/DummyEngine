@@ -41,7 +41,7 @@ SWint TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
 #if MID_VTX_RIGHT
     top_event = event_start[1 * SIMD_WIDTH + tri_ndx] + sw_max(0, top_delta) +
                 (SW_CULL_TILE_SIZE_X << FP_BITS);
-#else  // MID_VTX_RIGHT
+#else // MID_VTX_RIGHT
     top_event = event_start[1 * SIMD_WIDTH + tri_ndx] + sw_min(0, top_delta);
 #endif // MID_VTX_RIGHT
 #endif // TIGHT_TRANVERSAL
@@ -66,15 +66,14 @@ SWint TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
             const SWint res = NAME(_swProcessScanline_L1R1)(
 #endif
                 (SWztile *)ctx->ztiles, start, end, 2 /* left_event */,
-                0 /* right_event*/, tri_event, tile_row_ndx, tri_zmin,
-                tri_zmax, z0, zx);
+                0 /* right_event*/, tri_event, tile_row_ndx, tri_zmin, tri_zmax, z0, zx);
 #ifndef IS_OCCLUDER
             if (res) {
                 return 1;
             }
 #endif
 
-            tile_row_ndx += ctx->cov_tile_w;
+            tile_row_ndx += ctx->tile_w;
             (*z0) = _mmXXX_add_ps(*z0, _mmXXX_set1_ps(zy));
             UPDATE_TILE_EVENTS_Y(0);
             UPDATE_TILE_EVENTS_Y(2);
@@ -104,17 +103,15 @@ SWint TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
             const SWint res = NAME(_swProcessScanline_L1R2)(
 #endif
                 (SWztile *)ctx->ztiles, start, end, 2 /* left_event */,
-                0 /* right_event*/, tri_event, tile_row_ndx, tri_zmin,
-                tri_zmax, z0, zx);
-#else  // MID_VTX_RIGHT
+                0 /* right_event*/, tri_event, tile_row_ndx, tri_zmin, tri_zmax, z0, zx);
+#else // MID_VTX_RIGHT
 #ifdef IS_OCCLUDER
             const SWint res = NAME(_swProcessScanlineOccluder_L2R1)(
 #else
             const SWint res = NAME(_swProcessScanline_L2R1)(
 #endif
                 (SWztile *)ctx->ztiles, start, end, 2 /* left_event */,
-                0 /* right_event*/, tri_event, tile_row_ndx, tri_zmin,
-                tri_zmax, z0, zx);
+                0 /* right_event*/, tri_event, tile_row_ndx, tri_zmin, tri_zmax, z0, zx);
 #endif // MID_VTX_RIGHT
 #ifndef IS_OCCLUDER
             if (res) {
@@ -122,7 +119,7 @@ SWint TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
             }
 #endif
 
-            tile_row_ndx += ctx->cov_tile_w;
+            tile_row_ndx += ctx->tile_w;
         }
 
         // top half of triangle
@@ -153,8 +150,8 @@ SWint TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
 #endif
                     (SWztile *)ctx->ztiles, start, end,
                     MID_VTX_RIGHT + 1 /* left_event */,
-                    MID_VTX_RIGHT + 0 /* right_event*/, tri_event, tile_row_ndx,
-                    tri_zmin, tri_zmax, z0, zx);
+                    MID_VTX_RIGHT + 0 /* right_event*/, tri_event, tile_row_ndx, tri_zmin,
+                    tri_zmax, z0, zx);
 
 #ifndef IS_OCCLUDER
                 if (res) {
@@ -162,7 +159,7 @@ SWint TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
                 }
 #endif
 
-                tile_row_ndx += ctx->cov_tile_w;
+                tile_row_ndx += ctx->tile_w;
                 if (tile_row_ndx >= tile_end_row_ndx) {
                     break;
                 }
@@ -203,15 +200,15 @@ SWint TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
 #endif
                     (SWztile *)ctx->ztiles, start, end,
                     MID_VTX_RIGHT + 1 /* left_event */,
-                    MID_VTX_RIGHT + 0 /* right_event*/, tri_event, tile_row_ndx,
-                    tri_zmin, tri_zmax, z0, zx);
+                    MID_VTX_RIGHT + 0 /* right_event*/, tri_event, tile_row_ndx, tri_zmin,
+                    tri_zmax, z0, zx);
 #ifndef IS_OCCLUDER
                 if (res) {
                     return 1;
                 }
 #endif
 
-                tile_row_ndx += ctx->cov_tile_w;
+                tile_row_ndx += ctx->tile_w;
                 if (tile_row_ndx >= tile_end_row_ndx) {
                     break;
                 }

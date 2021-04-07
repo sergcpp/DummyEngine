@@ -121,6 +121,6 @@ if(MSVC)
 endif(MSVC)
 
 add_library(Ren STATIC ${ALL_SOURCE_FILES})
-target_link_libraries(Ren ${LIBS})
+target_link_libraries(Ren SW ${LIBS})
 
 add_subdirectory(tests)
