@@ -61,6 +61,8 @@ void RpDebugTextures::DrawShadowMaps(Ren::Context& ctx, RpAllocTex& shadowmap_te
     glUseProgram(blit_depth_prog_->id());
     glUniform4f(0, 0.0f, 0.0f, 1.0f, 1.0f);
 
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, shadowmap_tex.ref->id());
+
     // Draw visible shadow regions
     for (int i = 0; i < int(shadow_lists_.count); i++) {
         const ShadowList &sh_list = shadow_lists_.data[i];
