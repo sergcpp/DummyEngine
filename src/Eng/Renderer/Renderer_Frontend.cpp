@@ -54,6 +54,8 @@ static const uint8_t SunShadowUpdatePattern[4] = {
     0b00100010  // update cascade 3 once in four frames
 };
 
+static const bool EnableSunCulling = true;
+
 int16_t f32_to_s16(float value) { return int16_t(value * 32767); }
 
 uint16_t f32_to_u16(float value) { return uint16_t(value * 65535); }
@@ -187,7 +189,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
     const Mat4f &view_from_world = list.draw_cam.view_matrix(),
                 &clip_from_view = list.draw_cam.proj_matrix();
 
-    swCullCtxResize(&cull_ctx_, ctx_.w(), ctx_.h(), list.draw_cam.near());
+    swCullCtxResize(&cull_ctx_, SW_CULL_SUBTILE_X * (ctx_.w() / SW_CULL_SUBTILE_X),
+                    4 * (ctx_.h() / 4), list.draw_cam.near());
     swCullCtxClear(&cull_ctx_);
 
     const Mat4f view_from_identity = view_from_world * Mat4f{1.0f},
@@ -977,7 +980,17 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                 (cached_dist < 1.0f && cached_dir_dist < 0.1f);
 
             const uint8_t pattern_bit = (1u << uint8_t(frame_counter_ % 8));
-            const bool should_update = (pattern_bit & SunShadowUpdatePattern[casc]) != 0;
+            bool should_update = (pattern_bit & SunShadowUpdatePattern[casc]) != 0;
+
+            if (EnableSunCulling && casc > 0 && should_update) {
+                // Check if cascade is visible to main camera
+
+                const float p_min[2] = { -1.0f, -1.0f };
+                const float p_max[2] = { 1.0f, 1.0f };
+                const float dist = near_planes[casc];
+
+                should_update &= swCullCtxTestRect(&cull_ctx_, p_min, p_max, dist) != 0;
+            }
 
             if (sun_shadow_cache_[casc].valid && !should_update) {
                 // keep this cascade unchanged
@@ -991,49 +1004,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                 sun_shadow_cache_[casc].view_dir = view_dir;
                 sun_shadow_cache_[casc].clip_from_world = sh_clip_from_world;
             }
-
-#if 0
-            if (shadow_cam.CheckFrustumVisibility(cam.world_position()) != eVisResult::FullyVisible) {
-                // Check if shadowmap frustum is visible to main camera
-                
-                Mat4f world_from_clip = Inverse(sh_clip_from_world);
-
-                Vec4f frustum_points[] = {
-                    { -1.0f, -1.0f, 0.0f, 1.0f },
-                    {  1.0f, -1.0f, 0.0f, 1.0f },
-                    { -1.0f, -1.0f, 1.0f, 1.0f },
-                    {  1.0f, -1.0f, 1.0f, 1.0f },
-
-                    { -1.0f,  1.0f, 0.0f, 1.0f },
-                    {  1.0f,  1.0f, 0.0f, 1.0f },
-                    { -1.0f,  1.0f, 1.0f, 1.0f },
-                    {  1.0f,  1.0f, 1.0f, 1.0f }
-                };
-
-                for (int k = 0; k < 8; k++) {
-                    frustum_points[k] = world_from_clip * frustum_points[k];
-                    frustum_points[k] /= frustum_points[k][3];
-                }
-
-                SWcull_surf surf;
-
-                surf.type = SW_OCCLUDEE;
-                surf.prim_type = SW_TRIANGLES;
-                surf.index_type = SW_UNSIGNED_BYTE;
-                surf.attribs = &frustum_points[0][0];
-                surf.indices = &bbox_indices[0];
-                surf.stride = 4 * sizeof(float);
-                surf.count = 36;
-                surf.base_vertex = 0;
-                surf.xform = ValuePtr(clip_from_identity);
-
-                swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
-
-                if (surf.visible == 0) {
-                    continue;
-                }
-            }
-#endif
 
             stack_size = 0;
             stack[stack_size++] = scene.root_node;

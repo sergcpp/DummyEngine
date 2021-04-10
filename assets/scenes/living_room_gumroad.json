@@ -31,6 +31,9 @@
 			}, 
 			"drawable" : {
 				"mesh_file" : "room.mesh"
+			},
+			"occluder" : {
+				"mesh_file" : "room.mesh"
 			}, 
 			"lightmap" : {
 				"res" : 1024
