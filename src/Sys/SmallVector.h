@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <algorithm>
 #include <new>
 
@@ -145,8 +147,8 @@ class SmallVector : public SmallVectorImpl<T> {
     alignas(AlignmentOfT) char buffer_[SizeOfT * N];
 
   public:
-    SmallVector() : SmallVectorImpl((T *)buffer_, (T *)buffer_, N) {}
+    SmallVector() : SmallVectorImpl<T>((T *)buffer_, (T *)buffer_, N) {}
 
-    bool is_on_heap() const { return uintptr_t(begin()) != uintptr_t(&buffer_[0]); }
+    bool is_on_heap() const { return uintptr_t(this->begin()) != uintptr_t(&buffer_[0]); }
 };
 } // namespace Sys

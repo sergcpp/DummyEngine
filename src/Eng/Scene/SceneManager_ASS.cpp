@@ -18,6 +18,7 @@
 #include <Eng/Gui/Renderer.h>
 #include <Eng/Gui/Utils.h>
 #include <Net/hash/Crc32.h>
+#include <Net/hash/murmur.h>
 #include <Ray/internal/TextureSplitter.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
@@ -53,17 +54,18 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
         int i = 0;
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
-                out_data[i++] = {pixels[3 * (y * w + x)], pixels[3 * (y * w + x) + 1],
-                                 pixels[3 * (y * w + x) + 2], 255};
+                out_data[i++] = {pixels[3ull * (y * w + x)],
+                                 pixels[3ull * (y * w + x) + 1],
+                                 pixels[3ull * (y * w + x) + 2], 255};
             }
         }
     } else if (format == Ren::eTexFormat::RawRGBA8888) {
         int i = 0;
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
-                out_data[i++] = {pixels[4 * (y * w + x)], pixels[4 * (y * w + x) + 1],
-                                 pixels[4 * (y * w + x) + 2],
-                                 pixels[4 * (y * w + x) + 3]};
+                out_data[i++] = {
+                    pixels[4ull * (y * w + x)], pixels[4ull * (y * w + x) + 1],
+                    pixels[4ull * (y * w + x) + 2], pixels[4ull * (y * w + x) + 3]};
             }
         }
     } else {
@@ -135,8 +137,9 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
         }
 
         std::swap(_temp_pixels1, _temp_pixels2);
-        if (!has_invalid)
+        if (!has_invalid) {
             break;
+        }
     }
 
     return temp_pixels1;
@@ -232,7 +235,7 @@ void ReadAllFiles_MT_r(
     closedir(in_dir);
 }
 
-uint32_t Crc32HashFile(const char *in_file, Ren::ILog *log) {
+uint32_t HashFile(const char *in_file, Ren::ILog *log) {
     std::ifstream in_file_stream(in_file, std::ios::binary | std::ios::ate);
     if (!in_file_stream) {
         return 0;
@@ -240,19 +243,26 @@ uint32_t Crc32HashFile(const char *in_file, Ren::ILog *log) {
     const size_t in_file_size = size_t(in_file_stream.tellg());
     in_file_stream.seekg(0, std::ios::beg);
 
-    const size_t HashChunkSize = 16 * 1024;
+    const size_t HashChunkSize = 8 * 1024;
     uint8_t in_file_buf[HashChunkSize];
 
     log->Info("[PrepareAssets] Hashing %s", in_file);
 
-    uint32_t crc32_hash = 0;
+    uint32_t hash = 0;
+#if 0
     for (size_t i = 0; i < in_file_size; i += HashChunkSize) {
         const size_t portion = std::min(HashChunkSize, in_file_size - i);
         in_file_stream.read((char *)&in_file_buf[0], portion);
-        crc32_hash = crc32_fast(&in_file_buf[0], portion, crc32_hash);
+        hash = crc32_fast(&in_file_buf[0], portion, hash);
     }
-
-    return crc32_hash;
+#else
+    for (size_t i = 0; i < in_file_size; i += HashChunkSize) {
+        const size_t portion = std::min(HashChunkSize, in_file_size - i);
+        in_file_stream.read((char*)&in_file_buf[0], portion);
+        hash = murmur3_32(&in_file_buf[0], portion, hash);
+    }
+#endif
+    return hash;
 }
 
 bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &ctx,
@@ -323,17 +333,17 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context
             }
         }
 
-        const uint32_t in_crc32_hash = Crc32HashFile(in_file, ctx.log);
-        const std::string in_crc32_hash_str = std::to_string(in_crc32_hash);
+        const uint32_t in_hash = HashFile(in_file, ctx.log);
+        const std::string in_hash_str = std::to_string(in_hash);
 
         if (js_in_file.Has("in_hash") && js_in_file.Has("out_hash")) {
             const JsString &js_in_file_hash = js_in_file.at("in_hash").as_str();
-            if (js_in_file_hash.val == in_crc32_hash_str) {
-                const uint32_t out_crc32_hash = Crc32HashFile(out_file, ctx.log);
-                const std::string out_crc32_hash_str = std::to_string(out_crc32_hash);
+            if (js_in_file_hash.val == in_hash_str) {
+                const uint32_t out_hash = HashFile(out_file, ctx.log);
+                const std::string out_hash_str = std::to_string(out_hash);
 
                 const JsString &js_out_file_hash = js_in_file.at("out_hash").as_str();
-                if (js_out_file_hash.val == out_crc32_hash_str) {
+                if (js_out_file_hash.val == out_hash_str) {
                     // write new time
                     if (!js_in_file.Has("in_time")) {
                         js_in_file.Push("in_time", JsString{in_t});
@@ -357,10 +367,10 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context
 
         // store new hash and time value
         if (!js_in_file.Has("in_hash")) {
-            js_in_file.Push("in_hash", JsString{in_crc32_hash_str});
+            js_in_file.Push("in_hash", JsString{in_hash_str});
         } else {
             JsString &js_in_file_hash = js_in_file["in_hash"].as_str();
-            js_in_file_hash.val = in_crc32_hash_str;
+            js_in_file_hash.val = in_hash_str;
         }
 
         // write new time
@@ -371,12 +381,12 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context
             js_in_file_time.val = in_t;
         }
     } else {
-        const uint32_t in_crc32_hash = Crc32HashFile(in_file, ctx.log);
-        const std::string in_crc32_hash_str = std::to_string(in_crc32_hash);
+        const uint32_t in_hash = HashFile(in_file, ctx.log);
+        const std::string in_hash_str = std::to_string(in_hash);
 
         JsObject new_entry;
         new_entry.Push("in_time", JsString{in_t});
-        new_entry.Push("in_hash", JsString{in_crc32_hash_str});
+        new_entry.Push("in_hash", JsString{in_hash_str});
         const size_t new_ndx = js_files.Push(in_file, std::move(new_entry));
         ctx.cache->db_map[in_file] = int(new_ndx);
     }
@@ -652,8 +662,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
 
         const bool res = handler->convert(ctx, in_file, out_file.c_str());
         if (res) {
-            const uint32_t out_crc32_hash = Crc32HashFile(out_file.c_str(), ctx.log);
-            const std::string out_crc32_hash_str = std::to_string(out_crc32_hash);
+            const uint32_t out_hash = HashFile(out_file.c_str(), ctx.log);
+            const std::string out_hash_str = std::to_string(out_hash);
 
             JsObject &js_files = ctx.cache->js_db["files"].as_obj();
 
@@ -662,10 +672,10 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
                 JsObject &js_in_file = js_files[*in_ndx].second.as_obj();
                 // store new hash value
                 if (!js_in_file.Has("out_hash")) {
-                    js_in_file.Push("out_hash", JsString{out_crc32_hash_str});
+                    js_in_file.Push("out_hash", JsString{out_hash_str});
                 } else {
                     JsString &js_out_file_hash = js_in_file["out_hash"].as_str();
-                    js_out_file_hash.val = out_crc32_hash_str;
+                    js_out_file_hash.val = out_hash_str;
                 }
 
                 char out_t[32];

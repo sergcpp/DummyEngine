@@ -15,11 +15,7 @@ typedef struct SWzbuffer {
     SWfloat zmax;
 } SWzbuffer;
 
-typedef enum SWoccresult {
-    SW_OCCLUDED = 0,
-    SW_NONOCCLUDED,
-    SW_PARTIAL
-} SWoccresult;
+typedef enum SWoccresult { SW_OCCLUDED = 0, SW_NONOCCLUDED, SW_PARTIAL } SWoccresult;
 
 void swZbufInit(SWzbuffer *zb, SWint w, SWint h, SWfloat zmax);
 void swZbufDestroy(SWzbuffer *zb);
@@ -30,21 +26,24 @@ void swZbufClearDepth(SWzbuffer *zb, SWfloat val);
 #define swZbufGetDepth(zb, x, y) (zb)->depth[(y) * (zb)->w + (x)]
 #define swZbufTestDepth(zb, x, y, z) ((z) <= (zb)->depth[(y) * (zb)->w + (x)])
 
-#define swZbufSetTileRange(zb, x, y, zmin, zmax) {                                      \
-        SWzrange *_zr = &(zb)->tiles[((y) / SW_TILE_SIZE) * (zb)->tile_w +              \
-                                                            ((x) / SW_TILE_SIZE)];      \
-        _zr->min = (zmin);                                                              \
-        _zr->max = (zmax);                                                              \
+#define swZbufSetTileRange(zb, x, y, zmin, zmax)                                         \
+    {                                                                                    \
+        SWzrange *_zr =                                                                  \
+            &(zb)->tiles[((y) / SW_TILE_SIZE) * (zb)->tile_w + ((x) / SW_TILE_SIZE)];    \
+        _zr->min = (zmin);                                                               \
+        _zr->max = (zmax);                                                               \
     }
 
-#define swZbufUpdateTileRange(zb, x, y, zmin, zmax) {                           \
-        SWzrange *_zr = &(zb)->tiles[((y) / SW_TILE_SIZE) * (zb)->tile_w +      \
-                                                        ((x) / SW_TILE_SIZE)];  \
-        _zr->min = sw_min((zmin), _zr->min);                                    \
-        _zr->max = sw_max((zmax), _zr->max);                                    \
+#define swZbufUpdateTileRange(zb, x, y, zmin, zmax)                                      \
+    {                                                                                    \
+        SWzrange *_zr =                                                                  \
+            &(zb)->tiles[((y) / SW_TILE_SIZE) * (zb)->tile_w + ((x) / SW_TILE_SIZE)];    \
+        _zr->min = sw_min((zmin), _zr->min);                                             \
+        _zr->max = sw_max((zmax), _zr->max);                                             \
     }
 
-sw_inline SWoccresult swZbufTestTileRange(const SWzbuffer *zb, SWint x, SWint y, SWfloat min, SWfloat max) {
+sw_inline SWoccresult swZbufTestTileRange(const SWzbuffer *zb, SWint x, SWint y,
+                                          SWfloat min, SWfloat max) {
     SWzrange *zr = &zb->tiles[(y / SW_TILE_SIZE) * zb->tile_w + (x / SW_TILE_SIZE)];
     if (max < zr->min) {
         return SW_NONOCCLUDED;
@@ -62,6 +61,7 @@ sw_inline SWzrange *swZbufGetTileRange(const SWzbuffer *zb, SWint x, SWint y) {
 void swZbufSetDepth_(SWzbuffer *zb, SWint x, SWint y, SWfloat val);
 SWint swZbufTestDepth_(SWzbuffer *zb, SWint x, SWint y, SWfloat z);
 
-SWoccresult swZbufTriTestDepth(SWzbuffer *zb, SWint min[2], SWint max[2], SWfloat *attrs1, SWfloat *attrs2, SWfloat *attrs3);
+SWoccresult swZbufTriTestDepth(SWzbuffer *zb, SWint min[2], SWint max[2], SWfloat *attrs1,
+                               SWfloat *attrs2, SWfloat *attrs3);
 
 #endif /* SW_ZBUFFER_H */

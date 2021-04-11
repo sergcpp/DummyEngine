@@ -87,7 +87,7 @@ GameBase::~GameBase() {
     }
 }
 
-void GameBase::Resize(int w, int h) {
+void GameBase::Resize(const int w, const int h) {
     width = w;
     height = h;
 

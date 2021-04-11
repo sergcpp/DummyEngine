@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#undef Always
 
 namespace Ren {
 class Context;

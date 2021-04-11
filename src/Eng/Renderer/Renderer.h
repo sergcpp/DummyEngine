@@ -121,6 +121,8 @@ class Renderer {
     DynArray<SortSpan32> temp_sort_spans_32_[2];
     DynArray<SortSpan64> temp_sort_spans_64_[2];
 
+    std::vector<float> temp_depth;
+
     struct ShadowFrustumCache {
         bool valid = false;
         Ren::Vec3f view_pos, view_dir;

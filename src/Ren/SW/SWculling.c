@@ -1,481 +1,203 @@
 #include "SWculling.h"
 
+#include "SWalloc.h"
+#include "SWintrin.inl"
 
-void swCullCtxInit(SWcull_ctx *ctx, SWint w, SWint h, SWfloat zmax) {
-    swZbufInit(&ctx->zbuf, w, h, zmax);
-    swZbufClearDepth(&ctx->zbuf, 1.0f);
-    ctx->depth_eps = (SWfloat)0.001;
+SWint _swProcessTrianglesIndexed_Ref(SWcull_ctx *ctx, const void *attribs,
+                                     const SWuint *indices, SWuint stride,
+                                     SWuint index_count, const SWfloat *xform,
+                                     SWint is_occluder);
+SWint _swCullCtxTestRect_Ref(const SWcull_ctx *ctx, const SWfloat p_min[2],
+                             const SWfloat p_max[3], const SWfloat w_min);
+void _swCullCtxClearBuf_Ref(SWcull_ctx *ctx);
+void _swCullCtxDebugDepth_Ref(const SWcull_ctx *ctx, SWfloat *out_depth);
+
+#ifndef __ANDROID__
+SWint _swProcessTrianglesIndexed_SSE2(SWcull_ctx *ctx, const void *attribs,
+                                      const SWuint *indices, SWuint stride,
+                                      SWuint index_count, const SWfloat *xform,
+                                      SWint is_occluder);
+SWint _swProcessTrianglesIndexed_AVX2(SWcull_ctx *ctx, const void *attribs,
+                                      const SWuint *indices, SWuint stride,
+                                      SWuint index_count, const SWfloat *xform,
+                                      SWint is_occluder);
+SWint _swProcessTrianglesIndexed_AVX512(SWcull_ctx *ctx, const void *attribs,
+                                        const SWuint *indices, SWuint stride,
+                                        SWuint index_count, const SWfloat *xform,
+                                        SWint is_occluder);
+
+SWint _swCullCtxTestRect_SSE2(const SWcull_ctx *ctx, const SWfloat p_min[2],
+                              const SWfloat p_max[3], const SWfloat w_min);
+SWint _swCullCtxTestRect_AVX2(const SWcull_ctx *ctx, const SWfloat p_min[2],
+                              const SWfloat p_max[3], const SWfloat w_min);
+SWint _swCullCtxTestRect_AVX512(const SWcull_ctx *ctx, const SWfloat p_min[2],
+                                const SWfloat p_max[3], const SWfloat w_min);
+
+void _swCullCtxClearBuf_SSE2(SWcull_ctx *ctx);
+void _swCullCtxClearBuf_AVX2(SWcull_ctx *ctx);
+void _swCullCtxClearBuf_AVX512(SWcull_ctx *ctx);
+
+void _swCullCtxDebugDepth_SSE2(const SWcull_ctx *ctx, SWfloat *out_depth);
+void _swCullCtxDebugDepth_AVX2(const SWcull_ctx *ctx, SWfloat *out_depth);
+void _swCullCtxDebugDepth_AVX512(const SWcull_ctx *ctx, SWfloat *out_depth);
+#endif
+
+void swCullCtxInit(SWcull_ctx *ctx, const SWint w, const SWint h, SWfloat near_clip) {
+    swCPUInfoInit(&ctx->cpu_info);
+
+    ctx->ztiles = NULL;
+    swCullCtxResize(ctx, w, h, near_clip);
+
+    swCullCtxClear(ctx);
 }
 
 void swCullCtxDestroy(SWcull_ctx *ctx) {
-    swZbufDestroy(&ctx->zbuf);
+    swCPUInfoDestroy(&ctx->cpu_info);
+    sw_aligned_free(ctx->ztiles);
     memset(ctx, 0, sizeof(SWcull_ctx));
 }
 
-void swCullCtxClear(SWcull_ctx *ctx) {
-    swZbufClearDepth(&ctx->zbuf, ctx->zbuf.zmax);
+void swCullCtxResize(SWcull_ctx *ctx, const SWint w, const SWint h, SWfloat near_clip) {
+    if (ctx->w == w && ctx->h == h && ctx->near_clip == near_clip) {
+        return;
+    }
+
+    ctx->w = w;
+    ctx->h = h;
+
+    ctx->half_w = (SWfloat)w / 2;
+    ctx->half_h = (SWfloat)h / 2;
+
+#ifndef __ANDROID__
+    if (ctx->cpu_info.avx512_supported) {
+        ctx->tile_size_y = 16;
+        ctx->subtile_size_y = 4;
+        ctx->tri_indexed_proc =
+            (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_AVX512;
+        ctx->test_rect_proc = &_swCullCtxTestRect_AVX512;
+        ctx->clear_buf_proc = &_swCullCtxClearBuf_AVX512;
+        ctx->debug_depth_proc = (SWCullDebugDepthProcType)&_swCullCtxDebugDepth_AVX512;
+    } else if (ctx->cpu_info.avx2_supported) {
+        ctx->tile_size_y = 8;
+        ctx->subtile_size_y = 4;
+        ctx->tri_indexed_proc =
+            (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_AVX2;
+        ctx->test_rect_proc = &_swCullCtxTestRect_AVX2;
+        ctx->clear_buf_proc = &_swCullCtxClearBuf_AVX2;
+        ctx->debug_depth_proc = (SWCullDebugDepthProcType)&_swCullCtxDebugDepth_AVX2;
+    } else if (ctx->cpu_info.sse2_supported) {
+        ctx->tile_size_y = 4;
+        ctx->subtile_size_y = 4;
+        ctx->tri_indexed_proc =
+            (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_SSE2;
+        ctx->test_rect_proc = &_swCullCtxTestRect_SSE2;
+        ctx->clear_buf_proc = &_swCullCtxClearBuf_SSE2;
+        ctx->debug_depth_proc = (SWCullDebugDepthProcType)&_swCullCtxDebugDepth_SSE2;
+    } else
+#endif
+    {
+        ctx->tile_size_y = 1;
+        ctx->subtile_size_y = 1;
+        ctx->tri_indexed_proc =
+            (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_Ref;
+        ctx->test_rect_proc = &_swCullCtxTestRect_Ref;
+        ctx->clear_buf_proc = &_swCullCtxClearBuf_Ref;
+        ctx->debug_depth_proc = (SWCullDebugDepthProcType)&_swCullCtxDebugDepth_Ref;
+    }
+
+    assert((w % SW_CULL_SUBTILE_X == 0) && (h % ctx->subtile_size_y == 0));
+
+    ctx->tile_w = (w + (SW_CULL_TILE_SIZE_X - 1)) / SW_CULL_TILE_SIZE_X;
+    ctx->tile_h = (h + (ctx->tile_size_y - 1)) / ctx->tile_size_y;
+
+    const int tile_size = SW_CULL_TILE_SIZE_X * ctx->tile_size_y / 8 +
+                          2 * sizeof(float) * (SW_CULL_TILE_SIZE_X / SW_CULL_SUBTILE_X) *
+                              (ctx->tile_size_y / ctx->subtile_size_y);
+
+    ctx->ztiles_mem_size = ctx->tile_w * ctx->tile_h * tile_size;
+    sw_aligned_free(ctx->ztiles);
+    ctx->ztiles = sw_aligned_malloc(ctx->ztiles_mem_size, 64);
+
+    assert((uintptr_t)ctx->size_ivec4 % 16 == 0);
+    __m128i *size_ivec4 = (__m128i *)ctx->size_ivec4;
+    (*size_ivec4) = _mm128_setr_epi32(ctx->w, ctx->w, ctx->h, ctx->h);
+
+    assert((uintptr_t)ctx->half_size_vec4 % 16 == 0);
+    __m128 *half_size = (__m128 *)ctx->half_size_vec4;
+    (*half_size) = _mm128_setr_ps(ctx->half_w, ctx->half_w, ctx->half_h, ctx->half_h);
+
+    const SWfloat pad_w = ((SWfloat)2) / ctx->w;
+    const SWfloat pad_h = ((SWfloat)2) / ctx->h;
+
+    assert((uintptr_t)ctx->clip_planes % 16 == 0);
+    __m128 *clip_planes = (__m128 *)ctx->clip_planes;
+    clip_planes[0] = _mm128_setr_ps(1.0f - pad_w, 0.0f, 1.0f, 0.0f);
+    clip_planes[1] = _mm128_setr_ps(-1.0f + pad_w, 0.0f, 1.0f, 0.0f);
+    clip_planes[2] = _mm128_setr_ps(0.0f, -1.0f + pad_h, 1.0f, 0.0f);
+    clip_planes[3] = _mm128_setr_ps(0.0f, 1.0f - pad_h, 1.0f, 0.0f);
+    clip_planes[4] = _mm128_setr_ps(0.0f, 0.0f, 1.0f, -near_clip);
+
+    ctx->near_clip = near_clip;
 }
 
-void swCullCtxSubmitCullSurfs(SWcull_ctx *ctx, SWcull_surf *surfs, SWuint count) {
+void swCullCtxClear(SWcull_ctx *ctx) { (*ctx->clear_buf_proc)(ctx); }
+
+void swCullCtxSubmitCullSurfs(SWcull_ctx *ctx, SWcull_surf *surfs, const SWuint count) {
     for (SWuint i = 0; i < count; i++) {
         SWcull_surf *s = &surfs[i];
 
-        if (s->dont_skip && *(s->dont_skip) == 0) continue;
-
         if (s->indices) {
             if (s->prim_type == SW_TRIANGLES) {
-                if (s->index_type == SW_UNSIGNED_BYTE) {
-                    s->visible = swCullCtxCullTrianglesIndexed_Ubyte(ctx, s->attribs, (const SWubyte *)s->indices, s->stride, s->count, s->base_vertex, s->xform, (s->type == SW_OCCLUDER));
-                } else if (s->index_type == SW_UNSIGNED_INT) {
-                    s->visible = swCullCtxCullTrianglesIndexed_Uint(ctx, s->attribs, (const SWuint *)s->indices, s->stride, s->count, s->base_vertex, s->xform, (s->type == SW_OCCLUDER));
+                if (s->index_type == SW_UNSIGNED_INT) {
+                    s->visible = (*ctx->tri_indexed_proc)(
+                        ctx, s->attribs, (const SWuint *)s->indices, s->stride, s->count,
+                        s->xform, (s->type == SW_OCCLUDER));
+                } else {
+                    assert(0);
                 }
             }
         } else {
-
         }
     }
 }
 
-sw_inline void _swProcessTriangle(SWzbuffer *zbuf, const SWfloat *v0, const SWfloat *v1, const SWfloat *v2) {
-    SWint p0[2], p1[2], p2[2];
-    SWint min[2], max[2];
-    SWfloat vs_interpolated[3];
-    SWfloat vs_d10[3], vs_d20[3];
-
-    SWint d01[2], d12[2], d20[2];
-    SWint area;
-    SWfloat inv_area;
-    SWint C1, C2, C3;
-
-    _swProjectOnScreen(zbuf, v0, p0);
-    _swProjectOnScreen(zbuf, v1, p1);
-    _swProjectOnScreen(zbuf, v2, p2);
-
-    min[0] = sw_min(p0[0], sw_min(p1[0], p2[0]));
-    min[1] = sw_min(p0[1], sw_min(p1[1], p2[1]));
-    max[0] = sw_max(p0[0], sw_max(p1[0], p2[0]));
-    max[1] = sw_max(p0[1], sw_max(p1[1], p2[1]));
-
-    if (min[0] >= zbuf->w || min[1] >= zbuf->h || max[0] < 0 || max[1] < 0) return;
-
-    if (min[0] < 0) min[0] = 0;
-    if (min[1] < 0) min[1] = 0;
-    if (max[0] >= zbuf->w) max[0] = zbuf->w - 1;
-    if (max[1] >= zbuf->h) max[1] = zbuf->h - 1;
-
-    min[0] &= ~(SW_TILE_SIZE - 1);
-    min[1] &= ~(SW_TILE_SIZE - 1);
-
-    d01[0] = p0[0] - p1[0];
-    d01[1] = p0[1] - p1[1];
-    d12[0] = p1[0] - p2[0];
-    d12[1] = p1[1] - p2[1];
-    d20[0] = p2[0] - p0[0];
-    d20[1] = p2[1] - p0[1];
-
-    area = d01[0] * d20[1] - d20[0] * d01[1];
-
-    if (area <= 0) return;
-
-    inv_area = ((SWfloat)1) / area;
-
-    C1 = d01[1] * p0[0] - d01[0] * p0[1];
-    C2 = d12[1] * p1[0] - d12[0] * p1[1];
-    C3 = d20[1] * p2[0] - d20[0] * p2[1];
-
-    if (d01[1] < 0 || (d01[1] == 0 && d01[0] > 0)) C1++;
-    if (d12[1] < 0 || (d12[1] == 0 && d12[0] > 0)) C2++;
-    if (d20[1] < 0 || (d20[1] == 0 && d20[0] > 0)) C3++;
-
-    for (SWint i = 0; i < 3; i++) {
-        vs_d10[i] = v1[i] - v0[i];
-        vs_d20[i] = v2[i] - v0[i];
-    }
-
-    for (SWint y = min[1]; y < max[1]; y += SW_TILE_SIZE) {
-        for (SWint x = min[0]; x < max[0]; x += SW_TILE_SIZE) {
-            SWint x0 = x,
-                  x1 = sw_min(x + SW_TILE_SIZE - 1, zbuf->w - 1),
-                  y0 = y,
-                  y1 = sw_min(y + SW_TILE_SIZE - 1, zbuf->h - 1);
-
-            SWint full_tile = (x1 - x0 == SW_TILE_SIZE - 1) && (y1 - y0 == SW_TILE_SIZE - 1);
-
-            SWint Cy1 = C1 + d01[0] * y0 - d01[1] * x0;
-            SWint Cy2 = C2 + d12[0] * y0 - d12[1] * x0;
-            SWint Cy3 = C3 + d20[0] * y0 - d20[1] * x0;
-
-            SWint Cy1_10 = C1 + d01[0] * y0 - d01[1] * x1;
-            SWint Cy2_10 = C2 + d12[0] * y0 - d12[1] * x1;
-            SWint Cy3_10 = C3 + d20[0] * y0 - d20[1] * x1;
-
-            SWint Cy1_01 = C1 + d01[0] * y1 - d01[1] * x0;
-            SWint Cy2_01 = C2 + d12[0] * y1 - d12[1] * x0;
-            SWint Cy3_01 = C3 + d20[0] * y1 - d20[1] * x0;
-
-            SWint Cy1_11 = C1 + d01[0] * y1 - d01[1] * x1;
-            SWint Cy2_11 = C2 + d12[0] * y1 - d12[1] * x1;
-            SWint Cy3_11 = C3 + d20[0] * y1 - d20[1] * x1;
-
-            SWint a = ((Cy1 > 0) << 0) | ((Cy1_10 > 0) << 1) | ((Cy1_01 > 0) << 2) | ((Cy1_11 > 0) << 3);
-            SWint b = ((Cy2 > 0) << 0) | ((Cy2_10 > 0) << 1) | ((Cy2_01 > 0) << 2) | ((Cy2_11 > 0) << 3);
-            SWint c = ((Cy3 > 0) << 0) | ((Cy3_10 > 0) << 1) | ((Cy3_01 > 0) << 2) | ((Cy3_11 > 0) << 3);
-
-            if (a == 0 || b == 0 || c == 0) continue;
-
-            SWint full_cover = (a == 15 && b == 15 && c == 15) && full_tile;
-
-            /////
-
-            SWfloat f00_z = v0[2] + Cy3 * inv_area * vs_d10[2] + Cy1 * inv_area * vs_d20[2];
-            SWfloat f10_z = v0[2] + Cy3_10 * inv_area * vs_d10[2] + Cy1_10 * inv_area * vs_d20[2];
-            SWfloat f01_z = v0[2] + Cy3_01 * inv_area * vs_d10[2] + Cy1_01 * inv_area * vs_d20[2];
-            SWfloat f11_z = v0[2] + Cy3_11 * inv_area * vs_d10[2] + Cy1_11 * inv_area * vs_d20[2];
-
-            SWfloat zmin = sw_min(f00_z, sw_min(f10_z, sw_min(f01_z, f11_z)));
-            SWfloat zmax = sw_max(f00_z, sw_max(f10_z, sw_max(f01_z, f11_z)));
-
-            SWint depth_test = 1;
-
-            SWzrange *zr = swZbufGetTileRange(zbuf, x0, y0);
-            if (zmax < zr->min) {
-                depth_test = 0;
-            } else if (zmin > zr->max) {
-                continue;
-            }
-
-            if (full_cover && depth_test == 0) {
-                swZbufSetTileRange(zbuf, x0, y0, zmin, sw_min(zmax, zbuf->zmax));
-            } else {
-                swZbufUpdateTileRange(zbuf, x0, y0, zmin, sw_min(zmax, zbuf->zmax));
-            }
-
-            SWfloat vs_dx[3], vs_dy[3];
-            for (SWint i = 0; i < 3; i++) {
-                vs_dx[i] = -d20[1] * inv_area * vs_d10[i] - d01[1] * inv_area * vs_d20[i];
-                vs_dy[i] = d20[0] * inv_area * vs_d10[i] + d01[0] * inv_area * vs_d20[i] - SW_TILE_SIZE * vs_dx[i];
-                vs_interpolated[i] = v0[i] + Cy3 * inv_area * vs_d10[i] + Cy1 * inv_area * vs_d20[i];
-            }
-
-            /////
-
-            if (full_cover) {
-                SWint ix, iy;
-                for (iy = y; iy < y + SW_TILE_SIZE; iy++) {
-                    SWint Cx1 = Cy1, Cx3 = Cy3;
-                    for (ix = x; ix < x + SW_TILE_SIZE; ix++) {
-                        if (!depth_test || swZbufTestDepth(zbuf, ix, iy, vs_interpolated[2])) {
-                            swZbufSetDepth(zbuf, ix, iy, sw_min(vs_interpolated[2], zbuf->zmax));
-                        }
-
-                        sw_add_3(vs_interpolated, vs_dx);
-
-                        Cx1 -= d01[1];
-                        Cx3 -= d20[1];
-                    }
-
-                    sw_add_3(vs_interpolated, vs_dy);
-
-                    Cy1 += d01[0];
-                    Cy3 += d20[0];
-                }
-            } else {
-                SWint ix, iy;
-                for (iy = y; iy <= y1; iy++) {
-                    SWint Cx1 = Cy1, Cx2 = Cy2, Cx3 = Cy3;
-                    for (ix = x; ix <= x1; ix++) {
-                        if (Cx1 > 0 && Cx2 > 0 && Cx3 > 0) {
-                            if (!depth_test || swZbufTestDepth(zbuf, ix, iy, vs_interpolated[2])) {
-                                swZbufSetDepth(zbuf, ix, iy, sw_min(vs_interpolated[2], zbuf->zmax));
-                            }
-                        }
-
-                        sw_add_3(vs_interpolated, vs_dx);
-
-                        Cx1 -= d01[1];
-                        Cx2 -= d12[1];
-                        Cx3 -= d20[1];
-                    }
-
-                    sw_add_3(vs_interpolated, vs_dy);
-
-                    Cy1 += d01[0];
-                    Cy2 += d12[0];
-                    Cy3 += d20[0];
-                }
-            }
-        }
-    }
+SWint swCullCtxTestRect(SWcull_ctx *ctx, const SWfloat p_min[2], const SWfloat p_max[3],
+                        const SWfloat w_min) {
+    return (*ctx->test_rect_proc)(ctx, p_min, p_max, w_min);
 }
 
-sw_inline SWint _swTestTriangle(const SWzbuffer *zbuf, const SWfloat *v0, const SWfloat *v1, const SWfloat *v2, SWfloat eps) {
-    SWint p0[2], p1[2], p2[2];
-    SWint min[2], max[2];
-    SWfloat vs_interpolated[3];
-    SWfloat vs_d10[3], vs_d20[3];
+SWint _swClipPolygon(const __m128 in_vtx[], const SWint in_vtx_count, const __m128 plane,
+                     __m128 out_vtx[]) {
+    __m128 p0 = in_vtx[in_vtx_count - 1];
+    __m128 dist0 = _mm128_dp4_ps(plane, p0);
 
-    SWint d01[2], d12[2], d20[2];
-    SWint area;
-    SWfloat inv_area;
-    SWint C1, C2, C3;
+    SWint out_vtx_count = 0;
+    for (SWint i = 0; i < in_vtx_count; i++) {
+        const __m128 p1 = in_vtx[i];
+        const __m128 dist1 = _mm128_dp4_ps(plane, p1);
+        const int dist0_neg = _mm128_movemask_ps(dist0);
+        if (!dist0_neg) { // dist0 >= 0.0f
+            out_vtx[out_vtx_count++] = p0;
+        }
 
-    _swProjectOnScreen(zbuf, v0, p0);
-    _swProjectOnScreen(zbuf, v1, p1);
-    _swProjectOnScreen(zbuf, v2, p2);
-
-    min[0] = sw_min(p0[0], sw_min(p1[0], p2[0]));
-    min[1] = sw_min(p0[1], sw_min(p1[1], p2[1]));
-    max[0] = sw_max(p0[0], sw_max(p1[0], p2[0]));
-    max[1] = sw_max(p0[1], sw_max(p1[1], p2[1]));
-
-    if (min[0] >= zbuf->w || min[1] >= zbuf->h || max[0] < 0 || max[1] < 0) return 0;
-
-    if (min[0] < 0) min[0] = 0;
-    if (min[1] < 0) min[1] = 0;
-    if (max[0] >= zbuf->w) max[0] = zbuf->w - 1;
-    if (max[1] >= zbuf->h) max[1] = zbuf->h - 1;
-
-    min[0] &= ~(SW_TILE_SIZE - 1);
-    min[1] &= ~(SW_TILE_SIZE - 1);
-
-    d01[0] = p0[0] - p1[0];
-    d01[1] = p0[1] - p1[1];
-    d12[0] = p1[0] - p2[0];
-    d12[1] = p1[1] - p2[1];
-    d20[0] = p2[0] - p0[0];
-    d20[1] = p2[1] - p0[1];
-
-    area = d01[0] * d20[1] - d20[0] * d01[1];
-
-    if (area <= 0) return 0;
-
-    inv_area = ((SWfloat)1) / area;
-
-    C1 = d01[1] * p0[0] - d01[0] * p0[1];
-    C2 = d12[1] * p1[0] - d12[0] * p1[1];
-    C3 = d20[1] * p2[0] - d20[0] * p2[1];
-
-    if (d01[1] < 0 || (d01[1] == 0 && d01[0] > 0)) C1++;
-    if (d12[1] < 0 || (d12[1] == 0 && d12[0] > 0)) C2++;
-    if (d20[1] < 0 || (d20[1] == 0 && d20[0] > 0)) C3++;
-
-    for (SWint i = 0; i < 3; i++) {
-        vs_d10[i] = v1[i] - v0[i];
-        vs_d20[i] = v2[i] - v0[i];
-    }
-
-    for (SWint y = min[1]; y < max[1]; y += SW_TILE_SIZE) {
-        for (SWint x = min[0]; x < max[0]; x += SW_TILE_SIZE) {
-            SWint x0 = x,
-                  x1 = sw_min(x + SW_TILE_SIZE - 1, zbuf->w - 1),
-                  y0 = y,
-                  y1 = sw_min(y + SW_TILE_SIZE - 1, zbuf->h - 1);
-
-            SWint full_tile = (x1 - x0 == SW_TILE_SIZE - 1) && (y1 - y0 == SW_TILE_SIZE - 1);
-
-            SWint Cy1 = C1 + d01[0] * y0 - d01[1] * x0;
-            SWint Cy2 = C2 + d12[0] * y0 - d12[1] * x0;
-            SWint Cy3 = C3 + d20[0] * y0 - d20[1] * x0;
-
-            SWint Cy1_10 = C1 + d01[0] * y0 - d01[1] * x1;
-            SWint Cy2_10 = C2 + d12[0] * y0 - d12[1] * x1;
-            SWint Cy3_10 = C3 + d20[0] * y0 - d20[1] * x1;
-
-            SWint Cy1_01 = C1 + d01[0] * y1 - d01[1] * x0;
-            SWint Cy2_01 = C2 + d12[0] * y1 - d12[1] * x0;
-            SWint Cy3_01 = C3 + d20[0] * y1 - d20[1] * x0;
-
-            SWint Cy1_11 = C1 + d01[0] * y1 - d01[1] * x1;
-            SWint Cy2_11 = C2 + d12[0] * y1 - d12[1] * x1;
-            SWint Cy3_11 = C3 + d20[0] * y1 - d20[1] * x1;
-
-            SWint a = ((Cy1 > 0) << 0) | ((Cy1_10 > 0) << 1) | ((Cy1_01 > 0) << 2) | ((Cy1_11 > 0) << 3);
-            SWint b = ((Cy2 > 0) << 0) | ((Cy2_10 > 0) << 1) | ((Cy2_01 > 0) << 2) | ((Cy2_11 > 0) << 3);
-            SWint c = ((Cy3 > 0) << 0) | ((Cy3_10 > 0) << 1) | ((Cy3_01 > 0) << 2) | ((Cy3_11 > 0) << 3);
-
-            if (a == 0 || b == 0 || c == 0) continue;
-
-            SWint full_cover = (a == 15 && b == 15 && c == 15) && full_tile;
-
-            /////
-
-            SWfloat f00_z = v0[2] + Cy3 * inv_area * vs_d10[2] + Cy1 * inv_area * vs_d20[2];
-            SWfloat f10_z = v0[2] + Cy3_10 * inv_area * vs_d10[2] + Cy1_10 * inv_area * vs_d20[2];
-            SWfloat f01_z = v0[2] + Cy3_01 * inv_area * vs_d10[2] + Cy1_01 * inv_area * vs_d20[2];
-            SWfloat f11_z = v0[2] + Cy3_11 * inv_area * vs_d10[2] + Cy1_11 * inv_area * vs_d20[2];
-
-            SWfloat zmin = sw_min(f00_z, sw_min(f10_z, sw_min(f01_z, f11_z)));
-            SWfloat zmax = sw_max(f00_z, sw_max(f10_z, sw_max(f01_z, f11_z)));
-
-            const SWzrange *zr = swZbufGetTileRange(zbuf, x0, y0);
-            if (zmax < zr->min) {
-                return 1;
-            } else if (zmin > zr->max && zr->max != zbuf->zmax) {
-                continue;
-            }
-
-            SWfloat vs_dx[3], vs_dy[3];
-            for (SWint i = 0; i < 3; i++) {
-                vs_dx[i] = -d20[1] * inv_area * vs_d10[i] - d01[1] * inv_area * vs_d20[i];
-                vs_dy[i] = d20[0] * inv_area * vs_d10[i] + d01[0] * inv_area * vs_d20[i] - SW_TILE_SIZE * vs_dx[i];
-                vs_interpolated[i] = v0[i] + Cy3 * inv_area * vs_d10[i] + Cy1 * inv_area * vs_d20[i];
-            }
-
-            /////
-
-            if (full_cover) {
-                SWint ix, iy;
-                for (iy = y; iy < y + SW_TILE_SIZE; iy++) {
-                    SWint Cx1 = Cy1, Cx3 = Cy3;
-                    for (ix = x; ix < x + SW_TILE_SIZE; ix++) {
-                        SWfloat z = swZbufGetDepth(zbuf, ix, iy);
-                        if (z == zbuf->zmax || (z - vs_interpolated[2]) > -eps) {
-                            return 1;
-                        }
-
-                        sw_add_3(vs_interpolated, vs_dx);
-
-                        Cx1 -= d01[1];
-                        Cx3 -= d20[1];
-                    }
-
-                    sw_add_3(vs_interpolated, vs_dy);
-
-                    Cy1 += d01[0];
-                    Cy3 += d20[0];
-                }
+        // if dist0 and dist1 have different signs (segment intersects plane)
+        if (_mm128_movemask_ps(_mm128_xor_ps(dist0, dist1))) {
+            if (!dist0_neg) {
+                const __m128 t = _mm128_div_ps(dist0, _mm128_sub_ps(dist0, dist1));
+                out_vtx[out_vtx_count++] = _mm128_fmadd_ps(_mm128_sub_ps(p1, p0), t, p0);
             } else {
-                SWint ix, iy;
-                for (iy = y; iy <= y1; iy++) {
-                    SWint Cx1 = Cy1, Cx2 = Cy2, Cx3 = Cy3;
-                    for (ix = x; ix <= x1; ix++) {
-                        if (Cx1 > 0 && Cx2 > 0 && Cx3 > 0) {
-                            SWfloat z = swZbufGetDepth(zbuf, ix, iy);
-                            if (z == zbuf->zmax || (z - vs_interpolated[2]) > -eps) {
-                                return 1;
-                            }
-                        }
-
-                        sw_add_3(vs_interpolated, vs_dx);
-
-                        Cx1 -= d01[1];
-                        Cx2 -= d12[1];
-                        Cx3 -= d20[1];
-                    }
-
-                    sw_add_3(vs_interpolated, vs_dy);
-
-                    Cy1 += d01[0];
-                    Cy2 += d12[0];
-                    Cy3 += d20[0];
-                }
+                const __m128 t = _mm128_div_ps(dist1, _mm128_sub_ps(dist1, dist0));
+                out_vtx[out_vtx_count++] = _mm128_fmadd_ps(_mm128_sub_ps(p0, p1), t, p1);
             }
         }
+
+        dist0 = dist1;
+        p0 = p1;
     }
 
-    return 0;
+    return out_vtx_count;
 }
 
-SWint swCullCtxCullTrianglesIndexed_Ubyte(SWcull_ctx *ctx, const void *attribs, const SWubyte *indices,
-        SWuint stride, SWuint count, SWint base_vertex, const SWfloat *xform, SWint is_occluder) {
-    SWint res = 0;
-    SWfloat vs_out[16][4];
-
-    for (SWuint j = 0; j < count; j += 3) {
-        SWuint i0 = indices[j] + base_vertex;
-        SWfloat v0_x = ((SWfloat *)((uintptr_t)attribs + i0 * stride))[0];
-        SWfloat v0_y = ((SWfloat *)((uintptr_t)attribs + i0 * stride))[1];
-        SWfloat v0_z = ((SWfloat *)((uintptr_t)attribs + i0 * stride))[2];
-
-        SWuint i1 = indices[j + 1] + base_vertex;
-        SWfloat v1_x = ((SWfloat *)((uintptr_t)attribs + i1 * stride))[0];
-        SWfloat v1_y = ((SWfloat *)((uintptr_t)attribs + i1 * stride))[1];
-        SWfloat v1_z = ((SWfloat *)((uintptr_t)attribs + i1 * stride))[2];
-
-        SWuint i2 = indices[j + 2] + base_vertex;
-        SWfloat v2_x = ((SWfloat *)((uintptr_t)attribs + i2 * stride))[0];
-        SWfloat v2_y = ((SWfloat *)((uintptr_t)attribs + i2 * stride))[1];
-        SWfloat v2_z = ((SWfloat *)((uintptr_t)attribs + i2 * stride))[2];
-
-        vs_out[0][0] = xform[0] * v0_x + xform[4] * v0_y + xform[8] * v0_z + xform[12];
-        vs_out[0][1] = xform[1] * v0_x + xform[5] * v0_y + xform[9] * v0_z + xform[13];
-        vs_out[0][2] = xform[2] * v0_x + xform[6] * v0_y + xform[10] * v0_z + xform[14];
-        vs_out[0][3] = xform[3] * v0_x + xform[7] * v0_y + xform[11] * v0_z + xform[15];
-
-        vs_out[1][0] = xform[0] * v1_x + xform[4] * v1_y + xform[8] * v1_z + xform[12];
-        vs_out[1][1] = xform[1] * v1_x + xform[5] * v1_y + xform[9] * v1_z + xform[13];
-        vs_out[1][2] = xform[2] * v1_x + xform[6] * v1_y + xform[10] * v1_z + xform[14];
-        vs_out[1][3] = xform[3] * v1_x + xform[7] * v1_y + xform[11] * v1_z + xform[15];
-
-        vs_out[2][0] = xform[0] * v2_x + xform[4] * v2_y + xform[8] * v2_z + xform[12];
-        vs_out[2][1] = xform[1] * v2_x + xform[5] * v2_y + xform[9] * v2_z + xform[13];
-        vs_out[2][2] = xform[2] * v2_x + xform[6] * v2_y + xform[10] * v2_z + xform[14];
-        vs_out[2][3] = xform[3] * v2_x + xform[7] * v2_y + xform[11] * v2_z + xform[15];
-
-        SWint out_verts[16];
-        SWint num_verts = _swClipAndTransformToNDC_Tri_Simple(vs_out, vs_out, 0, 1, 2, is_occluder ? ctx->zbuf.zmax : 1.0f, out_verts);
-
-        for (SWint i = 1; i < num_verts - 1; i++) {
-            if (is_occluder) {
-                _swProcessTriangle(&ctx->zbuf, vs_out[out_verts[0]], vs_out[out_verts[i]], vs_out[out_verts[i + 1]]);
-            } else {
-                res = _swTestTriangle(&ctx->zbuf, vs_out[out_verts[0]], vs_out[out_verts[i]], vs_out[out_verts[i + 1]], ctx->depth_eps);
-                if (res) return 1;
-            }
-        }
-    }
-
-    return res;
-}
-
-SWint swCullCtxCullTrianglesIndexed_Uint(SWcull_ctx *ctx, const void *attribs, const SWuint *indices,
-        SWuint stride, SWuint count, SWint base_vertex, const SWfloat *xform, SWint is_occluder) {
-    SWint res = is_occluder;
-    SWfloat vs_out[16][4];
-
-    for (SWuint j = 0; j < count; j += 3) {
-        SWuint i0 = indices[j] + base_vertex;
-        SWfloat v0_x = ((SWfloat *)((uintptr_t)attribs + i0 * stride))[0];
-        SWfloat v0_y = ((SWfloat *)((uintptr_t)attribs + i0 * stride))[1];
-        SWfloat v0_z = ((SWfloat *)((uintptr_t)attribs + i0 * stride))[2];
-
-        SWuint i1 = indices[j + 1] + base_vertex;
-        SWfloat v1_x = ((SWfloat *)((uintptr_t)attribs + i1 * stride))[0];
-        SWfloat v1_y = ((SWfloat *)((uintptr_t)attribs + i1 * stride))[1];
-        SWfloat v1_z = ((SWfloat *)((uintptr_t)attribs + i1 * stride))[2];
-
-        SWuint i2 = indices[j + 2] + base_vertex;
-        SWfloat v2_x = ((SWfloat *)((uintptr_t)attribs + i2 * stride))[0];
-        SWfloat v2_y = ((SWfloat *)((uintptr_t)attribs + i2 * stride))[1];
-        SWfloat v2_z = ((SWfloat *)((uintptr_t)attribs + i2 * stride))[2];
-
-        vs_out[0][0] = xform[0] * v0_x + xform[4] * v0_y + xform[8] * v0_z + xform[12];
-        vs_out[0][1] = xform[1] * v0_x + xform[5] * v0_y + xform[9] * v0_z + xform[13];
-        vs_out[0][2] = xform[2] * v0_x + xform[6] * v0_y + xform[10] * v0_z + xform[14];
-        vs_out[0][3] = xform[3] * v0_x + xform[7] * v0_y + xform[11] * v0_z + xform[15];
-
-        vs_out[1][0] = xform[0] * v1_x + xform[4] * v1_y + xform[8] * v1_z + xform[12];
-        vs_out[1][1] = xform[1] * v1_x + xform[5] * v1_y + xform[9] * v1_z + xform[13];
-        vs_out[1][2] = xform[2] * v1_x + xform[6] * v1_y + xform[10] * v1_z + xform[14];
-        vs_out[1][3] = xform[3] * v1_x + xform[7] * v1_y + xform[11] * v1_z + xform[15];
-
-        vs_out[2][0] = xform[0] * v2_x + xform[4] * v2_y + xform[8] * v2_z + xform[12];
-        vs_out[2][1] = xform[1] * v2_x + xform[5] * v2_y + xform[9] * v2_z + xform[13];
-        vs_out[2][2] = xform[2] * v2_x + xform[6] * v2_y + xform[10] * v2_z + xform[14];
-        vs_out[2][3] = xform[3] * v2_x + xform[7] * v2_y + xform[11] * v2_z + xform[15];
-
-        SWint out_verts[16];
-        SWint num_verts = _swClipAndTransformToNDC_Tri_Simple(vs_out, vs_out, 0, 1, 2, is_occluder ? ctx->zbuf.zmax : 1.0f, out_verts);
-
-        for (SWint i = 1; i < num_verts - 1; i++) {
-            if (is_occluder) {
-                _swProcessTriangle(&ctx->zbuf, vs_out[out_verts[0]], vs_out[out_verts[i]], vs_out[out_verts[i + 1]]);
-            } else {
-                res = _swTestTriangle(&ctx->zbuf, vs_out[out_verts[0]], vs_out[out_verts[i]], vs_out[out_verts[i + 1]], ctx->depth_eps);
-                if (res) return 1;
-            }
-        }
-    }
-
-    return res;
+void swCullCtxDebugDepth(SWcull_ctx *ctx, SWfloat *out_depth) {
+    (*ctx->debug_depth_proc)(ctx, out_depth);
 }

@@ -17,8 +17,6 @@ extern __itt_domain *__g_itt_domain;
 namespace RendererInternal {
 bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]);
 
-extern const uint8_t bbox_indices[];
-
 int upper_power_of_two(int v) {
     int res = 1;
     while (res < v) {
@@ -89,13 +87,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
       shadow_splitter_(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT), rp_builder_(ctx_, sh_) {
     using namespace RendererInternal;
 
-    {
-        const float NEAR_CLIP = 0.5f;
-        const float FAR_CLIP = 10000.0f;
-        SWfloat z = FAR_CLIP / (FAR_CLIP - NEAR_CLIP) +
-                    (NEAR_CLIP - (2.0f * NEAR_CLIP)) / (0.15f * (FAR_CLIP - NEAR_CLIP));
-        swCullCtxInit(&cull_ctx_, 256, 128, z);
-    }
+    swCullCtxInit(&cull_ctx_, ctx.w(), ctx.h(), 0.0f);
 
     { // buffer used to sample probes
         FrameBuf::ColorAttachmentDesc desc;

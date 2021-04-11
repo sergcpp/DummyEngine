@@ -28,8 +28,8 @@ class RpDebugTextures : public RenderPassBase {
     Ren::TexHandle output_tex_;
     const ViewState *view_state_ = nullptr;
     const Ren::Camera *draw_cam_ = nullptr;
+    int depth_w_ = 0, depth_h_ = 0;
     const uint8_t *depth_pixels_ = nullptr;
-    const uint8_t *depth_tiles_ = nullptr;
     Ren::WeakTex2DRef down_tex_4x_;
     DynArrayConstRef<ShadowList> shadow_lists_;
     DynArrayConstRef<ShadowMapRegion> shadow_regions_;

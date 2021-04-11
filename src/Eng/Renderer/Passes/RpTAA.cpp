@@ -123,7 +123,7 @@ void RpTAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &depth_tex,
         initialized = true;
     }
 
-    if (!velocity_fb_.Setup(&velocity_tex.ref->handle(), 1, {}, depth_tex.ref->handle(),
+    if (!velocity_fb_.Setup(velocity_tex.ref->handle(), {}, depth_tex.ref->handle(),
                             false)) {
         ctx.log()->Error("RpTAA: velocity_fb_ init failed!");
     }

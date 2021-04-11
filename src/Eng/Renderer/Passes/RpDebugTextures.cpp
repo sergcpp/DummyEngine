@@ -8,16 +8,15 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-void RpDebugTextures::Setup(RpBuilder &builder, const ViewState *view_state,
-                            const DrawList &list, const int orphan_index,
-                            const Ren::Tex2DRef &down_tex_4x,
-                            const char shared_data_buf_name[],
-                            const char cells_buf_name[], const char items_buf_name[],
-                            const char shadow_map_name[], const char main_color_tex_name[],
-                            const char main_normal_tex_name[], const char main_spec_tex_name[],
-                            const char main_depth_tex_name[], const char ssao_tex_name[],
-                            const char blur_res_name[], const char reduced_tex_name[],
-                            Ren::TexHandle output_tex) {
+void RpDebugTextures::Setup(
+    RpBuilder &builder, const ViewState *view_state, const DrawList &list,
+    const int orphan_index, const Ren::Tex2DRef &down_tex_4x,
+    const char shared_data_buf_name[], const char cells_buf_name[],
+    const char items_buf_name[], const char shadow_map_name[],
+    const char main_color_tex_name[], const char main_normal_tex_name[],
+    const char main_spec_tex_name[], const char main_depth_tex_name[],
+    const char ssao_tex_name[], const char blur_res_name[], const char reduced_tex_name[],
+    Ren::TexHandle output_tex) {
     orphan_index_ = orphan_index;
     render_flags_ = list.render_flags;
     view_state_ = view_state;
@@ -25,15 +24,12 @@ void RpDebugTextures::Setup(RpBuilder &builder, const ViewState *view_state,
     output_tex_ = output_tex;
 
     if (!list.depth_pixels.empty()) {
+        depth_w_ = list.depth_w;
+        depth_h_ = list.depth_h;
         depth_pixels_ = list.depth_pixels.data();
     } else {
+        depth_w_ = depth_h_ = 0;
         depth_pixels_ = nullptr;
-    }
-
-    if (!list.depth_tiles.empty()) {
-        depth_tiles_ = list.depth_tiles.data();
-    } else {
-        depth_tiles_ = nullptr;
     }
 
     down_tex_4x_ = down_tex_4x;
@@ -133,24 +129,16 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
     int x_offset = 0;
 
     const auto debug_cull = uint32_t(EnableCulling | DebugCulling);
-    if (((render_flags_ & debug_cull) == debug_cull) && depth_pixels_ && depth_tiles_) {
+    if (((render_flags_ & debug_cull) == debug_cull) && depth_pixels_) {
         //
         // Depth values
         //
 
-        temp_tex_->SetSubImage(0, 0, 0, 256, 128, Ren::eTexFormat::RawRGBA8888,
+        temp_tex_->SetSubImage(0, 0, 0, depth_w_, depth_h_, Ren::eTexFormat::RawRGBA8888,
                                depth_pixels_);
 
-        x_offset += BlitTex(applied_state, x_offset, 0, 256, 128, temp_tex_, 1.0f);
-
-        //
-        // Depth tiles (min)
-        //
-
-        temp_tex_->SetSubImage(0, 0, 0, 256, 128, Ren::eTexFormat::RawRGBA8888,
-                               depth_tiles_);
-
-        x_offset += BlitTex(applied_state, x_offset, 0, 256, 128, temp_tex_, 1.0f);
+        x_offset +=
+            BlitTex(applied_state, x_offset, 0, depth_w_ / 2, depth_h_ / 2, temp_tex_, 1.0f);
     }
 
     if (render_flags_ & DebugDeferred) {
@@ -258,20 +246,22 @@ void RpDebugTextures::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
                                           "internal/blit_depth.frag.glsl");
         assert(blit_depth_prog_->ready());
 
-        { // temp 256x128 texture
-            Ren::Tex2DParams params;
-            params.w = 256;
-            params.h = 128;
-            params.format = Ren::eTexFormat::RawRGBA8888;
-            params.filter = Ren::eTexFilter::NoFilter;
-            params.repeat = Ren::eTexRepeat::ClampToEdge;
-
-            Ren::eTexLoadStatus status;
-            temp_tex_ = ctx.LoadTexture2D("__DEBUG_TEMP_TEXTURE__", params, &status);
-            assert(status == Ren::eTexLoadStatus::TexCreatedDefault);
-        }
-
         initialized = true;
+    }
+
+    if (depth_w_) { // temp texture
+        Ren::Tex2DParams params;
+        params.w = depth_w_;
+        params.h = depth_h_;
+        params.format = Ren::eTexFormat::RawRGBA8888;
+        params.filter = Ren::eTexFilter::NoFilter;
+        params.repeat = Ren::eTexRepeat::ClampToEdge;
+
+        Ren::eTexLoadStatus status;
+        temp_tex_ = ctx.LoadTexture2D("__DEBUG_TEMP_TEXTURE__", params, &status);
+        assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+               status == Ren::eTexLoadStatus::TexFound ||
+               status == Ren::eTexLoadStatus::TexFoundReinitialized);
     }
 
     { // setup temp vao

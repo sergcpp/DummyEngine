@@ -17,12 +17,13 @@ struct Plane {
 };
 
 enum class eCamPlane {
-    LeftPlane,
-    RightPlane,
-    TopPlane,
-    BottomPlane,
-    NearPlane,
-    FarPlane
+    Left,
+    Right,
+    Top,
+    Bottom,
+    Near,
+    Far,
+    _Count
 };
 
 enum class eVisResult { Invisible, FullyVisible, PartiallyVisible };
@@ -79,7 +80,7 @@ class Camera {
     }
 
     uint32_t render_mask() const { return render_mask_; }
-    void set_render_mask(uint32_t mask) { render_mask_ = mask; }
+    void set_render_mask(const uint32_t mask) { render_mask_ = mask; }
 
     Vec3f view_dir() const {
         return Vec3f{view_matrix_[0][2], view_matrix_[1][2], view_matrix_[2][2]};
@@ -94,8 +95,8 @@ class Camera {
     float near() const { return near_; }
     float far() const { return far_; }
 
-    const Plane &frustum_plane(int i) const { return frustum_.planes[i]; }
-    const Plane &frustum_plane(eCamPlane i) const { return frustum_.planes[int(i)]; }
+    const Plane &frustum_plane(const int i) const { return frustum_.planes[i]; }
+    const Plane &frustum_plane(const eCamPlane i) const { return frustum_.planes[int(i)]; }
 
     bool is_orthographic() const { return is_orthographic_; }
 
@@ -115,7 +116,7 @@ class Camera {
     // returns radius
     float GetBoundingSphere(Vec3f &out_center) const;
 
-    void ExtractSubFrustums(int resx, int resy, int resz, Frustum *sub_frustums) const;
+    void ExtractSubFrustums(int resx, int resy, int resz, Frustum sub_frustums[]) const;
 
     void Move(const Vec3f &v, float delta_time);
     void Rotate(float rx, float ry, float delta_time);

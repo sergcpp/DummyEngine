@@ -130,7 +130,8 @@ void Ren::Camera::SetPxOffset(const Vec2f px_offset) const {
     }
 }
 
-void Ren::Camera::Perspective(float angle, float aspect, float nearr, float farr) {
+void Ren::Camera::Perspective(const float angle, const float aspect, const float nearr,
+                              const float farr) {
     is_orthographic_ = false;
     angle_ = angle;
     aspect_ = aspect;
@@ -139,8 +140,8 @@ void Ren::Camera::Perspective(float angle, float aspect, float nearr, float farr
     PerspectiveProjection(proj_matrix_, angle, aspect, nearr, farr);
 }
 
-void Ren::Camera::Orthographic(float left, float right, float top, float down,
-                               float nearr, float farr) {
+void Ren::Camera::Orthographic(const float left, const float right, const float top,
+                               const float down, const float nearr, const float farr) {
     is_orthographic_ = true;
     near_ = nearr;
     far_ = farr;
@@ -153,11 +154,9 @@ void Ren::Camera::Move(const Vec3f &v, const float delta_time) {
     view_matrix_[3][2] -= v[2] * delta_time;
 }
 
-void Ren::Camera::Rotate(float rx, float ry, float delta_time) {
-    Vec3f front;
-    front[0] = -view_matrix_[0][2];
-    front[1] = -view_matrix_[1][2];
-    front[2] = -view_matrix_[2][2];
+void Ren::Camera::Rotate(const float rx, const float ry, const float delta_time) {
+    const auto front =
+        Vec3f{-view_matrix_[0][2], -view_matrix_[1][2], -view_matrix_[2][2]};
 
     Vec3f tr_front;
 
@@ -173,40 +172,40 @@ void Ren::Camera::Rotate(float rx, float ry, float delta_time) {
 }
 
 void Ren::Camera::UpdatePlanes() {
-    Mat4f combo_mat = proj_matrix_ * view_matrix_;
+    const Mat4f combo_mat = proj_matrix_ * view_matrix_;
 
-    frustum_.planes[(int)eCamPlane::LeftPlane].n[0] = combo_mat[0][3] + combo_mat[0][0];
-    frustum_.planes[(int)eCamPlane::LeftPlane].n[1] = combo_mat[1][3] + combo_mat[1][0];
-    frustum_.planes[(int)eCamPlane::LeftPlane].n[2] = combo_mat[2][3] + combo_mat[2][0];
-    frustum_.planes[(int)eCamPlane::LeftPlane].d = combo_mat[3][3] + combo_mat[3][0];
+    frustum_.planes[int(eCamPlane::Left)].n[0] = combo_mat[0][3] + combo_mat[0][0];
+    frustum_.planes[int(eCamPlane::Left)].n[1] = combo_mat[1][3] + combo_mat[1][0];
+    frustum_.planes[int(eCamPlane::Left)].n[2] = combo_mat[2][3] + combo_mat[2][0];
+    frustum_.planes[int(eCamPlane::Left)].d = combo_mat[3][3] + combo_mat[3][0];
 
-    frustum_.planes[(int)eCamPlane::RightPlane].n[0] = combo_mat[0][3] - combo_mat[0][0];
-    frustum_.planes[(int)eCamPlane::RightPlane].n[1] = combo_mat[1][3] - combo_mat[1][0];
-    frustum_.planes[(int)eCamPlane::RightPlane].n[2] = combo_mat[2][3] - combo_mat[2][0];
-    frustum_.planes[(int)eCamPlane::RightPlane].d = combo_mat[3][3] - combo_mat[3][0];
+    frustum_.planes[int(eCamPlane::Right)].n[0] = combo_mat[0][3] - combo_mat[0][0];
+    frustum_.planes[int(eCamPlane::Right)].n[1] = combo_mat[1][3] - combo_mat[1][0];
+    frustum_.planes[int(eCamPlane::Right)].n[2] = combo_mat[2][3] - combo_mat[2][0];
+    frustum_.planes[int(eCamPlane::Right)].d = combo_mat[3][3] - combo_mat[3][0];
 
-    frustum_.planes[(int)eCamPlane::TopPlane].n[0] = combo_mat[0][3] - combo_mat[0][1];
-    frustum_.planes[(int)eCamPlane::TopPlane].n[1] = combo_mat[1][3] - combo_mat[1][1];
-    frustum_.planes[(int)eCamPlane::TopPlane].n[2] = combo_mat[2][3] - combo_mat[2][1];
-    frustum_.planes[(int)eCamPlane::TopPlane].d = combo_mat[3][3] - combo_mat[3][1];
+    frustum_.planes[int(eCamPlane::Top)].n[0] = combo_mat[0][3] - combo_mat[0][1];
+    frustum_.planes[int(eCamPlane::Top)].n[1] = combo_mat[1][3] - combo_mat[1][1];
+    frustum_.planes[int(eCamPlane::Top)].n[2] = combo_mat[2][3] - combo_mat[2][1];
+    frustum_.planes[int(eCamPlane::Top)].d = combo_mat[3][3] - combo_mat[3][1];
 
-    frustum_.planes[(int)eCamPlane::BottomPlane].n[0] = combo_mat[0][3] + combo_mat[0][1];
-    frustum_.planes[(int)eCamPlane::BottomPlane].n[1] = combo_mat[1][3] + combo_mat[1][1];
-    frustum_.planes[(int)eCamPlane::BottomPlane].n[2] = combo_mat[2][3] + combo_mat[2][1];
-    frustum_.planes[(int)eCamPlane::BottomPlane].d = combo_mat[3][3] + combo_mat[3][1];
+    frustum_.planes[int(eCamPlane::Bottom)].n[0] = combo_mat[0][3] + combo_mat[0][1];
+    frustum_.planes[int(eCamPlane::Bottom)].n[1] = combo_mat[1][3] + combo_mat[1][1];
+    frustum_.planes[int(eCamPlane::Bottom)].n[2] = combo_mat[2][3] + combo_mat[2][1];
+    frustum_.planes[int(eCamPlane::Bottom)].d = combo_mat[3][3] + combo_mat[3][1];
 
-    frustum_.planes[(int)eCamPlane::NearPlane].n[0] = combo_mat[0][3] + combo_mat[0][2];
-    frustum_.planes[(int)eCamPlane::NearPlane].n[1] = combo_mat[1][3] + combo_mat[1][2];
-    frustum_.planes[(int)eCamPlane::NearPlane].n[2] = combo_mat[2][3] + combo_mat[2][2];
-    frustum_.planes[(int)eCamPlane::NearPlane].d = combo_mat[3][3] + combo_mat[3][2];
+    frustum_.planes[int(eCamPlane::Near)].n[0] = combo_mat[0][3] + combo_mat[0][2];
+    frustum_.planes[int(eCamPlane::Near)].n[1] = combo_mat[1][3] + combo_mat[1][2];
+    frustum_.planes[int(eCamPlane::Near)].n[2] = combo_mat[2][3] + combo_mat[2][2];
+    frustum_.planes[int(eCamPlane::Near)].d = combo_mat[3][3] + combo_mat[3][2];
 
-    frustum_.planes[(int)eCamPlane::FarPlane].n[0] = combo_mat[0][3] - combo_mat[0][2];
-    frustum_.planes[(int)eCamPlane::FarPlane].n[1] = combo_mat[1][3] - combo_mat[1][2];
-    frustum_.planes[(int)eCamPlane::FarPlane].n[2] = combo_mat[2][3] - combo_mat[2][2];
-    frustum_.planes[(int)eCamPlane::FarPlane].d = combo_mat[3][3] - combo_mat[3][2];
+    frustum_.planes[int(eCamPlane::Far)].n[0] = combo_mat[0][3] - combo_mat[0][2];
+    frustum_.planes[int(eCamPlane::Far)].n[1] = combo_mat[1][3] - combo_mat[1][2];
+    frustum_.planes[int(eCamPlane::Far)].n[2] = combo_mat[2][3] - combo_mat[2][2];
+    frustum_.planes[int(eCamPlane::Far)].d = combo_mat[3][3] - combo_mat[3][2];
 
-    for (int pl = (int)eCamPlane::LeftPlane; pl <= (int)eCamPlane::FarPlane; pl++) {
-        float inv_l =
+    for (int pl = 0; pl < int(eCamPlane::_Count); pl++) {
+        const float inv_l =
             1.0f / std::sqrt(frustum_.planes[pl].n[0] * frustum_.planes[pl].n[0] +
                              frustum_.planes[pl].n[1] * frustum_.planes[pl].n[1] +
                              frustum_.planes[pl].n[2] * frustum_.planes[pl].n[2]);
@@ -237,13 +236,14 @@ Ren::eVisResult Ren::Camera::CheckFrustumVisibility(const Vec3f &bbox_min,
 }
 
 float Ren::Camera::GetBoundingSphere(Vec3f &out_center) const {
-    float f = far_, n = near_;
+    const float f = far_, n = near_;
 
-    Vec3f fwd = Vec3f{-view_matrix_[0][2], -view_matrix_[1][2], -view_matrix_[2][2]};
+    const Vec3f fwd =
+        Vec3f{-view_matrix_[0][2], -view_matrix_[1][2], -view_matrix_[2][2]};
 
-    float k = std::sqrt(1 + (1.0f / (aspect_ * aspect_))) * aspect_ *
-              std::tan(0.5f * angle_ * Ren::Pi<float>() / 180.0f);
-    float k_sqr = k * k;
+    const float k = std::sqrt(1 + (1.0f / (aspect_ * aspect_))) * aspect_ *
+                    std::tan(0.5f * angle_ * Ren::Pi<float>() / 180.0f);
+    const float k_sqr = k * k;
     if (k_sqr >= (f - n) / (f + n)) {
         out_center = world_position_ + fwd * f;
         return f * k;
@@ -254,8 +254,8 @@ float Ren::Camera::GetBoundingSphere(Vec3f &out_center) const {
     }
 }
 
-void Ren::Camera::ExtractSubFrustums(int resx, int resy, int resz,
-                                     Frustum *sub_frustums) const {
+void Ren::Camera::ExtractSubFrustums(const int resx, const int resy, const int resz,
+                                     Frustum sub_frustums[]) const {
     // grid size by x and y in clip space
     const float grid_size_cs[2] = {2.0f / (float)resx, 2.0f / (float)resy};
 
@@ -266,14 +266,14 @@ void Ren::Camera::ExtractSubFrustums(int resx, int resy, int resz,
                     zfar = near_ * std::pow(far_ / near_, 1.0f / (float)resz);
 
         for (int y = 0; y < resy; y++) {
-            float ybot = -1.0f + (float)y * grid_size_cs[1],
-                  ytop = -1.0f + float(y + 1) * grid_size_cs[1];
+            const float ybot = -1.0f + float(y) * grid_size_cs[1],
+                        ytop = -1.0f + float(y + 1) * grid_size_cs[1];
 
             for (int x = 0; x < resx; x++) {
                 auto p0 =
-                         Ren::Vec4f{-1.0f + (float)x * grid_size_cs[0], ybot, 0.0f, 1.0f},
+                         Ren::Vec4f{-1.0f + float(x) * grid_size_cs[0], ybot, 0.0f, 1.0f},
                      p1 =
-                         Ren::Vec4f{-1.0f + (float)x * grid_size_cs[0], ytop, 0.0f, 1.0f},
+                         Ren::Vec4f{-1.0f + float(x) * grid_size_cs[0], ytop, 0.0f, 1.0f},
                      p2 = Ren::Vec4f{-1.0f + float(x + 1) * grid_size_cs[0], ytop, 0.0f,
                                      1.0f},
                      p3 = Ren::Vec4f{-1.0f + float(x + 1) * grid_size_cs[0], ybot, 0.0f,
@@ -290,17 +290,15 @@ void Ren::Camera::ExtractSubFrustums(int resx, int resy, int resz,
                                  _p3 = Ren::Vec3f{p3 / p3[3]};
 
                 Ren::Frustum &sf = sub_frustums[y * resx + x];
-                sf.planes[(int)eCamPlane::LeftPlane] = {world_position_, _p0, _p1};
-                sf.planes[(int)eCamPlane::RightPlane] = {world_position_, _p2, _p3};
-                sf.planes[(int)eCamPlane::TopPlane] = {world_position_, _p1, _p2};
-                sf.planes[(int)eCamPlane::BottomPlane] = {world_position_, _p3, _p0};
-                sf.planes[(int)eCamPlane::NearPlane] =
-                    frustum_.planes[(int)eCamPlane::NearPlane];
-                sf.planes[(int)eCamPlane::NearPlane].d -= (znear - near_);
-                sf.planes[(int)eCamPlane::FarPlane] =
-                    frustum_.planes[(int)eCamPlane::FarPlane];
-                sf.planes[(int)eCamPlane::FarPlane].d =
-                    -frustum_.planes[(int)eCamPlane::NearPlane].d + (zfar - near_);
+                sf.planes[int(eCamPlane::Left)] = {world_position_, _p0, _p1};
+                sf.planes[int(eCamPlane::Right)] = {world_position_, _p2, _p3};
+                sf.planes[int(eCamPlane::Top)] = {world_position_, _p1, _p2};
+                sf.planes[int(eCamPlane::Bottom)] = {world_position_, _p3, _p0};
+                sf.planes[int(eCamPlane::Near)] = frustum_.planes[int(eCamPlane::Near)];
+                sf.planes[int(eCamPlane::Near)].d -= (znear - near_);
+                sf.planes[int(eCamPlane::Far)] = frustum_.planes[int(eCamPlane::Far)];
+                sf.planes[int(eCamPlane::Far)].d =
+                    -frustum_.planes[int(eCamPlane::Near)].d + (zfar - near_);
             }
         }
     }
@@ -315,11 +313,10 @@ void Ren::Camera::ExtractSubFrustums(int resx, int resy, int resz,
 
         for (int i = 0; i < resy * resx; i++) {
             Ren::Frustum &sf = sub_frustums[z * resy * resx + i];
-            sf.planes[(int)eCamPlane::NearPlane].d -= (znear - near_);
-            sf.planes[(int)eCamPlane::FarPlane] =
-                frustum_.planes[(int)eCamPlane::FarPlane];
-            sf.planes[(int)eCamPlane::FarPlane].d =
-                -frustum_.planes[(int)eCamPlane::NearPlane].d + (zfar - near_);
+            sf.planes[int(eCamPlane::Near)].d -= (znear - near_);
+            sf.planes[int(eCamPlane::Far)] = frustum_.planes[int(eCamPlane::Far)];
+            sf.planes[int(eCamPlane::Far)].d =
+                -frustum_.planes[int(eCamPlane::Near)].d + (zfar - near_);
         }
     }
 }

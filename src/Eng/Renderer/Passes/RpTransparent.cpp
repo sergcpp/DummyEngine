@@ -155,12 +155,12 @@ void RpTransparent::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &co
         }
     }
 
-    if (!color_only_fb_.Setup(&color_tex.ref->handle(), 1, depth_tex.ref->handle(),
+    if (!color_only_fb_.Setup(color_tex.ref->handle(), depth_tex.ref->handle(),
                               depth_tex.ref->handle(), view_state_->is_multisampled)) {
         ctx.log()->Error("RpTransparent: color_only_fb_ init failed!");
     }
 
-    if (!resolved_fb_.Setup(&transparent_tex.ref->handle(), 1, {}, {}, false)) {
+    if (!resolved_fb_.Setup(transparent_tex.ref->handle(), {}, {}, false)) {
         ctx.log()->Error("RpTransparent: resolved_fb_ init failed!");
     }
 

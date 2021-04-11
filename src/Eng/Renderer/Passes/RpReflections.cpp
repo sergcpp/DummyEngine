@@ -186,15 +186,15 @@ void RpReflections::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &ss
         initialized = true;
     }
 
-    if (!ssr_buf1_fb_.Setup(&ssr1_tex.ref->handle(), 1, {}, {}, false)) {
+    if (!ssr_buf1_fb_.Setup(ssr1_tex.ref->handle(), {}, {}, false)) {
         ctx.log()->Error("RpReflections: ssr_buf1_fb_ init failed!");
     }
 
-    if (!ssr_buf2_fb_.Setup(&ssr2_tex.ref->handle(), 1, {}, {}, false)) {
+    if (!ssr_buf2_fb_.Setup(ssr2_tex.ref->handle(), {}, {}, false)) {
         ctx.log()->Error("RpReflections: ssr_buf2_fb_ init failed!");
     }
 
-    if (!output_fb_.Setup(&output_tex.ref->handle(), 1, {}, {}, false)) {
+    if (!output_fb_.Setup(output_tex.ref->handle(), {}, {}, false)) {
         ctx.log()->Error("RpReflections: output_fb_ init failed!");
     }
 }

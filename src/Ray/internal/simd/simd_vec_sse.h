@@ -182,9 +182,8 @@ public:
 #if 0 // requires sse4.1
         vec_ = _mm_blendv_ps(vec_, v1.vec_, mask.vec_);
 #else
-        __m128 temp1 = _mm_and_ps(mask.vec_, v1.vec_);
-        __m128 temp2 = _mm_andnot_ps(mask.vec_, vec_);
-        vec_ = _mm_or_ps(temp1, temp2);
+        __m128 cond = _mm_castsi128_ps(_mm_srai_epi32(_mm_castps_si128(mask.vec_), 31));
+        vec_ = _mm_or_ps(_mm_andnot_ps(cond, vec_), _mm_and_ps(cond, v1.vec_));
 #endif
     }
 
@@ -192,9 +191,8 @@ public:
 #if 0 // requires sse4.1
         vec_ = _mm_blendv_ps(v1.vec_, vec_, mask.vec_);
 #else
-        __m128 temp1 = _mm_andnot_ps(mask.vec_, v1.vec_);
-        __m128 temp2 = _mm_and_ps(mask.vec_, vec_);
-        vec_ = _mm_or_ps(temp1, temp2);
+        __m128 cond = _mm_castsi128_ps(_mm_srai_epi32(_mm_castps_si128(mask.vec_), 31));
+        vec_ = _mm_or_ps(_mm_and_ps(cond, vec_), _mm_andnot_ps(cond, v1.vec_));
 #endif
     }
 

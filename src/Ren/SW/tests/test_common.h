@@ -11,7 +11,7 @@ static void handle_assert(int passed, const char* assert, const char* file, long
     }
 }
 
-#define require(x) handle_assert((int)(x), #x , __FILE__, __LINE__ )
+#define require(x) handle_assert((x) != 0, #x , __FILE__, __LINE__ )
 
 
 #endif
