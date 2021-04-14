@@ -613,11 +613,13 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
         g_asset_handlers["hdr"] = {"dds", HConvHDRToRGBM};
         g_asset_handlers["png"] = {"dds", HConvToDDS};
         g_asset_handlers["img"] = {"dds", HConvImgToDDS};
+        g_asset_handlers["dds"] = {"dds", HCopy};
     } else if (strcmp(platform, "android") == 0) {
         g_asset_handlers["tga"] = {"ktx", HConvToASTC};
         g_asset_handlers["hdr"] = {"ktx", HConvHDRToRGBM};
         g_asset_handlers["png"] = {"ktx", HConvToASTC};
         g_asset_handlers["img"] = {"ktx", HConvImgToASTC};
+        g_asset_handlers["ktx"] = {"ktx", HCopy};
     }
     g_asset_handlers["txt"] = {"txt", HPreprocessMaterial};
 

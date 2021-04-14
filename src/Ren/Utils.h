@@ -140,7 +140,9 @@ int GetRequiredMemory_DXT1(int w, int h);
 int GetRequiredMemory_DXT5(int w, int h);
 
 // NOTE: intended for realtime compression, quality might not be the best
-void CompressImage_DXT1(const uint8_t img_src[], int w, int h, int channels,
-                        uint8_t img_dst[]);
-void CompressImage_DXT5(const uint8_t img_src[], int w, int h, bool is_YCoCg, uint8_t img_dst[]);
+template <int Channels>
+void CompressImage_DXT1(const uint8_t img_src[], int w, int h, uint8_t img_dst[]);
+
+template <bool Is_YCoCg = false>
+void CompressImage_DXT5(const uint8_t img_src[], int w, int h, uint8_t img_dst[]);
 } // namespace Ren

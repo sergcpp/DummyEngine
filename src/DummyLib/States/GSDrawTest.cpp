@@ -68,7 +68,7 @@ void GSDrawTest::OnPreloadScene(JsObject &js_scene) {
 
 #if 0 // texture compression test
     std::ifstream src_stream("assets/textures/lenna.png",
-                                std::ios::binary | std::ios::ate);
+                             std::ios::binary | std::ios::ate);
     assert(src_stream);
     auto src_size = size_t(src_stream.tellg());
     src_stream.seekg(0, std::ios::beg);
@@ -80,26 +80,42 @@ void GSDrawTest::OnPreloadScene(JsObject &js_scene) {
     unsigned char *image_data = SOIL_load_image_from_memory(
         &src_buf[0], int(src_size), &width, &height, &channels, 0);
 
-    const int RepeatCount = 100;
+#ifdef NDEBUG
+    const int RepeatCount = 1000;
+#else
+    const int RepeatCount = 1;
+#endif
 
-#if 1 // test DXT1
-    const int dxt_size_total = Ren::GetRequiredMemory_DXT1(width, height);
+#if 0 // test DXT1/DXT5
+    int dxt_size_total;
+    if (channels == 3) {
+        dxt_size_total = Ren::GetRequiredMemory_DXT1(width, height);
+    } else {
+        dxt_size_total = Ren::GetRequiredMemory_DXT5(width, height);
+    }
     std::unique_ptr<uint8_t[]> img_dst(new uint8_t[dxt_size_total]);
 
     const uint64_t t1 = Sys::GetTimeUs();
 
-    for (int i = 0; i < RepeatCount; i++) {
-        Ren::CompressImage_DXT1(image_data, width, height, channels, img_dst.get());
+    if (channels == 3) {
+        for (int i = 0; i < RepeatCount; i++) {
+            Ren::CompressImage_DXT1<3 /* Channels */>(image_data, width, height,
+                                                      img_dst.get());
+        }
+    } else {
+        for (int i = 0; i < RepeatCount; i++) {
+            Ren::CompressImage_DXT5(image_data, width, height, img_dst.get());
+        }
     }
-
-    channels = 3;
 #else // test YCoCg-DXT5
+    assert(channels == 3);
     std::unique_ptr<uint8_t[]> image_data_YCoCg =
         Ren::ConvertRGB_to_CoCgxY(image_data, width, height);
     channels = 4;
 
-    //SceneManagerInternal::WriteImage(image_data_YCoCg.get(), width, height, channels,
-    //                                 false, false, "assets/textures/wall_picture_YCoCg.png");
+    // SceneManagerInternal::WriteImage(image_data_YCoCg.get(), width, height, channels,
+    //                                false, false,
+    //                                "assets/textures/wall_picture_YCoCg.png");
 
     const int dxt_size_total = Ren::GetRequiredMemory_DXT5(width, height);
     std::unique_ptr<uint8_t[]> img_dst(new uint8_t[dxt_size_total]);
@@ -107,7 +123,8 @@ void GSDrawTest::OnPreloadScene(JsObject &js_scene) {
     const uint64_t t1 = Sys::GetTimeUs();
 
     for (int i = 0; i < RepeatCount; i++) {
-        Ren::CompressImage_DXT5(image_data_YCoCg.get(), width, height, true /* is_YCoCg */, img_dst.get());
+        Ren::CompressImage_DXT5<true /* Is_YCoCg */>(image_data_YCoCg.get(), width,
+                                                     height, img_dst.get());
     }
 #endif
     const uint64_t t2 = Sys::GetTimeUs();
@@ -117,9 +134,13 @@ void GSDrawTest::OnPreloadScene(JsObject &js_scene) {
 
     log_->Info("Compressed in %f ms", elapsed_ms);
     log_->Info("Speed is %f Mpixels per second",
-                double(width * height) / (1000000.0 * elapsed_s));
+               double(width * height) / (1000000.0 * elapsed_s));
 
     SOIL_free_image_data(image_data);
+
+#ifdef NDEBUG
+    system("pause");
+#endif
 
     //
     // Write out file
@@ -127,11 +148,11 @@ void GSDrawTest::OnPreloadScene(JsObject &js_scene) {
 
     Ren::DDSHeader header = {};
     header.dwMagic = (unsigned('D') << 0u) | (unsigned('D') << 8u) |
-                        (unsigned('S') << 16u) | (unsigned(' ') << 24u);
+                     (unsigned('S') << 16u) | (unsigned(' ') << 24u);
     header.dwSize = 124;
-    header.dwFlags = unsigned(DDSD_CAPS) | unsigned(DDSD_HEIGHT) |
-                        unsigned(DDSD_WIDTH) | unsigned(DDSD_PIXELFORMAT) |
-                        unsigned(DDSD_LINEARSIZE) | unsigned(DDSD_MIPMAPCOUNT);
+    header.dwFlags = unsigned(DDSD_CAPS) | unsigned(DDSD_HEIGHT) | unsigned(DDSD_WIDTH) |
+                     unsigned(DDSD_PIXELFORMAT) | unsigned(DDSD_LINEARSIZE) |
+                     unsigned(DDSD_MIPMAPCOUNT);
     header.dwWidth = width;
     header.dwHeight = height;
     header.dwPitchOrLinearSize = dxt_size_total;
@@ -141,25 +162,17 @@ void GSDrawTest::OnPreloadScene(JsObject &js_scene) {
 
     if (channels == 3) {
         header.sPixelFormat.dwFourCC = (unsigned('D') << 0u) | (unsigned('X') << 8u) |
-                                        (unsigned('T') << 16u) |
-                                        (unsigned('1') << 24u);
+                                       (unsigned('T') << 16u) | (unsigned('1') << 24u);
     } else {
         header.sPixelFormat.dwFourCC = (unsigned('D') << 0u) | (unsigned('X') << 8u) |
-                                        (unsigned('T') << 16u) |
-                                        (unsigned('5') << 24u);
+                                       (unsigned('T') << 16u) | (unsigned('5') << 24u);
     }
 
     header.sCaps.dwCaps1 = unsigned(DDSCAPS_TEXTURE) | unsigned(DDSCAPS_MIPMAP);
 
-    std::ofstream out_stream("test.dds", std::ios::binary);
+    std::ofstream out_stream("assets_pc/textures/wall_picture_YCoCg.dds",
+                             std::ios::binary);
     out_stream.write((char *)&header, sizeof(header));
-
-    /*for (int i = 0; i < mip_count; i++) {
-        out_stream.write((char*)dxt_data[i], dxt_size[i]);
-        SOIL_free_image_data(dxt_data[i]);
-        dxt_data[i] = nullptr;
-    }*/
-
     out_stream.write((char *)img_dst.get(), dxt_size_total);
 #endif
 
@@ -659,8 +672,8 @@ void GSDrawTest::OnUpdateScene() {
                               Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_, max_exposure_);
 
     // log_->Info("%f %f %f | %f %f %f",
-    //        view_origin_[0], view_origin_[1], view_origin_[2],
-    //        view_dir_[0], view_dir_[1], view_dir_[2]);
+    //       view_origin_[0], view_origin_[1], view_origin_[2],
+    //       view_dir_[0], view_dir_[1], view_dir_[2]);
 }
 
 void GSDrawTest::SaveScene(JsObject &js_scene) {

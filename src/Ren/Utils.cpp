@@ -5,6 +5,13 @@
 #include "CPUFeatures.h"
 #include "Texture.h"
 
+#ifdef __GNUC__
+#define force_inline __attribute__((always_inline)) inline
+#endif
+#ifdef _MSC_VER
+#define force_inline __forceinline
+#endif
+
 #define _MIN(x, y) ((x) < (y) ? (x) : (y))
 #define _MAX(x, y) ((x) < (y) ? (y) : (x))
 #define _ABS(x) ((x) < 0 ? -(x) : (x))
@@ -94,27 +101,33 @@ uint16_t f32_to_u16(const float value) { return uint16_t(value * 65535); }
     B  = [   1   -1    -1] [Cg]
 */
 
-uint8_t to_clamped_uint8(const int x) {
+force_inline uint8_t to_clamped_uint8(const int x) {
     return ((x) < 0 ? (0) : ((x) > 255 ? 255 : (x)));
 }
 
-#define RGB_TO_YCOCG_Y(r, g, b) (((r + (g<> 2))))
+//
+// Perfectly reversible RGB <-> YCoCg conversion (relies on integer wrap around)
+//
 
-void RGB_to_YCoCg_reversible(const uint8_t in_RGB[3], uint8_t out_YCoCg[3]) {
+force_inline void RGB_to_YCoCg_reversible(const uint8_t in_RGB[3], uint8_t out_YCoCg[3]) {
     out_YCoCg[1] = in_RGB[0] - in_RGB[2];
     const uint8_t t = in_RGB[2] + (out_YCoCg[1] >> 1);
     out_YCoCg[2] = in_RGB[1] - t;
     out_YCoCg[0] = t + (out_YCoCg[2] >> 1);
 }
 
-void YCoCg_to_RGB_reversible(const uint8_t in_YCoCg[3], uint8_t out_RGB[3]) {
+force_inline void YCoCg_to_RGB_reversible(const uint8_t in_YCoCg[3], uint8_t out_RGB[3]) {
     const uint8_t t = in_YCoCg[0] - (in_YCoCg[2] >> 1);
     out_RGB[1] = in_YCoCg[2] + t;
     out_RGB[2] = t - (in_YCoCg[1] >> 1);
     out_RGB[0] = in_YCoCg[1] + out_RGB[2];
 }
 
-void RGB_to_YCoCg(const uint8_t in_RGB[3], uint8_t out_YCoCg[3]) {
+//
+// Not-so-perfectly reversible RGB <-> YCoCg conversion (to use in shaders)
+//
+
+force_inline void RGB_to_YCoCg(const uint8_t in_RGB[3], uint8_t out_YCoCg[3]) {
     const int R = int(in_RGB[0]);
     const int G = int(in_RGB[1]);
     const int B = int(in_RGB[2]);
@@ -124,7 +137,7 @@ void RGB_to_YCoCg(const uint8_t in_RGB[3], uint8_t out_YCoCg[3]) {
     out_YCoCg[2] = to_clamped_uint8(128 + (-R + 2 * G - B) / 4);
 }
 
-void YCoCg_to_RGB(const uint8_t in_YCoCg[3], uint8_t out_RGB[3]) {
+force_inline void YCoCg_to_RGB(const uint8_t in_YCoCg[3], uint8_t out_RGB[3]) {
     const int Y = int(in_YCoCg[0]);
     const int Co = int(in_YCoCg[1]) - 128;
     const int Cg = int(in_YCoCg[2]) - 128;
@@ -142,15 +155,15 @@ const uint8_t _blank_ASTC_block_4x4[] = {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xF
                                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 const int _blank_ASTC_block_4x4_len = sizeof(_blank_ASTC_block_4x4);
 
-Ren::Vec4f permute(const Ren::Vec4f &x) {
+force_inline Ren::Vec4f permute(const Ren::Vec4f &x) {
     return Ren::Mod(((x * 34.0) + Ren::Vec4f{1.0}) * x, Ren::Vec4f{289.0});
 }
 
-Ren::Vec4f taylor_inv_sqrt(const Ren::Vec4f &r) {
+force_inline Ren::Vec4f taylor_inv_sqrt(const Ren::Vec4f &r) {
     return Ren::Vec4f{1.79284291400159f} - 0.85373472095314f * r;
 }
 
-Ren::Vec4f fade(const Ren::Vec4f &t) {
+force_inline Ren::Vec4f fade(const Ren::Vec4f &t) {
     return t * t * t * (t * (t * 6.0f - Ren::Vec4f{15.0f}) + Ren::Vec4f{10.0f});
 }
 } // namespace Ren
@@ -1309,14 +1322,14 @@ float Ren::PerlinNoise(const Ren::Vec4f &P, const Ren::Vec4f &rep) {
 //
 
 namespace Ren {
-void Extract4x4Block_Ref(const uint8_t src[], const int stride, const int channels,
-                         uint8_t dst[64]) {
-    if (channels == 4) {
+template <int Channels>
+void Extract4x4Block_Ref(const uint8_t src[], const int stride, uint8_t dst[64]) {
+    if (Channels == 4) {
         for (int j = 0; j < 4; j++) {
             memcpy(&dst[j * 4 * 4], src, 4 * 4);
             src += stride;
         }
-    } else if (channels == 3) {
+    } else if (Channels == 3) {
         for (int j = 0; j < 4; j++) {
             for (int i = 0; i < 4; i++) {
                 memcpy(&dst[i * 4], &src[i * 3], 3);
@@ -1328,24 +1341,24 @@ void Extract4x4Block_Ref(const uint8_t src[], const int stride, const int channe
 }
 
 // WARNING: Reads 4 bytes outside of block!
-void Extract4x4Block_SSSE3(const uint8_t src[], int stride, int channels,
-                           uint8_t dst[64]);
+template <int Channels>
+void Extract4x4Block_SSSE3(const uint8_t src[], int stride, uint8_t dst[64]);
 
-int ColorDistance(const uint8_t c1[3], const uint8_t c2[3]) {
+force_inline int ColorDistance(const uint8_t c1[3], const uint8_t c2[3]) {
     // euclidean distance
     return (c1[0] - c2[0]) * (c1[0] - c2[0]) + (c1[1] - c2[1]) * (c1[1] - c2[1]) +
            (c1[2] - c2[2]) * (c1[2] - c2[2]);
 }
 
-int ColorLumaApprox(const uint8_t color[3]) {
+force_inline int ColorLumaApprox(const uint8_t color[3]) {
     return int(color[0] + color[1] * 2 + color[2]);
 }
 
-uint16_t rgb888_to_rgb565(const uint8_t color[3]) {
+force_inline uint16_t rgb888_to_rgb565(const uint8_t color[3]) {
     return ((color[0] >> 3) << 11) | ((color[1] >> 2) << 5) | (color[2] >> 3);
 }
 
-void swap_rgb(uint8_t c1[3], uint8_t c2[3]) {
+force_inline void swap_rgb(uint8_t c1[3], uint8_t c2[3]) {
     uint8_t tm[3];
     memcpy(tm, c1, 3);
     memcpy(c1, c2, 3);
@@ -1436,13 +1449,14 @@ void GetMinMaxColorByBBox_Ref(const uint8_t block[64], uint8_t min_color[4],
     }
 }
 
-void GetMinMaxColorByBBox_SSE41(const uint8_t block[64], uint8_t min_color[4],
-                                uint8_t max_color[4]);
+template <bool UseAlpha = false, bool Is_YCoCg = false>
+void GetMinMaxColorByBBox_SSE2(const uint8_t block[64], uint8_t min_color[4],
+                               uint8_t max_color[4]);
 
-void InsetYCoCgBBox(uint8_t min_color[4], uint8_t max_color[4]) {
-    const uint8_t inset[] = {uint8_t((max_color[0] - min_color[0]) / 16),
-                             uint8_t((max_color[1] - min_color[1]) / 16), 0,
-                             uint8_t((max_color[3] - min_color[3]) / 32)};
+void InsetYCoCgBBox_Ref(uint8_t min_color[4], uint8_t max_color[4]) {
+    const int inset[] = {(max_color[0] - min_color[0]) - ((1 << (4 - 1)) - 1),
+                         (max_color[1] - min_color[1]) - ((1 << (4 - 1)) - 1), 0,
+                         (max_color[3] - min_color[3]) - ((1 << (5 - 1)) - 1)};
 
     int mini[4], maxi[4];
 
@@ -1471,12 +1485,14 @@ void InsetYCoCgBBox(uint8_t min_color[4], uint8_t max_color[4]) {
     max_color[3] = maxi[3];
 }
 
-void SelectYCoCgDiagonal(const uint8_t block[64], uint8_t min_color[3],
-                         uint8_t max_color[3]) {
-    const uint8_t mid0 = (int(min_color[0]) + max_color[0]) / 2;
-    const uint8_t mid1 = (int(min_color[1]) + max_color[1]) / 2;
+void InsetYCoCgBBox_SSE2(uint8_t min_color[4], uint8_t max_color[4]);
 
-#if 1 // use covariance
+void SelectYCoCgDiagonal_Ref(const uint8_t block[64], uint8_t min_color[3],
+                             uint8_t max_color[3]) {
+    const uint8_t mid0 = (int(min_color[0]) + max_color[0] + 1) / 2;
+    const uint8_t mid1 = (int(min_color[1]) + max_color[1] + 1) / 2;
+
+#if 0 // use covariance
     int covariance = 0;
     for (int i = 0; i < 16; i++) {
         const int b0 = block[i * 4 + 0] - mid0;
@@ -1501,7 +1517,7 @@ void SelectYCoCgDiagonal(const uint8_t block[64], uint8_t min_color[3],
     uint8_t mask = -(side > 8);
 
     uint8_t c0 = min_color[1];
-    uint8_t c1 = max_color[2];
+    uint8_t c1 = max_color[1];
 
     c0 ^= c1 ^= mask &= c0 ^= c1; // WTF?
 
@@ -1510,7 +1526,10 @@ void SelectYCoCgDiagonal(const uint8_t block[64], uint8_t min_color[3],
 #endif
 }
 
-void ScaleYCoCg(uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3]) {
+void SelectYCoCgDiagonal_SSE2(const uint8_t block[64], uint8_t min_color[3],
+                              uint8_t max_color[3]);
+
+void ScaleYCoCg_Ref(uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3]) {
     int m0 = _ABS(min_color[0] - 128);
     int m1 = _ABS(min_color[1] - 128);
     int m2 = _ABS(max_color[0] - 128);
@@ -1543,22 +1562,24 @@ void ScaleYCoCg(uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3]) {
     }
 }
 
-void push_u8(const uint8_t v, uint8_t *&out_data) { (*out_data++) = v; }
+void ScaleYCoCg_SSE2(uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3]);
 
-void push_u16(const uint16_t v, uint8_t *&out_data) {
+force_inline void push_u8(const uint8_t v, uint8_t *&out_data) { (*out_data++) = v; }
+
+force_inline void push_u16(const uint16_t v, uint8_t *&out_data) {
     (*out_data++) = (v >> 0) & 0xFF;
     (*out_data++) = (v >> 8) & 0xFF;
 }
 
-void push_u32(const uint32_t v, uint8_t *&out_data) {
+force_inline void push_u32(const uint32_t v, uint8_t *&out_data) {
     (*out_data++) = (v >> 0) & 0xFF;
     (*out_data++) = (v >> 8) & 0xFF;
     (*out_data++) = (v >> 16) & 0xFF;
     (*out_data++) = (v >> 24) & 0xFF;
 }
 
-void push_color_indices(const uint8_t block[64], const uint8_t min_color[3],
-                        const uint8_t max_color[3], uint8_t *&out_data) {
+void EmitColorIndices_Ref(const uint8_t block[64], const uint8_t min_color[3],
+                          const uint8_t max_color[3], uint8_t *&out_data) {
     uint8_t colors[4][4];
 
     // get two initial colors (as if they were converted to rgb565 and back
@@ -1633,8 +1654,11 @@ void push_color_indices(const uint8_t block[64], const uint8_t min_color[3],
     push_u32(result_indices, out_data);
 }
 
-void push_alpha_indices(const uint8_t block[64], const uint8_t min_alpha,
-                        const uint8_t max_alpha, uint8_t *&out_data) {
+void EmitColorIndices_SSE2(const uint8_t block[64], const uint8_t min_color[4],
+                           const uint8_t max_color[4], uint8_t *&out_data);
+
+void EmitAlphaIndices_Ref(const uint8_t block[64], const uint8_t min_alpha,
+                          const uint8_t max_alpha, uint8_t *&out_data) {
     uint8_t ind[16];
 
 #if 0 // simple version
@@ -1705,6 +1729,9 @@ void push_alpha_indices(const uint8_t block[64], const uint8_t min_alpha,
     push_u8((ind[13] >> 1) | (ind[14] << 2) | (ind[15] << 5), out_data);
 }
 
+void EmitAlphaIndices_SSE2(const uint8_t block[64], uint8_t min_alpha, uint8_t max_alpha,
+                           uint8_t *&out_data);
+
 // clang-format off
 
 const int BlockSize_DXT1 = 2 * sizeof(uint16_t) + sizeof(uint32_t);
@@ -1727,86 +1754,134 @@ int Ren::GetRequiredMemory_DXT5(const int w, const int h) {
     return BlockSize_DXT5 * (w * h) / (4 * 4);
 }
 
+template <int Channels>
 void Ren::CompressImage_DXT1(const uint8_t img_src[], const int w, const int h,
-                             const int channels, uint8_t img_dst[]) {
+                             uint8_t img_dst[]) {
     alignas(16) uint8_t block[64] = {};
     uint8_t *p_out = img_dst;
 
     if (g_CpuFeatures.ssse3_supported && g_CpuFeatures.sse41_supported) {
-        for (int j = 0; j < h; j += 4, img_src += 4 * w * channels) {
+        for (int j = 0; j < h; j += 4, img_src += 4 * w * Channels) {
             for (int i = 0; i < w; i += 4) {
-                Extract4x4Block_SSSE3(&img_src[i * channels], w * channels, channels,
-                                      block);
+                Extract4x4Block_SSSE3<Channels>(&img_src[i * Channels], w * Channels,
+                                                block);
 
                 alignas(16) uint8_t min_color[4], max_color[4];
-                GetMinMaxColorByBBox_SSE41(block, min_color, max_color);
+                GetMinMaxColorByBBox_SSE2(block, min_color, max_color);
 
                 push_u16(rgb888_to_rgb565(max_color), p_out);
                 push_u16(rgb888_to_rgb565(min_color), p_out);
 
-                push_color_indices(block, min_color, max_color, p_out);
+                EmitColorIndices_SSE2(block, min_color, max_color, p_out);
             }
         }
     } else {
-        for (int j = 0; j < h; j += 4, img_src += 4 * w * channels) {
+        for (int j = 0; j < h; j += 4, img_src += 4 * w * Channels) {
             for (int i = 0; i < w; i += 4) {
-                Extract4x4Block_Ref(&img_src[i * channels], w * channels, channels,
-                                    block);
+                Extract4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels,
+                                              block);
 
-                alignas(16) uint8_t min_color[4], max_color[4];
-                GetMinMaxColorByDistance(block, min_color, max_color);
+                uint8_t min_color[4], max_color[4];
+                // GetMinMaxColorByDistance(block, min_color, max_color);
                 // GetMinMaxColorByLuma(block, min_color, max_color);
-                // GetMinMaxColorByBBox_Ref(block, min_color, max_color);
+                GetMinMaxColorByBBox_Ref(block, min_color, max_color);
 
                 push_u16(rgb888_to_rgb565(max_color), p_out);
                 push_u16(rgb888_to_rgb565(min_color), p_out);
 
-                push_color_indices(block, min_color, max_color, p_out);
+                EmitColorIndices_Ref(block, min_color, max_color, p_out);
             }
         }
     }
 }
 
+template void Ren::CompressImage_DXT1<4 /* Channels */>(const uint8_t img_src[], int w,
+                                                        int h, uint8_t img_dst[]);
+template void Ren::CompressImage_DXT1<3 /* Channels */>(const uint8_t img_src[], int w,
+                                                        int h, uint8_t img_dst[]);
+
+template <bool Is_YCoCg>
 void Ren::CompressImage_DXT5(const uint8_t img_src[], const int w, const int h,
-                             const bool is_YCoCg, uint8_t img_dst[]) {
+                             uint8_t img_dst[]) {
+    alignas(16) uint8_t block[64] = {};
     uint8_t *p_out = img_dst;
-    for (int j = 0; j < h; j += 4, img_src += w * 4 * 4) {
-        for (int i = 0; i < w; i += 4) {
-            uint8_t block[64];
-            Extract4x4Block_SSSE3(&img_src[i * 4], w * 4, 4, block);
 
-            uint8_t min_color[4], max_color[4];
-            if (is_YCoCg) {
-                GetMinMaxColorByBBox_Ref<true /* UseAlpha */, true /* Is_YCoCg */>(
-                    block, min_color, max_color);
-                ScaleYCoCg(block, min_color, max_color);
-                InsetYCoCgBBox(min_color, max_color);
-                SelectYCoCgDiagonal(block, min_color, max_color);
-            } else {
-                GetMinMaxColorByBBox_Ref<true /* UseAlpha */>(block, min_color,
-                                                              max_color);
+    if (g_CpuFeatures.ssse3_supported && g_CpuFeatures.sse2_supported) {
+        for (int j = 0; j < h; j += 4, img_src += w * 4 * 4) {
+            for (int i = 0; i < w; i += 4) {
+                Extract4x4Block_SSSE3<4 /* Channels */>(&img_src[i * 4], w * 4, block);
+
+                alignas(16) uint8_t min_color[4], max_color[4];
+                GetMinMaxColorByBBox_SSE2<true /* UseAlpha */, Is_YCoCg>(block, min_color,
+                                                                         max_color);
+                if (Is_YCoCg) {
+                    ScaleYCoCg_SSE2(block, min_color, max_color);
+                    InsetYCoCgBBox_SSE2(min_color, max_color);
+                    SelectYCoCgDiagonal_SSE2(block, min_color, max_color);
+                }
+
+                //
+                // Write alpha block
+                //
+
+                push_u8(max_color[3], p_out);
+                push_u8(min_color[3], p_out);
+
+                EmitAlphaIndices_SSE2(block, min_color[3], max_color[3], p_out);
+
+                //
+                // Write color block
+                //
+
+                push_u16(rgb888_to_rgb565(max_color), p_out);
+                push_u16(rgb888_to_rgb565(min_color), p_out);
+
+                EmitColorIndices_SSE2(block, min_color, max_color, p_out);
             }
+        }
+    } else {
+        for (int j = 0; j < h; j += 4, img_src += w * 4 * 4) {
+            for (int i = 0; i < w; i += 4) {
+                Extract4x4Block_Ref<4 /* Channels */>(&img_src[i * 4], w * 4, block);
 
-            //
-            // Write alpha block
-            //
+                uint8_t min_color[4], max_color[4];
+                GetMinMaxColorByBBox_Ref<true /* UseAlpha */, Is_YCoCg>(block, min_color,
+                                                                        max_color);
+                if (Is_YCoCg) {
+                    ScaleYCoCg_Ref(block, min_color, max_color);
+                    InsetYCoCgBBox_Ref(min_color, max_color);
+                    SelectYCoCgDiagonal_Ref(block, min_color, max_color);
+                }
 
-            push_u8(max_color[3], p_out);
-            push_u8(min_color[3], p_out);
+                //
+                // Write alpha block
+                //
 
-            push_alpha_indices(block, min_color[3], max_color[3], p_out);
+                push_u8(max_color[3], p_out);
+                push_u8(min_color[3], p_out);
 
-            //
-            // Write color block
-            //
+                EmitAlphaIndices_Ref(block, min_color[3], max_color[3], p_out);
 
-            push_u16(rgb888_to_rgb565(max_color), p_out);
-            push_u16(rgb888_to_rgb565(min_color), p_out);
+                //
+                // Write color block
+                //
 
-            push_color_indices(block, min_color, max_color, p_out);
+                push_u16(rgb888_to_rgb565(max_color), p_out);
+                push_u16(rgb888_to_rgb565(min_color), p_out);
+
+                EmitColorIndices_Ref(block, min_color, max_color, p_out);
+            }
         }
     }
 }
+
+template void Ren::CompressImage_DXT5<false /* Is_YCoCg */>(const uint8_t img_src[],
+                                                            int w, int h,
+                                                            uint8_t img_dst[]);
+template void Ren::CompressImage_DXT5<true /* Is_YCoCg */>(const uint8_t img_src[], int w,
+                                                           int h, uint8_t img_dst[]);
 
 #undef _MIN
 #undef _MAX
+
+#undef force_inline

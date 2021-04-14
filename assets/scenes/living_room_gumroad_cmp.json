@@ -91,9 +91,9 @@
 			"name" : "wall_picture_0",
 			"transform" : {
 				"pos" : [
-					-1.69033, 
+					-1.55, 
 					1.60201, 
-					-0.135741
+					-0.85
 				], 
 				"rot" : [
 					90, 
@@ -104,6 +104,25 @@
 			"drawable" : {
 				"mesh_file" : "wall_picture_0.mesh",
 				"material_override" : [ "wall_picture_YCoCg.txt" ]
+			}
+		}, 
+		{
+			"name" : "wall_picture_1",
+			"transform" : {
+				"pos" : [
+					-1.55, 
+					1.60201, 
+					1.25
+				], 
+				"rot" : [
+					90, 
+					90, 
+					0
+				]
+			}, 
+			"drawable" : {
+				"mesh_file" : "wall_picture_1.mesh",
+				"material_override" : [ "wall_picture_0.txt" ]
 			}
 		},
 		{
@@ -3107,10 +3126,10 @@
 	], 
 	"camera" : {
 		"view_origin" : [
-			6.282039, 2.020283, -0.027150
+			0.867953, 1.689914, -0.138364
 		], 
 		"view_dir" : [
-			-0.989668, -0.139116, -0.034519
+			-0.999642, -0.024559, -0.009778
 		], 
 		"fwd_speed" : 0.025, 
 		"fov" : 29, 
