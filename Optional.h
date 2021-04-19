@@ -7,7 +7,7 @@ namespace Sys {
 template <typename T>
 class Optional {
     T *p_obj_;
-    char data_[sizeof(T)];
+    alignas(T) char data_[sizeof(T)];
 
 public:
     Optional() : p_obj_(nullptr) {}
