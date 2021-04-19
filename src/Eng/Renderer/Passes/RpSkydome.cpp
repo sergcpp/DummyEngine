@@ -32,8 +32,7 @@ void RpSkydome::Setup(RpBuilder &builder, const DrawList &list,
 #else
         params.format = Ren::eTexFormat::RawRG11F_B10F;
 #endif
-        params.filter = Ren::eTexFilter::NoFilter;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
         color_tex_ = builder.WriteTexture(color_tex, params, *this);
@@ -43,8 +42,7 @@ void RpSkydome::Setup(RpBuilder &builder, const DrawList &list,
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRGBA8888;
-        params.filter = Ren::eTexFilter::NoFilter;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
         spec_tex_ = builder.WriteTexture(spec_tex, params, *this);
@@ -54,8 +52,7 @@ void RpSkydome::Setup(RpBuilder &builder, const DrawList &list,
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::Depth24Stencil8;
-        params.filter = Ren::eTexFilter::NoFilter;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
         depth_tex_ = builder.WriteTexture(depth_tex, params, *this);
@@ -106,7 +103,4 @@ void RpSkydome::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &color_
     }
 }
 
-RpSkydome::~RpSkydome() {
-#if defined(USE_GL_RENDER)
-#endif
-}
+RpSkydome::~RpSkydome() = default;

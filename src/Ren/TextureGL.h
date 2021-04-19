@@ -28,27 +28,26 @@ enum eTexFlags {
 
 struct Tex2DParams {
     uint16_t w = 0, h = 0;
-    float lod_bias = 0.0f;
     uint16_t flags = 0;
+    uint8_t mip_count = 0;
+    uint8_t _pad = 0;
     uint8_t cube = 0;
     uint8_t samples = 1;
     uint8_t fallback_color[4] = {0, 255, 255, 255};
     eTexFormat format = eTexFormat::Undefined;
-    eTexFilter filter = eTexFilter::NoFilter;
-    eTexRepeat repeat = eTexRepeat::Repeat;
-    eTexCompare compare = eTexCompare::None;
+    eTexBlock block = eTexBlock::_None;
+    TexSamplingParams sampling;
 };
-static_assert(sizeof(Tex2DParams) == 20, "!");
+static_assert(sizeof(Tex2DParams) == 22, "!");
 
 inline bool operator==(const Tex2DParams &lhs, const Tex2DParams &rhs) {
-    return lhs.w == rhs.w && lhs.h == rhs.h && lhs.lod_bias == rhs.lod_bias &&
-           lhs.flags == rhs.flags && lhs.cube == rhs.cube && lhs.samples == rhs.samples &&
-           lhs.fallback_color[0] == rhs.fallback_color[0] &&
+    return lhs.w == rhs.w && lhs.h == rhs.h && lhs.flags == rhs.flags &&
+           lhs.mip_count == rhs.mip_count && lhs.cube == rhs.cube &&
+           lhs.samples == rhs.samples && lhs.fallback_color[0] == rhs.fallback_color[0] &&
            lhs.fallback_color[1] == rhs.fallback_color[1] &&
            lhs.fallback_color[2] == rhs.fallback_color[2] &&
            lhs.fallback_color[3] == rhs.fallback_color[3] && lhs.format == rhs.format &&
-           lhs.filter == rhs.filter && lhs.repeat == rhs.repeat &&
-           lhs.compare == rhs.compare;
+           lhs.sampling == rhs.sampling;
 }
 inline bool operator!=(const Tex2DParams &lhs, const Tex2DParams &rhs) {
     return !operator==(lhs, rhs);
@@ -76,10 +75,19 @@ inline bool operator==(const TexHandle lhs, const TexHandle rhs) {
 inline bool operator!=(const TexHandle lhs, const TexHandle rhs) {
     return !operator==(lhs, rhs);
 }
+inline bool operator<(const TexHandle lhs, const TexHandle rhs) {
+    if (lhs.id < rhs.id) {
+        return true;
+    } else if (lhs.id == rhs.id) {
+        return lhs.generation < rhs.generation;
+    }
+    return false;
+}
 
 class Texture2D : public RefCounter {
     TexHandle handle_;
     Tex2DParams params_;
+    uint16_t initialized_mips_ = 0;
     bool ready_ = false;
     uint32_t cubemap_ready_ = 0;
     String name_;
@@ -126,20 +134,24 @@ class Texture2D : public RefCounter {
     void Init(const void *data[6], const int size[6], const Tex2DParams &params,
               eTexLoadStatus *load_status, ILog *log);
 
+    void Realloc(int w, int h, int mip_count, int samples, Ren::eTexFormat format,
+                 bool is_srgb, ILog *log);
+
     TexHandle handle() const { return handle_; }
     uint32_t id() const { return handle_.id; }
     uint32_t generation() const { return handle_.generation; }
+    uint16_t initialized_mips() const { return initialized_mips_; }
 
     const Tex2DParams &params() const { return params_; }
 
     bool ready() const { return ready_; }
     const String &name() const { return name_; }
 
-    void SetFilter(eTexFilter f, eTexRepeat r, eTexCompare c, float lod_bias);
+    void SetFilter(TexSamplingParams sampling, ILog *log);
     void SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey,
-                     Ren::eTexFormat format, const void *data);
+                     Ren::eTexFormat format, const void *data, int data_len);
 
-    void ReadTextureData(eTexFormat format, void *out_data) const;
+    void DownloadTextureData(eTexFormat format, void *out_data) const;
 };
 
 using Tex2DRef = StrongRef<Texture2D>;
@@ -192,6 +204,9 @@ uint32_t GLInternalFormatFromTexFormat(eTexFormat format, bool is_srgb);
 uint32_t GLTypeFromTexFormat(eTexFormat format);
 uint32_t GLBindTarget(eBindTarget binding);
 
+eTexFormat FormatFromGLInternalFormat(uint32_t gl_internal_format, eTexBlock *block,
+                                      bool *is_srgb);
+
 void GLUnbindTextureUnits(int start, int count);
 
 const int MaxColorAttachments = 4;
@@ -214,10 +229,10 @@ class Framebuffer {
     bool Setup(const TexHandle color_attachments[], int color_attachments_count,
                TexHandle depth_attachment, TexHandle stencil_attachment,
                bool is_multisampled);
-    bool Setup(const TexHandle color_attachment,
-               TexHandle depth_attachment, TexHandle stencil_attachment,
-               bool is_multisampled) {
-        return Setup(&color_attachment, 1, depth_attachment, stencil_attachment, is_multisampled);
+    bool Setup(const TexHandle color_attachment, TexHandle depth_attachment,
+               TexHandle stencil_attachment, bool is_multisampled) {
+        return Setup(&color_attachment, 1, depth_attachment, stencil_attachment,
+                     is_multisampled);
     }
 };
 } // namespace Ren

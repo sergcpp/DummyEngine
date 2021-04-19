@@ -67,8 +67,10 @@ inline unsigned long long _xgetbv(unsigned int index) {
 
 ssize_t getline(char **lineptr, size_t *n, FILE *stream);
 char *strdup(const char *s);
+
 #endif
 
+unsigned long long get_xcr_feature_mask();
 
 void swCPUInfoInit(SWcpu_info *info) {
     memset(info, 0, sizeof(SWcpu_info));
@@ -173,7 +175,7 @@ void swCPUInfoInit(SWcpu_info *info) {
         if (os_uses_XSAVE_XRSTORE) {
             // Check if the OS will save the YMM registers
             // _XCR_XFEATURE_ENABLED_MASK = 0
-            unsigned long long xcr_feature_mask = _xgetbv(0);
+            unsigned long long xcr_feature_mask = get_xcr_feature_mask();
             os_saves_YMM = (xcr_feature_mask & 0x6) != 0;
         }
 

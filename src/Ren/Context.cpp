@@ -19,9 +19,7 @@ Ren::MeshRef Ren::Context::LoadMesh(const char *name, const float *positions,
                           vertex_buf2, index_buf, load_status, log_);
     } else {
         if (ref->ready()) {
-            if (load_status) {
-                (*load_status) = eMeshLoadStatus::Found;
-            }
+            (*load_status) = eMeshLoadStatus::Found;
         } else if (positions) {
             ref->Init(positions, vtx_count, indices, ndx_count, vertex_buf1, vertex_buf2,
                       index_buf, load_status, log_);
@@ -50,9 +48,7 @@ Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data,
                           skin_vertex_buf, delta_buf, load_status, log_);
     } else {
         if (ref->ready()) {
-            if (load_status) {
-                (*load_status) = eMeshLoadStatus::Found;
-            }
+            (*load_status) = eMeshLoadStatus::Found;
         } else if (data) {
             ref->Init(data, on_mat_load, vertex_buf1, vertex_buf2, index_buf,
                       skin_vertex_buf, delta_buf, load_status, log_);
@@ -71,19 +67,13 @@ Ren::MaterialRef Ren::Context::LoadMaterial(const char *name, const char *mat_sr
         ref = materials_.Add(name, mat_src, status, on_prog_load, on_tex_load, log_);
     } else {
         if (ref->ready()) {
-            if (status) {
-                (*status) = eMatLoadStatus::Found;
-            }
+            (*status) = eMatLoadStatus::Found;
         } else if (!ref->ready() && mat_src) {
             ref->Init(mat_src, status, on_prog_load, on_tex_load, log_);
         }
     }
 
     return ref;
-}
-
-Ren::MaterialRef Ren::Context::GetMaterial(uint32_t index) {
-    return {&materials_, index};
 }
 
 int Ren::Context::NumMaterialsNotReady() {
@@ -129,18 +119,12 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const Tex2DParams &p
     Tex2DRef ref = textures_.FindByName(name);
     if (!ref) {
         ref = textures_.Add(name, p, log_);
-        if (load_status) {
-            (*load_status) = eTexLoadStatus::TexCreatedDefault;
-        }
+        (*load_status) = eTexLoadStatus::TexCreatedDefault;
     } else if (ref->params() != p) {
         ref->Init(p, log_);
-        if (load_status) {
-            (*load_status) = eTexLoadStatus::TexFoundReinitialized;
-        }
+        (*load_status) = eTexLoadStatus::TexFoundReinitialized;
     } else {
-        if (load_status) {
-            (*load_status) = eTexLoadStatus::TexFound;
-        }
+        (*load_status) = eTexLoadStatus::TexFound;
     }
     return ref;
 }
@@ -152,9 +136,7 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const void *data, in
     if (!ref) {
         ref = textures_.Add(name, data, size, p, load_status, log_);
     } else {
-        if (load_status) {
-            (*load_status) = eTexLoadStatus::TexFound;
-        }
+        (*load_status) = eTexLoadStatus::TexFound;
         if (!ref->ready() && data) {
             ref->Init(data, size, p, load_status, log_);
         }
@@ -171,8 +153,7 @@ Ren::Tex2DRef Ren::Context::LoadTextureCube(const char *name, const void *data[6
         ref = textures_.Add(name, data, size, p, load_status, log_);
     } else {
         if (ref->ready()) {
-            if (load_status)
-                *load_status = eTexLoadStatus::TexFound;
+            (*load_status) = eTexLoadStatus::TexFound;
         } else if (data) {
             ref->Init(data, size, p, load_status, log_);
         }
@@ -241,8 +222,7 @@ Ren::TextureRegionRef Ren::Context::LoadTextureRegion(const char *name, const vo
         ref = texture_regions_.Add(name, data, size, p, &texture_atlas_, load_status);
     } else {
         if (ref->ready()) {
-            if (load_status)
-                *load_status = eTexLoadStatus::TexFound;
+            (*load_status) = eTexLoadStatus::TexFound;
         } else {
             ref->Init(data, size, p, &texture_atlas_, load_status);
         }

@@ -39,9 +39,13 @@ void RpDebugTextures::DrawShadowMaps(Ren::Context& ctx, RpAllocTex& shadowmap_te
                     6 * sizeof(uint16_t), PrimDrawInternal::fs_quad_indices);
 
     const auto &p = shadowmap_tex.ref->params();
-    const Ren::eTexCompare comp_before = p.compare;
+    const Ren::eTexCompare comp_before = p.sampling.compare;
 
-    shadowmap_tex.ref->SetFilter(p.filter, p.repeat, Ren::eTexCompare::None, p.lod_bias);
+    Ren::TexSamplingParams tmp_params = p.sampling;
+    tmp_params.compare = Ren::eTexCompare::None;
+
+
+    shadowmap_tex.ref->SetFilter(tmp_params, ctx.log());
 
     const float k = (float(p.h) / float(p.w)) *
                     (float(view_state_->scr_res[0]) / float(view_state_->scr_res[1]));
@@ -186,5 +190,7 @@ void RpDebugTextures::DrawShadowMaps(Ren::Context& ctx, RpAllocTex& shadowmap_te
     glBindVertexArray(0);
 
     // Restore compare mode
-    shadowmap_tex.ref->SetFilter(p.filter, p.repeat, comp_before, p.lod_bias);
+    tmp_params.compare = comp_before;
+
+    shadowmap_tex.ref->SetFilter(tmp_params, ctx.log());
 }

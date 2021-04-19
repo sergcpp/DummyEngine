@@ -41,8 +41,6 @@ void Ren::TextureRegion::Init(const void *data, const int size, const Tex2DParam
         Tex2DParams _p;
         _p.w = _p.h = 1;
         _p.format = eTexFormat::RawRGBA8888;
-        _p.filter = eTexFilter::NoFilter;
-        _p.repeat = eTexRepeat::Repeat;
         InitFromRAWData(cyan, 4, _p, atlas);
         // mark it as not ready
         ready_ = false;

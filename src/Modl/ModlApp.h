@@ -20,6 +20,13 @@ class LogStdout : public Ren::ILog {
         va_end(vl);
         putc('\n', stdout);
     }
+    void Warning(const char *fmt, ...) override {
+        va_list vl;
+        va_start(vl, fmt);
+        vprintf(fmt, vl);
+        va_end(vl);
+        putc('\n', stdout);
+    }
     void Error(const char *fmt, ...) override {
         va_list vl;
         va_start(vl, fmt);

@@ -15,7 +15,7 @@
 namespace Ren {
 class ILog;
 
-enum class eMaterialFlags {
+enum class eMatFlags {
     AlphaTest = (1u << 0u),
     AlphaBlend = (1u << 1u),
     DepthWrite = (1u << 2u),

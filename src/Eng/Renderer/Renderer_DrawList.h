@@ -60,6 +60,19 @@ struct ShadReg {
     uint32_t last_update, last_visible;
 };
 
+struct TexEntry {
+    uint32_t index;
+    union {
+        struct {
+            uint32_t cam_dist : 16;
+            uint32_t prio : 4;
+            uint32_t _unused : 12;
+        };
+        uint32_t sort_key = 0;
+    };
+};
+static_assert(sizeof(TexEntry) == 8, "!");
+
 struct DrawList {
     uint32_t                    render_flags = 0;
     Ren::Camera                 draw_cam;
@@ -84,6 +97,11 @@ struct DrawList {
     DynArray<EllipsItem>        ellipsoids;
     DynArray<CellData>          cells;
     DynArray<ItemData>          items;
+
+    DynArray<TexEntry>          visible_textures;
+    DynArray<TexEntry>          desired_textures;
+
+    const Ren::MaterialStorage  *materials = nullptr;
     const Ren::TextureAtlas     *decals_atlas = nullptr;
     const ProbeStorage          *probe_storage = nullptr;
 

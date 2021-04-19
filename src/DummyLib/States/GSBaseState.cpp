@@ -911,7 +911,7 @@ void GSBaseState::UpdateFrame(int list_index) {
 
             auto pos =
                 Ren::Vec4f{probe->offset[0], probe->offset[1], probe->offset[2], 1.0f};
-            pos = probe_tr->mat * pos;
+            pos = probe_tr->world_from_object * pos;
             pos /= pos[3];
 
             static const Ren::Vec3f axises[] = {

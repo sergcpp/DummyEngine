@@ -26,8 +26,8 @@ void RpSSAO::Setup(RpBuilder &builder, const ViewState *view_state,
         params.w = view_state->scr_res[0] / 2;
         params.h = view_state->scr_res[1] / 2;
         params.format = Ren::eTexFormat::RawR8;
-        params.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         ssao1_tex_ = builder.WriteTexture("SSAO Temp 1", params, *this);
         ssao2_tex_ = builder.WriteTexture("SSAO Temp 2", params, *this);
@@ -37,8 +37,8 @@ void RpSSAO::Setup(RpBuilder &builder, const ViewState *view_state,
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawR8;
-        params.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         output_tex_ = builder.WriteTexture(output_tex, params, *this);
     }
@@ -151,8 +151,8 @@ void RpSSAO::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &ssao1_tex
             Ren::Tex2DParams p;
             p.w = p.h = 1;
             p.format = Ren::eTexFormat::RawRGBA8888;
-            p.filter = Ren::eTexFilter::Bilinear;
-            p.repeat = Ren::eTexRepeat::ClampToEdge;
+            p.sampling.filter = Ren::eTexFilter::Bilinear;
+            p.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
             static const uint8_t white[] = {255, 255, 255, 255};
 

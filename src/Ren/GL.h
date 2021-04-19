@@ -452,6 +452,9 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_TEXTURE_CUBE_MAP_SEAMLESS        0x884F
 
 #define GL_TEXTURE_LOD_BIAS                 0x8501
+#define GL_TEXTURE_MIN_LOD                  0x813A
+#define GL_TEXTURE_MAX_LOD                  0x813B              
+
 
 #define GL_TEXTURE_COMPRESSED_IMAGE_SIZE    0x86A0
 
@@ -659,6 +662,11 @@ typedef void (APIENTRY *PFNGLTEXSTORAGE3DPROC)(GLenum target, GLsizei levels, GL
 
 typedef void (APIENTRY *PFNGLTEXSUBIMAGE3DPROC)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
                                                 GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void * pixels);
+
+typedef void (APIENTRY *PFNGLCOPYIMAGESUBDATA)(GLuint srcName, GLenum srcTarget, GLint srcLevel, GLint srcX,
+                                               GLint srcY, GLint srcZ, GLuint dstName, GLenum dstTarget,
+                                               GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ,
+                                               GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth);
 
 #if !defined(__linux__)
 typedef void (APIENTRY *PFNGLTEXIMAGE3DPROC)(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
@@ -913,6 +921,9 @@ typedef void (APIENTRY* PFNGLNAMEDBUFFERSTORAGECOMPPROC)(GLenum target, GLuint b
 #define glTexStorage3D              ren_glTexStorage3D
 
 #define glTexSubImage3D             ren_glTexSubImage3D
+
+#define glCopyImageSubData          ren_glCopyImageSubData
+
 #if !defined(__linux__)
 #define glTexImage3D                ren_glTexImage3D
 #endif
@@ -1121,6 +1132,8 @@ EXTERN_FUNC PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC ren_glRenderbufferStorageMul
 EXTERN_FUNC PFNGLTEXSTORAGE3DPROC               ren_glTexStorage3D;
 
 EXTERN_FUNC PFNGLTEXSUBIMAGE3DPROC              ren_glTexSubImage3D;
+
+EXTERN_FUNC PFNGLCOPYIMAGESUBDATA               ren_glCopyImageSubData;
 
 EXTERN_FUNC PFNGLTEXIMAGE3DPROC                 ren_glTexImage3D;
 

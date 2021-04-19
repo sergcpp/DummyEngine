@@ -23,6 +23,7 @@ void RpOpaque::Setup(RpBuilder &builder, const DrawList &list,
     cone_rt_lut_ = std::move(cone_rt_lut);
 
     env_ = &list.env;
+    materials_ = list.materials;
     decals_atlas_ = list.decals_atlas;
     probe_storage_ = list.probe_storage;
 
@@ -51,8 +52,7 @@ void RpOpaque::Setup(RpBuilder &builder, const DrawList &list,
 #else
         params.format = Ren::eTexFormat::RawRG11F_B10F;
 #endif
-        params.filter = Ren::eTexFilter::NoFilter;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
         color_tex_ = builder.WriteTexture(out_color, params, *this);
@@ -62,8 +62,7 @@ void RpOpaque::Setup(RpBuilder &builder, const DrawList &list,
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRGB10_A2;
-        params.filter = Ren::eTexFilter::NoFilter;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
         normal_tex_ = builder.WriteTexture(out_normals, params, *this);
@@ -73,8 +72,7 @@ void RpOpaque::Setup(RpBuilder &builder, const DrawList &list,
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRGBA8888;
-        params.filter = Ren::eTexFilter::NoFilter;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
         spec_tex_ = builder.WriteTexture(out_spec, params, *this);
@@ -84,8 +82,7 @@ void RpOpaque::Setup(RpBuilder &builder, const DrawList &list,
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::Depth24Stencil8;
-        params.filter = Ren::eTexFilter::NoFilter;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
         depth_tex_ = builder.WriteTexture(out_depth, params, *this);
@@ -111,8 +108,7 @@ void RpOpaque::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &color_t
         Ren::Tex2DParams p;
         p.w = p.h = 1;
         p.format = Ren::eTexFormat::RawRGBA8888;
-        p.filter = Ren::eTexFilter::NoFilter;
-        p.repeat = Ren::eTexRepeat::ClampToEdge;
+        p.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         Ren::eTexLoadStatus status;
         dummy_black_ = ctx.LoadTexture2D("dummy_black", black, sizeof(black), p, &status);

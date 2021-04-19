@@ -135,7 +135,7 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
         //
 
         temp_tex_->SetSubImage(0, 0, 0, depth_w_, depth_h_, Ren::eTexFormat::RawRGBA8888,
-                               depth_pixels_);
+                               depth_pixels_, -1 /* data_len */);
 
         x_offset +=
             BlitTex(applied_state, x_offset, 0, depth_w_ / 2, depth_h_ / 2, temp_tex_, 1.0f);
@@ -254,8 +254,7 @@ void RpDebugTextures::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         params.w = depth_w_;
         params.h = depth_h_;
         params.format = Ren::eTexFormat::RawRGBA8888;
-        params.filter = Ren::eTexFilter::NoFilter;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         Ren::eTexLoadStatus status;
         temp_tex_ = ctx.LoadTexture2D("__DEBUG_TEMP_TEXTURE__", params, &status);

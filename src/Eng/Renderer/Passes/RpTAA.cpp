@@ -31,8 +31,8 @@ void RpTAA::Setup(RpBuilder &builder, const ViewState *view_state, const int orp
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRG11F_B10F;
-        params.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         output_tex_ = builder.WriteTexture(output_tex_name, params, *this);
     }

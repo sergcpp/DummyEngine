@@ -73,9 +73,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                                 const program_load_callback &on_prog_load,
                                 const texture_load_callback &on_tex_load, ILog *log) {
     if (!mat_src) {
-        if (status) {
-            (*status) = eMatLoadStatus::SetToDefault;
-        }
+        (*status) = eMatLoadStatus::SetToDefault;
         return;
     }
 
@@ -136,15 +134,15 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             const std::string flag = std::string(p, q);
 
             if (flag == "alpha_test") {
-                flags_ |= uint32_t(eMaterialFlags::AlphaTest);
+                flags_ |= uint32_t(eMatFlags::AlphaTest);
             } else if (flag == "alpha_blend") {
-                flags_ |= uint32_t(eMaterialFlags::AlphaBlend);
+                flags_ |= uint32_t(eMatFlags::AlphaBlend);
             } else if (flag == "depth_write") {
-                flags_ |= uint32_t(eMaterialFlags::DepthWrite);
+                flags_ |= uint32_t(eMatFlags::DepthWrite);
             } else if (flag == "two_sided") {
-                flags_ |= uint32_t(eMaterialFlags::TwoSided);
+                flags_ |= uint32_t(eMatFlags::TwoSided);
             } else if (flag == "taa_responsive") {
-                flags_ |= uint32_t(eMaterialFlags::TaaResponsive);
+                flags_ |= uint32_t(eMatFlags::TaaResponsive);
             } else {
                 log->Error("Unknown flag %s", flag.c_str());
             }
@@ -218,9 +216,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
     }
 
     ready_ = true;
-    if (status) {
-        (*status) = eMatLoadStatus::CreatedFromData;
-    }
+    (*status) = eMatLoadStatus::CreatedFromData;
 }
 
 #ifdef _MSC_VER

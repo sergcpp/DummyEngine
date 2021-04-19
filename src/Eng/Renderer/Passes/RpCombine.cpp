@@ -33,8 +33,8 @@ void RpCombine::Setup(RpBuilder &builder, const ViewState *view_state, const flo
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRGB888;
-        params.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         output_tex_ = builder.WriteTexture(output_tex_name, params, *this);
     } else {
@@ -99,8 +99,7 @@ void RpCombine::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex *output
         Ren::Tex2DParams p;
         p.w = p.h = 1;
         p.format = Ren::eTexFormat::RawRGBA8888;
-        p.filter = Ren::eTexFilter::NoFilter;
-        p.repeat = Ren::eTexRepeat::ClampToEdge;
+        p.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         Ren::eTexLoadStatus status;
         dummy_black_ = ctx.LoadTexture2D("dummy_black", black, sizeof(black), p, &status);

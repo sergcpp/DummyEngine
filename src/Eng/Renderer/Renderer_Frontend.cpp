@@ -11,6 +11,10 @@ extern __itt_domain *__g_itt_domain;
 #endif
 
 namespace RendererInternal {
+// 'nabe' is short for 'neighbourhood'
+const float CamNabeRadius = 100.0f;
+const float CamNabeRadius2 = CamNabeRadius * CamNabeRadius;
+
 bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]) {
     return p[0] > bbox_min[0] && p[0] < bbox_max[0] && p[1] > bbox_min[1] &&
            p[1] < bbox_max[1] && p[2] > bbox_min[2] && p[2] < bbox_max[2];
@@ -19,22 +23,27 @@ bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3
 const uint32_t bbox_indices[] = {0, 1, 2, 2, 1, 3, 0, 4, 5, 0, 5, 1, 0, 2, 4, 4, 2, 6,
                                  2, 3, 6, 6, 3, 7, 3, 1, 5, 3, 5, 7, 4, 6, 5, 5, 6, 7};
 
-template <typename SpanType>
-void RadixSort_LSB(SpanType *begin, SpanType *end, SpanType *begin1) {
-    SpanType *end1 = begin1 + (end - begin);
+template <typename T>
+void RadixSort_LSB_Step(const unsigned shift, const T *begin, const T *end, T *begin1) {
+    size_t count[0x100] = {};
+    for (const T *p = begin; p != end; p++) {
+        count[(p->key >> shift) & 0xFFu]++;
+    }
+    T *bucket[0x100], *q = begin1;
+    for (int i = 0; i < 0x100; q += count[i++]) {
+        bucket[i] = q;
+    }
+    for (const T *p = begin; p != end; p++) {
+        *bucket[(p->key >> shift) & 0xFFu]++ = *p;
+    }
+}
 
-    for (unsigned shift = 0; shift < sizeof(SpanType::key) * 8; shift += 8) {
-        size_t count[0x100] = {};
-        for (SpanType *p = begin; p != end; p++) {
-            count[(p->key >> shift) & 0xFFu]++;
-        }
-        SpanType *bucket[0x100], *q = begin1;
-        for (int i = 0; i < 0x100; q += count[i++]) {
-            bucket[i] = q;
-        }
-        for (SpanType *p = begin; p != end; p++) {
-            *bucket[(p->key >> shift) & 0xFFu]++ = *p;
-        }
+template <typename T> void RadixSort_LSB(T *begin, T *end, T *begin1) {
+    T *end1 = begin1 + (end - begin);
+
+    for (unsigned shift = 0; shift < sizeof(T::key) * 8; shift += 8) {
+        RadixSort_LSB_Step(shift, begin, end, begin1);
+
         std::swap(begin, begin1);
         std::swap(end, end1);
     }
@@ -66,6 +75,10 @@ void __push_ellipsoids(const Drawable &dr, const Ren::Mat4f &world_from_object,
                        DrawList &list);
 uint32_t __push_skeletal_mesh(uint32_t skinned_buf_vtx_offset, const AnimState &as,
                               const Ren::Mesh *mesh, DrawList &list);
+uint32_t __record_texture(DynArray<TexEntry> &storage, const Ren::Tex2DRef &tex, int prio,
+                          uint16_t distance);
+void __record_textures(DynArray<TexEntry> &storage, const Ren::Material *mat,
+                       uint16_t distance);
 void __init_wind_params(const VegState &vs, const Environment &env,
                         const Ren::Mat4f &object_from_world, InstanceData &instance);
 
@@ -110,6 +123,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
     list.draw_cam = cam;
     list.env = scene.env;
+
+    list.materials = &scene.materials;
     list.decals_atlas = &scene.decals_atlas;
     list.probe_storage = &scene.probe_storage;
 
@@ -143,6 +158,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
     list.shape_keys_data.count = 0;
     list.skin_vertices_count = 0;
 
+    list.visible_textures.count = 0;
+    list.desired_textures.count = 0;
+
     const bool culling_enabled = (list.render_flags & EnableCulling) != 0;
     const bool lighting_enabled = (list.render_flags & EnableLights) != 0;
     const bool decals_enabled = (list.render_flags & EnableDecals) != 0;
@@ -160,7 +178,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
     ditem_to_decal_.count = 0;
     decals_boxes_.count = 0;
 
-    memset(proc_objects_.data, 0xff, sizeof(ProcessedObjData) * scene.objects.size());
+    std::memset(proc_objects_.data, 0xff,
+                sizeof(ProcessedObjData) * scene.objects.size());
 
     // retrieve pointers to components for fast access
     const auto *transforms = (Transform *)scene.comp_store[CompTransform]->Get(0);
@@ -216,7 +235,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                 &cull_clip_from_view = list.draw_cam.proj_matrix();
 
     if (scene.root_node != 0xffffffff) {
-        // Rasterize occluder meshes into a small framebuffer
+        // Rasterize occluder meshes
         stack[stack_size++] = scene.root_node;
 
         while (stack_size && culling_enabled) {
@@ -252,10 +271,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         continue;
                     }
 
-                    const Mat4f &world_from_object = tr.mat;
-
                     const Mat4f view_from_object =
-                                    cull_view_from_world * world_from_object,
+                                    cull_view_from_world * tr.world_from_object,
                                 clip_from_object = cull_clip_from_view * view_from_object;
 
                     const Occluder &occ = occluders[obj.components[CompOccluder]];
@@ -304,23 +321,23 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
         while (stack_size) {
             const uint32_t cur = stack[--stack_size] & IndexBits;
-            uint32_t skip_check = stack[stack_size] & SkipFrustumCheckBit;
+            uint32_t skip_frustum_check = stack[stack_size] & SkipFrustumCheckBit;
             const bvh_node_t *n = &scene.nodes[cur];
 
             const float bbox_points[8][3] = {BBOX_POINTS(n->bbox_min, n->bbox_max)};
-
-            if (!skip_check) {
-                const eVisResult res = list.draw_cam.CheckFrustumVisibility(bbox_points);
-                if (res == eVisResult::Invisible) {
-                    continue;
-                } else if (res == eVisResult::FullyVisible) {
-                    skip_check = SkipFrustumCheckBit;
+            eVisResult cam_visibility = eVisResult::PartiallyVisible;
+            if (!skip_frustum_check) {
+                cam_visibility = list.draw_cam.CheckFrustumVisibility(bbox_points);
+                if (cam_visibility == eVisResult::FullyVisible) {
+                    skip_frustum_check = SkipFrustumCheckBit;
                 }
             }
 
-            if (culling_enabled) {
-                const Vec3f &cam_pos = list.draw_cam.world_position();
+            const Vec3f &cam_pos = list.draw_cam.world_position();
+            const float cam_dist2 =
+                Ren::Distance2(cam_pos, 0.5f * (n->bbox_min + n->bbox_max));
 
+            if (culling_enabled && cam_visibility != eVisResult::Invisible) {
                 // do not question visibility of the node in which we are inside
                 if (cam_pos[0] < n->bbox_min[0] - 0.5f ||
                     cam_pos[1] < n->bbox_min[1] - 0.5f ||
@@ -342,26 +359,34 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                     swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
                     if (surf.visible == 0) {
-                        continue;
+                        cam_visibility = eVisResult::Invisible;
                     }
                 }
             }
 
+            if (cam_visibility == eVisResult::Invisible && cam_dist2 > CamNabeRadius2) {
+                continue;
+            }
+
             if (!n->prim_count) {
-                stack[stack_size++] = skip_check | n->left_child;
-                stack[stack_size++] = skip_check | n->right_child;
+                stack[stack_size++] = skip_frustum_check | n->left_child;
+                stack[stack_size++] = skip_frustum_check | n->right_child;
             } else {
                 const SceneObject &obj = scene.objects[n->prim_index];
 
-                if ((obj.comp_mask & CompTransformBit) &&
+                if (cam_visibility != eVisResult::Invisible &&
+                    (obj.comp_mask & CompTransformBit) &&
                     (obj.comp_mask & (CompDrawableBit | CompDecalBit |
                                       CompLightSourceBit | CompProbeBit))) { // NOLINT
+                    const uint16_t cam_dist_u16 =
+                        uint16_t(0xffffu * (std::sqrt(cam_dist2) / CamNabeRadius));
+
                     const Transform &tr = transforms[obj.components[CompTransform]];
 
                     const float bbox_points[8][3] = {
                         BBOX_POINTS(tr.bbox_min_ws, tr.bbox_max_ws)};
 
-                    if (!skip_check) {
+                    if (!skip_frustum_check) {
                         // Node has slightly enlarged bounds, so we need to check object's
                         // bounding box here
                         if (list.draw_cam.CheckFrustumVisibility(bbox_points) ==
@@ -371,8 +396,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                     }
 
                     if (culling_enabled) {
-                        const Vec3f &cam_pos = list.draw_cam.world_position();
-
                         // do not question visibility of the object in which we are
                         // inside
                         if (cam_pos[0] < tr.bbox_min_ws[0] - 0.5f ||
@@ -400,9 +423,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         }
                     }
 
-                    const Mat4f &world_from_object = tr.mat,
-                                &object_from_world = tr.inv_mat;
-                    const Mat4f world_from_object_trans = Transpose(world_from_object);
+                    const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
 
                     proc_objects_.data[n->prim_index].instance_index =
                         list.instances.count;
@@ -418,11 +439,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                4 * sizeof(float));
                     } else if (obj.comp_mask & CompVegStateBit) {
                         const VegState &vs = vegs[obj.components[CompVegState]];
-                        __init_wind_params(vs, list.env, object_from_world,
+                        __init_wind_params(vs, list.env, tr.object_from_world,
                                            curr_instance);
                     }
 
-                    const Mat4f view_from_object = view_from_world * world_from_object,
+                    const Mat4f view_from_object = view_from_world * tr.world_from_object,
                                 clip_from_object = clip_from_view * view_from_object;
 
                     if (obj.comp_mask & CompDrawableBit) {
@@ -432,10 +453,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         }
                         const Mesh *mesh = dr.mesh.get();
 
-                        const float max_sort_dist = 100.0f;
                         const auto dist = (uint8_t)_MIN(
                             255 * Distance(tr.bbox_min_ws, cam.world_position()) /
-                                max_sort_dist,
+                                CamNabeRadius,
                             255);
 
                         uint32_t base_vertex = mesh->attribs_buf1().offset / 16;
@@ -447,7 +467,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         }
                         proc_objects_.data[n->prim_index].base_vertex = base_vertex;
 
-                        __push_ellipsoids(dr, world_from_object, list);
+                        __push_ellipsoids(dr, tr.world_from_object, list);
 
                         const uint32_t indices_start = mesh->indices_buf().offset;
                         const TriGroup *grp = &mesh->group(0);
@@ -455,24 +475,30 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             const Material *mat = grp->mat.get();
                             const uint32_t mat_flags = mat->flags();
 
+                            if (cam_visibility != eVisResult::Invisible) {
+                                __record_textures(list.visible_textures, mat,
+                                                  cam_dist_u16);
+                            } else {
+                                __record_textures(list.desired_textures, mat,
+                                                  cam_dist_u16);
+                            }
+
                             MainDrawBatch &main_batch =
                                 list.main_batches.data[list.main_batches.count++];
 
                             main_batch.alpha_blend_bit =
-                                (mat_flags & uint32_t(eMaterialFlags::AlphaBlend)) ? 1
-                                                                                   : 0;
+                                (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? 1 : 0;
                             main_batch.prog_id =
                                 (uint32_t)mat->programs[program_index].index();
                             main_batch.alpha_test_bit =
-                                (mat_flags & uint32_t(eMaterialFlags::AlphaTest)) ? 1 : 0;
+                                (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
                             main_batch.depth_write_bit =
-                                (mat_flags & uint32_t(eMaterialFlags::DepthWrite)) ? 1
-                                                                                   : 0;
+                                (mat_flags & uint32_t(eMatFlags::DepthWrite)) ? 1 : 0;
                             main_batch.two_sided_bit =
-                                (mat_flags & uint32_t(eMaterialFlags::TwoSided)) ? 1 : 0;
+                                (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
                             main_batch.mat_id = (uint32_t)grp->mat.index();
                             main_batch.cam_dist =
-                                (mat_flags & uint32_t(eMaterialFlags::AlphaBlend))
+                                (mat_flags & uint32_t(eMatFlags::AlphaBlend))
                                     ? uint32_t(dist)
                                     : 0;
                             main_batch.indices_offset =
@@ -484,10 +510,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             main_batch.instance_count = 1;
 
                             if (zfill_enabled &&
-                                (!(mat->flags() & uint32_t(eMaterialFlags::AlphaBlend)) ||
-                                 ((mat->flags() & uint32_t(eMaterialFlags::AlphaBlend)) &&
-                                  (mat->flags() &
-                                   uint32_t(eMaterialFlags::AlphaTest))))) {
+                                (!(mat->flags() & uint32_t(eMatFlags::AlphaBlend)) ||
+                                 ((mat->flags() & uint32_t(eMatFlags::AlphaBlend)) &&
+                                  (mat->flags() & uint32_t(eMatFlags::AlphaTest))))) {
                                 DepthDrawBatch &zfill_batch =
                                     list.zfill_batches.data[list.zfill_batches.count++];
 
@@ -500,15 +525,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 }
 
                                 zfill_batch.alpha_test_bit =
-                                    (mat_flags & uint32_t(eMaterialFlags::AlphaTest)) ? 1
-                                                                                      : 0;
+                                    (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
                                 zfill_batch.moving_bit =
                                     (obj.last_change_mask & CompTransformBit) ? 1 : 0;
                                 zfill_batch.two_sided_bit =
-                                    (mat_flags & uint32_t(eMaterialFlags::TwoSided)) ? 1
-                                                                                     : 0;
+                                    (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
                                 zfill_batch.mat_id =
-                                    (mat_flags & uint32_t(eMaterialFlags::AlphaTest))
+                                    (mat_flags & uint32_t(eMatFlags::AlphaTest))
                                         ? uint32_t(main_batch.mat_id)
                                         : 0;
                                 zfill_batch.indices_offset = main_batch.indices_offset;
@@ -524,7 +547,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                         if (obj.last_change_mask & CompTransformBit) {
                             const Mat4f prev_world_from_object_trans =
-                                Transpose(tr.prev_mat);
+                                Transpose(tr.world_from_object_prev);
 
                             // moving objects need 2 transform matrices (for velocity
                             // calculation)
@@ -542,16 +565,16 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                         auto pos = Vec4f{light.offset[0], light.offset[1],
                                          light.offset[2], 1.0f};
-                        pos = world_from_object * pos;
+                        pos = tr.world_from_object * pos;
                         pos /= pos[3];
 
                         auto dir =
                             Vec4f{-light.dir[0], -light.dir[1], -light.dir[2], 0.0f};
-                        dir = world_from_object * dir;
+                        dir = tr.world_from_object * dir;
 
                         eVisResult res = eVisResult::FullyVisible;
 
-                        for (int k = 0; k < 6 && !skip_check; k++) {
+                        for (int k = 0; k < 6 && !skip_frustum_check; k++) {
                             const Plane &plane = list.draw_cam.frustum_plane(k);
 
                             const float dist = plane.n[0] * pos[0] + plane.n[1] * pos[1] +
@@ -586,7 +609,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                     &clip_from_view = decal.proj;
 
                         const Mat4f view_from_world =
-                                        view_from_object * object_from_world,
+                                        view_from_object * tr.object_from_world,
                                     clip_from_world = clip_from_view * view_from_world;
 
                         const Mat4f world_from_clip = Inverse(clip_from_world);
@@ -607,7 +630,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         eVisResult res = eVisResult::FullyVisible;
 
                         for (int p = int(eCamPlane::Left);
-                             p <= int(eCamPlane::Far) && !skip_check; p++) {
+                             p <= int(eCamPlane::Far) && !skip_frustum_check; p++) {
                             const Plane &plane = list.draw_cam.frustum_plane(p);
 
                             int in_count = 8;
@@ -652,7 +675,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                         auto pos = Vec4f{probe.offset[0], probe.offset[1],
                                          probe.offset[2], 1.0f};
-                        pos = world_from_object * pos;
+                        pos = tr.world_from_object * pos;
                         pos /= pos[3];
 
                         ProbeItem &pr = list.probes.data[list.probes.count++];
@@ -985,8 +1008,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
             if (EnableSunCulling && casc > 0 && should_update) {
                 // Check if cascade is visible to main camera
 
-                const float p_min[2] = { -1.0f, -1.0f };
-                const float p_max[2] = { 1.0f, 1.0f };
+                const float p_min[2] = {-1.0f, -1.0f};
+                const float p_max[2] = {1.0f, 1.0f};
                 const float dist = near_planes[casc];
 
                 should_update &= swCullCtxTestRect(&cull_ctx_, p_min, p_max, dist) != 0;
@@ -1050,8 +1073,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             continue;
                         }
 
-                        const Mat4f &world_from_object = tr.mat,
-                                    &object_from_world = tr.inv_mat;
                         const Mesh *mesh = dr.mesh.get();
 
                         if (proc_objects_.data[n->prim_index].instance_index ==
@@ -1060,7 +1081,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 list.instances.count;
 
                             const Mat4f world_from_object_trans =
-                                Transpose(world_from_object);
+                                Transpose(tr.world_from_object);
 
                             InstanceData &instance =
                                 list.instances.data[list.instances.count++];
@@ -1070,7 +1091,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             if (obj.comp_mask & CompVegStateBit) {
                                 const VegState &vs = vegs[obj.components[CompVegState]];
                                 __init_wind_params(vs, list.env,
-                                                   Inverse(world_from_object), instance);
+                                                   Inverse(tr.world_from_object),
+                                                   instance);
                             }
                         }
 
@@ -1092,12 +1114,19 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             const Material *mat = grp->mat.get();
                             const uint32_t mat_flags = mat->flags();
 
-                            if ((mat_flags & uint32_t(eMaterialFlags::AlphaBlend)) == 0) {
+                            if ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) == 0) {
+                                if ((mat_flags & uint32_t(eMatFlags::AlphaTest)) != 0 &&
+                                    mat->textures[0]) {
+                                    // assume only the first texture gives transparency
+                                    __record_texture(list.visible_textures,
+                                                     mat->textures[0], 0, 0xffffu);
+                                }
+
                                 DepthDrawBatch &batch =
                                     list.shadow_batches.data[list.shadow_batches.count++];
 
                                 batch.mat_id =
-                                    (mat_flags & uint32_t(eMaterialFlags::AlphaTest))
+                                    (mat_flags & uint32_t(eMatFlags::AlphaTest))
                                         ? (uint32_t)grp->mat.index()
                                         : 0;
 
@@ -1109,12 +1138,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 }
 
                                 batch.alpha_test_bit =
-                                    (mat_flags & uint32_t(eMaterialFlags::AlphaTest)) ? 1
-                                                                                      : 0;
+                                    (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
                                 batch.moving_bit = 0;
                                 batch.two_sided_bit =
-                                    (mat_flags & uint32_t(eMaterialFlags::TwoSided)) ? 1
-                                                                                     : 0;
+                                    (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
                                 batch.indices_offset =
                                     (mesh->indices_buf().offset + grp->offset) /
                                     sizeof(uint32_t);
@@ -1290,8 +1317,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             continue;
                         }
 
-                        const Mat4f &world_from_object = tr.mat,
-                                    &object_from_world = tr.inv_mat;
                         const Drawable &dr = drawables[obj.components[CompDrawable]];
                         if ((dr.vis_mask &
                              uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) {
@@ -1300,7 +1325,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                         const Mesh *mesh = dr.mesh.get();
 
-                        Mat4f world_from_object_trans = Transpose(world_from_object);
+                        Mat4f world_from_object_trans = Transpose(tr.world_from_object);
 
                         if (proc_objects_.data[n->prim_index].instance_index ==
                             0xffffffff) {
@@ -1314,7 +1339,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                             if (obj.comp_mask & CompVegStateBit) {
                                 const VegState &vs = vegs[obj.components[CompVegState]];
-                                __init_wind_params(vs, list.env, object_from_world,
+                                __init_wind_params(vs, list.env, tr.object_from_world,
                                                    instance);
                             }
                         }
@@ -1337,12 +1362,19 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             const Material *mat = grp->mat.get();
                             const uint32_t mat_flags = mat->flags();
 
-                            if ((mat_flags & uint32_t(eMaterialFlags::AlphaBlend)) == 0) {
+                            if ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) == 0) {
+                                if ((mat_flags & uint32_t(eMatFlags::AlphaTest)) != 0 &&
+                                    mat->textures[0]) {
+                                    // assume only the first texture gives transparency
+                                    __record_texture(list.visible_textures,
+                                                     mat->textures[0], 0, 0xffffu);
+                                }
+
                                 DepthDrawBatch &batch =
                                     list.shadow_batches.data[list.shadow_batches.count++];
 
                                 batch.mat_id =
-                                    (mat_flags & uint32_t(eMaterialFlags::AlphaTest))
+                                    (mat_flags & uint32_t(eMatFlags::AlphaTest))
                                         ? (uint32_t)grp->mat.index()
                                         : 0;
 
@@ -1354,12 +1386,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 }
 
                                 batch.alpha_test_bit =
-                                    (mat_flags & uint32_t(eMaterialFlags::AlphaTest)) ? 1
-                                                                                      : 0;
+                                    (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
                                 batch.moving_bit = 0;
                                 batch.two_sided_bit =
-                                    (mat_flags & uint32_t(eMaterialFlags::TwoSided)) ? 1
-                                                                                     : 0;
+                                    (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
                                 batch.indices_offset =
                                     (mesh->indices_buf().offset + grp->offset) /
                                     sizeof(uint32_t);
@@ -1602,6 +1632,44 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
         }
     }
 
+    /*{ // sort feedback array
+        temp_sort_spans_32_[0].count = tex_feedback_.count;
+        temp_sort_spans_32_[1].count = tex_feedback_.count;
+        uint32_t spans_count = 0;
+
+        const uint32_t tex_feedback_end = tex_feedback_.count;
+        for (uint32_t start = 0, end = 1; end <= tex_feedback_end; end++) {
+            if (end == tex_feedback_end || (tex_feedback_.data[start].sort_key !=
+                                            tex_feedback_.data[end].sort_key)) {
+                temp_sort_spans_32_[0].data[spans_count].key =
+                    tex_feedback_.data[start].sort_key;
+                temp_sort_spans_32_[0].data[spans_count].base = start;
+                temp_sort_spans_32_[0].data[spans_count++].count = end - start;
+                start = end;
+            }
+        }
+
+        RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data,
+                                  temp_sort_spans_32_[0].data + spans_count,
+                                  temp_sort_spans_32_[1].data);
+
+        // decompress sorted spans
+        tex_feedback_sorted_.count = 0;
+        for (uint32_t i = 0; i < spans_count; i++) {
+            for (uint32_t j = 0; j < temp_sort_spans_32_[0].data[i].count; j++) {
+                tex_feedback_sorted_.data[tex_feedback_sorted_.count++] =
+                    tex_feedback_.data[temp_sort_spans_32_[0].data[i].base + j];
+            }
+        }
+
+        volatile int ii = 0;
+    }*/
+
+    std::sort(
+        list.desired_textures.data,
+        list.desired_textures.data + list.desired_textures.count,
+        [](const TexEntry &t1, const TexEntry &t2) { return t1.sort_key < t2.sort_key; });
+
     /**********************************************************************************/
     /*                                ASSIGNING TO CLUSTERS                           */
     /**********************************************************************************/
@@ -1637,7 +1705,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
         list.depth_w = cull_ctx_.w;
         list.depth_h = cull_ctx_.h;
 
-        temp_depth.resize(list.depth_w * list.depth_h);
+        temp_depth.resize(size_t(list.depth_w) * list.depth_h);
         swCullCtxDebugDepth(&cull_ctx_, temp_depth.data());
 
         list.depth_pixels.resize(4ull * list.depth_w * list.depth_h);
@@ -1646,7 +1714,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
         for (int x = 0; x < list.depth_w; x++) {
             for (int y = 0; y < list.depth_h; y++) {
-                float z = _depth_pixels_f32[(list.depth_h - y - 1) * list.depth_w + x];
+                const float z =
+                    _depth_pixels_f32[(list.depth_h - y - 1) * list.depth_w + x];
                 _depth_pixels_u8[4ul * (y * list.depth_w + x) + 0] = uint8_t(z * 255);
                 _depth_pixels_u8[4ul * (y * list.depth_w + x) + 1] = uint8_t(z * 255);
                 _depth_pixels_u8[4ul * (y * list.depth_w + x) + 2] = uint8_t(z * 255);
@@ -2189,6 +2258,41 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
 
     assert(list.skin_vertices_count <= REN_MAX_SKIN_VERTICES_TOTAL);
     return curr_out_offset;
+}
+
+uint32_t RendererInternal::__record_texture(DynArray<TexEntry> &storage,
+                                            const Ren::Tex2DRef &tex, const int prio,
+                                            const uint16_t distance) {
+    const uint32_t index = tex.index();
+
+    TexEntry *beg = storage.data;
+    TexEntry *end = storage.data + storage.count;
+
+    TexEntry *entry =
+        std::lower_bound(beg, end, index, [](const TexEntry &t1, const uint32_t t2) {
+            return t1.index < t2;
+        });
+
+    if (entry == end || entry->index != index) {
+        ++storage.count;
+        std::copy_backward(entry, end, end + 1);
+        entry->index = index;
+    }
+
+    entry->prio = prio;
+    entry->cam_dist = _MIN(entry->cam_dist, distance);
+
+    return uint32_t(entry - beg);
+}
+
+void RendererInternal::__record_textures(DynArray<TexEntry> &storage,
+                                         const Ren::Material *mat,
+                                         const uint16_t distance) {
+    for (int i = 0; i < Ren::MaxMaterialTextureCount; i++) {
+        if (mat->textures[i]) {
+            __record_texture(storage, mat->textures[i], i, distance);
+        }
+    }
 }
 
 void RendererInternal::__init_wind_params(const VegState &vs, const Environment &env,

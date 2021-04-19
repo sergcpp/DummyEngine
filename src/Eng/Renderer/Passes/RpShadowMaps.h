@@ -18,13 +18,16 @@ class RpShadowMaps : public RenderPassBase {
     // lazily initialized data
 
     // temp data (valid only between Setup and Execute calls)
+    const Ren::MaterialStorage *materials_ = nullptr;
     DynArrayConstRef<DepthDrawBatch> shadow_batches_;
     DynArrayConstRef<uint32_t> shadow_batch_indices_;
     DynArrayConstRef<ShadowList> shadow_lists_;
     DynArrayConstRef<ShadowMapRegion> shadow_regions_;
+    Ren::TexHandle noise_tex_;
 
     // inputs
     RpResource instances_buf_;
+    RpResource shared_data_buf_;
 
     // outputs
     RpResource shadowmap_tex_;
@@ -42,7 +45,9 @@ class RpShadowMaps : public RenderPassBase {
     RpShadowMaps(int w, int h) : w_(w), h_(h) {}
 
     void Setup(RpBuilder &builder, const DrawList &list, int orphan_index,
-               const char instances_buf[], const char shadowmap_tex[]);
+               const char instances_buf[], const char shared_data_buf[],
+               const char shadowmap_tex[],
+               Ren::TexHandle noise_tex);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "SHADOW MAPS"; }

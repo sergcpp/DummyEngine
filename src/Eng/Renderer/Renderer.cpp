@@ -104,8 +104,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
         Ren::Tex2DParams p;
         p.w = p.h = 1;
         p.format = Ren::eTexFormat::RawRGBA8888;
-        p.filter = Ren::eTexFilter::NoFilter;
-        p.repeat = Ren::eTexRepeat::ClampToEdge;
+        p.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         Ren::eTexLoadStatus status;
         dummy_black_ =
@@ -121,8 +120,6 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
         Ren::Tex2DParams p;
         p.w = p.h = 8;
         p.format = Ren::eTexFormat::RawRG32F;
-        p.filter = Ren::eTexFilter::NoFilter;
-        p.repeat = Ren::eTexRepeat::Repeat;
 
         Ren::eTexLoadStatus status;
         rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", &HaltonSeq23[0][0],
@@ -134,8 +131,6 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
         Ren::Tex2DParams p;
         p.w = p.h = 4;
         p.format = Ren::eTexFormat::RawRG16;
-        p.filter = Ren::eTexFilter::NoFilter;
-        p.repeat = Ren::eTexRepeat::Repeat;
 
         Ren::eTexLoadStatus status;
         rand2d_dirs_4x4_ = ctx_.LoadTexture2D("rand2d_dirs_4x4", &__rand_dirs[0],
@@ -162,8 +157,8 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
         p.w = __cone_rt_lut_res;
         p.h = __cone_rt_lut_res;
         p.format = Ren::eTexFormat::RawRGBA8888;
-        p.filter = Ren::eTexFilter::BilinearNoMipmap;
-        p.repeat = Ren::eTexRepeat::ClampToEdge;
+        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         Ren::eTexLoadStatus status;
         cone_rt_lut_ =
@@ -183,8 +178,8 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
         Ren::Tex2DParams p;
         p.w = p.h = RendererInternal::__brdf_lut_res;
         p.format = Ren::eTexFormat::RawRG16U;
-        p.filter = Ren::eTexFilter::BilinearNoMipmap;
-        p.repeat = Ren::eTexRepeat::ClampToEdge;
+        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         Ren::eTexLoadStatus status;
         brdf_lut_ = ctx_.LoadTexture2D("brdf_lut", &RendererInternal::__brdf_lut[0],
@@ -202,8 +197,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
         Ren::Tex2DParams p;
         p.w = p.h = __noise_res;
         p.format = Ren::eTexFormat::RawRGBA8888Snorm;
-        p.filter = Ren::eTexFilter::BilinearNoMipmap;
-        p.repeat = Ren::eTexRepeat::Repeat;
+        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
 
         Ren::eTexLoadStatus status;
         noise_tex_ = ctx_.LoadTexture2D("noise", &__noise[0],
@@ -237,8 +231,8 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
     // Compile built-in shaders etc.
     InitRendererInternal();
 
-    temp_sub_frustums_.realloc(REN_CELLS_COUNT);
     temp_sub_frustums_.count = REN_CELLS_COUNT;
+    temp_sub_frustums_.realloc(temp_sub_frustums_.count);
 
     decals_boxes_.realloc(REN_MAX_DECALS_TOTAL);
     litem_to_lsource_.realloc(REN_MAX_LIGHTS_TOTAL);
@@ -246,7 +240,8 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
     allocated_shadow_regions_.realloc(REN_MAX_SHADOWMAPS_TOTAL);
 
     for (int i = 0; i < 2; i++) {
-        temp_sort_spans_32_[i].realloc(REN_MAX_SHADOW_BATCHES);
+        temp_sort_spans_32_[i].realloc(
+            std::max(REN_MAX_SHADOW_BATCHES, REN_MAX_TEX_COUNT));
         temp_sort_spans_64_[i].realloc(REN_MAX_MAIN_BATCHES);
     }
 
@@ -302,8 +297,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             params.w = cur_scr_w;
             params.h = cur_scr_h;
             params.format = Ren::eTexFormat::RawRG11F_B10F;
-            params.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.repeat = Ren::eTexRepeat::ClampToEdge;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
             Ren::eTexLoadStatus status;
             history_tex_ = ctx_.LoadTexture2D("History tex", params, &status);
@@ -314,11 +309,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
 
             // TODO: Replace this with usage of sampler objects
             int counter = 0;
-            ctx_.VisitTextures(Ren::TexUsageScene, [&counter](Ren::Texture2D &tex) {
+            ctx_.VisitTextures(Ren::TexUsageScene, [&counter, this](Ren::Texture2D &tex) {
                 Ren::Tex2DParams p = tex.params();
-                if (p.lod_bias > -1.0f) {
-                    p.lod_bias = -1.0f;
-                    tex.SetFilter(p.filter, p.repeat, p.compare, p.lod_bias);
+                if (p.sampling.lod_bias.to_float() > -1.0f) {
+                    p.sampling.lod_bias.from_float(-1.0f);
+                    tex.SetFilter(p.sampling, ctx_.log());
                     ++counter;
                 }
             });
@@ -330,11 +325,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             log->Info("Setting texture lod bias to 0.0");
 
             int counter = 0;
-            ctx_.VisitTextures(Ren::TexUsageScene, [&counter](Ren::Texture2D &tex) {
+            ctx_.VisitTextures(Ren::TexUsageScene, [&counter, this](Ren::Texture2D &tex) {
                 Ren::Tex2DParams p = tex.params();
-                if (p.lod_bias < 0.0f) {
-                    p.lod_bias = 0.0f;
-                    tex.SetFilter(p.filter, p.repeat, p.compare, p.lod_bias);
+                if (p.sampling.lod_bias.to_float() < 0.0f) {
+                    p.sampling.lod_bias.from_float(0.0f);
+                    tex.SetFilter(p.sampling, ctx_.log());
                     ++counter;
                 }
             });
@@ -346,12 +341,13 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             params.w = cur_scr_w / 4;
             params.h = cur_scr_h / 4;
             params.format = Ren::eTexFormat::RawRG11F_B10F;
-            params.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.repeat = Ren::eTexRepeat::ClampToEdge;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
             Ren::eTexLoadStatus status;
             down_tex_4x_ = ctx_.LoadTexture2D("DOWN 4x", params, &status);
             assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
+                   status == Ren::eTexLoadStatus::TexFound ||
                    status == Ren::eTexLoadStatus::TexFoundReinitialized);
         }
 
@@ -417,7 +413,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         // Shadow maps
         //
         rp_shadow_maps_.Setup(rp_builder_, list, cur_buf_chunk_, INSTANCES_BUF,
-                              SHADOWMAP_TEX);
+                              SHARED_DATA_BUF, SHADOWMAP_TEX, noise_tex_->handle());
         rp_tail->p_next = &rp_shadow_maps_;
         rp_tail = rp_tail->p_next;
 
@@ -440,7 +436,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         if ((list.render_flags & (EnableZFill | DebugWireframe)) == EnableZFill) {
             rp_depth_fill_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk_,
                                  INSTANCES_BUF, SHARED_DATA_BUF, MAIN_DEPTH_TEX,
-                                 MAIN_VELOCITY_TEX);
+                                 MAIN_VELOCITY_TEX, noise_tex_->handle());
             rp_tail->p_next = &rp_depth_fill_;
             rp_tail = rp_tail->p_next;
         }

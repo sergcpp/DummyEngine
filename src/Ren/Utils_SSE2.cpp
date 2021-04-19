@@ -11,6 +11,13 @@
 #include <immintrin.h>
 #include <xmmintrin.h>
 
+#ifdef __linux__
+#define _mm_storeu_si32(mem_addr, a) \
+    _mm_store_ss((float*)mem_addr, _mm_castsi128_ps(a));
+#define _mm_loadu_si32(mem_addr) \
+    _mm_castps_si128(_mm_load_ss((float const*)mem_addr))
+#endif
+
 #include "CPUFeatures.h"
 
 #define _ABS(x) ((x) < 0 ? -(x) : (x))

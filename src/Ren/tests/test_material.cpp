@@ -160,7 +160,7 @@ void test_material() {
         test.LoadMaterial("mat1", mat_src, &status, on_program_needed, on_texture_needed);
 
         require(status == Ren::eMatLoadStatus::CreatedFromData);
-        require(m_ref->flags() & uint32_t(Ren::eMaterialFlags::AlphaTest));
+        require(m_ref->flags() & uint32_t(Ren::eMatFlags::AlphaTest));
         require(m_ref->ready());
         require(m_ref->name() == "mat1");
 

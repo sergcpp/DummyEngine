@@ -30,6 +30,7 @@ set(SOURCE_FILES Anim.h
                  Context.cpp
                  CPUFeatures.h
                  CPUFeatures.cpp
+                 Fixed.h
                  Fwd.h
                  HashMap32.h
                  Log.h

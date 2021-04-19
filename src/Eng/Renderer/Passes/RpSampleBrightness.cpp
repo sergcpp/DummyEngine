@@ -13,8 +13,8 @@ void RpSampleBrightness::Setup(RpBuilder &builder, Ren::TexHandle tex_to_sample,
         params.w = 16;
         params.h = 8;
         params.format = Ren::eTexFormat::RawR16F;
-        params.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         reduced_tex_ = builder.WriteTexture(reduced_tex, params, *this);
     }

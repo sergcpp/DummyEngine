@@ -18,8 +18,8 @@ void GSUITest3::InitBookMaterials() {
         params.w = page_buf_.w;
         params.h = page_buf_.h;
         params.format = page_buf_.attachments[0].desc.format;
-        params.filter = page_buf_.attachments[0].desc.filter;
-        params.repeat = page_buf_.attachments[0].desc.repeat;
+        params.sampling.filter = page_buf_.attachments[0].desc.filter;
+        params.sampling.repeat = page_buf_.attachments[0].desc.repeat;
 
         // prevent texture deletion
         params.flags = Ren::TexNoOwnership;

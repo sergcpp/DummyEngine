@@ -611,8 +611,8 @@ void SceneManager::InitScene_PT(bool _override) {
                 const Ren::TriGroup *s = &mesh->group(0);
                 while (s->offset != -1) {
                     const Ren::Material *mat = s->mat.get();
-                    if (mat->flags() & (uint32_t(Ren::eMaterialFlags::AlphaBlend) |
-                                        uint32_t(Ren::eMaterialFlags::AlphaTest))) {
+                    if (mat->flags() & (uint32_t(Ren::eMatFlags::AlphaBlend) |
+                                        uint32_t(Ren::eMatFlags::AlphaTest))) {
                         // TODO: Properly support transparent objects
                         is_sparse = true;
                         ++s;
@@ -699,8 +699,8 @@ void SceneManager::InitScene_PT(bool _override) {
             if (mesh_it != loaded_meshes.end()) {
                 auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(
                     obj.components[CompTransform]);
-                tr->pt_mi =
-                    ray_scene_->AddMeshInstance(mesh_it->second, Ren::ValuePtr(tr->mat));
+                tr->pt_mi = ray_scene_->AddMeshInstance(
+                    mesh_it->second, Ren::ValuePtr(tr->world_from_object));
             }
         }
     }

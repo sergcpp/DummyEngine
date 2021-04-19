@@ -227,6 +227,8 @@ bool Ren::InitGLExtentions() {
 
     ren_glTexSubImage3D = (PFNGLTEXSUBIMAGE3DPROC)GetProcAddress(glTexSubImage3D);
 
+    ren_glCopyImageSubData = (PFNGLCOPYIMAGESUBDATA)GetProcAddress(glCopyImageSubData);
+
 #if !defined(__linux__)
     ren_glTexImage3D = (PFNGLTEXIMAGE3DPROC)GetProcAddress(glTexImage3D);
 #endif
@@ -299,13 +301,16 @@ bool Ren::InitGLExtentions() {
     ren_glBlendFunci = (PFNGLBLENDFUNCIPROC)GetProcAddress(glBlendFunci);
     ren_glClearBufferfv = (PFNGLCLEARBUFFERFVPROC)GetProcAddress(glClearBufferfv);
 
-    ren_glBindImageTexture = (PFNGLBINDIMAGETEXTUREPROC)GetProcAddress(glBindImageTexture);
+    ren_glBindImageTexture =
+        (PFNGLBINDIMAGETEXTUREPROC)GetProcAddress(glBindImageTexture);
 
     ren_glGenSamplers = (PFNGLGENSAMPLERSPROC)GetProcAddress(glGenSamplers);
     ren_glDeleteSamplers = (PFNGLDELETESAMPLERSPROC)GetProcAddress(glDeleteSamplers);
     ren_glBindSampler = (PFNGLBINDSAMPLERPROC)GetProcAddress(glBindSampler);
-    ren_glSamplerParameterf = (PFNGLSAMPLERPARAMETERFPROC)GetProcAddress(glSamplerParameterf);
-    ren_glSamplerParameteri = (PFNGLSAMPLERPARAMETERIPROC)GetProcAddress(glSamplerParameteri);
+    ren_glSamplerParameterf =
+        (PFNGLSAMPLERPARAMETERFPROC)GetProcAddress(glSamplerParameterf);
+    ren_glSamplerParameteri =
+        (PFNGLSAMPLERPARAMETERIPROC)GetProcAddress(glSamplerParameteri);
 #endif
 
     //
@@ -463,11 +468,12 @@ bool Ren::InitGLExtentions() {
         ren_glBindTextureUnit_Comp = ren_glBindTextureUnit_Comp_emu;
     }
 
-    ren_glNamedBufferStorage = (PFNGLNAMEDBUFFERSTORAGEPROC)GetProcAddress(glNamedBufferStorage);
+    ren_glNamedBufferStorage =
+        (PFNGLNAMEDBUFFERSTORAGEPROC)GetProcAddress(glNamedBufferStorage);
     if (ren_glNamedBufferStorage) {
-        ren_glNamedBufferStorage_Comp = [](GLenum /*target*/, GLuint buffer, GLsizeiptr size, const void* data, GLbitfield flags) {
-            ren_glNamedBufferStorage(buffer, size, data, flags);
-        };
+        ren_glNamedBufferStorage_Comp =
+            [](GLenum /*target*/, GLuint buffer, GLsizeiptr size, const void *data,
+               GLbitfield flags) { ren_glNamedBufferStorage(buffer, size, data, flags); };
     } else {
         ren_glNamedBufferStorage_Comp = ren_glNamedBufferStorage_Comp_emu;
     }

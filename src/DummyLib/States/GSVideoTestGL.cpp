@@ -34,8 +34,8 @@ void GSVideoTest::InitVideoTextures() {
             params.w = vp.w();
             params.h = vp.h();
             params.format = Ren::eTexFormat::RawR8;
-            params.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.repeat = Ren::eTexRepeat::ClampToEdge;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 #ifdef ORPHAN_TEXTURES
             params.flags = Ren::TexMutable;
 #endif
@@ -54,8 +54,8 @@ void GSVideoTest::InitVideoTextures() {
             params.w = vp.w() / 2;
             params.h = vp.h() / 2;
             params.format = Ren::eTexFormat::RawRG88;
-            params.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.repeat = Ren::eTexRepeat::ClampToEdge;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 #ifdef ORPHAN_TEXTURES
             params.flags = Ren::TexMutable;
 #endif
@@ -63,16 +63,16 @@ void GSVideoTest::InitVideoTextures() {
             for (int j = 0; j < TextureSyncWindow; j++) {
                 sprintf(name_buf, "__video_UV_texture_%i_%i__", tx, j);
                 Ren::eTexLoadStatus load_status;
-                uv_tex_[tx][j] = ren_ctx_->textures().Add(name_buf, &temp_buf[0],
-                                                         int(temp_buf.size() / 2), params,
-                                                         &load_status, log_.get());
+                uv_tex_[tx][j] = ren_ctx_->textures().Add(
+                    name_buf, &temp_buf[0], int(temp_buf.size() / 2), params,
+                    &load_status, log_.get());
             }
         }
 
         { // register material
             Ren::eMatLoadStatus status;
             orig_vid_mat_[tx] = ren_ctx_->LoadMaterial("wall_picture_yuv.txt", nullptr,
-                                                      &status, nullptr, nullptr);
+                                                       &status, nullptr, nullptr);
             if (status != Ren::eMatLoadStatus::Found) {
                 log_->Error("Failed to find material wall_picture");
                 return;
@@ -96,7 +96,7 @@ void GSVideoTest::InitVideoTextures() {
             sprintf(name_buf, "__video_texture_material_%i__", tx);
             vid_mat_[tx] = ren_ctx_->materials().Add(
                 name_buf,
-                orig_vid_mat_[tx]->flags() | uint32_t(Ren::eMaterialFlags::TaaResponsive),
+                orig_vid_mat_[tx]->flags() | uint32_t(Ren::eMatFlags::TaaResponsive),
                 programs, textures, params, log_.get());
         }
 
@@ -123,7 +123,7 @@ void GSVideoTest::InitVideoTextures() {
             y_pbo_[tx] = uint32_t(pbo_ids[0]);
             if (ren_ctx_->capabilities.persistent_buf_mapping) {
                 y_ptr_[tx] = (uint8_t *)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0,
-                                                        y_buf_size, BufferRangeMapFlags);
+                                                         y_buf_size, BufferRangeMapFlags);
             }
 
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo_ids[1]);

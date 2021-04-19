@@ -32,8 +32,7 @@ void RpDOF::Setup(RpBuilder &builder, const Ren::Camera *draw_cam,
         params.w = view_state->scr_res[0] / 4;
         params.h = view_state->scr_res[1] / 4;
         params.format = Ren::eTexFormat::RawR32F;
-        params.filter = Ren::eTexFilter::NoFilter;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         down_depth_4x_tex_ = builder.WriteTexture(depth_down_4x_name, params, *this);
     }
@@ -44,8 +43,8 @@ void RpDOF::Setup(RpBuilder &builder, const Ren::Camera *draw_cam,
         params.w = view_state->scr_res[0] / 4;
         params.h = view_state->scr_res[1] / 4;
         params.format = Ren::eTexFormat::RawR8;
-        params.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         down_tex_coc_[0] = builder.WriteTexture("DOF coc 1", params, *this);
         down_tex_coc_[1] = builder.WriteTexture("DOF coc 2", params, *this);

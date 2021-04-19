@@ -56,7 +56,7 @@ void ProbeStorage::Resize(Ren::eTexFormat format, int res, int capacity, Ren::IL
     const int mip_count = Ren::CalcMipCount(res, res, 16, Ren::eTexFilter::Bilinear);
 
     // allocate all mip levels
-    if (format != Ren::eTexFormat::Compressed) {
+    if (Ren::IsCompressedFormat(format)) {
         ren_glTextureStorage3D_Comp(
             GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, mip_count,
             Ren::GLInternalFormatFromTexFormat(format, false /* is_srgb */), res, res,
@@ -68,7 +68,7 @@ void ProbeStorage::Resize(Ren::eTexFormat format, int res, int capacity, Ren::IL
 
     const int blank_block_res = 64;
     uint8_t blank_block[blank_block_res * blank_block_res * 4] = {};
-    if (format == Ren::eTexFormat::Compressed) {
+    if (Ren::IsCompressedFormat(format)) {
         for (int i = 0; i < (blank_block_res / 4) * (blank_block_res / 4) * 16;) {
 #if defined(__ANDROID__)
             memcpy(&blank_block[i], Ren::_blank_ASTC_block_4x4,
@@ -98,7 +98,7 @@ void ProbeStorage::Resize(Ren::eTexFormat format, int res, int capacity, Ren::IL
 #endif
 
                     for (int x_off = 0; x_off < _res; x_off += blank_block_res) {
-                        if (format != Ren::eTexFormat::Compressed) {
+                        if (!Ren::IsCompressedFormat(format)) {
                             ren_glTextureSubImage3D_Comp(
                                 GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, level, x_off, y_off,
                                 (layer * 6 + face), _init_res, _init_res, 1,
@@ -157,7 +157,7 @@ bool ProbeStorage::SetPixelData(const int level, const int layer, const int face
 
     const int _res = int(unsigned(res_) >> unsigned(level));
 
-    if (format == Ren::eTexFormat::Compressed) {
+    if (Ren::IsCompressedFormat(format)) {
         ren_glCompressedTextureSubImage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, (GLuint)tex_id_,
                                                level, 0, 0, (layer * 6 + face), _res,
                                                _res, 1, tex_format, data_len, data);

@@ -294,8 +294,6 @@ int ModlApp::Init(int w, int h) {
         Ren::Tex2DParams p;
         p.w = p.h = checker_res;
         p.format = Ren::eTexFormat::RawRGB888;
-        p.filter = Ren::eTexFilter::NoFilter;
-        p.repeat = Ren::eTexRepeat::Repeat;
 
         checker_tex_ = ctx_.LoadTexture2D("__diag_checker", &checker_data[0],
                                           (int)checker_data.size(), p, nullptr);
@@ -1014,7 +1012,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
                     std::bind(&ModlApp::OnTextureNeeded, this, _1));
                 Ren::Material *mat = mat_ref.get();
                 alpha_test =
-                    (bool)(mat->flags() & uint32_t(Ren::eMaterialFlags::AlphaTest));
+                    (bool)(mat->flags() & uint32_t(Ren::eMatFlags::AlphaTest));
             } else {
                 cerr << "material " << materials[i] << " missing!" << endl;
             }
@@ -1723,8 +1721,7 @@ Ren::Tex2DRef ModlApp::OnTextureNeeded(const char *name) {
             [this, tex_name](void *data, int size) {
                 ctx_.ProcessSingleTask([this, tex_name, data, size]() {
                     Ren::Tex2DParams p;
-                    p.filter = Ren::eTexFilter::Trilinear;
-                    p.repeat = Ren::eTexRepeat::Repeat;
+                    p.sampling.filter = Ren::eTexFilter::Trilinear;
                     ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, nullptr);
                     LOGI("Texture %s loaded", tex_name.c_str());
                 });

@@ -2,29 +2,32 @@
 
 #include <Ren/Context.h>
 
-#include "../Renderer_Structs.h"
 #include "../../Utils/ShaderLoader.h"
+#include "../Renderer_Structs.h"
 
-void RpShadowMaps::Setup(RpBuilder &builder, const DrawList &list,
-                         const int orphan_index, const char instances_buf[],
-                         const char shadowmap_tex[]) {
+void RpShadowMaps::Setup(RpBuilder &builder, const DrawList &list, const int orphan_index,
+                         const char instances_buf[], const char shared_data_buf[],
+                         const char shadowmap_tex[], Ren::TexHandle noise_tex) {
     orphan_index_ = orphan_index;
 
+    materials_ = list.materials;
     shadow_batches_ = list.shadow_batches;
     shadow_batch_indices_ = list.shadow_batch_indices;
     shadow_lists_ = list.shadow_lists;
     shadow_regions_ = list.shadow_regions;
+    noise_tex_ = noise_tex;
 
     instances_buf_ = builder.ReadBuffer(instances_buf, *this);
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);
 
     { // shadow map buffer
         Ren::Tex2DParams params;
         params.w = w_;
         params.h = h_;
         params.format = Ren::eTexFormat::Depth16;
-        params.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
-        params.compare = Ren::eTexCompare::LEqual;
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.compare = Ren::eTexCompare::LEqual;
 
         shadowmap_tex_ = builder.WriteTexture(shadowmap_tex, params, *this);
     }

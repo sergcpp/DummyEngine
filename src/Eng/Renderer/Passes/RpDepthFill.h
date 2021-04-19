@@ -20,11 +20,13 @@ class RpDepthFill : public RenderPassBase {
         fillz_skin_transp_prog_, fillz_skin_transp_vel_prog_,
         fillz_skin_transp_vel_mov_prog_;
     Ren::Tex2DRef dummy_white_;
+    Ren::TexHandle noise_tex_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
 
     uint32_t render_flags_ = 0;
+    const Ren::MaterialStorage *materials_ = nullptr;
     DynArrayConstRef<uint32_t> zfill_batch_indices;
     DynArrayConstRef<DepthDrawBatch> zfill_batches;
 
@@ -48,7 +50,7 @@ class RpDepthFill : public RenderPassBase {
   public:
     void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
                int orphan_index, const char instances_buf[], const char shared_data_buf[],
-               const char main_depth_tex[], const char main_velocity_tex[]);
+               const char main_depth_tex[], const char main_velocity_tex[], Ren::TexHandle noise_tex);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "DEPTH FILL"; }

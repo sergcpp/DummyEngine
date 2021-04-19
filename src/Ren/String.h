@@ -124,7 +124,7 @@ public:
         }
     }
 
-    bool EndsWith(const char *str) {
+    bool EndsWith(const char *str) const {
         size_t len = strlen(str);
         for (size_t i = 0; i < len; i++) {
             if (str_[len_ - i] != str[len - i]) {

@@ -32,7 +32,7 @@ uint32_t _depth_draw_range(const DynArrayConstRef<uint32_t> &zfill_batch_indices
     return i;
 }
 
-uint32_t _depth_draw_range_ext(Ren::Context &ctx,
+uint32_t _depth_draw_range_ext(const Ren::MaterialStorage *materials,
                                const DynArrayConstRef<uint32_t> &zfill_batch_indices,
                                const DynArrayConstRef<DepthDrawBatch> &zfill_batches,
                                uint32_t i, uint32_t mask, uint32_t &cur_mat_id,
@@ -48,9 +48,9 @@ uint32_t _depth_draw_range_ext(Ren::Context &ctx,
         }
 
         if (batch.mat_id != cur_mat_id) {
-            const Ren::Material *mat = ctx.GetMaterial(batch.mat_id).get();
+            const Ren::Material &mat = materials->at(batch.mat_id);
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                       mat->textures[0]->id());
+                                       mat.textures[0]->id());
             cur_mat_id = batch.mat_id;
         }
 
@@ -101,6 +101,8 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT,
                                GLuint(instances_buf.tbos[orphan_index_]->id()));
+
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_NOISE_TEX_SLOT, noise_tex_.id);
 
     glBindFramebuffer(GL_FRAMEBUFFER, GLuint(depth_fill_fb_.id()));
     glClear(GL_STENCIL_BUFFER_BIT);
@@ -203,9 +205,8 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
                 rast_state.ApplyChanged(applied_state);
                 applied_state = rast_state;
 
-                i = _depth_draw_range_ext(builder.ctx(), zfill_batch_indices,
-                                          zfill_batches, i, DDB::BitAlphaTest, cur_mat_id,
-                                          _dummy);
+                i = _depth_draw_range_ext(materials_, zfill_batch_indices, zfill_batches,
+                                          i, DDB::BitAlphaTest, cur_mat_id, _dummy);
             }
 
             { // two-sided
@@ -215,9 +216,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
                 rast_state.ApplyChanged(applied_state);
                 applied_state = rast_state;
 
-                i = _depth_draw_range_ext(
-                    builder.ctx(), zfill_batch_indices, zfill_batches, i,
-                    DDB::BitAlphaTest | DDB::BitTwoSided, cur_mat_id, _dummy);
+                i = _depth_draw_range_ext(materials_, zfill_batch_indices, zfill_batches,
+                                          i, DDB::BitAlphaTest | DDB::BitTwoSided,
+                                          cur_mat_id, _dummy);
             }
         }
 
@@ -243,9 +244,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
                 rast_state.ApplyChanged(applied_state);
                 applied_state = rast_state;
 
-                i = _depth_draw_range_ext(
-                    builder.ctx(), zfill_batch_indices, zfill_batches, i,
-                    DDB::BitAlphaTest | DDB::BitMoving, cur_mat_id, _dummy);
+                i = _depth_draw_range_ext(materials_, zfill_batch_indices, zfill_batches,
+                                          i, DDB::BitAlphaTest | DDB::BitMoving,
+                                          cur_mat_id, _dummy);
             }
 
             { // two-sided
@@ -256,7 +257,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
                 applied_state = rast_state;
 
                 i = _depth_draw_range_ext(
-                    builder.ctx(), zfill_batch_indices, zfill_batches, i,
+                    materials_, zfill_batch_indices, zfill_batches, i,
                     DDB::BitAlphaTest | DDB::BitMoving | DDB::BitTwoSided, cur_mat_id,
                     _dummy);
             }
@@ -362,9 +363,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
                 rast_state.ApplyChanged(applied_state);
                 applied_state = rast_state;
 
-                i = _depth_draw_range_ext(
-                    builder.ctx(), zfill_batch_indices, zfill_batches, i,
-                    DDB::BitsVege | DDB::BitAlphaTest, cur_mat_id, _dummy);
+                i = _depth_draw_range_ext(materials_, zfill_batch_indices, zfill_batches,
+                                          i, DDB::BitsVege | DDB::BitAlphaTest,
+                                          cur_mat_id, _dummy);
             }
 
             { // two-sided
@@ -375,7 +376,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
                 applied_state = rast_state;
 
                 i = _depth_draw_range_ext(
-                    builder.ctx(), zfill_batch_indices, zfill_batches, i,
+                    materials_, zfill_batch_indices, zfill_batches, i,
                     DDB::BitsVege | DDB::BitAlphaTest | DDB::BitTwoSided, cur_mat_id,
                     _dummy);
             }
@@ -400,7 +401,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
                 applied_state = rast_state;
 
                 i = _depth_draw_range_ext(
-                    builder.ctx(), zfill_batch_indices, zfill_batches, i,
+                    materials_, zfill_batch_indices, zfill_batches, i,
                     DDB::BitsVege | DDB::BitAlphaTest | DDB::BitMoving, cur_mat_id,
                     _dummy);
             }
@@ -413,7 +414,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
                 applied_state = rast_state;
 
                 i = _depth_draw_range_ext(
-                    builder.ctx(), zfill_batch_indices, zfill_batches, i,
+                    materials_, zfill_batch_indices, zfill_batches, i,
                     DDB::BitsVege | DDB::BitAlphaTest | DDB::BitMoving | DDB::BitTwoSided,
                     cur_mat_id, _dummy);
             }
@@ -515,9 +516,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
                 rast_state.ApplyChanged(applied_state);
                 applied_state = rast_state;
 
-                i = _depth_draw_range_ext(
-                    builder.ctx(), zfill_batch_indices, zfill_batches, i,
-                    DDB::BitsSkinned | DDB::BitAlphaTest, cur_mat_id, _dummy);
+                i = _depth_draw_range_ext(materials_, zfill_batch_indices, zfill_batches,
+                                          i, DDB::BitsSkinned | DDB::BitAlphaTest,
+                                          cur_mat_id, _dummy);
             }
 
             { // two-sided
@@ -528,7 +529,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
                 applied_state = rast_state;
 
                 i = _depth_draw_range_ext(
-                    builder.ctx(), zfill_batch_indices, zfill_batches, i,
+                    materials_, zfill_batch_indices, zfill_batches, i,
                     DDB::BitsSkinned | DDB::BitAlphaTest | DDB::BitTwoSided, cur_mat_id,
                     _dummy);
             }
@@ -553,7 +554,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
                 applied_state = rast_state;
 
                 i = _depth_draw_range_ext(
-                    builder.ctx(), zfill_batch_indices, zfill_batches, i,
+                    materials_, zfill_batch_indices, zfill_batches, i,
                     DDB::BitsSkinned | DDB::BitAlphaTest | DDB::BitMoving, cur_mat_id,
                     _dummy);
             }
@@ -565,8 +566,8 @@ void RpDepthFill::DrawDepth(RpBuilder &builder) {
                 rast_state.ApplyChanged(applied_state);
                 applied_state = rast_state;
 
-                i = _depth_draw_range_ext(builder.ctx(), zfill_batch_indices,
-                                          zfill_batches, i,
+                i = _depth_draw_range_ext(materials_, zfill_batch_indices, zfill_batches,
+                                          i,
                                           DDB::BitsSkinned | DDB::BitAlphaTest |
                                               DDB::BitMoving | DDB::BitTwoSided,
                                           cur_mat_id, _dummy);

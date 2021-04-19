@@ -67,9 +67,7 @@ void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
     assert(IsMainThread());
 
     if (!vs_ref || !fs_ref) {
-        if (status) {
-            (*status) = eProgLoadStatus::SetToDefault;
-        }
+        (*status) = eProgLoadStatus::SetToDefault;
         return;
     }
 
@@ -114,9 +112,7 @@ void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
 
     InitBindings(log);
 
-    if (status) {
-        (*status) = eProgLoadStatus::CreatedFromData;
-    }
+    (*status) = eProgLoadStatus::CreatedFromData;
 }
 
 void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
@@ -124,13 +120,11 @@ void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
     assert(IsMainThread());
 
     if (!cs_ref) {
-        if (status) {
-            (*status) = eProgLoadStatus::SetToDefault;
-        }
+        (*status) = eProgLoadStatus::SetToDefault;
         return;
     }
 
-    GLuint program = (uint32_t)glCreateProgram();
+    GLuint program = glCreateProgram();
     if (program) {
         glAttachShader(program, (GLuint)cs_ref->id());
         glLinkProgram(program);
@@ -163,9 +157,7 @@ void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
 
     InitBindings(log);
 
-    if (status) {
-        (*status) = eProgLoadStatus::CreatedFromData;
-    }
+    (*status) = eProgLoadStatus::CreatedFromData;
 }
 
 void Ren::Program::InitBindings(ILog *log) {

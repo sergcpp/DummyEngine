@@ -22,8 +22,7 @@ void RpDownDepth::Setup(RpBuilder &builder, const ViewState *view_state,
         params.w = view_state->scr_res[0] / 2;
         params.h = view_state->scr_res[1] / 2;
         params.format = Ren::eTexFormat::RawR32F;
-        params.filter = Ren::eTexFilter::NoFilter;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         depth_down_2x_tex_ = builder.WriteTexture(output_tex, params, *this);
     }

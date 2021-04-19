@@ -21,6 +21,7 @@ void RpTransparent::Setup(
     cone_rt_lut_ = std::move(cone_rt_lut);
 
     env_ = &list.env;
+    materials_ = list.materials;
     decals_atlas_ = list.decals_atlas;
     probe_storage_ = list.probe_storage;
 
@@ -48,8 +49,8 @@ void RpTransparent::Setup(
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRG11F_B10F;
-        params.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         transparent_tex_ = builder.WriteTexture(transparent_tex_name, params, *this);
     }
@@ -108,8 +109,7 @@ void RpTransparent::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &co
         Ren::Tex2DParams p;
         p.w = p.h = 1;
         p.format = Ren::eTexFormat::RawRGBA8888;
-        p.filter = Ren::eTexFilter::NoFilter;
-        p.repeat = Ren::eTexRepeat::ClampToEdge;
+        p.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         Ren::eTexLoadStatus status;
         dummy_black_ = ctx.LoadTexture2D("dummy_black", black, sizeof(black), p, &status);

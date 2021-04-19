@@ -156,14 +156,12 @@ std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Tex2DRef &tex_r
         (std::string("assets/textures/") + tex_ref->name().c_str()).c_str());
     SceneManagerInternal::LoadTGA(in_file, params.w, params.h, &tex_data[0]);
 #else
-    tex_ref->ReadTextureData(Ren::eTexFormat::RawRGBA8888, (void *)&tex_data[0]);
+    tex_ref->DownloadTextureData(Ren::eTexFormat::RawRGBA8888, (void *)&tex_data[0]);
 #endif
 
-    if (flip_y) {
-        for (int y = 0; y < params.h / 2; y++) {
-            std::swap_ranges(&tex_data[y * params.w], &tex_data[(y + 1) * params.w],
-                             &tex_data[(params.h - y - 1) * params.w]);
-        }
+    for (int y = 0; y < params.h / 2 && flip_y; y++) {
+        std::swap_ranges(&tex_data[y * params.w], &tex_data[(y + 1) * params.w],
+                            &tex_data[(params.h - y - 1) * params.w]);
     }
 
     return tex_data;
@@ -249,19 +247,17 @@ uint32_t HashFile(const char *in_file, Ren::ILog *log) {
     log->Info("[PrepareAssets] Hashing %s", in_file);
 
     uint32_t hash = 0;
-#if 0
+
     for (size_t i = 0; i < in_file_size; i += HashChunkSize) {
         const size_t portion = std::min(HashChunkSize, in_file_size - i);
         in_file_stream.read((char *)&in_file_buf[0], portion);
+#if 0
         hash = crc32_fast(&in_file_buf[0], portion, hash);
-    }
 #else
-    for (size_t i = 0; i < in_file_size; i += HashChunkSize) {
-        const size_t portion = std::min(HashChunkSize, in_file_size - i);
-        in_file_stream.read((char*)&in_file_buf[0], portion);
         hash = murmur3_32(&in_file_buf[0], portion, hash);
-    }
 #endif
+    }
+
     return hash;
 }
 

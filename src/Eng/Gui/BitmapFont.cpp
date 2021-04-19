@@ -90,14 +90,15 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
             Ren::Tex2DParams p;
             p.w = img_data_w;
             p.h = img_data_h;
-            p.filter = draw_mode_ == eDrawMode::DrPassthrough
+            p.format = Ren::eTexFormat::RawRGBA8888;
+            p.sampling.filter = draw_mode_ == eDrawMode::DrPassthrough
                            ? Ren::eTexFilter::NoFilter
                            : Ren::eTexFilter::BilinearNoMipmap;
-            p.repeat = Ren::eTexRepeat::ClampToBorder;
-            p.format = Ren::eTexFormat::RawRGBA8888;
+            p.sampling.repeat = Ren::eTexRepeat::ClampToBorder;
 
+            Ren::eTexLoadStatus status;
             tex_ =
-                ctx.LoadTextureRegion(fname, img_data.get(), img_data_size, p, nullptr);
+                ctx.LoadTextureRegion(fname, img_data.get(), img_data_size, p, &status);
         } else if (chunk_id == uint32_t(Gui::eFontFileChunk::FontChGlyphData)) {
             if (!in_file.Read((char *)&glyph_range_count_, sizeof(uint32_t))) {
                 return false;

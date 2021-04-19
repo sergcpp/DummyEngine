@@ -53,6 +53,16 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder) {
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT,
                                GLuint(instances_buf.tbos[orphan_index_]->id()));
 
+    RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
+    glBindBufferRange(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
+                      GLuint(unif_shared_data_buf.ref->id()),
+                      orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock));
+    assert(orphan_index_ * SharedDataBlockSize %
+               builder.ctx().capabilities.unif_buf_offset_alignment ==
+           0);
+
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_NOISE_TEX_SLOT, noise_tex_.id);
+
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_fb_.id());
 
     bool region_cleared[REN_MAX_SHADOWMAPS_TOTAL] = {};
@@ -171,8 +181,8 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder) {
             }
 
             if (batch.mat_id != cur_mat_id) {
-                const Ren::Material *mat = ctx.GetMaterial(batch.mat_id).get();
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, mat->textures[0]->id());
+                const Ren::Material &mat = materials_->at(batch.mat_id);
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, mat.textures[0]->id());
                 cur_mat_id = batch.mat_id;
             }
 
@@ -219,8 +229,8 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder) {
             }
 
             if (batch.mat_id != cur_mat_id) {
-                const Ren::Material *mat = ctx.GetMaterial(batch.mat_id).get();
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, mat->textures[0]->id());
+                const Ren::Material &mat = materials_->at(batch.mat_id);
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, mat.textures[0]->id());
                 cur_mat_id = batch.mat_id;
             }
 

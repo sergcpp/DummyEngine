@@ -551,21 +551,24 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
             const Ren::Vec3f new_rot =
                 Mix(Ren::MakeVec3(action.rot_beg), Ren::MakeVec3(action.rot_end), t_norm);
 
-            tr.prev_mat = tr.mat;
-            tr.mat = Ren::Mat4f{1.0f};
-            tr.mat = Ren::Rotate(tr.mat, new_rot[2] * Ren::Pi<float>() / 180.0f,
-                                 Ren::Vec3f{0.0f, 0.0f, 1.0f});
-            tr.mat = Ren::Rotate(tr.mat, new_rot[0] * Ren::Pi<float>() / 180.0f,
-                                 Ren::Vec3f{1.0f, 0.0f, 0.0f});
-            tr.mat = Ren::Rotate(tr.mat, new_rot[1] * Ren::Pi<float>() / 180.0f,
-                                 Ren::Vec3f{0.0f, 1.0f, 0.0f});
+            tr.world_from_object_prev = tr.world_from_object;
+            tr.world_from_object = Ren::Mat4f{1.0f};
+            tr.world_from_object =
+                Ren::Rotate(tr.world_from_object, new_rot[2] * Ren::Pi<float>() / 180.0f,
+                            Ren::Vec3f{0.0f, 0.0f, 1.0f});
+            tr.world_from_object =
+                Ren::Rotate(tr.world_from_object, new_rot[0] * Ren::Pi<float>() / 180.0f,
+                            Ren::Vec3f{1.0f, 0.0f, 0.0f});
+            tr.world_from_object =
+                Ren::Rotate(tr.world_from_object, new_rot[1] * Ren::Pi<float>() / 180.0f,
+                            Ren::Vec3f{0.0f, 1.0f, 0.0f});
 
             const Ren::Vec3f new_pos =
                 Mix(Ren::MakeVec3(action.pos_beg), Ren::MakeVec3(action.pos_end), t_norm);
-            memcpy(&tr.mat[3][0], ValuePtr(new_pos), 3 * sizeof(float));
+            memcpy(&tr.world_from_object[3][0], ValuePtr(new_pos), 3 * sizeof(float));
 
-            if (memcmp(ValuePtr(tr.prev_mat), ValuePtr(tr.mat), sizeof(Ren::Mat4f)) !=
-                0) {
+            if (memcmp(ValuePtr(tr.world_from_object_prev),
+                       ValuePtr(tr.world_from_object), sizeof(Ren::Mat4f)) != 0) {
                 invalidate_mask |= CompTransformBit;
             }
         }
@@ -600,7 +603,8 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
                     ss.snd_src.SetOffset(t - float(action.sound_offset));
                 }
 
-                const Ren::Vec4f pos = tr.mat * Ren::Vec4f{0.0f, 1.0f, 0.0f, 1.0f};
+                const Ren::Vec4f pos =
+                    tr.world_from_object * Ren::Vec4f{0.0f, 1.0f, 0.0f, 1.0f};
                 ss.snd_src.set_position(Ren::ValuePtr(pos));
 
                 if (play_sound) {

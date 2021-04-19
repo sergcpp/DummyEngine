@@ -37,8 +37,8 @@ FrameBuf::FrameBuf(const char *name, Ren::Context &ctx, const int _w, const int 
         params.w = w;
         params.h = h;
         params.format = att.format;
-        params.filter = att.filter;
-        params.repeat = att.repeat;
+        params.sampling.filter = att.filter;
+        params.sampling.repeat = att.repeat;
         params.samples = sample_count;
 
         Ren::eTexLoadStatus status;
@@ -75,7 +75,7 @@ FrameBuf::FrameBuf(const char *name, Ren::Context &ctx, const int _w, const int 
         params.w = w;
         params.h = h;
         params.format = depth_att.format;
-        params.filter = depth_att.filter;
+        params.sampling.filter = depth_att.filter;
         params.samples = sample_count;
 
         Ren::eTexLoadStatus status;

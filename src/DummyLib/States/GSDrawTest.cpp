@@ -471,23 +471,26 @@ void GSDrawTest::Update(const uint64_t dt_us) {
                 auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(
                     scooter->components[CompTransform]);
 
-                tr->prev_mat = tr->mat;
-                tr->mat = Ren::Mat4f{1.0f};
-                tr->mat = Ren::Translate(tr->mat, rot_center);
+                tr->world_from_object_prev = tr->world_from_object;
+                tr->world_from_object = Ren::Mat4f{1.0f};
+                tr->world_from_object = Ren::Translate(tr->world_from_object, rot_center);
 
                 if (i < 8) {
                     // inner circle
-                    tr->mat = Ren::Rotate(
-                        tr->mat, scooters_angle_ + float(i) * 0.25f * Ren::Pi<float>(),
-                        Ren::Vec3f{0.0f, 1.0f, 0.0f});
-                    tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{6.5f, 0.0f, 0.0f});
+                    tr->world_from_object =
+                        Ren::Rotate(tr->world_from_object,
+                                    scooters_angle_ + float(i) * 0.25f * Ren::Pi<float>(),
+                                    Ren::Vec3f{0.0f, 1.0f, 0.0f});
+                    tr->world_from_object = Ren::Translate(tr->world_from_object,
+                                                           Ren::Vec3f{6.5f, 0.0f, 0.0f});
                 } else {
                     // outer circle
-                    tr->mat = Ren::Rotate(tr->mat,
-                                          -scooters_angle_ +
-                                              float(i - 8) * 0.25f * Ren::Pi<float>(),
-                                          Ren::Vec3f{0.0f, 1.0f, 0.0f});
-                    tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{-8.5f, 0.0f, 0.0f});
+                    tr->world_from_object = Ren::Rotate(
+                        tr->world_from_object,
+                        -scooters_angle_ + float(i - 8) * 0.25f * Ren::Pi<float>(),
+                        Ren::Vec3f{0.0f, 1.0f, 0.0f});
+                    tr->world_from_object = Ren::Translate(tr->world_from_object,
+                                                           Ren::Vec3f{-8.5f, 0.0f, 0.0f});
                 }
             }
         }

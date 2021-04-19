@@ -119,7 +119,13 @@ public:
 
 struct SceneData {
     Ren::String                             name;
+    
+    Ren::Texture2DStorage                   textures;
+    Ren::MaterialStorage                    materials;
+    Ren::MeshStorage                        meshes;
+
     Environment                             env;
+
     Ren::HashMap32<Ren::String, Ren::Vec4f> decals_textures;
     Ren::TextureAtlas                       decals_atlas;
     Ren::TextureSplitter                    lm_splitter;

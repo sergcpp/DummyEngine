@@ -93,18 +93,14 @@ void Ren::Shader::Init(const uint8_t *shader_data, const int data_size,
 void Ren::Shader::InitFromGLSL(const char *shader_src, const eShaderType type,
                                eShaderLoadStatus *status, ILog *log) {
     if (!shader_src) {
-        if (status) {
-            (*status) = eShaderLoadStatus::SetToDefault;
-        }
+        (*status) = eShaderLoadStatus::SetToDefault;
         return;
     }
 
     assert(id_ == 0);
     id_ = LoadShader(GLShaderTypes[int(type)], shader_src, log);
     if (!id_) {
-        if (status) {
-            (*status) = eShaderLoadStatus::SetToDefault;
-        }
+        (*status) = eShaderLoadStatus::SetToDefault;
         return;
     } else {
 #ifdef ENABLE_OBJ_LABELS
@@ -115,27 +111,21 @@ void Ren::Shader::InitFromGLSL(const char *shader_src, const eShaderType type,
     Descr *_bindings[3] = {bindings[0], bindings[1], bindings[2]};
     ParseGLSLBindings(shader_src, _bindings, bindings_count, log);
 
-    if (status) {
-        (*status) = eShaderLoadStatus::CreatedFromData;
-    }
+    (*status) = eShaderLoadStatus::CreatedFromData;
 }
 
 #ifndef __ANDROID__
 void Ren::Shader::InitFromSPIRV(const uint8_t *shader_data, const int data_size,
                                 const eShaderType type, eShaderLoadStatus *status, ILog *log) {
     if (!shader_data) {
-        if (status) {
-            (*status) = eShaderLoadStatus::SetToDefault;
-        }
+        (*status) = eShaderLoadStatus::SetToDefault;
         return;
     }
 
     assert(id_ == 0);
     id_ = LoadShader(GLShaderTypes[int(type)], shader_data, data_size, log);
     if (!id_) {
-        if (status) {
-            (*status) = eShaderLoadStatus::SetToDefault;
-        }
+        (*status) = eShaderLoadStatus::SetToDefault;
         return;
     }
 
@@ -175,9 +165,7 @@ void Ren::Shader::InitFromSPIRV(const uint8_t *shader_data, const int data_size,
 
     spvReflectDestroyShaderModule(&module);
 
-    if (status) {
-        (*status) = eShaderLoadStatus::CreatedFromData;
-    }
+    (*status) = eShaderLoadStatus::CreatedFromData;
 }
 #endif
 

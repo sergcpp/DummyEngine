@@ -309,7 +309,7 @@ void Ren::Camera::ExtractSubFrustums(const int resx, const int resy, const int r
                     zfar = near_ * std::pow(far_ / near_, float(z + 1) / float(resz));
 
         memcpy(&sub_frustums[z * resy * resx], &sub_frustums[0],
-               resy * resx * sizeof(Frustum));
+               sizeof(Frustum) * resy * resx);
 
         for (int i = 0; i < resy * resx; i++) {
             Ren::Frustum &sf = sub_frustums[z * resy * resx + i];

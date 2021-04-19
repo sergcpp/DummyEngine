@@ -20,7 +20,7 @@ void RpDebugProbes::Setup(RpBuilder &builder, const DrawList &list,
 
     shared_data_buf_ = builder.ReadBuffer(shared_data_buf_name, *this);
 
-    output_tex_ = builder.ReadTexture(output_tex_name, *this);
+    output_tex_ = builder.WriteTexture(output_tex_name, *this);
 }
 
 void RpDebugProbes::Execute(RpBuilder &builder) {

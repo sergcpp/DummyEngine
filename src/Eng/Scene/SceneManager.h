@@ -54,7 +54,7 @@ struct AssetCache {
         }
     }
 };
-}
+} // namespace SceneManagerInternal
 
 struct assets_context_t {
     const char *platform;
@@ -153,6 +153,16 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
                                   const char *te_shader);
     Ren::Tex2DRef OnLoadTexture(const char *name, const uint8_t color[4], uint32_t flags);
 
+    Ren::MeshRef LoadMesh(const char *name, std::istream *data,
+                          const Ren::material_load_callback &on_mat_load,
+                          Ren::eMeshLoadStatus *load_status);
+    Ren::MaterialRef LoadMaterial(const char *name, const char *mat_src,
+                                  Ren::eMatLoadStatus *status,
+                                  const Ren::program_load_callback &on_prog_load,
+                                  const Ren::texture_load_callback &on_tex_load);
+    Ren::Tex2DRef LoadTexture(const char *name, const void *data, int size,
+                              const Ren::Tex2DParams &p,
+                              Ren::eTexLoadStatus *load_status);
     Ren::Vec4f LoadDecalTexture(const char *name);
 
     void ProcessPendingTextures(int portion_size);
@@ -184,10 +194,16 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     struct TextureRequest {
         Ren::Tex2DRef ref;
-        std::unique_ptr<uint8_t[]> buf;
-        size_t buf_size = 0, data_size = 0;
+
+        Ren::Tex2DParams orig_params;
+        int mip_count;
+        int mip_offset_to_init, mip_count_to_init;
     };
-    std::deque<Ren::Tex2DRef> requested_textures_;
+    struct TextureRequestPending : public TextureRequest {
+        Sys::FileReadBuf buf;
+        Sys::FileReadEvent ev;
+    };
+    std::deque<TextureRequest> requested_textures_;
 
     static const int MaxSimultaneousRequests = 4;
 
@@ -198,7 +214,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     Sys::AsyncFileReader texture_reader_;
 
-    TextureRequest pending_textures_[MaxSimultaneousRequests];
+    TextureRequestPending pending_textures_[MaxSimultaneousRequests];
     int pending_textures_tail_ = 0, pending_textures_head_ = 0;
 
     void TextureLoaderProc();

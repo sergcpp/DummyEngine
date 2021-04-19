@@ -27,6 +27,7 @@ class RpTransparent : public RenderPassBase {
     const ProbeStorage *probe_storage_ = nullptr;
 
     uint32_t render_flags_ = 0;
+    const Ren::MaterialStorage *materials_ = nullptr;
     DynArrayConstRef<MainDrawBatch> main_batches_;
     DynArrayConstRef<uint32_t> main_batch_indices_;
     const int *alpha_blend_start_index_ = nullptr;

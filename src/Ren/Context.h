@@ -88,7 +88,6 @@ class Context : public TaskExecutor {
                              eMatLoadStatus *status,
                              const program_load_callback &on_prog_load,
                              const texture_load_callback &on_tex_load);
-    MaterialRef GetMaterial(uint32_t index);
     int NumMaterialsNotReady();
     void ReleaseMaterials();
 

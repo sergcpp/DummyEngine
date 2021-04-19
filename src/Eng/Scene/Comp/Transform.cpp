@@ -3,12 +3,12 @@
 #include <Sys/Json.h>
 
 void Transform::UpdateBBox() {
-    bbox_min_ws = bbox_max_ws = Ren::Vec3f(mat[3]);
+    bbox_min_ws = bbox_max_ws = Ren::Vec3f(world_from_object[3]);
 
     for (int j = 0; j < 3; j++) {
         for (int i = 0; i < 3; i++) {
-            const float a = mat[i][j] * bbox_min[i];
-            const float b = mat[i][j] * bbox_max[i];
+            const float a = world_from_object[i][j] * bbox_min[i];
+            const float b = world_from_object[i][j] * bbox_max[i];
 
             if (a < b) {
                 bbox_min_ws[j] += a;
@@ -21,7 +21,7 @@ void Transform::UpdateBBox() {
     }
 }
 
-void Transform::UpdateInvMatrix() { inv_mat = Ren::Inverse(mat); }
+void Transform::UpdateInvMatrix() { object_from_world = Ren::Inverse(world_from_object); }
 
 void Transform::Read(const JsObject &js_in, Transform &tr) {
     if (js_in.Has("pos")) {
@@ -31,7 +31,7 @@ void Transform::Read(const JsObject &js_in, Transform &tr) {
             Ren::Vec3f{float(js_pos.at(0).as_num().val), float(js_pos.at(1).as_num().val),
                        float(js_pos.at(2).as_num().val)};
 
-        tr.mat = Ren::Translate(tr.mat, pos);
+        tr.world_from_object = Ren::Translate(tr.world_from_object, pos);
     }
 
     if (js_in.Has("rot")) {
@@ -53,7 +53,7 @@ void Transform::Read(const JsObject &js_in, Transform &tr) {
                                              Ren::Vec3f{0.0f, 1.0f, 0.0f});
 
         const Ren::Mat4f rot_all = rot_y * rot_x * rot_z;
-        tr.mat = tr.mat * rot_all;
+        tr.world_from_object = tr.world_from_object * rot_all;
     }
 
     tr.UpdateInvMatrix();
@@ -63,9 +63,9 @@ void Transform::Write(const Transform &tr, JsObject &js_out) {
     { // write position
         JsArray js_pos;
 
-        js_pos.Push(JsNumber(double(tr.mat[3][0])));
-        js_pos.Push(JsNumber(double(tr.mat[3][1])));
-        js_pos.Push(JsNumber(double(tr.mat[3][2])));
+        js_pos.Push(JsNumber(double(tr.world_from_object[3][0])));
+        js_pos.Push(JsNumber(double(tr.world_from_object[3][1])));
+        js_pos.Push(JsNumber(double(tr.world_from_object[3][2])));
 
         js_out.Push("pos", std::move(js_pos));
     }

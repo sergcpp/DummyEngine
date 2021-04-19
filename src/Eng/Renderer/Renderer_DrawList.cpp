@@ -23,5 +23,8 @@ DrawList::DrawList() {
 
     items.realloc(REN_MAX_ITEMS_TOTAL);
 
+    visible_textures.realloc(REN_MAX_TEX_COUNT);
+    desired_textures.realloc(REN_MAX_TEX_COUNT);
+
     cached_shadow_regions.realloc(REN_MAX_SHADOWMAPS_TOTAL);
 }

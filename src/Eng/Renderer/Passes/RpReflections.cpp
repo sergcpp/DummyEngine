@@ -38,8 +38,8 @@ void RpReflections::Setup(RpBuilder &builder, const ViewState *view_state,
         params.w = view_state->scr_res[0] / 2;
         params.h = view_state->scr_res[1] / 2;
         params.format = Ren::eTexFormat::RawRGB10_A2;
-        params.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
         ssr1_tex_ = builder.WriteTexture("SSR Temp 1", params, *this);
         ssr2_tex_ = builder.WriteTexture("SSR Temp 2", params, *this);

@@ -34,7 +34,7 @@ Ren::TextureAtlas::TextureAtlas(const int w, const int h, const int min_res,
 
         const int blank_block_res = 64;
         uint8_t blank_block[blank_block_res * blank_block_res * 4] = {};
-        if (formats[i] == Ren::eTexFormat::Compressed) {
+        if (IsCompressedFormat(formats[i])) {
             for (int j = 0; j < (blank_block_res / 4) * (blank_block_res / 4) * 16;) {
 #if defined(__ANDROID__)
                 memcpy(&blank_block[j], Ren::_blank_ASTC_block_4x4,
@@ -69,7 +69,7 @@ Ren::TextureAtlas::TextureAtlas(const int w, const int h, const int min_res,
 #endif
 
                 for (int x_off = 0; x_off < _w; x_off += blank_block_res) {
-                    if (formats[i] == Ren::eTexFormat::Compressed) {
+                    if (IsCompressedFormat(formats[i])) {
                         ren_glCompressedTextureSubImage2D_Comp(
                             GL_TEXTURE_2D, tex_id, level, x_off, y_off, _init_res,
                             _init_res, internal_format, buf_len, blank_block);
@@ -159,7 +159,7 @@ void Ren::TextureAtlas::InitRegion(const void *data, const int data_len,
     }
 #endif
 
-    if (format == Ren::eTexFormat::Compressed) {
+    if (IsCompressedFormat(format)) {
         const GLenum tex_format =
 #if !defined(__ANDROID__)
             (flags & TexSRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT
@@ -188,7 +188,7 @@ void Ren::TextureAtlas::Finalize() {
     if (filter_ == eTexFilter::Trilinear || filter_ == eTexFilter::Bilinear) {
         for (int i = 0; i < MaxTextureCount && (formats_[i] != eTexFormat::Undefined);
              i++) {
-            if (formats_[i] != Ren::eTexFormat::Compressed) {
+            if (IsCompressedFormat(formats_[i])) {
                 ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, (GLuint)tex_ids_[i]);
             }
         }

@@ -8,13 +8,17 @@
 void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list,
                         const ViewState *view_state, int orphan_index,
                         const char instances_buf[], const char shared_data_buf[],
-                        const char main_depth_tex[], const char main_velocity_tex[]) {
+                        const char main_depth_tex[], const char main_velocity_tex[],
+                        Ren::TexHandle noise_tex) {
     orphan_index_ = orphan_index;
     view_state_ = view_state;
 
     render_flags_ = list.render_flags;
+    materials_ = list.materials;
     zfill_batch_indices = list.zfill_batch_indices;
     zfill_batches = list.zfill_batches;
+
+    noise_tex_ = noise_tex;
 
     instances_buf_ = builder.ReadBuffer(instances_buf, *this);
     shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);
@@ -24,8 +28,7 @@ void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list,
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::Depth24Stencil8;
-        params.filter = Ren::eTexFilter::NoFilter;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
         depth_tex_ = builder.WriteTexture(main_depth_tex, params, *this);
@@ -35,8 +38,7 @@ void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list,
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRG16;
-        params.filter = Ren::eTexFilter::NoFilter;
-        params.repeat = Ren::eTexRepeat::ClampToEdge;
+        params.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
         velocity_tex_ = builder.WriteTexture(main_velocity_tex, params, *this);
@@ -129,8 +131,8 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &dept
             Ren::Tex2DParams p;
             p.w = p.h = 1;
             p.format = Ren::eTexFormat::RawRGBA8888;
-            p.filter = Ren::eTexFilter::Bilinear;
-            p.repeat = Ren::eTexRepeat::ClampToEdge;
+            p.sampling.filter = Ren::eTexFilter::Bilinear;
+            p.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
 
             static const uint8_t white[] = {255, 255, 255, 255};
 
