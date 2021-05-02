@@ -402,7 +402,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data,
         groups_[i].mat = on_mat_load(&material_names[i][0]);
     }
 
-    if (tri_strips_count < (int)groups_.size()) {
+    if (tri_strips_count < MaxMeshTriGroupsCount) {
         groups_[tri_strips_count].offset = -1;
     }
 
@@ -513,7 +513,7 @@ void Ren::Mesh::InitMeshColored(std::istream &data,
         groups_[i].mat = on_mat_load(&material_names[i][0]);
     }
 
-    if (tri_strips_count < (int)groups_.size()) {
+    if (tri_strips_count < MaxMeshTriGroupsCount) {
         groups_[tri_strips_count].offset = -1;
     }
 
@@ -632,7 +632,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
         groups_[i].mat = on_mat_load(&material_names[i][0]);
     }
 
-    if (tri_groups_count < (int)groups_.size()) {
+    if (tri_groups_count < MaxMeshTriGroupsCount) {
         groups_[tri_groups_count].offset = -1;
     }
 

@@ -47,9 +47,6 @@ void ParseDDSHeader(const Ren::DDSHeader &hdr, Ren::Tex2DParams &params, Ren::IL
 }
 } // namespace SceneManagerInternal
 
-#define NEXT_REQ_NDX(x) ((x + 1) % MaxSimultaneousRequests)
-#define PREV_REQ_NDX(x) ((MaxSimultaneousRequests + x - 1) % MaxSimultaneousRequests)
-
 void SceneManager::TextureLoaderProc() {
     using namespace SceneManagerConstants;
     using namespace SceneManagerInternal;
@@ -59,68 +56,106 @@ void SceneManager::TextureLoaderProc() {
 #endif
 
     for (;;) {
-        TextureRequestPending &req = pending_textures_[pending_textures_head_];
+        TextureRequestPending *req = nullptr;
 
         {
-            std::unique_lock<std::mutex> lock(texture_requests_lock_);
-            texture_loader_cnd_.wait(lock, [this] {
-                return texture_loader_stop_ ||
-                       !requested_textures_.empty() &&
-                           NEXT_REQ_NDX(pending_textures_head_) != pending_textures_tail_;
+            std::unique_lock<std::mutex> lock(tex_requests_lock_);
+            tex_loader_cnd_.wait(lock, [this, &req] {
+                return tex_loader_stop_ || !requested_textures_.Empty();
             });
-            if (texture_loader_stop_) {
+            if (tex_loader_stop_) {
                 break;
             }
 
-            static_cast<TextureRequest &>(req) = std::move(requested_textures_.front());
-            requested_textures_.pop_front();
+            for (int i = 0; i < MaxSimultaneousRequests; i++) {
+                if (io_pending_tex_[i].state == eRequestState::Idle) {
+                    req = &io_pending_tex_[i];
+                    break;
+                }
+            }
+
+            if (!req) {
+                continue;
+            }
+
+            /*std::string str;
+            for (auto it = std::begin(requested_textures_);
+                 it != std::end(requested_textures_); ++it) {
+                str += it->ref->name().c_str();
+                str += '\n';
+            }*/
+
+            /*std::sort(std::begin(requested_textures_), std::end(requested_textures_),
+                      [](const TextureRequest &lhs, const TextureRequest &rhs) {
+                          if (strstr(lhs.ref->name().c_str(), "lightmaps/")) {
+                              return true;
+                          }
+                          return false;
+                      });*/
+
+            requested_textures_.Pop(*req);
         }
 
 #ifdef ENABLE_ITT_API
         __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_read_file_str);
 #endif
-        req.buf.set_data_len(0);
-        req.mip_offset_to_init = -1;
-        bool read_success;
+        req->buf->set_data_len(0);
+        req->mip_offset_to_init = 0xff;
 
         size_t read_offset = 0, read_size = 0;
 
         char path_buf[4096];
         strcpy(path_buf, SceneManagerConstants::TEXTURES_PATH);
-        strcat(path_buf, req.ref->name().c_str());
+        strcat(path_buf, req->ref->name().c_str());
 
-        if (req.ref->name().EndsWith(".dds") || req.ref->name().EndsWith(".DDS")) {
-            if (req.orig_params.format == Ren::eTexFormat::Undefined) {
+        bool read_success = true;
+
+        if (req->ref->name().EndsWith(".dds") || req->ref->name().EndsWith(".DDS")) {
+            if (req->orig_format == Ren::eTexFormat::Undefined) {
                 Ren::DDSHeader header;
 
                 size_t data_size = sizeof(Ren::DDSHeader);
-                read_success = texture_reader_.ReadFileBlocking(
-                    path_buf, 0 /* file_offset */, sizeof(Ren::DDSHeader), &header,
-                    data_size);
+                read_success = tex_reader_.ReadFileBlocking(path_buf, 0 /* file_offset */,
+                                                            sizeof(Ren::DDSHeader),
+                                                            &header, data_size);
                 read_success &= (data_size == sizeof(Ren::DDSHeader));
 
                 if (read_success) {
-                    ParseDDSHeader(header, req.orig_params, ren_ctx_.log());
-                    req.mip_count = int(header.dwMipMapCount);
+                    Ren::Tex2DParams temp_params;
+                    ParseDDSHeader(header, temp_params, ren_ctx_.log());
+                    req->orig_format = temp_params.format;
+                    req->orig_block = temp_params.block;
+                    req->orig_w = temp_params.w;
+                    req->orig_h = temp_params.h;
+                    req->mip_count = int(header.dwMipMapCount);
                 }
             }
-
-            const int max_load_w = std::max(req.ref->params().w * 2, 64);
-            const int max_load_h = std::max(req.ref->params().h * 2, 64);
-
             read_offset += sizeof(Ren::DDSHeader);
-            int w = int(req.orig_params.w), h = int(req.orig_params.h);
-            for (int i = 0; i < req.mip_count; i++) {
-                const int data_len = Ren::GetMipDataLenBytes(w, h, req.orig_params.format,
-                                                             req.orig_params.block);
+        } else if (req->ref->name().EndsWith(".ktx") ||
+                   req->ref->name().EndsWith(".KTX")) {
+            assert(false && "Not implemented!");
+            read_offset += sizeof(Ren::KTXHeader);
+        }
 
-                if ((w <= max_load_w && h <= max_load_h) || i == req.mip_count - 1) {
-                    if (req.mip_offset_to_init == -1) {
-                        req.mip_offset_to_init = i;
-                        req.mip_count_to_init = 0;
+        if (read_success) {
+            const Ren::Tex2DParams &cur_p = req->ref->params();
+
+            const int max_load_w = std::max(cur_p.w * 2, 64);
+            const int max_load_h = std::max(cur_p.h * 2, 64);
+
+            int w = int(req->orig_w), h = int(req->orig_h);
+            for (int i = 0; i < req->mip_count; i++) {
+                const int data_len =
+                    Ren::GetMipDataLenBytes(w, h, req->orig_format, req->orig_block);
+
+                if ((w <= max_load_w && h <= max_load_h) || i == req->mip_count - 1) {
+                    if (req->mip_offset_to_init == 0xff) {
+                        req->mip_offset_to_init = uint8_t(i);
+                        req->mip_count_to_init = 0;
                     }
-                    if (w > req.ref->params().w || h > req.ref->params().h || !req.ref->ready()) {
-                        req.mip_count_to_init++;
+                    if (w > cur_p.w || h > cur_p.h ||
+                        (cur_p.mip_count == 1 && w == cur_p.w && h == cur_p.h)) {
+                        req->mip_count_to_init++;
                         read_size += data_len;
                     }
                 } else {
@@ -130,28 +165,26 @@ void SceneManager::TextureLoaderProc() {
                 w = std::max(w / 2, 1);
                 h = std::max(h / 2, 1);
             }
-        } else if (req.ref->name().EndsWith(".ktx") || req.ref->name().EndsWith(".KTX")) {
-            assert(false && "Not implemented!");
-            read_offset += sizeof(Ren::KTXHeader);
+
+            // load next mip levels
+            assert(req->ref->params().w == req->orig_w ||
+                   req->ref->params().h != req->orig_h);
+
+            if (read_size) {
+                read_success = tex_reader_.ReadFileNonBlocking(
+                    path_buf, read_offset, read_size, *req->buf, req->ev);
+                assert(req->buf->data_len() == read_size);
+            }
         }
 
-        { // load next mip levels
-            assert(req.ref->params().w == req.orig_params.w ||
-                   req.ref->params().h != req.orig_params.h);
-        }
-
-        if (read_size) {
-            read_success = texture_reader_.ReadFileNonBlocking(
-                path_buf, read_offset, read_size, req.buf, req.ev);
-            assert(req.buf.data_len() == read_size);
+        if (read_success) {
+            std::lock_guard<std::mutex> _(tex_requests_lock_);
+            req->state = eRequestState::PendingIO;
         }
 
 #ifdef ENABLE_ITT_API
         __itt_task_end(__g_itt_domain);
 #endif
-
-        std::lock_guard<std::mutex> _(texture_requests_lock_);
-        pending_textures_head_ = NEXT_REQ_NDX(pending_textures_head_);
     }
 }
 
@@ -160,25 +193,67 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
 
     for (int i = 0; i < portion_size; i++) {
         TextureRequestPending *req = nullptr;
+        Sys::eFileReadResult res;
+        size_t bytes_read = 0;
         {
-            std::lock_guard<std::mutex> _(texture_requests_lock_);
-            if (pending_textures_head_ != pending_textures_tail_) {
-                req = &pending_textures_[pending_textures_tail_];
+            std::lock_guard<std::mutex> _(tex_requests_lock_);
+            for (int i = 0; i < MaxSimultaneousRequests; i++) {
+                if (io_pending_tex_[i].state == eRequestState::PendingIO) {
+                    res = io_pending_tex_[i].ev.GetResult(false /* block */, &bytes_read);
+                    if (res != Sys::eFileReadResult::Pending) {
+                        req = &io_pending_tex_[i];
+                        break;
+                    }
+                } else if (io_pending_tex_[i].state == eRequestState::PendingUpdate) {
+                    TextureRequestPending *req = &io_pending_tex_[i];
+                    auto *stage_buf = static_cast<TextureUpdateFileBuf *>(req->buf.get());
+                    const auto res = stage_buf->fence.ClientWaitSync(0);
+                    if (res == Ren::SyncFence::WaitResult::WaitFailed) {
+                        ren_ctx_.log()->Error("Waiting on fence failed!");
+
+                        static_cast<TextureRequest &>(*req) = {};
+                        req->state = eRequestState::Idle;
+                        tex_loader_cnd_.notify_one();
+                    } else if (res != Ren::SyncFence::WaitResult::TimeoutExpired) {
+                        if (req->ref->params().sampling.min_lod.value() > 0) {
+                            const auto it = std::lower_bound(
+                                std::begin(lod_transit_textures_),
+                                std::end(lod_transit_textures_), req->ref,
+                                [](const Ren::Tex2DRef &lhs, const Ren::Tex2DRef &rhs) {
+                                    return lhs.index() < rhs.index();
+                                });
+                            if (it == std::end(lod_transit_textures_) ||
+                                it->index() != req->ref.index()) {
+                                lod_transit_textures_.insert(it, req->ref);
+                            }
+                        }
+
+                        if (req->ref->params().w != req->orig_w ||
+                            req->ref->params().h != req->orig_h) {
+                            // send texture to be processed further (for next mip levels)
+                            requested_textures_.Push(std::move(*req));
+                        }
+
+                        req->state = eRequestState::Idle;
+                        tex_loader_cnd_.notify_one();
+                    }
+                }
             }
         }
 
         if (req) {
             const Ren::String &tex_name = req->ref->name();
 
-            size_t bytes_read;
-            const Sys::eFileReadResult res =
-                req->ev.GetResult(false /* block */, &bytes_read);
-
             if (res == Sys::eFileReadResult::Successful) {
+                assert(dynamic_cast<TextureUpdateFileBuf *>(req->buf.get()));
+                auto *stage_buf = static_cast<TextureUpdateFileBuf *>(req->buf.get());
+
+                stage_buf->stage_buf().FlushMapped(0, uint32_t(bytes_read));
+
                 const uint64_t t1_us = Sys::GetTimeUs();
 
-                int w = std::max(req->orig_params.w >> req->mip_offset_to_init, 1);
-                int h = std::max(req->orig_params.h >> req->mip_offset_to_init, 1);
+                int w = std::max(int(req->orig_w) >> req->mip_offset_to_init, 1);
+                int h = std::max(int(req->orig_h) >> req->mip_offset_to_init, 1);
 
                 uint16_t initialized_mips = req->ref->initialized_mips();
                 int last_initialized_mip = 0;
@@ -187,22 +262,37 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                 }
 
                 const Ren::Tex2DParams &p = req->ref->params();
+
                 req->ref->Realloc(w, h, last_initialized_mip + 1 + req->mip_count_to_init,
-                                  1 /* samples */, req->orig_params.format,
+                                  1 /* samples */, req->orig_format,
                                   (p.flags & Ren::TexSRGB) != 0, ren_ctx_.log());
 
-                const uint8_t *p_buf = req->buf.data();
-                for (int i = req->mip_offset_to_init;
-                     i < req->mip_offset_to_init + req->mip_count_to_init; i++) {
-                    const int data_len = Ren::GetMipDataLenBytes(
-                        w, h, req->orig_params.format, req->orig_params.block);
+                int data_off = int(req->buf->data_off());
+                for (int i = int(req->mip_offset_to_init);
+                     i < int(req->mip_offset_to_init) + req->mip_count_to_init; i++) {
+                    if (data_off >= bytes_read) {
+                        ren_ctx_.log()->Error("File %s has not enough data!",
+                                              tex_name.c_str());
+                        break;
+                    }
+                    const int data_len =
+                        Ren::GetMipDataLenBytes(w, h, req->orig_format, req->orig_block);
 
-                    req->ref->SetSubImage(i - req->mip_offset_to_init, 0, 0, w, h,
-                                          req->orig_params.format, p_buf, data_len);
+                    stage_buf->fence = req->ref->SetSubImage(
+                        i - req->mip_offset_to_init, 0, 0, w, h, req->orig_format,
+                        stage_buf->stage_buf(), data_off, data_len);
 
+                    data_off += data_len;
                     w = std::max(w / 2, 1);
                     h = std::max(h / 2, 1);
-                    p_buf += data_len;
+                }
+
+                { // offset min lod to account for newly allocated mip levels
+                    Ren::TexSamplingParams cur_sampling = req->ref->params().sampling;
+                    cur_sampling.min_lod.set_value(cur_sampling.min_lod.value() +
+                                                   cur_sampling.min_lod.One *
+                                                       req->mip_count_to_init);
+                    req->ref->SetFilter(cur_sampling, ren_ctx_.log());
                 }
 
                 const uint64_t t2_us = Sys::GetTimeUs();
@@ -214,23 +304,77 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
             }
 
             if (res != Sys::eFileReadResult::Pending) {
-                std::lock_guard<std::mutex> _(texture_requests_lock_);
-                if (res == Sys::eFileReadResult::Successful &&
-                    (req->ref->params().w != req->orig_params.w ||
-                     req->ref->params().h != req->orig_params.h)) {
-                    // send texture to be processed further (for next mip levels)
-                    requested_textures_.emplace_back(
-                        static_cast<TextureRequest &&>(*req));
+                if (res == Sys::eFileReadResult::Successful) {
+                    req->state = eRequestState::PendingUpdate;
                 } else {
                     static_cast<TextureRequest &>(*req) = {};
+
+                    std::lock_guard<std::mutex> _(tex_requests_lock_);
+                    req->state = eRequestState::Idle;
+                    tex_loader_cnd_.notify_one();
                 }
-                pending_textures_tail_ = NEXT_REQ_NDX(pending_textures_tail_);
-                texture_loader_cnd_.notify_one();
             } else {
                 break;
             }
         }
     }
+
+    //
+    // Animate lod transition to avoid sudden popping
+    //
+    for (auto it = std::begin(lod_transit_textures_);
+         it != std::end(lod_transit_textures_);) {
+        Ren::TexSamplingParams cur_sampling = (*it)->params().sampling;
+        cur_sampling.min_lod.set_value(std::max(cur_sampling.min_lod.value() - 1, 0));
+        (*it)->SetFilter(cur_sampling, ren_ctx_.log());
+
+        if (cur_sampling.min_lod.value() == 0) {
+            // transition is done, remove texture from list
+            it = lod_transit_textures_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+void SceneManager::ForceTextureReload() {
+    { // stop texture loading thread
+        std::unique_lock<std::mutex> lock(tex_requests_lock_);
+        tex_loader_stop_ = true;
+        tex_loader_cnd_.notify_one();
+    }
+
+    tex_loader_thread_.join();
+    for (int i = 0; i < MaxSimultaneousRequests; i++) {
+        io_pending_tex_[i].state = eRequestState::Idle;
+    }
+    requested_textures_.Clear();
+    lod_transit_textures_.clear();
+
+    // Reset texture to 1x1 mip and send to processing
+    for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures);
+         ++it) {
+        Ren::Tex2DParams p = (*it).params();
+
+        // drop to lowest lod
+        const int w = std::max(p.w >> p.mip_count, 1);
+        const int h = std::max(p.h >> p.mip_count, 1);
+
+        (*it).Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format,
+                      p.flags & Ren::TexSRGB, ren_ctx_.log());
+
+        p.sampling.min_lod.from_float(-1.0f);
+        (*it).SetFilter(p.sampling, ren_ctx_.log());
+
+        TextureRequest req;
+        req.ref = Ren::Tex2DRef{&scene_data_.textures, it.index()};
+
+        requested_textures_.Push(std::move(req));
+    }
+
+    // start texture loading thread
+    tex_loader_stop_ = false;
+    tex_loader_thread_ = std::thread(&SceneManager::TextureLoaderProc, this);
 }
 
 #undef NEXT_REQ_NDX

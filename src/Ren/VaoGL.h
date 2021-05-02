@@ -25,7 +25,7 @@ struct VtxAttribDesc {
 static_assert(sizeof(VtxAttribDesc) == 24, "!");
 
 inline bool operator==(const VtxAttribDesc &lhs, const VtxAttribDesc &rhs) {
-    return ::memcmp(&lhs, &rhs, sizeof(VtxAttribDesc)) == 0;
+    return std::memcmp(&lhs, &rhs, sizeof(VtxAttribDesc)) == 0;
 }
 
 const int MaxVertexAttributes = 8;
@@ -39,6 +39,8 @@ class Vao {
 
   public:
     Vao();
+    Vao(const Vao &rhs) = delete;
+    Vao(Vao &&rhs) = delete;
     ~Vao();
 
     uint32_t id() const { return id_; }

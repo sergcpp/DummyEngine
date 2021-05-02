@@ -73,11 +73,10 @@ class GSVideoTest final : public GSBaseState {
     // constant that controls maximum number of allowed in-flight frames
     static const int TextureSyncWindow = 2;
 
-    uint32_t y_pbo_[5] = {}, uv_pbo_[5] = {};
-    uint8_t *y_ptr_[5] = {}, *uv_ptr_[5] = {};
+    Ren::TextureStageBuf y_sbuf_[5], uv_sbuf_[5];
     int cur_frame_index_[5] = {};
     Ren::Tex2DRef y_tex_[5][TextureSyncWindow], uv_tex_[5][TextureSyncWindow];
-    void *after_tex_update_fences_[5][TextureSyncWindow] = {};
+    Ren::SyncFence after_tex_update_fences_[5][TextureSyncWindow];
 
     double frame_decode_time_ms_ = 0.0, tex_update_time_ms_ = 0.0;
 
@@ -98,7 +97,7 @@ class GSVideoTest final : public GSBaseState {
     void InitVideoTextures();
     void UpdateVideoTextures();
     void DestroyVideoTextures();
-    void UpdatePBOWithDecodedFrame(int tex_index, int frame_index);
+    void UpdateStageBufWithDecodedFrame(int tex_index, int frame_index);
 
     void SetVideoTextureFence(int tex_index, int frame_index);
     void InsertVideoTextureBarrier(int tex_index, int frame_index);
@@ -107,7 +106,7 @@ class GSVideoTest final : public GSBaseState {
     static void FlushGPUCommands();
 
     // Decoder thread procedures
-    void UpdatePBOWithDecodedFrame_Persistent(int tex_index, int frame_index);
+    void UpdateStageBufWithDecodedFrame_Persistent(int tex_index, int frame_index);
 
   public:
     explicit GSVideoTest(GameBase *game);

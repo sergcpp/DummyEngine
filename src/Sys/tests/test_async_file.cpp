@@ -27,7 +27,7 @@ void test_async_file() {
 
     { // read file (blocking 1)
         Sys::AsyncFileReader reader;
-        Sys::FileReadBuf buf;
+        Sys::DefaultFileReadBuf buf;
 
         require(reader.ReadFileBlocking(test_file_name, 0 /* read_offset */,
                                         Sys::WholeFile, buf));
@@ -57,7 +57,7 @@ void test_async_file() {
 
     { // read file (non-blocking 1)
         Sys::AsyncFileReader reader;
-        Sys::FileReadBuf buf;
+        Sys::DefaultFileReadBuf buf;
         Sys::FileReadEvent event;
 
         require(reader.ReadFileNonBlocking(test_file_name, 0 /* read_offset */,
@@ -76,7 +76,7 @@ void test_async_file() {
 
     { // read file (non-blocking 2)
         Sys::AsyncFileReader reader;
-        Sys::FileReadBuf buf;
+        Sys::DefaultFileReadBuf buf;
         Sys::FileReadEvent event;
 
         require(reader.ReadFileNonBlocking(test_file_name, 0 /* read_offset */,

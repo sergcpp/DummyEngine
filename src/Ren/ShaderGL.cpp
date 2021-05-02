@@ -55,8 +55,7 @@ Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
         glDeleteShader(id);
     }
 
-    id_ = rhs.id_;
-    rhs.id_ = 0;
+    id_ = exchange(rhs.id_, 0);
     type_ = rhs.type_;
     name_ = std::move(rhs.name_);
 
@@ -116,7 +115,8 @@ void Ren::Shader::InitFromGLSL(const char *shader_src, const eShaderType type,
 
 #ifndef __ANDROID__
 void Ren::Shader::InitFromSPIRV(const uint8_t *shader_data, const int data_size,
-                                const eShaderType type, eShaderLoadStatus *status, ILog *log) {
+                                const eShaderType type, eShaderLoadStatus *status,
+                                ILog *log) {
     if (!shader_data) {
         (*status) = eShaderLoadStatus::SetToDefault;
         return;

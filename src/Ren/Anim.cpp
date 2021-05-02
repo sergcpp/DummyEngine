@@ -50,8 +50,9 @@ void Ren::AnimSequence::InitAnimBones(std::istream &data) {
         data.read(bones_[i].parent_name, 64);
         int has_translate_anim = 0;
         data.read((char *)&has_translate_anim, 4);
-        if (has_translate_anim)
+        if (has_translate_anim) {
             bones_[i].flags |= uint32_t(eAnimBoneFlags::AnimHasTranslate);
+        }
         bones_[i].offset = offset;
         if (has_translate_anim) {
             offset += 7;
@@ -89,8 +90,8 @@ void Ren::AnimSequence::InitAnimBones(std::istream &data) {
     frames_.resize(file_header.p[FramesChunk].length / 4);
     data.read((char *)&frames_[0], (size_t)file_header.p[FramesChunk].length);
 
-    frame_dur_ = 1.0f / (float)fps_;
-    anim_dur_ = (float)len_ * frame_dur_;
+    frame_dur_ = 1.0f / float(fps_);
+    anim_dur_ = float(len_) * frame_dur_;
 
     ready_ = true;
 }

@@ -13,7 +13,7 @@ bool IsMainThread();
 uint8_t from_hex_char(const char c) {
     return (c >= 'A') ? (c >= 'a') ? (c - 'a' + 10) : (c - 'A' + 10) : (c - '0');
 }
-}
+} // namespace Ren
 
 Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *status,
                         const program_load_callback &on_prog_load,
@@ -26,25 +26,6 @@ Ren::Material::Material(const char *name, const uint32_t flags, ProgramRef progr
                         Tex2DRef textures[], const Vec4f params[], ILog *log) {
     name_ = String{name};
     Init(flags, programs, textures, params, log);
-}
-
-Ren::Material &Ren::Material::operator=(Material &&rhs) noexcept {
-    assert(IsMainThread());
-    flags_ = rhs.flags_;
-    ready_ = rhs.ready_;
-    name_ = std::move(rhs.name_);
-    for (int i = 0; i < MaxMaterialProgramCount; i++) {
-        programs[i] = std::move(rhs.programs[i]);
-    }
-    for (int i = 0; i < MaxMaterialTextureCount; i++) {
-        textures[i] = std::move(rhs.textures[i]);
-    }
-    for (int i = 0; i < MaxMaterialParamCount; i++) {
-        params[i] = rhs.params[i];
-    }
-    params_count = rhs.params_count;
-    RefCounter::operator=(std::move(rhs));
-    return *this;
 }
 
 void Ren::Material::Init(uint32_t flags, ProgramRef _programs[], Tex2DRef _textures[],
@@ -80,13 +61,13 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
     // Parse material
     const char *delims = " \r\n";
     const char *p = mat_src;
-    const char *q = strpbrk(p + 1, delims);
+    const char *q = std::strpbrk(p + 1, delims);
 
     int programs_count = 0;
     int textures_count = 0;
     params_count = 0;
 
-    for (; p != nullptr && q != nullptr; q = strpbrk(p, delims)) {
+    for (; p != nullptr && q != nullptr; q = std::strpbrk(p, delims)) {
         if (p == q) {
             p = q + 1;
             continue;
@@ -96,22 +77,22 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
         if (item == "gl_program:") {
 #ifdef USE_GL_RENDER
             p = q + 1;
-            q = strpbrk(p, delims);
+            q = std::strpbrk(p, delims);
             const std::string program_name = std::string(p, q);
             p = q + 1;
-            q = strpbrk(p, delims);
+            q = std::strpbrk(p, delims);
             const std::string v_shader_name = std::string(p, q);
             p = q + 1;
-            q = strpbrk(p, delims);
+            q = std::strpbrk(p, delims);
             const std::string f_shader_name = std::string(p, q);
 
             std::string tc_shader_name, te_shader_name;
             if (q && q[0] == '\r' && q[0] == '\n') {
                 p = q + 1;
-                q = strpbrk(p, delims);
+                q = std::strpbrk(p, delims);
                 tc_shader_name = std::string(p, q);
                 p = q + 1;
-                q = strpbrk(p, delims);
+                q = std::strpbrk(p, delims);
                 te_shader_name = std::string(p, q);
             }
 
@@ -130,7 +111,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
 #endif
         } else if (item == "flag:") {
             p = q + 1;
-            q = strpbrk(p, delims);
+            q = std::strpbrk(p, delims);
             const std::string flag = std::string(p, q);
 
             if (flag == "alpha_test") {
@@ -148,16 +129,16 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             }
         } else if (item == "texture:") {
             p = q + 1;
-            q = strpbrk(p, delims);
+            q = std::strpbrk(p, delims);
             const std::string texture_name = std::string(p, q);
 
             uint8_t texture_color[] = {0, 255, 255, 255};
             uint32_t texture_flags = 0;
 
             const char *_p = q + 1;
-            const char *_q = strpbrk(_p, delims);
+            const char *_q = std::strpbrk(_p, delims);
 
-            for (; _p != nullptr && _q != nullptr; _q = strpbrk(_p, delims)) {
+            for (; _p != nullptr && _q != nullptr; _q = std::strpbrk(_p, delims)) {
                 if (_p == _q) {
                     break;
                 }
@@ -166,10 +147,14 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                 const int flag_len = int(_q - _p);
 
                 if (flag[0] == '#') {
-                    texture_color[0] = from_hex_char(flag[1]) * 16 + from_hex_char(flag[2]);
-                    texture_color[1] = from_hex_char(flag[3]) * 16 + from_hex_char(flag[4]);
-                    texture_color[2] = from_hex_char(flag[5]) * 16 + from_hex_char(flag[6]);
-                    texture_color[3] = from_hex_char(flag[7]) * 16 + from_hex_char(flag[8]);
+                    texture_color[0] =
+                        from_hex_char(flag[1]) * 16 + from_hex_char(flag[2]);
+                    texture_color[1] =
+                        from_hex_char(flag[3]) * 16 + from_hex_char(flag[4]);
+                    texture_color[2] =
+                        from_hex_char(flag[5]) * 16 + from_hex_char(flag[6]);
+                    texture_color[3] =
+                        from_hex_char(flag[7]) * 16 + from_hex_char(flag[8]);
                 } else if (strncmp(flag, "signed", flag_len) == 0) {
                     texture_flags |= TexSigned;
                 } else if (strncmp(flag, "srgb", flag_len) == 0) {
@@ -192,20 +177,21 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                 _p = _q + 1;
             }
 
-            textures[textures_count++] = on_tex_load(texture_name.c_str(), texture_color, texture_flags);
+            textures[textures_count++] =
+                on_tex_load(texture_name.c_str(), texture_color, texture_flags);
         } else if (item == "param:") {
             Vec4f &par = params[params_count++];
             p = q + 1;
-            q = strpbrk(p, delims);
+            q = std::strpbrk(p, delims);
             par[0] = (float)strtod(p, nullptr);
             p = q + 1;
-            q = strpbrk(p, delims);
+            q = std::strpbrk(p, delims);
             par[1] = (float)strtod(p, nullptr);
             p = q + 1;
-            q = strpbrk(p, delims);
+            q = std::strpbrk(p, delims);
             par[2] = (float)strtod(p, nullptr);
             p = q + 1;
-            q = strpbrk(p, delims);
+            q = std::strpbrk(p, delims);
             par[3] = (float)strtod(p, nullptr);
         }
 

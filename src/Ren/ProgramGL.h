@@ -33,7 +33,8 @@ class Program : public RefCounter {
     std::array<UniformBlock, MaxUniformBlocksCount> uniform_blocks_;
     String name_;
 
-    void InitBindings(ILog* log);
+    void InitBindings(ILog *log);
+
   public:
     Program() = default;
     Program(const char *name, const uint32_t id, const Attribute *attrs,

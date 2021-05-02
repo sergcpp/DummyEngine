@@ -15,7 +15,7 @@
 #endif
 
 #ifndef NDEBUG
-#define TEX_VERBOSE_LOGGING
+//#define TEX_VERBOSE_LOGGING
 #endif
 
 namespace Ren {
@@ -243,6 +243,58 @@ bool IsDepthFormat(const eTexFormat format) {
 }
 } // namespace Ren
 
+static_assert(sizeof(GLsync) == sizeof(void *), "!");
+
+Ren::SyncFence::~SyncFence() {
+    if (sync_) {
+        glDeleteSync(reinterpret_cast<GLsync>(sync_));
+        sync_ = nullptr;
+    }
+}
+
+Ren::SyncFence::SyncFence(SyncFence &&rhs) { sync_ = exchange(rhs.sync_, nullptr); }
+
+Ren::SyncFence &Ren::SyncFence::operator=(SyncFence &&rhs) {
+    if (sync_) {
+        glDeleteSync(reinterpret_cast<GLsync>(sync_));
+    }
+    sync_ = exchange(rhs.sync_, nullptr);
+    return (*this);
+}
+
+void Ren::SyncFence::WaitSync() {
+    assert(sync_);
+    glWaitSync(reinterpret_cast<GLsync>(sync_), 0, GL_TIMEOUT_IGNORED);
+}
+
+Ren::SyncFence::WaitResult Ren::SyncFence::ClientWaitSync(const uint64_t timeout_us) {
+    assert(sync_);
+    auto sync = reinterpret_cast<GLsync>(sync_);
+    const GLenum res = glClientWaitSync(sync, 0, timeout_us);
+
+    WaitResult ret = WaitResult::WaitFailed;
+    if (res == GL_ALREADY_SIGNALED) {
+        ret = WaitResult::AlreadySignaled;
+    } else if (res == GL_TIMEOUT_EXPIRED) {
+        ret = WaitResult::TimeoutExpired;
+    } else if (res == GL_CONDITION_SATISFIED) {
+        ret = WaitResult::ConditionSatisfied;
+    }
+
+    if (ret != WaitResult::TimeoutExpired) {
+        glDeleteSync(sync);
+        sync_ = nullptr;
+    }
+
+    return ret;
+}
+
+Ren::SyncFence Ren::MakeFence() {
+    return SyncFence{glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0)};
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
+
 Ren::Texture2D::Texture2D(const char *name, const Tex2DParams &p, ILog *log)
     : name_(name) {
     Init(p, log);
@@ -269,14 +321,10 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
 
     Free();
 
-    handle_ = rhs.handle_;
-    rhs.handle_ = {};
-    params_ = rhs.params_;
-    rhs.params_ = {};
-    ready_ = rhs.ready_;
-    rhs.ready_ = false;
-    cubemap_ready_ = rhs.cubemap_ready_;
-    rhs.cubemap_ready_ = 0;
+    handle_ = exchange(rhs.handle_, {});
+    params_ = exchange(rhs.params_, {});
+    ready_ = exchange(rhs.ready_, false);
+    cubemap_ready_ = exchange(rhs.cubemap_ready_, 0);
     name_ = std::move(rhs.name_);
 
     RefCounter::operator=(std::move(rhs));
@@ -386,9 +434,9 @@ void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
                                 internal_format, GLsizei(w), GLsizei(h));
 #ifdef TEX_VERBOSE_LOGGING
     if (params_.format != eTexFormat::Undefined) {
-        log->Info("Realloc %s, %ix%i (%i mips) -> %ix%i (%i mips)",
-                  name_.c_str(), int(params_.w), int(params_.h), int(params_.mip_count),
-                  w, h, mip_count);
+        log->Info("Realloc %s, %ix%i (%i mips) -> %ix%i (%i mips)", name_.c_str(),
+                  int(params_.w), int(params_.h), int(params_.mip_count), w, h,
+                  mip_count);
     } else {
         log->Info("Alloc %s %ix%i (%i mips)", name_.c_str(), w, h, mip_count);
     }
@@ -419,8 +467,7 @@ void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
                                    GLsizei(std::max(params_.w >> src_mip, 1)),
                                    GLsizei(std::max(params_.h >> src_mip, 1)), 1);
 #ifdef TEX_VERBOSE_LOGGING
-                log->Info("Copying data mip %i [old] -> mip %i [new]",
-                          src_mip, dst_mip);
+                log->Info("Copying data mip %i [old] -> mip %i [new]", src_mip, dst_mip);
 #endif
 
                 new_initialized_mips |= (1u << dst_mip);
@@ -1113,6 +1160,8 @@ void Ren::Texture2D::SetFilter(TexSamplingParams sampling, ILog *log) {
             ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_CUBE_MAP, tex_id);
         }
     }
+
+    params_.sampling = sampling;
 }
 
 void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int offsety,
@@ -1143,6 +1192,42 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
     }
 }
 
+Ren::SyncFence Ren::Texture2D::SetSubImage(const int level, const int offsetx,
+                                           const int offsety, const int sizex,
+                                           const int sizey, const Ren::eTexFormat format,
+                                           const TextureStageBuf &sbuf,
+                                           const int data_off, const int data_len) {
+    assert(format == params_.format);
+    assert(params_.samples == 1);
+    assert(offsetx >= 0 && offsetx + sizex <= std::max(params_.w >> level, 1));
+    assert(offsety >= 0 && offsety + sizey <= std::max(params_.h >> level, 1));
+
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
+
+    if (IsCompressedFormat(format)) {
+        ren_glCompressedTextureSubImage2D_Comp(
+            GL_TEXTURE_2D, GLuint(handle_.id), GLint(level), GLint(offsetx),
+            GLint(offsety), GLsizei(sizex), GLsizei(sizey),
+            GLInternalFormatFromTexFormat(format, (params_.flags & TexSRGB) != 0),
+            GLsizei(data_len), reinterpret_cast<const void *>(uintptr_t(data_off)));
+    } else {
+        ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), level, offsetx,
+                                     offsety, sizex, sizey, GLFormatFromTexFormat(format),
+                                     GLTypeFromTexFormat(format),
+                                     reinterpret_cast<const void *>(uintptr_t(data_off)));
+    }
+
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    if (offsetx == 0 && offsety == 0 && sizex == std::max(params_.w >> level, 1) &&
+        sizey == std::max(params_.h >> level, 1)) {
+        // consider this level initialized
+        initialized_mips_ |= (1u << level);
+    }
+
+    return MakeFence();
+}
+
 void Ren::Texture2D::DownloadTextureData(const eTexFormat format, void *out_data) const {
 #if defined(__ANDROID__)
 #else
@@ -1155,6 +1240,80 @@ void Ren::Texture2D::DownloadTextureData(const eTexFormat format, void *out_data
 
     glBindTexture(GL_TEXTURE_2D, 0);
 #endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+void Ren::TextureStageBuf::Alloc(const uint32_t new_size,
+                                 const bool persistantly_mapped) {
+    assert(Ren::IsMainThread());
+    assert(id_ == 0xffffffff);
+
+    GLuint pbo_id;
+    glGenBuffers(1, &pbo_id);
+
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo_id);
+    glBufferStorage(GL_PIXEL_UNPACK_BUFFER, new_size, nullptr,
+                    persistantly_mapped
+                        ? GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_PERSISTENT_BIT)
+                        : GLbitfield(GL_MAP_WRITE_BIT));
+
+    if (persistantly_mapped) {
+        assert(!mapped_ptr_);
+        const GLbitfield BufferRangeMapFlags =
+            GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_PERSISTENT_BIT) |
+            GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
+            GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
+        mapped_ptr_ = (uint8_t *)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, new_size,
+                                                  BufferRangeMapFlags);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    }
+
+    id_ = uint32_t(pbo_id);
+    size_ = new_size;
+}
+
+void Ren::TextureStageBuf::Free() {
+    assert(Ren::IsMainThread());
+    if (id_ != 0xffffffff) {
+        auto pbo_id = GLuint(id_);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo_id);
+        if (mapped_ptr_) {
+            glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+            mapped_ptr_ = nullptr;
+        }
+        glDeleteBuffers(1, &pbo_id);
+        id_ = 0xffffffff;
+    }
+}
+
+uint8_t *Ren::TextureStageBuf::MapRange(const uint32_t offset, const uint32_t size) {
+    const GLbitfield BufferRangeMapFlags =
+        GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
+        GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
+    assert(!mapped_ptr_);
+
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, GLuint(id_));
+    auto *pinned_mem = (uint8_t *)glMapBufferRange(
+        GL_PIXEL_UNPACK_BUFFER, GLintptr(offset), GLsizeiptr(size), BufferRangeMapFlags);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    return pinned_mem;
+}
+
+void Ren::TextureStageBuf::Unmap() {
+    assert(!mapped_ptr_);
+
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, GLuint(id_));
+    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+}
+
+void Ren::TextureStageBuf::FlushMapped(const uint32_t offset, const uint32_t size) {
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, GLuint(id_));
+    glFlushMappedBufferRange(GL_PIXEL_UNPACK_BUFFER, offset,
+                             GLsizeiptr(size ? size : size_));
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -1174,11 +1333,9 @@ Ren::Texture1D &Ren::Texture1D::operator=(Texture1D &&rhs) noexcept {
 
     Free();
 
-    handle_ = rhs.handle_;
-    rhs.handle_ = {};
+    handle_ = exchange(rhs.handle_, {});
     buf_ = std::move(rhs.buf_);
-    params_ = rhs.params_;
-    rhs.params_ = {};
+    params_ = exchange(rhs.params_, {});
     name_ = std::move(rhs.name_);
 
     RefCounter::operator=(std::move(rhs));

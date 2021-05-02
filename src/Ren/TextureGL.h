@@ -84,6 +84,31 @@ inline bool operator<(const TexHandle lhs, const TexHandle rhs) {
     return false;
 }
 
+class TextureStageBuf;
+
+class SyncFence {
+    void *sync_ = nullptr;
+
+  public:
+    SyncFence() = default;
+    explicit SyncFence(void *sync) : sync_(sync) {}
+    ~SyncFence();
+
+    SyncFence(const SyncFence &rhs) = delete;
+    SyncFence(SyncFence &&rhs);
+    SyncFence &operator=(const SyncFence &rhs) = delete;
+    SyncFence &operator=(SyncFence &&rhs);
+
+    operator bool() const { return sync_ != nullptr; }
+
+    enum class WaitResult { AlreadySignaled, TimeoutExpired, ConditionSatisfied, WaitFailed };
+
+    void WaitSync();
+    WaitResult ClientWaitSync(uint64_t timeout_us = 1000000000);
+};
+
+SyncFence MakeFence();
+
 class Texture2D : public RefCounter {
     TexHandle handle_;
     Tex2DParams params_;
@@ -150,8 +175,35 @@ class Texture2D : public RefCounter {
     void SetFilter(TexSamplingParams sampling, ILog *log);
     void SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey,
                      Ren::eTexFormat format, const void *data, int data_len);
+    SyncFence SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey,
+                          Ren::eTexFormat format, const TextureStageBuf &sbuf,
+                          int data_off, int data_len);
 
     void DownloadTextureData(eTexFormat format, void *out_data) const;
+};
+
+class TextureStageBuf {
+    uint32_t id_ = 0xffffffff;
+    uint32_t size_ = 0;
+    uint8_t *mapped_ptr_ = nullptr;
+
+  public:
+    TextureStageBuf() = default;
+    TextureStageBuf(const TextureStageBuf &rhs) = delete;
+    TextureStageBuf(TextureStageBuf &&rhs) = delete;
+    ~TextureStageBuf() { Free(); }
+
+    uint32_t id() const { return id_; }
+    uint32_t size() const { return size_; }
+    uint8_t *mapped_ptr() const { return mapped_ptr_; }
+
+    void Alloc(uint32_t size, bool persistantly_mapped = true);
+    void Free();
+
+    uint8_t *MapRange(uint32_t offset, uint32_t size);
+    void Unmap();
+
+    void FlushMapped(uint32_t offset = 0, uint32_t size = 0);
 };
 
 using Tex2DRef = StrongRef<Texture2D>;
@@ -229,8 +281,8 @@ class Framebuffer {
     bool Setup(const TexHandle color_attachments[], int color_attachments_count,
                TexHandle depth_attachment, TexHandle stencil_attachment,
                bool is_multisampled);
-    bool Setup(const TexHandle color_attachment, TexHandle depth_attachment,
-               TexHandle stencil_attachment, bool is_multisampled) {
+    bool Setup(const TexHandle color_attachment, const TexHandle depth_attachment,
+               const TexHandle stencil_attachment, const bool is_multisampled) {
         return Setup(&color_attachment, 1, depth_attachment, stencil_attachment,
                      is_multisampled);
     }

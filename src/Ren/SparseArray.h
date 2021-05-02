@@ -5,16 +5,16 @@
 #include <iterator>
 
 namespace Ren {
-template <typename T>
-class SparseArray {
-protected:
-    uint8_t     *ctrl_;
-    T           *data_;
-    uint32_t    capacity_, size_;
-    uint32_t    first_free_;
+template <typename T> class SparseArray {
+  protected:
+    uint8_t *ctrl_;
+    T *data_;
+    uint32_t capacity_, size_;
+    uint32_t first_free_;
 
     static_assert(sizeof(T) >= sizeof(uint32_t), "!");
-public:
+
+  public:
     explicit SparseArray(uint32_t initial_capacity = 0)
         : ctrl_(nullptr), data_(nullptr), capacity_(0), size_(0), first_free_(0) {
         if (initial_capacity) {
@@ -32,7 +32,7 @@ public:
         reserve(rhs.capacity_);
 
         memcpy(ctrl_, rhs.ctrl_, (capacity_ + 7) / 8);
-        
+
         for (uint32_t i = 0; i < capacity_; i++) {
             if (ctrl_[i / 8] & (1u << (i % 8))) {
                 data_[i] = rhs.data_[i];
@@ -41,7 +41,9 @@ public:
     }
 
     SparseArray &operator=(const SparseArray &rhs) {
-        if (this == &rhs) return *this;
+        if (this == &rhs) {
+            return *this;
+        }
 
         clear();
         delete[] ctrl_;
@@ -77,14 +79,15 @@ public:
     }
 
     void reserve(uint32_t new_capacity) {
-        if (new_capacity <= capacity_) return;
+        if (new_capacity <= capacity_)
+            return;
 
         uint8_t *old_ctrl = ctrl_;
         T *old_data = data_;
 
         size_t mem_size = (new_capacity + 7) / 8;
         if (mem_size % alignof(T)) {
-            mem_size += alignof(T)-(mem_size % alignof(T));
+            mem_size += alignof(T) - (mem_size % alignof(T));
         }
 
         size_t data_start = mem_size;
@@ -105,7 +108,7 @@ public:
         for (uint32_t i = 0; i < capacity_; i++) {
             if (ctrl_[i / 8] & (1u << (i % 8))) {
                 T *el = data_ + i;
-                new(el) T(std::move(old_data[i]));
+                new (el) T(std::move(old_data[i]));
                 old_data[i].~T();
             }
         }
@@ -121,11 +124,11 @@ public:
         first_free_ = capacity_;
 
         capacity_ = new_capacity;
-        if (size_ > capacity_) size_ = capacity_;
+        if (size_ > capacity_)
+            size_ = capacity_;
     }
 
-    template<class... Args>
-    uint32_t emplace(Args &&... args) {
+    template <class... Args> uint32_t emplace(Args &&...args) {
         if (size_ + 1 > capacity_) {
             reserve(capacity_ ? (capacity_ * 2) : 8);
         }
@@ -133,7 +136,7 @@ public:
         memcpy(&first_free_, data_ + index, sizeof(uint32_t));
 
         T *el = data_ + index;
-        new(el) T(std::forward<Args>(args)...);
+        new (el) T(std::forward<Args>(args)...);
 
         ctrl_[index / 8] |= (1u << (index % 8));
 
@@ -206,16 +209,14 @@ public:
         friend class SparseArray<T>;
 
         SparseArray<T> *container_;
-        uint32_t        index_;
+        uint32_t index_;
 
-        SparseArrayIterator(SparseArray<T> *container, uint32_t index) : container_(container), index_(index) {}
-    public:
-        T &operator*() {
-            return container_->at(index_);
-        }
-        T &operator->() {
-            return &container_->at(index_);
-        }
+        SparseArrayIterator(SparseArray<T> *container, uint32_t index)
+            : container_(container), index_(index) {}
+
+      public:
+        T &operator*() { return container_->at(index_); }
+        T *operator->() { return &container_->at(index_); }
         SparseArrayIterator &operator++() {
             index_ = container_->NextOccupied(index_);
             return *this;
@@ -226,26 +227,24 @@ public:
             return tmp;
         }
 
-        uint32_t index() const {
-            return index_;
-        }
+        uint32_t index() const { return index_; }
 
-        bool operator< (const SparseArrayIterator &rhs) {
+        bool operator<(const SparseArrayIterator &rhs) const {
             return index_ < rhs.index_;
         }
-        bool operator<=(const SparseArrayIterator &rhs) {
+        bool operator<=(const SparseArrayIterator &rhs) const {
             return index_ <= rhs.index_;
         }
-        bool operator> (const SparseArrayIterator &rhs) {
+        bool operator>(const SparseArrayIterator &rhs) const {
             return index_ > rhs.index_;
         }
-        bool operator>=(const SparseArrayIterator &rhs) {
+        bool operator>=(const SparseArrayIterator &rhs) const {
             return index_ >= rhs.index_;
         }
-        bool operator==(const SparseArrayIterator &rhs) {
+        bool operator==(const SparseArrayIterator &rhs) const {
             return index_ == rhs.index_;
         }
-        bool operator!=(const SparseArrayIterator &rhs) {
+        bool operator!=(const SparseArrayIterator &rhs) const {
             return index_ != rhs.index_;
         }
     };
@@ -253,17 +252,15 @@ public:
     class SparseArrayConstIterator : public std::iterator<std::forward_iterator_tag, T> {
         friend class SparseArray<T>;
 
-        const SparseArray<T>    *container_;
-        uint32_t                index_;
+        const SparseArray<T> *container_;
+        uint32_t index_;
 
-        SparseArrayConstIterator(const SparseArray<T> *container, uint32_t index) : container_(container), index_(index) {}
-    public:
-        const T &operator*() {
-            return container_->at(index_);
-        }
-        const T &operator->() {
-            return &container_->at(index_);
-        }
+        SparseArrayConstIterator(const SparseArray<T> *container, uint32_t index)
+            : container_(container), index_(index) {}
+
+      public:
+        const T &operator*() const { return container_->at(index_); }
+        const T *operator->() const { return &container_->at(index_); }
         SparseArrayConstIterator &operator++() {
             index_ = container_->NextOccupied(index_);
             return *this;
@@ -275,26 +272,24 @@ public:
             return tmp;
         }
 
-        uint32_t index() const {
-            return index_;
-        }
+        uint32_t index() const { return index_; }
 
-        bool operator< (const SparseArrayConstIterator &rhs) {
+        bool operator<(const SparseArrayConstIterator &rhs) const {
             return index_ < rhs.index_;
         }
-        bool operator<=(const SparseArrayConstIterator &rhs) {
+        bool operator<=(const SparseArrayConstIterator &rhs) const {
             return index_ <= rhs.index_;
         }
-        bool operator> (const SparseArrayConstIterator &rhs) {
+        bool operator>(const SparseArrayConstIterator &rhs) const {
             return index_ > rhs.index_;
         }
-        bool operator>=(const SparseArrayConstIterator &rhs) {
+        bool operator>=(const SparseArrayConstIterator &rhs) const {
             return index_ >= rhs.index_;
         }
-        bool operator==(const SparseArrayConstIterator &rhs) {
+        bool operator==(const SparseArrayConstIterator &rhs) const {
             return index_ == rhs.index_;
         }
-        bool operator!=(const SparseArrayConstIterator &rhs) {
+        bool operator!=(const SparseArrayConstIterator &rhs) const {
             return index_ != rhs.index_;
         }
     };
@@ -320,23 +315,15 @@ public:
         return cend();
     }
 
-    iterator end() {
-        return iterator(this, capacity_);
-    }
+    iterator end() { return iterator(this, capacity_); }
 
-    const_iterator cend() const {
-        return const_iterator(this, capacity_);
-    }
+    const_iterator cend() const { return const_iterator(this, capacity_); }
 
-    iterator iter_at(uint32_t i) {
-        return iterator(this, i);
-    }
+    iterator iter_at(uint32_t i) { return iterator(this, i); }
 
-    const_iterator citer_at(uint32_t i) const {
-        return const_iterator(this, i);
-    }
+    const_iterator citer_at(uint32_t i) const { return const_iterator(this, i); }
 
-private:
+  private:
     uint32_t NextOccupied(uint32_t index) const {
         assert((ctrl_[index / 8] & (1u << (index % 8))) && "Invalid index!");
         for (uint32_t i = index + 1; i < capacity_; i++) {
@@ -352,4 +339,4 @@ private:
         return capacity_;
     }
 };
-}
+} // namespace Ren

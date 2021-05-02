@@ -127,7 +127,7 @@ struct Skeleton {
 
     Bone *find_bone(const char *name) const {
         for (int i = 0; i < bones_count; i++) {
-            if (strcmp(bones[i].name, name) == 0) {
+            if (std::strcmp(bones[i].name, name) == 0) {
                 return &bones[i];
             }
         }
@@ -147,6 +147,6 @@ struct Skeleton {
     void ApplyAnim(int anim_id1, int anim_id2, float t);
     void UpdateAnim(int anim_id, float t);
     void UpdateBones(Ren::Mat4f *matr_palette);
-    int UpdateShapes(uint16_t* out_shape_palette);
+    int UpdateShapes(uint16_t *out_shape_palette);
 };
 } // namespace Ren

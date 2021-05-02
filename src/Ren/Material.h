@@ -58,10 +58,10 @@ class Material : public RefCounter {
              const Vec4f params[], ILog *log);
 
     Material(const Mesh &rhs) = delete;
-    Material(Material &&rhs) noexcept { *this = std::move(rhs); }
+    Material(Material &&rhs) noexcept = default;
 
     Material &operator=(const Material &rhs) = delete;
-    Material &operator=(Material &&rhs) noexcept;
+    Material &operator=(Material &&rhs) noexcept = default;
 
     uint32_t flags() const { return flags_; }
     bool ready() const { return ready_; }

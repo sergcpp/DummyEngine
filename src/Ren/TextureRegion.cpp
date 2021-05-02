@@ -5,7 +5,7 @@
 Ren::TextureRegion::TextureRegion(const char *name, TextureAtlasArray *atlas,
                                   const int texture_pos[3])
     : name_(name), atlas_(atlas) {
-    memcpy(texture_pos_, texture_pos, 3 * sizeof(int));
+    std::memcpy(texture_pos_, texture_pos, 3 * sizeof(int));
 }
 
 Ren::TextureRegion::TextureRegion(const char *name, const void *data, int size,
@@ -24,10 +24,13 @@ Ren::TextureRegion::~TextureRegion() {
 Ren::TextureRegion &Ren::TextureRegion::operator=(TextureRegion &&rhs) noexcept {
     RefCounter::operator=(std::move(rhs));
 
+    if (atlas_) {
+        atlas_->Free(texture_pos_);
+    }
+
     name_ = std::move(rhs.name_);
-    atlas_ = rhs.atlas_;
-    rhs.atlas_ = nullptr;
-    memcpy(texture_pos_, rhs.texture_pos_, 3 * sizeof(int));
+    atlas_ = exchange(rhs.atlas_, nullptr);
+    std::memcpy(texture_pos_, rhs.texture_pos_, 3 * sizeof(int));
     params_ = rhs.params_;
     ready_ = rhs.ready_;
 
@@ -67,8 +70,7 @@ void Ren::TextureRegion::Init(const void *data, const int size, const Tex2DParam
 }
 
 void Ren::TextureRegion::InitFromRAWData(const void *data, const int /*size*/,
-                                         const Tex2DParams &p,
-                                         TextureAtlasArray *atlas) {
+                                         const Tex2DParams &p, TextureAtlasArray *atlas) {
     const int res[2] = {p.w, p.h};
     const int node = atlas->Allocate(data, p.format, res, texture_pos_, 1);
     if (node != -1) {
@@ -78,8 +80,7 @@ void Ren::TextureRegion::InitFromRAWData(const void *data, const int /*size*/,
 }
 
 void Ren::TextureRegion::InitFromTGAFile(const void *data, const int /*size*/,
-                                         const Tex2DParams &p,
-                                         TextureAtlasArray *atlas) {
+                                         const Tex2DParams &p, TextureAtlasArray *atlas) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
     std::unique_ptr<uint8_t[]> image_data = ReadTGAFile(data, w, h, format);
@@ -93,8 +94,7 @@ void Ren::TextureRegion::InitFromTGAFile(const void *data, const int /*size*/,
 }
 
 void Ren::TextureRegion::InitFromPNGFile(const void *data, const int size,
-                                         const Tex2DParams &p,
-                                         TextureAtlasArray *atlas) {
+                                         const Tex2DParams &p, TextureAtlasArray *atlas) {
     int w, h, channels;
     unsigned char *image_data = SOIL_load_image_from_memory((const unsigned char *)data,
                                                             size, &w, &h, &channels, 4);

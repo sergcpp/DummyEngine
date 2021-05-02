@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include <memory>
 
 #include "Anim.h"
@@ -21,18 +20,9 @@ struct TriGroup {
 
     TriGroup() = default;
     TriGroup(const TriGroup &rhs) = delete;
-    TriGroup(TriGroup &&rhs) noexcept { (*this) = std::move(rhs); }
+    TriGroup(TriGroup &&rhs) noexcept = default;
     TriGroup &operator=(const TriGroup &rhs) = delete;
-    TriGroup &operator=(TriGroup &&rhs) noexcept {
-        offset = rhs.offset;
-        rhs.offset = -1;
-        num_indices = rhs.num_indices;
-        rhs.num_indices = 0;
-        mat = std::move(rhs.mat);
-        flags = rhs.flags;
-        rhs.flags = 0;
-        return *this;
-    }
+    TriGroup &operator=(TriGroup &&rhs) noexcept = default;
 };
 
 const int MaxMeshTriGroupsCount = 52;
@@ -51,33 +41,23 @@ struct BufferRange {
     ~BufferRange() { Release(); }
 
     BufferRange(const BufferRange &rhs) = delete;
-    BufferRange(BufferRange &&rhs) noexcept {
-        buf = std::move(rhs.buf);
-        offset = rhs.offset;
-        rhs.offset = 0;
-        size = rhs.size;
-        rhs.size = 0;
-    }
+    BufferRange(BufferRange &&rhs) noexcept = default;
 
     BufferRange &operator=(const BufferRange &rhs) = delete;
     BufferRange &operator=(BufferRange &&rhs) noexcept {
         Release();
 
         buf = std::move(rhs.buf);
-        offset = rhs.offset;
-        rhs.offset = 0;
-        size = rhs.size;
-        rhs.size = 0;
+        offset = exchange(rhs.offset, 0);
+        size = exchange(rhs.size, 0);
 
         return *this;
     }
 
     void Release() {
-        if (buf && size) {
+        if (buf) {
             const bool res = buf->FreeRegion(offset);
             assert(res);
-            size = 0;
-            offset = 0;
         }
         buf = {};
     }
@@ -97,7 +77,7 @@ class Mesh : public RefCounter {
         indices_buf_;
     std::unique_ptr<char[]> attribs_, indices_;
     std::unique_ptr<VtxDelta[]> deltas_;
-    std::array<TriGroup, MaxMeshTriGroupsCount> groups_;
+    TriGroup groups_[MaxMeshTriGroupsCount];
     Vec3f bbox_min_, bbox_max_;
     String name_;
 
@@ -105,8 +85,8 @@ class Mesh : public RefCounter {
 
     // simple static mesh with normals
     void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load,
-                        BufferRef vertex_buf1, BufferRef vertex_buf2,
-                        BufferRef index_buf, ILog *log);
+                        BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+                        ILog *log);
     // simple mesh with 4 per-vertex colors
     void InitMeshColored(std::istream &data, const material_load_callback &on_mat_load,
                          BufferRef vertex_buf1, BufferRef vertex_buf2,
@@ -122,8 +102,8 @@ class Mesh : public RefCounter {
   public:
     Mesh() = default;
     Mesh(const char *name, const float *positions, int vtx_count, const uint32_t *indices,
-         int ndx_count, BufferRef vertex_buf1, BufferRef vertex_buf2,
-         BufferRef index_buf, eMeshLoadStatus *load_status, ILog *log);
+         int ndx_count, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+         eMeshLoadStatus *load_status, ILog *log);
     Mesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
          BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
          BufferRef skin_vertex_buf, BufferRef delta_buf, eMeshLoadStatus *load_status,

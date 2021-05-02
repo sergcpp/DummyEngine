@@ -12,6 +12,7 @@ template <typename T, int FpBits> class Fixed {
     explicit Fixed(const float v) : value_(T(v * One)) {}
 
     T value() const { return value_; }
+    void set_value(T v) { value_ = v; }
 
     float to_float() const { return float(value_) / One; }
     void from_float(const float v) { value_ = T(v * One); }

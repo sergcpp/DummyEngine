@@ -357,6 +357,15 @@ void GSBaseState::Enter() {
         });
 
     cmdline_->RegisterCommand(
+        "reload_textures", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+            auto shrd_this = weak_this.lock();
+            if (shrd_this) {
+                shrd_this->scene_manager_->ForceTextureReload();
+            }
+            return true;
+        });
+
+    cmdline_->RegisterCommand(
         "debug_cull", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
             auto shrd_this = weak_this.lock();
             if (shrd_this) {

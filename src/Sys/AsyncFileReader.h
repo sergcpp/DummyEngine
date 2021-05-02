@@ -7,7 +7,8 @@ class AsyncFileReaderImpl;
 
 const size_t WholeFile = 0xffffffffffffffff;
 
-class FileReadBuf {
+class FileReadBufBase {
+  protected:
     uint8_t *mem_ = nullptr;
 
     size_t data_off_ = 0;
@@ -17,15 +18,16 @@ class FileReadBuf {
     uint32_t chunk_count_ = 0;
 
   public:
-    FileReadBuf(const uint32_t chunk_size = 0xffffffff) : chunk_size_(chunk_size) {
+    explicit FileReadBufBase(const uint32_t chunk_size = 0xffffffff)
+        : chunk_size_(chunk_size) {
         if (chunk_size_ == 0xffffffff) {
             chunk_size_ = GetOptimalChunkSize();
         }
     }
-    ~FileReadBuf() { Free(); }
+    virtual ~FileReadBufBase() = default;
 
-    FileReadBuf(const FileReadBuf &rhs) = delete;
-    FileReadBuf(FileReadBuf &&rhs) = delete;
+    FileReadBufBase(const FileReadBufBase &rhs) = delete;
+    FileReadBufBase(FileReadBufBase &&rhs) = delete;
 
     uint32_t chunk_size() const { return chunk_size_; }
     uint32_t chunk_count() const { return chunk_count_; }
@@ -36,12 +38,33 @@ class FileReadBuf {
     void set_data_len(const size_t len) { data_len_ = len; }
 
     uint8_t *data() { return mem_ + data_off_; }
-    size_t data_len() { return data_len_; }
+    size_t data_off() const { return data_off_; }
+    size_t data_len() const { return data_len_; }
 
-    void Realloc(const size_t new_size);
-    void Free();
+    void Realloc(size_t new_size) {
+        if (new_size <= size_t(chunk_size_) * chunk_count_) {
+            return;
+        }
+
+        Free();
+
+        chunk_count_ = uint32_t((new_size + chunk_size_ - 1) / chunk_size_);
+        mem_ = Alloc(size_t(chunk_size_) * chunk_count_);
+    }
+
+    virtual uint8_t *Alloc(size_t new_size) = 0;
+    virtual void Free() = 0;
 
     static uint32_t GetOptimalChunkSize();
+};
+
+class DefaultFileReadBuf : public FileReadBufBase {
+  public:
+    DefaultFileReadBuf() = default;
+    ~DefaultFileReadBuf() override { Free(); }
+
+    uint8_t *Alloc(size_t new_size) override;
+    void Free() override;
 };
 
 enum class eFileReadResult { Failed = -1, Pending = 0, Successful = 1 };
@@ -50,7 +73,9 @@ class FileReadEvent {
 #if defined(_WIN32)
     void *h_file_ = nullptr;
     void *ev_ = nullptr;
-    char ov_[32];
+    char ov_[32] = {};
+#elif defined(__linux__)
+    unsigned long ctx_ = 0;
 #endif
 
   public:
@@ -69,12 +94,12 @@ class AsyncFileReader {
     ~AsyncFileReader();
 
     bool ReadFileBlocking(const char *file_path, size_t read_offset, size_t read_size,
-                          FileReadBuf &out_buf);
+                          FileReadBufBase &out_buf);
 
     bool ReadFileBlocking(const char *file_path, size_t read_offset, size_t read_size,
                           void *out_data, size_t &out_size);
 
     bool ReadFileNonBlocking(const char *file_path, size_t read_offset, size_t read_size,
-                             FileReadBuf &out_buf, FileReadEvent &out_event);
+                             FileReadBufBase &out_buf, FileReadEvent &out_event);
 };
 } // namespace Sys

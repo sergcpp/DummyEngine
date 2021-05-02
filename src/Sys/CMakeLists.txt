@@ -18,7 +18,6 @@ set(SOURCE_FILES AssetFile.h
                  AssetFileIO.h
                  AssetFileIO.cpp
                  AsyncFileReader.h
-                 AsyncFileReader.cpp
                  BinaryTree.h
                  Delegate.h
                  DynLib.h
@@ -43,6 +42,14 @@ set(SOURCE_FILES AssetFile.h
                  Time_.h
                  Time.cpp
                  Variant.h)
+
+IF(WIN32)
+set(SOURCE_FILES ${SOURCE_FILES}
+                 AsyncFileReader_win32.cpp)
+ELSE(WIN32)
+set(SOURCE_FILES ${SOURCE_FILES}
+                 AsyncFileReader_unix.cpp)
+ENDIF(WIN32)
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 

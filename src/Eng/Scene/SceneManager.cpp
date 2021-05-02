@@ -100,6 +100,30 @@ template <typename T> class DefaultCompStorage : public CompStorage {
 #include "__cam_rig.inl"
 } // namespace SceneManagerInternal
 
+class TextureUpdateFileBuf : public Sys::FileReadBufBase {
+    Ren::TextureStageBuf stage_buf_;
+
+  public:
+    TextureUpdateFileBuf() {
+        Realloc(24 * 1024 * 1024);
+    }
+    ~TextureUpdateFileBuf() override { Free(); }
+
+    Ren::TextureStageBuf &stage_buf() { return stage_buf_; }
+
+    uint8_t *Alloc(const size_t new_size) override {
+        stage_buf_.Alloc(uint32_t(new_size));
+        return stage_buf_.mapped_ptr();
+    }
+
+    void Free() override {
+        stage_buf_.Free();
+        mem_ = nullptr;
+    }
+
+    Ren::SyncFence fence;
+};
+
 SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context &snd_ctx,
                            Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads)
     : ren_ctx_(ren_ctx), sh_(sh), snd_ctx_(snd_ctx), ray_renderer_(ray_renderer),
@@ -187,7 +211,14 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
         &status);
     assert(status == Ren::eMeshLoadStatus::CreatedFromData);
 
-    texture_loader_thread_ = std::thread(&SceneManager::TextureLoaderProc, this);
+    requested_textures_.Reserve(8 * 1024 * 1024);
+
+    for (int i = 0; i < MaxSimultaneousRequests; i++) {
+        //io_pending_tex_[i].buf.reset(new Sys::DefaultFileReadBuf);
+        io_pending_tex_[i].buf.reset(new TextureUpdateFileBuf);
+    }
+
+    tex_loader_thread_ = std::thread(&SceneManager::TextureLoaderProc, this);
 
     const float pos[] = {0.0f, 0.0f, 0.0f};
     amb_sound_.Init(1.0f, pos);
@@ -197,13 +228,13 @@ SceneManager::~SceneManager() {
     ClearScene();
 
     {
-        std::unique_lock<std::mutex> lock(texture_requests_lock_);
-        texture_loader_stop_ = true;
-        texture_loader_cnd_.notify_one();
+        std::unique_lock<std::mutex> lock(tex_requests_lock_);
+        tex_loader_stop_ = true;
+        tex_loader_cnd_.notify_one();
     }
 
-    assert(texture_loader_thread_.joinable());
-    texture_loader_thread_.join();
+    assert(tex_loader_thread_.joinable());
+    tex_loader_thread_.join();
 }
 
 void SceneManager::RegisterComponent(uint32_t index, CompStorage *storage,
@@ -265,8 +296,8 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
             lm_indir_sh_tex_name += tex_ext;
 
             const uint8_t default_l1_color[] = {0, 0, 0, 0};
-            scene_data_.env.lm_indir_sh[sh_l] =
-                OnLoadTexture(lm_indir_sh_tex_name.c_str(), default_l1_color, Ren::TexNoRepeat);
+            scene_data_.env.lm_indir_sh[sh_l] = OnLoadTexture(
+                lm_indir_sh_tex_name.c_str(), default_l1_color, Ren::TexNoRepeat);
         }
     }
 
@@ -1081,22 +1112,24 @@ Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, const uint8_t color[
     p.flags = flags | Ren::TexUsageScene;
     memcpy(p.fallback_color, color, 4);
 
-
     p.sampling.filter = Ren::eTexFilter::Trilinear;
     if (p.flags & Ren::TexNoRepeat) {
         p.sampling.repeat = Ren::eTexRepeat::ClampToEdge;
     } else {
         p.sampling.repeat = Ren::eTexRepeat::Repeat;
     }
+    p.sampling.min_lod.from_float(-1.0f);
 
     Ren::eTexLoadStatus status;
     Ren::Tex2DRef ret = LoadTexture(name, nullptr, 0, p, &status);
 
     if (status == Ren::eTexLoadStatus::TexCreatedDefault) {
-        std::lock_guard<std::mutex> _(texture_requests_lock_);
-        requested_textures_.emplace_back();
-        requested_textures_.back().ref = ret;
-        texture_loader_cnd_.notify_one();
+        TextureRequest new_req;
+        new_req.ref = ret;
+
+        std::lock_guard<std::mutex> _(tex_requests_lock_);
+        requested_textures_.Push(std::move(new_req));
+        tex_loader_cnd_.notify_one();
     }
 
     return ret;

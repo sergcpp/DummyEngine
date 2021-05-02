@@ -48,8 +48,7 @@ Ren::Program &Ren::Program::operator=(Program &&rhs) noexcept {
         glDeleteProgram(prog);
     }
 
-    id_ = rhs.id_;
-    rhs.id_ = 0;
+    id_ = exchange(rhs.id_, 0);
     shaders_ = std::move(rhs.shaders_);
     attributes_ = std::move(rhs.attributes_);
     uniforms_ = std::move(rhs.uniforms_);
