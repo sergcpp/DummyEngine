@@ -21,8 +21,9 @@ inline void *aligned_malloc(size_t size, size_t alignment) {
 #ifdef __APPLE__
     void *p = nullptr;
     size_t mod = alignment % sizeof(void *);
-    if (mod)
+    if (mod) {
         alignment += sizeof(void *) - mod;
+    }
     posix_memalign(&p, alignment, size);
     return p;
 #else
