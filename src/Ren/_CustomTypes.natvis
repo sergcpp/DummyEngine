@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="Ren::StrongRef&lt;*&gt;">
+    <DisplayString>{{ [{storage_->data_[index_].counter_} strong ref] }}</DisplayString>
+    <Expand>
+      <Item Name="[storage]" ExcludeView="simple">storage_</Item>
+      <Item Name="[index]" ExcludeView="simple">index_</Item>
+      <Item Name="[ptr]" ExcludeView="simple">&amp;storage_->data_[index_]</Item>
+    </Expand>
+  </Type>
+  <Type Name="Ren::BasicString&lt;*&gt;" Priority="MediumLow">
+    <DisplayString>{{ str={str_,na}, len={len_} }}</DisplayString>
+  </Type>
+  <Type Name="Ren::SparseArray&lt;*&gt;">
+    <DisplayString>{{ size={size_}, capacity={capacity_} }}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">size_</Item>
+      <Item Name="[capacity]" ExcludeView="simple">capacity_</Item>
+      <CustomListItems ExcludeView="simple">
+        <Variable Name="i" InitialValue="0" />
+        <Size>size_</Size>
+        <Loop>
+          <Break Condition="i == capacity_" />
+          <If Condition="(ctrl_[i / 8] &amp; (1u &lt;&lt; (i % 8))) != 0">
+            <Item Name="[{i}]">data_[i],na</Item>
+          </If>
+          <Exec>i += 1</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+  <Type Name="Ren::RingBuffer&lt;*&gt;">
+    <DisplayString>{{ size={head_ - tail_}, capacity={capacity_} }}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">head_ - tail_</Item>
+      <Item Name="[capacity]" ExcludeView="simple">capacity_</Item>
+      <IndexListItems>
+        <Size>head_ - tail_</Size>
+        <ValueNode>buf_[(tail_ + $i) % capacity_]</ValueNode>
+      </IndexListItems>
+    </Expand>
+  </Type>
+  <Type Name="Ren::RingBuffer&lt;*&gt;::Iterator">
+    <DisplayString>{{ {container_->buf_[index_ &amp; (container_->capacity_ - 1)]} }}</DisplayString>
+    <Expand>
+      <Item Name="[index]" ExcludeView="simple">index_ &amp; (container_->capacity_ - 1)</Item>
+      <Item Name="[ptr]" ExcludeView="simple">&amp;container_->buf_[index_]</Item>
+    </Expand>
+  </Type>
+</AutoVisualizer>

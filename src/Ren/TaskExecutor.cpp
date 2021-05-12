@@ -3,12 +3,12 @@
 #include <thread>
 
 namespace Ren {
-    std::thread::id g_main_thread_id;
+std::thread::id g_main_thread_id;
 }
 
 Ren::TaskList::TaskList() {
     done_event = std::make_shared<std::atomic_bool>();
-    *(std::atomic_bool*)done_event.get() = false;
+    *(std::atomic_bool *)done_event.get() = false;
 }
 
 void Ren::TaskList::Submit(TaskExecutor *r) {
@@ -19,7 +19,7 @@ void Ren::TaskList::Submit(TaskExecutor *r) {
 
 void Ren::TaskList::Wait() {
 #ifndef __EMSCRIPTEN__
-    while (!*(std::atomic_bool*)done_event.get()) {
+    while (!*(std::atomic_bool *)done_event.get()) {
         std::this_thread::yield();
     }
 #endif
@@ -28,19 +28,19 @@ void Ren::TaskList::Wait() {
 void Ren::TaskExecutor::AddTaskList(TaskList &&list) {
 #ifndef __EMSCRIPTEN__
     std::lock_guard<std::mutex> lck(add_list_mtx_);
-    task_lists_.Push(std::move(list));
+    task_lists_.push_back(std::move(list));
 #else
     for (Task &t : list) {
         t.func(t.arg);
     }
-    *(std::atomic_bool*)list.done_event.get() = true;
+    *(std::atomic_bool *)list.done_event.get() = true;
 #endif
 }
 
 void Ren::TaskExecutor::AddSingleTask(TaskFunc func, void *arg) {
 #ifndef __EMSCRIPTEN__
     TaskList list;
-    list.push_back({ func, arg });
+    list.push_back({func, arg});
     list.Submit(this);
 #else
     func(arg);
@@ -50,7 +50,7 @@ void Ren::TaskExecutor::AddSingleTask(TaskFunc func, void *arg) {
 void Ren::TaskExecutor::ProcessSingleTask(TaskFunc func, void *arg) {
 #ifndef __EMSCRIPTEN__
     TaskList list;
-    list.push_back({ func, arg });
+    list.push_back({func, arg});
     list.Submit(this);
     list.Wait();
 #else
@@ -60,12 +60,13 @@ void Ren::TaskExecutor::ProcessSingleTask(TaskFunc func, void *arg) {
 
 bool Ren::TaskExecutor::ProcessTasks() {
 #ifndef __EMSCRIPTEN__
-    TaskList list;
-    if (task_lists_.Pop(list)) {
+    if (!task_lists_.empty()) {
+        TaskList list = task_lists_.front();
+        task_lists_.pop_front();
         for (Task &t : list) {
             t.func(t.arg);
         }
-        *(std::atomic_bool*)list.done_event.get() = true;
+        *(std::atomic_bool *)list.done_event.get() = true;
         return true;
     }
     return false;
@@ -74,10 +75,6 @@ bool Ren::TaskExecutor::ProcessTasks() {
 #endif
 }
 
-void Ren::RegisterAsMainThread() {
-    g_main_thread_id = std::this_thread::get_id();
-}
+void Ren::RegisterAsMainThread() { g_main_thread_id = std::this_thread::get_id(); }
 
-bool Ren::IsMainThread() {
-    return std::this_thread::get_id() == g_main_thread_id;
-}
+bool Ren::IsMainThread() { return std::this_thread::get_id() == g_main_thread_id; }

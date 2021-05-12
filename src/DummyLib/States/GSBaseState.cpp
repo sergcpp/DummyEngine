@@ -952,11 +952,16 @@ void GSBaseState::UpdateFrame(int list_index) {
             probes_to_update_.pop_back();
         }
 
-        main_view_lists_[list_index].render_flags = render_flags_;
+        auto &list = main_view_lists_[list_index];
+
+        list.render_flags = render_flags_;
 
         renderer_->PrepareDrawList(scene_manager_->scene_data(),
-                                   scene_manager_->main_cam(),
-                                   main_view_lists_[list_index]);
+                                   scene_manager_->main_cam(), list);
+
+        scene_manager_->UpdateTexturePriorities(
+            list.visible_textures.data, list.visible_textures.count,
+            list.desired_textures.data, list.desired_textures.count);
     }
 
     DrawUI(ui_renderer_.get(), ui_root_.get());

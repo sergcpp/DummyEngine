@@ -211,7 +211,7 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
         &status);
     assert(status == Ren::eMeshLoadStatus::CreatedFromData);
 
-    requested_textures_.Reserve(8 * 1024 * 1024);
+    requested_textures_.reserve(4000000);
 
     for (int i = 0; i < MaxSimultaneousRequests; i++) {
         //io_pending_tex_[i].buf.reset(new Sys::DefaultFileReadBuf);
@@ -1128,7 +1128,7 @@ Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, const uint8_t color[
         new_req.ref = ret;
 
         std::lock_guard<std::mutex> _(tex_requests_lock_);
-        requested_textures_.Push(std::move(new_req));
+        requested_textures_.push_back(std::move(new_req));
         tex_loader_cnd_.notify_one();
     }
 

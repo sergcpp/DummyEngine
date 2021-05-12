@@ -96,6 +96,19 @@ struct BBox {
     Ren::Vec3f bmin, bmax;
 };
 
+struct TexEntry {
+    uint32_t index;
+    union {
+        struct {
+            uint32_t cam_dist : 16;
+            uint32_t prio : 4;
+            uint32_t _unused : 12;
+        };
+        uint32_t sort_key = 0;
+    };
+};
+static_assert(sizeof(TexEntry) == 8, "!");
+
 class CompStorage {
 public:
     virtual ~CompStorage() = default;

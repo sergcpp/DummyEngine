@@ -55,13 +55,28 @@ void SceneManager::TextureLoaderProc() {
     __itt_thread_set_name("Texture loader");
 #endif
 
+    int iteration = 0;
+
+    const size_t SortPortion = 1;
+    const int SortInterval = 16;
+
+    auto sort_predicate = [](const TextureRequest &lhs, const TextureRequest &rhs) {
+        /*if (strstr(lhs.ref->name().c_str(), "lightmaps/") &&
+            !strstr(rhs.ref->name().c_str(), "lightmaps/")) {
+            return true;
+        }
+        return false;*/
+
+        return lhs.sort_key < rhs.sort_key;
+    };
+
     for (;;) {
         TextureRequestPending *req = nullptr;
 
         {
             std::unique_lock<std::mutex> lock(tex_requests_lock_);
             tex_loader_cnd_.wait(lock, [this, &req] {
-                return tex_loader_stop_ || !requested_textures_.Empty();
+                return tex_loader_stop_ || !requested_textures_.empty();
             });
             if (tex_loader_stop_) {
                 break;
@@ -78,22 +93,21 @@ void SceneManager::TextureLoaderProc() {
                 continue;
             }
 
-            /*std::string str;
-            for (auto it = std::begin(requested_textures_);
-                 it != std::end(requested_textures_); ++it) {
-                str += it->ref->name().c_str();
-                str += '\n';
-            }*/
+            /**/
 
-            /*std::sort(std::begin(requested_textures_), std::end(requested_textures_),
-                      [](const TextureRequest &lhs, const TextureRequest &rhs) {
-                          if (strstr(lhs.ref->name().c_str(), "lightmaps/")) {
-                              return true;
-                          }
-                          return false;
-                      });*/
+            if (iteration++ % SortInterval == 0) {
+                /*const size_t sort_portion =
+                    std::min(SortPortion, requested_textures_.size());
+                std::partial_sort(std::begin(requested_textures_),
+                                  std::begin(requested_textures_) + sort_portion,
+                                  std::end(requested_textures_), sort_predicate);*/
 
-            requested_textures_.Pop(*req);
+                std::sort(std::begin(requested_textures_), std::end(requested_textures_),
+                          sort_predicate);
+            }
+
+            static_cast<TextureRequest &>(*req) = requested_textures_.front();
+            requested_textures_.pop_front();
         }
 
 #ifdef ENABLE_ITT_API
@@ -127,7 +141,7 @@ void SceneManager::TextureLoaderProc() {
                     req->orig_block = temp_params.block;
                     req->orig_w = temp_params.w;
                     req->orig_h = temp_params.h;
-                    req->mip_count = int(header.dwMipMapCount);
+                    req->orig_mip_count = int(header.dwMipMapCount);
                 }
             }
             read_offset += sizeof(Ren::DDSHeader);
@@ -144,11 +158,12 @@ void SceneManager::TextureLoaderProc() {
             const int max_load_h = std::max(cur_p.h * 2, 64);
 
             int w = int(req->orig_w), h = int(req->orig_h);
-            for (int i = 0; i < req->mip_count; i++) {
+            for (int i = 0; i < req->orig_mip_count; i++) {
                 const int data_len =
                     Ren::GetMipDataLenBytes(w, h, req->orig_format, req->orig_block);
 
-                if ((w <= max_load_w && h <= max_load_h) || i == req->mip_count - 1) {
+                if ((w <= max_load_w && h <= max_load_h) ||
+                    i == req->orig_mip_count - 1) {
                     if (req->mip_offset_to_init == 0xff) {
                         req->mip_offset_to_init = uint8_t(i);
                         req->mip_count_to_init = 0;
@@ -207,7 +222,7 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                 } else if (io_pending_tex_[i].state == eRequestState::PendingUpdate) {
                     TextureRequestPending *req = &io_pending_tex_[i];
                     auto *stage_buf = static_cast<TextureUpdateFileBuf *>(req->buf.get());
-                    const auto res = stage_buf->fence.ClientWaitSync(0);
+                    const auto res = stage_buf->fence.ClientWaitSync(0 /* timeout_us */);
                     if (res == Ren::SyncFence::WaitResult::WaitFailed) {
                         ren_ctx_.log()->Error("Waiting on fence failed!");
 
@@ -231,7 +246,7 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                         if (req->ref->params().w != req->orig_w ||
                             req->ref->params().h != req->orig_h) {
                             // send texture to be processed further (for next mip levels)
-                            requested_textures_.Push(std::move(*req));
+                            requested_textures_.push_back(std::move(*req));
                         }
 
                         req->state = eRequestState::Idle;
@@ -337,6 +352,49 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
     }
 }
 
+void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[],
+                                           const int visible_count,
+                                           const TexEntry desired_textures[],
+                                           const int desired_count) {
+    std::unique_lock<std::mutex> lock(tex_requests_lock_);
+
+    for (auto it = requested_textures_.begin(); it != requested_textures_.end(); ++it) {
+        const TexEntry *found_entry = nullptr;
+
+        { // search among visible textures first
+            const TexEntry *beg = visible_textures;
+            const TexEntry *end = visible_textures + visible_count;
+
+            const TexEntry *entry = std::lower_bound(
+                beg, end, it->ref.index(),
+                [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
+
+            if (entry != end && entry->index == it->ref.index()) {
+                found_entry = entry;
+            }
+        }
+
+        if (!found_entry) { // search among surrounding texture
+            const TexEntry *beg = desired_textures;
+            const TexEntry *end = desired_textures + desired_count;
+
+            const TexEntry *entry = std::lower_bound(
+                beg, end, it->ref.index(),
+                [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
+
+            if (entry != end && entry->index == it->ref.index()) {
+                found_entry = entry;
+            }
+        }
+
+        if (found_entry) {
+            it->sort_key = found_entry->sort_key;
+        }
+    }
+
+    tex_loader_cnd_.notify_one();
+}
+
 void SceneManager::ForceTextureReload() {
     { // stop texture loading thread
         std::unique_lock<std::mutex> lock(tex_requests_lock_);
@@ -346,9 +404,11 @@ void SceneManager::ForceTextureReload() {
 
     tex_loader_thread_.join();
     for (int i = 0; i < MaxSimultaneousRequests; i++) {
+        size_t bytes_read = 0;
+        io_pending_tex_[i].ev.GetResult(true /* block */, &bytes_read);
         io_pending_tex_[i].state = eRequestState::Idle;
     }
-    requested_textures_.Clear();
+    requested_textures_.clear();
     lod_transit_textures_.clear();
 
     // Reset texture to 1x1 mip and send to processing
@@ -369,7 +429,7 @@ void SceneManager::ForceTextureReload() {
         TextureRequest req;
         req.ref = Ren::Tex2DRef{&scene_data_.textures, it.index()};
 
-        requested_textures_.Push(std::move(req));
+        requested_textures_.push_back(std::move(req));
     }
 
     // start texture loading thread

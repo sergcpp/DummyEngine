@@ -119,10 +119,11 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     void UpdateObjects();
 
+    void UpdateTexturePriorities(const TexEntry visible_textures[], int visible_count,
+                                 const TexEntry desired_textures[], int desired_count);
     void ForceTextureReload();
 
     void Serve(int texture_budget = 1);
-
 
     using ConvertAssetFunc = std::function<bool(
         assets_context_t &ctx, const char *in_file, const char *out_file)>;
@@ -197,17 +198,16 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     struct TextureRequest {
         Ren::Tex2DRef ref;
+        uint32_t sort_key = 0xffffffff;
 
         Ren::eTexFormat orig_format = Ren::eTexFormat::Undefined;
         Ren::eTexBlock orig_block;
         uint16_t orig_w, orig_h;
-        uint8_t mip_count;
+        uint8_t orig_mip_count;
         uint8_t mip_offset_to_init, mip_count_to_init;
     };
 
-    enum class eRequestState {
-        Idle, PendingIO, PendingUpdate
-    };
+    enum class eRequestState { Idle, PendingIO, PendingUpdate };
 
     struct TextureRequestPending : public TextureRequest {
         std::unique_ptr<Sys::FileReadBufBase> buf;
@@ -227,7 +227,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     TextureRequestPending io_pending_tex_[MaxSimultaneousRequests];
 
-    std::deque<Ren::Tex2DRef> lod_transit_textures_;
+    Ren::RingBuffer<Ren::Tex2DRef> lod_transit_textures_;
 
     void TextureLoaderProc();
 

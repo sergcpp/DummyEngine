@@ -1167,7 +1167,7 @@ void Ren::Texture2D::SetFilter(TexSamplingParams sampling, ILog *log) {
 void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int offsety,
                                  const int sizex, const int sizey,
                                  const Ren::eTexFormat format, const void *data,
-                                 int data_len) {
+                                 const int data_len) {
     assert(format == params_.format);
     assert(params_.samples == 1);
     assert(offsetx >= 0 && offsetx + sizex <= std::max(params_.w >> level, 1));

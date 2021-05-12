@@ -35,37 +35,33 @@ inline void aligned_free(void *p) {
 
 template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
     T *buf_;
-    size_t head_, tail_;
-    size_t capacity_;
+    size_t head_, tail_; // stored unbounded (should be masked later)
+    size_t capacity_;    // required to be power of two!
 
-    size_t next(const size_t i) const { return (i + 1) % capacity_; }
-    size_t prev(const size_t i) const { return (capacity_ + i - 1) % capacity_; }
-
-    bool is_valid(const size_t i) {
-        if (head_ >= tail_) {
-            return (tail_ <= i) && (i <= head_);
-        }
-        return (i >= 0 && i <= head_) || (i >= tail_ && i < capacity_);
-    }
+    size_t mask(const size_t i) const { return i & (capacity_ - 1); }
 
     T &at(const size_t i) {
         assert(is_valid(i));
-        return buf_[i];
+        return buf_[mask(i)];
     }
+
+    bool is_valid(const size_t i) const { return i - tail_ <= head_ - tail_; }
 
   public:
     RingBuffer() : buf_(nullptr), head_(0), tail_(0), capacity_(0) {}
-    explicit RingBuffer(size_t size) : RingBuffer() { Reserve(size); }
+    explicit RingBuffer(size_t size) : RingBuffer() { reserve(size); }
     ~RingBuffer() {
-        for (size_t i = prev(head_); i != prev(tail_); i = prev(i)) {
-            buf_[i].~T();
+        if (!empty()) {
+            for (size_t i = head_ - 1; i != tail_ - 1; --i) {
+                buf_[mask(i)].~T();
+            }
         }
         aligned_free(buf_);
     }
     RingBuffer(const RingBuffer &) = delete;
     RingBuffer &operator=(const RingBuffer &) = delete;
 
-    void Reserve(size_t req_capacity) {
+    void reserve(size_t req_capacity) {
         if (++req_capacity <= capacity_) {
             return;
         }
@@ -76,17 +72,15 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
         }
 
         T *new_buf = (T *)aligned_malloc(new_capacity * sizeof(T), AlignmentOfT);
-        size_t new_head = Size();
+        size_t new_head = size();
 
-        if (capacity_) {
-            size_t src = prev(head_);
-            size_t dst = prev(new_head);
+        if (new_head) {
+            size_t src = head_ - 1;
+            size_t dst = new_head - 1;
             do {
-                new (new_buf + dst) T(std::move(buf_[src]));
-                buf_[src].~T();
-                src = prev(src);
-                dst = prev(dst);
-            } while (src != prev(tail_));
+                new (&new_buf[dst--]) T(std::move(buf_[mask(src)]));
+                buf_[mask(src--)].~T();
+            } while (src != tail_ - 1);
         }
 
         aligned_free(buf_);
@@ -97,93 +91,207 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
         capacity_ = new_capacity;
     }
 
-    void Clear() {
-        for (size_t i = prev(head_); i != prev(tail_); i = prev(i)) {
-            buf_[i].~T();
+    void clear() {
+        for (size_t i = head_ - 1; i != tail_ - 1; --i) {
+            buf_[mask(i)].~T();
         }
         head_ = tail_ = 0;
     }
 
-    bool Empty() const { return (tail_ == head_); }
+    bool empty() const { return (tail_ == head_); }
 
-    bool Full() const { return next(head_) == tail_; }
+    size_t capacity() const { return capacity_; }
+    size_t size() const { return head_ - tail_; }
 
-    size_t Capacity() const { return capacity_; }
-    size_t Size() const {
-        if (head_ >= tail_) {
-            return head_ - tail_;
-        }
-        return capacity_ + head_ - tail_;
+    T &front() {
+        assert(tail_ != head_);
+        return buf_[mask(tail_)];
     }
 
-    void Push(const T &item) {
-        Reserve(Size() + 1);
-
-        new (buf_ + head_) T(item);
-        head_ = next(head_);
+    const T &front() const {
+        assert(tail_ != head_);
+        return buf_[mask(tail_)];
     }
 
-    void Push(T &&item) {
-        Reserve(Size() + 1);
-
-        new (buf_ + head_) T(std::move(item));
-        head_ = next(head_);
+    T &back() {
+        assert(tail_ != head_);
+        return buf_[mask(head_ - 1)];
     }
 
-    bool Pop(T &item) {
-        if (tail_ == head_) {
-            return false;
-        }
-        item = std::move(buf_[tail_]);
-        tail_ = next(tail_);
-
-        return true;
+    const T &back() const {
+        assert(tail_ != head_);
+        return buf_[mask(head_ - 1)];
     }
 
-    class RingBufferIterator : public std::iterator<std::bidirectional_iterator_tag, T> {
+    void push_back(const T &item) {
+        reserve(size() + 1);
+        new (buf_ + mask(head_++)) T(item);
+    }
+
+    void push_back(T &&item) {
+        reserve(size() + 1);
+        new (buf_ + mask(head_++)) T(std::move(item));
+    }
+
+    void pop_back() {
+        assert(tail_ != head_);
+        buf_[mask(--head_)].~T();
+    }
+
+    void push_front(const T &item) {
+        reserve(size() + 1);
+        new (buf_ + mask(--tail_)) T(item);
+    }
+
+    void push_front(T &&item) {
+        reserve(size() + 1);
+        new (buf_ + mask(--tail_)) T(std::move(item));
+    }
+
+    void pop_front() {
+        assert(tail_ != head_);
+        buf_[mask(tail_++)].~T();
+    }
+
+    class iterator : public std::iterator<std::random_access_iterator_tag, T> {
         friend class RingBuffer<T>;
 
         RingBuffer<T> *container_;
         size_t index_;
 
-        RingBufferIterator(RingBuffer<T> *container, const size_t index)
+        iterator(RingBuffer<T> *container, const size_t index)
             : container_(container), index_(index) {}
 
       public:
-        T &operator*() { return container_->at(index_); }
-        T *operator->() { return &container_->at(index_); }
-        RingBufferIterator &operator++() {
-            index_ = container_->next(index_);
-            assert(container_->is_valid(index_));
+        T &operator*() const { return container_->at(index_); }
+        T *operator->() const { return &container_->at(index_); }
+        iterator &operator++() {
+            ++index_;
             return *this;
         }
-        RingBufferIterator operator++(int) {
-            RingBufferIterator tmp(*this);
+        iterator operator++(int) {
+            Iterator tmp(*this);
             ++(*this);
             return tmp;
         }
-        RingBufferIterator &operator--() {
-            index_ = container_->prev(index_);
-            assert(container_->is_valid(index_));
+        iterator &operator--() {
+            --index_;
             return *this;
         }
 
         uint32_t index() const { return index_; }
 
-        bool operator==(const RingBufferIterator &rhs) {
+        bool operator==(const iterator &rhs) const {
             assert(container_ == rhs.container_);
             return index_ == rhs.index_;
         }
-        bool operator!=(const RingBufferIterator &rhs) {
+
+        bool operator!=(const iterator &rhs) const {
             assert(container_ == rhs.container_);
             return index_ != rhs.index_;
         }
-    };
 
-    using iterator = RingBufferIterator;
+        bool operator<(const iterator &rhs) const {
+            assert(container_ == rhs.container_);
+            return index_ < rhs.index_;
+        }
+
+        bool operator<=(const iterator &rhs) const {
+            assert(container_ == rhs.container_);
+            return index_ < rhs.index_;
+        }
+
+        bool operator>(const iterator &rhs) const {
+            assert(container_ == rhs.container_);
+            return index_ > rhs.index_;
+        }
+
+        bool operator>=(const iterator &rhs) const {
+            assert(container_ == rhs.container_);
+            return index_ > rhs.index_;
+        }
+
+        template <typename IntType> iterator &operator[](IntType i) {
+            return (*this) + i;
+        }
+
+        template <typename IntType> iterator &operator+=(IntType n) {
+            index_ += n;
+            return (*this);
+        }
+
+        template <typename IntType> iterator &operator-=(IntType n) {
+            index_ -= n;
+            return (*this);
+        }
+
+        template <typename IntType>
+        friend iterator operator+(const iterator &lhs, IntType n) {
+            iterator it = lhs;
+            return it += n;
+        }
+
+        template <typename IntType>
+        friend iterator operator+(IntType n, const iterator &rhs) {
+            iterator it = rhs;
+            return it += n;
+        }
+
+        template <typename IntType>
+        friend iterator operator-(const iterator &lhs, IntType n) {
+            iterator it = lhs;
+            return it -= n;
+        }
+
+        friend difference_type operator-(const iterator &lhs, const iterator &rhs) {
+            return difference_type(lhs.index_) - rhs.index_;
+        }
+
+        using difference_type = std::ptrdiff_t;
+        using value_type = T;
+        using pointer = T *;
+        using reference = T &;
+        using iterator_category = std::random_access_iterator_tag;
+    };
 
     iterator begin() { return {this, tail_}; }
     iterator end() { return {this, head_}; }
+
+    void insert(iterator it, const T &item) {
+        assert(it.container_ == this);
+        assert(is_valid(it.index_));
+
+        reserve(size() + 1);
+
+        if (it != end()) {
+            size_t src = head_ - 1;
+            do {
+                new (&buf_[mask(src + 1)]) T(std::move(buf_[mask(src)]));
+                buf_[mask(src)].~T();
+            } while (src-- != it.index_);
+        }
+
+        ++head_;
+        new (buf_ + mask(it.index_)) T(item);
+    }
+
+    iterator erase(iterator it) {
+        assert(it.container_ == this);
+        assert(is_valid(it.index_));
+
+        buf_[mask(it.index_)].~T();
+
+        if (it != end() - 1) {
+            size_t dst = it.index_;
+            do {
+                new (&buf_[mask(dst)]) T(std::move(buf_[mask(dst + 1)]));
+                buf_[mask(dst + 1)].~T();
+            } while (++dst != head_);
+        }
+
+        --head_;
+        return {this, it.index_};
+    }
 };
 
 template <class T> class AtomicRingBuffer {

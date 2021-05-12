@@ -119,6 +119,8 @@ if(MSVC)
     endif()
     set_source_files_properties(_Ren_AVX.cpp PROPERTIES COMPILE_FLAGS /arch:AVX)
     set_source_files_properties(_Ren_AVX512.cpp PROPERTIES COMPILE_FLAGS /arch:AVX512)
+
+    list(APPEND ALL_SOURCE_FILES _CustomTypes.natvis)
 endif(MSVC)
 
 add_library(Ren STATIC ${ALL_SOURCE_FILES})
