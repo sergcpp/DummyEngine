@@ -278,24 +278,21 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                     const Occluder &occ = occluders[obj.components[CompOccluder]];
                     const Mesh *mesh = occ.mesh.get();
 
-                    SWcull_surf surf[Ren::MaxMeshTriGroupsCount];
+                    SWcull_surf surf[64];
                     int surf_count = 0;
 
-                    const TriGroup *s = &mesh->group(0);
-                    while (s->offset != -1) {
+                    for (const auto &grp : mesh->groups()) {
                         SWcull_surf *_surf = &surf[surf_count++];
 
                         _surf->type = SW_OCCLUDER;
                         _surf->prim_type = SW_TRIANGLES;
                         _surf->index_type = SW_UNSIGNED_INT;
                         _surf->attribs = mesh->attribs();
-                        _surf->indices = ((const uint8_t *)mesh->indices() + s->offset);
+                        _surf->indices = ((const uint8_t *)mesh->indices() + grp.offset);
                         _surf->stride = 13 * sizeof(float);
 
-                        _surf->count = (SWuint)s->num_indices;
+                        _surf->count = SWuint(grp.num_indices);
                         _surf->xform = ValuePtr(clip_from_object);
-
-                        ++s;
                     }
 
                     swCullCtxSubmitCullSurfs(&cull_ctx_, surf, surf_count);
@@ -470,9 +467,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                         __push_ellipsoids(dr, tr.world_from_object, list);
 
                         const uint32_t indices_start = mesh->indices_buf().offset;
-                        const TriGroup *grp = &mesh->group(0);
-                        while (grp->offset != -1) {
-                            const Material *mat = grp->mat.get();
+                        for (const auto &grp : mesh->groups()) {
+                            const Material *mat = grp.mat.get();
                             const uint32_t mat_flags = mat->flags();
 
                             if (cam_visibility != eVisResult::Invisible) {
@@ -496,15 +492,15 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 (mat_flags & uint32_t(eMatFlags::DepthWrite)) ? 1 : 0;
                             main_batch.two_sided_bit =
                                 (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                            main_batch.mat_id = (uint32_t)grp->mat.index();
+                            main_batch.mat_id = uint32_t(grp.mat.index());
                             main_batch.cam_dist =
                                 (mat_flags & uint32_t(eMatFlags::AlphaBlend))
                                     ? uint32_t(dist)
                                     : 0;
                             main_batch.indices_offset =
-                                (indices_start + grp->offset) / sizeof(uint32_t);
+                                (indices_start + grp.offset) / sizeof(uint32_t);
                             main_batch.base_vertex = base_vertex;
-                            main_batch.indices_count = grp->num_indices;
+                            main_batch.indices_count = grp.num_indices;
                             main_batch.instance_indices[0] =
                                 (uint32_t)(list.instances.count - 1);
                             main_batch.instance_count = 1;
@@ -536,13 +532,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                         : 0;
                                 zfill_batch.indices_offset = main_batch.indices_offset;
                                 zfill_batch.base_vertex = base_vertex;
-                                zfill_batch.indices_count = grp->num_indices;
+                                zfill_batch.indices_count = grp.num_indices;
                                 zfill_batch.instance_indices[0] =
                                     (uint32_t)(list.instances.count - 1);
                                 zfill_batch.instance_count = 1;
                             }
-
-                            ++grp;
                         }
 
                         if (obj.last_change_mask & CompTransformBit) {
@@ -1109,9 +1103,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             }
                         }
 
-                        const TriGroup *grp = &mesh->group(0);
-                        while (grp->offset != -1) {
-                            const Material *mat = grp->mat.get();
+                        for (const auto &grp : mesh->groups()) {
+                            const Material *mat = grp.mat.get();
                             const uint32_t mat_flags = mat->flags();
 
                             if ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) == 0) {
@@ -1127,7 +1120,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                                 batch.mat_id =
                                     (mat_flags & uint32_t(eMatFlags::AlphaTest))
-                                        ? (uint32_t)grp->mat.index()
+                                        ? uint32_t(grp.mat.index())
                                         : 0;
 
                                 batch.type_bits = DepthDrawBatch::TypeSimple;
@@ -1143,16 +1136,15 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 batch.two_sided_bit =
                                     (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
                                 batch.indices_offset =
-                                    (mesh->indices_buf().offset + grp->offset) /
+                                    (mesh->indices_buf().offset + grp.offset) /
                                     sizeof(uint32_t);
                                 batch.base_vertex =
                                     proc_objects_.data[n->prim_index].base_vertex;
-                                batch.indices_count = grp->num_indices;
+                                batch.indices_count = grp.num_indices;
                                 batch.instance_indices[0] =
                                     proc_objects_.data[n->prim_index].instance_index;
                                 batch.instance_count = 1;
                             }
-                            ++grp;
                         }
                     }
                 }
@@ -1357,9 +1349,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                             }
                         }
 
-                        const TriGroup *grp = &mesh->group(0);
-                        while (grp->offset != -1) {
-                            const Material *mat = grp->mat.get();
+                        for (const auto &grp : mesh->groups()) {
+                            const Material *mat = grp.mat.get();
                             const uint32_t mat_flags = mat->flags();
 
                             if ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) == 0) {
@@ -1375,7 +1366,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                                 batch.mat_id =
                                     (mat_flags & uint32_t(eMatFlags::AlphaTest))
-                                        ? (uint32_t)grp->mat.index()
+                                        ? uint32_t(grp.mat.index())
                                         : 0;
 
                                 batch.type_bits = DepthDrawBatch::TypeSimple;
@@ -1391,16 +1382,15 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                                 batch.two_sided_bit =
                                     (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
                                 batch.indices_offset =
-                                    (mesh->indices_buf().offset + grp->offset) /
+                                    (mesh->indices_buf().offset + grp.offset) /
                                     sizeof(uint32_t);
                                 batch.base_vertex =
                                     proc_objects_.data[n->prim_index].base_vertex;
-                                batch.indices_count = grp->num_indices;
+                                batch.indices_count = grp.num_indices;
                                 batch.instance_indices[0] =
                                     proc_objects_.data[n->prim_index].instance_index;
                                 batch.instance_count = 1;
                             }
-                            ++grp;
                         }
                     }
 
@@ -2288,10 +2278,8 @@ uint32_t RendererInternal::__record_texture(DynArray<TexEntry> &storage,
 void RendererInternal::__record_textures(DynArray<TexEntry> &storage,
                                          const Ren::Material *mat,
                                          const uint16_t distance) {
-    for (int i = 0; i < Ren::MaxMaterialTextureCount; i++) {
-        if (mat->textures[i]) {
-            __record_texture(storage, mat->textures[i], i, distance);
-        }
+    for (int i = 0; i < int(mat->textures.size()); ++i) {
+        __record_texture(storage, mat->textures[i], i, distance);
     }
 }
 

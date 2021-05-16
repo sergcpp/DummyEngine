@@ -229,7 +229,8 @@ void test_mesh() {
 #endif
         };
 
-        auto on_texture_needed = [&test](const char *name, const uint8_t color[4], uint32_t flags) {
+        auto on_texture_needed = [&test](const char *name, const uint8_t color[4],
+                                         uint32_t flags) {
             Ren::eTexLoadStatus status;
             Ren::Tex2DParams p;
             return test.LoadTexture2D(name, nullptr, 0, p, &status);
@@ -250,8 +251,7 @@ void test_mesh() {
         require(m_ref->bbox_min() == Ren::Vec3f(-10.389862f, -220.607803f, -441.704651f));
         require(m_ref->bbox_max() == Ren::Vec3f(83.354584f, 179.815552f, 441.704651f));
 
-        require(m_ref->group(0).offset != -1);
-        require(m_ref->group(1).offset == -1);
+        require(m_ref->groups().size() == 1);
 
         require(m_ref->attribs() != nullptr);
         // 16 bytes per vertex in each buffer
@@ -261,17 +261,17 @@ void test_mesh() {
         require(m_ref->indices_buf().size == 20);
 
         require(m_ref->flags() == Ren::MeshHasAlpha);
-        require(m_ref->group(0).flags == Ren::MeshHasAlpha);
+        require(m_ref->groups()[0].flags == Ren::MeshHasAlpha);
 
         {
             Ren::eMeshLoadStatus load_status;
             Ren::MeshRef m_ref2 =
                 test.LoadMesh("ivy", &in, on_material_needed, &load_status);
             require(load_status == Ren::eMeshLoadStatus::Found);
-            require((bool)m_ref2);
+            require(bool(m_ref2));
         }
 
-        Ren::MaterialRef mat_ref = m_ref->group(0).mat;
+        Ren::MaterialRef mat_ref = m_ref->groups()[0].mat;
         require(!mat_ref->ready());
     }
 
@@ -295,7 +295,8 @@ void test_mesh() {
 #endif
         };
 
-        auto on_texture_needed = [&test](const char *name, const uint8_t color[4], uint32_t flags) {
+        auto on_texture_needed = [&test](const char *name, const uint8_t color[4],
+                                         uint32_t flags) {
             Ren::eTexLoadStatus status;
             Ren::Tex2DParams p;
             return test.LoadTexture2D(name, nullptr, 0, p, &status);
@@ -310,7 +311,7 @@ void test_mesh() {
         Ren::eMeshLoadStatus load_status;
         Ren::MeshRef m_ref = test.LoadMesh("test", &in, on_material_needed, &load_status);
         require(load_status == Ren::eMeshLoadStatus::CreatedFromData);
-        require((bool)m_ref);
+        require(bool(m_ref));
         require(m_ref->type() == Ren::eMeshType::Skeletal);
         require(m_ref->name() == "test");
 
@@ -321,8 +322,7 @@ void test_mesh() {
         require(m_ref->bbox_max()[1] == Approx(20).epsilon(0.01));
         require(m_ref->bbox_max()[2] == Approx(5).epsilon(0.01));
 
-        require(m_ref->group(0).offset != -1);
-        require(m_ref->group(1).offset == -1);
+        require(m_ref->groups().size() == 1);
 
         require(m_ref->attribs() != nullptr);
         // attribs have 48 bytes per vertex
@@ -331,7 +331,7 @@ void test_mesh() {
         require(m_ref->indices_buf().size == 22);
 
         require(m_ref->flags() == 0);
-        require(m_ref->group(0).flags == 0);
+        require(m_ref->groups()[0].flags == 0);
 
         require(m_ref->skel()->bones_count == 2);
         require(std::string(m_ref->skel()->bones[0].name) == "Bone01");
@@ -349,11 +349,11 @@ void test_mesh() {
             Ren::MeshRef m_ref2 =
                 test.LoadMesh("test", &in, on_material_needed, &load_status);
             require(load_status == Ren::eMeshLoadStatus::Found);
-            require((bool)m_ref2);
+            require(bool(m_ref2));
         }
 
-        Ren::MaterialRef mat_ref = m_ref->group(0).mat;
-        require((bool)mat_ref);
+        Ren::MaterialRef mat_ref = m_ref->groups()[0].mat;
+        require(bool(mat_ref));
         require(!mat_ref->ready());
     }
 }

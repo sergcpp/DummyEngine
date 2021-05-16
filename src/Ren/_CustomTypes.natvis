@@ -47,4 +47,15 @@
       <Item Name="[ptr]" ExcludeView="simple">&amp;container_->buf_[index_]</Item>
     </Expand>
   </Type>
+  <Type Name="Ren::SmallVectorImpl&lt;*&gt;">
+    <DisplayString>{{ size={end_ - begin_}, capacity={capacity_} }}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">end_ - begin_</Item>
+      <Item Name="[capacity]" ExcludeView="simple">capacity_</Item>
+      <ArrayItems>
+        <Size>end_ - begin_</Size>
+        <ValuePointer>begin_</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
 </AutoVisualizer>

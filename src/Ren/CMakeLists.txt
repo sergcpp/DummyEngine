@@ -45,6 +45,7 @@ set(SOURCE_FILES Anim.h
                  RastState.h
                  RingBuffer.h
                  Shader.h
+                 SmallVector.h
                  SparseArray.h
                  Storage.h
                  String.h

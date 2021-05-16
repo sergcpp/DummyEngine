@@ -789,8 +789,8 @@ void SceneManager::PostloadDrawable(const JsObject &js_comp_obj, void *comp,
         int index = 0;
         for (const JsElement &js_mat_el : js_materials.elements) {
             if (js_mat_el.type() == JsType::String) {
-                Ren::TriGroup &grp = dr->mesh->group(index);
-                grp.mat = OnLoadMaterial(js_mat_el.as_str().val.c_str());
+                const Ren::TriGroup &grp = dr->mesh->groups()[index];
+                const_cast<Ren::TriGroup &>(grp).mat = OnLoadMaterial(js_mat_el.as_str().val.c_str());
             }
             index++;
         }

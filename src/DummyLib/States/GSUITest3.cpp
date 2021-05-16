@@ -143,17 +143,12 @@ void GSUITest3::Enter() {
 
             Ren::Mesh *mesh = dr->mesh.get();
 
-            for (int i = 0; i < Ren::MaxMeshTriGroupsCount; i++) {
-                Ren::TriGroup &grp = mesh->group(i);
-                if (grp.offset == -1) {
-                    break;
-                }
-
+            for (const auto &grp : mesh->groups()) {
                 // hold reference to original material here
                 Ren::MaterialRef mat = grp.mat;
                 if (mat->name() == "book/book_page0.txt") {
                     // replace material
-                    grp.mat = page_mat_;
+                    const_cast<Ren::TriGroup &>(grp).mat = page_mat_;
                 }
             }
         }

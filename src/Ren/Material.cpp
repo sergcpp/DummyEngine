@@ -22,25 +22,29 @@ Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *s
     Init(mat_src, status, on_prog_load, on_tex_load, log);
 }
 
-Ren::Material::Material(const char *name, const uint32_t flags, ProgramRef programs[],
-                        Tex2DRef textures[], const Vec4f params[], ILog *log) {
+Ren::Material::Material(const char *name, const uint32_t flags, ProgramRef _programs[],
+                        const int programs_count, Tex2DRef _textures[],
+                        const int textures_count, const Vec4f _params[],
+                        const int params_count, ILog *log) {
     name_ = String{name};
-    Init(flags, programs, textures, params, log);
+    Init(flags, _programs, programs_count, _textures, textures_count, _params, params_count,
+         log);
 }
 
-void Ren::Material::Init(uint32_t flags, ProgramRef _programs[], Tex2DRef _textures[],
-                         const Vec4f _params[], ILog *log) {
+void Ren::Material::Init(uint32_t flags, ProgramRef _programs[], int programs_count,
+                         Tex2DRef _textures[], int textures_count, const Vec4f _params[],
+                         int params_count, ILog *log) {
     assert(IsMainThread());
     flags_ = flags;
     ready_ = true;
-    for (int i = 0; i < MaxMaterialProgramCount; i++) {
-        this->programs[i] = _programs[i];
+    for (int i = 0; i < programs_count; i++) {
+        programs.emplace_back(_programs[i]);
     }
-    for (int i = 0; i < MaxMaterialTextureCount; i++) {
-        this->textures[i] = _textures[i];
+    for (int i = 0; i < textures_count; i++) {
+        textures.emplace_back(_textures[i]);
     }
-    for (int i = 0; i < MaxMaterialParamCount; i++) {
-        this->params[i] = _params[i];
+    for (int i = 0; i < params_count; i++) {
+        params.emplace_back(_params[i]);
     }
 }
 
@@ -63,9 +67,9 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
     const char *p = mat_src;
     const char *q = std::strpbrk(p + 1, delims);
 
-    int programs_count = 0;
-    int textures_count = 0;
-    params_count = 0;
+    programs.clear();
+    textures.clear();
+    params.clear();
 
     for (; p != nullptr && q != nullptr; q = std::strpbrk(p, delims)) {
         if (p == q) {
@@ -96,10 +100,10 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                 te_shader_name = std::string(p, q);
             }
 
-            programs[programs_count++] = on_prog_load(
+            programs.emplace_back(on_prog_load(
                 program_name.c_str(), v_shader_name.c_str(), f_shader_name.c_str(),
                 tc_shader_name.empty() ? nullptr : tc_shader_name.c_str(),
-                te_shader_name.empty() ? nullptr : te_shader_name.c_str());
+                te_shader_name.empty() ? nullptr : te_shader_name.c_str()));
 #endif
         } else if (item == "sw_program:") {
 #ifdef USE_SW_RENDER
@@ -177,10 +181,10 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                 _p = _q + 1;
             }
 
-            textures[textures_count++] =
-                on_tex_load(texture_name.c_str(), texture_color, texture_flags);
+            textures.emplace_back(
+                on_tex_load(texture_name.c_str(), texture_color, texture_flags));
         } else if (item == "param:") {
-            Vec4f &par = params[params_count++];
+            Vec4f &par = params.emplace_back();
             p = q + 1;
             q = std::strpbrk(p, delims);
             par[0] = (float)strtod(p, nullptr);

@@ -124,6 +124,15 @@ public:
         }
     }
 
+    bool StartsWith(const char *str) const {
+        for (size_t i = 0; str[i] != '\0'; i++) {
+            if (str_[i] != str[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     bool EndsWith(const char *str) const {
         size_t len = strlen(str);
         for (size_t i = 0; i < len; i++) {

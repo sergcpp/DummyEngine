@@ -197,8 +197,6 @@ void main(void) {
 
         require(p->attribute(0).name == "aVertexPosition");
         require(p->attribute(0).loc != -1);
-        require(p->attribute(1).name.empty());
-        require(p->attribute(1).loc == -1);
 
         require(p->uniform(0).name == "uMVPMatrix");
         require(p->uniform(0).loc != -1);

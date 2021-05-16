@@ -85,17 +85,12 @@ void GSVideoTest::Enter() {
 
             Ren::Mesh *mesh = dr->mesh.get();
 
-            for (int j = 0; j < Ren::MaxMeshTriGroupsCount; j++) {
-                Ren::TriGroup &grp = mesh->group(j);
-                if (grp.offset == -1) {
-                    break;
-                }
-
+            for (const auto &grp : mesh->groups()) {
                 // hold reference to original material here
                 Ren::MaterialRef mat = grp.mat;
                 if (mat->name() == "wall_picture_yuv.txt") {
                     // replace material
-                    grp.mat = vid_mat_[i];
+                    const_cast<Ren::TriGroup &>(grp).mat = vid_mat_[i];
                 }
             }
         }

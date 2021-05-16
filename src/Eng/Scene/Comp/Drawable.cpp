@@ -45,7 +45,7 @@ void Drawable::Read(const JsObject &js_in, Drawable &dr) {
             dr.ellipsoids[i].axis[0] = float(js_ellipsoid_axis[0].as_num());
             dr.ellipsoids[i].axis[1] = float(js_ellipsoid_axis[1].as_num());
             dr.ellipsoids[i].axis[2] = float(js_ellipsoid_axis[2].as_num());
-            
+
             if (js_ellipsoid.Has("bone")) {
                 dr.ellipsoids[i].bone_name =
                     Ren::String{js_ellipsoid.at("bone").as_str().val.c_str()};
@@ -76,11 +76,7 @@ void Drawable::Write(const Drawable &dr, JsObject &js_out) {
         JsArray js_material_override;
 
         const Ren::Mesh *mesh = dr.mesh.get();
-        for (int i = 0; i < Ren::MaxMeshTriGroupsCount; i++) {
-            const Ren::TriGroup &grp = mesh->group(i);
-            if (grp.offset == -1)
-                break;
-
+        for (const auto &grp : mesh->groups()) {
             js_material_override.Push(JsString{grp.mat->name().c_str()});
         }
 

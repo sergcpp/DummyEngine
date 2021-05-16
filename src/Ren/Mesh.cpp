@@ -375,35 +375,33 @@ void Ren::Mesh::InitMeshSimple(std::istream &data,
     data.read((char *)indices_.get(), indices_buf_.size);
 
     const int materials_count = file_header.p[MATERIALS_CHUNK].length / 64;
-    std::array<char, 64> material_names[MaxMeshTriGroupsCount];
+    SmallVector<std::array<char, 64>, 8> material_names;
     for (int i = 0; i < materials_count; i++) {
-        data.read(&material_names[i][0], 64);
+        auto &name = material_names.emplace_back();
+        data.read(name.data(), 64);
     }
 
     flags_ = 0;
 
-    const int tri_strips_count = file_header.p[TRI_GROUPS_CHUNK].length / 12;
-    assert(tri_strips_count == materials_count);
-    for (int i = 0; i < tri_strips_count; i++) {
+    const int tri_groups_count = file_header.p[TRI_GROUPS_CHUNK].length / 12;
+    assert(tri_groups_count == materials_count);
+    for (int i = 0; i < tri_groups_count; i++) {
         int index, num_indices, alpha;
         data.read((char *)&index, 4);
         data.read((char *)&num_indices, 4);
         data.read((char *)&alpha, 4);
 
-        groups_[i].offset = (int)(index * sizeof(uint32_t));
-        groups_[i].num_indices = (int)num_indices;
-        groups_[i].flags = 0;
+        auto &grp = groups_.emplace_back();
+        grp.offset = int(index * sizeof(uint32_t));
+        grp.num_indices = (int)num_indices;
+        grp.flags = 0;
 
         if (alpha) {
-            groups_[i].flags |= MeshHasAlpha;
+            grp.flags |= MeshHasAlpha;
             flags_ |= MeshHasAlpha;
         }
 
-        groups_[i].mat = on_mat_load(&material_names[i][0]);
-    }
-
-    if (tri_strips_count < MaxMeshTriGroupsCount) {
-        groups_[tri_strips_count].offset = -1;
+        grp.mat = on_mat_load(&material_names[i][0]);
     }
 
     const uint32_t vertex_count = attribs_size / sizeof(orig_vertex_t);
@@ -486,9 +484,10 @@ void Ren::Mesh::InitMeshColored(std::istream &data,
     data.read((char *)indices_.get(), indices_buf_.size);
 
     const int materials_count = file_header.p[MATERIALS_CHUNK].length / 64;
-    std::array<char, 64> material_names[MaxMeshTriGroupsCount];
+    SmallVector<std::array<char, 64>, 8> material_names;
     for (int i = 0; i < materials_count; i++) {
-        data.read(&material_names[i][0], 64);
+        auto &name = material_names.emplace_back();
+        data.read(name.data(), 64);
     }
 
     flags_ = 0;
@@ -501,20 +500,17 @@ void Ren::Mesh::InitMeshColored(std::istream &data,
         data.read((char *)&num_indices, 4);
         data.read((char *)&alpha, 4);
 
-        groups_[i].offset = (int)(index * sizeof(uint32_t));
-        groups_[i].num_indices = (int)num_indices;
-        groups_[i].flags = 0;
+        auto &grp = groups_.emplace_back();
+        grp.offset = (int)(index * sizeof(uint32_t));
+        grp.num_indices = (int)num_indices;
+        grp.flags = 0;
 
         if (alpha) {
-            groups_[i].flags |= MeshHasAlpha;
+            grp.flags |= MeshHasAlpha;
             flags_ |= MeshHasAlpha;
         }
 
-        groups_[i].mat = on_mat_load(&material_names[i][0]);
-    }
-
-    if (tri_strips_count < MaxMeshTriGroupsCount) {
-        groups_[tri_strips_count].offset = -1;
+        grp.mat = on_mat_load(&material_names[i][0]);
     }
 
     assert(attribs_size % sizeof(orig_vertex_colored_t) == 0);
@@ -605,9 +601,10 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
     data.read((char *)indices_.get(), indices_buf_.size);
 
     const int materials_count = file_header.p[MATERIALS_CHUNK].length / 64;
-    std::array<char, 64> material_names[MaxMeshTriGroupsCount];
+    SmallVector<std::array<char, 64>, 8> material_names;
     for (int i = 0; i < materials_count; i++) {
-        data.read(&material_names[i][0], 64);
+        auto &name = material_names.emplace_back();
+        data.read(name.data(), 64);
     }
 
     flags_ = 0;
@@ -620,20 +617,17 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
         data.read((char *)&num_indices, 4);
         data.read((char *)&alpha, 4);
 
-        groups_[i].offset = int(index * sizeof(uint32_t));
-        groups_[i].num_indices = (int)num_indices;
-        groups_[i].flags = 0;
+        auto &grp = groups_.emplace_back();
+        grp.offset = int(index * sizeof(uint32_t));
+        grp.num_indices = (int)num_indices;
+        grp.flags = 0;
 
         if (alpha) {
-            groups_[i].flags |= MeshHasAlpha;
+            grp.flags |= MeshHasAlpha;
             flags_ |= MeshHasAlpha;
         }
 
-        groups_[i].mat = on_mat_load(&material_names[i][0]);
-    }
-
-    if (tri_groups_count < MaxMeshTriGroupsCount) {
-        groups_[tri_groups_count].offset = -1;
+        grp.mat = on_mat_load(&material_names[i][0]);
     }
 
     skel_.bones_count = file_header.p[BONES_CHUNK].length / (64 + 8 + 12 + 16);

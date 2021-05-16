@@ -6,6 +6,7 @@
 
 #include "Fwd.h"
 #include "Program.h"
+#include "SmallVector.h"
 #include "Storage.h"
 #include "String.h"
 #include "Texture.h"
@@ -22,10 +23,6 @@ enum class eMatFlags {
     TwoSided = (1u << 3u),
     TaaResponsive = (1u << 4u)
 };
-
-const int MaxMaterialProgramCount = 4;
-const int MaxMaterialTextureCount = 8;
-const int MaxMaterialParamCount = 8;
 
 enum class eMatLoadStatus { Found, SetToDefault, CreatedFromData };
 
@@ -45,17 +42,17 @@ class Material : public RefCounter {
                      const texture_load_callback &on_tex_load, ILog *log);
 
   public:
-    ProgramRef programs[MaxMaterialProgramCount];
-    Tex2DRef textures[MaxMaterialTextureCount];
-    Vec4f params[MaxMaterialParamCount];
-    int params_count = 0;
+    SmallVector<ProgramRef, 4> programs;
+    SmallVector<Tex2DRef, 8> textures;
+    SmallVector<Vec4f, 4> params;
 
     Material() = default;
     Material(const char *name, const char *mat_src, eMatLoadStatus *status,
              const program_load_callback &on_prog_load,
              const texture_load_callback &on_tex_load, ILog *log);
-    Material(const char *name, uint32_t flags, ProgramRef programs[], Tex2DRef textures[],
-             const Vec4f params[], ILog *log);
+    Material(const char *name, uint32_t flags, ProgramRef programs[], int programs_count,
+             Tex2DRef textures[], int textures_count, const Vec4f params[],
+             int params_count, ILog *log);
 
     Material(const Mesh &rhs) = delete;
     Material(Material &&rhs) noexcept = default;
@@ -67,8 +64,9 @@ class Material : public RefCounter {
     bool ready() const { return ready_; }
     const String &name() const { return name_; }
 
-    void Init(uint32_t flags, ProgramRef _programs[], Tex2DRef _textures[],
-              const Vec4f _params[], ILog *log);
+    void Init(uint32_t flags, ProgramRef _programs[], int programs_count,
+              Tex2DRef _textures[], int textures_count, const Vec4f _params[],
+              int params_count, ILog *log);
     void Init(const char *mat_src, eMatLoadStatus *status,
               const program_load_callback &on_prog_load,
               const texture_load_callback &on_tex_load, ILog *log);

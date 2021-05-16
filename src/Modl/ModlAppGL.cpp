@@ -37,8 +37,8 @@ inline void BindTexture(int slot, uint32_t tex) {
 void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     using namespace Ren;
 
-    Mesh *m = ref.get();
-    Material *mat = m->group(0).mat.get();
+    const Mesh *m = ref.get();
+    const Material *mat = m->groups()[0].mat.get();
     ProgramRef p = mat->programs[0];
 
     glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
@@ -70,9 +70,8 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
-    const Ren::TriGroup *s = &m->group(0);
-    while (s->offset != -1) {
-        const Ren::Material *mat = s->mat.get();
+    for (const auto &grp : m->groups()) {
+        const Ren::Material *mat = grp.mat.get();
 
         if (view_mode_ == eViewMode::DiagUVs1 || view_mode_ == eViewMode::DiagUVs2) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->id());
@@ -81,9 +80,8 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
         }
         BindTexture(NORMALMAP_SLOT, mat->textures[1]->id());
 
-        glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT,
-                       (void *)uintptr_t(s->offset));
-        ++s;
+        glDrawElements(GL_TRIANGLES, grp.num_indices, GL_UNSIGNED_INT,
+                       reinterpret_cast<void *>(uintptr_t(grp.offset)));
     }
 
     Ren::CheckError("", &log_);
@@ -92,8 +90,8 @@ void ModlApp::DrawMeshSimple(Ren::MeshRef &ref) {
 void ModlApp::DrawMeshColored(Ren::MeshRef &ref) {
     using namespace Ren;
 
-    Mesh *m = ref.get();
-    Material *mat = m->group(0).mat.get();
+    const Mesh *m = ref.get();
+    const Material *mat = m->groups()[0].mat.get();
     ProgramRef p = mat->programs[0];
 
     glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
@@ -125,9 +123,8 @@ void ModlApp::DrawMeshColored(Ren::MeshRef &ref) {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
-    const Ren::TriGroup *s = &m->group(0);
-    while (s->offset != -1) {
-        const Ren::Material *mat = s->mat.get();
+    for (const auto &grp : m->groups()) {
+        const Ren::Material *mat = grp.mat.get();
 
         if (view_mode_ == eViewMode::DiagUVs1) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->id());
@@ -137,9 +134,8 @@ void ModlApp::DrawMeshColored(Ren::MeshRef &ref) {
         }
         BindTexture(NORMALMAP_SLOT, mat->textures[1]->id());
 
-        glDrawElements(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT,
-                       (void *)uintptr_t(s->offset));
-        ++s;
+        glDrawElements(GL_TRIANGLES, grp.num_indices, GL_UNSIGNED_INT,
+                       reinterpret_cast<const void *>(uintptr_t(grp.offset)));
     }
 
     Ren::CheckError("", &log_);
@@ -149,7 +145,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
     using namespace Ren;
 
     Ren::Mesh *m = ref.get();
-    const Ren::Material *mat = m->group(0).mat.get();
+    const Ren::Material *mat = m->groups()[0].mat.get();
 
     anim_time_ += dt_s;
 
@@ -320,9 +316,8 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
 
     glCullFace(GL_BACK);
 
-    const Ren::TriGroup *s = &m->group(0);
-    while (s->offset != -1) {
-        const Ren::Material *mat = s->mat.get();
+    for (const auto &grp : m->groups()) {
+        const Ren::Material *mat = grp.mat.get();
 
         if ((mat->flags() & uint32_t(Ren::eMatFlags::TwoSided)) != 0) {
             glDisable(GL_CULL_FACE);
@@ -337,9 +332,8 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, float dt_s) {
         }
         BindTexture(NORMALMAP_SLOT, mat->textures[1]->id());
 
-        glDrawElementsBaseVertex(GL_TRIANGLES, s->num_indices, GL_UNSIGNED_INT,
-                                 (void *)uintptr_t(s->offset), (GLint)0);
-        ++s;
+        glDrawElementsBaseVertex(GL_TRIANGLES, grp.num_indices, GL_UNSIGNED_INT,
+                                 reinterpret_cast<void *>(uintptr_t(grp.offset)), 0);
     }
 
     Ren::CheckError("", &log_);

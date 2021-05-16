@@ -7,6 +7,7 @@
 #include <string>
 
 #include "Shader.h"
+#include "SmallVector.h"
 #include "Storage.h"
 #include "String.h"
 
@@ -18,45 +19,32 @@
 namespace Ren {
 class ILog;
 
-const int MaxAttributesCount = 32;
-const int MaxUniformsCount = 32;
-const int MaxUniformBlocksCount = 16;
-
 enum class eProgLoadStatus { Found, SetToDefault, CreatedFromData };
 
 class Program : public RefCounter {
     uint32_t id_ = 0; // native gl name
     uint32_t flags_ = 0;
     std::array<ShaderRef, int(eShaderType::_Count)> shaders_;
-    std::array<Attribute, MaxAttributesCount> attributes_;
-    std::array<Uniform, MaxUniformsCount> uniforms_;
-    std::array<UniformBlock, MaxUniformBlocksCount> uniform_blocks_;
+    SmallVector<Attribute, 8> attributes_;
+    SmallVector<Uniform, 8> uniforms_;
+    SmallVector<UniformBlock, 4> uniform_blocks_;
     String name_;
 
     void InitBindings(ILog *log);
 
   public:
     Program() = default;
-    Program(const char *name, const uint32_t id, const Attribute *attrs,
-            const Uniform *unifs, const UniformBlock *unif_blocks)
+    Program(const char *name, const uint32_t id, const Attribute *attrs, int attrs_count,
+            const Uniform *unifs, int unifs_count, const UniformBlock *unif_blocks, int unif_blocks_count)
         : id_(id) {
-        for (int i = 0; i < MaxAttributesCount; i++) {
-            if (attrs[i].loc == -1) {
-                break;
-            }
-            attributes_[i] = attrs[i];
+        for (int i = 0; i < attrs_count; i++) {
+            attributes_.emplace_back(attrs[i]);
         }
-        for (int i = 0; i < MaxUniformsCount; i++) {
-            if (unifs[i].loc == -1) {
-                break;
-            }
-            uniforms_[i] = unifs[i];
+        for (int i = 0; i < unifs_count; i++) {
+            uniforms_.emplace_back(unifs[i]);
         }
-        for (int i = 0; i < MaxUniformBlocksCount; i++) {
-            if (unif_blocks[i].loc == -1) {
-                break;
-            }
-            uniform_blocks_[i] = unif_blocks[i];
+        for (int i = 0; i < unif_blocks_count; i++) {
+            uniform_blocks_.emplace_back(unif_blocks[i]);
         }
         name_ = String{name};
     }
@@ -82,7 +70,7 @@ class Program : public RefCounter {
     const Attribute &attribute(const int i) const { return attributes_[i]; }
 
     const Attribute &attribute(const char *name) const {
-        for (int i = 0; i < MaxAttributesCount; i++) {
+        for (int i = 0; i < int(attributes_.size()); i++) {
             if (attributes_[i].name == name) {
                 return attributes_[i];
             }
@@ -93,7 +81,7 @@ class Program : public RefCounter {
     const Uniform &uniform(const int i) const { return uniforms_[i]; }
 
     const Uniform &uniform(const char *name) const {
-        for (int i = 0; i < MaxUniformsCount; i++) {
+        for (int i = 0; i < int(uniforms_.size()); i++) {
             if (uniforms_[i].name == name) {
                 return uniforms_[i];
             }
@@ -104,7 +92,7 @@ class Program : public RefCounter {
     const UniformBlock &uniform_block(const int i) const { return uniform_blocks_[i]; }
 
     const UniformBlock &uniform_block(const char *name) const {
-        for (int i = 0; i < MaxUniformBlocksCount; i++) {
+        for (int i = 0; i < int(uniform_blocks_.size()); i++) {
             if (uniform_blocks_[i].name == name) {
                 return uniform_blocks_[i];
             }

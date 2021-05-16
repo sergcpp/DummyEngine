@@ -608,14 +608,12 @@ void SceneManager::InitScene_PT(bool _override) {
 
                 bool is_sparse = false;
 
-                const Ren::TriGroup *s = &mesh->group(0);
-                while (s->offset != -1) {
-                    const Ren::Material *mat = s->mat.get();
+                for (const auto &grp : mesh->groups()) {
+                    const Ren::Material *mat = grp.mat.get();
                     if (mat->flags() & (uint32_t(Ren::eMatFlags::AlphaBlend) |
                                         uint32_t(Ren::eMatFlags::AlphaTest))) {
                         // TODO: Properly support transparent objects
                         is_sparse = true;
-                        ++s;
                         continue;
                     }
                     const char *mat_name = mat->name().c_str();
@@ -667,8 +665,7 @@ void SceneManager::InitScene_PT(bool _override) {
 
                     mesh_desc.shapes.emplace_back(
                         mat_it->second, 0xffffffff /*default_glow_mat*/,
-                        (size_t)(s->offset / sizeof(uint32_t)), (size_t)s->num_indices);
-                    ++s;
+                        size_t(grp.offset / sizeof(uint32_t)), size_t(grp.num_indices));
                 }
 
                 if (!mesh_desc.shapes.empty()) {

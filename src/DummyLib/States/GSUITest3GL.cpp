@@ -24,8 +24,9 @@ void GSUITest3::InitBookMaterials() {
         // prevent texture deletion
         params.flags = Ren::TexNoOwnership;
 
-        page_tex_ = ren_ctx_->textures().Add(
-            "__book_page_texture__", page_buf_.attachments[0].tex->id(), params, log_.get());
+        page_tex_ = ren_ctx_->textures().Add("__book_page_texture__",
+                                             page_buf_.attachments[0].tex->id(), params,
+                                             log_.get());
     }
 
     { // register material
@@ -37,27 +38,17 @@ void GSUITest3::InitBookMaterials() {
             return;
         }
 
-        Ren::ProgramRef programs[Ren::MaxMaterialProgramCount];
-        for (int i = 0; i < Ren::MaxMaterialProgramCount; i++) {
-            programs[i] = orig_page_mat_->programs[i];
-        }
-
-        Ren::Tex2DRef textures[Ren::MaxMaterialTextureCount];
-        for (int i = 0; i < Ren::MaxMaterialTextureCount; i++) {
-            textures[i] = orig_page_mat_->textures[i];
-        }
+        Ren::SmallVector<Ren::ProgramRef, 4> programs = orig_page_mat_->programs;
+        Ren::SmallVector<Ren::Tex2DRef, 8> textures = orig_page_mat_->textures;
+        Ren::SmallVector<Ren::Vec4f, 4> params = orig_page_mat_->params;
 
         // replace texture
         textures[2] = page_tex_;
 
-        Ren::Vec4f params[Ren::MaxMaterialParamCount];
-        for (int i = 0; i < Ren::MaxMaterialParamCount; i++) {
-            params[i] = orig_page_mat_->params[i];
-        }
-
-        page_mat_ =
-            ren_ctx_->materials().Add("__book_page_material__", orig_page_mat_->flags(),
-                                      programs, textures, params, log_.get());
+        page_mat_ = ren_ctx_->materials().Add(
+            "__book_page_material__", orig_page_mat_->flags(), programs.data(),
+            int(programs.size()), textures.data(), int(textures.size()), params.data(),
+            int(params.size()), log_.get());
     }
 }
 

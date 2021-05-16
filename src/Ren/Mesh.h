@@ -5,6 +5,7 @@
 #include "Anim.h"
 #include "Buffer.h"
 #include "Material.h"
+#include "SmallVector.h"
 #include "String.h"
 
 namespace Ren {
@@ -24,8 +25,6 @@ struct TriGroup {
     TriGroup &operator=(const TriGroup &rhs) = delete;
     TriGroup &operator=(TriGroup &&rhs) noexcept = default;
 };
-
-const int MaxMeshTriGroupsCount = 52;
 
 struct VtxDelta {
     float dp[3], dn[3], db[3];
@@ -77,7 +76,7 @@ class Mesh : public RefCounter {
         indices_buf_;
     std::unique_ptr<char[]> attribs_, indices_;
     std::unique_ptr<VtxDelta[]> deltas_;
-    TriGroup groups_[MaxMeshTriGroupsCount];
+    SmallVector<TriGroup, 8> groups_;
     Vec3f bbox_min_, bbox_max_;
     String name_;
 
@@ -133,8 +132,7 @@ class Mesh : public RefCounter {
     const BufferRange &sk_deltas_buf() const { return sk_deltas_buf_; }
     const void *indices() const { return indices_.get(); }
     const BufferRange &indices_buf() const { return indices_buf_; }
-    const TriGroup &group(int i) const { return groups_[i]; }
-    TriGroup &group(int i) { return groups_[i]; }
+    const SmallVectorImpl<TriGroup> &groups() const { return groups_; }
     const Vec3f &bbox_min() const { return bbox_min_; }
     const Vec3f &bbox_max() const { return bbox_max_; }
     const String &name() const { return name_; }

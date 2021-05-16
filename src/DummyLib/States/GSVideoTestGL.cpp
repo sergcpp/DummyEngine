@@ -66,26 +66,16 @@ void GSVideoTest::InitVideoTextures() {
                 return;
             }
 
-            Ren::ProgramRef programs[Ren::MaxMaterialProgramCount];
-            for (int j = 0; j < Ren::MaxMaterialProgramCount; j++) {
-                programs[j] = orig_vid_mat_[tx]->programs[j];
-            }
-
-            Ren::Tex2DRef textures[Ren::MaxMaterialTextureCount];
-            for (int j = 0; j < Ren::MaxMaterialTextureCount; j++) {
-                textures[j] = orig_vid_mat_[tx]->textures[j];
-            }
-
-            Ren::Vec4f params[Ren::MaxMaterialParamCount];
-            for (int j = 0; j < Ren::MaxMaterialParamCount; j++) {
-                params[j] = orig_vid_mat_[tx]->params[j];
-            }
+            Ren::SmallVector<Ren::ProgramRef, 4> programs = orig_vid_mat_[tx]->programs;
+            Ren::SmallVector<Ren::Tex2DRef, 8> textures = orig_vid_mat_[tx]->textures;
+            Ren::SmallVector<Ren::Vec4f, 4> params = orig_vid_mat_[tx]->params;
 
             sprintf(name_buf, "__video_texture_material_%i__", tx);
             vid_mat_[tx] = scene_manager_->scene_data().materials.Add(
                 name_buf,
                 orig_vid_mat_[tx]->flags() | uint32_t(Ren::eMatFlags::TaaResponsive),
-                programs, textures, params, log_.get());
+                programs.data(), int(programs.size()), textures.data(),
+                int(textures.size()), params.data(), int(params.size()), log_.get());
         }
 
 #if !defined(__ANDROID__)
