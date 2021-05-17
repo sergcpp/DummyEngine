@@ -91,7 +91,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
             p.w = img_data_w;
             p.h = img_data_h;
             p.format = Ren::eTexFormat::RawRGBA8888;
-            p.sampling.filter = draw_mode_ == eDrawMode::DrPassthrough
+            p.sampling.filter = draw_mode_ == eDrawMode::Passthrough
                            ? Ren::eTexFilter::NoFilter
                            : Ren::eTexFilter::BilinearNoMipmap;
             p.sampling.repeat = Ren::eTexRepeat::ClampToBorder;
@@ -180,9 +180,9 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
                    tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_->pos(2)));
 
     uint16_t u16_draw_mode = 0;
-    if (draw_mode_ == eDrawMode::DrDistanceField) {
+    if (draw_mode_ == eDrawMode::DistanceField) {
         u16_draw_mode = 32727;
-    } else if (draw_mode_ == eDrawMode::DrBlitDistanceField) {
+    } else if (draw_mode_ == eDrawMode::BlitDistanceField) {
         u16_draw_mode = 65535;
     }
 

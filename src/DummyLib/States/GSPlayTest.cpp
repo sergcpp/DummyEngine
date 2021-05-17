@@ -300,7 +300,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
     using namespace GSPlayTestInternal;
 
     // pt switch for touch controls
-    if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
+    if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
         if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
             evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
@@ -320,7 +320,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
     bool input_processed = false;
 
     switch (evt.type) {
-    case RawInputEvent::EvP1Down: {
+    case RawInputEv::P1Down: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
@@ -332,7 +332,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             input_processed = true;
         }
     } break;
-    case RawInputEvent::EvP2Down: {
+    case RawInputEv::P2Down: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
@@ -344,7 +344,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             input_processed = true;
         }
     } break;
-    case RawInputEvent::EvP1Up: {
+    case RawInputEv::P1Up: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
@@ -356,7 +356,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             input_processed = dialog_edit_ui_->Check(p);
         }
     } break;
-    case RawInputEvent::EvP2Up: {
+    case RawInputEv::P2Up: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
@@ -368,7 +368,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             input_processed = dialog_edit_ui_->Check(p);
         }
     } break;
-    case RawInputEvent::EvP1Move: {
+    case RawInputEv::P1Move: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
@@ -378,10 +378,10 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             dialog_edit_ui_->Hover(p);
         }
     } break;
-    case RawInputEvent::EvP2Move: {
+    case RawInputEv::P2Move: {
 
     } break;
-    case RawInputEvent::EvKeyDown: {
+    case RawInputEv::KeyDown: {
         input_processed = false;
 
         if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
@@ -415,7 +415,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             }
         }
     } break;
-    case RawInputEvent::EvKeyUp: {
+    case RawInputEv::KeyUp: {
         input_processed = true;
         if (evt.key_code == KeySpace) {
             play_started_time_s_ = 0.001f * Sys::GetTimeMs() - seq_edit_ui_->GetTime();
@@ -428,7 +428,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             input_processed = false;
         }
     } break;
-    case RawInputEvent::EvMouseWheel: {
+    case RawInputEv::MouseWheel: {
         if (dial_edit_mode_ == 0) {
             if (evt.move.dx > 0.0f) {
                 seq_edit_ui_->ZoomInTime();
@@ -437,7 +437,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             }
         }
     } break;
-    case RawInputEvent::EvResize: {
+    case RawInputEv::Resize: {
         cam_ctrl_->Resize(ren_ctx_->w(), ren_ctx_->h());
         dialog_edit_ui_->Resize(ui_root_.get());
         seq_edit_ui_->Resize(ui_root_.get());

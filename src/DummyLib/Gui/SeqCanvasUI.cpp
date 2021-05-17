@@ -117,7 +117,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
                     const Ren::Vec2f pos[2] = {el->dims()[0],
                                                el->dims()[0] + el->dims()[1]};
 
-                    r->PushImageQuad(Gui::eDrawMode::DrPassthrough, tex_layer, pos,
+                    r->PushImageQuad(Gui::eDrawMode::Passthrough, tex_layer, pos,
                                      uvs_px);
                 }
 

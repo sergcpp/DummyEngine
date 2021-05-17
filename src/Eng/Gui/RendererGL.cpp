@@ -132,23 +132,30 @@ Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &config) : ctx_(ctx) {
         index_count_[i] = 0;
     }
 
+    const int instance_index = g_instance_count++;
+
+    char name_buf[32];
+    sprintf(name_buf, "UI_VertexBuffer [%i]", instance_index);
+
     vertex_buf_ =
-        ctx_.CreateBuffer("UI_VertexBuffer", Ren::eBufferType::VertexAttribs,
+        ctx_.CreateBuffer(name_buf, Ren::eBufferType::VertexAttribs,
                           Ren::eBufferAccessType::Draw, Ren::eBufferAccessFreq::Dynamic,
                           FrameSyncWindow * MaxVerticesPerRange * sizeof(vertex_t));
 
+    sprintf(name_buf, "UI_IndexBuffer [%i]", instance_index);
+
     index_buf_ =
-        ctx_.CreateBuffer("UI_IndexBuffer", Ren::eBufferType::VertexIndices,
+        ctx_.CreateBuffer(name_buf, Ren::eBufferType::VertexIndices,
                           Ren::eBufferAccessType::Draw, Ren::eBufferAccessFreq::Dynamic,
                           FrameSyncWindow * MaxIndicesPerRange * sizeof(uint16_t));
 
     const Ren::VtxAttribDesc attribs[] = {
-        {vertex_buf_->handle(), VTX_POS_LOC, 3, Ren::eType::Float32,
-         sizeof(vertex_t), uintptr_t(offsetof(vertex_t, pos))},
-        {vertex_buf_->handle(), VTX_COL_LOC, 4, Ren::eType::Uint8UNorm,
-         sizeof(vertex_t), uintptr_t(offsetof(vertex_t, col))},
-        {vertex_buf_->handle(), VTX_UVS_LOC, 4, Ren::eType::Uint16UNorm,
-         sizeof(vertex_t), uintptr_t(offsetof(vertex_t, uvs))}};
+        {vertex_buf_->handle(), VTX_POS_LOC, 3, Ren::eType::Float32, sizeof(vertex_t),
+         uintptr_t(offsetof(vertex_t, pos))},
+        {vertex_buf_->handle(), VTX_COL_LOC, 4, Ren::eType::Uint8UNorm, sizeof(vertex_t),
+         uintptr_t(offsetof(vertex_t, col))},
+        {vertex_buf_->handle(), VTX_UVS_LOC, 4, Ren::eType::Uint16UNorm, sizeof(vertex_t),
+         uintptr_t(offsetof(vertex_t, uvs))}};
 
     vao_.Setup(attribs, 3, index_buf_->handle());
 
@@ -223,10 +230,10 @@ void Gui::Renderer::SwapBuffers() {
     fill_range_index_ = (draw_range_index_ + (FrameSyncWindow - 1)) % FrameSyncWindow;
 }
 
-void Gui::Renderer::Draw() {
+void Gui::Renderer::Draw(int w, int h) {
     using namespace UIRendererConstants;
 
-    glViewport(0, 0, ctx_.w(), ctx_.h());
+    glViewport(0, 0, w, h);
 
     //
     // Synchronize with previous draw

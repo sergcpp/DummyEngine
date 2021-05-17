@@ -351,7 +351,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
     using namespace GSUITest4Internal;
 
     // pt switch for touch controls
-    if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
+    if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
         if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
             evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
@@ -372,7 +372,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
     bool input_processed = false;
 
     switch (evt.type) {
-    case RawInputEvent::EvP1Down: {
+    case RawInputEv::P1Down: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
@@ -387,7 +387,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
         }
         word_puzzle_->Press(p, true);
     } break;
-    case RawInputEvent::EvP2Down: {
+    case RawInputEv::P2Down: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
@@ -401,7 +401,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
             // dialog_ui_->PressRMB
         }
     } break;
-    case RawInputEvent::EvP1Up: {
+    case RawInputEv::P1Up: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
@@ -416,7 +416,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
         word_puzzle_->Press(p, false);
         cam_ctrl_->HandleInput(evt);
     } break;
-    case RawInputEvent::EvP2Up: {
+    case RawInputEv::P2Up: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
@@ -428,7 +428,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
             input_processed = seq_edit_ui_->Check(p);
         }
     } break;
-    case RawInputEvent::EvP1Move: {
+    case RawInputEv::P1Move: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
@@ -440,10 +440,10 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
         dialog_ui_->Hover(p);
         word_puzzle_->Hover(p);
     } break;
-    case RawInputEvent::EvP2Move: {
+    case RawInputEv::P2Move: {
 
     } break;
-    case RawInputEvent::EvKeyDown: {
+    case RawInputEv::KeyDown: {
         input_processed = false;
 
         if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
@@ -482,7 +482,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
             }
         }
     } break;
-    case RawInputEvent::EvKeyUp: {
+    case RawInputEv::KeyUp: {
         input_processed = true;
         if (evt.key_code == KeyReturn) {
             use_free_cam_ = !use_free_cam_;
@@ -503,7 +503,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
             input_processed = false;
         }
     } break;
-    case RawInputEvent::EvMouseWheel: {
+    case RawInputEv::MouseWheel: {
         if (dial_edit_mode_ == 1) {
             if (evt.move.dx > 0.0f) {
                 seq_edit_ui_->ZoomInTime();
@@ -512,7 +512,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
             }
         }
     } break;
-    case RawInputEvent::EvResize:
+    case RawInputEv::Resize:
         cam_ctrl_->Resize(ren_ctx_->w(), ren_ctx_->h());
         dialog_ui_->Resize(ui_root_.get());
         dialog_edit_ui_->Resize(ui_root_.get());

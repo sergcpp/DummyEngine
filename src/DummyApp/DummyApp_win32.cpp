@@ -59,7 +59,7 @@ uint32_t ScancodeToHID(uint32_t scancode) {
     if (scancode >= 256) {
         return 0;
     }
-    return (uint32_t)ScancodeToHID_table[scancode];
+    return uint32_t(ScancodeToHID_table[scancode]);
 }
 
 class AuxGfxThread : public Sys::ThreadWorker {
@@ -126,31 +126,32 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     case WM_LBUTTONDOWN: {
         const float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(EvP1Down, 0, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(RawInputEv::P1Down, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_RBUTTONDOWN: {
         const float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(EvP2Down, 0, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(RawInputEv::P2Down, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_LBUTTONUP: {
         const float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(EvP1Up, 0, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(RawInputEv::P1Up, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_RBUTTONUP: {
         const float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(EvP2Up, 0, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(RawInputEv::P2Up, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_MOUSEMOVE: {
         const float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
 
-        g_app->AddEvent(EvP1Move, 0, px, py, px - last_p1_pos[0], py - last_p1_pos[1]);
+        g_app->AddEvent(RawInputEv::P1Move, 0, px, py, px - last_p1_pos[0],
+                        py - last_p1_pos[1]);
 
         last_p1_pos[0] = px;
         last_p1_pos[1] = py;
@@ -163,7 +164,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             const uint32_t scan_code = ScancodeFromLparam(lParam),
                            key_code = ScancodeToHID(scan_code);
 
-            g_app->AddEvent(EvKeyDown, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
+            g_app->AddEvent(RawInputEv::KeyDown, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
         }
         break;
     }
@@ -171,20 +172,20 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         const uint32_t scan_code = ScancodeFromLparam(lParam),
                        key_code = ScancodeToHID(scan_code);
 
-        g_app->AddEvent(EvKeyUp, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
+        g_app->AddEvent(RawInputEv::KeyUp, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
         break;
     }
     case WM_MOUSEWHEEL: {
         WORD _delta = HIWORD(wParam);
         const auto delta = reinterpret_cast<const short &>(_delta);
         const float wheel_motion = float(delta / WHEEL_DELTA);
-        g_app->AddEvent(EvMouseWheel, 0, 0.0f, 0.0f, wheel_motion, 0.0f);
+        g_app->AddEvent(RawInputEv::MouseWheel, 0, 0.0f, 0.0f, wheel_motion, 0.0f);
         break;
     }
     case WM_SIZE: {
         const int w = LOWORD(lParam), h = HIWORD(lParam);
         g_app->Resize(w, h);
-        g_app->AddEvent(EvResize, 0, (float)w, (float)h, 0.0f, 0.0f);
+        g_app->AddEvent(RawInputEv::Resize, 0, (float)w, (float)h, 0.0f, 0.0f);
     }
     default: {
         break;
@@ -399,7 +400,7 @@ void DummyApp::Resize(const int w, const int h) {
     }
 }
 
-void DummyApp::AddEvent(const int type, const uint32_t key_code, const float x,
+void DummyApp::AddEvent(const RawInputEv type, const uint32_t key_code, const float x,
                         const float y, const float dx, const float dy) {
     std::shared_ptr<InputManager> input_manager = input_manager_.lock();
     if (!input_manager) {
@@ -407,7 +408,7 @@ void DummyApp::AddEvent(const int type, const uint32_t key_code, const float x,
     }
 
     InputManager::Event evt;
-    evt.type = RawInputEvent(type);
+    evt.type = type;
     evt.key_code = key_code;
     evt.point.x = x;
     evt.point.y = y;

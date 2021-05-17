@@ -133,7 +133,7 @@ void GSUITest3::Enter() {
 
     const SceneData &scene = scene_manager_->scene_data();
 
-    if (book_index_ != 0xffffffff) {
+    /*if (book_index_ != 0xffffffff) {
         SceneObject *book = scene_manager_->GetObject(book_index_);
 
         const uint32_t mask = CompDrawableBit | CompAnimStateBit;
@@ -152,7 +152,7 @@ void GSUITest3::Enter() {
                 }
             }
         }
-    }
+    }*/
 
     // disable bloom and fxaa, they make fonts look bad
     render_flags_ &= ~EnableBloom;
@@ -327,7 +327,7 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
     using namespace GSUITest3Internal;
 
     // pt switch for touch controls
-    if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
+    if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
         if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
             evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
@@ -348,17 +348,17 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
     bool input_processed = true;
 
     switch (evt.type) {
-    case RawInputEvent::EvP1Down: {
+    case RawInputEv::P1Down: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (book_state_ == eBookState::BkOpened) {
         }
     } break;
-    case RawInputEvent::EvP2Down: {
+    case RawInputEv::P2Down: {
 
     } break;
-    case RawInputEvent::EvP1Up: {
+    case RawInputEv::P1Up: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
@@ -417,9 +417,9 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
             }
         }
     } break;
-    case RawInputEvent::EvP2Up: {
+    case RawInputEv::P2Up: {
     } break;
-    case RawInputEvent::EvP1Move: {
+    case RawInputEv::P1Move: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
@@ -427,13 +427,13 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
 
         hit_point_screen_.destroy();
     } break;
-    case RawInputEvent::EvP2Move: {
+    case RawInputEv::P2Move: {
 
     } break;
-    case RawInputEvent::EvKeyDown: {
+    case RawInputEv::KeyDown: {
         input_processed = false;
     } break;
-    case RawInputEvent::EvKeyUp: {
+    case RawInputEv::KeyUp: {
         if (evt.key_code == KeyUp || (evt.key_code == KeyW && !cmdline_enabled_)) {
             // text_printer_->restart();
             paged_reader_->set_cur_page(0);
@@ -441,7 +441,7 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
             input_processed = false;
         }
     } break;
-    case RawInputEvent::EvResize:
+    case RawInputEv::Resize:
         // paged_reader_->Resize(ui_root_.get());
         break;
     default:

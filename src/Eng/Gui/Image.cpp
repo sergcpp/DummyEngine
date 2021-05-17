@@ -45,7 +45,7 @@ void Gui::Image::Draw(Renderer *r) {
     const Ren::Tex2DParams &p = tex_->params();
     const int tex_layer = tex_->pos(2);
 
-    r->PushImageQuad(eDrawMode::DrPassthrough, tex_layer, pos, uvs_px_);
+    r->PushImageQuad(eDrawMode::Passthrough, tex_layer, pos, uvs_px_);
 }
 
 void Gui::Image::ResizeToContent(const Vec2f &pos, const BaseElement *parent) {

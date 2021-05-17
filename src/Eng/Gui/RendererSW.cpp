@@ -92,7 +92,7 @@ void Gui::Renderer::BeginDraw() {
     swEnable(SW_BLEND);
 
     Ren::Vec2i scissor_test[2] = { { 0, 0 }, { ctx_.w(), ctx_.h() } };
-    this->EmplaceParams(Ren::Vec3f(1, 1, 1), 0.0f, BlAlpha, scissor_test);
+    this->EmplaceParams(Ren::Vec3f(1, 1, 1), 0.0f, Alpha, scissor_test);
 }
 
 void Gui::Renderer::EndDraw() {

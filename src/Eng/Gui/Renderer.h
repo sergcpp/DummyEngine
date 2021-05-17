@@ -28,8 +28,8 @@ class Context;
 namespace Gui {
 const char GL_DEFINES_KEY[] = "gl_defines";
 
-enum class eBlendMode { BlAlpha, BlColor };
-enum class eDrawMode { DrPassthrough, DrDistanceField, DrBlitDistanceField };
+enum class eBlendMode { Alpha, Color };
+enum class eDrawMode { Passthrough, DistanceField, BlitDistanceField };
 
 using Ren::Vec2f;
 using Ren::Vec2i;
@@ -67,7 +67,7 @@ class Renderer {
     Ren::ProgramRef program() const { return ui_program_; }
 
     void SwapBuffers();
-    void Draw();
+    void Draw(int w, int h);
 
     void PushClipArea(const Ren::Vec2f dims[2]);
     void PopClipArea();
@@ -94,6 +94,7 @@ class Renderer {
     static const int MaxClipStackSize = 8;
 
     static_assert(FrameSyncWindow > 1, "!");
+    static int g_instance_count;
 
     Ren::Context &ctx_;
 

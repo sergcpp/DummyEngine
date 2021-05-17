@@ -58,8 +58,8 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         : begin_(begin), end_(end), capacity_(capacity) {}
 
     ~SmallVectorImpl() {
-        for (T *el = end_; el > begin_;) {
-            (--el)->~T();
+        while (end_ != begin_) {
+            (--end_)->~T();
         }
 
         if (capacity_ & OwnerBit) {
@@ -71,15 +71,13 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
     SmallVectorImpl(SmallVectorImpl &&rhs) = delete;
 
     SmallVectorImpl &operator=(const SmallVectorImpl &rhs) {
-        for (T *el = end_; el > begin_;) {
-            (--el)->~T();
+        while (end_ != begin_) {
+            (--end_)->~T();
         }
 
         if (capacity_ & OwnerBit) {
             aligned_free(begin_);
         }
-
-        end_ = begin_;
 
         reserve(rhs.capacity_ & CapacityMask);
 
@@ -97,15 +95,17 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
     }
 
     SmallVectorImpl &operator=(SmallVectorImpl &&rhs) {
-        for (T *el = end_; el > begin_;) {
-            (--el)->~T();
+        if (this == &rhs) {
+            return (*this);
+        }
+
+        while (end_ != begin_) {
+            (--end_)->~T();
         }
 
         if (capacity_ & OwnerBit) {
             aligned_free(begin_);
         }
-
-        end_ = begin_;
 
         if (rhs.capacity_ & OwnerBit) {
             begin_ = exchange(rhs.begin_, nullptr);
@@ -116,17 +116,11 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
 
             end_ = begin_ + (rhs.end_ - rhs.begin_);
 
-            if (rhs.end_ != rhs.begin_) {
-                T *src = rhs.end_ - 1;
-                T *dst = end_ - 1;
-                do {
-                    new (dst--) T(std::move(*src));
-                    (src--)->~T();
-                } while (src >= rhs.begin_);
+            T *dst = end_ - 1;
+            while (rhs.end_ != rhs.begin_) {
+                new (dst--) T(std::move(*--rhs.end_));
+                rhs.end_->~T();
             }
-
-            rhs.end_ = rhs.begin_;
-            rhs.capacity_ = 0;
         }
 
         return (*this);

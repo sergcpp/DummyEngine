@@ -33,21 +33,21 @@ bool FreeCamController::HandleInput(const InputManager::Event &evt) {
     using namespace Ren;
 
     switch (evt.type) {
-    case RawInputEvent::EvP1Down:
+    case RawInputEv::P1Down:
         if (evt.point.x < (move_region_frac_ * float(width_)) && move_pointer_ == 0) {
             move_pointer_ = 1;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 1;
         }
         break;
-    case RawInputEvent::EvP2Down:
+    case RawInputEv::P2Down:
         if (evt.point.x < (move_region_frac_ * float(width_)) && move_pointer_ == 0) {
             move_pointer_ = 2;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 2;
         }
         break;
-    case RawInputEvent::EvP1Up:
+    case RawInputEv::P1Up:
         if (move_pointer_ == 1) {
             move_pointer_ = 0;
             fwd_touch_speed_ = 0;
@@ -56,7 +56,7 @@ bool FreeCamController::HandleInput(const InputManager::Event &evt) {
             view_pointer_ = 0;
         }
         break;
-    case RawInputEvent::EvP2Up:
+    case RawInputEv::P2Up:
         if (move_pointer_ == 2) {
             move_pointer_ = 0;
             fwd_touch_speed_ = 0;
@@ -65,7 +65,7 @@ bool FreeCamController::HandleInput(const InputManager::Event &evt) {
             view_pointer_ = 0;
         }
         break;
-    case RawInputEvent::EvP1Move:
+    case RawInputEv::P1Move:
         if (move_pointer_ == 1) {
             side_touch_speed_ += evt.move.dx * 0.002f;
             side_touch_speed_ =
@@ -89,7 +89,7 @@ bool FreeCamController::HandleInput(const InputManager::Event &evt) {
             invalidate_view = true;
         }
         break;
-    case RawInputEvent::EvP2Move:
+    case RawInputEv::P2Move:
         if (move_pointer_ == 2) {
             side_touch_speed_ += evt.move.dx * 0.002f;
             side_touch_speed_ =
@@ -113,7 +113,7 @@ bool FreeCamController::HandleInput(const InputManager::Event &evt) {
             invalidate_view = true;
         }
         break;
-    case RawInputEvent::EvKeyDown: {
+    case RawInputEv::KeyDown: {
         if (evt.key_code == KeyUp ||
             (evt.key_code == KeyW && view_pointer_)) {
             fwd_press_speed_ = max_fwd_speed;
@@ -128,7 +128,7 @@ bool FreeCamController::HandleInput(const InputManager::Event &evt) {
             side_press_speed_ = max_fwd_speed;
         }
     } break;
-    case RawInputEvent::EvKeyUp: {
+    case RawInputEv::KeyUp: {
         if (evt.key_code == KeyUp ||
             (evt.key_code == KeyW && view_pointer_)) {
             fwd_press_speed_ = 0;

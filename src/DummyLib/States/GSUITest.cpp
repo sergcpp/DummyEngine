@@ -204,7 +204,7 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
     using namespace GSUITestInternal;
 
     // pt switch for touch controls
-    if (evt.type == RawInputEvent::EvP1Down || evt.type == RawInputEvent::EvP2Down) {
+    if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
         if (evt.point.x > float(ren_ctx_->w()) * 0.9f &&
             evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
@@ -225,44 +225,44 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
     bool input_processed = true;
 
     switch (evt.type) {
-    case RawInputEvent::EvP1Down: {
+    case RawInputEv::P1Down: {
         Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Press(p, true);
     } break;
-    case RawInputEvent::EvP2Down: {
+    case RawInputEv::P2Down: {
 
     } break;
-    case RawInputEvent::EvP1Up: {
+    case RawInputEv::P1Up: {
         const Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Press(p, false);
     } break;
-    case RawInputEvent::EvP2Up: {
+    case RawInputEv::P2Up: {
 
     } break;
-    case RawInputEvent::EvP1Move: {
+    case RawInputEv::P1Move: {
         Ren::Vec2f p =
             Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Hover(p);
     } break;
-    case RawInputEvent::EvP2Move: {
+    case RawInputEv::P2Move: {
 
     } break;
-    case RawInputEvent::EvKeyDown: {
+    case RawInputEv::KeyDown: {
         input_processed = false;
     } break;
-    case RawInputEvent::EvKeyUp: {
+    case RawInputEv::KeyUp: {
         if (evt.key_code == KeyUp || (evt.key_code == KeyW && !cmdline_enabled_)) {
             //word_puzzle_->restart();
         } else {
             input_processed = false;
         }
     } break;
-    case RawInputEvent::EvResize:
+    case RawInputEv::Resize:
         word_puzzle_->Resize(ui_root_.get());
         break;
     default:

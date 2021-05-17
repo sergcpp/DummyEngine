@@ -3,20 +3,16 @@
 #include <queue>
 
 struct InputManagerImp {
-    std::function<void(InputManager::Event &)> input_converters[(int)RawInputEvent::EvCount];
+    std::function<void(InputManager::Event &)> input_converters[(int)RawInputEv::Count];
     std::queue<InputManager::Event> input_buffer;
 };
 
 InputManager::InputManager() {
-    imp_ = new InputManagerImp();
+    imp_.reset(new InputManagerImp());
 }
 
-InputManager::~InputManager() {
-    delete imp_;
-}
-
-void InputManager::SetConverter(RawInputEvent evt_type, const std::function<void(Event &)> &conv) {
-    imp_->input_converters[(int)evt_type] = conv;
+void InputManager::SetConverter(RawInputEv evt_type, const std::function<void(Event &)> &conv) {
+    imp_->input_converters[int(evt_type)] = conv;
 }
 
 void InputManager::AddRawInputEvent(Event &evt) {

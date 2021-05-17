@@ -7,21 +7,21 @@
 
 struct InputManagerImp;
 
-enum RawInputEvent {
-    EvNone,
-    EvP1Down, EvP1Up, EvP1Move,
-    EvP2Down, EvP2Up, EvP2Move,
-    EvKeyDown, EvKeyUp,
-    EvResize,
-    EvMouseWheel,
-    EvCount
+enum class RawInputEv {
+    None = -1,
+    P1Down, P1Up, P1Move,
+    P2Down, P2Up, P2Move,
+    KeyDown, KeyUp,
+    Resize,
+    MouseWheel,
+    Count
 };
 
 class InputManager {
-    InputManagerImp *imp_;
+    std::unique_ptr<InputManagerImp> imp_;
 public:
     struct Event {
-        RawInputEvent type = RawInputEvent::EvNone;
+        RawInputEv type = RawInputEv::None;
         uint32_t key_code;
         struct {
             float x, y;
@@ -33,11 +33,11 @@ public:
     };
 
     InputManager();
-    ~InputManager();
+    ~InputManager() = default;
     InputManager(const InputManager &) = delete;
     InputManager &operator=(const InputManager &) = delete;
 
-    void SetConverter(RawInputEvent evt_type, const std::function<void(Event &)> &conv);
+    void SetConverter(RawInputEv evt_type, const std::function<void(Event &)> &conv);
     void AddRawInputEvent(Event &evt);
     bool PollEvent(uint64_t time_us, Event &evt);
     void ClearBuffer();

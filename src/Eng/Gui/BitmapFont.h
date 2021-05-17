@@ -64,8 +64,8 @@ private:
     float                               scale_;
     Ren::TextureRegionRef               tex_;
     uint32_t                            tex_res_[2];
-    eDrawMode                           draw_mode_ = eDrawMode::DrPassthrough;
-    eBlendMode                          blend_mode_ = eBlendMode::BlAlpha;
+    eDrawMode                           draw_mode_ = eDrawMode::Passthrough;
+    eBlendMode                          blend_mode_ = eBlendMode::Alpha;
     std::unique_ptr<glyph_range_t[]>    glyph_ranges_;
     uint32_t                            glyph_range_count_ = 0;
     uint32_t                            glyphs_count_ = 0;

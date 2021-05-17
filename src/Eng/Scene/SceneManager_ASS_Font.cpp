@@ -448,9 +448,9 @@ bool SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file,
         out_stream.write((const char *)&img_data_w, sizeof(uint16_t));
         out_stream.write((const char *)&img_data_h, sizeof(uint16_t));
 
-        const uint16_t draw_mode = is_sdf_font ? uint16_t(Gui::eDrawMode::DrDistanceField)
-                                               : uint16_t(Gui::eDrawMode::DrPassthrough),
-                       blend_mode = uint16_t(Gui::eBlendMode::BlAlpha);
+        const uint16_t draw_mode = is_sdf_font ? uint16_t(Gui::eDrawMode::DistanceField)
+                                               : uint16_t(Gui::eDrawMode::Passthrough),
+                       blend_mode = uint16_t(Gui::eBlendMode::Alpha);
         out_stream.write((const char *)&draw_mode, sizeof(uint16_t));
         out_stream.write((const char *)&blend_mode, sizeof(uint16_t));
 

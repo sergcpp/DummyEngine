@@ -29,26 +29,14 @@ void GSUITest3::InitBookMaterials() {
                                              log_.get());
     }
 
-    { // register material
-        Ren::eMatLoadStatus status;
-        orig_page_mat_ = ren_ctx_->LoadMaterial("book/book_page0.txt", nullptr, &status,
-                                                nullptr, nullptr);
-        if (status != Ren::eMatLoadStatus::Found) {
+    { // replace texture
+        orig_page_mat_ = scene_manager_->scene_data().materials.FindByName("book/book_page0.txt");
+        if (!orig_page_mat_) {
             log_->Error("Failed to find material book/book_page0");
             return;
         }
 
-        Ren::SmallVector<Ren::ProgramRef, 4> programs = orig_page_mat_->programs;
-        Ren::SmallVector<Ren::Tex2DRef, 8> textures = orig_page_mat_->textures;
-        Ren::SmallVector<Ren::Vec4f, 4> params = orig_page_mat_->params;
-
-        // replace texture
-        textures[2] = page_tex_;
-
-        page_mat_ = ren_ctx_->materials().Add(
-            "__book_page_material__", orig_page_mat_->flags(), programs.data(),
-            int(programs.size()), textures.data(), int(textures.size()), params.data(),
-            int(params.size()), log_.get());
+        orig_page_mat_->textures[2] = page_tex_;
     }
 }
 
@@ -75,19 +63,15 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
 
     r->SwapBuffers();
 
-    // just blit sdf into a buffer ignoring alpha
-    // glDisable(GL_BLEND);
-    // glBlendFunc(GL_ONE, GL_ONE);
-
     book_main_font_->set_scale(/*std::max((float)ctx_->w() / 4096.0f, 1.0f)*/ 1.0f);
-    assert(book_main_font_->draw_mode() == Gui::eDrawMode::DrDistanceField &&
-           book_emph_font_->draw_mode() == Gui::eDrawMode::DrDistanceField &&
-           book_caption_font_->draw_mode() == Gui::eDrawMode::DrDistanceField);
+    assert(book_main_font_->draw_mode() == Gui::eDrawMode::DistanceField &&
+           book_emph_font_->draw_mode() == Gui::eDrawMode::DistanceField &&
+           book_caption_font_->draw_mode() == Gui::eDrawMode::DistanceField);
 
     // just draw SDF 'as-is'
-    book_main_font_->set_draw_mode(Gui::eDrawMode::DrBlitDistanceField);
-    book_emph_font_->set_draw_mode(Gui::eDrawMode::DrBlitDistanceField);
-    book_caption_font_->set_draw_mode(Gui::eDrawMode::DrBlitDistanceField);
+    book_main_font_->set_draw_mode(Gui::eDrawMode::BlitDistanceField);
+    book_emph_font_->set_draw_mode(Gui::eDrawMode::BlitDistanceField);
+    book_caption_font_->set_draw_mode(Gui::eDrawMode::BlitDistanceField);
 
     const int page_base = paged_reader_->cur_page();
     for (int i = 0; i < (book_state_ == eBookState::BkOpened ? 2 : 4); i++) {
@@ -102,11 +86,11 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
 
     paged_reader_->set_cur_page(page_base);
 
-    book_main_font_->set_draw_mode(Gui::eDrawMode::DrDistanceField);
-    book_emph_font_->set_draw_mode(Gui::eDrawMode::DrDistanceField);
-    book_caption_font_->set_draw_mode(Gui::eDrawMode::DrDistanceField);
+    book_main_font_->set_draw_mode(Gui::eDrawMode::DistanceField);
+    book_emph_font_->set_draw_mode(Gui::eDrawMode::DistanceField);
+    book_caption_font_->set_draw_mode(Gui::eDrawMode::DistanceField);
 
-    r->Draw();
+    r->Draw(page_buf_.w, page_buf_.h);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
