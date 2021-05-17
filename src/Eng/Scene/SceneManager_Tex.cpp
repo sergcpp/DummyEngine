@@ -352,6 +352,7 @@ void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[],
                                            const int desired_count) {
     std::unique_lock<std::mutex> lock(tex_requests_lock_);
 
+    bool kick_loader_thread = false;
     for (auto it = requested_textures_.begin(); it != requested_textures_.end(); ++it) {
         const TexEntry *found_entry = nullptr;
 
@@ -383,10 +384,13 @@ void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[],
 
         if (found_entry) {
             it->sort_key = found_entry->sort_key;
+            kick_loader_thread = true;
         }
     }
 
-    tex_loader_cnd_.notify_one();
+    if (kick_loader_thread) {
+        tex_loader_cnd_.notify_one();
+    }
 }
 
 void SceneManager::ForceTextureReload() {
