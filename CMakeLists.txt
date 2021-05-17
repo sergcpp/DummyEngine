@@ -62,6 +62,10 @@ if(ENABLE_UNITYBUILD)
     source_group("src" FILES _Sys.cpp)
 endif()
 
+if(MSVC)
+    list(APPEND ALL_SOURCE_FILES _CustomTypes.natvis)
+endif(MSVC)
+
 add_library(Sys STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(Sys ${LIBS})
 

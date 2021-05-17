@@ -69,7 +69,7 @@ class PoolAllocator {
     }
 };
 
-PoolAllocator::MemChunk::MemChunk(size_t _block_size, uint8_t _block_count) {
+inline PoolAllocator::MemChunk::MemChunk(size_t _block_size, uint8_t _block_count) {
     p_data = new uint8_t[_block_size * _block_count];
     first_unused_block = 0;
     unused_block_count = _block_count;
@@ -80,18 +80,18 @@ PoolAllocator::MemChunk::MemChunk(size_t _block_size, uint8_t _block_count) {
     }
 }
 
-PoolAllocator::MemChunk::~MemChunk() {
+inline PoolAllocator::MemChunk::~MemChunk() {
     delete[] p_data;
 }
 
-PoolAllocator::MemChunk::MemChunk(MemChunk &&rhs) noexcept {
+inline PoolAllocator::MemChunk::MemChunk(MemChunk &&rhs) noexcept {
     p_data = rhs.p_data;
     rhs.p_data = nullptr;
     first_unused_block = rhs.first_unused_block;
     unused_block_count = rhs.unused_block_count;
 }
 
-PoolAllocator::MemChunk &PoolAllocator::MemChunk::operator=(MemChunk &&rhs) noexcept {
+inline PoolAllocator::MemChunk &PoolAllocator::MemChunk::operator=(MemChunk &&rhs) noexcept {
     delete[] p_data;
 
     p_data = rhs.p_data;
@@ -102,7 +102,7 @@ PoolAllocator::MemChunk &PoolAllocator::MemChunk::operator=(MemChunk &&rhs) noex
     return *this;
 }
 
-void *PoolAllocator::MemChunk::Alloc(size_t _block_size) {
+inline void *PoolAllocator::MemChunk::Alloc(size_t _block_size) {
     if (!unused_block_count) {
         return nullptr;
     }
@@ -113,7 +113,7 @@ void *PoolAllocator::MemChunk::Alloc(size_t _block_size) {
     return p_res;
 }
 
-void PoolAllocator::MemChunk::Free(void *p, size_t _block_size) {
+inline void PoolAllocator::MemChunk::Free(void *p, size_t _block_size) {
     assert(p >= p_data);
     auto *p_mem_to_release = (uint8_t *)p;
     // check if pointer is aligned to block size
@@ -125,12 +125,15 @@ void PoolAllocator::MemChunk::Free(void *p, size_t _block_size) {
     ++unused_block_count;
 }
 
+struct SharedState {
+    uint32_t users_count = 0;
+    std::vector<PoolAllocator> allocators;
+};
+
 template <typename T, typename FallBackAllocator = std::allocator<T>>
 class MultiPoolAllocator {
-    struct SharedState {
-        uint32_t users_count = 0;
-        std::vector<PoolAllocator> allocators;
-    };
+    template <typename U, typename FallBackAllocator = std::allocator<U>>
+    friend class MultiPoolAllocator;
 
     size_t mem_step_;
     size_t max_object_size_;
@@ -158,7 +161,7 @@ class MultiPoolAllocator {
     MultiPoolAllocator &operator=(const MultiPoolAllocator &) = delete;
 
     template <typename U>
-    explicit MultiPoolAllocator(const MultiPoolAllocator<U> &other)
+    /*explicit*/ MultiPoolAllocator(const MultiPoolAllocator<U> &other)
         : mem_step_(other.mem_step_), max_object_size_(other.max_object_size_),
           shared_state_(other.shared_state_),
           fallback_allocator_(other.fallback_allocator_) {
