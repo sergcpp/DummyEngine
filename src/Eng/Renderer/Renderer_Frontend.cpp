@@ -5,10 +5,8 @@
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 
-#ifdef ENABLE_ITT_API
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
-#endif
 
 namespace RendererInternal {
 // 'nabe' is short for 'neighbourhood'
@@ -82,11 +80,9 @@ void __record_textures(DynArray<TexEntry> &storage, const Ren::Material *mat,
 void __init_wind_params(const VegState &vs, const Environment &env,
                         const Ren::Mat4f &object_from_world, InstanceData &instance);
 
-#ifdef ENABLE_ITT_API
 __itt_string_handle *itt_gather_str = __itt_string_handle_create("GatherDrawables");
 __itt_string_handle *itt_proc_occluders_str =
     __itt_string_handle_create("ProcessOccluders");
-#endif
 } // namespace RendererInternal
 
 #define REN_UNINITIALIZE_X2(t)                                                           \
@@ -115,9 +111,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
     using namespace RendererInternal;
     using namespace Ren;
 
-#ifdef ENABLE_ITT_API
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_gather_str);
-#endif
 
     const uint64_t iteration_start = Sys::GetTimeUs();
 
@@ -227,9 +221,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
     const uint64_t occluders_start = Sys::GetTimeUs();
 
-#ifdef ENABLE_ITT_API
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_proc_occluders_str);
-#endif
 
     const Mat4f &cull_view_from_world = view_from_world,
                 &cull_clip_from_view = list.draw_cam.proj_matrix();
@@ -301,9 +293,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
         }
     }
 
-#ifdef ENABLE_ITT_API
     __itt_task_end(__g_itt_domain);
-#endif
 
     /**********************************************************************************/
     /*                        MESHES/LIGHTS/DECALS/PROBES GATHERING                   */
@@ -1731,9 +1721,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
             uint32_t(iteration_end - items_assignment_start);
     }
 
-#ifdef ENABLE_ITT_API
     __itt_task_end(__g_itt_domain);
-#endif
 }
 
 void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub_frustums,

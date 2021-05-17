@@ -5,10 +5,8 @@
 #include <html5.h>
 #endif
 
-#ifdef ENABLE_ITT_API
 #include <vtune/ittnotify.h>
 __itt_domain *__g_itt_domain = __itt_domain_create("Global");
-#endif
 
 #if defined(USE_GL_RENDER)
 #include <Ren/GL.h>
@@ -72,9 +70,7 @@ class AuxGfxThread : public Sys::ThreadWorker {
     AuxGfxThread(HDC device_ctx, HGLRC gl_ctx)
         : device_ctx_(device_ctx), gl_ctx_(gl_ctx) {
         AddTask([this]() {
-#ifdef ENABLE_ITT_API
             __itt_thread_set_name("AuxGfxThread");
-#endif
             ::wglMakeCurrent(device_ctx_, gl_ctx_);
         });
     }
@@ -448,16 +444,12 @@ int DummyApp::Run(int argc, char *argv[]) {
         return -1;
     }
 
-#ifdef ENABLE_ITT_API
     __itt_thread_set_name("Main Thread");
-#endif
 
     MSG msg;
     bool done = false;
     while (!done) {
-#ifdef ENABLE_ITT_API
         __itt_frame_begin_v3(__g_itt_domain, nullptr);
-#endif
 
         while (PeekMessage(&msg, nullptr, NULL, NULL, PM_REMOVE)) {
             if (msg.message == WM_QUIT) {
@@ -470,9 +462,8 @@ int DummyApp::Run(int argc, char *argv[]) {
         this->Frame();
 
         SwapBuffers(device_context_);
-#ifdef ENABLE_ITT_API
+
         __itt_frame_end_v3(__g_itt_domain, nullptr);
-#endif
     }
 
     this->Destroy();

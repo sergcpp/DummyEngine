@@ -11,11 +11,8 @@
 #include <thread>
 #include <vector>
 
-#ifdef ENABLE_ITT_API
 #include <vtune/ittnotify.h>
-
 extern __itt_domain *__g_itt_domain;
-#endif
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -51,7 +48,6 @@ inline ThreadPool::ThreadPool(size_t threads_count, const char *threads_name)
     : stop_(false) {
     for (size_t i = 0; i < threads_count; ++i)
         workers_.emplace_back([this, i, threads_name] {
-#ifdef ENABLE_ITT_API
             if (threads_name) {
                 char name_buf[64];
                 sprintf(name_buf, "%s_%i", threads_name, int(i));
@@ -59,7 +55,6 @@ inline ThreadPool::ThreadPool(size_t threads_count, const char *threads_name)
             } else {
                 __itt_thread_set_name("Worker thread");
             }
-#endif
 
             for (;;) {
                 std::function<void()> task;
@@ -149,7 +144,6 @@ inline QThreadPool::QThreadPool(const int threads_count, const int q_count,
     }
     for (int i = 0; i < threads_count; ++i) {
         workers_.emplace_back([this, i, threads_name] {
-#ifdef ENABLE_ITT_API
             char name_buf[64];
             if (threads_name) {
                 sprintf(name_buf, "%s_%i", threads_name, int(i));
@@ -157,7 +151,6 @@ inline QThreadPool::QThreadPool(const int threads_count, const int q_count,
                 sprintf(name_buf, "worker_thread_%i", int(i));
             }
             __itt_thread_set_name(name_buf);
-#endif
 
             for (;;) {
                 std::function<void()> task;

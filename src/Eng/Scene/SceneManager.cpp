@@ -20,10 +20,8 @@ extern "C" {
 #include <Ren/SOIL2/stb_image.h>
 }
 
-#ifdef ENABLE_ITT_API
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
-#endif
 
 #include "../Utils/Load.h"
 #include "../Utils/ShaderLoader.h"
@@ -50,13 +48,11 @@ extern const int LIGHTMAP_ATLAS_RESX = 2048, LIGHTMAP_ATLAS_RESY = 1024;
 const int PROBE_RES = 512;
 const int PROBE_COUNT = 16;
 
-#ifdef ENABLE_ITT_API
 __itt_string_handle *itt_load_scene_str =
     __itt_string_handle_create("SceneManager::LoadScene");
 __itt_string_handle *itt_serve_str = __itt_string_handle_create("SceneManager::Serve");
 __itt_string_handle *itt_on_loaded_str =
     __itt_string_handle_create("SceneManager::OnTextureDataLoaded");
-#endif
 } // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {
@@ -246,9 +242,7 @@ void SceneManager::RegisterComponent(uint32_t index, CompStorage *storage,
 void SceneManager::LoadScene(const JsObject &js_scene) {
     using namespace SceneManagerConstants;
 
-#ifdef ENABLE_ITT_API
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_load_scene_str);
-#endif
 
     Ren::ILog *log = ren_ctx_.log();
 
@@ -474,9 +468,7 @@ void SceneManager::LoadScene(const JsObject &js_scene) {
 
     RebuildBVH();
 
-#ifdef ENABLE_ITT_API
     __itt_task_end(__g_itt_domain);
-#endif
 }
 
 void SceneManager::SaveScene(JsObject &js_scene) {
@@ -1127,6 +1119,11 @@ Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, const uint8_t color[
         TextureRequest new_req;
         new_req.ref = ret;
 
+        if (ret->name().StartsWith("lightmaps/")) {
+            // set max priority for lightmaps
+            new_req.sort_key = 0;
+        }
+
         std::lock_guard<std::mutex> _(tex_requests_lock_);
         requested_textures_.push_back(std::move(new_req));
         tex_loader_cnd_.notify_one();
@@ -1317,13 +1314,9 @@ Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
 void SceneManager::Serve(const int texture_budget) {
     using namespace SceneManagerConstants;
 
-#ifdef ENABLE_ITT_API
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_serve_str);
-#endif
 
     ProcessPendingTextures(texture_budget);
 
-#ifdef ENABLE_ITT_API
     __itt_task_end(__g_itt_domain);
-#endif
 }

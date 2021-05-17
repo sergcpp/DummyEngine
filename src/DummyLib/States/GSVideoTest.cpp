@@ -3,10 +3,8 @@
 #include <fstream>
 #include <memory>
 
-#ifdef ENABLE_ITT_API
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
-#endif
 
 #include <Eng/Gui/Renderer.h>
 #include <Eng/Renderer/Renderer.h>
@@ -32,12 +30,10 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
                           "living_room_gumroad_vid.json";
 
-#ifdef ENABLE_ITT_API
 __itt_string_handle *itt_copy_pbo_str = __itt_string_handle_create("Copy to PBO");
 __itt_string_handle *itt_decode_str = __itt_string_handle_create("Decode Frame");
 __itt_string_handle *itt_vid_tex_str = __itt_string_handle_create("Video Textures");
 __itt_string_handle *itt_update_tex_str = __itt_string_handle_create("Update Textures");
-#endif
 
 extern const bool VerboseLogging;
 } // namespace GSVideoTestInternal
@@ -444,9 +440,8 @@ void GSVideoTest::SaveScene(JsObject &js_scene) {
 void GSVideoTest::UpdateVideoTextures() {
     using namespace GSVideoTestInternal;
 
-#ifdef ENABLE_ITT_API
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_vid_tex_str);
-#endif
+
     for (int tx = 0; tx < 5; tx++) {
         if (!vp_[tx].initialized()) {
             continue;
@@ -478,15 +473,11 @@ void GSVideoTest::UpdateVideoTextures() {
         decoder_threads_->Enqueue(q_index, [this, tx]() {
             using namespace GSVideoTestInternal;
 
-#ifdef ENABLE_ITT_API
             __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_decode_str);
-#endif
 
             decode_result_[tx] = vp_[tx].UpdateFrame(video_time_us_ / 1000);
 
-#ifdef ENABLE_ITT_API
             __itt_task_end(__g_itt_domain);
-#endif
         });
 
 #ifndef FORCE_UPLOAD_EVERY_FRAME
@@ -552,9 +543,8 @@ void GSVideoTest::UpdateVideoTextures() {
             UpdateVideoTextureData(tx, tex_to_update);
         }
     }
-#ifdef ENABLE_ITT_API
+
     __itt_task_end(__g_itt_domain);
-#endif
 }
 
 void GSVideoTest::UpdateVideoTextureData(const int tex_index, const int frame_index) {
@@ -566,9 +556,7 @@ void GSVideoTest::UpdateVideoTextureData(const int tex_index, const int frame_in
         log_->Info("Updating texture %tx", frame_index);
     }
 
-#ifdef ENABLE_ITT_API
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_update_tex_str);
-#endif
 
     const int tex_w = vp_[tex_index].w();
     const int tex_h = vp_[tex_index].h();
@@ -587,9 +575,7 @@ void GSVideoTest::UpdateVideoTextureData(const int tex_index, const int frame_in
         Ren::eTexFormat::RawRG88, uv_sbuf_[tex_index], frame_index * uv_buf_chunk_size,
         uv_buf_chunk_size);
 
-#ifdef ENABLE_ITT_API
     __itt_task_end(__g_itt_domain);
-#endif
 }
 
 void GSVideoTest::UpdateStageBufWithDecodedFrame(const int tex_index,
@@ -662,11 +648,9 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame_Persistent(const int tex_index,
     using namespace GSVideoTestInternal;
 
     assert(y_sbuf_[tex_index].mapped_ptr() && uv_sbuf_[tex_index].mapped_ptr() &&
-           "Persistent mapping should be available!");
+           "Persistent mapping must be available!");
 
-#ifdef ENABLE_ITT_API
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_copy_pbo_str);
-#endif
 
     const int tex_w = vp_[tex_index].w();
     const int tex_h = vp_[tex_index].h();
@@ -721,7 +705,5 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame_Persistent(const int tex_index,
         }
     }
 
-#ifdef ENABLE_ITT_API
     __itt_task_end(__g_itt_domain);
-#endif
 }

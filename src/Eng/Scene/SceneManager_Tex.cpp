@@ -3,10 +3,8 @@
 #include <Ren/Context.h>
 #include <Ren/Utils.h>
 
-#ifdef ENABLE_ITT_API
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
-#endif
 
 namespace SceneManagerConstants {
 #if defined(__ANDROID__)
@@ -15,9 +13,8 @@ extern const char *TEXTURES_PATH;
 extern const char *TEXTURES_PATH;
 #endif
 
-#ifdef ENABLE_ITT_API
 __itt_string_handle *itt_read_file_str = __itt_string_handle_create("ReadFile");
-#endif
+__itt_string_handle *itt_sort_tex_str = __itt_string_handle_create("SortTextures");
 } // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {
@@ -51,24 +48,12 @@ void SceneManager::TextureLoaderProc() {
     using namespace SceneManagerConstants;
     using namespace SceneManagerInternal;
 
-#ifdef ENABLE_ITT_API
     __itt_thread_set_name("Texture loader");
-#endif
 
     int iteration = 0;
 
-    const size_t SortPortion = 1;
-    const int SortInterval = 16;
-
-    auto sort_predicate = [](const TextureRequest &lhs, const TextureRequest &rhs) {
-        /*if (strstr(lhs.ref->name().c_str(), "lightmaps/") &&
-            !strstr(rhs.ref->name().c_str(), "lightmaps/")) {
-            return true;
-        }
-        return false;*/
-
-        return lhs.sort_key < rhs.sort_key;
-    };
+    const size_t SortPortion = 16;
+    const int SortInterval = 8;
 
     for (;;) {
         TextureRequestPending *req = nullptr;
@@ -96,23 +81,34 @@ void SceneManager::TextureLoaderProc() {
             /**/
 
             if (iteration++ % SortInterval == 0) {
-                /*const size_t sort_portion =
-                    std::min(SortPortion, requested_textures_.size());
-                std::partial_sort(std::begin(requested_textures_),
-                                  std::begin(requested_textures_) + sort_portion,
-                                  std::end(requested_textures_), sort_predicate);*/
-
-                std::sort(std::begin(requested_textures_), std::end(requested_textures_),
-                          sort_predicate);
+                __itt_task_begin(__g_itt_domain, __itt_null, __itt_null,
+                                 itt_sort_tex_str);
+                if (SortPortion != -1) {
+                    const size_t sort_portion =
+                        std::min(SortPortion, requested_textures_.size());
+                    std::partial_sort(
+                        std::begin(requested_textures_),
+                        std::begin(requested_textures_) + sort_portion,
+                        std::end(requested_textures_),
+                        [](const TextureRequest &lhs, const TextureRequest &rhs) {
+                            return lhs.sort_key < rhs.sort_key;
+                        });
+                } else {
+                    std::sort(std::begin(requested_textures_),
+                              std::end(requested_textures_),
+                              [](const TextureRequest &lhs, const TextureRequest &rhs) {
+                                  return lhs.sort_key < rhs.sort_key;
+                              });
+                }
+                __itt_task_end(__g_itt_domain);
             }
 
             static_cast<TextureRequest &>(*req) = requested_textures_.front();
             requested_textures_.pop_front();
         }
 
-#ifdef ENABLE_ITT_API
         __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_read_file_str);
-#endif
+
         req->buf->set_data_len(0);
         req->mip_offset_to_init = 0xff;
 
@@ -197,9 +193,7 @@ void SceneManager::TextureLoaderProc() {
             req->state = eRequestState::PendingIO;
         }
 
-#ifdef ENABLE_ITT_API
         __itt_task_end(__g_itt_domain);
-#endif
     }
 }
 

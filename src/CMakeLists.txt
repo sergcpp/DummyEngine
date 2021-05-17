@@ -56,9 +56,10 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     link_directories(${SDL2_LIBRARIES})
     link_directories(${ITT_LIBRARIES})
 	
-	add_definitions(-DENABLE_ITT_API)
+	#add_definitions(-DINTEL_NO_ITTNOTIFY_API)
 	add_definitions(-DENABLE_OBJ_LABELS)
 else()
+    add_definitions(-DINTEL_NO_ITTNOTIFY_API)
     set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/arm64-v8a)
 endif()
 

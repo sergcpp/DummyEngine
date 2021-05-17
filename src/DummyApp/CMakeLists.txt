@@ -32,7 +32,7 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     endif(WIN32)
     
     if(WIN32)
-        set(LIBS winmm imm32 version libittnotify)
+        set(LIBS winmm imm32 version)
     elseif(APPLE)
         set(LIBS -Wl,-Bstatic SDL2 -Wl,-Bdynamic X11 Xext Xcursor Xinerama Xi Xrandr Xss Xxf86vm asound wayland-client wayland-cursor wayland-server wayland-egl pulse sndio xkbcommon dl pthread GL glut c)
     else()

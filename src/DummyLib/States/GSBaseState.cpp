@@ -838,9 +838,7 @@ bool GSBaseState::HandleInput(const InputManager::Event &evt) {
 }
 
 void GSBaseState::BackgroundProc() {
-#ifdef ENABLE_ITT_API
     __itt_thread_set_name("Renderer Frontend Thread");
-#endif
 
     std::unique_lock<std::mutex> lock(mtx_);
     while (!shutdown_) {

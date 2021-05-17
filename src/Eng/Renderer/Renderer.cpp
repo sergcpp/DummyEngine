@@ -9,10 +9,8 @@
 
 #include "Renderer_Names.h"
 
-#ifdef ENABLE_ITT_API
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
-#endif
 
 namespace RendererInternal {
 bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]);
@@ -65,9 +63,7 @@ const int TaaSampleCount = 8;
 #include "__cone_rt_lut.inl"
 #include "__noise.inl"
 
-#ifdef ENABLE_ITT_API
 __itt_string_handle *itt_exec_dr_str = __itt_string_handle_create("ExecuteDrawList");
-#endif
 } // namespace RendererInternal
 
 // TODO: remove this coupling!!!
@@ -262,9 +258,7 @@ void Renderer::PrepareDrawList(const SceneData &scene, const Ren::Camera &cam,
 void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
     using namespace RendererInternal;
 
-#ifdef ENABLE_ITT_API
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_exec_dr_str);
-#endif
 
     const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
@@ -727,9 +721,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
     backend_time_diff_ = int64_t(gpu_draw_start) - int64_t(backend_cpu_start_);
     frame_counter_++;
 
-#ifdef ENABLE_ITT_API
     __itt_task_end(__g_itt_domain);
-#endif
 }
 
 #undef BBOX_POINTS

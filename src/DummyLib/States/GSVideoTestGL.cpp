@@ -1,9 +1,7 @@
 #include "GSVideoTest.h"
 
-#ifdef ENABLE_ITT_API
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain; // NOLINT
-#endif
 
 #include <Ren/Context.h>
 #include <Ren/GL.h>
@@ -94,11 +92,11 @@ void GSVideoTest::InitVideoTextures() {
 
 void GSVideoTest::DestroyVideoTextures() {
     for (int i = 0; i < 5; i++) {
-        y_sbuf_[i].Free();
-        uv_sbuf_[i].Free();
         for (int j = 0; j < TextureSyncWindow; j++) {
             WaitVideoTextureUpdated(i, j);
         }
+        y_sbuf_[i].Free();
+        uv_sbuf_[i].Free();
     }
 }
 
